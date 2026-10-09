@@ -30,6 +30,8 @@ export function BetDialog(props: {
   setOpen: (open: boolean) => void
   trackingLocation: string
   initialOutcome?: BinaryOutcomes
+  initialAmount?: number
+  onBuySuccess?: () => void
   binaryPseudonym?: {
     YES: {
       pseudonymName: string
@@ -48,6 +50,8 @@ export function BetDialog(props: {
     setOpen,
     trackingLocation,
     initialOutcome,
+    initialAmount,
+    onBuySuccess,
     questionPseudonym,
   } = props
   const { question } = contract
@@ -70,10 +74,14 @@ export function BetDialog(props: {
       <Col className="max-h-[42rem] overflow-auto px-4 py-4">
         <BuyPanel
           contract={contract}
-          onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
+          onBuySuccess={() => {
+            onBuySuccess?.()
+            setTimeout(() => setOpen(false), 500)
+          }}
           location={trackingLocation}
           inModal={true}
           initialOutcome={initialOutcome ?? 'YES'}
+          initialAmount={initialAmount}
           alwaysShowOutcomeSwitcher
           pseudonym={pseudonym}
           className="!px-0"
