@@ -157,6 +157,12 @@ export const updateCashStatsCore = async (daysAgo: number) => {
 // the oldest day in the last MAX_RECOVERY_DAYS whose stats never landed.
 // dau is the probe because it is written for every day the job completes and
 // for no day it does not.
+// A day counts as a gap when dau OR topic_daus is missing. topic_daus is
+// written last, by its own per-day chunks, so it is the column a killed run
+// leaves empty after dau has already landed: the 2026-10-08 run wrote dau for
+// 9/22-10/7 and then lost its topic-DAU transaction to an event-loop stall,
+// and with dau present no later 7-day window would ever have come back for
+// those days.
 const getRecoveryDaysAgo = async (
   pg: SupabaseDirectClient,
   end: string,
@@ -169,7 +175,7 @@ const getRecoveryDaysAgo = async (
     select min(w.day)::text as oldest_gap
     from wanted w
     left join daily_stats s on s.start_date = w.day
-    where s.dau is null`,
+    where s.dau is null or s.topic_daus is null`,
     [end, MAX_RECOVERY_DAYS]
   )
   if (!row?.oldest_gap) return requested
@@ -931,7 +937,11 @@ export const updateActivityStats = async (
   }
 
   log('calculate topic DAUs')
-  const topicDaus = await calculateTopicDaus(pg, start, end)
+  const { topicDaus, failed: topicDauFailures } = await calculateTopicDaus(
+    pg,
+    start,
+    end
+  )
 
   await bulkUpsertStats(
     pg,
@@ -940,6 +950,18 @@ export const updateActivityStats = async (
       topic_daus: topicCounts,
     }))
   )
+  // After the upsert, so the days that did compute stay written and the
+  // next run only has the failed ones left to repair (getRecoveryDaysAgo
+  // treats a missing topic_daus as a gap). Still thrown: the run must count
+  // as failed so helpers.ts escalates a repeat and check-stats-freshness
+  // keeps reporting the hole.
+  if (topicDauFailures.length > 0) {
+    throw new Error(
+      `topic DAUs failed for ${
+        topicDauFailures.length
+      } day(s): ${topicDauFailures.join(', ')}`
+    )
+  }
 }
 
 const isUserLikelySpammer = (user: StatUser) =>
@@ -1125,22 +1147,43 @@ async function calculateTopicDaus(
     group by day
   `
 
+  // One retry per day, and a day that still fails is reported rather than
+  // thrown, mirroring materializeActivityDays. Before this, the first failed
+  // day aborted the loop and every day's counts were lost: on 2026-10-08 one
+  // transaction killed by an event-loop stall (idle-in-transaction timeout)
+  // cost all 17 days of a recovery run.
   const topicDaus: Record<string, Record<string, number>> = {}
+  const failed: string[] = []
   const days = listDays(start, end)
   for (let i = 0; i < days.length; i++) {
     const day = days[i]
     const next = dayjs(day).add(1, 'day').format('YYYY-MM-DD')
-    const rows = await withChunkTimeout(pg, (tx) =>
-      tx.manyOrNone<{ day: string; group_counts: Record<string, number> }>(
-        topicDauSql,
-        [day, next]
-      )
-    )
-    rows.forEach((row) => {
-      topicDaus[row.day] = row.group_counts
-    })
+    for (let attempt = 0; attempt <= CHUNK_RETRIES; attempt++) {
+      try {
+        const rows = await withChunkTimeout(pg, (tx) =>
+          tx.manyOrNone<{ day: string; group_counts: Record<string, number> }>(
+            topicDauSql,
+            [day, next]
+          )
+        )
+        rows.forEach((row) => {
+          topicDaus[row.day] = row.group_counts
+        })
+        break
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        if (attempt === CHUNK_RETRIES) {
+          failed.push(day)
+          log.warn(`[update-stats] could not compute topic DAUs for ${day}`, {
+            error: message,
+          })
+        } else {
+          await sleep(CHUNK_RETRY_DELAY_MS)
+        }
+      }
+    }
   }
-  return topicDaus
+  return { topicDaus, failed }
 }
 
 export const updateCashActivityStats = async (
