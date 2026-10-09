@@ -82,6 +82,8 @@ import {
 } from './order-book'
 import { ShareBetModal } from './share-bet'
 import { YesNoSelector } from './yes-no-selector'
+import { isNextMarketPromptLocation } from 'common/next-market-prompt'
+import { setLastPageBet } from 'web/hooks/use-next-market-prompt'
 
 const WAIT_TO_DISMISS = 3000
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
@@ -90,6 +92,8 @@ type BuyPanelProps = {
   multiProps?: MultiBetProps
   onBuySuccess?: () => void
   initialOutcome?: BinaryOutcomes
+  /** Pre-fills the amount input, e.g. with the amount just bet elsewhere. */
+  initialAmount?: number
   location?: string
   replyToCommentId?: string
   feedReason?: string
@@ -243,6 +247,7 @@ export const BuyPanelBody = (
     outcome,
     setOutcome,
     onBuySuccess,
+    initialAmount,
     location = 'bet panel',
     onClose,
     replyToCommentId,
@@ -325,7 +330,7 @@ export const BuyPanelBody = (
     : 50
 
   const [betAmount, setBetAmount] = useState<number | undefined>(
-    initialBetAmount
+    initialAmount ?? initialBetAmount
   )
 
   const [error, setError] = useState<string | undefined>()
@@ -414,6 +419,17 @@ export const BuyPanelBody = (
       if (finalBetDetails) {
         setLastBetDetails(finalBetDetails)
         setIsSharing(false)
+        if (isNextMarketPromptLocation(location)) {
+          setLastPageBet({
+            contractId: contract.id,
+            betId: finalBetDetails.id,
+            amount: finalBetDetails.amount,
+            outcome: finalBetDetails.outcome,
+            answerId: finalBetDetails.answerId,
+            token: contract.token,
+            time: Date.now(),
+          })
+        }
         const timeoutId = setTimeout(() => {
           callOnBuySuccess()
         }, WAIT_TO_DISMISS)
@@ -555,6 +571,17 @@ export const BuyPanelBody = (
         }
         setLastBetDetails(fullBet)
         setIsSharing(false)
+        if (isNextMarketPromptLocation(location)) {
+          setLastPageBet({
+            contractId: contract.id,
+            betId: fullBet.id,
+            amount: fullBet.amount,
+            outcome: fullBet.outcome,
+            answerId: fullBet.answerId,
+            token: contract.token,
+            time: Date.now(),
+          })
+        }
         // TODO: we could remove the timeout and just not dismiss the modal
         const timeoutId = setTimeout(() => {
           callOnBuySuccess()
@@ -945,6 +972,9 @@ export const BuyPanelBody = (
                                   setIsEditingPayout(false)
                                 }
                               }}
+                              // The input replaces the payout the user just
+                              // clicked to edit, so focus belongs here.
+                              // eslint-disable-next-line jsx-a11y/no-autofocus
                               autoFocus
                               min={1}
                               step={1}
@@ -954,9 +984,19 @@ export const BuyPanelBody = (
                           ) : (
                             <span
                               className={clsx('cursor-pointer hover:underline')}
+                              role="button"
+                              tabIndex={0}
+                              aria-label="Edit payout"
                               onClick={() => {
                                 setEditablePayout(Math.floor(currentPayout))
                                 setIsEditingPayout(true)
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault()
+                                  setEditablePayout(Math.floor(currentPayout))
+                                  setIsEditingPayout(true)
+                                }
                               }}
                             >
                               {formatWithToken({
