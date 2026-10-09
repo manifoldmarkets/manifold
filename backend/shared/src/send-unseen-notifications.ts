@@ -22,7 +22,15 @@ export async function sendUnseenMarketMovementNotifications() {
           cmn.contract_id,
           n.user_id
         from contract_movement_notifications cmn
-          join user_notifications n on n.notification_id = cmn.notification_id
+          -- notification ids are 6-character random strings and are only
+          -- unique per user (user_notifications' primary key is
+          -- (user_id, notification_id)); joining on the id alone also picked
+          -- up other users' unrelated notifications that shared one, and a
+          -- "post" notification without movement data crashed every send
+          -- from 2026-09-16 to 2026-10-08.
+          join user_notifications n
+            on n.notification_id = cmn.notification_id
+            and n.user_id = cmn.user_id
         where cmn.destination = 'browser'
           and cmn.created_time > now() - interval '24 hours'
           and n.data->>'isSeen' = 'false'
@@ -36,7 +44,9 @@ export async function sendUnseenMarketMovementNotifications() {
           u.name as user_name,
           row_number() over (partition by n.user_id order by c.importance_score desc) as importance_rank
         from latest_contract_notifications lcn
-          join user_notifications n on n.notification_id = lcn.notification_id
+          join user_notifications n
+            on n.notification_id = lcn.notification_id
+            and n.user_id = lcn.user_id
           join private_users pu on n.user_id = pu.id
           join users u on pu.id = u.id
           join contracts c on lcn.contract_id = c.id
@@ -83,7 +93,22 @@ export async function sendUnseenMarketMovementNotifications() {
 
     // Prepare email notification (using up to MOVEMENTS_TO_SEND notifications)
     if (sendToEmail) {
-      const marketMovements: MarketMovementEmailData[] = userResults.map(
+      // A notification without movement data cannot be rendered. The join
+      // above should make this impossible; if it ever happens again, drop the
+      // row rather than let one bad notification cancel every user's email.
+      const renderable = userResults.filter(
+        (result) => (result.notification as Notification).data
+      )
+      if (renderable.length < userResults.length) {
+        log.warn(
+          `[send-unseen-notifications] skipping ${
+            userResults.length - renderable.length
+          } notification(s) without movement data for user ${privateUser.id}`
+        )
+      }
+      if (renderable.length === 0) continue
+
+      const marketMovements: MarketMovementEmailData[] = renderable.map(
         (result) => {
           const notification = result.notification as Notification
           const {
