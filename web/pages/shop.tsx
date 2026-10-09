@@ -72,6 +72,7 @@ import {
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
+import { MerchCheckoutModal } from 'web/components/shop/merch-checkout-modal'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { SPEND_MANA_ENABLED } from 'web/components/nav/sidebar'
@@ -1647,7 +1648,20 @@ function MerchItemCard(props: {
       </div>
 
       {/* Purchase confirmation modal */}
-      <Modal open={showPurchaseModal} setOpen={setShowPurchaseModal} size="md">
+      <MerchCheckoutModal
+        open={showPurchaseModal}
+        setOpen={setShowPurchaseModal}
+        actions={
+          <>
+            <Button color="gray" onClick={() => setShowPurchaseModal(false)}>
+              Cancel
+            </Button>
+            <Button color="indigo" onClick={handleProceedToShipping}>
+              Continue to Shipping
+            </Button>
+          </>
+        }
+      >
         <Col className="bg-canvas-0 gap-4 rounded-md p-6">
           <div className="text-lg font-semibold">Confirm Purchase</div>
           <p className="text-ink-600">
@@ -1727,20 +1741,41 @@ function MerchItemCard(props: {
               <strong>not stored</strong> by Manifold.
             </p>
           </div>
-
-          <Row className="justify-end gap-2">
-            <Button color="gray" onClick={() => setShowPurchaseModal(false)}>
-              Cancel
-            </Button>
-            <Button color="indigo" onClick={handleProceedToShipping}>
-              Continue to Shipping
-            </Button>
-          </Row>
         </Col>
-      </Modal>
+      </MerchCheckoutModal>
 
       {/* Shipping address modal */}
-      <Modal open={showShippingModal} setOpen={setShowShippingModal} size="md">
+      <MerchCheckoutModal
+        open={showShippingModal}
+        setOpen={setShowShippingModal}
+        actions={
+          <>
+            <Button color="gray" onClick={() => setShowShippingModal(false)}>
+              Back
+            </Button>
+            <Button
+              color="indigo"
+              disabled={
+                !shippingInfo.name ||
+                !selectedShipping ||
+                !taxIdValid ||
+                !emailFieldOk
+              }
+              onClick={() => {
+                setAcceptedTerms(false)
+                setShowConfirmOrderModal(true)
+              }}
+            >
+              Place Order ({formatMoney(discountedPrice)}
+              {selectedShipping &&
+                ` + ${formatMoney(
+                  Math.round(parseFloat(selectedShipping.rate) * 100)
+                )} shipping`}
+              )
+            </Button>
+          </>
+        }
+      >
         <Col className="bg-canvas-0 gap-4 rounded-md p-6">
           <div className="text-lg font-semibold">Shipping Address</div>
           <p className="text-ink-500 text-sm">
@@ -1756,7 +1791,7 @@ function MerchItemCard(props: {
               onChange={(e) =>
                 setShippingInfo((s) => ({ ...s, name: e.target.value }))
               }
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
             <input
               type="text"
@@ -1765,7 +1800,7 @@ function MerchItemCard(props: {
               onChange={(e) =>
                 setShippingInfo((s) => ({ ...s, address1: e.target.value }))
               }
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
             <input
               type="text"
@@ -1774,7 +1809,7 @@ function MerchItemCard(props: {
               onChange={(e) =>
                 setShippingInfo((s) => ({ ...s, address2: e.target.value }))
               }
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
             <input
               type="text"
@@ -1783,7 +1818,7 @@ function MerchItemCard(props: {
               onChange={(e) =>
                 setShippingInfo((s) => ({ ...s, city: e.target.value }))
               }
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:hidden"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:hidden"
             />
             <Row className="w-full gap-3">
               <input
@@ -1793,7 +1828,7 @@ function MerchItemCard(props: {
                 onChange={(e) =>
                   setShippingInfo((s) => ({ ...s, city: e.target.value }))
                 }
-                className="border-ink-300 bg-canvas-0 hidden min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:block"
+                className="border-ink-300 bg-canvas-0 hidden min-w-0 flex-1 rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:block"
               />
               <input
                 type="text"
@@ -1803,7 +1838,7 @@ function MerchItemCard(props: {
                 onChange={(e) =>
                   setShippingInfo((s) => ({ ...s, state: e.target.value }))
                 }
-                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none"
+                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none"
               />
               <input
                 type="text"
@@ -1812,7 +1847,7 @@ function MerchItemCard(props: {
                 onChange={(e) =>
                   setShippingInfo((s) => ({ ...s, zip: e.target.value }))
                 }
-                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none"
+                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none"
               />
             </Row>
             <p className="text-ink-500 -mt-1 text-xs">
@@ -1832,7 +1867,7 @@ function MerchItemCard(props: {
                 setShippingRates(null)
                 setSelectedShipping(null)
               }}
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
               {COUNTRIES.map((c) => (
                 <option key={c.code} value={c.code}>
@@ -1852,7 +1887,7 @@ function MerchItemCard(props: {
                       taxNumber: e.target.value,
                     }))
                   }
-                  className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
                 <p className="text-ink-500 text-xs">
                   <span className="font-medium">{taxIdConfig.label}:</span>{' '}
@@ -1874,7 +1909,7 @@ function MerchItemCard(props: {
                 onChange={(e) =>
                   setShippingInfo((s) => ({ ...s, email: e.target.value }))
                 }
-                className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               />
               {emailRequired ? (
                 <p className="text-ink-500 text-xs">
@@ -1960,40 +1995,35 @@ function MerchItemCard(props: {
               </span>
             </Row>
           </div>
+        </Col>
+      </MerchCheckoutModal>
 
-          <Row className="justify-end gap-2">
-            <Button color="gray" onClick={() => setShowShippingModal(false)}>
-              Back
+      {/* Final confirmation modal */}
+      <MerchCheckoutModal
+        open={showConfirmOrderModal}
+        setOpen={setShowConfirmOrderModal}
+        actions={
+          <>
+            <Button
+              color="gray"
+              onClick={() => setShowConfirmOrderModal(false)}
+            >
+              Go Back
             </Button>
             <Button
               color="indigo"
-              disabled={
-                !shippingInfo.name ||
-                !selectedShipping ||
-                !taxIdValid ||
-                !emailFieldOk
-              }
-              onClick={() => {
-                setAcceptedTerms(false)
-                setShowConfirmOrderModal(true)
-              }}
+              loading={purchasing}
+              disabled={countdown > 0 || purchasing || !acceptedTerms}
+              onClick={handleSubmitOrder}
             >
-              Place Order ({formatMoney(discountedPrice)}
-              {selectedShipping &&
-                ` + ${formatMoney(
-                  Math.round(parseFloat(selectedShipping.rate) * 100)
-                )} shipping`}
-              )
+              {purchasing
+                ? 'Processing...'
+                : countdown > 0
+                ? `Confirm Order (${countdown})`
+                : 'Confirm Order'}
             </Button>
-          </Row>
-        </Col>
-      </Modal>
-
-      {/* Final confirmation modal */}
-      <Modal
-        open={showConfirmOrderModal}
-        setOpen={setShowConfirmOrderModal}
-        size="md"
+          </>
+        }
       >
         <Col className="bg-canvas-0 gap-4 rounded-md p-6">
           <div className="text-lg font-semibold">Confirm Your Order</div>
@@ -2091,29 +2121,8 @@ function MerchItemCard(props: {
               shipment.
             </span>
           </label>
-
-          <Row className="justify-end gap-2">
-            <Button
-              color="gray"
-              onClick={() => setShowConfirmOrderModal(false)}
-            >
-              Go Back
-            </Button>
-            <Button
-              color="indigo"
-              loading={purchasing}
-              disabled={countdown > 0 || purchasing || !acceptedTerms}
-              onClick={handleSubmitOrder}
-            >
-              {purchasing
-                ? 'Processing...'
-                : countdown > 0
-                ? `Confirm Order (${countdown})`
-                : 'Confirm Order'}
-            </Button>
-          </Row>
         </Col>
-      </Modal>
+      </MerchCheckoutModal>
     </>
   )
 }
