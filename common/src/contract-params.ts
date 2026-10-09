@@ -4,7 +4,12 @@ import {
   getInitialProbability,
 } from 'common/calculate'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
-import { Contract, ContractParams, MultiContract } from 'common/contract'
+import {
+  Contract,
+  ContractParams,
+  isMultiCpmm,
+  MultiContract,
+} from 'common/contract'
 import { getContractOGProps } from 'common/contract-seo'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import {
@@ -16,10 +21,7 @@ import {
   getTopContractMetrics,
 } from 'common/supabase/contract-metrics'
 import { getTopicsOnContract } from 'common/supabase/groups'
-import {
-  getPerpPositionCount,
-  getPerpTradeCount,
-} from 'common/supabase/perps'
+import { getPerpPositionCount, getPerpTradeCount } from 'common/supabase/perps'
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
@@ -76,7 +78,7 @@ export async function getContractParams(
   const contractSlug = contract.slug
   const isCpmm1 = contract.mechanism === 'cpmm-1'
   const hasMechanism = contract.mechanism !== 'none'
-  const isMulti = contract.mechanism === 'cpmm-multi-1'
+  const isMulti = isMultiCpmm(contract)
   const isNumber = contract.outcomeType === 'NUMBER'
   const isPerp = contract.mechanism === 'perp'
   const numberContractBetCount = async () =>
@@ -86,7 +88,7 @@ export async function getContractParams(
       }).then((res) => res.count)
     )
   const includeRedemptions =
-    contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+    isMultiCpmm(contract) && contract.shouldAnswersSumToOne
   const [
     totalBets,
     lastBetArray,
@@ -137,16 +139,13 @@ export async function getContractParams(
       : isPerp
       ? getPerpPositionCount(contract.id, db)
       : 0,
-    retryUnAuthedApi(
-      contractSlug,
-      'get-related-markets',
-      () =>
-        unauthedApi('get-related-markets', {
-          contractId: contract.id,
-          limit: 10,
-          question: contract.question,
-          uniqueBettorCount: contract.uniqueBettorCount,
-        })
+    retryUnAuthedApi(contractSlug, 'get-related-markets', () =>
+      unauthedApi('get-related-markets', {
+        contractId: contract.id,
+        limit: 10,
+        question: contract.question,
+        uniqueBettorCount: contract.uniqueBettorCount,
+      })
     ),
     getChartAnnotations(contract.id, db),
     getTopicsOnContract(contract.id, db),
@@ -168,10 +167,7 @@ export async function getContractParams(
     points: ogPointsString,
   })
 
-  if (
-    contract.outcomeType === 'MULTIPLE_CHOICE' &&
-    contract.mechanism === 'cpmm-multi-1'
-  ) {
+  if (contract.outcomeType === 'MULTIPLE_CHOICE' && isMultiCpmm(contract)) {
     contract.answers = sortAnswers(contract, contract.answers)
       .slice(0, 20)
       .map((a) => omit(a, ['textFts', 'fsUpdatedTime']) as any)
@@ -302,7 +298,7 @@ export const getAnswerProbAtEveryBetTime = (
 }
 
 export const shouldHideGraph = (contract: Contract) => {
-  if (contract.mechanism !== 'cpmm-multi-1') return false
+  if (!isMultiCpmm(contract)) return false
   if (
     contract.outcomeType == 'NUMBER' ||
     contract.outcomeType == 'MULTI_NUMERIC' ||

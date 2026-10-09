@@ -1,6 +1,11 @@
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
-import { CPMMMultiContract, MultiContract, contractPath } from 'common/contract'
+import {
+  CPMMMultiContract,
+  MultiContract,
+  contractPath,
+  isMultiCpmm,
+} from 'common/contract'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { IoIosPerson } from 'react-icons/io'
@@ -55,7 +60,7 @@ export const CandidateBar = (props: {
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
   const { resolution } = contract
 
-  const isCpmm = contract.mechanism === 'cpmm-multi-1'
+  const isCpmm = isMultiCpmm(contract)
   return (
     <ClickFrame
       onClick={() => {

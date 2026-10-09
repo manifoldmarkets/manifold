@@ -47,6 +47,7 @@ it('rounds a fractional mark age to whole milliseconds', () => {
 
 it.each([
   { maxLeverage: '1' },
+  { maxLeverage: '101' },
   { annualFunding: '0' },
   { takerFeeApiBps: '301' },
   { takerFeeImpact: 'Infinity' },

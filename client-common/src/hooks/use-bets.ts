@@ -1,4 +1,5 @@
-import { APIParams, APIResponse } from 'common/api/schema'
+import { maxCachedAgeMs } from 'common/api/cache'
+import { API, APIParams, APIResponse } from 'common/api/schema'
 import { Bet, isOpenLimitOrder, LimitBet } from 'common/bet'
 import { createLiveSnapshot } from 'common/util/live-snapshot'
 import { User } from 'common/user'
@@ -8,6 +9,7 @@ import {
   SetStateAction,
   useEffect,
   useMemo,
+  useRef,
   useSyncExternalStore,
 } from 'react'
 import { useApiSubscription } from './use-api-subscription'
@@ -24,8 +26,14 @@ export function useBetsOnce(
     `use-bets-${JSON.stringify(options)}`
   )
 
+  // Only the latest request counts, so one for earlier options landing late
+  // can't replace its results.
+  const latestRequest = useRef(0)
   useEffectCheckEquality(() => {
-    api(options ?? {}).then((bets) => setBets(bets))
+    const requestId = ++latestRequest.current
+    api(options ?? {}).then((bets) => {
+      if (requestId === latestRequest.current) setBets(bets)
+    })
   }, [options])
 
   return bets
@@ -175,36 +183,50 @@ export const useSubscribeGlobalBets = (options?: APIParams<'bets'>) => {
   return newBets
 }
 
-// Each contract has one observable snapshot. A confirmed cancel changes the
-// cache itself, including when no quote panel is mounted. Live updates are
-// retained only while a snapshot request is in flight; no tombstone TTL is needed.
-const createOrderBook = () =>
-  createLiveSnapshot<LimitBet>((bets) =>
-    sortBy(
-      bets.filter((bet) => isOpenLimitOrder(bet)),
-      'createdTime'
-    )
+// Each contract has one observable snapshot for quote panels and one for
+// display-only consumers. Quote reads come from the origin. Display reads go
+// through the CDN, so they can lag a confirmed change by up to its max age;
+// keeping the snapshots apart stops one from replacing a quote panel's. A
+// confirmed cancel changes both, including when no consumer is mounted. Live
+// updates are kept only while a response might not include them, so no
+// tombstone TTL is needed. Updates from before a time with no consumers are
+// replayed only if they closed an order: anything else may have changed
+// unseen.
+const createOrderBook = (fresh: boolean) =>
+  createLiveSnapshot<LimitBet>(
+    (bets) =>
+      sortBy(
+        bets.filter((bet) => isOpenLimitOrder(bet)),
+        'createdTime'
+      ),
+    fresh ? 0 : maxCachedAgeMs(API.bets.cache),
+    // Filled, cancelled and expired orders can't reopen.
+    (bet) => !isOpenLimitOrder(bet)
   )
 const orderBooks = new Map<string, ReturnType<typeof createOrderBook>>()
-const getOrderBook = (contractId: string) => {
+const bookKey = (contractId: string, fresh: boolean) =>
+  `${fresh ? 'quote' : 'display'}:${contractId}`
+const getOrderBook = (contractId: string, fresh: boolean) => {
   // Never share mutable market state between SSR requests.
-  if (typeof window === 'undefined') return createOrderBook()
-  let book = orderBooks.get(contractId)
+  if (typeof window === 'undefined') return createOrderBook(fresh)
+  const key = bookKey(contractId, fresh)
+  let book = orderBooks.get(key)
   if (!book) {
-    book = createOrderBook()
-    orderBooks.set(contractId, book)
+    book = createOrderBook(fresh)
+    orderBooks.set(key, book)
   }
   return book
 }
 const getServerSnapshot = () => undefined
 
-/** Apply confirmed mutations to the same snapshot every quote panel reads. */
+/** Apply confirmed mutations to the snapshots every consumer reads. */
 export const applyLimitOrderUpdates = (bets: LimitBet[]) => {
   for (const [contractId, updates] of Object.entries(
     groupBy(bets, 'contractId')
   )) {
-    // With no cached book, a later mount starts from a fresh server read.
-    orderBooks.get(contractId)?.update(updates)
+    // With no cached book, a later mount starts from a server read.
+    for (const fresh of [true, false])
+      orderBooks.get(bookKey(contractId, fresh))?.update(updates)
   }
 }
 
@@ -212,10 +234,17 @@ export const useUnfilledBets = (
   contractId: string,
   api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>,
   useIsPageVisible: () => boolean,
-  options?: { enabled?: boolean }
+  options?: {
+    enabled?: boolean
+    /** Quote panels bypass the CDN; display consumers keep endpoint caching. */
+    fresh?: boolean
+  }
 ) => {
-  const { enabled = true } = options ?? {}
-  const book = useMemo(() => getOrderBook(contractId), [contractId])
+  const { enabled = true, fresh = false } = options ?? {}
+  const book = useMemo(
+    () => getOrderBook(contractId, fresh),
+    [contractId, fresh]
+  )
   const bets = useSyncExternalStore(
     book.subscribe,
     book.getSnapshot,
@@ -223,17 +252,22 @@ export const useUnfilledBets = (
   )
   const isPageVisible = useIsPageVisible()
 
-  useEffect(() => {
+  const refresh = useEvent(() => {
     if (!enabled || !isPageVisible) return
+    const params: APIParams<'bets'> = {
+      contractId,
+      kinds: 'open-limit',
+      order: 'asc',
+    }
     book
       .refresh(
-        () =>
-          api({ contractId, kinds: 'open-limit', order: 'asc' }) as Promise<
-            LimitBet[]
-          >
+        () => api(fresh ? { ...params, fresh } : params) as Promise<LimitBet[]>
       )
       .catch((e) => console.error('Failed to load limit orders', e))
-  }, [enabled, book, contractId, isPageVisible])
+  })
+  // Held while subscribed to the book's updates, below.
+  useEffect(() => (enabled ? book.hold() : undefined), [book, enabled])
+  useEffect(refresh, [enabled, book, contractId, isPageVisible])
 
   useApiSubscription({
     enabled,
@@ -264,7 +298,10 @@ export const useUnfilledBetsAndBalanceByUserId = (
   useIsPageVisible: () => boolean
 ) => {
   const unfilledBets =
-    useUnfilledBets(contractId, api, useIsPageVisible, { enabled: true }) ?? []
+    useUnfilledBets(contractId, api, useIsPageVisible, {
+      enabled: true,
+      fresh: true,
+    }) ?? []
   const userIds = uniq(unfilledBets.map((b) => b.userId))
   const balances = useUserBalances(userIds, usersApi, useIsPageVisible) ?? []
 

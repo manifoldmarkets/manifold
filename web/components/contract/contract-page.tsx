@@ -87,7 +87,6 @@ import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { FollowMarketButton } from '../buttons/follow-market-button'
 import { LogoIcon } from '../icons/logo-icon'
 import { CreatorSharePanel, NonCreatorSharePanel } from './creator-share-panel'
-import { MarketContext } from './market-context'
 import { YourTrades } from './your-trades'
 
 export function ContractPageContent(props: ContractParams) {
@@ -514,7 +513,7 @@ export function ContractPageContent(props: ContractParams) {
               // Perps render the description directly above the boost/share
               // panel so the oracle context (e.g. "30-day trailing average
               // Trump approval rating") is visible near the top of the page
-              // flow, not buried below MarketContext.
+              // flow, rather than further down.
               <ContractDescription
                 contractId={props.contract.id}
                 creatorId={props.contract.creatorId}
@@ -551,9 +550,13 @@ export function ContractPageContent(props: ContractParams) {
                 contract={liveContract}
               />
             )}
-            {props.contract.isRanked !== false && (
-              <MarketContext contractId={props.contract.id} />
-            )}
+            {/* The "Market context" AI panel was removed here. The component
+                (./market-context) and its get-market-context endpoint are all
+                still in place — to bring the button back, restore the import
+                and re-add:
+                {props.contract.isRanked !== false && (
+                  <MarketContext contractId={props.contract.id} />
+                )} */}
 
             <Row className="mb-4 mt-2 items-center gap-2">
               <MarketTopics

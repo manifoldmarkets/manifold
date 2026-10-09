@@ -5,7 +5,7 @@ import { APIError } from 'common/api/utils'
 import { isUserBanned, getUserBanMessage } from 'common/ban-utils'
 import { LimitBet, maker } from 'common/bet'
 import { MarginalBet } from 'common/calculate-metrics'
-import { Contract, MarketContract } from 'common/contract'
+import { Contract, MarketContract, isMultiCpmm } from 'common/contract'
 import { ContractMetric, isSummary } from 'common/contract-metric'
 import { getUniqueBettorBonusAmount } from 'common/economy'
 import {
@@ -60,6 +60,11 @@ type BetDataBody = {
 // lockContractAndGetBetData (in-transaction locked re-read) so the two paths
 // can't drift. The fragments assume the query is formatted with
 // [uid, contractId, answerIds, outcome] bound to $1..$4.
+// NOTE: `isSumsToOne` makes both answer-load queries below fetch ALL of a linked contract's
+// answers, including resolved ones — safe today because linked answers cannot be individually
+// resolved. If cpmm-multi-2 early per-answer NO resolution ships (reserved; see the CPMMMulti
+// doc comment in common/src/contract.ts), the sum-to-one arb must receive only the unresolved
+// subset — these loads are the natural filter site.
 const getLimitOrderQueryFragments = (body: BetDataBody) => {
   const answerIds =
     'answerIds' in body
@@ -87,6 +92,24 @@ const getLimitOrderQueryFragments = (body: BetDataBody) => {
     )
   `
   return { answerIds, isSumsToOne, whereLimitOrderBets }
+}
+
+// Contract-state guards shared by the pre-transaction validation and the
+// in-transaction locked re-read. fetchContractBetDataAndValidate runs before
+// the transaction, so a market that resolves or closes between that read and
+// the FOR UPDATE re-read — for example a sell that retries after losing a
+// serialization race with the resolution — must be re-checked against the
+// fresh row, or it would trade against an already-resolved market and pay out
+// on top of the resolution payout.
+export const assertContractTradeable = (contract: {
+  deleted?: boolean
+  closeTime?: number
+  isResolved: boolean
+}) => {
+  if (contract.deleted) throw new APIError(403, 'Market is deleted.')
+  if (contract.closeTime && Date.now() > contract.closeTime)
+    throw new APIError(403, 'Trading is closed.')
+  if (contract.isResolved) throw new APIError(403, 'Market is resolved.')
 }
 
 export const fetchContractBetDataAndValidate = async (
@@ -224,16 +247,13 @@ export const fetchContractBetDataAndValidate = async (
       'Perp markets use the /place-perp-trade endpoint instead.'
     )
 
-  if (contract.mechanism === 'cpmm-multi-1')
+  if (isMultiCpmm(contract))
     contract.answers = sortBy(
       uniqBy([...answers, ...contract.answers], 'id'),
       'index'
     )
 
-  const { closeTime, isResolved } = contract
-  if (closeTime && Date.now() > closeTime)
-    throw new APIError(403, 'Trading is closed.')
-  if (isResolved) throw new APIError(403, 'Market is resolved.')
+  assertContractTradeable(contract)
 
   const balanceByUserId = Object.fromEntries(
     uniqBy(unfilledBets, (b) => b.userId).map((bet) => [
@@ -325,8 +345,16 @@ export const lockContractAndGetBetData = async (
   )
   const results = await pgTrans.multi(queries)
   const contract = convertContract(results[0][0]) as MarketContract
+  // Re-check on the freshly locked row: the pre-transaction validation may
+  // have seen the market open, and this read (and the enclosing transaction)
+  // reruns on every retry, so a resolution that committed in between is
+  // caught here instead of being traded against.
+  assertContractTradeable(contract)
   const answers = results[1].map(convertAnswer)
-  if (contract.mechanism === 'cpmm-multi-1')
+  // isMultiCpmm, matching the pre-transaction read above — the in-transaction locked
+  // re-read must merge the fresh SQL answers for BOTH multi mechanisms, or a
+  // cpmm-multi-2 bet executes against the stale denormalized blob answers.
+  if (isMultiCpmm(contract))
     contract.answers = sortBy(
       uniqBy([...answers, ...contract.answers], 'id'),
       'index'
@@ -372,10 +400,9 @@ export const getUserBalancesAndMetrics = async (
   answerId?: string
 ) => {
   const startTime = Date.now()
-  const { id: contractId, mechanism } = contract
+  const { id: contractId } = contract
   // TODO: if we pass the makers' answerIds, we don't need to fetch the metrics for all answers
-  const sumsToOne =
-    mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+  const sumsToOne = isMultiCpmm(contract) && contract.shouldAnswersSumToOne
   const results = await pgTrans.multi(
     `
       SELECT balance, id FROM users WHERE id = ANY($1);

@@ -4,6 +4,7 @@ import { Answer, MAX_ANSWERS } from 'common/answer'
 import { getAnswerProbability, getProbability } from 'common/calculate'
 import {
   Contract,
+  isMultiCpmm,
   MAX_QUESTION_LENGTH,
   MultiContract,
   RESOLUTIONS,
@@ -13,6 +14,7 @@ import { MINIMUM_BOUNTY } from 'common/economy'
 import { DOMAIN } from 'common/envs/constants'
 import { MAX_ID_LENGTH } from 'common/group'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
+import { MAX_ANSWER_PROB, MIN_ANSWER_PROB } from 'common/new-contract'
 import { MIN_PERP_LEVERAGE, PERP_MIN_CLOSE_FRACTION } from 'common/perps/amm'
 import { PERP_CREATOR_ACCOUNTS } from 'common/perps/creator-accounts'
 import {
@@ -199,7 +201,7 @@ export function toLiteMarket(
     numericValues = { value, min, max, isLogScale }
   }
   const answers =
-    includeLiteAnswers && contract.mechanism === 'cpmm-multi-1'
+    includeLiteAnswers && isMultiCpmm(contract)
       ? contract.answers?.map((answer) => ({
           id: answer.id,
           text: answer.text,
@@ -282,15 +284,14 @@ export function toLiteMarket(
 export function toFullMarket(contract: Contract): FullMarket {
   const liteMarket = toLiteMarket(contract)
   const { outcomeType } = contract
-  const answers =
-    contract.mechanism === 'cpmm-multi-1'
-      ? contract.answers.map((answer) =>
-          augmentAnswerWithProbability(contract, answer)
-        )
-      : undefined
+  const answers = isMultiCpmm(contract)
+    ? contract.answers.map((answer) =>
+        augmentAnswerWithProbability(contract, answer)
+      )
+    : undefined
 
   let multiValues = {}
-  if (contract.mechanism === 'cpmm-multi-1') {
+  if (isMultiCpmm(contract)) {
     multiValues = {
       shouldAnswersSumToOne: contract.shouldAnswersSumToOne,
       addAnswersMode: contract.addAnswersMode,
@@ -510,6 +511,14 @@ export const createMultiSchema = z.object({
     .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE'])
     .default('DISABLED'),
   shouldAnswersSumToOne: z.boolean().optional(),
+  // Starting probability of each answer, in percent, in the same order as
+  // `answers`. Defaults to an even split. For answers that sum to one these
+  // must add up to 100 — or to less than 100 when the market has an 'Other'
+  // answer, which takes the remainder.
+  answerProbs: z
+    .array(z.number().gte(MIN_ANSWER_PROB).lte(MAX_ANSWER_PROB))
+    .max(MAX_ANSWERS)
+    .optional(),
 })
 
 export const createNumberSchema = z.object({

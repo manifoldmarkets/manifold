@@ -1,6 +1,7 @@
 import { runScript } from 'run-script'
 
 import { MAX_ANSWER_LENGTH } from 'common/answer'
+import { isMultiCpmm } from 'common/contract'
 import { isAdminId } from 'common/envs/constants'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { getAnswer, updateAnswer } from 'shared/supabase/answers'
@@ -295,7 +296,7 @@ runScript(async ({ pg }) => {
       conflicts.push(`${group.label}: contract ${group.contractId} not found`)
       continue
     }
-    if (contract.mechanism !== 'cpmm-multi-1') {
+    if (!isMultiCpmm(contract)) {
       conflicts.push(
         `${group.label}: expected multiple choice, got ${contract.mechanism}`
       )

@@ -32,7 +32,7 @@ export const ReactButton = memo(function ReactButton(props: {
   contentId: string
   contentCreatorId: string
   user: User | null | undefined
-  contentType: ReactionContentTypes
+  contentType: Exclude<ReactionContentTypes, 'social_post'>
   contentText: string
   trackingLocation: string
   className?: string
@@ -280,7 +280,7 @@ function useReactedDisplayList(
 }
 
 function UserReactedFullList(props: {
-  contentType: ReactionContentTypes
+  contentType: Exclude<ReactionContentTypes, 'social_post'>
   contentId: string
   user?: User | null
   userReacted?: boolean
@@ -326,7 +326,7 @@ function UserReactedFullList(props: {
 }
 
 function UserReactedPopup(props: {
-  contentType: ReactionContentTypes
+  contentType: Exclude<ReactionContentTypes, 'social_post'>
   contentId: string
   onRequestModal: () => void
   user?: User | null
@@ -380,7 +380,7 @@ function UserReactedPopup(props: {
   )
 }
 
-function UserReactedItem(props: { userInfo: MultiUserLinkInfo }) {
+export function UserReactedItem(props: { userInfo: MultiUserLinkInfo }) {
   const { userInfo } = props
   return (
     <UserHovercard userId={userInfo.id}>
