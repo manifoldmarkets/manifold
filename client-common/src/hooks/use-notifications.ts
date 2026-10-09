@@ -13,6 +13,14 @@ import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { APIParams, APIResponse } from 'common/api/schema'
 
 export const NOTIFICATIONS_PER_PAGE = 30
+const MAX_CACHED_NOTIFICATIONS = 15 * NOTIFICATIONS_PER_PAGE
+
+function boundNotifications(notifications: Notification[], limit: number) {
+  let regularCount = 0
+  return sortBy(notifications, (n) => -n.createdTime).filter(
+    (n) => n.markedAsRead === false || regularCount++ < limit
+  )
+}
 
 export function useNotifications(
   userId: string,
@@ -23,15 +31,21 @@ export function useNotifications(
     initialValue: T,
     key: string
   ) => readonly [T, (newState: T | ((prevState: T) => T)) => void, boolean],
-  count = 15 * NOTIFICATIONS_PER_PAGE,
+  count = MAX_CACHED_NOTIFICATIONS,
   newOnly?: boolean
 ) {
   const [notifications, setNotifications] = usePersistentLocalState<
     Notification[] | undefined
   >(undefined, 'notifications-' + userId)
-  const [latestCreatedTime, setLatestCreatedTime] = usePersistentLocalState<
-    number | undefined
-  >(undefined, 'latest-notification-time-' + userId)
+  // The bell and full page share a cache. Keep the full page's regular window
+  // and every pinned notification, even when the bell requests only 30 items.
+  const cacheLimit = Math.max(count, MAX_CACHED_NOTIFICATIONS)
+  // Derive the cursor from the same snapshot as the list. A separately saved
+  // timestamp can advance past notifications whose cache write failed.
+  const latestCreatedTime = notifications?.reduce(
+    (latest, n) => Math.max(latest, n.createdTime),
+    0
+  )
 
   const markAllAsSeen = () => {
     if (!notifications) return
@@ -80,13 +94,7 @@ export function useNotifications(
             }
           }
 
-          const updatedNotifications = Array.from(byId.values())
-          const newLatestCreatedTime = Math.max(
-            ...updatedNotifications.map((n) => n.createdTime),
-            latestCreatedTime ?? 0
-          )
-          setLatestCreatedTime(newLatestCreatedTime)
-          return updatedNotifications
+          return boundNotifications(Array.from(byId.values()), cacheLimit)
         })
       })
     }
@@ -98,10 +106,13 @@ export function useNotifications(
       console.log('new notification', data)
       setNotifications((notifs) => {
         const newNotification = data.notification as Notification
-        setLatestCreatedTime((prevTime) =>
-          Math.max(prevTime ?? 0, newNotification.createdTime)
+        return boundNotifications(
+          [
+            newNotification,
+            ...(notifs ?? []).filter((n) => n.id !== newNotification.id),
+          ],
+          cacheLimit
         )
-        return [newNotification, ...(notifs ?? [])]
       })
     },
   })
