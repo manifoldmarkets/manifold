@@ -2,7 +2,7 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 import { Bet, getNewBetId } from 'common/bet'
 import { computeRebalance } from 'common/rebalance'
 import { ContractMetric } from 'common/contract-metric'
-import { MarketContract } from 'common/contract'
+import { MarketContract, isMultiCpmm } from 'common/contract'
 import { noFees } from 'common/fees'
 import { MS_PER_DAY } from 'common/loans'
 import { EPSILON } from 'common/util/math'
@@ -42,10 +42,7 @@ export const rebalancePosition: APIHandler<
 
   const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, 'Contract not found.')
-  if (
-    contract.mechanism !== 'cpmm-multi-1' ||
-    !contract.shouldAnswersSumToOne
-  ) {
+  if (!isMultiCpmm(contract) || !contract.shouldAnswersSumToOne) {
     throw new APIError(
       400,
       'Rebalance is only supported on sum-to-one multi-choice markets.'

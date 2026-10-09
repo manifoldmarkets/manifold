@@ -26,6 +26,10 @@ import { LuShare } from 'react-icons/lu'
 
 export function CopyLinkOrShareButton(props: {
   url: string
+  // Computes the link at click time instead, for pages whose URL changes
+  // without a re-render (e.g. client-side deep-link state). `url` stays the
+  // server-rendered fallback.
+  getUrl?: () => string
   eventTrackingName: string // was type ShareEventName — why??
   tooltip?: string
   className?: string
@@ -38,6 +42,7 @@ export function CopyLinkOrShareButton(props: {
 }) {
   const {
     url,
+    getUrl,
     size,
     children,
     eventTrackingName,
@@ -50,10 +55,11 @@ export function CopyLinkOrShareButton(props: {
   const { os } = useBrowserOS()
 
   const onClick = () => {
-    if (!url) return
-    copyToClipboard(url)
+    const link = getUrl?.() || url
+    if (!link) return
+    copyToClipboard(link)
     if (!isNative) toast.success('Link copied!')
-    trackShareEvent(eventTrackingName, url, trackingInfo)
+    trackShareEvent(eventTrackingName, link, trackingInfo)
   }
 
   return (

@@ -19,7 +19,10 @@ export async function expireLimitOrders() {
     [],
     convertBet
   )
-  const bets = unfilteredBets.filter((bet) => !bet.silent)
+  // No notification for API orders: bots re-quote with short expirations, and
+  // one market maker drew ~270k of these a day, one per expired order, all to
+  // its own unread inbox.
+  const bets = unfilteredBets.filter((bet) => !bet.silent && !bet.isApi)
   const uniqueContractIds = uniq(bets.map((bet) => bet.contractId))
   const contracts = await getContractsDirect(uniqueContractIds, pg)
   await Promise.all(
@@ -36,5 +39,5 @@ export async function expireLimitOrders() {
     })
   )
 
-  console.log(`Expired ${bets.length} limit orders`)
+  console.log(`Expired ${unfilteredBets.length} limit orders`)
 }

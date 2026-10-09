@@ -19,6 +19,7 @@ export async function sendMarketCloseEmails() {
   const contracts = await pg.map(
     `select * from contracts where
       resolution_time is null and close_time < now()
+      and deleted = false
       and outcome_type not in ('POLL', 'BOUNTIED_QUESTION')
       and creator_id != $1`,
     [manifoldLoveUserId],
