@@ -1,8 +1,11 @@
 import { Bet } from 'common/bet'
-import { getProfitMetrics } from 'common/calculate'
-import { excludeSelfTrades, filterBetsForLeagueScoring } from 'common/leagues'
+import { Contract } from 'common/contract'
+import {
+  addLeagueProfitForContract,
+  isLeagueScorableContract,
+} from 'common/leagues'
 import { convertContract } from 'common/supabase/contracts'
-import { groupBy, keyBy, sum, zipObject } from 'lodash'
+import { chunk, groupBy, sum, zipObject } from 'lodash'
 import {
   SupabaseDirectClient,
   createSupabaseDirectClient,
@@ -38,87 +41,46 @@ export async function updateLeague(
     return
   }
 
-  log('Loading users, bets, and contracts...')
+  // Candidate contracts come from contracts.last_bet_time, which the
+  // contract_bets insert trigger bumps on every bet, so any market with a
+  // season bet is in this set (a superset: a market whose only season
+  // activity was unfilled orders is harmless, it scores nothing below). The
+  // old `join contract_bets ... where created_time in season` found the same
+  // contracts by walking every bet row of the season: 3.36M rows and 258 s on
+  // 2026-10-09 for 5,104 contracts, versus 91 ms from the last_bet_time index.
+  log('Loading users and contracts...')
   const results = await pg.multi(
     `select users.id from users
     join leagues on leagues.user_id = users.id
     where leagues.season = $1;
-    select cb.data
-    from contract_bets as cb
-    where created_time > millis_to_ts($2)
-      and created_time < millis_to_ts($3);
-    select distinct on (contracts.id) ${contractColumnsToSelectWithPrefix(
-      'contracts'
-    )}
+    select ${contractColumnsToSelectWithPrefix('contracts')}
     from contracts
-    join contract_bets cb on contracts.id = cb.contract_id
-    where cb.created_time > millis_to_ts($2)
-      and cb.created_time < millis_to_ts($3)
+    where contracts.last_bet_time >= millis_to_ts($2)
       and contracts.token = 'MANA'
       and contracts.visibility = 'public'
       and contracts.mechanism is distinct from 'perp'
       and coalesce((contracts.data->'isRanked')::boolean, true) = true;`,
-    [season, seasonStart, seasonEnd]
+    [season, seasonStart]
   )
 
   const userIds = results[0].map((r: any) => r.id as string)
-  const bets = results[1].map((r: any) => r.data as Bet)
-  const contracts = results[2].map(convertContract)
-
-  const betsByUserId = groupBy(bets, (b) => b.userId)
-  const contractsById = keyBy(contracts, 'id')
-
-  log(
-    `Loaded ${userIds.length} user ids, ${bets.length} bets, ${contracts.length} contracts.`
-  )
+  const contracts = results[1].map(convertContract)
+  log(`Loaded ${userIds.length} user ids, ${contracts.length} contracts.`)
 
   log('Computing metric updates...')
-  const userProfit: { user_id: string; amount: number; category: 'profit' }[] =
-    []
-  for (const userId of userIds) {
-    const userBets = betsByUserId[userId] ?? []
-    const betsByContract = groupBy(userBets, (b) => b.contractId)
-    let totalProfit = 0
-
-    for (const [contractId, contractBets] of Object.entries(betsByContract)) {
-      const contract = contractsById[contractId]
-      if (
-        contract &&
-        contract.token === 'MANA' &&
-        contract.visibility === 'public' &&
-        contract.mechanism !== 'perp' &&
-        contract.isRanked !== false &&
-        !EXCLUDED_CONTRACT_SLUGS.has(contract.slug)
-      ) {
-        // Adjust bets to exclude portions that filled against user's own limit orders
-        const nonSelfTradeBets = excludeSelfTrades(contractBets, userId)
-
-        // Filter bets: if it's user's own market, only count bets placed 1+ hour after creation
-        const relevantBets = filterBetsForLeagueScoring(
-          nonSelfTradeBets,
-          contract,
-          userId
-        )
-
-        if (relevantBets.length > 0) {
-          const { profit } = getProfitMetrics(contract, relevantBets)
-          if (isNaN(profit)) {
-            log.error(
-              `Profit is NaN! contract ${contract.slug} (${contract.id}) userId ${userId}`
-            )
-            continue
-          }
-
-          totalProfit += profit
-        }
-      }
-    }
-    userProfit.push({
-      user_id: userId,
-      amount: totalProfit,
-      category: 'profit',
-    })
-  }
+  const profitByUserId = await computeSeasonProfit(
+    pg,
+    season,
+    seasonStart,
+    seasonEnd,
+    userIds,
+    contracts
+  )
+  const userProfit = userIds.map((userId) => ({
+    user_id: userId,
+    amount: profitByUserId[userId] ?? 0,
+    category: 'profit' as const,
+  }))
 
   // Include mana earned from unique trader bonuses during the season.
   const uniqueTraderBonuses = await pg.manyOrNone<{
@@ -180,8 +142,90 @@ export async function updateLeague(
   log('Done.')
 }
 
-const EXCLUDED_CONTRACT_SLUGS = new Set([
-  'will-there-be-another-wellrecognize-393de260ec26',
-  'will-there-be-another-wellrecognize-511a499bd82e',
-  'will-there-be-another-wellrecognize',
-])
+// How many contracts' bets are held in memory at once. 300 contracts of the
+// current season came back as 6,387 rows / 4.3 MB of bet JSON on 2026-10-09.
+const CONTRACT_CHUNK_SIZE = 250
+
+// Sums each league member's profit over the season's scorable contracts.
+//
+// Season bets are loaded per chunk of contracts, never all at once. This job
+// used to run `select cb.data from contract_bets` for the whole season every
+// 15 minutes and score it in JavaScript. A limit order that never fills still
+// leaves a row, and a market-making bot quoting with a 2-second TTL took the
+// current season past 3.1M rows within eight days (the job's own log line:
+// "Loaded 3671 user ids, 3147604 bets, 4760 contracts"). Parsing that took
+// 5-20 minutes per run, froze the event loop for minutes at a time (long
+// enough for Postgres to kill every other job's open transaction on the 60s
+// idle-in-transaction timeout), and two overlapping results exhausted the
+// 14 GB heap: the scheduler container OOM-crashed every day between 10:00 and
+// 11:50 UTC for at least the month of logs we keep.
+//
+// Two things bound it now:
+//  - rows with amount = 0 and shares = 0 (unfilled or expired limit orders)
+//    are excluded in SQL. getCpmmOrDpmProfit adds nothing for them: no
+//    invested amount, no sale value, and zero shares pay out zero. A fill
+//    against your own order always references a row that did fill, so
+//    amount <> 0, and excludeSelfTrades still sees it. On 2026-10-09 that was
+//    92% of the season's rows (3,232,186 -> 247,559).
+//  - what remains is fetched CONTRACT_CHUNK_SIZE contracts at a time, joined
+//    to the season's league members (the only users ever scored), so the
+//    heap holds one chunk and the loop yields between chunks.
+//
+// The scoring itself is unchanged: per user, per contract, excludeSelfTrades,
+// then filterBetsForLeagueScoring, then getProfitMetrics, now in
+// common/leagues.ts (addLeagueProfitForContract) where it is unit-tested
+// against the old whole-season loop. Every member gets an entry, 0 if they
+// have no scorable bets, as before.
+export const computeSeasonProfit = async (
+  pg: SupabaseDirectClient,
+  season: number,
+  seasonStart: number,
+  seasonEnd: number,
+  userIds: string[],
+  contracts: Contract[]
+) => {
+  const profitByUserId: Record<string, number> = Object.fromEntries(
+    userIds.map((id) => [id, 0])
+  )
+  const scorable = contracts.filter(isLeagueScorableContract)
+  const chunks = chunk(scorable, CONTRACT_CHUNK_SIZE)
+  let betCount = 0
+
+  for (const chunkContracts of chunks) {
+    const bets = await pg.map(
+      `select cb.data
+      from contract_bets cb
+      join leagues l on l.user_id = cb.user_id and l.season = $1
+      where cb.contract_id in ($2:list)
+        and cb.created_time > millis_to_ts($3)
+        and cb.created_time < millis_to_ts($4)
+        and (cb.amount <> 0 or cb.shares <> 0)`,
+      [season, chunkContracts.map((c) => c.id), seasonStart, seasonEnd],
+      (r) => r.data as Bet
+    )
+    betCount += bets.length
+    const betsByContractId = groupBy(bets, (b) => b.contractId)
+
+    for (const contract of chunkContracts) {
+      const betsByUserId = groupBy(
+        betsByContractId[contract.id] ?? [],
+        (b) => b.userId
+      )
+      const nanUserIds = addLeagueProfitForContract(
+        contract,
+        betsByUserId,
+        profitByUserId
+      )
+      for (const userId of nanUserIds) {
+        log.error(
+          `Profit is NaN! contract ${contract.slug} (${contract.id}) userId ${userId}`
+        )
+      }
+    }
+  }
+
+  log(
+    `Scored ${betCount} bets across ${scorable.length} contracts in ${chunks.length} chunks.`
+  )
+  return profitByUserId
+}
