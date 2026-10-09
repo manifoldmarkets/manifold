@@ -365,7 +365,19 @@ function ActivityTab(props: {
         tabs={[
           {
             title: `${capitalize(TRADE_TERM)}s`,
-            content: <DailyChart values={dataFor('bet_count')} />,
+            content: (
+              <>
+                <DailyChart values={dataFor('bet_count')} />
+                <p className="text-ink-500 mt-2 text-sm">
+                  As of October 8, 2026, {TRADE_TERM}s exclude API limit orders
+                  that never filled. Bots can post thousands of these a day
+                  without anyone trading against them, and at their peak they
+                  outnumbered real {TRADE_TERM}s more than 10 to 1. This is
+                  applied retroactively to all days since May 2023, when we
+                  started recording which orders come from the API.
+                </p>
+              </>
+            ),
           },
           {
             title: 'Questions created',
