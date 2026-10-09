@@ -16,9 +16,9 @@ export function MerchCheckoutModal(props: {
       setOpen={setOpen}
       size="md"
       adaptToKeyboard
-      // Reserve the shared modal's top spacing and keep actions outside the
-      // scrolling content when shipping rates or address fields add height.
-      className="bg-canvas-0 flex max-h-[calc(var(--modal-viewport-height,100dvh)-5rem)] flex-col rounded-md"
+      // Match the shared modal's adaptive top spacing. Wider dialogs have no
+      // top padding, so the form can use the full viewport above the footer.
+      className="bg-canvas-0 flex max-h-[calc(var(--modal-viewport-height,100dvh)-var(--modal-top-spacing,5rem))] flex-col rounded-md sm:max-h-[var(--modal-viewport-height,100dvh)]"
     >
       <div className="min-h-0 overflow-y-auto overscroll-contain">
         {children}

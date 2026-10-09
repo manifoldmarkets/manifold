@@ -37,13 +37,21 @@ export function Modal(props: {
 
   const viewport = useVisualViewport(open && adaptToKeyboard)
   const viewportStyle:
-    | (CSSProperties & { '--modal-viewport-height': string })
-    | undefined = viewport
+    | (CSSProperties & {
+        '--modal-viewport-height'?: string
+        '--modal-top-spacing': string
+      })
+    | undefined = adaptToKeyboard
     ? {
-        top: viewport.offsetTop,
-        bottom: 'auto',
-        height: viewport.height,
-        '--modal-viewport-height': `${viewport.height}px`,
+        // Leave room for the form and footer when the keyboard is open.
+        '--modal-top-spacing':
+          'clamp(0px, calc(var(--modal-viewport-height, 100dvh) - 12rem), 5rem)',
+        ...(viewport && {
+          top: viewport.offsetTop,
+          bottom: 'auto',
+          height: viewport.height,
+          '--modal-viewport-height': `${viewport.height}px`,
+        }),
       }
     : undefined
 
@@ -85,7 +93,10 @@ export function Modal(props: {
       />
 
       <div
-        className="fixed inset-0 z-10 w-screen overflow-y-auto pt-20 sm:p-0"
+        className={clsx(
+          'fixed inset-0 z-10 w-screen overflow-y-auto sm:p-0',
+          adaptToKeyboard ? 'pt-[var(--modal-top-spacing)]' : 'pt-20'
+        )}
         style={viewportStyle}
       >
         <div className="flex min-h-full justify-center overflow-hidden">
