@@ -251,6 +251,12 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'When another use tags you',
     verb: 'tagged you',
   },
+  tagged_all_traders: {
+    simple: 'A question creator tagged all traders (@traders)',
+    detailed:
+      'When a question creator or mod tags everyone who traded on a question with @traders',
+    verb: 'tagged all traders',
+  },
   league_changed: {
     simple: 'Your league changed',
     detailed: 'When you join, move up, or move down a league',
