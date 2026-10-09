@@ -10,6 +10,14 @@ export async function getUserForStaticProps(
   return convertUser(data[0] ?? null)
 }
 
+export async function getUserByIdForStaticProps(
+  db: SupabaseClient,
+  userId: string
+) {
+  const { data } = await run(db.from('users').select().eq('id', userId))
+  return convertUser(data[0] ?? null)
+}
+
 // assumes logged in
 export async function getUserAndPrivateUserForStaticProps(
   db: SupabaseClient,

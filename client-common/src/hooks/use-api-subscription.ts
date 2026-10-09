@@ -14,6 +14,9 @@ export type SubscriptionOptions = {
   onBroadcast: (msg: ServerMessage<'broadcast'>) => void
   onError?: (err: Error) => void
   enabled?: boolean
+  /** Called once the server acknowledges a subscription this consumer had to
+   * wait for, so reads that started earlier can be reconciled. Skipped when
+   * every topic was already acknowledged, since no broadcast was missed. */
   onSubscribed?: () => void
 }
 
@@ -25,8 +28,9 @@ export function useApiSubscription(opts: SubscriptionOptions) {
     if (ws != null && (opts.enabled ?? true)) {
       let active = true
       ws.subscribe(opts.topics, onBroadcast)
-        .then(() => {
-          if (active && ws.state === WebSocket.OPEN) onSubscribed()
+        .then((unacknowledged) => {
+          if (active && unacknowledged && ws.state === WebSocket.OPEN)
+            onSubscribed()
         })
         .catch(opts.onError ?? console.error)
       return () => {

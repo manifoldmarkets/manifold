@@ -6,8 +6,13 @@ import { APIParams } from 'common/api/schema'
 import { APIError } from 'common/api/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { getProbability } from 'common/calculate'
-import { isBinaryMulti, MarketContract, MultiContract } from 'common/contract'
-import { versusSide, versusSideProb } from 'common/versus'
+import {
+  isBinaryMulti,
+  isMultiCpmm,
+  MarketContract,
+  MultiContract,
+} from 'common/contract'
+import { showsSideProbability, versusSide, versusSideProb } from 'common/versus'
 import { TRADE_TERM } from 'common/envs/constants'
 import { CandidateBet } from 'common/new-bet'
 import { getPseudoProbability } from 'common/pseudo-numeric'
@@ -83,11 +88,10 @@ export default function LimitOrderPanel(props: {
     ? (contract as MultiContract).answers.map(getAnswerColor)
     : undefined
 
-  // When the two sides have names (versus markets, or binary markets shown
-  // with pseudonyms such as Republican/Democratic) the probability input is
-  // the price of the side being bought rather than the YES price.
-  const showsSideProb = isBinaryMC || !!pseudonym
-  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
+  // Versus markets and renamed binary sides take the price of the side being
+  // bought rather than the YES price (see showsSideProbability).
+  const showsSideProb = showsSideProbability(contract, pseudonym)
+  const isCpmmMulti = isMultiCpmm(contract)
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
   }
@@ -163,6 +167,14 @@ export default function LimitOrderPanel(props: {
   const [limitProbInt, setLimitProbInt] = useState<number | undefined>(
     Math.round(initialProb * 100)
   )
+  const quoteKey = `${contract.id}-${multiProps?.answerToBuy.id}-${outcome}`
+  const previousQuoteKey = useRef(quoteKey)
+  useEffect(() => {
+    if (previousQuoteKey.current === quoteKey) return
+    previousQuoteKey.current = quoteKey
+    setLimitProbInt(Math.round(initialProb * 100))
+    setError(undefined)
+  }, [quoteKey, initialProb])
 
   // Track the last applied prefill timestamp to avoid re-applying or resetting
   const lastAppliedPrefillTimestamp = useRef<number | null>(null)

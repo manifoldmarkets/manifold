@@ -1,9 +1,7 @@
 import { getPerpConfig, PerpConfigPatch } from 'common/perps/management'
-import { getMnxInstrument } from 'common/perps/mnx'
 import { PerpContract } from 'common/contract'
 import { convertContract } from 'common/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
-import { fetchMnxSnapshot, requireMnxReady } from 'shared/mnx'
 import { getMinTradingMarkAgeMs, getOracleFeed } from 'shared/oracle-feeds'
 import { requirePerpManager } from 'shared/perps/management-auth'
 import { advisoryLockQuery, mergeContractDataQuery } from 'shared/perps/queries'
@@ -15,7 +13,9 @@ import type { ValidatedAPIParams } from 'common/api/schema'
 
 // Config edits serialize with trades, funding, and settlement. Fees apply to
 // subsequent opens/adds; funding changes apply to the next funding event.
-// Lower leverage caps grandfather existing positions. Freshness gates affect
+// Lower leverage caps grandfather existing positions. The leverage cap is
+// Manifold's own setting: on an MNX feed it may exceed the leverage MNX
+// offers, so changing it never consults the provider. Freshness gates affect
 // closes too, and may never go below the provider's cadence floor.
 export const setPerpConfig = async (
   body: ValidatedAPIParams<'update-perp-config'>,
@@ -36,15 +36,6 @@ export const setPerpConfig = async (
   if (before.mechanism !== 'perp')
     throw new APIError(400, 'Only perp markets have a perp risk config')
   await requirePerpManager(pg, userId, before)
-
-  // Fetch before taking the database lock. Reducing leverage remains possible
-  // during a provider outage; increases require the same capability as creation.
-  const snapshot =
-    getMnxInstrument(before.oracleFeedId) &&
-    patch.maxLeverage !== undefined &&
-    patch.maxLeverage > before.maxLeverage
-      ? await fetchMnxSnapshot()
-      : null
 
   const updated = await runTransactionWithRetries(async (tx) => {
     await tx.one(advisoryLockQuery(contractId))
@@ -71,36 +62,6 @@ export const setPerpConfig = async (
         throw new APIError(
           409,
           'Market rules changed since this preview. Refresh and review again.'
-        )
-    }
-    if (
-      patch.maxLeverage !== undefined &&
-      patch.maxLeverage > contract.maxLeverage &&
-      getMnxInstrument(contract.oracleFeedId)
-    ) {
-      if (!snapshot)
-        throw new APIError(
-          409,
-          'Leverage changed since this request. Refresh and review again.'
-        )
-      let supported: number
-      try {
-        supported = requireMnxReady(snapshot, contract.oracleFeedId)
-          .supportedLeverage!
-      } catch (error) {
-        throw new APIError(
-          400,
-          error instanceof Error ? error.message : String(error)
-        )
-      }
-      if (
-        !Number.isFinite(supported) ||
-        supported <= 1 ||
-        patch.maxLeverage > supported
-      )
-        throw new APIError(
-          400,
-          `MNX currently supports at most ${supported}x leverage on this feed.`
         )
     }
     if (patch.maxOraclePriceAgeMs !== undefined) {

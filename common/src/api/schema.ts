@@ -1,4 +1,16 @@
+import {
+  socialPostDraftSchema,
+  socialPostEditSchema,
+  hasSocialPostContent,
+  socialPostSourceSchema,
+  socialCursorSchema,
+  SocialPost,
+  SocialPostPage,
+  SocialPostDetail,
+  SocialLikerPage,
+} from '../social-post'
 import { PerpSuggestion } from '../perps/suggestion'
+import { MNX_LINK_LOCATIONS } from 'common/perps/mnx-cta'
 import { MnxDashboard, perpConfigFields } from 'common/perps/management'
 import { randomStringRegex } from 'common/util/random'
 import type { BrowsePersonalization } from 'common/browse-personalization'
@@ -14,7 +26,12 @@ import {
   PostComment,
   type ContractComment,
 } from 'common/comment'
-import { AIGeneratedMarket, Contract, MarketContract } from 'common/contract'
+import {
+  AIGeneratedMarket,
+  Contract,
+  CREATEABLE_OUTCOME_TYPES,
+  MarketContract,
+} from 'common/contract'
 import { Dashboard } from 'common/dashboard'
 import { SWEEPS_MIN_BET } from 'common/economy'
 import {
@@ -662,6 +679,8 @@ export const API = (_apiTypeCheck = {
         commentRepliesOnly: coerceBoolean.optional(),
         count: coerceBoolean.optional(),
         points: coerceBoolean.optional(),
+        // Bypass caches for open-limit reads. See isUncachedQuoteRead.
+        fresh: coerceBoolean.optional(),
       })
       .strict(),
   },
@@ -884,6 +903,8 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         ids: z.array(z.string()).max(100),
+        // Bypass caches. See isUncachedQuoteRead.
+        fresh: coerceBoolean.optional(),
       })
       .strict(),
   },
@@ -946,6 +967,10 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string(),
         amount: z.number().gt(0).finite(),
+        // Subsidize a SINGLE answer (its own binary CPMM) instead of the whole market. Omit for
+        // the whole-market add. The subsidy lands in that answer's subsidyPool and the per-answer
+        // drizzle deepens it losslessly (float-p for cpmm-multi-2) — see add-liquidity.ts.
+        answerId: z.string().optional(),
       })
       .strict(),
   },
@@ -1865,11 +1890,13 @@ export const API = (_apiTypeCheck = {
       // settings
       optOutBetWarnings: z.boolean().optional(),
       isAdvancedTrader: z.boolean().optional(),
+      hideApiTrades: z.boolean().optional(),
       //internal
       seenStreakModal: z.boolean().optional(),
       shouldShowWelcome: z.boolean().optional(),
       hasSeenContractFollowModal: z.boolean().optional(),
       hasSeenLoanModal: z.boolean().optional(),
+      hasSeenPerpsExplainer: z.boolean().optional(),
       lastShopVisitTime: z.number().optional(),
     }),
     returns: {} as FullUser,
@@ -1964,7 +1991,13 @@ export const API = (_apiTypeCheck = {
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as { id: string; balance: number }[],
-    props: z.object({ ids: z.array(z.string()) }).strict(),
+    props: z
+      .object({
+        ids: z.array(z.string()),
+        // Bypass caches. See isUncachedQuoteRead.
+        fresh: coerceBoolean.optional(),
+      })
+      .strict(),
   },
   'user/by-id/:id/block': {
     method: 'POST',
@@ -2064,6 +2097,19 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-mnx-invite-link': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'private, no-store',
+    props: z
+      .object({
+        feedId: z.string(),
+        location: z.enum(MNX_LINK_LOCATIONS),
+      })
+      .strict(),
+    returns: {} as { url: string },
+  },
   'get-job-interest': {
     method: 'GET',
     visibility: 'undocumented',
@@ -2108,7 +2154,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contentId: z.string(),
-        contentType: z.enum(['comment', 'contract', 'post']),
+        contentType: z.enum(['comment', 'contract', 'post', 'social_post']),
         commentParentType: z.enum(['post']).optional(),
         remove: z.boolean().optional(),
         reactionType: z.enum(['like', 'dislike']).optional().default('like'),
@@ -3377,7 +3423,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contentIds: z.array(z.string()),
-        contentType: z.enum(['comment', 'contract']),
+        contentType: z.enum(['comment', 'contract', 'social_post']),
       })
       .strict(),
   },
@@ -3588,7 +3634,11 @@ export const API = (_apiTypeCheck = {
         data: z.object({
           question: z.string(),
           description: z.any().optional(),
-          outcomeType: z.string(),
+          // The creatable types, not a free string. A draft is a market in
+          // progress, so a type create-market can never accept (PERP) has no
+          // business being saved as one — storing it produced a draft that
+          // looked creatable in the form and then failed at submit.
+          outcomeType: z.enum(CREATEABLE_OUTCOME_TYPES),
           answers: z.array(z.string()).optional(),
           closeDate: z.string().optional(),
           closeHoursMinutes: z.string().optional(),
@@ -4992,6 +5042,92 @@ export const API = (_apiTypeCheck = {
     },
   },
 
+  'create-social-post': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        content: socialPostDraftSchema,
+        parentId: z.string().optional(),
+        source: socialPostSourceSchema.optional(),
+      })
+      .strict()
+      .refine(
+        ({ content, source }) =>
+          hasSocialPostContent(content) || !!(source && 'postId' in source),
+        'Add text, a market, an image, or a quoted post'
+      ),
+    returns: {} as SocialPost,
+  },
+  'edit-social-post': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ id: z.string(), content: socialPostEditSchema }).strict(),
+    returns: {} as SocialPost,
+  },
+  'delete-social-post': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ id: z.string() }).strict(),
+    returns: {} as { success: true },
+  },
+  'get-social-posts': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'no-store',
+    props: z
+      .object({
+        parentId: z.string().optional(),
+        ids: z.array(z.string().min(1).max(200)).min(1).max(50).optional(),
+        forModeration: z
+          .enum(['true', 'false'])
+          .transform((value) => value === 'true')
+          .optional(),
+        useCache: z
+          .enum(['true', 'false'])
+          .transform((value) => value === 'true')
+          .optional(),
+        cursor: socialCursorSchema.optional(),
+        limit: z.coerce.number().int().min(1).max(30).default(20),
+      })
+      .strict()
+      .refine(
+        ({ ids, parentId, cursor, useCache }) =>
+          !ids || (!parentId && !cursor && !useCache),
+        'ID lookups cannot be combined with timeline pagination or caching'
+      )
+      .refine(
+        ({ forModeration, ids }) => !forModeration || !!ids,
+        'Moderation lookups require post IDs'
+      ),
+    returns: {} as SocialPostPage,
+  },
+  'get-social-post': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'no-store',
+    props: z.object({ id: z.string() }).strict(),
+    returns: {} as SocialPostDetail,
+  },
+  'get-social-likers': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'no-store',
+    props: z
+      .object({
+        id: z.string(),
+        cursor: socialCursorSchema.optional(),
+        limit: z.coerce.number().int().min(1).max(50).default(30),
+      })
+      .strict(),
+    returns: {} as SocialLikerPage,
+  },
   'admin-sports-resolve': {
     method: 'POST',
     visibility: 'undocumented',

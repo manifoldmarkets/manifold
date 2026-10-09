@@ -1,6 +1,6 @@
 import { Placement } from '@floating-ui/react'
 import clsx from 'clsx'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { getPerpBackingPool } from 'common/perps/amm'
 import { formatWithToken } from 'common/util/format'
 
@@ -22,7 +22,7 @@ export function LiquidityTooltip(props: {
 
   const isCashContract = contract.token === 'CASH'
   const isPerp = contract.mechanism === 'perp'
-  const hasAnswers = contract.mechanism === 'cpmm-multi-1'
+  const hasAnswers = isMultiCpmm(contract)
   const totalLiquidity = isPerp
     ? getPerpBackingPool(contract.poolLong, contract.poolShort)
     : 'totalLiquidity' in contract
@@ -34,11 +34,7 @@ export function LiquidityTooltip(props: {
         contract.answers.length
       ) - 1
     : getTierIndexFromLiquidity(totalLiquidity)
-  if (
-    mechanism !== 'cpmm-multi-1' &&
-    mechanism !== 'cpmm-1' &&
-    mechanism !== 'perp'
-  )
+  if (!isMultiCpmm(contract) && mechanism !== 'cpmm-1' && mechanism !== 'perp')
     return <></>
   const amount = totalLiquidity
   return (

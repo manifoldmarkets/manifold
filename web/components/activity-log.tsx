@@ -36,6 +36,7 @@ import {
   useGlobalComments,
   useSubscribeGlobalComments,
 } from 'web/hooks/use-comments'
+import { useHideApiTrades } from 'web/hooks/use-hide-api-trades'
 import {
   usePublicContracts,
   useLiveAllNewContracts,
@@ -105,9 +106,8 @@ export function ActivityLog(props: {
   )
 
   const [pill, setPill] = useState<PillOptions>('all')
-  const [hideApiTrades, setHideApiTrades] = usePersistentInMemoryState(
-    false,
-    'live-hide-api-trades'
+  const [hideApiTrades, setHideApiTrades] = useHideApiTrades(
+    !!showHideApiTrades
   )
   const effectiveHideApiTrades = showHideApiTrades && hideApiTrades
 
@@ -171,7 +171,11 @@ export function ActivityLog(props: {
     })
   }
 
+  // Only the latest request counts, so one made under earlier filters (e.g.
+  // before the saved Hide API trades value loaded) can't replace its results.
+  const topicalRequestId = useRef(0)
   const getRecentTopicalContent = async (topicSlugs: string[]) => {
+    const requestId = ++topicalRequestId.current
     setLoading(true)
     const recentContracts = await getRecentActiveContractsOnTopics(
       topicSlugs,
@@ -192,6 +196,7 @@ export function ActivityLog(props: {
       recentContractIds,
       count
     )
+    if (requestId !== topicalRequestId.current) return
     setRecentTopicalBets(recentBets)
     setRecentTopicalComments(recentComments)
     setLoading(false)
