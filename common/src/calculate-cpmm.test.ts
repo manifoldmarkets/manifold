@@ -322,20 +322,23 @@ describe('CPMM Calculations', () => {
       expect(getLimitOrderFill(makers)).toEqual({ shares: 0, orderCount: 0 })
     })
 
-    it('measures the limit order fill in the shares being sold', () => {
-      const shares = 2000
-      const { makers } = calculateCpmmSale(
-        state,
-        shares,
-        'YES',
-        [makeLimitOrder()],
-        balanceByUserId
-      )
+    it.each([0.25, 0.5, 0.75])(
+      'measures sell fills in sold-share units at p=%s',
+      (p) => {
+        const shares = 2000
+        const { makers } = calculateCpmmSale(
+          { ...state, p },
+          shares,
+          'YES',
+          [makeLimitOrder({ limitProb: p })],
+          balanceByUserId
+        )
 
-      // The sell panel shows this against the size of the sale, so the two have
-      // to be the same unit — the order absorbs the sale whole here.
-      expect(getLimitOrderFill(makers).shares).toBeCloseTo(shares, 6)
-    })
+        // The sell panel shows this against the size of the sale, so the two have
+        // to be the same unit — the order absorbs the sale whole here.
+        expect(getLimitOrderFill(makers).shares).toBeCloseTo(shares, 6)
+      }
+    )
 
     it('cancelling your own order moves the price your sale would make', () => {
       const shares = 2000
