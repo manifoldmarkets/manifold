@@ -130,6 +130,30 @@ export const CUSTOM_METRICS = {
     metricKind: 'GAUGE',
     valueKind: 'int64Value',
   },
+  // Process health, sampled by the metric writer at every flush. The main
+  // scheduler OOM-crashed daily for over a month at the 14 GB V8 heap limit
+  // with nothing to show it, and the multi-minute event-loop stalls that did
+  // the collateral damage (every other job's open transaction killed on the
+  // idle-in-transaction timeout) could only be reconstructed afterwards from
+  // gaps in a 10-second cron. These make both visible in Cloud Monitoring.
+  'process/rss_bytes': {
+    metricKind: 'GAUGE',
+    valueKind: 'int64Value',
+  },
+  'process/heap_used_bytes': {
+    metricKind: 'GAUGE',
+    valueKind: 'int64Value',
+  },
+  'process/heap_total_bytes': {
+    metricKind: 'GAUGE',
+    valueKind: 'int64Value',
+  },
+  // Worst lag of a 1-second timer since the previous flush: how long the
+  // event loop was blocked, at most, in that minute.
+  'process/event_loop_lag_ms': {
+    metricKind: 'GAUGE',
+    valueKind: 'int64Value',
+  },
   'vercel/revalidations_succeeded': {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
