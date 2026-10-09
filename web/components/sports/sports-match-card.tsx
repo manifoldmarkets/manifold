@@ -606,12 +606,16 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
 
       {betOutcome &&
         (match.hasDraw === false ? (
-          // Knockout (2-way) markets use the standard versus bet modal.
+          // Versus markets (a game with no Draw answer): opens on the team clicked.
           <SportsVersusBetDialog
             contractId={match.contractId}
+            initialAnswerId={
+              betOutcome === 'teamB' ? match.teamBAnswerId : match.teamAAnswerId
+            }
             onClose={() => setBetOutcome(null)}
           />
         ) : (
+          // Standard 3-way soccer markets (home / draw / away).
           <SportsBetPanel
             match={{
               ...match,
