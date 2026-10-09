@@ -38,6 +38,7 @@ import { ContractDescription } from 'web/components/contract/contract-descriptio
 import { AuthorInfo } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
+import { NextMarketPrompt } from 'web/components/bet/next-market-prompt'
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
@@ -425,6 +426,8 @@ export function ContractPageContent(props: ContractParams) {
                   graphUser={graphUser}
                   setGraphUser={setGraphUser}
                 />
+
+                <NextMarketPrompt contract={liveContract} className="mb-2" />
 
                 {liveContract.mechanism !== 'perp' && (
                   <UserBetsSummary
