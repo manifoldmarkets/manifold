@@ -1,15 +1,13 @@
 import { unauthedApi } from './api'
 
 it('separates fresh quote URLs from cached display URLs and bypasses the fetch cache', async () => {
-  const fetch = jest
-    .spyOn(globalThis, 'fetch')
-    .mockImplementation(
-      async () =>
-        new Response('[]', {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
-    )
+  const fetch = jest.spyOn(globalThis, 'fetch').mockImplementation(
+    async () =>
+      new Response('[]', {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+  )
   try {
     await unauthedApi('bets', {
       contractId: 'market',
