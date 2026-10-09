@@ -1431,9 +1431,11 @@ export const useSearchResults = (props: {
             discoveryVariant: sendDiscoveryOptions
               ? discoveryVariant
               : undefined,
+            // The semantic tail on low-hit searches outlived the discovery-v1
+            // experiment; the legacy client-side sort already keeps semantic
+            // rows after the lexical results.
             enableSemanticSearch:
               sendDiscoveryOptions &&
-              discoveryVariant === 'treatment' &&
               endpoint === 'search-markets-full' &&
               query.trim().length > 0
                 ? true
