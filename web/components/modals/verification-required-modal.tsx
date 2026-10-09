@@ -29,13 +29,16 @@ export function VerificationRequiredModal({
     { action }
   )
 
-  // Verifying can't help: prize access was explicitly revoked (a failed
-  // iDenfy check or an admin), or, for loans, an admin/superban bonus block —
-  // which approval deliberately leaves in place.
+  // Verifying can't help: an admin/superban bonus block, which approval
+  // deliberately leaves in place along with the account's prize state; or a
+  // prize bar on an account that has already passed iDenfy (it can't start
+  // another session). Anyone else barred from prizes — e.g. a failed check,
+  // or an under-18 who has since turned 18 — is offered a retry.
   const isUnavailable =
-    action === 'enter prize drawings'
-      ? user.prizeEligibility === 'ineligible'
-      : user.bonusEligibility === 'ineligible'
+    user.bonusEligibility === 'ineligible' ||
+    (action === 'enter prize drawings' &&
+      user.prizeEligibility === 'ineligible' &&
+      user.bonusEligibility === 'verified')
   // User has been actively flagged for required verification (suspected alt,
   // suspicious signup, manual review) — show different copy so they understand
   // this is a system action, not just a missing-step prompt.

@@ -2,6 +2,7 @@ import { Request, Response } from 'express'
 import * as crypto from 'crypto'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
+import { FieldVal } from 'shared/supabase/utils'
 import { getUser, log, getContractSupabase } from 'shared/utils'
 import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 import { runTxnFromBank } from 'shared/txn/run-txn'
@@ -283,17 +284,28 @@ export const idenfyCallback = async (req: Request, res: Response) => {
   if (internalStatus === 'approved') {
     const user = await getUser(userId)
     if (user) {
+      // An admin/superban bonus block survives approval — current, or the
+      // snapshot under an admin flag. Such an account earns neither legacy
+      // payout below.
+      const keepsBonusBlock =
+        user.bonusEligibility === 'ineligible' ||
+        (user.bonusEligibility === 'requires_verification' &&
+          user.previousBonusEligibility === 'ineligible')
+
       // Legacy accounts were created with signupBonusPaid 0 (or, much older,
       // undefined) and promised the top-up on verification. Topped-up accounts
       // hold LEGACY_VERIFIED_SIGNUP_TOP_UP; accounts created since hold the
       // full STARTING_BALANCE paid at signup.
-      const owesLegacyTopUp = !user.signupBonusPaid
+      const owesLegacyTopUp = !keepsBonusBlock && !user.signupBonusPaid
 
       // Only referrals recorded before signup-time payouts have a legacy
       // verify half left to pay; skip the lookups for everyone else.
       const referrerId = user.referredByUserId
       const owesLegacyReferralHalf =
-        !!referrerId && referrerId !== userId && paysLegacyReferralHalves(user)
+        !keepsBonusBlock &&
+        !!referrerId &&
+        referrerId !== userId &&
+        paysLegacyReferralHalves(user)
       const referrer =
         owesLegacyReferralHalf && referrerId ? await getUser(referrerId) : null
       const referredByContract =
@@ -308,21 +320,26 @@ export const idenfyCallback = async (req: Request, res: Response) => {
       // miss the dedup and double-pay.
       const referralBonusAmount = await runTransactionWithRetries(
         async (tx) => {
-          // Update bonus eligibility and pin prize eligibility. Pinning
-          // 'eligible' (rather than leaving it unset to fall back through
+          // Mark verified and pin prize eligibility. Pinning 'eligible'
+          // (rather than leaving it unset to fall back through
           // isIdentityVerified) means an admin who later flags the user
           // bonus-ineligible doesn't accidentally also cut prize access —
-          // the two axes stay decoupled once iDenfy has approved. An admin
-          // bonus block ('ineligible') is kept: since verification became
-          // optional, iDenfy no longer writes it, so passing KYC must not
-          // clear it. (An admin flag, 'requires_verification', is what
-          // verification is meant to clear.)
+          // the two axes stay decoupled once iDenfy has approved.
+          //
+          // An admin/superban bonus block ('ineligible') survives approval,
+          // whether it's current or the snapshot under an admin flag:
+          // iDenfy no longer writes it, so passing KYC must not clear it.
+          // (An admin flag, 'requires_verification', is what verification
+          // is meant to clear.) A blocked account's prize state is left
+          // alone too — the sweepstakes endpoints gate on prize eligibility
+          // alone, so pinning 'eligible' would let a superbanned account
+          // that passes KYC buy tickets and claim cash. With it unset, the
+          // isIdentityVerified fallback stays false for 'ineligible'.
+          // Approval resolves any flag, so its snapshot is spent either way.
           await updateUser(tx, userId, {
-            bonusEligibility:
-              user.bonusEligibility === 'ineligible'
-                ? 'ineligible'
-                : 'verified',
-            prizeEligibility: 'eligible',
+            bonusEligibility: keepsBonusBlock ? 'ineligible' : 'verified',
+            ...(keepsBonusBlock ? {} : { prizeEligibility: 'eligible' }),
+            previousBonusEligibility: FieldVal.delete() as any,
             ...(user.verificationFlagReason
               ? {
                   verificationFlagReason: markOutdated(

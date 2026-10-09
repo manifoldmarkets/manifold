@@ -11,6 +11,11 @@
 // session, not banned from posting (legacy flag), and no active ban other than
 // a modAlert — superbanned accounts keep their block.
 //
+// Caveat: nothing records who set 'ineligible', so an account an admin blocked
+// by hand (admin-set-bonus-eligibility) after it failed a check also matches.
+// On 2026-10-09 the scope was 279 users, none with a past ban or a
+// verification flag reason. Read the dry-run list before applying.
+//
 // Dry run by default. Set DRY_RUN=false to apply.
 
 import { runScript } from 'run-script'
@@ -26,13 +31,18 @@ if (require.main === module) {
       username: string
       prize_eligibility: string | null
       latest_status: string | null
+      latest_session_time: string | null
     }>(
       `select u.id, u.username,
               u.data->>'prizeEligibility' as prize_eligibility,
-              (select status from idenfy_verifications iv
-                where iv.user_id = u.id
-                order by created_time desc limit 1) as latest_status
+              latest.status as latest_status,
+              latest.created_time::text as latest_session_time
        from users u
+       left join lateral (
+         select status, created_time from idenfy_verifications iv
+         where iv.user_id = u.id
+         order by created_time desc limit 1
+       ) latest on true
        where u.data->>'bonusEligibility' = 'ineligible'
          and coalesce(u.data->>'isBannedFromPosting', 'false') <> 'true'
          and exists (
@@ -57,7 +67,9 @@ if (require.main === module) {
       console.log(
         `${DRY_RUN ? '[dry-run] ' : ''}${u.username} (${u.id}) latest iDenfy: ${
           u.latest_status
-        }, prizeEligibility: ${u.prize_eligibility ?? 'unset → ineligible'}`
+        } at ${u.latest_session_time}, prizeEligibility: ${
+          u.prize_eligibility ?? 'unset → ineligible'
+        }`
       )
       if (DRY_RUN) continue
       await updateUser(pg, u.id, {
