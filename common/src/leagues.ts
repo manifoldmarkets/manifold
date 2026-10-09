@@ -1,5 +1,6 @@
 import { keyBy } from 'lodash'
 import { Bet } from './bet'
+import { getProfitMetrics } from './calculate'
 import { Contract } from './contract'
 import { LeagueChangeData } from './notification'
 import { Row } from './supabase/utils'
@@ -12,6 +13,61 @@ export const LEAGUES_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Da
  * For a user's own markets, only bets placed 1+ hour after market creation are counted.
  * For other users' markets, all bets count.
  */
+// Markets that never count toward league mana earned.
+export const EXCLUDED_LEAGUE_CONTRACT_SLUGS = new Set([
+  'will-there-be-another-wellrecognize-393de260ec26',
+  'will-there-be-another-wellrecognize-511a499bd82e',
+  'will-there-be-another-wellrecognize',
+])
+
+export const isLeagueScorableContract = (contract: Contract) =>
+  contract.token === 'MANA' &&
+  contract.visibility === 'public' &&
+  contract.mechanism !== 'perp' &&
+  contract.isRanked !== false &&
+  !EXCLUDED_LEAGUE_CONTRACT_SLUGS.has(contract.slug)
+
+/**
+ * Adds each user's season profit on one contract into profitByUserId.
+ *
+ * Only users already present in profitByUserId (the season's league members)
+ * are scored; everyone else's bets are ignored. This is the per-contract step
+ * of what update-league used to do per user over the whole season's bets in
+ * one pass, split out so bets can be loaded a few hundred contracts at a time
+ * instead of all at once (3M+ rows a season once API market-makers arrived).
+ *
+ * Returns the users whose profit came out NaN; they are skipped, as before.
+ */
+export const addLeagueProfitForContract = (
+  contract: Contract,
+  betsByUserId: Record<string, Bet[]>,
+  profitByUserId: Record<string, number>
+) => {
+  const nanUserIds: string[] = []
+  for (const [userId, userBets] of Object.entries(betsByUserId)) {
+    if (!(userId in profitByUserId)) continue
+
+    // Adjust bets to exclude portions that filled against user's own limit orders
+    const nonSelfTradeBets = excludeSelfTrades(userBets, userId)
+
+    // Filter bets: if it's user's own market, only count bets placed 1+ hour after creation
+    const relevantBets = filterBetsForLeagueScoring(
+      nonSelfTradeBets,
+      contract,
+      userId
+    )
+    if (relevantBets.length === 0) continue
+
+    const { profit } = getProfitMetrics(contract, relevantBets)
+    if (isNaN(profit)) {
+      nanUserIds.push(userId)
+      continue
+    }
+    profitByUserId[userId] += profit
+  }
+  return nanUserIds
+}
+
 export const filterBetsForLeagueScoring = (
   bets: Bet[],
   contract: Contract,
