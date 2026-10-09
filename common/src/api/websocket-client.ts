@@ -62,6 +62,8 @@ export class APIRealtimeClient {
   private stopped = false
   private reconnectAttempt = 0
   private subscriptionRequests = new Map<string, Promise<void>>()
+  // Topics the server has acknowledged on the current connection.
+  private acknowledgedTopics = new Set<string>()
   private reconnectListeners: Set<(count: number) => void>
 
   constructor(url: string) {
@@ -101,10 +103,14 @@ export class APIRealtimeClient {
     // in order to check the semantics of events etc.
     const socket = new WebSocket(this.url)
     this.ws = socket
+    this.acknowledgedTopics.clear()
     this.ws.onmessage = (ev) => {
       this.receiveMessage(JSON.parse(ev.data))
     }
     this.ws.onerror = (ev) => {
+      // Like onclose: an error from a socket we've already replaced must not
+      // start a reconnect that would orphan the live one.
+      if (this.ws !== socket) return
       console.error('API websocket error: ', ev)
       // Browser errors are followed by close. The timer guard coalesces both.
       this.waitAndReconnect()
@@ -118,13 +124,8 @@ export class APIRealtimeClient {
         HEARTBEAT_MS
       )
       try {
-        if (this.subscriptions.size > 0) {
-          const topics = Array.from(this.subscriptions.keys())
-          const request = this.sendMessage('subscribe', { topics })
-          for (const topic of topics)
-            this.subscriptionRequests.set(topic, request)
-          await request
-        }
+        if (this.subscriptions.size > 0)
+          await this.requestSubscription(Array.from(this.subscriptions.keys()))
         if (
           this.stopped ||
           this.ws !== socket ||
@@ -155,6 +156,7 @@ export class APIRealtimeClient {
 
       // Acknowledgments belong to this connection. Recovery establishes new
       // subscriptions before announcing the next connection generation.
+      this.acknowledgedTopics.clear()
       for (const txn of Array.from(this.txns.values())) {
         clearTimeout(txn.timeout)
         txn.reject(new Error('Websocket was closed.'))
@@ -246,7 +248,10 @@ export class APIRealtimeClient {
           this.ws === socket &&
           !this.stopped
         ) {
-          console.error('Websocket request failed, attempting to reconnect:', error)
+          console.error(
+            'Websocket request failed, attempting to reconnect:',
+            error
+          )
           socket.close()
           this.waitAndReconnect()
         }
@@ -263,7 +268,14 @@ export class APIRealtimeClient {
     return await this.sendMessage('identify', { uid })
   }
 
+  /** Waits for any pending acknowledgment of these topics on the open
+   * connection. Resolves to true if any topic wasn't acknowledged yet when this
+   * was called: broadcasts sent before the subscription took effect were
+   * missed, so state the caller has already read should be refetched. */
   async subscribe(topics: string[], handler: BroadcastHandler) {
+    const unacknowledged = topics.some(
+      (topic) => !this.acknowledgedTopics.has(topic)
+    )
     const added: string[] = []
     for (const topic of topics) {
       const existing = this.subscriptions.get(topic)
@@ -273,14 +285,32 @@ export class APIRealtimeClient {
         added.push(topic)
       }
     }
-    if (added.length) {
-      const request = this.sendMessage('subscribe', { topics: added })
-      for (const topic of added) this.subscriptionRequests.set(topic, request)
-    }
+    // While disconnected, onopen subscribes every topic on the next connection.
+    if (added.length && this.state === WebSocket.OPEN)
+      this.requestSubscription(added)
     // A second consumer of a topic must also wait for its pending subscribe.
     await Promise.all(
       topics.map((topic) => this.subscriptionRequests.get(topic))
     )
+    return unacknowledged
+  }
+
+  private requestSubscription(topics: string[]) {
+    const request = this.sendMessage('subscribe', { topics })
+    for (const topic of topics) {
+      this.subscriptionRequests.set(topic, request)
+      this.acknowledgedTopics.delete(topic)
+    }
+    request.then(
+      () => {
+        for (const topic of topics)
+          if (this.subscriptionRequests.get(topic) === request)
+            this.acknowledgedTopics.add(topic)
+      },
+      // sendMessage reconnects on failure; waiting consumers get the rejection.
+      () => {}
+    )
+    return request
   }
 
   async unsubscribe(topics: string[], handler: BroadcastHandler) {
@@ -293,6 +323,7 @@ export class APIRealtimeClient {
       else {
         this.subscriptions.delete(topic)
         this.subscriptionRequests.delete(topic)
+        this.acknowledgedTopics.delete(topic)
         removed.push(topic)
       }
     }

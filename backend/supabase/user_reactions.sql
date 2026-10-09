@@ -29,3 +29,6 @@ create index user_reactions_content_id_raw on public.user_reactions using btree 
 drop index if exists user_reactions_pkey;
 
 create unique index user_reactions_pkey on public.user_reactions using btree (user_id, reaction_id);
+
+create unique index user_reactions_social_unique on user_reactions(user_id, content_id) where content_type = 'social_post';
+create index user_reactions_social_likers on user_reactions(content_id, created_time, user_id) where content_type = 'social_post';

@@ -42,7 +42,6 @@ export type MnxFeedSnapshot = {
   marketId?: number
   health: OracleFeedHealth
   point?: OraclePoint
-  supportedLeverage?: number
   maxLeverage?: number
   markPriceRaw?: string
 }
@@ -168,13 +167,10 @@ export const parseMnxSnapshot = (
       )
         throw new Error('MNX price conflicts at an immutable timestamp')
       const point: OraclePoint = { ts: fetchedAt, sourceTs: ts, price }
-      // Margin configuration affects new launches only, never an existing feed.
-      let supportedLeverage: number | undefined
+      // Margin configuration only sets the launch script's default leverage.
+      // It never caps a market's leverage or gates an existing feed.
       let maxLeverage: number | undefined
       try {
-        supportedLeverage = mnxSupportedLeverage(
-          String(market.initial_margin_ratio_e18_raw)
-        )
         maxLeverage = mnxLaunchLeverage(
           String(market.initial_margin_ratio_e18_raw)
         )
@@ -185,7 +181,6 @@ export const parseMnxSnapshot = (
         ...identity,
         point,
         maxLeverage,
-        supportedLeverage,
         markPriceRaw: market.mark_price_e18_raw,
         health: {
           checkedAt: fetchedAt,

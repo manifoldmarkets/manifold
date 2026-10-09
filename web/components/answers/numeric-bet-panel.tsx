@@ -56,7 +56,7 @@ export const NumericBetPanel = (props: {
       higher: 'Higher',
     },
   } = props
-  const contract = useLiveContract(props.contract)
+  const contract = useLiveContract(props.contract, { fresh: true })
   const user = useUser()
   const isCreatorBanned =
     !!user &&
@@ -216,7 +216,9 @@ export const NumericBetPanel = (props: {
         undefined,
         unfilledBets,
         balanceByUserId,
-        contract.collectedFees
+        contract.collectedFees,
+        // The preview must price with the same arb the backend will use.
+        contract.mechanism
       )
     const fees = [...newBetResults, ...otherBetResults].reduce(
       (acc, r) => addObjects(acc, r.totalFees),

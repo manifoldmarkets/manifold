@@ -8,6 +8,7 @@ import {
   getVersusShares,
   mergeVersusMetricsByUser,
   partitionVersusBets,
+  showsSideProbability,
   toMainAnswerMetric,
   toMainAnswerOrder,
   versusSide,
@@ -30,6 +31,7 @@ const makeAnswer = (
   createdTime: 0,
   poolYes: 100,
   poolNo: 100,
+  p: 0.5,
   prob,
   totalLiquidity: 100,
   subsidyPool: 0,
@@ -542,5 +544,45 @@ describe('mergeVersusMetricsByUser', () => {
         metrics
       )
     ).toBe(metrics)
+  })
+})
+
+describe('showsSideProbability', () => {
+  const generic = {
+    YES: { pseudonymName: 'YES' },
+    NO: { pseudonymName: 'NO' },
+  }
+  const parties = {
+    YES: { pseudonymName: 'Republican' },
+    NO: { pseudonymName: 'Democratic' },
+  }
+  const binary = {
+    id: 'b1',
+    mechanism: 'cpmm-1',
+    outcomeType: 'BINARY',
+  } as unknown as Contract
+  const threeWay = {
+    ...versus,
+    mechanism: 'cpmm-multi-2',
+    answers: [home, away, makeAnswer('other', 'Other', 0.1, 2)],
+  } as unknown as CPMMMultiContract
+
+  it('shows the side being bought on a versus market', () => {
+    expect(showsSideProbability(versus)).toBe(true)
+  })
+
+  it('shows the side being bought on a binary market with renamed sides', () => {
+    expect(showsSideProbability(binary, parties)).toBe(true)
+  })
+
+  it('keeps the YES probability for plain or generic YES/NO labels', () => {
+    expect(showsSideProbability(binary)).toBe(false)
+    expect(showsSideProbability(binary, generic)).toBe(false)
+  })
+
+  it('keeps the answer probability on a market with more than two answers', () => {
+    expect(showsSideProbability(threeWay)).toBe(false)
+    expect(showsSideProbability(threeWay, generic)).toBe(false)
+    expect(showsSideProbability(threeWay, parties)).toBe(false)
   })
 })

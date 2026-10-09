@@ -1,0 +1,575 @@
+import {
+  fitAnswerProbs,
+  fitCopiedAnswerProbs,
+  roundAnswerProbs,
+  withAnswerProbRemoved,
+  withAnswerProbSet,
+} from './answer-probs'
+import { getInitialAnswerProbability } from './calculate'
+import { getInitialAnswerPools } from './calculate-cpmm'
+import { CPMMMultiContract } from './contract'
+import {
+  ANSWER_PROB_SUM_TOLERANCE,
+  getAnswerProbsError,
+  getNewContract,
+  MAX_ANSWER_PROB,
+  MIN_ANSWER_PROB,
+} from './new-contract'
+import { User } from './user'
+
+const probOf = (pool: { YES: number; NO: number }) =>
+  pool.NO / (pool.YES + pool.NO)
+
+// What the liquidity providers are paid if answer k is the one that resolves
+// YES: their YES shares in k, plus their NO shares in every other answer.
+const payoutIfAnswerWins = (pools: { YES: number; NO: number }[], k: number) =>
+  pools[k].YES +
+  pools.reduce((total, pool, i) => total + (i === k ? 0 : pool.NO), 0)
+
+describe('getInitialAnswerPools', () => {
+  it('matches the even-split formula when every answer starts equal', () => {
+    const ante = 1000
+    for (const n of [2, 3, 4, 10, 25]) {
+      const pools = getInitialAnswerPools(Array(n).fill(1 / n), ante, true)
+      for (const pool of pools) {
+        expect(pool.YES).toBeCloseTo(ante / 2, 4)
+        expect(pool.NO).toBeCloseTo(ante / (2 * n - 2), 4)
+      }
+    }
+  })
+
+  it('starts answers at the probabilities they were given', () => {
+    const cases = [
+      [0.6, 0.3, 0.1],
+      [0.9, 0.05, 0.05],
+      [0.8, 0.2],
+      [0.5, 0.25, 0.15, 0.1],
+      [0.02, 0.98],
+    ]
+    for (const probs of cases) {
+      const pools = getInitialAnswerPools(probs, 1000, true)
+      pools.forEach((pool, i) => expect(probOf(pool)).toBeCloseTo(probs[i], 6))
+    }
+  })
+
+  it('never pays out more than the ante that seeded it', () => {
+    const cases = [
+      [0.6, 0.3, 0.1],
+      [0.9, 0.05, 0.05],
+      [0.8, 0.2],
+      [0.34, 0.33, 0.33],
+      [0.5, 0.25, 0.15, 0.1],
+      Array(20).fill(0.05),
+    ]
+    const ante = 1000
+    for (const probs of cases) {
+      const pools = getInitialAnswerPools(probs, ante, true)
+      pools.forEach((_, k) =>
+        expect(payoutIfAnswerWins(pools, k)).toBeLessThanOrEqual(ante + 1e-6)
+      )
+    }
+  })
+
+  it('spends the whole ante on the answer that needs it most', () => {
+    // Some answer has to pay out the full ante, otherwise we left liquidity on
+    // the table.
+    const ante = 1000
+    const pools = getInitialAnswerPools([0.6, 0.3, 0.1], ante, true)
+    const payouts = pools.map((_, k) => payoutIfAnswerWins(pools, k))
+    expect(Math.max(...payouts)).toBeCloseTo(ante, 4)
+  })
+
+  it('gives independent answers their own share of the ante', () => {
+    const pools = getInitialAnswerPools([0.75, 0.5, 0.2], 300, false)
+    pools.forEach((pool) => {
+      // Each answer is its own binary market, so neither side can pay out more
+      // than the 100 mana that seeded it.
+      expect(Math.max(pool.YES, pool.NO)).toBeCloseTo(100, 6)
+    })
+    expect(probOf(pools[0])).toBeCloseTo(0.75, 6)
+    expect(probOf(pools[1])).toBeCloseTo(0.5, 6)
+    expect(probOf(pools[2])).toBeCloseTo(0.2, 6)
+  })
+})
+
+describe('getAnswerProbsError', () => {
+  const sumToOne = {
+    numAnswers: 3,
+    shouldAnswersSumToOne: true,
+    hasOtherAnswer: false,
+  }
+
+  it('accepts probabilities that add up to 100', () => {
+    expect(
+      getAnswerProbsError({ ...sumToOne, answerProbs: [50, 30, 20] })
+    ).toBeUndefined()
+  })
+
+  it('tolerates rounding, but not a real mistake', () => {
+    expect(
+      getAnswerProbsError({
+        ...sumToOne,
+        answerProbs: [33, 33, 33 + ANSWER_PROB_SUM_TOLERANCE],
+      })
+    ).toBeUndefined()
+    expect(
+      getAnswerProbsError({ ...sumToOne, answerProbs: [50, 30, 30] })
+    ).toContain('110')
+  })
+
+  it.each([{ answerProbs: [50, 49.5, 1] }, { answerProbs: [99, 1, 1] }])(
+    'rejects $answerProbs when normalization crosses the lower bound',
+    ({ answerProbs }) => {
+      expect(getAnswerProbsError({ ...sumToOne, answerProbs })).toContain(
+        'After normalization'
+      )
+    }
+  )
+
+  it.each([
+    { answerProbs: [33, 33, 33] },
+    { answerProbs: [34, 34, 33] },
+    { answerProbs: [99, 1] },
+    { answerProbs: [1, 15.1, 48.2, 35.7] },
+  ])(
+    'accepts $answerProbs when normalized probabilities stay in bounds',
+    ({ answerProbs }) => {
+      expect(
+        getAnswerProbsError({
+          ...sumToOne,
+          numAnswers: answerProbs.length,
+          answerProbs,
+        })
+      ).toBeUndefined()
+    }
+  )
+
+  it('rejects a count that does not match the answers', () => {
+    expect(
+      getAnswerProbsError({ ...sumToOne, answerProbs: [50, 50] })
+    ).toContain('got 2')
+  })
+
+  it('rejects probabilities outside the tradeable range', () => {
+    expect(
+      getAnswerProbsError({
+        ...sumToOne,
+        answerProbs: [MIN_ANSWER_PROB - 0.5, 50, 50],
+      })
+    ).toContain(`${MIN_ANSWER_PROB}%`)
+    expect(
+      getAnswerProbsError({
+        ...sumToOne,
+        numAnswers: 2,
+        answerProbs: [MAX_ANSWER_PROB + 0.5, 0.5],
+      })
+    ).toContain(`${MAX_ANSWER_PROB}%`)
+  })
+
+  it('keeps the Other answer inside the same bounds', () => {
+    const withOther = { ...sumToOne, hasOtherAnswer: true }
+    expect(
+      getAnswerProbsError({ ...withOther, answerProbs: [50, 20, 10] })
+    ).toBeUndefined()
+    // Nothing left for Other
+    expect(
+      getAnswerProbsError({ ...withOther, answerProbs: [50, 30, 20] })
+    ).toContain('Other')
+    // Everything left for Other, which would open it at 100%
+    expect(
+      getAnswerProbsError({ ...withOther, numAnswers: 0, answerProbs: [] })
+    ).toContain('Other')
+  })
+
+  it.each([{ answerProbs: [99] }, { answerProbs: [1] }])(
+    'accepts $answerProbs with Other taking the bounded remainder',
+    ({ answerProbs }) => {
+      expect(
+        getAnswerProbsError({
+          ...sumToOne,
+          numAnswers: answerProbs.length,
+          hasOtherAnswer: true,
+          answerProbs,
+        })
+      ).toBeUndefined()
+    }
+  )
+
+  it('does not constrain the sum for independent answers', () => {
+    expect(
+      getAnswerProbsError({
+        ...sumToOne,
+        shouldAnswersSumToOne: false,
+        answerProbs: [80, 70, 60],
+      })
+    ).toBeUndefined()
+  })
+
+  it('does not normalize independent probabilities at the bounds', () => {
+    expect(
+      getAnswerProbsError({
+        ...sumToOne,
+        shouldAnswersSumToOne: false,
+        answerProbs: [99, 1, 1],
+      })
+    ).toBeUndefined()
+  })
+})
+
+describe('getNewContract with answerProbs', () => {
+  const creator = {
+    id: 'creator',
+    name: 'Creator',
+    username: 'creator',
+    createdTime: 0,
+  } as User
+
+  const makeMultiContract = (props: {
+    answers: string[]
+    answerProbs?: number[]
+    addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
+    ante?: number
+  }) =>
+    getNewContract({
+      id: 'contract',
+      slug: 'contract',
+      creator,
+      question: 'Who wins?',
+      outcomeType: 'MULTIPLE_CHOICE',
+      description: '',
+      initialProb: 50,
+      ante: props.ante ?? 1000,
+      closeTime: undefined,
+      visibility: 'public',
+      isTwitchContract: undefined,
+      token: 'MANA',
+      min: 0,
+      max: 0,
+      isLogScale: false,
+      answers: props.answers,
+      answerProbs: props.answerProbs,
+      // These cover cpmm-multi-1's seeding; cpmm-multi-2-creation.test.ts
+      // covers the markets starting probabilities open as cpmm-multi-2.
+      cpmmMulti2Enabled: false,
+      addAnswersMode: props.addAnswersMode ?? 'DISABLED',
+      shouldAnswersSumToOne: true,
+      unit: undefined,
+      midpoints: undefined,
+      timezone: undefined,
+      voterVisibility: undefined,
+      pollType: undefined,
+      maxSelections: undefined,
+    } as any) as CPMMMultiContract
+
+  it('still splits evenly when no probabilities are given', () => {
+    const { answers } = makeMultiContract({ answers: ['A', 'B', 'C', 'D'] })
+    expect(answers.map((a) => a.prob)).toEqual([0.25, 0.25, 0.25, 0.25])
+  })
+
+  it('starts each answer where the creator set it', () => {
+    const { answers } = makeMultiContract({
+      answers: ['A', 'B', 'C'],
+      answerProbs: [60, 30, 10],
+    })
+    expect(answers.map((a) => a.prob)).toEqual([0.6, 0.3, 0.1])
+    answers.forEach((answer) =>
+      expect(answer.poolNo / (answer.poolYes + answer.poolNo)).toBeCloseTo(
+        answer.prob,
+        6
+      )
+    )
+  })
+
+  it('gives the Other answer whatever is left over', () => {
+    const { answers } = makeMultiContract({
+      answers: ['A', 'B'],
+      answerProbs: [60, 30],
+      addAnswersMode: 'ANYONE',
+    })
+    expect(answers.map((a) => a.text)).toEqual(['A', 'B', 'Other'])
+    expect(answers.map((a) => a.prob)).toEqual([0.6, 0.3, 0.1])
+    expect(answers[2].isOther).toBe(true)
+  })
+
+  it('normalises percentages that are a rounding point off', () => {
+    const { answers } = makeMultiContract({
+      answers: ['A', 'B', 'C'],
+      answerProbs: [33, 33, 33],
+    })
+    expect(answers.reduce((total, a) => total + a.prob, 0)).toBeCloseTo(1, 10)
+  })
+
+  it('remembers where each answer opened, so history starts there', () => {
+    const contract = makeMultiContract({
+      answers: ['A', 'B'],
+      answerProbs: [60, 30],
+      addAnswersMode: 'ANYONE',
+    })
+    const [a, b, other] = contract.answers
+    expect(contract.initialProbabilities).toEqual({
+      [a.id]: 0.6,
+      [b.id]: 0.3,
+      [other.id]: 0.1,
+    })
+    // Even after trading moves the live probability, history starts where
+    // the creator put it — not at the even split the fallback assumes.
+    const traded = {
+      ...contract,
+      answers: contract.answers.map((ans) => ({ ...ans, prob: 1 / 3 })),
+    }
+    expect(getInitialAnswerProbability(traded, traded.answers[0])).toBe(0.6)
+    expect(getInitialAnswerProbability(traded, traded.answers[2])).toBe(0.1)
+  })
+
+  it('leaves the even split unrecorded, so old markets are unaffected', () => {
+    const contract = makeMultiContract({ answers: ['A', 'B', 'C', 'D'] })
+    expect(contract.initialProbabilities).toBeUndefined()
+    expect(getInitialAnswerProbability(contract, contract.answers[0])).toBe(
+      0.25
+    )
+  })
+
+  it('starts a converted market at the even split it opened at', () => {
+    // A cpmm-multi-1 market converted to cpmm-multi-2 keeps its pools, which
+    // have since moved; it opened at the even split, as it had no starting
+    // probabilities.
+    const contract = makeMultiContract({ answers: ['A', 'B', 'C', 'D'] })
+    const converted = {
+      ...contract,
+      mechanism: 'cpmm-multi-2' as const,
+      answers: contract.answers.map((a, i) =>
+        i === 0 ? { ...a, poolYes: a.poolYes / 9, prob: 0.75 } : a
+      ),
+    }
+    expect(getInitialAnswerProbability(converted, converted.answers[0])).toBe(
+      0.25
+    )
+  })
+})
+
+describe('editing starting probabilities in the create form', () => {
+  it('rounds to a tenth without changing the total', () => {
+    const rounded = roundAnswerProbs([100 / 3, 100 / 3, 100 / 3, 0])
+    expect(rounded).toEqual([33.4, 33.3, 33.3, 0])
+    expect(rounded.reduce((a, b) => a + b, 0)).toBeCloseTo(100, 10)
+  })
+
+  it('gives a newly named answer an even slice taken from the others', () => {
+    // Two named answers at 50/50 and a blank slot that just got named.
+    const probs = withAnswerProbSet([50, 50, 0], 2, 100 / 3)
+    expect(probs).toEqual([33.4, 33.3, 33.3])
+  })
+
+  it('hands a blanked answer’s share back to the rest, in proportion', () => {
+    expect(withAnswerProbSet([40, 40, 20], 2, 0)).toEqual([50, 50, 0])
+    expect(withAnswerProbSet([60, 20, 20], 2, 0)).toEqual([75, 25, 0])
+  })
+
+  it('leaves a valid split alone when a blank slot is deleted', () => {
+    // A blank slot holds 0, so removing it changes nothing for the others.
+    expect(withAnswerProbRemoved([50, 50, 0], 2)).toEqual([50, 50])
+  })
+
+  it('spreads a deleted answer’s share over the rest in proportion', () => {
+    expect(withAnswerProbRemoved([60, 30, 10], 2)).toEqual([66.7, 33.3])
+  })
+
+  it('keeps whatever total the named answers had, so Other is untouched', () => {
+    // 80% across the named answers, 20% left for Other.
+    const probs = withAnswerProbSet([40, 40, 0], 2, 80 / 3)
+    expect(probs.reduce((a, b) => a + b, 0)).toBeCloseTo(80, 10)
+  })
+})
+
+describe('fitting live odds to seed a duplicate market', () => {
+  const passes = (answerProbs: number[], shouldAnswersSumToOne = true) =>
+    getAnswerProbsError({
+      answerProbs,
+      numAnswers: answerProbs.length,
+      shouldAnswersSumToOne,
+      hasOtherAnswer: false,
+    }) === undefined
+
+  it('raises long shots to the floor without breaking the total', () => {
+    const fitted = fitAnswerProbs([99.5, 0.3, 0.2], true, 1, 99)!
+    expect(fitted).toEqual([98, 1, 1])
+    expect(passes(fitted)).toBe(true)
+  })
+
+  it('takes the difference from the answers above the floor, in proportion', () => {
+    const fitted = fitAnswerProbs([60, 39.5, 0.5], true, 1, 99)!
+    // 0.5 raised to 1 costs 0.5, split 59:38.5 between the other two.
+    expect(fitted[2]).toBe(1)
+    expect(fitted[0]).toBeCloseTo(60 - (0.5 * 59) / 97.5, 1)
+    expect(fitted.reduce((a, b) => a + b, 0)).toBeCloseTo(100, 10)
+    expect(passes(fitted)).toBe(true)
+  })
+
+  it('fits a long tail of many answers under the floor', () => {
+    const probs = [60, ...Array(49).fill(40 / 49 - 0.01), 0.49]
+    const fitted = fitAnswerProbs(probs, true, 1, 99)!
+    expect(fitted.every((prob) => prob >= 1)).toBe(true)
+    expect(fitted.reduce((a, b) => a + b, 0)).toBeCloseTo(100, 10)
+    expect(passes(fitted)).toBe(true)
+  })
+
+  it('leaves odds already in range where they are', () => {
+    expect(fitAnswerProbs([50, 30, 20], true, 1, 99)).toEqual([50, 30, 20])
+  })
+
+  it('clamps independent answers one by one', () => {
+    const fitted = fitAnswerProbs([0.4, 99.8, 50], false, 1, 99)!
+    expect(fitted).toEqual([1, 99, 50])
+    expect(passes(fitted, false)).toBe(true)
+  })
+
+  it('gives up when the answers can’t all fit', () => {
+    expect(fitAnswerProbs(Array(101).fill(1), true, 1, 99)).toBeUndefined()
+  })
+
+  it('spreads the rounding over many answers, so none leaves the range', () => {
+    // 51 even answers each round to 2%, 102% in all. Putting the whole -2 on
+    // one answer left it at 0%, and the copy's form refused it.
+    const even = fitAnswerProbs(Array(51).fill(100 / 51), true, 1, 99)!
+    expect(even.filter((prob) => prob === 2)).toHaveLength(31)
+    expect(even.filter((prob) => prob === 1.9)).toHaveLength(20)
+    expect(passes(even)).toBe(true)
+    // Each 2.25% rounds up a tenth; the 1% answer keeps its 1%.
+    const tail = fitAnswerProbs([...Array(44).fill(2.25), 1], true, 1, 99)!
+    expect(tail[44]).toBe(1)
+    expect(passes(tail)).toBe(true)
+  })
+
+  it('carries every even split, and always passes the create form’s check', () => {
+    for (let n = 2; n <= 100; n++) {
+      const fitted = fitAnswerProbs(Array(n).fill(100 / n), true, 1, 99)!
+      expect(fitted).toHaveLength(n)
+      fitted.forEach((prob) =>
+        expect(Math.abs(prob - 100 / n)).toBeLessThan(0.1)
+      )
+      expect(passes(fitted)).toBe(true)
+    }
+    let seed = 11
+    const rng = () => {
+      seed = (seed * 16807) % 2147483647
+      return seed / 2147483647
+    }
+    for (let i = 0; i < 3000; i++) {
+      const n = 2 + Math.floor(rng() * 99)
+      // Near-even weights, where rounding piles up, or ordinary ones with
+      // some answers far under 1%.
+      const nearEven = rng() < 0.5
+      const weights = Array.from({ length: n }, () =>
+        nearEven ? 1 + rng() * 0.05 : rng() < 0.2 ? rng() * 1e-6 : rng() ** 3
+      )
+      const total = weights.reduce((a, b) => a + b, 0)
+      const probs = weights.map((w) => (w / total) * 100)
+      const fitted = fitAnswerProbs(probs, true, 1, 99)
+      // Only odds that can't fit at all are left behind.
+      if (probs.every((prob) => prob >= 1 && prob <= 99))
+        expect(fitted).toBeDefined()
+      if (fitted) expect(passes(fitted)).toBe(true)
+    }
+  })
+})
+
+describe('fitting the odds of a market with an Other answer to seed a copy', () => {
+  // The copy lists every answer but Other, and recreates Other with whatever
+  // the listed ones leave.
+  const passes = (answerProbs: number[]) =>
+    getAnswerProbsError({
+      answerProbs,
+      numAnswers: answerProbs.length,
+      shouldAnswersSumToOne: true,
+      hasOtherAnswer: true,
+    }) === undefined
+  const fit = (probs: number[]) =>
+    fitCopiedAnswerProbs(probs, true, true, 1, 99)
+
+  it('carries the listed answers, leaving Other its share', () => {
+    expect(fit([40, 30, 30])).toEqual([40, 30])
+    expect(passes([40, 30])).toBe(true)
+  })
+
+  it('keeps Other a tenth clear of the floor and the ceiling', () => {
+    // Other under the floor is raised to it, then a tenth more.
+    const low = fit([98, 1.5, 0.5])!
+    expect(low).toEqual([97.4, 1.5])
+    expect(passes(low)).toBe(true)
+    // Other over the ceiling.
+    const high = fit([0.5, 99.5])!
+    expect(high).toEqual([1.1])
+    expect(passes(high)).toBe(true)
+  })
+
+  it('carries nothing from Other alone, so the copy opens it as the original did', () => {
+    // Creation refuses starting probabilities that list no answer.
+    expect(fit([99])).toBeUndefined()
+    expect(fit([50])).toBeUndefined()
+  })
+
+  it('carries independent answers, which have no Other, one by one', () => {
+    expect(fitCopiedAnswerProbs([80, 20, 50], false, false, 1, 99)).toEqual([
+      80, 20, 50,
+    ])
+  })
+
+  it('gives up when the answers can’t all fit', () => {
+    expect(fit(Array(100).fill(1))).toBeUndefined()
+  })
+
+  it('carries many near-even answers, whatever their rounding adds up to', () => {
+    for (let n = 2; n <= 99; n++) {
+      const fitted = fit(Array(n).fill(100 / n))!
+      expect(fitted).toHaveLength(n - 1)
+      expect(passes(fitted)).toBe(true)
+      // Within the rounding, plus the tenth that keeps Other off the floor.
+      fitted.forEach((prob) =>
+        expect(Math.abs(prob - 100 / n)).toBeLessThan(0.2)
+      )
+    }
+    let seed = 13
+    const rng = () => {
+      seed = (seed * 16807) % 2147483647
+      return seed / 2147483647
+    }
+    for (let i = 0; i < 2000; i++) {
+      const n = 2 + Math.floor(rng() * 65)
+      const weights = Array.from({ length: n }, () => 1 + rng() * 0.05)
+      const total = weights.reduce((a, b) => a + b, 0)
+      const probs = weights.map((w) => (w / total) * 100)
+      const fitted = fit(probs)
+      if (probs.every((prob) => prob >= 1.5 && prob <= 98.5))
+        expect(fitted).toBeDefined()
+      if (fitted) expect(passes(fitted)).toBe(true)
+    }
+  })
+
+  it('always passes the create form’s check, and keeps odds already in range', () => {
+    let seed = 7
+    const rng = () => {
+      seed = (seed * 16807) % 2147483647
+      return seed / 2147483647
+    }
+    let carried = 0
+    for (let i = 0; i < 3000; i++) {
+      const n = 2 + Math.floor(rng() * 99)
+      // Mostly ordinary weights, with some answers far under 1%.
+      const weights = Array.from({ length: n }, () =>
+        rng() < 0.2 ? rng() * 1e-6 : rng() ** 3
+      )
+      const total = weights.reduce((a, b) => a + b, 0)
+      const probs = weights.map((w) => (w / total) * 100)
+      const fitted = fit(probs)
+      if (!fitted) continue
+      carried++
+      expect(fitted).toHaveLength(n - 1)
+      expect(passes(fitted)).toBe(true)
+      if (probs.every((prob) => prob >= 1.5 && prob <= 98.5))
+        fitted.forEach((prob, j) =>
+          expect(Math.abs(prob - probs[j])).toBeLessThan(0.2)
+        )
+    }
+    expect(carried).toBeGreaterThan(2000)
+  })
+})

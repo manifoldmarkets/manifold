@@ -412,6 +412,14 @@ export const NEW_USER_HERLPER_IDS = [
   'OdBj5DW6PbYtnImvybpyZzfhb133', // jim
 ]
 
+// Accounts that create markets in bulk (ManifoldPolitics made 46 election
+// conditionals in one evening). Their followers still get the in-app
+// notification for each new market, but not the "<creator> asked <question>"
+// email, which would arrive once per market.
+export const NO_NEW_MARKET_EMAIL_CREATOR_IDS = [
+  'vuI5upWB8yU00rP7yxj95J2zd952', // ManifoldPolitics
+]
+
 export const OPTED_OUT_OF_LEAGUES = [
   'vuI5upWB8yU00rP7yxj95J2zd952', // ManifoldPolitics
   '8lZo8X5lewh4hnCoreI7iSc0GxK2', // ManifoldAI
@@ -570,6 +578,7 @@ export const RESERVED_PATHS = [
   'create-post',
   'date-docs',
   'dashboard',
+  'data',
   'discord',
   'discord-bot',
   'dream',

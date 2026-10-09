@@ -29,9 +29,11 @@ Select live markets, or use **Manage** on one market:
   leverage cap, funding cap/sensitivity, or the maximum oracle mark age. Blank
   fields stay unchanged. Funding is entered as an annualized percentage and
   converted using each market's own funding period. API base fees cannot go
-  below the web base. Lower leverage caps affect new opens/adds, and increases
-  on MNX feeds require current provider support. Oracle age also gates closes
-  and cannot be reduced below the feed's cadence floor.
+  below the web base. Lower leverage caps affect new opens/adds. The leverage
+  cap is Manifold's own setting: it can be raised above the leverage MNX offers
+  on the instrument, up to the platform maximum of 100×, and changing it does
+  not depend on MNX being reachable. Oracle age also gates closes and cannot be
+  reduced below the feed's cadence floor.
 - **Visibility:** choose Unlisted or Public in the bottom management panel,
   review each selected market's before/after visibility, then apply. Markets
   already at the chosen visibility are skipped. Public markets appear in search
@@ -73,11 +75,13 @@ New MNX markets use the partner's category templates: `[Company] IPO Market Cap
 (MNX)` for valuation futures, `[Company] (MNX)` for equities, and `H100 GPU rental
 price (MNX)` for compute. Descriptions come from the same instrument registry;
 canonical display tickers remain unchanged (including `ANTH`, `SNDK`, and `H100`).
-The market's oracle attribution continues to link to MNX independently of its
-editable description. A fixed notice beside that source explains that if MNX
-ends the instrument, trading pauses pending administrative settlement and does
-not automatically roll into a replacement. Deploy the web change before running
-the copy backfill so this notice stays visible when descriptions are replaced.
+The chart's source credit links to MNX with a compact UTC timestamp. A separate
+CTA sits at the top of the description, below the trading and position panels
+(see the perps README). The delisting behaviour still holds — if MNX ends the
+instrument, trading pauses pending administrative settlement and does not
+automatically roll into a replacement — but the market page no longer prints a
+standing notice saying so; a settled market shows no CTA for exactly that
+reason.
 
 The launch preflight reports an edited MNX-owned title as `INFO`, printing both
 the stored title and the template. Matching titles still report `PASS`; title

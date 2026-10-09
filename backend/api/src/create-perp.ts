@@ -273,24 +273,19 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
   )
 
   // Fetch live provider readiness before opening a transaction. Candles alone
-  // cannot authorize creation, and provider-margin failures affect launches only.
+  // cannot authorize creation, and provider-margin failures affect launches
+  // only. MNX's own leverage is not a ceiling on this market's maxLeverage.
   let oracleFeedHealth: OracleFeedHealth | undefined
   if (getMnxInstrument(oracleFeedId)) {
     const snapshot = await fetchMnxSnapshot()
-    let ready
     try {
-      ready = requireMnxReady(snapshot, oracleFeedId)
+      requireMnxReady(snapshot, oracleFeedId)
     } catch (error) {
       throw new APIError(
         400,
         error instanceof Error ? error.message : String(error)
       )
     }
-    if (maxLeverage > ready.supportedLeverage!)
-      throw new APIError(
-        400,
-        `MNX launch leverage must be at most MNX’s supported ${ready.supportedLeverage}×`
-      )
     if (Date.now() - oraclePoint.ts > maxOraclePriceAgeMs)
       throw new APIError(
         400,
@@ -307,19 +302,24 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
   const proposedSlug = slugify(question)
 
   const contract = await pg.tx(async (tx) => {
-    if (getMnxInstrument(oracleFeedId)) {
-      await tx.one(advisoryLockQuery(`create-perp:${oracleFeedId}`))
-      const existing = await tx.oneOrNone<{ id: string }>(
-        `select id from contracts where mechanism = 'perp' and resolution_time is null
-         and data->>'oracleFeedId' = $1`,
-        [oracleFeedId]
+    // One live market per feed, for every feed — not just MNX. A second perp
+    // on the same oracle splits backing and open interest across two books
+    // that quote the same price, so the duplicate is never the market anyone
+    // meant to trade. The advisory lock makes the check-then-insert atomic:
+    // without it two concurrent creations both read "no existing market" and
+    // both insert. Held to the end of the transaction, keyed by feed, so
+    // creations on different feeds never wait on each other.
+    await tx.one(advisoryLockQuery(`create-perp:${oracleFeedId}`))
+    const existing = await tx.oneOrNone<{ id: string }>(
+      `select id from contracts where mechanism = 'perp' and resolution_time is null
+       and data->>'oracleFeedId' = $1`,
+      [oracleFeedId]
+    )
+    if (existing)
+      throw new APIError(
+        409,
+        `A live market already exists for ${oracleFeedId}: ${existing.id}`
       )
-      if (existing)
-        throw new APIError(
-          409,
-          `A live market already exists for ${oracleFeedId}: ${existing.id}`
-        )
-    }
     const collision = await tx.oneOrNone<{ id: string }>(
       `select 1 as id from contracts where slug = $1 limit 1`,
       [proposedSlug]

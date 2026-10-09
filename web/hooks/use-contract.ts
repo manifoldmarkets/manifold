@@ -8,6 +8,7 @@ import {
   useApiSubscription,
   useWebsocketReconnectCount,
 } from 'client-common/hooks/use-api-subscription'
+import { useStaggeredReconnectCount } from 'client-common/hooks/use-staggered-reconnect-count'
 import { useIsPageVisible } from './use-page-visible'
 import { api } from 'web/lib/api/api'
 import { db } from 'web/lib/supabase/db'
@@ -97,23 +98,40 @@ export function useLiveAllNewContracts(limit: number) {
   return contracts
 }
 
-export function useLiveContract<C extends Contract = Contract>(initial: C): C {
+export function useLiveContract<C extends Contract = Contract>(
+  initial: C,
+  options?: {
+    /** For pages and panels that quote this contract: read it from the origin,
+     * and reconcile as soon as a subscription or reconnect could have missed
+     * broadcasts. Cards and tables read through the CDN instead, and
+     * reconcile after each connection, staggered. */
+    fresh?: boolean
+  }
+): C {
+  const fresh = options?.fresh ?? false
   const isPageVisible = useIsPageVisible()
   const reconnectCount = useWebsocketReconnectCount()
+  const staggeredReconnectCount = useStaggeredReconnectCount()
   const [subscriptionCount, setSubscriptionCount] = useState(0)
   // ian: Batching is helpful on pages like /browse
   const [contract, setContract] = useBatchedGetter<C>(
     queryHandlers,
-    'markets',
+    fresh ? 'markets-fresh' : 'markets',
     initial.id,
     initial,
     isPageVisible,
     undefined,
-    reconnectCount + subscriptionCount
+    fresh ? reconnectCount + subscriptionCount : staggeredReconnectCount
   )
 
-  useContractUpdates(initial, setContract, () => {
-    if (isPageVisible) setSubscriptionCount((count) => count + 1)
-  })
+  useContractUpdates(
+    initial,
+    setContract,
+    fresh
+      ? () => {
+          if (isPageVisible) setSubscriptionCount((count) => count + 1)
+        }
+      : undefined
+  )
   return contract ?? initial
 }

@@ -4,7 +4,7 @@ import { groupBy, minBy, sortBy, uniqBy } from 'lodash'
 import { buildArray } from 'common/util/array'
 import { HOUR_MS } from 'common/util/time'
 import { getInitialAnswerProbability } from './calculate'
-import { MarketContract } from './contract'
+import { isMultiCpmm, MarketContract } from './contract'
 
 export async function getTotalBetCount(contractId: string) {
   const res = (await unauthedApi('bets', {
@@ -61,7 +61,7 @@ export const getBetPointsBetween = async (
   const sorted = sortBy(data, 'createdTime')
 
   const startingProbs = []
-  if (contract.mechanism === 'cpmm-multi-1') {
+  if (isMultiCpmm(contract)) {
     const { answers } = contract
     const rawPointsByAns = groupBy(data, 'answerId')
 

@@ -1,9 +1,9 @@
 import {
-  CPMM_ARBITRAGE_ERROR_PREFIX,
   getCpmmProbability,
+  isCpmmDegenerateStateError,
 } from 'common/calculate-cpmm'
 import { getLimitOrderFill, LimitBet, LimitOrderFill } from 'common/bet'
-import { Answer } from 'common/answer'
+import { Answer, answerP } from 'common/answer'
 import { noFees } from 'common/fees'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import { sumBy } from 'lodash'
@@ -11,7 +11,7 @@ import { addObjects } from 'common/util/object'
 import { computeCpmmBet } from 'common/new-bet'
 import { MAX_CPMM_PROB, MIN_CPMM_PROB } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
-import { MarketContract } from 'common/contract'
+import { isMultiCpmm, MarketContract } from 'common/contract'
 const DEFAULT_SLIPPAGE = 0.1
 
 export const getLimitBetReturns = (
@@ -31,14 +31,14 @@ export const getLimitBetReturns = (
   // panel bets on the main answer: YES backs it, NO backs the other answer.
   const outcome = binaryOutcome
 
-  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
+  const isCpmmMulti = isMultiCpmm(contract)
   const cpmmState = isCpmmMulti
     ? {
         pool: {
           YES: multiProps!.answerToBuy.poolYes,
           NO: multiProps!.answerToBuy.poolNo,
         },
-        p: 0.5,
+        p: answerP(multiProps!.answerToBuy),
         collectedFees: contract.collectedFees,
       }
     : {
@@ -87,7 +87,10 @@ export const getLimitBetReturns = (
         .concat(newBetResult.ordersToCancel)
         .concat(otherBetResults.flatMap((r) => r.ordersToCancel))
       // Keep other-answer dependencies separate from shares of this answer.
-      limitOrderFill = getLimitOrderFill(newBetResult.makers, otherBetResults.flatMap((r) => r.makers))
+      limitOrderFill = getLimitOrderFill(
+        newBetResult.makers,
+        otherBetResults.flatMap((r) => r.makers)
+      )
       fees = addObjects(
         newBetResult.totalFees,
         otherBetResults.reduce(
@@ -119,7 +122,7 @@ export const getLimitBetReturns = (
   } catch (err: any) {
     console.error('Error in getLimitBetReturns:', err)
     calculationError =
-      (err?.message.startsWith(CPMM_ARBITRAGE_ERROR_PREFIX)
+      (isCpmmDegenerateStateError(err)
         ? `Error buying ${outcome} on this answer, buy ${
             outcome === 'YES' ? 'NO' : 'YES'
           } in other answers first.`

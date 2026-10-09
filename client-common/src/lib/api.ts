@@ -53,6 +53,8 @@ export async function apiWithAuth<P extends APIPath>(
     pathProps.method,
     auth,
     params,
-    isUncachedQuoteRead(path, params) ? { ...options, cache: 'no-store' } : options
+    isUncachedQuoteRead(path, params)
+      ? { ...options, cache: 'no-store' }
+      : options
   )) as Promise<APIResponse<P>>
 }

@@ -12,6 +12,9 @@ export const queryHandlers: QueryHandlers = {
   markets: async ({ ids }: BatchQueryParams) => {
     return await api('markets-by-ids', { ids: Array.from(ids) })
   },
+  'markets-fresh': async ({ ids }: BatchQueryParams) => {
+    return await api('markets-by-ids', { ids: Array.from(ids), fresh: true })
+  },
   'comment-reactions': async ({ ids }: BatchQueryParams) => {
     const { data: reactionsData } = await run(
       db
