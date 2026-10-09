@@ -1,5 +1,5 @@
 import { groupBy, mapValues, minBy, omitBy, sortBy, sum, sumBy } from 'lodash'
-import { fill, LimitBet } from './bet'
+import { fill, isOpenLimitOrder, LimitBet } from './bet'
 import { Fees, getFeesSplit, getTakerFee, noFees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import { BINARY_SEARCH_NAN_ERROR, binarySearch } from './util/algos'
@@ -353,9 +353,11 @@ export const computeFills = (
     : limit
 
   const sortedBets = sortBy(
+    // Callers are meant to hand us only open orders, but a client's cached
+    // order book can lag behind a cancel or a fill. Never quote a price
+    // against an order that isn't there any more.
     unfilledBets.filter(
-      (bet) =>
-        bet.outcome !== outcome && (bet.expiresAt ? bet.expiresAt > now : true)
+      (bet) => bet.outcome !== outcome && isOpenLimitOrder(bet, now)
     ),
     (bet) => (outcome === 'YES' ? bet.limitProb : -bet.limitProb),
     (bet) => bet.createdTime
