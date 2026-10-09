@@ -3,7 +3,10 @@ import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
 import { contentSchema } from 'common/api/zod-types'
 import { isAdminId } from 'common/envs/constants'
 import { isUserBanned } from 'common/ban-utils'
-import { hasAccountTrustSignal } from 'common/user'
+import {
+  newAccountGateMessage,
+  passesNewAccountGate,
+} from 'shared/new-account-gate'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { createPrivateUserMessageMain } from 'shared/supabase/private-messages'
 import { getUser } from 'shared/utils'
@@ -57,11 +60,12 @@ export const createprivateusermessage = authEndpoint(async (req, auth) => {
     }
   }
 
-  // Private messaging is gated on account trust, not bonus eligibility.
-  if (!hasAccountTrustSignal(creator) && !allRecipientsAreAdmins) {
+  // Private messaging shares the new-account social gate with comments.
+  if (!allRecipientsAreAdmins && !(await passesNewAccountGate(pg, creator))) {
     throw new APIError(
       403,
-      'Please verify your identity to send messages. You can still message Manifold staff for support.'
+      newAccountGateMessage('Messaging') +
+        ' You can still message Manifold staff for support.'
     )
   }
 

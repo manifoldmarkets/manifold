@@ -78,7 +78,8 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
     })
     .map((row) => row.user_id)
 
-  // Silicon (bots) bypasses iDenfy verification — bots can't be KYC'd.
+  // Everyone in good standing gets their prize — verification isn't needed.
+  // Silicon (bots) is eligible regardless of bonus standing.
   const eligibleUserIds = new Set([
     ...usersWithEligibility
       .map((row) => convertUser(row))

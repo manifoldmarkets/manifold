@@ -15,8 +15,8 @@ import { Title } from '../widgets/title'
 import { isIdentityVerified, PrivateUser, User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { generateNewApiKey } from 'web/lib/api/api-key'
-import { api, APIError } from 'web/lib/api/api'
-import { track } from 'web/lib/service/analytics'
+import { api } from 'web/lib/api/api'
+import { useStartIdentityVerification } from 'web/hooks/use-start-identity-verification'
 import { DeleteYourselfButton } from './delete-yourself'
 import { capitalize } from 'lodash'
 import { ENV_CONFIG, isAdminId, TRADE_TERM } from 'common/envs/constants'
@@ -51,8 +51,8 @@ export const AccountSettings = (props: {
 
   return (
     <Col className="gap-5">
-      {/* Show the KYC entry point to anyone not yet identity-verified — including
-          bonus-'eligible' purchasers, who still need to verify for prize drawings. */}
+      {/* Optional KYC entry point for anyone not yet identity-verified — it only
+          unlocks prize drawings and early commenting, so it's never pushed. */}
       {!isIdentityVerified(user) && <IdentityVerificationSetting />}
       <div>
         <label className="mb-1 block">
@@ -145,33 +145,20 @@ export const AccountSettings = (props: {
 }
 
 function IdentityVerificationSetting() {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const handleVerify = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      track('identity verification: started from settings')
-      const response = await api('create-idenfy-session', {})
-      window.location.href = response.redirectUrl
-    } catch (e) {
-      console.error('Failed to start verification:', e)
-      setError(
-        e instanceof APIError && e.code === 503
-          ? e.message
-          : 'Failed to start verification. Please try again.'
-      )
-    } finally {
-      setLoading(false)
-    }
-  }
+  const {
+    start: handleVerify,
+    loading,
+    error,
+  } = useStartIdentityVerification(
+    'identity verification: started from settings'
+  )
 
   return (
     <div>
       <label className="mb-1 block">Identity Verification</label>
       <div className="text-ink-600 mb-2 text-sm">
-        Verify your identity to be eligible for bonuses and cash prize raffles.
+        Optional. Verifying lets you enter prize drawings and comment before
+        your account is a week old.
       </div>
       {error && <div className="text-scarlet-500 mb-2 text-sm">{error}</div>}
       <Button onClick={handleVerify} loading={loading} disabled={loading}>

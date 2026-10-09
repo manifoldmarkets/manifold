@@ -27,19 +27,25 @@ export const adminSetBonusEligibility: APIHandler<
     throw new APIError(404, 'User not found')
   }
 
-  const flagReasonUpdate = user.verificationFlagReason
-    ? { verificationFlagReason: markOutdated(user.verificationFlagReason) }
-    : {}
+  // Setting eligibility directly ends any flag, so drop its snapshot too —
+  // a stale one would otherwise be restored by a later flag/unflag cycle.
+  const flagReasonUpdate = {
+    previousBonusEligibility: FieldVal.delete() as any,
+    ...(user.verificationFlagReason
+      ? { verificationFlagReason: markOutdated(user.verificationFlagReason) }
+      : {}),
+  }
 
   if (bonusEligibility === null) {
-    // Clear the field entirely - user will be treated as "must verify"
-    // for full bonus access (undefined bonusEligibility is not full access).
+    // Clear the field entirely - back to a default account (full bonuses;
+    // prize drawings still need verification). Pausing bonuses until the user
+    // verifies is admin-flag-for-verification, not this.
     await updateUser(pg, userId, {
       bonusEligibility: FieldVal.delete() as any,
       ...flagReasonUpdate,
     })
     log(
-      `Admin ${auth.uid} cleared bonusEligibility for user ${userId} (must re-verify)`
+      `Admin ${auth.uid} cleared bonusEligibility for user ${userId} (back to default)`
     )
   } else {
     await updateUser(pg, userId, { bonusEligibility, ...flagReasonUpdate })
