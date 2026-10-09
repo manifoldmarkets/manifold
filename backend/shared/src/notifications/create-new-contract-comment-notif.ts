@@ -97,7 +97,7 @@ export const createCommentOnContractNotification = async (
     }) as Notification
   }
 
-  const needNotFollowContractReasons = ['tagged_user']
+  const needNotFollowContractReasons = ['tagged_user', 'tagged_all_traders']
 
   // Users reached only through @traders get their own preference, so they can
   // keep these pings without the push alerts they want for direct tags.
@@ -139,8 +139,7 @@ export const createCommentOnContractNotification = async (
 
   const sendNotificationsIfSettingsPermit = async (
     userId: string,
-    reason: NotificationReason,
-    preference: NotificationReason = reason
+    reason: NotificationReason
   ) => {
     const privateUser = privateUserMap.get(userId)
     if (
@@ -153,7 +152,7 @@ export const createCommentOnContractNotification = async (
       return
 
     const { sendToBrowser, sendToEmail, sendToMobile, notificationPreference } =
-      getNotificationDestinationsForUser(privateUser, preference)
+      getNotificationDestinationsForUser(privateUser, reason)
 
     const receivedNotifications = usersToReceivedNotifications[userId] ?? []
 
@@ -184,7 +183,7 @@ export const createCommentOnContractNotification = async (
       const { bet } = repliedUsersInfo?.[userId] ?? {}
       // TODO: change subject of email title to be more specific, i.e.: replied to you on/tagged you on/comment
       const email = getNewCommentEmail(
-        preference,
+        reason,
         privateUser,
         privateUser.name,
         sourceUser,
@@ -224,11 +223,7 @@ export const createCommentOnContractNotification = async (
   }
   await Promise.all(
     allTradersTaggedUserIds.map(async (userId) =>
-      sendNotificationsIfSettingsPermit(
-        userId,
-        'tagged_user',
-        'tagged_all_traders'
-      )
+      sendNotificationsIfSettingsPermit(userId, 'tagged_all_traders')
     )
   )
   log('notifying creator')
