@@ -12,10 +12,14 @@ import {
   useRef,
   useSyncExternalStore,
 } from 'react'
-import { useApiSubscription } from './use-api-subscription'
+import {
+  useApiSubscription,
+  useWebsocketReconnectCount,
+} from './use-api-subscription'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { useEvent } from './use-event'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { useStaggeredReconnectCount } from './use-staggered-reconnect-count'
 
 export function useBetsOnce(
   api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>,
@@ -236,7 +240,9 @@ export const useUnfilledBets = (
   useIsPageVisible: () => boolean,
   options?: {
     enabled?: boolean
-    /** Quote panels bypass the CDN; display consumers keep endpoint caching. */
+    /** For quote panels: read from the origin, and reconcile as soon as a
+     * subscription or reconnect could have missed broadcasts. Otherwise reads
+     * go through the CDN, and reconcile after each connection, staggered. */
     fresh?: boolean
   }
 ) => {
@@ -251,6 +257,9 @@ export const useUnfilledBets = (
     getServerSnapshot
   )
   const isPageVisible = useIsPageVisible()
+  const reconnectCount = useWebsocketReconnectCount()
+  const staggeredReconnectCount = useStaggeredReconnectCount()
+  const connection = fresh ? reconnectCount : staggeredReconnectCount
 
   const refresh = useEvent(() => {
     if (!enabled || !isPageVisible) return
@@ -267,9 +276,10 @@ export const useUnfilledBets = (
   })
   // Held while subscribed to the book's updates, below.
   useEffect(() => (enabled ? book.hold() : undefined), [book, enabled])
-  useEffect(refresh, [enabled, book, contractId, isPageVisible])
+  useEffect(refresh, [enabled, book, contractId, isPageVisible, connection])
 
   useApiSubscription({
+    onSubscribed: fresh ? refresh : undefined,
     enabled,
     topics: [`contract/${contractId}/orders`],
     onBroadcast: ({ data }) => book.update(data.bets as LimitBet[]),

@@ -103,7 +103,7 @@ export function ContractPageContent(props: ContractParams) {
   } = props
 
   // Just use the contract that was navigated to directly
-  const liveContract = useLiveContract(props.contract)
+  const liveContract = useLiveContract(props.contract, { fresh: true })
 
   const user = useUser()
 
