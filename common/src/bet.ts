@@ -1,4 +1,4 @@
-import { groupBy, mapValues } from 'lodash'
+import { groupBy, mapValues, sumBy, uniqBy } from 'lodash'
 import { Fees } from './fees'
 import { maxMinBin } from './chart'
 import { nanoid } from 'common/util/random'
@@ -105,6 +105,29 @@ export type maker = {
 }
 
 export const getNewBetId = () => nanoid(12)
+
+/** How much of a trade is absorbed by resting limit orders rather than by the
+ * pool. This is the part of a quote that moves when someone posts or cancels an
+ * order, so it's worth showing rather than folding silently into the total. */
+export type LimitOrderFill = {
+  shares: number
+  orderCount: number
+  otherAnswerOrderCount?: number
+}
+
+export const getLimitOrderFill = (
+  makers: maker[],
+  otherAnswerMakers: maker[] = []
+): LimitOrderFill => ({
+  shares: sumBy(makers, 'shares'),
+  orderCount: uniqBy(makers, (m) => m.bet.id).length,
+  ...(otherAnswerMakers.length
+    ? {
+        otherAnswerOrderCount: uniqBy(otherAnswerMakers, (m) => m.bet.id)
+          .length,
+      }
+    : {}),
+})
 
 // A limit order can still be matched against only while it has unfilled amount
 // left, hasn't been cancelled, and hasn't expired. Cancelling and filling are

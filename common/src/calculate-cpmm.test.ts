@@ -1,4 +1,4 @@
-import { LimitBet } from './bet'
+import { getLimitOrderFill, LimitBet } from './bet'
 import { mapValues, sum } from 'lodash'
 import {
   addCpmmLiquidity,
@@ -282,6 +282,63 @@ describe('CPMM Calculations', () => {
       )
       expect(makers).toHaveLength(0)
     })
+
+    it('reports how much of a trade rests on limit orders', () => {
+      const orders = [
+        makeLimitOrder({ id: 'a' }),
+        makeLimitOrder({ id: 'b', createdTime: 1 }),
+      ]
+      const { makers, takers } = computeFills(
+        state,
+        'NO',
+        1000,
+        undefined,
+        orders,
+        balanceByUserId
+      )
+      const fill = getLimitOrderFill(makers)
+
+      // The first order is deep enough to take the whole trade on its own.
+      expect(fill.orderCount).toBe(1)
+      expect(fill.shares).toBeGreaterThan(0)
+      expect(fill.shares).toBeCloseTo(
+        takers.reduce((total, taker) => total + taker.shares, 0),
+        6
+      )
+    })
+
+    it('reports no limit order fill once the orders are cancelled', () => {
+      const { makers, takers } = computeFills(
+        state,
+        'NO',
+        1000,
+        undefined,
+        [makeLimitOrder({ isCancelled: true })],
+        balanceByUserId
+      )
+
+      // The trade still happens, but entirely against the pool.
+      expect(takers.length).toBeGreaterThan(0)
+      expect(getLimitOrderFill(makers)).toEqual({ shares: 0, orderCount: 0 })
+    })
+
+    it.each([0.25, 0.5, 0.75])(
+      'measures sell fills in sold-share units at p=%s',
+      (p) => {
+        const shares = 2000
+        const { makers } = calculateCpmmSale(
+          { ...state, p },
+          shares,
+          'YES',
+          [makeLimitOrder({ limitProb: p })],
+          balanceByUserId
+        )
+
+        // The sell panel shows this against the size of the sale, so the two have
+        // to be the same unit — the order absorbs the sale whole here.
+        expect(getLimitOrderFill(makers).shares).toBeCloseTo(shares, 6)
+      }
+    )
 
     it('cancelling your own order moves the price your sale would make', () => {
       const shares = 2000

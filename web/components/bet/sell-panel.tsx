@@ -2,7 +2,7 @@ import { useUnfilledBetsAndBalanceByUserId } from 'client-common/hooks/use-bets'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
 import { APIError } from 'common/api/utils'
-import { LimitBet } from 'common/bet'
+import { LimitBet, LimitOrderFill } from 'common/bet'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import {
   CPMMContract,
@@ -36,6 +36,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { AmountInput } from '../widgets/amount-input'
+import { LimitOrderFillRow } from './limit-order-fill-row'
 import { MoneyDisplay } from './money-display'
 
 export function SellPanel(props: {
@@ -196,8 +197,9 @@ export function SellPanel(props: {
   let fees: Fees
   let cpmmState
   let makers: LimitBet[]
+  let limitOrderFill: LimitOrderFill
   if (isMultiSumsToOne) {
-    ;({ initialProb, cpmmState, saleValue, fees, makers } =
+    ;({ initialProb, cpmmState, saleValue, fees, makers, limitOrderFill } =
       getSaleResultMultiSumsToOne(
         contract,
         answerId!,
@@ -207,14 +209,15 @@ export function SellPanel(props: {
         balanceByUserId
       ))
   } else {
-    ;({ initialProb, cpmmState, saleValue, fees, makers } = getSaleResult(
-      contract,
-      sellQuantity,
-      sharesOutcome,
-      unfilledBets,
-      balanceByUserId,
-      answer
-    ))
+    ;({ initialProb, cpmmState, saleValue, fees, makers, limitOrderFill } =
+      getSaleResult(
+        contract,
+        sellQuantity,
+        sharesOutcome,
+        unfilledBets,
+        balanceByUserId,
+        answer
+      ))
   }
   betDeps.current = makers
   const totalFees = getFeeTotal(fees)
@@ -339,6 +342,12 @@ export function SellPanel(props: {
             <span>{getFormattedMappedValue(contract, resultProb)}</span>
           </span>
         </Row>
+
+        <LimitOrderFillRow
+          contract={contract}
+          fill={limitOrderFill}
+          totalShares={sellQuantity}
+        />
 
         <div className="border-ink-200 my-2 border-t" />
 
