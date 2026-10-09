@@ -21,7 +21,9 @@ it('separates fresh quote URLs from cached display URLs and bypasses the fetch c
     await unauthedApi('users/by-id/balance', { ids: ['maker'], fresh: true })
     await unauthedApi('bets', { contractId: 'market', fresh: true })
 
-    const requests = fetch.mock.calls.map(([request]) => request as Request)
+    const requests = fetch.mock.calls.map(
+      ([request]) => request as Pick<Request, 'url' | 'cache'>
+    )
     const freshUrl = new URL(requests[0].url)
     const displayUrl = new URL(requests[1].url)
     expect(freshUrl.searchParams.get('fresh')).toBe('true')
