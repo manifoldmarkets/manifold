@@ -125,7 +125,7 @@ Return a JSON array containing ONLY the IDs of markets to KEEP (those that are d
 `
 
         marketsToKeep = await promptAI<string[]>(prompt, {
-          model: aiModels.flashLite,
+          model: aiModels.haiku,
           parseAsJson: true,
           thinkingLevel: 'minimal',
         })
