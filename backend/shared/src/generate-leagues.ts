@@ -20,6 +20,15 @@ import {
 import { bulkInsert } from './supabase/utils'
 import { log } from './utils'
 
+// Who counts as active for league purposes, given a season start ($1).
+const activeUserIdsSql = `
+  select distinct user_id from contract_bets
+  where created_time > $1
+  union
+  select distinct creator_id as user_id from contracts
+  where created_time > $1 and deleted = false
+`
+
 export async function generateNextSeason(
   pg: SupabaseDirectClient,
   season: number
@@ -41,11 +50,7 @@ export async function generateNextSeason(
   )
 
   const activeUserIds = await pg.manyOrNone<{ user_id: string }>(
-    `with active_user_ids as (
-      select distinct user_id
-      from contract_bets
-      where contract_bets.created_time > $1
-    )
+    `with active_user_ids as (${activeUserIdsSql})
     select user_id from active_user_ids
     join users on users.id = user_id
     where coalesce(users.data->>'isBannedFromPosting', 'false') = 'false'
@@ -314,17 +319,26 @@ export const getUsersNotInLeague = async (
   pg: SupabaseDirectClient,
   season: number
 ) => {
+  const boundaries = await getSeasonStartAndEnd(pg, season)
+  if (!boundaries) {
+    log(`Error: Season ${season} not found in leagues_season_end_times`)
+    return []
+  }
+  const startDate = new Date(boundaries.seasonStart)
+
   const rows = await pg.manyOrNone<{ id: string }>(
-    `
-    select distinct users.id
+    `with active_user_ids as (${activeUserIdsSql})
+    select users.id
     from users
-    left join leagues on users.id = leagues.user_id
-    join contract_bets cb on users.id = cb.user_id
+    join active_user_ids on active_user_ids.user_id = users.id
+    left join leagues on leagues.user_id = users.id and leagues.season = $2
     where
-      (leagues.user_id is null or leagues.season != $1)
-      and cb.created_time > to_date('20230501', 'YYYYMMDD')
+      leagues.user_id is null
+      and coalesce(users.data->>'isBannedFromPosting', 'false') = 'false'
+      and coalesce(users.data->>'userDeleted', 'false') = 'false'
+      and users.is_bot = false
     `,
-    [season]
+    [startDate, season]
   )
   return rows.map((r) => r.id)
 }
@@ -350,16 +364,31 @@ export const addToLeagueIfNotInOne = async (
   log('Adding user to league', userId)
   const season = await getEffectiveCurrentSeason()
 
-  const existingLeague = await pg.oneOrNone<{
-    season: number
-    division: number
-    cohort: string
+  const row = await pg.oneOrNone<{
+    is_bot: boolean
+    season: number | null
+    division: number | null
+    cohort: string | null
   }>(
-    `select season, division, cohort from leagues where user_id = $1 and season = $2`,
+    `select users.is_bot, leagues.season, leagues.division, leagues.cohort
+    from users
+    left join leagues on leagues.user_id = users.id and leagues.season = $2
+    where users.id = $1`,
     [userId, season]
   )
-  if (existingLeague) {
-    return existingLeague
+  if (!row) return
+  // Bots belong in the bot division, which insertBots assigns at rollover.
+  // Adding them here would drop them into a human cohort.
+  if (row.is_bot) {
+    log('Skipping bot', userId)
+    return
+  }
+  if (row.season !== null) {
+    return {
+      season: row.season,
+      division: row.division as number,
+      cohort: row.cohort as string,
+    }
   }
 
   const portfolio = await getCurrentPortfolio(pg, userId)
