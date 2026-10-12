@@ -356,25 +356,27 @@ const valuePositions = (
     : undefined
 }
 
-/**
- * Reconstructs each boundary by reversing at most 30 days of append-only
- * events from the authoritative current position. The cash-flow identity is:
- *
- *   period P&L = current value + payouts - boundary value - new margin
- *
- * Funding and partial ADL are captured in the reversed position state.
- */
-export const calculatePerpMetricPeriods = (args: {
+type ReplayArgs = {
   currentPositions: PerpPosition[]
   events: PerpEvent[]
   currentPrice: number | undefined
-  periods: PerpMetricPeriodCutoffs
-  /** Optional sink for why a period could not be reconstructed. All three
-   * periods are written together or not at all, so without this the caller
-   * can only log that *something* failed for a user/contract pair. */
+  /** Optional sink for why a boundary could not be reconstructed. Without
+   * this the caller can only log that *something* failed for a
+   * user/contract pair. */
   failures?: string[]
-}): PerpMetricPeriodCalculation | undefined => {
-  const recordFailure = (reason: string) => args.failures?.push(reason)
+}
+
+type PreparedReplay = {
+  /** Raw rows: every reversal starts from its own fresh copy of them. */
+  currentPositions: PerpPosition[]
+  events: PerpEvent[]
+  currentValue: number
+}
+
+const prepareReplay = (
+  args: ReplayArgs,
+  recordFailure: (reason: string) => void
+): PreparedReplay | undefined => {
   const firstPosition = args.currentPositions[0]
   const firstEvent = args.events[0]
   const userId = firstPosition?.userId ?? firstEvent?.userId
@@ -389,54 +391,94 @@ export const calculatePerpMetricPeriods = (args: {
       (event) => event.userId !== userId || event.contractId !== contractId
     )
   ) {
+    recordFailure('rows do not belong to exactly one user and contract')
     return undefined
   }
 
   const currentPositions = initialPositions(args.currentPositions)
   const events = orderedEvents(args.events)
-  if (!currentPositions || !events) return undefined
+  if (!currentPositions || !events) {
+    recordFailure('invalid current position or event ids')
+    return undefined
+  }
 
   const currentValue = valuePositions(currentPositions, args.currentPrice)
-  if (currentValue === undefined) return undefined
+  if (currentValue === undefined) {
+    recordFailure(
+      `no usable current price (got ${args.currentPrice}) for an open position`
+    )
+    return undefined
+  }
+
+  return { currentPositions: args.currentPositions, events, currentValue }
+}
+
+const profitSinceCutoff = (
+  replay: PreparedReplay,
+  { cutoff, price }: PerpMetricPeriodCutoff,
+  recordFailure: (reason: string) => void
+): PeriodMetric | undefined => {
+  const { currentValue } = replay
+  const previous = reverseToCutoff(
+    replay.currentPositions,
+    replay.events,
+    cutoff
+  )
+  if (!previous) {
+    recordFailure('could not replay events back to the cutoff')
+    return undefined
+  }
+  const previousValue = valuePositions(previous.positions, price)
+  if (previousValue === undefined) {
+    recordFailure(
+      `no usable boundary price (got ${price}) for a position open at the cutoff`
+    )
+    return undefined
+  }
+
+  const profit =
+    currentValue + previous.payouts - previousValue - previous.cashDeposited
+  const invested = previousValue + previous.cashDeposited
+  const profitPercent = invested > 0 ? (profit / invested) * 100 : 0
+  if (
+    !Number.isFinite(profit) ||
+    !Number.isFinite(invested) ||
+    !Number.isFinite(profitPercent)
+  ) {
+    recordFailure(`non-finite result (profit=${profit}, invested=${invested})`)
+    return undefined
+  }
+
+  return {
+    profit,
+    profitPercent,
+    invested,
+    prevValue: previousValue,
+    value: currentValue,
+  }
+}
+
+/**
+ * Reconstructs each boundary by reversing at most 30 days of append-only
+ * events from the authoritative current position. The cash-flow identity is:
+ *
+ *   period P&L = current value + payouts - boundary value - new margin
+ *
+ * Funding and partial ADL are captured in the reversed position state.
+ * All three periods are written together or not at all.
+ */
+export const calculatePerpMetricPeriods = (
+  args: ReplayArgs & { periods: PerpMetricPeriodCutoffs }
+): PerpMetricPeriodCalculation | undefined => {
+  const recordFailure = (reason: string) => args.failures?.push(reason)
+  const replay = prepareReplay(args, recordFailure)
+  if (!replay) return undefined
 
   const fromEntries = PERP_METRIC_PERIODS.map((period) => {
-    const { cutoff, price } = args.periods[period]
-    const previous = reverseToCutoff(args.currentPositions, events, cutoff)
-    if (!previous) {
-      recordFailure(`${period}: could not replay events back to the cutoff`)
-      return undefined
-    }
-    const previousValue = valuePositions(previous.positions, price)
-    if (previousValue === undefined) {
-      recordFailure(
-        `${period}: no usable boundary price (got ${price}) for a position open at the cutoff`
-      )
-      return undefined
-    }
-
-    const profit =
-      currentValue + previous.payouts - previousValue - previous.cashDeposited
-    const invested = previousValue + previous.cashDeposited
-    const profitPercent = invested > 0 ? (profit / invested) * 100 : 0
-    if (
-      !Number.isFinite(profit) ||
-      !Number.isFinite(invested) ||
-      !Number.isFinite(profitPercent)
-    ) {
-      recordFailure(
-        `${period}: non-finite result (profit=${profit}, invested=${invested})`
-      )
-      return undefined
-    }
-
-    const value: PeriodMetric = {
-      profit,
-      profitPercent,
-      invested,
-      prevValue: previousValue,
-      value: currentValue,
-    }
-    return [period, value] as const
+    const value = profitSinceCutoff(replay, args.periods[period], (reason) =>
+      recordFailure(`${period}: ${reason}`)
+    )
+    return value && ([period, value] as const)
   })
   if (fromEntries.some((entry) => entry === undefined)) return undefined
 
@@ -445,4 +487,19 @@ export const calculatePerpMetricPeriods = (args: {
       fromEntries as [PerpMetricPeriod, PeriodMetric][]
     ) as Record<PerpMetricPeriod, PeriodMetric>,
   }
+}
+
+/**
+ * The same identity measured from one fixed boundary instead of the rolling
+ * periods — a league season's start. Sharing the replay means a season's
+ * PERP total can never disagree with the portfolio's own period math. The
+ * caller supplies every event applied since `since.cutoff`; the replay has no
+ * horizon of its own.
+ */
+export const calculatePerpProfitSince = (
+  args: ReplayArgs & { since: PerpMetricPeriodCutoff }
+): PeriodMetric | undefined => {
+  const recordFailure = (reason: string) => args.failures?.push(reason)
+  const replay = prepareReplay(args, recordFailure)
+  return replay && profitSinceCutoff(replay, args.since, recordFailure)
 }

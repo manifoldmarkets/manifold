@@ -50,6 +50,9 @@ explicit (see "Integration points" below).
   append-only events from authoritative current positions. The period job
   patches only `from`, so it cannot overwrite a concurrent trade or funding
   update.
+- `season-profit.ts` — league-season P&L per (user, PERP): the same replay
+  from one repeatable snapshot, with the season start as the boundary. See
+  "League seasons".
 
 ## Pure math
 
@@ -782,6 +785,28 @@ separate transactions and one contract can briefly lag or fail. If reporting
 ever needs the historically executable contract price instead, persist
 per-contract oracle-application history and value from that record.
 
+## League seasons
+
+From `FIRST_SEASON_WITH_PERP_PROFIT` in `common/src/leagues.ts` (season 42,
+October 2026), a league score includes a `perp_profit` breakdown entry: each
+public, ranked PERP position's P&L over the season, from
+`calculatePerpProfitSince` — the period identity above with the season start
+as the boundary. A position carried into a season therefore counts only for
+how its value moved after the boundary, so no mana is scored in two seasons.
+The gate is the season number, never the deploy time: a season that started
+under the old rule is never rescored, and past seasons carry no entry.
+
+Hourly funding is most of a season's event rows. Funding scales size and cost
+basis by one common factor and leaves the entry price alone, so
+`season-profit.ts` collapses each run of funding rows between two other events
+into one row in SQL; the replay is unchanged. A pair whose history cannot be
+replayed keeps its user's last written total and logs under `update-league`
+rather than silently dropping that market from the score.
+
+Since PERP P&L scores, `generateNextSeason` counts PERP trades and open
+positions as league activity, so a PERP-only trader keeps the division they
+earned at rollover. Bots are still placed in Silicon only from ordinary bets.
+
 ## Integration points (grep for these to find everything)
 
 - `outcomeType === 'PERP'` — UI switch branches.
@@ -804,8 +829,9 @@ The touched files outside this folder are:
 - `backend/shared/src/send-market-movement-notifications.ts` — exclude perps.
 - `backend/shared/src/importance-score.ts` — perp scoring branch.
 - `backend/scheduler/src/jobs/index.ts`, `update-perps.ts` — schedule wiring.
-- `backend/scheduler/src/jobs/update-league.ts` — intentionally excludes PERP
-  position P&L from league scoring for launch.
+- `backend/scheduler/src/jobs/update-league.ts`,
+  `backend/shared/src/generate-leagues.ts` — league scoring from
+  `FIRST_SEASON_WITH_PERP_PROFIT` (see "League seasons").
 - `web/components/contract/{contract-overview,contracts-table,feed-contract-card}.tsx`,
   `web/components/perps/*`, `web/components/search.tsx`,
   `web/pages/admin/create-perp.tsx` — frontend surface.

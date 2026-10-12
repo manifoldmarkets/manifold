@@ -1,6 +1,24 @@
 import { Bet } from './bet'
 import { noFees } from './fees'
-import { excludeSelfTrades } from './leagues'
+import {
+  excludeSelfTrades,
+  FIRST_SEASON_WITH_PERP_PROFIT,
+  getApproximateSeasonDates,
+  seasonCountsPerpProfit,
+} from './leagues'
+
+describe('seasonCountsPerpProfit', () => {
+  it('starts with the October 2026 season and never reaches back', () => {
+    expect(
+      getApproximateSeasonDates(FIRST_SEASON_WITH_PERP_PROFIT).start
+    ).toEqual(new Date('2026-10-01T00:00:00-07:00'))
+    expect(seasonCountsPerpProfit(FIRST_SEASON_WITH_PERP_PROFIT - 1)).toBe(
+      false
+    )
+    expect(seasonCountsPerpProfit(FIRST_SEASON_WITH_PERP_PROFIT)).toBe(true)
+    expect(seasonCountsPerpProfit(FIRST_SEASON_WITH_PERP_PROFIT + 1)).toBe(true)
+  })
+})
 
 describe('adjustBetsForSelfTrades', () => {
   const userId = 'user1'

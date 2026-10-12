@@ -11,6 +11,7 @@ import {
   excludeSelfTrades,
   filterBetsForLeagueScoring,
   getApproximateSeasonDates,
+  seasonCountsPerpProfit,
 } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
 import { usePublicContracts } from 'web/hooks/use-contract'
@@ -90,6 +91,7 @@ export const ManaEarnedBreakdown = (props: {
     })
 
   const [showHighestFirst, setShowHighestFirst] = useState(true)
+  const countsPerps = seasonCountsPerpProfit(season)
 
   const contractsSorted =
     contracts &&
@@ -120,6 +122,14 @@ export const ManaEarnedBreakdown = (props: {
               {formatMoney(mana_earned_breakdown?.profit ?? 0)}
             </span>
           </Row>
+          {countsPerps && (
+            <Row className="items-center justify-between p-3">
+              <span className="text-ink-600 text-sm">Perpetuals profit</span>
+              <span className="text-ink-900 font-medium">
+                {formatMoney(mana_earned_breakdown?.perp_profit ?? 0)}
+              </span>
+            </Row>
+          )}
           <Row className="items-center justify-between p-3">
             <span className="text-ink-600 text-sm">Unique trader bonuses</span>
             <span className="text-ink-900 font-medium">
@@ -131,6 +141,8 @@ export const ManaEarnedBreakdown = (props: {
         <p className="text-ink-500 text-xs">
           Only counts profit on trades placed on or after{' '}
           {start.toLocaleDateString()}.
+          {countsPerps &&
+            ' Perpetual positions count what they gained or lost since then, including ones opened earlier.'}
         </p>
 
         {contracts && contracts.length > 0 && (

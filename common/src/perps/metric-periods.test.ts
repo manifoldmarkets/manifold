@@ -2,6 +2,7 @@ import { DAY_MS } from '../util/time'
 import { mergedEntryPrice } from './amm'
 import {
   calculatePerpMetricPeriods,
+  calculatePerpProfitSince,
   PerpMetricPeriodCutoffs,
 } from './metric-periods'
 import { PerpDirection, PerpEvent, PerpPosition } from './position'
@@ -607,5 +608,150 @@ describe('calculatePerpMetricPeriods', () => {
         periods: periods(100),
       })
     ).toBeUndefined()
+  })
+})
+
+describe('calculatePerpProfitSince', () => {
+  const SEASON_START = NOW - 20 * DAY_MS
+
+  it('scores a position carried into the season only from the boundary', () => {
+    // 1000 long from 100, worth 200 at the season start (110) and 300 now.
+    const result = calculatePerpProfitSince({
+      currentPositions: [position()],
+      events: [],
+      currentPrice: 120,
+      since: { cutoff: SEASON_START, price: 110 },
+    })
+
+    expect(result?.prevValue).toBeCloseTo(200)
+    expect(result?.value).toBeCloseTo(300)
+    expect(result?.profit).toBeCloseTo(100)
+  })
+
+  it('agrees with the rolling period measured from the same boundary', () => {
+    const args = {
+      currentPositions: [
+        position({
+          direction: 'short' as const,
+          size: 500,
+          costBasis: 50,
+          originalCostBasis: 50,
+          entryPrice: 110,
+        }),
+      ],
+      events: [
+        event({
+          id: 2,
+          eventType: 'close',
+          appliedTime: NOW - 3 * DAY_MS,
+          oraclePrice: 110,
+          sizeDelta: -1000,
+          costBasisDelta: -100,
+          originalCostBasisDelta: -100,
+          data: { payout: 200, entryPrice: 100, reason: 'flip' },
+        }),
+        open(3, NOW - 3 * DAY_MS, 'short', 500, 50, 110),
+      ],
+      currentPrice: 99,
+    }
+
+    const rolling = calculatePerpMetricPeriods({
+      ...args,
+      periods: periods(100, 105, 95),
+    })
+    const since = calculatePerpProfitSince({
+      ...args,
+      since: { cutoff: NOW - 7 * DAY_MS, price: 105 },
+    })
+
+    expect(since).toEqual(rolling?.from.week)
+  })
+
+  it('replays a run of funding rows the same as one row carrying their sum', () => {
+    // Build the history forward with the engine's own scaling: funding
+    // multiplies size and cost basis by one factor and keeps the entry
+    // price, which is what lets the season query collapse a run in SQL.
+    let size = 1000
+    let costBasis = 100
+    let id = 10
+    const fund = (factor: number) => {
+      const funding = event({
+        id: id++,
+        eventType: 'funding',
+        appliedTime: SEASON_START + DAY_MS,
+        sizeDelta: size * factor - size,
+        costBasisDelta: costBasis * factor - costBasis,
+        data: { fundingRate: 1 - factor },
+      })
+      size *= factor
+      costBasis *= factor
+      return funding
+    }
+
+    const beforeAdd = [fund(0.99), fund(1.03), fund(0.98)]
+    const addPrice = 105
+    const entryPrice = mergedEntryPrice(size, 100, 500, addPrice)
+    const add = event({
+      id: id++,
+      eventType: 'add',
+      appliedTime: SEASON_START + DAY_MS,
+      oraclePrice: addPrice,
+      sizeDelta: 500,
+      costBasisDelta: 50,
+      originalCostBasisDelta: 50,
+      data: { entryPrice },
+    })
+    size += 500
+    costBasis += 50
+    const afterAdd = [fund(0.995), fund(1.01)]
+
+    const collapse = (run: PerpEvent[]) =>
+      event({
+        ...run[run.length - 1],
+        sizeDelta: run.reduce((total, e) => total + e.sizeDelta, 0),
+        costBasisDelta: run.reduce((total, e) => total + e.costBasisDelta, 0),
+      })
+
+    const replay = (events: PerpEvent[]) =>
+      calculatePerpProfitSince({
+        currentPositions: [
+          position({
+            size,
+            costBasis,
+            originalCostBasis: 150,
+            entryPrice,
+            leverage: size / costBasis,
+          }),
+        ],
+        events,
+        currentPrice: 110,
+        since: { cutoff: SEASON_START, price: 100 },
+      })
+
+    const individual = replay([...beforeAdd, add, ...afterAdd])
+    const collapsed = replay([collapse(beforeAdd), add, collapse(afterAdd)])
+
+    expect(individual).toBeDefined()
+    expect(collapsed?.profit).toBeCloseTo(individual?.profit ?? NaN, 9)
+    expect(collapsed?.prevValue).toBeCloseTo(individual?.prevValue ?? NaN, 9)
+    expect(collapsed?.invested).toBeCloseTo(individual?.invested ?? NaN, 9)
+    // Carried in at 100 with entry 100: worth exactly its cost basis then.
+    expect(individual?.prevValue).toBeCloseTo(100, 9)
+  })
+
+  it('says why a pair could not be replayed', () => {
+    const failures: string[] = []
+    expect(
+      calculatePerpProfitSince({
+        currentPositions: [position()],
+        events: [],
+        currentPrice: 110,
+        since: { cutoff: SEASON_START, price: undefined },
+        failures,
+      })
+    ).toBeUndefined()
+    expect(failures).toEqual([
+      'no usable boundary price (got undefined) for a position open at the cutoff',
+    ])
   })
 })

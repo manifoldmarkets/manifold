@@ -45,6 +45,21 @@ export async function generateNextSeason(
       select distinct user_id
       from contract_bets
       where contract_bets.created_time > $1
+      union
+      -- PERP trades aren't bets, but their profit counts toward leagues, so a
+      -- PERP-only trader keeps the division they earned. Same predicate as
+      -- the contract_perp_events_participation_ts index.
+      select user_id
+      from contract_perp_events
+      where ts > $1
+        and user_id is not null
+        and event_type in ('open', 'add', 'close')
+        and data->>'reason' is distinct from 'flip'
+        and data->>'reason' is distinct from 'resolve-market'
+      union
+      -- Holding a PERP position is scored exposure even without a trade.
+      select user_id
+      from contract_perp_positions
     )
     select user_id from active_user_ids
     join users on users.id = user_id
