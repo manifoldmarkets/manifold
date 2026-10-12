@@ -45,7 +45,7 @@ Respond with ONLY "yes" if this is spam, or "no" if it's a legitimate comment.`
 
   try {
     const response = await promptAI(prompt, {
-      model: aiModels.flash,
+      model: aiModels.flashLite,
       thinkingLevel: 'minimal',
     })
     return response.toLowerCase().trim() === 'yes'
