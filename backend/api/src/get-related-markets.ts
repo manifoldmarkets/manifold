@@ -1,5 +1,8 @@
 import { Contract } from 'common/contract'
-import { isEligibleRelatedMarket } from 'common/related-markets'
+import {
+  isEligibleRelatedMarket,
+  relatedMarketsFilterKey,
+} from 'common/related-markets'
 import { MINUTE_MS } from 'common/util/time'
 import { getContractsDirect } from 'shared/supabase/contracts'
 import {
@@ -27,6 +30,11 @@ const cachedRelatedMarkets = new Map<string, cacheType>()
 // every materialization still rechecks current contract eligibility.
 const RELATED_MARKETS_CACHE_TTL_MS = 10 * MINUTE_MS
 const RELATED_MARKETS_CACHE_TTL_S = RELATED_MARKETS_CACHE_TTL_MS / 1000
+// The model's duplicate verdict is cached separately, keyed on the candidate
+// set (see relatedMarketsFilterKey), so the 10-minute membership cache above
+// can stay short without re-paying for the model on every re-render. ~11k
+// calls/day, ~95% of all LLM calls in prod, before this cache.
+const RELATED_MARKETS_FILTER_TTL_S = 24 * 60 * 60
 const relatedMarketsCacheKey = (contractId: string, limit: number) =>
   // Version the key so deployment immediately abandons six-hour entries
   // written by the previous cache policy.
@@ -86,14 +94,23 @@ export const getRelatedMarkets: APIHandler<'get-related-markets'> = async (
     question &&
     marketsFromEmbeddings.length > 0
   ) {
-    log('Filtering related markets with Gemini', { contractId, question })
-    try {
-      const relatedMarketsData = marketsFromEmbeddings.map((market) => ({
-        id: market.id,
-        question: market.question,
-      }))
+    const filterKey = relatedMarketsFilterKey(
+      contractId,
+      marketsFromEmbeddings.map((market) => market.id)
+    )
+    let marketsToKeep = await cacheGetJson<string[]>(filterKey)
+    if (Array.isArray(marketsToKeep)) {
+      metrics.inc('cache/hits', { cache: 'related-markets-filter' })
+    } else {
+      metrics.inc('cache/misses', { cache: 'related-markets-filter' })
+      log('Filtering related markets with AI', { contractId, question })
+      try {
+        const relatedMarketsData = marketsFromEmbeddings.map((market) => ({
+          id: market.id,
+          question: market.question,
+        }))
 
-      const prompt = `
+        const prompt = `
 I have a prediction market with the question: "${question}".
 I also have a list of potentially related markets below.
 Please identify which markets are semantically different enough to keep, and which are too similar in meaning and should be filtered out.
@@ -107,21 +124,33 @@ ${JSON.stringify(relatedMarketsData)}
 Return a JSON array containing ONLY the IDs of markets to KEEP (those that are different enough).
 `
 
-      const marketsToKeep = await promptAI<string[]>(prompt, {
-        model: aiModels.flashLite,
-        parseAsJson: true,
-        thinkingLevel: 'minimal',
-      })
-
-      if (Array.isArray(marketsToKeep) && marketsToKeep.length > 0) {
-        marketsFromEmbeddings = marketsFromEmbeddings.filter((market) =>
-          marketsToKeep.includes(market.id)
-        )
+        marketsToKeep = await promptAI<string[]>(prompt, {
+          model: aiModels.flashLite,
+          parseAsJson: true,
+          thinkingLevel: 'minimal',
+        })
+        // An empty verdict is treated as "no filtering" below; don't pin
+        // that for a day in case it was a bad answer rather than a judgment.
+        if (Array.isArray(marketsToKeep) && marketsToKeep.length > 0) {
+          await cacheSetJson(
+            filterKey,
+            marketsToKeep,
+            RELATED_MARKETS_FILTER_TTL_S
+          )
+        }
+      } catch (error) {
+        log.error('Error filtering related markets with AI, using unfiltered', {
+          error,
+        })
+        marketsToKeep = undefined
       }
-    } catch (error) {
-      log.error('Error filtering with Gemini, using unfiltered markets', {
-        error,
-      })
+    }
+
+    const keep = marketsToKeep
+    if (Array.isArray(keep) && keep.length > 0) {
+      marketsFromEmbeddings = marketsFromEmbeddings.filter((market) =>
+        keep.includes(market.id)
+      )
     }
   }
   marketsFromEmbeddings = marketsFromEmbeddings.slice(0, limit)

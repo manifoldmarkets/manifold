@@ -41,3 +41,18 @@ export const materializeEligibleRelatedMarkets = <
         contract != null && isEligibleRelatedMarket(contract, now)
     )
 }
+
+/** Cache key for the model's "which of these candidates are near-duplicates"
+ * verdict. Keyed on the candidate set rather than on time: as long as the
+ * embedding search returns the same markets, the verdict is the same, so a
+ * contract page can be re-rendered every few minutes without paying for the
+ * model again. A newly published similar market changes the set and forces
+ * a fresh pass. Order-insensitive because the search returns ties in an
+ * unstable order. */
+export const relatedMarketsFilterKey = (
+  contractId: string,
+  candidateIds: readonly string[]
+) =>
+  `related-markets-filter:v1:${contractId}:${[...candidateIds]
+    .sort()
+    .join(',')}`

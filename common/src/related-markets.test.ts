@@ -1,6 +1,7 @@
 import {
   isEligibleRelatedMarket,
   materializeEligibleRelatedMarkets,
+  relatedMarketsFilterKey,
 } from './related-markets'
 
 const NOW = 1_000
@@ -81,5 +82,25 @@ describe('materializeEligibleRelatedMarkets', () => {
         (contract) => contract.id
       )
     ).toEqual(['eligible-second', 'eligible-first'])
+  })
+})
+
+describe('relatedMarketsFilterKey', () => {
+  it('is stable across candidate order', () => {
+    expect(relatedMarketsFilterKey('c1', ['b', 'a', 'c'])).toBe(
+      relatedMarketsFilterKey('c1', ['c', 'a', 'b'])
+    )
+  })
+
+  it('changes when the candidate set changes', () => {
+    expect(relatedMarketsFilterKey('c1', ['a', 'b'])).not.toBe(
+      relatedMarketsFilterKey('c1', ['a', 'b', 'c'])
+    )
+  })
+
+  it('is scoped to the source contract', () => {
+    expect(relatedMarketsFilterKey('c1', ['a'])).not.toBe(
+      relatedMarketsFilterKey('c2', ['a'])
+    )
   })
 })
