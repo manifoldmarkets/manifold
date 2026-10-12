@@ -99,4 +99,3 @@ export const formattingPrompt = `
     - addAnswersMode ("DISABLED", "ONLY_CREATOR", or "ANYONE", required if one of the "DEPENDENT_MULTIPLE_CHOICE" or "INDEPENDENT_MULTIPLE_CHOICE" types is provided)
       ${addAnswersModeDescription}
     - reasoning (string, required - extract the reasoning section from each market suggestion)`
-
