@@ -16,6 +16,7 @@ import {
   NEXT_MARKET_PROMPT_BET_EVENT,
   NEXT_MARKET_PROMPT_CLICK_EVENT,
   NEXT_MARKET_PROMPT_DISMISS_EVENT,
+  NEXT_MARKET_PROMPT_EMPTY_EVENT,
   NEXT_MARKET_PROMPT_SHOWN_EVENT,
   NEXT_MARKET_PROMPT_TEST_NAME,
   NEXT_MARKET_PROMPT_TRIGGER_EVENT,
@@ -162,12 +163,34 @@ function TriggeredNextMarketPrompt(props: {
         (c) => c.outcomeType !== 'MULTIPLE_CHOICE' || c.answers.length > 0
       )
       setCandidates(ready)
+      const counts = {
+        related: related.length,
+        afterFilters: picked.length,
+        afterHydration: ready.length,
+        recentlyBetExcluded: related.filter((c) => recentlyBet.includes(c.id))
+          .length,
+      }
+      if (override !== undefined) {
+        // QA override active: say why the strip did or did not appear.
+        console.info('[next-market-prompt]', {
+          variant,
+          market: contract.id,
+          ...counts,
+          shown: ready.map((c) => c.question),
+        })
+      }
       if (ready.length > 0) {
         track(NEXT_MARKET_PROMPT_SHOWN_EVENT, {
           contractId: contract.id,
           candidateIds: ready.map((c) => c.id),
           candidateCount: ready.length,
           betAmount: lastBet.amount,
+          location: lastBet.location,
+        })
+      } else {
+        track(NEXT_MARKET_PROMPT_EMPTY_EVENT, {
+          contractId: contract.id,
+          ...counts,
           location: lastBet.location,
         })
       }

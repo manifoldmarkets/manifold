@@ -21,6 +21,9 @@ export const NEXT_MARKET_PROMPT_CLICK_EVENT = 'next market prompt click'
 export const NEXT_MARKET_PROMPT_BET_EVENT = 'next market prompt bet'
 // The user closed the strip with its X.
 export const NEXT_MARKET_PROMPT_DISMISS_EVENT = 'next market prompt dismiss'
+// Treatment only: a trigger that produced no eligible candidate, with the
+// counts at each filtering step, so the empty rate is measurable.
+export const NEXT_MARKET_PROMPT_EMPTY_EVENT = 'next market prompt empty'
 
 export const NEXT_MARKET_PROMPT_COUNT = 3
 export const NEXT_MARKET_PROMPT_MIN_PROB = 0.05
