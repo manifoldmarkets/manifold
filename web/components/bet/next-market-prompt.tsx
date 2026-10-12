@@ -1,7 +1,10 @@
+import { XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
+import { maxBy } from 'lodash'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { getForcedABTestVariant } from 'common/ab-test'
+import { getProbability } from 'common/calculate'
 import {
   BinaryContract,
   Contract,
@@ -9,15 +12,19 @@ import {
   CPMMMultiContract,
 } from 'common/contract'
 import {
+  getNextMarketPromptPlacement,
   NEXT_MARKET_PROMPT_BET_EVENT,
   NEXT_MARKET_PROMPT_CLICK_EVENT,
+  NEXT_MARKET_PROMPT_DISMISS_EVENT,
   NEXT_MARKET_PROMPT_SHOWN_EVENT,
   NEXT_MARKET_PROMPT_TEST_NAME,
   NEXT_MARKET_PROMPT_TRIGGER_EVENT,
   NEXT_MARKET_PROMPT_VARIANTS,
+  NextMarketPromptPlacement,
   pickNextMarketCandidates,
 } from 'common/next-market-prompt'
 import { User } from 'common/user'
+import { formatPercent } from 'common/util/format'
 import { useABTestAssignment } from 'web/hooks/use-ab-test'
 import {
   LastPageBet,
@@ -29,33 +36,37 @@ import { api } from 'web/lib/api/api'
 import { isContractBlocked } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
-import { ContractStatusLabel } from '../contract/contracts-table'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BetDialog, MultiBetDialog } from './bet-dialog'
 
-/**
- * After a bet on the market page, offers three related markets the user has
- * not bet on, each with one-tap bet buttons. Renders nothing until a bet is
- * placed on this page, and nothing at all in the control arm.
- */
 // A bet older than this no longer counts as "just placed" when the user
 // navigates back to the page.
 const PROMPT_TTL_MS = 15 * 60 * 1000
 // One trigger event per bet, even if the page remounts.
 const trackedTriggerBets = new Set<string>()
 
+/**
+ * After a bet on the market page, offers three related markets the user has
+ * not bet on, each with one-tap bet buttons. Renders nothing until a bet is
+ * placed on this page, and nothing at all in the control arm.
+ *
+ * Mount one instance per placement: `panel` inside the binary bet panel,
+ * `page` under the overview for answer-panel bets.
+ */
 export function NextMarketPrompt(props: {
   contract: Contract
+  placement: NextMarketPromptPlacement
   className?: string
 }) {
-  const { contract, className } = props
+  const { contract, placement, className } = props
   const user = useUser()
   const lastBet = useLastPageBet()
   if (
     !user ||
     !lastBet ||
     lastBet.contractId !== contract.id ||
+    getNextMarketPromptPlacement(lastBet.location) !== placement ||
     Date.now() - lastBet.time > PROMPT_TTL_MS
   ) {
     return null
@@ -95,6 +106,7 @@ function TriggeredNextMarketPrompt(props: {
   )
   const variant = assignment?.variant
   const [candidates, setCandidates] = useState<Contract[] | undefined>()
+  const [dismissed, setDismissed] = useState(false)
   const triggerKey = lastBet.betId ?? String(lastBet.time)
 
   useEffect(() => {
@@ -108,6 +120,7 @@ function TriggeredNextMarketPrompt(props: {
       betAmount: lastBet.amount,
       outcome: lastBet.outcome,
       answerId: lastBet.answerId,
+      location: lastBet.location,
     })
   }, [variant])
 
@@ -134,13 +147,28 @@ function TriggeredNextMarketPrompt(props: {
         excludeContractIds: new Set(recentlyBet),
         isBlocked: (c) => isContractBlocked(privateUser, c),
       })
-      setCandidates(picked)
-      if (picked.length > 0) {
+      // The related-markets endpoint strips answers from multiple-choice
+      // markets, which the bet dialog needs. Hydrate the picks.
+      const full = picked.length
+        ? await api('markets-by-ids', { ids: picked.map((c) => c.id) })
+            .then((contracts) => {
+              const byId = new Map(contracts.map((c) => [c.id, c]))
+              return picked.map((c) => byId.get(c.id) ?? c)
+            })
+            .catch(() => picked)
+        : []
+      if (cancelled) return
+      const ready = full.filter(
+        (c) => c.outcomeType !== 'MULTIPLE_CHOICE' || c.answers.length > 0
+      )
+      setCandidates(ready)
+      if (ready.length > 0) {
         track(NEXT_MARKET_PROMPT_SHOWN_EVENT, {
           contractId: contract.id,
-          candidateIds: picked.map((c) => c.id),
-          candidateCount: picked.length,
+          candidateIds: ready.map((c) => c.id),
+          candidateCount: ready.length,
           betAmount: lastBet.amount,
+          location: lastBet.location,
         })
       }
     }
@@ -150,30 +178,52 @@ function TriggeredNextMarketPrompt(props: {
     }
   }, [variant, contract.id, user.id])
 
-  if (variant !== 'treatment' || !candidates || candidates.length === 0) {
+  if (
+    variant !== 'treatment' ||
+    dismissed ||
+    !candidates ||
+    candidates.length === 0
+  ) {
     return null
   }
 
   return (
     <Col
       className={clsx(
-        'bg-canvas-50 border-ink-200 rounded-lg border px-3 py-2',
+        'bg-primary-50 border-primary-200 rounded-lg border px-3 pb-1 pt-2',
         className
       )}
     >
       <Row className="items-center justify-between">
-        <span className="text-ink-700 text-sm font-medium">Keep going</span>
-        <span className="text-ink-400 text-xs">Related markets</span>
+        <span className="text-primary-700 text-xs font-semibold uppercase tracking-wide">
+          While you're here
+        </span>
+        <button
+          type="button"
+          className="text-ink-400 hover:text-ink-700 -mr-1 rounded p-1 transition-colors"
+          aria-label="Dismiss"
+          onClick={() => {
+            setDismissed(true)
+            track(NEXT_MARKET_PROMPT_DISMISS_EVENT, {
+              contractId: contract.id,
+              candidateCount: candidates.length,
+            })
+          }}
+        >
+          <XIcon className="h-4 w-4" />
+        </button>
       </Row>
-      {candidates.map((candidate, position) => (
-        <NextMarketRow
-          key={candidate.id}
-          contract={candidate}
-          position={position}
-          sourceContractId={contract.id}
-          amount={lastBet.amount}
-        />
-      ))}
+      <Col className="divide-ink-200 divide-y">
+        {candidates.map((candidate, position) => (
+          <NextMarketRow
+            key={candidate.id}
+            contract={candidate}
+            position={position}
+            sourceContractId={contract.id}
+            amount={lastBet.amount}
+          />
+        ))}
+      </Col>
     </Col>
   )
 }
@@ -189,6 +239,15 @@ function NextMarketRow(props: {
   const [openMulti, setOpenMulti] = useState(false)
   const isBinary =
     contract.outcomeType === 'BINARY' && contract.mechanism === 'cpmm-1'
+  const yesProb =
+    contract.outcomeType === 'BINARY' ? getProbability(contract) : undefined
+  const leadingAnswer =
+    contract.outcomeType === 'MULTIPLE_CHOICE'
+      ? maxBy(
+          contract.answers.filter((a) => !a.isOther),
+          (a) => a.prob
+        )
+      : undefined
 
   const trackClick = (outcome: 'YES' | 'NO' | 'bet' | 'link') =>
     track(NEXT_MARKET_PROMPT_CLICK_EVENT, {
@@ -199,7 +258,7 @@ function NextMarketRow(props: {
     })
 
   return (
-    <Row className="border-ink-100 items-center justify-between gap-3 border-t py-2">
+    <Row className="items-center justify-between gap-3 py-2">
       <Col className="min-w-0 gap-0.5">
         <Link
           href={contractPath(contract)}
@@ -208,39 +267,42 @@ function NextMarketRow(props: {
         >
           {contract.question}
         </Link>
-        <ContractStatusLabel
-          contract={contract}
-          chanceLabel
-          className="text-ink-600 text-xs font-semibold"
-        />
+        {leadingAnswer && (
+          <span className="text-ink-500 line-clamp-1 text-xs">
+            {leadingAnswer.text}{' '}
+            <span className="font-semibold">
+              {formatPercent(leadingAnswer.prob)}
+            </span>
+          </span>
+        )}
       </Col>
-      {isBinary ? (
+      {isBinary && yesProb !== undefined ? (
         <Row className="shrink-0 gap-1">
           <Button
-            size="2xs"
-            color="green-outline"
+            size="xs"
+            color="green"
             onClick={() => {
               trackClick('YES')
               setOpenOutcome('YES')
             }}
           >
-            Yes
+            Yes {formatPercent(yesProb)}
           </Button>
           <Button
-            size="2xs"
-            color="red-outline"
+            size="xs"
+            color="red"
             onClick={() => {
               trackClick('NO')
               setOpenOutcome('NO')
             }}
           >
-            No
+            No {formatPercent(1 - yesProb)}
           </Button>
         </Row>
       ) : (
         <Button
-          size="2xs"
-          color="indigo-outline"
+          size="xs"
+          color="indigo"
           className="shrink-0"
           onClick={() => {
             trackClick('bet')

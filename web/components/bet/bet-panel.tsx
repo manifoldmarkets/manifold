@@ -422,6 +422,7 @@ export const BuyPanelBody = (
         if (isNextMarketPromptLocation(location)) {
           setLastPageBet({
             contractId: contract.id,
+            location,
             betId: finalBetDetails.id,
             amount: finalBetDetails.amount,
             outcome: finalBetDetails.outcome,
@@ -574,6 +575,7 @@ export const BuyPanelBody = (
         if (isNextMarketPromptLocation(location)) {
           setLastPageBet({
             contractId: contract.id,
+            location,
             betId: fullBet.id,
             amount: fullBet.amount,
             outcome: fullBet.outcome,

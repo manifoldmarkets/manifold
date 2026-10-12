@@ -19,6 +19,8 @@ export const NEXT_MARKET_PROMPT_CLICK_EVENT = 'next market prompt click'
 // A bet placed through the dialog the strip opened (binary markets only;
 // multi-choice bets are attributed by time in the analysis).
 export const NEXT_MARKET_PROMPT_BET_EVENT = 'next market prompt bet'
+// The user closed the strip with its X.
+export const NEXT_MARKET_PROMPT_DISMISS_EVENT = 'next market prompt dismiss'
 
 export const NEXT_MARKET_PROMPT_COUNT = 3
 export const NEXT_MARKET_PROMPT_MIN_PROB = 0.05
@@ -33,6 +35,15 @@ export const NEXT_MARKET_PROMPT_LOCATIONS: readonly string[] = [
 ]
 export const isNextMarketPromptLocation = (location: string | undefined) =>
   !!location && NEXT_MARKET_PROMPT_LOCATIONS.includes(location)
+
+// Where the strip renders. The binary bet panel stays open after a bet, so
+// its strip sits inside that panel, right under "Trade placed". Answer
+// panels (multiple choice, versus) close themselves after a bet, so their
+// strip renders on the page under the overview instead.
+export type NextMarketPromptPlacement = 'panel' | 'page'
+export const getNextMarketPromptPlacement = (
+  location: string | undefined
+): NextMarketPromptPlacement => (location === 'bet panel' ? 'panel' : 'page')
 
 export const isNextMarketPromptCandidate = (
   contract: Contract,

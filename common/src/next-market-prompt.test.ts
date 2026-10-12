@@ -1,5 +1,6 @@
 import { Contract } from './contract'
 import {
+  getNextMarketPromptPlacement,
   isNextMarketPromptLocation,
   pickNextMarketCandidates,
 } from './next-market-prompt'
@@ -123,5 +124,12 @@ describe('isNextMarketPromptLocation', () => {
     expect(isNextMarketPromptLocation('feed card')).toBe(false)
     expect(isNextMarketPromptLocation('next market prompt')).toBe(false)
     expect(isNextMarketPromptLocation(undefined)).toBe(false)
+  })
+})
+
+describe('getNextMarketPromptPlacement', () => {
+  it('keeps the binary panel strip inside the panel and answer bets on the page', () => {
+    expect(getNextMarketPromptPlacement('bet panel')).toBe('panel')
+    expect(getNextMarketPromptPlacement('contract page answer')).toBe('page')
   })
 })

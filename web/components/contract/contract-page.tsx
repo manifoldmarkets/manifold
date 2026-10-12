@@ -441,7 +441,11 @@ export function ContractPageContent(props: ContractParams) {
                   setGraphUser={setGraphUser}
                 />
 
-                <NextMarketPrompt contract={liveContract} className="mb-2" />
+                <NextMarketPrompt
+                  contract={liveContract}
+                  placement="page"
+                  className="mb-2"
+                />
 
                 {liveContract.mechanism !== 'perp' && (
                   <UserBetsSummary
