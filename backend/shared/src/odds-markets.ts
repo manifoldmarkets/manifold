@@ -453,7 +453,9 @@ export async function createOddsMarketsForActiveCalendar(
         { creator, switches }
       )
     } catch (e) {
-      log(`[sports-odds-create] ${competitionId}: ${e}`)
+      // An exhausted quota or a provider outage stops a whole competition:
+      // an error, so it alerts.
+      log.error(`[sports-odds-create] ${competitionId} didn't run: ${e}`)
     }
   }
   return out
@@ -476,7 +478,10 @@ interface PendingGame {
  * means one early call and one early alert.
  */
 export interface ScorePollState {
+  /** Any /scores call per sport key. */
   lastPolled: Record<string, number>
+  /** /scores calls that asked for finished games, per sport key. */
+  lastFinished: Record<string, number>
   /** Failed /scores calls in a row per sport key; each doubles the wait. */
   failures: Record<string, number>
   /**
@@ -492,6 +497,7 @@ export interface ScorePollState {
 
 export const newScorePollState = (): ScorePollState => ({
   lastPolled: {},
+  lastFinished: {},
   failures: {},
   missing: {},
   lastOverdueAlert: {},
@@ -579,7 +585,8 @@ export async function pollOddsScoresAndResolve(
     settings,
     state.lastPolled,
     now,
-    state.failures
+    state.failures,
+    state.lastFinished
   )
 
   const bySport = groupBy(pending, (p) => p.sportKey)
@@ -589,6 +596,7 @@ export async function pollOddsScoresAndResolve(
     // Counted even if the call fails, so a failing provider is retried at
     // the set interval, doubled per failure in a row, not on every tick.
     state.lastPolled[sportKey] = now
+    if (withFinished) state.lastFinished[sportKey] = now
     stats.polled++
     const games = bySport[sportKey] ?? []
     let scores: OddsApiScore[]
@@ -601,9 +609,15 @@ export async function pollOddsScoresAndResolve(
       // finished, however early: the provider only lists a completed game
       // when asked for finished ones. Ask now rather than at the finals
       // check, so the market resolves and stops trading on a known result.
+      // Games already known to be missing (postponed) are left to the
+      // finals check, so they don't add a call to every live poll.
       const listed = new Set(scores.map((s) => s.id))
-      if (!withFinished && games.some((g) => !listed.has(g.eventId))) {
+      const dropped = games.some(
+        (g) => !listed.has(g.eventId) && !(g.contract.id in state.missing)
+      )
+      if (!withFinished && dropped) {
         stats.polled++
+        state.lastFinished[sportKey] = now
         scores = await getScores(sportKey, { finishedDays: LOOKBACK_DAYS })
       }
       delete state.failures[sportKey]

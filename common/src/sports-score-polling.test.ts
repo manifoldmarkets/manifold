@@ -61,13 +61,9 @@ describe('scorePollPlan', () => {
     expect(scorePollPlan([game('a', 181)], off, {}, NOW)).toEqual([
       { sportKey: 'americanfootball_nfl', withFinished: true },
     ])
+    const twoAgo = { americanfootball_nfl: NOW - 2 * MIN }
     expect(
-      scorePollPlan(
-        [game('a', 181)],
-        off,
-        { americanfootball_nfl: NOW - 2 * MIN },
-        NOW
-      )
+      scorePollPlan([game('a', 181)], off, twoAgo, NOW, {}, twoAgo)
     ).toEqual([])
   })
 
@@ -136,20 +132,65 @@ describe('scorePollPlan', () => {
 
   it('checks a game 3 hours past close at most every half hour', () => {
     const stuck = game('a', 8 * 60, { closeTime: NOW - 4 * 60 * MIN })
-    const off = settings({ sports: { nfl: 0 }, finals: 60 })
+    const tenAgo = { americanfootball_nfl: NOW - 10 * MIN }
+    const halfHourAgo = { americanfootball_nfl: NOW - 31 * MIN }
+    // With live scores off or on: a closed market isn't polled for live
+    // scores, so the 5-minute live default doesn't override the half hour.
+    for (const s of [
+      settings({ sports: { nfl: 0 }, finals: 60 }),
+      settings(),
+    ]) {
+      expect(scorePollPlan([stuck], s, tenAgo, NOW, {}, tenAgo)).toEqual([])
+      expect(
+        scorePollPlan([stuck], s, halfHourAgo, NOW, {}, halfHourAgo)
+      ).toEqual([{ sportKey: 'americanfootball_nfl', withFinished: true }])
+    }
+  })
+
+  it('asks for finished games at the finals interval, not on every live poll', () => {
+    // A game polled every 30 seconds next to one waiting on its final.
+    const s = settings({ sports: { nfl: 30 } })
+    const games = [game('live', 30), game('waiting', 181)]
+    const polled = { americanfootball_nfl: NOW - 40 * 1000 }
+    // Finals checked a minute ago: this live poll costs 1 credit, not 2.
     expect(
-      scorePollPlan([stuck], off, { americanfootball_nfl: NOW - 10 * MIN }, NOW)
-    ).toEqual([])
-    expect(
-      keys(
-        scorePollPlan(
-          [stuck],
-          off,
-          { americanfootball_nfl: NOW - 31 * MIN },
-          NOW
-        )
+      scorePollPlan(
+        games,
+        s,
+        polled,
+        NOW,
+        {},
+        { americanfootball_nfl: NOW - MIN }
       )
-    ).toEqual(['americanfootball_nfl'])
+    ).toEqual([{ sportKey: 'americanfootball_nfl', withFinished: false }])
+    // Five minutes on, the finals check is due again.
+    expect(
+      scorePollPlan(
+        games,
+        s,
+        polled,
+        NOW,
+        {},
+        { americanfootball_nfl: NOW - 5 * MIN }
+      )
+    ).toEqual([{ sportKey: 'americanfootball_nfl', withFinished: true }])
+  })
+
+  it("doesn't poll a game gone from the feed for live scores", () => {
+    // Missing even with finished games asked for: postponed. Only the
+    // finals check looks for it.
+    const gone = game('a', 60, { missing: true })
+    const recent = { americanfootball_nfl: NOW - 40 * 1000 }
+    expect(
+      scorePollPlan(
+        [gone],
+        settings({ sports: { nfl: 30 } }),
+        recent,
+        NOW,
+        {},
+        recent
+      )
+    ).toEqual([])
   })
 })
 

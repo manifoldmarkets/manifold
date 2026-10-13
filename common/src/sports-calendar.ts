@@ -256,7 +256,8 @@ const ENTRIES: CalendarInput[] = [
     competitionId: 'epl-2026-27',
     phase: 'Season',
     startDate: '2026-08-15',
-    endDate: '2027-05-17',
+    // The final round is on 30 May 2027.
+    endDate: '2027-05-30',
     autoCreate: true,
     autoResolve: true,
     notes: '~380 games total; rolling 14-day creation window',

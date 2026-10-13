@@ -149,50 +149,63 @@ const OVERDUE_AFTER_MS = 3 * 60 * 60 * 1000
 const SLACK_MS = 5_000
 
 /**
- * The sport keys to call /scores for on this tick, given when each was last
- * called. A key is due when the fastest reason among its started games has
- * come round: live scores for a game that wants them, or finals for a game
- * that's due to end or has gone missing from a live-only response (at most
- * every half hour once it's 3 hours overdue). `withFinished` asks for
- * completed games too, which costs 2 credits instead of 1, and is only
- * needed once a game is due to end or missing. A key whose calls keep
- * failing waits twice as long per failure in a row, up to half an hour, so
- * a provider outage or an exhausted quota isn't called every interval.
+ * The sport keys to call /scores for on this tick. Two reasons to call, each
+ * on its own clock:
+ * - Live scores, for a game whose market is still open and that's still in
+ *   the feed, at its live interval since the key's last call of any kind.
+ * - Finals, for a game that's due to end or has gone missing from a
+ *   live-only response, at the finals interval (at most every half hour once
+ *   it's 3 hours overdue) since the key's last call that asked for finished
+ *   games (`lastFinished`).
+ * `withFinished` asks for completed games too, which costs 2 credits instead
+ * of 1, so it's only set when a finals check is due: a game waiting on its
+ * final doesn't double the cost of every live poll beside it. A key whose
+ * calls keep failing waits twice as long per failure in a row, up to half an
+ * hour, so a provider outage or an exhausted quota isn't called every
+ * interval.
  */
 export function scorePollPlan(
   games: PollingGame[],
   settings: ScorePollingSettings,
   lastPolled: Record<string, number>,
   now: number,
-  failures: Record<string, number> = {}
+  failures: Record<string, number> = {},
+  lastFinished: Record<string, number> = {}
 ): { sportKey: string; withFinished: boolean }[] {
   const plan: { sportKey: string; withFinished: boolean }[] = []
   for (const [sportKey, keyGames] of Object.entries(
     groupBy(games, (g) => g.sportKey)
   )) {
-    const intervals: number[] = []
-    let withFinished = false
+    const liveIntervals: number[] = []
+    const finalsIntervals: number[] = []
     for (const game of keyGames) {
       const live = liveInterval(game, settings)
-      if (live > 0) intervals.push(live)
+      // A closed market isn't traded and a missing game isn't in the feed:
+      // live scores for either would only cost credits.
+      const open = game.closeTime === undefined || now < game.closeTime
+      if (live > 0 && open && !game.missing) liveIntervals.push(live)
       if (game.missing || finalsDue(game, now)) {
-        withFinished = true
         const overdue =
           game.closeTime !== undefined &&
           now - game.closeTime > OVERDUE_AFTER_MS
-        intervals.push(
+        finalsIntervals.push(
           overdue
             ? Math.max(settings.finals, OVERDUE_FINALS_INTERVAL)
             : settings.finals
         )
       }
     }
-    if (intervals.length === 0) continue
-    const interval =
-      backedOff(Math.min(...intervals), failures[sportKey] ?? 0) * 1000
-    const since = now - (lastPolled[sportKey] ?? -Infinity)
-    if (since + SLACK_MS < interval) continue
-    plan.push({ sportKey, withFinished })
+    const fails = failures[sportKey] ?? 0
+    const due = (intervals: number[], last: number | undefined) => {
+      if (intervals.length === 0) return false
+      const wait = backedOff(Math.min(...intervals), fails) * 1000
+      return now - (last ?? -Infinity) + SLACK_MS >= wait
+    }
+    const finals = due(finalsIntervals, lastFinished[sportKey])
+    // A call with finished games lists the live ones too, so it counts as
+    // a live poll: lastPolled covers both kinds.
+    const live = due(liveIntervals, lastPolled[sportKey])
+    if (finals || live) plan.push({ sportKey, withFinished: finals })
   }
   return plan
 }
