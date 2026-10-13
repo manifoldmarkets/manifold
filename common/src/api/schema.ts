@@ -65,6 +65,9 @@ import {
 import { Repost } from 'common/repost'
 import { ManaSupply } from 'common/stats'
 import { SportsMarket } from 'common/sports'
+import { SPORT_KEY_RE, SportsScheduleResponse } from 'common/sports-schedule'
+import { CompetitionSwitchState } from 'common/sports-calendar'
+import { ScorePollingPanel } from 'common/sports-score-polling'
 import { Row } from 'common/supabase/utils'
 import type { ManaPayTxn, Txn } from 'common/txn'
 import { z } from 'zod'
@@ -1455,6 +1458,31 @@ export const API = (_apiTypeCheck = {
       .object({
         apiSecret: z.string().min(1),
         quote: perpQuoteSchema,
+      })
+      .strict(),
+  },
+  // Scheduler -> API writer; must stay off the read-replica allowlist.
+  'internal-sports-broadcast': {
+    method: 'POST',
+    visibility: 'private',
+    authed: false,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        apiSecret: z.string().min(1),
+        contractId: z.string().min(1),
+        score: z.object({
+          sportsHomeScore: z.number().finite().nonnegative().nullable(),
+          sportsAwayScore: z.number().finite().nonnegative().nullable(),
+          sportsLiveStatus: z.enum([
+            'IN_PLAY',
+            'PAUSED',
+            'FINISHED',
+            'AWARDED',
+          ]),
+          sportsLiveMinute: z.string().nullable(),
+          sportsLiveUpdatedTime: z.number().finite(),
+        }),
       })
       .strict(),
   },
@@ -5118,6 +5146,101 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as SocialLikerPage,
   },
+  // Upcoming, live and just-finished games across every sport, each with the
+  // ids of its related markets (props, totals, community side-bets). Powers the
+  // /sports schedule. Probabilities move over websockets after the first load,
+  // so a short shared cache keeps the fan-out cheap.
+  'sports-schedule': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=30, stale-while-revalidate=60',
+    props: z
+      .object({
+        // 'all', a curated sport key, or a sport from a Sports subtopic.
+        sport: z.string().regex(SPORT_KEY_RE).optional(),
+        daysAhead: z.coerce.number().int().min(1).max(60).optional(),
+        limit: z.coerce.number().int().min(1).max(400).optional(),
+        // nextCursor from the previous page.
+        cursor: z
+          .string()
+          .regex(/^\d+_[A-Za-z0-9]+$/)
+          .max(64)
+          .optional(),
+        includeRelated: coerceBoolean.optional(),
+      })
+      .strict(),
+    returns: {} as SportsScheduleResponse,
+  },
+
+  // The scheduler switches on /admin/sports: one per Odds API calendar phase.
+  'admin-sports-competition-switches': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { switches: CompetitionSwitchState[] },
+  },
+  'admin-sports-set-competition-switch': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionId: z.string().max(100),
+        phase: z.string().max(100),
+        on: z.boolean(),
+      })
+      .strict(),
+    returns: {} as { on: boolean },
+  },
+  // How often the sports resolver asks for scores, and the credits it spends.
+  'admin-sports-score-polling': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as ScorePollingPanel,
+  },
+  'admin-sports-set-score-polling': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        // 'sport:<sport id>', 'game:<contract id>' or 'finals'.
+        target: z.string().max(60),
+        // Seconds; 0 is off. Null goes back to the default.
+        intervalSeconds: z.number().int().min(0).max(3600).nullable(),
+      })
+      .strict(),
+    returns: {} as { intervalSeconds: number | null },
+  },
+  'admin-sports-create-odds-markets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionId: z.string(),
+        dryRun: z.boolean().optional(),
+        // Provider event ids from a dry run. Only these games are created.
+        eventIds: z.array(z.string()).max(200).optional(),
+      })
+      .strict(),
+    returns: {} as {
+      created: number
+      skipped: number
+      errors: number
+      results: Array<{
+        eventId: string
+        question: string
+        status: 'created' | 'skipped' | 'dry-run' | 'error'
+        reason: string | null
+      }>
+    },
+  },
+
   'admin-sports-resolve': {
     method: 'POST',
     visibility: 'undocumented',

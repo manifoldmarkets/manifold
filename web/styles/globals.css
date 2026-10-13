@@ -42,6 +42,14 @@
     outline: none;
   }
   :root {
+    /* Team colours for sports match cards / bet panels (home, away, draw). */
+    --sports-team-a: #1a7a9a;
+    --sports-team-a-vibrant: #0a8fad;
+    --sports-team-b: #8b3a52;
+    --sports-team-b-vibrant: #c4436e;
+    --sports-draw: #6b7a8e;
+    --sports-draw-vibrant: #7a8ca0;
+
     --color-ink-0: 255 255 255;
     --color-ink-50: 248 248 252;
     --color-ink-100: 236 237 248;
@@ -97,6 +105,11 @@
     --color-yes-950: 4 47 46;
   }
   .dark {
+    --sports-team-a-vibrant: #25c4e8;
+    --sports-team-b-vibrant: #e85a8a;
+    --sports-draw: #7a8a9e;
+    --sports-draw-vibrant: #a8aabf;
+
     color-scheme: dark;
 
     --color-ink-1000: 255 255 255;
