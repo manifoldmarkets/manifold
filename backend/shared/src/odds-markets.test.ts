@@ -1181,6 +1181,46 @@ describe('score polling settings', () => {
     ])
   })
 
+  it("doesn't double the cost of live polls while a postponed game waits", async () => {
+    // A live game polled every 30 seconds, next to a game the feed no longer
+    // lists (postponed) whose finals check ran a minute ago. The live poll
+    // stays a 1-credit live-only call, with no follow-up for the missing game.
+    const db = database()
+    const state = newScorePollState()
+    state.missing.postponed = NOW - 10 * MINUTE
+    state.lastPolled.americanfootball_nfl = NOW - 40 * 1000
+    state.lastFinished.americanfootball_nfl = NOW - MINUTE
+    db.pg.map.mockImplementation(polling([['sport:nfl', 30]]))
+    const [live] = nflGame(30 * MINUTE)
+    const [postponed] = nflGame(60 * MINUTE)
+    db.pg.manyOrNone.mockResolvedValueOnce([
+      live,
+      {
+        data: {
+          ...postponed.data,
+          id: 'postponed',
+          sportsEventId: 'odds:americanfootball_nfl:postponed',
+        },
+      },
+    ])
+    jest.mocked(getScores).mockResolvedValue([
+      {
+        ...event,
+        completed: false,
+        scores: [
+          { name: 'Away', score: '7' },
+          { name: 'Home', score: '3' },
+        ],
+        last_update: null,
+      },
+    ])
+    const result = await pollOddsScoresAndResolve(db.client, state)
+    expect(jest.mocked(getScores).mock.calls).toEqual([
+      ['americanfootball_nfl', {}],
+    ])
+    expect(result.live).toBe(1)
+  })
+
   it('waits twice as long per failed scores call in a row, up to half an hour', async () => {
     const db = database()
     const state = newScorePollState()
@@ -1210,4 +1250,20 @@ describe('score polling settings', () => {
     expect(await tick(90)).toBe(5)
     expect(await tick(95)).toBe(6)
   })
+})
+
+it("logs an error when a competition can't run, so it alerts", async () => {
+  // An exhausted quota or a provider outage fails the odds fetch.
+  jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-01T12:00:00Z'))
+  jest
+    .mocked(getUpcomingOdds)
+    .mockRejectedValue(
+      new Error(
+        'Odds API /odds error for americanfootball_nfl: 401 Unauthorized'
+      )
+    )
+  await createOddsMarketsForActiveCalendar(database().client)
+  expect(log.error).toHaveBeenCalledWith(
+    expect.stringContaining("nfl-regular-2026 didn't run")
+  )
 })
