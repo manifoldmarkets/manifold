@@ -88,7 +88,7 @@ export const setContractUninterested = async (
  * transaction.
  */
 const widenNearestNeighbourSearch = (tx: SupabaseTransaction) =>
-  tx.none(`select set_config('hnsw.ef_search', $1, true)`, [
+  tx.one(`select set_config('hnsw.ef_search', $1, true)`, [
     String(NEAR_DUPLICATE_CANDIDATE_LIMIT),
   ])
 

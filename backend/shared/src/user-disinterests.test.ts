@@ -41,6 +41,15 @@ const makeDb = (
   const tx = {
     none: jest.fn(async (sql: string, args: unknown[]) => {
       record(sql, args)
+      // Match pg-promise's row-count contract: SELECT set_config returns a
+      // row, so passing it to none() would abort the whole mark transaction.
+      if (/^select\s/i.test(sql.trim())) {
+        throw new Error('No return data was expected.')
+      }
+    }),
+    one: jest.fn(async (sql: string, args: unknown[]) => {
+      record(sql, args)
+      return { set_config: args[0] }
     }),
     oneOrNone: jest.fn(
       async (sql: string, args: unknown[], cb?: (r: CreatorRow) => unknown) => {

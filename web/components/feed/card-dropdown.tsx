@@ -10,6 +10,7 @@ import {
   PlusCircleIcon,
 } from '@heroicons/react/solid'
 import { Contract } from 'common/contract'
+import { useRef } from 'react'
 import toast from 'react-hot-toast'
 import { TiVolume, TiVolumeMute } from 'react-icons/ti'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
@@ -24,26 +25,34 @@ export function FeedDropdown(props: {
   contract: Contract
   itemCreatorId: string | undefined
   interesting: boolean
-  toggleInteresting: () => void
+  setInteresting: (interesting: boolean) => void
   importanceScore: number
 }) {
-  const { contract, itemCreatorId, interesting, toggleInteresting } = props
+  const { contract, itemCreatorId, interesting, setInteresting } = props
   const user = useUser()
   const creatorId = itemCreatorId ?? contract.creatorId
   const creator = useDisplayUserById(creatorId)
   const { isFollowing, toggleFollow } = useIsFollowing(user?.id, creatorId)
+  const pendingUninterested = useRef(false)
 
   const toggleUninterested = async () => {
+    if (pendingUninterested.current) return
+    pendingUninterested.current = true
     try {
       if (interesting) {
-        await markUninterestedWithToast(contract, 'feed card')
+        await markUninterestedWithToast(contract, 'feed card', () =>
+          setInteresting(true)
+        )
+        setInteresting(false)
       } else {
         await setUninterested(contract, false, 'feed card')
+        setInteresting(true)
         toast('Restored to your feed')
       }
-      toggleInteresting()
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      pendingUninterested.current = false
     }
   }
 

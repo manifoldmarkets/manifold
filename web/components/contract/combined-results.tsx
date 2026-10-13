@@ -79,9 +79,25 @@ export function CombinedResults(props: CombinedResultsProps) {
   const user = useUser()
   // Rows the user marked uninterested from this result set. Dropped here so
   // the row goes at once; the next fetch won't return them.
-  const [hiddenContractIds, setHiddenContractIds] = useState<string[]>([])
-  const showUninterested =
-    !!user && !hideActions && searchParams[FOR_YOU_KEY] === '1'
+  const [hiddenByUser, setHiddenByUser] = useState<Record<string, string[]>>({})
+  const isForYou =
+    searchParams[FOR_YOU_KEY] === '1' && !searchParams[QUERY_KEY].trim()
+  const showUninterested = !!user && !hideActions && isForYou
+  const hiddenContractIds = user && isForYou ? hiddenByUser[user.id] ?? [] : []
+  const setHidden = (contractId: string, hidden: boolean) => {
+    if (!user) return
+    setHiddenByUser((byUser) => {
+      const ids = byUser[user.id] ?? []
+      return {
+        ...byUser,
+        [user.id]: hidden
+          ? ids.includes(contractId)
+            ? ids
+            : [...ids, contractId]
+          : ids.filter((id) => id !== contractId),
+      }
+    })
+  }
 
   const sort =
     searchParams[TOPIC_FILTER_KEY] === 'recent'
@@ -107,11 +123,8 @@ export function CombinedResults(props: CombinedResultsProps) {
     content: ({ contract }) => (
       <UninterestedRowButton
         contract={contract}
-        onHidden={() =>
-          setHiddenContractIds((ids) =>
-            ids.includes(contract.id) ? ids : [...ids, contract.id]
-          )
-        }
+        onHidden={() => setHidden(contract.id, true)}
+        onRestored={() => setHidden(contract.id, false)}
       />
     ),
   }

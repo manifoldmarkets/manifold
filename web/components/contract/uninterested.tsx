@@ -1,5 +1,5 @@
 import { Contract } from 'common/contract'
-import { MouseEvent } from 'react'
+import { MouseEvent, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { TiVolumeMute } from 'react-icons/ti'
 import { useUser } from 'web/hooks/use-user'
@@ -53,18 +53,12 @@ export const markUninterestedWithToast = async (
     (t) => (
       <Row className="items-center gap-3">
         <span>Hidden from your feed{similar}.</span>
-        <button
-          type="button"
-          className="text-primary-600 hover:text-primary-700 shrink-0 font-semibold"
-          onClick={async () => {
-            toast.dismiss(t.id)
-            await setUninterested(contract, false, source)
-            onUndo?.()
-            toast('Restored to your feed')
-          }}
-        >
-          Undo
-        </button>
+        <UninterestedUndoButton
+          contract={contract}
+          source={source}
+          onUndo={onUndo}
+          toastId={t.id}
+        />
       </Row>
     ),
     {
@@ -73,6 +67,42 @@ export const markUninterestedWithToast = async (
     }
   )
   return result
+}
+
+function UninterestedUndoButton(props: {
+  contract: Contract
+  source: UninterestedSource
+  onUndo?: () => void
+  toastId: string
+}) {
+  const { contract, source, onUndo, toastId } = props
+  const [pending, setPending] = useState(false)
+  const pendingRef = useRef(false)
+  return (
+    <button
+      type="button"
+      className="text-primary-600 hover:text-primary-700 shrink-0 font-semibold disabled:opacity-50"
+      disabled={pending}
+      onClick={async () => {
+        if (pendingRef.current) return
+        pendingRef.current = true
+        setPending(true)
+        try {
+          await setUninterested(contract, false, source)
+          onUndo?.()
+          toast.dismiss(toastId)
+          toast('Restored to your feed')
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : String(err))
+        } finally {
+          pendingRef.current = false
+          setPending(false)
+        }
+      }}
+    >
+      {pending ? 'Restoring...' : 'Undo'}
+    </button>
+  )
 }
 
 /** Menu label with the (i) explainer. */
@@ -103,8 +133,9 @@ export function UninterestedMenuLabel(props: { uninterested: boolean }) {
 export function UninterestedRowButton(props: {
   contract: Contract
   onHidden: () => void
+  onRestored: () => void
 }) {
-  const { contract, onHidden } = props
+  const { contract, onHidden, onRestored } = props
   const user = useUser()
   // Keep the column's width so rows stay aligned.
   if (!user || user.id === contract.creatorId)
@@ -120,9 +151,14 @@ export function UninterestedRowButton(props: {
           e.preventDefault()
           e.stopPropagation()
           onHidden()
-          markUninterestedWithToast(contract, 'browse for-you').catch((err) =>
+          markUninterestedWithToast(
+            contract,
+            'browse for-you',
+            onRestored
+          ).catch((err) => {
+            onRestored()
             toast.error(err instanceof Error ? err.message : String(err))
-          )
+          })
         }}
       >
         <TiVolumeMute className="h-5 w-5" />
