@@ -8,11 +8,6 @@ import { HOUR_MS } from './util/time'
 
 export const LEAGUES_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
 
-/**
- * Filters bets to only include those that count for league scoring.
- * For a user's own markets, only bets placed 1+ hour after market creation are counted.
- * For other users' markets, all bets count.
- */
 // Markets that never count toward league mana earned.
 export const EXCLUDED_LEAGUE_CONTRACT_SLUGS = new Set([
   'will-there-be-another-wellrecognize-393de260ec26',
@@ -68,6 +63,11 @@ export const addLeagueProfitForContract = (
   return nanUserIds
 }
 
+/**
+ * Filters bets to only include those that count for league scoring.
+ * For a user's own markets, only bets placed 1+ hour after market creation are counted.
+ * For other users' markets, all bets count.
+ */
 export const filterBetsForLeagueScoring = (
   bets: Bet[],
   contract: Contract,
