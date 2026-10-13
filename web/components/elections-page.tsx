@@ -19,10 +19,7 @@ import { FilterPill } from './search/filter-pills'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
 import { SectionInView } from './us-elections/section-in-view'
 import { PollingPerpsRow } from './us-elections/polling-perps-row'
-import {
-  ConditionalMarketsGrid,
-  MarketSpotlightGrid,
-} from './us-elections/market-spotlight'
+import { MarketSpotlightGrid } from './us-elections/market-spotlight'
 import {
   ConditionalMatrix,
   LiveConditionOdds,
@@ -113,7 +110,7 @@ export function USElectionsPage(
     pollingPerpContracts,
     trendingContracts,
     contestContracts = [],
-    conditionalRows = [],
+    unprecedentedContracts = [],
     senateMatrixRows = [],
     houseMatrixRows = [],
     presidencyMatrixRows = [],
@@ -278,17 +275,19 @@ export function USElectionsPage(
         )
       )}
 
-      {/* What follows the result: markets conditional on who wins. A curated
-          list (web/lib/politics/midterm-conditionals.ts); pairs of "If
-          Democrats win / If Republicans win" markets sit side by side. */}
-      {conditionalRows.length > 0 && (
-        <SectionInView section="conditional markets" className="gap-3">
-          <SectionHeader subtitle="Bets on what happens next, depending on who wins. Each is refunded (resolves N/A) if its condition isn't met.">
-            If Democrats win… or Republicans do
+      {/* Unprecedented politics: community markets on things that have not
+          happened before in American politics (troops at polling places, a
+          third term, a president defying the Supreme Court…). A curated,
+          ordered list (web/lib/politics/unprecedented-politics.ts); spares
+          slide in as markets close. */}
+      {unprecedentedContracts.length > 0 && (
+        <SectionInView section="unprecedented politics" className="gap-3">
+          <SectionHeader subtitle="Things that have never happened in American politics, with the market's live odds that they do.">
+            Unprecedented politics
           </SectionHeader>
-          <ConditionalMarketsGrid
-            rows={conditionalRows}
-            trackingPostfix="election conditional"
+          <MarketSpotlightGrid
+            contracts={unprecedentedContracts}
+            trackingPostfix="election unprecedented"
           />
         </SectionInView>
       )}

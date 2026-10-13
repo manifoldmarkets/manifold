@@ -19,10 +19,6 @@ import {
   wholePercent,
   withConditionProbs,
 } from './conditional-matrix'
-import {
-  MIDTERM_CONDITIONALS,
-  midtermConditionalRefs,
-} from './midterm-conditionals'
 
 const NOW = Date.UTC(2026, 9, 7)
 
@@ -130,15 +126,6 @@ test('config ids are unique across all matrices', () => {
     const labels = matrix.map((p) => p.label)
     assert.equal(new Set(labels).size, labels.length)
   }
-})
-
-test('no market is in both a matrix and the conditional card row', () => {
-  const matrixIds = new Set(conditionalMatrixIds())
-  const { ids } = midtermConditionalRefs(MIDTERM_CONDITIONALS)
-  assert.deepEqual(
-    ids.filter((id) => matrixIds.has(id)),
-    []
-  )
 })
 
 test('the House pairs that moved into the matrix are where they should be', () => {
