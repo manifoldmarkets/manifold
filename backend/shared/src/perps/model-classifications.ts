@@ -413,7 +413,10 @@ export const getProvisionalClassifications = async (
      order by classified_at asc, permaslug asc`
   )
   return sortByLastChecked(
-    rows.filter((row) => !isCompositeSlug(basePermaslug(row.permaslug))),
+    rows.filter((row) => {
+      const slug = basePermaslug(row.permaslug)
+      return !OPEN_WEIGHT_MODELS[slug] && !isCompositeSlug(slug)
+    }),
     provisionalCheckedAt
   )
 }

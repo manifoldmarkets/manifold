@@ -147,8 +147,6 @@ const SUBMIT: Anthropic.Tool = {
   },
 }
 
-const TOOLS: Anthropic.ToolUnion[] = [WEB_SEARCH, SUBMIT]
-
 const userPrompt = (subject: LabAgentSubject) => {
   const lines = [
     `Research this OpenRouter ${
@@ -236,6 +234,14 @@ export const classifyLabSubjectWithAgent = async (
   let nudged = false
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
+    // max_uses applies to one Messages request, including a resumed turn.
+    // Account for every attempted search across the whole research session.
+    const remainingSearches = MAX_WEB_SEARCHES - searches.length
+    if (remainingSearches <= 0)
+      return unresolved('search budget exhausted before an attribution', {
+        transient: searches.every((search) => search.error !== undefined),
+      })
+
     let response: Anthropic.Message
     try {
       response = await anthropic.messages.create({
@@ -245,7 +251,7 @@ export const classifyLabSubjectWithAgent = async (
         // classify-model-agent.ts: the 5-series rejects them with a 400, and
         // this call stays portable across whatever PERPS_CLASSIFIER_MODEL is.
         system: SYSTEM_PROMPT,
-        tools: TOOLS,
+        tools: [{ ...WEB_SEARCH, max_uses: remainingSearches }, SUBMIT],
         messages,
       })
     } catch (err) {
@@ -386,6 +392,21 @@ export const finalizeLabVerdict = (
     verdict: { verdict: 'unresolved' as const, reasoning: why },
     rejectedReason,
   })
+
+  // HTTP 200 can still carry only web-search error blocks. Nothing was
+  // researched in that case: do not present a negative finding or delay a
+  // watched row for a week merely because the search service was unavailable.
+  if (
+    searches.length > 0 &&
+    searches.every((search) => search.error !== undefined)
+  )
+    return {
+      ...unresolved(
+        `all web searches failed - ${reasoning}`,
+        'no successful web search'
+      ),
+      transient: true,
+    }
 
   if (verdict === 'unattributed') {
     if (searches.length === 0)

@@ -483,6 +483,7 @@ function LabClassificationSection(props: {
                   row={{
                     ...row,
                     provisional: true,
+                    isChinese: false,
                     discoveredVia: null,
                     firstSeen: row.classifiedAt,
                     firstRankedAt: null,

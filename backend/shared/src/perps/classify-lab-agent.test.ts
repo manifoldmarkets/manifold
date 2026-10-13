@@ -123,4 +123,30 @@ describe('finalizeLabVerdict', () => {
       'unresolved'
     )
   })
+
+  test.each(['unattributed', 'unresolved'])(
+    'retries %s when every web search failed',
+    (verdict) => {
+      const result = finalize({ verdict, reasoning: 'nothing found' }, [
+        { query: 'publisher reveal', results: [], error: 'unavailable' },
+        {
+          query: 'publisher headquarters',
+          results: [],
+          error: 'too_many_requests',
+        },
+      ])
+      expect(result.verdict.verdict).toBe('unresolved')
+      expect(result.transient).toBe(true)
+      expect(result.rejectedReason).toBe('no successful web search')
+    }
+  )
+
+  test('a completed search with no matches can support unattributed', () => {
+    const result = finalize(
+      { verdict: 'unattributed', reasoning: 'no official attribution found' },
+      [{ query: 'publisher reveal', results: [] }]
+    )
+    expect(result.verdict.verdict).toBe('unattributed')
+    expect(result.transient).toBeUndefined()
+  })
 })
