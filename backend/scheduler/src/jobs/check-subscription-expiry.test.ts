@@ -1,7 +1,7 @@
 import { daysUntilExpiry } from './check-subscription-expiry'
 
 // The scheduler package has no jest config; run with the shared one:
-//   yarn --cwd backend/shared jest --roots ../scheduler/src check-subscription-expiry
+//   yarn --cwd backend/shared jest --roots=../scheduler/src --testPathPattern check-subscription-expiry
 describe('daysUntilExpiry', () => {
   const now = Date.parse('2026-10-09T12:00:00Z')
 
