@@ -1,4 +1,3 @@
-import { sum } from 'lodash'
 import Link from 'next/link'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
@@ -6,6 +5,7 @@ import toast from 'react-hot-toast'
 import { ENV } from 'common/envs/constants'
 import { SPORT_LEAGUE_LABEL, SPORTS_CALENDAR } from 'common/sports-calendar'
 import {
+  creditsPerDay,
   FINALS_INTERVALS,
   LIVE_INTERVALS,
   OddsApiUsageSummary,
@@ -18,37 +18,47 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { api } from 'web/lib/api/api'
 
+/** Saves waiting on the API, by target, with the value asked for. */
+type Pending = Record<string, number | null>
+
 // How often the resolver asks The Odds API for scores, and what it spends.
 // Changes apply on the scheduler's next 10-second tick.
 export function AdminScorePolling() {
   const { data, refresh } = useAPIGetter('admin-sports-score-polling', {})
-  const [saving, setSaving] = useState<string | null>(null)
+  // Each setting saves on its own: while one is in flight its select shows
+  // the value asked for and is disabled, and the others still work. A second
+  // save on the same target waits for the first, so the later choice wins.
+  const [pending, setPending] = useState<Pending>({})
 
   if (!data) return <LoadingIndicator />
 
   const save = async (target: string, intervalSeconds: number | null) => {
-    setSaving(target)
+    setPending((p) => ({ ...p, [target]: intervalSeconds }))
     try {
       await api('admin-sports-set-score-polling', { target, intervalSeconds })
       await refresh()
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
     } finally {
-      setSaving(null)
+      setPending(({ [target]: _done, ...rest }) => rest)
     }
   }
 
   return (
     <Col className="gap-6">
       <Credits usage={data.usage} />
-      <LiveBySport data={data} saving={saving} save={save} />
+      <LiveBySport data={data} pending={pending} save={save} />
       <Row className="flex-wrap items-center gap-2 text-sm">
         <span className="text-ink-800 font-medium">Check for finals every</span>
         <IntervalSelect
           label="Finals check interval"
           options={FINALS_INTERVALS}
-          value={data.finals.intervalSeconds}
-          disabled={saving === pollingTarget.finals}
+          value={
+            pollingTarget.finals in pending
+              ? pending[pollingTarget.finals] ?? data.finals.intervalSeconds
+              : data.finals.intervalSeconds
+          }
+          disabled={pollingTarget.finals in pending}
           onChange={(v) => save(pollingTarget.finals, v)}
         />
         <span className="text-ink-500 text-xs">
@@ -56,15 +66,14 @@ export function AdminScorePolling() {
           with live scores off. Every 30 minutes once a game is 3 hours overdue.
         </span>
       </Row>
-      <GamesNow data={data} saving={saving} save={save} />
+      <GamesNow data={data} pending={pending} save={save} />
     </Col>
   )
 }
 
 function Credits(props: { usage: OddsApiUsageSummary }) {
   const { usage } = props
-  const last7 = usage.byDay.slice(-7)
-  const perDay = last7.length ? sum(last7.map((d) => d.credits)) / 7 : 0
+  const { perDay, days } = creditsPerDay(usage.byDay, Date.now())
   const max = Math.max(1, ...usage.byDay.map((d) => d.credits))
   return (
     <Col className="border-ink-200 gap-2 rounded-lg border p-3">
@@ -91,7 +100,9 @@ function Credits(props: { usage: OddsApiUsageSummary }) {
           </span>
           <span className="text-ink-600 text-xs">
             {perDay > 0
-              ? `Last 7 days: about ${Math.round(
+              ? `Last ${
+                  days === 1 ? 'day' : `${days} days`
+                }: about ${Math.round(
                   perDay
                 ).toLocaleString()} a day, so the rest lasts about ${Math.floor(
                   usage.remaining / perDay
@@ -136,10 +147,10 @@ function Credits(props: { usage: OddsApiUsageSummary }) {
 
 function LiveBySport(props: {
   data: ScorePollingPanel
-  saving: string | null
+  pending: Pending
   save: (target: string, intervalSeconds: number | null) => void
 }) {
-  const { data, saving, save } = props
+  const { data, pending, save } = props
   return (
     <Col className="gap-1">
       <span className="text-ink-800 text-sm font-medium">
@@ -161,8 +172,12 @@ function LiveBySport(props: {
             <IntervalSelect
               label={`${SPORT_LEAGUE_LABEL[s.sport]} live score interval`}
               options={LIVE_INTERVALS}
-              value={s.intervalSeconds}
-              disabled={saving === target}
+              value={
+                target in pending
+                  ? pending[target] ?? s.intervalSeconds
+                  : s.intervalSeconds
+              }
+              disabled={target in pending}
               onChange={(v) => save(target, v)}
             />
             <span className="text-ink-500 text-xs">
@@ -178,10 +193,10 @@ function LiveBySport(props: {
 
 function GamesNow(props: {
   data: ScorePollingPanel
-  saving: string | null
+  pending: Pending
   save: (target: string, intervalSeconds: number | null) => void
 }) {
-  const { data, saving, save } = props
+  const { data, pending, save } = props
   const sportSeconds = Object.fromEntries(
     data.sports.map((s) => [s.sport, s.intervalSeconds])
   )
@@ -200,6 +215,7 @@ function GamesNow(props: {
       {data.games.map((g) => {
         const target = pollingTarget.game(g.contractId)
         const follows = g.sport ? sportSeconds[g.sport] : undefined
+        const override = target in pending ? pending[target] : g.overrideSeconds
         return (
           <Row
             key={g.contractId}
@@ -222,8 +238,8 @@ function GamesNow(props: {
             <select
               aria-label={`Live score interval for ${g.question}`}
               className="border-ink-300 bg-canvas-0 rounded border px-2 py-1 text-sm"
-              value={g.overrideSeconds ?? ''}
-              disabled={saving === target}
+              value={override ?? ''}
+              disabled={target in pending}
               onChange={(e) =>
                 save(
                   target,

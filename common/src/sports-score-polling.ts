@@ -1,4 +1,4 @@
-import { groupBy } from 'lodash'
+import { groupBy, sum } from 'lodash'
 import { ENV } from './envs/constants'
 import { SPORT_LEAGUE_LABEL, SportId } from './sports-calendar'
 
@@ -113,6 +113,12 @@ export interface PollingGame {
   sport: SportId | undefined
   startTime: number
   closeTime: number | undefined
+  /**
+   * Absent from the last live-only response. The provider only lists a
+   * completed game when asked for finished ones, so the game has probably
+   * ended, however early: a finals check is due.
+   */
+  missing?: boolean
 }
 
 /** A game's live score interval in seconds; 0 is off. */
@@ -146,15 +152,19 @@ const SLACK_MS = 5_000
  * The sport keys to call /scores for on this tick, given when each was last
  * called. A key is due when the fastest reason among its started games has
  * come round: live scores for a game that wants them, or finals for a game
- * that's due to end (at most every half hour once it's 3 hours overdue).
- * `withFinished` asks for completed games too, which costs 2 credits instead
- * of 1, and is only needed once a game is due to end.
+ * that's due to end or has gone missing from a live-only response (at most
+ * every half hour once it's 3 hours overdue). `withFinished` asks for
+ * completed games too, which costs 2 credits instead of 1, and is only
+ * needed once a game is due to end or missing. A key whose calls keep
+ * failing waits twice as long per failure in a row, up to half an hour, so
+ * a provider outage or an exhausted quota isn't called every interval.
  */
 export function scorePollPlan(
   games: PollingGame[],
   settings: ScorePollingSettings,
   lastPolled: Record<string, number>,
-  now: number
+  now: number,
+  failures: Record<string, number> = {}
 ): { sportKey: string; withFinished: boolean }[] {
   const plan: { sportKey: string; withFinished: boolean }[] = []
   for (const [sportKey, keyGames] of Object.entries(
@@ -165,7 +175,7 @@ export function scorePollPlan(
     for (const game of keyGames) {
       const live = liveInterval(game, settings)
       if (live > 0) intervals.push(live)
-      if (finalsDue(game, now)) {
+      if (game.missing || finalsDue(game, now)) {
         withFinished = true
         const overdue =
           game.closeTime !== undefined &&
@@ -178,12 +188,22 @@ export function scorePollPlan(
       }
     }
     if (intervals.length === 0) continue
-    const interval = Math.min(...intervals) * 1000
+    const interval =
+      backedOff(Math.min(...intervals), failures[sportKey] ?? 0) * 1000
     const since = now - (lastPolled[sportKey] ?? -Infinity)
     if (since + SLACK_MS < interval) continue
     plan.push({ sportKey, withFinished })
   }
   return plan
+}
+
+/**
+ * How long to wait after `failures` failed calls in a row: the interval,
+ * doubled per failure, up to half an hour (or the interval, if longer).
+ */
+export function backedOff(intervalSeconds: number, failures: number): number {
+  const cap = Math.max(intervalSeconds, OVERDUE_FINALS_INTERVAL)
+  return Math.min(intervalSeconds * 2 ** Math.max(0, failures), cap)
 }
 
 // ─── The panel on /admin/sports ───────────────────────────────────────────────
@@ -198,6 +218,31 @@ export interface OddsApiUsageSummary {
   byDay: { day: string; credits: number }[]
   /** Calls and credits per sport key over the last 7 days. */
   bySport: { sportKey: string; calls: number; credits: number }[]
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000
+const utcDay = (day: string) => Date.parse(`${day}T00:00:00Z`)
+
+/**
+ * What the last week cost per day, for how long the credits will last. The
+ * rows are the UTC days with a call, so a quiet day in a week of history
+ * counts as a day of nothing, but a history that only began a few days ago
+ * is averaged over the days it has, not over seven.
+ */
+export function creditsPerDay(
+  byDay: { day: string; credits: number }[],
+  now: number
+): { perDay: number; days: number } {
+  if (byDay.length === 0) return { perDay: 0, days: 0 }
+  const today = Math.floor(now / DAY_MS) * DAY_MS
+  const weekStart = today - 6 * DAY_MS
+  const firstRecorded = Math.min(...byDay.map((d) => utcDay(d.day)))
+  const from = Math.max(weekStart, firstRecorded)
+  const days = Math.max(1, Math.round((today - from) / DAY_MS) + 1)
+  const credits = sum(
+    byDay.filter((d) => utcDay(d.day) >= from).map((d) => d.credits)
+  )
+  return { perDay: credits / days, days }
 }
 
 export interface ScorePollingPanel {

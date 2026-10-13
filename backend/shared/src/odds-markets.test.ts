@@ -865,15 +865,95 @@ describe('admin switches', () => {
     expect(requestedKeys()).not.toContain('americanfootball_nfl')
   })
 
-  it("falls back to the calendar's defaults if the switches can't be read", async () => {
+  it("creates nothing if the switches can't be read", async () => {
+    // The switches are the off switch for spending: the calendar's defaults
+    // would create games an admin switched off.
     const db = database()
     db.pg.map.mockRejectedValue(new Error('relation does not exist'))
+    expect(await createOddsMarketsForActiveCalendar(db.client)).toEqual({})
+    expect(getUpcomingOdds).not.toHaveBeenCalled()
+    expect(log.error).toHaveBeenCalledWith(
+      expect.stringContaining('creates nothing')
+    )
+  })
+
+  it("keeps a switched-off feed's open markets in sync with the provider", async () => {
+    // The NFL is switched off with a market still open. The daily run still
+    // fetches its games, moves that market to the kickoff the provider moved
+    // it to, and creates nothing.
+    const db = database()
+    db.contracts.push({ id: 'existing' } as Contract)
+    db.pg.map.mockImplementation(
+      async (sql: string, _values: unknown, map: (row: unknown) => unknown) => {
+        if (sql.includes('sports_competition_switches'))
+          return [
+            map({
+              competition_id: 'nfl-regular-2026',
+              phase: 'Regular Season',
+              enabled: false,
+              updated_by: 'admin',
+              updated_time: '2026-10-01T00:00:00Z',
+            }),
+          ]
+        if (sql.includes('split_part'))
+          return [map({ sport_key: 'americanfootball_nfl' })]
+        return []
+      }
+    )
+    db.pg.oneOrNone.mockImplementation(
+      async (sql: string, values?: unknown[]) => {
+        if (sql.includes("data->>'sportsStartTimestamp' as start"))
+          return { start: '2026-10-05T00:20:00Z', resolution: null }
+        if (sql.includes("data->>'sportsEventId'"))
+          return values?.[0] === 'odds:americanfootball_nfl:event'
+            ? { id: 'existing' }
+            : null
+        return null
+      }
+    )
+    const moved = { ...event, commence_time: '2026-10-04T17:00:00Z' }
+    const fresh = { ...event, id: 'new', commence_time: '2026-10-11T17:00:00Z' }
+    jest
+      .mocked(getUpcomingOdds)
+      .mockImplementation(async (key) =>
+        key === 'americanfootball_nfl' ? [moved, fresh] : []
+      )
     await createOddsMarketsForActiveCalendar(db.client)
     expect(requestedKeys()).toContain('americanfootball_nfl')
-    expect(requestedKeys()).not.toContain('icehockey_nhl')
-    expect(log.error).toHaveBeenCalledWith(
-      expect.stringContaining("couldn't read the switches")
+    expect(db.pg.none).toHaveBeenCalledWith(
+      expect.stringContaining('update contracts'),
+      [expect.stringContaining(moved.commence_time), 'existing']
     )
+    expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
+    expect(db.contracts).toHaveLength(1)
+  })
+
+  it("doesn't create a game inside a phase that's off, even where another phase's dates cover it", async () => {
+    // The CFP window (18 Dec to 25 Jan) overlaps the bowl season's (12 Dec
+    // to 1 Jan) on the one college football feed. With the bowls switched
+    // off, a 30 Dec game isn't created through the CFP; a 15 Jan one is.
+    jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-12-20T12:00:00Z'))
+    jest.mocked(getUpcomingOdds).mockResolvedValue([
+      { ...event, id: 'bowl', commence_time: '2026-12-30T20:00:00Z' },
+      { ...event, id: 'semi', commence_time: '2027-01-15T01:00:00Z' },
+    ])
+    const result = await createOddsMarketsForCompetition(
+      database().client,
+      'cfb-cfp-2027',
+      { dryRun: true, switches: { 'cfb-regular-2026:Bowl Season': false } }
+    )
+    expect(result.log.map((r) => [r.eventId, r.status])).toEqual([
+      ['bowl', 'skipped'],
+      ['semi', 'dry-run'],
+    ])
+    expect(result.log[0].reason).toContain('Bowl Season is off')
+    // With the bowls on, both are created.
+    const both = await createOddsMarketsForCompetition(
+      database().client,
+      'cfb-cfp-2027',
+      { dryRun: true }
+    )
+    expect(both.log.map((r) => r.status)).toEqual(['dry-run', 'dry-run'])
   })
 
   it('never creates in a locked phase, even switched on', async () => {
@@ -1023,14 +1103,111 @@ describe('score polling settings', () => {
     expect(getScores).toHaveBeenCalledWith('americanfootball_nfl', {})
   })
 
-  it("polls at the defaults if the settings can't be read", async () => {
+  it("polls nothing if the settings can't be read, and says so once an hour", async () => {
+    // The settings are the off switch for spending credits: the defaults
+    // would poll a sport an admin switched off.
     const db = database()
+    const state = newScorePollState()
     db.pg.map.mockRejectedValue(new Error('relation does not exist'))
     db.pg.manyOrNone.mockResolvedValueOnce(nflGame(60 * MINUTE))
-    await pollOddsScoresAndResolve(db.client, newScorePollState())
-    expect(getScores).toHaveBeenCalledTimes(1)
+    expect((await pollOddsScoresAndResolve(db.client, state)).polled).toBe(0)
+    expect(getScores).not.toHaveBeenCalled()
     expect(log.error).toHaveBeenCalledWith(
-      expect.stringContaining("couldn't read the polling settings")
+      expect.stringContaining('nothing is polled')
     )
+    db.pg.manyOrNone.mockResolvedValueOnce(nflGame(60 * MINUTE))
+    await pollOddsScoresAndResolve(db.client, state)
+    expect(log.error).toHaveBeenCalledTimes(1)
+  })
+
+  it('checks for a final the moment a started game drops out of the live scores', async () => {
+    // An hour into an NFL game (due to end at three), the live-only call no
+    // longer lists it: it finished early. The same tick asks for finished
+    // games and resolves it, rather than two hours on at the finals check.
+    const db = database()
+    db.pg.manyOrNone
+      .mockResolvedValueOnce(nflGame(60 * MINUTE))
+      .mockResolvedValueOnce([
+        { id: 'away-answer', text: 'Away', index: 1, contract_id: 'game' },
+        { id: 'home-answer', text: 'Home', index: 0, contract_id: 'game' },
+      ])
+    jest
+      .mocked(getScores)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          ...event,
+          completed: true,
+          scores: [
+            { name: 'Away', score: '14' },
+            { name: 'Home', score: '21' },
+          ],
+          last_update: null,
+        },
+      ])
+    const result = await pollOddsScoresAndResolve(
+      db.client,
+      newScorePollState()
+    )
+    expect(jest.mocked(getScores).mock.calls).toEqual([
+      ['americanfootball_nfl', {}],
+      ['americanfootball_nfl', { finishedDays: 3 }],
+    ])
+    expect(result.resolved).toBe(1)
+    expect(resolveMarketHelper).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'game' }),
+      creator,
+      creator,
+      { outcome: 'home-answer', resolutions: { 'home-answer': 100 } }
+    )
+  })
+
+  it('keeps asking for finished games while a started game is missing from the feed', async () => {
+    // Still missing with finished games included: postponed, or not filed
+    // yet. Later polls keep including finished games rather than going back
+    // to live-only calls until the finals check.
+    const db = database()
+    const state = newScorePollState()
+    jest.mocked(getScores).mockResolvedValue([])
+    db.pg.manyOrNone.mockResolvedValueOnce(nflGame(60 * MINUTE))
+    await pollOddsScoresAndResolve(db.client, state)
+    jest.spyOn(Date, 'now').mockReturnValue(NOW + 5 * MINUTE)
+    db.pg.manyOrNone.mockResolvedValueOnce(nflGame(60 * MINUTE))
+    await pollOddsScoresAndResolve(db.client, state)
+    expect(jest.mocked(getScores).mock.calls).toEqual([
+      ['americanfootball_nfl', {}],
+      ['americanfootball_nfl', { finishedDays: 3 }],
+      ['americanfootball_nfl', { finishedDays: 3 }],
+    ])
+  })
+
+  it('waits twice as long per failed scores call in a row, up to half an hour', async () => {
+    const db = database()
+    const state = newScorePollState()
+    jest.mocked(getScores).mockRejectedValue(new Error('503'))
+    const tick = async (minutesOn: number) => {
+      jest.spyOn(Date, 'now').mockReturnValue(NOW + minutesOn * MINUTE)
+      db.pg.manyOrNone.mockResolvedValueOnce(nflGame(60 * MINUTE))
+      await pollOddsScoresAndResolve(db.client, state)
+      return jest.mocked(getScores).mock.calls.length
+    }
+    expect(await tick(0)).toBe(1)
+    // The 5-minute default: after one failure the next call waits 10.
+    expect(await tick(5)).toBe(1)
+    expect(await tick(10)).toBe(2)
+    // Two failures: 20 minutes.
+    expect(await tick(20)).toBe(2)
+    expect(await tick(30)).toBe(3)
+    // Three: 40 would be next, but half an hour is the most.
+    expect(await tick(55)).toBe(3)
+    expect(await tick(60)).toBe(4)
+    // A call that works resets the wait.
+    jest
+      .mocked(getScores)
+      .mockResolvedValue([
+        { ...event, completed: false, scores: null, last_update: null },
+      ])
+    expect(await tick(90)).toBe(5)
+    expect(await tick(95)).toBe(6)
   })
 })
