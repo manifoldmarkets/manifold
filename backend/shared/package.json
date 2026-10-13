@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc -b && (cd ../../common && tsc-alias) && tsc-alias",
     "alias": "tsc-alias",
-    "test": "jest",
+    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js",
     "verify": "yarn --cwd=../.. verify",
     "verify:dir": "npx eslint . --max-warnings 0"
   },
@@ -31,6 +31,7 @@
     "string-similarity": "4.0.4"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.3.14",
     "@types/jest": "29.2.4",
     "@types/mailgun-js": "0.22.12",
     "@types/numeral": "2.0.5",

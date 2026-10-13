@@ -11,10 +11,10 @@ import {
 
 // update-league used to score the whole season in one pass: every bet row of
 // the season loaded, then per league member, per contract. It now loads bets
-// a chunk of contracts at a time (members only, no amount=0/shares=0 rows)
-// and calls addLeagueProfitForContract per contract. These tests pin the two
-// to the same numbers, and pin the claim that the SQL-side row filter changes
-// nothing.
+// a chunk of contracts at a time (members only, excluding empty zero orders)
+// and calls addLeagueProfitForContract per contract. Empty zero-value orders
+// can be dropped, but zero rows carrying fills must survive self-trade
+// adjustment. Actual-query regressions also run in the shared test suite.
 
 const SEASON_START = Date.parse('2026-10-01T18:35:20.627Z')
 const DAY = 24 * 60 * 60 * 1000
@@ -240,7 +240,7 @@ const oldWholeSeasonProfit = (
 }
 
 // What update-league does now, with the chunk query's row selection
-// (this chunk's contracts, league members only, no amount=0/shares=0 rows)
+// (this chunk's contracts, league members only, no empty zero-value orders)
 // applied in memory.
 const newChunkedProfit = (
   contracts: Contract[],
@@ -261,7 +261,7 @@ const newChunkedProfit = (
       (b) =>
         ids.has(b.contractId) &&
         members.has(b.userId) &&
-        (b.amount !== 0 || b.shares !== 0)
+        (b.amount !== 0 || b.shares !== 0 || (b.fills?.length ?? 0) > 0)
     )
     const byContract = groupBy(rows, (b) => b.contractId)
     for (const contract of chunkContracts) {
@@ -293,7 +293,7 @@ describe('league season profit', () => {
     }
   )
 
-  it('rows with amount 0 and shares 0 never change a profit', () => {
+  it('empty zero-value orders do not change a profit', () => {
     for (const seed of [3, 11, 99]) {
       const bets = makeSeasonBets(seed)
       const zeroRows = bets.filter((b) => b.amount === 0 && b.shares === 0)

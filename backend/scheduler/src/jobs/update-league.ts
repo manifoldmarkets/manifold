@@ -41,13 +41,10 @@ export async function updateLeague(
     return
   }
 
-  // Candidate contracts come from contracts.last_bet_time, which the
-  // contract_bets insert trigger bumps on every bet, so any market with a
-  // season bet is in this set (a superset: a market whose only season
-  // activity was unfilled orders is harmless, it scores nothing below). The
-  // old `join contract_bets ... where created_time in season` found the same
-  // contracts by walking every bet row of the season: 3.36M rows and 258 s on
-  // 2026-10-09 for 5,104 contracts, versus 91 ms from the last_bet_time index.
+  // Preserve the old season-bet candidate set without duplicating contract
+  // payloads for every bet. Synthetic bets (e.g. shares from adding an answer)
+  // do not advance contracts.last_bet_time. EXISTS can use the existing
+  // (contract_id, created_time) index and stop at the first season bet.
   log('Loading users and contracts...')
   const results = await pg.multi(
     `select users.id from users
@@ -55,12 +52,17 @@ export async function updateLeague(
     where leagues.season = $1;
     select ${contractColumnsToSelectWithPrefix('contracts')}
     from contracts
-    where contracts.last_bet_time >= millis_to_ts($2)
+    where exists (
+      select 1 from contract_bets cb
+      where cb.contract_id = contracts.id
+        and cb.created_time > millis_to_ts($2)
+        and cb.created_time < millis_to_ts($3)
+    )
       and contracts.token = 'MANA'
       and contracts.visibility = 'public'
       and contracts.mechanism is distinct from 'perp'
       and coalesce((contracts.data->'isRanked')::boolean, true) = true;`,
-    [season, seasonStart]
+    [season, seasonStart, seasonEnd]
   )
 
   const userIds = results[0].map((r: any) => r.id as string)
@@ -160,16 +162,16 @@ const CONTRACT_CHUNK_SIZE = 250
 // 14 GB heap: the scheduler container OOM-crashed every day between 10:00 and
 // 11:50 UTC for at least the month of logs we keep.
 //
-// Two things bound it now:
-//  - rows with amount = 0 and shares = 0 (unfilled or expired limit orders)
-//    are excluded in SQL. getCpmmOrDpmProfit adds nothing for them: no
-//    invested amount, no sale value, and zero shares pay out zero. A fill
-//    against your own order always references a row that did fill, so
-//    amount <> 0, and excludeSelfTrades still sees it. On 2026-10-09 that was
-//    92% of the season's rows (3,232,186 -> 247,559).
+// Two things reduce the rows held at once:
+//  - zero-amount/zero-share rows without fills (empty limit orders) are
+//    excluded in SQL. Filled synthetic rows can also have zero amount and
+//    shares: excludeSelfTrades needs their fills before the creator-time
+//    filter runs, so those rows must stay. Keep nullable historical values
+//    conservatively too; only known empty rows are discarded.
 //  - what remains is fetched CONTRACT_CHUNK_SIZE contracts at a time, joined
 //    to the season's league members (the only users ever scored), so the
-//    heap holds one chunk and the loop yields between chunks.
+//    heap holds one chunk and the loop yields between chunks. The number of
+//    bets on a single contract is not bounded by the contract chunk size.
 //
 // The scoring itself is unchanged: per user, per contract, excludeSelfTrades,
 // then filterBetsForLeagueScoring, then getProfitMetrics, now in
@@ -199,7 +201,11 @@ export const computeSeasonProfit = async (
       where cb.contract_id in ($2:list)
         and cb.created_time > millis_to_ts($3)
         and cb.created_time < millis_to_ts($4)
-        and (cb.amount <> 0 or cb.shares <> 0)`,
+        and (
+          cb.amount is distinct from 0
+          or cb.shares is distinct from 0
+          or coalesce(cb.data->'fills', '[]'::jsonb) <> '[]'::jsonb
+        )`,
       [season, chunkContracts.map((c) => c.id), seasonStart, seasonEnd],
       (r) => r.data as Bet
     )
