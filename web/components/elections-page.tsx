@@ -33,14 +33,17 @@ import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { buildShareUrl } from 'web/lib/util/share-url'
 import {
   balanceOfPowerAnswerColor,
+  balanceOfPowerSweepOdds,
   MIDTERM_CONTEST_TOPIC_SLUG,
 } from 'web/lib/politics/election-curation'
 import type { MidtermSpotlightProps } from 'web/lib/politics/home'
 import {
+  BOTH_2026_COLUMNS,
   CongressChamber,
   congressChambers,
   ConditionalMatrixRow,
   HOUSE_2026_COLUMNS,
+  MatrixColumns,
   PRESIDENT_2028_COLUMNS,
   SENATE_2026_COLUMNS,
   withConditionProbs,
@@ -113,6 +116,7 @@ export function USElectionsPage(
     unprecedentedContracts = [],
     senateMatrixRows = [],
     houseMatrixRows = [],
+    bothMatrixRows = [],
     presidencyMatrixRows = [],
     hideTitle,
   } = props
@@ -252,13 +256,17 @@ export function USElectionsPage(
           Balance of Power slot; until either chamber has two complete rows
           (e.g. before the markets are created) the joint-distribution market
           shows here instead. */}
-      {senateMatrixRows.length > 0 || houseMatrixRows.length > 0 ? (
+      {senateMatrixRows.length > 0 ||
+      houseMatrixRows.length > 0 ||
+      bothMatrixRows.length > 0 ? (
         <SectionInView section="conditional matrix 2026" className="gap-3">
           <CongressConditionalSection
             senateRows={senateMatrixRows}
             houseRows={houseMatrixRows}
+            bothRows={bothMatrixRows}
             senateControlContract={senateControlContract}
             houseControlContract={houseControlContract}
+            balanceOfPowerContract={balanceOfPowerContract}
           />
         </SectionInView>
       ) : (
@@ -382,34 +390,80 @@ const MATRIX_FOOTNOTE =
 const CHAMBER_CHOICES: Record<string, CongressChamber> = {
   Senate: 'senate',
   House: 'house',
+  Both: 'both',
 }
 
-// The 2026 Congress matrices under one header, with a Senate | House switch
-// when both chambers have rows. Column headers carry the live control odds of
-// the chosen chamber (the map's control cards' markets: YES is a Republican
-// majority in both).
+// What each view of the Congress section says and shows. The condition odds in
+// the column headers come from the map's control cards' markets for a chamber
+// (YES is a Republican majority in both) and from the Balance of Power
+// market's sweep answers for Both.
+const CHAMBER_VIEWS: Record<
+  CongressChamber,
+  { subtitle: string; caption: string; columns: MatrixColumns }
+> = {
+  senate: {
+    subtitle:
+      'The same questions, asked under each outcome of the Senate race. Click a chance to bet on it.',
+    caption: 'Chances by Senate result',
+    columns: SENATE_2026_COLUMNS,
+  },
+  house: {
+    subtitle:
+      'The same questions, asked under each outcome of the House race. Click a chance to bet on it.',
+    caption: 'Chances by House result',
+    columns: HOUSE_2026_COLUMNS,
+  },
+  both: {
+    subtitle:
+      'What follows if one party wins both the Senate and the House. Some questions have a market for one party only. Click a chance to bet on it.',
+    caption: 'Chances by Congress sweep',
+    columns: BOTH_2026_COLUMNS,
+  },
+}
+
+// The 2026 Congress matrices under one header, with a Senate | House | Both
+// switch for the views that have rows.
 function CongressConditionalSection(props: {
   senateRows: ConditionalMatrixRow[]
   houseRows: ConditionalMatrixRow[]
+  bothRows: ConditionalMatrixRow[]
   senateControlContract: Contract | null
   houseControlContract: Contract | null
+  balanceOfPowerContract: Contract | null
 }) {
   const chambers = congressChambers({
     senate: props.senateRows,
     house: props.houseRows,
+    both: props.bothRows,
   })
   const [choice, setChoice] = usePersistentInMemoryState<CongressChamber>(
     'senate',
     'election-conditional-matrix-chamber'
   )
   const chamber = chambers.includes(choice) ? choice : chambers[0]
-  const senate = chamber === 'senate'
+  const view = CHAMBER_VIEWS[chamber]
+  const rows =
+    chamber === 'senate'
+      ? props.senateRows
+      : chamber === 'house'
+      ? props.houseRows
+      : props.bothRows
+  const conditionContract =
+    chamber === 'senate'
+      ? props.senateControlContract
+      : chamber === 'house'
+      ? props.houseControlContract
+      : props.balanceOfPowerContract
+  const readConditionOdds: (
+    contract: Contract
+  ) => { dem: number; rep: number } | undefined =
+    chamber === 'both'
+      ? balanceOfPowerSweepOdds
+      : (contract) => electionOdds(contract, true)
   return (
     <>
       <SectionHeader
-        subtitle={`The same questions, asked under each outcome of the ${
-          senate ? 'Senate' : 'House'
-        } race. Click a chance to bet on it.`}
+        subtitle={view.subtitle}
         action={
           chambers.length > 1 && (
             <ChoicesToggleGroup
@@ -432,19 +486,14 @@ function CongressConditionalSection(props: {
       </SectionHeader>
       <LiveConditionOdds
         key={chamber}
-        contract={
-          senate ? props.senateControlContract : props.houseControlContract
-        }
-        read={(c) => electionOdds(c, true)}
+        contract={conditionContract}
+        read={readConditionOdds}
       >
         {(odds) => (
           <ConditionalMatrix
-            caption={`Chances by ${senate ? 'Senate' : 'House'} result`}
-            columns={withConditionProbs(
-              senate ? SENATE_2026_COLUMNS : HOUSE_2026_COLUMNS,
-              odds
-            )}
-            rows={senate ? props.senateRows : props.houseRows}
+            caption={view.caption}
+            columns={withConditionProbs(view.columns, odds)}
+            rows={rows}
             trackingName={`election conditional matrix 2026 ${chamber}`}
             footnote={MATRIX_FOOTNOTE}
           />

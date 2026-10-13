@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { Contract } from 'common/contract'
 import {
+  BOTH_2026_MATRIX,
   buildConditionalMatrixRows,
   conditionalMatrixIds,
   ConditionalMatrixPair,
@@ -12,6 +13,7 @@ import {
   isMatrixCollapsible,
   MATRIX_COLLAPSED_ROWS,
   matrixProb,
+  matrixRowContracts,
   PRESIDENT_2028_MATRIX,
   SENATE_2026_MATRIX,
   slimMatrixRows,
@@ -46,18 +48,47 @@ const PAIRS: ConditionalMatrixPair[] = [
 ]
 
 const all = (pairs = PAIRS) =>
-  pairs.flatMap((p) => [binary(p.dem), binary(p.rep)])
+  pairs.flatMap((p) =>
+    [p.dem, p.rep].filter((id): id is string => !!id).map((id) => binary(id))
+  )
 
 test('a complete pair becomes a row, in config order, Dem and Rep kept apart', () => {
   // Fetched order is irrelevant: rows follow the config.
   const rows = buildConditionalMatrixRows(PAIRS, all().reverse(), NOW)
   assert.deepEqual(
-    rows.map((r) => [r.label, r.dem.id, r.rep.id]),
+    rows.map((r) => [r.label, r.dem?.id, r.rep?.id]),
     [
       ['First', 'D1', 'R1'],
       ['Second', 'D2', 'R2'],
       ['Third', 'D3', 'R3'],
     ]
+  )
+})
+
+test('a one-sided config needs only its one market, and never gets an undefined key', () => {
+  const pairs: ConditionalMatrixPair[] = [
+    { label: 'Pair', dem: 'D1', rep: 'R1' },
+    { label: 'Rep only', rep: 'R2' },
+    { label: 'Dem only', dem: 'D3' },
+    { label: 'Rep only, missing', rep: 'R4' },
+    { label: 'Neither' },
+  ]
+  const rows = buildConditionalMatrixRows(pairs, all(), NOW)
+  assert.deepEqual(
+    rows.map((r) => [r.label, r.dem?.id, r.rep?.id]),
+    [
+      ['Pair', 'D1', 'R1'],
+      ['Rep only', undefined, 'R2'],
+      ['Dem only', 'D3', undefined],
+    ]
+  )
+  // Absent, not undefined: Next.js cannot serialize undefined page props.
+  assert.deepEqual(Object.keys(rows[1]), ['label', 'rep'])
+  assert.deepEqual(Object.keys(rows[2]), ['label', 'dem'])
+  assert.deepEqual(Object.keys(slimMatrixRows(rows)[1]), ['label', 'rep'])
+  assert.deepEqual(
+    matrixRowContracts(rows).map((c) => c.id),
+    ['D1', 'R1', 'R2', 'D3']
   )
 })
 
@@ -113,7 +144,8 @@ test('the real config resolves to nothing before its markets exist', () => {
 
 test('config ids are unique across all matrices', () => {
   const ids = conditionalMatrixIds()
-  assert.equal(ids.length, 2 * (6 + 10 + 7))
+  // Senate 6 pairs, House 10, 2028 7, Both: one pair and one Rep-only row.
+  assert.equal(ids.length, 2 * (6 + 10 + 7) + 3)
   assert.equal(new Set(ids).size, ids.length)
   for (const id of ids) assert.match(id, /^[A-Za-z0-9]{10}$/)
   // Labels repeat across matrices (a 2027 shutdown is asked under both
@@ -121,6 +153,7 @@ test('config ids are unique across all matrices', () => {
   for (const matrix of [
     SENATE_2026_MATRIX,
     HOUSE_2026_MATRIX,
+    BOTH_2026_MATRIX,
     PRESIDENT_2028_MATRIX,
   ]) {
     const labels = matrix.map((p) => p.label)
@@ -146,23 +179,42 @@ test('the Supreme Court pair moved from the card row to the Senate matrix', () =
   )
 })
 
-test('the Congress section offers the chambers that have rows, Senate first', () => {
+test('the Both view holds the sweep markets, with the $5,000 checks Rep-only', () => {
+  const checks = BOTH_2026_MATRIX.find((p) => p.rep === 'Ud2Q60puts')
+  assert.ok(checks)
+  assert.equal(checks?.dem, undefined)
+  const depression = BOTH_2026_MATRIX.find((p) => p.dem === 'NLtqAPnLzA')
+  assert.equal(depression?.rep, 'tPgqUCc2zq')
+  for (const p of BOTH_2026_MATRIX) assert.ok(p.dem || p.rep, p.label)
+})
+
+test('the Congress section offers the views that have rows, Senate first, Both last', () => {
   const rows = buildConditionalMatrixRows(PAIRS, all(), NOW)
-  assert.deepEqual(congressChambers({ senate: rows, house: rows }), [
-    'senate',
+  assert.deepEqual(
+    congressChambers({ senate: rows, house: rows, both: rows }),
+    ['senate', 'house', 'both']
+  )
+  assert.deepEqual(congressChambers({ senate: [], house: rows, both: [] }), [
     'house',
   ])
-  assert.deepEqual(congressChambers({ senate: [], house: rows }), ['house'])
-  assert.deepEqual(congressChambers({ senate: rows, house: [] }), ['senate'])
-  assert.deepEqual(congressChambers({ senate: [], house: [] }), [])
+  assert.deepEqual(congressChambers({ senate: rows, house: [], both: [] }), [
+    'senate',
+  ])
+  assert.deepEqual(congressChambers({ senate: [], house: [], both: rows }), [
+    'both',
+  ])
+  assert.deepEqual(congressChambers({ senate: [], house: [], both: [] }), [])
 })
 
 test('slimMatrixRows drops the description but keeps what the matrix reads', () => {
   const rows = buildConditionalMatrixRows(PAIRS, all(), NOW)
   const slim = slimMatrixRows(rows)
-  assert.equal('description' in slim[0].dem, false)
-  assert.equal(slim[0].dem.question, rows[0].dem.question)
-  assert.equal(matrixProb(slim[0].dem), matrixProb(rows[0].dem))
+  const [full, thin] = [rows[0].dem, slim[0].dem]
+  assert.ok(full && thin)
+  if (!full || !thin) return
+  assert.equal('description' in thin, false)
+  assert.equal(thin.question, full.question)
+  assert.equal(matrixProb(thin), matrixProb(full))
 })
 
 test('long matrices collapse to six rows behind a toggle', () => {

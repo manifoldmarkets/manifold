@@ -17,6 +17,9 @@ import { isOpenPublicMarket } from './election-curation'
 //
 // Picked from prod on 2026-10-13: open, public, binary, none in the Midterm
 // Contest topic or the conditional matrices. Trader counts as of that day.
+// Markets conditional on a party winning both chambers (e.g. the $5,000
+// checks) belong in the Congress matrix's Both view instead
+// (BOTH_2026_MATRIX in conditional-matrix.ts).
 
 export const UNPRECEDENTED_POLITICS_SIZE = 8
 
@@ -41,9 +44,6 @@ export const UNPRECEDENTED_POLITICS_SLUGS: string[] = [
   // Will a sitting US President refuse to follow or ignore a Supreme Court
   // ruling by 2032? (92)
   'will-a-sitting-us-president-refuse',
-  // Will Trump give American adults $5000 each if the republicans win the
-  // midterms? (37; N/A unless Republicans win)
-  'will-trump-give-american-adults-500',
   // In 2028, will AI be at least as big a political issue as abortion? (2,718)
   'in-2028-will-ai-be-at-least-as-big',
 
@@ -51,6 +51,9 @@ export const UNPRECEDENTED_POLITICS_SLUGS: string[] = [
   // Will Donald Trump attempt to suspend, delay, or reschedule the 2028
   // elections? (107)
   'will-donald-trump-attempt-to-suspen',
+  // Will Donald Trump publicly call for a global halt in AI progress before
+  // 2028? (65) The AI-pause angle: the closest politically framed market.
+  'will-donald-trump-publicly-call-for',
   // Will Trump/USA buy or acquire part of Greenland? (1,270)
   'will-trump-buy-greenland',
   // Will the United States experience a constitutional crisis before 2030?
