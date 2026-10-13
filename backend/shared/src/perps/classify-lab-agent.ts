@@ -56,9 +56,16 @@ export type LabAgentVerdict =
 export type LabAgentSearch = {
   query: string
   results: { title: string; url: string }[]
+  /** False when a paused response has not delivered this search's result yet. */
+  completed?: boolean
   /** Set when the search itself failed (rate limit, unavailable). */
   error?: string
 }
+
+const hasCompletedSearch = (searches: LabAgentSearch[]) =>
+  searches.some(
+    (search) => search.completed !== false && search.error === undefined
+  )
 
 export type LabAgentClassification = {
   subjectType: LabClassificationSubjectType
@@ -239,7 +246,7 @@ export const classifyLabSubjectWithAgent = async (
     const remainingSearches = MAX_WEB_SEARCHES - searches.length
     if (remainingSearches <= 0)
       return unresolved('search budget exhausted before an attribution', {
-        transient: searches.every((search) => search.error !== undefined),
+        transient: !hasCompletedSearch(searches),
       })
 
     let response: Anthropic.Message
@@ -328,12 +335,13 @@ const collectSearches = (
       const input = block.input as Record<string, unknown> | null
       const query =
         typeof input?.query === 'string' ? input.query : JSON.stringify(input)
-      const search: LabAgentSearch = { query, results: [] }
+      const search: LabAgentSearch = { query, results: [], completed: false }
       open.set(block.id, search)
       searches.push(search)
     } else if (block.type === 'web_search_tool_result') {
       const search = open.get(block.tool_use_id)
       if (!search) continue
+      search.completed = true
       if (Array.isArray(block.content))
         search.results = block.content.map((r) => ({
           title: r.title,
@@ -396,13 +404,10 @@ export const finalizeLabVerdict = (
   // HTTP 200 can still carry only web-search error blocks. Nothing was
   // researched in that case: do not present a negative finding or delay a
   // watched row for a week merely because the search service was unavailable.
-  if (
-    searches.length > 0 &&
-    searches.every((search) => search.error !== undefined)
-  )
+  if (searches.length > 0 && !hasCompletedSearch(searches))
     return {
       ...unresolved(
-        `all web searches failed - ${reasoning}`,
+        `no web search completed successfully - ${reasoning}`,
         'no successful web search'
       ),
       transient: true,

@@ -125,6 +125,32 @@ test('an exhausted budget of failed searches still permits an outage retry', asy
   expect(result.transient).toBe(true)
 })
 
+test.each([0, 5])(
+  'a pause with %i failed searches and the rest unfinished does not start cooldown',
+  async (failedCount) => {
+    const response = searchResponse(6)
+    create.mockResolvedValue({
+      ...response,
+      content: [
+        ...response.content.filter((block) => block.type === 'server_tool_use'),
+        ...Array.from({ length: failedCount }, (_, index) => ({
+          type: 'web_search_tool_result',
+          tool_use_id: `search-${index}`,
+          content: { error_code: 'unavailable' },
+        })),
+      ],
+    })
+    const result = await classifyLabSubjectWithAgent(subject)
+    expect(create).toHaveBeenCalledTimes(1)
+    expect(result.searches).toHaveLength(6)
+    expect(
+      result.searches.filter((search) => search.completed === false)
+    ).toHaveLength(6 - failedCount)
+    expect(result.verdict.verdict).toBe('unresolved')
+    expect(result.transient).toBe(true)
+  }
+)
+
 test('treats HTTP-200 search errors as transient without any network call', async () => {
   create.mockResolvedValue({
     stop_reason: 'tool_use',
