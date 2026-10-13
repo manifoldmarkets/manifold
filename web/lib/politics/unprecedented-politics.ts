@@ -24,6 +24,9 @@ export const UNPRECEDENTED_POLITICS_SLUGS: string[] = [
   // Will there be troops or federal agents at US voting booths in 2026 or
   // 2028? (267 traders)
   'will-there-be-pressure-by-troops-or',
+  // Will Federal Agents draw guns on voters on Election Day 2026? (10; closes
+  // Nov 4, 2026, so it leaves with the midterms)
+  'will-federal-agents-draw-guns-on-vo',
   // Will Trump declare a national emergency before the midterms? (146; closes
   // Nov 2, 2026)
   'will-trump-declare-a-national-emerg-qphcUqSlZZ',
