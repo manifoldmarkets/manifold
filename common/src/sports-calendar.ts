@@ -603,6 +603,24 @@ export function calendarEntriesFor(
   return SPORTS_CALENDAR.filter((e) => e.competitionId === competitionId)
 }
 
+/**
+ * Other phases on the same Odds API feed whose dates overlap this one's.
+ * The feed can't tell their games apart, so a game inside both is created
+ * only if both are on (the CFP window overlaps the bowls'; a phase's last
+ * US evening is the next phase's first UTC day).
+ */
+export function overlappingPhases(
+  entry: SportsCalendarEntry
+): SportsCalendarEntry[] {
+  if (!entry.oddsKey) return []
+  const w = phaseWindow(entry)
+  return SPORTS_CALENDAR.filter((e) => {
+    if (e === entry || e.oddsKey !== entry.oddsKey) return false
+    const o = phaseWindow(e)
+    return o.from <= w.to && w.from <= o.to
+  })
+}
+
 // ─── Scheduler switches ───────────────────────────────────────────────────────
 //
 // Admins switch a phase's scheduled creation on or off from /admin/sports.
@@ -665,6 +683,8 @@ export interface CompetitionSwitchState {
   defaultOn: boolean
   locked?: string
   notes?: string
+  /** Phases on the same feed whose dates overlap this one's, as labels. */
+  overlaps: string[]
   /** Who set the switch and when; absent while the phase runs on its default. */
   updatedBy?: string
   updatedTime?: number
