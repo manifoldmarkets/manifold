@@ -1,6 +1,5 @@
 import { formatOraclePrice } from 'common/perps/oracle-display'
 import clsx from 'clsx'
-import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { useEffect, useRef, useState } from 'react'
 import { PerpContract } from 'common/contract'
 import { formatPerpClosePercent, inferPriceDecimals } from 'common/perps/format'
@@ -13,6 +12,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
+import { useHideApiTrades } from 'web/hooks/use-hide-api-trades'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
@@ -50,13 +50,13 @@ export const PerpTradesTab = (props: {
   const [hasMore, setHasMore] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const initializedRef = useRef(false)
+  // Bumped whenever the list resets for a new filter, so a page requested
+  // under the old filter can be dropped when it arrives.
+  const filterEpochRef = useRef(0)
   // Filtering is server-side (like the bets tab): dropping API rows on the
   // client would leave short, ragged pages since pagination counts rows
   // before the filter.
-  const [hideApiTrades, setHideApiTrades] = usePersistentInMemoryState(
-    false,
-    `hide-api-perp-trades-${contract.id}`
-  )
+  const [hideApiTrades, setHideApiTrades] = useHideApiTrades()
   // Hoisted out of EventRow: one resize listener for the tab, not one per row.
   const isMobile = useIsMobile(800)
 
@@ -66,9 +66,12 @@ export const PerpTradesTab = (props: {
   // prepending unseen rows without disturbing pagination.
   useEffect(() => {
     let cancelled = false
+    filterEpochRef.current++
     initializedRef.current = false
     setEvents(null)
     setHasMore(true)
+    // A page still loading for the old filter mustn't block the new list.
+    setLoadingMore(false)
     const load = () =>
       api('get-perp-events', {
         contractId: contract.id,
@@ -108,6 +111,7 @@ export const PerpTradesTab = (props: {
 
   const loadMore = async () => {
     if (!events || !hasMore || loadingMore) return false
+    const epoch = filterEpochRef.current
     setLoadingMore(true)
     try {
       const oldest = events[events.length - 1]
@@ -117,6 +121,8 @@ export const PerpTradesTab = (props: {
         limit: PAGE_SIZE,
         ...(hideApiTrades ? { excludeApi: true } : {}),
       })
+      // Stale: the list was reset for another filter while this loaded.
+      if (filterEpochRef.current !== epoch) return true
       if (more.length === 0) {
         setHasMore(false)
         return false
@@ -125,7 +131,8 @@ export const PerpTradesTab = (props: {
       setHasMore(more.length === PAGE_SIZE)
       return true
     } finally {
-      setLoadingMore(false)
+      // After a reset, loadingMore belongs to the new list's requests.
+      if (filterEpochRef.current === epoch) setLoadingMore(false)
     }
   }
 

@@ -4,6 +4,7 @@ import { Contract } from 'common/contract'
 import { electionOdds } from './election-map-model'
 import {
   auditedOdds,
+  candidateBinaryParty,
   complementParty,
   foldComplement,
   raceOdds,
@@ -94,19 +95,75 @@ test('a complement stays separate where the other major party has no nominee', (
   assert.equal(complementParty('house', 'XX-1', 'D'), 'R')
 })
 
-test('a candidate binary never feeds party totals and does not fall back to labels', () => {
+test("a sole nominee's candidate binary counts as their party, like a one-sided price", () => {
+  // CO-4: Boebert is the only Republican on the ballot (with a Democrat and a
+  // Libertarian), so YES is the Republican and NO folds to the Democrat.
+  const co = raceOdds(
+    'house',
+    'CO-4',
+    binary('5EIC9A05cU', 0.64),
+    'will-lauren-boebert-be-reelected-to',
+    electionOdds
+  )
+  assert.deepEqual(co.basis, { kind: 'market' })
+  assert.ok(Math.abs(co.odds!.rep - 0.64) < 1e-9)
+  assert.ok(Math.abs(co.odds!.dem - 0.36) < 1e-9)
+  assert.equal(co.odds!.notRep, undefined)
+  // AL-2 and NC-9 name the Democrat.
+  const al = raceOdds(
+    'house',
+    'AL-2',
+    binary('2gnh0c6NqI', 0.3),
+    'will-democrat-shomari-figures-win-a',
+    electionOdds
+  )
+  assert.ok(Math.abs(al.odds!.dem - 0.3) < 1e-9)
+  assert.ok(Math.abs(al.odds!.rep - 0.7) < 1e-9)
+  const nc = sourceAudit('will-richard-ojeda-win-north-caroli')!
+  assert.equal(candidateBinaryParty(nc), 'D')
+})
+
+test('a candidate binary that is not a sole nominee stays a candidate bet', () => {
+  // CA-12 is a Democrat-vs-Democrat top-two race: a bet on one of them is not
+  // a party price.
+  const ca = sourceAudit('will-jamie-joyce-win-the-2026-12th')!
+  assert.equal(candidateBinaryParty(ca), undefined)
   const r = raceOdds(
+    'house',
+    'CA-12',
+    binary(ca.contractId, 0.6),
+    'will-jamie-joyce-win-the-2026-12th',
+    electionOdds
+  )
+  assert.notEqual(r.basis.kind, 'market')
+  // A name that is not on the ballot (a primary loser, a typo) never counts.
+  const offBallot = { ...sourceAudit('will-lauren-boebert-be-reelected-to')! }
+  offBallot.candidate = 'Someone Else'
+  assert.equal(candidateBinaryParty(offBallot), undefined)
+  const r2 = raceOdds(
     'house',
     'CO-4',
     binary('5EIC9A05cU', 0.6),
     'will-lauren-boebert-be-reelected-to',
-    electionOdds
+    () => undefined
   )
-  assert.equal(r.odds, undefined)
-  assert.deepEqual(r.basis, {
-    kind: 'candidate-only',
-    candidate: 'Lauren Boebert',
-  })
+  assert.ok(r2.odds)
+  // Not a candidate binary at all.
+  assert.equal(
+    candidateBinaryParty(sourceAudit('will-a-republican-win-the-florida-g')!),
+    undefined
+  )
+})
+
+test("a sole nominee's bet keeps its honest labels, in the party's color", () => {
+  const labels = binaryElectionLabels({
+    ...binary('5EIC9A05cU', 0.64),
+    slug: 'will-lauren-boebert-be-reelected-to',
+  } as Contract)
+  assert.equal(labels.YES.pseudonymName, 'Lauren Boebert')
+  assert.equal(labels.YES.pseudonymColor, 'sienna')
+  assert.equal(labels.NO.pseudonymName, 'Any other winner')
+  assert.equal(labels.NO.pseudonymColor, 'gray')
 })
 
 test('an answer labelled "Democrats OR Independents" for an independent is not counted as D', () => {

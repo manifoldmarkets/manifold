@@ -127,7 +127,9 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
     const startNotifications = Date.now()
     await Promise.all(
       cancelledLimitOrders
-        .filter((order) => !order.silent)
+        // API orders can't be placed silent, so skip them here, as the
+        // expiry sweep does.
+        .filter((order) => !order.silent && !order.isApi)
         .map((order) => {
           createLimitBetCanceledNotification(
             originalBettor,
