@@ -17,6 +17,7 @@ import {
 } from 'shared/helpers/search-pagination'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { applyUserDisinterestsToTopicScores } from 'shared/supabase/user-disinterests'
 import {
   from,
   groupBy,
@@ -236,6 +237,13 @@ export async function getForYouSQL(
     })
   }
   const userBetsJoin = hasBets === '1' && userId && userBetsJoinSql
+  // Topics of markets the user marked uninterested weigh less; see
+  // common/disinterests.ts.
+  const topicScores = await applyUserDisinterestsToTopicScores(
+    createSupabaseDirectClient(),
+    userId,
+    userIdsToAverageTopicConversionScores[userId]
+  )
   const forYou = renderSql(
     buildArray(
       select(
@@ -248,10 +256,7 @@ export async function getForYouSQL(
           unnest(array[$1]) as group_id,
           unnest(array[$2]) as avg_conversion_score)
           as uti on uti.group_id = group_contracts.group_id`,
-        [
-          Object.keys(userIdsToAverageTopicConversionScores[userId]),
-          Object.values(userIdsToAverageTopicConversionScores[userId]),
-        ]
+        [Object.keys(topicScores), Object.values(topicScores)]
       ),
       where(
         `contracts.id not in (select contract_id from user_disinterests where user_id = $1 and contract_id = contracts.id)`,
