@@ -6,6 +6,7 @@ import {
   DotsHorizontalIcon,
   GiftIcon,
   HeartIcon,
+  LibraryIcon,
   LoginIcon,
   LogoutIcon,
   MoonIcon,
@@ -346,6 +347,7 @@ const getDesktopNav = (
         href: `/notifications`,
         icon: NotificationsIcon,
       },
+      { name: 'Election', href: '/election', icon: LibraryIcon },
       { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
       // Show shop when enabled OR for admins (testing)
       (SPEND_MANA_ENABLED || options.isAdminOrMod) && {
@@ -370,6 +372,7 @@ const getDesktopNav = (
 
   return buildArray(
     { name: 'Browse', href: '/', icon: SearchIcon },
+    { name: 'Election', href: '/election', icon: LibraryIcon },
     { name: 'Predictle', href: '/predictle', icon: SparklesIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
@@ -402,6 +405,7 @@ const getMobileNav = (
         </>
       ) : undefined,
     },
+    { name: 'Election', href: '/election', icon: LibraryIcon },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Explore', href: '/explore', icon: IoCompassOutline },
     { name: 'Forum', href: '/posts', icon: ChatIcon },
