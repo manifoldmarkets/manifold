@@ -53,6 +53,14 @@ never queued or delayed waiting for it, and a Redis outage outside a deploy
 changes nothing for clients. Sockets on the old VM always disconnect when it is
 deleted.
 
+Serving does not wait for the metadata watcher to initialize. Its first
+successful read therefore checks any handover value against the writer's
+received broadcasts, just like a later change. If metadata was unavailable
+while clients connected, recovery cannot silently discard the handover.
+An older value left on the VM may conservatively close those early connections
+once; connections established after that check are unaffected by repeated reads
+of the same value.
+
 ## Failures and recovery
 
 The helper rolls back by itself when the replacement does not become ready:

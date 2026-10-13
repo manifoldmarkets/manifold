@@ -133,6 +133,8 @@ async function fakeMetadataServer() {
   let attributes: Record<string, string> = {}
   let etag = 1
   let failNext = 0
+  let holdNext = false
+  let heldResponse: (() => void) | undefined
   const waiting = new Set<() => void>()
   const requests: URL[] = []
   const server = createServer((req, res) => {
@@ -153,6 +155,11 @@ async function fakeMetadataServer() {
     }
     const respond = () =>
       res.writeHead(200, { ETag: String(etag) }).end(JSON.stringify(attributes))
+    if (holdNext) {
+      holdNext = false
+      heldResponse = respond
+      return
+    }
     if (
       url.searchParams.get('wait_for_change') === 'true' &&
       url.searchParams.get('last_etag') === String(etag)
@@ -180,6 +187,14 @@ async function fakeMetadataServer() {
     host,
     requests,
     failNext: (count: number) => (failNext = count),
+    holdNextRead() {
+      holdNext = true
+      return async () => {
+        await waitUntil(() => heldResponse != null)
+        heldResponse?.()
+        heldResponse = undefined
+      }
+    },
     // Like gcloud add-metadata: rewriting the same content changes nothing.
     set(next: Record<string, string>) {
       if (JSON.stringify(next) === JSON.stringify(attributes)) return
@@ -548,4 +563,33 @@ describe('websocket server', () => {
     await waitUntil(() => after.events().includes('next'))
     expect(after.ws.readyState).toBe(WebSocket.OPEN)
   })
+
+  it.each(['failed', 'delayed'] as const)(
+    'handles a handover received after a %s initial metadata read',
+    async (initialRead) => {
+      const metadata = await fakeMetadataServer()
+      process.env.GCE_METADATA_HOST = metadata.host
+      const writer = await startWriter('vm', { sharedBroadcasts: false })
+      if (initialRead === 'failed') metadata.failNext(1)
+      const release =
+        initialRead === 'delayed' ? metadata.holdNextRead() : undefined
+      writer.server.watchWebSocketHandover(writer.wss)
+      await waitUntil(() => metadata.requests.length === 1)
+      // Serving sockets does not wait for the metadata watch to initialize.
+      const before = await subscriber(writer.url)
+      metadata.set({ [HANDOVER_KEY]: 'retired' })
+      await release?.()
+      await metadata.polling()
+      await waitUntil(() => before.ws.readyState !== WebSocket.OPEN, 500)
+      expect(await before.closed).toBe(1012)
+
+      // Re-reading the same value must not close clients that connected later.
+      const after = await subscriber(writer.url)
+      metadata.set({ [HANDOVER_KEY]: 'retired', unrelated: 'changed' })
+      await metadata.polling()
+      writer.server.broadcast('global/x', { id: 'after' })
+      await waitUntil(() => after.events().includes('after'))
+      expect(after.ws.readyState).toBe(WebSocket.OPEN)
+    }
+  )
 })

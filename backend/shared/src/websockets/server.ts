@@ -600,7 +600,7 @@ function missedBroadcastsFrom(retired: string) {
  * have missed.
  */
 export function watchWebSocketHandover(wss: WebSocketServer) {
-  const stop = watchHandover((retired) => {
+  const onHandover = (retired: string) => {
     const missed = missedBroadcastsFrom(retired)
     for (const [id, sender] of senders) {
       if (sender.host === retired) senders.delete(id)
@@ -626,7 +626,12 @@ export function watchWebSocketHandover(wss: WebSocketServer) {
         closed,
       }
     )
-  })
+  }
+  // Readiness does not wait for metadata. A first read delayed by an outage
+  // can already contain this deployment's handover, so apply it to any sockets
+  // accepted meanwhile. Historical values may conservatively close early
+  // sockets once, but later reads of the same value never repeat the handover.
+  const stop = watchHandover(onHandover, { includeInitialValue: true })
   wss.on('close', stop)
   return stop
 }

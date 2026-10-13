@@ -49,11 +49,18 @@ export async function readInstanceName(options: { host?: string } = {}) {
 /**
  * Calls onHandover with each new value a deploy writes to this VM's
  * HANDOVER_KEY attribute. The value present when watching starts is the
- * baseline, not a handover. Returns a function that stops watching.
+ * baseline by default. Set includeInitialValue when clients can connect
+ * before the first successful read: that value may be a handover they need.
+ * Returns a function that stops watching.
  */
 export function watchHandover(
   onHandover: (value: string) => void,
-  { host = metadataHost(), timeoutSec = 300, retryDelayMs = 1_000 } = {}
+  {
+    host = metadataHost(),
+    timeoutSec = 300,
+    retryDelayMs = 1_000,
+    includeInitialValue = false,
+  } = {}
 ) {
   const controller = new AbortController()
   const watch = async () => {
@@ -81,7 +88,11 @@ export function watchHandover(
         if (!response.etag) throw new Error('Metadata server sent no ETag')
         const value = JSON.parse(response.body)[HANDOVER_KEY]
         const next = typeof value === 'string' && value ? value : undefined
-        if (etag != null && next != null && next !== current) {
+        if (
+          (etag != null || includeInitialValue) &&
+          next != null &&
+          next !== current
+        ) {
           try {
             onHandover(next)
           } catch (error) {
