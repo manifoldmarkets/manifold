@@ -33,7 +33,6 @@ import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { buildShareUrl } from 'web/lib/util/share-url'
 import {
   balanceOfPowerAnswerColor,
-  balanceOfPowerSweepOdds,
   MIDTERM_CONTEST_TOPIC_SLUG,
 } from 'web/lib/politics/election-curation'
 import type { MidtermSpotlightProps } from 'web/lib/politics/home'
@@ -41,6 +40,7 @@ import {
   BOTH_2026_COLUMNS,
   CongressChamber,
   congressChambers,
+  congressViewSelection,
   ConditionalMatrixRow,
   HOUSE_2026_COLUMNS,
   MatrixColumns,
@@ -266,7 +266,6 @@ export function USElectionsPage(
             bothRows={bothMatrixRows}
             senateControlContract={senateControlContract}
             houseControlContract={houseControlContract}
-            balanceOfPowerContract={balanceOfPowerContract}
           />
         </SectionInView>
       ) : (
@@ -387,16 +386,13 @@ export function USElectionsPage(
 const MATRIX_FOOTNOTE =
   "Each market resolves N/A if its condition doesn't happen, so bets only count in that world."
 
-const CHAMBER_CHOICES: Record<string, CongressChamber> = {
-  Senate: 'senate',
-  House: 'house',
-  Both: 'both',
-}
+const MIDTERMS_MATRIX_FOOTNOTE =
+  'Depression markets do not define "win the midterms" or say whether they resolve N/A if that condition fails. Their timelines may extend beyond 2028. The $5,000 market requires 50+ Republican Senate seats and a House majority; otherwise it resolves N/A. Read each market\'s rules before betting.'
 
 // What each view of the Congress section says and shows. The condition odds in
 // the column headers come from the map's control cards' markets for a chamber
-// (YES is a Republican majority in both) and from the Balance of Power
-// market's sweep answers for Both.
+// (YES is a Republican majority in both). The broader Midterms view has no
+// shared condition, so it shows neither condition odds nor a blanket N/A rule.
 const CHAMBER_VIEWS: Record<
   CongressChamber,
   { subtitle: string; caption: string; columns: MatrixColumns }
@@ -415,13 +411,13 @@ const CHAMBER_VIEWS: Record<
   },
   both: {
     subtitle:
-      'What follows if one party wins both the Senate and the House. Some questions have a market for one party only. Click a chance to bet on it.',
-    caption: 'Chances by Congress sweep',
+      "These markets use different midterm conditions. Click a chance to open its market, and read each market's rules before betting.",
+    caption: 'Market-specific midterm conditions',
     columns: BOTH_2026_COLUMNS,
   },
 }
 
-// The 2026 Congress matrices under one header, with a Senate | House | Both
+// The 2026 Congress matrices under one header, with a Senate | House | Midterms
 // switch for the views that have rows.
 function CongressConditionalSection(props: {
   senateRows: ConditionalMatrixRow[]
@@ -429,7 +425,6 @@ function CongressConditionalSection(props: {
   bothRows: ConditionalMatrixRow[]
   senateControlContract: Contract | null
   houseControlContract: Contract | null
-  balanceOfPowerContract: Contract | null
 }) {
   const chambers = congressChambers({
     senate: props.senateRows,
@@ -440,7 +435,8 @@ function CongressConditionalSection(props: {
     'senate',
     'election-conditional-matrix-chamber'
   )
-  const chamber = chambers.includes(choice) ? choice : chambers[0]
+  const { chamber, choicesMap } = congressViewSelection(chambers, choice)
+  if (!chamber) return null
   const view = CHAMBER_VIEWS[chamber]
   const rows =
     chamber === 'senate'
@@ -453,13 +449,7 @@ function CongressConditionalSection(props: {
       ? props.senateControlContract
       : chamber === 'house'
       ? props.houseControlContract
-      : props.balanceOfPowerContract
-  const readConditionOdds: (
-    contract: Contract
-  ) => { dem: number; rep: number } | undefined =
-    chamber === 'both'
-      ? balanceOfPowerSweepOdds
-      : (contract) => electionOdds(contract, true)
+      : null
   return (
     <>
       <SectionHeader
@@ -468,7 +458,7 @@ function CongressConditionalSection(props: {
           chambers.length > 1 && (
             <ChoicesToggleGroup
               currentChoice={chamber}
-              choicesMap={CHAMBER_CHOICES}
+              choicesMap={choicesMap}
               setChoice={(value) => {
                 setChoice(value as CongressChamber)
                 track('toggle election conditional matrix chamber', {
@@ -487,7 +477,7 @@ function CongressConditionalSection(props: {
       <LiveConditionOdds
         key={chamber}
         contract={conditionContract}
-        read={readConditionOdds}
+        read={(contract) => electionOdds(contract, true)}
       >
         {(odds) => (
           <ConditionalMatrix
@@ -495,7 +485,9 @@ function CongressConditionalSection(props: {
             columns={withConditionProbs(view.columns, odds)}
             rows={rows}
             trackingName={`election conditional matrix 2026 ${chamber}`}
-            footnote={MATRIX_FOOTNOTE}
+            footnote={
+              chamber === 'both' ? MIDTERMS_MATRIX_FOOTNOTE : MATRIX_FOOTNOTE
+            }
           />
         )}
       </LiveConditionOdds>

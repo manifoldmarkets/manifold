@@ -82,19 +82,19 @@ export const SENATE_2026_COLUMNS: MatrixColumns = [
   },
 ]
 
-// A sweep: the same party wins the Senate and the House. The condition odds
-// come from the Balance of Power market's sweep answers
-// (balanceOfPowerSweepOdds in election-curation.ts).
+// These community markets use different midterm conditions. In particular,
+// the depression markets do not define "win the midterms" as a sweep, so do
+// not label every row with a shared condition or attach sweep probabilities.
 export const BOTH_2026_COLUMNS: MatrixColumns = [
   {
     party: 'dem',
-    label: 'If Democrats win both chambers',
-    shortLabel: 'Dem sweep',
+    label: 'Democratic condition',
+    shortLabel: 'Dem condition',
   },
   {
     party: 'rep',
-    label: 'If Republicans keep both chambers',
-    shortLabel: 'Rep sweep',
+    label: 'Republican condition',
+    shortLabel: 'Rep condition',
   },
 ]
 
@@ -215,16 +215,16 @@ export const SENATE_2026_MATRIX: ConditionalMatrixPair[] = [
   },
 ]
 
-// 2026 sweep: markets that resolve N/A unless one party ends up with both
-// chambers. Community markets, so the wording varies ("if the Democrats win
-// the midterms"); each market's own criteria define the sweep. One-sided rows
-// are expected here: promises are made by one party.
+// Broader midterm conditions: each community market defines its own rules.
+// Only the $5,000 market explicitly requires control of both chambers. The
+// depression markets leave "win the midterms" and the failed-condition
+// resolution unspecified; the view discloses that uncertainty.
 export const BOTH_2026_MATRIX: ConditionalMatrixPair[] = [
   // Gen: "Will the US enter a depression if the Democrats / the Republicans win
-  // the midterms?" Resolves by the end of 2028, or later if the same party
-  // keeps winning.
+  // the midterms?" The rules allow the horizon to extend after 2028 when the
+  // named party retains the control specified in that market's criteria.
   {
-    label: 'US enters a depression (by end of 2028)',
+    label: 'US enters a depression (may extend beyond 2028)',
     dem: 'NLtqAPnLzA',
     rep: 'tPgqUCc2zq',
   },
@@ -278,8 +278,15 @@ export const PRESIDENT_2028_MATRIX: ConditionalMatrixPair[] = [
   },
 ]
 
-// The Congress section's views: each chamber's race, and a sweep of both.
+// The Congress section's views. Keep the stored 'both' key for the broader
+// Midterms view, whose markets do not all define a both-chamber condition.
 export type CongressChamber = 'senate' | 'house' | 'both'
+
+const CONGRESS_CHAMBER_LABELS: Record<CongressChamber, string> = {
+  senate: 'Senate',
+  house: 'House',
+  both: 'Midterms',
+}
 
 /**
  * The 2026 Congress matrices that have rows to show, Senate first: it is the
@@ -291,6 +298,24 @@ export function congressChambers(
   return (['senate', 'house', 'both'] as const).filter(
     (c) => rows[c].length > 0
   )
+}
+
+/** Keep the selected view and its advertised choices within available data. */
+export function congressViewSelection(
+  chambers: CongressChamber[],
+  preferred: CongressChamber
+): {
+  chamber: CongressChamber | undefined
+  choicesMap: Record<string, CongressChamber>
+} {
+  return {
+    chamber: chambers.includes(preferred) ? preferred : chambers[0],
+    choicesMap: Object.fromEntries(
+      chambers.map(
+        (chamber) => [CONGRESS_CHAMBER_LABELS[chamber], chamber] as const
+      )
+    ),
+  }
 }
 
 /** Every contract id the matrices reference, for one batched fetch. */

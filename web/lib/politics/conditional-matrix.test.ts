@@ -7,6 +7,8 @@ import {
   conditionalMatrixIds,
   ConditionalMatrixPair,
   congressChambers,
+  congressViewSelection,
+  CongressChamber,
   gapPoints,
   HOUSE_2026_COLUMNS,
   HOUSE_2026_MATRIX,
@@ -179,13 +181,70 @@ test('the Supreme Court pair moved from the card row to the Senate matrix', () =
   )
 })
 
-test('the Both view holds the sweep markets, with the $5,000 checks Rep-only', () => {
+test('the Midterms view keeps the market conditions separate, with the $5,000 market Rep-only', () => {
   const checks = BOTH_2026_MATRIX.find((p) => p.rep === 'Ud2Q60puts')
   assert.ok(checks)
   assert.equal(checks?.dem, undefined)
   const depression = BOTH_2026_MATRIX.find((p) => p.dem === 'NLtqAPnLzA')
   assert.equal(depression?.rep, 'tPgqUCc2zq')
+  assert.match(depression?.label ?? '', /may extend beyond 2028/)
   for (const p of BOTH_2026_MATRIX) assert.ok(p.dem || p.rep, p.label)
+})
+
+test('every combination of available Congress views advertises only selectable views', () => {
+  const rows = buildConditionalMatrixRows(PAIRS, all(), NOW)
+  const names: CongressChamber[] = ['senate', 'house', 'both']
+  for (let mask = 0; mask < 8; mask++) {
+    const available = names.filter((_, index) => mask & (1 << index))
+    const chambers = congressChambers({
+      senate: available.includes('senate') ? rows : [],
+      house: available.includes('house') ? rows : [],
+      both: available.includes('both') ? rows : [],
+    })
+    for (const preferred of names) {
+      const view = congressViewSelection(chambers, preferred)
+      assert.deepEqual(Object.values(view.choicesMap), available)
+      assert.equal(
+        view.chamber,
+        available.includes(preferred) ? preferred : available[0]
+      )
+      // Every visible choice opens itself, including the two-view cases that
+      // previously advertised a third view and silently selected another.
+      for (const choice of Object.values(view.choicesMap))
+        assert.equal(congressViewSelection(chambers, choice).chamber, choice)
+    }
+  }
+})
+
+test('repeated Congress switching and refreshed data retain only valid views', () => {
+  const all: CongressChamber[] = ['senate', 'house', 'both']
+  let preferred: CongressChamber = 'both'
+  assert.equal(congressViewSelection(all, preferred).chamber, 'both')
+
+  // A market closes or becomes unavailable; Midterms is no longer offered.
+  const withoutMidterms: CongressChamber[] = ['senate', 'house']
+  const missing = congressViewSelection(withoutMidterms, preferred)
+  assert.equal(missing.chamber, 'senate')
+  assert.deepEqual(missing.choicesMap, { Senate: 'senate', House: 'house' })
+  // Changing the choice while data is missing survives its restoration.
+  preferred = 'house'
+  assert.equal(
+    congressViewSelection(withoutMidterms, preferred).chamber,
+    'house'
+  )
+  assert.equal(congressViewSelection(all, preferred).chamber, 'house')
+  preferred = 'both'
+  assert.equal(congressViewSelection(all, preferred).chamber, 'both')
+  // Repeated disappearance and reappearance preserves the last user choice,
+  // but never exposes it while the corresponding data is absent.
+  for (let refresh = 0; refresh < 3; refresh++) {
+    assert.equal(
+      congressViewSelection(withoutMidterms, preferred).chamber,
+      'senate'
+    )
+    assert.equal(congressViewSelection([], preferred).chamber, undefined)
+    assert.equal(congressViewSelection(all, preferred).chamber, 'both')
+  }
 })
 
 test('the Congress section offers the views that have rows, Senate first, Both last', () => {
