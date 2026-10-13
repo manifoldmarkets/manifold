@@ -84,6 +84,7 @@ import { ShareBetModal } from './share-bet'
 import { YesNoSelector } from './yes-no-selector'
 import { isNextMarketPromptLocation } from 'common/next-market-prompt'
 import { setLastPageBet } from 'web/hooks/use-next-market-prompt'
+import { useIsMarketPageBet } from 'web/hooks/use-answer-bet-tracking-location'
 
 const WAIT_TO_DISMISS = 3000
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
@@ -91,6 +92,8 @@ type BuyPanelProps = {
   contract: MarketContract
   multiProps?: MultiBetProps
   onBuySuccess?: () => void
+  /** Called once on the first positive fill, independently of dismissal. */
+  onBetPlaced?: (bet: Bet) => void
   initialOutcome?: BinaryOutcomes
   /** Pre-fills the amount input, e.g. with the amount just bet elsewhere. */
   initialAmount?: number
@@ -247,6 +250,7 @@ export const BuyPanelBody = (
     outcome,
     setOutcome,
     onBuySuccess,
+    onBetPlaced,
     initialAmount,
     location = 'bet panel',
     onClose,
@@ -393,6 +397,31 @@ export const BuyPanelBody = (
     (params) => api('bets', params)
   )
   const updatedBet = limitBets.find((b) => b.id === submittedBet?.id)
+  const isMarketPageBet = useIsMarketPageBet()
+  const recordedBetIds = useRef(new Set<string>())
+  const recordBetPlaced = useEvent((bet: Bet) => {
+    if (
+      !Number.isFinite(bet.amount) ||
+      bet.amount <= 0 ||
+      recordedBetIds.current.has(bet.id)
+    )
+      return
+    recordedBetIds.current.add(bet.id)
+    if (isMarketPageBet && isNextMarketPromptLocation(location)) {
+      setLastPageBet({
+        contractId: contract.id,
+        userId: bet.userId,
+        location,
+        betId: bet.id,
+        amount: bet.amount,
+        outcome: bet.outcome,
+        answerId: bet.answerId,
+        token: contract.token,
+        time: Date.now(),
+      })
+    }
+    onBetPlaced?.(bet)
+  })
   useEffect(() => {
     if (!submittedBet) return
     if (
@@ -419,18 +448,7 @@ export const BuyPanelBody = (
       if (finalBetDetails) {
         setLastBetDetails(finalBetDetails)
         setIsSharing(false)
-        if (isNextMarketPromptLocation(location)) {
-          setLastPageBet({
-            contractId: contract.id,
-            location,
-            betId: finalBetDetails.id,
-            amount: finalBetDetails.amount,
-            outcome: finalBetDetails.outcome,
-            answerId: finalBetDetails.answerId,
-            token: contract.token,
-            time: Date.now(),
-          })
-        }
+        recordBetPlaced(finalBetDetails)
         const timeoutId = setTimeout(() => {
           callOnBuySuccess()
         }, WAIT_TO_DISMISS)
@@ -550,6 +568,14 @@ export const BuyPanelBody = (
           limitProb: slippageProtection ? limitProb : undefined,
         } as APIParams<'bet'>)
       )
+      const fullBet: Bet = {
+        ...(bet as CandidateBet<LimitBet>),
+        id: bet.betId,
+        userId: user.id,
+      }
+      // Partial fills have already traded too. Record the API confirmation
+      // before waiting for expiry, since the dialog may close during that wait.
+      recordBetPlaced(fullBet)
       if (bet.isFilled) {
         if (slippageProtection) {
           toast.success(
@@ -565,25 +591,8 @@ export const BuyPanelBody = (
         setSubmittedBet(null)
         setIsSubmitting(false)
 
-        const fullBet: Bet = {
-          ...(bet as CandidateBet<LimitBet>),
-          id: bet.betId,
-          userId: user.id,
-        }
         setLastBetDetails(fullBet)
         setIsSharing(false)
-        if (isNextMarketPromptLocation(location)) {
-          setLastPageBet({
-            contractId: contract.id,
-            location,
-            betId: fullBet.id,
-            amount: fullBet.amount,
-            outcome: fullBet.outcome,
-            answerId: fullBet.answerId,
-            token: contract.token,
-            time: Date.now(),
-          })
-        }
         // TODO: we could remove the timeout and just not dismiss the modal
         const timeoutId = setTimeout(() => {
           callOnBuySuccess()
@@ -1023,6 +1032,8 @@ export const BuyPanelBody = (
         ) : (
           <>
             <LimitOrderPanel
+              onBetPlaced={recordBetPlaced}
+              location={location}
               betAmount={matchingPrefillOrder?.amount ?? betAmount}
               contract={contract}
               multiProps={multiProps}

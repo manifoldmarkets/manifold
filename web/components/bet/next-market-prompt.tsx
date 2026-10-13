@@ -27,6 +27,8 @@ import {
 import { User } from 'common/user'
 import { formatPercent } from 'common/util/format'
 import { useABTestAssignment } from 'web/hooks/use-ab-test'
+import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
+import { useIsMarketPageBet } from 'web/hooks/use-answer-bet-tracking-location'
 import {
   LastPageBet,
   useLastPageBet,
@@ -63,9 +65,12 @@ export function NextMarketPrompt(props: {
   const { contract, placement, className } = props
   const user = useUser()
   const lastBet = useLastPageBet()
+  const isMarketPageBet = useIsMarketPageBet()
   if (
+    !isMarketPageBet ||
     !user ||
     !lastBet ||
+    lastBet.userId !== user.id ||
     lastBet.contractId !== contract.id ||
     getNextMarketPromptPlacement(lastBet.location) !== placement ||
     Date.now() - lastBet.time > PROMPT_TTL_MS
@@ -75,7 +80,7 @@ export function NextMarketPrompt(props: {
   return (
     <TriggeredNextMarketPrompt
       // Remount per bet so each one is its own trigger.
-      key={lastBet.time}
+      key={lastBet.betId ?? lastBet.time}
       contract={contract}
       lastBet={lastBet}
       user={user}
@@ -125,8 +130,8 @@ function TriggeredNextMarketPrompt(props: {
     })
   }, [variant])
 
-  useEffect(() => {
-    if (variant !== 'treatment') return
+  useEffectCheckEquality(() => {
+    if (variant !== 'treatment' || !privateUser) return
     let cancelled = false
     const load = async () => {
       const [related, recentlyBet] = await Promise.all([
@@ -146,22 +151,25 @@ function TriggeredNextMarketPrompt(props: {
         sourceContractId: contract.id,
         token: lastBet.token,
         excludeContractIds: new Set(recentlyBet),
-        isBlocked: (c) => isContractBlocked(privateUser, c),
+        // Hydrate the eligible pool before applying topic blocks and the cap:
+        // get-related-markets strips both answers and groupSlugs.
+        count: related.length,
       })
       // The related-markets endpoint strips answers from multiple-choice
       // markets, which the bet dialog needs. Hydrate the picks.
       const full = picked.length
-        ? await api('markets-by-ids', { ids: picked.map((c) => c.id) })
-            .then((contracts) => {
-              const byId = new Map(contracts.map((c) => [c.id, c]))
-              return picked.map((c) => byId.get(c.id) ?? c)
-            })
-            .catch(() => picked)
+        ? await api('markets-by-ids', { ids: picked.map((c) => c.id) }).catch(
+            () => [] as Contract[]
+          )
         : []
       if (cancelled) return
-      const ready = full.filter(
-        (c) => c.outcomeType !== 'MULTIPLE_CHOICE' || c.answers.length > 0
-      )
+      const ready = pickNextMarketCandidates(picked, {
+        sourceContractId: contract.id,
+        token: lastBet.token,
+        excludeContractIds: new Set(recentlyBet),
+        hydratedContracts: full,
+        isBlocked: (c) => isContractBlocked(privateUser, c),
+      })
       setCandidates(ready)
       const counts = {
         related: related.length,
@@ -199,7 +207,16 @@ function TriggeredNextMarketPrompt(props: {
     return () => {
       cancelled = true
     }
-  }, [variant, contract.id, user.id])
+  }, [
+    variant,
+    contract.id,
+    user.id,
+    !!privateUser,
+    privateUser?.blockedContractIds,
+    privateUser?.blockedUserIds,
+    privateUser?.blockedByUserIds,
+    privateUser?.blockedGroupSlugs,
+  ])
 
   if (
     variant !== 'treatment' ||
@@ -345,11 +362,14 @@ function NextMarketRow(props: {
           trackingLocation="next market prompt"
           initialOutcome={openOutcome}
           initialAmount={amount}
-          onBuySuccess={() =>
+          onBetPlaced={(bet) =>
             track(NEXT_MARKET_PROMPT_BET_EVENT, {
               contractId: contract.id,
               sourceContractId,
               position,
+              betId: bet.id,
+              betAmount: bet.amount,
+              outcome: bet.outcome,
             })
           }
         />
@@ -359,6 +379,7 @@ function NextMarketRow(props: {
           contract={contract as CPMMMultiContract}
           open={openMulti}
           setOpen={setOpenMulti}
+          trackingLocation="next market prompt"
         />
       )}
     </Row>

@@ -22,7 +22,7 @@ import { MINUTE_MS } from 'common/util/time'
 import { EXPIRATION_OPTIONS } from 'web/components/bet/order-expiration-options'
 import dayjs from 'dayjs'
 import { capitalize, clamp } from 'lodash'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { LuShare } from 'react-icons/lu'
 import { Input } from 'web/components/widgets/input'
@@ -54,6 +54,8 @@ export default function LimitOrderPanel(props: {
   unfilledBets: LimitBet[]
   balanceByUserId: { [userId: string]: number }
   onBuySuccess?: () => void
+  onBetPlaced?: (bet: Bet) => void
+  location?: string
   className?: string
   betAmount?: number
   outcome: 'YES' | 'NO' | undefined
@@ -79,9 +81,12 @@ export default function LimitOrderPanel(props: {
     user,
     outcome,
     onBuySuccess,
+    onBetPlaced,
+    location = 'bet panel',
     pseudonym,
     expiration,
   } = props
+  const limitProbInputId = useId()
   const { pseudonymColor } = pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
   const isBinaryMC = isBinaryMulti(contract)
   const binaryMCColors = isBinaryMC
@@ -313,8 +318,9 @@ export default function LimitOrderPanel(props: {
         id: bet.betId,
         userId: user.id,
       }
+      onBetPlaced?.(fullBet)
       track('bet', {
-        location: 'bet panel',
+        location,
         outcomeType: contract.outcomeType,
         slug: contract.slug,
         contractId: contract.id,
@@ -402,12 +408,13 @@ export default function LimitOrderPanel(props: {
         />
       </Col>
       <Col className="relative mt-6 w-full gap-1">
-        <div className="text-ink-600">
+        <label htmlFor={limitProbInputId} className="text-ink-600">
           {isPseudoNumeric ? 'Value' : `Probability (%)`}
-        </div>
+        </label>
         <Row>
-          <label className="font-sm md:font-lg relative w-full">
+          <div className="font-sm md:font-lg relative w-full">
             <Input
+              id={limitProbInputId}
               type="number"
               min={isPseudoNumeric ? contract.min : 1}
               max={isPseudoNumeric ? contract.max : 99}
@@ -462,7 +469,7 @@ export default function LimitOrderPanel(props: {
                 +5
               </button>
             </Row>
-          </label>
+          </div>
         </Row>
 
         <ProbabilitySlider
@@ -583,6 +590,8 @@ export default function LimitOrderPanel(props: {
                         setIsEditingPayout(false)
                       }
                     }}
+                    // Focus follows the user's explicit click to edit payout.
+                    // eslint-disable-next-line jsx-a11y/no-autofocus
                     autoFocus
                     min={1}
                     step={1}
@@ -590,7 +599,9 @@ export default function LimitOrderPanel(props: {
                     onChangeAmount={setEditablePayout}
                   />
                 ) : (
-                  <span
+                  <button
+                    type="button"
+                    aria-label="Edit payout"
                     className="cursor-pointer hover:underline"
                     onClick={() => {
                       setEditablePayout(Math.floor(currentPayout))
@@ -601,7 +612,7 @@ export default function LimitOrderPanel(props: {
                       amount={currentPayout}
                       isCashContract={isCashContract}
                     />
-                  </span>
+                  </button>
                 )}
               </span>
               {!isEditingPayout && <>({returnPercent})</>}

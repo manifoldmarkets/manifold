@@ -1,4 +1,4 @@
-import { Contract } from './contract'
+import { Contract, isMultiCpmm } from './contract'
 
 // A/B test: after a bet placed on the market page, offer three related
 // markets with one-tap bet buttons. Motivation (Sept 2026 analysis): 55% of
@@ -63,15 +63,14 @@ export const isNextMarketPromptCandidate = (
       prob <= (opts.maxProb ?? NEXT_MARKET_PROMPT_MAX_PROB)
     )
   }
-  return (
-    contract.outcomeType === 'MULTIPLE_CHOICE' &&
-    contract.mechanism === 'cpmm-multi-1'
-  )
+  return contract.outcomeType === 'MULTIPLE_CHOICE' && isMultiCpmm(contract)
 }
 
 /**
  * Picks the markets to offer, in the order the candidates were supplied
- * (the related-markets endpoint already ranks by similarity).
+ * (the related-markets endpoint already ranks by similarity). When hydrated
+ * contracts are supplied, their full, current data is used for filtering;
+ * candidates missing from that response are excluded.
  */
 export const pickNextMarketCandidates = (
   candidates: readonly Contract[],
@@ -80,20 +79,32 @@ export const pickNextMarketCandidates = (
     token: Contract['token']
     excludeContractIds: ReadonlySet<string>
     isBlocked?: (contract: Contract) => boolean
+    hydratedContracts?: readonly Contract[]
     now?: number
     count?: number
   }
 ): Contract[] => {
   const now = opts.now ?? Date.now()
   const count = opts.count ?? NEXT_MARKET_PROMPT_COUNT
+  const hydratedById = opts.hydratedContracts
+    ? new Map(opts.hydratedContracts.map((c) => [c.id, c]))
+    : undefined
   const seen = new Set<string>([opts.sourceContractId])
   const picked: Contract[] = []
-  for (const contract of candidates) {
+  for (const candidate of candidates) {
+    const contract = hydratedById ? hydratedById.get(candidate.id) : candidate
+    if (!contract) continue
     if (seen.has(contract.id)) continue
     seen.add(contract.id)
     if (opts.excludeContractIds.has(contract.id)) continue
     if (contract.token !== opts.token) continue
     if (!isNextMarketPromptCandidate(contract, { now })) continue
+    if (
+      hydratedById &&
+      contract.outcomeType === 'MULTIPLE_CHOICE' &&
+      !contract.answers?.length
+    )
+      continue
     if (opts.isBlocked?.(contract)) continue
     picked.push(contract)
     if (picked.length >= count) break

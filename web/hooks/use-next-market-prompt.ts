@@ -4,6 +4,7 @@ import { NextMarketPromptVariant } from 'common/next-market-prompt'
 
 export type LastPageBet = {
   contractId: string
+  userId: string
   /** The bet panel's tracking location; decides where the strip renders. */
   location: string
   betId?: string

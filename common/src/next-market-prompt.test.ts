@@ -114,6 +114,73 @@ describe('pickNextMarketCandidates', () => {
       })
     ).toEqual(['cash'])
   })
+
+  it('applies topic blocks after hydration and fills from later candidates', () => {
+    const candidates = ['blocked', 'a', 'b', 'c'].map((id) =>
+      binary(id, { groupSlugs: [] })
+    )
+    expect(
+      pick(candidates, {
+        hydratedContracts: [
+          binary('c'),
+          binary('blocked', { groupSlugs: ['blocked-topic'] }),
+          binary('b'),
+          binary('a'),
+        ],
+        isBlocked: (c) => c.groupSlugs?.includes('blocked-topic') ?? false,
+      })
+    ).toEqual(['a', 'b', 'c'])
+  })
+
+  it('uses hydrated eligibility instead of a stale related-market snapshot', () => {
+    expect(
+      pick(
+        [binary('closed'), binary('resolved'), binary('extreme'), binary('a')],
+        {
+          hydratedContracts: [
+            binary('closed', { closeTime: NOW - 1 }),
+            binary('resolved', { isResolved: true }),
+            binary('extreme', { prob: 0.99 }),
+            binary('a'),
+          ],
+        }
+      )
+    ).toEqual(['a'])
+  })
+
+  it('excludes missing hydrated contracts instead of using stripped data', () => {
+    expect(
+      pick([binary('missing'), binary('a')], {
+        hydratedContracts: [binary('a')],
+      })
+    ).toEqual(['a'])
+    expect(pick([binary('a')], { hydratedContracts: [] })).toEqual([])
+  })
+
+  it('requires hydrated answers before offering a multiple-choice dialog', () => {
+    expect(
+      pick([multi('empty'), multi('a')], {
+        hydratedContracts: [
+          multi('empty', { answers: [] }),
+          multi('a', {
+            answers: [{ id: 'answer', text: 'Answer', prob: 0.5 }],
+          }),
+        ],
+      })
+    ).toEqual(['a'])
+  })
+
+  it('offers hydrated multiple-choice markets from both CPMM versions', () => {
+    const answers = [{ id: 'answer', text: 'Answer', prob: 0.5 }]
+    expect(
+      pick([multi('v1'), multi('v2', { mechanism: 'cpmm-multi-2' })], {
+        hydratedContracts: [
+          multi('v1', { answers }),
+          multi('v2', { mechanism: 'cpmm-multi-2', answers }),
+        ],
+      })
+    ).toEqual(['v1', 'v2'])
+  })
 })
 
 describe('isNextMarketPromptLocation', () => {
