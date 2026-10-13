@@ -13,6 +13,7 @@ import {
 import { MINIMUM_BOUNTY } from 'common/economy'
 import { DOMAIN } from 'common/envs/constants'
 import { MAX_ID_LENGTH } from 'common/group'
+import { MARKET_LINK_RELATIONS } from 'common/market-links'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
 import { MAX_ANSWER_PROB, MIN_ANSWER_PROB } from 'common/new-contract'
 import { MIN_PERP_LEVERAGE, PERP_MIN_CLOSE_FRACTION } from 'common/perps/amm'
@@ -589,6 +590,10 @@ export const createMarketProps = z
     sportsEventId: z.string().optional(),
     sportsLeague: z.string().optional(),
     takerAPIOrdersDisabled: coerceBoolean.optional(),
+    // The market this one is about (see common/market-links). Without a close
+    // time, the new market closes when that one does.
+    linkedToContractId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
+    linkRelation: z.enum(MARKET_LINK_RELATIONS).optional(),
   })
   .and(
     z.union([

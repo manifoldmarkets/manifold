@@ -41,6 +41,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { camelCase, first } from 'lodash'
+import { getLinkParentError } from 'common/market-links'
 import { generateAntes } from 'shared/create-contract-helpers'
 import { getCloseDate } from 'shared/helpers/ai-close-date'
 import { betsQueue } from 'shared/helpers/fn-queue'
@@ -54,6 +55,10 @@ import {
   createSupabaseDirectClient,
   pgp,
 } from 'shared/supabase/init'
+import {
+  getLinkParentCandidate,
+  upsertMarketLink,
+} from 'shared/supabase/market-links'
 import { bulkInsertQuery } from 'shared/supabase/utils'
 import { anythingToRichText } from 'shared/tiptap'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
@@ -189,10 +194,26 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     pollType,
     maxSelections,
   } = validateMarketBody(body)
+  const { linkedToContractId, linkRelation } = body
 
   const userId = auth.uid
 
   const pg = createSupabaseDirectClient()
+
+  // The market this one is about. Checked before any mana moves; the link is
+  // written in the same transaction as the market.
+  let linkParentCloseTime: number | undefined
+  if (linkedToContractId) {
+    if (visibility !== 'public')
+      throw new APIError(
+        400,
+        'Only public markets can be linked to another market.'
+      )
+    const parent = await getLinkParentCandidate(pg, linkedToContractId)
+    const linkError = getLinkParentError(parent)
+    if (linkError) throw new APIError(400, linkError)
+    linkParentCloseTime = parent?.closeTime ?? undefined
+  }
 
   const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
   const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
@@ -209,8 +230,9 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const totalMarketCost = ante + (extraLiquidity ?? 0)
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
 
+  // A linked market closes with the market it's about unless told otherwise.
   const closeTime = await getCloseTimestamp(
-    closeTimeRaw,
+    closeTimeRaw ?? linkParentCloseTime,
     question,
     outcomeType,
     utcOffset
@@ -364,6 +386,15 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       })
 
       await generateAntes(tx, providerId, contract, ante, totalMarketCost)
+
+      if (linkedToContractId) {
+        await upsertMarketLink(tx, {
+          childId: contract.id,
+          parentId: linkedToContractId,
+          relation: linkRelation ?? 'related',
+          createdBy: userId,
+        })
+      }
 
       return { contract, user }
     })

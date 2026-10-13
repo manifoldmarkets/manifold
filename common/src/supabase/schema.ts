@@ -2373,6 +2373,52 @@ export type Database = {
         }
         Relationships: []
       }
+      market_links: {
+        Row: {
+          child_contract_id: string
+          parent_contract_id: string
+          relation: string
+          created_by: string
+          created_time: string
+        }
+        Insert: {
+          child_contract_id: string
+          parent_contract_id: string
+          relation?: string
+          created_by: string
+          created_time?: string
+        }
+        Update: {
+          child_contract_id?: string
+          parent_contract_id?: string
+          relation?: string
+          created_by?: string
+          created_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'market_links_child_contract_id_fkey'
+            columns: ['child_contract_id']
+            isOneToOne: true
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'market_links_parent_contract_id_fkey'
+            columns: ['parent_contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'market_links_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       market_ads: {
         Row: {
           cost_per_view: number
