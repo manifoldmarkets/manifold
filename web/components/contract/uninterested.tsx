@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { TiVolumeMute } from 'react-icons/ti'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
+import { auth } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
@@ -41,7 +42,12 @@ export const markUninterestedWithToast = async (
   source: UninterestedSource,
   onUndo?: () => void
 ) => {
+  const ownerId = auth.currentUser?.uid
+  if (!ownerId) throw new Error('Sign in to hide this question.')
   const result = await setUninterested(contract, true, source)
+  // The request belonged to the account that started it. Do not offer its
+  // Undo action to an account that signed in while the response was pending.
+  if (auth.currentUser?.uid !== ownerId) return result
   const n = result.hiddenSimilarCount
   const similar =
     n === 0
@@ -58,6 +64,7 @@ export const markUninterestedWithToast = async (
           source={source}
           onUndo={onUndo}
           toastId={t.id}
+          ownerId={ownerId}
         />
       </Row>
     ),
@@ -74,8 +81,9 @@ function UninterestedUndoButton(props: {
   source: UninterestedSource
   onUndo?: () => void
   toastId: string
+  ownerId: string
 }) {
-  const { contract, source, onUndo, toastId } = props
+  const { contract, source, onUndo, toastId, ownerId } = props
   const [pending, setPending] = useState(false)
   const pendingRef = useRef(false)
   return (
@@ -85,10 +93,20 @@ function UninterestedUndoButton(props: {
       disabled={pending}
       onClick={async () => {
         if (pendingRef.current) return
+        const dismissIfAccountChanged = () => {
+          if (auth.currentUser?.uid === ownerId) return false
+          toast.dismiss(toastId)
+          toast.error(
+            'Your account changed. Open this question to update its feed preference.'
+          )
+          return true
+        }
+        if (dismissIfAccountChanged()) return
         pendingRef.current = true
         setPending(true)
         try {
           await setUninterested(contract, false, source)
+          if (dismissIfAccountChanged()) return
           onUndo?.()
           toast.dismiss(toastId)
           toast('Restored to your feed')
