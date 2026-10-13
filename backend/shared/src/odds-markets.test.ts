@@ -1401,3 +1401,49 @@ it("logs an error when a competition can't run, so it alerts", async () => {
     expect.stringContaining("nfl-regular-2026 didn't run")
   )
 })
+
+it('backs off across the switch from live polls to a finals check', async () => {
+  // Six failed 30-second live polls reach the half-hour cap just before the
+  // NFL game is due to end. The finals check that comes due 10 seconds
+  // after the sixth failure waits out the cooldown too.
+  const db = database()
+  const state = newScorePollState()
+  db.pg.map.mockImplementation(
+    async (sql: string, _values: unknown, map: (row: unknown) => unknown) =>
+      sql.includes('sports_score_polling')
+        ? [map({ target: 'sport:nfl', interval_seconds: 30 })]
+        : []
+  )
+  db.pg.manyOrNone.mockResolvedValue([
+    {
+      data: {
+        id: 'game',
+        mechanism: 'cpmm-multi-2',
+        outcomeType: 'MULTIPLE_CHOICE',
+        sportsHomeTeam: 'Home',
+        sportsAwayTeam: 'Away',
+        sportsLeague: 'NFL',
+        sportsEventId: 'odds:americanfootball_nfl:event',
+        sportsStartTimestamp: new Date(NOW - 180 * 60_000).toISOString(),
+        closeTime: NOW + 60 * 60_000,
+      },
+    },
+  ])
+  jest.mocked(getScores).mockRejectedValue(new Error('503'))
+  for (const seconds of [-1870, -1810, -1690, -1450, -970, -10]) {
+    jest.spyOn(Date, 'now').mockReturnValue(NOW + seconds * 1000)
+    await pollOddsScoresAndResolve(db.client, state)
+  }
+  expect(getScores).toHaveBeenCalledTimes(6)
+  expect(state.failures.americanfootball_nfl).toBe(6)
+  jest.spyOn(Date, 'now').mockReturnValue(NOW)
+  await pollOddsScoresAndResolve(db.client, state)
+  expect(getScores).toHaveBeenCalledTimes(6)
+  // Half an hour after the last attempt, the finals check goes out.
+  jest.spyOn(Date, 'now').mockReturnValue(NOW + 1790 * 1000)
+  await pollOddsScoresAndResolve(db.client, state)
+  expect(jest.mocked(getScores).mock.calls.at(-1)).toEqual([
+    'americanfootball_nfl',
+    { finishedDays: 3 },
+  ])
+})

@@ -196,6 +196,25 @@ describe('scorePollPlan', () => {
   })
 })
 
+describe('scorePollPlan after failed calls', () => {
+  it("doesn't let a finals check through a failure cooldown", () => {
+    // Six failed 30-second live polls: the next call of any kind waits half
+    // an hour from the last attempt, even a finals check that has never run.
+    const s = settings({ sports: { nfl: 30 } })
+    const atFinals = game('a', 180, { closeTime: NOW + 60 * MIN })
+    const lastAttempt = { americanfootball_nfl: NOW - 10 * 1000 }
+    const fails = { americanfootball_nfl: 6 }
+    expect(scorePollPlan([atFinals], s, lastAttempt, NOW, fails, {})).toEqual(
+      []
+    )
+    // Half an hour after the last attempt, the finals check goes first.
+    const halfHourAgo = { americanfootball_nfl: NOW - 30 * MIN }
+    expect(scorePollPlan([atFinals], s, halfHourAgo, NOW, fails, {})).toEqual([
+      { sportKey: 'americanfootball_nfl', withFinished: true },
+    ])
+  })
+})
+
 describe('backedOff', () => {
   it('doubles per failure up to half an hour, or the interval if longer', () => {
     expect(backedOff(30, 0)).toBe(30)
