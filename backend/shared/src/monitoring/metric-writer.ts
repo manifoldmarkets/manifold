@@ -14,6 +14,15 @@ import {
 // more than once per 5 seconds.
 export const METRICS_INTERVAL_MS = 60_000
 
+// How often the event-loop lag sampler is meant to run. A sample that fires
+// late by more than the interval was held up by synchronous work (or GC); the
+// worst such lag between flushes is exported as process/event_loop_lag_ms.
+const LAG_SAMPLE_MS = 1_000
+// A single stall this long is logged on its own, so it lands in Logs Explorer
+// next to the job that caused it. The pool's idle_in_transaction_session_timeout
+// is 60 s, so anything approaching that is already costing other jobs.
+const STALL_WARN_MS = 5_000
+
 function serializeTimestamp(ts: number) {
   const seconds = ts / 1000
   const nanos = (ts % 1000) * 1000
@@ -99,6 +108,8 @@ export class MetricWriter {
   intervalMs: number
   instance?: InstanceInfo
   runInterval?: NodeJS.Timeout
+  lagInterval?: NodeJS.Timeout
+  maxLagMs = 0
 
   constructor(store: MetricStore, intervalMs: number) {
     this.client = new MetricServiceClient()
@@ -106,7 +117,20 @@ export class MetricWriter {
     this.intervalMs = intervalMs
   }
 
+  // Memory and worst event-loop lag since the last flush, as gauges on
+  // every flush. process.memoryUsage() is cheap; heapUsed is the number that
+  // hits --max-old-space-size.
+  sampleProcessHealth() {
+    const mem = process.memoryUsage()
+    this.store.set('process/rss_bytes', mem.rss)
+    this.store.set('process/heap_used_bytes', mem.heapUsed)
+    this.store.set('process/heap_total_bytes', mem.heapTotal)
+    this.store.set('process/event_loop_lag_ms', Math.round(this.maxLagMs))
+    this.maxLagMs = 0
+  }
+
   async write() {
+    this.sampleProcessHealth()
     const freshEntries = this.store.freshEntries()
     if (freshEntries.length > 0) {
       for (const entry of freshEntries) {
@@ -144,10 +168,32 @@ export class MetricWriter {
         }
       }, this.intervalMs)
     }
+    if (!this.lagInterval) {
+      // Timer drift as the lag measure: a callback due at `expected` that
+      // runs at `now` was blocked for now - expected. After a long stall Node
+      // fires an overdue interval once, so one sample sees the whole stall.
+      let expected = Date.now() + LAG_SAMPLE_MS
+      this.lagInterval = setInterval(() => {
+        const now = Date.now()
+        const lag = Math.max(0, now - expected)
+        expected = now + LAG_SAMPLE_MS
+        if (lag > this.maxLagMs) this.maxLagMs = lag
+        if (lag >= STALL_WARN_MS) {
+          log.warn(`Event loop stalled for ${(lag / 1000).toFixed(1)}s.`, {
+            lagMs: lag,
+          })
+        }
+      }, LAG_SAMPLE_MS)
+      // Never keep the process alive just to measure it.
+      this.lagInterval.unref()
+    }
   }
 
   stop() {
     clearTimeout(this.runInterval)
+    clearInterval(this.lagInterval)
+    this.runInterval = undefined
+    this.lagInterval = undefined
   }
 }
 
