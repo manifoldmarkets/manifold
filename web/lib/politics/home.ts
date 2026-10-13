@@ -37,6 +37,7 @@ import {
   UNPRECEDENTED_POLITICS_SLUGS,
 } from 'web/lib/politics/unprecedented-politics'
 import {
+  BOTH_2026_MATRIX,
   buildConditionalMatrixRows,
   conditionalMatrixIds,
   ConditionalMatrixRow,
@@ -58,10 +59,12 @@ export type MidtermSpotlightProps = {
   // (web/lib/politics/unprecedented-politics.ts), in display order.
   unprecedentedContracts: Contract[]
   // The conditional matrices: rows asked under each outcome of the 2026 Senate
-  // and House races and the 2028 presidency. Empty means the matrix is hidden
-  // (fewer than two complete rows, e.g. before its markets are created).
+  // and House races, under a sweep of both chambers, and under the 2028
+  // presidency. Empty means the matrix is hidden (fewer than two rows, e.g.
+  // before its markets are created).
   senateMatrixRows: ConditionalMatrixRow[]
   houseMatrixRows: ConditionalMatrixRow[]
+  bothMatrixRows: ConditionalMatrixRow[]
   presidencyMatrixRows: ConditionalMatrixRow[]
 }
 export type MidtermsPageProps = ElectionsPageProps & MidtermSpotlightProps
@@ -225,6 +228,9 @@ export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
   const houseMatrixRows = slimMatrixRows(
     buildConditionalMatrixRows(HOUSE_2026_MATRIX, conditionalContracts, now)
   )
+  const bothMatrixRows = slimMatrixRows(
+    buildConditionalMatrixRows(BOTH_2026_MATRIX, conditionalContracts, now)
+  )
   const presidencyMatrixRows = slimMatrixRows(
     buildConditionalMatrixRows(PRESIDENT_2028_MATRIX, conditionalContracts, now)
   )
@@ -238,6 +244,7 @@ export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
         ...contestContracts,
         ...matrixRowContracts(senateMatrixRows),
         ...matrixRowContracts(houseMatrixRows),
+        ...matrixRowContracts(bothMatrixRows),
         ...matrixRowContracts(presidencyMatrixRows),
       ].map((c) => c.id),
     }
@@ -254,6 +261,7 @@ export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
       ...unprecedentedContracts,
       ...matrixRowContracts(senateMatrixRows),
       ...matrixRowContracts(houseMatrixRows),
+      ...matrixRowContracts(bothMatrixRows),
       ...matrixRowContracts(presidencyMatrixRows),
       ...pollingPerpContracts,
     ].map((c) => c.id),
@@ -285,6 +293,7 @@ export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
     unprecedentedContracts,
     senateMatrixRows,
     houseMatrixRows,
+    bothMatrixRows,
     presidencyMatrixRows,
   }
 }

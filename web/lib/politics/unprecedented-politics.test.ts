@@ -30,17 +30,23 @@ test('the curated list has no duplicates and keeps spares behind the slots', () 
   assert.ok(UNPRECEDENTED_POLITICS_SLUGS.length > UNPRECEDENTED_POLITICS_SIZE)
 })
 
-test('the three markets the section was built around are in the shown slots', () => {
+test('the markets the section was built around are in the shown slots', () => {
   const shown = UNPRECEDENTED_POLITICS_SLUGS.slice(
     0,
     UNPRECEDENTED_POLITICS_SIZE
   )
   for (const slug of [
     'will-there-be-pressure-by-troops-or',
-    'will-trump-give-american-adults-500',
+    'will-federal-agents-draw-guns-on-vo',
     'will-trump-declare-a-national-emerg-qphcUqSlZZ',
   ])
     assert.ok(shown.includes(slug), slug)
+  // The $5,000-checks market moved to the Congress matrix's Both view.
+  assert.ok(
+    !UNPRECEDENTED_POLITICS_SLUGS.includes(
+      'will-trump-give-american-adults-500'
+    )
+  )
 })
 
 test('keeps the curated order, not the fetch order', () => {
