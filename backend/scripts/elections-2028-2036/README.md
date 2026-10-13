@@ -29,12 +29,11 @@ answers sum to one, adding answers disabled, tier Ṁ1,000, public after a quiet
 | `cycles.ts` | Election dates, close times, idempotency series, per-state round rules (Georgia runoff, Louisiana, Maine/Alaska RCV, Vermont governor). |
 | `inventory.ts`, `templates.ts`, `seeds.ts` | Race list, question/description/search-term templates, Stage A seed math. |
 | `generate-manifests.ts` (+ `.test.ts`) | Writes `<cycle>/manifest.json`, `inventories/<cycle>.json`, `topics-needed.md`. |
-| `market-seeds.ts` (+ `.test.ts`) | Stage B refresh: Kalshi prices, then priors blended with the certified 2026 results. |
 | `topics.json`, `topics-needed.md` | Prod topic ids used, and the topics Tod still has to create. |
 | `SEEDS.md` | The seed formula, parameters and the "Another party" exceptions. |
 | `2028/manifest.json`, `2032/…`, `2036/…` | The manifests (series `us-<cycle>-general-v1`), `review.approved: false`. |
 | `<cycle>/out/` | Dry-run output (`dry-run-report.md`, `-payloads.json`, `-plan.json`, `-dashboard-mapping.json`, `dry-run-online.json`). |
-| `../create-election-markets.ts`, `../../shared/src/elections/` | The 2026 creation CLI and library (restored from tag `elections-2026-launch`), generalised for later cycles and the `president` office. |
+| `../create-election-markets.ts`, `../../shared/src/elections/` | The 2026 creation CLI and library (from the 2026 launch), generalised for later cycles and the `president` office. |
 
 ## Commands (all from `backend/scripts`)
 
@@ -48,9 +47,6 @@ npx ts-node --transpile-only create-election-markets.ts --manifest elections-202
 # online dry run (read-only GETs against prod): duplicate findings per race
 npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2028/manifest.json --out elections-2028-2036/2028/out --quiet --online [--resume-online] [--pace-ms 250] [--only "<raceKey regex>"]
 
-# Stage B seed refresh (see SEEDS.md); --check writes nothing
-npx ts-node --transpile-only elections-2028-2036/market-seeds.ts --check
-npx ts-node --transpile-only elections-2028-2036/market-seeds.ts --results-2026 <certified-2026.json>
 ```
 
 Tests (from the repository root):
@@ -58,7 +54,6 @@ Tests (from the repository root):
 ```powershell
 $env:TS_NODE_PROJECT = 'backend/scripts/tsconfig.json'; $env:TS_NODE_TRANSPILE_ONLY = '1'
 node -r ts-node/register --test backend/scripts/elections-2028-2036/generate-manifests.test.ts
-node -r ts-node/register --test backend/scripts/elections-2028-2036/market-seeds.test.ts
 yarn --cwd=backend/shared test src/elections --runInBand
 npx tsc --noEmit -p backend/scripts
 ```
@@ -98,10 +93,8 @@ CLI writes into `<cycle>/out/` next to the state file after each run.)
 
 1. **Create the missing topics** in `topics-needed.md` (or decide to launch
    without them), paste the ids into `topics.json`, regenerate.
-2. **Refresh seeds**: build the certified-2026 results file (format in
-   `SEEDS.md`), then `market-seeds.ts --check`, read the coverage report, then
-   run it without `--check`. Every manifest is now `review.approved: false`
-   with new seeds. Re-run the two test files.
+2. **Review seeds**: the manifests carry the Stage A priors (`SEEDS.md`).
+   We don't use Kalshi's prices: we don't have permission to use their data (decided 13 Oct 2026). The seeding that relied on them has been removed.
 3. **Review the online dry runs**: re-run `--online` for each cycle (the
    October runs are in `<cycle>/out/dry-run-online.json` but markets will have
    been created since). For every EQUIVALENT finding decide: skip ours (do
@@ -122,8 +115,7 @@ CLI writes into `<cycle>/out/` next to the state file after each run.)
 6. **Pilot one market per cycle**: the first apply for a cycle creates its
    state file; `--only` picks the pilot and `--max-mana 1000` stops after it.
    Recommended pilots: `2028-president-US-general`, `2032-president-US-general`,
-   `2036-president-US-general` (the most-watched markets; their seeds are the
-   Kalshi national prices).
+   `2036-president-US-general` (the most-watched markets).
    ```powershell
    $env:MANIFOLD_API_KEY = '<@ManifoldPolitics key, never on the command line>'
    npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2028/manifest.json --out elections-2028-2036/2028/out --state C:\Users\User\elections-2028-prod\state.prod.json --env prod --apply --init-state --quiet --creator-username ManifoldPolitics --max-mana 1000 --only 2028-president-US-general
@@ -140,8 +132,7 @@ CLI writes into `<cycle>/out/` next to the state file after each run.)
    created twice. Expect roughly 10–15 seconds per market (create, read back,
    three colour edits, publish), so about two hours for 2028.
 8. **Afterwards**: copy `<cycle>/out/dashboard-mapping.prod.json` next to each
-   state file; commit the final manifests and a record branch/tag like the
-   2026 launch (`launch/elections-2026-prod`, tag `elections-2026-launch`).
+   state file; commit the final manifests on a record branch/tag.
    Page wiring is a separate, later task; the `dashboard` block of every entry
    carries `list`, `key`, `cycle` and `office` for it.
 

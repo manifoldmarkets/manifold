@@ -279,31 +279,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AL-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-AL-A1"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-AL-A1",
-              "answer": 0,
-              "price": 75.5,
-              "yesBid": 73,
-              "yesAsk": 78,
-              "lastPrice": 85,
-              "volume": 4786.49,
-              "volume24h": 0,
-              "openInterest": 1729.01,
-              "fetchedAt": "2026-10-06T05:04:41.838Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -402,31 +380,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AL-A2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-AL-A2"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-AL-A2",
-              "answer": 0,
-              "price": 67.5,
-              "yesBid": 65,
-              "yesAsk": 70,
-              "lastPrice": 71,
-              "volume": 8079.08,
-              "volume24h": 0,
-              "openInterest": 1113,
-              "fetchedAt": "2026-10-06T05:04:41.838Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -530,31 +486,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AL-A4. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-AL-A4"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-AL-A4",
-              "answer": 0,
-              "price": 77.5,
-              "yesBid": 73,
-              "yesAsk": 82,
-              "lastPrice": 82,
-              "volume": 0.14,
-              "volume24h": 0,
-              "openInterest": 0.14,
-              "fetchedAt": "2026-10-06T05:04:41.838Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -659,31 +593,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AR-HJR1018. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-AR-HJR1018"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-AR-HJR1018",
-              "answer": 0,
-              "price": 97.5,
-              "yesBid": 96,
-              "yesAsk": 99,
-              "lastPrice": 95,
-              "volume": 10898.29,
-              "volume24h": 0,
-              "openInterest": 1190.36,
-              "fetchedAt": "2026-10-06T05:04:41.838Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -778,31 +690,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AR-SJR11. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-AR-SJR11"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-AR-SJR11",
-              "answer": 0,
-              "price": 96,
-              "yesBid": 94,
-              "yesAsk": 98,
-              "lastPrice": 84,
-              "volume": 14333.75,
-              "volume24h": 0,
-              "openInterest": 5782.01,
-              "fetchedAt": "2026-10-06T05:04:41.838Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -897,31 +787,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AR-SJR15. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 55%. Talk Business & Politics-Hendrix College poll, Aug 11-12, 2026, 1,217 likely voters: 37% for / 25% against / 38% undecided (https://talkbusiness.net/2026/08/poll-voters-weigh-in-on-4-ballot-proposals/). High undecided share, so the seed is only a slight lean.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-AR-SJR15"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-AR-SJR15",
-              "answer": 0,
-              "price": 77.5,
-              "yesBid": 76,
-              "yesAsk": 79,
-              "lastPrice": 79,
-              "volume": 5713.26,
-              "volume24h": 0,
-              "openInterest": 2837.11,
-              "fetchedAt": "2026-10-06T05:04:41.838Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -1018,31 +886,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-AR-A578. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-AR-A578"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-AR-A578",
-              "answer": 0,
-              "price": 90.5,
-              "yesBid": 89,
-              "yesAsk": 92,
-              "lastPrice": 84,
-              "volume": 14067.99,
-              "volume24h": 0,
-              "openInterest": 5913.27,
-              "fetchedAt": "2026-10-06T05:04:41.838Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -1854,31 +1700,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR01. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 60%. PPIC Statewide Survey, Sep 4-10 2026, 1,103 likely voters: 55% yes / 43% no / 2% DK - https://www.ppic.org/publication/ppic-statewide-survey-californians-and-their-government-september-2026/",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXCABALLOTMEASURES-26NOV03-PR01"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXCABALLOTMEASURES-26NOV03-PR01",
-              "answer": 0,
-              "price": 77,
-              "yesBid": 74,
-              "yesAsk": 80,
-              "lastPrice": 74,
-              "volume": 338.82,
-              "volume24h": 134.18,
-              "openInterest": 239.18,
-              "fetchedAt": "2026-10-06T05:04:25.987Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -2008,31 +1832,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR02. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXCABALLOTMEASURES-26NOV03-PR02"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXCABALLOTMEASURES-26NOV03-PR02",
-              "answer": 0,
-              "price": 82.5,
-              "yesBid": 79,
-              "yesAsk": 86,
-              "lastPrice": 86,
-              "volume": 508.86,
-              "volume24h": 0,
-              "openInterest": 504.86,
-              "fetchedAt": "2026-10-06T05:04:25.987Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -2138,31 +1940,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR03. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXCABALLOTMEASURES-26NOV03-PR03"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXCABALLOTMEASURES-26NOV03-PR03",
-              "answer": 0,
-              "price": 82,
-              "yesBid": 78,
-              "yesAsk": 86,
-              "lastPrice": 84,
-              "volume": 1668.91,
-              "volume24h": 200,
-              "openInterest": 1668.91,
-              "fetchedAt": "2026-10-06T05:04:25.987Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -2279,31 +2059,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR38. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 58%. PPIC Statewide Survey, Sep 4-10 2026, 1,103 likely voters: 55% yes / 42% no / 3% DK - https://www.ppic.org/publication/ppic-statewide-survey-californians-and-their-government-september-2026/",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXCABALLOTMEASURES-26NOV03-PR38"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXCABALLOTMEASURES-26NOV03-PR38",
-              "answer": 0,
-              "price": 41.5,
-              "yesBid": 41,
-              "yesAsk": 42,
-              "lastPrice": 57,
-              "volume": 4804.2,
-              "volume24h": 0,
-              "openInterest": 2950.5,
-              "fetchedAt": "2026-10-06T05:04:25.987Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -2425,31 +2183,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR41. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 45%. PPIC Statewide Survey, Sep 4-10 2026, 1,103 likely voters: 51/44/5 - https://www.ppic.org/publication/ppic-statewide-survey-californians-and-their-government-september-2026/; Berkeley IGS Poll, Sep 15-20 2026, 4,512 likely voters: 37/33/30 - https://escholarship.org/uc/item/3w14s99c",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXCABALLOTMEASURES-26NOV03-PR41"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXCABALLOTMEASURES-26NOV03-PR41",
-              "answer": 0,
-              "price": 40,
-              "yesBid": 35,
-              "yesAsk": 45,
-              "lastPrice": 36,
-              "volume": 111.58,
-              "volume24h": 0,
-              "openInterest": 77.22,
-              "fetchedAt": "2026-10-06T05:04:25.987Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -2734,31 +2470,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR44. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXCABALLOTMEASURES-26NOV03-PR44"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXCABALLOTMEASURES-26NOV03-PR44",
-              "answer": 0,
-              "price": 21,
-              "yesBid": 18,
-              "yesAsk": 24,
-              "lastPrice": 27,
-              "volume": 3245.08,
-              "volume24h": 0,
-              "openInterest": 1694.97,
-              "fetchedAt": "2026-10-06T05:04:25.987Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -2916,31 +2630,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXCABALLOTMEASURES-26NOV03-PR45. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 45%. PPIC Statewide Survey, Sep 4-10 2026, 1,103 likely voters: 49% yes / 46% no / 5% DK - https://www.ppic.org/publication/ppic-statewide-survey-californians-and-their-government-september-2026/",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXCABALLOTMEASURES-26NOV03-PR45"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXCABALLOTMEASURES-26NOV03-PR45",
-              "answer": 0,
-              "price": 52,
-              "yesBid": 50,
-              "yesAsk": 54,
-              "lastPrice": 50,
-              "volume": 3303.41,
-              "volume24h": 201.63,
-              "openInterest": 917.92,
-              "fetchedAt": "2026-10-06T05:04:25.987Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -3157,31 +2849,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-I177. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-CO-I177"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-CO-I177",
-              "answer": 0,
-              "price": 50,
-              "yesBid": 48,
-              "yesAsk": 52,
-              "lastPrice": 51,
-              "volume": 4751.59,
-              "volume24h": 9.47,
-              "openInterest": 1313.58,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -3272,31 +2942,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-A83. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-CO-A83"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-CO-A83",
-              "answer": 0,
-              "price": 63.5,
-              "yesBid": 59,
-              "yesAsk": 68,
-              "lastPrice": 68,
-              "volume": 7.19,
-              "volume24h": 7.19,
-              "openInterest": 7.19,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -3388,31 +3036,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-A84. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-CO-A84"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-CO-A84",
-              "answer": 0,
-              "price": 68.5,
-              "yesBid": 64,
-              "yesAsk": 73,
-              "lastPrice": 0,
-              "volume": 0,
-              "volume24h": 0,
-              "openInterest": 0,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -3505,31 +3131,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-A85. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-CO-A85"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-CO-A85",
-              "answer": 0,
-              "price": 72.5,
-              "yesBid": 68,
-              "yesAsk": 77,
-              "lastPrice": 0,
-              "volume": 0,
-              "volume24h": 0,
-              "openInterest": 0,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -3622,31 +3226,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-A86. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-CO-A86"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-CO-A86",
-              "answer": 0,
-              "price": 60.5,
-              "yesBid": 56,
-              "yesAsk": 65,
-              "lastPrice": 0,
-              "volume": 0,
-              "volume24h": 0,
-              "openInterest": 0,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -3749,31 +3331,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-A87. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-CO-A87"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-CO-A87",
-              "answer": 0,
-              "price": 33,
-              "yesBid": 29,
-              "yesAsk": 37,
-              "lastPrice": 22,
-              "volume": 2391.77,
-              "volume24h": 1863,
-              "openInterest": 2163,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -3867,31 +3427,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-I108. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-CO-I108"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-CO-I108",
-              "answer": 0,
-              "price": 68,
-              "yesBid": 67,
-              "yesAsk": 69,
-              "lastPrice": 70,
-              "volume": 6314.43,
-              "volume24h": 0,
-              "openInterest": 1474.23,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -3985,31 +3523,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-I109. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-CO-I109"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-CO-I109",
-              "answer": 0,
-              "price": 63,
-              "yesBid": 59,
-              "yesAsk": 67,
-              "lastPrice": 66,
-              "volume": 262,
-              "volume24h": 0,
-              "openInterest": 129,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -4102,31 +3618,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-I110. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-CO-I110"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-CO-I110",
-              "answer": 0,
-              "price": 60,
-              "yesBid": 56,
-              "yesAsk": 64,
-              "lastPrice": 63,
-              "volume": 368.7,
-              "volume24h": 48,
-              "openInterest": 263.14,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -4319,31 +3813,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-P137. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-CO-P137"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-CO-P137",
-              "answer": 0,
-              "price": 65.5,
-              "yesBid": 61,
-              "yesAsk": 70,
-              "lastPrice": 0,
-              "volume": 0,
-              "volume24h": 0,
-              "openInterest": 0,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -4438,31 +3910,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-CO-PNN. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-CO-PNN"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-CO-PNN",
-              "answer": 0,
-              "price": 54.5,
-              "yesBid": 53,
-              "yesAsk": 56,
-              "lastPrice": 53,
-              "volume": 2435.57,
-              "volume24h": 53.55,
-              "openInterest": 1350.01,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -4556,31 +4006,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-FL-A2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-FL-A2"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-FL-A2",
-              "answer": 0,
-              "price": 66,
-              "yesBid": 64,
-              "yesAsk": 68,
-              "lastPrice": 64,
-              "volume": 9608.94,
-              "volume24h": 0,
-              "openInterest": 1500.22,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -4805,31 +4233,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-FL-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-FL-A1"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-FL-A1",
-              "answer": 0,
-              "price": 69.5,
-              "yesBid": 66,
-              "yesAsk": 73,
-              "lastPrice": 66,
-              "volume": 320.42,
-              "volume24h": 0,
-              "openInterest": 320.42,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -4931,31 +4337,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-GA-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-GA-A1"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-GA-A1",
-              "answer": 0,
-              "price": 88.5,
-              "yesBid": 84,
-              "yesAsk": 93,
-              "lastPrice": 87,
-              "volume": 36,
-              "volume24h": 0,
-              "openInterest": 11,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -5249,31 +4633,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-HI-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-HI-A1"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-HI-A1",
-              "answer": 0,
-              "price": 76.5,
-              "yesBid": 72,
-              "yesAsk": 81,
-              "lastPrice": 0,
-              "volume": 0,
-              "volume24h": 0,
-              "openInterest": 0,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -5366,31 +4728,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-HI-A2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-HI-A2"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-HI-A2",
-              "answer": 0,
-              "price": 76.5,
-              "yesBid": 72,
-              "yesAsk": 81,
-              "lastPrice": 79,
-              "volume": 200,
-              "volume24h": 0,
-              "openInterest": 200,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -5481,31 +4821,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-IA-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 45%. Suffolk University, Aug 20-23 2026, 500 LV, ±4.4: 33% yes / 36% no / 30% undecided. https://www.kcrg.com/2026/08/28/iowa-likely-voters-closely-split-income-tax-constitutional-amendment-poll-finds/",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-IA-A1"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-IA-A1",
-              "answer": 0,
-              "price": 36.5,
-              "yesBid": 34,
-              "yesAsk": 39,
-              "lastPrice": 39,
-              "volume": 18668.77,
-              "volume24h": 0,
-              "openInterest": 4755.77,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -5599,31 +4917,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-ID-HJR4. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-ID-HJR4"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-ID-HJR4",
-              "answer": 0,
-              "price": 2.5,
-              "yesBid": 1,
-              "yesAsk": 4,
-              "lastPrice": 6,
-              "volume": 10410.4,
-              "volume24h": 0,
-              "openInterest": 2686.61,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -5713,31 +5009,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-ID-HJR6. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-ID-HJR6"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-ID-HJR6",
-              "answer": 0,
-              "price": 92.5,
-              "yesBid": 91,
-              "yesAsk": 94,
-              "lastPrice": 94,
-              "volume": 9418.26,
-              "volume24h": 0,
-              "openInterest": 2835.26,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -5828,31 +5102,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-ID-P1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 55%. Boise State SPS poll (field dates not found; reported 2026-07-10): ~61% support / 28% oppose / 12% unsure (https://stateline.org/2026/07/10/in-deep-red-idaho-support-for-ballot-question-on-abortion-access-is-spread-across-party-lines/). Seed shaded below the poll: deep-red state and the poll may be old.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-ID-P1"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-ID-P1",
-              "answer": 0,
-              "price": 46.5,
-              "yesBid": 44,
-              "yesAsk": 49,
-              "lastPrice": 48,
-              "volume": 7342.5,
-              "volume24h": 20.5,
-              "openInterest": 3763.05,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -5948,31 +5200,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-IN-PQ1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported — no recent public poll found",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-IN-PQ1"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-IN-PQ1",
-              "answer": 0,
-              "price": 86,
-              "yesBid": 83,
-              "yesAsk": 89,
-              "lastPrice": 94,
-              "volume": 6455.12,
-              "volume24h": 0,
-              "openInterest": 932.12,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -6064,31 +5294,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-IN-PQ2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported — no recent public poll found",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-IN-PQ2"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-IN-PQ2",
-              "answer": 0,
-              "price": 79,
-              "yesBid": 77,
-              "yesAsk": 81,
-              "lastPrice": 85,
-              "volume": 6127,
-              "volume24h": 0,
-              "openInterest": 1441.24,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -6288,31 +5496,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-KY-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-KY-A1"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-KY-A1",
-              "answer": 0,
-              "price": 94,
-              "yesBid": 91,
-              "yesAsk": 97,
-              "lastPrice": 90,
-              "volume": 6014,
-              "volume24h": 0,
-              "openInterest": 2917.02,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -6415,31 +5601,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A220. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-LA-A220"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-LA-A220",
-              "answer": 0,
-              "price": 70.5,
-              "yesBid": 66,
-              "yesAsk": 75,
-              "lastPrice": 68,
-              "volume": 50,
-              "volume24h": 0,
-              "openInterest": 0,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -6539,31 +5703,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A277. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-LA-A277"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-LA-A277",
-              "answer": 0,
-              "price": 81.5,
-              "yesBid": 79,
-              "yesAsk": 84,
-              "lastPrice": 81,
-              "volume": 1024,
-              "volume24h": 0,
-              "openInterest": 752,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -6664,31 +5806,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A414. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-LA-A414"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-LA-A414",
-              "answer": 0,
-              "price": 70.5,
-              "yesBid": 66,
-              "yesAsk": 75,
-              "lastPrice": 74,
-              "volume": 50.06,
-              "volume24h": 0,
-              "openInterest": 0.06,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -6790,31 +5910,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A273. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-LA-A273"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-LA-A273",
-              "answer": 0,
-              "price": 55.5,
-              "yesBid": 54,
-              "yesAsk": 57,
-              "lastPrice": 54,
-              "volume": 4941.35,
-              "volume24h": 0,
-              "openInterest": 2188.71,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -6913,31 +6011,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A271. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-LA-A271"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-LA-A271",
-              "answer": 0,
-              "price": 72.5,
-              "yesBid": 70,
-              "yesAsk": 75,
-              "lastPrice": 74,
-              "volume": 50.06,
-              "volume24h": 0,
-              "openInterest": 25.06,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -7037,31 +6113,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A272. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-LA-A272"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-LA-A272",
-              "answer": 0,
-              "price": 41.5,
-              "yesBid": 39,
-              "yesAsk": 44,
-              "lastPrice": 45,
-              "volume": 6502.86,
-              "volume24h": 0,
-              "openInterest": 1827.04,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -7162,31 +6216,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A606. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-LA-A606"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-LA-A606",
-              "answer": 0,
-              "price": 53.5,
-              "yesBid": 50,
-              "yesAsk": 57,
-              "lastPrice": 59,
-              "volume": 2841.29,
-              "volume24h": 0,
-              "openInterest": 1742.21,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -7286,31 +6318,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A274. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-LA-A274"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-LA-A274",
-              "answer": 0,
-              "price": 82.5,
-              "yesBid": 80,
-              "yesAsk": 85,
-              "lastPrice": 81,
-              "volume": 1258,
-              "volume24h": 0,
-              "openInterest": 1059,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -7409,31 +6419,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A39. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-LA-A39"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-LA-A39",
-              "answer": 0,
-              "price": 82.5,
-              "yesBid": 80,
-              "yesAsk": 85,
-              "lastPrice": 82,
-              "volume": 2356,
-              "volume24h": 0,
-              "openInterest": 1136,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -7534,31 +6522,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-LA-A607. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-LA-A607"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-LA-A607",
-              "answer": 0,
-              "price": 60.5,
-              "yesBid": 58,
-              "yesAsk": 63,
-              "lastPrice": 58,
-              "volume": 5020.32,
-              "volume24h": 0,
-              "openInterest": 3016.23,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -7653,31 +6619,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MD-Q1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported — no recent public poll found",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-MD-Q1"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-MD-Q1",
-              "answer": 0,
-              "price": 76.5,
-              "yesBid": 72,
-              "yesAsk": 81,
-              "lastPrice": 0,
-              "volume": 0,
-              "volume24h": 0,
-              "openInterest": 0,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -7765,31 +6709,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MD-Q2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported — no recent public poll found",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-MD-Q2"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-MD-Q2",
-              "answer": 0,
-              "price": 75.5,
-              "yesBid": 74,
-              "yesAsk": 77,
-              "lastPrice": 79,
-              "volume": 4355.21,
-              "volume24h": 0,
-              "openInterest": 481.88,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -8190,31 +7112,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MN-CA. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported — no recent public poll found",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-MN-CA"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-MN-CA",
-              "answer": 0,
-              "price": 89.5,
-              "yesBid": 88,
-              "yesAsk": 91,
-              "lastPrice": 91,
-              "volume": 2936.55,
-              "volume24h": 0,
-              "openInterest": 1553.92,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -8309,31 +7209,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXREPRODUCTIVEMEASURES-26-MO. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXREPRODUCTIVEMEASURES-26-MO"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXREPRODUCTIVEMEASURES-26-MO",
-              "answer": 0,
-              "price": 54,
-              "yesBid": 49,
-              "yesAsk": 59,
-              "lastPrice": 50,
-              "volume": 8121.56,
-              "volume24h": 0,
-              "openInterest": 4578.79,
-              "fetchedAt": "2026-10-06T05:05:03.556Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -8571,31 +7449,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MO-A7. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-MO-A7"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-MO-A7",
-              "answer": 0,
-              "price": 27.5,
-              "yesBid": 24,
-              "yesAsk": 31,
-              "lastPrice": 31,
-              "volume": 4219.02,
-              "volume24h": 0,
-              "openInterest": 2297.95,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -8690,31 +7546,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MO-A8. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-MO-A8"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-MO-A8",
-              "answer": 0,
-              "price": 70,
-              "yesBid": 66,
-              "yesAsk": 74,
-              "lastPrice": 66,
-              "volume": 143.01,
-              "volume24h": 0,
-              "openInterest": 43.44,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -8808,31 +7642,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MT-CI132. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-MT-CI132"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-MT-CI132",
-              "answer": 0,
-              "price": 75.5,
-              "yesBid": 71,
-              "yesAsk": 80,
-              "lastPrice": 85,
-              "volume": 11.64,
-              "volume24h": 0,
-              "openInterest": 11.64,
-              "fetchedAt": "2026-10-06T05:04:41.838Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -8923,31 +7735,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MT-CI133. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-MT-CI133"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-MT-CI133",
-              "answer": 0,
-              "price": 74.5,
-              "yesBid": 70,
-              "yesAsk": 79,
-              "lastPrice": 84,
-              "volume": 11.77,
-              "volume24h": 0,
-              "openInterest": 11.77,
-              "fetchedAt": "2026-10-06T05:04:41.838Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -9042,31 +7832,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-MT-I194. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-MT-I194"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-MT-I194",
-              "answer": 0,
-              "price": 50,
-              "yesBid": 46,
-              "yesAsk": 54,
-              "lastPrice": 45,
-              "volume": 51.45,
-              "volume24h": 0,
-              "openInterest": 31.21,
-              "fetchedAt": "2026-10-06T05:04:41.838Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -9158,31 +7926,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NC-A2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-NC-A2"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-NC-A2",
-              "answer": 0,
-              "price": 75,
-              "yesBid": 71,
-              "yesAsk": 79,
-              "lastPrice": 71,
-              "volume": 1.64,
-              "volume24h": 0,
-              "openInterest": 1.64,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -9270,31 +8016,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NC-A3. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-NC-A3"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-NC-A3",
-              "answer": 0,
-              "price": 70,
-              "yesBid": 66,
-              "yesAsk": 74,
-              "lastPrice": 75,
-              "volume": 20.65,
-              "volume24h": 0,
-              "openInterest": 20.65,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -9384,31 +8108,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NC-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-NC-A1"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-NC-A1",
-              "answer": 0,
-              "price": 83.5,
-              "yesBid": 79,
-              "yesAsk": 88,
-              "lastPrice": 83,
-              "volume": 0.02,
-              "volume24h": 0,
-              "openInterest": 0.01,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -9502,31 +8204,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-ND-CM1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03); context: a broader 2024 ND Measure 2 (single subject + 60% + double vote) reportedly failed ~44-56.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-ND-CM1"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-ND-CM1",
-              "answer": 0,
-              "price": 15.5,
-              "yesBid": 13,
-              "yesAsk": 18,
-              "lastPrice": 23,
-              "volume": 4943.01,
-              "volume24h": 0,
-              "openInterest": 2912.99,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -9621,31 +8301,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-ND-CM2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03); context: sponsor-aligned 2025 poll showed 79% support for free school lunches in general, not for this measure.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-ND-CM2"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-ND-CM2",
-              "answer": 0,
-              "price": 57.5,
-              "yesBid": 53,
-              "yesAsk": 62,
-              "lastPrice": 61,
-              "volume": 1.59,
-              "volume24h": 0,
-              "openInterest": 1.59,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -9741,31 +8399,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NE26-FFG. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported — no recent public poll found",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-NE26-FFG"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-NE26-FFG",
-              "answer": 0,
-              "price": 80.5,
-              "yesBid": 78,
-              "yesAsk": 83,
-              "lastPrice": 81,
-              "volume": 2645.04,
-              "volume24h": 0,
-              "openInterest": 1070.02,
-              "fetchedAt": "2026-10-06T05:04:41.838Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -9860,31 +8496,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NE26-OSWA. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 60%. UNL Bureau of Sociological Research, April 2026, likely voters: 58% support / 31% oppose / 11% undecided on legalizing online sports betting (cited Aug 6 2026). https://www.deucescracked.com/blog/nebraska-sports-betting-2026-ballot-november-vote",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-NE26-OSWA"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-NE26-OSWA",
-              "answer": 0,
-              "price": 64.5,
-              "yesBid": 60,
-              "yesAsk": 69,
-              "lastPrice": 68,
-              "volume": 71.91,
-              "volume24h": 0,
-              "openInterest": 71.91,
-              "fetchedAt": "2026-10-06T05:04:41.838Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -9980,31 +8594,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NE26-OSWR. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 60%. UNL Bureau of Sociological Research, April 2026, likely voters: 58% support / 31% oppose / 11% undecided on legalizing online sports betting. https://www.deucescracked.com/blog/nebraska-sports-betting-2026-ballot-november-vote",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-NE26-OSWR"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-NE26-OSWR",
-              "answer": 0,
-              "price": 66.5,
-              "yesBid": 62,
-              "yesAsk": 71,
-              "lastPrice": 62,
-              "volume": 239,
-              "volume24h": 0,
-              "openInterest": 125,
-              "fetchedAt": "2026-10-06T05:04:41.838Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -10286,31 +8878,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-BQ3. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-NM-BQ3"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-NM-BQ3",
-              "answer": 0,
-              "price": 84.5,
-              "yesBid": 80,
-              "yesAsk": 89,
-              "lastPrice": 0,
-              "volume": 0,
-              "volume24h": 0,
-              "openInterest": 0,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -10403,31 +8973,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-A4. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-NM-A4"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-NM-A4",
-              "answer": 0,
-              "price": 42.5,
-              "yesBid": 38,
-              "yesAsk": 47,
-              "lastPrice": 48,
-              "volume": 2265,
-              "volume24h": 0,
-              "openInterest": 76,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -10519,31 +9067,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-BQ2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-NM-BQ2"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-NM-BQ2",
-              "answer": 0,
-              "price": 89.5,
-              "yesBid": 88,
-              "yesAsk": 91,
-              "lastPrice": 89,
-              "volume": 4071,
-              "volume24h": 0,
-              "openInterest": 3046,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -10635,31 +9161,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-NM-A1"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-NM-A1",
-              "answer": 0,
-              "price": 73,
-              "yesBid": 71,
-              "yesAsk": 75,
-              "lastPrice": 76,
-              "volume": 370.65,
-              "volume24h": 0,
-              "openInterest": 56.66,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -10752,31 +9256,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-A3. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-NM-A3"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-NM-A3",
-              "answer": 0,
-              "price": 73,
-              "yesBid": 71,
-              "yesAsk": 75,
-              "lastPrice": 76,
-              "volume": 275,
-              "volume24h": 0,
-              "openInterest": 50,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -10869,31 +9351,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-A2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-NM-A2"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-NM-A2",
-              "answer": 0,
-              "price": 70.5,
-              "yesBid": 66,
-              "yesAsk": 75,
-              "lastPrice": 0,
-              "volume": 0,
-              "volume24h": 0,
-              "openInterest": 0,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -10985,31 +9445,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-NM-BQ1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-NM-BQ1"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-NM-BQ1",
-              "answer": 0,
-              "price": 97,
-              "yesBid": 95,
-              "yesAsk": 99,
-              "lastPrice": 94,
-              "volume": 3563,
-              "volume24h": 0,
-              "openInterest": 2738,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -11101,31 +9539,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-OH-IS3. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 75%. Honest Elections Project Action (sponsor, pro-ID), May 27-Jun 2 2026, n=800: 76% would vote for enshrining photo ID in the Ohio constitution. https://thefederalist.com/2026/06/08/poll-finds-76-percent-of-ohio-voters-support-enshrining-photo-id-in-state-constitution/",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-OH-IS3"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-OH-IS3",
-              "answer": 0,
-              "price": 94,
-              "yesBid": 93,
-              "yesAsk": 95,
-              "lastPrice": 95,
-              "volume": 1094.72,
-              "volume24h": 0,
-              "openInterest": 512.8,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -11228,31 +9644,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-OK-SQ845. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-OK-SQ845"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-OK-SQ845",
-              "answer": 0,
-              "price": 48.5,
-              "yesBid": 46,
-              "yesAsk": 51,
-              "lastPrice": 45,
-              "volume": 4883.15,
-              "volume24h": 44.14,
-              "openInterest": 2729.01,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -11346,31 +9740,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-OK-SQ847. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-OK-SQ847"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-OK-SQ847",
-              "answer": 0,
-              "price": 49.5,
-              "yesBid": 46,
-              "yesAsk": 53,
-              "lastPrice": 45,
-              "volume": 94.61,
-              "volume24h": 44.14,
-              "openInterest": 68.14,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -11952,31 +10324,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-SD-AI. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-SD-AI"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-SD-AI",
-              "answer": 0,
-              "price": 20,
-              "yesBid": 16,
-              "yesAsk": 24,
-              "lastPrice": 18,
-              "volume": 7.9,
-              "volume24h": 0,
-              "openInterest": 3.95,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -12067,31 +10417,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-SD-AJ. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 85%. Prior results for similar measures: 2024 citizenship-to-vote amendments passed in all 8 states, 62%-86% (https://www.nbcnews.com/politics/2024-election/ballot-measures-targeting-noncitizen-voting-approved-8-states-rcna178888). No SD poll.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-SD-AJ"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-SD-AJ",
-              "answer": 0,
-              "price": 94,
-              "yesBid": 92,
-              "yesAsk": 96,
-              "lastPrice": 99,
-              "volume": 2465.4,
-              "volume24h": 0,
-              "openInterest": 1464.6,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -12181,31 +10509,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-SD-AK. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-SD-AK"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-SD-AK",
-              "answer": 0,
-              "price": 80.5,
-              "yesBid": 76,
-              "yesAsk": 85,
-              "lastPrice": 0,
-              "volume": 0,
-              "volume24h": 0,
-              "openInterest": 0,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -12294,31 +10600,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-SD-AL. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 35%. Prior SD results: a 2018 supermajority proposal and 2022 Amendment C (60% for tax measures) both failed, the latter about 2-to-1 (https://news.ballotpedia.org/2025/03/11/south-dakota-voters-to-decide-on-60-supermajority-requirement-for-constitutional-amendments-after-rejecting-similar-requirement-for-tax-related-measures-in-2022/). No 2026 poll.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-SD-AL"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-SD-AL",
-              "answer": 0,
-              "price": 17,
-              "yesBid": 13,
-              "yesAsk": 21,
-              "lastPrice": 16,
-              "volume": 874.03,
-              "volume24h": 0,
-              "openInterest": 874.03,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -12411,31 +10695,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-TN-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03); context: all four 2022 TN amendments passed easily (https://tennesseelookout.com/2022/11/10/amended-all-four-amendments-to-tennessees-constitution-pass-overwhelmingly/).",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-TN-A1"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-TN-A1",
-              "answer": 0,
-              "price": 91,
-              "yesBid": 89,
-              "yesAsk": 93,
-              "lastPrice": 87,
-              "volume": 210.75,
-              "volume24h": 0,
-              "openInterest": 105,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -12531,31 +10793,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-TN-A2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03); context: all four 2022 TN amendments passed easily (see TN-amend-1).",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-TN-A2"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-TN-A2",
-              "answer": 0,
-              "price": 84.5,
-              "yesBid": 81,
-              "yesAsk": 88,
-              "lastPrice": 88,
-              "volume": 3098.73,
-              "volume24h": 0,
-              "openInterest": 1001.72,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -12650,31 +10890,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-TN-A3. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03); context: all four 2022 TN amendments passed easily (see TN-amend-1).",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-TN-A3"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-TN-A3",
-              "answer": 0,
-              "price": 89,
-              "yesBid": 86,
-              "yesAsk": 92,
-              "lastPrice": 87,
-              "volume": 3017.03,
-              "volume24h": 0,
-              "openInterest": 489.02,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -12769,31 +10987,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-UT-SJR2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-UT-SJR2"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-UT-SJR2",
-              "answer": 0,
-              "price": 65,
-              "yesBid": 63,
-              "yesAsk": 67,
-              "lastPrice": 66,
-              "volume": 3554.02,
-              "volume24h": 0,
-              "openInterest": 2405.01,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -12886,31 +11082,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-UT-HJR10. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-UT-HJR10"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-UT-HJR10",
-              "answer": 0,
-              "price": 73.5,
-              "yesBid": 69,
-              "yesAsk": 78,
-              "lastPrice": 0,
-              "volume": 0,
-              "volume24h": 0,
-              "openInterest": 0,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -13006,31 +11180,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXREPRODUCTIVEMEASURES-26-VA. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 70%. Wason Center (CNU) poll, Jan 2026: 66% support a reproductive-rights amendment (https://www.whsv.com/2026/01/29/wason-center-releases-results-new-poll-various-virginia-issues/). Poll is ~8 months old.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXREPRODUCTIVEMEASURES-26-VA"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXREPRODUCTIVEMEASURES-26-VA",
-              "answer": 0,
-              "price": 92.55,
-              "yesBid": 90.1,
-              "yesAsk": 95,
-              "lastPrice": 95.7,
-              "volume": 7034.21,
-              "volume24h": 1331.64,
-              "openInterest": 3365.83,
-              "fetchedAt": "2026-10-06T05:05:03.556Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -13135,31 +11287,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-VA-Q2. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll or prior result found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-VA-Q2"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-VA-Q2",
-              "answer": 0,
-              "price": 94.5,
-              "yesBid": 90,
-              "yesAsk": 99,
-              "lastPrice": 0,
-              "volume": 0,
-              "volume24h": 0,
-              "openInterest": 0,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -13256,31 +11386,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-VA-Q3. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 70%. Wason Center (CNU) poll, Jan 2026: 64% support automatic restoration on release (https://www.whsv.com/2026/01/29/wason-center-releases-results-new-poll-various-virginia-issues/). Poll is ~8 months old.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-VA-Q3"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-VA-Q3",
-              "answer": 0,
-              "price": 95.5,
-              "yesBid": 94,
-              "yesAsk": 97,
-              "lastPrice": 97,
-              "volume": 5897.61,
-              "volume24h": 0,
-              "openInterest": 1599.55,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -13382,31 +11490,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-VT-PR3. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported — no recent public poll found",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-VT-PR3"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-VT-PR3",
-              "answer": 0,
-              "price": 90,
-              "yesBid": 88,
-              "yesAsk": 92,
-              "lastPrice": 87,
-              "volume": 6275.06,
-              "volume24h": 0,
-              "openInterest": 3175,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -13499,31 +11585,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-VT-PR4. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported — no recent public poll found",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-VT-PR4"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-VT-PR4",
-              "answer": 0,
-              "price": 88,
-              "yesBid": 86,
-              "yesAsk": 90,
-              "lastPrice": 85,
-              "volume": 1544.72,
-              "volume24h": 0,
-              "openInterest": 1500,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -13617,31 +11681,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-WA-IL26001. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-WA-IL26001"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-WA-IL26001",
-              "answer": 0,
-              "price": 48.5,
-              "yesBid": 44,
-              "yesAsk": 53,
-              "lastPrice": 45,
-              "volume": 905.25,
-              "volume24h": 0,
-              "openInterest": 269.25,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -13737,31 +11779,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-WA-IL26638. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 50%. unsupported - no recent public poll found (web search 2026-10-03)",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-WA-IL26638"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-WA-IL26638",
-              "answer": 0,
-              "price": 40,
-              "yesBid": 39,
-              "yesAsk": 41,
-              "lastPrice": 41,
-              "volume": 472.99,
-              "volume24h": 0,
-              "openInterest": 242.98,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -13862,31 +11882,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-WA-IP26645. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 35%. DHM Research, Sep 14-21 2026, 800 residents, with official ballot language: 35% yes / 57% no / 8% DK (40/44/16 without fiscal statement) - https://www.nwprogressive.org/weblog/2026/09/poll-watch-dhm-research-finds-washingtonians-likely-to-uphold-million-dollar-earners-tax-by-rejecting-brian-heywoods-645.html REVIEW: Seed review: DHM sampled residents, not likely voters; industry-side polls report majority opposition to the income tax.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-WA-IP26645"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-WA-IP26645",
-              "answer": 0,
-              "price": 20,
-              "yesBid": 16,
-              "yesAsk": 24,
-              "lastPrice": 16,
-              "volume": 35.06,
-              "volume24h": 0,
-              "openInterest": 15.06,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,
@@ -14287,31 +12285,9 @@
         "visibility": "public"
       },
       "seed": {
-        "basis": "Public market order-book seed fetched 2026-10-06T05:05:26.005Z; Normalized complementary YES/NO; approval direction; clamped to 1-99%. KXSTATEBALLOTMEASURE-WV-A1. Seed, not a guaranteed forecast; Source settlement criteria may differ. See market-seed-mapping.json for identity and direction evidence.",
+        "basis": "Opening prices taken from a third-party prediction market at launch (6 Oct 2026). The quotes were removed from the repo: we don't have permission to use that provider's data.",
         "note": "Initial pool probability only, not an observed forecast. Previous audit proposal: 85%. Prior results for similar measures: 2024 citizenship-to-vote amendments passed in all 8 states, 62%-86% (https://www.nbcnews.com/politics/2024-election/ballot-measures-targeting-noncitizen-voting-approved-8-states-rcna178888). No WV poll.",
-        "needsReview": false,
-        "source": {
-          "kind": "market-price",
-          "apiBase": "https://api.elections.kalshi.com/trade-api/v2",
-          "tickers": [
-            "KXSTATEBALLOTMEASURE-WV-A1"
-          ],
-          "fetchedAt": "2026-10-06T05:05:26.005Z",
-          "quotes": [
-            {
-              "ticker": "KXSTATEBALLOTMEASURE-WV-A1",
-              "answer": 0,
-              "price": 95,
-              "yesBid": 93,
-              "yesAsk": 97,
-              "lastPrice": 94,
-              "volume": 4382,
-              "volume24h": 0,
-              "openInterest": 3183,
-              "fetchedAt": "2026-10-06T05:04:41.837Z"
-            }
-          ]
-        }
+        "needsReview": false
       },
       "liquidityPlan": {
         "tier": 1000,

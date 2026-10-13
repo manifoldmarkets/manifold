@@ -1,8 +1,48 @@
 // Stage A seeds: provisional priors from the last two presidential results,
 // regressed toward even by office and horizon. Pure functions; SEEDS.md
 // documents the formula and every parameter below.
-import { normalizeSeeds } from '../elections-2026/market-seeds'
 import { Cycle } from './cycles'
+
+export function normalizeSeeds(weights: number[]): number[] {
+  if (
+    weights.length < 2 ||
+    weights.length > 100 ||
+    weights.some((x) => !Number.isFinite(x) || x < 0)
+  )
+    throw new Error('Invalid seed weights')
+  if (weights.every((x) => x === 0))
+    throw new Error('All seed weights are zero')
+  const values = weights.map(() => 0)
+  let free = weights.map((_, i) => i)
+  let remaining = 100
+  while (free.length) {
+    const sum = free.reduce((n, i) => n + weights[i], 0)
+    const below = free.filter(
+      (i) =>
+        (sum ? (weights[i] / sum) * remaining : remaining / free.length) < 1
+    )
+    if (!below.length) {
+      free.forEach((i) => {
+        values[i] = sum
+          ? (weights[i] / sum) * remaining
+          : remaining / free.length
+      })
+      break
+    }
+    below.forEach((i) => {
+      values[i] = 1
+      remaining--
+    })
+    free = free.filter((i) => !below.includes(i))
+  }
+  const tenths = values.map((x) => Math.round(x * 10))
+  const largest = values.indexOf(Math.max(...values))
+  tenths[largest] += 1000 - tenths.reduce((a, b) => a + b, 0)
+  const result = tenths.map((x) => x / 10)
+  if (result.some((x) => x < 1 || x > 99))
+    throw new Error('Seed bounds violated')
+  return result
+}
 
 export type TwoParty = { d: number; r: number; total?: number }
 export type UnitResults = Partial<Record<2020 | 2024, TwoParty>>

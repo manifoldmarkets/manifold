@@ -1,11 +1,9 @@
 # Seeds for the 2028 / 2032 / 2036 generic markets
 
-Two stages, both re-runnable. Stage A is what the committed manifests carry
-today. Stage B replaces it in December 2026, after the midterm results are
-certified, and must be re-run immediately before launch.
+Stage A is what the committed manifests carry. We don't use Kalshi's prices: we don't have permission to use their data (decided 13 Oct 2026). The seeding that relied on them has been removed. Another
+market-price source can be added later if its terms allow this use.
 
-Tod's rule: **market prices first, then actual results. Never poll averages,
-never ratings.** Nothing here reads a poll, a PVI or a race rating.
+Nothing here reads a poll, a PVI or a race rating.
 
 ## Constraints from the create-market API
 
@@ -14,8 +12,7 @@ never ratings.** Nothing here reads a poll, a PVI or a race rating.
 - normalisation floors each answer at 1% and gives the rounding remainder to
   the largest answer, so the most lopsided seed is **98 / 1 / 1**.
 
-`normalizeSeeds` (shared with the 2026 refresh, `../elections-2026/market-seeds.ts`)
-enforces all three; `assertSeedConstraints` in `seeds.ts` re-checks every seed.
+`normalizeSeeds` in `seeds.ts` enforces all three; `assertSeedConstraints` in `seeds.ts` re-checks every seed.
 
 ## Stage A — provisional priors (now)
 
@@ -86,59 +83,14 @@ seat); every presidential, governor and House market (a third-party *win* of a
 state's electors or a House seat is a 1% event; Utah 2016's McMullin took 21.5%
 and did not win).
 
-## Stage B — refresh after the 2026 results (December)
+## Stage B — blending in the certified 2026 results (not built)
 
-Code: `market-seeds.ts` (same structure as the 2026 refresh). Run from
-`backend/scripts`:
-
-```powershell
-# preview only: fetch Kalshi, print the coverage report, write nothing
-npx ts-node --transpile-only elections-2028-2036/market-seeds.ts --check
-
-# refresh the three manifests (or one with --cycle 2028)
-npx ts-node --transpile-only elections-2028-2036/market-seeds.ts --results-2026 <certified-2026.json>
-```
-
-Per race, in order:
-
-1. **Kalshi public prices** where an exact party-winner event exists for that
-   race and year. Discovery keeps Politics/Elections series whose ticker starts
-   with `PRESPARTY`, `PRES`, `SENATE`, `GOV` or `HOUSERACE` (with or without the
-   `KX` prefix) and events that name 2028/2032/2036 (or whose rules name the
-   term). Matching requires the state (and district) and year in the event
-   ticker, the office and state name in the title, and rules text consistent
-   with the cycle: `GOVPARTYNH-28` is rejected because its rules say
-   "pursuant to the 2026 election". Outcomes map to Democratic / Republican by
-   party text; independents (e.g. `SENATEPA-28-JFET`, "as an independent") and
-   other parties aggregate to "Another party or independent". When the event
-   prices no independent or third-party outcome at all, the reviewed Stage A
-   "Another party" share for that race (1%, or the exception) is kept and the
-   two major parties split the rest in proportion to their quotes, so the
-   Alaska and Utah judgements survive a D/R-only Kalshi event. Quote rules are
-   the 2026 ones: two-sided spread ≤ 10c, the 0–2c / 98–100c one-sided
-   exceptions (flagged), inactive, crossed or wider books are *thin*, last
-   trades are never substituted. Kalshi settles on the sworn-in member /
-   inaugurated governor / party winning the presidency, so prices are a
-   reference, not settlement-equivalent.
-2. **Otherwise the Stage A prior**, blended with the certified 2026 result for
-   the unit when `--results-2026` is given:
-   `lean = (1 − w) × presidentialLean + w × (m2026(unit) − m2026(national House))`,
-   with `w` from `RESULTS_2026_WEIGHT`: House 0.5 (the district's own 2026
-   House result), Senate 0.3 (the state's 2026 Senate race if present,
-   else its statewide two-party House vote), governor 0.2 (statewide House
-   vote), president 0 (the presidential lean already is the signal).
-   The 2026 results file is hand-filled from the state certifications
-   (`{ "nationalHouse": {d, r}, "house": { "AL-01": {d, r} }, "senate": { "GA": {d, r} } }`,
-   two-party votes, uncontested races omitted).
-3. Writes `out/seed-snapshot.json`, `out/seed-mapping.json` (every race:
-   tickers, quotes, old → new seed, reason) and `out/seed-coverage.md`, and
-   patches **only** `answerProbs`, `seed.basis` and `seed.source` in each
-   manifest (surgical JSON edits; `assertOnlySeedsChanged` guards it), bumps
-   `manifestVersion`, and resets `review.approved`, `reviewedBy` and
-   `reviewedAt`. Approval must be renewed after every refresh.
-
-Kalshi coverage on 2026-10-06 is in the report that accompanied this branch
-(`out/seed-coverage.md` after a `--check` run, and the summary in the PR-less
-handoff): national 2028 and 2032 party markets exist; a handful of 2028 Senate
-and governor events exist; no 2028 state-level presidential, House or 2036
-events yet. Expect much more by December 2026.
+`stageASeed` takes an optional `blend` of a certified 2026 result:
+`lean = (1 − w) × presidentialLean + w × (m2026(unit) − m2026(national House))`,
+with `w` from `RESULTS_2026_WEIGHT` (House 0.5, Senate 0.3, governor 0.2,
+president 0). There is no command that reads a certified results file and
+patches the manifests yet: the earlier refresh tool also read market prices
+and was removed with them. A results-only refresh would hand-fill
+`{ "nationalHouse": {d, r}, "house": { "AL-01": {d, r} }, "senate": { "GA": {d, r} } }`
+(two-party votes, uncontested races omitted), patch only `answerProbs` and
+`seed.basis`, and reset each manifest's approval.
