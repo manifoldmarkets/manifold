@@ -12,6 +12,11 @@ import {
   verifyHuggingFaceWeights,
 } from 'shared/huggingface'
 import {
+  PROVISIONAL_RECHECK_INTERVAL_MS,
+  latestTimestamp,
+  parseTimestamp,
+} from 'shared/perps/classification-recheck'
+import {
   ClassificationRow,
   upsertClassification,
 } from 'shared/perps/model-classifications'
@@ -46,7 +51,8 @@ export const getModelClassifications: APIHandler<
   // instead, and correcting an older verdict still works through the CLI.
   const rows = await pg.manyOrNone<ClassificationRow>(
     `select permaslug, open, weights, source, evidence,
-            first_seen, first_ranked_at, classified_at, classified_by
+            first_seen, first_ranked_at, classified_at, classified_by,
+            provisional
      from model_classifications
      order by first_ranked_at asc nulls last, first_seen asc`
   )
@@ -151,6 +157,7 @@ export const getModelClassifications: APIHandler<
       .filter(
         (r) =>
           r.open !== null &&
+          !r.provisional &&
           !OPEN_WEIGHT_MODELS[r.permaslug] &&
           !isCompositeSlug(r.permaslug)
       )
@@ -165,8 +172,50 @@ export const getModelClassifications: APIHandler<
         classifiedBy: r.classified_by,
       }))
       .sort((a, b) => (b.classifiedAt ?? 0) - (a.classifiedAt ?? 0)),
+    // The watch list: closed by default at an operator's say-so, re-checked
+    // weekly by the watcher. Contradicted rows first — the research found
+    // what the operator could not, and the index is publishing against it
+    // until someone looks.
+    provisional: rows
+      .filter(
+        (r) =>
+          r.provisional &&
+          !OPEN_WEIGHT_MODELS[r.permaslug] &&
+          !isCompositeSlug(r.permaslug)
+      )
+      .map((r) => {
+        const lastCheckedAt = parseTimestamp(r.evidence?.['agentRanAt'])
+        const recommendation = evidenceString(r, 'agentRecommendation')
+        return {
+          permaslug: r.permaslug,
+          openRouterName: evidenceString(r, 'openRouterName'),
+          classifiedAt: r.classified_at
+            ? new Date(r.classified_at).getTime()
+            : null,
+          classifiedBy: r.classified_by,
+          lastCheckedAt: Number.isFinite(lastCheckedAt) ? lastCheckedAt : null,
+          nextCheckAt:
+            (latestTimestamp([r.evidence?.['agentRanAt'], r.classified_at]) ??
+              now) + PROVISIONAL_RECHECK_INTERVAL_MS,
+          contradicted: recommendation === 'open',
+          agentRecommendation: recommendation,
+          agentReasoning: evidenceString(r, 'agentReasoning'),
+          agentSearches: evidenceSearches(r),
+          agentProposedWeights: evidenceString(r, 'agentProposedWeights'),
+          agentWeightFileCount:
+            typeof r.evidence?.['weightFileCount'] === 'number'
+              ? (r.evidence['weightFileCount'] as number)
+              : null,
+        }
+      })
+      .sort(
+        (a, b) =>
+          Number(b.contradicted) - Number(a.contradicted) ||
+          a.nextCheckAt - b.nextCheckAt
+      ),
     seedVersion: OPEN_WEIGHT_LIST_VERSION,
     graceWindowMs: UNCLASSIFIED_GRACE_WINDOW_MS,
+    provisionalRecheckIntervalMs: PROVISIONAL_RECHECK_INTERVAL_MS,
   }
 }
 
@@ -176,6 +225,7 @@ export const setModelClassification: APIHandler<
   throwErrorIfNotAdmin(auth.uid)
   const permaslug = basePermaslug(body.permaslug.trim())
   const { open, weights } = body
+  const provisional = body.provisional ?? false
 
   // The seed list is the published methodology. Silently overriding an entry
   // from an admin form would change what the index means, so a genuine
@@ -207,6 +257,21 @@ export const setModelClassification: APIHandler<
         `published methodology — edit common/src/perps/open-weight-models.ts.`
     )
 
+  // The third answer. Closed as the DEFAULT for a model whose weights the
+  // operator could not find and does not expect to yet — a stealth model, or
+  // weights announced and unshipped — rather than as a finding. It is the
+  // methodology's own rule ("you cannot download weights for a model nobody
+  // has named") applied without pretending a search settled it, and it puts
+  // the row on the watcher's weekly re-check so the default cannot quietly
+  // become permanent. An open call is never provisional: it cites a verified
+  // repo or it does not land.
+  if (provisional && open)
+    throw new APIError(
+      400,
+      'A provisional verdict is always closed — it is the default for not ' +
+        'finding weights. An open call cites a verified repo instead.'
+    )
+
   const pg = createSupabaseDirectClient()
 
   // Verify the citation before it enters the map, not after.
@@ -223,9 +288,25 @@ export const setModelClassification: APIHandler<
   // The operator is trusted to make the JUDGEMENT; they are not a substitute
   // for the mechanical check, and being asked to re-type a repo id is exactly
   // where a slip happens.
+  // The upsert replaces evidence (archiving the old one in history), and the
+  // watch list wants to show a name, not a bare slug — so carry it forward.
+  const prior = await pg.oneOrNone<{ name: string | null }>(
+    `select evidence->>'openRouterName' as name
+     from model_classifications where permaslug = $1`,
+    [permaslug]
+  )
   let evidence: Record<string, unknown> = {
     classifiedByAdmin: auth.uid,
     weightsCitedAt: Date.now(),
+    openRouterName: prior?.name ?? null,
+    ...(provisional
+      ? {
+          provisional: true,
+          provisionalNote:
+            'closed applied as the default — no public weights could be ' +
+            'found; re-checked weekly until an operator firms the verdict',
+        }
+      : {}),
   }
   if (open) {
     const cited = weights?.trim() ?? ''
@@ -270,12 +351,17 @@ export const setModelClassification: APIHandler<
     source: 'admin',
     evidence,
     classifiedBy: auth.uid,
+    provisional,
   })
 
   log(
     `admin ${auth.uid} classified ${permaslug} as ${
-      open ? `open (${weights})` : 'closed'
+      open
+        ? `open (${weights})`
+        : provisional
+        ? 'closed (provisional, under watch)'
+        : 'closed'
     }`
   )
-  return { success: true as const, permaslug, open }
+  return { success: true as const, permaslug, open, provisional }
 }
