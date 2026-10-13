@@ -3,6 +3,8 @@ import {
   creditsPerDay,
   DEFAULT_FINALS_INTERVAL,
   finalsDue,
+  finalsOnlySettings,
+  liveInterval,
   parsePollingRows,
   PollingGame,
   pollingSettingError,
@@ -207,8 +209,8 @@ describe('creditsPerDay', () => {
   const day = (daysAgo: number) =>
     new Date(NOW - daysAgo * 24 * 60 * MIN).toISOString().slice(0, 10)
 
-  it('averages a short history over the days it has, not over seven', () => {
-    // Two days of use: 1,000 credits is 500 a day, not 143.
+  it('averages a short history over the full days it has, not over seven', () => {
+    // Two days of use: yesterday's 700 is the rate, not 1,000 over 7.
     expect(
       creditsPerDay(
         [
@@ -217,11 +219,20 @@ describe('creditsPerDay', () => {
         ],
         NOW
       )
-    ).toEqual({ perDay: 500, days: 2 })
+    ).toEqual({ perDay: 700, days: 1, today: 300 })
+    expect(
+      creditsPerDay(
+        [
+          { day: day(3), credits: 300 },
+          { day: day(1), credits: 600 },
+        ],
+        NOW
+      )
+    ).toEqual({ perDay: 300, days: 3, today: 0 })
   })
 
   it('counts a quiet day in a week of history as a day of nothing', () => {
-    // Used 10 days ago, then only today: 100 over the week.
+    // Used 10 days ago, then only today: nothing over the week before today.
     expect(
       creditsPerDay(
         [
@@ -230,15 +241,17 @@ describe('creditsPerDay', () => {
         ],
         NOW
       )
-    ).toEqual({ perDay: 100 / 7, days: 7 })
+    ).toEqual({ perDay: 0, days: 7, today: 100 })
   })
 
-  it('is nothing with no history, or none this week', () => {
-    expect(creditsPerDay([], NOW)).toEqual({ perDay: 0, days: 0 })
-    expect(creditsPerDay([{ day: day(10), credits: 900 }], NOW)).toEqual({
+  it('never averages today, a partial day', () => {
+    // Two hours into the first day of use there is no rate yet.
+    expect(creditsPerDay([{ day: day(0), credits: 40 }], NOW)).toEqual({
       perDay: 0,
-      days: 7,
+      days: 0,
+      today: 40,
     })
+    expect(creditsPerDay([], NOW)).toEqual({ perDay: 0, days: 0, today: 0 })
   })
 })
 
@@ -284,6 +297,13 @@ describe('settings', () => {
         { target: 'sport:nba', intervalSeconds: 7 },
       ])
     ).toEqual({ sports: { nba: 30 }, games: { abc: 0 }, finals: 60 })
+  })
+
+  it('falls back to finals only, with live scores off for every sport', () => {
+    const fallback = finalsOnlySettings()
+    expect(liveInterval({ contractId: 'a', sport: 'nfl' }, fallback)).toBe(0)
+    expect(liveInterval({ contractId: 'a', sport: 'nhl' }, fallback)).toBe(0)
+    expect(fallback.finals).toBe(DEFAULT_FINALS_INTERVAL)
   })
 
   it("maps a market's league label to its sport", () => {

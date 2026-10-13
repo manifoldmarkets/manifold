@@ -22,6 +22,7 @@ import {
   calendarPhaseKey,
   calendarStatus,
   competitionSwitchError,
+  overlappingPhases,
   phaseWindow,
   SPORTS_CALENDAR,
 } from './sports-calendar'
@@ -186,6 +187,22 @@ describe('2026–27 calendar eligibility', () => {
         .map((b) => `${calendarPhaseKey(a)} / ${calendarPhaseKey(b)}`)
     )
     expect(overlapping).toEqual([])
+  })
+
+  it('knows which phases share dates on one feed', () => {
+    // The CFP window overlaps the bowls'; the MLB playoffs' last US evening
+    // is the World Series' first UTC day. The Premier League stands alone.
+    const [cfp] = calendarEntriesFor('cfb-cfp-2027')
+    expect(overlappingPhases(cfp).map(calendarPhaseKey)).toEqual([
+      'cfb-regular-2026:Bowl Season',
+    ])
+    const playoffs = calendarEntriesFor('mlb-2026').find(
+      (p) => p.phase === 'Playoffs'
+    )!
+    expect(overlappingPhases(playoffs).map(calendarPhaseKey)).toEqual([
+      'mlb-2026:World Series',
+    ])
+    expect(overlappingPhases(calendarEntriesFor('epl-2026-27')[0])).toEqual([])
   })
 
   it('keeps the March Madness window off the conference tournaments', () => {

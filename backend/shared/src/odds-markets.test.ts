@@ -363,7 +363,11 @@ it('creates college post-season games but not regular-season ones', async () => 
     'cfb-regular-2026',
     { dryRun: true }
   )
-  expect(result.log.map((r) => r.eventId)).toEqual(['bowl'])
+  expect(result.log.map((r) => [r.eventId, r.status])).toEqual([
+    ['october', 'skipped'],
+    ['bowl', 'dry-run'],
+  ])
+  expect(result.log[0].reason).toContain('Regular Season is off')
 })
 
 it("moves an existing market to the provider's new kickoff", async () => {
@@ -1098,14 +1102,22 @@ describe('score polling settings', () => {
 
   it('asks for live games only while no game is due to end', async () => {
     const db = database()
+    jest
+      .mocked(getScores)
+      .mockResolvedValue([
+        { ...event, completed: false, scores: null, last_update: null },
+      ])
     db.pg.manyOrNone.mockResolvedValueOnce(nflGame(60 * MINUTE))
     await pollOddsScoresAndResolve(db.client, newScorePollState())
-    expect(getScores).toHaveBeenCalledWith('americanfootball_nfl', {})
+    expect(jest.mocked(getScores).mock.calls).toEqual([
+      ['americanfootball_nfl', {}],
+    ])
   })
 
-  it("polls nothing if the settings can't be read, and says so once an hour", async () => {
+  it("polls finals only, live scores off, if the settings can't be read, and says so hourly", async () => {
     // The settings are the off switch for spending credits: the defaults
-    // would poll a sport an admin switched off.
+    // would write live scores for a sport an admin switched off. Finals
+    // can't be switched off, so they still run and games resolve.
     const db = database()
     const state = newScorePollState()
     db.pg.map.mockRejectedValue(new Error('relation does not exist'))
@@ -1113,11 +1125,133 @@ describe('score polling settings', () => {
     expect((await pollOddsScoresAndResolve(db.client, state)).polled).toBe(0)
     expect(getScores).not.toHaveBeenCalled()
     expect(log.error).toHaveBeenCalledWith(
-      expect.stringContaining('nothing is polled')
+      expect.stringContaining('finals only')
     )
+    // Due to end and still going: asked with finished games, no live score
+    // written.
+    jest.mocked(getScores).mockResolvedValue([
+      {
+        ...event,
+        completed: false,
+        scores: [
+          { name: 'Away', score: '20' },
+          { name: 'Home', score: '20' },
+        ],
+        last_update: null,
+      },
+    ])
+    db.pg.manyOrNone.mockResolvedValueOnce(nflGame(190 * MINUTE))
+    const result = await pollOddsScoresAndResolve(db.client, state)
+    expect(getScores).toHaveBeenCalledWith('americanfootball_nfl', {
+      finishedDays: 3,
+    })
+    expect(result.live).toBe(0)
+    expect(db.writes).toEqual([])
+    expect(log.error).toHaveBeenCalledTimes(1)
+    // An hour on, it says so again.
+    jest.spyOn(Date, 'now').mockReturnValue(NOW + 61 * MINUTE)
+    db.pg.manyOrNone.mockResolvedValueOnce(nflGame(190 * MINUTE))
+    await pollOddsScoresAndResolve(db.client, state)
+    expect(log.error).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps the live scores when only the finished-games call fails', async () => {
+    // Two NFL games an hour in: one still listed live, one gone. The second
+    // call fails, so the first response is used: the live score is written,
+    // the missing game is flagged, and nothing backs off.
+    const db = database()
+    const state = newScorePollState()
+    const two = () => [
+      ...nflGame(60 * MINUTE),
+      {
+        data: {
+          ...nflGame(60 * MINUTE)[0].data,
+          id: 'gone',
+          sportsEventId: 'odds:americanfootball_nfl:gone',
+        },
+      },
+    ]
+    db.pg.manyOrNone.mockResolvedValueOnce(two()).mockResolvedValueOnce(two())
+    jest
+      .mocked(getScores)
+      .mockResolvedValueOnce([
+        {
+          ...event,
+          completed: false,
+          scores: [
+            { name: 'Away', score: '3' },
+            { name: 'Home', score: '7' },
+          ],
+          last_update: null,
+        },
+      ])
+      .mockRejectedValueOnce(new Error('503'))
+      .mockResolvedValue([])
+    const result = await pollOddsScoresAndResolve(db.client, state)
+    expect(result.live).toBe(1)
+    expect(result.pending).toBe(1)
+    expect(publishSportsLiveScore).toHaveBeenCalledWith(
+      'game',
+      expect.objectContaining({ sportsHomeScore: 7, sportsAwayScore: 3 })
+    )
+    // Five minutes on: due again (no backoff), one call with finished games.
+    jest.spyOn(Date, 'now').mockReturnValue(NOW + 5 * MINUTE)
+    await pollOddsScoresAndResolve(db.client, state)
+    expect(jest.mocked(getScores).mock.calls).toEqual([
+      ['americanfootball_nfl', {}],
+      ['americanfootball_nfl', { finishedDays: 3 }],
+      ['americanfootball_nfl', { finishedDays: 3 }],
+    ])
+  })
+
+  it("keeps asking for finished games, in one call, for a completed game it can't resolve", async () => {
+    // An NHL game comes back completed and level, which the resolver leaves
+    // for a person. Later polls include finished games in their one call
+    // rather than asking twice every tick.
+    const db = database()
+    const state = newScorePollState()
+    const nhl = () => [
+      {
+        data: {
+          ...nflGame(60 * MINUTE)[0].data,
+          sportsLeague: 'NHL',
+          sportsEventId: 'odds:icehockey_nhl:event',
+        },
+      },
+    ]
+    db.pg.manyOrNone.mockResolvedValueOnce(nhl()).mockResolvedValueOnce(nhl())
+    const level = {
+      ...event,
+      sport_key: 'icehockey_nhl',
+      completed: true,
+      scores: [
+        { name: 'Away', score: '2' },
+        { name: 'Home', score: '2' },
+      ],
+      last_update: null,
+    }
+    jest.mocked(getScores).mockResolvedValueOnce([]).mockResolvedValue([level])
+    expect((await pollOddsScoresAndResolve(db.client, state)).errors).toBe(1)
+    jest.spyOn(Date, 'now').mockReturnValue(NOW + 5 * MINUTE)
+    expect((await pollOddsScoresAndResolve(db.client, state)).errors).toBe(1)
+    expect(jest.mocked(getScores).mock.calls).toEqual([
+      ['icehockey_nhl', {}],
+      ['icehockey_nhl', { finishedDays: 3 }],
+      ['icehockey_nhl', { finishedDays: 3 }],
+    ])
+    expect(resolveMarketHelper).not.toHaveBeenCalled()
+  })
+
+  it('forgets a flagged game once the resolver stops watching it', async () => {
+    const db = database()
+    const state = newScorePollState()
+    jest.mocked(getScores).mockResolvedValue([])
     db.pg.manyOrNone.mockResolvedValueOnce(nflGame(60 * MINUTE))
     await pollOddsScoresAndResolve(db.client, state)
-    expect(log.error).toHaveBeenCalledTimes(1)
+    expect(Object.keys(state.missing)).toEqual(['game'])
+    db.pg.manyOrNone.mockResolvedValueOnce([])
+    await pollOddsScoresAndResolve(db.client, state)
+    expect(state.missing).toEqual({})
   })
 
   it('checks for a final the moment a started game drops out of the live scores', async () => {

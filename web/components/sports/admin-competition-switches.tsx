@@ -124,6 +124,12 @@ function SwitchRow(props: {
         </Row>
         {s.locked && <span className="text-xs text-amber-600">{s.locked}</span>}
         {s.notes && <span className="text-ink-500 text-xs">{s.notes}</span>}
+        {s.overlaps.length > 0 && (
+          <span className="text-ink-500 text-xs">
+            Shares dates with {s.overlaps.join(' and ')}: a game inside both is
+            created only if both are on.
+          </span>
+        )}
         <span className="text-ink-400 text-xs">
           {s.updatedBy && s.updatedTime
             ? `Switched ${s.on ? 'on' : 'off'} by @${s.updatedBy}, ${new Date(

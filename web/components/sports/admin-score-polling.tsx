@@ -26,8 +26,9 @@ type Pending = Record<string, number | null>
 export function AdminScorePolling() {
   const { data, refresh } = useAPIGetter('admin-sports-score-polling', {})
   // Each setting saves on its own: while one is in flight its select shows
-  // the value asked for and is disabled, and the others still work. A second
-  // save on the same target waits for the first, so the later choice wins.
+  // the value asked for and is disabled, and the others still work. A select
+  // stays disabled until its own save lands, so two saves on one target
+  // can't overtake each other.
   const [pending, setPending] = useState<Pending>({})
 
   if (!data) return <LoadingIndicator />
@@ -73,7 +74,7 @@ export function AdminScorePolling() {
 
 function Credits(props: { usage: OddsApiUsageSummary }) {
   const { usage } = props
-  const { perDay, days } = creditsPerDay(usage.byDay, Date.now())
+  const spend = creditsPerDay(usage.byDay, Date.now())
   const max = Math.max(1, ...usage.byDay.map((d) => d.credits))
   return (
     <Col className="border-ink-200 gap-2 rounded-lg border p-3">
@@ -99,15 +100,7 @@ function Credits(props: { usage: OddsApiUsageSummary }) {
             )}
           </span>
           <span className="text-ink-600 text-xs">
-            {perDay > 0
-              ? `Last ${
-                  days === 1 ? 'day' : `${days} days`
-                }: about ${Math.round(
-                  perDay
-                ).toLocaleString()} a day, so the rest lasts about ${Math.floor(
-                  usage.remaining / perDay
-                )} days at that rate.`
-              : 'Nothing spent in the last 7 days.'}
+            {spendSummary(spend, usage.remaining)}
           </span>
         </>
       )}
@@ -143,6 +136,28 @@ function Credits(props: { usage: OddsApiUsageSummary }) {
       )}
     </Col>
   )
+}
+
+// "Last 3 days: about 120 a day, so the rest lasts about 150 days at that
+// rate. 40 so far today." Today is a partial day, so it's never averaged.
+function spendSummary(
+  spend: ReturnType<typeof creditsPerDay>,
+  remaining: number
+) {
+  const { perDay, days, today } = spend
+  const todayNote = today > 0 ? ` ${today.toLocaleString()} so far today.` : ''
+  if (days === 0) {
+    return today > 0
+      ? `${today.toLocaleString()} so far today; a daily rate needs a full day.`
+      : 'Nothing spent in the last 7 days.'
+  }
+  const span = days === 1 ? 'Yesterday' : `Last ${days} days`
+  if (perDay === 0) return `${span}: nothing spent.${todayNote}`
+  return `${span}: about ${Math.round(
+    perDay
+  ).toLocaleString()} a day, so the rest lasts about ${Math.floor(
+    remaining / perDay
+  )} days at that rate.${todayNote}`
 }
 
 function LiveBySport(props: {

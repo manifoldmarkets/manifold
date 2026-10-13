@@ -102,6 +102,21 @@ export function parsePollingRows(
   return settings
 }
 
+/**
+ * What the resolver falls back to when the admin's settings can't be read:
+ * live scores off for every sport and finals at the default. Nothing an
+ * admin switched off runs, and games still resolve.
+ */
+export function finalsOnlySettings(): ScorePollingSettings {
+  return {
+    sports: Object.fromEntries(SPORT_IDS.map((id) => [id, 0])) as Partial<
+      Record<SportId, number>
+    >,
+    games: {},
+    finals: DEFAULT_FINALS_INTERVAL,
+  }
+}
+
 /** The sport behind a market's `sportsLeague` label. */
 export const sportForLeague = (league: string | undefined) =>
   SPORT_IDS.find((id) => SPORT_LEAGUE_LABEL[id] === league)
@@ -114,9 +129,10 @@ export interface PollingGame {
   startTime: number
   closeTime: number | undefined
   /**
-   * Absent from the last live-only response. The provider only lists a
-   * completed game when asked for finished ones, so the game has probably
-   * ended, however early: a finals check is due.
+   * Absent from the last response (the provider only lists a completed game
+   * when asked for finished ones, so it has probably ended, however early),
+   * or completed but not resolvable yet. No live polls for it; its sport's
+   * finals checks keep asking for finished games.
    */
   missing?: boolean
 }
@@ -237,25 +253,32 @@ const DAY_MS = 24 * 60 * 60 * 1000
 const utcDay = (day: string) => Date.parse(`${day}T00:00:00Z`)
 
 /**
- * What the last week cost per day, for how long the credits will last. The
- * rows are the UTC days with a call, so a quiet day in a week of history
- * counts as a day of nothing, but a history that only began a few days ago
- * is averaged over the days it has, not over seven.
+ * What the last week cost per day, for how long the credits will last: the
+ * full UTC days before today, back to the first recorded call or seven
+ * days, whichever is nearer, so a quiet day in a week of history counts as
+ * a day of nothing but a history that began two days ago is averaged over
+ * two. Today is a partial day, so it's reported on its own, not averaged.
  */
 export function creditsPerDay(
   byDay: { day: string; credits: number }[],
   now: number
-): { perDay: number; days: number } {
-  if (byDay.length === 0) return { perDay: 0, days: 0 }
+): { perDay: number; days: number; today: number } {
   const today = Math.floor(now / DAY_MS) * DAY_MS
-  const weekStart = today - 6 * DAY_MS
-  const firstRecorded = Math.min(...byDay.map((d) => utcDay(d.day)))
-  const from = Math.max(weekStart, firstRecorded)
-  const days = Math.max(1, Math.round((today - from) / DAY_MS) + 1)
-  const credits = sum(
-    byDay.filter((d) => utcDay(d.day) >= from).map((d) => d.credits)
+  const credits = (rows: { credits: number }[]) =>
+    sum(rows.map((d) => d.credits))
+  const todayCredits = credits(byDay.filter((d) => utcDay(d.day) === today))
+  const before = byDay.filter((d) => utcDay(d.day) < today)
+  if (before.length === 0) return { perDay: 0, days: 0, today: todayCredits }
+  const from = Math.max(
+    today - 7 * DAY_MS,
+    Math.min(...before.map((d) => utcDay(d.day)))
   )
-  return { perDay: credits / days, days }
+  const days = Math.max(1, Math.round((today - from) / DAY_MS))
+  return {
+    perDay: credits(before.filter((d) => utcDay(d.day) >= from)) / days,
+    days,
+    today: todayCredits,
+  }
 }
 
 export interface ScorePollingPanel {

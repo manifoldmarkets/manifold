@@ -15,6 +15,7 @@ import {
   calendarPhaseKey,
   calendarStatus,
   competitionSwitchError,
+  overlappingPhases,
   SPORTS_CALENDAR,
 } from 'common/sports-calendar'
 
@@ -55,6 +56,9 @@ export const adminSportsCompetitionSwitches: APIHandler<
         defaultOn: autoCreates(e, {}),
         locked: e.locked,
         notes: e.notes,
+        overlaps: overlappingPhases(e).map(
+          (o) => `${o.competition} ${o.phase}`
+        ),
         updatedBy: row ? usernames[row.updatedBy] ?? row.updatedBy : undefined,
         updatedTime: row?.updatedTime,
       }
