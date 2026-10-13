@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { hitTargets, layoutSegments, seatPosition } from './seat-bar-layout'
+import {
+  hitTargets,
+  layoutSegments,
+  seatPosition,
+  segmentAt,
+} from './seat-bar-layout'
 
 const close = (a: number, b: number) => Math.abs(a - b) < 1e-6
 
@@ -70,4 +75,36 @@ test('tap targets reach 24px without overlapping thin neighbors', () => {
   // Wide segments get exactly their own extent.
   assert.ok(close(targets[1].left, boxes[1].x))
   assert.ok(close(targets[1].width, boxes[1].w))
+})
+
+test('a drag finds the segment under the pointer, clamping to eligible ones', () => {
+  // The Senate bar: held seats at both ends, races between.
+  const counts = [34, 13, 5, 1, 1, 1, 2, 12, 31]
+  const width = 1000
+  const boxes = layoutSegments(counts, width, { min: 6, gap: 2 })
+  const targets = hitTargets(boxes, width)
+  const races = (i: number) => i > 0 && i < counts.length - 1
+  const center = (i: number) => boxes[i].x + boxes[i].w / 2
+  for (let i = 1; i < counts.length - 1; i++)
+    assert.equal(segmentAt(targets, center(i), races), i)
+  // Over a held block or past either end: the nearest race group.
+  assert.equal(segmentAt(targets, center(0), races), 1)
+  assert.equal(segmentAt(targets, -40, races), 1)
+  assert.equal(segmentAt(targets, center(8), races), 7)
+  assert.equal(segmentAt(targets, width + 40, races), 7)
+  // Without a filter every segment is eligible.
+  assert.equal(segmentAt(targets, center(0)), 0)
+  assert.equal(segmentAt(targets, Number.NaN), undefined)
+  assert.equal(segmentAt([], 10), undefined)
+})
+
+test('where targets overlap, the thin segment on top wins', () => {
+  const targets = [
+    { left: 0, width: 100 },
+    { left: 90, width: 24 },
+    { left: 114, width: 100 },
+  ]
+  assert.equal(segmentAt(targets, 95), 1)
+  assert.equal(segmentAt(targets, 50), 0)
+  assert.equal(segmentAt(targets, 150), 2)
 })

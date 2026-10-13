@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { buildRaces, seatSummary } from './election-map-model'
-import { getHeldOffice, getIncumbentGroups } from './election-incumbents'
+import {
+  getHeldOffice,
+  getIncumbentGroups,
+  heldSeats,
+} from './election-incumbents'
 import { DATA } from './usa-map-data'
 
 test('incumbent shading covers exactly off-ballot states, never unpriced elections', () => {
@@ -76,4 +80,30 @@ test('off-ballot details preserve split delegations and independent affiliations
   assert.equal(getHeldOffice('senate', 'VT')?.members[0].party, 'Independent')
   assert.equal(getHeldOffice('governor', 'VA')?.control, 'dem')
   assert.equal(getHeldOffice('governor', 'UT')?.control, 'rep')
+})
+
+test('held Senate seats match the seat bar, one per senator not on the ballot', () => {
+  const races = buildRaces('senate', {})
+  const seats = heldSeats('senate')
+  const summary = seatSummary(races, 'senate')
+  // The bar's held blocks: 34 Democratic caucus (with King and Sanders), 31 R.
+  assert.equal(seats.filter((s) => s.side === 'dem').length, summary.held.dem)
+  assert.equal(seats.filter((s) => s.side === 'rep').length, summary.held.rep)
+  assert.equal(new Set(seats.map((s) => s.id)).size, seats.length)
+  // Every state has two senators: a race and one held seat, or two held.
+  const scheduled = new Set(races.map((r) => r.state))
+  const states = Object.keys(DATA).filter((state) => state !== 'DC')
+  for (const state of states) {
+    const held = seats.filter((s) => s.state === state).length
+    assert.equal(held, scheduled.has(state) ? 1 : 2, state)
+  }
+  assert.equal(races.length + seats.length, 100)
+  // Independents keep their affiliation but count with the Democrats.
+  const king = seats.find((s) => s.member.name === 'Angus King')!
+  assert.equal(king.member.party, 'Independent')
+  assert.equal(king.side, 'dem')
+  // Listed by state name.
+  assert.equal(seats[0].state, 'AL')
+  assert.deepEqual(heldSeats('house'), [])
+  assert.deepEqual(heldSeats('governor'), [])
 })

@@ -337,4 +337,11 @@ export const HOUSE_RACE_MARKETS: {
   { district: 'WI-6', slug: 'which-party-will-win-the-2026-us-ho-UsnIntCntO' },
   { district: 'WI-8', slug: 'which-party-will-win-the-2026-us-ho-SzNS958APl' },
   { district: 'WY-0', slug: 'which-party-will-win-the-2026-us-ho-5SsOZ2Q2Su' },
+  // TN-9: the existing candidate market has no answer for the Republican nominee,
+  // so a party market was created for it on 2026-10-07.
+  {
+    district: 'TN-9',
+    slug: 'which-party-will-win-the-2026-us-ho-IhLS288ygC',
+    preferOverPortfolio: true,
+  },
 ]

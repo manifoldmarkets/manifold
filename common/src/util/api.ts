@@ -13,6 +13,9 @@ let localOnlyUserId: string | null =
 export function setLocalOnlyUserId(userId: string | null) {
   localOnlyUserId = userId
 }
+export function getLocalOnlyUserId() {
+  return localOnlyUserId
+}
 
 export function unauthedApi<P extends APIPath>(path: P, params: APIParams<P>) {
   return baseApiCall(

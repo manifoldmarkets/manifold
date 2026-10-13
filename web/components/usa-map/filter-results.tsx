@@ -1,9 +1,10 @@
 import { ReactNode, useEffect, useId, useState } from 'react'
 import styles from './election-explorer.module.css'
 
-// Results shown while a search or seat-bar group narrows the map: six
+// Results shown while a search or seat-bar groups narrow the map: six
 // entries on desktop and three on phones until "Show all", and a "Hide list"
-// toggle so the map stays in view while people click between groups.
+// toggle so the map stays in view while people click between groups. The
+// explorer announces the summary from a live region that is always mounted.
 const COLLAPSED = 6
 
 export function FilterResults(props: {
@@ -24,8 +25,8 @@ export function FilterResults(props: {
   const visible = expanded ? items : items.slice(0, COLLAPSED)
   return (
     <>
-      <div className={styles.filterNotice} role="status">
-        <span>{summary}</span>
+      <div className={styles.filterNotice}>
+        <span className={styles.filterSummary}>{summary}</span>
         <span className={styles.filterActions}>
           {items.length > 0 && (
             <button

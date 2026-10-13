@@ -36,47 +36,17 @@ export const MIDTERM_CONDITIONALS: MidtermConditionalEntry[] = [
   // Deliberately not listed: if-the-dems-win-enough-seats-in-the ("If the Dems
   // win enough seats in the midterms, will Trump be impeached?"). Its creator
   // defines "enough seats" as two-thirds of the House, so it will almost
-  // certainly resolve N/A. The impeachment pair below asks the question
-  // properly.
+  // certainly resolve N/A. The impeachment row of the 2026 House matrix asks
+  // the question properly.
   // "If Trump puts boots on the ground in Iran, will Dems win the Senate?"
   // Conditional the other way round: the condition is Iran, the outcome is the
   // Senate. N/A unless the linked boots-on-the-ground market resolves YES
   // before the midterms.
   { market: { slug: 'if-trump-puts-boots-on-the-ground-i' } },
-  // Paired conditionals created 2026-10-06 (ids reserved before creation).
-  // Impeachment: "If Democrats win / Republicans keep the House in 2026, will
-  // the House impeach Donald Trump before January 3, 2029?"
-  {
-    pair: {
-      chamber: 'House',
-      ifDemocrats: { id: 'QSAIq5EEps' },
-      ifRepublicans: { id: 'POZNNqR528' },
-    },
-  },
-  // Government shutdown in 2027.
-  {
-    pair: {
-      chamber: 'House',
-      ifDemocrats: { id: '2RZ2c5ZICl' },
-      ifRepublicans: { id: '8RI2Qy9ndh' },
-    },
-  },
-  // S&P 500 in 2027.
-  {
-    pair: {
-      chamber: 'House',
-      ifDemocrats: { id: 'C9pqA8yg00' },
-      ifRepublicans: { id: 'usOOuPqSst' },
-    },
-  },
-  // A Supreme Court seat.
-  {
-    pair: {
-      chamber: 'Senate',
-      ifDemocrats: { id: 'pcdS8RNNRA' },
-      ifRepublicans: { id: 'RU8Rztcs28' },
-    },
-  },
+  // Pairs conditional on House or Senate control (impeachment, shutdown, the
+  // Supreme Court seat, …) live in the 2026 Congress matrices
+  // (HOUSE_2026_MATRIX and SENATE_2026_MATRIX in conditional-matrix.ts), not
+  // here: a market belongs to one section or the other.
 ]
 
 const refs = (entries: MidtermConditionalEntry[]): MarketRef[] =>

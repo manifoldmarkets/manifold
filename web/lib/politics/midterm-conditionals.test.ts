@@ -5,6 +5,7 @@ import {
   buildMidtermConditionalRows,
   conditionalRowContracts,
   conditionalStem,
+  MIDTERM_CONDITIONALS,
   MidtermConditionalEntry,
   midtermConditionalRefs,
 } from './midterm-conditionals'
@@ -24,9 +25,21 @@ const market = (slug: string, overrides: Record<string, unknown> = {}) =>
 
 test('the curated list has no duplicate references', () => {
   const { slugs, ids } = midtermConditionalRefs()
-  assert.ok(slugs.length + ids.length >= 3)
+  assert.ok(slugs.length + ids.length >= 2)
   assert.equal(new Set(slugs).size, slugs.length)
   assert.equal(new Set(ids).size, ids.length)
+})
+
+test('the card row keeps the two singles', () => {
+  // The House and Senate pairs moved to the 2026 Congress matrices
+  // (conditional-matrix.ts).
+  assert.equal(MIDTERM_CONDITIONALS.length, 2)
+  assert.ok(MIDTERM_CONDITIONALS.every((e) => !('pair' in e)))
+  assert.deepEqual(midtermConditionalRefs().ids, [])
+  assert.deepEqual(midtermConditionalRefs().slugs, [
+    'if-democrats-win-the-house-or-senat',
+    'if-trump-puts-boots-on-the-ground-i',
+  ])
 })
 
 test('refs are split into slugs and ids', () => {
@@ -86,21 +99,21 @@ test('a pair whose markets do not exist yet is skipped silently', () => {
 
 test('a complete pair becomes one card with Dem left and the shared stem', () => {
   const dem = market('d', {
-    id: 'QSAIq5EEps',
+    id: 'pcdS8RNNRA',
     question:
-      'If Democrats win the House in 2026, will the House impeach Donald Trump before January 3, 2029?',
+      'If Democrats win the Senate in 2026, will a Supreme Court seat be filled in 2027?',
   })
   const rep = market('r', {
-    id: 'POZNNqR528',
+    id: 'RU8Rztcs28',
     question:
-      'If Republicans keep the House in 2026, will the House impeach Donald Trump before January 3, 2029?',
+      'If Republicans keep the Senate in 2026, will a Supreme Court seat be filled in 2027?',
   })
   const rows = buildMidtermConditionalRows([rep, dem], NOW, [
     {
       pair: {
-        chamber: 'House',
-        ifDemocrats: { id: 'QSAIq5EEps' },
-        ifRepublicans: { id: 'POZNNqR528' },
+        chamber: 'Senate',
+        ifDemocrats: { id: 'pcdS8RNNRA' },
+        ifRepublicans: { id: 'RU8Rztcs28' },
       },
     },
   ])
@@ -108,14 +121,11 @@ test('a complete pair becomes one card with Dem left and the shared stem', () =>
   const row = rows[0]
   assert.equal(row.kind, 'pair')
   if (row.kind !== 'pair') return
-  assert.equal(row.ifDemocrats.id, 'QSAIq5EEps')
-  assert.equal(row.ifRepublicans.id, 'POZNNqR528')
-  assert.equal(
-    row.stem,
-    'Will the House impeach Donald Trump before January 3, 2029?'
-  )
-  assert.equal(row.demLabel, 'If Democrats win the House')
-  assert.equal(row.repLabel, 'If Republicans keep the House')
+  assert.equal(row.ifDemocrats.id, 'pcdS8RNNRA')
+  assert.equal(row.ifRepublicans.id, 'RU8Rztcs28')
+  assert.equal(row.stem, 'Will a Supreme Court seat be filled in 2027?')
+  assert.equal(row.demLabel, 'If Democrats win the Senate')
+  assert.equal(row.repLabel, 'If Republicans keep the Senate')
 })
 
 test('a half pair degrades to a single card', () => {

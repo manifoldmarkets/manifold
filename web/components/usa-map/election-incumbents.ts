@@ -3,6 +3,7 @@ import {
   senateHeldSeats2026,
 } from 'web/public/data/senate-state-data'
 import houseSnapshot from 'web/public/data/election-house-incumbents.json'
+import { DATA } from './usa-map-data'
 
 export type Officeholder = {
   name: string
@@ -190,6 +191,46 @@ export function getHeldOffice(
       { name: senate.name2, party: senate.party2 },
     ],
   }
+}
+
+// One Senate seat that is not on the 2026 ballot. `side` is the caucus the
+// seat bar counts it for: independents (King, Sanders) caucus with Democrats.
+export type HeldSeat = {
+  id: string
+  state: string
+  member: Officeholder
+  side: 'dem' | 'rep'
+}
+
+// Every Senate seat not on the ballot, one entry per senator, by state name:
+// the other senator in a state with a race, both senators elsewhere. The
+// House and governorships have none (every seat on those bars is up).
+export function heldSeats(mode: string): HeldSeat[] {
+  if (mode !== 'senate') return []
+  const seats = [
+    ...Object.entries(senateHeldSeats2026).map(([state, member]) => ({
+      state,
+      member,
+    })),
+    ...currentSenate2026.flatMap(({ state }) =>
+      (getHeldOffice('senate', state)?.members ?? []).map((member) => ({
+        state,
+        member,
+      }))
+    ),
+  ]
+  return seats
+    .map(({ state, member }) => ({
+      id: `${state}:${member.name}`,
+      state,
+      member,
+      side: member.party === 'Republican' ? ('rep' as const) : ('dem' as const),
+    }))
+    .sort((a, b) =>
+      (DATA[a.state]?.name ?? a.state).localeCompare(
+        DATA[b.state]?.name ?? b.state
+      )
+    )
 }
 
 export const HELD_COLORS = {
