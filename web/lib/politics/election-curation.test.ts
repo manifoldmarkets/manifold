@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { Contract } from 'common/contract'
 import {
   balanceOfPowerAnswerColor,
+  balanceOfPowerSweepOdds,
   BOP_COLORS,
   curateTrendingMarkets,
   getHeadlineOdds,
@@ -166,6 +167,62 @@ test('getHeadlineOdds: nothing to show for a multi with no live answers', () => 
     answers: [],
   })
   assert.equal(getHeadlineOdds(empty), undefined)
+})
+
+test('balanceOfPowerSweepOdds reads each party sweep from the answers', () => {
+  const bop = market({
+    mechanism: 'cpmm-multi-1',
+    outcomeType: 'MULTIPLE_CHOICE',
+    shouldAnswersSumToOne: true,
+    answers: [
+      {
+        id: 'a1',
+        text: 'Democrats Sweep',
+        prob: 0.64,
+        poolYes: 36,
+        poolNo: 64,
+      },
+      {
+        id: 'a2',
+        text: 'Republicans Sweep',
+        prob: 0.06,
+        poolYes: 94,
+        poolNo: 6,
+      },
+      {
+        id: 'a3',
+        text: 'D Senate, R House',
+        prob: 0.01,
+        poolYes: 99,
+        poolNo: 1,
+      },
+      {
+        id: 'a4',
+        text: 'R Senate, D House',
+        prob: 0.29,
+        poolYes: 71,
+        poolNo: 29,
+      },
+    ],
+  })
+  const odds = balanceOfPowerSweepOdds(bop)
+  assert.ok(odds)
+  if (!odds) return
+  assert.ok(Math.abs(odds.dem - 0.64) < 0.02, String(odds.dem))
+  assert.ok(Math.abs(odds.rep - 0.06) < 0.02, String(odds.rep))
+  // No sweep answers (or not a multi): nothing to show.
+  assert.equal(
+    balanceOfPowerSweepOdds(
+      market({
+        mechanism: 'cpmm-multi-1',
+        outcomeType: 'MULTIPLE_CHOICE',
+        shouldAnswersSumToOne: true,
+        answers: [{ id: 'x', text: 'Other', prob: 1, poolYes: 1, poolNo: 99 }],
+      })
+    ),
+    undefined
+  )
+  assert.equal(balanceOfPowerSweepOdds(market()), undefined)
 })
 
 test('balanceOfPowerAnswerColor maps each outcome by meaning', () => {
