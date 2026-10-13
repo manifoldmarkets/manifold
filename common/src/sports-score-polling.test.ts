@@ -1,4 +1,6 @@
 import {
+  backedOff,
+  creditsPerDay,
   DEFAULT_FINALS_INTERVAL,
   finalsDue,
   parsePollingRows,
@@ -92,6 +94,46 @@ describe('scorePollPlan', () => {
     ])
   })
 
+  it('checks for a final as soon as a started game drops out of the live scores', () => {
+    // An hour into an NFL game, polled 2 minutes ago: not due for 3 more.
+    const polled = { americanfootball_nfl: NOW - 2 * MIN }
+    expect(scorePollPlan([game('a', 60)], settings(), polled, NOW)).toEqual([])
+    // A game the live-only call has stopped listing has probably finished,
+    // so it's checked for a final at the finals interval, finished games
+    // included, with live scores on or off.
+    const gone = game('a', 60, { missing: true })
+    for (const s of [
+      settings({ finals: 60 }),
+      settings({ sports: { nfl: 0 }, finals: 60 }),
+    ]) {
+      expect(scorePollPlan([gone], s, polled, NOW)).toEqual([
+        { sportKey: 'americanfootball_nfl', withFinished: true },
+      ])
+    }
+  })
+
+  it('waits twice as long per failed call in a row, up to half an hour', () => {
+    const games = [game('a', 30)]
+    const after = (minutes: number) => ({
+      americanfootball_nfl: NOW - minutes * MIN,
+    })
+    expect(keys(scorePollPlan(games, settings(), after(6), NOW))).toEqual([
+      'americanfootball_nfl',
+    ])
+    // One failure: the 5-minute default becomes 10.
+    const once = { americanfootball_nfl: 1 }
+    expect(scorePollPlan(games, settings(), after(6), NOW, once)).toEqual([])
+    expect(
+      keys(scorePollPlan(games, settings(), after(10), NOW, once))
+    ).toEqual(['americanfootball_nfl'])
+    // Many failures: half an hour at most.
+    const many = { americanfootball_nfl: 10 }
+    expect(scorePollPlan(games, settings(), after(29), NOW, many)).toEqual([])
+    expect(
+      keys(scorePollPlan(games, settings(), after(30), NOW, many))
+    ).toEqual(['americanfootball_nfl'])
+  })
+
   it('checks a game 3 hours past close at most every half hour', () => {
     const stuck = game('a', 8 * 60, { closeTime: NOW - 4 * 60 * MIN })
     const off = settings({ sports: { nfl: 0 }, finals: 60 })
@@ -108,6 +150,54 @@ describe('scorePollPlan', () => {
         )
       )
     ).toEqual(['americanfootball_nfl'])
+  })
+})
+
+describe('backedOff', () => {
+  it('doubles per failure up to half an hour, or the interval if longer', () => {
+    expect(backedOff(30, 0)).toBe(30)
+    expect(backedOff(30, 3)).toBe(240)
+    expect(backedOff(300, 5)).toBe(1800)
+    expect(backedOff(1800, 2)).toBe(1800)
+  })
+})
+
+describe('creditsPerDay', () => {
+  const day = (daysAgo: number) =>
+    new Date(NOW - daysAgo * 24 * 60 * MIN).toISOString().slice(0, 10)
+
+  it('averages a short history over the days it has, not over seven', () => {
+    // Two days of use: 1,000 credits is 500 a day, not 143.
+    expect(
+      creditsPerDay(
+        [
+          { day: day(1), credits: 700 },
+          { day: day(0), credits: 300 },
+        ],
+        NOW
+      )
+    ).toEqual({ perDay: 500, days: 2 })
+  })
+
+  it('counts a quiet day in a week of history as a day of nothing', () => {
+    // Used 10 days ago, then only today: 100 over the week.
+    expect(
+      creditsPerDay(
+        [
+          { day: day(10), credits: 900 },
+          { day: day(0), credits: 100 },
+        ],
+        NOW
+      )
+    ).toEqual({ perDay: 100 / 7, days: 7 })
+  })
+
+  it('is nothing with no history, or none this week', () => {
+    expect(creditsPerDay([], NOW)).toEqual({ perDay: 0, days: 0 })
+    expect(creditsPerDay([{ day: day(10), credits: 900 }], NOW)).toEqual({
+      perDay: 0,
+      days: 7,
+    })
   })
 })
 

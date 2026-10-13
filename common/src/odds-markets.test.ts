@@ -168,6 +168,24 @@ describe('2026–27 calendar eligibility', () => {
     }
   })
 
+  it("never has a phase that's on by default overlap one that's off on the same feed", () => {
+    // A game inside an off phase's dates isn't created even when another
+    // phase covers it, so such an overlap would silently switch part of the
+    // on phase off. The CFP window overlaps the bowls', and both are on.
+    const on = SPORTS_CALENDAR.filter((p) => autoCreates(p, {}))
+    const off = SPORTS_CALENDAR.filter((p) => p.oddsKey && !autoCreates(p, {}))
+    const overlapping = on.flatMap((a) =>
+      off
+        .filter((b) => {
+          const wa = phaseWindow(a)
+          const wb = phaseWindow(b)
+          return b.oddsKey === a.oddsKey && wa.from <= wb.to && wb.from <= wa.to
+        })
+        .map((b) => `${calendarPhaseKey(a)} / ${calendarPhaseKey(b)}`)
+    )
+    expect(overlapping).toEqual([])
+  })
+
   it('keeps the March Madness window off the conference tournaments', () => {
     // Selection Sunday is 14 Mar 2027; conference finals are before it.
     const [madness] = calendarEntriesFor('ncaab-tournament-2027')

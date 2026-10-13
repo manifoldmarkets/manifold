@@ -29,7 +29,7 @@ import { getCompetitionSwitches } from 'shared/supabase/sports-competition-switc
 import { getScorePollingSettings } from 'shared/supabase/sports-score-polling'
 import {
   liveInterval,
-  parsePollingRows,
+  ScorePollingSettings,
   scorePollPlan,
   sportForLeague,
 } from 'common/sports-score-polling'
@@ -41,6 +41,7 @@ import {
   phaseWindow,
   SPORT_ID_TO_SPORT_KEY,
   SPORT_LEAGUE_LABEL,
+  SPORTS_CALENDAR,
 } from 'common/sports-calendar'
 import {
   buildOddsMarketParams,
@@ -107,12 +108,15 @@ async function sportsCreator(): Promise<User> {
 
 /**
  * Create the missing markets for one competition's upcoming games. Games are
- * taken from the Odds API for the next two weeks and kept only if they fall
- * inside one of the competition's switched-on phases (`switches`, falling
- * back to each phase's default), so a shared sport key (the NFL regular
- * season and playoffs share one) never creates the wrong phase's games.
- * `eventIds` narrows that to the games an admin picked from a dry run; the
- * other checks still apply.
+ * taken from the Odds API for the next two weeks. A game is created only if
+ * it falls inside one of the competition's switched-on phases (`switches`,
+ * falling back to each phase's default) and outside every phase on the same
+ * feed that's off, so a shared sport key (the NFL regular season and
+ * playoffs share one; the CFP window overlaps the bowls') never creates a
+ * phase's games while it's off. A game that already has a market is kept in
+ * sync with the provider's kickoff whether or not its phase is still on.
+ * `eventIds` narrows the run to the games an admin picked from a dry run;
+ * the other checks still apply.
  */
 export async function createOddsMarketsForCompetition(
   pg: SupabaseDirectClient,
@@ -132,16 +136,27 @@ export async function createOddsMarketsForCompetition(
       `${competitionId} has no Odds API sport key; create by hand`
     )
   }
-  const windows = phases
-    .filter((p) => autoCreates(p, opts.switches ?? {}))
+  const switches = opts.switches ?? {}
+  // Every phase a market could have been made in: a market that exists is
+  // re-synced to the provider's kickoff even after its phase is switched off,
+  // so a postponed game still closes and resolves at the real time.
+  const syncWindows = phases.filter((p) => !p.locked).map(phaseWindow)
+  const createWindows = phases
+    .filter((p) => autoCreates(p, switches))
     .map(phaseWindow)
+  // Phases on this feed where creation is off. The provider files a feed's
+  // games under one key, so a game inside an off phase's dates isn't created
+  // even when another phase's dates cover it too: off means off.
+  const offPhases = SPORTS_CALENDAR.filter(
+    (p) => p.oddsKey === entry.oddsKey && !autoCreates(p, switches)
+  )
   const result: OddsCreateResult = {
     created: 0,
     skipped: 0,
     errors: 0,
     log: [],
   }
-  if (windows.length === 0) return result
+  if (syncWindows.length === 0) return result
 
   // Only games that haven't started: the odds endpoint also returns games in
   // play, and a market opened from a live line is not a market. The clock is
@@ -152,10 +167,12 @@ export async function createOddsMarketsForCompetition(
   const picked = opts.eventIds ? new Set(opts.eventIds) : undefined
   const fetched = await getUpcomingOdds(entry.oddsKey, ROLLING_WINDOW_DAYS)
   const now = Date.now()
+  const inWindow = (t: number, w: { from: number; to: number }) =>
+    t >= w.from && t <= w.to
   const events = fetched
     .filter((e) => {
       const t = new Date(e.commence_time).getTime()
-      return t > now && windows.some((w) => t >= w.from && t <= w.to)
+      return t > now && syncWindows.some((w) => inWindow(t, w))
     })
     .filter((e) => !picked || picked.has(e.id))
     .sort((a, b) => Date.parse(a.commence_time) - Date.parse(b.commence_time))
@@ -190,6 +207,20 @@ export async function createOddsMarketsForCompetition(
                 opts.dryRun ? 'would move' : 'moved'
               } its kickoff to ${params.sportsStartTimestamp}`
             : `market ${existing.id} already exists`,
+        })
+        continue
+      }
+      const start = Date.parse(params.sportsStartTimestamp)
+      // Outside the phases that are on: nothing to create, nothing to say.
+      if (!createWindows.some((w) => inWindow(start, w))) continue
+      const offPhase = offPhases.find((p) => inWindow(start, phaseWindow(p)))
+      if (offPhase) {
+        result.skipped++
+        result.log.push({
+          eventId: event.id,
+          question: params.question,
+          status: 'skipped',
+          reason: `${offPhase.competition}: ${offPhase.phase} is off`,
         })
         continue
       }
@@ -369,21 +400,47 @@ async function resyncKickoff(
 export async function createOddsMarketsForActiveCalendar(
   pg: SupabaseDirectClient
 ): Promise<Record<string, OddsCreateResult>> {
-  // The admin switches. Without them the run falls back to the calendar's
-  // defaults rather than creating nothing.
-  const switches = await getCompetitionSwitches(pg).catch((e) => {
-    log.error(`[sports-odds-create] couldn't read the switches: ${e}`)
-    return {} as CompetitionSwitches
-  })
-  // Any competition with a switched-on phase inside the rolling window, so
-  // opening night gets its markets two weeks out and not the morning of.
+  // The admin switches are the off switch for spending, so a run that can't
+  // read them creates nothing: falling back to the calendar's defaults would
+  // create games an admin switched off.
+  let switches: CompetitionSwitches
+  try {
+    switches = await getCompetitionSwitches(pg)
+  } catch (e) {
+    log.error(
+      `[sports-odds-create] couldn't read the switches, so this run creates nothing: ${e}`
+    )
+    return {}
+  }
+  // Feeds with a market the resolver still watches: their games are kept in
+  // sync with the provider's kickoffs whether or not the phase is still on.
+  const watchedKeys = new Set(
+    await pg.map(
+      `select distinct split_part(data->>'sportsEventId', ':', 2) as sport_key
+         from contracts
+        where creator_id = any($1)
+          and resolution is null
+          and data->>'sportsEventId' like 'odds:%'
+          and close_time > now() - ($2 || ' days')::interval`,
+      [MANIFOLD_SPORTS_USER_IDS, String(LOOKBACK_DAYS)],
+      (r) => r.sport_key as string
+    )
+  )
+  // Any competition with a switched-on phase, or open markets, inside the
+  // rolling window, so opening night gets its markets two weeks out and not
+  // the morning of.
   const now = Date.now()
   const competitionIds = uniq(
     calendarEntriesOverlapping(
       now,
       now + ROLLING_WINDOW_DAYS * 24 * 60 * 60 * 1000
     )
-      .filter((e) => autoCreates(e, switches))
+      .filter(
+        (e) =>
+          !e.locked &&
+          e.oddsKey !== undefined &&
+          (autoCreates(e, switches) || watchedKeys.has(e.oddsKey))
+      )
       .map((e) => e.competitionId)
   )
   const creator = await sportsCreator()
@@ -413,17 +470,30 @@ interface PendingGame {
 
 /**
  * What the resolver remembers between ticks: when it last asked for each
- * sport key's scores, and when it last reported each overdue game. The
- * scheduler job keeps one for its lifetime; a restart only means one early
- * call and one early alert.
+ * sport key's scores, how many of those calls failed in a row, which started
+ * games have gone missing from the feed, and when it last reported each
+ * overdue game. The scheduler job keeps one for its lifetime; a restart only
+ * means one early call and one early alert.
  */
 export interface ScorePollState {
   lastPolled: Record<string, number>
+  /** Failed /scores calls in a row per sport key; each doubles the wait. */
+  failures: Record<string, number>
+  /**
+   * Started games absent from the feed even with finished games asked for,
+   * by contract id: postponed, cancelled or not yet filed. Their sport keeps
+   * asking for finished games at the finals interval until they turn up.
+   */
+  missing: Record<string, number>
   lastOverdueAlert: Record<string, number>
+  /** When the polling settings last failed to load; logged hourly. */
+  lastSettingsError?: number
 }
 
 export const newScorePollState = (): ScorePollState => ({
   lastPolled: {},
+  failures: {},
+  missing: {},
   lastOverdueAlert: {},
 })
 
@@ -470,13 +540,31 @@ export async function pollOddsScoresAndResolve(
     pending.push({ contract, ...parsed, startTime })
   }
   const stats = { polled: 0, live: 0, resolved: 0, pending: 0, errors: 0 }
+  // Forget games the resolver no longer watches.
+  const pendingIds = new Set(pending.map((game) => game.contract.id))
+  for (const id of Object.keys(state.missing)) {
+    if (!pendingIds.has(id)) delete state.missing[id]
+  }
   if (pending.length === 0) return stats
 
-  // Without the admin settings, poll at the defaults rather than not at all.
-  const settings = await getScorePollingSettings(pg).catch((e) => {
-    log.error(`[sports-odds-resolve] couldn't read the polling settings: ${e}`)
-    return parsePollingRows([])
-  })
+  // The settings are the off switch for spending credits, so a tick that
+  // can't read them polls nothing rather than at the defaults; the next
+  // tick, 10 seconds on, tries again.
+  let settings: ScorePollingSettings | undefined
+  try {
+    settings = await getScorePollingSettings(pg)
+  } catch (e) {
+    if (now - (state.lastSettingsError ?? -Infinity) >= HOUR_MS) {
+      state.lastSettingsError = now
+      log.error(
+        `[sports-odds-resolve] couldn't read the polling settings, so nothing is polled: ${e}`
+      )
+    }
+  }
+  if (!settings) {
+    for (const game of pending) alertIfOverdue(game, state, now)
+    return stats
+  }
   const sportOf = (game: PendingGame) =>
     sportForLeague((game.contract as any).sportsLeague)
   const plan = scorePollPlan(
@@ -486,10 +574,12 @@ export async function pollOddsScoresAndResolve(
       sport: sportOf(game),
       startTime: game.startTime,
       closeTime: game.contract.closeTime,
+      missing: game.contract.id in state.missing,
     })),
     settings,
     state.lastPolled,
-    now
+    now,
+    state.failures
   )
 
   const bySport = groupBy(pending, (p) => p.sportKey)
@@ -497,7 +587,7 @@ export async function pollOddsScoresAndResolve(
   const creator = plan.length > 0 ? await sportsCreator() : undefined
   for (const { sportKey, withFinished } of plan) {
     // Counted even if the call fails, so a failing provider is retried at
-    // the set interval rather than on every tick.
+    // the set interval, doubled per failure in a row, not on every tick.
     state.lastPolled[sportKey] = now
     stats.polled++
     const games = bySport[sportKey] ?? []
@@ -507,8 +597,21 @@ export async function pollOddsScoresAndResolve(
         sportKey,
         withFinished ? { finishedDays: LOOKBACK_DAYS } : {}
       )
+      // A started game absent from a live-only response has probably just
+      // finished, however early: the provider only lists a completed game
+      // when asked for finished ones. Ask now rather than at the finals
+      // check, so the market resolves and stops trading on a known result.
+      const listed = new Set(scores.map((s) => s.id))
+      if (!withFinished && games.some((g) => !listed.has(g.eventId))) {
+        stats.polled++
+        scores = await getScores(sportKey, { finishedDays: LOOKBACK_DAYS })
+      }
+      delete state.failures[sportKey]
     } catch (e) {
-      log(`[sports-odds-resolve] scores for ${sportKey} failed: ${e}`)
+      state.failures[sportKey] = (state.failures[sportKey] ?? 0) + 1
+      log(
+        `[sports-odds-resolve] scores for ${sportKey} failed (${state.failures[sportKey]} in a row): ${e}`
+      )
       stats.errors += games.length
       continue
     }
@@ -516,9 +619,13 @@ export async function pollOddsScoresAndResolve(
     for (const game of games) {
       const score = scoreById.get(game.eventId)
       if (!score) {
+        if (!(game.contract.id in state.missing)) {
+          state.missing[game.contract.id] = now
+        }
         stats.pending++
         continue
       }
+      delete state.missing[game.contract.id]
       try {
         if (score.completed) {
           await finishGame(pg, game, score, creator!)

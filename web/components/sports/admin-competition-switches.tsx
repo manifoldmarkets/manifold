@@ -56,8 +56,9 @@ export function AdminCompetitionSwitches() {
       <p className="text-ink-500 text-sm">
         The daily job (6&nbsp;AM LA) creates the next two weeks&apos; games for
         every phase switched on here, up to 25 per competition per run, at
-        Ṁ1,000 each. Switching a phase off stops new games; markets already
-        created still resolve.
+        Ṁ1,000 each. Switching a phase off stops new games, even where another
+        phase&apos;s dates cover them; markets already created still follow the
+        provider&apos;s kickoff and resolve.
         {ENV !== 'PROD' &&
           ' On dev every phase defaults to off: switch on only what you want to test.'}
       </p>
