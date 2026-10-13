@@ -212,6 +212,16 @@ export function scorePollPlan(
       }
     }
     const fails = failures[sportKey] ?? 0
+    // After a failed call, nothing goes out on either clock until the
+    // backed-off wait since the last attempt has passed: a finals check
+    // coming due mustn't slip through a live-poll cooldown, or the other
+    // way round. lastPolled records every attempt, failed ones included.
+    const intervals = [...liveIntervals, ...finalsIntervals]
+    if (fails > 0 && intervals.length > 0) {
+      const cooldown = backedOff(Math.min(...intervals), fails) * 1000
+      if (now - (lastPolled[sportKey] ?? -Infinity) + SLACK_MS < cooldown)
+        continue
+    }
     const due = (intervals: number[], last: number | undefined) => {
       if (intervals.length === 0) return false
       const wait = backedOff(Math.min(...intervals), fails) * 1000
