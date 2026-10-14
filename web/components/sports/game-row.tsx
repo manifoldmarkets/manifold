@@ -372,6 +372,7 @@ export function GameRow(props: {
       >
         <Row className="min-h-[3rem] items-center gap-2 px-4 py-1">
           <GameWhen game={game} layout="inline" />
+          <SportsMarketBadge market={game} />
           {showLeague && (
             <span className="text-ink-400 truncate text-[10px] font-semibold uppercase tracking-wide">
               {game.league}
@@ -394,10 +395,7 @@ export function GameRow(props: {
             </button>
           )}
         </Row>
-        <div className="text-ink-400 flex items-center justify-between px-4 pb-2 text-[10px] font-semibold uppercase tracking-wider">
-          <span className="flex items-center gap-1">
-            <SportsMarketBadge market={game} /> Matchup
-          </span>
+        <div className="text-ink-400 flex items-center justify-end px-4 pb-2 text-[10px] font-semibold uppercase tracking-wider">
           <span>Win chance</span>
         </div>
         <div className="px-4 pb-3">{teams}</div>
