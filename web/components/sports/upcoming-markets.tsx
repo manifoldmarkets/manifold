@@ -1,5 +1,5 @@
 import dayjs from 'dayjs'
-import { useMemo } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { formatJustTime } from 'client-common/lib/time'
 import { Contract } from 'common/contract'
 import {
@@ -26,6 +26,9 @@ export function UpcomingMarkets(props: {
   sportsByKey: Record<string, SportInfo>
 }) {
   const { refs, sport, showSport, sportsByKey } = props
+  const [showAll, setShowAll] = useState(false)
+  const listId = useId()
+  const previewLimit = 6
   const ids = refs.map((r) => r.id)
   const { data, error } = useAPIGetter(
     'markets-by-ids',
@@ -41,7 +44,10 @@ export function UpcomingMarkets(props: {
 
   if (refs.length === 0) return null
 
-  const days = groupByDay(refs, (r) => r.closeTime)
+  const days = groupByDay(
+    showAll ? refs : refs.slice(0, previewLimit),
+    (r) => r.closeTime
+  )
   const loading = !data && !error
 
   return (
@@ -51,55 +57,68 @@ export function UpcomingMarkets(props: {
         count={refs.length}
         unit="market"
       />
-      {loading ? (
-        <Col className="border-ink-200 bg-canvas-0 divide-ink-100 divide-y rounded-lg border">
-          {[0, 1, 2, 3, 4].slice(0, Math.min(5, refs.length)).map((i) => (
-            <div key={i} className="px-3 py-2.5">
-              <div className="bg-ink-100 h-4 w-3/4 animate-pulse rounded" />
-            </div>
-          ))}
-        </Col>
-      ) : (
-        days.map((day) => {
-          const rows = day.items
-            .map((r) => ({ ref: r, contract: byId.get(r.id) }))
-            .filter(
-              (x): x is { ref: UpcomingMarketRef; contract: Contract } =>
-                !!x.contract
-            )
-          if (rows.length === 0) return null
-          return (
-            <Col key={day.key} className="gap-1">
-              <DayLabel
-                label={day.label}
-                date={dayjs(day.items[0].closeTime).format('ddd, MMM D')}
-              />
-              <Col className="border-ink-200 bg-canvas-0 divide-ink-100 divide-y rounded-lg border">
-                {rows.map(({ ref, contract }) => (
-                  <RelatedMarketRow
-                    key={ref.id}
-                    contract={contract}
-                    prefix={
-                      <Col className="w-14 shrink-0 items-start gap-0.5 pt-0.5">
-                        <span className="text-ink-900 text-xs font-medium tabular-nums">
-                          {formatJustTime(ref.closeTime).replace(':00', '')}
-                        </span>
-                        {showSport && (
-                          <span
-                            className="text-ink-400 max-w-full truncate text-[10px] font-semibold uppercase tracking-wide"
-                            title={sportsByKey[ref.sport]?.longLabel}
-                          >
-                            {sportsByKey[ref.sport]?.label}
+      <Col id={listId} className="gap-3">
+        {loading ? (
+          <Col className="border-ink-200 bg-canvas-0 divide-ink-100 divide-y rounded-lg border">
+            {[0, 1, 2, 3, 4].slice(0, Math.min(5, refs.length)).map((i) => (
+              <div key={i} className="px-3 py-2.5">
+                <div className="bg-ink-100 h-4 w-3/4 animate-pulse rounded" />
+              </div>
+            ))}
+          </Col>
+        ) : (
+          days.map((day) => {
+            const rows = day.items
+              .map((r) => ({ ref: r, contract: byId.get(r.id) }))
+              .filter(
+                (x): x is { ref: UpcomingMarketRef; contract: Contract } =>
+                  !!x.contract
+              )
+            if (rows.length === 0) return null
+            return (
+              <Col key={day.key} className="gap-1">
+                <DayLabel
+                  label={day.label}
+                  date={dayjs(day.items[0].closeTime).format('MMM D')}
+                />
+                <Col className="border-ink-200 bg-canvas-0 divide-ink-100 divide-y rounded-lg border">
+                  {rows.map(({ ref, contract }) => (
+                    <RelatedMarketRow
+                      key={ref.id}
+                      contract={contract}
+                      prefix={
+                        <Col className="w-14 shrink-0 items-start gap-0.5 pt-0.5">
+                          <span className="text-ink-900 text-xs font-medium tabular-nums">
+                            {formatJustTime(ref.closeTime).replace(':00', '')}
                           </span>
-                        )}
-                      </Col>
-                    }
-                  />
-                ))}
+                          {showSport && (
+                            <span
+                              className="text-ink-400 max-w-full truncate text-[10px] font-semibold uppercase tracking-wide"
+                              title={sportsByKey[ref.sport]?.longLabel}
+                            >
+                              {sportsByKey[ref.sport]?.label}
+                            </span>
+                          )}
+                        </Col>
+                      }
+                    />
+                  ))}
+                </Col>
               </Col>
-            </Col>
-          )
-        })
+            )
+          })
+        )}
+      </Col>
+      {!loading && !error && !showAll && refs.length > previewLimit && (
+        <button
+          type="button"
+          aria-controls={listId}
+          aria-expanded={false}
+          onClick={() => setShowAll(true)}
+          className="border-ink-200 text-primary-700 hover:bg-canvas-50 min-h-[44px] rounded-lg border px-3 py-2 text-sm font-medium"
+        >
+          Show all {refs.length} closing markets
+        </button>
       )}
     </Col>
   )
@@ -110,9 +129,7 @@ function DayLabel(props: { label: string; date: string }) {
   return (
     <div className="flex items-baseline gap-2 px-1">
       <span className="text-ink-700 text-xs font-semibold">{label}</span>
-      {(label === 'Today' || label === 'Tomorrow') && (
-        <span className="text-ink-400 text-[11px]">{date}</span>
-      )}
+      <span className="text-ink-500 text-[11px]">{date}</span>
     </div>
   )
 }

@@ -47,7 +47,7 @@ export function SportsShell(props: {
     <Page trackPageView={trackPageView}>
       <SEO title={seo.title} description={seo.description} url={seo.url} />
       <Col className="w-full gap-2 px-2 pt-3 sm:px-4">
-        <Row className="items-end justify-between gap-2 px-1">
+        <Row className="items-center justify-between gap-2 px-1">
           <Col className="min-w-0 gap-0.5">
             {breadcrumb && (
               <Link
@@ -58,18 +58,23 @@ export function SportsShell(props: {
                 <ChevronRightIcon className="h-3.5 w-3.5" />
               </Link>
             )}
-            <h1 className="text-ink-1000 truncate text-2xl font-bold tracking-tight">
+            <h1 className="text-ink-1000 break-words text-2xl font-bold tracking-tight">
               {heading}
             </h1>
-            {subheading && <p className="text-ink-500 text-sm">{subheading}</p>}
           </Col>
           <Link
             href="/create"
-            className="bg-primary-600 hover:bg-primary-700 text-ink-0 hidden shrink-0 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium sm:flex"
+            className="bg-primary-600 hover:bg-primary-700 text-ink-0 flex min-h-[40px] shrink-0 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium"
           >
-            <PlusIcon className="h-4 w-4" /> Create market
+            <PlusIcon className="h-4 w-4" />
+            <span>
+              Create<span className="sr-only sm:not-sr-only"> market</span>
+            </span>
           </Link>
         </Row>
+        {subheading && (
+          <p className="text-ink-500 px-1 text-sm">{subheading}</p>
+        )}
 
         <div className="bg-canvas-0 border-ink-100 sticky top-0 z-20 -mx-2 border-b px-2 sm:-mx-4 sm:px-4">
           <SportRail
@@ -105,6 +110,7 @@ export function SportMarkets(props: {
   return (
     <Col className="gap-6">
       <UpcomingMarkets
+        key={sport === 'all' ? 'all' : sport.key}
         refs={upcoming}
         sport={sport === 'all' ? 'all' : sport.key}
         showSport={sport === 'all'}

@@ -14,8 +14,7 @@ function dayLabel(ms: number, now = Date.now()): string {
   const today = dayjs(now)
   if (d.isSame(today, 'day')) return 'Today'
   if (d.isSame(today.add(1, 'day'), 'day')) return 'Tomorrow'
-  if (d.diff(today.startOf('day'), 'day') < 7) return d.format('dddd')
-  return d.format('ddd, MMM D')
+  return d.format('dddd')
 }
 
 /** Group items by the local calendar day of `time(item)`, keeping their order. */
@@ -81,11 +80,7 @@ export function GameFeed(props: {
         <Col key={day.key} className="gap-2">
           <SectionHeader
             label={day.label}
-            sublabel={
-              day.label === 'Today' || day.label === 'Tomorrow'
-                ? dayjs(day.items[0].startTime).format('ddd, MMM D')
-                : undefined
-            }
+            sublabel={dayjs(day.items[0].startTime).format('MMM D')}
             count={day.items.length}
           />
           <GameGroup
@@ -157,7 +152,7 @@ export function SectionHeader(props: {
 }) {
   const { label, sublabel, count, accent, unit = 'game' } = props
   return (
-    <Row className="items-baseline gap-2 px-1">
+    <Row className="flex-wrap items-baseline gap-x-2 gap-y-1 px-1">
       {accent && (
         <span className="h-2 w-2 translate-y-[-1px] animate-pulse rounded-full bg-red-500" />
       )}
@@ -171,7 +166,7 @@ export function SectionHeader(props: {
       </h2>
       {sublabel && <span className="text-ink-500 text-xs">{sublabel}</span>}
       {count !== undefined && (
-        <span className="text-ink-400 ml-auto text-xs">
+        <span className="text-ink-500 ml-auto whitespace-nowrap text-xs">
           {count} {count === 1 ? unit : `${unit}s`}
         </span>
       )}

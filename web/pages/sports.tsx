@@ -78,7 +78,7 @@ export default function SportsPage() {
       selected="all"
       rail={rail}
       heading="Sports"
-      subheading="Every game in the next two weeks, in kickoff order. Tap a price to bet."
+      subheading="Upcoming games, live odds and sports markets. Tap a percentage to bet."
       seo={{
         title: 'Sports',
         description:
