@@ -82,6 +82,7 @@ import {
 } from './order-book'
 import { ShareBetModal } from './share-bet'
 import { YesNoSelector } from './yes-no-selector'
+import { TradePanelLayout } from './trade-panel-layout'
 
 const WAIT_TO_DISMISS = 3000
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
@@ -106,6 +107,8 @@ type BuyPanelProps = {
   children?: React.ReactNode | ((outcome: BinaryOutcomes) => React.ReactNode)
   alwaysShowOutcomeSwitcher?: boolean
   className?: string
+  /** Keep the trade ticket compact and put orders in a separate view. */
+  compact?: boolean
 }
 
 export function BuyPanel(
@@ -135,7 +138,7 @@ export function BuyPanel(
   const isStonk = contract.outcomeType === 'STONK'
 
   const [outcome, setOutcome] = useState<BinaryOutcomes>(initialOutcome)
-  const [isPanelBodyVisible, setIsPanelBodyVisible] = useState(false)
+  const [isPanelBodyVisible, setIsPanelBodyVisible] = useState(!!initialOutcome)
   const cancelDismissTimerRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
@@ -251,7 +254,11 @@ export const BuyPanelBody = (
     children,
     outcomeControl,
     cancelDismissTimerRef,
+    compact = false,
   } = props
+
+  const [showOrders, setShowOrders] = useState(false)
+  const tradeFormRef = useRef<HTMLDivElement>(null)
 
   const user = useUser()
   const isCreatorBanned =
@@ -450,6 +457,10 @@ export const BuyPanelBody = (
     setPrefillLimitOrder({ ...fillParams, limitProb, timestamp: Date.now() })
     setOutcome(fillParams.outcome)
     setBetTypeSetting('Limit')
+    setShowOrders(false)
+    requestAnimationFrame(() =>
+      tradeFormRef.current?.querySelector('input')?.focus()
+    )
     toast('Expiration set to immediate', { icon: '⏱️' })
   })
 
@@ -769,63 +780,142 @@ export const BuyPanelBody = (
     }
   }, [cancelDismissTimerRef, cancelDismissTimerFn])
 
+  const betTypeControls = (
+    <Row className="ml-auto shrink-0 items-center justify-end gap-2">
+      {!isStonk && (
+        <ChoicesToggleGroup
+          currentChoice={compact && showOrders ? undefined : betType}
+          color="gray"
+          choicesMap={{
+            Quick: 'Market',
+            Limit: 'Limit',
+          }}
+          setChoice={(val) => {
+            setBetTypeSetting(val as 'Market' | 'Limit')
+            setShowOrders(false)
+          }}
+        />
+      )}
+      {onClose && (
+        <Button
+          color="gray-white"
+          size="sm"
+          onClick={onClose}
+          className="-mr-2"
+          aria-label="Close betting panel"
+        >
+          <XIcon className="h-5 w-5" />
+        </Button>
+      )}
+    </Row>
+  )
+
+  const orderBookBets = isBinaryMC
+    ? unfilledBets
+    : unfilledBets.filter((b) => b.answerId === multiProps?.answerToBuy?.id)
+  const activeOrderCount = orderBookBets.filter(
+    (b) => !b.silent && (!b.expiresAt || b.expiresAt > Date.now())
+  ).length
+  const orders = (
+    <>
+      {(compact || isMultiCpmm(contract)) && (
+        <YourOrders
+          className={compact ? 'mb-3' : 'mt-2 py-4'}
+          contract={contract}
+          bets={isBinaryMC ? allUnfilledBets : unfilledBetsMatchingAnswer}
+        />
+      )}
+      {compact && activeOrderCount === 0 && (
+        <p className="text-ink-500 py-8 text-center text-sm">
+          No open orders yet.
+        </p>
+      )}
+      <OrderBookPanel
+        contract={contract}
+        limitBets={orderBookBets}
+        answer={multiProps?.answerToBuy}
+        pseudonym={props.pseudonym}
+        onOrderClick={handleOrderClick}
+      />
+    </>
+  )
+
   return (
     <>
-      <Col className={clsx(className, 'relative rounded-xl px-4 py-2')}>
-        {typeof children === 'function' ? children(outcome) : children}
-        <Row className="mb-2 mt-2 flex-wrap items-center justify-between gap-x-2 gap-y-1">
-          {outcomeControl ?? (
-            <Row
-              className={clsx(
-                'gap-1',
-                (isBinaryMC || propPseudonymName) &&
-                  !props.alwaysShowOutcomeSwitcher &&
-                  'invisible'
-              )}
-            >
-              <ChoicesToggleGroup
-                currentChoice={outcome}
-                color={outcome === 'YES' ? 'light-green' : 'light-red'}
-                choicesMap={choicesMap}
-                toggleClassName={
-                  props.pseudonym
-                    ? 'px-2 text-xs sm:px-4 sm:text-sm'
-                    : undefined
-                }
-                setChoice={(outcome) => {
-                  setOutcome(outcome as 'YES' | 'NO')
-                  // Cancel dismiss timer if user is switching outcomes
-                  cancelDismissTimerFn()
-                }}
-              />
-            </Row>
+      <TradePanelLayout
+        className={className}
+        compact={compact}
+        showOrders={showOrders}
+        setShowOrders={setShowOrders}
+        orderCount={activeOrderCount}
+        header={typeof children === 'function' ? children(outcome) : children}
+        orders={orders}
+        tradeFormRef={tradeFormRef}
+        controls={betTypeControls}
+      >
+        <Row
+          className={clsx(
+            'mb-2 flex-wrap items-center justify-between gap-x-2 gap-y-1',
+            !compact && 'mt-2'
           )}
-          <Row className="ml-auto shrink-0 items-center justify-end gap-2">
-            {!isStonk && (
-              <ChoicesToggleGroup
-                currentChoice={betType}
-                color="gray"
-                choicesMap={{
-                  Quick: 'Market',
-                  Limit: 'Limit',
-                }}
-                setChoice={(val) => {
-                  setBetTypeSetting(val as 'Market' | 'Limit')
-                }}
-              />
-            )}
-            {onClose && (
-              <Button
-                color="gray-white"
-                size="sm"
-                onClick={onClose}
-                className="-mr-2"
-                aria-label="Close betting panel"
+        >
+          {compact && props.pseudonym ? (
+            <Row
+              className="w-full min-w-0 gap-1"
+              aria-label="Choose an outcome"
+            >
+              {(['YES', 'NO'] as const).map((side) => (
+                <button
+                  key={side}
+                  type="button"
+                  title={props.pseudonym?.[side].pseudonymName}
+                  aria-pressed={outcome === side}
+                  onClick={() => {
+                    setOutcome(side)
+                    cancelDismissTimerFn()
+                  }}
+                  className={clsx(
+                    'min-w-0 flex-1 rounded-md border px-2 py-2 text-sm font-medium',
+                    outcome === side
+                      ? 'border-primary-500 bg-primary-50 text-primary-800'
+                      : 'text-ink-600 hover:bg-canvas-50 border-transparent'
+                  )}
+                >
+                  <span className="line-clamp-2">
+                    {props.pseudonym?.[side].pseudonymName}
+                  </span>
+                </button>
+              ))}
+            </Row>
+          ) : (
+            outcomeControl ?? (
+              <Row
+                className={clsx(
+                  'gap-1',
+                  (isBinaryMC || propPseudonymName) &&
+                    !props.alwaysShowOutcomeSwitcher &&
+                    'invisible'
+                )}
               >
-                <XIcon className="h-5 w-5" />
-              </Button>
-            )}
-          </Row>
+                <ChoicesToggleGroup
+                  currentChoice={outcome}
+                  color={outcome === 'YES' ? 'light-green' : 'light-red'}
+                  choicesMap={choicesMap}
+                  toggleClassName={
+                    props.pseudonym
+                      ? 'px-2 text-xs sm:px-4 sm:text-sm'
+                      : undefined
+                  }
+                  setChoice={(outcome) => {
+                    setOutcome(outcome as 'YES' | 'NO')
+                    // Cancel dismiss timer if user is switching outcomes
+                    cancelDismissTimerFn()
+                  }}
+                />
+              </Row>
+            )
+          )}
+          {!compact && betTypeControls}
         </Row>
         {betType === 'Market' ? (
           <>
@@ -839,6 +929,7 @@ export const BuyPanelBody = (
               className={clsx('mb-2 flex-wrap items-center gap-x-8 gap-y-4')}
             >
               <BuyAmountInput
+                compact={compact}
                 parentClassName="max-w-full"
                 amount={betAmount}
                 onChange={onBetChange}
@@ -981,6 +1072,7 @@ export const BuyPanelBody = (
         ) : (
           <>
             <LimitOrderPanel
+              compact={compact}
               betAmount={matchingPrefillOrder?.amount ?? betAmount}
               contract={contract}
               multiProps={multiProps}
@@ -1026,9 +1118,11 @@ export const BuyPanelBody = (
                     disabled={betDisabled}
                     size="xl"
                     color={
-                      pseudonymColor ??
-                      binaryMCColors?.[outcome == 'YES' ? 0 : 1] ??
-                      (outcome === 'NO' ? 'red' : 'green')
+                      compact
+                        ? 'indigo'
+                        : pseudonymColor ??
+                          binaryMCColors?.[outcome == 'YES' ? 0 : 1] ??
+                          (outcome === 'NO' ? 'red' : 'green')
                     }
                     actionLabel={
                       betDisabled && !outcome ? (
@@ -1061,7 +1155,7 @@ export const BuyPanelBody = (
                         </span>
                       )
                     }
-                    inModal={!!onClose}
+                    inModal={compact || !!onClose}
                   />
                 </>
               )
@@ -1149,7 +1243,12 @@ export const BuyPanelBody = (
         )}
 
         {user && (
-          <Row className="mt-5 items-start justify-between text-sm">
+          <Row
+            className={clsx(
+              compact ? 'mt-2' : 'mt-5',
+              'items-start justify-between text-sm'
+            )}
+          >
             <Row className={''}>
               <span className={clsx('text-ink-600 mr-1 whitespace-nowrap ')}>
                 Your mana balance
@@ -1163,29 +1262,7 @@ export const BuyPanelBody = (
             </Row>
           </Row>
         )}
-      </Col>
-
-      {isMultiCpmm(contract) && (
-        <YourOrders
-          className="mt-2 py-4"
-          contract={contract}
-          // Versus orders may be stored on either answer.
-          bets={isBinaryMC ? allUnfilledBets : unfilledBetsMatchingAnswer}
-        />
-      )}
-      <OrderBookPanel
-        contract={contract}
-        limitBets={
-          isBinaryMC
-            ? unfilledBets
-            : unfilledBets.filter(
-                (b) => b.answerId === multiProps?.answerToBuy?.id
-              )
-        }
-        answer={multiProps?.answerToBuy}
-        pseudonym={props.pseudonym}
-        onOrderClick={handleOrderClick}
-      />
+      </TradePanelLayout>
     </>
   )
 }
