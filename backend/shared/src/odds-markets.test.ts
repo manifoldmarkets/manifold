@@ -276,10 +276,11 @@ it('opens the answers at the devigged moneyline', async () => {
     text: string
     prob: number
   }[]
-  expect(answers.map((a) => a.text)).toEqual(['Home', 'Away'])
+  // Away first, as in the "Away at Home" title.
+  expect(answers.map((a) => a.text)).toEqual(['Away', 'Home'])
   // -300 / +250 devigs to about 72.4% / 27.6%.
-  expect(answers[0].prob).toBeCloseTo(0.724, 2)
-  expect(answers[1].prob).toBeCloseTo(0.276, 2)
+  expect(answers[0].prob).toBeCloseTo(0.276, 2)
+  expect(answers[1].prob).toBeCloseTo(0.724, 2)
 })
 
 it('colours the answers by team, and keeps the versus pair otherwise', async () => {
@@ -318,9 +319,13 @@ it('colours the answers by team, and keeps the versus pair otherwise', async () 
       (a: { color?: string }) => a.color
     )
   }
-  expect(await colorsFor(named)).toEqual(
-    gameAnswerColors('nfl', chiefs, bills, false)
-  )
+  const [chiefsColor, billsColor] = gameAnswerColors(
+    'nfl',
+    chiefs,
+    bills,
+    false
+  )!
+  expect(await colorsFor(named)).toEqual([billsColor, chiefsColor])
   expect(await colorsFor(event)).toEqual(VERSUS_COLORS)
 })
 

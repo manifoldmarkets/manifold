@@ -127,28 +127,36 @@ export function GameRow(props: {
     setBetOutcome(outcome)
   }
 
+  const homeLine = (
+    <TeamLine
+      team={game.home}
+      score={score?.home ?? null}
+      won={homeWon}
+      lost={finished && game.isResolved && !homeWon}
+      live={live}
+      finished={finished}
+      canBet={canBet}
+      onBet={() => onBet('teamA')}
+    />
+  )
+  const awayLine = (
+    <TeamLine
+      team={game.away}
+      score={score?.away ?? null}
+      won={awayWon}
+      lost={finished && game.isResolved && !awayWon}
+      live={live}
+      finished={finished}
+      canBet={canBet}
+      onBet={() => onBet('teamB')}
+    />
+  )
+  // Soccer reads home over away; every other sport lists the away team on
+  // top, as US sportsbooks do.
   const teams = (
     <Col className="min-w-0 gap-1.5 sm:gap-1">
-      <TeamLine
-        team={game.home}
-        score={score?.home ?? null}
-        won={homeWon}
-        lost={finished && game.isResolved && !homeWon}
-        live={live}
-        finished={finished}
-        canBet={canBet}
-        onBet={() => onBet('teamA')}
-      />
-      <TeamLine
-        team={game.away}
-        score={score?.away ?? null}
-        won={awayWon}
-        lost={finished && game.isResolved && !awayWon}
-        live={live}
-        finished={finished}
-        canBet={canBet}
-        onBet={() => onBet('teamB')}
-      />
+      {game.draw ? homeLine : awayLine}
+      {game.draw ? awayLine : homeLine}
       {game.draw && (
         <Row className="items-center gap-2 pl-8">
           <span
@@ -245,7 +253,11 @@ export function GameRow(props: {
           <Link
             href={gamePath(game)}
             onClick={(e) => e.stopPropagation()}
-            aria-label={`Open ${game.home.name} vs ${game.away.name}`}
+            aria-label={
+              game.draw
+                ? `Open ${game.home.name} vs ${game.away.name}`
+                : `Open ${game.away.name} at ${game.home.name}`
+            }
             className="text-ink-400 hover:text-primary-700 flex items-center gap-0.5 text-[11px] tabular-nums"
           >
             <span className="hidden sm:inline">
