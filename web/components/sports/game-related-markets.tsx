@@ -1,7 +1,7 @@
 import { ChevronDownIcon, PlusIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
-import { useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   Contract,
   contractPath,
@@ -41,13 +41,31 @@ const GROUP_ORDER: RelatedGroup[] = ['game-lines', 'props', 'community']
  * The markets on a game, under its card on the sport page. Today the list is
  * the schedule's matching: official lines and props by event id, and
  * community markets that name both teams near kickoff. Markets linked to a
- * game will go here too. Loads only when the disclosure is expanded.
+ * game will go here too. Warm the first three rows near the viewport;
+ * remaining markets load only when requested. Live rows mount on expansion.
  */
 export function GameLinkedMarkets(props: { game: ScheduleGame }) {
   const { game } = props
   const [expanded, setExpanded] = useState(false)
   const panelId = useId()
   const [showAll, setShowAll] = useState(false)
+  const [nearby, setNearby] = useState(false)
+  const disclosureRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (nearby || !disclosureRef.current) return
+    if (typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setNearby(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '400px' }
+    )
+    observer.observe(disclosureRef.current)
+    return () => observer.disconnect()
+  }, [nearby])
   const ordered = useMemo(
     () =>
       GROUP_ORDER.flatMap((group) =>
@@ -56,25 +74,44 @@ export function GameLinkedMarkets(props: { game: ScheduleGame }) {
     [game.related]
   )
   const ids = ordered.map((r) => r.id)
-  // Cached per game; refetches if the id list changes (a new prop
-  // appeared), keeping the previous list on screen.
-  const { data, error } = useAPIGetter(
+  const firstIds = ids.slice(0, INITIAL_ROWS)
+  const remainingIds = ids.slice(INITIAL_ROWS)
+  // The existing request cache deduplicates hover, focus, scrolling, and
+  // reopening. Keep the preview separate so Show more never clears it.
+  const preview = useAPIGetter(
     'markets-by-ids',
-    { ids },
+    { ids: firstIds },
     undefined,
-    `sports-related-${game.id}`,
-    ids.length > 0 && expanded
+    `sports-related-${game.id}-preview`,
+    firstIds.length > 0 && (nearby || expanded)
+  )
+  const rest = useAPIGetter(
+    'markets-by-ids',
+    { ids: remainingIds },
+    undefined,
+    `sports-related-${game.id}-rest`,
+    remainingIds.length > 0 && expanded && showAll
   )
   const contracts = useMemo(() => {
-    if (!data) return undefined
-    const byId = new Map(data.map((c) => [c.id, c]))
-    return ids.map((id) => byId.get(id)).filter((c): c is Contract => !!c)
-  }, [data, ids.join(',')])
-  const visible = showAll ? contracts : contracts?.slice(0, INITIAL_ROWS)
-  const hidden = (contracts?.length ?? 0) - (visible?.length ?? 0)
+    if (!preview.data) return undefined
+    const byId = new Map(
+      [...preview.data, ...(rest.data ?? [])].map((c) => [c.id, c])
+    )
+    return (showAll ? ids : firstIds)
+      .map((id) => byId.get(id))
+      .filter((c): c is Contract => !!c)
+  }, [preview.data, rest.data, ids.join(','), showAll])
+  const loadingPreview = firstIds.length > 0 && !preview.data && !preview.error
+  const loadingRest =
+    showAll && remainingIds.length > 0 && !rest.data && !rest.error
 
   return (
-    <div className="border-ink-100 rounded-b-xl border-t">
+    <div
+      ref={disclosureRef}
+      onPointerEnter={() => setNearby(true)}
+      onFocusCapture={() => setNearby(true)}
+      className="border-ink-100 rounded-b-xl border-t"
+    >
       <button
         type="button"
         aria-expanded={expanded}
@@ -100,67 +137,101 @@ export function GameLinkedMarkets(props: { game: ScheduleGame }) {
       <div
         id={panelId}
         hidden={!expanded}
-        aria-busy={ids.length > 0 && visible === undefined && !error}
-        className="bg-canvas-50 rounded-b-xl px-4 pb-2"
+        aria-busy={loadingPreview || loadingRest}
+        className="bg-canvas-50 rounded-b-xl px-4 pb-1"
       >
-        {ids.length === 0 ? (
-          <p className="text-ink-500 py-3 text-sm">No linked markets yet.</p>
-        ) : error ? (
-          <p className="text-ink-500 mt-1 text-xs">
-            Couldn't load these markets.
-          </p>
-        ) : visible === undefined ? (
-          <Col role="status" className="divide-ink-200 divide-y">
-            <span className="sr-only">Loading props</span>
-            {ids.slice(0, INITIAL_ROWS).map((id) => (
-              <div
-                key={id}
-                aria-hidden
-                className="animate-pulse space-y-3 py-3"
-              >
-                <div className="space-y-1.5">
-                  <div className="bg-ink-100 h-4 w-full rounded" />
-                  <div className="bg-ink-100 h-4 w-2/3 rounded" />
-                </div>
-                <div className="bg-ink-100 h-3 w-1/2 rounded" />
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-ink-100 h-10 rounded-md" />
-                  <div className="bg-ink-100 h-10 rounded-md" />
-                </div>
-              </div>
-            ))}
-          </Col>
-        ) : (
-          <Col className="divide-ink-200 divide-y">
-            {visible.map((c) => (
-              <RelatedMarketRow key={c.id} contract={c} layout="prop" />
-            ))}
-            {(hidden > 0 ||
-              (showAll && (contracts?.length ?? 0) > INITIAL_ROWS)) && (
-              <button
-                type="button"
-                onClick={() => setShowAll((value) => !value)}
-                className="text-primary-700 hover:bg-canvas-50 w-full px-2.5 py-1.5 text-left text-xs font-medium"
-              >
-                {showAll ? 'Show fewer' : `Show ${hidden} more`}
-              </button>
+        {expanded && (
+          <>
+            {ids.length === 0 ? (
+              <p className="text-ink-500 py-3 text-sm">
+                No linked markets yet.
+              </p>
+            ) : preview.error && !preview.data ? (
+              <p className="text-ink-500 py-2 text-xs" role="alert">
+                Couldn't load these markets.
+                <button
+                  type="button"
+                  onClick={() => void preview.refresh()}
+                  className="text-primary-700 ml-2 underline"
+                >
+                  Retry
+                </button>
+              </p>
+            ) : contracts === undefined ? (
+              <PropsSkeleton count={firstIds.length} />
+            ) : (
+              <Col className="divide-ink-200 divide-y">
+                {contracts.map((c) => (
+                  <RelatedMarketRow key={c.id} contract={c} layout="prop" />
+                ))}
+                {contracts.length === 0 && !loadingRest && (
+                  <p className="text-ink-500 py-2 text-xs">
+                    No available linked markets.
+                  </p>
+                )}
+                {loadingRest && (
+                  <PropsSkeleton
+                    count={Math.min(remainingIds.length, INITIAL_ROWS)}
+                  />
+                )}
+                {showAll && rest.error && (
+                  <p className="text-ink-500 py-2 text-xs" role="alert">
+                    Couldn't load more markets.
+                    <button
+                      type="button"
+                      onClick={() => void rest.refresh()}
+                      className="text-primary-700 ml-2 underline"
+                    >
+                      Retry
+                    </button>
+                  </p>
+                )}
+                {remainingIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAll((value) => !value)}
+                    className="text-primary-700 hover:bg-canvas-50 w-full px-2.5 py-1.5 text-left text-xs font-medium"
+                  >
+                    {showAll
+                      ? 'Show fewer'
+                      : `Show ${remainingIds.length} more`}
+                  </button>
+                )}
+              </Col>
             )}
-          </Col>
+            <Row className="border-ink-100 justify-end border-t pt-1">
+              <Link
+                href={createMarketHref(game)}
+                onClick={() =>
+                  track('sports create related market', { contractId: game.id })
+                }
+                className="text-ink-500 hover:text-primary-700 flex min-h-[28px] items-center gap-1 text-xs font-medium"
+              >
+                <PlusIcon className="h-3.5 w-3.5" />
+                Add a market
+              </Link>
+            </Row>
+          </>
         )}
-        <Row className="border-ink-100 justify-end border-t pt-1">
-          <Link
-            href={createMarketHref(game)}
-            onClick={() =>
-              track('sports create related market', { contractId: game.id })
-            }
-            className="text-ink-500 hover:text-primary-700 flex min-h-[36px] items-center gap-1 text-xs font-medium"
-          >
-            <PlusIcon className="h-3.5 w-3.5" />
-            Add a market
-          </Link>
-        </Row>
       </div>
     </div>
+  )
+}
+
+function PropsSkeleton({ count }: { count: number }) {
+  return (
+    <Col role="status" className="divide-ink-200 divide-y">
+      <span className="sr-only">Loading props</span>
+      {Array.from({ length: count }, (_, index) => (
+        <div key={index} aria-hidden className="animate-pulse space-y-2 py-2">
+          <div className="bg-ink-100 h-4 w-5/6 rounded" />
+          <div className="flex items-center justify-between gap-3">
+            <div className="bg-ink-100 h-3 w-1/3 rounded" />
+            <div className="bg-ink-100 h-8 w-32 rounded" />
+          </div>
+        </div>
+      ))}
+    </Col>
   )
 }
 
@@ -180,7 +251,7 @@ function createMarketHref(game: ScheduleGame) {
   return `/create?params=${encodeURIComponent(JSON.stringify(params))}`
 }
 
-/** A market row, with full-width actions when expanded inside a game. */
+/** A market row, with the question above compact actions inside a game. */
 export function RelatedMarketRow(props: {
   contract: Contract
   /** Rendered before the question: a time, a sport tag. */
@@ -215,90 +286,94 @@ export function RelatedMarketRow(props: {
       />
     ) : null
 
-  return (
-    <div className={isProp ? 'py-3' : 'hover:bg-canvas-50 px-2.5 py-2'}>
-      <div
-        className={clsx(
-          'flex flex-col',
-          isProp
-            ? 'gap-3'
-            : 'gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3'
-        )}
+  const question = (
+    <Link
+      href={contractPath(contract)}
+      className="text-ink-800 hover:text-primary-700 block text-sm leading-snug"
+    >
+      {official && (
+        <>
+          <SportsMarketBadge market={contract} />{' '}
+        </>
+      )}
+      {removeEmojis(
+        official
+          ? contract.question.replace(/\s*\[official\]\s*$/i, '')
+          : contract.question
+      )}
+    </Link>
+  )
+  const metadata = (
+    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+      {!official && <SportsMarketBadge market={contract} />}
+      <Link
+        href={`/${contract.creatorUsername}`}
+        className="text-ink-500 hover:text-primary-700 max-w-[12rem] truncate text-[11px]"
       >
-        <Row className="min-w-0 flex-1 items-start gap-2">
-          {prefix}
-          <div className="min-w-0 flex-1">
-            <Link
-              href={contractPath(contract)}
-              className="text-ink-800 hover:text-primary-700 block text-sm leading-snug"
-            >
-              {official && (
-                <>
-                  <SportsMarketBadge market={contract} />{' '}
-                </>
-              )}
-              {removeEmojis(
-                official
-                  ? contract.question.replace(/\s*\[official\]\s*$/i, '')
-                  : contract.question
-              )}
-            </Link>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-              {!official && <SportsMarketBadge market={contract} />}
-              <Link
-                href={`/${contract.creatorUsername}`}
-                className="text-ink-500 hover:text-primary-700 max-w-[12rem] truncate text-[11px]"
-              >
-                @{contract.creatorUsername}
-              </Link>
-              <span className="text-ink-400 text-[11px]">
-                Ṁ{shortFormatNumber(contract.volume)} ·{' '}
-                {contract.uniqueBettorCount}{' '}
-                {contract.uniqueBettorCount === 1 ? 'trader' : 'traders'}
-              </span>
-              {isProp && <span className="ml-auto">{status}</span>}
-            </div>
-          </div>
-        </Row>
-        <Row
-          className={clsx(
-            'items-center gap-2',
-            isProp ? 'w-full' : 'shrink-0 self-end sm:self-auto'
-          )}
+        @{contract.creatorUsername}
+      </Link>
+      <span className="text-ink-400 text-[11px]">
+        Ṁ{shortFormatNumber(contract.volume)} · {contract.uniqueBettorCount}{' '}
+        {contract.uniqueBettorCount === 1 ? 'trader' : 'traders'}
+      </span>
+    </div>
+  )
+  const actions = (
+    <Row className="shrink-0 items-center gap-2">
+      {status}
+      {!closed && isBinary && (
+        <BetButton
+          contract={contract as BinaryContract}
+          user={user}
+          questionTitle={contract.question}
+          labels={isProp ? { yes: 'Yes', no: 'No' } : undefined}
+          className={
+            isProp
+              ? 'grid grid-cols-2 gap-1.5 [&>button]:m-0 [&>button]:min-h-[32px] [&>button]:min-w-[3.5rem]'
+              : 'flex'
+          }
+        />
+      )}
+      {!closed && isMulti && (
+        <Button
+          size="2xs"
+          color="indigo-outline"
+          onClick={() => {
+            if (!user) {
+              firebaseLogin()
+              return
+            }
+            track('bet intent', { location: 'sports related market' })
+            setBetOpen(true)
+          }}
         >
-          {!isProp && status}
-          {!closed && isBinary && (
-            <BetButton
-              contract={contract as BinaryContract}
-              user={user}
-              questionTitle={contract.question}
-              labels={isProp ? { yes: 'Yes', no: 'No' } : undefined}
-              className={
-                isProp
-                  ? 'grid w-full grid-cols-2 gap-2 [&>button]:m-0 [&>button]:min-h-[40px] [&>button]:w-full'
-                  : 'flex'
-              }
-            />
-          )}
-          {!closed && isMulti && (
-            <Button
-              size="2xs"
-              color="indigo-outline"
-              className={isProp ? 'min-h-[40px] w-full' : undefined}
-              onClick={() => {
-                if (!user) {
-                  firebaseLogin()
-                  return
-                }
-                track('bet intent', { location: 'sports related market' })
-                setBetOpen(true)
-              }}
-            >
-              Bet
-            </Button>
-          )}
-        </Row>
-      </div>
+          Bet
+        </Button>
+      )}
+    </Row>
+  )
+  return (
+    <div className={isProp ? 'py-2' : 'hover:bg-canvas-50 px-2.5 py-2'}>
+      {isProp ? (
+        <>
+          {question}
+          <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+            <div className="min-w-0 flex-1">{metadata}</div>
+            {actions}
+          </div>
+        </>
+      ) : (
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+          <Row className="min-w-0 flex-1 items-start gap-2">
+            {prefix}
+            <div className="min-w-0 flex-1">
+              {question}
+              <div className="mt-1.5">{metadata}</div>
+            </div>
+          </Row>
+          <div className="self-end sm:self-auto">{actions}</div>
+        </div>
+      )}
       {answers.length > 0 && (
         <Row
           className={clsx(
