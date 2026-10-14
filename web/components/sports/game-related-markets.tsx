@@ -112,28 +112,42 @@ export function GameLinkedMarkets(props: { game: ScheduleGame }) {
       onFocusCapture={() => setNearby(true)}
       className="border-ink-100 rounded-b-xl border-t"
     >
-      <button
-        type="button"
-        aria-expanded={expanded}
-        aria-controls={panelId}
-        aria-label={`Props & more for ${game.home.name} vs ${game.away.name}`}
-        onClick={() => setExpanded((value) => !value)}
-        className="text-ink-600 hover:bg-canvas-50 focus-visible:ring-primary-500 flex min-h-[44px] w-full items-center gap-2 rounded-b-xl px-4 text-left text-xs font-semibold focus-visible:ring-2"
-      >
-        <ChevronDownIcon
-          className={clsx(
-            'h-4 w-4 transition-transform',
-            expanded && 'rotate-180'
+      <Row className="items-center">
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={panelId}
+          aria-label={`Props & more for ${game.home.name} vs ${game.away.name}`}
+          onClick={() => setExpanded((value) => !value)}
+          className="text-ink-600 hover:bg-canvas-50 focus-visible:ring-primary-500 flex min-h-[44px] min-w-0 flex-1 items-center gap-2 rounded-b-xl px-4 text-left text-xs font-semibold focus-visible:ring-2"
+        >
+          <ChevronDownIcon
+            className={clsx(
+              'h-4 w-4 transition-transform',
+              expanded && 'rotate-180'
+            )}
+          />
+          Props & more
+          <span className="bg-canvas-100 text-ink-500 rounded px-1.5 py-0.5 tabular-nums">
+            {ids.length}
+          </span>
+          {!expanded && (
+            <span className="text-ink-400 ml-auto font-normal">Explore</span>
           )}
-        />
-        Props & more
-        <span className="bg-canvas-100 text-ink-500 rounded px-1.5 py-0.5 tabular-nums">
-          {ids.length}
-        </span>
-        <span className="text-ink-400 ml-auto font-normal">
-          {expanded ? 'Collapse' : 'Explore'}
-        </span>
-      </button>
+        </button>
+        {expanded && (
+          <Link
+            href={createMarketHref(game)}
+            onClick={() =>
+              track('sports create related market', { contractId: game.id })
+            }
+            className="text-ink-500 hover:text-primary-700 focus-visible:ring-primary-500 flex min-h-[44px] shrink-0 items-center gap-1 rounded-lg px-4 text-xs font-medium focus-visible:ring-2"
+          >
+            <PlusIcon className="h-3.5 w-3.5" />
+            Add a market
+          </Link>
+        )}
+      </Row>
       <div
         id={panelId}
         hidden={!expanded}
@@ -199,18 +213,6 @@ export function GameLinkedMarkets(props: { game: ScheduleGame }) {
                 )}
               </Col>
             )}
-            <Row className="border-ink-100 justify-end border-t pt-1">
-              <Link
-                href={createMarketHref(game)}
-                onClick={() =>
-                  track('sports create related market', { contractId: game.id })
-                }
-                className="text-ink-500 hover:text-primary-700 flex min-h-[28px] items-center gap-1 text-xs font-medium"
-              >
-                <PlusIcon className="h-3.5 w-3.5" />
-                Add a market
-              </Link>
-            </Row>
           </>
         )}
       </div>
