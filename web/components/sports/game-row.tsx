@@ -395,9 +395,6 @@ export function GameRow(props: {
             </button>
           )}
         </Row>
-        <div className="text-ink-400 flex items-center justify-end px-4 pb-2 text-[10px] font-semibold uppercase tracking-wider">
-          <span>Win chance</span>
-        </div>
         <div className="px-4 pb-3">{teams}</div>
         <div className="text-ink-500 flex flex-wrap items-center justify-between gap-2 px-4 pb-3 text-xs">
           <span>
