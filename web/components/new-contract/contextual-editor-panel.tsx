@@ -26,6 +26,8 @@ export type FormState = {
   closeDate?: string
   closeHoursMinutes?: string
   neverCloses: boolean
+  // Persist creator intent so reloading a linked draft preserves its close time.
+  hasManuallyEditedCloseDate?: boolean
   selectedGroups: Group[]
   visibility: 'public' | 'unlisted'
   liquidityTier: number

@@ -49,6 +49,13 @@ import { ProminentTypeSelector } from './prominent-type-selector'
 import { TypeSwitcherModal } from './type-switcher-modal'
 import { scrollToFirstError } from './utils/scroll-to-error'
 import { getAnteAnswerCount } from './utils/get-ante-answer-count'
+import {
+  applyLinkedMarketCloseTime,
+  applySuggestedCloseTime,
+  getCloseTimeFields,
+  hasManualCloseTime,
+  restoreMarketDraft,
+} from './utils/linked-market-state'
 
 const MAX_DESCRIPTION_LENGTH = 16000
 
@@ -76,6 +83,7 @@ export function NewContractPanel(props: {
     closeDate: undefined,
     closeHoursMinutes: '23:59',
     neverCloses: false,
+    hasManuallyEditedCloseDate: false,
     selectedGroups: [],
     visibility: 'public',
     liquidityTier: 100,
@@ -100,11 +108,10 @@ export function NewContractPanel(props: {
       ? JSON.parse(params.description)
       : undefined,
     answers: params?.answers || [],
-    closeDate: params?.closeTime
-      ? new Date(params.closeTime).toISOString().split('T')[0]
-      : undefined,
     closeHoursMinutes: '23:59',
     neverCloses: false,
+    ...getCloseTimeFields(params?.closeTime),
+    hasManuallyEditedCloseDate: false,
     selectedGroups: [],
     visibility: (params?.visibility as 'public' | 'unlisted') || 'public',
     liquidityTier: 100, // Default to tier 0 (100 mana)
@@ -145,8 +152,9 @@ export function NewContractPanel(props: {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isTypeSwitcherOpen, setIsTypeSwitcherOpen] = useState(false)
-  const [hasManuallyEditedCloseDate, setHasManuallyEditedCloseDate] =
-    useState(false)
+  const hasManuallyEditedCloseDate = hasManualCloseTime(formState)
+  const setHasManuallyEditedCloseDate = (value: boolean) =>
+    setFormState((prev) => ({ ...prev, hasManuallyEditedCloseDate: value }))
   const [showResetConfirmation, setShowResetConfirmation] = useState(false)
   const [isCloseDateModalOpen, setIsCloseDateModalOpen] = useState(false)
   const [hasLowConfidenceCloseDate, setHasLowConfidenceCloseDate] =
@@ -389,11 +397,15 @@ export function NewContractPanel(props: {
         answers: formState.answers,
         closeDate: formState.closeDate,
         closeHoursMinutes: formState.closeHoursMinutes,
+        neverCloses: formState.neverCloses,
+        hasManuallyEditedCloseDate,
+        linkedToContractId: formState.linkedToContractId,
+        linkRelation: formState.linkRelation,
         visibility: formState.visibility,
         selectedGroups: formState.selectedGroups,
         savedAt: Date.now(),
       }
-      await api('save-market-draft', { data: draft as any })
+      await api('save-market-draft', { data: draft })
       toast.success('Draft saved')
       await loadDrafts()
     } catch (error) {
@@ -406,18 +418,8 @@ export function NewContractPanel(props: {
 
   const loadDraftFromDb = async (draft: MarketDraft) => {
     try {
-      setFormState({
-        ...formState,
-        question: draft.data.question,
-        description: draft.data.description,
-        outcomeType: draft.data.outcomeType as any,
-        answers: draft.data.answers,
-        answerProbs: undefined,
-        closeDate: draft.data.closeDate,
-        closeHoursMinutes: draft.data.closeHoursMinutes,
-        visibility: draft.data.visibility,
-        selectedGroups: draft.data.selectedGroups,
-      })
+      setFormState((prev) => restoreMarketDraft(prev, draft.data))
+      setHasLowConfidenceCloseDate(false)
       if (draft.data.description && descriptionEditor) {
         descriptionEditor.commands.setContent(draft.data.description)
       }
@@ -476,6 +478,25 @@ export function NewContractPanel(props: {
     return isFreeMarket ? `Create for free!` : `Create for ${formatMoney(cost)}`
   }
 
+  // Check the current form when an async suggestion returns. A creator may
+  // have linked the market or chosen a close time while the request was pending.
+  const applyAutomaticCloseTime = useEvent(
+    (
+      question: string,
+      closeTime: number,
+      options: { confidence?: number; preserveCloseTime?: boolean } = {}
+    ) => {
+      if (applySuggestedCloseTime(formState, question, closeTime) === formState)
+        return
+      setFormState((prev) => {
+        const next = applySuggestedCloseTime(prev, question, closeTime)
+        if (next === prev || !options.preserveCloseTime) return next
+        return { ...next, hasManuallyEditedCloseDate: true }
+      })
+      setHasLowConfidenceCloseDate((options.confidence ?? 100) < 75)
+    }
+  )
+
   // Auto-extract close date from question
   const getAISuggestedCloseDate = useEvent(async (question: string) => {
     const shouldHaveCloseDate = formState.outcomeType !== 'POLL'
@@ -497,14 +518,10 @@ export function NewContractPanel(props: {
         utcOffset: new Date().getTimezoneOffset() * -1,
       })
 
-      if (result?.closeTime && !hasManuallyEditedCloseDate) {
-        const dateStr = dayjs(result.closeTime).format('YYYY-MM-DD')
-        const time = dayjs(result.closeTime).format('HH:mm')
-        updateField('closeDate', dateStr)
-        updateField('closeHoursMinutes', time)
-        // Flag low confidence dates to prompt user confirmation on submit
-        setHasLowConfidenceCloseDate(result.confidence < 75)
-      }
+      if (result?.closeTime)
+        applyAutomaticCloseTime(question, result.closeTime, {
+          confidence: result.confidence,
+        })
     } catch (e) {
       console.error('Error getting suggested close date:', e)
     }
@@ -1170,21 +1187,17 @@ export function NewContractPanel(props: {
           contractId={formState.linkedToContractId}
           relation={formState.linkRelation}
           onChange={(link) => {
-            updateField('linkedToContractId', link?.contractId)
-            updateField('linkRelation', link?.relation)
+            setFormState((prev) => ({
+              ...prev,
+              linkedToContractId: link?.contractId,
+              linkRelation: link?.relation,
+            }))
           }}
           onParentLoaded={(parent) => {
             // Close with the linked market unless the creator chose a time.
-            if (hasManuallyEditedCloseDate || !parent.closeTime) return
-            updateField(
-              'closeDate',
-              dayjs(parent.closeTime).format('YYYY-MM-DD')
-            )
-            updateField(
-              'closeHoursMinutes',
-              dayjs(parent.closeTime).format('HH:mm')
-            )
-            updateField('neverCloses', false)
+            if (applyLinkedMarketCloseTime(formState, parent) === formState)
+              return
+            setFormState((prev) => applyLinkedMarketCloseTime(prev, parent))
             setHasLowConfidenceCloseDate(false)
           }}
         />
@@ -1361,9 +1374,13 @@ export function NewContractPanel(props: {
                       ? parsedDate.endOf('year')
                       : parsedDate.add(1, 'month') // Add buffer for non-year formats
 
-                    updateField('closeDate', closeDate.format('YYYY-MM-DD'))
-                    updateField('closeHoursMinutes', '23:59')
-                    setHasManuallyEditedCloseDate(true) // Prevent auto-override
+                    applyAutomaticCloseTime(
+                      formState.question,
+                      closeDate.hour(23).minute(59).valueOf(),
+                      // Keep the creator's maximum date from being replaced
+                      // by later suggestions, as with other explicit dates.
+                      { preserveCloseTime: true }
+                    )
                   } catch (e) {
                     console.error('Error parsing maxString for close date:', e)
                   }
@@ -1421,11 +1438,10 @@ export function NewContractPanel(props: {
                 clearError('answers')
 
                 // Auto-set close date using binary-style logic (1 year from now)
-                if (!hasManuallyEditedCloseDate) {
-                  const oneYearFromNow = dayjs().add(1, 'year')
-                  updateField('closeDate', oneYearFromNow.format('YYYY-MM-DD'))
-                  updateField('closeHoursMinutes', '23:59')
-                }
+                applyAutomaticCloseTime(
+                  formState.question,
+                  dayjs().add(1, 'year').hour(23).minute(59).valueOf()
+                )
               } catch (e) {
                 console.error('Error generating numeric ranges:', e)
               } finally {
@@ -1606,9 +1622,10 @@ export function NewContractPanel(props: {
               setHasManuallyEditedCloseDate(true)
             }}
             closeHoursMinutes={formState.closeHoursMinutes}
-            setCloseHoursMinutes={(time) =>
+            setCloseHoursMinutes={(time) => {
               updateField('closeHoursMinutes', time)
-            }
+              setHasManuallyEditedCloseDate(true)
+            }}
             outcomeType={formState.outcomeType as any}
             submitState={isSubmitting ? 'LOADING' : 'EDITING'}
             setNeverCloses={(neverCloses) => {

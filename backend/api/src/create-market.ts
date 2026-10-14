@@ -41,7 +41,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { camelCase, first } from 'lodash'
-import { getLinkParentError } from 'common/market-links'
+import { getLinkChildError, getLinkParentError } from 'common/market-links'
 import { generateAntes } from 'shared/create-contract-helpers'
 import { getCloseDate } from 'shared/helpers/ai-close-date'
 import { betsQueue } from 'shared/helpers/fn-queue'
@@ -335,6 +335,16 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           maxSelections: maxSelections,
         })
       )
+      // Moderation can override the requested visibility. Check the actual
+      // child before inserting it or moving any mana.
+      if (linkedToContractId) {
+        const childError = getLinkChildError({
+          visibility: contract.visibility,
+          deleted: !!contract.deleted,
+          childCount: 0,
+        })
+        if (childError) throw new APIError(400, childError)
+      }
       const nativeColumns = nativeContractColumnsArray.filter(
         (column) => column !== 'data'
       )

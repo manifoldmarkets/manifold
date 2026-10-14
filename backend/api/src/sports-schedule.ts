@@ -93,24 +93,25 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     // Markets linked to a game go under it first, where their creator put
     // them. A market linked to anything is left out of the team-name
     // matching, so it can't be guessed onto another game.
-    const [allCandidates, linked] = await Promise.all([
-      getRelatedCandidates(pg, index),
-      orWithoutLinks(
-        () =>
+    const allCandidates = await getRelatedCandidates(pg, index)
+    // Both reads must succeed before using links. Otherwise a child can be
+    // listed under its explicit parent and guessed onto another game, or
+    // disappear when only the exclusion read succeeds.
+    const { linked, withParents } = await orWithoutLinks(
+      async () => {
+        const [linked, withParents] = await Promise.all([
           getLinkedChildren(
             pg,
             ordered.map((g) => g.id)
           ),
-        []
-      ),
-    ])
-    const withParents = await orWithoutLinks(
-      () =>
-        getIdsWithParents(
-          pg,
-          allCandidates.map((c) => c.id)
-        ),
-      new Set<string>()
+          getIdsWithParents(
+            pg,
+            allCandidates.map((c) => c.id)
+          ),
+        ])
+        return { linked, withParents }
+      },
+      { linked: [], withParents: new Set<string>() }
     )
     const candidates = allCandidates.filter((c) => !withParents.has(c.id))
     const linkedByGame = groupBy(linked, (l) => l.parentId)

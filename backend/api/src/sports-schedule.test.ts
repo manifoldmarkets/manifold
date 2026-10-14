@@ -61,6 +61,7 @@ let answerRows: Record<string, unknown>[] = []
 let linkRows: { id: string; parent_id: string; relation: string }[] = []
 let linkedElsewhere: { id: string }[] = []
 let linksMissing = false
+let failedLinkRead: 'children' | 'parents' | undefined
 
 // Each game's two answers, home first, unless a test sets answerRows.
 const gameAnswers = (data: Record<string, unknown>) =>
@@ -82,13 +83,19 @@ beforeEach(() => {
   linkRows = []
   linkedElsewhere = []
   linksMissing = false
+  failedLinkRead = undefined
   jest.mocked(createSupabaseDirectClient).mockReturnValue({
     manyOrNone: async (sql: string) => {
       if (linksMissing && sql.includes('market_links'))
         throw new Error('relation "market_links" does not exist')
-      if (sql.includes('from market_links l')) return linkRows
-      if (sql.includes('select child_contract_id as id from market_links'))
+      if (sql.includes('from market_links l')) {
+        if (failedLinkRead === 'children') throw new Error('Link read failed')
+        return linkRows
+      }
+      if (sql.includes('select child_contract_id as id from market_links')) {
+        if (failedLinkRead === 'parents') throw new Error('Link read failed')
         return linkedElsewhere
+      }
       if (sql.includes("where data->>'sportsEventId'")) return officialRows
       if (sql.includes('from answers'))
         return answerRows.length > 0
@@ -331,4 +338,21 @@ describe('linked markets', () => {
     const result = 'result' in response ? response.result : response
     expect(result.games[0].related.map((r) => r.id)).toEqual(['nfl-prop'])
   })
+
+  it.each(['children', 'parents'] as const)(
+    'uses the complete heuristic fallback when the %s read fails',
+    async (failedRead) => {
+      failedLinkRead = failedRead
+      linkRows = [{ id: 'nfl-prop', parent_id: 'soccer', relation: 'prop' }]
+      linkedElsewhere = [{ id: 'nfl-prop' }]
+      const response = await getSchedule({ sport: 'all' })
+      const result = 'result' in response ? response.result : response
+      const appearances = result.games.flatMap((game) =>
+        game.related
+          .filter((market) => market.id === 'nfl-prop')
+          .map((market) => ({ gameId: game.id, kind: market.kind }))
+      )
+      expect(appearances).toEqual([{ gameId: 'nfl', kind: 'official' }])
+    }
+  )
 })

@@ -14,6 +14,7 @@ import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useEvent } from 'client-common/hooks/use-event'
 
 /**
  * "This is about…": the market a new market is linked to. A linked market
@@ -31,7 +32,7 @@ export function LinkedMarketField(props: {
 }) {
   const { contractId, relation = 'related', onChange, onParentLoaded } = props
   const [picking, setPicking] = useState(false)
-  const { data } = useAPIGetter(
+  const { data, error, refresh } = useAPIGetter(
     'markets-by-ids',
     { ids: contractId ? [contractId] : [] },
     undefined,
@@ -39,17 +40,18 @@ export function LinkedMarketField(props: {
     !!contractId
   )
   const parent = contractId ? data?.find((c) => c.id === contractId) : undefined
+  const onLoaded = useEvent(onParentLoaded)
   useEffect(() => {
-    if (parent) onParentLoaded(parent)
-  }, [parent?.id])
+    if (parent) onLoaded(parent)
+  }, [parent?.id, parent?.closeTime, onLoaded])
 
   const pick = (contracts: Contract[]) => {
     setPicking(false)
     const picked = contracts[0]
     if (!picked) return
     const closed =
-      !!picked.resolution ||
-      (!!picked.closeTime && picked.closeTime <= Date.now())
+      picked.isResolved ||
+      (picked.closeTime != null && picked.closeTime <= Date.now())
     if (closed) {
       toast.error('Pick a market that is still open.')
       return
@@ -74,6 +76,13 @@ export function LinkedMarketField(props: {
                 >
                   {removeEmojis(parent.question)}
                 </a>
+              ) : error ? (
+                <span className="text-scarlet-600 text-sm">
+                  Couldn't load that market.{' '}
+                  <button type="button" className="underline" onClick={refresh}>
+                    Retry
+                  </button>
+                </span>
               ) : data ? (
                 <span className="text-scarlet-600 text-sm">
                   That market wasn't found. Remove the link or pick another.
@@ -138,7 +147,7 @@ export function LinkedMarketField(props: {
             What market is this about?
           </span>
           <span className="text-ink-500 text-sm">
-            Your market will show next to it, and close when it does.
+            Your market will be linked to it and use its close time by default.
           </span>
           <SelectMarkets
             maxSelections={1}
