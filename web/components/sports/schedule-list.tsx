@@ -14,7 +14,11 @@ import { Row } from 'web/components/layout/row'
 import { GameRow, GameRowSkeleton } from 'web/components/sports/game-row'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { SportsActivity } from './sports-activity'
+import {
+  compareGameStartTime,
+  compareGameVolume,
+  selectFeaturedGame,
+} from './game-feed-utils'
 
 type DaySection<T> = { key: string; label: string; items: T[] }
 
@@ -80,6 +84,9 @@ export function GameFeed(props: {
       ids.includes(id) ? ids.filter((value) => value !== id) : [...ids, id]
     )
   const normalized = query.trim().toLowerCase()
+  const hasFilters = filter !== 'all' || date !== 'all' || !!normalized
+  const featured =
+    view === 'cards' && !hasFilters ? selectFeaturedGame(active) : undefined
   const filtered = active
     .filter(
       (game) =>
@@ -92,21 +99,20 @@ export function GameFeed(props: {
             .toLowerCase()
             .includes(normalized))
     )
-    .sort((a, b) =>
-      sort === 'volume' ? b.volume - a.volume : a.startTime - b.startTime
-    )
-  const live = filtered.filter((g) => g.status === 'live')
-  const upcoming = filtered.filter((g) => g.status === 'upcoming')
+    .sort(sort === 'volume' ? compareGameVolume : compareGameStartTime)
+  // Live games always run in kickoff order, including in the Live filter.
+  const live = filtered
+    .filter((g) => g.status === 'live' && g.id !== featured?.id)
+    .sort(compareGameStartTime)
+  const upcoming = filtered.filter(
+    (g) => g.status === 'upcoming' && g.id !== featured?.id
+  )
   const days = groupByDay(upcoming, (g) => g.startTime).sort((a, b) =>
     a.key.localeCompare(b.key)
   )
   const allDays = groupByDay(active, (game) => game.startTime).sort((a, b) =>
     a.key.localeCompare(b.key)
   )
-  const featured = active
-    .filter((game) => Number.isFinite(game.volume) && game.volume > 0)
-    .sort((a, b) => b.volume - a.volume)[0]
-  const hasFilters = filter !== 'all' || date !== 'all' || !!normalized
   const reset = () => {
     setQuery('')
     setDate('all')
@@ -123,18 +129,7 @@ export function GameFeed(props: {
         <GameRow
           key={game.id}
           game={game}
-          variant={
-            view === 'compact'
-              ? 'compact'
-              : !hasFilters && game.id === featured?.id
-              ? 'featured'
-              : 'card'
-          }
-          className={
-            view === 'cards' && !hasFilters && game.id === featured?.id
-              ? 'sm:col-span-2'
-              : undefined
-          }
+          variant={view === 'compact' ? 'compact' : 'card'}
           showLeague={showLeague}
           watched={saved.includes(game.id)}
           onToggleWatch={() => toggleSaved(game.id)}
@@ -154,23 +149,22 @@ export function GameFeed(props: {
   if (active.length === 0) return <>{empty}</>
 
   return (
-    <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_270px]">
+    <div className="min-w-0">
       <Col className="min-w-0 gap-5">
         <div className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-ink-1000 text-lg font-bold sm:text-xl">
-              The game board{' '}
-              <span className="text-ink-400 ml-1 text-sm font-normal">
-                {active.length}
-                {hasMore ? '+' : ''}
-              </span>
-            </h2>
+          <div className="flex justify-end">
             <label className="text-ink-500 flex items-center gap-2 text-xs">
               <span className="sr-only sm:not-sr-only">Sort</span>
               <select
                 aria-label="Sort games"
                 className="border-ink-200 bg-canvas-0 text-ink-700 w-32 rounded-lg border py-1.5 pl-2 pr-7 text-xs sm:w-auto"
-                value={sort}
+                value={filter === 'live' ? 'time' : sort}
+                disabled={filter === 'live'}
+                title={
+                  filter === 'live'
+                    ? 'Live games are ordered by start time'
+                    : undefined
+                }
                 onChange={(event) => setSort(event.target.value)}
               >
                 <option value="time">Start time</option>
@@ -331,6 +325,15 @@ export function GameFeed(props: {
             </div>
           )}
         </div>
+        {featured && (
+          <GameRow
+            game={featured}
+            variant="featured"
+            showLeague={showLeague}
+            watched={saved.includes(featured.id)}
+            onToggleWatch={() => toggleSaved(featured.id)}
+          />
+        )}
         {filtered.length === 0 && (
           <div className="border-ink-200 rounded-xl border border-dashed px-5 py-8 text-center">
             <h3 className="text-ink-900 font-semibold">
@@ -393,7 +396,6 @@ export function GameFeed(props: {
           </p>
         )}
       </Col>
-      <SportsActivity games={active} />
     </div>
   )
 }
