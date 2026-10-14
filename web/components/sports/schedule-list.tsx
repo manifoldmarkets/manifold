@@ -1,5 +1,11 @@
 import clsx from 'clsx'
-import { SearchIcon, StarIcon, XIcon } from '@heroicons/react/solid'
+import {
+  SearchIcon,
+  StarIcon,
+  ViewGridIcon,
+  ViewListIcon,
+  XIcon,
+} from '@heroicons/react/solid'
 import dayjs from 'dayjs'
 import { ReactNode, useState } from 'react'
 import { ScheduleGame } from 'common/sports-schedule'
@@ -58,6 +64,10 @@ export function GameFeed(props: {
   const [filter, setFilter] = useState<'all' | 'live' | 'saved'>('all')
   const [date, setDate] = useState('all')
   const [sort, setSort] = useState('time')
+  const [view, setView] = usePersistentLocalState<'cards' | 'compact'>(
+    'cards',
+    'sports-game-view'
+  )
   const [saved, setSaved] = usePersistentLocalState<string[]>(
     [],
     'sports-saved-games'
@@ -106,7 +116,7 @@ export function GameFeed(props: {
     <div
       className={clsx(
         'grid items-start gap-3',
-        items.length > 1 && 'sm:grid-cols-2'
+        view === 'cards' && items.length > 1 && 'sm:grid-cols-2'
       )}
     >
       {items.map((game) => (
@@ -114,10 +124,14 @@ export function GameFeed(props: {
           key={game.id}
           game={game}
           variant={
-            !hasFilters && game.id === featured?.id ? 'featured' : 'card'
+            view === 'compact'
+              ? 'compact'
+              : !hasFilters && game.id === featured?.id
+              ? 'featured'
+              : 'card'
           }
           className={
-            !hasFilters && game.id === featured?.id
+            view === 'cards' && !hasFilters && game.id === featured?.id
               ? 'sm:col-span-2'
               : undefined
           }
@@ -144,7 +158,7 @@ export function GameFeed(props: {
       <Col className="min-w-0 gap-5">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-ink-1000 text-xl font-bold">
+            <h2 className="text-ink-1000 text-lg font-bold sm:text-xl">
               The game board{' '}
               <span className="text-ink-400 ml-1 text-sm font-normal">
                 {active.length}
@@ -152,10 +166,10 @@ export function GameFeed(props: {
               </span>
             </h2>
             <label className="text-ink-500 flex items-center gap-2 text-xs">
-              Sort
+              <span className="sr-only sm:not-sr-only">Sort</span>
               <select
                 aria-label="Sort games"
-                className="border-ink-200 bg-canvas-0 text-ink-700 rounded-lg border py-1.5 pl-2 pr-7 text-xs"
+                className="border-ink-200 bg-canvas-0 text-ink-700 w-32 rounded-lg border py-1.5 pl-2 pr-7 text-xs sm:w-auto"
                 value={sort}
                 onChange={(event) => setSort(event.target.value)}
               >
@@ -227,6 +241,39 @@ export function GameFeed(props: {
                 <span className="text-xs opacity-70">{item.count}</span>
               </button>
             ))}
+            <div
+              className="border-ink-200 ml-auto flex rounded-lg border p-0.5"
+              role="group"
+              aria-label="Game board layout"
+            >
+              {(
+                [
+                  { value: 'cards', label: 'Card view', Icon: ViewGridIcon },
+                  {
+                    value: 'compact',
+                    label: 'Compact view',
+                    Icon: ViewListIcon,
+                  },
+                ] as const
+              ).map(({ value, label, Icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-label={label}
+                  title={label}
+                  aria-pressed={view === value}
+                  onClick={() => setView(value)}
+                  className={clsx(
+                    'flex h-9 w-9 items-center justify-center rounded-md',
+                    view === value
+                      ? 'bg-primary-50 text-primary-700'
+                      : 'text-ink-400 hover:bg-canvas-100'
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                </button>
+              ))}
+            </div>
           </div>
           {filter !== 'live' && (
             <div

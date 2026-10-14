@@ -86,9 +86,9 @@ export function SportsShell(props: {
         {children}
 
         <p className="text-ink-400 px-1 pb-2 pt-4 text-[11px]">
-          Times are in your local time zone. Game markets are created and
-          resolved automatically by @ManifoldSports for connected leagues;
-          anyone can add props and side-bets.
+          Times are in your local time zone. Official markets are created by
+          @ManifoldSports; community markets are created by other users. Check
+          each market's rules for how it resolves.
         </p>
       </Col>
     </Page>

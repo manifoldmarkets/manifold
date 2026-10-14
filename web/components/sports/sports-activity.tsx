@@ -125,7 +125,12 @@ export function SportsActivity({ games }: { games: ScheduleGame[] }) {
                   className="hover:bg-canvas-50 block px-4 py-3"
                 >
                   <div className="mb-1.5 flex min-w-0 items-center gap-1.5 text-xs">
-                    <Avatar size="2xs" avatarUrl={user?.avatarUrl} noLink />
+                    <Avatar
+                      size="2xs"
+                      avatarUrl={user?.avatarUrl}
+                      username={user?.username}
+                      noLink
+                    />
                     <span className="text-ink-700 truncate font-medium">
                       {user?.name ?? 'Trader'}
                     </span>

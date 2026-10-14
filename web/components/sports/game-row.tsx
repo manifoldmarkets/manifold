@@ -16,6 +16,7 @@ import { shortFormatNumber } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { GameLinkedMarkets } from 'web/components/sports/game-related-markets'
+import { SportsMarketBadge } from './sports-market-badge'
 import { sportPath } from 'web/components/sports/sport-rail'
 import {
   Flag,
@@ -93,7 +94,7 @@ const gameAnchor = (game: Pick<ScheduleGame, 'id'>) => `game-${game.id}`
  */
 export function GameRow(props: {
   game: ScheduleGame
-  variant?: 'list' | 'card' | 'featured'
+  variant?: 'list' | 'card' | 'featured' | 'compact'
   showLeague?: boolean
   className?: string
   watched?: boolean
@@ -137,7 +138,14 @@ export function GameRow(props: {
   }
 
   const teams = (
-    <Col className="min-w-0 gap-1.5 sm:gap-1">
+    <div
+      className={clsx(
+        'min-w-0',
+        variant === 'compact'
+          ? 'grid gap-x-5 gap-y-2 sm:grid-cols-2'
+          : 'flex flex-col gap-1.5 sm:gap-1'
+      )}
+    >
       <TeamLine
         team={game.home}
         score={score?.home ?? null}
@@ -181,7 +189,7 @@ export function GameRow(props: {
           />
         </Row>
       )}
-    </Col>
+    </div>
   )
 
   // Kept outside the clickable row: clicks in a portal still bubble up the
@@ -204,6 +212,59 @@ export function GameRow(props: {
       />
     ))
 
+  if (variant === 'compact') {
+    return (
+      <section
+        id={gameAnchor(game)}
+        className={clsx(
+          'bg-canvas-0 border-ink-200 scroll-mt-32 overflow-hidden rounded-xl border',
+          className
+        )}
+      >
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 p-3 sm:grid-cols-[6rem_minmax(0,1fr)_auto]">
+          <div className="col-span-2 mb-2 flex flex-wrap items-center gap-2 sm:col-span-1 sm:mb-0 sm:flex-col sm:items-start">
+            <GameWhen game={game} layout="inline" />
+            <SportsMarketBadge market={game} />
+            {showLeague && (
+              <span className="text-ink-400 text-[10px] font-semibold">
+                {game.league}
+              </span>
+            )}
+          </div>
+          {teams}
+          <div className="flex flex-col items-end gap-2">
+            {onToggleWatch && (
+              <button
+                type="button"
+                onClick={onToggleWatch}
+                aria-pressed={!!watched}
+                aria-label={`${watched ? 'Unsave' : 'Save'} ${
+                  game.home.name
+                } vs ${game.away.name}`}
+                className={clsx(
+                  'hover:bg-canvas-100 flex h-10 w-10 items-center justify-center rounded-lg',
+                  watched ? 'text-primary-600' : 'text-ink-300'
+                )}
+              >
+                <StarIcon className="h-5 w-5" />
+              </button>
+            )}
+            <Link
+              href={gamePath(game)}
+              aria-label={`Open ${game.home.name} vs ${game.away.name}`}
+              className="text-ink-500 hover:text-primary-700 flex items-center gap-0.5 text-[11px]"
+            >
+              Ṁ{shortFormatNumber(game.volume)}
+              <ChevronRightIcon className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+        <GameLinkedMarkets game={game} />
+        {dialog}
+      </section>
+    )
+  }
+
   if (variant === 'featured') {
     return (
       <section
@@ -214,9 +275,12 @@ export function GameRow(props: {
         )}
       >
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-2 sm:px-5">
-          <span className="text-primary-700 text-xs font-bold uppercase tracking-wider">
-            Most traded matchup
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-primary-700 text-xs font-bold uppercase tracking-wider">
+              Most traded matchup
+            </span>
+            <SportsMarketBadge market={game} />
+          </div>
           {onToggleWatch && (
             <button
               type="button"
@@ -329,7 +393,7 @@ export function GameRow(props: {
           )}
         </Row>
         <div className="text-ink-400 flex items-center justify-between px-4 pb-2 text-[10px] font-semibold uppercase tracking-wider">
-          <span>Matchup</span>
+          <SportsMarketBadge market={game} />
           <span>Win chance</span>
         </div>
         <div className="px-4 pb-3">{teams}</div>
@@ -363,6 +427,7 @@ export function GameRow(props: {
         <GameWhen game={game} layout="column" showLeague={showLeague} />
         {teams}
         <Col className="items-end gap-1 self-center">
+          <SportsMarketBadge market={game} />
           <Link
             href={gamePath(game)}
             onClick={(e) => e.stopPropagation()}

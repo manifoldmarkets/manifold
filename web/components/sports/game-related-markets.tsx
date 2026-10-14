@@ -5,6 +5,7 @@ import { useId, useMemo, useState } from 'react'
 import {
   Contract,
   contractPath,
+  BinaryContract,
   CPMMMultiContract,
   isBinaryMulti,
   isMultiCpmm,
@@ -15,6 +16,7 @@ import {
   SPORT_BY_KEY,
 } from 'common/sports-schedule'
 import { removeEmojis } from 'common/util/string'
+import { shortFormatNumber } from 'common/util/format'
 import { BetButton } from 'web/components/bet/feed-bet-button'
 import { MultiBetDialog } from 'web/components/bet/bet-dialog'
 import { Button } from 'web/components/buttons/button'
@@ -26,6 +28,10 @@ import { useLiveContract } from 'web/hooks/use-contract'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
+import {
+  isOfficialSportsMarket,
+  SportsMarketBadge,
+} from './sports-market-badge'
 
 const INITIAL_ROWS = 3
 // Lines first, then props, then whatever else names the teams.
@@ -97,7 +103,7 @@ export function GameLinkedMarkets(props: { game: ScheduleGame }) {
         className="bg-canvas-50 rounded-b-xl px-4 pb-3 pt-1"
       >
         <Row className="items-center justify-between gap-2">
-          <span className="text-ink-500 text-xs">Community markets</span>
+          <span className="text-ink-500 text-xs">Markets on this game</span>
           <Link
             href={createMarketHref(game)}
             onClick={() =>
@@ -179,12 +185,13 @@ export function RelatedMarketRow(props: {
     !!contract.resolution ||
     (!!contract.closeTime && contract.closeTime < Date.now())
 
-  const answers =
+  const previewAnswers =
     isMulti && !isBinaryMulti(contract)
-      ? [...(contract as CPMMMultiContract).answers]
+      ? (contract as CPMMMultiContract).answers
+          .filter((answer) => closed || !answer.resolution)
           .sort((a, b) => b.prob - a.prob)
-          .slice(0, 3)
       : []
+  const answers = previewAnswers.slice(0, 3)
 
   return (
     <div className="hover:bg-canvas-50 px-2.5 py-2">
@@ -192,12 +199,32 @@ export function RelatedMarketRow(props: {
       <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <Row className="min-w-0 flex-1 items-start gap-2">
           {prefix}
-          <Link
-            href={contractPath(contract)}
-            className="text-ink-800 hover:text-primary-700 min-w-0 flex-1 text-sm leading-snug"
-          >
-            {removeEmojis(contract.question)}
-          </Link>
+          <div className="min-w-0 flex-1">
+            <Link
+              href={contractPath(contract)}
+              className="text-ink-800 hover:text-primary-700 block text-sm leading-snug"
+            >
+              {removeEmojis(
+                isOfficialSportsMarket(contract)
+                  ? contract.question.replace(/\s*\[official\]\s*$/i, '')
+                  : contract.question
+              )}
+            </Link>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+              <SportsMarketBadge market={contract} />
+              <Link
+                href={`/${contract.creatorUsername}`}
+                className="text-ink-500 hover:text-primary-700 max-w-[12rem] truncate text-[11px]"
+              >
+                @{contract.creatorUsername}
+              </Link>
+              <span className="text-ink-400 text-[11px]">
+                Ṁ{shortFormatNumber(contract.volume)} ·{' '}
+                {contract.uniqueBettorCount}{' '}
+                {contract.uniqueBettorCount === 1 ? 'trader' : 'traders'}
+              </span>
+            </div>
+          </div>
         </Row>
         <Row className="shrink-0 items-center gap-2 self-end sm:self-auto">
           {(isBinary || (isMulti && isBinaryMulti(contract)) || !isMulti) && (
@@ -208,7 +235,7 @@ export function RelatedMarketRow(props: {
           )}
           {!closed && isBinary && (
             <BetButton
-              contract={contract as any}
+              contract={contract as BinaryContract}
               user={user}
               questionTitle={contract.question}
               className="flex"
@@ -247,10 +274,9 @@ export function RelatedMarketRow(props: {
               </span>
             </span>
           ))}
-          {(contract as CPMMMultiContract).answers.length > answers.length && (
+          {previewAnswers.length > answers.length && (
             <span className="text-ink-400 text-xs">
-              +{(contract as CPMMMultiContract).answers.length - answers.length}{' '}
-              more
+              +{previewAnswers.length - answers.length} more
             </span>
           )}
         </Row>
