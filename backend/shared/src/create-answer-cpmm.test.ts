@@ -57,10 +57,26 @@ jest.mock('api/helpers/bets', () => ({
   getUnfilledBetsAndUserBalances: jest.fn(),
   updateMakers: jest.fn(),
 }))
-jest.mock('shared/supabase/contracts', () => ({ updateContract: jest.fn() }))
+jest.mock('shared/supabase/contracts', () => ({
+  updateContract: jest.fn(async () => ({
+    id: 'c1',
+    visibility: 'public',
+    totalLiquidity: 1500,
+  })),
+}))
 jest.mock('shared/supabase/liquidity', () => ({ insertLiquidity: jest.fn() }))
 jest.mock('shared/supabase/users', () => ({
-  incrementBalance: jest.fn(),
+  incrementBalance: jest.fn(
+    async (
+      _pg: unknown,
+      id: string,
+      deltas: { balance?: number; totalDeposits?: number }
+    ) => ({
+      id,
+      balance: 1e6 + (deltas.balance ?? 0),
+      totalDeposits: 1e6 + (deltas.totalDeposits ?? 0),
+    })
+  ),
   broadcastUserUpdates: jest.fn(),
   bulkIncrementBalancesQuery: jest.fn(() => 'select 1'),
 }))
@@ -68,17 +84,21 @@ jest.mock('shared/websockets/helpers', () => ({
   broadcastNewAnswer: jest.fn(),
   broadcastOrders: jest.fn(),
   broadcastUpdatedAnswers: jest.fn(),
+  broadcastUpdatedContract: jest.fn(),
   broadcastUpdatedMetrics: jest.fn(),
+  broadcastUpdatedUser: jest.fn(),
 }))
 
 import { Request } from 'express'
 import { Answer } from 'common/answer'
-import { LimitBet } from 'common/bet'
+import { Bet, LimitBet } from 'common/bet'
 import { CPMMMultiContract } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
 import { User } from 'common/user'
 import { AuthedUser } from 'api/helpers/endpoint'
 import { createAnswerCPMM } from 'api/create-answer-cpmm'
 import { getUnfilledBets } from 'api/helpers/bets'
+import { redeemShares } from 'api/redeem-shares'
 import {
   getAnswersForContract,
   insertAnswer,
@@ -86,16 +106,24 @@ import {
   updateAnswers,
 } from 'shared/supabase/answers'
 import { cancelLimitOrders } from 'shared/supabase/bets'
+import { updateContract } from 'shared/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { broadcastUserUpdates, incrementBalance } from 'shared/supabase/users'
 import { getContractSupabase, getUser } from 'shared/utils'
 import {
   broadcastNewAnswer,
   broadcastOrders,
   broadcastUpdatedAnswers,
+  broadcastUpdatedContract,
+  broadcastUpdatedMetrics,
+  broadcastUpdatedUser,
 } from 'shared/websockets/helpers'
 
 const mocked = <T extends (...args: any[]) => any>(fn: T) =>
   fn as unknown as jest.MockedFunction<T>
+
+const callOrder = (fn: (...args: any[]) => any) =>
+  mocked(fn).mock.invocationCallOrder
 
 const answer = (
   id: string,
@@ -159,13 +187,19 @@ const trans = {
   one: jest.fn(async () => ({ mechanism: 'cpmm-multi-2' })),
   map: jest.fn(async () => []),
   none: jest.fn(),
-  multi: jest.fn(async () => [[], [], [], []]),
+  multi: jest.fn(async (): Promise<unknown[][]> => [[], [], [], []]),
 }
 
+// Every websocket message the handler can send, so broadcastsAtCommit counts
+// balance, metric and contract updates as well as answer and order ones.
 const broadcastCount = () =>
   mocked(broadcastNewAnswer).mock.calls.length +
   mocked(broadcastUpdatedAnswers).mock.calls.length +
-  mocked(broadcastOrders).mock.calls.length
+  mocked(broadcastOrders).mock.calls.length +
+  mocked(broadcastUpdatedUser).mock.calls.length +
+  mocked(broadcastUserUpdates).mock.calls.length +
+  mocked(broadcastUpdatedMetrics).mock.calls.length +
+  mocked(broadcastUpdatedContract).mock.calls.length
 
 beforeEach(() => {
   jest.clearAllMocks()
@@ -262,6 +296,14 @@ describe('createAnswerCPMM', () => {
     for (const call of mocked(cancelLimitOrders).mock.calls) {
       expect(call[2]).toEqual({ broadcast: false })
     }
+    expect(incrementBalance).toHaveBeenCalledTimes(2)
+    for (const call of mocked(incrementBalance).mock.calls) {
+      expect(call[3]).toEqual({ broadcast: false })
+    }
+    expect(updateContract).toHaveBeenCalledTimes(2)
+    for (const call of mocked(updateContract).mock.calls) {
+      expect(call[3]).toEqual({ broadcast: false })
+    }
     expect(broadcastsAtCommit).toEqual([0, 0])
 
     // The committed state is announced once, in the order it was written.
@@ -280,8 +322,94 @@ describe('createAnswerCPMM', () => {
       { ...unfilledBets[0], isCancelled: true },
     ])
 
+    // The creator's balance and the contract's liquidity are the committed
+    // attempt's, sent around the answer messages.
+    expect(broadcastUpdatedUser).toHaveBeenCalledTimes(1)
+    expect(broadcastUpdatedUser).toHaveBeenCalledWith(
+      await mocked(incrementBalance).mock.results[1].value
+    )
+    expect(broadcastUpdatedContract).toHaveBeenCalledTimes(1)
+    expect(broadcastUpdatedContract).toHaveBeenCalledWith('public', {
+      id: 'c1',
+      totalLiquidity: 1500,
+    })
+    expect(callOrder(broadcastUpdatedUser)[0]).toBeLessThan(
+      callOrder(broadcastNewAnswer)[0]
+    )
+    expect(callOrder(broadcastNewAnswer)[0]).toBeLessThan(
+      callOrder(broadcastUpdatedAnswers)[0]
+    )
+    expect(callOrder(broadcastUpdatedAnswers)[1]).toBeLessThan(
+      callOrder(broadcastOrders)[0]
+    )
+    expect(callOrder(broadcastOrders)[0]).toBeLessThan(
+      callOrder(broadcastUpdatedContract)[0]
+    )
+
     expect(answers.filter((a) => a.id === newAnswerId)).toHaveLength(1)
     expect(answers).toHaveLength(4)
+  })
+
+  it('announces nothing when every attempt fails to serialize', async () => {
+    commitsToFail = 3
+    unfilledBets = [order('o1', 'other', 'YES', 0.5)]
+
+    await expect(createAnswer()).rejects.toMatchObject({ code: '40001' })
+
+    expect(insertAnswer).toHaveBeenCalledTimes(3)
+    const ids = mocked(insertAnswer).mock.calls.map(([, a]) => (a as Answer).id)
+    expect(new Set(ids).size).toBe(1)
+    expect(broadcastsAtCommit).toEqual([0, 0, 0])
+    expect(broadcastCount()).toBe(0)
+    expect(answers).toHaveLength(3)
+  })
+
+  it("announces the Other holders' redeemed positions after commit", async () => {
+    commitsToFail = 1
+    const metric = {
+      userId: 'holder',
+      contractId: 'c1',
+      answerId: 'a',
+    } as ContractMetric
+    const holder = {
+      id: 'holder',
+      balance: 110,
+      cash_balance: 0,
+      spice_balance: 0,
+      total_deposits: 0,
+      total_cash_deposits: 0,
+    }
+    // Both attempts redeem a holder's refined position.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      mocked(redeemShares).mockResolvedValueOnce({
+        betsToInsert: [
+          {
+            id: 'r1',
+            userId: 'holder',
+            contractId: 'c1',
+            answerId: 'a',
+          } as Bet,
+        ],
+        updatedMetrics: [metric],
+        balanceUpdates: [{ id: 'holder', balance: 10 }],
+      } as Awaited<ReturnType<typeof redeemShares>>)
+      trans.multi.mockResolvedValueOnce([[], [], [holder], []])
+    }
+
+    await createAnswer()
+
+    expect(broadcastsAtCommit).toEqual([0, 0])
+    expect(broadcastUserUpdates).toHaveBeenCalledTimes(1)
+    expect(broadcastUserUpdates).toHaveBeenCalledWith([holder])
+    expect(broadcastUpdatedMetrics).toHaveBeenCalledTimes(1)
+    expect(broadcastUpdatedMetrics).toHaveBeenCalledWith([metric])
+    // After the answer the positions refer to, before the contract's liquidity.
+    expect(callOrder(broadcastNewAnswer)[0]).toBeLessThan(
+      callOrder(broadcastUserUpdates)[0]
+    )
+    expect(callOrder(broadcastUpdatedMetrics)[0]).toBeLessThan(
+      callOrder(broadcastUpdatedContract)[0]
+    )
   })
 
   it('reads the order book once and cancels the orders the new prices have passed', async () => {

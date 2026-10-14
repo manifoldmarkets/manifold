@@ -2,17 +2,26 @@ jest.mock('../websockets/helpers', () => ({
   broadcastNewAnswer: jest.fn(),
   broadcastUpdatedAnswers: jest.fn(),
   broadcastOrders: jest.fn(),
+  broadcastUpdatedContract: jest.fn(),
+  broadcastUpdatedUser: jest.fn(),
 }))
+// Pulled in by ./contracts at import time; unused by the writes under test.
+jest.mock('shared/helpers/openai-utils', () => ({}))
+jest.mock('shared/helpers/prompt-ai', () => ({}))
 
 import { LimitBet } from 'common/bet'
 import { Row } from 'common/supabase/utils'
 import { SupabaseDirectClient } from './init'
 import { insertAnswer, updateAnswer, updateAnswers } from './answers'
 import { cancelLimitOrders } from './bets'
+import { updateContract } from './contracts'
+import { incrementBalance } from './users'
 import {
   broadcastNewAnswer,
   broadcastOrders,
   broadcastUpdatedAnswers,
+  broadcastUpdatedContract,
+  broadcastUpdatedUser,
 } from '../websockets/helpers'
 
 const row = {
@@ -127,5 +136,69 @@ describe('cancelLimitOrders', () => {
     expect(await cancelLimitOrders(pg, [])).toEqual([])
     expect(pg.none).not.toHaveBeenCalled()
     expect(broadcastOrders).not.toHaveBeenCalled()
+  })
+})
+
+describe('balance and contract writes', () => {
+  const userRow = { id: 'u1', balance: 90, total_deposits: 40 }
+  const contractRow = {
+    data: { id: 'c1', visibility: 'public', totalLiquidity: 1100 },
+    importance_score: 0,
+    view_count: 0,
+    token: 'MANA',
+  } as unknown as Row<'contracts'>
+  const clientReturning = (row: unknown) =>
+    ({ one: jest.fn(async () => row) } as unknown as SupabaseDirectClient)
+
+  it('broadcast by default', async () => {
+    const users = clientReturning(userRow)
+    const userUpdate = await incrementBalance(users, 'u1', {
+      balance: -10,
+      totalDeposits: -10,
+    })
+    expect(userUpdate).toEqual({ id: 'u1', balance: 90, totalDeposits: 40 })
+    expect(broadcastUpdatedUser).toHaveBeenCalledWith(userUpdate)
+
+    const contracts = clientReturning(contractRow)
+    const contract = await updateContract(contracts, 'c1', {
+      totalLiquidity: 1100,
+    })
+    expect(contract).toMatchObject({ id: 'c1', totalLiquidity: 1100 })
+    expect(broadcastUpdatedContract).toHaveBeenCalledWith('public', {
+      id: 'c1',
+      totalLiquidity: 1100,
+    })
+  })
+
+  it('return the row without broadcasting when asked not to', async () => {
+    const users = clientReturning(userRow)
+    const userUpdate = await incrementBalance(
+      users,
+      'u1',
+      { balance: -10, totalDeposits: -10 },
+      { broadcast: false }
+    )
+    expect(userUpdate).toEqual({ id: 'u1', balance: 90, totalDeposits: 40 })
+    expect(users.one).toHaveBeenCalledTimes(1)
+
+    const contracts = clientReturning(contractRow)
+    const contract = await updateContract(
+      contracts,
+      'c1',
+      { totalLiquidity: 1100 },
+      { broadcast: false }
+    )
+    expect(contract).toMatchObject({ id: 'c1', totalLiquidity: 1100 })
+    expect(contracts.one).toHaveBeenCalledTimes(1)
+
+    expect(broadcastUpdatedUser).not.toHaveBeenCalled()
+    expect(broadcastUpdatedContract).not.toHaveBeenCalled()
+  })
+
+  it('incrementBalance writes and returns nothing for no change', async () => {
+    const users = clientReturning(userRow)
+    expect(await incrementBalance(users, 'u1', { balance: 0 })).toBeUndefined()
+    expect(users.one).not.toHaveBeenCalled()
+    expect(broadcastUpdatedUser).not.toHaveBeenCalled()
   })
 })
