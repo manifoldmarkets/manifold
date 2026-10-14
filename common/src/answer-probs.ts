@@ -1,6 +1,6 @@
 import { orderBy, range, sum } from 'lodash'
 import { Answer } from './answer'
-import { MultiContract } from './contract'
+import { Contract, MultiContract } from './contract'
 import { MAX_ANSWER_PROB, MIN_ANSWER_PROB } from './new-contract'
 
 // The create form keeps one starting percentage per answer slot, blank slots
@@ -162,4 +162,25 @@ export const getCopiedAnswerProbs = (
     MIN_ANSWER_PROB,
     MAX_ANSWER_PROB
   )
+}
+
+// A new-answer update can grow a truncated list past the server's old count
+// without filling any missing answers. Only a full fetch, or every answer
+// from a known-complete server snapshot, establishes completeness.
+export const hasAllAnswersForCopy = (
+  initial: Pick<Contract, 'id'> & { answers?: Pick<Answer, 'id'>[] },
+  live: Pick<Contract, 'id'> & { answers?: Pick<Answer, 'id'>[] },
+  totalAnswers: number | undefined,
+  hasLoaded: boolean
+) => {
+  if (initial.id !== live.id) return false
+  if (!live.answers || hasLoaded) return true
+  if (
+    totalAnswers === undefined ||
+    !initial.answers ||
+    initial.answers.length < totalAnswers
+  )
+    return false
+  const liveIds = new Set(live.answers.map((answer) => answer.id))
+  return initial.answers.every((answer) => liveIds.has(answer.id))
 }
