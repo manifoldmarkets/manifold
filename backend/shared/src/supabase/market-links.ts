@@ -1,6 +1,41 @@
 import { LinkParentCandidate, MarketLinkRelation } from 'common/market-links'
 import { tsToMillis } from 'common/supabase/utils'
-import { SupabaseDirectClient } from './init'
+import { SupabaseDirectClient, SupabaseTransaction } from './init'
+
+/**
+ * Serialize graph mutations touching these existing markets. Lock before
+ * reading link state, and keep the locks through the write in the same tx.
+ * The stable order prevents opposing links from taking locks in reverse.
+ * NO KEY UPDATE also blocks close/visibility/resolution changes without
+ * conflicting with the foreign-key checks performed by unrelated inserts.
+ */
+export async function lockMarketLinkContracts(
+  tx: SupabaseTransaction,
+  contractIds: string[]
+) {
+  await tx.manyOrNone(
+    `select id from contracts
+     where id = any($1::text[])
+     order by id
+     for no key update`,
+    [contractIds]
+  )
+}
+
+/**
+ * Creation holds its parent lock before touching the payer. Resolution takes
+ * those locks in the opposite order, so never wait for the payer while holding
+ * the parent: the caller can roll back and retry before any writes occur.
+ */
+export async function lockMarketLinkFundingUser(
+  tx: SupabaseTransaction,
+  userId: string
+) {
+  await tx.oneOrNone(
+    `select id from users where id = $1 for no key update nowait`,
+    [userId]
+  )
+}
 
 /** A would-be parent, with what getLinkParentError checks. */
 export async function getLinkParentCandidate(
@@ -45,9 +80,9 @@ export async function getLinkedChildCount(
   return row.count
 }
 
-/** Links `childId` to `parentId`, replacing any parent it had. */
+/** Links a child after locking and validating it and its parent in this tx. */
 export async function upsertMarketLink(
-  pg: SupabaseDirectClient,
+  pg: SupabaseTransaction,
   link: {
     childId: string
     parentId: string
@@ -70,11 +105,17 @@ export async function upsertMarketLink(
 
 export async function deleteMarketLink(
   pg: SupabaseDirectClient,
-  childId: string
+  childId: string,
+  authorizedParentId: string
 ) {
-  await pg.none(`delete from market_links where child_contract_id = $1`, [
-    childId,
-  ])
+  // A concurrent reparent must not let the previous parent's owner remove
+  // the replacement link. PostgreSQL rechecks this predicate after waiting
+  // for a concurrent update of the same row.
+  await pg.none(
+    `delete from market_links
+     where child_contract_id = $1 and parent_contract_id = $2`,
+    [childId, authorizedParentId]
+  )
 }
 
 export async function getMarketLinkParent(

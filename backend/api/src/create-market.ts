@@ -52,11 +52,14 @@ import {
 } from 'shared/supabase/contracts'
 import {
   SupabaseDirectClient,
+  SupabaseTransaction,
   createSupabaseDirectClient,
   pgp,
 } from 'shared/supabase/init'
 import {
   getLinkParentCandidate,
+  lockMarketLinkContracts,
+  lockMarketLinkFundingUser,
   upsertMarketLink,
 } from 'shared/supabase/market-links'
 import { bulkInsertQuery } from 'shared/supabase/utils'
@@ -79,6 +82,29 @@ import { z } from 'zod'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 type Body = ValidatedAPIParams<'market'>
+
+class LinkedCreationFundingBusy extends Error {}
+
+async function runLinkedCreationTransaction<T>(
+  pg: SupabaseDirectClient,
+  run: (tx: SupabaseTransaction) => Promise<T>
+) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await pg.tx(run)
+    } catch (error) {
+      // Only the deliberate NOWAIT preflight is retryable here. Never rerun
+      // a creation that has reached ante movement or other side effects.
+      if (!(error instanceof LinkedCreationFundingBusy)) throw error
+      if (attempt === 1)
+        throw new APIError(
+          503,
+          'The funding account is busy. Please try again.'
+        )
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
+  }
+}
 
 export const createMarket: APIHandler<'market'> = onlyUsersWhoCanPerformAction(
   'createMarket',
@@ -194,7 +220,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     pollType,
     maxSelections,
   } = validateMarketBody(body)
-  const { linkedToContractId, linkRelation } = body
+  const { linkedToContractId, linkRelation, neverCloses } = body
 
   const userId = auth.uid
 
@@ -231,14 +257,19 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
 
   // A linked market closes with the market it's about unless told otherwise.
-  const closeTime = await getCloseTimestamp(
-    closeTimeRaw ?? linkParentCloseTime,
-    question,
-    outcomeType,
-    utcOffset
-  )
+  const defaultCloseTime = neverCloses
+    ? undefined
+    : await getCloseTimestamp(
+        closeTimeRaw ?? linkParentCloseTime,
+        question,
+        outcomeType,
+        utcOffset
+      )
 
-  if (closeTime && closeTime < Date.now())
+  if (
+    defaultCloseTime !== undefined &&
+    (!Number.isFinite(defaultCloseTime) || defaultCloseTime <= Date.now())
+  )
     throw new APIError(400, 'Question must close in the future')
 
   const duplicateSubmissionUrl = await getDuplicateSubmissionUrl(
@@ -252,8 +283,58 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     )
   }
 
+  const isFree = userId === FREE_MARKET_USER_ID && totalMarketCost <= 100
+  const house = isProd()
+    ? HOUSE_LIQUIDITY_PROVIDER_ID
+    : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+  const providerId = isFree ? house : userId
+  const transact = <T>(run: (tx: SupabaseTransaction) => Promise<T>) =>
+    linkedToContractId ? runLinkedCreationTransaction(pg, run) : pg.tx(run)
+  // Resolution pays users before updating the parent. Share its queue key
+  // locally; the NOWAIT payer preflight prevents the inverse lock order
+  // from deadlocking across replicas.
+  const queueDependencies = linkedToContractId
+    ? [userId, linkedToContractId]
+    : [userId]
+
   return await betsQueue.enqueueFn(async () => {
-    return pg.tx(async (tx) => {
+    return transact(async (tx) => {
+      let closeTime = defaultCloseTime
+      if (linkedToContractId) {
+        // The child does not exist yet. Lock the existing parent before any
+        // inserts or funds move, then reread using a fresh statement snapshot.
+        await lockMarketLinkContracts(tx, [linkedToContractId])
+        const parent = await getLinkParentCandidate(tx, linkedToContractId)
+        const linkError = getLinkParentError(parent)
+        if (linkError) throw new APIError(400, linkError)
+        if (closeTimeRaw === undefined && !neverCloses)
+          closeTime =
+            parent?.closeTime ??
+            (NO_CLOSE_TIME_TYPES.includes(outcomeType)
+              ? undefined
+              : defaultCloseTime)
+      }
+      if (
+        closeTime !== undefined &&
+        (!Number.isFinite(closeTime) || closeTime <= Date.now())
+      )
+        throw new APIError(400, 'Question must close in the future')
+
+      if (linkedToContractId) {
+        try {
+          await lockMarketLinkFundingUser(tx, providerId)
+        } catch (error: unknown) {
+          if (
+            typeof error === 'object' &&
+            error !== null &&
+            'code' in error &&
+            error.code === '55P03'
+          )
+            throw new LinkedCreationFundingBusy()
+          throw error
+        }
+      }
+
       const proposedSlug = slugify(question)
 
       const userAndSlugResult = await tx.multi(
@@ -272,7 +353,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
         )
       }
 
-      const isFree = userId === FREE_MARKET_USER_ID && totalMarketCost <= 100
       if (!isFree && totalMarketCost > user.balance)
         throw new APIError(403, `Balance must be at least ${totalMarketCost}.`)
       if (isFree) {
@@ -374,10 +454,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       if (result[1].length > 0 && isMultiCpmm(contract)) {
         contract.answers = result[1].map(convertAnswer)
       }
-      const house = isProd()
-        ? HOUSE_LIQUIDITY_PROVIDER_ID
-        : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-      const providerId = isFree ? house : userId
       await runTxnOutsideBetQueue(tx, {
         fromId: providerId,
         fromType: 'USER',
@@ -408,7 +484,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
       return { contract, user }
     })
-  }, [userId])
+  }, queueDependencies)
 }
 
 async function getDuplicateSubmissionUrl(
@@ -466,6 +542,9 @@ function validateMarketBody(body: Body) {
     sportsLeague,
     takerAPIOrdersDisabled,
   } = body
+
+  if (body.neverCloses && (outcomeType !== 'POLL' || closeTime !== undefined))
+    throw new APIError(400, 'Only polls without a close time can never close.')
 
   if (groupIds && groupIds.length > MAX_GROUPS_PER_MARKET)
     throw new APIError(

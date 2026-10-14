@@ -2,7 +2,9 @@ jest.mock('./helpers/rate-limit', () => ({
   onlyUsersWhoCanPerformAction: (_action: string, f: unknown) => f,
 }))
 jest.mock('shared/supabase/init', () => ({
-  createSupabaseDirectClient: jest.fn(() => ({})),
+  createSupabaseDirectClient: jest.fn(() => ({
+    tx: (run: (tx: object) => Promise<unknown>) => run({}),
+  })),
 }))
 jest.mock('shared/utils', () => ({ getContract: jest.fn() }))
 jest.mock('shared/supabase/market-links', () => ({
@@ -10,6 +12,7 @@ jest.mock('shared/supabase/market-links', () => ({
   getLinkedChildCount: jest.fn(),
   getLinkParentCandidate: jest.fn(),
   getMarketLinkParent: jest.fn(),
+  lockMarketLinkContracts: jest.fn(),
   upsertMarketLink: jest.fn(),
 }))
 jest.mock('common/envs/constants', () => ({
@@ -19,6 +22,7 @@ jest.mock('common/envs/constants', () => ({
 }))
 
 import { getContract } from 'shared/utils'
+import { Contract } from 'common/contract'
 import {
   deleteMarketLink,
   getLinkedChildCount,
@@ -49,7 +53,7 @@ beforeEach(() => {
   jest.clearAllMocks()
   jest
     .mocked(getContract)
-    .mockImplementation(async (_pg, id) => contracts[id] as any)
+    .mockImplementation(async (_pg, id) => contracts[id] as Contract)
   jest.mocked(getLinkedChildCount).mockResolvedValue(0)
   jest.mocked(getLinkParentCandidate).mockResolvedValue(openParent)
 })
@@ -119,7 +123,11 @@ describe('unlink-market', () => {
     await expect(unlink({ contractId: 'prop' }, { uid })).resolves.toEqual({
       success: true,
     })
-    expect(deleteMarketLink).toHaveBeenCalledWith(expect.anything(), 'prop')
+    expect(deleteMarketLink).toHaveBeenCalledWith(
+      expect.anything(),
+      'prop',
+      'game'
+    )
   })
 
   it('refuses anyone else', async () => {

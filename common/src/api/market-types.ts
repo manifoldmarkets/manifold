@@ -579,6 +579,9 @@ export const createMarketProps = z
         'Close time must be in the future.'
       )
       .optional(),
+    // Explicit POLL "Never" overrides a linked parent's deadline. Omission
+    // keeps the existing close-time default/inheritance behavior.
+    neverCloses: z.boolean().optional(),
     groupIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)).optional(),
     visibility: z.enum(VISIBILITIES).default('public').optional(),
     isTwitchContract: z.boolean().optional(),
@@ -591,7 +594,8 @@ export const createMarketProps = z
     sportsLeague: z.string().optional(),
     takerAPIOrdersDisabled: coerceBoolean.optional(),
     // The market this one is about (see common/market-links). Without a close
-    // time, the new market closes when that one does.
+    // time, the new market closes when that one does, unless a poll explicitly
+    // requests neverCloses.
     linkedToContractId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
     linkRelation: z.enum(MARKET_LINK_RELATIONS).optional(),
   })
@@ -607,6 +611,21 @@ export const createMarketProps = z
       createMultiDateSchema,
     ])
   )
+  .superRefine(({ neverCloses, outcomeType, closeTime }, ctx) => {
+    if (!neverCloses) return
+    if (outcomeType !== 'POLL')
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Only polls can explicitly request neverCloses.',
+        path: ['neverCloses'],
+      })
+    if (closeTime !== undefined)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Choose either neverCloses or closeTime, not both.',
+        path: ['closeTime'],
+      })
+  })
 
 export const updateMarketProps = z
   .object({

@@ -6,6 +6,7 @@ import {
   getLinkedChildCount,
   getLinkParentCandidate,
   getMarketLinkParent,
+  lockMarketLinkContracts,
   upsertMarketLink,
 } from 'shared/supabase/market-links'
 import { getContract } from 'shared/utils'
@@ -21,32 +22,35 @@ export const linkMarket: APIHandler<'link-market'> =
     const { contractId, parentContractId, relation = 'related' } = props
     const pg = createSupabaseDirectClient()
 
-    const child = await getContract(pg, contractId)
-    if (!child) throw new APIError(404, 'Market not found')
-    if (child.creatorId !== auth.uid && !isMod(auth.uid))
-      throw new APIError(
-        403,
-        "Only the market's creator or a mod can link it to another market"
-      )
+    return pg.tx(async (tx) => {
+      await lockMarketLinkContracts(tx, [contractId, parentContractId])
+      const child = await getContract(tx, contractId)
+      if (!child) throw new APIError(404, 'Market not found')
+      if (child.creatorId !== auth.uid && !isMod(auth.uid))
+        throw new APIError(
+          403,
+          "Only the market's creator or a mod can link it to another market"
+        )
 
-    const childError = getLinkChildError({
-      visibility: child.visibility,
-      deleted: !!child.deleted,
-      childCount: await getLinkedChildCount(pg, contractId),
+      const childError = getLinkChildError({
+        visibility: child.visibility,
+        deleted: !!child.deleted,
+        childCount: await getLinkedChildCount(tx, contractId),
+      })
+      if (childError) throw new APIError(400, childError)
+
+      const parent = await getLinkParentCandidate(tx, parentContractId)
+      const parentError = getLinkParentError(parent, contractId)
+      if (parentError) throw new APIError(400, parentError)
+
+      await upsertMarketLink(tx, {
+        childId: contractId,
+        parentId: parentContractId,
+        relation,
+        createdBy: auth.uid,
+      })
+      return { success: true as const }
     })
-    if (childError) throw new APIError(400, childError)
-
-    const parent = await getLinkParentCandidate(pg, parentContractId)
-    const parentError = getLinkParentError(parent, contractId)
-    if (parentError) throw new APIError(400, parentError)
-
-    await upsertMarketLink(pg, {
-      childId: contractId,
-      parentId: parentContractId,
-      relation,
-      createdBy: auth.uid,
-    })
-    return { success: true as const }
   })
 
 // Removes a market's link. The parent's creator can unlink too, so nobody
@@ -73,6 +77,6 @@ export const unlinkMarket: APIHandler<'unlink-market'> =
         "Only the market's creator, the linked market's creator or a mod can unlink it"
       )
 
-    await deleteMarketLink(pg, contractId)
+    await deleteMarketLink(pg, contractId, link.parent_contract_id)
     return { success: true as const }
   })

@@ -53,6 +53,7 @@ import {
   applyLinkedMarketCloseTime,
   applySuggestedCloseTime,
   getCloseTimeFields,
+  getCreateMarketCloseParams,
   hasManualCloseTime,
   restoreMarketDraft,
 } from './utils/linked-market-state'
@@ -802,6 +803,8 @@ export function NewContractPanel(props: {
     setFormState((prev) => ({
       ...prev,
       outcomeType: newType,
+      // The explicit Never option is only available for polls.
+      neverCloses: newType === 'POLL' && prev.neverCloses,
       shouldAnswersSumToOne: defaultShouldAnswersSumToOne,
       // The answer list is rebuilt below, so any starting probabilities the
       // creator set no longer line up with it.
@@ -934,19 +937,11 @@ export function NewContractPanel(props: {
 
     try {
       // Build API payload - include ALL fields like original form
-      const closeTime = formState.neverCloses
-        ? undefined
-        : formState.closeDate
-        ? new Date(
-            formState.closeDate + 'T' + (formState.closeHoursMinutes || '23:59')
-          ).getTime()
-        : undefined
-
       const payload: any = {
         question: formState.question.trim(),
         outcomeType: formState.outcomeType,
         description: formState.description || '',
-        closeTime,
+        ...getCreateMarketCloseParams(formState),
         visibility: formState.visibility,
         groupIds: formState.selectedGroups.map((g) => g.id),
         liquidityTier: formState.liquidityTier,

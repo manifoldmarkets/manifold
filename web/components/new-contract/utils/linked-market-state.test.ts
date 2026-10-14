@@ -6,6 +6,7 @@ import {
   applyLinkedMarketCloseTime,
   applySuggestedCloseTime,
   getCloseTimeFields,
+  getCreateMarketCloseParams,
   restoreMarketDraft,
 } from './linked-market-state'
 
@@ -29,6 +30,71 @@ const draft: MarketDraft['data'] = {
   selectedGroups: [],
   savedAt: closeTime,
 }
+
+test('a Never poll sends an explicit override without its previous inherited deadline', () => {
+  assert.deepEqual(
+    getCreateMarketCloseParams({
+      ...state,
+      outcomeType: 'POLL',
+      neverCloses: true,
+      closeDate: '2026-10-15',
+      closeHoursMinutes: '00:15',
+    }),
+    { neverCloses: true }
+  )
+})
+
+test('restoring a linked Never poll preserves the override through parent loading and submission', () => {
+  const loaded = restoreMarketDraft(state, {
+    ...draft,
+    outcomeType: 'POLL',
+    linkedToContractId: 'game',
+    linkRelation: 'related',
+    neverCloses: true,
+    hasManuallyEditedCloseDate: true,
+  })
+  const inherited = applyLinkedMarketCloseTime(loaded, {
+    id: 'game',
+    closeTime,
+  })
+  assert.strictEqual(inherited, loaded)
+  assert.deepEqual(getCreateMarketCloseParams(inherited), { neverCloses: true })
+})
+
+test('normal and dated-poll payloads omit Never, including stale flags from another type', () => {
+  for (const outcomeType of ['BINARY', 'POLL'] as const) {
+    assert.deepEqual(getCreateMarketCloseParams({ ...state, outcomeType }), {})
+    assert.deepEqual(
+      getCreateMarketCloseParams({
+        ...state,
+        outcomeType,
+        closeDate: '2026-10-15',
+        closeHoursMinutes: '00:15',
+      }),
+      { closeTime }
+    )
+  }
+  assert.deepEqual(
+    getCreateMarketCloseParams({ ...state, neverCloses: true }),
+    {}
+  )
+  assert.deepEqual(
+    getCreateMarketCloseParams({
+      ...state,
+      neverCloses: true,
+      closeDate: '2026-10-15',
+      closeHoursMinutes: '00:15',
+    }),
+    { closeTime }
+  )
+})
+
+test('invalid dates fail before constructing a non-finite API deadline', () => {
+  assert.throws(
+    () => getCreateMarketCloseParams({ ...state, closeDate: 'invalid-date' }),
+    /valid close date and time/
+  )
+})
 
 test('URL/parent close times retain the local date and minute, including after midnight', () => {
   assert.deepEqual(getCloseTimeFields(closeTime), {

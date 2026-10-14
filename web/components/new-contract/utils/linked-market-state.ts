@@ -3,6 +3,23 @@ import type { MarketDraft } from 'common/drafts'
 import dayjs from 'dayjs'
 import type { FormState } from '../contextual-editor-panel'
 
+export function getCreateMarketCloseParams(
+  state: Pick<
+    FormState,
+    'outcomeType' | 'neverCloses' | 'closeDate' | 'closeHoursMinutes'
+  >
+): { closeTime?: number; neverCloses?: true } {
+  if (state.outcomeType === 'POLL' && state.neverCloses)
+    return { neverCloses: true }
+  if (!state.closeDate) return {}
+  const closeTime = new Date(
+    state.closeDate + 'T' + (state.closeHoursMinutes || '23:59')
+  ).getTime()
+  if (!Number.isFinite(closeTime))
+    throw new Error('Please select a valid close date and time.')
+  return { closeTime }
+}
+
 export function getCloseTimeFields(closeTime: number | undefined) {
   if (closeTime === undefined || !Number.isFinite(closeTime)) return undefined
   const date = dayjs(closeTime)
