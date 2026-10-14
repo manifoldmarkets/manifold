@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import {
   SearchIcon,
-  StarIcon,
+  HeartIcon,
   ViewGridIcon,
   ViewListIcon,
   XIcon,
@@ -14,6 +14,8 @@ import { Row } from 'web/components/layout/row'
 import { GameRow, GameRowSkeleton } from 'web/components/sports/game-row'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { useGameLikes } from './use-game-likes'
 import {
   compareGameStartTime,
   compareGameVolume,
@@ -49,7 +51,7 @@ export function groupByDay<T>(
 
 /**
  * A filterable board of live and upcoming games, grouped by local date.
- * Saved games stay on this device. Search covers loaded games; filtered
+ * Likes use the account's existing market reactions. Search covers loaded games; filtered
  * views expose pagination explicitly so an empty result is not a dead end.
  */
 export function GameFeed(props: {
@@ -65,24 +67,17 @@ export function GameFeed(props: {
   const { games, loading, hasMore, loadMore, variant, showLeague, empty } =
     props
   const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<'all' | 'live' | 'saved'>('all')
+  const [filter, setFilter] = useState<'all' | 'live' | 'liked'>('all')
   const [date, setDate] = useState('all')
   const [sort, setSort] = useState('time')
   const [view, setView] = usePersistentLocalState<'cards' | 'compact'>(
     'cards',
     'sports-game-view'
   )
-  const [saved, setSaved] = usePersistentLocalState<string[]>(
-    [],
-    'sports-saved-games'
-  )
   const active = games.filter(
     (game) => game.status === 'upcoming' || game.status === 'live'
   )
-  const toggleSaved = (id: string) =>
-    setSaved((ids) =>
-      ids.includes(id) ? ids.filter((value) => value !== id) : [...ids, id]
-    )
+  const likes = useGameLikes(active.map((game) => game.id))
   const normalized = query.trim().toLowerCase()
   const hasFilters = filter !== 'all' || date !== 'all' || !!normalized
   const featured =
@@ -91,7 +86,7 @@ export function GameFeed(props: {
     .filter(
       (game) =>
         (filter !== 'live' || game.status === 'live') &&
-        (filter !== 'saved' || saved.includes(game.id)) &&
+        (filter !== 'liked' || likes.liked.has(game.id)) &&
         (date === 'all' ||
           dayjs(game.startTime).format('YYYY-MM-DD') === date) &&
         (!normalized ||
@@ -131,8 +126,9 @@ export function GameFeed(props: {
           game={game}
           variant={view === 'compact' ? 'compact' : 'card'}
           showLeague={showLeague}
-          watched={saved.includes(game.id)}
-          onToggleWatch={() => toggleSaved(game.id)}
+          liked={likes.liked.has(game.id)}
+          likeDisabled={likes.disabled(game.id)}
+          onToggleLike={() => void likes.toggle(game.id)}
         />
       ))}
     </div>
@@ -240,10 +236,9 @@ export function GameFeed(props: {
                       .length,
                   },
                   {
-                    value: 'saved',
-                    label: 'Saved',
-                    count: active.filter((game) => saved.includes(game.id))
-                      .length,
+                    value: 'liked',
+                    label: 'Liked',
+                    count: likes.loading ? undefined : likes.liked.size,
                   },
                 ] as const
               ).map((item) => (
@@ -265,8 +260,8 @@ export function GameFeed(props: {
                   {item.value === 'live' && (
                     <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
                   )}
-                  {item.value === 'saved' && (
-                    <StarIcon className="h-3.5 w-3.5" />
+                  {item.value === 'liked' && (
+                    <HeartIcon className="h-3.5 w-3.5" />
                   )}
                   {item.label}
                   <span className="text-xs opacity-70">{item.count}</span>
@@ -318,7 +313,6 @@ export function GameFeed(props: {
             >
               <span>
                 {filtered.length} of {active.length} loaded games
-                {filter === 'saved' && ' · saved on this device'}
               </span>
               <button
                 type="button"
@@ -329,36 +323,61 @@ export function GameFeed(props: {
               </button>
             </div>
           )}
+          {likes.error && (
+            <p className="text-ink-500 text-xs" role="alert">
+              Couldn't load your likes.
+              <button
+                type="button"
+                className="text-primary-700 ml-2 underline"
+                onClick={() => void likes.refresh()}
+              >
+                Retry
+              </button>
+            </p>
+          )}
         </div>
         {featured && (
           <GameRow
             game={featured}
             variant="featured"
             showLeague={showLeague}
-            watched={saved.includes(featured.id)}
-            onToggleWatch={() => toggleSaved(featured.id)}
+            liked={likes.liked.has(featured.id)}
+            likeDisabled={likes.disabled(featured.id)}
+            onToggleLike={() => void likes.toggle(featured.id)}
           />
         )}
         {filtered.length === 0 && (
           <div className="border-ink-200 rounded-xl border border-dashed px-5 py-8 text-center">
             <h3 className="text-ink-900 font-semibold">
-              {filter === 'saved'
-                ? 'Your game board starts here'
+              {filter === 'liked'
+                ? !likes.user && !likes.loading
+                  ? 'Sign in to see your liked games'
+                  : likes.error
+                  ? 'Your likes are unavailable'
+                  : likes.loading
+                  ? 'Loading your liked games…'
+                  : 'No liked games here yet'
                 : filter === 'live'
                 ? 'No games live right now'
                 : 'No matching games'}
             </h3>
             <p className="text-ink-500 mt-1 text-sm">
-              {filter === 'saved'
-                ? 'Star a matchup to keep it close.'
+              {filter === 'liked'
+                ? 'Heart a game to add it to your Manifold likes.'
                 : 'Try another date, team, or filter.'}
             </p>
             <button
               type="button"
-              onClick={reset}
+              onClick={
+                filter === 'liked' && likes.user === null
+                  ? firebaseLogin
+                  : reset
+              }
               className="text-primary-700 mt-3 min-h-[40px] text-sm font-bold"
             >
-              Show all games
+              {filter === 'liked' && likes.user === null
+                ? 'Sign in'
+                : 'Show all games'}
             </button>
           </div>
         )}

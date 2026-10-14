@@ -1,4 +1,5 @@
-import { ChevronRightIcon, StarIcon } from '@heroicons/react/solid'
+import { ChevronRightIcon, HeartIcon } from '@heroicons/react/solid'
+import { HeartIcon as OutlineHeartIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import Link from 'next/link'
@@ -97,20 +98,23 @@ export function GameRow(props: {
   variant?: 'list' | 'card' | 'featured' | 'compact'
   showLeague?: boolean
   className?: string
-  watched?: boolean
-  onToggleWatch?: () => void
+  liked?: boolean
+  likeDisabled?: boolean
+  onToggleLike?: () => void
 }) {
   const {
     game,
     variant = 'list',
     showLeague,
     className,
-    watched,
-    onToggleWatch,
+    liked,
+    likeDisabled,
+    onToggleLike,
   } = props
   const router = useRouter()
   const [betOutcome, setBetOutcome] = useState<MatchOutcome | null>(null)
   const user = useUser()
+  const LikeIcon = liked ? HeartIcon : OutlineHeartIcon
 
   const live = game.status === 'live'
   const finished = game.status === 'finished'
@@ -235,20 +239,21 @@ export function GameRow(props: {
           </div>
           {teams}
           <div className="flex flex-col items-end gap-2">
-            {onToggleWatch && (
+            {onToggleLike && (
               <button
                 type="button"
-                onClick={onToggleWatch}
-                aria-pressed={!!watched}
-                aria-label={`${watched ? 'Unsave' : 'Save'} ${
+                onClick={onToggleLike}
+                disabled={likeDisabled}
+                aria-pressed={!!liked}
+                aria-label={`${liked ? 'Unlike' : 'Like'} ${
                   game.home.name
                 } vs ${game.away.name}`}
                 className={clsx(
-                  'hover:bg-canvas-100 flex h-10 w-10 items-center justify-center rounded-lg',
-                  watched ? 'text-primary-600' : 'text-ink-300'
+                  'hover:bg-canvas-100 flex h-10 w-10 items-center justify-center rounded-lg disabled:opacity-50',
+                  liked ? 'text-primary-600' : 'text-ink-400'
                 )}
               >
-                <StarIcon className="h-5 w-5" />
+                <LikeIcon className="h-5 w-5" aria-hidden />
               </button>
             )}
             <Link
@@ -283,20 +288,21 @@ export function GameRow(props: {
               {live ? 'Most traded live game' : 'Most traded upcoming game'}
             </span>
           </div>
-          {onToggleWatch && (
+          {onToggleLike && (
             <button
               type="button"
-              onClick={onToggleWatch}
-              aria-pressed={!!watched}
-              aria-label={`${watched ? 'Unsave' : 'Save'} ${
-                game.home.name
-              } vs ${game.away.name}`}
+              onClick={onToggleLike}
+              disabled={likeDisabled}
+              aria-pressed={!!liked}
+              aria-label={`${liked ? 'Unlike' : 'Like'} ${game.home.name} vs ${
+                game.away.name
+              }`}
               className={clsx(
-                'hover:bg-primary-100 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
-                watched ? 'text-primary-600' : 'text-ink-400'
+                'hover:bg-primary-100 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg disabled:opacity-50',
+                liked ? 'text-primary-600' : 'text-ink-400'
               )}
             >
-              <StarIcon className="h-5 w-5" />
+              <LikeIcon className="h-5 w-5" aria-hidden />
             </button>
           )}
         </div>
@@ -378,20 +384,21 @@ export function GameRow(props: {
               {game.league}
             </span>
           )}
-          {onToggleWatch && (
+          {onToggleLike && (
             <button
               type="button"
-              onClick={onToggleWatch}
-              aria-pressed={!!watched}
-              aria-label={`${watched ? 'Unsave' : 'Save'} ${
-                game.home.name
-              } vs ${game.away.name}`}
+              onClick={onToggleLike}
+              disabled={likeDisabled}
+              aria-pressed={!!liked}
+              aria-label={`${liked ? 'Unlike' : 'Like'} ${game.home.name} vs ${
+                game.away.name
+              }`}
               className={clsx(
-                'hover:bg-canvas-100 ml-auto flex h-10 w-10 items-center justify-center rounded-lg',
-                watched ? 'text-primary-600' : 'text-ink-300'
+                'hover:bg-canvas-100 ml-auto flex h-10 w-10 items-center justify-center rounded-lg disabled:opacity-50',
+                liked ? 'text-primary-600' : 'text-ink-400'
               )}
             >
-              <StarIcon className="h-5 w-5" />
+              <LikeIcon className="h-5 w-5" aria-hidden />
             </button>
           )}
         </Row>
