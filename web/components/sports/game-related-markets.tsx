@@ -176,6 +176,7 @@ export function RelatedMarketRow(props: {
 }) {
   const { prefix } = props
   const contract = useLiveContract(props.contract)
+  const official = isOfficialSportsMarket(contract)
   const user = useUser()
   const [betOpen, setBetOpen] = useState(false)
   const isBinary =
@@ -204,14 +205,19 @@ export function RelatedMarketRow(props: {
               href={contractPath(contract)}
               className="text-ink-800 hover:text-primary-700 block text-sm leading-snug"
             >
+              {official && (
+                <>
+                  <SportsMarketBadge market={contract} />{' '}
+                </>
+              )}
               {removeEmojis(
-                isOfficialSportsMarket(contract)
+                official
                   ? contract.question.replace(/\s*\[official\]\s*$/i, '')
                   : contract.question
               )}
             </Link>
             <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-              <SportsMarketBadge market={contract} />
+              {!official && <SportsMarketBadge market={contract} />}
               <Link
                 href={`/${contract.creatorUsername}`}
                 className="text-ink-500 hover:text-primary-700 max-w-[12rem] truncate text-[11px]"

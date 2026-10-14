@@ -223,8 +223,10 @@ export function GameRow(props: {
       >
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 p-3 sm:grid-cols-[6rem_minmax(0,1fr)_auto]">
           <div className="col-span-2 mb-2 flex flex-wrap items-center gap-2 sm:col-span-1 sm:mb-0 sm:flex-col sm:items-start">
-            <GameWhen game={game} layout="inline" />
-            <SportsMarketBadge market={game} />
+            <div className="flex items-center gap-1.5">
+              <SportsMarketBadge market={game} />
+              <GameWhen game={game} layout="inline" />
+            </div>
             {showLeague && (
               <span className="text-ink-400 text-[10px] font-semibold">
                 {game.league}
@@ -274,12 +276,12 @@ export function GameRow(props: {
           className
         )}
       >
-        <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-2 sm:px-5">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center justify-between gap-2 px-4 pt-2 sm:px-5">
+          <div className="flex min-w-0 items-center gap-2">
+            <SportsMarketBadge market={game} />
             <span className="text-primary-700 text-xs font-bold uppercase tracking-wider">
               {live ? 'Most traded live game' : 'Most traded upcoming game'}
             </span>
-            <SportsMarketBadge market={game} />
           </div>
           {onToggleWatch && (
             <button
@@ -290,7 +292,7 @@ export function GameRow(props: {
                 game.home.name
               } vs ${game.away.name}`}
               className={clsx(
-                'hover:bg-primary-100 flex h-10 w-10 items-center justify-center rounded-lg',
+                'hover:bg-primary-100 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
                 watched ? 'text-primary-600' : 'text-ink-400'
               )}
             >
@@ -393,7 +395,9 @@ export function GameRow(props: {
           )}
         </Row>
         <div className="text-ink-400 flex items-center justify-between px-4 pb-2 text-[10px] font-semibold uppercase tracking-wider">
-          <SportsMarketBadge market={game} />
+          <span className="flex items-center gap-1">
+            <SportsMarketBadge market={game} /> Matchup
+          </span>
           <span>Win chance</span>
         </div>
         <div className="px-4 pb-3">{teams}</div>

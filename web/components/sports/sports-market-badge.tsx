@@ -1,5 +1,4 @@
 import { BadgeCheckIcon, UserGroupIcon } from '@heroicons/react/solid'
-import clsx from 'clsx'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { Tooltip } from 'web/components/widgets/tooltip'
 
@@ -18,21 +17,26 @@ export function isOfficialSportsMarket(market: MarketCreator) {
 export function SportsMarketBadge({ market }: { market: MarketCreator }) {
   const official = isOfficialSportsMarket(market)
   const description = official
-    ? 'Created by Manifold Sports. Check the market rules for how it resolves.'
+    ? 'Official Manifold market. Created by Manifold Sports. Check the market rules for how it resolves.'
     : `Created by @${market.creatorUsername}. Check the market rules for how it resolves.`
-  const Icon = official ? BadgeCheckIcon : UserGroupIcon
+  if (official) {
+    return (
+      <Tooltip text={description}>
+        <span
+          role="img"
+          aria-label={description}
+          className="text-primary-600 inline-flex shrink-0 align-text-bottom"
+        >
+          <BadgeCheckIcon className="h-4 w-4" aria-hidden />
+        </span>
+      </Tooltip>
+    )
+  }
   return (
     <Tooltip text={description}>
-      <span
-        className={clsx(
-          'inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-1.5 py-0.5 text-[10px] font-semibold normal-case leading-4 tracking-normal',
-          official
-            ? 'bg-primary-100 text-primary-700'
-            : 'bg-canvas-100 text-ink-600'
-        )}
-      >
-        <Icon className="h-3.5 w-3.5" aria-hidden />
-        {official ? 'Official' : 'Community'}
+      <span className="bg-canvas-100 text-ink-600 inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-1.5 py-0.5 text-[10px] font-semibold normal-case leading-4 tracking-normal">
+        <UserGroupIcon className="h-3.5 w-3.5" aria-hidden />
+        Community
         <span className="sr-only"> — {description}</span>
       </span>
     </Tooltip>
