@@ -151,13 +151,33 @@ export function GameFeed(props: {
   return (
     <div className="min-w-0">
       <Col className="min-w-0 gap-5">
-        <div className="space-y-3">
-          <div className="flex justify-end">
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="border-ink-200 bg-canvas-0 focus-within:border-primary-400 focus-within:ring-primary-200 flex min-w-[8rem] flex-1 items-center gap-2 rounded-xl border px-3 focus-within:ring-2">
+              <SearchIcon className="text-ink-400 h-4 w-4 shrink-0" />
+              <input
+                aria-label="Search loaded games"
+                placeholder="Search games"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                className="placeholder:text-ink-400 w-full min-w-0 border-0 bg-transparent py-2 text-sm focus:outline-none focus:ring-0"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery('')}
+                  aria-label="Clear game search"
+                  className="text-ink-500 flex h-9 w-9 shrink-0 items-center justify-center"
+                >
+                  <XIcon className="h-4 w-4" />
+                </button>
+              )}
+            </div>
             <label className="text-ink-500 flex items-center gap-2 text-xs">
               <span className="sr-only sm:not-sr-only">Sort</span>
               <select
                 aria-label="Sort games"
-                className="border-ink-200 bg-canvas-0 text-ink-700 w-32 rounded-lg border py-1.5 pl-2 pr-7 text-xs sm:w-auto"
+                className="border-ink-200 bg-canvas-0 text-ink-700 min-h-[40px] w-28 rounded-lg border py-1.5 pl-2 pr-7 text-xs disabled:opacity-50 sm:w-auto"
                 value={filter === 'live' ? 'time' : sort}
                 disabled={filter === 'live'}
                 title={
@@ -171,72 +191,8 @@ export function GameFeed(props: {
                 <option value="volume">Most traded per day</option>
               </select>
             </label>
-          </div>
-          <div className="border-ink-200 bg-canvas-0 focus-within:border-primary-400 focus-within:ring-primary-200 flex items-center gap-2 rounded-xl border px-3 focus-within:ring-2">
-            <SearchIcon className="text-ink-400 h-4 w-4 shrink-0" />
-            <input
-              aria-label="Search loaded games"
-              placeholder="Find a team or league…"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              className="placeholder:text-ink-400 w-full min-w-0 border-0 bg-transparent py-3 text-sm focus:outline-none focus:ring-0"
-            />
-            {query && (
-              <button
-                type="button"
-                onClick={() => setQuery('')}
-                aria-label="Clear game search"
-                className="text-ink-500 flex h-9 w-9 shrink-0 items-center justify-center"
-              >
-                <XIcon className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-          <div
-            className="flex flex-wrap items-center gap-2"
-            aria-label="Game filters"
-          >
-            {(
-              [
-                { value: 'all', label: 'All games', count: active.length },
-                {
-                  value: 'live',
-                  label: 'Live',
-                  count: active.filter((game) => game.status === 'live').length,
-                },
-                {
-                  value: 'saved',
-                  label: 'Saved',
-                  count: active.filter((game) => saved.includes(game.id))
-                    .length,
-                },
-              ] as const
-            ).map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                aria-pressed={filter === item.value}
-                onClick={() => {
-                  setFilter(item.value)
-                  setDate('all')
-                }}
-                className={clsx(
-                  'flex min-h-[40px] items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold sm:px-3 sm:text-sm',
-                  filter === item.value
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-canvas-0 text-ink-600 hover:bg-canvas-100'
-                )}
-              >
-                {item.value === 'live' && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                )}
-                {item.value === 'saved' && <StarIcon className="h-3.5 w-3.5" />}
-                {item.label}
-                <span className="text-xs opacity-70">{item.count}</span>
-              </button>
-            ))}
             <div
-              className="border-ink-200 ml-auto flex rounded-lg border p-0.5"
+              className="border-ink-200 flex shrink-0 rounded-lg border p-0.5"
               role="group"
               aria-label="Game board layout"
             >
@@ -269,43 +225,92 @@ export function GameFeed(props: {
               ))}
             </div>
           </div>
-          {filter !== 'live' && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <div
-              className="flex gap-2 overflow-x-auto pb-1"
-              aria-label="Game dates"
+              className="flex shrink-0 items-center gap-2"
+              aria-label="Game filters"
             >
-              <button
-                type="button"
-                aria-pressed={date === 'all'}
-                onClick={() => setDate('all')}
-                className={clsx(
-                  'min-h-[44px] shrink-0 rounded-lg border px-3 text-xs font-semibold',
-                  date === 'all'
-                    ? 'border-primary-300 bg-primary-50 text-primary-700'
-                    : 'border-ink-200 text-ink-500'
-                )}
+              {(
+                [
+                  { value: 'all', label: 'All games', count: active.length },
+                  {
+                    value: 'live',
+                    label: 'Live',
+                    count: active.filter((game) => game.status === 'live')
+                      .length,
+                  },
+                  {
+                    value: 'saved',
+                    label: 'Saved',
+                    count: active.filter((game) => saved.includes(game.id))
+                      .length,
+                  },
+                ] as const
+              ).map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  aria-pressed={filter === item.value}
+                  onClick={() => {
+                    setFilter(item.value)
+                    setDate('all')
+                  }}
+                  className={clsx(
+                    'flex min-h-[40px] items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold sm:px-3 sm:text-sm',
+                    filter === item.value
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-canvas-0 text-ink-600 hover:bg-canvas-100'
+                  )}
+                >
+                  {item.value === 'live' && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                  )}
+                  {item.value === 'saved' && (
+                    <StarIcon className="h-3.5 w-3.5" />
+                  )}
+                  {item.label}
+                  <span className="text-xs opacity-70">{item.count}</span>
+                </button>
+              ))}
+            </div>
+            {filter !== 'live' && (
+              <div
+                className="flex min-w-0 basis-full gap-2 overflow-x-auto pb-1 md:flex-1 md:basis-0"
+                aria-label="Game dates"
               >
-                All dates
-              </button>
-              {allDays.map((day) => (
                 <button
                   type="button"
-                  key={day.key}
-                  aria-pressed={date === day.key}
-                  onClick={() => setDate(day.key)}
+                  aria-pressed={date === 'all'}
+                  onClick={() => setDate('all')}
                   className={clsx(
-                    'min-h-[44px] shrink-0 rounded-lg border px-3 text-left text-xs',
-                    date === day.key
+                    'min-h-[44px] shrink-0 rounded-lg border px-3 text-xs font-semibold',
+                    date === 'all'
                       ? 'border-primary-300 bg-primary-50 text-primary-700'
                       : 'border-ink-200 text-ink-500'
                   )}
                 >
-                  <span className="block font-semibold">{day.label}</span>
-                  <span>{dayjs(day.key).format('MMM D')}</span>
+                  All dates
                 </button>
-              ))}
-            </div>
-          )}
+                {allDays.map((day) => (
+                  <button
+                    type="button"
+                    key={day.key}
+                    aria-pressed={date === day.key}
+                    onClick={() => setDate(day.key)}
+                    className={clsx(
+                      'min-h-[44px] shrink-0 rounded-lg border px-3 text-left text-xs',
+                      date === day.key
+                        ? 'border-primary-300 bg-primary-50 text-primary-700'
+                        : 'border-ink-200 text-ink-500'
+                    )}
+                  >
+                    <span className="block font-semibold">{day.label}</span>
+                    <span>{dayjs(day.key).format('MMM D')}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           {hasFilters && (
             <div
               className="text-ink-500 flex items-center justify-between gap-2 text-xs"
