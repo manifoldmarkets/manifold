@@ -100,21 +100,9 @@ export function GameLinkedMarkets(props: { game: ScheduleGame }) {
       <div
         id={panelId}
         hidden={!expanded}
-        className="bg-canvas-50 rounded-b-xl px-4 pb-3 pt-1"
+        aria-busy={ids.length > 0 && visible === undefined && !error}
+        className="bg-canvas-50 rounded-b-xl px-4 pb-2"
       >
-        <Row className="items-center justify-between gap-2">
-          <span className="text-ink-500 text-xs">Markets on this game</span>
-          <Link
-            href={createMarketHref(game)}
-            onClick={() =>
-              track('sports create related market', { contractId: game.id })
-            }
-            className="text-ink-500 hover:text-primary-700 flex items-center gap-1 text-xs font-medium"
-          >
-            <PlusIcon className="h-3.5 w-3.5" />
-            Add a market
-          </Link>
-        </Row>
         {ids.length === 0 ? (
           <p className="text-ink-500 py-3 text-sm">No linked markets yet.</p>
         ) : error ? (
@@ -122,18 +110,30 @@ export function GameLinkedMarkets(props: { game: ScheduleGame }) {
             Couldn't load these markets.
           </p>
         ) : visible === undefined ? (
-          <Col className="mt-2 gap-1.5">
+          <Col role="status" className="divide-ink-200 divide-y">
+            <span className="sr-only">Loading props</span>
             {ids.slice(0, INITIAL_ROWS).map((id) => (
               <div
                 key={id}
-                className="bg-ink-100 h-9 w-full animate-pulse rounded-md"
-              />
+                aria-hidden
+                className="animate-pulse space-y-3 py-3"
+              >
+                <div className="space-y-1.5">
+                  <div className="bg-ink-100 h-4 w-full rounded" />
+                  <div className="bg-ink-100 h-4 w-2/3 rounded" />
+                </div>
+                <div className="bg-ink-100 h-3 w-1/2 rounded" />
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-ink-100 h-10 rounded-md" />
+                  <div className="bg-ink-100 h-10 rounded-md" />
+                </div>
+              </div>
             ))}
           </Col>
         ) : (
-          <Col className="divide-ink-100 border-ink-200 bg-canvas-0 mt-2 divide-y rounded-md border">
+          <Col className="divide-ink-200 divide-y">
             {visible.map((c) => (
-              <RelatedMarketRow key={c.id} contract={c} />
+              <RelatedMarketRow key={c.id} contract={c} layout="prop" />
             ))}
             {(hidden > 0 ||
               (showAll && (contracts?.length ?? 0) > INITIAL_ROWS)) && (
@@ -147,6 +147,18 @@ export function GameLinkedMarkets(props: { game: ScheduleGame }) {
             )}
           </Col>
         )}
+        <Row className="border-ink-100 justify-end border-t pt-1">
+          <Link
+            href={createMarketHref(game)}
+            onClick={() =>
+              track('sports create related market', { contractId: game.id })
+            }
+            className="text-ink-500 hover:text-primary-700 flex min-h-[36px] items-center gap-1 text-xs font-medium"
+          >
+            <PlusIcon className="h-3.5 w-3.5" />
+            Add a market
+          </Link>
+        </Row>
       </div>
     </div>
   )
@@ -168,13 +180,15 @@ function createMarketHref(game: ScheduleGame) {
   return `/create?params=${encodeURIComponent(JSON.stringify(params))}`
 }
 
-/** A compact one-line market: question, current price, and a way to bet. */
+/** A market row, with full-width actions when expanded inside a game. */
 export function RelatedMarketRow(props: {
   contract: Contract
   /** Rendered before the question: a time, a sport tag. */
   prefix?: React.ReactNode
+  layout?: 'row' | 'prop'
 }) {
-  const { prefix } = props
+  const { prefix, layout = 'row' } = props
+  const isProp = layout === 'prop'
   const contract = useLiveContract(props.contract)
   const official = isOfficialSportsMarket(contract)
   const user = useUser()
@@ -193,11 +207,24 @@ export function RelatedMarketRow(props: {
           .sort((a, b) => b.prob - a.prob)
       : []
   const answers = previewAnswers.slice(0, 3)
+  const status =
+    isBinary || (isMulti && isBinaryMulti(contract)) || !isMulti ? (
+      <ContractStatusLabel
+        contract={contract}
+        className="shrink-0 text-sm font-semibold"
+      />
+    ) : null
 
   return (
-    <div className="hover:bg-canvas-50 px-2.5 py-2">
-      {/* Phones: question on top, price and buttons underneath it. */}
-      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+    <div className={isProp ? 'py-3' : 'hover:bg-canvas-50 px-2.5 py-2'}>
+      <div
+        className={clsx(
+          'flex flex-col',
+          isProp
+            ? 'gap-3'
+            : 'gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3'
+        )}
+      >
         <Row className="min-w-0 flex-1 items-start gap-2">
           {prefix}
           <div className="min-w-0 flex-1">
@@ -229,28 +256,35 @@ export function RelatedMarketRow(props: {
                 {contract.uniqueBettorCount}{' '}
                 {contract.uniqueBettorCount === 1 ? 'trader' : 'traders'}
               </span>
+              {isProp && <span className="ml-auto">{status}</span>}
             </div>
           </div>
         </Row>
-        <Row className="shrink-0 items-center gap-2 self-end sm:self-auto">
-          {(isBinary || (isMulti && isBinaryMulti(contract)) || !isMulti) && (
-            <ContractStatusLabel
-              contract={contract}
-              className="text-sm font-semibold"
-            />
+        <Row
+          className={clsx(
+            'items-center gap-2',
+            isProp ? 'w-full' : 'shrink-0 self-end sm:self-auto'
           )}
+        >
+          {!isProp && status}
           {!closed && isBinary && (
             <BetButton
               contract={contract as BinaryContract}
               user={user}
               questionTitle={contract.question}
-              className="flex"
+              labels={isProp ? { yes: 'Yes', no: 'No' } : undefined}
+              className={
+                isProp
+                  ? 'grid w-full grid-cols-2 gap-2 [&>button]:m-0 [&>button]:min-h-[40px] [&>button]:w-full'
+                  : 'flex'
+              }
             />
           )}
           {!closed && isMulti && (
             <Button
               size="2xs"
               color="indigo-outline"
+              className={isProp ? 'min-h-[40px] w-full' : undefined}
               onClick={() => {
                 if (!user) {
                   firebaseLogin()
