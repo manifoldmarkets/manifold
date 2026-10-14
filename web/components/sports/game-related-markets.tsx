@@ -1,7 +1,7 @@
-import { PlusIcon } from '@heroicons/react/outline'
+import { ChevronDownIcon, PlusIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import {
   Contract,
   contractPath,
@@ -21,7 +21,6 @@ import { Button } from 'web/components/buttons/button'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { useUser } from 'web/hooks/use-user'
@@ -36,11 +35,12 @@ const GROUP_ORDER: RelatedGroup[] = ['game-lines', 'props', 'community']
  * The markets on a game, under its card on the sport page. Today the list is
  * the schedule's matching: official lines and props by event id, and
  * community markets that name both teams near kickoff. Markets linked to a
- * game will go here too. Loads once the card scrolls into view.
+ * game will go here too. Loads only when the disclosure is expanded.
  */
 export function GameLinkedMarkets(props: { game: ScheduleGame }) {
   const { game } = props
-  const [seen, setSeen] = useState(false)
+  const [expanded, setExpanded] = useState(false)
+  const panelId = useId()
   const [showAll, setShowAll] = useState(false)
   const ordered = useMemo(
     () =>
@@ -57,7 +57,7 @@ export function GameLinkedMarkets(props: { game: ScheduleGame }) {
     { ids },
     undefined,
     `sports-related-${game.id}`,
-    ids.length > 0 && seen
+    ids.length > 0 && expanded
   )
   const contracts = useMemo(() => {
     if (!data) return undefined
@@ -68,58 +68,80 @@ export function GameLinkedMarkets(props: { game: ScheduleGame }) {
   const hidden = (contracts?.length ?? 0) - (visible?.length ?? 0)
 
   return (
-    <div className="border-ink-100 bg-canvas-50 rounded-b-lg border-t px-3 py-2.5">
-      {!seen && ids.length > 0 && (
-        <VisibilityObserver onVisibilityUpdated={(v) => v && setSeen(true)} />
-      )}
-      <Row className="items-center justify-between gap-2">
-        <span className="text-ink-600 text-xs font-medium">
-          Markets on this game
-          <span className="text-ink-400 font-normal">
-            {' · '}
-            {ids.length > 0 ? ids.length : 'none yet'}
-          </span>
-        </span>
-        <Link
-          href={createMarketHref(game)}
-          onClick={() =>
-            track('sports create related market', { contractId: game.id })
-          }
-          className="text-ink-500 hover:text-primary-700 flex items-center gap-1 text-xs font-medium"
-        >
-          <PlusIcon className="h-3.5 w-3.5" />
-          Add a market
-        </Link>
-      </Row>
-      {ids.length === 0 ? null : error ? (
-        <p className="text-ink-500 mt-1 text-xs">
-          Couldn't load these markets.
-        </p>
-      ) : visible === undefined ? (
-        <Col className="mt-2 gap-1.5">
-          {ids.slice(0, INITIAL_ROWS).map((id) => (
-            <div
-              key={id}
-              className="bg-ink-100 h-9 w-full animate-pulse rounded-md"
-            />
-          ))}
-        </Col>
-      ) : (
-        <Col className="divide-ink-100 border-ink-200 bg-canvas-0 mt-2 divide-y rounded-md border">
-          {visible.map((c) => (
-            <RelatedMarketRow key={c.id} contract={c} />
-          ))}
-          {hidden > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowAll(true)}
-              className="text-primary-700 hover:bg-canvas-50 w-full px-2.5 py-1.5 text-left text-xs font-medium"
-            >
-              Show {hidden} more
-            </button>
+    <div className="border-ink-100 rounded-b-xl border-t">
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        aria-label={`Props & more for ${game.home.name} vs ${game.away.name}`}
+        onClick={() => setExpanded((value) => !value)}
+        className="text-ink-600 hover:bg-canvas-50 focus-visible:ring-primary-500 flex min-h-[44px] w-full items-center gap-2 rounded-b-xl px-4 text-left text-xs font-semibold focus-visible:ring-2"
+      >
+        <ChevronDownIcon
+          className={clsx(
+            'h-4 w-4 transition-transform',
+            expanded && 'rotate-180'
           )}
-        </Col>
-      )}
+        />
+        Props & more
+        <span className="bg-canvas-100 text-ink-500 rounded px-1.5 py-0.5 tabular-nums">
+          {ids.length}
+        </span>
+        <span className="text-ink-400 ml-auto font-normal">
+          {expanded ? 'Collapse' : 'Explore'}
+        </span>
+      </button>
+      <div
+        id={panelId}
+        hidden={!expanded}
+        className="bg-canvas-50 rounded-b-xl px-4 pb-3 pt-1"
+      >
+        <Row className="items-center justify-between gap-2">
+          <span className="text-ink-500 text-xs">Community markets</span>
+          <Link
+            href={createMarketHref(game)}
+            onClick={() =>
+              track('sports create related market', { contractId: game.id })
+            }
+            className="text-ink-500 hover:text-primary-700 flex items-center gap-1 text-xs font-medium"
+          >
+            <PlusIcon className="h-3.5 w-3.5" />
+            Add a market
+          </Link>
+        </Row>
+        {ids.length === 0 ? (
+          <p className="text-ink-500 py-3 text-sm">No linked markets yet.</p>
+        ) : error ? (
+          <p className="text-ink-500 mt-1 text-xs">
+            Couldn't load these markets.
+          </p>
+        ) : visible === undefined ? (
+          <Col className="mt-2 gap-1.5">
+            {ids.slice(0, INITIAL_ROWS).map((id) => (
+              <div
+                key={id}
+                className="bg-ink-100 h-9 w-full animate-pulse rounded-md"
+              />
+            ))}
+          </Col>
+        ) : (
+          <Col className="divide-ink-100 border-ink-200 bg-canvas-0 mt-2 divide-y rounded-md border">
+            {visible.map((c) => (
+              <RelatedMarketRow key={c.id} contract={c} />
+            ))}
+            {(hidden > 0 ||
+              (showAll && (contracts?.length ?? 0) > INITIAL_ROWS)) && (
+              <button
+                type="button"
+                onClick={() => setShowAll((value) => !value)}
+                className="text-primary-700 hover:bg-canvas-50 w-full px-2.5 py-1.5 text-left text-xs font-medium"
+              >
+                {showAll ? 'Show fewer' : `Show ${hidden} more`}
+              </button>
+            )}
+          </Col>
+        )}
+      </div>
     </div>
   )
 }

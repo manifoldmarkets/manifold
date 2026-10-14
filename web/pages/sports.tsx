@@ -78,7 +78,7 @@ export default function SportsPage() {
       selected="all"
       rail={rail}
       heading="Sports"
-      subheading="Upcoming games, live odds and sports markets. Tap a percentage to bet."
+      subheading="Pick a game. Make a call. Trade with the crowd."
       seo={{
         title: 'Sports',
         description:

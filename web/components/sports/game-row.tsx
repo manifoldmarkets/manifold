@@ -1,4 +1,4 @@
-import { ChevronRightIcon } from '@heroicons/react/solid'
+import { ChevronRightIcon, StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import Link from 'next/link'
@@ -93,11 +93,20 @@ const gameAnchor = (game: Pick<ScheduleGame, 'id'>) => `game-${game.id}`
  */
 export function GameRow(props: {
   game: ScheduleGame
-  variant?: 'list' | 'card'
+  variant?: 'list' | 'card' | 'featured'
   showLeague?: boolean
   className?: string
+  watched?: boolean
+  onToggleWatch?: () => void
 }) {
-  const { game, variant = 'list', showLeague, className } = props
+  const {
+    game,
+    variant = 'list',
+    showLeague,
+    className,
+    watched,
+    onToggleWatch,
+  } = props
   const router = useRouter()
   const [betOutcome, setBetOutcome] = useState<MatchOutcome | null>(null)
   const user = useUser()
@@ -195,35 +204,127 @@ export function GameRow(props: {
       />
     ))
 
+  if (variant === 'featured') {
+    return (
+      <section className="border-primary-200 bg-primary-50 overflow-hidden rounded-2xl border">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4 sm:px-5">
+          <span className="text-primary-700 text-xs font-bold uppercase tracking-wider">
+            In the spotlight
+          </span>
+          <span className="text-ink-500 text-xs">
+            Most traded on this board
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-4 px-4 py-4 sm:px-5">
+          {[
+            { team: game.home, outcome: 'teamA' as const, score: score?.home },
+            { team: game.away, outcome: 'teamB' as const, score: score?.away },
+          ].map(({ team, outcome, score: teamScore }) => (
+            <div key={team.answerId} className="min-w-0">
+              <div className="mb-2 flex items-center gap-2">
+                <TeamBadge team={team} />
+                <span className="text-ink-500 text-xs font-semibold">
+                  {team.shortName}
+                </span>
+              </div>
+              <h3
+                className="text-ink-1000 mb-3 truncate text-xl font-bold sm:text-2xl"
+                title={team.name}
+              >
+                {team.name}
+                {teamScore != null && (
+                  <span className="ml-2 tabular-nums">{teamScore}</span>
+                )}
+              </h3>
+              <PriceChip
+                prob={team.prob}
+                disabled={!canBet}
+                label={`Bet on ${team.name}`}
+                onClick={() => onBet(outcome)}
+                className="!bg-canvas-0 hover:!bg-primary-600 hover:!text-ink-0 !w-full !py-2 !text-lg shadow-sm"
+              />
+            </div>
+          ))}
+        </div>
+        {game.draw && (
+          <button
+            type="button"
+            className="text-primary-700 mx-4 mb-3 text-sm font-semibold"
+            onClick={() => onBet('draw')}
+          >
+            Draw {Math.round(game.draw.prob * 100)}%
+          </button>
+        )}
+        <div className="border-primary-200 flex flex-wrap items-center justify-between gap-2 border-t px-4 py-3 text-xs sm:px-5">
+          <div className="text-ink-600 flex flex-wrap items-center gap-2">
+            <span>
+              {game.league} · {dayjs(game.startTime).format('ddd, MMM D')}
+            </span>
+            <GameWhen game={game} layout="inline" />
+          </div>
+          <Link
+            href={gamePath(game)}
+            className="text-primary-700 flex items-center gap-1 font-semibold"
+          >
+            Ṁ{shortFormatNumber(game.volume)} traded{' '}
+            <ChevronRightIcon className="h-4 w-4" />
+          </Link>
+        </div>
+        {dialog}
+      </section>
+    )
+  }
+
   if (variant === 'card') {
     return (
       <div
         id={gameAnchor(game)}
         className={clsx(
-          'bg-canvas-0 border-ink-200 scroll-mt-32 rounded-lg border',
+          'bg-canvas-0 border-ink-200 hover:border-primary-300 scroll-mt-32 overflow-hidden rounded-xl border transition-colors',
           className
         )}
       >
-        <Row className="border-ink-100 min-h-[2.5rem] items-center gap-2 border-b px-3 py-1.5">
+        <Row className="min-h-[3rem] items-center gap-2 px-4 py-1">
           <GameWhen game={game} layout="inline" />
           {showLeague && (
             <span className="text-ink-400 truncate text-[10px] font-semibold uppercase tracking-wide">
               {game.league}
             </span>
           )}
+          {onToggleWatch && (
+            <button
+              type="button"
+              onClick={onToggleWatch}
+              aria-pressed={!!watched}
+              aria-label={`${watched ? 'Unsave' : 'Save'} ${
+                game.home.name
+              } vs ${game.away.name}`}
+              className={clsx(
+                'hover:bg-canvas-100 ml-auto flex h-10 w-10 items-center justify-center rounded-lg',
+                watched ? 'text-primary-600' : 'text-ink-300'
+              )}
+            >
+              <StarIcon className="h-5 w-5" />
+            </button>
+          )}
+        </Row>
+        <div className="text-ink-400 flex items-center justify-between px-4 pb-2 text-[10px] font-semibold uppercase tracking-wider">
+          <span>Matchup</span>
+          <span>Win chance</span>
+        </div>
+        <div className="px-4 pb-3">{teams}</div>
+        <div className="text-ink-500 flex flex-wrap items-center justify-between gap-2 px-4 pb-3 text-xs">
+          <span>
+            Ṁ{shortFormatNumber(game.volume)} · {game.uniqueBettorCount}{' '}
+            {game.uniqueBettorCount === 1 ? 'trader' : 'traders'}
+          </span>
           <Link
             href={gamePath(game)}
-            className="text-ink-500 hover:text-primary-700 ml-auto flex shrink-0 items-center gap-1 text-xs"
+            className="hover:text-primary-700 flex items-center gap-0.5"
           >
-            <span className="hidden tabular-nums sm:inline">
-              Ṁ{shortFormatNumber(game.volume)} · {game.uniqueBettorCount}{' '}
-              {game.uniqueBettorCount === 1 ? 'trader' : 'traders'} ·
-            </span>
-            Game page
-            <ChevronRightIcon className="h-3.5 w-3.5" />
+            Game page <ChevronRightIcon className="h-3.5 w-3.5" />
           </Link>
-        </Row>
-        <div className="px-3 py-3">{teams}</div>
+        </div>
         <GameLinkedMarkets game={game} />
         {dialog}
       </div>
@@ -423,13 +524,13 @@ function TeamBadge({ team }: { team: ScheduleTeam }) {
         alt=""
         loading="lazy"
         onError={() => setFailed(true)}
-        className="h-6 w-6 flex-shrink-0 rounded-full object-contain"
+        className="h-8 w-8 flex-shrink-0 rounded-full object-contain"
       />
     )
   }
   if (team.flag) {
     return (
-      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center">
+      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center">
         <Flag emoji={team.flag} name={team.name} />
       </span>
     )
@@ -438,7 +539,7 @@ function TeamBadge({ team }: { team: ScheduleTeam }) {
   return (
     <span
       className={clsx(
-        'flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold',
+        'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-[10px] font-bold',
         !color && 'bg-ink-100 text-ink-600'
       )}
       style={
@@ -471,7 +572,7 @@ function PriceChip(props: {
       disabled={disabled}
       onClick={onClick}
       className={clsx(
-        'w-14 shrink-0 rounded-md py-1.5 text-center text-sm font-semibold tabular-nums transition-colors sm:w-16 sm:py-1',
+        'focus-visible:ring-primary-500 min-h-[40px] w-16 shrink-0 rounded-lg py-2 text-center text-base font-bold tabular-nums transition-colors focus-visible:ring-2 sm:w-20',
         className,
         flash === 'up' && '!bg-teal-500/30 !text-teal-700',
         flash === 'down' && '!bg-scarlet-500/30 !text-scarlet-700',

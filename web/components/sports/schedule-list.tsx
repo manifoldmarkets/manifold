@@ -1,11 +1,14 @@
 import clsx from 'clsx'
+import { SearchIcon, StarIcon, XIcon } from '@heroicons/react/solid'
 import dayjs from 'dayjs'
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { ScheduleGame } from 'common/sports-schedule'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { GameRow, GameRowSkeleton } from 'web/components/sports/game-row'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { SportsActivity } from './sports-activity'
 
 type DaySection<T> = { key: string; label: string; items: T[] }
 
@@ -35,12 +38,9 @@ export function groupByDay<T>(
 }
 
 /**
- * The game feed: what's live now, then every upcoming game by kickoff,
- * grouped by day. More games load as the reader nears the bottom.
- *
- * `list` packs each day into one table of compact rows (the all-sports
- * feed); `cards` gives every game its own card with room for the markets on
- * it (a sport's page).
+ * A filterable board of live and upcoming games, grouped by local date.
+ * Saved games stay on this device. Search covers loaded games; filtered
+ * views expose pagination explicitly so an empty result is not a dead end.
  */
 export function GameFeed(props: {
   games: ScheduleGame[]
@@ -54,9 +54,71 @@ export function GameFeed(props: {
 }) {
   const { games, loading, hasMore, loadMore, variant, showLeague, empty } =
     props
-  const live = games.filter((g) => g.status === 'live')
-  const upcoming = games.filter((g) => g.status === 'upcoming')
-  const days = groupByDay(upcoming, (g) => g.startTime)
+  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState<'all' | 'live' | 'saved'>('all')
+  const [date, setDate] = useState('all')
+  const [sort, setSort] = useState('time')
+  const [saved, setSaved] = usePersistentLocalState<string[]>(
+    [],
+    'sports-saved-games'
+  )
+  const active = games.filter(
+    (game) => game.status === 'upcoming' || game.status === 'live'
+  )
+  const toggleSaved = (id: string) =>
+    setSaved((ids) =>
+      ids.includes(id) ? ids.filter((value) => value !== id) : [...ids, id]
+    )
+  const normalized = query.trim().toLowerCase()
+  const filtered = active
+    .filter(
+      (game) =>
+        (filter !== 'live' || game.status === 'live') &&
+        (filter !== 'saved' || saved.includes(game.id)) &&
+        (date === 'all' ||
+          dayjs(game.startTime).format('YYYY-MM-DD') === date) &&
+        (!normalized ||
+          `${game.home.name} ${game.home.shortName} ${game.away.name} ${game.away.shortName} ${game.league}`
+            .toLowerCase()
+            .includes(normalized))
+    )
+    .sort((a, b) =>
+      sort === 'volume' ? b.volume - a.volume : a.startTime - b.startTime
+    )
+  const live = filtered.filter((g) => g.status === 'live')
+  const upcoming = filtered.filter((g) => g.status === 'upcoming')
+  const days = groupByDay(upcoming, (g) => g.startTime).sort((a, b) =>
+    a.key.localeCompare(b.key)
+  )
+  const allDays = groupByDay(active, (game) => game.startTime).sort((a, b) =>
+    a.key.localeCompare(b.key)
+  )
+  const featured = [...active].sort((a, b) => b.volume - a.volume)[0]
+  const hasFilters = filter !== 'all' || date !== 'all' || !!normalized
+  const reset = () => {
+    setQuery('')
+    setDate('all')
+    setFilter('all')
+  }
+  const renderGames = (items: ScheduleGame[]) => (
+    <div
+      className={clsx(
+        'grid items-start gap-3',
+        items.length > 1 && 'sm:grid-cols-2'
+      )}
+    >
+      {items.map((game) => (
+        <GameRow
+          key={game.id}
+          game={game}
+          variant="card"
+          showLeague={showLeague}
+          watched={saved.includes(game.id)}
+          onToggleWatch={() => toggleSaved(game.id)}
+        />
+      ))}
+    </div>
+  )
 
   if (loading && games.length === 0) {
     return (
@@ -66,65 +128,222 @@ export function GameFeed(props: {
       </Col>
     )
   }
-  if (live.length === 0 && upcoming.length === 0) return <>{empty}</>
+  if (active.length === 0) return <>{empty}</>
 
   return (
-    <Col className="gap-6">
-      {live.length > 0 && (
-        <Col className="gap-2">
-          <SectionHeader label="Live now" count={live.length} accent />
-          <GameGroup games={live} variant={variant} showLeague={showLeague} />
-        </Col>
-      )}
-      {days.map((day) => (
-        <Col key={day.key} className="gap-2">
-          <SectionHeader
-            label={day.label}
-            sublabel={dayjs(day.items[0].startTime).format('MMM D')}
-            count={day.items.length}
-          />
-          <GameGroup
-            games={day.items}
-            variant={variant}
-            showLeague={showLeague}
-          />
-        </Col>
-      ))}
-      {hasMore ? (
-        <>
-          <LoadMoreUntilNotVisible loadMore={loadMore} />
-          <FeedSkeleton variant={variant} rows={2} />
-        </>
-      ) : (
-        <p className="text-ink-400 px-1 text-center text-xs">
-          That's every game in the next two weeks.
-        </p>
-      )}
-    </Col>
-  )
-}
-
-function GameGroup(props: {
-  games: ScheduleGame[]
-  variant: 'list' | 'cards'
-  showLeague: boolean
-}) {
-  const { games, variant, showLeague } = props
-  if (variant === 'cards') {
-    return (
-      <Col className="gap-3">
-        {games.map((g) => (
-          <GameRow key={g.id} game={g} variant="card" showLeague={showLeague} />
+    <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_270px]">
+      <Col className="min-w-0 gap-5">
+        {!hasFilters && featured && (
+          <div className="hidden sm:block">
+            <GameRow game={featured} variant="featured" />
+          </div>
+        )}
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-ink-1000 text-xl font-bold">
+              The game board{' '}
+              <span className="text-ink-400 ml-1 text-sm font-normal">
+                {active.length}
+                {hasMore ? '+' : ''}
+              </span>
+            </h2>
+            <label className="text-ink-500 flex items-center gap-2 text-xs">
+              Sort
+              <select
+                aria-label="Sort games"
+                className="border-ink-200 bg-canvas-0 text-ink-700 rounded-lg border py-1.5 pl-2 pr-7 text-xs"
+                value={sort}
+                onChange={(event) => setSort(event.target.value)}
+              >
+                <option value="time">Start time</option>
+                <option value="volume">Most traded per day</option>
+              </select>
+            </label>
+          </div>
+          <div className="border-ink-200 bg-canvas-0 focus-within:border-primary-400 focus-within:ring-primary-200 flex items-center gap-2 rounded-xl border px-3 focus-within:ring-2">
+            <SearchIcon className="text-ink-400 h-4 w-4 shrink-0" />
+            <input
+              aria-label="Search loaded games"
+              placeholder="Find a team or league…"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              className="placeholder:text-ink-400 w-full min-w-0 border-0 bg-transparent py-3 text-sm focus:outline-none focus:ring-0"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                aria-label="Clear game search"
+                className="text-ink-500 flex h-9 w-9 shrink-0 items-center justify-center"
+              >
+                <XIcon className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <div
+            className="flex flex-wrap items-center gap-2"
+            aria-label="Game filters"
+          >
+            {(
+              [
+                { value: 'all', label: 'All games', count: active.length },
+                {
+                  value: 'live',
+                  label: 'Live',
+                  count: active.filter((game) => game.status === 'live').length,
+                },
+                {
+                  value: 'saved',
+                  label: 'Saved',
+                  count: active.filter((game) => saved.includes(game.id))
+                    .length,
+                },
+              ] as const
+            ).map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                aria-pressed={filter === item.value}
+                onClick={() => {
+                  setFilter(item.value)
+                  setDate('all')
+                }}
+                className={clsx(
+                  'flex min-h-[40px] items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold sm:px-3 sm:text-sm',
+                  filter === item.value
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-canvas-0 text-ink-600 hover:bg-canvas-100'
+                )}
+              >
+                {item.value === 'live' && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                )}
+                {item.value === 'saved' && <StarIcon className="h-3.5 w-3.5" />}
+                {item.label}
+                <span className="text-xs opacity-70">{item.count}</span>
+              </button>
+            ))}
+          </div>
+          {filter !== 'live' && (
+            <div
+              className="flex gap-2 overflow-x-auto pb-1"
+              aria-label="Game dates"
+            >
+              <button
+                type="button"
+                aria-pressed={date === 'all'}
+                onClick={() => setDate('all')}
+                className={clsx(
+                  'min-h-[44px] shrink-0 rounded-lg border px-3 text-xs font-semibold',
+                  date === 'all'
+                    ? 'border-primary-300 bg-primary-50 text-primary-700'
+                    : 'border-ink-200 text-ink-500'
+                )}
+              >
+                All dates
+              </button>
+              {allDays.map((day) => (
+                <button
+                  type="button"
+                  key={day.key}
+                  aria-pressed={date === day.key}
+                  onClick={() => setDate(day.key)}
+                  className={clsx(
+                    'min-h-[44px] shrink-0 rounded-lg border px-3 text-left text-xs',
+                    date === day.key
+                      ? 'border-primary-300 bg-primary-50 text-primary-700'
+                      : 'border-ink-200 text-ink-500'
+                  )}
+                >
+                  <span className="block font-semibold">{day.label}</span>
+                  <span>{dayjs(day.key).format('MMM D')}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {hasFilters && (
+            <div
+              className="text-ink-500 flex items-center justify-between gap-2 text-xs"
+              role="status"
+            >
+              <span>
+                {filtered.length} of {active.length} loaded games
+                {filter === 'saved' && ' · saved on this device'}
+              </span>
+              <button
+                type="button"
+                className="text-primary-700 min-h-[32px] font-semibold"
+                onClick={reset}
+              >
+                Reset filters
+              </button>
+            </div>
+          )}
+        </div>
+        {filtered.length === 0 && (
+          <div className="border-ink-200 rounded-xl border border-dashed px-5 py-8 text-center">
+            <h3 className="text-ink-900 font-semibold">
+              {filter === 'saved'
+                ? 'Your game board starts here'
+                : filter === 'live'
+                ? 'No games live right now'
+                : 'No matching games'}
+            </h3>
+            <p className="text-ink-500 mt-1 text-sm">
+              {filter === 'saved'
+                ? 'Star a matchup to keep it close.'
+                : 'Try another date, team, or filter.'}
+            </p>
+            <button
+              type="button"
+              onClick={reset}
+              className="text-primary-700 mt-3 min-h-[40px] text-sm font-bold"
+            >
+              Show all games
+            </button>
+          </div>
+        )}
+        {live.length > 0 && (
+          <Col className="gap-2">
+            <SectionHeader label="Live now" count={live.length} accent />
+            {renderGames(live)}
+          </Col>
+        )}
+        {days.map((day) => (
+          <Col key={day.key} className="gap-2">
+            <SectionHeader
+              label={day.label}
+              sublabel={dayjs(day.items[0].startTime).format('MMM D')}
+              count={day.items.length}
+            />
+            {renderGames(day.items)}
+          </Col>
         ))}
+        {hasMore ? (
+          <>
+            {hasFilters ? (
+              <button
+                type="button"
+                onClick={() => void loadMore()}
+                className="text-primary-700 border-ink-200 rounded-lg border p-3 text-sm font-semibold"
+              >
+                Load more games to search
+              </button>
+            ) : (
+              <>
+                <LoadMoreUntilNotVisible loadMore={loadMore} />
+                <FeedSkeleton variant={variant} rows={2} />
+              </>
+            )}
+          </>
+        ) : (
+          <p className="text-ink-400 px-1 text-center text-xs">
+            All available games · Times shown in your local time zone
+          </p>
+        )}
       </Col>
-    )
-  }
-  return (
-    <Col className="border-ink-200 bg-canvas-0 divide-ink-100 divide-y overflow-hidden rounded-lg border">
-      {games.map((g) => (
-        <GameRow key={g.id} game={g} variant="list" showLeague={showLeague} />
-      ))}
-    </Col>
+      <SportsActivity games={active} />
+    </div>
   )
 }
 

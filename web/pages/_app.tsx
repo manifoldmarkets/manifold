@@ -1,7 +1,7 @@
 import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
 import type { AppProps } from 'next/app'
-import { Figtree } from 'next/font/google'
+import localFont from 'next/font/local'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import Script from 'next/script'
@@ -23,10 +23,17 @@ import '../styles/globals.css'
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
 
-const mainFont = Figtree({
-  weight: ['300', '400', '500', '600', '700'],
+// Local preview: use the same Figtree faces without a build-time Google request.
+const mainFont = localFont({
+  src: [
+    { path: '../public/fonts/figtree-300.ttf', weight: '300' },
+    { path: '../public/fonts/figtree-400.ttf', weight: '400' },
+    { path: '../public/fonts/figtree-500.ttf', weight: '500' },
+    { path: '../public/fonts/figtree-600.ttf', weight: '600' },
+    { path: '../public/fonts/figtree-700.ttf', weight: '700' },
+  ],
   variable: '--font-main',
-  subsets: ['latin'],
+  display: 'swap',
 })
 
 function firstLine(msg: string) {
