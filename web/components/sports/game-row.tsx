@@ -206,16 +206,35 @@ export function GameRow(props: {
 
   if (variant === 'featured') {
     return (
-      <section className="border-primary-200 bg-primary-50 overflow-hidden rounded-2xl border">
-        <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4 sm:px-5">
+      <section
+        id={gameAnchor(game)}
+        className={clsx(
+          'border-primary-200 bg-primary-50 scroll-mt-32 overflow-hidden rounded-2xl border',
+          className
+        )}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-2 sm:px-5">
           <span className="text-primary-700 text-xs font-bold uppercase tracking-wider">
-            In the spotlight
+            Most traded matchup
           </span>
-          <span className="text-ink-500 text-xs">
-            Most traded on this board
-          </span>
+          {onToggleWatch && (
+            <button
+              type="button"
+              onClick={onToggleWatch}
+              aria-pressed={!!watched}
+              aria-label={`${watched ? 'Unsave' : 'Save'} ${
+                game.home.name
+              } vs ${game.away.name}`}
+              className={clsx(
+                'hover:bg-primary-100 flex h-10 w-10 items-center justify-center rounded-lg',
+                watched ? 'text-primary-600' : 'text-ink-400'
+              )}
+            >
+              <StarIcon className="h-5 w-5" />
+            </button>
+          )}
         </div>
-        <div className="grid grid-cols-2 gap-4 px-4 py-4 sm:px-5">
+        <div className="grid grid-cols-2 gap-4 px-4 pb-4 pt-1 sm:px-5">
           {[
             { team: game.home, outcome: 'teamA' as const, score: score?.home },
             { team: game.away, outcome: 'teamB' as const, score: score?.away },
@@ -228,7 +247,7 @@ export function GameRow(props: {
                 </span>
               </div>
               <h3
-                className="text-ink-1000 mb-3 truncate text-xl font-bold sm:text-2xl"
+                className="text-ink-1000 mb-3 min-h-[3rem] text-lg font-bold leading-tight sm:min-h-0 sm:truncate sm:text-2xl"
                 title={team.name}
               >
                 {team.name}
@@ -270,6 +289,7 @@ export function GameRow(props: {
             <ChevronRightIcon className="h-4 w-4" />
           </Link>
         </div>
+        <GameLinkedMarkets game={game} />
         {dialog}
       </section>
     )

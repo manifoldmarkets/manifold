@@ -93,7 +93,9 @@ export function GameFeed(props: {
   const allDays = groupByDay(active, (game) => game.startTime).sort((a, b) =>
     a.key.localeCompare(b.key)
   )
-  const featured = [...active].sort((a, b) => b.volume - a.volume)[0]
+  const featured = active
+    .filter((game) => Number.isFinite(game.volume) && game.volume > 0)
+    .sort((a, b) => b.volume - a.volume)[0]
   const hasFilters = filter !== 'all' || date !== 'all' || !!normalized
   const reset = () => {
     setQuery('')
@@ -111,7 +113,14 @@ export function GameFeed(props: {
         <GameRow
           key={game.id}
           game={game}
-          variant="card"
+          variant={
+            !hasFilters && game.id === featured?.id ? 'featured' : 'card'
+          }
+          className={
+            !hasFilters && game.id === featured?.id
+              ? 'sm:col-span-2'
+              : undefined
+          }
           showLeague={showLeague}
           watched={saved.includes(game.id)}
           onToggleWatch={() => toggleSaved(game.id)}
@@ -133,11 +142,6 @@ export function GameFeed(props: {
   return (
     <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_270px]">
       <Col className="min-w-0 gap-5">
-        {!hasFilters && featured && (
-          <div className="hidden sm:block">
-            <GameRow game={featured} variant="featured" />
-          </div>
-        )}
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-ink-1000 text-xl font-bold">
