@@ -57,26 +57,10 @@ jest.mock('api/helpers/bets', () => ({
   getUnfilledBetsAndUserBalances: jest.fn(),
   updateMakers: jest.fn(),
 }))
-jest.mock('shared/supabase/contracts', () => ({
-  updateContract: jest.fn(async () => ({
-    id: 'c1',
-    visibility: 'public',
-    totalLiquidity: 1500,
-  })),
-}))
+jest.mock('shared/supabase/contracts', () => ({ updateContract: jest.fn() }))
 jest.mock('shared/supabase/liquidity', () => ({ insertLiquidity: jest.fn() }))
 jest.mock('shared/supabase/users', () => ({
-  incrementBalance: jest.fn(
-    async (
-      _pg: unknown,
-      id: string,
-      deltas: { balance?: number; totalDeposits?: number }
-    ) => ({
-      id,
-      balance: 1e6 + (deltas.balance ?? 0),
-      totalDeposits: 1e6 + (deltas.totalDeposits ?? 0),
-    })
-  ),
+  incrementBalance: jest.fn(),
   broadcastUserUpdates: jest.fn(),
   bulkIncrementBalancesQuery: jest.fn(() => 'select 1'),
 }))
@@ -97,7 +81,11 @@ import { ContractMetric } from 'common/contract-metric'
 import { User } from 'common/user'
 import { AuthedUser } from 'api/helpers/endpoint'
 import { createAnswerCPMM } from 'api/create-answer-cpmm'
-import { getUnfilledBets } from 'api/helpers/bets'
+import {
+  getUnfilledBets,
+  getUnfilledBetsAndUserBalances,
+  updateMakers,
+} from 'api/helpers/bets'
 import { redeemShares } from 'api/redeem-shares'
 import {
   getAnswersForContract,
@@ -105,7 +93,7 @@ import {
   updateAnswer,
   updateAnswers,
 } from 'shared/supabase/answers'
-import { cancelLimitOrders } from 'shared/supabase/bets'
+import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
 import { updateContract } from 'shared/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { broadcastUserUpdates, incrementBalance } from 'shared/supabase/users'
@@ -262,7 +250,33 @@ beforeEach(() => {
   mocked(cancelLimitOrders).mockImplementation(async (_pg, orders) =>
     orders.map((o) => ({ ...o, isCancelled: true }))
   )
+
+  // The rows a database returns differ between attempts (the retry reads
+  // state another transaction changed), so a handler that broadcast a failed
+  // attempt's row could not pass by coincidence.
+  let balanceWrites = 0
+  mocked(incrementBalance).mockImplementation(async (_pg, id, deltas) => ({
+    id,
+    balance: 1e6 - 1000 * ++balanceWrites + (deltas.balance ?? 0),
+    totalDeposits: 1e6 + (deltas.totalDeposits ?? 0),
+  }))
+  let liquidityWrites = 0
+  mocked(updateContract).mockImplementation(
+    async () =>
+      ({
+        id: 'c1',
+        visibility: 'public',
+        totalLiquidity: 1000 + 100 * ++liquidityWrites,
+      } as unknown as Awaited<ReturnType<typeof updateContract>>)
+  )
 })
+
+const committedResult = async <T>(fn: (...args: any[]) => Promise<T>) => {
+  const results = mocked(fn).mock.results.map((r) => r.value as Promise<T>)
+  const values = await Promise.all(results)
+  expect(values[values.length - 1]).not.toEqual(values[0])
+  return values[values.length - 1]
+}
 
 const createAnswer = async () => {
   const response = await createAnswerCPMM(
@@ -323,15 +337,19 @@ describe('createAnswerCPMM', () => {
     ])
 
     // The creator's balance and the contract's liquidity are the committed
-    // attempt's, sent around the answer messages.
+    // (second) attempt's rows, not the rolled-back attempt's, sent around the
+    // answer messages.
     expect(broadcastUpdatedUser).toHaveBeenCalledTimes(1)
     expect(broadcastUpdatedUser).toHaveBeenCalledWith(
-      await mocked(incrementBalance).mock.results[1].value
+      await committedResult(incrementBalance)
     )
+    const committedContract = (await committedResult(
+      updateContract
+    )) as CPMMMultiContract
     expect(broadcastUpdatedContract).toHaveBeenCalledTimes(1)
     expect(broadcastUpdatedContract).toHaveBeenCalledWith('public', {
       id: 'c1',
-      totalLiquidity: 1500,
+      totalLiquidity: committedContract.totalLiquidity,
     })
     expect(callOrder(broadcastUpdatedUser)[0]).toBeLessThan(
       callOrder(broadcastNewAnswer)[0]
@@ -364,45 +382,44 @@ describe('createAnswerCPMM', () => {
     expect(answers).toHaveLength(3)
   })
 
+  // What convertOtherAnswerShares' redemption of a holder's refined position
+  // writes, as the handler sees it: redeemShares' result and the balance rows
+  // the combined insert/metrics/balance query returns.
+  const redeems = (holder: string) => {
+    mocked(redeemShares).mockResolvedValueOnce({
+      betsToInsert: [
+        { id: 'r-' + holder, userId: holder, contractId: 'c1', answerId: 'a' },
+      ] as Bet[],
+      updatedMetrics: [
+        { userId: holder, contractId: 'c1', answerId: 'a' } as ContractMetric,
+      ],
+      balanceUpdates: [{ id: holder, balance: 10 }],
+    } as Awaited<ReturnType<typeof redeemShares>>)
+    trans.multi.mockResolvedValueOnce([
+      [],
+      [],
+      [{ id: holder, balance: 110, cash_balance: 0, spice_balance: 0 }],
+      [],
+    ])
+  }
+
   it("announces the Other holders' redeemed positions after commit", async () => {
     commitsToFail = 1
-    const metric = {
-      userId: 'holder',
-      contractId: 'c1',
-      answerId: 'a',
-    } as ContractMetric
-    const holder = {
-      id: 'holder',
-      balance: 110,
-      cash_balance: 0,
-      spice_balance: 0,
-      total_deposits: 0,
-      total_cash_deposits: 0,
-    }
-    // Both attempts redeem a holder's refined position.
-    for (let attempt = 0; attempt < 2; attempt++) {
-      mocked(redeemShares).mockResolvedValueOnce({
-        betsToInsert: [
-          {
-            id: 'r1',
-            userId: 'holder',
-            contractId: 'c1',
-            answerId: 'a',
-          } as Bet,
-        ],
-        updatedMetrics: [metric],
-        balanceUpdates: [{ id: 'holder', balance: 10 }],
-      } as Awaited<ReturnType<typeof redeemShares>>)
-      trans.multi.mockResolvedValueOnce([[], [], [holder], []])
-    }
+    // The rolled-back attempt redeems one holder, the committed one another.
+    redeems('rolledBack')
+    redeems('committed')
 
     await createAnswer()
 
     expect(broadcastsAtCommit).toEqual([0, 0])
     expect(broadcastUserUpdates).toHaveBeenCalledTimes(1)
-    expect(broadcastUserUpdates).toHaveBeenCalledWith([holder])
+    expect(broadcastUserUpdates).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 'committed', balance: 110 }),
+    ])
     expect(broadcastUpdatedMetrics).toHaveBeenCalledTimes(1)
-    expect(broadcastUpdatedMetrics).toHaveBeenCalledWith([metric])
+    expect(broadcastUpdatedMetrics).toHaveBeenCalledWith([
+      expect.objectContaining({ userId: 'committed', answerId: 'a' }),
+    ])
     // After the answer the positions refer to, before the contract's liquidity.
     expect(callOrder(broadcastNewAnswer)[0]).toBeLessThan(
       callOrder(broadcastUserUpdates)[0]
@@ -410,6 +427,20 @@ describe('createAnswerCPMM', () => {
     expect(callOrder(broadcastUpdatedMetrics)[0]).toBeLessThan(
       callOrder(broadcastUpdatedContract)[0]
     )
+  })
+
+  it("discards a failed attempt's redemptions when the committed attempt has none", async () => {
+    commitsToFail = 1
+    redeems('rolledBack')
+    // The second attempt gets the default: nothing to redeem.
+
+    await createAnswer()
+
+    expect(broadcastsAtCommit).toEqual([0, 0])
+    expect(broadcastUserUpdates).toHaveBeenCalledTimes(1)
+    expect(broadcastUserUpdates).toHaveBeenCalledWith([])
+    expect(broadcastUpdatedMetrics).toHaveBeenCalledTimes(1)
+    expect(broadcastUpdatedMetrics).toHaveBeenCalledWith([])
   })
 
   it('reads the order book once and cancels the orders the new prices have passed', async () => {
@@ -443,5 +474,74 @@ describe('createAnswerCPMM', () => {
     expect(broadcastOrders).toHaveBeenCalledWith(
       cancelled.map((o) => ({ ...o, isCancelled: true }))
     )
+  })
+
+  it('on cpmm-multi-1, announces Other before the pools and nothing before commit', async () => {
+    // The v1 split is live on most sum-to-one markets. Its first Other message
+    // is the row as updateAnswer returned it (new index and liquidity, old
+    // pools); the pools batch that follows corrects Other, so the client must
+    // apply them in that order.
+    answers = [
+      answer('a', 0, 400, 600),
+      answer('b', 1, 700, 300),
+      answer('other', 2, 900, 100, true),
+    ]
+    const before = answers.map((a) => ({ ...a }))
+    const current = await getContractSupabase('c1')
+    mocked(getContractSupabase).mockResolvedValue({
+      ...current,
+      mechanism: 'cpmm-multi-1',
+      answers: before,
+      collectedFees: { creatorFee: 0, platformFee: 0, liquidityFee: 0 },
+    } as CPMMMultiContract)
+    // One mechanism read per attempt.
+    trans.one.mockResolvedValueOnce({ mechanism: 'cpmm-multi-1' })
+    trans.one.mockResolvedValueOnce({ mechanism: 'cpmm-multi-1' })
+    mocked(getUnfilledBetsAndUserBalances).mockResolvedValue({
+      unfilledBets: [],
+      balanceByUserId: { u1: 1e6 },
+      contractMetrics: [],
+    })
+    mocked(updateMakers).mockResolvedValue({
+      betsToInsert: [],
+      updatedMetrics: [],
+      balanceUpdates: [],
+      updatedMakers: [],
+      bulkUpdateLimitOrdersQuery: 'select 1',
+    } as Awaited<ReturnType<typeof updateMakers>>)
+    mocked(insertBet).mockImplementation(async (bet) => ({
+      insertedBet: { bet_id: bet.answerId } as Awaited<
+        ReturnType<typeof insertBet>
+      >['insertedBet'],
+      updatedMetrics: [],
+    }))
+    commitsToFail = 1
+
+    const { newAnswerId } = await createAnswer()
+
+    expect(broadcastsAtCommit).toEqual([0, 0])
+    expect(broadcastNewAnswer).toHaveBeenCalledTimes(1)
+    expect(broadcastUpdatedAnswers).toHaveBeenCalledTimes(2)
+    const [otherRow, pools] = mocked(broadcastUpdatedAnswers).mock.calls
+    expect(otherRow[1]).toEqual([
+      expect.objectContaining({ id: 'other', index: 3 }),
+    ])
+    expect(pools[1].map((u) => u.id).sort()).toEqual(
+      ['a', 'b', newAnswerId, 'other'].sort()
+    )
+    expect(broadcastUpdatedUser).toHaveBeenCalledTimes(1)
+    expect(broadcastUpdatedContract).toHaveBeenCalledTimes(1)
+
+    // Replaying the messages the way the client does lands on the committed
+    // rows.
+    let client = [...before, mocked(broadcastNewAnswer).mock.calls[0][0]]
+    for (const [, updates] of mocked(broadcastUpdatedAnswers).mock.calls) {
+      client = client.map((a) => ({
+        ...a,
+        ...updates.find((u) => u.id === a.id),
+      }))
+    }
+    const byIndex = (a: Answer, b: Answer) => a.index - b.index
+    expect(client.sort(byIndex)).toEqual(answers.sort(byIndex))
   })
 })
