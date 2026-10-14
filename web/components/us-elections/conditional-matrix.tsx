@@ -22,7 +22,9 @@ import { track } from 'web/lib/service/analytics'
 // A conditional-market matrix: each row is one question asked under each of
 // two outcomes, with both chances side by side and a slim dumbbell showing the
 // gap. Every chance opens the bet dialog for its own market. Rows come from
-// buildConditionalMatrixRows (web/lib/politics/conditional-matrix.ts).
+// buildConditionalMatrixRows (web/lib/politics/conditional-matrix.ts). A row
+// may have a market for one side only; the other cell says so and the row
+// has no dumbbell.
 //
 // Party colors are the map's: azure-600 and sienna-600 are DEM_COLOR and
 // REP_COLOR (usa-map/state-election-map.ts). Small text uses the darker and
@@ -121,7 +123,7 @@ export function ConditionalMatrix(props: {
         <div role="rowgroup" id={bodyId}>
           {shown.map((row) => (
             <MatrixRow
-              key={`${row.dem.id}-${row.rep.id}`}
+              key={`${row.dem?.id ?? ''}-${row.rep?.id ?? ''}`}
               row={row}
               columns={columns}
               trackingName={trackingName}
@@ -187,14 +189,6 @@ function MatrixRow(props: {
   trackingName: string
 }) {
   const { row, columns, trackingName } = props
-  const contracts: Record<MatrixParty, BinaryContract> = {
-    dem: useLiveContract(row.dem),
-    rep: useLiveContract(row.rep),
-  }
-  const probs: Record<MatrixParty, number | undefined> = {
-    dem: matrixProb(contracts.dem),
-    rep: matrixProb(contracts.rep),
-  }
   return (
     <div
       role="row"
@@ -209,32 +203,45 @@ function MatrixRow(props: {
       >
         {row.label}
       </div>
-      {columns.map((column) => (
-        <div role="cell" key={column.party}>
-          <MatrixCell
-            contract={contracts[column.party]}
-            prob={probs[column.party]}
-            column={column}
-            trackingName={trackingName}
-          />
+      {columns.map((column) => {
+        const contract = row[column.party]
+        return (
+          <div role="cell" key={column.party}>
+            {contract ? (
+              <MatrixCell
+                contract={contract}
+                column={column}
+                trackingName={trackingName}
+              />
+            ) : (
+              <EmptyCell column={column} />
+            )}
+          </div>
+        )
+      })}
+      {/* The gap needs both sides. A one-sided row keeps the column on wide
+          screens so the grid lines up, and skips it on phones, where it would
+          add an empty line. */}
+      {row.dem && row.rep ? (
+        <div role="cell" className="col-span-2 md:col-span-1">
+          <GapDumbbell columns={columns} dem={row.dem} rep={row.rep} />
         </div>
-      ))}
-      <div role="cell" className="col-span-2 md:col-span-1">
-        <GapDumbbell columns={columns} probs={probs} />
-      </div>
+      ) : (
+        <div role="cell" className="hidden md:block" />
+      )}
     </div>
   )
 }
 
 function MatrixCell(props: {
   contract: BinaryContract
-  prob: number | undefined
   column: ConditionalMatrixColumn
   trackingName: string
 }) {
-  const { contract, prob, column, trackingName } = props
+  const { column, trackingName } = props
+  const contract = useLiveContract(props.contract)
+  const percent = wholePercent(matrixProb(contract))
   const [open, setOpen] = useState(false)
-  const percent = wholePercent(prob)
   return (
     <>
       <button
@@ -281,6 +288,25 @@ function MatrixCell(props: {
   )
 }
 
+// A side with no market: the row's other side has one. Same footprint as a
+// chance, so the columns stay aligned.
+function EmptyCell(props: { column: ConditionalMatrixColumn }) {
+  const { column } = props
+  const description = `${column.label}: no market`
+  return (
+    <div
+      aria-label={description}
+      title={description}
+      className="border-ink-200 text-ink-400 flex w-full flex-col items-center rounded-lg border border-dashed px-2 py-1"
+    >
+      <span className="text-2xl font-semibold leading-tight">–</span>
+      <span className="text-ink-500 text-xs">
+        <span className="md:hidden">{column.shortLabel}: </span>no market
+      </span>
+    </div>
+  )
+}
+
 const pct = (p: number) => `${p * 100}%`
 
 const DOT =
@@ -291,9 +317,16 @@ const DOT =
 // chances by column, so nothing depends on telling the dots apart by color.
 function GapDumbbell(props: {
   columns: MatrixColumns
-  probs: Record<MatrixParty, number | undefined>
+  dem: BinaryContract
+  rep: BinaryContract
 }) {
-  const { columns, probs } = props
+  const { columns } = props
+  const dem = useLiveContract(props.dem)
+  const rep = useLiveContract(props.rep)
+  const probs: Record<MatrixParty, number | undefined> = {
+    dem: matrixProb(dem),
+    rep: matrixProb(rep),
+  }
   const [a, b] = columns.map((c) => probs[c.party])
   if (a == null || b == null) return null
   const gap = gapPoints(a, b)
