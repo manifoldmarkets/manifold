@@ -338,32 +338,34 @@ export function GameRow(props: {
                 </div>
                 {gameControls}
               </div>
-              <div className="mx-auto my-auto w-full max-w-lg px-4 pb-5 pt-3 sm:px-5">
+              <div className="@container/scoreboard mx-auto my-auto w-full max-w-md px-4 pb-5 pt-3 sm:px-5">
                 <div className="text-ink-500 mb-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs">
                   <span>
                     {game.league} · {dayjs(game.startTime).format('ddd, MMM D')}
                   </span>
                   <GameWhen game={game} layout="inline" />
                 </div>
-                <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-3 gap-y-3 text-center">
+                <div className="grid grid-cols-2 items-center gap-x-6 gap-y-2 text-center">
                   {[game.home, game.away].map((team, index) => (
                     <div
                       key={team.answerId}
                       className={clsx(
-                        'row-start-1 flex min-w-0 flex-col items-center gap-2',
-                        index === 0 ? 'col-start-1' : 'col-start-3'
+                        'row-start-1 justify-self-center',
+                        index === 0 ? 'col-start-1' : 'col-start-2'
                       )}
                     >
-                      <TeamBadge team={team} />
-                      <h3 className="text-ink-1000 flex min-h-[2.5rem] w-full items-center justify-center text-base font-bold leading-tight sm:text-lg">
-                        <span className="min-w-0 break-words">{team.name}</span>
-                      </h3>
+                      <TeamBadge team={team} featured />
                     </div>
                   ))}
-                  <div className="col-start-2 row-start-1">
+                  <div className="col-span-2 col-start-1 row-start-1 justify-self-center">
                     {score ? (
                       <span
-                        className="text-ink-1000 whitespace-nowrap text-2xl font-bold tabular-nums sm:text-3xl"
+                        className={clsx(
+                          'text-ink-1000 @[22rem]/scoreboard:text-3xl whitespace-nowrap font-bold tabular-nums',
+                          score.home >= 100 || score.away >= 100
+                            ? '@[18rem]/scoreboard:text-2xl text-lg'
+                            : 'text-2xl'
+                        )}
                         aria-label={`${game.home.name} ${score.home}, ${game.away.name} ${score.away}`}
                       >
                         {score.home}
@@ -378,6 +380,17 @@ export function GameRow(props: {
                       </span>
                     )}
                   </div>
+                  {[game.home, game.away].map((team, index) => (
+                    <div
+                      key={team.answerId}
+                      className={clsx(
+                        'row-start-2 min-w-0',
+                        index === 0 ? 'col-start-1' : 'col-start-2'
+                      )}
+                    >
+                      <FeaturedTeamName team={team} sport={game.sport} />
+                    </div>
+                  ))}
                   {[
                     { team: game.home, outcome: 'teamA' as const },
                     { team: game.away, outcome: 'teamB' as const },
@@ -389,8 +402,9 @@ export function GameRow(props: {
                       label={`Bet on ${team.name}`}
                       onClick={() => onBet(outcome)}
                       className={clsx(
-                        '!bg-canvas-0 hover:!bg-primary-600 hover:!text-ink-0 row-start-2 !w-24 max-w-full justify-self-center shadow-sm',
-                        index === 0 ? 'col-start-1' : 'col-start-3'
+                        '!bg-canvas-0 hover:!bg-primary-600 hover:!text-ink-0 row-start-3 max-w-full justify-self-center shadow-sm',
+                        game.draw ? '@[22rem]/scoreboard:!w-24 !w-20' : '!w-24',
+                        index === 0 ? 'col-start-1' : 'col-start-2'
                       )}
                     />
                   ))}
@@ -402,7 +416,7 @@ export function GameRow(props: {
                       aria-label={`Bet on a draw (${Math.round(
                         game.draw.prob * 100
                       )}%)`}
-                      className="text-primary-700 hover:bg-primary-100 focus-visible:ring-primary-500 col-start-2 row-start-2 min-h-[40px] rounded-lg px-2 text-xs font-semibold focus-visible:ring-2 disabled:opacity-60"
+                      className="text-primary-700 hover:bg-primary-100 focus-visible:ring-primary-500 col-span-2 col-start-1 row-start-3 min-h-[40px] justify-self-center rounded-lg px-2 text-xs font-semibold focus-visible:ring-2 disabled:opacity-60"
                     >
                       Draw
                       <br />
@@ -632,8 +646,41 @@ function TeamLine(props: {
   )
 }
 
-function TeamBadge({ team }: { team: ScheduleTeam }) {
+function FeaturedTeamName({
+  team,
+  sport,
+}: {
+  team: ScheduleTeam
+  sport: ScheduleGame['sport']
+}) {
+  // NFL nicknames are one word. Keep the full name for other sports.
+  const split = sport === 'nfl' ? team.name.lastIndexOf(' ') : -1
+  const city = split > 0 ? team.name.slice(0, split) : undefined
+  const name = split > 0 ? team.name.slice(split + 1) : team.name
+  return (
+    <h3
+      aria-label={team.name}
+      className="flex min-h-[2.75rem] w-full flex-col justify-center gap-0.5 [text-wrap:balance]"
+    >
+      {city && <span className="text-ink-500 text-xs font-medium">{city}</span>}
+      <span className="text-ink-1000 @[18rem]/scoreboard:text-base @[22rem]/scoreboard:text-lg text-sm font-bold leading-tight">
+        {name}
+      </span>
+    </h3>
+  )
+}
+
+function TeamBadge({
+  team,
+  featured = false,
+}: {
+  team: ScheduleTeam
+  featured?: boolean
+}) {
   const [failed, setFailed] = useState(false)
+  const size = featured
+    ? 'h-8 w-8 @[18rem]/scoreboard:h-10 @[18rem]/scoreboard:w-10'
+    : 'h-8 w-8'
   if (team.imageUrl && !failed) {
     return (
       <img
@@ -641,13 +688,15 @@ function TeamBadge({ team }: { team: ScheduleTeam }) {
         alt=""
         loading="lazy"
         onError={() => setFailed(true)}
-        className="h-8 w-8 flex-shrink-0 rounded-full object-contain"
+        className={clsx(size, 'flex-shrink-0 rounded-full object-contain')}
       />
     )
   }
   if (team.flag) {
     return (
-      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center">
+      <span
+        className={clsx(size, 'flex flex-shrink-0 items-center justify-center')}
+      >
         <Flag emoji={team.flag} name={team.name} />
       </span>
     )
@@ -656,7 +705,9 @@ function TeamBadge({ team }: { team: ScheduleTeam }) {
   return (
     <span
       className={clsx(
-        'flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-[10px] font-bold',
+        size,
+        'flex flex-shrink-0 items-center justify-center rounded-lg font-bold',
+        featured ? 'text-xs' : 'text-[10px]',
         !color && 'bg-ink-100 text-ink-600'
       )}
       style={
