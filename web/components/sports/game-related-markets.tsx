@@ -142,7 +142,7 @@ export function GameLinkedMarkets(props: {
       >
         <div className="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
           {matchup}
-          <div className="border-primary-200 bg-canvas-0/40 min-w-0 border-t px-4 pb-2 lg:border-l lg:border-t-0">
+          <div className="border-primary-200 bg-canvas-0/40 flex min-w-0 flex-col border-t px-4 pb-2 lg:border-l lg:border-t-0">
             <Row className="min-h-[44px] items-center justify-between gap-2">
               <h3 className="text-ink-600 text-xs font-semibold">
                 Props & more
@@ -166,70 +166,72 @@ export function GameLinkedMarkets(props: {
                 </Col>
               )}
             </div>
+            {moreCount > 0 && (
+              <button
+                type="button"
+                aria-expanded={expanded}
+                aria-controls={panelId}
+                aria-label={`More props & markets for ${game.home.name} vs ${game.away.name}`}
+                onClick={() => setExpanded((value) => !value)}
+                className="text-primary-700 hover:bg-primary-100 focus-visible:ring-primary-500 mt-auto flex min-h-[32px] items-center gap-1.5 self-end rounded-lg px-2 text-xs font-semibold focus-visible:ring-2"
+              >
+                {expanded
+                  ? 'Fewer markets'
+                  : `${moreCount} more ${
+                      moreCount === 1 ? 'market' : 'markets'
+                    }`}
+                <ChevronDownIcon
+                  className={clsx(
+                    'h-4 w-4 transition-transform',
+                    expanded && 'rotate-180'
+                  )}
+                />
+              </button>
+            )}
           </div>
         </div>
         {moreCount > 0 && (
-          <div className="border-primary-200 border-t">
-            <button
-              type="button"
-              aria-expanded={expanded}
-              aria-controls={panelId}
-              aria-label={`More props & markets for ${game.home.name} vs ${game.away.name}`}
-              onClick={() => setExpanded((value) => !value)}
-              className="text-ink-600 hover:bg-primary-100 focus-visible:ring-primary-500 flex min-h-[44px] w-full items-center gap-2 px-4 text-left text-xs font-semibold focus-visible:ring-2"
-            >
-              <ChevronDownIcon
-                className={clsx(
-                  'h-4 w-4 transition-transform',
-                  expanded && 'rotate-180'
-                )}
-              />
-              {expanded
-                ? 'Fewer markets'
-                : `${moreCount} more ${moreCount === 1 ? 'market' : 'markets'}`}
-            </button>
-            <div
-              id={panelId}
-              hidden={!expanded}
-              aria-busy={loadingPreview || loadingRest}
-              className="bg-canvas-50 px-4 pb-2"
-            >
-              {expanded && (
-                <div className="grid gap-x-6 lg:grid-cols-2">
-                  {moreMarkets?.map((c) => (
-                    <div
-                      key={c.id}
-                      className="border-ink-200 min-w-0 border-b last:border-b-0"
-                    >
-                      <RelatedMarketRow contract={c} layout="prop" />
-                    </div>
-                  ))}
-                  {loadingPreview && (
-                    <PropsSkeleton
-                      count={Math.min(
-                        moreCount,
-                        INITIAL_ROWS - HERO_PREVIEW_ROWS
-                      )}
-                    />
-                  )}
-                  {loadingRest && (
-                    <PropsSkeleton
-                      count={Math.min(remainingIds.length, INITIAL_ROWS)}
-                    />
-                  )}
-                  {rest.error && <MarketLoadError refresh={rest.refresh} />}
-                  {!loadingPreview &&
-                    !loadingRest &&
-                    !preview.error &&
-                    !rest.error &&
-                    moreMarkets?.length === 0 && (
-                      <p className="text-ink-500 py-2 text-xs">
-                        No more available linked markets.
-                      </p>
+          <div
+            id={panelId}
+            hidden={!expanded}
+            aria-busy={loadingPreview || loadingRest}
+            className="border-primary-200 bg-canvas-50 border-t px-4 pb-2"
+          >
+            {expanded && (
+              <div className="grid gap-x-6 lg:grid-cols-2">
+                {moreMarkets?.map((c) => (
+                  <div
+                    key={c.id}
+                    className="border-ink-200 min-w-0 border-b last:border-b-0"
+                  >
+                    <RelatedMarketRow contract={c} layout="prop" />
+                  </div>
+                ))}
+                {loadingPreview && (
+                  <PropsSkeleton
+                    count={Math.min(
+                      moreCount,
+                      INITIAL_ROWS - HERO_PREVIEW_ROWS
                     )}
-                </div>
-              )}
-            </div>
+                  />
+                )}
+                {loadingRest && (
+                  <PropsSkeleton
+                    count={Math.min(remainingIds.length, INITIAL_ROWS)}
+                  />
+                )}
+                {rest.error && <MarketLoadError refresh={rest.refresh} />}
+                {!loadingPreview &&
+                  !loadingRest &&
+                  !preview.error &&
+                  !rest.error &&
+                  moreMarkets?.length === 0 && (
+                    <p className="text-ink-500 py-2 text-xs">
+                      No more available linked markets.
+                    </p>
+                  )}
+              </div>
+            )}
           </div>
         )}
       </div>
