@@ -12,7 +12,6 @@ import { ScheduleGame } from 'common/sports-schedule'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { GameRow, GameRowSkeleton } from 'web/components/sports/game-row'
-import { SportsHero } from './sports-hero'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -343,8 +342,8 @@ export function GameFeed(props: {
           )}
         </div>
         {featured && (
-          <SportsHero
-            kind="game"
+          <GameRow
+            variant="featured"
             game={featured}
             showLeague={showLeague}
             liked={likes.liked.has(featured.id)}

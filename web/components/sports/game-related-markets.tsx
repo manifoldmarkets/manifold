@@ -286,16 +286,7 @@ export function GameLinkedMarkets(props: {
                 No linked markets yet.
               </p>
             ) : preview.error && !preview.data ? (
-              <p className="text-ink-500 py-2 text-xs" role="alert">
-                Couldn't load these markets.
-                <button
-                  type="button"
-                  onClick={() => void preview.refresh()}
-                  className="text-primary-700 ml-2 underline"
-                >
-                  Retry
-                </button>
-              </p>
+              <MarketLoadError refresh={preview.refresh} />
             ) : contracts === undefined ? (
               <PropsSkeleton count={firstIds.length} />
             ) : (
@@ -314,16 +305,7 @@ export function GameLinkedMarkets(props: {
                   />
                 )}
                 {showAll && rest.error && (
-                  <p className="text-ink-500 py-2 text-xs" role="alert">
-                    Couldn't load more markets.
-                    <button
-                      type="button"
-                      onClick={() => void rest.refresh()}
-                      className="text-primary-700 ml-2 underline"
-                    >
-                      Retry
-                    </button>
-                  </p>
+                  <MarketLoadError refresh={rest.refresh} />
                 )}
                 {remainingIds.length > 0 && (
                   <button
