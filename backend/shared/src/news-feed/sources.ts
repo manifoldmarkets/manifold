@@ -189,10 +189,14 @@ const cleanWikitext = (s: string) =>
     .replace(/\s+/g, ' ')
     .trim()
 
-const firstSentence = (text: string) => {
-  const m = text.match(/^(.+?[.!?])(\s|$)/)
-  const s = m ? m[1] : text
-  return s.length > 160 ? s.slice(0, 157).trimEnd() + '…' : s
+/** The portal bullets are a sentence or two; the headline is the text
+itself, cut at a word if it runs long. Sentence splitting is unreliable
+because of abbreviations such as "U.S.". */
+const headlineOf = (text: string) => {
+  if (text.length <= 150) return text
+  const cut = text.slice(0, 150)
+  const at = cut.lastIndexOf(' ')
+  return (at > 80 ? cut.slice(0, at) : cut).trimEnd() + '…'
 }
 
 /** Parses one day's portal page into stories: the deepest bullets that cite
@@ -238,7 +242,7 @@ export function parseWikiCurrentEvents(wikitext: string, day: Date) {
     stories.push({
       origin: 'wikipedia',
       key: text,
-      headline: firstSentence(text),
+      headline: headlineOf(text),
       summary: text,
       topic,
       category,
