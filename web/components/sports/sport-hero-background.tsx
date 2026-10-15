@@ -34,12 +34,19 @@ const SPORT_ICONS: Partial<Record<AnySportKey, IconType>> = {
 }
 
 /** Decorative sport identity using the app's existing icon library. */
-export function SportHeroBackground({ sport }: { sport?: AnySportKey }) {
+export function SportHeroBackground({
+  sport,
+  scoreboard = false,
+}: {
+  sport?: AnySportKey
+  scoreboard?: boolean
+}) {
   const Ball = sport && BALL_ICONS[sport]
   const Icon = (sport && SPORT_ICONS[sport]) || MdEmojiEvents
   const racing = sport === 'f1'
+  const ballSize = scoreboard ? 48 : 80
   const positionClass =
-    'text-primary-600 pointer-events-none absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 select-none'
+    'text-primary-600 pointer-events-none absolute left-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 select-none'
 
   if (Ball || sport === 'golf' || sport === 'cricket') {
     return (
@@ -49,6 +56,7 @@ export function SportHeroBackground({ sport }: { sport?: AnySportKey }) {
         viewBox="0 0 360 180"
         className={clsx(
           positionClass,
+          scoreboard ? 'top-[calc(50%-3rem)]' : 'top-1/2',
           'h-full max-h-44 w-full max-w-sm opacity-[0.14]'
         )}
       >
@@ -66,13 +74,18 @@ export function SportHeroBackground({ sport }: { sport?: AnySportKey }) {
           opacity="0.5"
         />
         {Ball ? (
-          <Ball x="140" y="8" size={80} strokeWidth="1.25" />
+          <Ball
+            x={180 - ballSize / 2}
+            y={48 - ballSize / 2}
+            size={ballSize}
+            strokeWidth="1.25"
+          />
         ) : (
           <svg
-            x="140"
-            y="8"
-            width="80"
-            height="80"
+            x={180 - ballSize / 2}
+            y={48 - ballSize / 2}
+            width={ballSize}
+            height={ballSize}
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -111,7 +124,7 @@ export function SportHeroBackground({ sport }: { sport?: AnySportKey }) {
       focusable="false"
       className={clsx(
         positionClass,
-        'opacity-[0.07]',
+        'top-1/2 opacity-[0.07]',
         racing ? 'h-24 w-56 sm:h-28 sm:w-72' : 'h-24 w-24 sm:h-28 sm:w-28'
       )}
     />

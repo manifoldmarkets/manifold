@@ -330,7 +330,7 @@ export function GameRow(props: {
           game={game}
           matchup={
             <div className="relative isolate flex min-w-0 flex-col overflow-hidden">
-              <SportHeroBackground sport={game.sport} />
+              <SportHeroBackground sport={game.sport} scoreboard />
               <div className="flex items-center gap-2 px-4 py-2 sm:px-5">
                 <div className="@container flex min-w-[1rem] flex-1 items-center gap-2">
                   <SportsMarketBadge market={game} />
