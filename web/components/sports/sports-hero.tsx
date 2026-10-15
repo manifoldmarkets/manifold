@@ -46,11 +46,13 @@ type MarketHeroProps = HeroActions & {
   kind: 'market'
   market: SportsHeroMarket
   sport?: AnySportKey
+  /** Display name from the sports index for sports outside the curated list. */
+  sportLabel?: string
   /** Already-loaded rows; linking and fetching remain with the caller. */
   linkedMarkets?: { id: string; content: ReactNode }[]
   /** Event metadata comes from the caller, never from parsing the question. */
   event?: {
-    label: string
+    label?: string
     startTime?: number
     chanceLabel?: string
     outcomesLabel?: string
@@ -73,6 +75,7 @@ const PREVIEW_COUNT = 4
 function MarketHero({
   market,
   sport,
+  sportLabel,
   event,
   linkedMarkets = [],
   liked,
@@ -202,6 +205,7 @@ function MarketHero({
             <div className="text-ink-500 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
               <span>
                 {event?.label ??
+                  sportLabel ??
                   (sport ? SPORT_BY_KEY[sport]?.label : undefined) ??
                   'Sports'}
               </span>
