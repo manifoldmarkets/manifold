@@ -2,7 +2,7 @@ import clsx from 'clsx'
 
 import {
   contractPath,
-  BinaryContract,
+  BinaryOrPseudoNumericContract,
   CPMMMultiContract,
   CPMMNumericContract,
   isBinaryMulti,
@@ -29,7 +29,7 @@ import { MultiBetProps } from 'client-common/lib/bet'
 import { getAnswerColor } from '../charts/contract/choice'
 
 export function BetDialog(props: {
-  contract: BinaryContract
+  contract: BinaryOrPseudoNumericContract
   open: boolean
   setOpen: (open: boolean) => void
   trackingLocation: string
@@ -68,7 +68,7 @@ export function BetDialog(props: {
   )
 }
 
-/** Shared, single-ticket dialog for binary, versus and individual answers. */
+/** Shared ticket for cpmm-1 markets, versus markets and individual answers. */
 export function TradeDialog(
   props: {
     open: boolean
@@ -79,7 +79,7 @@ export function TradeDialog(
     description?: ReactNode
     pseudonym?: ComponentProps<typeof BuyPanel>['pseudonym']
   } & (
-    | { contract: BinaryContract; multiProps?: never }
+    | { contract: BinaryOrPseudoNumericContract; multiProps?: never }
     | {
         contract: CPMMMultiContract | CPMMNumericContract
         multiProps: MultiBetProps
@@ -101,10 +101,9 @@ export function TradeDialog(
     NO: { pseudonymName: 'NO', pseudonymColor: 'red' as const },
   }
 
-  const initialProb =
-    contract.outcomeType === 'BINARY'
-      ? getProbability(contract)
-      : getAnswerProbability(contract, multiProps!.answerToBuy.id)
+  const initialProb = multiProps
+    ? getAnswerProbability(contract, multiProps.answerToBuy.id)
+    : getProbability(contract)
   // Named sides (e.g. Republican/Democratic) show the chosen side's chance;
   // plain YES/NO shows the YES chance, which buying NO moves down.
   const sideProb = showsSideProbability(contract, pseudonym)

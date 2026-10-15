@@ -29,7 +29,7 @@ const expirationOptions = EXPIRATION_OPTIONS.filter((o) => o.value !== -1)
 
 // Knockout markets have no Draw answer, so they're plain binary-multi "versus"
 // markets — bet on them with Manifold's standard versus modal (MultiBetDialog →
-// BinaryMultiAnswersPanel) instead of the custom three-way sports panel below.
+// TradeDialog) instead of the custom three-way sports panel below.
 // Loads the contract by id the same way SportsBetPanel does.
 export function SportsVersusBetDialog({
   contractId,

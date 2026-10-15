@@ -7,16 +7,10 @@ import {
   Contract,
   CPMMMultiContract,
   isMultiCpmm,
-  isBinaryMulti,
-  getMainBinaryMCAnswer,
 } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
 import { floatingEqual } from 'common/util/math'
-import {
-  BetDialog,
-  MultiBetDialog,
-  TradeDialog,
-} from 'web/components/bet/bet-dialog'
+import { BetDialog, TradeDialog } from 'web/components/bet/bet-dialog'
 import { Button } from 'web/components/buttons/button'
 import {
   BinaryUserPosition,
@@ -121,27 +115,19 @@ function MultiOutcomes(props: { contract: CPMMMultiContract; race: Race }) {
           ) : null
         }}
       />
-      {betting &&
-        (isBinaryMulti(contract) ? (
-          <MultiBetDialog
-            contract={contract}
-            open
-            setOpen={(open) => !open && setBetting(undefined)}
-            initialOutcome={
-              betting.id === getMainBinaryMCAnswer(contract)?.id ? 'YES' : 'NO'
-            }
-          />
-        ) : (
-          <TradeDialog
-            contract={contract}
-            multiProps={{ answers: contract.answers, answerToBuy: betting }}
-            open
-            setOpen={(open) => !open && setBetting(undefined)}
-            title={`${betting.text}, ${race.label}`}
-            initialOutcome="YES"
-            trackingLocation="election map race"
-          />
-        ))}
+      {/* Position badges and selling are keyed by the stored answer id. Keep
+          map trades on the clicked answer, including two-answer races. */}
+      {betting && (
+        <TradeDialog
+          contract={contract}
+          multiProps={{ answers: contract.answers, answerToBuy: betting }}
+          open
+          setOpen={(open) => !open && setBetting(undefined)}
+          title={`${betting.text}, ${race.label}`}
+          initialOutcome="YES"
+          trackingLocation="election map race"
+        />
+      )}
     </>
   )
 }

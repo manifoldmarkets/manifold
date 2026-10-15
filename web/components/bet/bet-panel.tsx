@@ -64,7 +64,7 @@ import { showsSideProbability, versusSide, versusSideProb } from 'common/versus'
 import { getBetSharePrice } from 'common/share-bet'
 import { Button } from '../buttons/button'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
-import { getAnswerColor } from '../charts/contract/choice'
+import { getAnswerColor, getPseudonym } from '../charts/contract/choice'
 import { LocationMonitor } from '../gidx/location-monitor'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -449,18 +449,32 @@ export const BuyPanelBody = (
   // Handle order book click to prefill limit order
   const handleOrderClick = useEvent((clickedOrder: OrderClickData) => {
     const fillParams = calculateOrderFillParams(clickedOrder)
+    // The versus order book quotes the main answer. Mirror the outcome when
+    // this ticket buys the other answer (e.g. a candidate opened from the map).
+    const outcome =
+      versusSide(contract, {
+        answerId: multiProps?.answerToBuy.id,
+        outcome: fillParams.outcome,
+      })?.sideOutcome ?? fillParams.outcome
     // The limit order panel's probability input is the price of the side
     // being bought when the sides are named, so mirror the NO side's price.
     const limitProb = showsSideProb
       ? versusSideProb(fillParams.outcome, fillParams.limitProb)
       : fillParams.limitProb
-    setPrefillLimitOrder({ ...fillParams, limitProb, timestamp: Date.now() })
-    setOutcome(fillParams.outcome)
+    setPrefillLimitOrder({
+      ...fillParams,
+      outcome,
+      limitProb,
+      timestamp: Date.now(),
+    })
+    setOutcome(outcome)
     setBetTypeSetting('Limit')
     setShowOrders(false)
-    requestAnimationFrame(() =>
-      tradeFormRef.current?.querySelector('input')?.focus()
-    )
+    if (compact && !isIOS() && !isAndroid()) {
+      requestAnimationFrame(() =>
+        tradeFormRef.current?.querySelector('input')?.focus()
+      )
+    }
     toast('Expiration set to immediate', { icon: '⏱️' })
   })
 
@@ -697,7 +711,7 @@ export const BuyPanelBody = (
     ? `Are you sure you want to move the market to ${displayedAfter}?`
     : undefined
 
-  const choicesMap: { [key: string]: string } = isStonk
+  const choicesMap: Record<string, 'YES' | 'NO'> = isStonk
     ? { Buy: 'YES', Short: 'NO' }
     : props.pseudonym
     ? {
@@ -834,7 +848,9 @@ export const BuyPanelBody = (
         contract={contract}
         limitBets={orderBookBets}
         answer={multiProps?.answerToBuy}
-        pseudonym={props.pseudonym}
+        // Versus columns always refer to the main answer, even when the
+        // ticket itself is for the other answer. Use the market's side names.
+        pseudonym={isBinaryMC ? getPseudonym(contract) : props.pseudonym}
         onOrderClick={handleOrderClick}
       />
     </>
@@ -862,13 +878,14 @@ export const BuyPanelBody = (
           {compact && props.pseudonym ? (
             <Row
               className="w-full min-w-0 gap-1"
+              role="group"
               aria-label="Choose an outcome"
             >
-              {(['YES', 'NO'] as const).map((side) => (
+              {Object.entries(choicesMap).map(([label, side]) => (
                 <button
                   key={side}
                   type="button"
-                  title={props.pseudonym?.[side].pseudonymName}
+                  title={label}
                   aria-pressed={outcome === side}
                   onClick={() => {
                     setOutcome(side)
@@ -881,9 +898,7 @@ export const BuyPanelBody = (
                       : 'text-ink-600 hover:bg-canvas-50 border-transparent'
                   )}
                 >
-                  <span className="line-clamp-2">
-                    {props.pseudonym?.[side].pseudonymName}
-                  </span>
+                  <span className="line-clamp-2">{label}</span>
                 </button>
               ))}
             </Row>
