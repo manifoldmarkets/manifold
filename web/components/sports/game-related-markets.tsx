@@ -1,7 +1,7 @@
 import { ChevronDownIcon, PlusIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   Contract,
   contractPath,
@@ -34,6 +34,7 @@ import {
 } from './sports-market-badge'
 
 const INITIAL_ROWS = 3
+const HERO_PREVIEW_ROWS = 2
 // Lines first, then props, then whatever else names the teams.
 const GROUP_ORDER: RelatedGroup[] = ['game-lines', 'props', 'community']
 
@@ -42,10 +43,15 @@ const GROUP_ORDER: RelatedGroup[] = ['game-lines', 'props', 'community']
  * the schedule's matching: official lines and props by event id, and
  * community markets that name both teams near kickoff. Markets linked to a
  * game will go here too. Warm the first three rows near the viewport;
- * remaining markets load only when requested. Live rows mount on expansion.
+ * remaining markets load only when requested. Live rows mount only for the
+ * hero preview or an open section.
  */
-export function GameLinkedMarkets(props: { game: ScheduleGame }) {
-  const { game } = props
+export function GameLinkedMarkets(props: {
+  game: ScheduleGame
+  /** The hero's scoreboard, beside a small always-visible market preview. */
+  matchup?: ReactNode
+}) {
+  const { game, matchup } = props
   const [expanded, setExpanded] = useState(false)
   const panelId = useId()
   const [showAll, setShowAll] = useState(false)
@@ -74,6 +80,7 @@ export function GameLinkedMarkets(props: { game: ScheduleGame }) {
     [game.related]
   )
   const ids = ordered.map((r) => r.id)
+  const featured = !!matchup && ids.length > 0
   const firstIds = ids.slice(0, INITIAL_ROWS)
   const remainingIds = ids.slice(INITIAL_ROWS)
   // The existing request cache deduplicates hover, focus, scrolling, and
@@ -90,29 +97,156 @@ export function GameLinkedMarkets(props: { game: ScheduleGame }) {
     { ids: remainingIds },
     undefined,
     `sports-related-${game.id}-rest`,
-    remainingIds.length > 0 && expanded && showAll
+    remainingIds.length > 0 && expanded && (featured || showAll)
   )
   const contracts = useMemo(() => {
     if (!preview.data) return undefined
     const byId = new Map(
       [...preview.data, ...(rest.data ?? [])].map((c) => [c.id, c])
     )
-    return (showAll ? ids : firstIds)
+    return (featured || showAll ? ids : firstIds)
       .map((id) => byId.get(id))
       .filter((c): c is Contract => !!c)
-  }, [preview.data, rest.data, ids.join(','), showAll])
+  }, [preview.data, rest.data, ids.join(','), showAll, featured])
   const loadingPreview = firstIds.length > 0 && !preview.data && !preview.error
   const loadingRest =
-    showAll && remainingIds.length > 0 && !rest.data && !rest.error
+    (featured || showAll) &&
+    expanded &&
+    remainingIds.length > 0 &&
+    !rest.data &&
+    !rest.error
+
+  const addMarket = (
+    <Link
+      href={createMarketHref(game)}
+      onClick={() =>
+        track('sports create related market', { contractId: game.id })
+      }
+      className="text-ink-500 hover:text-primary-700 focus-visible:ring-primary-500 flex min-h-[44px] shrink-0 items-center gap-1 rounded-lg px-4 text-xs font-medium focus-visible:ring-2"
+    >
+      <PlusIcon className="h-3.5 w-3.5" />
+      Add a market
+    </Link>
+  )
+
+  if (featured) {
+    const sidebarIds = ids.slice(0, HERO_PREVIEW_ROWS)
+    const sidebarMarkets = contracts?.filter((c) => sidebarIds.includes(c.id))
+    const moreMarkets = contracts?.filter((c) => !sidebarIds.includes(c.id))
+    const moreCount = ids.length - sidebarIds.length
+    return (
+      <div
+        ref={disclosureRef}
+        onPointerEnter={() => setNearby(true)}
+        onFocusCapture={() => setNearby(true)}
+      >
+        <div className="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+          {matchup}
+          <div className="border-primary-200 bg-canvas-0/40 min-w-0 border-t px-4 pb-2 lg:border-l lg:border-t-0">
+            <Row className="min-h-[44px] items-center justify-between gap-2">
+              <h3 className="text-ink-600 text-xs font-semibold">
+                Props & more
+              </h3>
+              {addMarket}
+            </Row>
+            <div aria-busy={loadingPreview}>
+              {preview.error && !preview.data ? (
+                <MarketLoadError refresh={preview.refresh} />
+              ) : !sidebarMarkets ? (
+                <PropsSkeleton count={sidebarIds.length} />
+              ) : sidebarMarkets.length === 0 ? (
+                <p className="text-ink-500 py-2 text-xs">
+                  No available linked markets.
+                </p>
+              ) : (
+                <Col className="divide-ink-200 divide-y">
+                  {sidebarMarkets.map((c) => (
+                    <RelatedMarketRow key={c.id} contract={c} layout="prop" />
+                  ))}
+                </Col>
+              )}
+            </div>
+          </div>
+        </div>
+        {moreCount > 0 && (
+          <div className="border-primary-200 border-t">
+            <button
+              type="button"
+              aria-expanded={expanded}
+              aria-controls={panelId}
+              aria-label={`More props & markets for ${game.home.name} vs ${game.away.name}`}
+              onClick={() => setExpanded((value) => !value)}
+              className="text-ink-600 hover:bg-primary-100 focus-visible:ring-primary-500 flex min-h-[44px] w-full items-center gap-2 px-4 text-left text-xs font-semibold focus-visible:ring-2"
+            >
+              <ChevronDownIcon
+                className={clsx(
+                  'h-4 w-4 transition-transform',
+                  expanded && 'rotate-180'
+                )}
+              />
+              {expanded
+                ? 'Fewer markets'
+                : `${moreCount} more ${moreCount === 1 ? 'market' : 'markets'}`}
+            </button>
+            <div
+              id={panelId}
+              hidden={!expanded}
+              aria-busy={loadingPreview || loadingRest}
+              className="bg-canvas-50 px-4 pb-2"
+            >
+              {expanded && (
+                <div className="grid gap-x-6 lg:grid-cols-2">
+                  {moreMarkets?.map((c) => (
+                    <div
+                      key={c.id}
+                      className="border-ink-200 min-w-0 border-b last:border-b-0"
+                    >
+                      <RelatedMarketRow contract={c} layout="prop" />
+                    </div>
+                  ))}
+                  {loadingPreview && (
+                    <PropsSkeleton
+                      count={Math.min(
+                        moreCount,
+                        INITIAL_ROWS - HERO_PREVIEW_ROWS
+                      )}
+                    />
+                  )}
+                  {loadingRest && (
+                    <PropsSkeleton
+                      count={Math.min(remainingIds.length, INITIAL_ROWS)}
+                    />
+                  )}
+                  {rest.error && <MarketLoadError refresh={rest.refresh} />}
+                  {!loadingPreview &&
+                    !loadingRest &&
+                    !preview.error &&
+                    !rest.error &&
+                    moreMarkets?.length === 0 && (
+                      <p className="text-ink-500 py-2 text-xs">
+                        No more available linked markets.
+                      </p>
+                    )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div
       ref={disclosureRef}
       onPointerEnter={() => setNearby(true)}
       onFocusCapture={() => setNearby(true)}
-      className="border-ink-100 rounded-b-xl border-t"
+      className={clsx('border-ink-100 rounded-b-xl', !matchup && 'border-t')}
     >
-      <Row className="items-center">
+      {matchup}
+      <Row
+        className={clsx('items-center', matchup && 'border-ink-100 border-t')}
+      >
         <button
           type="button"
           aria-expanded={expanded}
@@ -135,18 +269,7 @@ export function GameLinkedMarkets(props: { game: ScheduleGame }) {
             <span className="text-ink-400 ml-auto font-normal">Explore</span>
           )}
         </button>
-        {expanded && (
-          <Link
-            href={createMarketHref(game)}
-            onClick={() =>
-              track('sports create related market', { contractId: game.id })
-            }
-            className="text-ink-500 hover:text-primary-700 focus-visible:ring-primary-500 flex min-h-[44px] shrink-0 items-center gap-1 rounded-lg px-4 text-xs font-medium focus-visible:ring-2"
-          >
-            <PlusIcon className="h-3.5 w-3.5" />
-            Add a market
-          </Link>
-        )}
+        {expanded && addMarket}
       </Row>
       <div
         id={panelId}
@@ -217,6 +340,21 @@ export function GameLinkedMarkets(props: { game: ScheduleGame }) {
         )}
       </div>
     </div>
+  )
+}
+
+function MarketLoadError({ refresh }: { refresh: () => unknown }) {
+  return (
+    <p className="text-ink-500 py-2 text-xs" role="alert">
+      Couldn't load these markets.
+      <button
+        type="button"
+        onClick={() => void refresh()}
+        className="text-primary-700 ml-2 underline"
+      >
+        Retry
+      </button>
+    </p>
   )
 }
 

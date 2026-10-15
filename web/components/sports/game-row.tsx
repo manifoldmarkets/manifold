@@ -1,4 +1,4 @@
-import { ChevronRightIcon, HeartIcon } from '@heroicons/react/solid'
+import { ChevronRightIcon, HeartIcon, UsersIcon } from '@heroicons/react/solid'
 import { HeartIcon as OutlineHeartIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
@@ -131,6 +131,31 @@ export function GameRow(props: {
   const homeWon = game.winnerAnswerId === game.home.answerId
   const awayWon = game.winnerAnswerId === game.away.answerId
   const drawWon = !!game.draw && game.winnerAnswerId === game.draw.answerId
+
+  const gameStats = (
+    <span
+      className="text-ink-500 flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] tabular-nums"
+      title={`Ṁ${shortFormatNumber(game.volume)} traded · ${
+        game.uniqueBettorCount
+      } traders`}
+    >
+      Ṁ{shortFormatNumber(game.volume)}
+      <span aria-hidden>·</span>
+      <UsersIcon className="h-3.5 w-3.5" aria-hidden />
+      {shortFormatNumber(game.uniqueBettorCount)}
+      <span className="sr-only">traders</span>
+    </span>
+  )
+  const gameLink = (
+    <Link
+      href={gamePath(game)}
+      aria-label={`Open ${game.home.name} vs ${game.away.name} game page`}
+      title="Game page"
+      className="text-ink-400 hover:text-primary-700 hover:bg-primary-100 focus-visible:ring-primary-500 flex h-10 w-8 shrink-0 items-center justify-center rounded-lg focus-visible:ring-2"
+    >
+      <ChevronRightIcon className="h-5 w-5" aria-hidden />
+    </Link>
+  )
 
   const onBet = (outcome: MatchOutcome) => {
     if (!user) {
@@ -281,87 +306,109 @@ export function GameRow(props: {
           className
         )}
       >
-        <div className="flex items-center justify-between gap-2 px-4 pt-2 sm:px-5">
-          <div className="flex min-w-0 items-center gap-2">
+        <div className="flex items-center gap-2 px-4 py-1 sm:px-5">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             <SportsMarketBadge market={game} />
-            <span className="text-primary-700 text-xs font-bold uppercase tracking-wider">
+            <span className="text-primary-700 text-[10px] font-bold uppercase tracking-wide sm:text-xs">
               {live ? 'Most traded live game' : 'Most traded upcoming game'}
             </span>
           </div>
-          {onToggleLike && (
-            <button
-              type="button"
-              onClick={onToggleLike}
-              disabled={likeDisabled}
-              aria-pressed={!!liked}
-              aria-label={`${liked ? 'Unlike' : 'Like'} ${game.home.name} vs ${
-                game.away.name
-              }`}
-              className={clsx(
-                'hover:bg-primary-100 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg disabled:opacity-50',
-                liked ? 'text-primary-600' : 'text-ink-400'
-              )}
-            >
-              <LikeIcon className="h-5 w-5" aria-hidden />
-            </button>
-          )}
-        </div>
-        <div className="grid grid-cols-2 gap-4 px-4 pb-4 pt-1 sm:px-5">
-          {[
-            { team: game.home, outcome: 'teamA' as const, score: score?.home },
-            { team: game.away, outcome: 'teamB' as const, score: score?.away },
-          ].map(({ team, outcome, score: teamScore }) => (
-            <div key={team.answerId} className="min-w-0">
-              <div className="mb-2 flex items-center gap-2">
-                <TeamBadge team={team} />
-                <span className="text-ink-500 text-xs font-semibold">
-                  {team.shortName}
-                </span>
-              </div>
-              <h3
-                className="text-ink-1000 mb-3 min-h-[3rem] text-lg font-bold leading-tight sm:min-h-0 sm:truncate sm:text-2xl"
-                title={team.name}
-              >
-                {team.name}
-                {teamScore != null && (
-                  <span className="ml-2 tabular-nums">{teamScore}</span>
+          {gameStats}
+          <div className="flex shrink-0 items-center">
+            {onToggleLike && (
+              <button
+                type="button"
+                onClick={onToggleLike}
+                disabled={likeDisabled}
+                aria-pressed={!!liked}
+                aria-label={`${liked ? 'Unlike' : 'Like'} ${
+                  game.home.name
+                } vs ${game.away.name}`}
+                className={clsx(
+                  'hover:bg-primary-100 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg disabled:opacity-50',
+                  liked ? 'text-primary-600' : 'text-ink-400'
                 )}
-              </h3>
-              <PriceChip
-                prob={team.prob}
-                disabled={!canBet}
-                label={`Bet on ${team.name}`}
-                onClick={() => onBet(outcome)}
-                className="!bg-canvas-0 hover:!bg-primary-600 hover:!text-ink-0 !w-full !py-2 !text-lg shadow-sm"
-              />
-            </div>
-          ))}
-        </div>
-        {game.draw && (
-          <button
-            type="button"
-            className="text-primary-700 mx-4 mb-3 text-sm font-semibold"
-            onClick={() => onBet('draw')}
-          >
-            Draw {Math.round(game.draw.prob * 100)}%
-          </button>
-        )}
-        <div className="border-primary-200 flex flex-wrap items-center justify-between gap-2 border-t px-4 py-3 text-xs sm:px-5">
-          <div className="text-ink-600 flex flex-wrap items-center gap-2">
-            <span>
-              {game.league} · {dayjs(game.startTime).format('ddd, MMM D')}
-            </span>
-            <GameWhen game={game} layout="inline" />
+              >
+                <LikeIcon className="h-5 w-5" aria-hidden />
+              </button>
+            )}
+            {gameLink}
           </div>
-          <Link
-            href={gamePath(game)}
-            className="text-primary-700 flex items-center gap-1 font-semibold"
-          >
-            Ṁ{shortFormatNumber(game.volume)} traded{' '}
-            <ChevronRightIcon className="h-4 w-4" />
-          </Link>
         </div>
-        <GameLinkedMarkets game={game} />
+        <GameLinkedMarkets
+          game={game}
+          matchup={
+            <div className="mx-auto w-full max-w-lg self-center px-4 pb-5 pt-3 sm:px-5">
+              <div className="text-ink-500 mb-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs">
+                <span>
+                  {game.league} · {dayjs(game.startTime).format('ddd, MMM D')}
+                </span>
+                <GameWhen game={game} layout="inline" />
+              </div>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-3 gap-y-3 text-center">
+                {[game.home, game.away].map((team, index) => (
+                  <div
+                    key={team.answerId}
+                    className={clsx(
+                      'row-start-1 flex min-w-0 flex-col items-center gap-2',
+                      index === 0 ? 'col-start-1' : 'col-start-3'
+                    )}
+                  >
+                    <TeamBadge team={team} />
+                    <h3 className="text-ink-1000 flex min-h-[2.5rem] w-full items-center justify-center text-base font-bold leading-tight sm:text-lg">
+                      <span className="min-w-0 break-words">{team.name}</span>
+                    </h3>
+                  </div>
+                ))}
+                <div className="col-start-2 row-start-1">
+                  {score ? (
+                    <span
+                      className="text-ink-1000 whitespace-nowrap text-2xl font-bold tabular-nums sm:text-3xl"
+                      aria-label={`${game.home.name} ${score.home}, ${game.away.name} ${score.away}`}
+                    >
+                      {score.home}
+                      <span className="text-ink-400 mx-1.5 font-normal">–</span>
+                      {score.away}
+                    </span>
+                  ) : (
+                    <span className="text-ink-400 text-sm font-medium">vs</span>
+                  )}
+                </div>
+                {[
+                  { team: game.home, outcome: 'teamA' as const },
+                  { team: game.away, outcome: 'teamB' as const },
+                ].map(({ team, outcome }, index) => (
+                  <PriceChip
+                    key={team.answerId}
+                    prob={team.prob}
+                    disabled={!canBet}
+                    label={`Bet on ${team.name}`}
+                    onClick={() => onBet(outcome)}
+                    className={clsx(
+                      '!bg-canvas-0 hover:!bg-primary-600 hover:!text-ink-0 row-start-2 !w-24 max-w-full justify-self-center shadow-sm',
+                      index === 0 ? 'col-start-1' : 'col-start-3'
+                    )}
+                  />
+                ))}
+                {game.draw && (
+                  <button
+                    type="button"
+                    disabled={!canBet}
+                    onClick={() => onBet('draw')}
+                    aria-label={`Bet on a draw (${Math.round(
+                      game.draw.prob * 100
+                    )}%)`}
+                    className="text-primary-700 hover:bg-primary-100 focus-visible:ring-primary-500 col-start-2 row-start-2 min-h-[40px] rounded-lg px-2 text-xs font-semibold focus-visible:ring-2 disabled:opacity-60"
+                  >
+                    Draw
+                    <br />
+                    {Math.round(game.draw.prob * 100)}%
+                  </button>
+                )}
+              </div>
+            </div>
+          }
+        />
         {dialog}
       </section>
     )
@@ -376,45 +423,39 @@ export function GameRow(props: {
           className
         )}
       >
-        <Row className="min-h-[3rem] items-center gap-2 px-4 py-1">
-          <GameWhen game={game} layout="inline" />
-          <SportsMarketBadge market={game} />
-          {showLeague && (
-            <span className="text-ink-400 truncate text-[10px] font-semibold uppercase tracking-wide">
-              {game.league}
-            </span>
-          )}
-          {onToggleLike && (
-            <button
-              type="button"
-              onClick={onToggleLike}
-              disabled={likeDisabled}
-              aria-pressed={!!liked}
-              aria-label={`${liked ? 'Unlike' : 'Like'} ${game.home.name} vs ${
-                game.away.name
-              }`}
-              className={clsx(
-                'hover:bg-canvas-100 ml-auto flex h-10 w-10 items-center justify-center rounded-lg disabled:opacity-50',
-                liked ? 'text-primary-600' : 'text-ink-400'
-              )}
-            >
-              <LikeIcon className="h-5 w-5" aria-hidden />
-            </button>
-          )}
+        <Row className="min-h-[3rem] items-center gap-1 px-3 py-1">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+            <GameWhen game={game} layout="inline" />
+            <SportsMarketBadge market={game} />
+            {showLeague && (
+              <span className="text-ink-400 truncate text-[10px] font-semibold uppercase tracking-wide">
+                {game.league}
+              </span>
+            )}
+            <div className="ml-auto">{gameStats}</div>
+          </div>
+          <div className="flex shrink-0 items-center">
+            {onToggleLike && (
+              <button
+                type="button"
+                onClick={onToggleLike}
+                disabled={likeDisabled}
+                aria-pressed={!!liked}
+                aria-label={`${liked ? 'Unlike' : 'Like'} ${
+                  game.home.name
+                } vs ${game.away.name}`}
+                className={clsx(
+                  'hover:bg-canvas-100 flex h-10 w-10 items-center justify-center rounded-lg disabled:opacity-50',
+                  liked ? 'text-primary-600' : 'text-ink-400'
+                )}
+              >
+                <LikeIcon className="h-5 w-5" aria-hidden />
+              </button>
+            )}
+            {gameLink}
+          </div>
         </Row>
         <div className="px-4 pb-3">{teams}</div>
-        <div className="text-ink-500 flex flex-wrap items-center justify-between gap-2 px-4 pb-3 text-xs">
-          <span>
-            Ṁ{shortFormatNumber(game.volume)} · {game.uniqueBettorCount}{' '}
-            {game.uniqueBettorCount === 1 ? 'trader' : 'traders'}
-          </span>
-          <Link
-            href={gamePath(game)}
-            className="hover:text-primary-700 flex items-center gap-0.5"
-          >
-            Game page <ChevronRightIcon className="h-3.5 w-3.5" />
-          </Link>
-        </div>
         <GameLinkedMarkets game={game} />
         {dialog}
       </div>
