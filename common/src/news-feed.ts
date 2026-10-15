@@ -26,7 +26,12 @@ export const NEWS_CATEGORY_KEYS: NewsCategory[] = [
 export const isNewsCategory = (s: string): s is NewsCategory =>
   (NEWS_CATEGORY_KEYS as string[]).includes(s)
 
-export type NewsSourceLink = { name: string; url: string }
+export type NewsSourceLink = {
+  name: string
+  url: string
+  /** The outlet's own site, when the link itself is an aggregator redirect. */
+  site?: string
+}
 
 export type NewsStoryOrigin = 'wikipedia' | 'google-news'
 

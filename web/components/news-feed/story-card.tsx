@@ -180,7 +180,10 @@ function SourcesRow(props: { sources: NewsSourceLink[] }) {
           rel="noreferrer"
           className="text-ink-500 hover:text-primary-700 inline-flex items-center whitespace-nowrap"
         >
-          <LinkFavicon href={s.url} />
+          {/* Aggregator redirects would show the aggregator's icon. */}
+          {(s.site || !/news\.google\.com/.test(s.url)) && (
+            <LinkFavicon href={s.site ?? s.url} />
+          )}
           {s.name}
         </a>
       ))}

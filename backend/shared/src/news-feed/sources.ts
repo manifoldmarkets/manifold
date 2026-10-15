@@ -45,11 +45,21 @@ export const hostnameOf = (url: string) => {
   }
 }
 
-/** One link per outlet, first seen wins. */
+const AGGREGATOR_HOSTS = new Set(['news.google.com'])
+
+/** True for links that bounce through an aggregator rather than the outlet. */
+export const isAggregatorLink = (url: string) =>
+  AGGREGATOR_HOSTS.has(hostnameOf(url) ?? '')
+
+/** One link per outlet, first seen wins. Aggregator redirects all share a
+ * host, so those dedupe by the outlet's name instead. */
 export const dedupeSources = (sources: NewsSourceLink[]) =>
   uniqBy(
     sources.filter((s) => s.url && s.name),
-    (s) => hostnameOf(s.url) ?? s.url
+    (s) =>
+      isAggregatorLink(s.url)
+        ? 'name:' + s.name.trim().toLowerCase()
+        : hostnameOf(s.url) ?? s.url
   )
 
 const decodeEntities = (s: string) =>
@@ -265,6 +275,7 @@ export function parseGoogleNewsRss(
       {
         name: sourceName || hostnameOf(sourceUrl ?? link) || 'Source',
         url: link,
+        site: sourceUrl,
       },
     ]
     const description = decodeEntities(tag(item, 'description'))
