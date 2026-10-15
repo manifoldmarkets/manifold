@@ -6,7 +6,7 @@ import { ChevronRightIcon, HeartIcon, UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import Link from 'next/link'
-import { useId, useState } from 'react'
+import { ReactNode, useId, useState } from 'react'
 import { Answer } from 'common/answer'
 import { contractPath, CPMMMultiContract } from 'common/contract'
 import { AnySportKey, ScheduleGame, SPORT_BY_KEY } from 'common/sports-schedule'
@@ -45,11 +45,14 @@ type MarketHeroProps = HeroActions & {
   kind: 'market'
   market: SportsHeroMarket
   sport?: AnySportKey
+  /** Already-loaded rows; linking and fetching remain with the caller. */
+  linkedMarkets?: { id: string; content: ReactNode }[]
   /** Event metadata comes from the caller, never from parsing the question. */
   event?: {
     label: string
     startTime?: number
     chanceLabel?: string
+    outcomesLabel?: string
     outcomeDescription?: string
   }
 }
@@ -70,13 +73,21 @@ function MarketHero({
   market,
   sport,
   event,
+  linkedMarkets = [],
   liked,
   likeDisabled,
   onToggleLike,
   className,
 }: MarketHeroProps) {
   const [expanded, setExpanded] = useState(false)
+  const [propsExpanded, setPropsExpanded] = useState(false)
+  const [activePanel, setActivePanel] = useState<'outcomes' | 'props'>(
+    'outcomes'
+  )
   const panelId = useId()
+  const propsPanelId = useId()
+  const outcomesId = useId()
+  const propsId = useId()
   const titleId = useId()
   const LikeIcon = liked ? HeartIcon : OutlineHeartIcon
   const href = contractPath(market)
@@ -93,6 +104,9 @@ function MarketHero({
   )
   const preview = answers.slice(0, PREVIEW_COUNT)
   const rest = answers.slice(PREVIEW_COUNT)
+  const hasProps = linkedMarkets.length > 0
+  const featuredProps = linkedMarkets.slice(0, 2)
+  const remainingProps = linkedMarkets.slice(2)
   const closed =
     market.isResolved ||
     (market.closeTime != null && market.closeTime <= Date.now())
@@ -106,12 +120,25 @@ function MarketHero({
       id={`market-hero-${market.id}`}
       aria-labelledby={titleId}
       className={clsx(
-        'border-primary-200 bg-primary-50 scroll-mt-32 overflow-hidden rounded-2xl border',
+        '@container/market-hero border-primary-200 bg-primary-50 scroll-mt-32 overflow-hidden rounded-2xl border',
         className
       )}
     >
-      <div className="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-        <div className="flex min-w-0 flex-col">
+      <div
+        className={clsx(
+          'grid',
+          hasProps
+            ? '@[40rem]/market-hero:grid-cols-2 @[54rem]/market-hero:grid-cols-[minmax(0,.95fr)_minmax(0,1fr)_minmax(0,1.2fr)]'
+            : 'lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]'
+        )}
+      >
+        <div
+          className={clsx(
+            'flex min-w-0 flex-col',
+            hasProps &&
+              '@[40rem]/market-hero:col-span-2 @[54rem]/market-hero:col-span-1'
+          )}
+        >
           <div className="flex items-center gap-2 px-4 py-2 sm:px-5">
             <div className="@container flex min-w-[1rem] flex-1 items-center gap-2">
               <SportsMarketBadge market={market} compact />
@@ -165,7 +192,12 @@ function MarketHero({
               </Link>
             </div>
           </div>
-          <div className="flex flex-1 flex-col justify-center px-4 pb-5 pt-2 sm:px-5">
+          <div
+            className={clsx(
+              'flex flex-1 flex-col justify-center px-4 pb-5 pt-2 sm:px-5',
+              hasProps && '@[40rem]/market-hero:pb-4'
+            )}
+          >
             <div className="text-ink-500 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
               <span>
                 {event?.label ??
@@ -185,7 +217,10 @@ function MarketHero({
             </div>
             <h2
               id={titleId}
-              className="text-ink-1000 mt-3 max-w-lg text-xl font-bold leading-tight [overflow-wrap:anywhere] sm:text-2xl"
+              className={clsx(
+                'text-ink-1000 mt-3 max-w-lg text-xl font-bold leading-tight [overflow-wrap:anywhere]',
+                !hasProps && 'sm:text-2xl'
+              )}
             >
               {market.question}
             </h2>
@@ -195,10 +230,64 @@ function MarketHero({
                   ? 'One outcome wins.'
                   : 'Each outcome has an independent chance.')}
             </p>
-            {sport === 'f1' && <RacingIllustration />}
+            {sport === 'f1' && <RacingIllustration compact={hasProps} />}
           </div>
         </div>
-        <div className="border-primary-200 bg-canvas-0/40 flex min-w-0 flex-col border-t px-4 pb-2 pt-3 lg:border-l lg:border-t-0">
+        {hasProps && (
+          <div
+            role="group"
+            aria-label="Hero preview"
+            className="border-primary-200 @[40rem]/market-hero:hidden flex gap-1 border-t px-4 py-2"
+          >
+            {(
+              [
+                {
+                  value: 'outcomes',
+                  label: event?.outcomesLabel ?? 'Outcomes',
+                  count: answers.length,
+                  id: outcomesId,
+                },
+                {
+                  value: 'props',
+                  label: 'Props',
+                  count: linkedMarkets.length,
+                  id: propsId,
+                },
+              ] as const
+            ).map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                aria-pressed={activePanel === item.value}
+                aria-controls={item.id}
+                onClick={() => setActivePanel(item.value)}
+                className={clsx(
+                  'focus-visible:ring-primary-500 flex min-h-[36px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold focus-visible:ring-2',
+                  activePanel === item.value
+                    ? 'bg-canvas-0 text-primary-700 shadow-sm'
+                    : 'text-ink-500 hover:bg-primary-100'
+                )}
+              >
+                {item.label}
+                <span className="text-ink-400 font-normal">{item.count}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        <div
+          id={outcomesId}
+          className={clsx(
+            'border-primary-200 bg-canvas-0/40 min-w-0 flex-col px-4 pb-2 pt-3',
+            hasProps
+              ? [
+                  '@[40rem]/market-hero:border-t @[54rem]/market-hero:border-l @[54rem]/market-hero:border-t-0 min-h-[260px]',
+                  activePanel === 'outcomes'
+                    ? 'flex'
+                    : '@[40rem]/market-hero:flex hidden',
+                ]
+              : 'flex border-t lg:border-l lg:border-t-0'
+          )}
+        >
           <div className="text-ink-500 mb-1 flex items-center justify-between gap-3 text-xs">
             <h3 className="font-semibold">
               {market.shouldAnswersSumToOne
@@ -233,19 +322,97 @@ function MarketHero({
             </button>
           )}
         </div>
+        {hasProps && (
+          <div
+            id={propsId}
+            className={clsx(
+              'border-primary-200 bg-canvas-0/40 @[40rem]/market-hero:border-l @[40rem]/market-hero:border-t @[54rem]/market-hero:border-t-0 min-h-[260px] min-w-0 flex-col px-4 pb-2 pt-3',
+              activePanel === 'props'
+                ? 'flex'
+                : '@[40rem]/market-hero:flex hidden'
+            )}
+          >
+            <h3 className="text-ink-500 mb-1 text-xs font-semibold">
+              Props & more
+            </h3>
+            <div className="divide-ink-200 divide-y">
+              {featuredProps.map((prop) => (
+                <div key={prop.id}>{prop.content}</div>
+              ))}
+            </div>
+            {remainingProps.length > 0 && (
+              <button
+                type="button"
+                aria-expanded={propsExpanded}
+                aria-controls={propsPanelId}
+                onClick={() => setPropsExpanded((value) => !value)}
+                className="text-primary-700 hover:bg-primary-100 focus-visible:ring-primary-500 mt-auto flex min-h-[32px] items-center gap-1.5 self-end rounded-lg px-2 text-xs font-semibold focus-visible:ring-2"
+              >
+                {propsExpanded
+                  ? 'Fewer markets'
+                  : `${remainingProps.length} more ${
+                      remainingProps.length === 1 ? 'market' : 'markets'
+                    }`}
+                <ChevronDownIcon
+                  className={clsx(
+                    'h-4 w-4 transition-transform',
+                    propsExpanded && 'rotate-180'
+                  )}
+                />
+              </button>
+            )}
+          </div>
+        )}
       </div>
-      <div
-        id={panelId}
-        hidden={!expanded}
-        className="border-primary-200 bg-canvas-50 border-t px-4 pb-2"
-      >
+      <div id={panelId} hidden={!expanded}>
         {expanded && (
-          <div className="grid gap-x-6 lg:grid-cols-2">
-            {rest.map((answer) => (
-              <div key={answer.id} className="border-ink-200 min-w-0 border-b">
-                <OutcomeRow answer={answer} href={href} />
-              </div>
-            ))}
+          <div
+            className={clsx(
+              'border-primary-200 bg-canvas-50 border-t px-4 pb-2',
+              hasProps &&
+                activePanel !== 'outcomes' &&
+                '@[40rem]/market-hero:block hidden'
+            )}
+          >
+            {hasProps && (
+              <h3 className="text-ink-500 pt-3 text-xs font-semibold">
+                More {event?.outcomesLabel?.toLowerCase() ?? 'outcomes'}
+              </h3>
+            )}
+            <div className="grid gap-x-6 lg:grid-cols-2">
+              {rest.map((answer) => (
+                <div
+                  key={answer.id}
+                  className="border-ink-200 min-w-0 border-b"
+                >
+                  <OutcomeRow answer={answer} href={href} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      <div id={propsPanelId} hidden={!propsExpanded}>
+        {propsExpanded && (
+          <div
+            className={clsx(
+              'border-primary-200 bg-canvas-50 border-t px-4 pb-2',
+              activePanel !== 'props' && '@[40rem]/market-hero:block hidden'
+            )}
+          >
+            <h3 className="text-ink-500 pt-3 text-xs font-semibold">
+              More props & markets
+            </h3>
+            <div className="@[40rem]/market-hero:grid-cols-2 grid gap-x-6">
+              {remainingProps.map((prop) => (
+                <div
+                  key={prop.id}
+                  className="border-ink-200 min-w-0 border-b last:border-b-0"
+                >
+                  {prop.content}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -292,13 +459,16 @@ function OutcomeRow({
 }
 
 /** Decorative race motif: no predicted finishing positions or real circuit. */
-function RacingIllustration() {
+function RacingIllustration({ compact = false }: { compact?: boolean }) {
   return (
     <svg
       viewBox="0 0 300 100"
       aria-hidden="true"
       focusable="false"
-      className="mt-3 hidden h-20 w-full max-w-xs self-center sm:block"
+      className={clsx(
+        'mt-3 hidden w-full max-w-xs self-center',
+        compact ? '@[54rem]/market-hero:block h-12' : 'h-20 sm:block'
+      )}
     >
       <path
         d="M57 22H243C267 22 280 34 280 50S267 78 243 78H57C33 78 20 66 20 50S33 22 57 22Z"
