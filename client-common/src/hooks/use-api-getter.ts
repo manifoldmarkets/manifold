@@ -4,7 +4,7 @@ import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useEvent } from './use-event'
 import { apiWithoutAuth } from '../lib/api'
 import { APIError } from 'common/api/utils'
-const promiseCache: Record<string, Promise<any> | undefined> = {}
+const promiseCache: Record<string, Promise<unknown> | undefined> = {}
 
 // Prepopulate cache with data, e.g. from static props
 export function prepopulateCache<P extends APIPath>(
@@ -51,22 +51,30 @@ export const useAPIGetterWithCall = <P extends APIPath>(
     setError(undefined)
     const mine = ++generation.current
 
-    let promise = promiseCache[key]
+    let promise = promiseCache[key] as Promise<APIResponse<P>> | undefined
     if (!promise) {
-      setLoading(true)
       promise = apiCall(path, props)
-        .catch(setError)
-        .finally(() => setLoading(false))
       promiseCache[key] = promise
     }
 
-    const result = await promise
-    if (mine === generation.current) setData(result)
+    setLoading(true)
+    try {
+      const result = await promise
+      if (mine === generation.current) setData(result)
+    } catch (error) {
+      // Cache only successful reads. Every subscriber handles the rejection,
+      // and a remount can retry instead of reusing an empty resolved promise.
+      if (promiseCache[key] === promise) delete promiseCache[key]
+      if (mine === generation.current) setError(error as APIError)
+    } finally {
+      if (mine === generation.current) setLoading(false)
+    }
   })
 
   useEffect(() => {
     getAndSetData()
     return () => {
+      generation.current++
       setLoading(false)
     }
   }, [propsStringToTriggerRefresh, enabled])
