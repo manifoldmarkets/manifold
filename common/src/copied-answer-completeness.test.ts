@@ -70,12 +70,8 @@ describe.each(['cpmm-multi-1', 'cpmm-multi-2'] as const)(
       )
       expect(hasAllAnswers).toBe(true)
       const copied = getCopiedAnswerProbs(live, hasAllAnswers)
-      if (mechanism === 'cpmm-multi-2') {
-        expect(copied).toHaveLength(answers.length)
-        expect(copied!.reduce((sum, prob) => sum + prob, 0)).toBeCloseTo(100)
-      } else {
-        expect(copied).toBeUndefined()
-      }
+      expect(copied).toHaveLength(answers.length)
+      expect(copied!.reduce((sum, prob) => sum + prob, 0)).toBeCloseTo(100)
     })
   }
 )
