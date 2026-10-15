@@ -1,4 +1,4 @@
-import { ChevronRightIcon, PlusIcon } from '@heroicons/react/solid'
+import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/solid'
 import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { ReactNode } from 'react'
@@ -13,21 +13,29 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
 import { SportsRailData } from 'web/hooks/use-sports-schedule'
-import { SportRail, SportSelection, sportPath } from './sport-rail'
+import {
+  SportRail,
+  SportSelection,
+  sportPath,
+  useSportHref,
+} from './sport-rail'
 import { SportsMarketSections } from './sports-market-sections'
 import { UpcomingMarkets } from './upcoming-markets'
 
 /**
  * The frame every sports page shares: the heading, the sport navigation
- * (sticky), and one column of content under it.
+ * (sticky), and a responsive game board or market columns under it.
+ * The heading block is the same height on every sports page, so switching
+ * sports never moves the rail or the content under it.
  */
 export function SportsShell(props: {
   selected: SportSelection
   rail: SportsRailData | undefined
   heading: ReactNode
+  /** One line; truncated rather than wrapped. */
   subheading?: ReactNode
-  /** "Sports ›" above the heading, on a sport's page. */
-  breadcrumb?: boolean
+  /** A back arrow to all sports beside the heading, on a sport's page. */
+  backToAll?: boolean
   seo: { title: string; description: string; url: string }
   trackPageView: string
   children: ReactNode
@@ -37,41 +45,48 @@ export function SportsShell(props: {
     rail,
     heading,
     subheading,
-    breadcrumb,
+    backToAll,
     seo,
     trackPageView,
     children,
   } = props
+  const sportHref = useSportHref()
   return (
-    // The standard main column, next to the nav like the rest of the site.
-    <Page trackPageView={trackPageView}>
+    <Page trackPageView={trackPageView} className="min-w-0 lg:col-span-10">
       <SEO title={seo.title} description={seo.description} url={seo.url} />
-      <Col className="w-full gap-2 px-2 pt-3 sm:px-4">
-        <Row className="items-end justify-between gap-2 px-1">
-          <Col className="min-w-0 gap-0.5">
-            {breadcrumb && (
+      <Col className="w-full min-w-0 gap-3 px-3 pt-5 sm:px-6 sm:pt-7">
+        <Row className="items-center justify-between gap-2 px-1">
+          <Row className="min-w-0 items-center gap-2">
+            {backToAll && (
               <Link
-                href="/sports"
-                className="text-ink-500 hover:text-primary-700 flex items-center gap-0.5 text-xs font-medium"
+                href={sportHref('all')}
+                aria-label="Back to all sports"
+                title="All sports"
+                className="border-ink-200 text-ink-600 hover:bg-canvas-50 hover:text-primary-700 focus-visible:ring-primary-500 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border focus-visible:ring-2"
               >
-                Sports
-                <ChevronRightIcon className="h-3.5 w-3.5" />
+                <ArrowLeftIcon className="h-5 w-5" />
               </Link>
             )}
-            <h1 className="text-ink-1000 truncate text-2xl font-bold tracking-tight">
+            <h1 className="text-ink-1000 min-w-0 truncate text-3xl font-bold tracking-tight sm:text-4xl">
               {heading}
             </h1>
-            {subheading && <p className="text-ink-500 text-sm">{subheading}</p>}
-          </Col>
+          </Row>
           <Link
             href="/create"
-            className="bg-primary-600 hover:bg-primary-700 text-ink-0 hidden shrink-0 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium sm:flex"
+            className="bg-primary-600 hover:bg-primary-700 text-ink-0 flex min-h-[40px] shrink-0 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium"
           >
-            <PlusIcon className="h-4 w-4" /> Create market
+            <PlusIcon className="h-4 w-4" />
+            <span>
+              Create<span className="sr-only sm:not-sr-only"> market</span>
+            </span>
           </Link>
         </Row>
+        {/* Always one line, even while a sport is loading. */}
+        <p className="text-ink-500 truncate px-1 text-sm">
+          {subheading ?? '\u00a0'}
+        </p>
 
-        <div className="bg-canvas-0 border-ink-100 sticky top-0 z-20 -mx-2 border-b px-2 sm:-mx-4 sm:px-4">
+        <div className="bg-canvas-0 border-ink-100 sticky top-0 z-20 -mx-3 border-b px-3 sm:-mx-6 sm:px-6">
           <SportRail
             sports={rail?.sports ?? CURATED_SPORTS}
             selected={selected}
@@ -82,9 +97,9 @@ export function SportsShell(props: {
         {children}
 
         <p className="text-ink-400 px-1 pb-2 pt-4 text-[11px]">
-          Times are in your local time zone. Game markets are created and
-          resolved automatically by @ManifoldSports for connected leagues;
-          anyone can add props and side-bets.
+          Times are in your local time zone. Official markets are created by
+          @ManifoldSports; community markets are created by other users. Check
+          each market's rules for how it resolves.
         </p>
       </Col>
     </Page>
@@ -103,16 +118,23 @@ export function SportMarkets(props: {
 }) {
   const { sport, upcoming, sportsByKey, enabled } = props
   return (
-    <Col className="gap-6">
-      <UpcomingMarkets
-        refs={upcoming}
-        sport={sport === 'all' ? 'all' : sport.key}
-        showSport={sport === 'all'}
-        sportsByKey={sportsByKey}
+    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <Col className="min-w-0 gap-6">
+        <UpcomingMarkets
+          key={sport === 'all' ? 'all' : sport.key}
+          refs={upcoming}
+          sport={sport === 'all' ? 'all' : sport.key}
+          showSport={sport === 'all'}
+          sportsByKey={sportsByKey}
+        />
+        <MakeAMarket sport={sport} />
+      </Col>
+      <SportsMarketSections
+        sport={sport}
+        enabled={enabled}
+        className="min-w-0"
       />
-      <SportsMarketSections sport={sport} enabled={enabled} />
-      <MakeAMarket sport={sport} />
-    </Col>
+    </div>
   )
 }
 
