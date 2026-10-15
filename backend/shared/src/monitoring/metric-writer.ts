@@ -173,22 +173,29 @@ export class MetricWriter {
       // runs at `now` was blocked for now - expected. After a long stall Node
       // fires an overdue interval once, so one sample sees the whole stall.
       let expected = Date.now() + LAG_SAMPLE_MS
+      let lastSampleAt = Date.now()
       let lastCpu = process.cpuUsage()
       this.lagInterval = setInterval(() => {
         const now = Date.now()
         const lag = Math.max(0, now - expected)
         expected = now + LAG_SAMPLE_MS
-        // Process CPU since the previous sample, which spans the stall. CPU
-        // near the stall length means the thread was computing (JS or GC);
-        // near zero means it sat in a blocking syscall or was descheduled.
-        const cpu = process.cpuUsage(lastCpu)
-        lastCpu = process.cpuUsage()
+        // CPU of this whole process (all threads, not sibling PM2 processes)
+        // since the previous sample: a window of about lag + 1s around the
+        // stall. Near windowMs suggests the main thread was computing (JS or
+        // GC); near zero, that it sat in a blocking syscall or was descheduled.
+        const cpuNow = process.cpuUsage()
+        const cpuUserMs = Math.round((cpuNow.user - lastCpu.user) / 1000)
+        const cpuSystemMs = Math.round((cpuNow.system - lastCpu.system) / 1000)
+        const windowMs = now - lastSampleAt
+        lastCpu = cpuNow
+        lastSampleAt = now
         if (lag > this.maxLagMs) this.maxLagMs = lag
         if (lag >= STALL_WARN_MS) {
           log.warn(`Event loop stalled for ${(lag / 1000).toFixed(1)}s.`, {
             lagMs: lag,
-            cpuUserMs: Math.round(cpu.user / 1000),
-            cpuSystemMs: Math.round(cpu.system / 1000),
+            windowMs,
+            cpuUserMs,
+            cpuSystemMs,
           })
         }
       }, LAG_SAMPLE_MS)
