@@ -329,13 +329,11 @@ export function GameRow(props: {
           game={game}
           matchup={
             <div className="flex min-w-0 flex-col">
-              <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 sm:px-5">
-                <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-4 py-2 sm:px-5">
+                <div className="@container flex min-w-[1rem] flex-1 items-center gap-2">
                   <SportsMarketBadge market={game} />
-                  <span className="text-primary-700 text-[10px] font-bold uppercase tracking-wide">
-                    {live
-                      ? 'Most traded live game'
-                      : 'Most traded upcoming game'}
+                  <span className="text-primary-700 @[5rem]:not-sr-only sr-only whitespace-nowrap text-[10px] font-bold uppercase tracking-wide">
+                    Featured
                   </span>
                 </div>
                 {gameControls}
