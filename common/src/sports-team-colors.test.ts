@@ -219,6 +219,27 @@ describe('colouring games created before team colours', () => {
     ])
   })
 
+  it('gives each team its own colour on an away-first versus market', () => {
+    const [homeColor, awayColor] = gameAnswerColors(
+      'nfl',
+      nfl.sportsHomeTeam,
+      nfl.sportsAwayTeam,
+      false
+    )!
+    const awayFirst = [nfl.sportsAwayTeam, nfl.sportsHomeTeam].map(
+      (text, index) => ({
+        id: `a${index}`,
+        index,
+        text,
+        color: VERSUS_COLORS[index],
+      })
+    )
+    expect(gameAnswerColorBackfill(nfl, awayFirst)).toEqual([
+      { id: 'a0', color: awayColor },
+      { id: 'a1', color: homeColor },
+    ])
+  })
+
   it('recolours a three-way market on the chart palette', () => {
     const soccer = {
       sportsLeague: 'Soccer',

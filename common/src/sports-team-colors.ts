@@ -319,15 +319,21 @@ export function gameAnswerColorBackfill(
   const ordered = sortBy(answers, (a) => a.index)
   const texts = ordered.map((a) => a.text)
   const threeWay = texts.length === 3 && texts[2] === 'Draw'
-  if (texts[0] !== home || texts[1] !== away) return undefined
   if (texts.length !== (threeWay ? 3 : 2)) return undefined
+  // Soccer markets list home first; versus markets were home first until
+  // they switched to away first, so either order is as created.
+  const homeFirst = texts[0] === home && texts[1] === away
+  const awayFirst = !threeWay && texts[0] === away && texts[1] === home
+  if (!homeFirst && !awayFirst) return undefined
   const current = ordered.map((a) => a.color?.toLowerCase())
   const untouched =
     current.every((c) => c === undefined) ||
     (!threeWay && current.every((c, i) => c === VERSUS_COLORS[i]))
   if (!untouched) return undefined
   const colors = gameAnswerColors(sport, home, away, threeWay)
-  return colors && ordered.map((a, i) => ({ id: a.id, color: colors[i] }))
+  if (!colors) return undefined
+  const inOrder = awayFirst ? [colors[1], colors[0]] : colors
+  return ordered.map((a, i) => ({ id: a.id, color: inOrder[i] }))
 }
 
 /**

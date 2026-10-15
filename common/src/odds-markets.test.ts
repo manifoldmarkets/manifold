@@ -467,12 +467,12 @@ describe('the market a game becomes', () => {
   const nfl = calendarEntriesFor('nfl-regular-2026')[0]
   const epl = calendarEntriesFor('epl-2026-27')[0]
   const cfb = calendarEntriesFor('cfb-regular-2026')[0]
-  it('is a versus market for the NFL, home first, seeded from the moneyline', () => {
+  it('is a versus market for the NFL, away first, seeded from the moneyline', () => {
     const p = buildOddsMarketParams(nflEvent, nfl)
     expect(p.outcomeType).toBe('MULTIPLE_CHOICE')
-    expect(p.answers).toEqual(['Kansas City Chiefs', 'Buffalo Bills'])
-    expect(p.answerShortTexts).toEqual(['KC', 'BUF'])
-    const [home, away] = p.answerProbs!
+    expect(p.answers).toEqual(['Buffalo Bills', 'Kansas City Chiefs'])
+    expect(p.answerShortTexts).toEqual(['BUF', 'KC'])
+    const [away, home] = p.answerProbs!
     expect(home).toBeGreaterThan(55)
     expect(home).toBeLessThan(60)
     expect(home + away).toBeCloseTo(100, 1)
@@ -499,7 +499,7 @@ describe('the market a game becomes', () => {
       },
       mlb
     )
-    expect(p.answerShortTexts).toEqual(['NYY', 'TB'])
+    expect(p.answerShortTexts).toEqual(['TB', 'NYY'])
     // A team without a code leaves both sides to their names.
     const cfb = calendarEntriesFor('cfb-regular-2026')[0]
     expect(
@@ -583,11 +583,15 @@ describe('the market a game becomes', () => {
     expect(p.answerProbs).toBeUndefined()
     expect(p.answers).toHaveLength(2)
   })
-  it('colours the answers by team, home first, with a neutral Draw', () => {
+  it('colours the answers by team, in answer order, with a neutral Draw', () => {
     const versus = buildOddsMarketParams(nflEvent, nfl)
-    expect(versus.answerColors).toEqual(
-      gameAnswerColors('nfl', 'Kansas City Chiefs', 'Buffalo Bills', false)
-    )
+    const [homeColor, awayColor] = gameAnswerColors(
+      'nfl',
+      'Kansas City Chiefs',
+      'Buffalo Bills',
+      false
+    )!
+    expect(versus.answerColors).toEqual([awayColor, homeColor])
     expect(versus.answerColors).toHaveLength(2)
     const threeWay = buildOddsMarketParams(soccerEvent, epl)
     expect(threeWay.answerColors).toHaveLength(3)
