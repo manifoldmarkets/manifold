@@ -146,7 +146,13 @@ export function NotificationItem({
         isChildOfGroup={isChildOfGroup}
       />
     )
-  } else if (reason === 'perp_liquidation' || reason === 'perp_adl') {
+  } else if (
+    reason === 'perp_liquidation' ||
+    reason === 'perp_adl' ||
+    reason === 'perp_profit' ||
+    reason === 'perp_loss' ||
+    reason === 'perp_liquidation_warning'
+  ) {
     const { sourceContractCreatorUsername, sourceContractSlug } = notification
     const link =
       sourceContractCreatorUsername && sourceContractSlug
