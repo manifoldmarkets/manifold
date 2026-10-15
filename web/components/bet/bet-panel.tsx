@@ -711,14 +711,19 @@ export const BuyPanelBody = (
     ? `Are you sure you want to move the market to ${displayedAfter}?`
     : undefined
 
-  const choicesMap: Record<string, 'YES' | 'NO'> = isStonk
-    ? { Buy: 'YES', Short: 'NO' }
+  // Keyed by side, so two sides that share a name still get a button each.
+  const outcomeLabels = isStonk
+    ? { YES: 'Buy', NO: 'Short' }
     : props.pseudonym
     ? {
-        [props.pseudonym.YES.pseudonymName]: 'YES',
-        [props.pseudonym.NO.pseudonymName]: 'NO',
+        YES: props.pseudonym.YES.pseudonymName,
+        NO: props.pseudonym.NO.pseudonymName,
       }
-    : { Yes: 'YES', No: 'NO' }
+    : { YES: 'Yes', NO: 'No' }
+  const choicesMap: Record<string, 'YES' | 'NO'> = {
+    [outcomeLabels.YES]: 'YES',
+    [outcomeLabels.NO]: 'NO',
+  }
 
   const { pseudonymName: propPseudonymName, pseudonymColor } =
     props.pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
@@ -881,11 +886,11 @@ export const BuyPanelBody = (
               role="group"
               aria-label="Choose an outcome"
             >
-              {Object.entries(choicesMap).map(([label, side]) => (
+              {(['YES', 'NO'] as const).map((side) => (
                 <button
                   key={side}
                   type="button"
-                  title={label}
+                  title={outcomeLabels[side]}
                   aria-pressed={outcome === side}
                   onClick={() => {
                     setOutcome(side)
@@ -898,7 +903,7 @@ export const BuyPanelBody = (
                       : 'text-ink-600 hover:bg-canvas-50 border-transparent'
                   )}
                 >
-                  <span className="line-clamp-2">{label}</span>
+                  <span className="line-clamp-2">{outcomeLabels[side]}</span>
                 </button>
               ))}
             </Row>
