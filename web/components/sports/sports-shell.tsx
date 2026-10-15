@@ -1,4 +1,4 @@
-import { ChevronRightIcon, PlusIcon } from '@heroicons/react/solid'
+import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/solid'
 import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { ReactNode } from 'react'
@@ -13,21 +13,29 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
 import { SportsRailData } from 'web/hooks/use-sports-schedule'
-import { SportRail, SportSelection, sportPath } from './sport-rail'
+import {
+  SportRail,
+  SportSelection,
+  sportPath,
+  useSportHref,
+} from './sport-rail'
 import { SportsMarketSections } from './sports-market-sections'
 import { UpcomingMarkets } from './upcoming-markets'
 
 /**
  * The frame every sports page shares: the heading, the sport navigation
  * (sticky), and a responsive game board or market columns under it.
+ * The heading block is the same height on every sports page, so switching
+ * sports never moves the rail or the content under it.
  */
 export function SportsShell(props: {
   selected: SportSelection
   rail: SportsRailData | undefined
   heading: ReactNode
+  /** One line; truncated rather than wrapped. */
   subheading?: ReactNode
-  /** "Sports ›" above the heading, on a sport's page. */
-  breadcrumb?: boolean
+  /** A back arrow to all sports beside the heading, on a sport's page. */
+  backToAll?: boolean
   seo: { title: string; description: string; url: string }
   trackPageView: string
   children: ReactNode
@@ -37,30 +45,32 @@ export function SportsShell(props: {
     rail,
     heading,
     subheading,
-    breadcrumb,
+    backToAll,
     seo,
     trackPageView,
     children,
   } = props
+  const sportHref = useSportHref()
   return (
     <Page trackPageView={trackPageView} className="min-w-0 lg:col-span-10">
       <SEO title={seo.title} description={seo.description} url={seo.url} />
       <Col className="w-full min-w-0 gap-3 px-3 pt-5 sm:px-6 sm:pt-7">
         <Row className="items-center justify-between gap-2 px-1">
-          <Col className="min-w-0 gap-0.5">
-            {breadcrumb && (
+          <Row className="min-w-0 items-center gap-2">
+            {backToAll && (
               <Link
-                href="/sports"
-                className="text-ink-500 hover:text-primary-700 flex items-center gap-0.5 text-xs font-medium"
+                href={sportHref('all')}
+                aria-label="Back to all sports"
+                title="All sports"
+                className="border-ink-200 text-ink-600 hover:bg-canvas-50 hover:text-primary-700 focus-visible:ring-primary-500 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border focus-visible:ring-2"
               >
-                Sports
-                <ChevronRightIcon className="h-3.5 w-3.5" />
+                <ArrowLeftIcon className="h-5 w-5" />
               </Link>
             )}
-            <h1 className="text-ink-1000 break-words text-3xl font-bold tracking-tight sm:text-4xl">
+            <h1 className="text-ink-1000 min-w-0 truncate text-3xl font-bold tracking-tight sm:text-4xl">
               {heading}
             </h1>
-          </Col>
+          </Row>
           <Link
             href="/create"
             className="bg-primary-600 hover:bg-primary-700 text-ink-0 flex min-h-[40px] shrink-0 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium"
@@ -71,9 +81,10 @@ export function SportsShell(props: {
             </span>
           </Link>
         </Row>
-        {subheading && (
-          <p className="text-ink-500 px-1 text-sm">{subheading}</p>
-        )}
+        {/* Always one line, even while a sport is loading. */}
+        <p className="text-ink-500 truncate px-1 text-sm">
+          {subheading ?? '\u00a0'}
+        </p>
 
         <div className="bg-canvas-0 border-ink-100 sticky top-0 z-20 -mx-3 border-b px-3 sm:-mx-6 sm:px-6">
           <SportRail

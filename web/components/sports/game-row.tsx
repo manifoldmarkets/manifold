@@ -277,11 +277,11 @@ export function GameRow(props: {
           className
         )}
       >
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 p-3 sm:grid-cols-[6rem_minmax(0,1fr)_auto]">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 p-3 sm:grid-cols-[7rem_minmax(0,1fr)_auto]">
           <div className="col-span-2 mb-2 flex flex-wrap items-center gap-2 sm:col-span-1 sm:mb-0 sm:flex-col sm:items-start">
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5 sm:items-start">
               <SportsMarketBadge market={game} />
-              <GameWhen game={game} />
+              <GameWhen game={game} stackOnWide />
             </div>
             {showLeague && (
               <span className="text-ink-400 text-[10px] font-semibold">
@@ -460,7 +460,12 @@ export function GameRow(props: {
  * When a game is: the kickoff time (and how soon), "LIVE" with the clock, or
  * the final, displayed inline in a card header.
  */
-function GameWhen({ game }: { game: ScheduleGame }) {
+function GameWhen(props: {
+  game: ScheduleGame
+  /** From sm up, put "in 1h 45m" under the time (the compact row's column). */
+  stackOnWide?: boolean
+}) {
+  const { game, stackOnWide } = props
   const live = game.status === 'live'
   // A live feed (score / clock) is only available for some leagues; without
   // it the game says "In progress" rather than pretending to have a clock.
@@ -510,7 +515,12 @@ function GameWhen({ game }: { game: ScheduleGame }) {
   }
 
   return (
-    <Row className="min-w-0 items-baseline gap-2">
+    <Row
+      className={clsx(
+        'min-w-0 items-baseline gap-2',
+        stackOnWide && 'sm:flex-col sm:items-start sm:gap-0'
+      )}
+    >
       {primary}
       {secondary && (
         <span className="text-ink-500 text-xs tabular-nums">{secondary}</span>

@@ -13,6 +13,13 @@ export type SportSelection = AnySportKey | 'all'
 export const sportPath = (sport: SportSelection) =>
   sport === 'all' ? '/sports' : `/sports/${sport}`
 
+/** Links between sports keep the Markets tab open when it is. */
+export function useSportHref() {
+  const router = useRouter()
+  return (sport: SportSelection) =>
+    sportPath(sport) + (router.query.tab === 'markets' ? '?tab=markets' : '')
+}
+
 /**
  * The sports navigation: "All" opens the upcoming feed, every other chip its
  * sport's page. Sports with games on come first and carry their game count.
@@ -24,9 +31,7 @@ export function SportRail(props: {
   className?: string
 }) {
   const { sports, selected, counts, className } = props
-  const router = useRouter()
-  const hrefFor = (sport: SportSelection) =>
-    sportPath(sport) + (router.query.tab === 'markets' ? '?tab=markets' : '')
+  const hrefFor = useSportHref()
 
   const withGames = sports.filter((s) => (counts[s.key] ?? 0) > 0)
   const withoutGames = sports.filter(

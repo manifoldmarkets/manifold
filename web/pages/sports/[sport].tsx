@@ -57,7 +57,8 @@ export default function SportPage() {
         selected="all"
         rail={rail}
         heading="Sport not found"
-        breadcrumb
+        subheading="Pick a sport below, or see every game."
+        backToAll
         seo={{ title: 'Sports', description: '', url: '/sports' }}
         trackPageView="/sports/unknown"
       >
@@ -90,13 +91,18 @@ export default function SportPage() {
         sport ? (
           <>
             <span className="mr-2">{sport.emoji}</span>
-            {sport.longLabel}
+            {/* The rail's short label fits beside the back arrow on phones. */}
+            <span className="sm:hidden">{sport.label}</span>
+            <span className="hidden sm:inline">{sport.longLabel}</span>
           </>
         ) : (
           <span className="bg-ink-100 inline-block h-7 w-40 animate-pulse rounded align-middle" />
         )
       }
-      breadcrumb
+      subheading={
+        sport ? `Every ${sport.label} game, plus props and futures.` : undefined
+      }
+      backToAll
       seo={{
         title: sport ? `${sport.longLabel} games and markets` : 'Sports',
         description: sport

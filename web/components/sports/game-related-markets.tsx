@@ -58,6 +58,9 @@ export function GameLinkedMarkets(props: {
   const { game, matchup } = props
   const [expanded, setExpanded] = useState(false)
   const panelId = useId()
+  // The hero's props, folded under the scoreboard on narrow screens.
+  const [heroPropsOpen, setHeroPropsOpen] = useState(false)
+  const heroPropsId = useId()
   const [showAll, setShowAll] = useState(false)
   const [nearby, setNearby] = useState(false)
   const disclosureRef = useRef<HTMLDivElement>(null)
@@ -148,52 +151,87 @@ export function GameLinkedMarkets(props: {
       >
         <div className="grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
           {matchup}
-          <div className="border-primary-200 bg-canvas-0/40 flex min-w-0 flex-col border-t px-4 pb-2 lg:border-l lg:border-t-0">
+          <div
+            className={clsx(
+              'border-primary-200 bg-canvas-0/40 flex min-w-0 flex-col border-t px-4 lg:border-l lg:border-t-0 lg:pb-2',
+              heroPropsOpen && 'pb-2'
+            )}
+          >
             <Row className="min-h-[44px] items-center justify-between gap-2">
-              <h3 className="text-ink-600 text-xs font-semibold">
-                Props & more
-              </h3>
-              {addMarket}
-            </Row>
-            <div aria-busy={loadingPreview}>
-              {preview.error && !preview.data ? (
-                <MarketLoadError refresh={preview.refresh} />
-              ) : !sidebarMarkets ? (
-                <PropsSkeleton count={sidebarIds.length} />
-              ) : sidebarMarkets.length === 0 ? (
-                <p className="text-ink-500 py-2 text-xs">
-                  No available linked markets.
-                </p>
-              ) : (
-                <Col className="divide-ink-200 divide-y">
-                  {sidebarMarkets.map((c) => (
-                    <RelatedMarketRow key={c.id} contract={c} layout="prop" />
-                  ))}
-                </Col>
-              )}
-            </div>
-            {moreCount > 0 && (
+              {/* Below lg the props sit under the scoreboard, so they fold
+                  away like a card's; beside it they are always shown. */}
               <button
                 type="button"
-                aria-expanded={expanded}
-                aria-controls={panelId}
-                aria-label={`More props & markets for ${game.home.name} vs ${game.away.name}`}
-                onClick={() => setExpanded((value) => !value)}
-                className="text-primary-700 hover:bg-primary-100 focus-visible:ring-primary-500 mt-auto flex min-h-[32px] items-center gap-1.5 self-end rounded-lg px-2 text-xs font-semibold focus-visible:ring-2"
+                aria-expanded={heroPropsOpen}
+                aria-controls={heroPropsId}
+                onClick={() => setHeroPropsOpen((value) => !value)}
+                className="text-ink-600 focus-visible:ring-primary-500 -mx-1 flex min-h-[44px] min-w-0 flex-1 items-center gap-2 rounded px-1 text-left text-xs font-semibold focus-visible:ring-2 lg:hidden"
               >
-                {expanded
-                  ? 'Fewer markets'
-                  : `${moreCount} more ${
-                      moreCount === 1 ? 'market' : 'markets'
-                    }`}
                 <ChevronDownIcon
                   className={clsx(
                     'h-4 w-4 transition-transform',
-                    expanded && 'rotate-180'
+                    heroPropsOpen && 'rotate-180'
                   )}
                 />
+                Props & more
+                <span className="bg-canvas-100 text-ink-500 rounded px-1.5 py-0.5 tabular-nums">
+                  {ids.length}
+                </span>
               </button>
-            )}
+              <h3 className="text-ink-600 hidden text-xs font-semibold lg:block">
+                Props & more
+              </h3>
+              <div className={clsx(!heroPropsOpen && 'max-lg:hidden')}>
+                {addMarket}
+              </div>
+            </Row>
+            <div
+              id={heroPropsId}
+              className={clsx(
+                'flex flex-1 flex-col',
+                !heroPropsOpen && 'max-lg:hidden'
+              )}
+            >
+              <div aria-busy={loadingPreview}>
+                {preview.error && !preview.data ? (
+                  <MarketLoadError refresh={preview.refresh} />
+                ) : !sidebarMarkets ? (
+                  <PropsSkeleton count={sidebarIds.length} />
+                ) : sidebarMarkets.length === 0 ? (
+                  <p className="text-ink-500 py-2 text-xs">
+                    No available linked markets.
+                  </p>
+                ) : (
+                  <Col className="divide-ink-200 divide-y">
+                    {sidebarMarkets.map((c) => (
+                      <RelatedMarketRow key={c.id} contract={c} layout="prop" />
+                    ))}
+                  </Col>
+                )}
+              </div>
+              {moreCount > 0 && (
+                <button
+                  type="button"
+                  aria-expanded={expanded}
+                  aria-controls={panelId}
+                  aria-label={`More props & markets for ${game.home.name} vs ${game.away.name}`}
+                  onClick={() => setExpanded((value) => !value)}
+                  className="text-primary-700 hover:bg-primary-100 focus-visible:ring-primary-500 mt-auto flex min-h-[32px] items-center gap-1.5 self-end rounded-lg px-2 text-xs font-semibold focus-visible:ring-2"
+                >
+                  {expanded
+                    ? 'Fewer markets'
+                    : `${moreCount} more ${
+                        moreCount === 1 ? 'market' : 'markets'
+                      }`}
+                  <ChevronDownIcon
+                    className={clsx(
+                      'h-4 w-4 transition-transform',
+                      expanded && 'rotate-180'
+                    )}
+                  />
+                </button>
+              )}
+            </div>
           </div>
         </div>
         {moreCount > 0 && (
@@ -201,7 +239,10 @@ export function GameLinkedMarkets(props: {
             id={panelId}
             hidden={!expanded}
             aria-busy={loadingPreview || loadingRest}
-            className="border-primary-200 bg-canvas-50 border-t px-4 pb-2"
+            className={clsx(
+              'border-primary-200 bg-canvas-50 border-t px-4 pb-2',
+              !heroPropsOpen && 'max-lg:hidden'
+            )}
           >
             {expanded && (
               <div className="grid gap-x-6 lg:grid-cols-2">
