@@ -19,6 +19,7 @@ import { Row } from 'web/components/layout/row'
 import { GameLinkedMarkets } from 'web/components/sports/game-related-markets'
 import { SportsMarketBadge } from './sports-market-badge'
 import { SportHeroBackground } from './sport-hero-background'
+import { getGameDisplayTeams } from './game-feed-utils'
 import { sportPath } from 'web/components/sports/sport-rail'
 import {
   Flag,
@@ -129,9 +130,11 @@ export function GameRow(props: {
       ? { home: game.liveScore.home, away: game.liveScore.away }
       : null)
 
-  const homeWon = game.winnerAnswerId === game.home.answerId
-  const awayWon = game.winnerAnswerId === game.away.answerId
   const drawWon = !!game.draw && game.winnerAnswerId === game.draw.answerId
+  const displayTeams = getGameDisplayTeams(game)
+  const matchupLabel = game.draw
+    ? `${game.home.name} vs ${game.away.name}`
+    : `${game.away.name} at ${game.home.name}`
 
   const gameControlClassName =
     'text-ink-500 inline-flex h-8 min-w-[2rem] shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-lg border px-2 text-xs font-medium tabular-nums'
@@ -143,9 +146,7 @@ export function GameRow(props: {
       onClick={onToggleLike}
       disabled={likeDisabled}
       aria-pressed={!!liked}
-      aria-label={`${liked ? 'Unlike' : 'Like'} ${game.home.name} vs ${
-        game.away.name
-      }`}
+      aria-label={`${liked ? 'Unlike' : 'Like'} ${matchupLabel}`}
       title={liked ? 'Unlike' : 'Like'}
       className={clsx(
         gameControlClassName,
@@ -160,7 +161,7 @@ export function GameRow(props: {
   const gameLink = (
     <Link
       href={gamePath(game)}
-      aria-label={`Open ${game.home.name} vs ${game.away.name} game page`}
+      aria-label={`Open ${matchupLabel} game page`}
       title="Game page"
       className={clsx(gameControlClassName, gameActionClassName, 'w-8 !px-0')}
     >
@@ -211,26 +212,21 @@ export function GameRow(props: {
           : 'flex flex-col gap-1.5 sm:gap-1'
       )}
     >
-      <TeamLine
-        team={game.home}
-        score={score?.home ?? null}
-        won={homeWon}
-        lost={finished && game.isResolved && !homeWon}
-        live={live}
-        finished={finished}
-        canBet={canBet}
-        onBet={() => onBet('teamA')}
-      />
-      <TeamLine
-        team={game.away}
-        score={score?.away ?? null}
-        won={awayWon}
-        lost={finished && game.isResolved && !awayWon}
-        live={live}
-        finished={finished}
-        canBet={canBet}
-        onBet={() => onBet('teamB')}
-      />
+      {displayTeams.map(({ team, side, outcome }) => (
+        <TeamLine
+          key={team.answerId}
+          team={team}
+          score={score?.[side] ?? null}
+          won={game.winnerAnswerId === team.answerId}
+          lost={
+            finished && game.isResolved && game.winnerAnswerId !== team.answerId
+          }
+          live={live}
+          finished={finished}
+          canBet={canBet}
+          onBet={() => onBet(outcome)}
+        />
+      ))}
       {game.draw && (
         <Row className="items-center gap-2 pl-8">
           <span
@@ -303,7 +299,7 @@ export function GameRow(props: {
             {likeButton}
             <Link
               href={gamePath(game)}
-              aria-label={`Open ${game.home.name} vs ${game.away.name}`}
+              aria-label={`Open ${matchupLabel}`}
               className={clsx(gameControlClassName, gameActionClassName)}
             >
               Ṁ{shortFormatNumber(game.volume)}
@@ -348,7 +344,7 @@ export function GameRow(props: {
                   <GameWhen game={game} layout="inline" />
                 </div>
                 <div className="grid grid-cols-2 items-center gap-x-6 gap-y-2 text-center">
-                  {[game.home, game.away].map((team, index) => (
+                  {displayTeams.map(({ team }, index) => (
                     <div
                       key={team.answerId}
                       className={clsx(
@@ -368,13 +364,17 @@ export function GameRow(props: {
                             ? '@[18rem]/scoreboard:text-2xl text-lg'
                             : 'text-2xl'
                         )}
-                        aria-label={`${game.home.name} ${score.home}, ${game.away.name} ${score.away}`}
+                        aria-label={displayTeams
+                          .map(
+                            ({ team, side }) => `${team.name} ${score[side]}`
+                          )
+                          .join(', ')}
                       >
-                        {score.home}
+                        {score[displayTeams[0].side]}
                         <span className="text-ink-400 mx-1.5 font-normal">
                           –
                         </span>
-                        {score.away}
+                        {score[displayTeams[1].side]}
                       </span>
                     ) : (
                       <span className="text-ink-400 text-sm font-medium">
@@ -382,7 +382,7 @@ export function GameRow(props: {
                       </span>
                     )}
                   </div>
-                  {[game.home, game.away].map((team, index) => (
+                  {displayTeams.map(({ team }, index) => (
                     <div
                       key={team.answerId}
                       className={clsx(
@@ -395,10 +395,7 @@ export function GameRow(props: {
                       </h3>
                     </div>
                   ))}
-                  {[
-                    { team: game.home, outcome: 'teamA' as const },
-                    { team: game.away, outcome: 'teamB' as const },
-                  ].map(({ team, outcome }, index) => (
+                  {displayTeams.map(({ team, outcome }, index) => (
                     <PriceChip
                       key={team.answerId}
                       prob={team.prob}
@@ -481,7 +478,11 @@ export function GameRow(props: {
           <Link
             href={gamePath(game)}
             onClick={(e) => e.stopPropagation()}
-            aria-label={`Open ${game.home.name} vs ${game.away.name}`}
+            aria-label={
+              game.draw
+                ? `Open ${game.home.name} vs ${game.away.name}`
+                : `Open ${game.away.name} at ${game.home.name}`
+            }
             className="text-ink-400 hover:text-primary-700 flex items-center gap-0.5 text-[11px] tabular-nums"
           >
             <span className="hidden sm:inline">
