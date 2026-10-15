@@ -6,6 +6,10 @@ import { METRIC_WRITER } from 'shared/monitoring/metric-writer'
 import { initCaches } from 'shared/init-caches'
 import { listen as webSocketListen } from 'shared/websockets/server'
 import { app } from './app'
+import {
+  isNewsFeedEnabled,
+  startNewsFeedRefresher,
+} from 'shared/news-feed/state'
 
 if (!LOCAL_ONLY) {
   // Normal mode: initialize Firebase and GCP services
@@ -67,5 +71,12 @@ const startupProcess = async () => {
   }
 
   log('Server started successfully')
+
+  // The news feed prototype: gather stories and link markets in-process.
+  // Off unless NEWS_FEED_ENABLED=true (see dev-docs/news-feed-prototype.md).
+  if (isNewsFeedEnabled()) {
+    startNewsFeedRefresher()
+    log.info('News feed refresher started.')
+  }
 }
 startupProcess()

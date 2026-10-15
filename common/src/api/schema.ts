@@ -16,6 +16,7 @@ import { randomStringRegex } from 'common/util/random'
 import type { BrowsePersonalization } from 'common/browse-personalization'
 import { MAX_ANSWER_LENGTH, type Answer } from 'common/answer'
 import { coerceBoolean, contentSchema } from 'common/api/zod-types'
+import { NewsFeedResponse } from 'common/news-feed'
 import { AnyBalanceChangeType } from 'common/balance-change'
 import type { Bet, LimitBet } from 'common/bet'
 import { ChatMessage, PrivateChatMessage } from 'common/chat-message'
@@ -5259,6 +5260,31 @@ export const API = (_apiTypeCheck = {
         result: string
         status: 'resolved' | 'skipped' | 'error'
       }>
+    },
+  },
+  'get-news-feed': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z
+      .object({
+        category: z.string().optional(),
+        limit: z.coerce.number().gte(1).lte(200).optional(),
+        offset: z.coerce.number().gte(0).optional(),
+        includeUnlinked: coerceBoolean.optional(),
+      })
+      .strict(),
+    returns: {} as NewsFeedResponse,
+  },
+  'refresh-news-feed': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      started: boolean
+      refreshing: boolean
+      updatedTime: number | null
     },
   },
 } as const)

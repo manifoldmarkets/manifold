@@ -300,6 +300,8 @@ import { getShopItems } from './get-shop-items'
 import { getShopStats } from './get-shop-stats'
 import { getSiteActivity } from './get-site-activity'
 import { getSportsGames } from './get-sports-games'
+import { getNewsFeed } from './get-news-feed'
+import { refreshNewsFeedHandler } from './refresh-news-feed'
 import { getSuspectedSpamComments } from './get-suspected-spam-comments'
 import { getUserAchievements } from './get-user-achievements'
 import { getUserCalibration } from './get-user-calibration'
@@ -560,6 +562,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-tasks': getTasks,
   'get-site-activity': getSiteActivity,
   'get-sports-games': getSportsGames,
+  'get-news-feed': getNewsFeed,
+  'refresh-news-feed': refreshNewsFeedHandler,
   'get-market-props': getMarketProps,
   'get-user-contract-metrics-with-contracts':
     getUserContractMetricsWithContracts,
