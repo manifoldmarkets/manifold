@@ -111,3 +111,28 @@ test('volume sorting handles invalid numbers and breaks ties by start time', () 
     ['earlier', 'high-volume']
   )
 })
+
+test('featured game stays put across pagination and volume changes, but yields to live games', () => {
+  const first: FeedGame = {
+    id: 'first',
+    status: 'upcoming',
+    startTime: 1,
+    volume: 10,
+  }
+  const later: FeedGame = {
+    id: 'later',
+    status: 'upcoming',
+    startTime: 2,
+    volume: 100,
+  }
+  assert.equal(selectFeaturedGame([first, later], first.id)?.id, first.id)
+  const live = { ...later, status: 'live' as const }
+  assert.equal(selectFeaturedGame([first, live], first.id)?.id, live.id)
+  const biggerLive = { ...first, status: 'live' as const, volume: 1000 }
+  assert.equal(selectFeaturedGame([biggerLive, live], live.id)?.id, live.id)
+  assert.equal(
+    selectFeaturedGame([{ ...live, status: 'finished' }, first], live.id)?.id,
+    first.id
+  )
+  assert.equal(selectFeaturedGame([later], first.id)?.id, later.id)
+})

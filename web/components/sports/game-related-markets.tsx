@@ -16,6 +16,10 @@ import {
   SPORT_BY_KEY,
 } from 'common/sports-schedule'
 import { removeEmojis } from 'common/util/string'
+import {
+  getCustomYesButtonText,
+  getCustomNoButtonText,
+} from 'common/shop/items'
 import { shortFormatNumber } from 'common/util/format'
 import { BetButton } from 'web/components/bet/feed-bet-button'
 import { MultiBetDialog } from 'web/components/bet/bet-dialog'
@@ -100,9 +104,9 @@ export function GameLinkedMarkets(props: {
     remainingIds.length > 0 && expanded && (featured || showAll)
   )
   const contracts = useMemo(() => {
-    if (!preview.data) return undefined
+    if (!preview.data && !rest.data) return undefined
     const byId = new Map(
-      [...preview.data, ...(rest.data ?? [])].map((c) => [c.id, c])
+      [...(preview.data ?? []), ...(rest.data ?? [])].map((c) => [c.id, c])
     )
     return (featured || showAll ? ids : firstIds)
       .map((id) => byId.get(id))
@@ -131,7 +135,9 @@ export function GameLinkedMarkets(props: {
 
   if (featured) {
     const sidebarIds = ids.slice(0, HERO_PREVIEW_ROWS)
-    const sidebarMarkets = contracts?.filter((c) => sidebarIds.includes(c.id))
+    const sidebarMarkets = preview.data
+      ? contracts?.filter((c) => sidebarIds.includes(c.id))
+      : undefined
     const moreMarkets = contracts?.filter((c) => !sidebarIds.includes(c.id))
     const moreCount = ids.length - sidebarIds.length
     return (
@@ -219,6 +225,9 @@ export function GameLinkedMarkets(props: {
                   <PropsSkeleton
                     count={Math.min(remainingIds.length, INITIAL_ROWS)}
                   />
+                )}
+                {preview.error && !preview.data && (
+                  <MarketLoadError refresh={preview.refresh} />
                 )}
                 {rest.error && <MarketLoadError refresh={rest.refresh} />}
                 {!loadingPreview &&
@@ -327,7 +336,7 @@ export function GameLinkedMarkets(props: {
   )
 }
 
-function MarketLoadError({ refresh }: { refresh: () => unknown }) {
+export function MarketLoadError({ refresh }: { refresh: () => unknown }) {
   return (
     <p className="text-ink-500 py-2 text-xs" role="alert">
       Couldn't load these markets.
@@ -450,7 +459,14 @@ export function RelatedMarketRow(props: {
           contract={contract as BinaryContract}
           user={user}
           questionTitle={contract.question}
-          labels={isProp ? { yes: 'Yes', no: 'No' } : undefined}
+          labels={
+            isProp
+              ? {
+                  yes: getCustomYesButtonText(user?.entitlements) ?? 'Yes',
+                  no: getCustomNoButtonText(user?.entitlements) ?? 'No',
+                }
+              : undefined
+          }
           className={
             isProp
               ? 'grid grid-cols-2 gap-1.5 [&>button]:m-0 [&>button]:min-h-[32px] [&>button]:min-w-[3.5rem]'

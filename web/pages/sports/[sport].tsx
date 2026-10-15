@@ -115,11 +115,11 @@ export default function SportPage() {
             content: (
               <div className="pt-3">
                 <GameFeed
+                  key={key}
                   games={games}
                   loading={loading || !schedule}
                   hasMore={hasMore}
                   loadMore={loadMore}
-                  variant="cards"
                   showLeague={showLeague}
                   empty={
                     <div className="flex flex-col gap-6">

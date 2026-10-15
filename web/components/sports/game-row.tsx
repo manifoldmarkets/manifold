@@ -3,13 +3,11 @@ import { HeartIcon as OutlineHeartIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { formatJustTime } from 'client-common/lib/time'
 import {
   ScheduleGame,
   ScheduleTeam,
-  SPORT_BY_KEY,
   teamDisplayName,
 } from 'common/sports-schedule'
 import { readableTextColor } from 'common/sports-team-colors'
@@ -20,7 +18,6 @@ import { GameLinkedMarkets } from 'web/components/sports/game-related-markets'
 import { SportsMarketBadge } from './sports-market-badge'
 import { SportHeroBackground } from './sport-hero-background'
 import { getGameDisplayTeams } from './game-feed-utils'
-import { sportPath } from 'web/components/sports/sport-rail'
 import {
   Flag,
   MatchOutcome,
@@ -92,12 +89,11 @@ const gameAnchor = (game: Pick<ScheduleGame, 'id'>) => `game-${game.id}`
 /**
  * One game: when it starts (or the live score), the two teams with their
  * prices as the bet buttons, and the draw for soccer.
- *  - `list`: a compact row for the all-sports feed; the row opens the game.
- *  - `card`: a card for a sport's page, with the markets on the game below.
+ * Card, compact row, or featured scoreboard, with related markets below.
  */
 export function GameRow(props: {
   game: ScheduleGame
-  variant?: 'list' | 'card' | 'featured' | 'compact'
+  variant?: 'card' | 'featured' | 'compact'
   showLeague?: boolean
   className?: string
   liked?: boolean
@@ -106,14 +102,13 @@ export function GameRow(props: {
 }) {
   const {
     game,
-    variant = 'list',
+    variant = 'card',
     showLeague,
     className,
     liked,
     likeDisabled,
     onToggleLike,
   } = props
-  const router = useRouter()
   const [betOutcome, setBetOutcome] = useState<MatchOutcome | null>(null)
   const user = useUser()
   const LikeIcon = liked ? HeartIcon : OutlineHeartIcon
@@ -228,7 +223,7 @@ export function GameRow(props: {
         />
       ))}
       {game.draw && (
-        <Row className="items-center gap-2 pl-8">
+        <Row className="items-center gap-2 pl-10">
           <span
             className={clsx(
               'text-xs',
@@ -286,7 +281,7 @@ export function GameRow(props: {
           <div className="col-span-2 mb-2 flex flex-wrap items-center gap-2 sm:col-span-1 sm:mb-0 sm:flex-col sm:items-start">
             <div className="flex items-center gap-1.5">
               <SportsMarketBadge market={game} />
-              <GameWhen game={game} layout="inline" />
+              <GameWhen game={game} />
             </div>
             {showLeague && (
               <span className="text-ink-400 text-[10px] font-semibold">
@@ -341,7 +336,7 @@ export function GameRow(props: {
                   <span>
                     {game.league} · {dayjs(game.startTime).format('ddd, MMM D')}
                   </span>
-                  <GameWhen game={game} layout="inline" />
+                  <GameWhen game={game} />
                 </div>
                 <div className="grid grid-cols-2 items-center gap-x-6 gap-y-2 text-center">
                   {displayTeams.map(({ team }, index) => (
@@ -434,74 +429,28 @@ export function GameRow(props: {
     )
   }
 
-  if (variant === 'card') {
-    return (
-      <div
-        id={gameAnchor(game)}
-        className={clsx(
-          'bg-canvas-0 border-ink-200 hover:border-primary-300 scroll-mt-32 overflow-hidden rounded-xl border transition-colors',
-          className
-        )}
-      >
-        <Row className="min-h-[3rem] flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
-            <GameWhen game={game} layout="inline" />
-            <SportsMarketBadge market={game} />
-            {showLeague && (
-              <span className="text-ink-400 truncate text-[10px] font-semibold uppercase tracking-wide">
-                {game.league}
-              </span>
-            )}
-          </div>
-          {gameControls}
-        </Row>
-        <div className="px-4 pb-3">{teams}</div>
-        <GameLinkedMarkets game={game} />
-        {dialog}
-      </div>
-    )
-  }
-
   return (
-    <div className={className}>
-      {/* The row opens the game (a mouse convenience); the link on the right
-          is the keyboard and screen-reader way in. */}
-      <div
-        role="presentation"
-        onClick={() => router.push(gamePath(game))}
-        className="hover:bg-canvas-50 grid cursor-pointer grid-cols-[3.75rem_minmax(0,1fr)_auto] items-center gap-x-2 px-2 py-2.5 transition-colors sm:grid-cols-[4.5rem_minmax(0,1fr)_4.5rem] sm:gap-x-3 sm:px-3"
-      >
-        <GameWhen game={game} layout="column" showLeague={showLeague} />
-        {teams}
-        <Col className="items-end gap-1 self-center">
+    <div
+      id={gameAnchor(game)}
+      className={clsx(
+        'bg-canvas-0 border-ink-200 hover:border-primary-300 scroll-mt-32 overflow-hidden rounded-xl border transition-colors',
+        className
+      )}
+    >
+      <Row className="min-h-[3rem] flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+          <GameWhen game={game} />
           <SportsMarketBadge market={game} />
-          <Link
-            href={gamePath(game)}
-            onClick={(e) => e.stopPropagation()}
-            aria-label={
-              game.draw
-                ? `Open ${game.home.name} vs ${game.away.name}`
-                : `Open ${game.away.name} at ${game.home.name}`
-            }
-            className="text-ink-400 hover:text-primary-700 flex items-center gap-0.5 text-[11px] tabular-nums"
-          >
-            <span className="hidden sm:inline">
-              Ṁ{shortFormatNumber(game.volume)}
+          {showLeague && (
+            <span className="text-ink-400 truncate text-[10px] font-semibold uppercase tracking-wide">
+              {game.league}
             </span>
-            <ChevronRightIcon className="h-4 w-4" />
-          </Link>
-          {game.relatedCount > 0 && (
-            <Link
-              href={`${sportPath(game.sport)}#${gameAnchor(game)}`}
-              onClick={(e) => e.stopPropagation()}
-              className="text-primary-700 hover:bg-primary-50 rounded px-1 text-[11px] font-medium"
-            >
-              +{game.relatedCount}
-              <span className="hidden sm:inline"> markets</span>
-            </Link>
           )}
-        </Col>
-      </div>
+        </div>
+        {gameControls}
+      </Row>
+      <div className="px-4 pb-3">{teams}</div>
+      <GameLinkedMarkets game={game} />
       {dialog}
     </div>
   )
@@ -509,20 +458,14 @@ export function GameRow(props: {
 
 /**
  * When a game is: the kickoff time (and how soon), "LIVE" with the clock, or
- * the final. A column in a feed row, one line in a card header.
+ * the final, displayed inline in a card header.
  */
-function GameWhen(props: {
-  game: ScheduleGame
-  layout: 'column' | 'inline'
-  showLeague?: boolean
-}) {
-  const { game, layout, showLeague } = props
+function GameWhen({ game }: { game: ScheduleGame }) {
   const live = game.status === 'live'
   // A live feed (score / clock) is only available for some leagues; without
   // it the game says "In progress" rather than pretending to have a clock.
   const hasFeed = live && !!game.liveScore
   const finished = game.status === 'finished'
-  const sport = SPORT_BY_KEY[game.sport]
   const time = formatJustTime(game.startTime).replace(':00', '')
 
   let primary: ReactNode
@@ -566,30 +509,13 @@ function GameWhen(props: {
     secondary = startsSoonLabel(game.startTime)
   }
 
-  if (layout === 'inline') {
-    return (
-      <Row className="min-w-0 items-baseline gap-2">
-        {primary}
-        {secondary && (
-          <span className="text-ink-500 text-xs tabular-nums">{secondary}</span>
-        )}
-      </Row>
-    )
-  }
   return (
-    <Col className="items-start gap-0.5 self-start pt-1">
+    <Row className="min-w-0 items-baseline gap-2">
       {primary}
       {secondary && (
-        <span className="text-ink-500 text-[11px] tabular-nums">
-          {secondary}
-        </span>
+        <span className="text-ink-500 text-xs tabular-nums">{secondary}</span>
       )}
-      {showLeague && sport && (
-        <span className="text-ink-400 mt-0.5 text-[10px] font-semibold uppercase tracking-wide">
-          {sport.label}
-        </span>
-      )}
-    </Col>
+    </Row>
   )
 }
 
@@ -767,8 +693,8 @@ function useProbFlash(pct: number): 'up' | 'down' | null {
   return flash
 }
 
-export function GameRowSkeleton(props: { variant?: 'list' | 'card' }) {
-  const { variant = 'list' } = props
+export function GameRowSkeleton(props: { variant?: 'compact' | 'card' }) {
+  const { variant = 'card' } = props
   const teams = (
     <Col className="gap-2">
       <div className="bg-ink-100 h-5 w-2/3 rounded" />
@@ -789,7 +715,7 @@ export function GameRowSkeleton(props: { variant?: 'list' | 'card' }) {
     )
   }
   return (
-    <div className="animate-pulse px-3 py-2.5">
+    <div className="border-ink-200 bg-canvas-0 animate-pulse rounded-xl border px-3 py-2.5">
       <div className="grid grid-cols-[4.5rem_minmax(0,1fr)_4.5rem] gap-3">
         <div className="bg-ink-100 h-4 w-12 rounded" />
         {teams}

@@ -75,7 +75,7 @@ export function SportsShell(props: {
           <p className="text-ink-500 px-1 text-sm">{subheading}</p>
         )}
 
-        <div className="bg-canvas-0 border-ink-100 sticky top-0 z-20 -mx-2 border-b px-2 sm:-mx-4 sm:px-4">
+        <div className="bg-canvas-0 border-ink-100 sticky top-0 z-20 -mx-3 border-b px-3 sm:-mx-6 sm:px-6">
           <SportRail
             sports={rail?.sports ?? CURATED_SPORTS}
             selected={selected}

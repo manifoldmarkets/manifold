@@ -100,7 +100,6 @@ export default function SportsPage() {
                   loading={loading || !schedule}
                   hasMore={hasMore}
                   loadMore={loadMore}
-                  variant="list"
                   showLeague
                   empty={
                     <div className="flex flex-col gap-6">

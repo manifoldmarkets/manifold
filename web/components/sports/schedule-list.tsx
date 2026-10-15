@@ -7,7 +7,7 @@ import {
   XIcon,
 } from '@heroicons/react/solid'
 import dayjs from 'dayjs'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { ScheduleGame } from 'common/sports-schedule'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -59,17 +59,16 @@ export function GameFeed(props: {
   loading: boolean
   hasMore: boolean
   loadMore: () => Promise<boolean>
-  variant: 'list' | 'cards'
   showLeague: boolean
   /** Shown when there is nothing live or upcoming. */
   empty: ReactNode
 }) {
-  const { games, loading, hasMore, loadMore, variant, showLeague, empty } =
-    props
+  const { games, loading, hasMore, loadMore, showLeague, empty } = props
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'all' | 'live' | 'liked'>('all')
   const [date, setDate] = useState('all')
   const [sort, setSort] = useState('time')
+  const [featuredId, setFeaturedId] = useState<string>()
   const [view, setView] = usePersistentLocalState<'cards' | 'compact'>(
     'cards',
     'sports-game-view'
@@ -80,8 +79,12 @@ export function GameFeed(props: {
   const likes = useGameLikes(active.map((game) => game.id))
   const normalized = query.trim().toLowerCase()
   const hasFilters = filter !== 'all' || date !== 'all' || !!normalized
+  const selectedFeatured = selectFeaturedGame(active, featuredId)
+  useEffect(() => {
+    if (selectedFeatured) setFeaturedId(selectedFeatured.id)
+  }, [selectedFeatured?.id])
   const featured =
-    view === 'cards' && !hasFilters ? selectFeaturedGame(active) : undefined
+    view === 'cards' && !hasFilters ? selectedFeatured : undefined
   const filtered = active
     .filter(
       (game) =>
@@ -138,7 +141,7 @@ export function GameFeed(props: {
     return (
       <Col className="gap-2">
         <SectionHeader label="Up next" />
-        <FeedSkeleton variant={variant} rows={4} />
+        <FeedSkeleton view={view} rows={4} />
       </Col>
     )
   }
@@ -343,6 +346,7 @@ export function GameFeed(props: {
         </div>
         {featured && (
           <GameRow
+            key={featured.id}
             variant="featured"
             game={featured}
             showLeague={showLeague}
@@ -402,7 +406,7 @@ export function GameFeed(props: {
             {renderGames(day.items)}
           </Col>
         ))}
-        {hasMore ? (
+        {hasMore && filter !== 'live' ? (
           <>
             {hasFilters ? (
               <button
@@ -415,13 +419,14 @@ export function GameFeed(props: {
             ) : (
               <>
                 <LoadMoreUntilNotVisible loadMore={loadMore} />
-                <FeedSkeleton variant={variant} rows={2} />
+                <FeedSkeleton view={view} rows={2} />
               </>
             )}
           </>
         ) : (
           <p className="text-ink-400 px-1 text-center text-xs">
-            All available games · Times shown in your local time zone
+            {filter === 'live' ? 'All live games' : 'All available games'} ·
+            Times shown in your local time zone
           </p>
         )}
       </Col>
@@ -429,17 +434,15 @@ export function GameFeed(props: {
   )
 }
 
-function FeedSkeleton(props: { variant: 'list' | 'cards'; rows: number }) {
-  const { variant, rows } = props
+function FeedSkeleton(props: { view: 'cards' | 'compact'; rows: number }) {
+  const { view, rows } = props
   const items = Array.from({ length: rows }, (_, i) => (
-    <GameRowSkeleton key={i} variant={variant === 'cards' ? 'card' : 'list'} />
+    <GameRowSkeleton key={i} variant={view === 'cards' ? 'card' : 'compact'} />
   ))
-  return variant === 'cards' ? (
-    <Col className="gap-3">{items}</Col>
-  ) : (
-    <Col className="border-ink-200 bg-canvas-0 divide-ink-100 divide-y overflow-hidden rounded-lg border">
+  return (
+    <div className={clsx('grid gap-3', view === 'cards' && 'sm:grid-cols-2')}>
       {items}
-    </Col>
+    </div>
   )
 }
 

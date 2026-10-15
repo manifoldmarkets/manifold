@@ -29,8 +29,18 @@ const safeVolume = (game: GameOrder) =>
 export const compareGameVolume = (a: GameOrder, b: GameOrder) =>
   safeVolume(b) - safeVolume(a) || compareGameStartTime(a, b)
 
-/** One live game takes priority over any upcoming game, then volume. */
-export function selectFeaturedGame<T extends GameOrder>(games: readonly T[]) {
+/** Retain the current game while browsing; promote a live game when one starts. */
+export function selectFeaturedGame<T extends GameOrder>(
+  games: readonly T[],
+  currentId?: string
+) {
+  const current = games.find((game) => game.id === currentId)
+  if (
+    current?.status === 'live' ||
+    (current?.status === 'upcoming' &&
+      !games.some((game) => game.status === 'live'))
+  )
+    return current
   return games
     .filter((game) => game.status === 'live' || game.status === 'upcoming')
     .sort(
