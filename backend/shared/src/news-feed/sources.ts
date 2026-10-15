@@ -1,4 +1,5 @@
 import * as https from 'https'
+import { urlToHttpOptions } from 'url'
 import { uniqBy } from 'lodash'
 import { NewsCategory, NewsSourceLink, NewsStoryOrigin } from 'common/news-feed'
 import { log } from 'shared/utils'
@@ -37,9 +38,11 @@ function httpsGet(
   redirects = 0
 ): Promise<string> {
   return new Promise((resolve, reject) => {
+    // One options object plus callback: a dependency patches https.request
+    // and mishandles the (url, options, callback) form.
     const req = https.get(
-      url,
       {
+        ...urlToHttpOptions(new URL(url)),
         family,
         headers: { 'User-Agent': USER_AGENT, Accept: '*/*' },
         timeout: FETCH_TIMEOUT_MS,
