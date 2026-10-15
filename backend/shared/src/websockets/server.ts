@@ -1,10 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import { Server as HttpServer } from 'node:http'
+import { hostname } from 'node:os'
+import { setTimeout as sleep } from 'node:timers/promises'
 import { createClient } from '@redis/client'
 import { Server as WebSocketServer, RawData, WebSocket } from 'ws'
 import { isError } from 'lodash'
 import { LOCAL_DEV, log, metrics } from 'shared/utils'
 import { Switchboard } from './switchboard'
+import { watchHandover } from './handover'
 import {
   BroadcastPayload,
   ClientMessage,
@@ -16,26 +19,50 @@ const SWITCHBOARD = new Switchboard()
 
 // if a connection doesn't ping for this long, we assume the other side is toast
 const CONNECTION_TIMEOUT_MS = 60 * 1000
+// 1012 (Service Restart) tells clients to reconnect, resubscribe and backfill.
+const HANDOVER_CLOSE_CODE = 1012
 const DEFAULT_REDIS_BROADCAST_CHANNEL_PREFIX = 'api-websocket-broadcasts'
 const REDIS_SUBSCRIBER_INITIAL_RETRY_DELAY_MS = 1_000
 const REDIS_SUBSCRIBER_MAX_RETRY_DELAY_MS = 60_000
+// How often an idle writer tells the others its event count.
+const REDIS_HEARTBEAT_MS = 5_000
+const REDIS_SHUTDOWN_TIMEOUT_MS = 500
+const REDIS_LOG_INTERVAL_MS = 60_000
 const WEBSOCKET_INSTANCE_ID = randomUUID()
+const REDIS_URL = process.env.REDIS_URL?.trim() || undefined
 
+// What writers exchange on the shared channel. Every message carries the
+// sender's count of broadcasts so far, so a receiver can tell whether it got
+// all of them (see trackSender and watchWebSocketHandover).
 type RedisBroadcast = {
   originInstanceId?: string
-  topics: string[]
-  data: BroadcastPayload
+  // The sender's VM instance name, which a deploy's handover refers to.
+  host?: string
+  kind?: 'event' | 'heartbeat' | 'shutdown'
+  eventSeq?: number
+  topics?: string[]
+  data?: BroadcastPayload
 }
 
 type RedisClient = ReturnType<typeof createClient>
 
 let redisPublisher: RedisClient | undefined
-let redisPublisherConnect: Promise<RedisClient> | undefined
 let redisSubscriber: RedisClient | undefined
 let redisSubscriberConnect: Promise<void> | undefined
 let redisSubscriberShouldRun = false
 let redisSubscriberRetryTimeout: NodeJS.Timeout | undefined
 let redisSubscriberRetryDelayMs = REDIS_SUBSCRIBER_INITIAL_RETRY_DELAY_MS
+let localHost = hostname()
+let eventSeq = 0
+
+type SenderState = {
+  host: string
+  lastEventSeq: number
+  // False once one of the sender's broadcasts may not have reached this writer.
+  complete: boolean
+  shutDown: boolean
+}
+const senders = new Map<string, SenderState>()
 
 // Categorize topics to avoid unbounded metric cardinality
 function getTopicCategory(topic: string): string {
@@ -127,17 +154,11 @@ function processMessage(ws: WebSocket, data: RawData): ServerMessage<'ack'> {
   }
 }
 
-function getRedisUrl() {
-  const url = process.env.REDIS_URL
-  return url && url.trim().length > 0 ? url : undefined
-}
-
 function getRedisUrlForLogging() {
-  const url = getRedisUrl()
-  if (url == null) return undefined
+  if (REDIS_URL == null) return undefined
 
   try {
-    const parsed = new URL(url)
+    const parsed = new URL(REDIS_URL)
     const auth = parsed.username || parsed.password ? '<redacted>@' : ''
     return `${parsed.protocol}//${auth}${parsed.hostname}:${
       parsed.port || '6379'
@@ -183,7 +204,22 @@ function getRedisLogContext() {
     project: process.env.GOOGLE_CLOUD_PROJECT,
     firebaseEnv: process.env.NEXT_PUBLIC_FIREBASE_ENV,
     instanceId: WEBSOCKET_INSTANCE_ID,
+    host: localHost,
   }
+}
+
+const lastRedisProblemLog = new Map<string, number>()
+// node-redis reports every failed reconnect attempt; log each problem at most
+// once a minute.
+function logRedisProblem(message: string, err: unknown) {
+  const now = Date.now()
+  if (
+    now - (lastRedisProblemLog.get(message) ?? -Infinity) <
+    REDIS_LOG_INTERVAL_MS
+  )
+    return
+  lastRedisProblemLog.set(message, now)
+  log.error(message, { ...getRedisErrorDetails(err), ...getRedisLogContext() })
 }
 
 function getRedisBroadcastEnvironment() {
@@ -200,7 +236,12 @@ function getRedisBroadcastChannel() {
 }
 
 function redisBroadcastsEnabled() {
-  return getRedisUrl() != null
+  return REDIS_URL != null
+}
+
+const redisSocketOptions = {
+  connectTimeout: 5_000,
+  reconnectStrategy: (retries: number) => Math.min(500 * 2 ** retries, 30_000),
 }
 
 function recordBroadcastMetrics(topics: string[]) {
@@ -245,16 +286,15 @@ function sendToLocalSubscribersMulti(topics: string[], data: BroadcastPayload) {
 
 function parseRedisBroadcast(message: string) {
   const parsed = JSON.parse(message) as RedisBroadcast
-  if (!Array.isArray(parsed.topics)) {
-    throw new Error('Redis websocket broadcast has no topics array.')
+  const kind = parsed.kind ?? 'event'
+  if (!['event', 'heartbeat', 'shutdown'].includes(kind)) {
+    throw new Error('Redis websocket broadcast has an unknown kind.')
   }
-  for (const topic of parsed.topics) {
-    if (typeof topic !== 'string') {
-      throw new Error('Redis websocket broadcast topic is not a string.')
-    }
+  if (parsed.eventSeq != null && !Number.isInteger(parsed.eventSeq)) {
+    throw new Error('Redis websocket broadcast sequence is invalid.')
   }
-  if (parsed.data == null || typeof parsed.data !== 'object') {
-    throw new Error('Redis websocket broadcast has invalid data.')
+  if (parsed.host != null && typeof parsed.host !== 'string') {
+    throw new Error('Redis websocket broadcast host is invalid.')
   }
   if (
     parsed.originInstanceId != null &&
@@ -262,74 +302,131 @@ function parseRedisBroadcast(message: string) {
   ) {
     throw new Error('Redis websocket broadcast origin instance ID is invalid.')
   }
-  return parsed
+  if (kind === 'event') {
+    if (!Array.isArray(parsed.topics)) {
+      throw new Error('Redis websocket broadcast has no topics array.')
+    }
+    for (const topic of parsed.topics) {
+      if (typeof topic !== 'string') {
+        throw new Error('Redis websocket broadcast topic is not a string.')
+      }
+    }
+    if (parsed.data == null || typeof parsed.data !== 'object') {
+      throw new Error('Redis websocket broadcast has invalid data.')
+    }
+  }
+  return { ...parsed, kind }
 }
 
-function resetRedisPublisher() {
-  redisPublisher = undefined
-  redisPublisherConnect = undefined
-}
-
-async function getRedisPublisher() {
-  if (!redisBroadcastsEnabled()) return undefined
-  if (redisPublisherConnect != null) return await redisPublisherConnect
-
-  const url = getRedisUrl()
-  if (url == null) return undefined
-
+function startRedisPublisher() {
+  if (REDIS_URL == null || redisPublisher != null) return
   log.info(
     'Starting Redis websocket publisher connection.',
     getRedisLogContext()
   )
-  redisPublisher = createClient({ url })
-  redisPublisher.on('error', (err: unknown) => {
-    log.error('Redis websocket publisher error.', {
-      ...getRedisErrorDetails(err),
-      ...getRedisLogContext(),
-    })
+  const publisher = createClient({
+    url: REDIS_URL,
+    // Best effort: while disconnected, drop broadcasts at once instead of
+    // queueing them in memory or making callers wait for a connection.
+    disableOfflineQueue: true,
+    socket: redisSocketOptions,
+  })
+  redisPublisher = publisher
+  publisher.on('error', (err: unknown) => {
     metrics.inc('ws/redis_publisher_errors')
+    logRedisProblem('Redis websocket publisher error.', err)
   })
-  redisPublisher.on('reconnecting', () => {
-    log.warn('Redis websocket publisher reconnecting.', getRedisLogContext())
+  publisher.on('ready', () => {
+    log.info('Redis websocket publisher connected.', getRedisLogContext())
   })
-
-  redisPublisherConnect = redisPublisher
-    .connect()
-    .then(() => {
-      log.info('Redis websocket publisher connected.', getRedisLogContext())
-      return redisPublisher!
-    })
-    .catch((err: unknown) => {
-      resetRedisPublisher()
-      log.error('Failed to start Redis websocket publisher.', {
-        ...getRedisErrorDetails(err),
-        ...getRedisLogContext(),
-      })
-      throw err
-    })
-
-  return await redisPublisherConnect
+  publisher.connect().catch((err: unknown) => {
+    logRedisProblem('Failed to start Redis websocket publisher.', err)
+  })
 }
 
-async function publishRedisBroadcast(topics: string[], data: BroadcastPayload) {
-  const publisher = await getRedisPublisher()
+function stopRedisPublisher() {
+  const publisher = redisPublisher
+  redisPublisher = undefined
   if (publisher == null) return
+  const stop = publisher.isReady ? publisher.quit() : publisher.disconnect()
+  stop.catch((err: unknown) => {
+    logRedisProblem('Failed to stop Redis websocket publisher.', err)
+  })
+}
 
-  const broadcast: RedisBroadcast = {
-    originInstanceId: WEBSOCKET_INSTANCE_ID,
-    topics,
-    data,
+// Resolves to whether the message was handed to Redis. Never waits for a
+// connection: a message sent while disconnected is dropped, and the sequence
+// numbers let the other writers notice.
+function publishToRedis(
+  message: Omit<RedisBroadcast, 'originInstanceId' | 'host'>
+) {
+  startRedisPublisher()
+  const publisher = redisPublisher
+  if (!publisher?.isReady) {
+    metrics.inc('ws/redis_broadcast_publish_errors')
+    return Promise.resolve(false)
   }
-  await publisher.publish(getRedisBroadcastChannel(), JSON.stringify(broadcast))
-  metrics.inc('ws/redis_broadcasts_published')
+  const payload: RedisBroadcast = {
+    originInstanceId: WEBSOCKET_INSTANCE_ID,
+    host: localHost,
+    ...message,
+  }
+  return publisher
+    .publish(getRedisBroadcastChannel(), JSON.stringify(payload))
+    .then(
+      () => {
+        metrics.inc('ws/redis_broadcasts_published')
+        return true
+      },
+      (err: unknown) => {
+        metrics.inc('ws/redis_broadcast_publish_errors')
+        logRedisProblem('Redis websocket broadcast failed.', err)
+        return false
+      }
+    )
+}
+
+// Tracks another writer's broadcast count. The sender stays complete while
+// every broadcast it numbered reached this writer: none was sent before it was
+// first heard while clients were connected here, and none went missing since.
+function trackSender({
+  originInstanceId,
+  host,
+  kind,
+  eventSeq,
+}: ReturnType<typeof parseRedisBroadcast>) {
+  if (originInstanceId == null) return
+  const seq = eventSeq ?? NaN
+  // How many broadcasts the sender had numbered before this message.
+  const before = kind === 'event' ? seq - 1 : seq
+  let sender = senders.get(originInstanceId)
+  if (sender == null) {
+    sender = {
+      host: host ?? '',
+      lastEventSeq: before,
+      complete:
+        Number.isInteger(seq) &&
+        (before === 0 || SWITCHBOARD.clients.size === 0),
+      shutDown: false,
+    }
+    senders.set(originInstanceId, sender)
+  } else if (before !== sender.lastEventSeq) {
+    sender.complete = false
+  }
+  if (host) sender.host = host
+  if (Number.isInteger(seq)) sender.lastEventSeq = seq
+  if (kind === 'shutdown') sender.shutDown = true
 }
 
 function handleRedisBroadcast(message: string) {
   try {
-    const { originInstanceId, topics, data } = parseRedisBroadcast(message)
+    const broadcast = parseRedisBroadcast(message)
     metrics.inc('ws/redis_broadcasts_received')
-    if (originInstanceId === WEBSOCKET_INSTANCE_ID) return
-    sendToLocalSubscribersMulti(topics, data)
+    if (broadcast.originInstanceId === WEBSOCKET_INSTANCE_ID) return
+    trackSender(broadcast)
+    if (broadcast.kind === 'event' && broadcast.topics && broadcast.data) {
+      sendToLocalSubscribersMulti(broadcast.topics, broadcast.data)
+    }
   } catch (err: unknown) {
     log.error('Error handling Redis websocket broadcast.', {
       ...getRedisErrorDetails(err),
@@ -370,7 +467,7 @@ function scheduleRedisSubscriberRetry() {
 }
 
 function startRedisBroadcastSubscriber() {
-  if (!redisBroadcastsEnabled()) {
+  if (REDIS_URL == null) {
     log.info('Redis websocket broadcasts disabled.', getRedisLogContext())
     return
   }
@@ -378,25 +475,19 @@ function startRedisBroadcastSubscriber() {
   if (redisSubscriberConnect != null || redisSubscriberRetryTimeout != null)
     return
 
-  const url = getRedisUrl()
-  if (url == null) return
-
   const channel = getRedisBroadcastChannel()
   log.info(
     'Starting Redis websocket subscriber connection.',
     getRedisLogContext()
   )
-  const subscriber = createClient({ url })
+  const subscriber = createClient({
+    url: REDIS_URL,
+    socket: redisSocketOptions,
+  })
   redisSubscriber = subscriber
   subscriber.on('error', (err: unknown) => {
-    log.error('Redis websocket subscriber error.', {
-      ...getRedisErrorDetails(err),
-      ...getRedisLogContext(),
-    })
     metrics.inc('ws/redis_subscriber_errors')
-  })
-  subscriber.on('reconnecting', () => {
-    log.warn('Redis websocket subscriber reconnecting.', getRedisLogContext())
+    logRedisProblem('Redis websocket subscriber error.', err)
   })
 
   redisSubscriberConnect = subscriber
@@ -404,22 +495,13 @@ function startRedisBroadcastSubscriber() {
     .then(() => subscriber.subscribe(channel, handleRedisBroadcast))
     .then(() => {
       resetRedisSubscriberRetryDelay()
-      log.info('Redis websocket subscriber connected.', getRedisLogContext())
       log.info('Redis websocket subscriber listening.', getRedisLogContext())
     })
     .catch((err: unknown) => {
       if (redisSubscriber === subscriber) redisSubscriber = undefined
       redisSubscriberConnect = undefined
-      subscriber.quit().catch((quitErr: unknown) => {
-        log.error('Failed to quit Redis websocket subscriber.', {
-          ...getRedisErrorDetails(quitErr),
-          ...getRedisLogContext(),
-        })
-      })
-      log.error('Failed to start Redis websocket subscriber.', {
-        ...getRedisErrorDetails(err),
-        ...getRedisLogContext(),
-      })
+      subscriber.disconnect().catch(() => {})
+      logRedisProblem('Failed to start Redis websocket subscriber.', err)
       metrics.inc('ws/redis_subscriber_start_errors')
       scheduleRedisSubscriberRetry()
     })
@@ -433,11 +515,10 @@ function stopRedisBroadcastSubscriber() {
   const subscriber = redisSubscriber
   redisSubscriber = undefined
   redisSubscriberConnect = undefined
-  subscriber?.quit().catch((err: unknown) => {
-    log.error('Failed to quit Redis websocket subscriber.', {
-      ...getRedisErrorDetails(err),
-      ...getRedisLogContext(),
-    })
+  if (subscriber == null) return
+  const stop = subscriber.isReady ? subscriber.quit() : subscriber.disconnect()
+  stop.catch((err: unknown) => {
+    logRedisProblem('Failed to stop Redis websocket subscriber.', err)
   })
 }
 
@@ -446,13 +527,8 @@ export function broadcastMulti(topics: string[], data: BroadcastPayload) {
   sendToLocalSubscribersMulti(topics, data)
 
   if (redisBroadcastsEnabled()) {
-    publishRedisBroadcast(topics, data).catch((err: unknown) => {
-      log.error('Redis websocket broadcast failed.', {
-        ...getRedisErrorDetails(err),
-        ...getRedisLogContext(),
-      })
-      metrics.inc('ws/redis_broadcast_publish_errors')
-    })
+    eventSeq++
+    void publishToRedis({ kind: 'event', eventSeq, topics, data })
   }
 }
 
@@ -460,21 +536,119 @@ export function broadcast(topic: string, data: BroadcastPayload) {
   return broadcastMulti([topic], data)
 }
 
+/** The VM instance name a deploy's handover uses to refer to this writer. */
+export function setWebSocketInstanceName(name: string) {
+  localHost = name
+}
+
+/**
+ * Tells the other writers this process has sent its last broadcast, so their
+ * handover can trust what they received from it. Call before exiting.
+ */
+export async function announceWebSocketShutdown() {
+  if (!redisPublisher?.isReady) return
+  const timeout = new AbortController()
+  await Promise.race([
+    publishToRedis({ kind: 'shutdown', eventSeq }).finally(() =>
+      timeout.abort()
+    ),
+    sleep(REDIS_SHUTDOWN_TIMEOUT_MS, undefined, {
+      signal: timeout.signal,
+    }).catch(() => {}),
+  ])
+}
+
+// Iterate the switchboard, not wss.clients: ws tracks a socket from the upgrade
+// until its close handshake ends, which need not match the switchboard, and
+// getClient throws for a socket the switchboard does not know.
+function sweepStaleConnections() {
+  const now = Date.now()
+  for (const [ws, client] of SWITCHBOARD.getAll()) {
+    if (client.lastSeen < now - CONNECTION_TIMEOUT_MS) ws.terminate()
+  }
+}
+
+/** Closes every connected socket; each leaves once its handshake completes. */
+export function closeAllConnections(code: number, reason: string) {
+  let closed = 0
+  for (const [ws] of SWITCHBOARD.getAll()) {
+    ws.close(code, reason)
+    closed++
+  }
+  return closed
+}
+
+// Why this writer's clients may have missed broadcasts from the writer on VM
+// `retired`, or undefined if every one of them arrived.
+function missedBroadcastsFrom(retired: string) {
+  if (!redisBroadcastsEnabled()) return 'shared broadcasts are disabled here'
+  const streams = [...senders.values()].filter((s) => s.host === retired)
+  if (streams.length === 0) return `never heard from ${retired}`
+  if (streams.some((s) => !s.shutDown)) {
+    return `${retired} did not announce its shutdown`
+  }
+  if (streams.some((s) => !s.complete))
+    return `missed broadcasts from ${retired}`
+  return undefined
+}
+
+/**
+ * During a deploy two writers serve at once, relaying their broadcasts to each
+ * other through Redis. When the deploy reports the other writer's VM gone,
+ * keep this writer's connections if every broadcast from it arrived here.
+ * Otherwise close them all, so clients reconnect and backfill what they may
+ * have missed.
+ */
+export function watchWebSocketHandover(wss: WebSocketServer) {
+  const stop = watchHandover((retired) => {
+    const missed = missedBroadcastsFrom(retired)
+    for (const [id, sender] of senders) {
+      if (sender.host === retired) senders.delete(id)
+    }
+    if (missed == null) {
+      log.info(
+        'Writer handover: every broadcast from the old writer arrived.',
+        {
+          retired,
+        }
+      )
+      return
+    }
+    const closed = closeAllConnections(
+      HANDOVER_CLOSE_CODE,
+      'Writer handover; reconnect and backfill'
+    )
+    log.info(
+      'Writer handover: closed connections that may have missed broadcasts.',
+      {
+        retired,
+        missed,
+        closed,
+      }
+    )
+  })
+  wss.on('close', stop)
+  return stop
+}
+
 export function listen(server: HttpServer, path: string) {
   startRedisBroadcastSubscriber()
+  let heartbeat: NodeJS.Timeout | undefined
+  if (redisBroadcastsEnabled()) {
+    startRedisPublisher()
+    heartbeat = setInterval(
+      () => void publishToRedis({ kind: 'heartbeat', eventSeq }),
+      REDIS_HEARTBEAT_MS
+    )
+  }
   const wss = new WebSocketServer({ server, path })
   let deadConnectionCleaner: NodeJS.Timeout | undefined
   wss.on('listening', () => {
     log.info(`Web socket server listening on ${path}.`)
-    deadConnectionCleaner = setInterval(function ping() {
-      const now = Date.now()
-      for (const ws of wss.clients) {
-        const lastSeen = SWITCHBOARD.getClient(ws).lastSeen
-        if (lastSeen < now - CONNECTION_TIMEOUT_MS) {
-          ws.terminate()
-        }
-      }
-    }, CONNECTION_TIMEOUT_MS)
+    deadConnectionCleaner = setInterval(
+      sweepStaleConnections,
+      CONNECTION_TIMEOUT_MS
+    )
   })
   wss.on('error', (err) => {
     log.error('Error on websocket server.', { error: err })
@@ -502,7 +676,9 @@ export function listen(server: HttpServer, path: string) {
   })
   wss.on('close', function close() {
     clearInterval(deadConnectionCleaner)
+    clearInterval(heartbeat)
     stopRedisBroadcastSubscriber()
+    stopRedisPublisher()
   })
   return wss
 }
