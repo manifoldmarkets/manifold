@@ -388,7 +388,9 @@ export function GameRow(props: {
                         index === 0 ? 'col-start-1' : 'col-start-2'
                       )}
                     >
-                      <FeaturedTeamName team={team} sport={game.sport} />
+                      <h3 className="text-ink-1000 @[18rem]/scoreboard:text-base @[22rem]/scoreboard:text-lg flex min-h-[2.75rem] items-center justify-center text-sm font-bold leading-tight [text-wrap:balance]">
+                        {team.name}
+                      </h3>
                     </div>
                   ))}
                   {[
@@ -643,30 +645,6 @@ function TeamLine(props: {
         />
       )}
     </Row>
-  )
-}
-
-function FeaturedTeamName({
-  team,
-  sport,
-}: {
-  team: ScheduleTeam
-  sport: ScheduleGame['sport']
-}) {
-  // NFL nicknames are one word. Keep the full name for other sports.
-  const split = sport === 'nfl' ? team.name.lastIndexOf(' ') : -1
-  const city = split > 0 ? team.name.slice(0, split) : undefined
-  const name = split > 0 ? team.name.slice(split + 1) : team.name
-  return (
-    <h3
-      aria-label={team.name}
-      className="flex min-h-[2.75rem] w-full flex-col justify-center gap-0.5 [text-wrap:balance]"
-    >
-      {city && <span className="text-ink-500 text-xs font-medium">{city}</span>}
-      <span className="text-ink-1000 @[18rem]/scoreboard:text-base @[22rem]/scoreboard:text-lg text-sm font-bold leading-tight">
-        {name}
-      </span>
-    </h3>
   )
 }
 

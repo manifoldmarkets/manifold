@@ -14,7 +14,13 @@ export function isOfficialSportsMarket(market: MarketCreator) {
 }
 
 /** Creator provenance, deliberately independent of resolution method. */
-export function SportsMarketBadge({ market }: { market: MarketCreator }) {
+export function SportsMarketBadge({
+  market,
+  compact = false,
+}: {
+  market: MarketCreator
+  compact?: boolean
+}) {
   const official = isOfficialSportsMarket(market)
   const description = official
     ? 'Official Manifold market. Created by Manifold Sports. Check the market rules for how it resolves.'
@@ -28,6 +34,19 @@ export function SportsMarketBadge({ market }: { market: MarketCreator }) {
           className="text-primary-600 inline-flex shrink-0 align-text-bottom"
         >
           <BadgeCheckIcon className="h-4 w-4" aria-hidden />
+        </span>
+      </Tooltip>
+    )
+  }
+  if (compact) {
+    return (
+      <Tooltip text={description}>
+        <span
+          role="img"
+          aria-label={`Community market. ${description}`}
+          className="text-ink-500 inline-flex shrink-0 align-text-bottom"
+        >
+          <UserGroupIcon className="h-4 w-4" aria-hidden />
         </span>
       </Tooltip>
     )
