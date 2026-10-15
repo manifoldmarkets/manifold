@@ -364,10 +364,12 @@ export function buildOddsMarketParams(
   const colors = gameAnswerColors(entry.sport, home, away, threeWay)
   const answerColors = colors && (threeWay ? colors : [colors[1], colors[0]])
 
-  // The date tells repeat fixtures apart (series, rematches).
+  // The date tells repeat fixtures apart (series, rematches). The league
+  // label in front of the title marks the market as official, so the title
+  // doesn't say it.
   const question = threeWay
-    ? `${home} vs ${away}, ${date} [official]`
-    : `${away} at ${home}, ${date} [official]`
+    ? `${home} vs ${away}, ${date}`
+    : `${away} at ${home}, ${date}`
 
   const sportParam = SPORT_ID_TO_SPORT_KEY[entry.sport]
   const manifoldSportsLink =

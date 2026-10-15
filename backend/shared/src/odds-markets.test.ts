@@ -752,6 +752,11 @@ describe("re-syncing a moved game's title", () => {
     expect((await resync(oldTitle)).question).toBe(newTitle)
   })
 
+  it('moves a title from before "[official]" was dropped', async () => {
+    const patch = await resync(oldTitle + ' [official]')
+    expect(patch.question).toBe(newTitle)
+  })
+
   it('leaves a title someone edited', async () => {
     const patch = await resync('Bills at Chiefs: the rematch')
     expect(patch.question).toBeUndefined()

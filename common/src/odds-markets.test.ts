@@ -476,9 +476,7 @@ describe('the market a game becomes', () => {
     expect(home).toBeGreaterThan(55)
     expect(home).toBeLessThan(60)
     expect(home + away).toBeCloseTo(100, 1)
-    expect(p.question).toBe(
-      'Buffalo Bills at Kansas City Chiefs, Sep 13 [official]'
-    )
+    expect(p.question).toBe('Buffalo Bills at Kansas City Chiefs, Sep 13')
     expect(p.description).toContain('resolves 50/50 between the two teams')
     expect(p.description).toContain('/sports?sport=nfl')
     expect(p.sportsEventId).toBe('odds:americanfootball_nfl:abc123')
@@ -530,7 +528,7 @@ describe('the market a game becomes', () => {
     expect(p.answerProbs).toHaveLength(3)
     expect(p.answerProbs!.reduce((a, b) => a + b, 0)).toBeCloseTo(100, 1)
     expect(p.answerShortTexts).toEqual(['ARS', 'CHE', 'Draw'])
-    expect(p.question).toBe('Arsenal vs Chelsea, Sep 13 [official]')
+    expect(p.question).toBe('Arsenal vs Chelsea, Sep 13')
     expect(p.description).toContain('90 minutes plus stoppage time')
     expect(p.sportsLeague).toBe('Soccer')
   })

@@ -27,6 +27,7 @@ import { getScores, getUpcomingOdds } from 'shared/the-odds-api-client'
 import { manifoldSportsUserId, MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { getCompetitionSwitches } from 'shared/supabase/sports-competition-switches'
 import { getScorePollingSettings } from 'shared/supabase/sports-score-polling'
+import { LEGACY_OFFICIAL_SUFFIX } from 'common/sports-league-label'
 import {
   finalsOnlySettings,
   liveInterval,
@@ -373,11 +374,14 @@ async function resyncKickoff(
   if (Date.parse(row.start ?? '') === Date.parse(params.sportsStartTimestamp))
     return false
   // The date is in the title, so repeat fixtures differ. Move it with the
-  // kickoff, but only while the title is still the one the pipeline wrote:
-  // an edited title stays. The slug never changes.
+  // kickoff, but only while the title is still the one the pipeline wrote
+  // (or wrote before it dropped "[official]"): an edited title stays. The
+  // slug never changes.
+  const pipelineTitle = row.start ? opts.titleFor(row.start) : undefined
   const retitle =
-    !!row.start &&
-    row.question === opts.titleFor(row.start) &&
+    !!pipelineTitle &&
+    (row.question === pipelineTitle ||
+      row.question === pipelineTitle + LEGACY_OFFICIAL_SUFFIX) &&
     params.question !== row.question
   if (!opts.dryRun) {
     await pg.none(

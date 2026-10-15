@@ -57,7 +57,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { FeedPerpPriceSparkline } from 'web/components/perps/feed-perp-price-sparkline'
-import { PerpMarketBadge } from 'web/components/perps/perp-market-badge'
+import { MarketTitleLabel } from 'web/components/contract/market-title-label'
 import { PerpOracleAttribution } from 'web/components/perps/perp-oracle-attribution'
 import { useLivePerpContract } from 'web/components/perps/use-live-perp-contract'
 import { PollPanel } from 'web/components/poll/poll-panel'
@@ -567,7 +567,7 @@ function PerpContractSmolView(props: {
         rel="noreferrer"
         className="hover:text-primary-700 mt-1 flex min-w-0 items-start gap-2 text-lg font-semibold leading-tight transition-colors"
       >
-        <PerpMarketBadge contract={contract} />
+        <MarketTitleLabel contract={contract} />
         <span className="line-clamp-2">{contract.question}</span>
       </a>
 
