@@ -33,9 +33,12 @@ const CAPTURE_COOLDOWN_MS = 10 * 60_000
 export type StallCapture = {
   // How long the heartbeat had been stuck when the capture began.
   blockedBeforeCaptureMs: number
-  // Heartbeat stuck time from the start of the stall until it moved again,
-  // or null if it was still stuck when the capture gave up.
-  stalledMs: number | null
+  // Bounds on the stall, from its start: the last time the heartbeat was seen
+  // stuck, and the first time it was seen moving again (null if it was still
+  // stuck when the capture gave up). Neither includes profiler cleanup. They
+  // are far apart when the main thread only serviced Profiler.start late.
+  stalledAtLeastMs: number
+  stalledAtMostMs: number | null
   // Heuristic: the heartbeat was still stuck when Profiler.start returned.
   // False means the main thread only serviced it after the stall ended, i.e.
   // it was off-CPU (blocking syscall, descheduled) and the profile shows what
@@ -71,12 +74,13 @@ let lastChange = Date.now()
 let lastCapture = -Infinity
 let busy = false
 
-async function capture(stuckBeat, stallStart) {
+async function capture(stuckBeat, stallStart, seenStuckAt) {
   const cpu0 = process.cpuUsage()
   const t0 = Date.now()
   let started = false
   let profile = null
-  let stalledMs = null
+  let lastSeenStuck = seenStuckAt
+  let recoveredAt = null
   let profilerStartedDuringStall = false
   try {
     await post('Profiler.enable')
@@ -84,11 +88,16 @@ async function capture(stuckBeat, stallStart) {
     await post('Profiler.start')
     started = true
     profilerStartedDuringStall = Atomics.load(beat, 0) === stuckBeat
-    while (Date.now() - t0 < maxProfileMs) {
+    // Check the heartbeat before the deadline, so a stall that ended while
+    // Profiler.start was pending still counts as recovered.
+    while (true) {
+      const now = Date.now()
       if (Atomics.load(beat, 0) !== stuckBeat) {
-        stalledMs = Date.now() - stallStart
+        recoveredAt = now
         break
       }
+      lastSeenStuck = now
+      if (now - t0 >= maxProfileMs) break
       await sleep(50)
     }
     profile = (await post('Profiler.stop')).profile
@@ -102,7 +111,8 @@ async function capture(stuckBeat, stallStart) {
   const cpu = process.cpuUsage(cpu0)
   return {
     blockedBeforeCaptureMs: t0 - stallStart,
-    stalledMs,
+    stalledAtLeastMs: lastSeenStuck - stallStart,
+    stalledAtMostMs: recoveredAt === null ? null : recoveredAt - stallStart,
     profilerStartedDuringStall,
     profiledMs: Math.round((profile.endTime - profile.startTime) / 1000),
     cpuUserMs: Math.round(cpu.user / 1000),
@@ -123,7 +133,7 @@ setInterval(() => {
   if (busy || now - lastChange < stallMs || now - lastCapture < cooldownMs) return
   busy = true
   lastCapture = now
-  capture(current, lastChange)
+  capture(current, lastChange, now)
     .then((result) => parentPort.postMessage({ capture: result }))
     .catch((err) => parentPort.postMessage({ error: String((err && err.message) || err) }))
     .finally(() => {
@@ -177,13 +187,14 @@ export function startStallWatchdog() {
       maxFrames: 25,
       maxSelf: 15,
     })
+    const secs = (ms: number) => (ms / 1000).toFixed(1)
+    const { stalledAtLeastMs: least, stalledAtMostMs: most } = stats
     const stalled =
-      stats.stalledMs === null
-        ? `over ${(
-            (stats.blockedBeforeCaptureMs + stats.wallMs) /
-            1000
-          ).toFixed(1)}s`
-        : `${(stats.stalledMs / 1000).toFixed(1)}s`
+      most === null
+        ? `at least ${secs(least)}s`
+        : most - least <= 500
+        ? `${secs(most)}s`
+        : `${secs(least)}-${secs(most)}s`
     log.warn(
       `Event loop stall profile: blocked ${stalled}, top: ${
         summary.topSelf[0]?.frame ?? 'no samples'
