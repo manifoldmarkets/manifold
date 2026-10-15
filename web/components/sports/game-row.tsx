@@ -133,9 +133,9 @@ export function GameRow(props: {
   const drawWon = !!game.draw && game.winnerAnswerId === game.draw.answerId
 
   const gameControlClassName =
-    'border-ink-200 bg-canvas-0 text-ink-500 inline-flex h-8 min-w-[2rem] shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-lg border px-2 text-xs font-medium tabular-nums'
+    'text-ink-500 inline-flex h-8 min-w-[2rem] shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-lg border px-2 text-xs font-medium tabular-nums'
   const gameActionClassName =
-    'hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 focus-visible:ring-primary-500 transition-colors focus-visible:ring-2'
+    'border-ink-200 bg-canvas-0 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 focus-visible:ring-primary-500 transition-colors focus-visible:ring-2'
   const likeButton = onToggleLike && (
     <button
       type="button"
@@ -173,14 +173,14 @@ export function GameRow(props: {
       className="flex shrink-0 items-center gap-1"
     >
       <span
-        className={gameControlClassName}
+        className={clsx(gameControlClassName, 'border-transparent')}
         title={`Ṁ${shortFormatNumber(game.volume)} traded`}
       >
         Ṁ{shortFormatNumber(game.volume)}
         <span className="sr-only">traded</span>
       </span>
       <span
-        className={gameControlClassName}
+        className={clsx(gameControlClassName, 'border-transparent')}
         title={`${game.uniqueBettorCount} traders`}
       >
         <UsersIcon className="h-4 w-4" aria-hidden />

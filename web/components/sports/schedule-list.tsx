@@ -221,7 +221,7 @@ export function GameFeed(props: {
               ))}
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
             <div
               className="flex shrink-0 items-center gap-2"
               aria-label="Game filters"
@@ -268,43 +268,48 @@ export function GameFeed(props: {
                 </button>
               ))}
             </div>
-            {filter !== 'live' && (
-              <div
-                className="flex min-w-0 basis-full gap-2 overflow-x-auto pb-1 md:flex-1 md:basis-0"
-                aria-label="Game dates"
+            {/* Keep this strip's space in Live so the filter row stays put. */}
+            <div
+              className={clsx(
+                'flex min-w-0 basis-full gap-2 overflow-x-auto md:flex-1 md:basis-0',
+                filter === 'live' && 'invisible'
+              )}
+              aria-label="Game dates"
+              aria-hidden={filter === 'live'}
+            >
+              <button
+                type="button"
+                disabled={filter === 'live'}
+                aria-pressed={date === 'all'}
+                onClick={() => setDate('all')}
+                className={clsx(
+                  'h-10 shrink-0 whitespace-nowrap rounded-lg border px-3 text-xs font-semibold',
+                  date === 'all'
+                    ? 'border-primary-300 bg-primary-50 text-primary-700'
+                    : 'border-ink-200 text-ink-500'
+                )}
               >
+                All dates
+              </button>
+              {allDays.map((day) => (
                 <button
                   type="button"
-                  aria-pressed={date === 'all'}
-                  onClick={() => setDate('all')}
+                  key={day.key}
+                  disabled={filter === 'live'}
+                  aria-pressed={date === day.key}
+                  onClick={() => setDate(day.key)}
                   className={clsx(
-                    'min-h-[44px] shrink-0 rounded-lg border px-3 text-xs font-semibold',
-                    date === 'all'
+                    'h-10 shrink-0 whitespace-nowrap rounded-lg border px-3 text-left text-xs',
+                    date === day.key
                       ? 'border-primary-300 bg-primary-50 text-primary-700'
                       : 'border-ink-200 text-ink-500'
                   )}
                 >
-                  All dates
+                  <span className="block font-semibold">{day.label}</span>
+                  <span>{dayjs(day.key).format('MMM D')}</span>
                 </button>
-                {allDays.map((day) => (
-                  <button
-                    type="button"
-                    key={day.key}
-                    aria-pressed={date === day.key}
-                    onClick={() => setDate(day.key)}
-                    className={clsx(
-                      'min-h-[44px] shrink-0 rounded-lg border px-3 text-left text-xs',
-                      date === day.key
-                        ? 'border-primary-300 bg-primary-50 text-primary-700'
-                        : 'border-ink-200 text-ink-500'
-                    )}
-                  >
-                    <span className="block font-semibold">{day.label}</span>
-                    <span>{dayjs(day.key).format('MMM D')}</span>
-                  </button>
-                ))}
-              </div>
-            )}
+              ))}
+            </div>
           </div>
           {hasFilters && (
             <div
