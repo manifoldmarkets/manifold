@@ -3,6 +3,7 @@ import { useContractBets } from 'client-common/hooks/use-bets'
 import { getMultiBetPointsFromBets } from 'client-common/lib/choice'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
+import { hasAllAnswersForCopy } from 'common/answer-probs'
 import { Bet } from 'common/bet'
 import {
   HistoryPoint,
@@ -62,7 +63,7 @@ import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { precacheAnswers } from 'web/hooks/use-answers'
-import { useLiveContract } from 'web/hooks/use-contract'
+import { useLiveContractWithStatus } from 'web/hooks/use-contract'
 import { useGraphUserFromUrl } from 'web/hooks/use-graph-user'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
@@ -100,10 +101,21 @@ export function ContractPageContent(props: ContractParams) {
     dashboards,
     pinnedComments,
     totalComments,
+    totalAnswers,
   } = props
 
   // Just use the contract that was navigated to directly
-  const liveContract = useLiveContract(props.contract)
+  const { contract: liveContract, hasLoaded } = useLiveContractWithStatus(
+    props.contract
+  )
+  // The server renders a big market with only its top answers; the rest arrive
+  // with the live contract. Until then a duplicate would copy only those
+  const hasAllAnswers = hasAllAnswersForCopy(
+    props.contract,
+    liveContract,
+    totalAnswers,
+    hasLoaded
+  )
 
   const user = useUser()
 
@@ -331,6 +343,7 @@ export function ContractPageContent(props: ContractParams) {
               {(headerStuck || !coverImageUrl) && (
                 <HeaderActions
                   contract={liveContract}
+                  hasAllAnswers={hasAllAnswers}
                   initialHideGraph={initialHideGraph}
                   hideGraph={hideGraph}
                   setHideGraph={setHideGraph}
@@ -352,6 +365,7 @@ export function ContractPageContent(props: ContractParams) {
               </div>
               <HeaderActions
                 contract={liveContract}
+                hasAllAnswers={hasAllAnswers}
                 initialHideGraph={initialHideGraph}
                 hideGraph={hideGraph}
                 setHideGraph={setHideGraph}
