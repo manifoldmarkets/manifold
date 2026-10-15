@@ -132,8 +132,10 @@ const absorb = (story: NewsStory, r: RawStory) => {
   story.updatedTime = Math.max(story.updatedTime, r.publishedTime)
   if (story.category === 'other' && r.category !== 'other')
     story.category = r.category
-  // The portal's sentence is better context than a headline.
-  if (r.origin === 'wikipedia' && story.origin === 'google-news') {
+  // The portal's sentence is better context than a headline, and the
+  // portal edits its bullets, so a re-read refreshes the text.
+  if (r.origin === 'wikipedia') {
+    if (story.origin === 'wikipedia') story.headline = r.headline
     story.summary = r.summary
     story.topic = story.topic ?? r.topic
   } else if (!story.summary && r.summary) {
