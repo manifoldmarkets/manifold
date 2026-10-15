@@ -52,7 +52,7 @@ function ResolvingCard(props: { contract: Contract; story?: NewsStory }) {
       className="bg-canvas-0 border-ink-200 hover:border-primary-300 w-60 shrink-0 snap-start rounded-lg border p-3 transition-colors"
     >
       <Col className="h-full gap-1.5">
-        <span className="text-ink-800 line-clamp-2 text-sm font-medium leading-snug">
+        <span className="text-ink-900 line-clamp-2 text-sm font-medium leading-snug">
           {removeEmojis(contract.question)}
         </span>
         <Row className="mt-auto items-center justify-between gap-2">

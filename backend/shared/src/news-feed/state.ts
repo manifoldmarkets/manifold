@@ -18,6 +18,10 @@ import { buildNewsFeed, NewsFeedBuild } from './pipeline'
 export const isNewsFeedEnabled = () => process.env.NEWS_FEED_ENABLED === 'true'
 
 export const NEWS_FEED_REFRESH_MS = 10 * MINUTE_MS
+/** A cached build older than this is ignored on startup. */
+const CACHE_MAX_AGE_MS = 24 * 60 * MINUTE_MS
+/** A refresh still "running" after this long is assumed wedged. */
+const REFRESH_BUDGET_MS = 25 * MINUTE_MS
 
 type State = {
   build?: NewsFeedBuild
@@ -45,7 +49,12 @@ function loadFromDisk() {
     const parsed = JSON.parse(
       fs.readFileSync(cachePath(), 'utf8')
     ) as NewsFeedBuild
-    if (parsed && Array.isArray(parsed.stories) && parsed.contractsById) {
+    if (
+      parsed &&
+      Array.isArray(parsed.stories) &&
+      parsed.contractsById &&
+      Date.now() - parsed.updatedTime < CACHE_MAX_AGE_MS
+    ) {
       state.build = parsed
       log('news-feed: loaded cached build', {
         stories: parsed.stories.length,
@@ -118,7 +127,14 @@ export async function refreshNewsFeed(
   opts: { minIntervalMs?: number; waitForCompletion?: boolean } = {}
 ) {
   loadFromDisk()
-  if (state.refreshing) return false
+  if (state.refreshing) {
+    // A refresh that has run far past its budget is treated as wedged (a
+    // hung upstream call) rather than left to block every later refresh.
+    if (Date.now() - state.lastRefreshStarted < REFRESH_BUDGET_MS) return false
+    log.warn('news-feed: previous refresh overran its budget; starting anew', {
+      startedAt: new Date(state.lastRefreshStarted).toISOString(),
+    })
+  }
   if (
     opts.minIntervalMs &&
     Date.now() - state.lastRefreshStarted < opts.minIntervalMs

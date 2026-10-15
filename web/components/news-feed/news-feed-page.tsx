@@ -19,6 +19,8 @@ import { ResolvingSoon, SpotlightQuestion } from './resolving-soon'
 import { StoryCard, StoryCardSkeleton } from './story-card'
 
 const PAGE_SIZE = 40
+/** The schema's ceiling for one request. */
+const MAX_LIMIT = 200
 const POLL_MS = 60_000
 const BUILDING_POLL_MS = 8_000
 const NEW_HIGHLIGHT_MS = 45_000
@@ -89,7 +91,7 @@ export function NewsFeedPage() {
     return byId
   }, [data?.stories])
   const stories = data?.stories ?? []
-  const hasMore = !!data && data.total > stories.length
+  const hasMore = !!data && data.total > stories.length && limit < MAX_LIMIT
   const linkedCount = data
     ? sum(Object.values(data.counts).map((n) => n ?? 0))
     : 0
@@ -241,7 +243,7 @@ export function NewsFeedPage() {
         {hasMore && (
           <button
             type="button"
-            onClick={() => setLimit((l) => l + PAGE_SIZE)}
+            onClick={() => setLimit((l) => Math.min(l + PAGE_SIZE, MAX_LIMIT))}
             className="border-ink-200 text-ink-700 hover:bg-canvas-50 mx-auto rounded-full border px-4 py-1.5 text-sm font-medium"
           >
             Show more stories

@@ -1,3 +1,4 @@
+import * as https from 'https'
 import { uniqBy } from 'lodash'
 import { NewsCategory, NewsSourceLink, NewsStoryOrigin } from 'common/news-feed'
 import { log } from 'shared/utils'
@@ -26,15 +27,75 @@ export type RawStory = {
 }
 
 const USER_AGENT = 'ManifoldNewsFeed/0.1 (prototype; https://manifold.markets)'
-const FETCH_TIMEOUT_MS = 15_000
+const FETCH_TIMEOUT_MS = 10_000
+const MAX_REDIRECTS = 3
 
-export async function fetchText(url: string) {
-  const res = await fetch(url, {
-    headers: { 'User-Agent': USER_AGENT, Accept: '*/*' },
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+/** GET a URL as text over one IP family (0 lets the OS choose). */
+function httpsGet(
+  url: string,
+  family: 0 | 4 | 6,
+  redirects = 0
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const req = https.get(
+      url,
+      {
+        family,
+        headers: { 'User-Agent': USER_AGENT, Accept: '*/*' },
+        timeout: FETCH_TIMEOUT_MS,
+      },
+      (res) => {
+        const status = res.statusCode ?? 0
+        if (status >= 300 && status < 400 && res.headers.location) {
+          res.resume()
+          if (redirects >= MAX_REDIRECTS) {
+            reject(new Error(`too many redirects for ${url}`))
+            return
+          }
+          resolve(
+            httpsGet(
+              new URL(res.headers.location, url).toString(),
+              family,
+              redirects + 1
+            )
+          )
+          return
+        }
+        if (status < 200 || status >= 300) {
+          res.resume()
+          reject(new Error(`${status} for ${url}`))
+          return
+        }
+        const chunks: Buffer[] = []
+        res.on('data', (c: Buffer) => chunks.push(c))
+        res.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
+        res.on('error', reject)
+      }
+    )
+    req.on('timeout', () =>
+      req.destroy(new Error(`timeout after ${FETCH_TIMEOUT_MS}ms for ${url}`))
+    )
+    req.on('error', reject)
   })
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`)
-  return res.text()
+}
+
+/**
+ * Fetch a feed as text. Tries the OS's pick of address family, then IPv6,
+ * then IPv4: on at least one dev box Wikipedia's IPv4 edge times out for
+ * Node while IPv6 answers, and the global fetch gives up before trying it.
+ */
+export async function fetchText(url: string) {
+  const errors: string[] = []
+  for (const family of [0, 6, 4] as const) {
+    try {
+      return await httpsGet(url, family)
+    } catch (e) {
+      errors.push(
+        `${family || 'auto'}: ${e instanceof Error ? e.message : String(e)}`
+      )
+    }
+  }
+  throw new Error(`fetch failed for ${url} (${errors.join('; ')})`)
 }
 
 export const hostnameOf = (url: string) => {

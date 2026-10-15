@@ -2,6 +2,7 @@ import { createHash } from 'crypto'
 import { sortBy, sumBy } from 'lodash'
 import { Contract } from 'common/contract'
 import { fetchLinkPreview } from 'common/link-preview'
+import { isFaviconAllowed } from 'common/favicon-allowlist'
 import { isNewsCategory, NewsCategory, NewsStory } from 'common/news-feed'
 import { isEligibleRelatedMarket } from 'common/related-markets'
 import { convertContract } from 'common/supabase/contracts'
@@ -18,6 +19,7 @@ import {
   dedupeSources,
   gatherRawStories,
   hostnameOf,
+  isAggregatorLink,
   RawStory,
 } from './sources'
 
@@ -46,6 +48,9 @@ export type StoryMemo = {
   category: NewsCategory
   verifiedAt: number
   imageTriedAt?: number
+  /** Ids of raw items that merged into this story, so they are not embedded
+   * again on the next refresh. */
+  aliases?: string[]
 }
 
 export type NewsFeedBuild = {
@@ -60,7 +65,11 @@ export type NewsFeedBuild = {
 const KEEP_STORIES_MS = 3 * DAY_MS
 const MAX_STORIES = 400
 /** Same story from another outlet, by embedding similarity. */
-const MERGE_SIMILARITY = 0.86
+const MERGE_SIMILARITY = 0.82
+/** Raw item ids remembered per story after merging. */
+const MAX_ALIASES = 40
+/** A verifier call that takes longer than this is treated as failed. */
+const VERIFY_TIMEOUT_MS = 60_000
 /** Below this no market is worth asking the verifier about. */
 const CANDIDATE_FLOOR = 0.35
 const CANDIDATES_PER_STORY = 12
@@ -227,15 +236,19 @@ Rules:
 - "category": the single best fit from politics, world, economy, tech, science, sport, culture, other.`
 
   try {
-    const res = await promptAI<{
-      relevant?: unknown
-      forecastable?: unknown
-      category?: unknown
-    }>(prompt, {
-      model: aiModels.flash,
-      parseAsJson: true,
-      thinkingLevel: 'minimal',
-    })
+    const res = await withTimeout(
+      promptAI<{
+        relevant?: unknown
+        forecastable?: unknown
+        category?: unknown
+      }>(prompt, {
+        model: aiModels.flash,
+        parseAsJson: true,
+        thinkingLevel: 'minimal',
+      }),
+      VERIFY_TIMEOUT_MS
+    )
+    if (!res) throw new Error('verifier timed out')
     const allowed = new Set(candidates.map((c) => c.contract.id))
     const ids = Array.isArray(res?.relevant)
       ? res.relevant.filter(
@@ -328,10 +341,13 @@ export async function buildNewsFeed(
 
   // 2. Fold raw items in. Known ids just refresh; the rest get embedded and
   //    either merge into a story we have or become one.
+  const aliasToStory = new Map<string, string>()
+  for (const m of Object.values(memos))
+    for (const a of m.aliases ?? []) aliasToStory.set(a, m.id)
   const fresh = new Map<string, RawStory>()
   for (const r of raw) {
     const id = storyIdFor(r.origin, r.key)
-    const existing = stories.get(id)
+    const existing = stories.get(id) ?? stories.get(aliasToStory.get(id) ?? '')
     if (existing) absorb(existing, r)
     else if (!fresh.has(id)) fresh.set(id, r)
   }
@@ -373,8 +389,12 @@ export async function buildNewsFeed(
     .map((m) => ({ id: m.id, embedding: m.embedding }))
 
   let merged = 0
+  let processed = 0
   const bestSims: number[] = []
   for (const f of sortBy(embeddedFresh, (f) => f.raw.publishedTime)) {
+    // All-pairs cosine over a few hundred vectors is CPU-bound; yield so the
+    // API keeps serving requests while this runs in-process.
+    if (++processed % 20 === 0) await new Promise((r) => setImmediate(r))
     if (!f.embedding) {
       stories.set(f.id, toStory(f.id, f.raw))
       memos[f.id] = {
@@ -396,6 +416,8 @@ export async function buildNewsFeed(
       best && best.sim >= MERGE_SIMILARITY ? stories.get(best.id) : undefined
     if (target) {
       absorb(target, f.raw)
+      const tm = memos[target.id]
+      if (tm) tm.aliases = [...(tm.aliases ?? []), f.id].slice(-MAX_ALIASES)
       merged++
       continue
     }
@@ -500,7 +522,10 @@ export async function buildNewsFeed(
     assembled.push(story)
   }
 
-  // 5. Thumbnails for linked stories whose first link is a real outlet.
+  // 5. Thumbnails for linked stories whose first link is a known outlet. The
+  //    favicon allowlist doubles as the set of hosts we are willing to fetch
+  //    from: citations are user-editable on the portal, so never follow an
+  //    arbitrary host from the server.
   const wantImage = assembled
     .filter(
       (s) =>
@@ -508,7 +533,8 @@ export async function buildNewsFeed(
         !s.image &&
         !memos[s.id]?.imageTriedAt &&
         s.sources[0] &&
-        !(hostnameOf(s.sources[0].url) ?? '').endsWith('google.com')
+        !isAggregatorLink(s.sources[0].url) &&
+        isFaviconAllowed(hostnameOf(s.sources[0].url) ?? '')
     )
     .sort((a, b) => b.score - a.score)
     .slice(0, IMAGES_PER_REFRESH)
