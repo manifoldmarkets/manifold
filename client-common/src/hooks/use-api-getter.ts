@@ -41,6 +41,12 @@ export const useAPIGetterWithCall = <P extends APIPath>(
     undefined,
     key
   )
+  // The request the data came from. Data is shared across props, so a failed
+  // read for new props must not leave the old props' data showing as its own.
+  const [dataKey, setDataKey] = usePersistentInMemoryState<string | undefined>(
+    undefined,
+    `${overrideKey ?? path}-data-key`
+  )
 
   // Every call gets a generation number. A response that lands after a newer
   // call (different props, or a refresh) is dropped: the setter always writes
@@ -60,12 +66,19 @@ export const useAPIGetterWithCall = <P extends APIPath>(
     setLoading(true)
     try {
       const result = await promise
-      if (mine === generation.current) setData(result)
+      if (mine === generation.current) {
+        setData(result)
+        setDataKey(key)
+      }
     } catch (error) {
       // Cache only successful reads. Every subscriber handles the rejection,
       // and a remount can retry instead of reusing an empty resolved promise.
       if (promiseCache[key] === promise) delete promiseCache[key]
-      if (mine === generation.current) setError(error as APIError)
+      if (mine === generation.current) {
+        setError(error as APIError)
+        // A failed refresh keeps its last good data; anything else is cleared.
+        if (dataKey !== key) setData(undefined)
+      }
     } finally {
       if (mine === generation.current) setLoading(false)
     }
