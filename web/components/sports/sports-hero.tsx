@@ -13,6 +13,7 @@ import { AnySportKey, ScheduleGame, SPORT_BY_KEY } from 'common/sports-schedule'
 import { shortFormatNumber } from 'common/util/format'
 import { GameRow } from './game-row'
 import { SportsMarketBadge } from './sports-market-badge'
+import { SportHeroBackground } from './sport-hero-background'
 
 /** Full multiple-choice contracts fit this view without inventing two teams. */
 export type SportsHeroMarket = Pick<
@@ -128,15 +129,14 @@ function MarketHero({
         className={clsx(
           'grid',
           hasProps
-            ? '@[40rem]/market-hero:grid-cols-2 @[54rem]/market-hero:grid-cols-[minmax(0,.95fr)_minmax(0,1fr)_minmax(0,1.2fr)]'
+            ? '@[40rem]/market-hero:grid-cols-2'
             : 'lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]'
         )}
       >
         <div
           className={clsx(
             'flex min-w-0 flex-col',
-            hasProps &&
-              '@[40rem]/market-hero:col-span-2 @[54rem]/market-hero:col-span-1'
+            hasProps && '@[40rem]/market-hero:col-span-2'
           )}
         >
           <div className="flex items-center gap-2 px-4 py-2 sm:px-5">
@@ -194,10 +194,11 @@ function MarketHero({
           </div>
           <div
             className={clsx(
-              'flex flex-1 flex-col justify-center px-4 pb-5 pt-2 sm:px-5',
+              'relative isolate flex flex-1 flex-col justify-center overflow-hidden px-4 pb-5 pt-2 sm:px-5',
               hasProps && '@[40rem]/market-hero:pb-4'
             )}
           >
+            <SportHeroBackground sport={sport} />
             <div className="text-ink-500 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
               <span>
                 {event?.label ??
@@ -230,7 +231,6 @@ function MarketHero({
                   ? 'One outcome wins.'
                   : 'Each outcome has an independent chance.')}
             </p>
-            {sport === 'f1' && <RacingIllustration compact={hasProps} />}
           </div>
         </div>
         {hasProps && (
@@ -280,7 +280,7 @@ function MarketHero({
             'border-primary-200 bg-canvas-0/40 min-w-0 flex-col px-4 pb-2 pt-3',
             hasProps
               ? [
-                  '@[40rem]/market-hero:border-t @[54rem]/market-hero:border-l @[54rem]/market-hero:border-t-0 min-h-[260px]',
+                  '@[40rem]/market-hero:border-t min-h-[260px]',
                   activePanel === 'outcomes'
                     ? 'flex'
                     : '@[40rem]/market-hero:flex hidden',
@@ -326,7 +326,7 @@ function MarketHero({
           <div
             id={propsId}
             className={clsx(
-              'border-primary-200 bg-canvas-0/40 @[40rem]/market-hero:border-l @[40rem]/market-hero:border-t @[54rem]/market-hero:border-t-0 min-h-[260px] min-w-0 flex-col px-4 pb-2 pt-3',
+              'border-primary-200 bg-canvas-0/40 @[40rem]/market-hero:border-l @[40rem]/market-hero:border-t min-h-[260px] min-w-0 flex-col px-4 pb-2 pt-3',
               activePanel === 'props'
                 ? 'flex'
                 : '@[40rem]/market-hero:flex hidden'
@@ -455,77 +455,5 @@ function OutcomeRow({
         {label}
       </span>
     </Link>
-  )
-}
-
-/** Decorative race motif: no predicted finishing positions or real circuit. */
-function RacingIllustration({ compact = false }: { compact?: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 300 100"
-      aria-hidden="true"
-      focusable="false"
-      className={clsx(
-        'mt-3 hidden w-full max-w-xs self-center',
-        compact ? '@[54rem]/market-hero:block h-12' : 'h-20 sm:block'
-      )}
-    >
-      <path
-        d="M57 22H243C267 22 280 34 280 50S267 78 243 78H57C33 78 20 66 20 50S33 22 57 22Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="14"
-        className="text-primary-100"
-      />
-      <path
-        d="M57 22H243C267 22 280 34 280 50S267 78 243 78H57C33 78 20 66 20 50S33 22 57 22Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1"
-        strokeDasharray="5 5"
-        className="text-primary-300"
-      />
-      <g
-        transform="translate(90 22)"
-        className="text-primary-600"
-        fill="currentColor"
-      >
-        <rect x="-15" y="-4" width="30" height="8" rx="4" />
-        <path d="M-8-8H5L13 0 5 8H-8Z" />
-        <path d="M-13-10H-8V10H-13ZM11-9H15V9H11Z" />
-        <rect
-          x="-3"
-          y="-3"
-          width="7"
-          height="6"
-          rx="2"
-          className="text-canvas-0"
-        />
-      </g>
-      <g
-        transform="translate(211 78) rotate(180)"
-        className="text-primary-400"
-        fill="currentColor"
-      >
-        <rect x="-15" y="-4" width="30" height="8" rx="4" />
-        <path d="M-8-8H5L13 0 5 8H-8Z" />
-        <path d="M-13-10H-8V10H-13ZM11-9H15V9H11Z" />
-        <rect
-          x="-3"
-          y="-3"
-          width="7"
-          height="6"
-          rx="2"
-          className="text-canvas-0"
-        />
-      </g>
-      <g
-        transform="translate(193 15)"
-        className="text-primary-700"
-        fill="currentColor"
-      >
-        <path d="M0 0H5V5H0ZM5 5H10V10H5ZM0 10H5V15H0ZM10 0H15V5H10ZM10 10H15V15H10Z" />
-      </g>
-    </svg>
   )
 }

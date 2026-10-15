@@ -18,6 +18,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { GameLinkedMarkets } from 'web/components/sports/game-related-markets'
 import { SportsMarketBadge } from './sports-market-badge'
+import { SportHeroBackground } from './sport-hero-background'
 import { sportPath } from 'web/components/sports/sport-rail'
 import {
   Flag,
@@ -328,7 +329,8 @@ export function GameRow(props: {
         <GameLinkedMarkets
           game={game}
           matchup={
-            <div className="flex min-w-0 flex-col">
+            <div className="relative isolate flex min-w-0 flex-col overflow-hidden">
+              <SportHeroBackground sport={game.sport} />
               <div className="flex items-center gap-2 px-4 py-2 sm:px-5">
                 <div className="@container flex min-w-[1rem] flex-1 items-center gap-2">
                   <SportsMarketBadge market={game} />
