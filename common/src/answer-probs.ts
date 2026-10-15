@@ -120,9 +120,9 @@ export const fitCopiedAnswerProbs = (
 
 // The starting probabilities a copy of a multi-cpmm market opens at, in percent
 // and in the order of its listed answers (see fitCopiedAnswerProbs), or
-// undefined to open at an even split. The new multiple choice market chooses
-// its own mechanism, so either multi-cpmm source can supply its current odds.
-// Not once the market or any answer is resolved, when prob
+// undefined to open at an even split. Only a cpmm-multi-2 multiple choice
+// market opens at given odds, and a duplicate of one should start where the
+// original stands. Not once the market or any answer is resolved, when prob
 // holds the resolution instead. Fitted into the range bets trade in, since a
 // long shot can sit under it. The copy recreates Other with what the listed
 // answers leave, so Other's odds are carried that way, and only when the copy
@@ -145,8 +145,7 @@ export const getCopiedAnswerProbs = (
     contract.shouldAnswersSumToOne && contract.addAnswersMode !== 'DISABLED'
   if (
     !hasAllAnswers ||
-    (contract.mechanism !== 'cpmm-multi-1' &&
-      contract.mechanism !== 'cpmm-multi-2') ||
+    contract.mechanism !== 'cpmm-multi-2' ||
     contract.outcomeType !== 'MULTIPLE_CHOICE' ||
     contract.isResolved ||
     contract.answers.some((a) => a.resolution) ||

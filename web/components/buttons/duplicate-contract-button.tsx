@@ -112,7 +112,7 @@ export function duplicateContractHref(
   if (isMultiCpmm(contract)) {
     params.addAnswersMode = contract.addAnswersMode
     params.shouldAnswersSumToOne = contract.shouldAnswersSumToOne
-    // Carry either multi-cpmm source's CURRENT odds as the duplicate's
+    // cpmm-multi-2: carry the answers' CURRENT probabilities as the duplicate's
     // starting probabilities (a duplicate should start where the original stands,
     // not reset to uniform), where getCopiedAnswerProbs finds that safe
     params.answerProbs = getCopiedAnswerProbs(contract, hasAllAnswers)
