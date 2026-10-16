@@ -29,7 +29,7 @@ const RESOLVING_SOON_LIMIT = 12
  */
 export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
   const {
-    category,
+    categories,
     limit = DEFAULT_LIMIT,
     offset = 0,
     includeUnlinked = false,
@@ -71,10 +71,9 @@ export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
   // Sorted here rather than trusting the build order, which a cached build
   // from an older version may not share.
   const pool = includeUnlinked ? build.stories : linked
+  const wanted = new Set((categories ?? []).filter(isNewsCategory))
   const filtered =
-    category && isNewsCategory(category)
-      ? pool.filter((s) => s.category === category)
-      : pool
+    wanted.size > 0 ? pool.filter((s) => wanted.has(s.category)) : pool
   const ordered =
     sort === 'top'
       ? sortBy(filtered, (s) => -s.score)

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Contract } from 'common/contract'
 import {
   NEWS_SORTS,
+  NewsCategory,
   NewsSort,
   NewsSpotlight,
   NewsStory,
@@ -20,7 +21,7 @@ import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
-import { CategoryFilter, CategoryRail } from './category-rail'
+import { CategoryRail } from './category-rail'
 import { ResolvingSoon } from './resolving-soon'
 import { StoryCard, StoryCardSkeleton } from './story-card'
 
@@ -40,18 +41,19 @@ type LikeState = { liked: boolean; count: number }
  */
 export function NewsFeedPage() {
   const user = useUser()
-  const [category, setCategory] = useState<CategoryFilter>('all')
+  // Empty means every category.
+  const [categories, setCategories] = useState<NewsCategory[]>([])
   const [sort, setSort] = useState<NewsSort>('newest')
   const [includeUnlinked, setIncludeUnlinked] = useState(false)
   const [limit, setLimit] = useState(PAGE_SIZE)
   const props = useMemo(
     () => ({
-      category: category === 'all' ? undefined : category,
+      categories: categories.length > 0 ? categories : undefined,
       sort,
       limit,
       includeUnlinked,
     }),
-    [category, sort, limit, includeUnlinked]
+    [categories, sort, limit, includeUnlinked]
   )
   const { data, error, refresh } = useAPIGetter(
     'get-news-feed',
@@ -137,7 +139,7 @@ export function NewsFeedPage() {
     return byId
   }, [data?.stories])
   const spotlight =
-    category === 'all' && !includeUnlinked ? data?.spotlight : undefined
+    categories.length === 0 && !includeUnlinked ? data?.spotlight : undefined
   // The top story leads the page; it is not repeated in the list below.
   const stories = (data?.stories ?? []).filter(
     (s) => s.id !== spotlight?.story.id
@@ -224,9 +226,15 @@ export function NewsFeedPage() {
 
         <div className="bg-canvas-0 border-ink-100 sticky top-0 z-20 -mx-2 border-b px-2 sm:-mx-4 sm:px-4">
           <CategoryRail
-            selected={category}
-            onSelect={(c) => {
-              setCategory(c)
+            selected={categories}
+            onToggle={(c) => {
+              setCategories((prev) =>
+                c === 'all'
+                  ? []
+                  : prev.includes(c)
+                  ? prev.filter((k) => k !== c)
+                  : [...prev, c]
+              )
               setLimit(PAGE_SIZE)
             }}
             counts={data?.counts ?? {}}
@@ -250,7 +258,7 @@ export function NewsFeedPage() {
             <StoryCard {...cardProps(spotlight.story)} hero defaultOpen />
           </Col>
         )}
-        {category === 'all' && resolvingSoon.length > 0 && (
+        {categories.length === 0 && resolvingSoon.length > 0 && (
           <ResolvingSoon
             contracts={resolvingSoon}
             storiesByContractId={storiesByContractId}

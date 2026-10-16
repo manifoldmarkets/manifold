@@ -5269,7 +5269,7 @@ export const API = (_apiTypeCheck = {
     preferAuth: true,
     props: z
       .object({
-        category: z.string().optional(),
+        categories: z.array(z.string()).max(8).optional(),
         limit: z.coerce.number().gte(1).lte(200).optional(),
         offset: z.coerce.number().gte(0).optional(),
         includeUnlinked: coerceBoolean.optional(),

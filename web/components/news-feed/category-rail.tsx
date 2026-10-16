@@ -5,30 +5,31 @@ import { Row } from 'web/components/layout/row'
 import { Carousel } from 'web/components/widgets/carousel'
 import { track } from 'web/lib/service/analytics'
 
-export type CategoryFilter = NewsCategory | 'all'
-
 /**
  * The feed's navigation: "All" pinned, then one chip per category with the
- * number of stories that have a market. Mirrors the sports rail.
+ * number of stories that have a market. Chips combine: tap several to see
+ * those categories together; "All" clears them. Mirrors the sports rail.
  */
 export function CategoryRail(props: {
-  selected: CategoryFilter
-  onSelect: (category: CategoryFilter) => void
+  /** The categories in the feed; empty means every category. */
+  selected: NewsCategory[]
+  onToggle: (category: NewsCategory | 'all') => void
   counts: NewsFeedCounts
   className?: string
 }) {
-  const { selected, onSelect, counts, className } = props
+  const { selected, onToggle, counts, className } = props
   const total = sum(Object.values(counts).map((n) => n ?? 0))
+  const none = selected.length === 0
 
   return (
     <Row className={clsx('w-full items-center', className)}>
       <Row className="bg-canvas-0 relative z-10 shrink-0 gap-1.5 py-2 pr-1.5">
         <Chip
-          active={selected === 'all'}
+          active={none}
           emoji="📰"
           label="All"
           count={total || undefined}
-          onClick={() => onSelect('all')}
+          onClick={() => onToggle('all')}
         />
         <div className="bg-ink-200 my-auto h-5 w-px shrink-0" />
       </Row>
@@ -41,11 +42,11 @@ export function CategoryRail(props: {
         {NEWS_CATEGORIES.map((c) => (
           <Chip
             key={c.key}
-            active={selected === c.key}
+            active={selected.includes(c.key)}
             emoji={c.emoji}
             label={c.label}
             count={counts[c.key]}
-            onClick={() => onSelect(c.key)}
+            onClick={() => onToggle(c.key)}
           />
         ))}
       </Carousel>
