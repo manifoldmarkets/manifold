@@ -136,12 +136,22 @@ const updateModelClassificationsInternal = async () => {
       !isCompositeSlug(m.permaslug)
   )
   if (unknown.length === 0) log('[model-classifier] catalog fully classified')
-  else await classifyUnknownModels(pg, unknown)
+  else {
+    try {
+      await classifyUnknownModels(pg, unknown)
+    } catch (err) {
+      log.error(`[model-classifier] pending classification failed - ${err}`)
+    }
+  }
 
   // Both run whether or not the catalog had anything new: a watched row is
   // settled as far as the catalog sweep is concerned, and the lab queue is
   // independent of it.
-  await recheckProvisionalModels(pg, catalog)
+  try {
+    await recheckProvisionalModels(pg, catalog)
+  } catch (err) {
+    log.error(`[model-classifier] provisional re-check failed - ${err}`)
+  }
   await researchLabSubjects(pg, catalog)
 }
 
@@ -464,7 +474,18 @@ export const recheckProvisionalModels = async (
       (typeof recordedName === 'string' ? recordedName : undefined)
 
     if (entry?.huggingFaceId) {
-      const verification = await verifyHuggingFaceWeights(entry.huggingFaceId)
+      const verification = await verifyHuggingFaceWeights(
+        entry.huggingFaceId
+      ).catch((err) => {
+        log.error(
+          `[model-classifier] ${slug}: repo verification failed - ${err}`
+        )
+        return null
+      })
+      if (!verification) {
+        unresolved++
+        continue
+      }
       logHuggingFaceVerification(slug, verification)
       if (verification.confirmed) {
         const applied = await openProvisionalClassification(
@@ -499,6 +520,16 @@ export const recheckProvisionalModels = async (
       name,
       declaredHuggingFaceId: entry?.huggingFaceId ?? null,
     })
+    if (result.transient) {
+      // An outage is not new evidence against a standing contradiction.
+      // Preserve both the recommendation and its clock so the next sweep retries.
+      log.warn(
+        `[model-classifier] ${slug}: transient re-check failure; preserving ` +
+          `prior research - ${result.verdict.reasoning.slice(0, 200)}`
+      )
+      unresolved++
+      continue
+    }
     const evidence = {
       openRouterName: name ?? null,
       agentReasoning: result.verdict.reasoning,
@@ -528,7 +559,7 @@ export const recheckProvisionalModels = async (
       reconfirmed++
       continue
     }
-    await recordAgentRecommendation(pg, slug, null, evidence, !result.transient)
+    await recordAgentRecommendation(pg, slug, null, evidence)
     unresolved++
   }
   log(
@@ -603,6 +634,15 @@ const researchLabSubjects = async (
     const result = await classifyLabSubjectWithAgent(
       labAgentSubject(row, catalog)
     )
+    if (row.provisional && result.transient) {
+      log.warn(
+        `[lab-classifier] ${row.subject_type} ${row.subject_slug}: transient ` +
+          `re-check failure; preserving prior research - ` +
+          result.verdict.reasoning.slice(0, 200)
+      )
+      unresolved++
+      continue
+    }
     const { verdict } = result
     const placement =
       verdict.verdict === 'chinese' || verdict.verdict === 'non-chinese'
