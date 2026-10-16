@@ -3,9 +3,7 @@ import { SPORTS_SCHEDULE_PAGE_SIZE } from 'common/sports-game-feed'
 import { selectSportsOgMarket, SportsOgMarket } from 'common/sports-og'
 
 /** Server-side only: snapshot the same first page used by the sports feed. */
-export async function loadSportsOgMarket(
-  fetcher: typeof fetch = fetch
-): Promise<SportsOgMarket | null> {
+export async function loadSportsOgMarket(): Promise<SportsOgMarket | null> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 4000)
   try {
@@ -15,7 +13,7 @@ export async function loadSportsOgMarket(
       limit: String(SPORTS_SCHEDULE_PAGE_SIZE),
       includeRelated: 'false',
     }).toString()
-    const response = await fetcher(url, {
+    const response = await fetch(url, {
       signal: controller.signal,
       cache: 'no-store',
     })
