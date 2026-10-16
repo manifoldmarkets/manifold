@@ -1,4 +1,6 @@
 import clsx from 'clsx'
+import { Bet } from 'common/bet'
+import { AnswerBetTrackingLocationContext } from 'web/hooks/use-answer-bet-tracking-location'
 
 import {
   contractPath,
@@ -30,6 +32,8 @@ export function BetDialog(props: {
   setOpen: (open: boolean) => void
   trackingLocation: string
   initialOutcome?: BinaryOutcomes
+  initialAmount?: number
+  onBetPlaced?: (bet: Bet) => void
   binaryPseudonym?: {
     YES: {
       pseudonymName: string
@@ -48,6 +52,8 @@ export function BetDialog(props: {
     setOpen,
     trackingLocation,
     initialOutcome,
+    initialAmount,
+    onBetPlaced,
     questionPseudonym,
   } = props
   const { question } = contract
@@ -71,9 +77,11 @@ export function BetDialog(props: {
         <BuyPanel
           contract={contract}
           onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
+          onBetPlaced={onBetPlaced}
           location={trackingLocation}
           inModal={true}
           initialOutcome={initialOutcome ?? 'YES'}
+          initialAmount={initialAmount}
           alwaysShowOutcomeSwitcher
           pseudonym={pseudonym}
           className="!px-0"
@@ -116,8 +124,15 @@ export function MultiBetDialog(props: {
   setOpen: (open: boolean) => void
   /** For two-answer "versus" markets: open on this side. */
   initialOutcome?: 'YES' | 'NO'
+  trackingLocation?: string
 }) {
-  const { contract, open, setOpen, initialOutcome } = props
+  const {
+    contract,
+    open,
+    setOpen,
+    initialOutcome,
+    trackingLocation = 'contract table',
+  } = props
   const { question } = contract
   const [query, setQuery] = usePersistentInMemoryState(
     '',
@@ -142,41 +157,43 @@ export function MultiBetDialog(props: {
         'pointer-events-auto max-h-[32rem] overflow-auto'
       )}
     >
-      <Col>
-        {contract.outcomeType === 'NUMBER' ? (
-          <NumericBetDialog contract={contract as CPMMNumericContract} />
-        ) : (
-          <>
-            <Link
-              href={contractPath(contract)}
-              className={clsx('text-primary-700 text-xl', linkClass)}
-            >
-              {question}
-            </Link>
-            {isBinaryMC ? (
-              <BinaryMultiAnswersPanel
-                contract={contract as CPMMMultiContract}
-                preselect
-                preselectOutcome={initialOutcome}
-                onClose={() => setOpen(false)}
-              />
-            ) : (
-              <AnswersPanel
-                contract={contract}
-                selectedAnswerIds={[]}
-                sort={sort}
-                setSort={setSort}
-                query={query}
-                setQuery={setQuery}
-                onAnswerHover={() => null}
-                onAnswerClick={() => null}
-                defaultAddAnswer={contract.addAnswersMode === 'ANYONE'}
-                floatingSearchClassName={'-top-8 pt-4'}
-              />
-            )}
-          </>
-        )}
-      </Col>
+      <AnswerBetTrackingLocationContext.Provider value={trackingLocation}>
+        <Col>
+          {contract.outcomeType === 'NUMBER' ? (
+            <NumericBetDialog contract={contract as CPMMNumericContract} />
+          ) : (
+            <>
+              <Link
+                href={contractPath(contract)}
+                className={clsx('text-primary-700 text-xl', linkClass)}
+              >
+                {question}
+              </Link>
+              {isBinaryMC ? (
+                <BinaryMultiAnswersPanel
+                  contract={contract as CPMMMultiContract}
+                  preselect
+                  preselectOutcome={initialOutcome}
+                  onClose={() => setOpen(false)}
+                />
+              ) : (
+                <AnswersPanel
+                  contract={contract}
+                  selectedAnswerIds={[]}
+                  sort={sort}
+                  setSort={setSort}
+                  query={query}
+                  setQuery={setQuery}
+                  onAnswerHover={() => null}
+                  onAnswerClick={() => null}
+                  defaultAddAnswer={contract.addAnswersMode === 'ANYONE'}
+                  floatingSearchClassName={'-top-8 pt-4'}
+                />
+              )}
+            </>
+          )}
+        </Col>
+      </AnswerBetTrackingLocationContext.Provider>
     </Modal>
   )
 }
