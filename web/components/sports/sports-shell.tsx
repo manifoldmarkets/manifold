@@ -45,9 +45,10 @@ export function SportsShell(props: {
             {/* Goes back in history (to the previous sport, or wherever the
                 visitor came from), or Home when they arrived from off-site.
                 The button only appears once it can tell which, so it gets a
-                fixed slot and the heading never moves. */}
+                fixed slot and the heading never moves. Remount when the sport
+                changes so its history check stays current on Back/Forward. */}
             <div className="-ml-2.5 h-8 w-10 shrink-0">
-              <BackButton size="xs" homeFallback />
+              <BackButton key={selected} size="xs" homeFallback />
             </div>
             <h1 className="text-ink-1000 min-w-0 truncate text-3xl font-bold tracking-tight sm:text-4xl">
               {heading}
