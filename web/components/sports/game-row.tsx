@@ -24,7 +24,7 @@ import {
   SportsMatch,
 } from 'web/components/sports/sports-match-card'
 import {
-  SportsBetPanel,
+  SportsThreeWayBetDialog,
   SportsVersusBetDialog,
 } from 'web/components/sports/sports-bet-panel'
 import { useUser } from 'web/hooks/use-user'
@@ -253,7 +253,7 @@ export function GameRow(props: {
   const dialog =
     betOutcome &&
     (game.draw ? (
-      <SportsBetPanel
+      <SportsThreeWayBetDialog
         match={toSportsMatch(game)}
         initialOutcome={betOutcome}
         onClose={() => setBetOutcome(null)}

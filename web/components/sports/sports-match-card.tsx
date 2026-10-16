@@ -7,7 +7,10 @@ import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { useUnfilledBets } from 'client-common/hooks/use-bets'
 import { flagImageCode } from 'common/sports'
 import { ContractMetric } from 'common/contract-metric'
-import { SportsBetPanel, SportsVersusBetDialog } from './sports-bet-panel'
+import {
+  SportsThreeWayBetDialog,
+  SportsVersusBetDialog,
+} from './sports-bet-panel'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import {
   PositionsHovercard,
@@ -616,7 +619,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
           />
         ) : (
           // Standard 3-way soccer markets (home / draw / away).
-          <SportsBetPanel
+          <SportsThreeWayBetDialog
             match={{
               ...match,
               teamA: { ...match.teamA, prob: probs.teamA },

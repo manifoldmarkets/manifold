@@ -1,4 +1,9 @@
-import { Contract, CPMMMultiContract, isMultiCpmm } from 'common/contract'
+import {
+  Contract,
+  BinaryContract,
+  CPMMMultiContract,
+  isMultiCpmm,
+} from 'common/contract'
 import { User } from 'common/user'
 import { useState } from 'react'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -121,9 +126,9 @@ export function BetButton(props: {
             setOpen={setOpenMC}
           />
         )}
-        {open && contract.mechanism === 'cpmm-1' && (
+        {open && (
           <BetDialog
-            contract={contract}
+            contract={contract as BinaryContract}
             open={open}
             setOpen={setOpen}
             trackingLocation="contract table"

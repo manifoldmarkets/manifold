@@ -34,15 +34,15 @@ export function TradePanelLayout(props: {
         {header}
         {compact && (
           <Row className="mb-1 items-center justify-between gap-2">
-            <div>{controls}</div>
             <button
               type="button"
               aria-pressed={showOrders}
               onClick={() => setShowOrders(!showOrders)}
-              className="text-primary-700 hover:bg-primary-50 rounded-md px-2 py-2 text-sm font-medium"
+              className="text-primary-700 hover:bg-primary-50 -ml-2 rounded-md px-2 py-2 text-sm font-medium"
             >
               {showOrders ? 'Back to trade' : `Order book (${orderCount})`}
             </button>
+            {controls}
           </Row>
         )}
         {/* Keep amounts, prices and expiration mounted while viewing orders. */}
