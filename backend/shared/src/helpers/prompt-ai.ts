@@ -94,6 +94,11 @@ export async function promptAI<T = unknown>(
         webSearch,
         effort,
       })
+      // Parsing belongs inside the attempt: malformed JSON is a failed
+      // classification too, and should use the same fallback as API errors.
+      return options.parseAsJson
+        ? (parseAIResponseAsJson(rawResponse) as T)
+        : rawResponse
     } catch (error) {
       // Everything routed to Claude is a classification whose Gemini
       // equivalent simply costs more; none of it is a feature that may be
