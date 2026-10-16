@@ -21,6 +21,29 @@ import { api } from 'web/lib/api/api'
 // It only ever auto-decides `open`, and only against public weight files — so
 // what lands on this page is the judgement calls: API-only models, and models
 // whose weights exist somewhere the publisher never declared.
+//
+// Three answers to every row, not two. "Open" and "closed" are findings; the
+// third, "unknown", is for the rows that used to be most of the cost of this
+// page — stealth models and weights that are announced but not shipped, where
+// there is nothing to find yet. Unknown takes the index's default side with no
+// evidence to type and puts the row on a watch list the research agent
+// re-checks weekly, so a default can never silently become permanent.
+
+type ModelClassificationData = APIResponse<'get-model-classifications'>
+type WatchedModel = ModelClassificationData['provisional'][number]
+
+const HOUR_MS = 3_600_000
+
+const relativeTime = (timestamp: number) => {
+  const hours = Math.max(0, Math.floor((Date.now() - timestamp) / HOUR_MS))
+  return hours < 48 ? `${hours}h ago` : `${Math.floor(hours / 24)}d ago`
+}
+
+const untilTime = (timestamp: number) => {
+  const hours = Math.ceil((timestamp - Date.now()) / HOUR_MS)
+  if (hours <= 0) return 'due now'
+  return hours < 48 ? `in ${hours}h` : `in ${Math.ceil(hours / 24)}d`
+}
 
 export default function AdminModelClassificationsPage() {
   useRedirectIfSignedOut()
@@ -55,6 +78,11 @@ export default function AdminModelClassificationsPage() {
   // backlog that can wait. Sorting by it puts the real work at the top.
   const ranked = pending.filter((p) => p.rankedAgeMs !== null)
   const backlog = pending.filter((p) => p.rankedAgeMs === null)
+  const watched = data?.provisional ?? []
+  const contradicted = watched.filter((m) => m.contradicted)
+  const recheckDays = data
+    ? Math.round(data.provisionalRecheckIntervalMs / (24 * HOUR_MS))
+    : 7
 
   return (
     <Page trackPageView={false}>
@@ -82,7 +110,7 @@ export default function AdminModelClassificationsPage() {
               </div>
               <div className="text-ink-500">
                 Seed list version {data?.seedVersion ?? '—'} · grace window{' '}
-                {data ? Math.round(data.graceWindowMs / 3_600_000) : '—'}h
+                {data ? Math.round(data.graceWindowMs / HOUR_MS) : '—'}h
               </div>
             </Col>
 
@@ -91,6 +119,17 @@ export default function AdminModelClassificationsPage() {
                 <b>{expired.length} past the grace window.</b> The index is
                 halting on these right now — the feed is not publishing until
                 they are classified.
+              </div>
+            )}
+
+            {contradicted.length > 0 && (
+              <div className="bg-scarlet-100 text-scarlet-700 rounded p-3 text-sm">
+                <b>
+                  {contradicted.length} provisional verdict
+                  {contradicted.length === 1 ? '' : 's'} contradicted.
+                </b>{' '}
+                The weekly re-check found public weights for a model the index
+                is publishing as closed — see “Under watch” below.
               </div>
             )}
 
@@ -125,6 +164,30 @@ export default function AdminModelClassificationsPage() {
                 </div>
                 {backlog.map((model) => (
                   <PendingRow
+                    key={model.permaslug}
+                    model={model}
+                    onDone={refresh}
+                  />
+                ))}
+              </Col>
+            )}
+
+            {watched.length > 0 && (
+              <Col className="gap-2 pt-2">
+                <div className="text-ink-700 font-semibold">
+                  Under watch ({watched.length})
+                </div>
+                <div className="text-ink-500 text-sm">
+                  Closed by default because nobody could find weights: stealth
+                  models, and weights announced but not shipped. The index
+                  counts them as closed. The watcher re-researches each one
+                  every {recheckDays} days. It flips a row open on its own only
+                  when the publisher declares a repo that verifies with weight
+                  files; anything the research agent finds comes back here for a
+                  click. Confirm a verdict to stop watching it.
+                </div>
+                {watched.map((model) => (
+                  <WatchedModelRow
                     key={model.permaslug}
                     model={model}
                     onDone={refresh}
@@ -201,9 +264,9 @@ function HowThisWorks(props: { isAdmin: boolean }) {
                 exact model instead.
               </div>
               <div className="text-ink-600">
-                Needs a one-line evidence summary <i>and</i> a public source URL
-                — the verdict buttons stay disabled until both are filled in.
-                Mods and admins.
+                A firm verdict needs a one-line evidence summary <i>and</i> a
+                public source URL — the verdict buttons stay disabled until both
+                are filled in. <i>Unknown</i> needs neither. Mods and admins.
               </div>
             </Col>
 
@@ -219,7 +282,8 @@ function HowThisWorks(props: { isAdmin: boolean }) {
                 </div>
                 <div className="text-ink-600">
                   An open call needs the HuggingFace repo that proves it. A
-                  closed call needs nothing. Admins only.
+                  closed call needs nothing. <i>Unknown</i> is closed for now,
+                  re-checked weekly. Admins only.
                 </div>
               </Col>
             )}
@@ -250,6 +314,15 @@ function HowThisWorks(props: { isAdmin: boolean }) {
                 <b>Click the verdict.</b> It saves immediately and the queue
                 refreshes.
               </li>
+              <li>
+                <b>Can’t tell yet?</b> Click <i>Unknown</i> instead of inventing
+                evidence. The row takes the index’s default side — closed, or
+                non-Chinese — and joins the “Under watch” list, where the
+                research agent re-checks it weekly. Anything it finds comes back
+                here with a red border, and a publisher-declared repo that
+                verifies flips an open-weight row open on its own. Firm it up
+                whenever you like.
+              </li>
             </ol>
           </Col>
 
@@ -268,7 +341,25 @@ function HowThisWorks(props: { isAdmin: boolean }) {
 type LabClassificationData = APIResponse<'get-openrouter-lab-classifications'>
 type PendingLabClassification = LabClassificationData['pending'][number]
 type DecidedLabClassification = LabClassificationData['decided'][number]
-type LabClassificationDisplay = PendingLabClassification &
+type WatchedLabClassification = LabClassificationData['provisional'][number]
+type LabAgentFindings = Pick<
+  PendingLabClassification,
+  | 'agentRecommendation'
+  | 'agentPublisher'
+  | 'agentHeadquarters'
+  | 'agentSourceUrl'
+  | 'agentReasoning'
+  | 'agentSearches'
+  | 'recheckedAt'
+>
+// One row component serves all three lists. Pending rows carry the research
+// findings; firm decisions carry a verdict and its evidence; watched rows carry
+// both, plus the flag that says the verdict is a default.
+type LabClassificationDisplay = Omit<
+  PendingLabClassification,
+  keyof LabAgentFindings
+> &
+  Partial<LabAgentFindings> &
   Partial<
     Pick<
       DecidedLabClassification,
@@ -279,7 +370,11 @@ type LabClassificationDisplay = PendingLabClassification &
       | 'classifiedAt'
       | 'classifiedBy'
     >
-  >
+  > &
+  Partial<Pick<WatchedLabClassification, 'contradicted' | 'nextCheckAt'>> & {
+    /** Set by the section that renders the watch list. */
+    provisional?: boolean
+  }
 
 function LabClassificationSection(props: {
   data: LabClassificationData | undefined
@@ -289,6 +384,11 @@ function LabClassificationSection(props: {
   const pending = data?.pending ?? []
   const ranked = pending.filter((row) => row.firstRankedAt !== null)
   const backlog = pending.filter((row) => row.firstRankedAt === null)
+  const watched = data?.provisional ?? []
+  const contradicted = watched.filter((row) => row.contradicted)
+  const recheckDays = data
+    ? Math.round(data.recheckIntervalMs / (24 * HOUR_MS))
+    : 7
 
   return (
     <Col className="gap-4">
@@ -299,8 +399,8 @@ function LabClassificationSection(props: {
         <div className="text-ink-600 text-sm">
           Classify where an OpenRouter publisher is headquartered. Normal labs
           are decided once by author; anonymous or shared namespaces use an
-          exact-model decision. Every verdict needs a short evidence summary and
-          a public source.
+          exact-model decision. A firm verdict needs a short evidence summary
+          and a public source; <i>Unknown</i> needs neither.
         </div>
         <div className="text-ink-400 mt-1 text-xs">
           Audited seed version {data?.seedVersion ?? '—'} · database decisions
@@ -314,6 +414,17 @@ function LabClassificationSection(props: {
         </div>
       ) : (
         <>
+          {contradicted.length > 0 && (
+            <div className="bg-scarlet-100 text-scarlet-700 rounded p-3 text-sm">
+              <b>
+                {contradicted.length} provisional verdict
+                {contradicted.length === 1 ? '' : 's'} contradicted.
+              </b>{' '}
+              The weekly re-check attributed a subject the index is publishing
+              as non-Chinese to a Chinese publisher — see “Under watch” below.
+            </div>
+          )}
+
           <Col className="gap-2">
             <div className="text-ink-700 font-semibold">
               Ranked or backfill-blocking ({ranked.length})
@@ -346,6 +457,37 @@ function LabClassificationSection(props: {
                 <LabClassificationRow
                   key={`${row.subjectType}:${row.subjectSlug}`}
                   row={row}
+                  onDone={onDone}
+                />
+              ))}
+            </Col>
+          )}
+
+          {watched.length > 0 && (
+            <Col className="gap-2 pt-2">
+              <div className="text-ink-700 font-semibold">
+                Under watch ({watched.length})
+              </div>
+              <div className="text-ink-500 text-sm">
+                Non-Chinese by default: anonymous models and publishers nobody
+                could place, treated like OpenRouter's own cloaked slugs —
+                denominator only, never numerator. The research agent re-checks
+                each one every {recheckDays} days for a reveal or a
+                headquarters. A Chinese finding is flagged here and alerted;
+                nothing is applied without a click. Confirm a verdict to stop
+                watching it.
+              </div>
+              {watched.map((row) => (
+                <LabClassificationRow
+                  key={`${row.subjectType}:${row.subjectSlug}`}
+                  row={{
+                    ...row,
+                    provisional: true,
+                    isChinese: false,
+                    discoveredVia: null,
+                    firstSeen: row.classifiedAt,
+                    firstRankedAt: null,
+                  }}
                   onDone={onDone}
                 />
               ))}
@@ -390,10 +532,59 @@ function LabClassificationRow(props: {
   const { row, ranked = false, onDone } = props
   const fieldId = useId()
   const decided = row.isChinese !== undefined
+  const provisional = row.provisional === true
+  // Only a FIRM verdict counts as already decided for the buttons: firming a
+  // provisional row is the whole point of opening its editor.
+  const firm = decided && !provisional
   const [editing, setEditing] = useState(!decided)
-  const [evidence, setEvidence] = useState(row.evidence ?? '')
-  const [sourceUrl, setSourceUrl] = useState(row.sourceUrl ?? '')
+  // Prefill from the research when it found a placement. For a provisional
+  // row the stored evidence is the canned default, which is not what a firm
+  // verdict should say, so the suggestion wins there too.
+  const suggestion =
+    row.agentPublisher && row.agentHeadquarters
+      ? {
+          evidence: `${row.agentPublisher}, ${row.agentHeadquarters}`,
+          sourceUrl: row.agentSourceUrl ?? '',
+        }
+      : null
+  const [evidence, setEvidence] = useState(
+    firm ? row.evidence ?? '' : suggestion?.evidence ?? ''
+  )
+  const [sourceUrl, setSourceUrl] = useState(
+    firm ? row.sourceUrl ?? '' : suggestion?.sourceUrl ?? ''
+  )
   const [saving, setSaving] = useState(false)
+
+  const save = async (params: {
+    isChinese: boolean
+    provisional?: boolean
+    evidence?: string
+    sourceUrl?: string
+  }) => {
+    setSaving(true)
+    try {
+      await api('set-openrouter-lab-classification', {
+        subjectType: row.subjectType,
+        subjectSlug: row.subjectSlug,
+        ...params,
+      })
+      toast.success(
+        `${row.subjectSlug} → ${
+          params.isChinese
+            ? 'Chinese'
+            : params.provisional
+            ? 'non-Chinese for now, under watch'
+            : 'non-Chinese'
+        }`
+      )
+      setEditing(false)
+      onDone()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : String(error))
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const classify = async (isChinese: boolean) => {
     if (!evidence.trim()) {
@@ -411,45 +602,40 @@ function LabClassificationRow(props: {
       toast.error('Evidence URL must use http or https')
       return
     }
-
-    setSaving(true)
-    try {
-      await api('set-openrouter-lab-classification', {
-        subjectType: row.subjectType,
-        subjectSlug: row.subjectSlug,
-        isChinese,
-        evidence: evidence.trim(),
-        sourceUrl: url.toString(),
-      })
-      toast.success(
-        `${row.subjectSlug} → ${isChinese ? 'Chinese' : 'non-Chinese'}`
-      )
-      setEditing(false)
-      onDone()
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : String(error))
-    } finally {
-      setSaving(false)
-    }
+    await save({
+      isChinese,
+      evidence: evidence.trim(),
+      sourceUrl: url.toString(),
+    })
   }
 
   const ageHours = Math.max(
     0,
-    Math.floor((Date.now() - row.firstSeen) / 3_600_000)
+    Math.floor((Date.now() - row.firstSeen) / HOUR_MS)
   )
   const rankedAgeHours =
     row.firstRankedAt === null
       ? null
-      : Math.max(0, Math.floor((Date.now() - row.firstRankedAt) / 3_600_000))
+      : Math.max(0, Math.floor((Date.now() - row.firstRankedAt) / HOUR_MS))
   const decisionChanged =
     evidence.trim() !== (row.evidence ?? '') ||
     sourceUrl.trim() !== (row.sourceUrl ?? '')
+  const useSuggestion = () => {
+    if (!suggestion) return
+    setEvidence(suggestion.evidence)
+    setSourceUrl(suggestion.sourceUrl)
+  }
+  const hasFindings = !!(row.agentRecommendation || row.agentReasoning)
 
   return (
     <Col
       className={clsx(
         'gap-2 rounded border p-3',
-        ranked ? 'border-amber-400' : 'border-ink-200'
+        row.contradicted
+          ? 'border-scarlet-300'
+          : ranked || provisional
+          ? 'border-amber-400'
+          : 'border-ink-200'
       )}
     >
       <Row className="flex-wrap items-baseline gap-2">
@@ -458,6 +644,11 @@ function LabClassificationRow(props: {
             className={row.isChinese ? 'text-scarlet-600' : 'text-teal-600'}
           >
             {row.isChinese ? 'Chinese' : 'non-Chinese'}
+          </span>
+        )}
+        {provisional && (
+          <span className="rounded border border-amber-400 px-1.5 py-0.5 text-xs text-amber-700 dark:text-amber-300">
+            provisional
           </span>
         )}
         <span className="bg-canvas-100 text-ink-500 rounded px-1.5 py-0.5 text-xs">
@@ -475,12 +666,23 @@ function LabClassificationRow(props: {
             · via {row.discoveredVia ?? 'unknown'}
           </span>
         )}
+        {provisional &&
+          row.classifiedAt !== undefined &&
+          row.nextCheckAt !== undefined && (
+            <span className="text-ink-400 text-xs">
+              since {relativeTime(row.classifiedAt)} ·{' '}
+              {row.recheckedAt
+                ? `re-checked ${relativeTime(row.recheckedAt)}`
+                : 'not re-checked yet'}{' '}
+              · next {untilTime(row.nextCheckAt)}
+            </span>
+          )}
         {decided && (
           <button
             className="text-primary-600 text-xs hover:underline"
             onClick={() => setEditing((value) => !value)}
           >
-            {editing ? 'cancel' : 'change'}
+            {editing ? 'cancel' : provisional ? 'firm it up' : 'change'}
           </button>
         )}
       </Row>
@@ -503,6 +705,74 @@ function LabClassificationRow(props: {
             </div>
           )}
         </div>
+      )}
+
+      {hasFindings && (
+        <Col className="bg-canvas-50 gap-1.5 rounded p-3 text-sm">
+          <div className="text-ink-700 font-semibold">
+            {provisional ? 'Latest re-check:' : 'Research says:'}{' '}
+            {row.agentRecommendation === 'chinese' ? (
+              <span className="text-scarlet-600">
+                Chinese — {row.agentPublisher}, {row.agentHeadquarters}
+              </span>
+            ) : row.agentRecommendation === 'non-chinese' ? (
+              <span className="text-teal-600">
+                non-Chinese — {row.agentPublisher}, {row.agentHeadquarters}
+              </span>
+            ) : row.agentRecommendation === 'unattributed' ? (
+              <span className="text-ink-900">
+                still anonymous — no official attribution found
+              </span>
+            ) : (
+              <span className="text-ink-500">could not determine</span>
+            )}
+            {row.recheckedAt != null && (
+              <span className="text-ink-400 font-normal">
+                {' '}
+                · {relativeTime(row.recheckedAt)}
+              </span>
+            )}
+          </div>
+          {row.agentSourceUrl && (
+            <a
+              className="text-primary-600 w-fit hover:underline"
+              href={row.agentSourceUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Source it cited ↗
+            </a>
+          )}
+          {row.agentReasoning && (
+            <div className="text-ink-600 whitespace-pre-wrap">
+              {row.agentReasoning}
+            </div>
+          )}
+          {row.agentSearches && row.agentSearches.length > 0 ? (
+            <LabAgentSearches searches={row.agentSearches} />
+          ) : (
+            <div className="text-scarlet-600">
+              No searches recorded — this rests on nothing checkable. Treat it
+              as unresearched.
+            </div>
+          )}
+          <div className="text-ink-500 text-xs">
+            A recommendation, not a classification — nothing was applied. The
+            cited URL is one its own search returned; open it and check it says
+            what the summary claims before you click.
+          </div>
+          {suggestion &&
+            editing &&
+            (evidence !== suggestion.evidence ||
+              sourceUrl !== suggestion.sourceUrl) && (
+              <button
+                className="text-primary-600 w-fit text-xs hover:underline"
+                onClick={useSuggestion}
+              >
+                Use this in the form below
+              </button>
+            )}
+        </Col>
       )}
 
       {decided && !editing && (
@@ -576,7 +846,7 @@ function LabClassificationRow(props: {
               color="red"
               disabled={
                 saving ||
-                (row.isChinese === true && !decisionChanged) ||
+                (firm && row.isChinese === true && !decisionChanged) ||
                 !evidence.trim() ||
                 !sourceUrl.trim()
               }
@@ -589,18 +859,87 @@ function LabClassificationRow(props: {
               color="green"
               disabled={
                 saving ||
-                (row.isChinese === false && !decisionChanged) ||
+                (firm && row.isChinese === false && !decisionChanged) ||
                 !evidence.trim() ||
                 !sourceUrl.trim()
               }
               onClick={() => classify(false)}
             >
-              Non-Chinese
+              {provisional
+                ? 'Non-Chinese — confirm, stop watching'
+                : 'Non-Chinese'}
             </Button>
+            {!decided && (
+              <Button
+                size="sm"
+                color="amber-outline"
+                disabled={saving}
+                onClick={() => save({ isChinese: false, provisional: true })}
+              >
+                Unknown — non-Chinese for now, keep checking
+              </Button>
+            )}
           </Row>
+          {!decided && (
+            <div className="text-ink-500 text-xs">
+              Unknown needs no evidence. For stealth models and publishers
+              nobody can place yet: counts in the denominator only, like
+              OpenRouter's cloaked slugs, and the research agent re-checks it
+              weekly for a reveal.
+            </div>
+          )}
         </Col>
       )}
     </Col>
+  )
+}
+
+// The searches themselves, not just the summary of them. The only checkable
+// part of a negative finding ("still anonymous") is which queries came back
+// with nothing, and the only way to trust a placement is to open the result it
+// cites. Collapsed so the queue stays skimmable.
+function LabAgentSearches(props: {
+  searches: NonNullable<LabClassificationDisplay['agentSearches']>
+}) {
+  const { searches } = props
+  return (
+    <details className="mt-1">
+      <summary className="text-primary-600 cursor-pointer select-none hover:underline">
+        Show the {searches.length} web search
+        {searches.length === 1 ? '' : 'es'} it ran — check these, not the
+        summary
+      </summary>
+      <Col className="mt-2 gap-3">
+        {searches.map((search, i) => (
+          <Col key={i} className="border-ink-200 gap-1 border-l-2 pl-3">
+            <div className="text-ink-700 break-all font-mono text-xs">
+              {search.query}
+              {search.error && (
+                <span className="text-scarlet-600"> — {search.error}</span>
+              )}
+            </div>
+            <ul className="text-ink-600 max-h-64 overflow-y-auto text-xs">
+              {search.results.map((result) => (
+                <li key={result.url} className="break-all">
+                  <a
+                    className="hover:underline"
+                    href={result.url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {result.title}
+                  </a>{' '}
+                  <span className="text-ink-400">{result.url}</span>
+                </li>
+              ))}
+              {search.results.length === 0 && !search.error && (
+                <li>(no results)</li>
+              )}
+            </ul>
+          </Col>
+        ))}
+      </Col>
+    </details>
   )
 }
 
@@ -630,7 +969,7 @@ function DecidedRow(props: {
   const [weights, setWeights] = useState(model.weights ?? '')
   const [saving, setSaving] = useState(false)
 
-  const reclassify = async (open: boolean) => {
+  const reclassify = async (open: boolean, provisional = false) => {
     if (open && !weights.trim()) {
       toast.error('An open call needs the weights repo that proves it')
       return
@@ -641,8 +980,13 @@ function DecidedRow(props: {
         permaslug: model.permaslug,
         open,
         weights: open ? weights.trim() : undefined,
+        provisional,
       })
-      toast.success(`${model.permaslug} -> ${open ? 'open' : 'closed'}`)
+      toast.success(
+        `${model.permaslug} -> ${
+          open ? 'open' : provisional ? 'closed for now, under watch' : 'closed'
+        }`
+      )
       setEditing(false)
       onDone()
     } catch (e) {
@@ -714,11 +1058,60 @@ function DecidedRow(props: {
           >
             Closed
           </Button>
+          {/* The way onto the watch list for a verdict that was typed as
+              closed before "unknown" existed — weights announced but not
+              shipped is the usual case. */}
+          <Button
+            size="xs"
+            color="amber-outline"
+            disabled={saving}
+            onClick={() => reclassify(false, true)}
+          >
+            Unknown — keep checking
+          </Button>
         </Row>
       )}
     </Col>
   )
 }
+
+// The HuggingFace searches a verdict rests on, not just the summary of them.
+// This is the only checkable thing about a closed verdict — a global search
+// returning nothing is the evidence; the prose describing it is not. Collapsed
+// so the queue stays skimmable.
+function AgentSearches(props: {
+  searches: { tool: string; input: string | null; result: string }[]
+}) {
+  const { searches } = props
+  return (
+    <details className="mt-1">
+      <summary className="text-primary-600 cursor-pointer select-none hover:underline">
+        Show the {searches.length} search
+        {searches.length === 1 ? '' : 'es'} it ran — check these, not the
+        summary
+      </summary>
+      <Col className="mt-2 gap-3">
+        {searches.map((search, i) => (
+          <Col key={i} className="border-ink-200 gap-1 border-l-2 pl-3">
+            <div className="text-ink-700 break-all font-mono text-xs">
+              {search.tool}
+              {search.input && (
+                <span className="text-ink-500"> {search.input}</span>
+              )}
+            </div>
+            {/* Capped and scrollable: a single chatty search used to run for
+                screens and push the verdict buttons out of sight, which is
+                how a row gets skipped. */}
+            <div className="bg-canvas-0 text-ink-700 max-h-64 overflow-y-auto whitespace-pre-wrap break-words rounded p-2 font-mono text-xs">
+              {search.result || '(no output recorded)'}
+            </div>
+          </Col>
+        ))}
+      </Col>
+    </details>
+  )
+}
+
 function PendingRow(props: {
   model: {
     permaslug: string
@@ -746,7 +1139,7 @@ function PendingRow(props: {
   )
   const [saving, setSaving] = useState(false)
 
-  const classify = async (open: boolean) => {
+  const classify = async (open: boolean, provisional = false) => {
     if (open && !weights.trim()) {
       toast.error('An open call needs the weights repo that proves it')
       return
@@ -757,8 +1150,13 @@ function PendingRow(props: {
         permaslug: model.permaslug,
         open,
         weights: open ? weights.trim() : undefined,
+        provisional,
       })
-      toast.success(`${model.permaslug} → ${open ? 'open' : 'closed'}`)
+      toast.success(
+        `${model.permaslug} → ${
+          open ? 'open' : provisional ? 'closed for now, under watch' : 'closed'
+        }`
+      )
       onDone()
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
@@ -767,11 +1165,9 @@ function PendingRow(props: {
     }
   }
 
-  const hours = Math.floor(model.ageMs / 3_600_000)
+  const hours = Math.floor(model.ageMs / HOUR_MS)
   const rankedHours =
-    model.rankedAgeMs === null
-      ? null
-      : Math.floor(model.rankedAgeMs / 3_600_000)
+    model.rankedAgeMs === null ? null : Math.floor(model.rankedAgeMs / HOUR_MS)
 
   return (
     <Col
@@ -830,36 +1226,8 @@ function PendingRow(props: {
             {model.agentReasoning}
           </div>
 
-          {/* The searches themselves, not just the summary of them. This is
-              the only checkable thing about a closed verdict — a global search
-              returning nothing is the evidence; the prose describing it is
-              not. Collapsed so the queue stays skimmable. */}
           {model.agentSearches.length > 0 ? (
-            <details className="mt-1">
-              <summary className="text-primary-600 cursor-pointer select-none hover:underline">
-                Show the {model.agentSearches.length} search
-                {model.agentSearches.length === 1 ? '' : 'es'} it ran — check
-                these, not the summary
-              </summary>
-              <Col className="mt-2 gap-3">
-                {model.agentSearches.map((search, i) => (
-                  <Col key={i} className="border-ink-200 gap-1 border-l-2 pl-3">
-                    <div className="text-ink-700 break-all font-mono text-xs">
-                      {search.tool}
-                      {search.input && (
-                        <span className="text-ink-500"> {search.input}</span>
-                      )}
-                    </div>
-                    {/* Capped and scrollable: a single chatty search used to
-                        run for screens and push the verdict buttons out of
-                        sight, which is how a row gets skipped. */}
-                    <div className="bg-canvas-0 text-ink-700 max-h-64 overflow-y-auto whitespace-pre-wrap break-words rounded p-2 font-mono text-xs">
-                      {search.result || '(no output recorded)'}
-                    </div>
-                  </Col>
-                ))}
-              </Col>
-            </details>
+            <AgentSearches searches={model.agentSearches} />
           ) : (
             <div className="text-scarlet-600">
               No searches recorded — this verdict rests on nothing checkable.
@@ -906,7 +1274,7 @@ function PendingRow(props: {
         </a>
       </Row>
 
-      <Row className="gap-2">
+      <Row className="flex-wrap gap-2">
         <Button
           size="sm"
           color="green"
@@ -922,6 +1290,175 @@ function PendingRow(props: {
           onClick={() => classify(false)}
         >
           Closed — API only
+        </Button>
+        <Button
+          size="sm"
+          color="amber-outline"
+          disabled={saving}
+          onClick={() => classify(false, true)}
+        >
+          Unknown — closed for now, keep checking
+        </Button>
+      </Row>
+      <div className="text-ink-500 text-xs">
+        Unknown is for stealth models and weights that are announced but not
+        shipped. It counts as closed — the methodology's rule for weights nobody
+        can download — and the watcher re-researches it weekly: a
+        publisher-declared repo that verifies flips it open on its own; anything
+        else comes back here for a click.
+      </div>
+    </Col>
+  )
+}
+
+// A row on the watch list: closed by default, with the latest weekly re-check
+// and the two ways to take it off the list — an open verdict (prefilled from
+// a contradicting finding) or a firm closed one.
+function WatchedModelRow(props: { model: WatchedModel; onDone: () => void }) {
+  const { model, onDone } = props
+  const [weights, setWeights] = useState(model.agentProposedWeights ?? '')
+  const [saving, setSaving] = useState(false)
+
+  const decide = async (open: boolean) => {
+    if (open && !weights.trim()) {
+      toast.error('An open call needs the weights repo that proves it')
+      return
+    }
+    setSaving(true)
+    try {
+      await api('set-model-classification', {
+        permaslug: model.permaslug,
+        open,
+        weights: open ? weights.trim() : undefined,
+      })
+      toast.success(`${model.permaslug} → ${open ? 'open' : 'closed (firm)'}`)
+      onDone()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Col
+      className={clsx(
+        'gap-2 rounded border p-3',
+        model.contradicted ? 'border-scarlet-300' : 'border-amber-400'
+      )}
+    >
+      <Row className="flex-wrap items-baseline gap-2">
+        <span className="text-ink-500 text-sm">closed</span>
+        <span className="rounded border border-amber-400 px-1.5 py-0.5 text-xs text-amber-700 dark:text-amber-300">
+          provisional
+        </span>
+        <span className="font-mono text-sm font-semibold">
+          {model.permaslug}
+        </span>
+        {model.openRouterName && (
+          <span className="text-ink-600 text-sm">{model.openRouterName}</span>
+        )}
+        <span className="text-ink-400 text-xs">
+          {model.classifiedAt !== null &&
+            `since ${relativeTime(model.classifiedAt)} · `}
+          {model.lastCheckedAt !== null
+            ? `re-checked ${relativeTime(model.lastCheckedAt)}`
+            : 'not re-checked yet'}{' '}
+          · next {untilTime(model.nextCheckAt)}
+        </span>
+      </Row>
+
+      {model.agentRecommendation && (
+        <Col className="bg-canvas-50 gap-1.5 rounded p-3 text-sm">
+          <div className="text-ink-700 font-semibold">
+            Latest re-check:{' '}
+            {model.contradicted ? (
+              <span className="text-scarlet-600">
+                public weights found
+                {model.agentProposedWeights && (
+                  <span className="font-mono">
+                    {' '}
+                    {model.agentProposedWeights}
+                  </span>
+                )}
+                {model.agentWeightFileCount !== null && (
+                  <span className="text-ink-500 font-normal">
+                    {' '}
+                    ({model.agentWeightFileCount} weight files, re-verified
+                    against the live API)
+                  </span>
+                )}
+              </span>
+            ) : model.agentRecommendation === 'closed' ? (
+              <span className="text-ink-900">still no public weights</span>
+            ) : (
+              <span className="text-ink-500">could not determine</span>
+            )}
+          </div>
+          {model.agentReasoning && (
+            <div className="text-ink-600 whitespace-pre-wrap">
+              {model.agentReasoning}
+            </div>
+          )}
+          {model.agentSearches.length > 0 && (
+            <AgentSearches searches={model.agentSearches} />
+          )}
+          {model.contradicted && (
+            <div className="text-ink-500 text-xs">
+              A recommendation, not a classification — the index is still
+              publishing this model as closed. Verification proves the repo is
+              public and carries weights, not that it is this model. Check the
+              repo, then click.
+            </div>
+          )}
+        </Col>
+      )}
+
+      <Row className="flex-wrap items-center gap-3">
+        <div className="w-full sm:w-96">
+          <Input
+            className="w-full font-mono text-sm"
+            placeholder="HuggingFace repo backing an open call"
+            value={weights}
+            onChange={(e) => setWeights(e.target.value)}
+          />
+        </div>
+        {!!weights.trim() && (
+          <a
+            className="text-primary-600 text-sm hover:underline"
+            href={`https://huggingface.co/${weights.trim()}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            check repo ↗
+          </a>
+        )}
+        <a
+          className="text-primary-600 text-sm hover:underline"
+          href={`https://openrouter.ai/${model.permaslug}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          OpenRouter ↗
+        </a>
+      </Row>
+
+      <Row className="flex-wrap gap-2">
+        <Button
+          size="sm"
+          color="green"
+          disabled={saving}
+          onClick={() => decide(true)}
+        >
+          Open — weights public
+        </Button>
+        <Button
+          size="sm"
+          color="gray"
+          disabled={saving}
+          onClick={() => decide(false)}
+        >
+          Closed — confirm, stop watching
         </Button>
       </Row>
     </Col>

@@ -1167,8 +1167,29 @@ export const API = (_apiTypeCheck = {
         classifiedAt: number | null
         classifiedBy: string | null
       }[]
+      /**
+       * Closed by default at an operator's say-so ("unknown"), re-checked
+       * weekly by the watcher until a human firms the verdict. Carries the
+       * latest re-check so the operator can act on it in one click.
+       */
+      provisional: {
+        permaslug: string
+        openRouterName: string | null
+        classifiedAt: number | null
+        classifiedBy: string | null
+        lastCheckedAt: number | null
+        nextCheckAt: number
+        /** The re-check found verified public weights for a row published as closed. */
+        contradicted: boolean
+        agentRecommendation: string | null
+        agentReasoning: string | null
+        agentSearches: { tool: string; input: string | null; result: string }[]
+        agentProposedWeights: string | null
+        agentWeightFileCount: number | null
+      }[]
       seedVersion: string
       graceWindowMs: number
+      provisionalRecheckIntervalMs: number
     },
     props: z.object({}).strict(),
   },
@@ -1176,13 +1197,22 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
-    returns: {} as { success: true; permaslug: string; open: boolean },
+    returns: {} as {
+      success: true
+      permaslug: string
+      open: boolean
+      provisional: boolean
+    },
     props: z
       .object({
         permaslug: z.string().min(1),
         open: z.boolean(),
         // The HuggingFace repo proving the weights are downloadable.
         weights: z.string().min(1).optional(),
+        // "Unknown": closed as the default for weights that cannot be found
+        // yet (a stealth model; announced and unshipped), re-checked weekly
+        // until firmed. Only ever with `open: false`.
+        provisional: z.boolean().optional(),
       })
       .strict()
       // Same invariant the seed list's test and the table's check constraint
@@ -1191,6 +1221,9 @@ export const API = (_apiTypeCheck = {
       // constraint violation.
       .refine((p) => !p.open || !!p.weights, {
         message: 'An open classification must cite a public weights repo',
+      })
+      .refine((p) => !p.provisional || !p.open, {
+        message: 'A provisional verdict is always closed',
       }),
   },
   // Runtime maintenance for the Chinese-lab OpenRouter index. Ordinary
@@ -1209,6 +1242,22 @@ export const API = (_apiTypeCheck = {
         exampleNames: string[]
         firstSeen: number
         firstRankedAt: number | null
+        /**
+         * The research agent's web-search findings, if it ran. Never
+         * applied; prefilled for the operator to confirm. The cited URL is
+         * one the agent's own search returned, never one it recalled.
+         */
+        agentRecommendation: 'chinese' | 'non-chinese' | 'unattributed' | null
+        agentPublisher: string | null
+        agentHeadquarters: string | null
+        agentSourceUrl: string | null
+        agentReasoning: string | null
+        agentSearches: {
+          query: string
+          error: string | null
+          results: { title: string; url: string }[]
+        }[]
+        recheckedAt: number | null
       }[]
       decided: {
         subjectType: 'author' | 'model'
@@ -1222,7 +1271,38 @@ export const API = (_apiTypeCheck = {
         classifiedAt: number
         classifiedBy: string | null
       }[]
+      /**
+       * Non-Chinese by default at an operator's say-so ("unknown"): anonymous
+       * models and publishers nobody could place, denominator only, re-checked
+       * weekly for a reveal until a human firms the verdict.
+       */
+      provisional: {
+        subjectType: 'author' | 'model'
+        subjectSlug: string
+        evidence: string
+        sourceUrl: string | null
+        exampleModels: string[]
+        exampleNames: string[]
+        source: 'auto' | 'admin'
+        classifiedAt: number
+        classifiedBy: string | null
+        agentRecommendation: 'chinese' | 'non-chinese' | 'unattributed' | null
+        agentPublisher: string | null
+        agentHeadquarters: string | null
+        agentSourceUrl: string | null
+        agentReasoning: string | null
+        agentSearches: {
+          query: string
+          error: string | null
+          results: { title: string; url: string }[]
+        }[]
+        recheckedAt: number | null
+        nextCheckAt: number
+        /** The re-check attributed a row published as non-Chinese to a Chinese publisher. */
+        contradicted: boolean
+      }[]
       seedVersion: string
+      recheckIntervalMs: number
     },
     props: z.object({}).strict(),
   },
@@ -1235,13 +1315,19 @@ export const API = (_apiTypeCheck = {
       subjectType: 'author' | 'model'
       subjectSlug: string
       isChinese: boolean
+      provisional: boolean
     },
     props: z
       .object({
         subjectType: z.enum(['author', 'model']),
         subjectSlug: z.string().trim().min(1).max(300),
         isChinese: z.boolean(),
-        evidence: z.string().trim().min(1).max(2_000),
+        // "Unknown": non-Chinese as the denominator-only default for a subject
+        // nobody can place yet. Needs no evidence — the server records what it
+        // is — and is re-checked weekly until firmed. Never Chinese: that is a
+        // positive claim.
+        provisional: z.boolean().optional(),
+        evidence: z.string().trim().min(1).max(2_000).optional(),
         sourceUrl: z
           .string()
           .trim()
@@ -1249,9 +1335,17 @@ export const API = (_apiTypeCheck = {
           .max(2_000)
           .refine((url) => /^https?:\/\//i.test(url), {
             message: 'Evidence URL must use http or https',
-          }),
+          })
+          .optional(),
       })
-      .strict(),
+      .strict()
+      .refine((p) => !p.provisional || !p.isChinese, {
+        message: 'A provisional verdict is always non-Chinese',
+      })
+      .refine((p) => !!p.provisional || (!!p.evidence && !!p.sourceUrl), {
+        message:
+          'A firm verdict needs an evidence summary and a public source URL',
+      }),
   },
   // Admin / MNX-owner live risk tuning; undocumented deliberately — internal
   // operator tooling, not part of the public perp API surface.
