@@ -50,7 +50,7 @@ import { UserLikedContractsButton } from 'web/components/profile/user-liked-cont
 import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
 import { SEO } from 'web/components/SEO'
 import { UserHandles } from 'web/components/user/user-handles'
-import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
+import { FlaggedAccountBanner } from 'web/components/user/flagged-account-banner'
 import { Avatar } from 'web/components/widgets/avatar'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
@@ -409,9 +409,7 @@ function UserProfile(props: {
         )}
 
         {isCurrentUser && (
-          <Col className="mx-4 mt-2">
-            <VerifyPhoneNumberBanner user={currentUser} />
-          </Col>
+          <FlaggedAccountBanner user={currentUser} className="mx-4 mt-2" />
         )}
 
         <Col className="mx-4">

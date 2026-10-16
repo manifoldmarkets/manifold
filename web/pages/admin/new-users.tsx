@@ -227,11 +227,11 @@ function NewUsersTable() {
                   <option value="">
                     {u.bonusEligibility === 'requires_verification'
                       ? 'Requires verification (flagged)'
-                      : 'Unset'}
+                      : 'Default (unset)'}
                   </option>
                   <option value="verified">Verified</option>
                   <option value="grandfathered">Grandfathered</option>
-                  <option value="eligible">Eligible (bonuses only)</option>
+                  <option value="eligible">Eligible (trusted, no KYC)</option>
                   <option value="ineligible">Ineligible</option>
                 </select>
               </td>

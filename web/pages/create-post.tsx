@@ -1,18 +1,14 @@
-import { ShieldCheckIcon } from '@heroicons/react/solid'
 import { useState } from 'react'
 
-import { STARTING_BALANCE } from 'common/economy'
 import { Group } from 'common/group'
 import { Visibility } from 'common/contract'
-import { hasAccountTrustSignal } from 'common/user'
-import { formatMoney } from 'common/util/format'
+import { canPostSocially } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import clsx from 'clsx'
 import Link from 'next/link'
 import Router from 'next/router'
 import { Button } from 'web/components/buttons/button'
 import { BackButton } from 'web/components/contract/back-button'
-import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
@@ -22,10 +18,10 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
+import { NewAccountGateNotice } from 'web/components/user/new-account-gate-notice'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { api, APIError } from 'web/lib/api/api'
-import { track } from 'web/lib/service/analytics'
 
 export async function getServerSideProps(context: any) {
   return {
@@ -75,7 +71,7 @@ export function CreatePostForm(props: {
 
   const user = useUser()
   const isAdmin = useAdmin()
-  const canCreate = user && hasAccountTrustSignal(user)
+  const canCreate = user && canPostSocially(user)
 
   async function savePost(title: string) {
     if (!editor) return
@@ -195,53 +191,8 @@ export function CreatePostForm(props: {
           </Button>
         </>
       ) : (
-        <VerifyToCreatePost />
+        user && <NewAccountGateNotice user={user} action="Posting" />
       )}
     </div>
-  )
-}
-
-function VerifyToCreatePost() {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const handleVerify = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      track('create post verification prompt: clicked')
-      const response = await api('create-idenfy-session', {})
-      window.location.href = response.redirectUrl
-    } catch (e) {
-      console.error('Failed to start verification:', e)
-      setError(
-        e instanceof APIError && e.code === 503
-          ? e.message
-          : 'Failed to start verification. Please try again.'
-      )
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <Col className="border-primary-300 bg-primary-50 items-center gap-3 rounded-lg border p-6">
-      <ShieldCheckIcon className="text-primary-500 h-12 w-12" />
-      <div className="text-ink-900 text-center text-lg font-semibold">
-        Verify your identity to create posts
-      </div>
-      <div className="text-ink-600 max-w-md text-center text-sm">
-        Complete a quick identity check (~2 min) to start posting. You'll also
-        receive{' '}
-        <span className="font-semibold">
-          {formatMoney(STARTING_BALANCE, 'MANA')}
-        </span>{' '}
-        as a bonus.
-      </div>
-      {error && <div className="text-scarlet-500 text-sm">{error}</div>}
-      <Button onClick={handleVerify} loading={loading}>
-        Verify now
-      </Button>
-    </Col>
   )
 }

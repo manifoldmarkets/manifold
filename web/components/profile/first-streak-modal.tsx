@@ -5,7 +5,6 @@ import { Title } from 'web/components/widgets/title'
 import { Button } from 'web/components/buttons/button'
 
 import { useEffect } from 'react'
-import Link from 'next/link'
 import { useUser } from 'web/hooks/use-user'
 import { StreakProgressBar } from './streak-progress-bar'
 import { updateUser } from 'web/lib/api/api'
@@ -53,11 +52,6 @@ export function BettingStreakProgressModal(props: {
   const { open, setOpen, currentStreak, questMultiplier = 1 } = props
   const user = useUser()
   const freezes = user?.streakForgiveness ?? 0
-  const isUnverified = user && getEffectiveTier(user) === 'unverified'
-  // For unverified users, show the *verified* bonuses (5/10/15/20/25) as the
-  // aspirational target in the bar; the disclaimer below explains they
-  // currently earn 20% of these. Other tiers see their actual amounts.
-  const displayMultiplier = isUnverified ? 1 : questMultiplier
   return (
     <Modal open={open} setOpen={setOpen} size="md">
       <Col className="bg-canvas-0 rounded-md px-8 py-6">
@@ -72,22 +66,9 @@ export function BettingStreakProgressModal(props: {
         <div className="my-4">
           <StreakProgressBar
             currentStreak={currentStreak}
-            questMultiplier={displayMultiplier}
+            questMultiplier={questMultiplier}
           />
         </div>
-
-        {isUnverified && (
-          <p className="text-ink-600 mb-4 text-xs">
-            Unverified accounts receive 20% of the streak bonus shown above.{' '}
-            <Link
-              href="/membership"
-              className="text-primary-700 font-semibold hover:underline"
-            >
-              Verify or subscribe
-            </Link>{' '}
-            to unlock the full amount.
-          </p>
-        )}
 
         <Row className="w-full items-center justify-between">
           <Row className="text-ink-500 items-center gap-1.5 text-sm">

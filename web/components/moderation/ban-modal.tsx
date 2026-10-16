@@ -1090,7 +1090,7 @@ function BonusEligibilityControl({ user }: { user: User }) {
     },
     {
       value: 'eligible' as const,
-      label: 'Eligible (bonuses only)',
+      label: 'Eligible (trusted, no KYC)',
       color: 'text-teal-600',
     },
     {
@@ -1100,8 +1100,8 @@ function BonusEligibilityControl({ user }: { user: User }) {
     },
     {
       value: null,
-      label: 'Require Verification',
-      color: 'text-orange-600',
+      label: 'Default (unset)',
+      color: 'text-ink-600',
     },
   ] as const
 
@@ -1121,7 +1121,7 @@ function BonusEligibilityControl({ user }: { user: User }) {
       })
       toast.success(
         newValue === null
-          ? 'User must now re-verify to receive bonuses'
+          ? 'Cleared eligibility - back to default'
           : `Bonus eligibility updated to '${newValue}'`
       )
       setSelectedEligibility(newValue)
@@ -1196,9 +1196,9 @@ function BonusEligibilityControl({ user }: { user: User }) {
             })}
           </Row>
           <p className="text-ink-500 text-xs">
-            <strong>Require Verification</strong> clears eligibility so the user
-            must complete iDenfy to regain bonuses (useful for ending
-            grandfathered status).
+            <strong>Default</strong> clears eligibility: full bonuses, but prize
+            drawings need iDenfy (useful for ending grandfathered status). To
+            pause bonuses until they verify, flag them from the user-info page.
           </p>
         </div>
       )}
