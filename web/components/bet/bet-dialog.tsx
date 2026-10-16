@@ -28,7 +28,7 @@ import { formatPercent } from 'common/util/format'
 import { showsSideProbability, versusSideProb } from 'common/versus'
 import { ComponentProps, ReactNode, useState } from 'react'
 import { ArrowLeftIcon } from '@heroicons/react/solid'
-import { keyBy, sortBy } from 'lodash'
+import { keyBy, maxBy, sortBy } from 'lodash'
 import { Button } from 'web/components/buttons/button'
 import { Input } from 'web/components/widgets/input'
 import { MultiBetProps } from 'client-common/lib/bet'
@@ -308,8 +308,11 @@ export function ThreeWayTradeDialog(props: {
     ordered.length === contract.answers.length
       ? ordered
       : sortBy(contract.answers, 'index')
+  // Without a requested answer, open on the most likely one.
   const [answerId, setAnswerId] = useState(
-    initialAnswerId && byId[initialAnswerId] ? initialAnswerId : choices[0].id
+    initialAnswerId && byId[initialAnswerId]
+      ? initialAnswerId
+      : maxBy(choices, (a) => getAnswerProbability(contract, a.id))!.id
   )
   const answer = byId[answerId] ?? choices[0]
 
@@ -359,7 +362,9 @@ function AnswerPicker(props: {
                 : 'text-ink-600 hover:bg-canvas-50 border-ink-200'
             )}
           >
-            <span className="line-clamp-1 font-medium">{a.text}</span>
+            <span className="line-clamp-2 text-center font-medium leading-tight">
+              {a.text}
+            </span>
             <span className="text-xs tabular-nums">
               {formatPercent(getAnswerProbability(contract, a.id))}
             </span>
