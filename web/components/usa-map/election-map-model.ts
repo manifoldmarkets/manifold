@@ -9,6 +9,7 @@ import {
 import { DATA } from './usa-map-data'
 import { BallotCandidate, raceCandidates } from './election-candidates'
 import { looksTied, shownPercent } from './election-display'
+import { matchesSearchQuery } from './election-search'
 import {
   basisOdds,
   fixedBasisIds,
@@ -178,6 +179,10 @@ const exactStateQuery = (value: string) =>
   )
 
 export function matchesStateQuery(state: string, query: string) {
+  return matchesSearchQuery(query, (term) => matchesStateTerm(state, term))
+}
+
+function matchesStateTerm(state: string, query: string) {
   const value = query.trim().toLowerCase()
   const exactState = exactStateQuery(value)
   if (exactState) return state === exactState
@@ -185,6 +190,10 @@ export function matchesStateQuery(state: string, query: string) {
 }
 
 export function matchesRaceQuery(race: Race, query: string) {
+  return matchesSearchQuery(query, (term) => matchesRaceTerm(race, term))
+}
+
+function matchesRaceTerm(race: Race, query: string) {
   const value = query.trim().toLowerCase().replace(/[–—‑]/g, '-')
   const district = /^([a-z]{2})[\s-]*(\d+|al|at[- ]large)$/.exec(value)
   if (district) {

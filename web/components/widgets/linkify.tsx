@@ -84,7 +84,8 @@ export const getLinkTarget = (
   newTab: boolean,
   isNative: boolean
 ) => {
-  if (href.startsWith('http') && !isManifoldHost(href)) return '_blank'
+  // Schemes are case-insensitive, and linkify keeps e.g. HTTPS:// as typed.
+  if (/^https?:/i.test(href) && !isManifoldHost(href)) return '_blank'
   // Native will open 'a new tab' when target = '_blank' in the system browser rather than in the app
   if (isNative) return '_self'
   return newTab ? '_blank' : '_self'

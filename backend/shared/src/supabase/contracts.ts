@@ -283,7 +283,13 @@ export const updateContract = async (
   pg: SupabaseDirectClient,
   contractId: string,
   // TODO: can't figure out how to exclude native columns from DataUpdate
-  update: DataUpdate<'contracts'>
+  update: DataUpdate<'contracts'>,
+  options?: {
+    // Pass false inside a transaction that may be retried, and broadcast the
+    // updated fields of the returned contract once it has committed (see
+    // AnswerWriteOptions in ./answers.ts).
+    broadcast?: boolean
+  }
 ) => {
   if (Object.keys(update).some((k) => nativeContractColumnsArray.includes(k))) {
     throw new APIError(500, 'Cannot update native columns via data update')
@@ -297,7 +303,9 @@ export const updateContract = async (
     fullUpdate,
     (_, k) => newContract[k as keyof Contract] ?? null
   ) as any
-  broadcastUpdatedContract(newContract.visibility, updatedValues)
+  if (options?.broadcast !== false) {
+    broadcastUpdatedContract(newContract.visibility, updatedValues)
+  }
   return newContract
 }
 

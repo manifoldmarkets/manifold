@@ -1,22 +1,23 @@
 import { APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { SportsMarket } from 'common/sports'
+import { MANIFOLD_SPORTS_USER_IDS, SportsMarket } from 'common/sports'
 import { ENV_CONFIG } from 'common/envs/constants'
 
-export const sportsMarkets: APIHandler<'sports-markets'> = async (
-  props
-) => {
-
+export const sportsMarkets: APIHandler<'sports-markets'> = async (props) => {
   const { sportsLeague } = props
   const pg = createSupabaseDirectClient()
 
+  // Official markets only: anyone can set sportsLeague and the team fields
+  // when creating a market, and the dashboards and admin monitor present
+  // these rows as @ManifoldSports games.
   const rows = await pg.manyOrNone<{ data: any }>(
     `select data
      from contracts
      where data->>'sportsLeague' = $1
+       and creator_id = any($2)
        and token = 'MANA'
      order by (data->>'closeTime')::bigint asc`,
-    [sportsLeague]
+    [sportsLeague, MANIFOLD_SPORTS_USER_IDS]
   )
 
   const now = Date.now()
@@ -40,12 +41,13 @@ export const sportsMarkets: APIHandler<'sports-markets'> = async (
     const needsAttention =
       !resolution && closeTime > 0 && now - closeTime > attentionThresholdMs
 
-    const answers: Array<{ id: string; text: string; prob: number }> =
-      (d.answers ?? []).map((a: { id: string; text: string; prob?: number }) => ({
-        id: a.id,
-        text: a.text,
-        prob: a.prob ?? 0,
-      }))
+    const answers: Array<{ id: string; text: string; prob: number }> = (
+      d.answers ?? []
+    ).map((a: { id: string; text: string; prob?: number }) => ({
+      id: a.id,
+      text: a.text,
+      prob: a.prob ?? 0,
+    }))
 
     return {
       id: d.id as string,
@@ -58,11 +60,15 @@ export const sportsMarkets: APIHandler<'sports-markets'> = async (
         d.resolutionTime != null && Number.isFinite(Number(d.resolutionTime))
           ? Number(d.resolutionTime)
           : null,
-      sportsHomeScore: d.sportsHomeScore != null ? (d.sportsHomeScore as number) : null,
-      sportsAwayScore: d.sportsAwayScore != null ? (d.sportsAwayScore as number) : null,
+      sportsHomeScore:
+        d.sportsHomeScore != null ? (d.sportsHomeScore as number) : null,
+      sportsAwayScore:
+        d.sportsAwayScore != null ? (d.sportsAwayScore as number) : null,
       sportsScoreDuration: (d.sportsScoreDuration as string) ?? null,
-      sportsPenHome: d.sportsPenHome != null ? (d.sportsPenHome as number) : null,
-      sportsPenAway: d.sportsPenAway != null ? (d.sportsPenAway as number) : null,
+      sportsPenHome:
+        d.sportsPenHome != null ? (d.sportsPenHome as number) : null,
+      sportsPenAway:
+        d.sportsPenAway != null ? (d.sportsPenAway as number) : null,
       sportsLiveStatus: (d.sportsLiveStatus as string) ?? null,
       sportsLiveMinute: (d.sportsLiveMinute as string) ?? null,
       sportsLiveUpdatedTime:

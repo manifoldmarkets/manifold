@@ -27,7 +27,7 @@ import { BinaryBetButton } from '../us-elections/contracts/conditional-market/co
 import { capitalize } from 'lodash'
 import { SWEEPIES_NAME } from 'common/envs/constants'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import { PerpMarketBadge } from '../perps/perp-market-badge'
+import { MarketTitleLabel } from '../contract/market-title-label'
 
 export function HorizontalDashboardCard(props: {
   contract: Contract
@@ -129,9 +129,7 @@ export function HorizontalDashboardCard(props: {
           onClick={trackClick}
         >
           <VisibilityIcon contract={contract} />{' '}
-          {contract.outcomeType === 'PERP' && (
-            <PerpMarketBadge contract={contract} className="mr-1" />
-          )}
+          <MarketTitleLabel contract={contract} className="mr-1" />
           {contract.question}
         </Link>
       </Col>

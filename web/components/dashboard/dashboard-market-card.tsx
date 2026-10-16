@@ -40,7 +40,7 @@ import { useUnfilledBets } from 'client-common/hooks/use-bets'
 import { api } from 'web/lib/api/api'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { FeedPerpPriceSparkline } from '../perps/feed-perp-price-sparkline'
-import { PerpMarketBadge } from '../perps/perp-market-badge'
+import { MarketTitleLabel } from '../contract/market-title-label'
 import { ClickFrame } from '../widgets/click-frame'
 
 type MarketMeta = {
@@ -304,9 +304,7 @@ export function DashboardMarketCard({
       {/* Question title */}
       <div className="px-5 pt-3">
         <p className="text-ink-900 line-clamp-2 text-lg font-semibold leading-snug">
-          {perpContract && (
-            <PerpMarketBadge contract={perpContract} className="mr-1" />
-          )}
+          <MarketTitleLabel contract={contract} className="mr-1" />
           {contract.question}
         </p>
       </div>
