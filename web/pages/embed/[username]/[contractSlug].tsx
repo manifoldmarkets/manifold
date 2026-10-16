@@ -352,6 +352,7 @@ function ContractSmolView(props: {
           className="hover:text-primary-700 text-ink-1000 text-lg transition-all hover:underline sm:text-xl lg:mb-4 lg:text-2xl"
           rel="noreferrer"
         >
+          <MarketTitleLabel contract={contract} className="mr-1" />
           {question}
         </a>
         {isBinary && (
