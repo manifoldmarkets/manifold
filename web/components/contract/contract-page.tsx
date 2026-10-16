@@ -21,6 +21,7 @@ import {
 import { shouldHideGraph } from 'common/contract-params'
 import { base64toPoints } from 'common/edge/og'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
+import { getSportsLeagueLabel } from 'common/sports-league-label'
 import { DAY_MS } from 'common/util/time'
 import { mergeWith, uniqBy } from 'lodash'
 import Image from 'next/image'
@@ -388,6 +389,8 @@ export function ContractPageContent(props: ContractParams) {
                         <PerpMarketExplainer
                           contract={liveContract as PerpContract}
                         />
+                      ) : getSportsLeagueLabel(liveContract) ? (
+                        <MarketTitleLabel contract={liveContract} />
                       ) : undefined
                     }
                   />
