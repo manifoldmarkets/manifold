@@ -318,6 +318,36 @@ describe('CPMM Calculations', () => {
             }
     })
 
+    it('finishes Newton where its first step is small only because h is steep', () => {
+      // A sale of NO from a NO side below an ulp of the shares: the start
+      // point, shares at the current price, is within an ulp of the bracket's
+      // low end, where the slope is pOwn over that ulp. The first step is
+      // below the step tolerance while h is still about -0.04, so measuring
+      // the step alone returned a cost 2.5e-12 short of the root (360 ulps).
+      const state: CpmmState = {
+        pool: { YES: 713.6883575561092, NO: 9.046462526111048e-16 },
+        p: 0.99,
+        collectedFees: noFees,
+      }
+      const shares = -55.078061312182925
+      const cost = calculateCpmmAmountToBuySharesFixedP(state, shares, 'NO')
+      expect(Math.abs(cost - -55.07806131218036)).toBeLessThan(1e-13)
+      // The invariant holds across the trade to within rounding of its terms:
+      // the root, not a point short of it.
+      const { YES, NO } = state.pool
+      const h =
+        (1 - state.p) * Math.log1p((cost - shares) / NO) +
+        state.p * Math.log1p(cost / YES)
+      expect(Math.abs(h)).toBeLessThan(1e-3)
+      // And no float nearer the low end does as well: the cost is the least
+      // that covers the shares, as a bracket closed to adjacent floats gives.
+      const lower = cost - Math.abs(cost) * Number.EPSILON * 4
+      expect(
+        (1 - state.p) * Math.log1p((lower - shares) / NO) +
+          state.p * Math.log1p(lower / YES)
+      ).toBeLessThan(0)
+    })
+
     it('leaves the p = 0.5 closed form unchanged', () => {
       const pool = { YES: 120, NO: 80 }
       const shares = 25
