@@ -1,4 +1,6 @@
 import { ImageResponse } from '@vercel/og'
+import { parseSportsOgMarket } from 'common/sports-og'
+import { NextRequest } from 'next/server'
 import { OgSports } from 'web/components/og/og-sports'
 import { classToTw } from 'web/components/og/utils'
 import { getCardOptions } from './market'
@@ -7,11 +9,14 @@ type ImageResponseOptions = ConstructorParameters<typeof ImageResponse>[1]
 
 export const config = { runtime: 'edge' }
 
-export default async function handler() {
+export default async function handler(req: NextRequest) {
   try {
+    const market = parseSportsOgMarket(
+      new URL(req.url).searchParams.get('market')
+    )
     const options = await getCardOptions(2)
     return new ImageResponse(
-      classToTw(OgSports()),
+      classToTw(OgSports({ market })),
       options as ImageResponseOptions
     )
   } catch (error) {

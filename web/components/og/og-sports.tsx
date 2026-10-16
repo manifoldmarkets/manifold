@@ -1,8 +1,9 @@
 import { OG_CARD_HEIGHT, OG_CARD_WIDTH } from 'common/edge/og'
+import { formatSportsOgAsOf, SportsOgMarket } from 'common/sports-og'
 import Logo from 'web/public/logo.svg'
 
-// Evergreen copy in the same gradient frame and white card as market embeds.
-export function OgSports() {
+// The featured market is a dated snapshot; the artwork is the outage fallback.
+export function OgSports({ market }: { market: SportsOgMarket | null }) {
   return (
     <div
       className="flex flex-col bg-indigo-700"
@@ -68,7 +69,13 @@ export function OgSports() {
               ))}
             </div>
           </div>
-          <SportsMarketPreview />
+          {market ? (
+            <SportsMarketPreview market={market} />
+          ) : (
+            <div className="flex justify-center" style={{ width: 400 }}>
+              <SportsIllustration width={304} height={256} />
+            </div>
+          )}
         </div>
       </div>
 
@@ -83,52 +90,79 @@ export function OgSports() {
   )
 }
 
-// This is an explicitly labeled illustration, not a live fixture or forecast.
-function SportsMarketPreview() {
+const shorten = (text: string, length: number) =>
+  text.length <= length ? text : text.slice(0, length - 1).trimEnd() + '…'
+
+function SportsMarketPreview({ market }: { market: SportsOgMarket }) {
+  const question = market.question.replace(/\s*\[official\]\s*$/i, '')
+  const hasDraw = market.outcomes.length === 3
   return (
     <div
       className="flex shrink-0 flex-col rounded-2xl border border-indigo-200 bg-white shadow-lg"
-      style={{ width: 400, padding: 24 }}
+      style={{ width: 400, padding: 22 }}
     >
-      <div className="relative flex flex-col" style={{ height: 136 }}>
-        <span className="flex text-gray-500" style={{ fontSize: 20 }}>
-          Example market
+      <div className="flex items-center justify-between">
+        <span className="flex text-indigo-700" style={{ fontSize: 20 }}>
+          Featured market
         </span>
-        <span className="mt-6 flex text-gray-900" style={{ fontSize: 36 }}>
-          Who wins?
+        <span className="flex text-gray-500" style={{ fontSize: 18 }}>
+          {shorten(market.league, 16)}
         </span>
-        <div className="absolute right-0 top-0 flex">
-          <SportsIllustration />
-        </div>
       </div>
-      <div className="flex flex-col" style={{ gap: 12 }}>
-        {[
-          { team: 'Home team', probability: '60%', color: '#ccfbf1' },
-          { team: 'Away team', probability: '40%', color: '#e0e7ff' },
-        ].map(({ team, probability, color }) => (
-          <div
-            key={team}
-            className="flex items-center justify-between rounded-lg text-gray-900"
-            style={{
-              padding: '14px 18px',
-              fontSize: 24,
-              backgroundImage: `linear-gradient(to right, ${color} ${probability}, #f3f4f6 ${probability})`,
-            }}
-          >
-            <span className="flex">{team}</span>
-            <span className="flex">{probability}</span>
-          </div>
-        ))}
+      <span
+        className="my-4 flex overflow-hidden text-gray-900"
+        style={{
+          fontSize: hasDraw ? 24 : 26,
+          lineHeight: 1.15,
+          maxHeight: hasDraw ? 83 : 90,
+        }}
+      >
+        {shorten(question, 78)}
+      </span>
+      <div className="flex flex-col" style={{ gap: 8 }}>
+        {market.outcomes.map(({ name, prob }, index) => {
+          const percent = Math.round(prob * 100)
+          const color = ['#ccfbf1', '#e0e7ff', '#e5e7eb'][index]
+          return (
+            <div
+              key={index}
+              className="flex items-center justify-between rounded-lg text-gray-900"
+              style={{
+                padding: hasDraw ? '8px 14px' : '10px 14px',
+                backgroundImage: `linear-gradient(to right, ${color} ${percent}%, #f3f4f6 ${percent}%)`,
+              }}
+            >
+              <span
+                className="flex overflow-hidden"
+                style={{ fontSize: 20, lineHeight: 1.2, maxHeight: 24 }}
+              >
+                {shorten(name, 24)}
+              </span>
+              <span className="ml-2 flex shrink-0" style={{ fontSize: 22 }}>
+                {`${percent}%`}
+              </span>
+            </div>
+          )
+        })}
       </div>
+      <span className="mt-4 flex text-gray-500" style={{ fontSize: 16 }}>
+        {`Odds as of ${formatSportsOgAsOf(market.asOf)}`}
+      </span>
     </div>
   )
 }
 
-function SportsIllustration() {
+function SportsIllustration({
+  width,
+  height,
+}: {
+  width: number
+  height: number
+}) {
   return (
     <svg
-      width="152"
-      height="128"
+      width={width}
+      height={height}
       viewBox="0 0 380 320"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
