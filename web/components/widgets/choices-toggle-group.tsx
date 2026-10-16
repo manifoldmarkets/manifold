@@ -23,7 +23,7 @@ const colorClasses = {
 export type ColorType = keyof typeof colorClasses
 
 export function ChoicesToggleGroup(props: {
-  currentChoice: number | string | boolean | undefined
+  currentChoice: number | string | boolean | null | undefined
   choicesMap: { [key: string]: string | number | boolean }
   disabled?: boolean
   disabledOptions?: Array<string | number | boolean> //values
@@ -66,7 +66,9 @@ export function ChoicesToggleGroup(props: {
         disabled && '!cursor-not-allowed opacity-50'
       )}
       value={currentChoice}
-      onChange={setChoice}
+      onChange={(val: number | string | boolean | null) => {
+        if (val !== null) setChoice(val)
+      }}
       disabled={disabled}
     >
       {Object.entries(choicesMap).map(([choiceKey, choice]) => (

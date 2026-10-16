@@ -803,7 +803,8 @@ export const BuyPanelBody = (
     <Row className="ml-auto shrink-0 items-center justify-end gap-2">
       {!isStonk && (
         <ChoicesToggleGroup
-          currentChoice={compact && showOrders ? undefined : betType}
+          // null, not undefined: no selection while the RadioGroup stays controlled.
+          currentChoice={compact && showOrders ? null : betType}
           color="gray"
           choicesMap={{
             Quick: 'Market',
