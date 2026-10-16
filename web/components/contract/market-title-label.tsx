@@ -21,9 +21,11 @@ export function MarketTitleLabel(props: {
   return <SportsLeagueLabel league={league} className={className} />
 }
 
-// The perp ticker's look in red: bold monospace at the size of the text it
-// sits in, reading as the first word of the title.
-export const SPORTS_LEAGUE_LABEL_CLASS = 'text-scarlet-600 font-mono font-bold'
+// The perp ticker's look in saddle brown: bold monospace at the size of the
+// text it sits in, reading as the first word of the title. Not scarlet, which
+// is the NO colour; the dark-mode tan keeps it readable on the dark canvas.
+export const SPORTS_LEAGUE_LABEL_CLASS =
+  'text-[#8b4513] dark:text-[#d9a066] font-mono font-bold'
 
 export function SportsLeagueLabel(props: {
   league: string
