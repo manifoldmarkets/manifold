@@ -12,18 +12,17 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updatePrivateUser } from 'shared/supabase/users'
 
 export const unsubscribe = async (req: Request, res: Response) => {
-  const id = req.query.id as string
-  const type = req.query.type as string
-  if (!id || !type) {
-    res.status(400).send('Empty id or subscription type parameter.')
+  const { id, type } = req.query
+  if (typeof id !== 'string' || !id || typeof type !== 'string' || !type) {
+    res.status(400).send('Empty or invalid id or subscription type parameter.')
+    return
+  }
+  if (!Object.prototype.hasOwnProperty.call(NOTIFICATION_DESCRIPTIONS, type)) {
+    res.status(400).send('Invalid subscription type parameter.')
     return
   }
   console.log(`Unsubscribing ${id} from ${type}`)
   const notificationSubscriptionType = type as notification_preference
-  if (notificationSubscriptionType === undefined) {
-    res.status(400).send('Invalid subscription type parameter.')
-    return
-  }
   const optOutAllType: notification_preference = 'opt_out_all'
   const wantsToOptOutAll = notificationSubscriptionType === optOutAllType
 
