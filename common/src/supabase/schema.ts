@@ -3781,6 +3781,7 @@ export type Database = {
           creator_id: string
           feed_id: number | null
           id: number
+          source_contract_id: string | null
           user_id: string
         }
         Insert: {
@@ -3790,6 +3791,7 @@ export type Database = {
           creator_id: string
           feed_id?: number | null
           id?: never
+          source_contract_id?: string | null
           user_id: string
         }
         Update: {
@@ -3799,6 +3801,7 @@ export type Database = {
           creator_id?: string
           feed_id?: number | null
           id?: never
+          source_contract_id?: string | null
           user_id?: string
         }
         Relationships: []

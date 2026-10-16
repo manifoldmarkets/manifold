@@ -20,14 +20,6 @@ export function normalizeAndAverageVectors(vectors: number[][]): number[] {
   return normalize(zipped.map((vals) => mean(vals)))
 }
 
-async function normalizeOrGetDefault(
-  pg: SupabaseDirectClient | ITask<any>,
-  embedding: string | null
-) {
-  if (embedding === null) return await getDefaultEmbedding(pg)
-  return normalize(JSON.parse(embedding) as number[])
-}
-
 export async function getDefaultEmbedding(
   pg: SupabaseDirectClient | ITask<any>
 ) {
@@ -109,79 +101,5 @@ export async function getAverageContractEmbedding(
       if (r.average_embedding === null) return null
       return normalize(JSON.parse(r.average_embedding) as number[])
     }
-  )
-}
-
-export async function addContractToUserDisinterestEmbedding(
-  pg: SupabaseDirectClient,
-  userId: string,
-  contractId: string,
-  creatorId: string,
-  feedId?: number,
-  removeContract?: boolean
-) {
-  await pg.task('update-user-disinterest-embedding', async (pg) => {
-    if (removeContract) {
-      await pg.none(
-        `delete from user_disinterests
-                where user_id = $1 and contract_id = $2 and creator_id = $3 and feed_id = $4`,
-        [userId, contractId, creatorId, feedId]
-      )
-    } else
-      await pg.none(
-        `insert into user_disinterests (user_id, contract_id, creator_id, feed_id)
-              values ($1, $2, $3, $4)`,
-        [userId, contractId, creatorId, feedId]
-      )
-  })
-  await updateUserDisinterestEmbeddingInternal(pg, userId)
-}
-
-export async function updateUserDisinterestEmbeddingInternal(
-  pg: SupabaseDirectClient,
-  userId: string
-) {
-  const disinterestedContractIds = await getDisinterestedContractIds(pg, userId)
-  const disinterestEmbedding = await computeUserDisinterestEmbedding(
-    pg,
-    userId,
-    disinterestedContractIds
-  )
-
-  await pg.none(
-    'UPDATE user_embeddings SET disinterest_embedding = $2 WHERE user_id = $1',
-    [userId, disinterestEmbedding]
-  )
-}
-
-async function getDisinterestedContractIds(
-  pg: SupabaseDirectClient | ITask<any>,
-  userId: string
-) {
-  // Get contract ids that you bet on or liked.
-  return await pg.map(
-    `select contract_id from
-      user_disinterests
-      where user_id = $1
-    `,
-    [userId],
-    (r: { contract_id: string }) => r.contract_id
-  )
-}
-
-async function computeUserDisinterestEmbedding(
-  pg: SupabaseDirectClient | ITask<any>,
-  userId: string,
-  contractIds: string[]
-) {
-  return await pg.one(
-    `
-      select avg(embedding) as average_embedding
-      from contract_embeddings
-      where contract_id = any($1)
-    `,
-    [contractIds, userId],
-    async (r: { average_embedding: string }) =>
-      normalizeOrGetDefault(pg, r.average_embedding)
   )
 }

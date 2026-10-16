@@ -15,12 +15,13 @@ import { FaDroplet } from 'react-icons/fa6'
 import { GoGraph } from 'react-icons/go'
 import { IoDuplicate } from 'react-icons/io5'
 import { MdOutlineReport } from 'react-icons/md'
-import { TiVolumeMute } from 'react-icons/ti'
+import { TiVolume, TiVolumeMute } from 'react-icons/ti'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { RepostButton, RepostModal } from 'web/components/comments/repost-modal'
 import { useNativeInfo } from 'web/components/native-message-provider'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { api, updateUserDisinterestEmbedding } from 'web/lib/api/api'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { api } from 'web/lib/api/api'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
 import { PaymentsModal } from 'web/pages/payments'
@@ -39,6 +40,12 @@ import { ChangeBannerButton } from './change-banner-button'
 import { ContractInfoDialog } from './contract-info-dialog'
 import { FollowMarketModal } from './follow-market-modal'
 import { AddLiquidityModal } from './liquidity-modal'
+import {
+  markUninterestedWithToast,
+  setUninterested,
+  uninterestedLabel,
+  UninterestedMenuLabel,
+} from './uninterested'
 
 export function HeaderActions(props: {
   contract: Contract
@@ -81,14 +88,30 @@ export function HeaderActions(props: {
     await api('market/:contractId/unblock', { contractId: contract.id })
   }
 
-  const markUninteresting = async () => {
-    await updateUserDisinterestEmbedding({
-      contractId: contract.id,
-      creatorId: contract.creatorId,
-    })
-    toast(`We won't show you content like that again`, {
-      icon: <TiVolumeMute className={'h-5 w-5 text-teal-500'} />,
-    })
+  const { data: uninterestedStatus, setData: setUninterestedStatus } =
+    useAPIGetter(
+      'market/:contractId/uninterested-status',
+      user && !isCreator ? { contractId: contract.id } : undefined,
+      undefined,
+      `uninterested-status-${contract.id}`
+    )
+  const uninterested = uninterestedStatus?.uninterested ?? false
+
+  const toggleUninterested = async () => {
+    try {
+      if (uninterested) {
+        await setUninterested(contract, false, 'market page')
+        setUninterestedStatus({ uninterested: false })
+        toast('Restored to your feed')
+      } else {
+        await markUninterestedWithToast(contract, 'market page', () =>
+          setUninterestedStatus({ uninterested: false })
+        )
+        setUninterestedStatus({ uninterested: true })
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e))
+    }
   }
 
   const addLiquidityPossible =
@@ -214,11 +237,19 @@ export function HeaderActions(props: {
               'text-orange-600 dark:text-orange-400 data-[focus]:!text-orange-700 dark:data-[focus]:!text-orange-300 data-[focus]:!bg-orange-100 dark:data-[focus]:!bg-ink-100',
           },
           {
-            name: 'Uninterested',
-            onClick: markUninteresting,
-            icon: <TiVolumeMute className="h-5 w-5" />,
-            className:
-              'text-orange-600 dark:text-orange-400 data-[focus]:!text-orange-700 dark:data-[focus]:!text-orange-300 data-[focus]:!bg-orange-100 dark:data-[focus]:!bg-ink-100',
+            name: uninterestedLabel(uninterested),
+            buttonContent: (
+              <UninterestedMenuLabel uninterested={uninterested} />
+            ),
+            onClick: toggleUninterested,
+            icon: uninterested ? (
+              <TiVolume className="h-5 w-5" />
+            ) : (
+              <TiVolumeMute className="h-5 w-5" />
+            ),
+            className: uninterested
+              ? ''
+              : 'text-orange-600 dark:text-orange-400 data-[focus]:!text-orange-700 dark:data-[focus]:!text-orange-300 data-[focus]:!bg-orange-100 dark:data-[focus]:!bg-ink-100',
           },
         ]
       : []),
