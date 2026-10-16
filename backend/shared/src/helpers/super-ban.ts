@@ -252,8 +252,9 @@ export async function superBanUserCore(
 
   if (!alreadyBanned && !skippedMarketCleanup) {
     const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000
-    pg.result(
-      `with affected_users as (
+    await pg
+      .result(
+        `with affected_users as (
         select distinct follow_id as uid
         from contract_follows
         where contract_id in (
@@ -270,8 +271,8 @@ export async function superBanUserCore(
       where user_id in (select uid from affected_users)
         and (data->>'createdTime')::bigint > $3
         and data->>'sourceUserUsername' = $2`,
-      [userId, creator.username, threeDaysAgo]
-    )
+        [userId, creator.username, threeDaysAgo]
+      )
       .then(({ rowCount }) => {
         log(`Deleted ${rowCount} spam notifications for user ${userId}.`)
       })

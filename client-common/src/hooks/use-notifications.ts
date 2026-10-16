@@ -7,17 +7,19 @@ import {
 } from 'common/notification'
 import { User } from 'common/user'
 import { Dictionary, first, groupBy, sortBy } from 'lodash'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { APIParams, APIResponse } from 'common/api/schema'
+import { BaseApiCallOptions } from 'common/util/api'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 
 export function useNotifications(
   userId: string,
   api: (
-    params: APIParams<'get-notifications'>
+    params: APIParams<'get-notifications'>,
+    options?: BaseApiCallOptions
   ) => Promise<APIResponse<'get-notifications'>>,
   usePersistentLocalState: <T>(
     initialValue: T,
@@ -26,6 +28,7 @@ export function useNotifications(
   count = 15 * NOTIFICATIONS_PER_PAGE,
   newOnly?: boolean
 ) {
+  const generation = useRef(0)
   const [notifications, setNotifications] = usePersistentLocalState<
     Notification[] | undefined
   >(undefined, 'notifications-' + userId)
@@ -46,12 +49,14 @@ export function useNotifications(
   }
 
   useEffect(() => {
+    const request = ++generation.current
     if (userId) {
       const params = {
         limit: count,
         after: newOnly ? latestCreatedTime : undefined,
       }
       api(params).then((newData) => {
+        if (request !== generation.current) return
         setNotifications((oldData) => {
           const byId = new Map<string, Notification>()
 
@@ -90,24 +95,44 @@ export function useNotifications(
         })
       })
     }
+    return () => {
+      generation.current++
+    }
   }, [userId, count, newOnly])
 
   useApiSubscription({
-    topics: [`user-notifications/${userId}`],
-    onBroadcast: ({ data }) => {
-      console.log('new notification', data)
-      setNotifications((notifs) => {
-        const newNotification = data.notification as Notification
-        setLatestCreatedTime((prevTime) =>
-          Math.max(prevTime ?? 0, newNotification.createdTime)
-        )
-        return [newNotification, ...(notifs ?? [])]
-      })
+    topics: [
+      `user-notifications/${userId}`,
+      `user-notification-status/${userId}`,
+    ],
+    recoveryKey: `${count}-${newOnly}`,
+    getSnapshot: async (signal) => {
+      const request = ++generation.current
+      // Refresh statuses as well as newly created notifications. Using the
+      // newest creation time would skip read/seen changes during the outage.
+      const result = await api({ limit: count }, { cache: 'no-store', signal })
+      return () => {
+        if (request !== generation.current) return false
+        setNotifications(result)
+        setLatestCreatedTime(Math.max(0, ...result.map((n) => n.createdTime)))
+      }
     },
-  })
-  useApiSubscription({
-    topics: [`user-notification-status/${userId}`],
-    onBroadcast: ({ data }) => {
+    onBroadcast: ({ topic, data }) => {
+      generation.current++
+      if (topic === `user-notifications/${userId}`) {
+        console.log('new notification', data)
+        setNotifications((notifs) => {
+          const newNotification = data.notification as Notification
+          setLatestCreatedTime((prevTime) =>
+            Math.max(prevTime ?? 0, newNotification.createdTime)
+          )
+          return [
+            newNotification,
+            ...(notifs ?? []).filter((n) => n.id !== newNotification.id),
+          ]
+        })
+        return
+      }
       const payload = data as {
         type: 'marked_as_read' | 'marked_as_seen'
         notificationIds?: string[]
@@ -137,7 +162,8 @@ export function useNotifications(
 export function useGroupedUnseenNotifications(
   userId: string,
   api: (
-    params: APIParams<'get-notifications'>
+    params: APIParams<'get-notifications'>,
+    options?: BaseApiCallOptions
   ) => Promise<APIResponse<'get-notifications'>>,
   usePersistentLocalState: <T>(
     initialValue: T,
@@ -163,7 +189,8 @@ export function useGroupedUnseenNotifications(
 export function useGroupedNotifications(
   user: User,
   api: (
-    params: APIParams<'get-notifications'>
+    params: APIParams<'get-notifications'>,
+    options?: BaseApiCallOptions
   ) => Promise<APIResponse<'get-notifications'>>,
   usePersistentLocalState: <T>(
     initialValue: T,

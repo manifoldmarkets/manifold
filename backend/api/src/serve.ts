@@ -9,17 +9,27 @@ import {
   announceWebSocketShutdown,
   listen as webSocketListen,
   setWebSocketInstanceName,
+  stopAcceptingWebSockets,
   watchWebSocketHandover,
 } from 'shared/websockets/server'
 import { readInstanceName } from 'shared/websockets/handover'
 import { app } from './app'
 import { markCachesLoaded } from './healthz'
+import { createShutdown } from './helpers/shutdown'
 
-// PM2 stops its processes with SIGINT (after a container stop's SIGTERM). Tell
-// any writer overlapping this one during a deploy that its broadcasts ended.
+// Readiness and admission close synchronously. Accepted handlers, their
+// post-response continuations and registered background producers must finish
+// before the final broadcast count is trusted by the replacement writer.
+const shutdown = createShutdown({
+  stopAcceptingSockets: stopAcceptingWebSockets,
+  announce: announceWebSocketShutdown,
+  exit: () => process.exit(0),
+  report: (drained, announced) =>
+    log.info('API shutdown drain completed.', { drained, announced }),
+})
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
-  process.once(signal, () => {
-    announceWebSocketShutdown().finally(() => process.exit(0))
+  process.on(signal, () => {
+    void shutdown()
   })
 }
 

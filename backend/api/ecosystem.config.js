@@ -11,6 +11,8 @@ module.exports = {
       instances: 1,
       autorestart: true,
       watch: false,
+      // 6s producer drain + at most 500ms for the final Redis marker.
+      kill_timeout: 8000,
       // 16 GB on the box, give 12 GB to the JS heap
       node_args: '--max-old-space-size=12288',
       env: {
@@ -29,6 +31,7 @@ module.exports = {
       exec_mode: 'cluster',
       autorestart: true,
       watch: false,
+      kill_timeout: 8000,
       node_args: '--max-old-space-size=12288',
       increment_var: 'PORT',
       env: {

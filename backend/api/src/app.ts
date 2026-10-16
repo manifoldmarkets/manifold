@@ -16,6 +16,7 @@ import { MINUTE_MS } from 'common/util/time'
 import { addOldRoutes } from './old-routes'
 import { handlers } from './routes'
 import { healthzLive, healthzReady } from './healthz'
+import { trackRequest } from './helpers/shutdown'
 
 export const allowCorsUnrestricted: RequestHandler = cors({
   origin: '*',
@@ -153,7 +154,7 @@ Object.entries(handlers).forEach(([path, handler]) => {
     express.json(),
     allowCorsUnrestricted,
     cache,
-    typedEndpoint(path as any, handler as any),
+    trackRequest(typedEndpoint(path as any, handler as any)),
     apiErrorHandler,
   ] as const
 
@@ -183,7 +184,7 @@ app.post(
     metricName: 'mcp/rate_limit',
   }),
   express.json({ limit: '256kb' }),
-  handleMcpRequest
+  trackRequest(handleMcpRequest)
 )
 
 addOldRoutes(app)

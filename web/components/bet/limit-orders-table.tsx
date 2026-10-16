@@ -73,7 +73,7 @@ export function LimitOrdersTable(props: {
     filter,
   } = props
 
-  const { data, loading } = useAPIGetter(
+  const { data, loading, getSnapshot, snapshotKey } = useAPIGetter(
     'get-user-limit-orders-with-contracts',
     {
       userId: user.id,
@@ -84,7 +84,19 @@ export function LimitOrdersTable(props: {
     }
   )
   const [limitUpdates, setLimitUpdates] = useState<LimitBet[]>([])
-  listenToUserOrders(user.id, setLimitUpdates, true)
+  listenToUserOrders(
+    user.id,
+    setLimitUpdates,
+    true,
+    async (signal) => {
+      const commit = await getSnapshot(signal)
+      return () => {
+        if (commit() === false) return false
+        setLimitUpdates([])
+      }
+    },
+    snapshotKey
+  )
   const allLimitBets = uniqBy([...limitUpdates, ...(data?.bets ?? [])], 'id')
   const [missingContracts, setMissingContracts] = useState<MarketContract[]>([])
   const contracts = [...(data?.contracts ?? []), ...missingContracts]

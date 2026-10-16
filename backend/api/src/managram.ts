@@ -1,3 +1,4 @@
+import { settleAll } from 'shared/helpers/producer-drain'
 import { canSendMana } from 'common/can-send-mana'
 import { isAdminId } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
@@ -201,7 +202,7 @@ export const managram: APIHandler<'managram'> = onlyUsersWhoCanPerformAction(
       })
     }, [fromId, ...toIds])
 
-    await Promise.all(
+    await settleAll(
       toIds.map((toId) =>
         createManaPaymentNotification(fromUser, toId, amount, message, token)
       )

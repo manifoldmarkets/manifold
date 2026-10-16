@@ -8,7 +8,7 @@ export const updateDashboardGroups = async (
   txn: ITask<{}>
 ) => {
   // delete all dashboard_groups
-  txn.none(`delete from dashboard_groups where dashboard_id = $1`, [
+  await txn.none(`delete from dashboard_groups where dashboard_id = $1`, [
     dashboardId,
   ])
 
@@ -21,6 +21,6 @@ export const updateDashboardGroups = async (
       groupsIds.map((g) => ({ dashboard_id: dashboardId, group_id: g })),
       cs
     )
-    txn.none(query)
+    await txn.none(query)
   }
 }

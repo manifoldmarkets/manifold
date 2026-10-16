@@ -111,6 +111,15 @@ export default function CashoutPage() {
     topics: [
       `gidx-checkout-session/${checkoutSession?.MerchantSessionID ?? '_'}`,
     ],
+    enabled: !!checkoutSession,
+    // GIDX exposes no read-only session-status endpoint here. Never recreate or
+    // complete a cashout to recover a notification that may have been missed.
+    getSnapshot: async () => () => {
+      setSessionStatus(undefined)
+      setError(
+        'The connection was interrupted and the payment status could not be refreshed. Check your transaction history before trying again.'
+      )
+    },
     onBroadcast: ({ data }) => {
       const { StatusCode, StatusMessage } = data
       console.log('ws update', StatusMessage, StatusCode)

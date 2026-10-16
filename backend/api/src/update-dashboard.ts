@@ -26,8 +26,8 @@ export const updatedashboard = authEndpoint(async (req, auth) => {
 
   const pg = createSupabaseDirectClient()
 
-  const updatedDashboard = await pg.tx((txn) => {
-    const dashboard = txn.one(
+  const updatedDashboard = await pg.tx(async (txn) => {
+    const dashboard = await txn.one(
       `update dashboards
       set items = $1,
       title = $2
@@ -37,7 +37,7 @@ export const updatedashboard = authEndpoint(async (req, auth) => {
       [JSON.stringify(items), title, dashboardId, auth.uid]
     )
 
-    updateDashboardGroups(dashboardId, topics, txn)
+    await updateDashboardGroups(dashboardId, topics, txn)
 
     return dashboard
   })

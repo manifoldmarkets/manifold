@@ -1,6 +1,6 @@
 import { PrivateChatMessage } from 'common/chat-message'
 import { millisToTs, tsToMillis } from 'common/supabase/utils'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { max, orderBy, uniq, uniqBy } from 'lodash'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import {
@@ -24,13 +24,16 @@ export function usePrivateMessages(
   const [messages, setMessages] = usePersistentLocalState<
     PrivateChatMessage[] | undefined
   >(undefined, `private-messages-${channelId}-${limit}-v1`)
+  const generation = useRef(0)
 
   const fetchMessages = async () => {
+    const request = ++generation.current
     const newMessages = await api('get-channel-messages', {
       channelId,
       limit,
       id: messages ? max(messages.map((m) => m.id)) : undefined,
     })
+    if (request !== generation.current) return
     setMessages((prevMessages) =>
       orderBy(
         uniqBy([...newMessages, ...(prevMessages ?? [])], (m) => m.id),
@@ -41,13 +44,35 @@ export function usePrivateMessages(
   }
 
   useEffect(() => {
-    fetchMessages()
+    fetchMessages().catch(console.error)
+    return () => {
+      generation.current++
+    }
   }, [channelId, limit, messages?.length])
 
   useApiSubscription({
     topics: ['private-user-messages/' + userId],
+    recoveryKey: `${channelId}-${limit}`,
+    getSnapshot: async (signal) => {
+      const request = ++generation.current
+      const result = await api(
+        'get-channel-messages',
+        { channelId, limit },
+        { cache: 'no-store', signal }
+      )
+      return () => {
+        if (request !== generation.current) return false
+        setMessages((previous) =>
+          orderBy(
+            uniqBy([...result, ...(previous ?? [])], 'id'),
+            'createdTime',
+            'desc'
+          )
+        )
+      }
+    },
     onBroadcast: () => {
-      fetchMessages()
+      fetchMessages().catch(console.error)
     },
   })
 

@@ -3,7 +3,7 @@
 All API deploy entry points (`deploy-api.sh`, `deploy-api-windows.sh`,
 `deploy-dev-windows.ps1`) build a template and hand it to `deploy-rollout.cjs`.
 The API MIG has one VM: one writer process (HTTP writes and `/ws`) and three
-read replicas. Its autohealing check uses `/healthz/live`, which succeeds while
+read-only API workers. Its autohealing check uses `/healthz/live`, which succeeds while
 caches warm, so it cannot authorize deleting the old VM. The external
 Application Load Balancer returns 503 when no backend is ready.
 
@@ -35,18 +35,36 @@ the writers also relay every broadcast to each other through the existing
 Memorystore instance (`REDIS_URL`), so a socket on either VM receives both
 writers' events.
 
-Redis pub/sub delivers at most once, so each writer numbers its broadcasts,
-sends a heartbeat with its count every five seconds, and announces its last
-count when PM2 stops it. When the deploy reports the old VM gone, the surviving
+Redis pub/sub delivers at most once, so each writer numbers its broadcasts and
+sends a heartbeat with its count every five seconds. On SIGINT or SIGTERM the
+retiring process stops admitting requests and sockets, marks readiness unhealthy,
+and allows up to six seconds for accepted request handlers, authentication,
+post-response continuations and registered background producers to finish.
+Concurrent producer branches settle before a failure escapes their parent.
+Only a complete drain permits a final count; pending Redis publications and
+the final marker share a further 500ms deadline. Timeout or producer failure
+withholds that marker. Repeated signals reuse the same shutdown operation.
+
+When the deploy reports the old VM gone, the surviving
 writer keeps its connections only if it received every broadcast the retired
 writer numbered, through its shutdown announcement. Otherwise it closes all of
-its connections with code 1012, so clients reconnect and backfill. That happens
+its connections with code 1012, so updated clients reconnect and refetch state. That happens
 when:
 
 - the retired writer predates this relay (the first production rollout),
 - Redis is not configured (dev) or was unreachable during the overlap,
 - a relayed broadcast was lost, or
 - the retired writer stopped without announcing it (a crash or a kill).
+
+PM2 has an explicit eight-second `kill_timeout`. The six-second drain plus
+500ms marker budget leaves process-exit headroom, but this is not proof of the
+hosting platform's grace period. Before rollout, verify on the actual image and
+VM that PM2 receives the shutdown signal and the writer gets at least this
+budget before the container or VM forces termination. Local tests use real
+HTTP/WebSocket connections with mock Redis; they do not simulate PM2/COS/VM
+deletion. A forcibly interrupted transaction can have an uncertain outcome;
+this protocol neither retries money-moving requests nor guarantees completion
+of every accepted operation.
 
 The relay is best effort. Readiness never depends on Redis, broadcasts are
 never queued or delayed waiting for it, and a Redis outage outside a deploy
@@ -60,6 +78,31 @@ while clients connected, recovery cannot silently discard the handover.
 An older value left on the VM may conservatively close those early connections
 once; connections established after that check are unaffected by repeated reads
 of the same value.
+
+## Client state recovery
+
+The first-party client preserves healthy replacement sockets. After a disconnect
+it waits for subscription acknowledgements, then refetches the state used by
+active subscriptions. API snapshots bypass browser and getter caches. A read
+from an obsolete connection or filter cannot commit; a live broadcast racing
+the read causes a retry instead of overwriting newer state. Failed or ten-second
+timed-out snapshots retry. There is no shared snapshot/event watermark, so a
+continuously busy topic can postpone reconciliation until a read finishes
+between broadcasts. Existing list limits still apply; this is state recovery,
+not an unlimited event history or exactly-once delivery protocol.
+
+Refresh-all commands and the diagnostic event log have no retained snapshot.
+The legacy GIDX redemption flow has no read-only status endpoint: after reconnect
+it clears the old status and asks the user to check transaction history, without
+repeating a monetary request. Dormant native-only subscription callers have not
+been migrated or built as part of this change.
+
+Ship the updated web client before relying on this fallback. An already-open
+older client only reconnects and resubscribes; the server cannot upgrade its
+recovery behavior. Configure and verify the shared Redis relay separately before
+claiming seamless overlapping writers. An unconfigured relay deliberately falls
+back to reconnection. The final count proves delivery to the surviving writer,
+not acknowledgement or application by each browser.
 
 ## Failures and recovery
 
@@ -100,13 +143,16 @@ remove.
 
 ## First production rollout from the current writer
 
-No maintenance window is needed. The running writer predates the relay and the
+The running writer may predate the relay and the
 handover watcher, so during that overlap each VM's sockets receive only its own
 VM's events. Its sockets disconnect when it is deleted, as with every earlier
 deploy, and the new writer then closes its own connections once with 1012. If
 that first rollout fails and rolls back, the old writer cannot act on the
 handover signal: sockets that stayed on it get no signal for events the
-replacement sent during the overlap.
+replacement sent during the overlap. Plan the first rollout and rollback with
+this limitation, old browser versions, Redis configuration, and the verified
+host shutdown grace period in view. Do not announce seamless first-rollout
+delivery from the local tests alone.
 
 The operator's gcloud account needs to describe, list and set metadata on
 Compute instances, in addition to the instance group and backend service access
@@ -127,4 +173,4 @@ Publish after the first production rollout is confirmed.
 | Deploy disconnects           | Sockets on the old VM dropped when it was removed.                                                             | Same. Sockets on the new VM may also get one 1012 close after the old VM is gone, if delivery from it cannot be verified (always on the first rollout of this change). |
 | Events missed during deploys | Both VMs served for a while. A socket received only its own VM's events, with no signal.                       | Production VMs relay events to each other. A socket that may have missed any is closed with 1012.                                                                      |
 | Other disconnects            | Crashes, network, the load balancer's 24-hour connection limit, 60–120 s without a ping.                       | Unchanged.                                                                                                                                                             |
-| What clients must do         | Reconnect, resubscribe and backfill.                                                                           | Unchanged. Reconnect after any close except 1000, resubscribe, and backfill over HTTP after every reconnect: events sent while disconnected are not replayed.          |
+| What clients must do         | Reconnect and resubscribe; first-party views did not systematically repair missed state.                       | Updated first-party views refetch after acknowledged resubscription, with stale-read guards and retries. Other clients must implement their own state recovery.        |

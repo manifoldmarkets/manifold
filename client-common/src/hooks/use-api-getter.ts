@@ -4,6 +4,7 @@ import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useEvent } from './use-event'
 import { apiWithoutAuth } from '../lib/api'
 import { APIError } from 'common/api/utils'
+import { RecoverySnapshot } from 'common/api/subscription-recovery'
 const promiseCache: Record<string, Promise<unknown> | undefined> = {}
 
 // Prepopulate cache with data, e.g. from static props
@@ -97,7 +98,33 @@ export const useAPIGetterWithCall = <P extends APIPath>(
     await getAndSetData()
   }
 
-  return { data, error, refresh, setData, loading }
+  const getSnapshot: RecoverySnapshot = async (signal) => {
+    if (!props || !enabled) return () => {}
+    const mine = ++generation.current
+    const result = await apiCall(
+      path,
+      { ...props },
+      { cache: 'no-store', signal }
+    )
+    return () => {
+      if (mine !== generation.current) return false
+      promiseCache[key] = Promise.resolve(result)
+      setData(result)
+      setDataKey(key)
+      setError(undefined)
+      setLoading(false)
+    }
+  }
+
+  return {
+    data,
+    error,
+    refresh,
+    setData,
+    loading,
+    getSnapshot,
+    snapshotKey: key,
+  }
 }
 
 function deepCopyWithoutKeys(obj: any, keysToRemove: string[]): any {

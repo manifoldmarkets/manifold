@@ -1,3 +1,4 @@
+import { settleAll } from 'shared/helpers/producer-drain'
 import {
   log,
   revalidateContractStaticProps,
@@ -125,13 +126,13 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
       `Broadcasting cancelled orders took ${Date.now() - startCancelOrders}ms`
     )
     const startNotifications = Date.now()
-    await Promise.all(
+    await settleAll(
       cancelledLimitOrders
         // API orders can't be placed silent, so skip them here, as the
         // expiry sweep does.
         .filter((order) => !order.silent && !order.isApi)
         .map((order) => {
-          createLimitBetCanceledNotification(
+          return createLimitBetCanceledNotification(
             originalBettor,
             order.userId,
             order,
@@ -154,7 +155,7 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
   const makersToNotify = updatedMakers.filter((m) => !m.silent)
   if (makersToNotify.length) {
     const makerUsers = await getUsers(makersToNotify.map((m) => m.userId))
-    await Promise.all(
+    await settleAll(
       makersToNotify.map(async (updatedMaker) => {
         const bet = bets.find((b) =>
           b.fills?.some((f) => f.matchedBetId === updatedMaker.id)
@@ -191,7 +192,7 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
 
   const earliestBet = nonRedemptionNonApiBets[0]
 
-  await Promise.all([
+  await settleAll([
     !originalBettor.lastBetTime &&
       (await createFollowSuggestionNotification(
         originalBettor.id,
@@ -231,7 +232,9 @@ export const payReferralBetBonus = async (referredUser: User) => {
   const referrerId = referredUser.referredByUserId
   if (!referrerId) return
   if (referrerId === referredUser.id) {
-    log(`Skipped referral first-bet bonus - self-referral for ${referredUser.id}`)
+    log(
+      `Skipped referral first-bet bonus - self-referral for ${referredUser.id}`
+    )
     return
   }
 

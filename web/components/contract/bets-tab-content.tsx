@@ -129,7 +129,28 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const filteredInitialBets = props.bets.filter(passesBetFilters)
   const filteredOlderBets = olderBets.filter(passesBetFilters)
   const bets = [...filteredInitialBets, ...filteredOlderBets]
-  listenToOrderUpdates(contract.id, setOlderBets, true)
+  listenToOrderUpdates(
+    contract.id,
+    setOlderBets,
+    true,
+    async (signal) => {
+      // Refresh the historical rows actually displayed; cancelled/filled orders
+      // disappear from the open-order endpoint, so that endpoint cannot repair them.
+      const refreshed: Bet[] = []
+      for (let offset = 0; offset < olderBets.length; offset += 10) {
+        const batch = await Promise.all(
+          olderBets
+            .slice(offset, offset + 10)
+            .map((bet) =>
+              api('bets', { id: bet.id }, { cache: 'no-store', signal })
+            )
+        )
+        refreshed.push(...batch.flat())
+      }
+      return () => setOlderBets(refreshed)
+    },
+    `${filtersKey}-${olderBets.length}`
+  )
 
   const oldestBet = minBy(bets, (b) => b.createdTime)
 

@@ -1,5 +1,6 @@
 import { RequestHandler } from 'express'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { apiProducers } from 'shared/helpers/producer-drain'
 
 // Liveness: is this process up with a responsive event loop? Used for restart
 // decisions. Deliberately does NOT touch the db or the connection pool — a
@@ -32,6 +33,10 @@ export const markCachesLoaded = () => {
 // unhealthy. Deployments must retain the old VM until the replacement passes
 // this check on every serving port, not just the MIG's liveness check.
 export const healthzReady: RequestHandler = (_req, res) => {
+  if (apiProducers.draining) {
+    res.status(503).json({ status: 'draining' })
+    return
+  }
   if (!cachesLoaded) {
     res.status(503).json({ status: 'warming' })
     return

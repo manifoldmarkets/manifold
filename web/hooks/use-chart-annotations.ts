@@ -3,9 +3,13 @@ import { PointerMode } from 'web/components/charts/helpers'
 import { useUser } from 'web/hooks/use-user'
 import { Contract } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
-import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import {
+  ChartAnnotation,
+  getChartAnnotations,
+} from 'common/supabase/chart-annotations'
+import { db } from 'web/lib/supabase/db'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
-import { sortBy } from 'lodash'
+import { sortBy, uniqBy } from 'lodash'
 
 export const useAnnotateChartTools = (
   contract: Contract,
@@ -37,10 +41,17 @@ export const useAnnotateChartTools = (
 
   useApiSubscription({
     topics: [`contract/${contract.id}/chart-annotation`],
+    getSnapshot: async () => {
+      const result = await getChartAnnotations(contract.id, db)
+      return () => setChartAnnotations(result)
+    },
     onBroadcast: (msg) => {
       const newAnnotation = msg.data.annotation as ChartAnnotation
       setChartAnnotations((prevAnnotations) =>
-        sortBy([...prevAnnotations, newAnnotation], (c) => c.event_time)
+        sortBy(
+          uniqBy([...prevAnnotations, newAnnotation], 'id'),
+          (c) => c.event_time
+        )
       )
     },
   })

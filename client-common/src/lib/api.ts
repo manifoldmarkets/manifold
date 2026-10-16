@@ -20,7 +20,8 @@ export async function callWithAuth(
 
 export type apiWithoutAuth<P extends APIPath> = (
   path: P,
-  params: APIParams<P>
+  params: APIParams<P>,
+  options?: BaseApiCallOptions
 ) => Promise<APIResponse<P>>
 
 // This is the preferred way of using the api going forward

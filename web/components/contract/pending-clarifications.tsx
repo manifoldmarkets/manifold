@@ -18,9 +18,12 @@ export function PendingClarifications(props: {
 }) {
   const { contractId, isCreator } = props
 
-  const { data, refresh } = useAPIGetter('get-pending-clarifications', {
-    contractId,
-  })
+  const { data, refresh, getSnapshot, snapshotKey } = useAPIGetter(
+    'get-pending-clarifications',
+    {
+      contractId,
+    }
+  )
 
   // Store new clarifications from websocket
   const [newClarifications, setNewClarifications] = usePersistentInMemoryState<
@@ -30,6 +33,14 @@ export function PendingClarifications(props: {
   // Subscribe to new pending clarifications
   useApiSubscription({
     topics: [`contract/${contractId}/pending-clarification`],
+    recoveryKey: snapshotKey,
+    getSnapshot: async (signal) => {
+      const commit = await getSnapshot(signal)
+      return () => {
+        if (commit() === false) return false
+        setNewClarifications([])
+      }
+    },
     onBroadcast: (msg) => {
       const clarification = msg.data.clarification as PendingClarification
       setNewClarifications((prev) => {

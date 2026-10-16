@@ -8,7 +8,6 @@ import { useContext, useEffect, useState } from 'react'
 import { AuthContext } from 'web/components/auth-context'
 import { api } from 'web/lib/api/api'
 import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
-import { getPrivateUserSafe } from 'web/lib/supabase/users'
 import { useIsPageVisible } from './use-page-visible'
 import { db } from 'web/lib/supabase/db'
 
@@ -36,10 +35,8 @@ export const useWebsocketUser = (userId: string | undefined) => {
 
 export const useWebsocketPrivateUser = (userId: string | undefined) => {
   const isPageVisible = useIsPageVisible()
-  return useWebsocketPrivateUserCommon(
-    userId,
-    isPageVisible,
-    getPrivateUserSafe
+  return useWebsocketPrivateUserCommon(userId, isPageVisible, (options) =>
+    api('me/private', {}, options)
   )
 }
 

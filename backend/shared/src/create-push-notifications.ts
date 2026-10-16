@@ -1,3 +1,4 @@
+import { settleAll } from 'shared/helpers/producer-drain'
 import { Expo, ExpoPushMessage } from 'expo-server-sdk'
 
 import { Notification } from 'common/notification'
@@ -58,7 +59,7 @@ export const createPushNotifications = async (
       status: string
     }[] = []
 
-    await Promise.all(
+    await settleAll(
       tickets.map(async (ticket, i) => {
         const message = messages[messageOffset + i]
         if (ticket.status === 'ok') {

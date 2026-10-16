@@ -107,6 +107,18 @@ export const useLivePerpContract = (
 
   useApiSubscription({
     topics: [`contract/${ssrContract.id}/perp-quote`],
+    getSnapshot: async (signal) => {
+      const quote = await api(
+        'get-perp-quote',
+        { contractId: ssrContract.id },
+        { cache: 'no-store', signal }
+      )
+      return () => {
+        applyQuote(quote)
+        // The existing fresh burst also reloads pools and slow contract fields.
+        refresh()
+      }
+    },
     enabled: !ssrContract.isResolved,
     onBroadcast: (msg) => {
       const incoming = (msg.data as { quote?: PerpQuote }).quote

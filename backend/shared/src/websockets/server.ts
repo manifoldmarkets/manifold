@@ -54,6 +54,9 @@ let redisSubscriberRetryTimeout: NodeJS.Timeout | undefined
 let redisSubscriberRetryDelayMs = REDIS_SUBSCRIBER_INITIAL_RETRY_DELAY_MS
 let localHost = hostname()
 let eventSeq = 0
+let acceptingSockets = true
+let heartbeat: NodeJS.Timeout | undefined
+const pendingPublishes = new Set<Promise<boolean>>()
 
 type SenderState = {
   host: string
@@ -528,7 +531,9 @@ export function broadcastMulti(topics: string[], data: BroadcastPayload) {
 
   if (redisBroadcastsEnabled()) {
     eventSeq++
-    void publishToRedis({ kind: 'event', eventSeq, topics, data })
+    const pending = publishToRedis({ kind: 'event', eventSeq, topics, data })
+    pendingPublishes.add(pending)
+    void pending.finally(() => pendingPublishes.delete(pending))
   }
 }
 
@@ -543,19 +548,37 @@ export function setWebSocketInstanceName(name: string) {
 
 /**
  * Tells the other writers this process has sent its last broadcast, so their
- * handover can trust what they received from it. Call before exiting.
+ * handover can trust what they received from it. Call ONLY after all producers
+ * have drained and admission has closed, then exit. Timeout is not success.
  */
 export async function announceWebSocketShutdown() {
-  if (!redisPublisher?.isReady) return
+  clearInterval(heartbeat)
+  if (!redisPublisher?.isReady) return false
   const timeout = new AbortController()
-  await Promise.race([
-    publishToRedis({ kind: 'shutdown', eventSeq }).finally(() =>
-      timeout.abort()
-    ),
-    sleep(REDIS_SHUTDOWN_TIMEOUT_MS, undefined, {
-      signal: timeout.signal,
-    }).catch(() => {}),
-  ])
+  let expired = false
+  try {
+    return await Promise.race([
+      (async () => {
+        const delivered = await Promise.all(pendingPublishes)
+        if (expired || delivered.some((success) => !success)) return false
+        return publishToRedis({ kind: 'shutdown', eventSeq })
+      })(),
+      sleep(REDIS_SHUTDOWN_TIMEOUT_MS, false, { signal: timeout.signal }).then(
+        () => {
+          expired = true
+          return false
+        },
+        () => false
+      ),
+    ])
+  } finally {
+    timeout.abort()
+  }
+}
+
+/** Existing sockets keep receiving the accepted requests' final updates. */
+export function stopAcceptingWebSockets() {
+  acceptingSockets = false
 }
 
 // Iterate the switchboard, not wss.clients: ws tracks a socket from the upgrade
@@ -638,7 +661,6 @@ export function watchWebSocketHandover(wss: WebSocketServer) {
 
 export function listen(server: HttpServer, path: string) {
   startRedisBroadcastSubscriber()
-  let heartbeat: NodeJS.Timeout | undefined
   if (redisBroadcastsEnabled()) {
     startRedisPublisher()
     heartbeat = setInterval(
@@ -659,6 +681,10 @@ export function listen(server: HttpServer, path: string) {
     log.error('Error on websocket server.', { error: err })
   })
   wss.on('connection', (ws) => {
+    if (!acceptingSockets) {
+      ws.close(HANDOVER_CLOSE_CODE, 'Server is draining; reconnect')
+      return
+    }
     // todo: should likely kill connections that haven't sent any ping for a long time
     metrics.inc('ws/connections_established')
     metrics.set('ws/open_connections', wss.clients.size)

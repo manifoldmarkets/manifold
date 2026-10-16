@@ -4,6 +4,8 @@ import { createServer, Server as HttpServer } from 'node:http'
 import { AddressInfo, connect as connectTcp, Socket } from 'node:net'
 import { WebSocket } from 'ws'
 import { log } from 'shared/utils'
+import { ProducerDrain } from 'shared/helpers/producer-drain'
+import { createShutdown } from 'api/helpers/shutdown'
 import { HANDOVER_KEY, readInstanceName, watchHandover } from './handover'
 
 // Each writer below is a separate module instance, like a process on its own
@@ -592,4 +594,132 @@ describe('websocket server', () => {
       expect(after.ws.readyState).toBe(WebSocket.OPEN)
     }
   )
+})
+
+describe('drained writer shutdown', () => {
+  const heldWork = () => {
+    let finish!: () => void
+    const pending = new Promise<void>((resolve) => {
+      finish = resolve
+    })
+    return { pending, finish }
+  }
+
+  it.each([false, true])(
+    'drains a late producer before final count; lost delivery=%s',
+    async (lose) => {
+      const { oldWriter, newWriter, onNew, handOver } = await overlap()
+      const producers = new ProducerDrain()
+      const held = heldWork()
+      const producer = producers.track(async () => {
+        await held.pending
+        oldWriter.server.broadcast('global/x', { id: 'accepted-before-stop' })
+      })
+      const exit = jest.fn()
+      const announce = jest.fn(oldWriter.server.announceWebSocketShutdown)
+      const stop = createShutdown({
+        producers,
+        stopAcceptingSockets: oldWriter.server.stopAcceptingWebSockets,
+        announce,
+        exit,
+        report: jest.fn(),
+      })
+      const stopped = stop()
+      expect(stop()).toBe(stopped)
+      expect(announce).not.toHaveBeenCalled()
+      if (lose) newWriter.subscriber().lose = 1
+      held.finish()
+      await producer
+      await stopped
+      expect(announce).toHaveBeenCalledTimes(1)
+      expect(exit).toHaveBeenCalledTimes(1)
+      await handOver({ announce: false })
+      if (lose) {
+        expect(await onNew.closed).toBe(1012)
+        closedBecause('missed broadcasts from old-vm')
+      } else {
+        await waitUntil(() =>
+          logged(
+            'Writer handover: every broadcast from the old writer arrived.'
+          )
+        )
+        expect(onNew.events()).toEqual(['accepted-before-stop'])
+        expect(onNew.ws.readyState).toBe(WebSocket.OPEN)
+      }
+    }
+  )
+
+  it.each([false, true])(
+    'waits for pending Redis publication; publish failure=%s',
+    async (fail) => {
+      const { oldWriter, onNew, handOver } = await overlap()
+      const held = heldWork()
+      const publish = oldWriter.publisher().publish.bind(oldWriter.publisher())
+      const kinds: string[] = []
+      jest
+        .spyOn(oldWriter.publisher(), 'publish')
+        .mockImplementation(async (channel, payload) => {
+          const { kind } = JSON.parse(payload)
+          kinds.push(kind)
+          if (kind === 'event') {
+            await held.pending
+            if (fail) throw new Error('Redis publish failed')
+          }
+          return publish(channel, payload)
+        })
+      oldWriter.server.broadcast('global/x', { id: 'pending-publication' })
+      const announced = oldWriter.server.announceWebSocketShutdown()
+      expect(kinds).toEqual(['event'])
+      held.finish()
+      expect(await announced).toBe(!fail)
+      expect(kinds).toEqual(fail ? ['event'] : ['event', 'shutdown'])
+      await handOver({ announce: false })
+      if (fail) expect(await onNew.closed).toBe(1012)
+      else {
+        await waitUntil(() =>
+          logged(
+            'Writer handover: every broadcast from the old writer arrived.'
+          )
+        )
+        expect(onNew.events()).toEqual(['pending-publication'])
+        expect(onNew.ws.readyState).toBe(WebSocket.OPEN)
+      }
+    }
+  )
+
+  it('never publishes a delayed final marker after its flush deadline expires', async () => {
+    const { oldWriter, onNew, handOver } = await overlap()
+    const held = heldWork()
+    const publish = oldWriter.publisher().publish.bind(oldWriter.publisher())
+    const kinds: string[] = []
+    jest
+      .spyOn(oldWriter.publisher(), 'publish')
+      .mockImplementation(async (channel, payload) => {
+        const { kind } = JSON.parse(payload)
+        kinds.push(kind)
+        if (kind === 'event') await held.pending
+        return publish(channel, payload)
+      })
+    oldWriter.server.broadcast('global/x', { id: 'late-ack' })
+    expect(await oldWriter.server.announceWebSocketShutdown()).toBe(false)
+    held.finish()
+    await waitUntil(() => onNew.events().includes('late-ack'))
+    expect(kinds).toEqual(['event'])
+    await handOver({ announce: false })
+    expect(await onNew.closed).toBe(1012)
+    closedBecause('old-vm did not announce its shutdown')
+  })
+
+  it('rejects new sockets while existing sockets receive the last accepted work', async () => {
+    const writer = await startWriter('vm')
+    const existing = await subscriber(writer.url)
+    writer.server.stopAcceptingWebSockets()
+    const fresh = new WebSocket(writer.url)
+    cleanup.push(() => fresh.terminate())
+    const closed = once(fresh, 'close')
+    expect((await closed)[0]).toBe(1012)
+    writer.server.broadcast('global/x', { id: 'last-update' })
+    await waitUntil(() => existing.events().includes('last-update'))
+    expect(existing.ws.readyState).toBe(WebSocket.OPEN)
+  })
 })

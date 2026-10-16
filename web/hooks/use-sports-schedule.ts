@@ -174,6 +174,28 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
 
   useApiSubscription({
     topics,
+    recoveryKey: sport,
+    getSnapshot: async (signal) => {
+      const request = ++generation.current
+      const response = await api(
+        'sports-schedule',
+        {
+          sport,
+          limit: refreshLimit(
+            feedRef.current,
+            SCHEDULE_PAGE_SIZE,
+            MAX_SCHEDULE_LIMIT
+          ),
+        },
+        { cache: 'no-store', signal }
+      )
+      return () => {
+        if (request !== generation.current) return false
+        setLive((previous) => pruneLiveForPage(previous, response))
+        setStored({ ...feedFromResponse(response), sport })
+        setLoading(false)
+      }
+    },
     enabled: topics.length > 0 && isPageVisible,
     onBroadcast: ({ topic, data }) => {
       const id = topic.split('/')[1]

@@ -42,7 +42,7 @@ function UnseenNotificationsBubble(props: { privateUser: PrivateUser }) {
   const unseenNotificationGroups =
     useGroupedUnseenNotifications(
       privateUser.id,
-      (params) => api('get-notifications', params),
+      (params, options) => api('get-notifications', params, options),
       usePersistentLocalState
     ) ?? []
 

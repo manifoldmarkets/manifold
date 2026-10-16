@@ -1,5 +1,6 @@
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
-import { useEffect, useState } from 'react'
+import { SetStateAction, useEffect, useRef, useState } from 'react'
+import { useEvent } from './use-event'
 import { Contract } from 'common/contract'
 import { Reaction } from 'common/reaction'
 import { DisplayUser } from 'common/api/user-types'
@@ -96,11 +97,17 @@ export const useBatchedGetter = <T>(
   const key = `${queryType}-${id}`
   const [state, setState] = usePersistentInMemoryState<T>(initialValue, key)
   const [loadedKey, setLoadedKey] = useState<string>()
+  const revision = useRef(0)
+  const setLiveState = useEvent((value: SetStateAction<T>) => {
+    revision.current++
+    setState(value)
+  })
 
   const MAX_BATCH_SIZE = 38
 
   useEffect(() => {
     if (!enabled) return
+    const startedAtRevision = revision.current
 
     // Find the latest batch for this query type
     let currentBatch = pendingRequests.findLast(
@@ -125,7 +132,7 @@ export const useBatchedGetter = <T>(
     // Live updates can change state before the batch query finishes. Keep
     // successful loading separate from those updates and from cached state.
     const onLoad = (data: T) => {
-      setState(data)
+      if (revision.current === startedAtRevision) setState(data)
       setLoadedKey(data == null ? undefined : key)
     }
     pendingCallbacks.get(key)!.push(onLoad)
@@ -146,5 +153,5 @@ export const useBatchedGetter = <T>(
     }
   }, [queryType, id, enabled, userId])
 
-  return [state, setState, loadedKey === key] as const
+  return [state, setLiveState, loadedKey === key] as const
 }
