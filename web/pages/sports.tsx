@@ -1,6 +1,7 @@
 import { keyBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo } from 'react'
+import { OG_CARD_HEIGHT, OG_CARD_WIDTH } from 'common/edge/og'
 import {
   AnySportKey,
   CURATED_SPORTS,
@@ -84,6 +85,10 @@ export default function SportsPage() {
         description:
           'Bet on every game: live odds and upcoming games across the NFL, NBA, MLB, soccer and more.',
         url: '/sports',
+        ogProps: { endpoint: 'sports', props: {} },
+        imageSize: { width: OG_CARD_WIDTH * 2, height: OG_CARD_HEIGHT * 2 },
+        imageAlt:
+          'Manifold Sports. Pick a game. Make a call. Trade with the crowd. Play-money prediction markets for NFL, NBA, MLB, NHL, soccer and more.',
       }}
       trackPageView="/sports"
     >

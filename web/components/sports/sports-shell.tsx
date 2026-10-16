@@ -1,7 +1,7 @@
 import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/solid'
 import { sortBy } from 'lodash'
 import Link from 'next/link'
-import { ReactNode } from 'react'
+import { ComponentProps, ReactNode } from 'react'
 import {
   AnySportKey,
   CURATED_SPORTS,
@@ -36,7 +36,7 @@ export function SportsShell(props: {
   subheading?: ReactNode
   /** A back arrow to all sports beside the heading, on a sport's page. */
   backToAll?: boolean
-  seo: { title: string; description: string; url: string }
+  seo: ComponentProps<typeof SEO>
   trackPageView: string
   children: ReactNode
 }) {
@@ -53,7 +53,7 @@ export function SportsShell(props: {
   const sportHref = useSportHref()
   return (
     <Page trackPageView={trackPageView} className="min-w-0 lg:col-span-10">
-      <SEO title={seo.title} description={seo.description} url={seo.url} />
+      <SEO {...seo} />
       <Col className="w-full min-w-0 gap-3 px-3 pt-5 sm:px-6 sm:pt-7">
         <Row className="items-center justify-between gap-2 px-1">
           <Row className="min-w-0 items-center gap-2">
