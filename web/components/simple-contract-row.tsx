@@ -5,7 +5,7 @@ import { Row } from 'web/components/layout/row'
 import { Contract, contractPath } from 'common/contract'
 import { Avatar } from 'web/components/widgets/avatar'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
-import { PerpMarketBadge } from 'web/components/perps/perp-market-badge'
+import { MarketTitleLabel } from 'web/components/contract/market-title-label'
 import { UserHovercard } from './user/user-hovercard'
 
 export function SimpleContractRow(props: {
@@ -36,9 +36,7 @@ export function SimpleContractRow(props: {
           'break-anywhere mr-0.5 whitespace-normal font-medium lg:mr-auto'
         )}
       >
-        {contract.outcomeType === 'PERP' && (
-          <PerpMarketBadge contract={contract} className="mr-1" />
-        )}
+        <MarketTitleLabel contract={contract} className="mr-1" />
         {contract.question}
       </div>
       <Row className="gap-3">

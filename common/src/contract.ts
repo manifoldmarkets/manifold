@@ -413,10 +413,20 @@ export type Poll = {
   maxSelections?: number // For multi-select: max options user can pick (defaults to all)
 }
 
+export type SportsMarketType = 'moneyline' | 'spread' | 'total' | 'prop'
+
 export type Sports = {
   sportsStartTimestamp: string
   sportsEventId: string
   sportsLeague: string
+  /**
+   * A pipeline game market's teams, as the provider named them. The resolver
+   * reads scores by these names, whichever way round a score feed lists them.
+   */
+  sportsHomeTeam?: string
+  sportsAwayTeam?: string
+  /** What the market is about the game; the sports page files it by this. */
+  sportsMarketType?: SportsMarketType
 }
 
 export type MultiContract =
@@ -628,6 +638,8 @@ export type ContractParams = {
   totalComments: number
   totalPositions: number
   totalBets: number
+  /** How many answers the market has. A big market's contract holds only its top answers until the live contract loads */
+  totalAnswers?: number
   topContractMetrics: ContractMetric[]
   relatedContracts: Contract[]
   chartAnnotations: ChartAnnotation[]
