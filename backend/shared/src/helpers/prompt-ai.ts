@@ -24,7 +24,7 @@ export type PromptAIOptionsBase = {
   reasoning?: { effort: ReasoningEffort }
   // Gemini-specific thinking level. If not specified but reasoning.effort is,
   // it will be mapped to an equivalent thinking level for Gemini models.
-  // 'minimal' and 'medium' are only supported by Gemini 3 Flash.
+  // 'minimal' is a Flash-Lite level; promptGemini clamps it to 'low' on Flash.
   thinkingLevel?: GeminiThinkingLevel
 }
 
