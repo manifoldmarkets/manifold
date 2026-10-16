@@ -1,29 +1,9 @@
 import { z } from 'zod'
-import { FIREBASE_CONFIG } from './envs/constants'
 import { getGameDisplayTeams, selectFeaturedGame } from './sports-game-feed'
-
-/** Only fetch team uploads from our own public image bucket in the OG worker. */
-export function isSportsOgLogoUrl(value: string) {
-  try {
-    const url = new URL(value)
-    const prefix = `/v0/b/${FIREBASE_CONFIG.storageBucket}/o/`
-    return (
-      url.origin === 'https://firebasestorage.googleapis.com' &&
-      !url.username &&
-      !url.password &&
-      url.pathname.startsWith(prefix) &&
-      decodeURIComponent(url.pathname.slice(prefix.length)).startsWith(
-        'user-images/'
-      ) &&
-      url.searchParams.get('alt') === 'media'
-    )
-  } catch {
-    return false
-  }
-}
 
 const timestamp = z.number().finite().int().positive().max(8.64e15)
 const probability = z.number().finite().min(0).max(1)
+// Use colours and text badges in the embed; strip team image URLs from snapshots.
 const team = z.object({
   name: z.string().trim().min(1).max(120),
   prob: probability,
@@ -31,12 +11,6 @@ const team = z.object({
   color: z
     .string()
     .regex(/^#[\da-f]{6}$/i)
-    .nullish()
-    .catch(null),
-  imageUrl: z
-    .string()
-    .max(1000)
-    .refine(isSportsOgLogoUrl)
     .nullish()
     .catch(null),
 })

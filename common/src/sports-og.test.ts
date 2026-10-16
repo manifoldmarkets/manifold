@@ -1,14 +1,10 @@
 import {
   formatSportsOgAsOf,
-  isSportsOgLogoUrl,
   parseSportsOgMarket,
   selectSportsOgMarket,
   sportsOgImageAlt,
 } from './sports-og'
 import { selectFeaturedGame } from './sports-game-feed'
-import { FIREBASE_CONFIG } from './envs/constants'
-
-const LOGO = `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_CONFIG.storageBucket}/o/user-images%2FManifoldSports%2Fteam.png?alt=media`
 
 const NOW = Date.parse('2026-10-16T02:30:00Z')
 const game = (overrides = {}) => ({
@@ -138,7 +134,7 @@ it('rejects malformed odds and timestamps in the public image URL', () => {
   ).toBeNull()
 })
 
-it('keeps each team logo, colour and code with its odds after away/home ordering', () => {
+it('keeps each team colour and code with its odds, while omitting logo URLs', () => {
   const market = selectSportsOgMarket(
     snapshot([
       game({
@@ -146,7 +142,7 @@ it('keeps each team logo, colour and code with its odds after away/home ordering
           name: 'Philadelphia Eagles',
           shortName: 'PHI',
           color: '#005962',
-          imageUrl: LOGO,
+          imageUrl: 'https://example.com/team.png',
           prob: 0.37,
         },
         away: {
@@ -168,7 +164,6 @@ it('keeps each team logo, colour and code with its odds after away/home ordering
   expect(market?.outcomes[1]).toMatchObject({
     shortName: 'PHI',
     color: '#005962',
-    imageUrl: LOGO,
     prob: 0.37,
   })
   expect(market).toMatchObject({
@@ -177,17 +172,21 @@ it('keeps each team logo, colour and code with its odds after away/home ordering
     kickoffKnown: true,
   })
   expect(parseSportsOgMarket(JSON.stringify(market))).toEqual(market)
-})
-
-it.each([
-  'http://127.0.0.1/logo.png',
-  'https://firebasestorage.googleapis.com.evil.example/team.png',
-  LOGO.replace(FIREBASE_CONFIG.storageBucket, 'other-bucket'),
-  LOGO.replace('user-images', 'private-images'),
-  LOGO.replace('alt=media', 'alt=json'),
-  'data:image/svg+xml,<svg/>',
-])('does not accept an arbitrary URL for the OG worker to fetch: %s', (url) => {
-  expect(isSportsOgLogoUrl(url)).toBe(false)
+  expect(market?.outcomes.every((outcome) => !('imageUrl' in outcome))).toBe(
+    true
+  )
+  // Old image URLs may still carry logo fields; they are discarded too.
+  expect(
+    parseSportsOgMarket(
+      JSON.stringify({
+        ...market,
+        outcomes: market?.outcomes.map((outcome) => ({
+          ...outcome,
+          imageUrl: 'https://example.com/team.png',
+        })),
+      })
+    )
+  ).toEqual(market)
 })
 
 it('falls back on invalid decoration without losing the real market', () => {
@@ -198,7 +197,6 @@ it('falls back on invalid decoration without losing the real market', () => {
           name: 'Eagles',
           prob: 0.37,
           color: 'url(https://example.com)',
-          imageUrl: 'http://127.0.0.1/logo.png',
         },
       }),
     ]),
@@ -208,7 +206,6 @@ it('falls back on invalid decoration without losing the real market', () => {
     name: 'Eagles',
     prob: 0.37,
     color: null,
-    imageUrl: null,
   })
   expect(
     parseSportsOgMarket(

@@ -5,13 +5,7 @@ import Logo from 'web/public/logo.svg'
 import { OgSportGraphic } from './og-sport-graphic'
 
 // The featured market is a dated snapshot; the artwork is the outage fallback.
-export function OgSports({
-  market,
-  logos = [],
-}: {
-  market: SportsOgMarket | null
-  logos?: (string | undefined)[]
-}) {
+export function OgSports({ market }: { market: SportsOgMarket | null }) {
   return (
     <div
       className="flex flex-col bg-indigo-700"
@@ -78,7 +72,7 @@ export function OgSports({
             </div>
           </div>
           {market ? (
-            <SportsMarketPreview market={market} logos={logos} />
+            <SportsMarketPreview market={market} />
           ) : (
             <div className="flex justify-center" style={{ width: 400 }}>
               <SportsIllustration width={304} height={256} />
@@ -101,13 +95,7 @@ export function OgSports({
 const shorten = (text: string, length: number) =>
   text.length <= length ? text : text.slice(0, length - 1).trimEnd() + '…'
 
-function SportsMarketPreview({
-  market,
-  logos,
-}: {
-  market: SportsOgMarket
-  logos: (string | undefined)[]
-}) {
+function SportsMarketPreview({ market }: { market: SportsOgMarket }) {
   const teams = market.outcomes.slice(0, 2)
   const draw = market.outcomes[2]
   const colors = teams.map((team, i) => team.color ?? ['#4f46e5', '#0f766e'][i])
@@ -166,23 +154,13 @@ function SportsMarketPreview({
                 style={{
                   width: 68,
                   height: 68,
-                  backgroundColor: logos[i] ? '#ffffff' : colors[i],
+                  backgroundColor: colors[i],
                   color: readableTextColor(colors[i]),
                 }}
               >
-                {logos[i] ? (
-                  <img
-                    src={logos[i]}
-                    alt={team.name}
-                    width={58}
-                    height={58}
-                    style={{ objectFit: 'contain' }}
-                  />
-                ) : (
-                  <span className="flex" style={{ fontSize: 25 }}>
-                    {(team.shortName ?? team.name).slice(0, 3).toUpperCase()}
-                  </span>
-                )}
+                <span className="flex" style={{ fontSize: 25 }}>
+                  {(team.shortName ?? team.name).slice(0, 3).toUpperCase()}
+                </span>
               </div>
               <span
                 className="mt-3 flex items-center justify-center overflow-hidden text-center text-gray-900"
