@@ -1,0 +1,173 @@
+TROPHY BADGE ART — MIDJOURNEY GENERATION GUIDE
+=================================================
+
+Work tier-by-tier. For each tier:
+1. Run the BASELINE prompt (no --sref) to establish the border/style
+2. Pick your favorite result, upscale it, copy its image URL
+3. Run all badge prompts for that tier with --sref [YOUR_URL] --sw 100
+
+
+================================================================================
+TIER 1: GREEN (19 badges)
+================================================================================
+
+STEP 1 — Generate the green tier baseline (pick your favorite, upscale, copy URL):
+
+/imagine prompt: A cute cartoon animal inside a circular achievement badge, 3D clay render, centered composition, friendly cartoon style with expressive eyes, thin polished silver border with subtle green emerald gem inlays, soft green glow, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250
+
+STEP 2 — Run each of these with --sref [YOUR_GREEN_BASELINE_URL] --sw 100 appended:
+
+/imagine prompt: A tiny cute goldfish swimming through coins, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thin polished silver border with subtle green gem inlays, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A small friendly minnow fish with a determined expression, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thin polished silver border with subtle green gem inlays, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A single dartboard with one dart stuck in the bullseye, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thin polished silver border with subtle green gem inlays, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A pair of bouncing dice mid-roll, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thin polished silver border with subtle green gem inlays, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A tiny flickering sparkle star, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thin polished silver border with subtle green gem inlays, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A glowing four-leaf clover, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thin polished silver border with subtle green gem inlays, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A glowing pink brain with lightning sparks, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thin polished silver border with subtle green gem inlays, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A small hammer resting on an anvil, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thin polished silver border with subtle green gem inlays, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A wrench and toolbelt hanging ready, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thin polished silver border with subtle green gem inlays, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A cute friendly ghost fading into mist, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thin polished silver border with subtle green gem inlays, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A shadowy mysterious silhouette figure, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thin polished silver border with subtle green gem inlays, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A friendly waving hand with a warm glow, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thin polished silver border with subtle green gem inlays, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A speech bubble with animated dots inside, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thin polished silver border with subtle green gem inlays, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A thought cloud bubble with a lightbulb inside, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thin polished silver border with subtle green gem inlays, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: Two hands shaking in a friendly handshake, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thin polished silver border with subtle green gem inlays, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A green heart with a gentle glow, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thin polished silver border with subtle green gem inlays, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A tiny green seedling sprouting from soil, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thin polished silver border with subtle green gem inlays, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+
+
+================================================================================
+TIER 2: BLUE (14 badges)
+================================================================================
+
+STEP 1 — Generate the blue tier baseline:
+
+/imagine prompt: A cute cartoon animal inside a circular achievement badge, 3D clay render, centered composition, friendly cartoon style with expressive eyes, brushed steel border with glowing sapphire accent ring, cool blue ambient glow, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250
+
+STEP 2 — Run each with --sref [YOUR_BLUE_BASELINE_URL] --sw 100:
+
+/imagine prompt: A sleek powerful swordfish cutting through water, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, brushed steel border with sapphire accent ring, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A rising bar chart with an upward arrow, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, brushed steel border with sapphire accent ring, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A warm glowing ember coal with orange heat, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, brushed steel border with sapphire accent ring, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A sharp gleaming knife blade with a glint, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, brushed steel border with sapphire accent ring, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A chess knight piece on a chessboard square, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, brushed steel border with sapphire accent ring, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A construction crane building a structure, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, brushed steel border with sapphire accent ring, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A drafting compass and blueprint with geometric shapes, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, brushed steel border with sapphire accent ring, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A group of small figures looking upward in awe, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, brushed steel border with sapphire accent ring, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A shouting face silhouette with sound waves, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, brushed steel border with sapphire accent ring, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A chain link connecting two glowing nodes, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, brushed steel border with sapphire accent ring, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A purple heart with a golden ribbon, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, brushed steel border with sapphire accent ring, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A boxing glove ready to punch, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, brushed steel border with sapphire accent ring, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A strong growing tree with full green canopy, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, brushed steel border with sapphire accent ring, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A newborn bird hatching from a cracked egg, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, brushed steel border with sapphire accent ring, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+
+
+================================================================================
+TIER 3: PURPLE (11 badges)
+================================================================================
+
+STEP 1 — Generate the purple tier baseline:
+
+/imagine prompt: A cute cartoon animal inside a circular achievement badge, 3D clay render, centered composition, friendly cartoon style with expressive eyes, ornate purple-gold border with amethyst gems embedded, purple ambient glow, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250
+
+STEP 2 — Run each with --sref [YOUR_PURPLE_BASELINE_URL] --sw 100:
+
+/imagine prompt: A fierce grinning shark with sharp teeth, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, ornate purple-gold border with amethyst gems, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A stock ticker tape machine printing rapidly with dollar signs, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, ornate purple-gold border with amethyst gems, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A roaring explosion of fire and sparks, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, ornate purple-gold border with amethyst gems, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A glowing purple crystal ball with swirling mist inside, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, ornate purple-gold border with amethyst gems, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A miniature glowing city skyline at sunset, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, ornate purple-gold border with amethyst gems, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A megaphone broadcasting sound waves outward, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, ornate purple-gold border with amethyst gems, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A notepad with a pen writing furiously, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, ornate purple-gold border with amethyst gems, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: An envelope with a glowing letter emerging, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, ornate purple-gold border with amethyst gems, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A red heart with radiating warmth lines, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, ornate purple-gold border with amethyst gems, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A golden trophy cup with sparkles, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, ornate purple-gold border with amethyst gems, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A military medal ribbon with a star, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, ornate purple-gold border with amethyst gems, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+
+
+================================================================================
+TIER 4: CRIMSON (9 badges)
+================================================================================
+
+STEP 1 — Generate the crimson tier baseline:
+
+/imagine prompt: A cute cartoon animal inside a circular achievement badge, 3D clay render, centered composition, friendly cartoon style with expressive eyes, heavy dark iron border with glowing red runes and crimson energy, red ambient glow, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250
+
+STEP 2 — Run each with --sref [YOUR_CRIMSON_BASELINE_URL] --sw 100:
+
+/imagine prompt: A powerful orca whale breaching through a wave, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, heavy dark iron border with glowing red runes, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A complex spinning gear mechanism with interlocking cogs, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, heavy dark iron border with glowing red runes, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: An erupting volcano with lava flowing down, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, heavy dark iron border with glowing red runes, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A wise wizard with a long beard holding a glowing staff, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, heavy dark iron border with glowing red runes, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A telescope pointed at distant stars and nebulae, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, heavy dark iron border with glowing red runes, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A golden star shining on a spotlight stage, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, heavy dark iron border with glowing red runes, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A bullhorn megaphone with radiating sound lines, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, heavy dark iron border with glowing red runes, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A knight on horseback charging forward, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, heavy dark iron border with glowing red runes, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A grand castle fortress with banners flying, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, heavy dark iron border with glowing red runes, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+
+
+================================================================================
+TIER 5: GOLD (16 badges)
+================================================================================
+
+STEP 1 — Generate the gold tier baseline:
+
+/imagine prompt: A cute cartoon animal inside a circular achievement badge, 3D clay render, centered composition, friendly cartoon style with expressive eyes, thick radiant gold border with diamond studs and warm golden glow, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250
+
+STEP 2 — Run each with --sref [YOUR_GOLD_BASELINE_URL] --sw 100:
+
+/imagine prompt: A majestic spouting whale with a crown-like water spout, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thick radiant gold border with diamond studs, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A glowing red-eyed robot head with metallic jaw, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thick radiant gold border with diamond studs, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A majestic phoenix bird rising from flames with spread wings, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thick radiant gold border with diamond studs, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A radiant eternal sun with dancing flame corona, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thick radiant gold border with diamond studs, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A mystical all-seeing eye with radiating light beams, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thick radiant gold border with diamond studs, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A glowing globe with continents lit up, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thick radiant gold border with diamond studs, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A towering mountain peak piercing through clouds, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thick radiant gold border with diamond studs, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A gold medal on a silk ribbon, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thick radiant gold border with diamond studs, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A film clapperboard with a spotlight behind it, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thick radiant gold border with diamond studs, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A royal crown with jewels on a velvet cushion, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thick radiant gold border with diamond studs, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A newspaper front page with a spotlight on it, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thick radiant gold border with diamond studs, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A glowing lightbulb with radiating ideas and sparks, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thick radiant gold border with diamond studs, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A satellite dish broadcasting signal beams into space, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thick radiant gold border with diamond studs, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A magical flute with musical notes spiraling around it, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thick radiant gold border with diamond studs, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A sparkling heart with a gift bow on top, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thick radiant gold border with diamond studs, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+/imagine prompt: A wise elder figure with a long white beard and staff, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, thick radiant gold border with diamond studs, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 250 --sref [URL] --sw 100
+
+
+================================================================================
+TIER 6: PRISMATIC (15 badges)
+================================================================================
+
+STEP 1 — Generate the prismatic tier baseline:
+
+/imagine prompt: A cute cartoon animal inside a circular achievement badge, 3D clay render, centered composition, friendly cartoon style with expressive eyes, iridescent chrome border with rainbow refraction and holographic sheen, prismatic light rays, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 400
+
+STEP 2 — Run each with --sref [YOUR_PRISMATIC_BASELINE_URL] --sw 100:
+
+/imagine prompt: A colossal sea serpent leviathan emerging from a whirlpool, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, iridescent chrome border with rainbow refraction holographic sheen, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 400 --sref [URL] --sw 100
+/imagine prompt: A massive kraken with glowing tentacles wrapped around a trident, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, iridescent chrome border with rainbow refraction holographic sheen, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 400 --sref [URL] --sw 100
+/imagine prompt: A swirling galaxy vortex pulling everything inward, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, iridescent chrome border with rainbow refraction holographic sheen, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 400 --sref [URL] --sw 100
+/imagine prompt: An undying spirit flame floating in a dark void, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, iridescent chrome border with rainbow refraction holographic sheen, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 400 --sref [URL] --sw 100
+/imagine prompt: An ancient ornate hourglass frozen mid-flow with glowing sand, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, iridescent chrome border with rainbow refraction holographic sheen, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 400 --sref [URL] --sw 100
+/imagine prompt: A cosmic eternal flame burning with starfield inside, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, iridescent chrome border with rainbow refraction holographic sheen, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 400 --sref [URL] --sw 100
+/imagine prompt: A radiant glowing star with infinite light rays, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, iridescent chrome border with rainbow refraction holographic sheen, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 400 --sref [URL] --sw 100
+/imagine prompt: A glowing infinity symbol made of pure light, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, iridescent chrome border with rainbow refraction holographic sheen, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 400 --sref [URL] --sw 100
+/imagine prompt: A shooting comet with a dazzling trail, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, iridescent chrome border with rainbow refraction holographic sheen, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 400 --sref [URL] --sw 100
+/imagine prompt: A meteor shower raining across a night sky, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, iridescent chrome border with rainbow refraction holographic sheen, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 400 --sref [URL] --sw 100
+/imagine prompt: A spiral galaxy with glowing center and arms, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, iridescent chrome border with rainbow refraction holographic sheen, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 400 --sref [URL] --sw 100
+/imagine prompt: A vintage microphone on a grand stage with spotlight, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, iridescent chrome border with rainbow refraction holographic sheen, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 400 --sref [URL] --sw 100
+/imagine prompt: A magic wand with a crown forming from sparkles, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, iridescent chrome border with rainbow refraction holographic sheen, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 400 --sref [URL] --sw 100
+/imagine prompt: An angelic heart with a halo and tiny wings, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, iridescent chrome border with rainbow refraction holographic sheen, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 400 --sref [URL] --sw 100
+/imagine prompt: A cute cartoon goat standing on a mountain peak, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, iridescent chrome border with rainbow refraction holographic sheen, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 400 --sref [URL] --sw 100
+/imagine prompt: A grand classical temple with marble pillars, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, iridescent chrome border with rainbow refraction holographic sheen, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 400 --sref [URL] --sw 100
+/imagine prompt: A checkered racing flag waving triumphantly, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, iridescent chrome border with rainbow refraction holographic sheen, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 400 --sref [URL] --sw 100
+/imagine prompt: A lightning bolt striking with electric energy radiating, circular achievement badge icon, 3D clay render, centered composition, friendly cartoon style, iridescent chrome border with rainbow refraction holographic sheen, soft studio lighting, no text, no labels --ar 1:1 --v 6.1 --s 400 --sref [URL] --sw 100
+
+
+================================================================================
+TOTALS: 6 baseline prompts + 84 badge prompts = 90 prompts
+================================================================================
+
+NAMING CONVENTION (for saving files):
+  [trophy-id]_[milestone-name].png
+  e.g. trading-volume_goldfish.png, trading-volume_minnow.png, etc.
