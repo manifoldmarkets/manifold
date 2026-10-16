@@ -153,9 +153,11 @@ export function SectionHeader(props: {
   count?: number
   /** Noun for the count: "game" (default) or "market". */
   unit?: string
+  /** Its plural, when it is not just the noun plus s. */
+  unitPlural?: string
   accent?: boolean
 }) {
-  const { label, sublabel, count, accent, unit = 'game' } = props
+  const { label, sublabel, count, accent, unit = 'game', unitPlural } = props
   return (
     <Row className="items-baseline gap-2 px-1">
       {accent && (
@@ -172,7 +174,7 @@ export function SectionHeader(props: {
       {sublabel && <span className="text-ink-500 text-xs">{sublabel}</span>}
       {count !== undefined && (
         <span className="text-ink-400 ml-auto text-xs">
-          {count} {count === 1 ? unit : `${unit}s`}
+          {count} {count === 1 ? unit : unitPlural ?? `${unit}s`}
         </span>
       )}
     </Row>

@@ -246,6 +246,7 @@ export function NewsFeedPage() {
                   label={day.label}
                   count={day.items.length}
                   unit="story"
+                  unitPlural="stories"
                 />
                 <StoryList>
                   {day.items.map((s) => (
