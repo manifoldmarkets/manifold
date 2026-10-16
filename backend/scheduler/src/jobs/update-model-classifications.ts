@@ -14,6 +14,7 @@ import {
   getPendingClassifications,
   getProvisionalClassifications,
   getResearchEligibility,
+  openProvisionalClassification,
   provisionalCheckedAt,
   recordAgentRecommendation,
   recordPendingModels,
@@ -417,7 +418,7 @@ const researchRemainingModels = async (
  * catalog, and a model delisted from the catalog — how stealth models usually
  * end — still gets the agent, which is what can find the reveal.
  */
-const recheckProvisionalModels = async (
+export const recheckProvisionalModels = async (
   pg: SupabaseDirectClient,
   catalog: OpenRouterCatalogEntry[]
 ) => {
@@ -466,17 +467,19 @@ const recheckProvisionalModels = async (
       const verification = await verifyHuggingFaceWeights(entry.huggingFaceId)
       logHuggingFaceVerification(slug, verification)
       if (verification.confirmed) {
-        await upsertClassification(pg, {
-          permaslug: slug,
-          open: true,
-          weights: verification.repo,
-          source: 'auto',
-          evidence: {
+        const applied = await openProvisionalClassification(
+          pg,
+          row,
+          verification.repo,
+          {
             ...verification.evidence,
             openRouterName: name ?? null,
             supersededProvisional: true,
-          },
-        })
+          }
+        )
+        // A newer verdict/research snapshot wins. Do not report a flip or
+        // spend an agent call on the obsolete snapshot after losing this race.
+        if (!applied) continue
         log.warn(
           `[model-classifier] ${slug}: provisional closed -> OPEN — publisher ` +
             `now declares ${verification.repo} ` +

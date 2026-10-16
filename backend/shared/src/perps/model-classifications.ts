@@ -40,6 +40,11 @@ export type ClassificationRow = {
   provisional: boolean
 }
 
+export type ProvisionalClassificationRow = ClassificationRow & {
+  /** Exact PostgreSQL timestamp: never round this snapshot token through Date. */
+  updated_time: string
+}
+
 export type ResolvedClassifications = {
   /** Seed + adjudicated overrides, ready for computeOpenWeightShare. */
   classifications: ModelClassifications
@@ -318,6 +323,60 @@ export const upsertClassification = async (
   )
 }
 /**
+ * Apply a verified publisher repo only to the provisional snapshot we checked.
+ * Verification runs outside the database; a human may decide the row meanwhile.
+ * All writers advance updated_time, and comparing evidence also protects against
+ * two decisions sharing now() in one transaction (each decision appends history).
+ * Research-only changes conservatively skip this flip and are retried next time
+ * the row is due. The predicate and history append are one atomic mutation.
+ */
+export const openProvisionalClassification = async (
+  pg: SupabaseDirectClient,
+  observed: ProvisionalClassificationRow,
+  weights: string,
+  evidence: Record<string, unknown>
+): Promise<boolean> => {
+  if (!weights)
+    throw new Error('refusing to classify open without a weights repo')
+  if (!observed.provisional || observed.open !== false) return false
+  const applied = await pg.oneOrNone<{ permaslug: string }>(
+    `update model_classifications
+     set open = true,
+         weights = $4,
+         source = 'auto',
+         provisional = false,
+         evidence = $5::jsonb || jsonb_build_object(
+           'history',
+           coalesce(evidence->'history', '[]'::jsonb) ||
+             jsonb_build_array(jsonb_build_object(
+               'open', open,
+               'weights', weights,
+               'source', source,
+               'provisional', provisional,
+               'classifiedAt', classified_at,
+               'classifiedBy', classified_by,
+               'supersededAt', now(),
+               'evidence', evidence - 'history'
+             ))
+         ),
+         classified_at = now(),
+         classified_by = null,
+         updated_time = now()
+     where permaslug = $1 and provisional and open is false
+       and updated_time = $2::timestamptz and evidence = $3::jsonb
+     returning permaslug`,
+    [
+      observed.permaslug,
+      observed.updated_time,
+      JSON.stringify(observed.evidence),
+      weights,
+      JSON.stringify(evidence),
+    ]
+  )
+  return applied !== null
+}
+
+/**
  * Attach the research agent's findings to a PENDING or PROVISIONAL row without
  * adjudicating it.
  *
@@ -403,11 +462,11 @@ export const provisionalCheckedAt = (
  */
 export const getProvisionalClassifications = async (
   pg: SupabaseDirectClient
-): Promise<ClassificationRow[]> => {
-  const rows = await pg.manyOrNone<ClassificationRow>(
+): Promise<ProvisionalClassificationRow[]> => {
+  const rows = await pg.manyOrNone<ProvisionalClassificationRow>(
     `select permaslug, open, weights, source, evidence,
             first_seen, first_ranked_at, classified_at, classified_by,
-            provisional
+            provisional, updated_time::text
      from model_classifications
      where provisional
      order by classified_at asc, permaslug asc`
