@@ -58,7 +58,6 @@ export default function SportPage() {
         rail={rail}
         heading="Sport not found"
         subheading="Pick a sport below, or see every game."
-        backToAll
         seo={{ title: 'Sports', description: '', url: '/sports' }}
         trackPageView="/sports/unknown"
       >
@@ -102,7 +101,6 @@ export default function SportPage() {
       subheading={
         sport ? `Every ${sport.label} game, plus props and futures.` : undefined
       }
-      backToAll
       seo={{
         title: sport ? `${sport.longLabel} games and markets` : 'Sports',
         description: sport
