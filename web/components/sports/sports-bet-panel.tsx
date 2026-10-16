@@ -1,3 +1,4 @@
+import { escapeRegExp } from 'lodash'
 import { useEffect, useState } from 'react'
 import { db } from 'web/lib/supabase/db'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
@@ -120,6 +121,12 @@ export function SportsThreeWayBetDialog({
     teamB: match.teamBAnswerId,
   }
   const live = match.liveScore
+  // Titles often end with the date ("Everton vs Chelsea, Oct 17"); repeat it
+  // only when the local kickoff date differs.
+  const titleHasDate = new RegExp(
+    `\\b${escapeRegExp(match.closeDateLabel)}\\b`
+  ).test(contract.question)
+  const kickoff = `Kickoff ${match.closeTime}`
   const description = live
     ? [
         live.minute === 'HT'
@@ -133,7 +140,9 @@ export function SportsThreeWayBetDialog({
       ]
         .filter(Boolean)
         .join(' · ')
-    : `${match.closeDateLabel} · Kickoff ${match.closeTime}`
+    : titleHasDate
+    ? kickoff
+    : `${match.closeDateLabel} · ${kickoff}`
   return (
     <ThreeWayTradeDialog
       contract={contract}
