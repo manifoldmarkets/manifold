@@ -88,7 +88,7 @@ export default function SportsPage() {
         ogProps: { endpoint: 'sports', props: {} },
         imageSize: { width: OG_CARD_WIDTH * 2, height: OG_CARD_HEIGHT * 2 },
         imageAlt:
-          'Manifold Sports. Pick a game. Make a call. Trade with the crowd. Play-money prediction markets for NFL, NBA, MLB, NHL, soccer and more.',
+          'Manifold Sports. Know the game? Make the call. Trade with the crowd. Free-to-play prediction markets for NFL, NBA, MLB, NHL, soccer and more.',
       }}
       trackPageView="/sports"
     >
