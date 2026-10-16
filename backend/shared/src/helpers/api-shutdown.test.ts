@@ -6,6 +6,7 @@ import { AddressInfo } from 'node:net'
 import { createShutdown, trackRequest } from 'api/helpers/shutdown'
 import { authEndpoint, typedEndpoint } from 'api/helpers/endpoint'
 import { FullUser } from 'common/api/user-types'
+import { APIError } from 'common/api/utils'
 import { ProducerDrain } from './producer-drain'
 
 jest.mock('shared/utils', () => ({
@@ -36,7 +37,10 @@ async function endpoint(handler: RequestHandler, producers: ProducerDrain) {
   const app = express()
   app.get('/', trackRequest(handler, producers))
   app.use(((error, _req, res, _next) => {
-    if (!res.headersSent) res.status(500).end(String(error))
+    if (!res.headersSent)
+      res
+        .status(error instanceof APIError ? error.code : 500)
+        .end(String(error))
   }) as express.ErrorRequestHandler)
   const server = createServer(app)
   servers.push(server)
@@ -178,6 +182,69 @@ it('does not announce success when an accepted post-response continuation fails'
   const lifecycle = shutdown(producers)
   const stopped = lifecycle.stop()
   finish.resolve()
+  await stopped
+  expect(lifecycle.announce).not.toHaveBeenCalled()
+  expect(lifecycle.report).toHaveBeenCalledWith(true, false)
+})
+
+it.each(['typed-auth', 'legacy-auth', 'schema', 'auth-service'] as const)(
+  'allows a final marker when %s fails before entering the business handler',
+  async (kind) => {
+    const producers = new ProducerDrain()
+    const entered = deferred()
+    const finish = deferred()
+    mockVerifyToken.mockImplementation(async () => {
+      entered.resolve()
+      await finish.promise
+      if (kind === 'auth-service') throw new Error('Auth service unavailable')
+      return kind === 'schema' ? { user_id: 'test-user' } : {}
+    })
+    const handler = jest.fn(async () => ({ id: 'test-user' } as FullUser))
+    const wrapped =
+      kind === 'legacy-auth'
+        ? authEndpoint(handler)
+        : kind === 'schema'
+        ? typedEndpoint('get-contract', handler as never)
+        : typedEndpoint('me', handler)
+    const url = await endpoint(wrapped, producers)
+    const response = fetch(url, {
+      headers: { Authorization: 'Bearer fake-test-token' },
+    })
+    await entered.promise
+    const lifecycle = shutdown(producers)
+    const stopped = lifecycle.stop()
+    finish.resolve()
+    expect((await response).status).toBe(
+      kind === 'schema' ? 400 : kind === 'auth-service' ? 500 : 401
+    )
+    await stopped
+    expect(handler).not.toHaveBeenCalled()
+    expect(lifecycle.announce).toHaveBeenCalledTimes(1)
+    expect(lifecycle.report).toHaveBeenCalledWith(true, true)
+  }
+)
+
+it('withholds the marker for a business-handler error even if its status is 400', async () => {
+  const producers = new ProducerDrain()
+  const entered = deferred()
+  const finish = deferred()
+  mockVerifyToken.mockResolvedValue({ user_id: 'test-user' })
+  const url = await endpoint(
+    typedEndpoint('me', async () => {
+      entered.resolve()
+      await finish.promise
+      throw new APIError(400, 'A later operation failed after work started')
+    }),
+    producers
+  )
+  const response = fetch(url, {
+    headers: { Authorization: 'Bearer fake-test-token' },
+  })
+  await entered.promise
+  const lifecycle = shutdown(producers)
+  const stopped = lifecycle.stop()
+  finish.resolve()
+  expect((await response).status).toBe(400)
   await stopped
   expect(lifecycle.announce).not.toHaveBeenCalled()
   expect(lifecycle.report).toHaveBeenCalledWith(true, false)

@@ -1,9 +1,20 @@
-import { RequestHandler } from 'express'
+import { RequestHandler, Response } from 'express'
 import { apiProducers, ProducerDrain } from 'shared/helpers/producer-drain'
 
 // Leave headroom below PM2's explicit 8s kill_timeout and Docker's default
 // 10s stop budget. The final Redis marker has its own 500ms upper bound.
 export const PRODUCER_DRAIN_TIMEOUT_MS = 6_000
+
+const requestPhases = new WeakMap<Response, 'validation' | 'producer'>()
+
+// Only endpoint wrappers that can prove no business handler has run may mark
+// validation. Raw handlers remain producers by default, including on 4xx errors.
+export function setRequestPhase(
+  response: Response,
+  phase: 'validation' | 'producer'
+) {
+  requestPhases.set(response, phase)
+}
 
 export function trackRequest(
   handler: RequestHandler,
@@ -20,10 +31,12 @@ export function trackRequest(
     void producers
       .track(async () => {
         await handler(req, res, (error?: unknown) => {
-          if (error) producers.recordFailure()
+          if (error && requestPhases.get(res) !== 'validation')
+            producers.recordFailure()
           next(error)
         })
-        if (res.statusCode >= 500) producers.recordFailure()
+        if (res.statusCode >= 500 && requestPhases.get(res) !== 'validation')
+          producers.recordFailure()
       })
       .catch(next)
   }

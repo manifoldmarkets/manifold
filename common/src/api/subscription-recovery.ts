@@ -4,13 +4,15 @@ export type RecoverySnapshot = (
   signal: AbortSignal
 ) => Promise<() => void | boolean>
 
-const RETRY_MS = 1000
+const INITIAL_RETRY_MS = 1000
+const MAX_RETRY_MS = 30_000
 const TIMEOUT_MS = 10_000
 
 export class SubscriptionRecovery {
   private generation = 0
   private revision = 0
   private connected = false
+  private retryDelay = INITIAL_RETRY_MS
   private controller?: AbortController
   private retry?: ReturnType<typeof setTimeout>
   private timeout?: ReturnType<typeof setTimeout>
@@ -25,8 +27,12 @@ export class SubscriptionRecovery {
   }
 
   connectionChanged(connected: boolean) {
+    // The connection notification and the local subscribe acknowledgement can
+    // both report readiness. Keep an in-flight repair and its backoff intact.
+    if (connected && this.connected) return
     this.stop()
     this.connected = connected
+    this.retryDelay = INITIAL_RETRY_MS
     if (connected) void this.fetch()
   }
 
@@ -39,8 +45,13 @@ export class SubscriptionRecovery {
   }
 
   private scheduleRetry() {
-    if (this.connected)
-      this.retry = setTimeout(() => void this.fetch(), RETRY_MS)
+    if (!this.connected) return
+    // Spread clients after an outage, and bound sustained retries to one every
+    // 24-30 seconds. Continue at that rate so an open view eventually repairs
+    // even if no further reconnect or visibility change occurs.
+    const delay = Math.round(this.retryDelay * (0.8 + 0.2 * Math.random()))
+    this.retryDelay = Math.min(this.retryDelay * 2, MAX_RETRY_MS)
+    this.retry = setTimeout(() => void this.fetch(), delay)
   }
 
   private async fetch() {

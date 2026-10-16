@@ -46,6 +46,8 @@ export function useApiSubscription(opts: SubscriptionOptions) {
         .then(() => {
           // A view may mount or change filters after the reconnect completed.
           // Refresh its retained state too, once its own subscription is ready.
+          // This can add one read alongside its ordinary mount fetch, which may
+          // be cached or incremental and cannot establish a fresh snapshot.
           if (active && ws.isReady && ws.recoveryEpoch > 0)
             recovery?.connectionChanged(true)
         })

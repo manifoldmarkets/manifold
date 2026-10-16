@@ -44,6 +44,9 @@ Concurrent producer branches settle before a failure escapes their parent.
 Only a complete drain permits a final count; pending Redis publications and
 the final marker share a further 500ms deadline. Timeout or producer failure
 withholds that marker. Repeated signals reuse the same shutdown operation.
+Authentication and schema failures before the business handler starts do not
+invalidate the count. Once a handler starts, any failure remains conservative,
+including a 4xx error after work may have been committed.
 
 When the deploy reports the old VM gone, the surviving
 writer keeps its connections only if it received every broadcast the retired
@@ -86,7 +89,11 @@ it waits for subscription acknowledgements, then refetches the state used by
 active subscriptions. API snapshots bypass browser and getter caches. A read
 from an obsolete connection or filter cannot commit; a live broadcast racing
 the read causes a retry instead of overwriting newer state. Failed or ten-second
-timed-out snapshots retry. There is no shared snapshot/event watermark, so a
+timed-out snapshots retry with exponential backoff and jitter, capped at one
+attempt every 24-30 seconds plus request duration. Retries continue at that rate
+until recovery succeeds or the subscription stops. Later mounts after a
+reconnect also fetch fresh state, which can add a request alongside a consumer's
+ordinary cached or incremental read. There is no shared snapshot/event watermark, so a
 continuously busy topic can postpone reconciliation until a read finishes
 between broadcasts. Existing list limits still apply; this is state recovery,
 not an unlimited event history or exactly-once delivery protocol.
