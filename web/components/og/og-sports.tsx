@@ -1,9 +1,17 @@
 import { OG_CARD_HEIGHT, OG_CARD_WIDTH } from 'common/edge/og'
 import { formatSportsOgAsOf, SportsOgMarket } from 'common/sports-og'
+import { readableTextColor } from 'common/sports-team-colors'
 import Logo from 'web/public/logo.svg'
+import { OgSportGraphic } from './og-sport-graphic'
 
 // The featured market is a dated snapshot; the artwork is the outage fallback.
-export function OgSports({ market }: { market: SportsOgMarket | null }) {
+export function OgSports({
+  market,
+  logos = [],
+}: {
+  market: SportsOgMarket | null
+  logos?: (string | undefined)[]
+}) {
   return (
     <div
       className="flex flex-col bg-indigo-700"
@@ -41,16 +49,16 @@ export function OgSports({ market }: { market: SportsOgMarket | null }) {
         </div>
 
         <div className="flex flex-1 items-center justify-between">
-          <div className="flex flex-col" style={{ width: 570 }}>
+          <div className="flex flex-col" style={{ width: 500 }}>
             <span
               className="flex text-gray-900"
-              style={{ fontSize: 68, lineHeight: 1.1 }}
+              style={{ fontSize: 62, lineHeight: 1.1 }}
             >
               Know the game?
             </span>
             <span
               className="flex text-indigo-700"
-              style={{ fontSize: 68, lineHeight: 1.1 }}
+              style={{ fontSize: 62, lineHeight: 1.1 }}
             >
               Make the call.
             </span>
@@ -62,7 +70,7 @@ export function OgSports({ market }: { market: SportsOgMarket | null }) {
                 <span
                   key={sport}
                   className="flex rounded-lg bg-indigo-50 text-indigo-700"
-                  style={{ padding: '8px 14px', fontSize: 20 }}
+                  style={{ padding: '8px 12px', fontSize: 18 }}
                 >
                   {sport}
                 </span>
@@ -70,7 +78,7 @@ export function OgSports({ market }: { market: SportsOgMarket | null }) {
             </div>
           </div>
           {market ? (
-            <SportsMarketPreview market={market} />
+            <SportsMarketPreview market={market} logos={logos} />
           ) : (
             <div className="flex justify-center" style={{ width: 400 }}>
               <SportsIllustration width={304} height={256} />
@@ -93,59 +101,149 @@ export function OgSports({ market }: { market: SportsOgMarket | null }) {
 const shorten = (text: string, length: number) =>
   text.length <= length ? text : text.slice(0, length - 1).trimEnd() + '…'
 
-function SportsMarketPreview({ market }: { market: SportsOgMarket }) {
-  const question = market.question.replace(/\s*\[official\]\s*$/i, '')
-  const hasDraw = market.outcomes.length === 3
+function SportsMarketPreview({
+  market,
+  logos,
+}: {
+  market: SportsOgMarket
+  logos: (string | undefined)[]
+}) {
+  const teams = market.outcomes.slice(0, 2)
+  const draw = market.outcomes[2]
+  const colors = teams.map((team, i) => team.color ?? ['#4f46e5', '#0f766e'][i])
+  const when = market.startTime
+    ? new Intl.DateTimeFormat('en-US', {
+        timeZone: 'UTC',
+        month: 'short',
+        day: 'numeric',
+        ...(market.kickoffKnown
+          ? { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' as const }
+          : {}),
+      }).format(new Date(market.startTime)) +
+      (market.kickoffKnown ? ' UTC' : '')
+    : shorten(market.question.replace(/\s*\[official\]\s*$/i, ''), 48)
   return (
     <div
-      className="flex shrink-0 flex-col rounded-2xl border border-indigo-200 bg-white shadow-lg"
-      style={{ width: 400, padding: 22 }}
+      className="relative flex shrink-0 flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-lg"
+      style={{ width: 480 }}
     >
-      <div className="flex items-center justify-between">
-        <span className="flex text-indigo-700" style={{ fontSize: 20 }}>
-          Featured market
-        </span>
-        <span className="flex text-gray-500" style={{ fontSize: 18 }}>
-          {shorten(market.league, 16)}
-        </span>
-      </div>
-      <span
-        className="my-4 flex overflow-hidden text-gray-900"
+      <div
+        className="relative flex flex-col"
         style={{
-          fontSize: hasDraw ? 24 : 26,
-          lineHeight: 1.15,
-          maxHeight: hasDraw ? 83 : 90,
+          padding: '18px 22px 20px',
+          backgroundImage: `linear-gradient(to right, ${colors[0]}20, ${colors[1]}20)`,
         }}
       >
-        {shorten(question, 78)}
-      </span>
-      <div className="flex flex-col" style={{ gap: 8 }}>
-        {market.outcomes.map(({ name, prob }, index) => {
-          const percent = Math.round(prob * 100)
-          const color = ['#ccfbf1', '#e0e7ff', '#e5e7eb'][index]
-          return (
+        <div
+          className="absolute flex"
+          style={{ left: 129, top: 65, opacity: 0.24 }}
+        >
+          <OgSportGraphic sport={market.sport} />
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="flex text-indigo-700" style={{ fontSize: 17 }}>
+            Featured market
+          </span>
+          <span className="flex text-gray-600" style={{ fontSize: 17 }}>
+            {shorten(market.league, 24)}
+          </span>
+        </div>
+        <span
+          className="mt-2 flex justify-center text-gray-600"
+          style={{ fontSize: 17 }}
+        >
+          {when}
+        </span>
+        <div className="relative mt-4 flex" style={{ width: 434 }}>
+          {teams.map((team, i) => (
             <div
-              key={index}
-              className="flex items-center justify-between rounded-lg text-gray-900"
+              key={i}
+              className="flex shrink-0 flex-col items-center"
+              style={{ width: 196, marginLeft: i === 1 ? 42 : 0 }}
+            >
+              <div
+                className="flex items-center justify-center rounded-2xl shadow-sm"
+                style={{
+                  width: 68,
+                  height: 68,
+                  backgroundColor: logos[i] ? '#ffffff' : colors[i],
+                  color: readableTextColor(colors[i]),
+                }}
+              >
+                {logos[i] ? (
+                  <img
+                    src={logos[i]}
+                    alt={team.name}
+                    width={58}
+                    height={58}
+                    style={{ objectFit: 'contain' }}
+                  />
+                ) : (
+                  <span className="flex" style={{ fontSize: 25 }}>
+                    {(team.shortName ?? team.name).slice(0, 3).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <span
+                className="mt-3 flex items-center justify-center overflow-hidden text-center text-gray-900"
+                style={{ fontSize: 23, lineHeight: 1.15, height: 54 }}
+              >
+                {shorten(team.name, 30)}
+              </span>
+              <span
+                className="mt-3 flex items-center justify-center rounded-xl"
+                style={{
+                  width: 132,
+                  height: 54,
+                  fontSize: 36,
+                  backgroundColor: colors[i],
+                  color: readableTextColor(colors[i]),
+                }}
+              >{`${Math.round(team.prob * 100)}%`}</span>
+            </div>
+          ))}
+          <span
+            className="absolute flex text-gray-500"
+            style={{ left: 206, top: 79, fontSize: 16 }}
+          >
+            vs
+          </span>
+          {draw && (
+            <div
+              className="absolute flex flex-col items-center text-gray-600"
               style={{
-                padding: hasDraw ? '8px 14px' : '10px 14px',
-                backgroundImage: `linear-gradient(to right, ${color} ${percent}%, #f3f4f6 ${percent}%)`,
+                left: 184,
+                bottom: 0,
+                width: 66,
+                height: 54,
+                fontSize: 14,
               }}
             >
+              <span className="flex">Draw</span>
               <span
-                className="flex overflow-hidden"
-                style={{ fontSize: 20, lineHeight: 1.2, maxHeight: 24 }}
-              >
-                {shorten(name, 24)}
-              </span>
-              <span className="ml-2 flex shrink-0" style={{ fontSize: 22 }}>
-                {`${percent}%`}
-              </span>
+                className="mt-1 flex"
+                style={{ fontSize: 23 }}
+              >{`${Math.round(draw.prob * 100)}%`}</span>
             </div>
-          )
-        })}
+          )}
+        </div>
       </div>
-      <span className="mt-4 flex text-gray-500" style={{ fontSize: 16 }}>
+      <div className="flex h-2 overflow-hidden">
+        {market.outcomes.map((team, i) => (
+          <div
+            key={i}
+            className="flex h-full"
+            style={{
+              width: `${team.prob * 100}%`,
+              backgroundColor: i === 2 ? '#9ca3af' : colors[i],
+            }}
+          />
+        ))}
+      </div>
+      <span
+        className="flex justify-center py-3 text-gray-500"
+        style={{ fontSize: 15 }}
+      >
         {`Odds as of ${formatSportsOgAsOf(market.asOf)}`}
       </span>
     </div>

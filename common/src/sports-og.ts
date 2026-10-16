@@ -1,16 +1,51 @@
 import { z } from 'zod'
+import { FIREBASE_CONFIG } from './envs/constants'
 import { getGameDisplayTeams, selectFeaturedGame } from './sports-game-feed'
+
+/** Only fetch team uploads from our own public image bucket in the OG worker. */
+export function isSportsOgLogoUrl(value: string) {
+  try {
+    const url = new URL(value)
+    const prefix = `/v0/b/${FIREBASE_CONFIG.storageBucket}/o/`
+    return (
+      url.origin === 'https://firebasestorage.googleapis.com' &&
+      !url.username &&
+      !url.password &&
+      url.pathname.startsWith(prefix) &&
+      decodeURIComponent(url.pathname.slice(prefix.length)).startsWith(
+        'user-images/'
+      ) &&
+      url.searchParams.get('alt') === 'media'
+    )
+  } catch {
+    return false
+  }
+}
 
 const timestamp = z.number().finite().int().positive().max(8.64e15)
 const probability = z.number().finite().min(0).max(1)
 const team = z.object({
   name: z.string().trim().min(1).max(120),
   prob: probability,
+  shortName: z.string().trim().min(1).max(24).optional().catch(undefined),
+  color: z
+    .string()
+    .regex(/^#[\da-f]{6}$/i)
+    .nullish()
+    .catch(null),
+  imageUrl: z
+    .string()
+    .max(1000)
+    .refine(isSportsOgLogoUrl)
+    .nullish()
+    .catch(null),
 })
 const gameSchema = z.object({
   id: z.string().min(1).max(128),
   question: z.string().trim().min(1).max(500),
   league: z.string().trim().min(1).max(80),
+  sport: z.string().max(64).optional(),
+  kickoffKnown: z.boolean().optional(),
   status: z.enum(['live', 'upcoming', 'finished']),
   startTime: timestamp,
   closeTime: timestamp,
@@ -25,6 +60,9 @@ const marketSchema = z.object({
   id: z.string().min(1).max(128),
   question: z.string().trim().min(1).max(500),
   league: z.string().trim().min(1).max(80),
+  sport: z.string().max(64).optional(),
+  startTime: timestamp.optional(),
+  kickoffKnown: z.boolean().optional(),
   outcomes: z.array(team).min(2).max(3),
   asOf: timestamp,
 })
@@ -60,6 +98,9 @@ export function selectSportsOgMarket(
     id: game.id,
     question: game.question,
     league: game.league,
+    sport: game.sport,
+    startTime: game.startTime,
+    kickoffKnown: game.kickoffKnown,
     outcomes,
     asOf: snapshotTime,
   }
@@ -69,7 +110,7 @@ export function selectSportsOgMarket(
 export function parseSportsOgMarket(
   value: string | null
 ): SportsOgMarket | null {
-  if (!value || value.length > 2400) return null
+  if (!value || value.length > 6000) return null
   try {
     const parsed = marketSchema.safeParse(JSON.parse(value))
     return parsed.success ? parsed.data : null

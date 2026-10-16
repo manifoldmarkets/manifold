@@ -1,16 +1,22 @@
 import {
   formatSportsOgAsOf,
+  isSportsOgLogoUrl,
   parseSportsOgMarket,
   selectSportsOgMarket,
   sportsOgImageAlt,
 } from './sports-og'
 import { selectFeaturedGame } from './sports-game-feed'
+import { FIREBASE_CONFIG } from './envs/constants'
+
+const LOGO = `https://firebasestorage.googleapis.com/v0/b/${FIREBASE_CONFIG.storageBucket}/o/user-images%2FManifoldSports%2Fteam.png?alt=media`
 
 const NOW = Date.parse('2026-10-16T02:30:00Z')
 const game = (overrides = {}) => ({
   id: 'game-a',
   question: 'Panthers at Eagles, Oct 18 [official]',
   league: 'NFL',
+  sport: 'nfl',
+  kickoffKnown: true,
   status: 'upcoming' as const,
   startTime: NOW + 60_000,
   closeTime: NOW + 3_600_000,
@@ -107,7 +113,7 @@ it('preserves the snapshot across the image URL round-trip', () => {
   expect(formatSportsOgAsOf(NOW)).toBe('Oct 16, 2026, 02:30 UTC')
 })
 
-it.each([null, '{', 'x'.repeat(2401), '{"outcomes":[]}'])(
+it.each([null, '{', 'x'.repeat(6001), '{"outcomes":[]}'])(
   'rejects invalid image input',
   (value) => {
     expect(parseSportsOgMarket(value)).toBeNull()
@@ -130,4 +136,92 @@ it('rejects malformed odds and timestamps in the public image URL', () => {
       })
     )
   ).toBeNull()
+})
+
+it('keeps each team logo, colour and code with its odds after away/home ordering', () => {
+  const market = selectSportsOgMarket(
+    snapshot([
+      game({
+        home: {
+          name: 'Philadelphia Eagles',
+          shortName: 'PHI',
+          color: '#005962',
+          imageUrl: LOGO,
+          prob: 0.37,
+        },
+        away: {
+          name: 'Carolina Panthers',
+          shortName: 'CAR',
+          color: '#0085CA',
+          imageUrl: null,
+          prob: 0.63,
+        },
+      }),
+    ]),
+    NOW
+  )
+  expect(market?.outcomes[0]).toMatchObject({
+    shortName: 'CAR',
+    color: '#0085CA',
+    prob: 0.63,
+  })
+  expect(market?.outcomes[1]).toMatchObject({
+    shortName: 'PHI',
+    color: '#005962',
+    imageUrl: LOGO,
+    prob: 0.37,
+  })
+  expect(market).toMatchObject({
+    sport: 'nfl',
+    startTime: NOW + 60_000,
+    kickoffKnown: true,
+  })
+  expect(parseSportsOgMarket(JSON.stringify(market))).toEqual(market)
+})
+
+it.each([
+  'http://127.0.0.1/logo.png',
+  'https://firebasestorage.googleapis.com.evil.example/team.png',
+  LOGO.replace(FIREBASE_CONFIG.storageBucket, 'other-bucket'),
+  LOGO.replace('user-images', 'private-images'),
+  LOGO.replace('alt=media', 'alt=json'),
+  'data:image/svg+xml,<svg/>',
+])('does not accept an arbitrary URL for the OG worker to fetch: %s', (url) => {
+  expect(isSportsOgLogoUrl(url)).toBe(false)
+})
+
+it('falls back on invalid decoration without losing the real market', () => {
+  const market = selectSportsOgMarket(
+    snapshot([
+      game({
+        home: {
+          name: 'Eagles',
+          prob: 0.37,
+          color: 'url(https://example.com)',
+          imageUrl: 'http://127.0.0.1/logo.png',
+        },
+      }),
+    ]),
+    NOW
+  )
+  expect(market?.outcomes[1]).toMatchObject({
+    name: 'Eagles',
+    prob: 0.37,
+    color: null,
+    imageUrl: null,
+  })
+  expect(
+    parseSportsOgMarket(
+      JSON.stringify({
+        id: 'old-url',
+        question: 'A vs B',
+        league: 'NFL',
+        outcomes: [
+          { name: 'A', prob: 0.5 },
+          { name: 'B', prob: 0.5 },
+        ],
+        asOf: NOW,
+      })
+    )
+  ).not.toBeNull()
 })
