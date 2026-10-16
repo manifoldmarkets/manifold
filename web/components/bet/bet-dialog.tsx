@@ -307,7 +307,7 @@ export function ThreeWayTradeDialog(props: {
   const choices =
     ordered.length === contract.answers.length
       ? ordered
-      : sortBy(contract.answers, 'index')
+      : drawInMiddle(sortBy(contract.answers, 'index'))
   // Without a requested answer, open on the most likely one.
   const [answerId, setAnswerId] = useState(
     initialAnswerId && byId[initialAnswerId]
@@ -335,6 +335,14 @@ export function ThreeWayTradeDialog(props: {
       }
     />
   )
+}
+
+// Soccer markets list Draw last; the sports page shows it between the teams.
+const drawInMiddle = (answers: Answer[]) => {
+  const draw = answers.find((a) => a.text === 'Draw')
+  if (!draw || answers.length < 3) return answers
+  const [first, ...rest] = answers.filter((a) => a.id !== draw.id)
+  return [first, draw, ...rest]
 }
 
 function AnswerPicker(props: {
