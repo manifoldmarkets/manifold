@@ -68,7 +68,8 @@ export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
   const counts: NewsFeedCounts = {}
   for (const s of linked) counts[s.category] = (counts[s.category] ?? 0) + 1
 
-  // The build is newest first already; the other orders sort a copy.
+  // Sorted here rather than trusting the build order, which a cached build
+  // from an older version may not share.
   const pool = includeUnlinked ? build.stories : linked
   const filtered =
     category && isNewsCategory(category)
@@ -83,7 +84,7 @@ export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
           (s) => -likeCount(s.id),
           (s) => -s.updatedTime
         )
-      : filtered
+      : sortBy(filtered, (s) => -s.updatedTime)
   const page = ordered.slice(offset, offset + limit)
 
   const resolvingSoon = sortBy(
