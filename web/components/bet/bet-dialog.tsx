@@ -201,6 +201,33 @@ function TradeTicket(props: TradeTicketProps) {
   // Named sides (e.g. Republican/Democratic) show the chosen side's chance;
   // plain YES/NO shows the YES chance, which buying NO moves down.
   const sideProb = showsSideProbability(contract, pseudonym)
+  const heading = (
+    <>
+      {above}
+      <Link
+        className="line-clamp-2 pr-7 text-lg font-semibold leading-snug hover:underline"
+        href={contractPath(contract)}
+        title={title}
+      >
+        {title}
+      </Link>
+      {description && <div className="text-ink-600 text-sm">{description}</div>}
+    </>
+  )
+  // Lists and sports rows can be stale, so the market may have closed since.
+  const isClosed =
+    contract.isResolved ||
+    (contract.closeTime != null && contract.closeTime <= Date.now())
+  if (isClosed)
+    return (
+      <Col className="gap-1">
+        {heading}
+        <p className="text-ink-600 py-4 text-sm">
+          Trading has closed on this market.
+        </p>
+      </Col>
+    )
+
   return (
     <BuyPanel
       key={contract.id + multiProps.answerToBuy.id}
@@ -221,17 +248,7 @@ function TradeTicket(props: TradeTicketProps) {
           : probabilityLabel
         return (
           <Col className="mb-2 gap-1">
-            {above}
-            <Link
-              className="line-clamp-2 pr-7 text-lg font-semibold leading-snug hover:underline"
-              href={contractPath(contract)}
-              title={title}
-            >
-              {title}
-            </Link>
-            {description && (
-              <div className="text-ink-600 text-sm">{description}</div>
-            )}
+            {heading}
             <Row className="items-baseline justify-between gap-2">
               <span
                 className="text-ink-500 min-w-0 truncate text-sm"
@@ -416,7 +433,7 @@ function MultiChoiceTradeDialog(props: {
           >
             {contract.question}
           </Link>
-          {answers.length > ANSWER_SEARCH_THRESHOLD && (
+          {(answers.length > ANSWER_SEARCH_THRESHOLD || query) && (
             <Input
               type="search"
               placeholder="Search answers"

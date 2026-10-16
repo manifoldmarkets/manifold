@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { db } from 'web/lib/supabase/db'
+import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { getContract, getAnswersForContracts } from 'common/supabase/contracts'
 import { CPMMMultiContract, isMultiCpmm } from 'common/contract'
 import {
@@ -14,14 +15,16 @@ import { SportsMatch, MatchOutcome } from './sports-match-card'
 // with a Draw are three-way. Both load the contract by id.
 function useSportsContract(contractId: string | undefined) {
   const [contract, setContract] = useState<CPMMMultiContract | null>(null)
+  const [failed, setFailed] = useState(!contractId)
 
   useEffect(() => {
     if (!contractId) return
     let cancelled = false
     getContract(db, contractId)
       .then(async (c) => {
+        if (cancelled) return
         // isMultiCpmm: a converted cpmm-multi-2 game would otherwise render a silent null.
-        if (cancelled || !c || !isMultiCpmm(c)) return
+        if (!c || !isMultiCpmm(c)) return setFailed(true)
         const answerMap = await getAnswersForContracts(db, [c.id])
         if (cancelled) return
         const multi = c as CPMMMultiContract
@@ -30,13 +33,32 @@ function useSportsContract(contractId: string | undefined) {
           answers: answerMap[c.id] ?? multi.answers ?? [],
         })
       })
-      .catch(() => {})
+      .catch(() => {
+        if (!cancelled) setFailed(true)
+      })
     return () => {
       cancelled = true
     }
   }, [contractId])
 
-  return contract
+  return { contract, failed }
+}
+
+// The row keeps its bet state while this is open, so give it a way to close.
+function SportsLoadError(props: { onClose: () => void }) {
+  return (
+    <Modal
+      open
+      setOpen={(open) => {
+        if (!open) props.onClose()
+      }}
+      className={MODAL_CLASS}
+    >
+      <p className="text-ink-700">
+        Couldn&apos;t load this market. Please try again.
+      </p>
+    </Modal>
+  )
 }
 
 export function SportsVersusBetDialog({
@@ -49,8 +71,9 @@ export function SportsVersusBetDialog({
   /** The answer (team) the dialog opens on; defaults to the first answer. */
   initialAnswerId?: string
 }) {
-  const contract = useSportsContract(contractId)
+  const { contract, failed } = useSportsContract(contractId)
 
+  if (failed) return <SportsLoadError onClose={onClose} />
   if (!contract) return null
   // The versus panel treats the first answer as YES and the second as NO, so
   // the side is decided by where the answer sits in the fetched market, not
@@ -81,8 +104,9 @@ export function SportsThreeWayBetDialog({
   initialOutcome: MatchOutcome
   onClose: () => void
 }) {
-  const contract = useSportsContract(match.contractId)
+  const { contract, failed } = useSportsContract(match.contractId)
 
+  if (failed) return <SportsLoadError onClose={onClose} />
   if (!contract) return null
   const setOpen = (open: boolean) => {
     if (!open) onClose()
