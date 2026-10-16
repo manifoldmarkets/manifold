@@ -74,7 +74,7 @@ export function OgSports() {
         style={{ borderTop: '1px solid #4338ca', paddingTop: 20, fontSize: 22 }}
       >
         <span className="flex">Play-money prediction markets</span>
-        <span className="flex">Live odds. Upcoming games. Season winners.</span>
+        <span className="flex">Free to play</span>
       </div>
     </div>
   )
