@@ -235,3 +235,25 @@ test('search combines full state names, measure numbers and topics', () => {
   assert.ok(matchesMeasureQuery(nv, 'Nevada Q6', 'Nevada'))
   assert.ok(!matchesMeasureQuery(ca, 'NV prop 39', 'California'))
 })
+
+test('comma-separated measure searches combine states and specific measures', () => {
+  const ca = BALLOT_MEASURES.find((m) => m.key === 'CA-prop-39')!
+  const nv = BALLOT_MEASURES.find((m) => m.key === 'NV-q-6')!
+  const otherCa = { ...base }
+  for (const query of ['California,NV', ' CA , Nevada, ', ',,']) {
+    assert.ok(matchesMeasureQuery(ca, query, 'California'), query)
+    assert.ok(matchesMeasureQuery(nv, query, 'Nevada'), query)
+  }
+  for (const query of [
+    'CA Prop 39, Nevada Q6',
+    ',CA Prop 39,,Nevada Q6,CA Prop 39, ',
+  ]) {
+    assert.ok(matchesMeasureQuery(ca, query, 'California'), query)
+    assert.ok(matchesMeasureQuery(nv, query, 'Nevada'), query)
+    assert.ok(!matchesMeasureQuery(otherCa, query, 'California'), query)
+  }
+  for (const query of ['texas,ct-1', ',missing topic, ']) {
+    assert.ok(!matchesMeasureQuery(ca, query, 'California'), query)
+    assert.ok(!matchesMeasureQuery(nv, query, 'Nevada'), query)
+  }
+})
