@@ -9,6 +9,7 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { SEO } from 'web/components/SEO'
+import { groupByDay, SectionHeader } from 'web/components/sports/schedule-list'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useUser } from 'web/hooks/use-user'
@@ -16,7 +17,7 @@ import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { CategoryFilter, CategoryRail } from './category-rail'
 import { ResolvingSoon, SpotlightQuestion } from './resolving-soon'
-import { StoryCard, StoryCardSkeleton } from './story-card'
+import { StoryRow, StoryRowSkeleton } from './story-row'
 
 const PAGE_SIZE = 40
 /** The schema's ceiling for one request. */
@@ -26,8 +27,9 @@ const BUILDING_POLL_MS = 8_000
 const NEW_HIGHLIGHT_MS = 45_000
 
 /**
- * /news: the wire, with markets. Stories arrive at the top as the server's
- * refresher finds them; prices on the rows update live.
+ * /news: the wire, with markets. One list per day of compact rows, like the
+ * sports feed; a row opens to its outlets and markets. Stories arrive as the
+ * server's refresher finds them; prices update live.
  */
 export function NewsFeedPage() {
   const user = useUser()
@@ -91,6 +93,14 @@ export function NewsFeedPage() {
     return byId
   }, [data?.stories])
   const stories = data?.stories ?? []
+  // One list per day, newest day first; within a day the server's ranking.
+  const days = useMemo(
+    () =>
+      groupByDay(stories, (s) => s.updatedTime).sort((a, b) =>
+        a.key < b.key ? 1 : -1
+      ),
+    [stories]
+  )
   const hasMore = !!data && data.total > stories.length && limit < MAX_LIMIT
   const linkedCount = data
     ? sum(Object.values(data.counts).map((n) => n ?? 0))
@@ -137,11 +147,11 @@ export function NewsFeedPage() {
         <Row className="items-end justify-between gap-3 px-1">
           <Col className="min-w-0 gap-0.5">
             <h1 className="text-ink-1000 text-2xl font-bold tracking-tight">
-              Manifold News
+              News
             </h1>
             <p className="text-ink-500 text-sm">
-              Every story on the wire, with the markets it moves. Tap a price to
-              bet.
+              Every story on the wire, with the markets it moves. Open a story
+              to trade.
             </p>
           </Col>
           <Row className="shrink-0 items-center gap-2">
@@ -203,42 +213,54 @@ export function NewsFeedPage() {
           />
         )}
 
-        <Col className="gap-3">
-          {building && stories.length === 0 ? (
-            <>
-              <Notice>
-                Gathering the wire and matching markets. The first build takes a
-                couple of minutes; this page updates itself.
-              </Notice>
-              <StoryCardSkeleton hero />
-              <StoryCardSkeleton />
-              <StoryCardSkeleton />
-            </>
-          ) : stories.length === 0 ? (
+        {building && stories.length === 0 ? (
+          <Col className="gap-2">
             <Notice>
-              No stories with a market in this section yet.{' '}
-              {!includeUnlinked && (
-                <button
-                  type="button"
-                  className="text-primary-700 underline"
-                  onClick={() => setIncludeUnlinked(true)}
-                >
-                  Show unlinked stories too
-                </button>
-              )}
+              Gathering the wire and matching markets. The first build takes a
+              couple of minutes; this page updates itself.
             </Notice>
-          ) : (
-            stories.map((s, i) => (
-              <StoryCard
-                key={s.id}
-                story={s}
-                contractsById={contractsById}
-                hero={i === 0 && category === 'all' && !includeUnlinked}
-                isNew={fresh.has(s.id)}
-              />
-            ))
-          )}
-        </Col>
+            <StoryList>
+              {[0, 1, 2, 3, 4].map((i) => (
+                <StoryRowSkeleton key={i} />
+              ))}
+            </StoryList>
+          </Col>
+        ) : stories.length === 0 ? (
+          <Notice>
+            No stories with a market in this section yet.{' '}
+            {!includeUnlinked && (
+              <button
+                type="button"
+                className="text-primary-700 underline"
+                onClick={() => setIncludeUnlinked(true)}
+              >
+                Show unlinked stories too
+              </button>
+            )}
+          </Notice>
+        ) : (
+          <Col className="gap-5">
+            {days.map((day) => (
+              <Col key={day.key} className="gap-2">
+                <SectionHeader
+                  label={day.label}
+                  count={day.items.length}
+                  unit="story"
+                />
+                <StoryList>
+                  {day.items.map((s) => (
+                    <StoryRow
+                      key={s.id}
+                      story={s}
+                      contractsById={contractsById}
+                      isNew={fresh.has(s.id)}
+                    />
+                  ))}
+                </StoryList>
+              </Col>
+            ))}
+          </Col>
+        )}
 
         {hasMore && (
           <button
@@ -275,6 +297,15 @@ export function NewsFeedPage() {
         </p>
       </Col>
     </Page>
+  )
+}
+
+/** The bordered, divided list the sports feed uses for its rows. */
+function StoryList(props: { children: React.ReactNode }) {
+  return (
+    <Col className="border-ink-200 bg-canvas-0 divide-ink-100 divide-y overflow-hidden rounded-lg border">
+      {props.children}
+    </Col>
   )
 }
 
