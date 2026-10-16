@@ -1,8 +1,5 @@
 import { Contract } from 'common/contract'
-import {
-  isEligibleRelatedMarket,
-  relatedMarketsFilterKey,
-} from 'common/related-markets'
+import { isEligibleRelatedMarket } from 'common/related-markets'
 import { MINUTE_MS } from 'common/util/time'
 import { getContractsDirect } from 'shared/supabase/contracts'
 import {
@@ -16,6 +13,10 @@ import { APIHandler } from 'api/helpers/endpoint'
 import { orderBy } from 'lodash'
 import { TOPIC_SIMILARITY_THRESHOLD } from 'shared/helpers/embeddings'
 import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
+import {
+  isValidRelatedMarketsVerdict,
+  relatedMarketsFilterKey,
+} from 'shared/helpers/related-markets-filter'
 
 type cacheType = {
   marketIdsFromEmbeddings: string[]
@@ -96,10 +97,11 @@ export const getRelatedMarkets: APIHandler<'get-related-markets'> = async (
   ) {
     const filterKey = relatedMarketsFilterKey(
       contractId,
-      marketsFromEmbeddings.map((market) => market.id)
+      question,
+      marketsFromEmbeddings
     )
-    let marketsToKeep = await cacheGetJson<string[]>(filterKey)
-    if (Array.isArray(marketsToKeep)) {
+    let marketsToKeep: unknown = await cacheGetJson(filterKey)
+    if (isValidRelatedMarketsVerdict(marketsToKeep, marketsFromEmbeddings)) {
       metrics.inc('cache/hits', { cache: 'related-markets-filter' })
     } else {
       metrics.inc('cache/misses', { cache: 'related-markets-filter' })
@@ -131,7 +133,9 @@ Return a JSON array containing ONLY the IDs of markets to KEEP (those that are d
         })
         // An empty verdict is treated as "no filtering" below; don't pin
         // that for a day in case it was a bad answer rather than a judgment.
-        if (Array.isArray(marketsToKeep) && marketsToKeep.length > 0) {
+        if (
+          isValidRelatedMarketsVerdict(marketsToKeep, marketsFromEmbeddings)
+        ) {
           await cacheSetJson(
             filterKey,
             marketsToKeep,
@@ -147,7 +151,7 @@ Return a JSON array containing ONLY the IDs of markets to KEEP (those that are d
     }
 
     const keep = marketsToKeep
-    if (Array.isArray(keep) && keep.length > 0) {
+    if (isValidRelatedMarketsVerdict(keep, marketsFromEmbeddings)) {
       marketsFromEmbeddings = marketsFromEmbeddings.filter((market) =>
         keep.includes(market.id)
       )
