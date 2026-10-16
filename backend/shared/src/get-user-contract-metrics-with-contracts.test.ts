@@ -19,7 +19,7 @@ const getMetrics = getUserContractMetricsWithContracts as (
 
 it.each([
   ['odds:americanfootball_nfl:game', 'NFL', 'NFL'],
-  ['537327', 'FIFA World Cup', 'WORLD CUP'],
+  ['537327', 'FIFA World Cup', 'WC26'],
 ])(
   'preserves the profile league label for %s',
   async (eventId, league, label) => {

@@ -1,4 +1,5 @@
 import { SPORTS_CALENDAR } from './sports-calendar'
+import { SPORT_CATEGORIES } from './sports-schedule'
 import { MANIFOLD_SPORTS_USER_IDS } from './sports'
 import {
   getSportsLeagueLabel,
@@ -26,14 +27,26 @@ describe('getSportsLeagueLabel', () => {
     ).toBe('EPL')
   })
 
-  it('labels the older football-data markets by league', () => {
+  it('names college games the way the /sports chips do', () => {
+    const chip = (key: string) =>
+      SPORT_CATEGORIES.find((c) => c.key === key)?.label
+    const label = (sportKey: string) =>
+      getSportsLeagueLabel({
+        creatorId: sports,
+        sportsEventId: `odds:${sportKey}:abc`,
+      })
+    expect(label('americanfootball_ncaaf')).toBe(chip('ncaaf'))
+    expect(label('basketball_ncaab')).toBe(chip('ncaab'))
+  })
+
+  it('labels the older football-data World Cup markets WC26', () => {
     expect(
       getSportsLeagueLabel({
         creatorId: sports,
         sportsEventId: '537327',
         sportsLeague: 'FIFA World Cup',
       })
-    ).toBe('WORLD CUP')
+    ).toBe('WC26')
   })
 
   it("doesn't label a market someone else made with sports fields", () => {

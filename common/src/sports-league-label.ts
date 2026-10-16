@@ -1,5 +1,5 @@
 import { parseOddsEventId } from './odds-markets'
-import { MANIFOLD_SPORTS_USER_IDS } from './sports'
+import { MANIFOLD_SPORTS_USER_IDS, WORLD_CUP_2026 } from './sports'
 
 // The short league label an official game market shows in front of its
 // title ("NFL Seahawks at Broncos, Oct 15"), the way a perp shows its ticker.
@@ -9,7 +9,8 @@ import { MANIFOLD_SPORTS_USER_IDS } from './sports'
 const LABEL_BY_ODDS_KEY: Record<string, string> = {
   americanfootball_nfl: 'NFL',
   americanfootball_nfl_preseason: 'NFL',
-  americanfootball_ncaaf: 'CFB',
+  // What the /sports chip calls it.
+  americanfootball_ncaaf: 'NCAAF',
   baseball_mlb: 'MLB',
   basketball_nba: 'NBA',
   basketball_wnba: 'WNBA',
@@ -24,9 +25,12 @@ const LABEL_BY_ODDS_KEY: Record<string, string> = {
   soccer_france_ligue_one: 'LIGUE 1',
 }
 
-/** By `sportsLeague`, for the older football-data markets. */
+/**
+ * By `sportsLeague`, for the older football-data markets. That pipeline only
+ * ran the 2026 World Cup; a later one comes through the Odds API keys above.
+ */
 const LABEL_BY_LEAGUE: Record<string, string> = {
-  'FIFA World Cup': 'WORLD CUP',
+  [WORLD_CUP_2026.sportsLeague]: 'WC26',
 }
 
 /** Exported for the test that keeps it in step with the calendar. */
