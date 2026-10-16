@@ -155,7 +155,7 @@ export const getBestComments: APIHandler<'get-best-comments'> = rateLimitByUser(
         `
 
         const batchMsgContent = await promptAI(batchPrompt, {
-          model: aiModels.flash,
+          model: aiModels.haiku,
         })
         const batchCommentIds = batchMsgContent
           ? batchMsgContent
@@ -199,7 +199,7 @@ export const getBestComments: APIHandler<'get-best-comments'> = rateLimitByUser(
       So, what are the highest quality ~${limit} comment IDs separated by commas, in order
       of descending quality? (ie don't say here are my top comments, just give me the IDs)
     `
-    const chosenComments = await promptAI(prompt, { model: aiModels.flash })
+    const chosenComments = await promptAI(prompt, { model: aiModels.haiku })
     const commentIds = chosenComments
       ? chosenComments
           .split(',')
