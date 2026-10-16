@@ -360,6 +360,17 @@ function NotificationSettingLine(props: {
   const [emailEnabled, setEmailEnabled] = useState(previousEmailValue)
   const [mobileEnabled, setMobileEnabled] = useState(previousMobileValue)
   const [error, setError] = useState<string>('')
+
+  useEffect(() => {
+    setInAppEnabled(previousInAppValue)
+  }, [previousInAppValue])
+  useEffect(() => {
+    setEmailEnabled(previousEmailValue)
+  }, [previousEmailValue])
+  useEffect(() => {
+    setMobileEnabled(previousMobileValue)
+  }, [previousMobileValue])
+
   const navigateToSection = useContext(SectionRoutingContext)
   const highlight = navigateToSection === subscriptionTypeKey
   const isOptOutSection = subscriptionTypeKey === 'opt_out_all'
