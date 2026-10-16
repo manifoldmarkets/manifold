@@ -1,6 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { removeUndefinedProps } from 'common/util/object'
-import { log } from 'shared/utils'
 import { parseAIResponseAsJson } from './gemini'
 
 // Claude Haiku 5.5 (https://platform.claude.com/docs/en/models/haiku-5-5/overview):
@@ -31,6 +30,10 @@ export type ClaudeOptions = {
 // few hundred output tokens at most; this leaves room to think at any effort
 // level without truncating the answer.
 const MAX_TOKENS = 8192
+// This single-turn helper serves interactive requests. Leave time for the
+// alternate provider instead of spending the SDK's ten-minute timeout plus
+// retries on Claude. Bound the whole stream, including a stalled response body.
+const REQUEST_TIMEOUT_MS = 30_000
 
 export const promptClaudeStream = async function* (
   prompt: string,
@@ -44,7 +47,11 @@ export const promptClaudeStream = async function* (
     throw new Error('Missing ANTHROPIC_API_KEY')
   }
 
-  const anthropic = new Anthropic({ apiKey })
+  const anthropic = new Anthropic({
+    apiKey,
+    timeout: REQUEST_TIMEOUT_MS,
+    maxRetries: 0,
+  })
 
   // No temperature / top_p / top_k: every 5-series Claude model rejects a
   // non-default sampling parameter with a 400. (A hardcoded `temperature: 0`
@@ -74,24 +81,30 @@ export const promptClaudeStream = async function* (
     })
   )
 
-  for await (const chunk of stream) {
-    if (
-      chunk.type === 'content_block_delta' &&
-      chunk.delta.type === 'text_delta'
-    ) {
-      yield chunk.delta.text
-    } else if (chunk.type === 'message_delta') {
-      // Haiku 5.5 runs safety classifiers and has no server-side fallback: a
-      // declined request is a normal 200 with stop_reason 'refusal' and
-      // (usually) no text. Surface it as an error so callers take their
-      // existing failure path instead of parsing an empty string.
-      if (chunk.delta.stop_reason === 'refusal') {
-        throw new Error('Claude declined the request (stop_reason: refusal)')
-      }
-      if (chunk.delta.stop_reason === 'max_tokens') {
-        log.warn('Claude response hit max_tokens', { model, effort })
+  const timeout = setTimeout(() => stream.abort(), REQUEST_TIMEOUT_MS)
+  try {
+    for await (const chunk of stream) {
+      if (
+        chunk.type === 'content_block_delta' &&
+        chunk.delta.type === 'text_delta'
+      ) {
+        yield chunk.delta.text
+      } else if (chunk.type === 'message_delta') {
+        // Refusals and incomplete answers are not valid classifications,
+        // even if the partial text happens to be parseable JSON.
+        const reason = chunk.delta.stop_reason
+        if (
+          reason === 'refusal' ||
+          reason === 'max_tokens' ||
+          reason === 'pause_turn'
+        ) {
+          throw new Error(`Claude response incomplete (stop_reason: ${reason})`)
+        }
       }
     }
+  } finally {
+    clearTimeout(timeout)
+    stream.abort()
   }
 }
 
@@ -103,6 +116,7 @@ export const promptClaude = async (
   for await (const chunk of promptClaudeStream(prompt, options)) {
     fullResponse += chunk
   }
+  if (!fullResponse.trim()) throw new Error('Claude returned an empty response')
   return fullResponse
 }
 
