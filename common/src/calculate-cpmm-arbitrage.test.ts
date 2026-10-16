@@ -1,8 +1,9 @@
-import { groupBy, sumBy } from 'lodash'
+import { groupBy, sum, sumBy } from 'lodash'
 import { Answer } from './answer'
 import { Bet, LimitBet } from './bet'
 import {
   calculateCpmmMultiSumsToOneSale,
+  cpmmMulti2SumToOneCreationPools,
   getCpmmProbability,
   isCpmmDegenerateStateError,
 } from './calculate-cpmm'
@@ -1341,5 +1342,130 @@ describe('calculateCpmmMultiSumsToOneSale — cpmm-multi-2 next to a resting lim
           sellerLoss
       ).toBeCloseTo(0, 6)
     }
+  })
+})
+
+describe('calculateCpmmMultiArbitrageBet — a maker short of balance across legs', () => {
+  // One maker rests a YES order on each of the two other answers, with balance
+  // for about one leg. The second leg then gets no maker fill and the pool
+  // has to sell the whole leg, so it must be priced for that: the redemption
+  // credits the taker the NO the legs actually bought, and no more.
+  const multi1 = () => [0.4, 0.3, 0.3].map((q, i) => getAnswerK(i, q, 1e6))
+  const multi2 = () =>
+    cpmmMulti2SumToOneCreationPools([0.4, 0.35, 0.25], 1000).map(
+      ({ poolYes, poolNo, p, prob }, i) =>
+        ({ ...getAnswerK(i, prob, 1), poolYes, poolNo, p } as Answer)
+    )
+  const restingYes = (answers: Answer[]) => [
+    getLimitBet('Y1', answers[1], 'YES', 'maker', 500, answers[1].prob),
+    getLimitBet('Y2', answers[2], 'YES', 'maker', 500, answers[2].prob),
+  ]
+  const restingNo = (answers: Answer[]) => [
+    getLimitBet('N1', answers[1], 'NO', 'maker', 500, answers[1].prob),
+    getLimitBet('N2', answers[2], 'NO', 'maker', 500, answers[2].prob),
+  ]
+
+  // What the market pays out if `winner` resolves YES: the pools' own share
+  // plus every position, before the bet (pools only) and after it.
+  const payoutIfYes = (
+    answers: Answer[],
+    result: ReturnType<typeof calculateCpmmMultiArbitrageBet>,
+    winner: string
+  ) => {
+    const { newBetResult, otherBetResults } = result
+    const results = [newBetResult, ...otherBetResults]
+    const before = sumBy(answers, (a) =>
+      a.id === winner ? a.poolYes : a.poolNo
+    )
+    const after =
+      sumBy(results, (r) =>
+        r.answer.id === winner ? r.cpmmState.pool.YES : r.cpmmState.pool.NO
+      ) +
+      sumBy(results, (r) =>
+        (r.outcome === 'YES') === (r.answer.id === winner)
+          ? sumBy(r.takers, 'shares')
+          : 0
+      ) +
+      sumBy(results, (r) =>
+        sumBy(r.makers, (m) =>
+          (m.bet.outcome === 'YES') === (m.bet.answerId === winner)
+            ? m.shares
+            : 0
+        )
+      )
+    return after - before
+  }
+
+  const check = (
+    answers: Answer[],
+    outcome: 'YES' | 'NO',
+    unfilled: LimitBet[],
+    betAmount: number
+  ) => {
+    const makerBalance = 60
+    const result = calculateCpmmMultiArbitrageBet(
+      answers,
+      answers[0],
+      outcome,
+      betAmount,
+      undefined,
+      unfilled,
+      { maker: makerBalance },
+      noFees
+    )
+    const { newBetResult, otherBetResults } = result
+    // Positive control: the maker fills the first leg and runs out before
+    // the second, so the second leg is the one at stake.
+    expect(getMakerSpent(result, 'maker')).toBeCloseTo(makerBalance, 6)
+    expect(otherBetResults[0].makers.length).toBeGreaterThan(0)
+    expect(sumBy(otherBetResults[1].makers, 'amount')).toBeLessThan(
+      sumBy(otherBetResults[0].makers, 'amount')
+    )
+
+    // The redemption credit is the last fill on the answer bought. It is
+    // backed by the shares the other legs bought, net of their own
+    // redemption fills, so it cannot exceed the smallest leg.
+    const redemption = newBetResult.takers[newBetResult.takers.length - 1]
+    const acquired = otherBetResults.map((r) =>
+      sumBy(r.takers.slice(0, -1), 'shares')
+    )
+    expect(redemption.matchedBetId).toBeNull()
+    expect(redemption.shares).toBeCloseTo(Math.min(...acquired), 6)
+
+    // The taker is charged the bet, and every outcome pays out exactly
+    // what the taker and the maker put in.
+    const results = [newBetResult, ...otherBetResults]
+    expect(sumBy(results, (r) => sumBy(r.takers, 'amount'))).toBeCloseTo(
+      betAmount,
+      6
+    )
+    const paidIn = betAmount + sumBy(results, (r) => sumBy(r.makers, 'amount'))
+    for (const { id } of answers) {
+      expect(payoutIfYes(answers, result, id)).toBeCloseTo(paidIn, 6)
+    }
+    const probs = results.map((r) =>
+      getCpmmProbability(r.cpmmState.pool, r.answer.p ?? 0.5)
+    )
+    expect(sum(probs)).toBeCloseTo(1, 6)
+  }
+
+  it('cpmm-multi-1: a YES buy redeems only the NO the legs bought', () => {
+    const answers = multi1()
+    check(answers, 'YES', restingYes(answers), 200)
+  })
+
+  it('cpmm-multi-1: a NO buy redeems only the YES the legs bought', () => {
+    const answers = multi1()
+    check(answers, 'NO', restingNo(answers), 200)
+  })
+
+  it('cpmm-multi-2: a YES buy redeems only the NO the legs bought', () => {
+    const answers = multi2()
+    check(answers, 'YES', restingYes(answers), 200)
+  })
+
+  it('cpmm-multi-2: a NO buy redeems only the YES the legs bought', () => {
+    const answers = multi2()
+    check(answers, 'NO', restingNo(answers), 200)
   })
 })
