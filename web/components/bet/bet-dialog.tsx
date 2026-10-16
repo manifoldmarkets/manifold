@@ -453,6 +453,8 @@ function MultiChoiceTradeDialog(props: {
               aria-label="Search answers"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              showSearchIcon
+              className="w-full"
             />
           )}
           <Col className="divide-ink-200 divide-y">
