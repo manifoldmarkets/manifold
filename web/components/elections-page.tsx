@@ -1,25 +1,54 @@
-import { ReactNode, useState } from 'react'
+import { ReactNode, useMemo, useState } from 'react'
 import clsx from 'clsx'
+import Link from 'next/link'
+
+import { Contract, isMultiCpmm } from 'common/contract'
+import { referralQuery } from 'common/util/share'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { Col } from 'web/components/layout/col'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { Row } from './layout/row'
-import { HomepageMap } from './usa-map/homepage-map'
+import { LiveElectionMap } from './usa-map/live-election-map'
 import { TrendingMidtermsCarousel } from './us-elections/trending-midterms-carousel'
 import { FeedContractCard } from './contract/feed-contract-card'
-import { BalanceOfPowerPanel } from './us-elections/balance-of-power-panel'
 import { Presidency2028Section } from './us-elections/presidency-2028-section'
 import { BackButton } from './contract/back-button'
-import { ContractsTable } from './contract/contracts-table'
 import { Search } from './search'
 import { FilterPill } from './search/filter-pills'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
 import { SectionInView } from './us-elections/section-in-view'
 import { PollingPerpsRow } from './us-elections/polling-perps-row'
+import { MarketSpotlightGrid } from './us-elections/market-spotlight'
+import {
+  ConditionalMatrix,
+  LiveConditionOdds,
+} from './us-elections/conditional-matrix'
+import { electionOdds } from './usa-map/election-map-model'
+import { getPartyProbs } from './usa-map/state-election-map'
 import { track } from 'web/lib/service/analytics'
 import { useUser } from 'web/hooks/use-user'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { referralQuery } from 'common/util/share'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { buildShareUrl } from 'web/lib/util/share-url'
+import {
+  balanceOfPowerAnswerColor,
+  MIDTERM_CONTEST_TOPIC_SLUG,
+} from 'web/lib/politics/election-curation'
+import type { MidtermSpotlightProps } from 'web/lib/politics/home'
+import {
+  BOTH_2026_COLUMNS,
+  CongressChamber,
+  congressChambers,
+  congressViewSelection,
+  ConditionalMatrixRow,
+  HOUSE_2026_COLUMNS,
+  MatrixColumns,
+  PRESIDENT_2028_COLUMNS,
+  SENATE_2026_COLUMNS,
+  withConditionProbs,
+} from 'web/lib/politics/conditional-matrix'
+import interactions from './us-elections/election-interactions.module.css'
 
 // Kept for legacy political market panels that still reference it.
 export const ELECTIONS_PARTY_QUESTION_PSEUDONYM =
@@ -40,22 +69,33 @@ const ELECTION_FEED_TOPICS = [
   { slug: 'elections', label: 'All elections' },
 ]
 
-// One consistent, left-aligned section divider used throughout the page.
-function SectionHeader(props: { children: ReactNode; subtitle?: string }) {
+// One consistent, left-aligned section heading used throughout the page. An
+// h2 under the page's h1, styled as before.
+function SectionHeader(props: {
+  children: ReactNode
+  subtitle?: ReactNode
+  action?: ReactNode
+}) {
+  // The action (e.g. "See all") sits under the subtitle on phones and at the
+  // right from sm up, so it never squeezes the title.
   return (
-    <Col className="gap-0.5">
-      <div className="text-primary-700 text-xl font-semibold sm:text-2xl">
-        {props.children}
-      </div>
-      {props.subtitle && (
-        <div className="text-ink-500 text-sm">{props.subtitle}</div>
-      )}
-    </Col>
+    <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
+      <Col className="gap-0.5">
+        <h2 className="text-primary-700 text-xl font-semibold sm:text-2xl">
+          {props.children}
+        </h2>
+        {props.subtitle && (
+          <div className="text-ink-600 text-sm">{props.subtitle}</div>
+        )}
+      </Col>
+      {props.action}
+    </div>
   )
 }
 
 export function USElectionsPage(
-  props: ElectionsPageProps & { hideTitle?: boolean }
+  props: ElectionsPageProps &
+    Partial<MidtermSpotlightProps> & { hideTitle?: boolean }
 ) {
   const {
     presidency2028Contract,
@@ -68,10 +108,16 @@ export function USElectionsPage(
     houseControlContract,
     senateControlContract,
     houseDistrictsContract,
-    tossUpContracts,
+    additionalHouseContracts,
+    ballotMeasureContracts,
     pollingPerpContracts,
-    redistrictingContracts,
     trendingContracts,
+    contestContracts = [],
+    unprecedentedContracts = [],
+    senateMatrixRows = [],
+    houseMatrixRows = [],
+    bothMatrixRows = [],
+    presidencyMatrixRows = [],
     hideTitle,
   } = props
 
@@ -83,57 +129,86 @@ export function USElectionsPage(
   // level so it works even when trending is absent).
   useSaveReferral(user)
 
-  // Share the page itself, tagged with the sharer's referral code so sign-ups
-  // from the link are credited.
-  const shareUrl = `https://${ENV_CONFIG.domain}/election${
-    user?.username ? referralQuery(user.username) : ''
-  }`
+  // Share the page as it is being viewed: the current path and query, so an
+  // explorer deep link (?office=senate&race=ME) survives, tagged with the
+  // sharer's referral code so sign-ups from the link are credited. Read at
+  // click time, because the explorer can update the URL without re-rendering
+  // this component. shareUrl is the server-rendered fallback, as before.
+  const referral = user?.username ? referralQuery(user.username) : undefined
+  const shareUrl = buildShareUrl({
+    domain: ENV_CONFIG.domain,
+    pathname: '/election',
+    search: '',
+    referralQuery: referral,
+  })
+  const getShareUrl = () =>
+    buildShareUrl({
+      domain: ENV_CONFIG.domain,
+      pathname: window.location.pathname,
+      search: window.location.search,
+      referralQuery: referral,
+    })
+
+  // Color the Balance of Power answers by what they mean (Democratic sweep
+  // blue, Republican sweep red, the two splits purple) instead of the default
+  // answer palette. Display only: the market itself is untouched.
+  const balanceOfPowerColors = useMemo(
+    () =>
+      balanceOfPowerContract && isMultiCpmm(balanceOfPowerContract)
+        ? Object.fromEntries(
+            balanceOfPowerContract.answers.map((a) => [
+              a.id,
+              balanceOfPowerAnswerColor(a.text),
+            ])
+          )
+        : undefined,
+    [balanceOfPowerContract]
+  )
 
   return (
-    <Col className="mb-8 gap-6 px-1 sm:px-2">
-      {/* Hero with back navigation, left-aligned (back sits left of the title). */}
+    <Col
+      className={clsx(interactions.scope, 'isolate mb-8 gap-6 px-1 sm:px-2')}
+    >
+      {/* Hero with back navigation, left-aligned (back sits left of the title).
+          A visitor arriving from a shared link has no Manifold history to go
+          back to, so the arrow goes Home instead of off-site. */}
       <Row className="items-center gap-2 pt-3 sm:pt-1">
-        <BackButton />
+        <BackButton homeFallback />
         <Col className={clsx(hideTitle && 'hidden')}>
-          <div className="text-primary-700 text-3xl font-normal sm:text-4xl">
+          <h1 className="text-primary-700 text-3xl font-normal sm:text-4xl">
             Elections
-          </div>
-          <div className="text-ink-500 text-sm sm:text-base">
+          </h1>
+          <div className="text-ink-600 text-sm sm:text-base">
             Live prediction market odds on US elections
           </div>
         </Col>
         <CopyLinkOrShareButton
           url={shareUrl}
+          getUrl={getShareUrl}
           eventTrackingName="share elections page"
           tooltip="Share this page"
           color="gray-outline"
           size="sm"
-          className="ml-auto shrink-0 gap-1.5"
+          className="ml-auto shrink-0 gap-1.5 sm:ml-4"
         >
           Share
         </CopyLinkOrShareButton>
       </Row>
 
-      {/* 2026 Midterms — the balance-of-power levers and the race map together
-          in a single card so the section reads as one unit. */}
+      {/* Chamber controls sit above the map's own surface. */}
       <SectionInView section="midterms map" className="gap-3">
-        <SectionHeader subtitle="Who controls Washington after the 2026 midterms">
-          2026 Midterms
-        </SectionHeader>
-        <Col className="bg-canvas-0 gap-4 rounded-xl p-4 sm:p-5">
-          <BalanceOfPowerPanel
-            houseControl={houseControlContract}
-            senateControl={senateControlContract}
-          />
-          <div className="border-ink-200 border-t" />
-          <HomepageMap
-            rawSenateStateContracts={rawSenateStateContracts}
-            rawGovernorStateContracts={rawGovernorStateContracts}
-            rawSenateCandidateContracts={rawSenateCandidateContracts}
-            rawGovernorCandidateContracts={rawGovernorCandidateContracts}
-            houseDistrictsContract={houseDistrictsContract}
-          />
-        </Col>
+        <SectionHeader>2026 Midterms</SectionHeader>
+        <LiveElectionMap
+          houseControlContract={houseControlContract}
+          senateControlContract={senateControlContract}
+          rawSenateStateContracts={rawSenateStateContracts}
+          rawGovernorStateContracts={rawGovernorStateContracts}
+          rawSenateCandidateContracts={rawSenateCandidateContracts}
+          rawGovernorCandidateContracts={rawGovernorCandidateContracts}
+          houseDistrictsContract={houseDistrictsContract}
+          additionalHouseContracts={additionalHouseContracts}
+          ballotMeasureContracts={ballotMeasureContracts}
+        />
       </SectionInView>
 
       {/* Polling averages - the continuously-updating numbers (approval,
@@ -141,73 +216,106 @@ export function USElectionsPage(
           so they keep moving instead of settling like a binary market. */}
       {pollingPerpContracts.length > 0 && (
         <SectionInView section="polling" className="gap-3">
-          <SectionHeader subtitle="Live VoteHub polling averages, traded as perpetuals">
+          <SectionHeader subtitle="VoteHub's live polling averages. Bet on whether they go higher or lower.">
             Polling averages
           </SectionHeader>
           <PollingPerpsRow contracts={pollingPerpContracts} />
         </SectionInView>
       )}
 
-      {/* Closest races - replaces the retired hand-curated primaries list
-          (six of its seven markets had resolved by Sept 2026). Derived from
-          the map markets in getTossUpRaces, so it re-ranks itself as the races
-          move and can never go stale. */}
-      {tossUpContracts.length > 0 && (
-        <SectionInView section="toss-ups" className="gap-3">
-          <SectionHeader subtitle="The tightest Senate and Governor races on the board">
-            Closest races
+      {/* The Manifold Midterm Contest — community questions about the campaign
+          itself that no other prediction site lists. Replaces the retired
+          Redistricting watch-list, whose questions had all settled. Selected
+          server-side by traders, then recent volume (rankContestMarkets). */}
+      {contestContracts.length > 0 && (
+        <SectionInView section="midterm contest" className="gap-3">
+          <SectionHeader
+            subtitle="Only on Manifold: the community's contest questions about the campaign trail, from candidate visits to winning margins."
+            action={
+              <Link
+                href={`/topic/${MIDTERM_CONTEST_TOPIC_SLUG}`}
+                className="text-primary-700 hover:text-primary-800 shrink-0 whitespace-nowrap text-sm font-medium hover:underline"
+                onClick={() => track('click election contest see all')}
+              >
+                See all contest markets →
+              </Link>
+            }
+          >
+            Manifold Midterm Contest
           </SectionHeader>
-          <ContractsTable
-            contracts={tossUpContracts}
-            hideAvatar
-            trackingPostfix="election toss-ups"
+          <MarketSpotlightGrid
+            contracts={contestContracts}
+            trackingPostfix="election midterm contest"
           />
         </SectionInView>
       )}
 
-      {/* Mid-decade redistricting — its own watch-list so these don't crowd the
-          Trending block. Shown once a few are live. */}
-      {redistrictingContracts.length > 0 && (
-        <SectionInView section="redistricting" className="gap-3">
-          <SectionHeader subtitle="Mid-decade map fights that could swing House seats">
-            Redistricting
-          </SectionHeader>
-          <ContractsTable
-            contracts={redistrictingContracts}
-            hideAvatar
-            trackingPostfix="election redistricting"
+      {/* What control of Congress changes: the same questions asked under
+          each outcome of the Senate and House races
+          (web/lib/politics/conditional-matrix.ts), Senate first. It takes the
+          Balance of Power slot; until either chamber has two complete rows
+          (e.g. before the markets are created) the joint-distribution market
+          shows here instead. */}
+      {senateMatrixRows.length > 0 ||
+      houseMatrixRows.length > 0 ||
+      bothMatrixRows.length > 0 ? (
+        <SectionInView section="conditional matrix 2026" className="gap-3">
+          <CongressConditionalSection
+            senateRows={senateMatrixRows}
+            houseRows={houseMatrixRows}
+            bothRows={bothMatrixRows}
+            senateControlContract={senateControlContract}
+            houseControlContract={houseControlContract}
           />
         </SectionInView>
+      ) : (
+        balanceOfPowerContract && (
+          <SectionInView section="balance of power" className="gap-3">
+            <SectionHeader>Balance of Power</SectionHeader>
+            <FeedContractCard
+              contract={balanceOfPowerContract}
+              trackingPostfix="midterms balance of power"
+              showGraph
+              answerColors={balanceOfPowerColors}
+            />
+          </SectionInView>
+        )
       )}
 
-      {/* The full joint-distribution market, for trading the exact split. */}
-      {balanceOfPowerContract && (
-        <SectionInView section="balance of power" className="gap-3">
-          <SectionHeader>Balance of Power</SectionHeader>
-          <FeedContractCard
-            contract={balanceOfPowerContract}
-            trackingPostfix="midterms balance of power"
-            showGraph
+      {/* Unprecedented politics: community markets on things that have not
+          happened before in American politics (troops at polling places, a
+          third term, a president defying the Supreme Court…). A curated,
+          ordered list (web/lib/politics/unprecedented-politics.ts); spares
+          slide in as markets close. */}
+      {unprecedentedContracts.length > 0 && (
+        <SectionInView section="unprecedented politics" className="gap-3">
+          <SectionHeader subtitle="Things that have never happened in American politics, with the market's live odds that they do.">
+            Unprecedented politics
+          </SectionHeader>
+          <MarketSpotlightGrid
+            contracts={unprecedentedContracts}
+            trackingPostfix="election unprecedented"
           />
         </SectionInView>
       )}
 
       {/* Trending — the hottest open midterm markets right now, auto-selected
-          by daily score server-side (getTrendingMidtermContracts) and
-          refreshed on every revalidation, so it needs no curation. It sits
+          by daily score server-side and curated for launch
+          (curateTrendingMarkets: federal and governor races, 10+ traders, at
+          most two per creator, nothing shown elsewhere on the page). It sits
           below the midterms sections: the map and the control markets are
           what this page is uniquely for. */}
       {trendingContracts.length > 0 && (
         <SectionInView section="trending" className="gap-2">
           <Col className="gap-0.5">
-            <Row className="text-primary-700 w-fit items-center gap-1.5 text-xl font-semibold sm:text-2xl">
-              <span className="relative h-4 w-4">
+            <h2 className="text-primary-700 flex w-fit items-center gap-1.5 text-xl font-semibold sm:text-2xl">
+              <span className="relative h-4 w-4" aria-hidden>
                 <span className="block h-4 w-4 animate-pulse rounded-full bg-indigo-500/40" />
                 <span className="absolute left-1 top-1 block h-2 w-2 rounded-full bg-indigo-500" />
               </span>
               Trending
-            </Row>
-            <div className="text-ink-500 text-sm">
+            </h2>
+            <div className="text-ink-600 text-sm">
               The hottest midterm markets right now
             </div>
           </Col>
@@ -227,18 +335,35 @@ export function USElectionsPage(
         </SectionInView>
       )}
 
+      {/* The 2028 counterpart: questions asked under each party's president.
+          Hidden until it has two complete rows. */}
+      {presidencyMatrixRows.length > 0 && (
+        <SectionInView section="conditional matrix 2028" className="gap-3">
+          <SectionHeader subtitle="The same questions, asked under a Democratic and a Republican president. Click a chance to bet on it.">
+            What the 2028 winner would change
+          </SectionHeader>
+          <PresidencyConditionalMatrix
+            rows={presidencyMatrixRows}
+            partyContract={presidency2028PartyContract}
+          />
+        </SectionInView>
+      )}
+
       {/* Infinite-scroll feed of election markets; topic bubbles sit in their
-          own row below the sort/filter controls (Search's extraFilterPills). */}
+          own row below the sort/filter controls (Search's extraFilterPills).
+          Defaults to Total traders: "Best" surfaced one-trader seeded district
+          markets first. The persist key changed with the default so returning
+          visitors pick it up. */}
       <SectionInView section="feed" className="gap-3">
         <SectionHeader>More election markets</SectionHeader>
         <Search
           key={feedTopic.slug}
-          persistPrefix="election-page-markets"
+          persistPrefix="election-page-markets-v2"
           topicSlug={feedTopic.slug}
           contractsOnly
           hideSearchTypes
           useUrlParams={false}
-          defaultSort="score"
+          defaultSort="most-popular"
           defaultFilter="open"
           extraFilterPills={ELECTION_FEED_TOPICS.map((t) => (
             <FilterPill
@@ -255,5 +380,137 @@ export function USElectionsPage(
         />
       </SectionInView>
     </Col>
+  )
+}
+
+const MATRIX_FOOTNOTE =
+  "Each market resolves N/A if its condition doesn't happen, so bets only count in that world."
+
+const MIDTERMS_MATRIX_FOOTNOTE =
+  'Depression markets do not define "win the midterms" or say whether they resolve N/A if that condition fails. Their timelines may extend beyond 2028. The $5,000 market requires 50+ Republican Senate seats and a House majority; otherwise it resolves N/A. Read each market\'s rules before betting.'
+
+// What each view of the Congress section says and shows. The condition odds in
+// the column headers come from the map's control cards' markets for a chamber
+// (YES is a Republican majority in both). The broader Midterms view has no
+// shared condition, so it shows neither condition odds nor a blanket N/A rule.
+const CHAMBER_VIEWS: Record<
+  CongressChamber,
+  { subtitle: string; caption: string; columns: MatrixColumns }
+> = {
+  senate: {
+    subtitle:
+      'The same questions, asked under each outcome of the Senate race. Click a chance to bet on it.',
+    caption: 'Chances by Senate result',
+    columns: SENATE_2026_COLUMNS,
+  },
+  house: {
+    subtitle:
+      'The same questions, asked under each outcome of the House race. Click a chance to bet on it.',
+    caption: 'Chances by House result',
+    columns: HOUSE_2026_COLUMNS,
+  },
+  both: {
+    subtitle:
+      "These markets use different midterm conditions. Click a chance to open its market, and read each market's rules before betting.",
+    caption: 'Market-specific midterm conditions',
+    columns: BOTH_2026_COLUMNS,
+  },
+}
+
+// The 2026 Congress matrices under one header, with a Senate | House | Midterms
+// switch for the views that have rows.
+function CongressConditionalSection(props: {
+  senateRows: ConditionalMatrixRow[]
+  houseRows: ConditionalMatrixRow[]
+  bothRows: ConditionalMatrixRow[]
+  senateControlContract: Contract | null
+  houseControlContract: Contract | null
+}) {
+  const chambers = congressChambers({
+    senate: props.senateRows,
+    house: props.houseRows,
+    both: props.bothRows,
+  })
+  const [choice, setChoice] = usePersistentInMemoryState<CongressChamber>(
+    'senate',
+    'election-conditional-matrix-chamber'
+  )
+  const { chamber, choicesMap } = congressViewSelection(chambers, choice)
+  if (!chamber) return null
+  const view = CHAMBER_VIEWS[chamber]
+  const rows =
+    chamber === 'senate'
+      ? props.senateRows
+      : chamber === 'house'
+      ? props.houseRows
+      : props.bothRows
+  const conditionContract =
+    chamber === 'senate'
+      ? props.senateControlContract
+      : chamber === 'house'
+      ? props.houseControlContract
+      : null
+  return (
+    <>
+      <SectionHeader
+        subtitle={view.subtitle}
+        action={
+          chambers.length > 1 && (
+            <ChoicesToggleGroup
+              currentChoice={chamber}
+              choicesMap={choicesMap}
+              setChoice={(value) => {
+                setChoice(value as CongressChamber)
+                track('toggle election conditional matrix chamber', {
+                  chamber: value,
+                })
+              }}
+              color="gray"
+              className="self-start sm:self-auto"
+              toggleClassName="focus-visible:!outline-none"
+            />
+          )
+        }
+      >
+        What control of Congress would change
+      </SectionHeader>
+      <LiveConditionOdds
+        key={chamber}
+        contract={conditionContract}
+        read={(contract) => electionOdds(contract, true)}
+      >
+        {(odds) => (
+          <ConditionalMatrix
+            caption={view.caption}
+            columns={withConditionProbs(view.columns, odds)}
+            rows={rows}
+            trackingName={`election conditional matrix 2026 ${chamber}`}
+            footnote={
+              chamber === 'both' ? MIDTERMS_MATRIX_FOOTNOTE : MATRIX_FOOTNOTE
+            }
+          />
+        )}
+      </LiveConditionOdds>
+    </>
+  )
+}
+
+// The 2028 matrix, headed by the live odds of the 2028 party market.
+function PresidencyConditionalMatrix(props: {
+  rows: ConditionalMatrixRow[]
+  partyContract: Contract | null
+}) {
+  return (
+    <LiveConditionOdds contract={props.partyContract} read={getPartyProbs}>
+      {(odds) => (
+        <ConditionalMatrix
+          caption="Chances by 2028 presidential winner"
+          columns={withConditionProbs(PRESIDENT_2028_COLUMNS, odds)}
+          rows={props.rows}
+          trackingName="election conditional matrix 2028"
+          footnote={MATRIX_FOOTNOTE}
+        />
+      )}
+    </LiveConditionOdds>
   )
 }

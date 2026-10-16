@@ -1,7 +1,8 @@
 import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react'
 import { XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { ReactNode, useEffect, useRef } from 'react'
+import { CSSProperties, ReactNode, useEffect, useRef } from 'react'
+import { useVisualViewport } from 'web/hooks/use-visual-viewport'
 
 export const MODAL_CLASS = // card color and spacing
   'items-center gap-4 rounded-md bg-canvas-0 sm:px-8 px-4 py-6 text-ink-1000'
@@ -18,6 +19,8 @@ export function Modal(props: {
   className?: string
   onClose?: () => void
   ariaLabel?: string
+  hideCloseButton?: boolean
+  adaptToKeyboard?: boolean
 }) {
   const {
     children,
@@ -28,7 +31,29 @@ export function Modal(props: {
     className,
     onClose,
     ariaLabel,
+    hideCloseButton = false,
+    adaptToKeyboard = false,
   } = props
+
+  const viewport = useVisualViewport(open && adaptToKeyboard)
+  const viewportStyle:
+    | (CSSProperties & {
+        '--modal-viewport-height'?: string
+        '--modal-top-spacing': string
+      })
+    | undefined = adaptToKeyboard
+    ? {
+        // Leave room for the form and footer when the keyboard is open.
+        '--modal-top-spacing':
+          'clamp(0px, calc(var(--modal-viewport-height, 100dvh) - 12rem), 5rem)',
+        ...(viewport && {
+          top: viewport.offsetTop,
+          bottom: 'auto',
+          height: viewport.height,
+          '--modal-viewport-height': `${viewport.height}px`,
+        }),
+      }
+    : undefined
 
   const sizeClass = {
     sm: 'w-full sm:max-w-sm',
@@ -67,7 +92,13 @@ export function Modal(props: {
         className="bg-canvas-100/75 fixed inset-0 transition-opacity data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in"
       />
 
-      <div className="fixed inset-0 z-10 w-screen overflow-y-auto pt-20 sm:p-0">
+      <div
+        className={clsx(
+          'fixed inset-0 z-10 w-screen overflow-y-auto sm:p-0',
+          adaptToKeyboard ? 'pt-[var(--modal-top-spacing)]' : 'pt-20'
+        )}
+        style={viewportStyle}
+      >
         <div className="flex min-h-full justify-center overflow-hidden">
           <DialogPanel
             transition
@@ -81,7 +112,7 @@ export function Modal(props: {
           >
             {children}
 
-            {setOpen && (
+            {setOpen && !hideCloseButton && (
               <button
                 onClick={() => setOpen(false)}
                 aria-label="Close dialog"

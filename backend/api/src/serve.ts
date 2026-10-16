@@ -3,6 +3,7 @@ import { getLocalEnv, initAdmin } from 'shared/init-admin'
 import { loadSecretsToEnv, getServiceAccountCredentials } from 'common/secrets'
 import { LOCAL_DEV, LOCAL_ONLY, log } from 'shared/utils'
 import { METRIC_WRITER } from 'shared/monitoring/metric-writer'
+import { startStallWatchdog } from 'shared/monitoring/stall-watchdog'
 import { initCaches, scheduleDailyCacheRefresh } from 'shared/init-caches'
 import {
   announceWebSocketShutdown,
@@ -37,6 +38,7 @@ if (!LOCAL_ONLY) {
   }
 
   METRIC_WRITER.start()
+  startStallWatchdog()
 } else {
   log('Api server starting up in LOCAL_ONLY mode...')
 }

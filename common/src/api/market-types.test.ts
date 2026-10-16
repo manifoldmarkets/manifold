@@ -343,19 +343,24 @@ function getLiteMarket(overrides: Partial<LiteMarket> = {}): LiteMarket {
 
 describe('update-perp-config props', () => {
   // The schema lives in schema.ts, but its refine is the kind of guard that
-  // silently rots: every optional field has to be listed, and forgetting one
+  // silently rots: every tunable field has to count, and forgetting one
   // makes a request that sets ONLY that field fail as "nothing to update".
   // maxOraclePriceAgeMs shipped that way and would have rejected the exact
   // call the change existed to enable.
   const props = API['update-perp-config'].props
-
-  const optionalFields = Object.keys(
-    (props as unknown as { _def: { schema: z.ZodObject<z.ZodRawShape> } })._def
-      .schema.shape
-  ).filter((k) => k !== 'contractId')
+  const shape = (
+    props as unknown as { _def: { schema: z.ZodObject<z.ZodRawShape> } }
+  )._def.schema.shape
+  // Optimistic checks of what the operator reviewed. They change nothing, so
+  // a request carrying only these must still count as "nothing to update".
+  const previewFields = ['expectedConfig', 'expectedManagerId']
+  const tunableFields = Object.keys(shape).filter(
+    (k) => k !== 'contractId' && !previewFields.includes(k)
+  )
 
   it('enumerates the tunable fields, so the loop below cannot pass vacuously', () => {
-    expect(optionalFields.sort()).toEqual([
+    expect(tunableFields.sort()).toEqual([
+      'fundingSensitivity',
       'maxFundingRate',
       'maxLeverage',
       'maxOraclePriceAgeMs',
@@ -363,18 +368,23 @@ describe('update-perp-config props', () => {
       'takerFeeBps',
       'takerFeeImpact',
     ])
+    // A new field must be classified as tunable or preview, never ignored.
+    expect(Object.keys(shape).filter((k) => previewFields.includes(k))).toEqual(
+      previewFields
+    )
   })
 
   it('accepts each tunable field on its own', () => {
     const sample: Record<string, number> = {
       maxLeverage: 10,
       maxFundingRate: 0.02,
+      fundingSensitivity: 5,
       takerFeeBps: 10,
       takerFeeImpact: 90,
       takerFeeApiBps: 30,
       maxOraclePriceAgeMs: 10_000,
     }
-    for (const field of optionalFields) {
+    for (const field of tunableFields) {
       expect(sample[field]).toBeDefined() // keeps this test honest as fields are added
       const parsed = props.safeParse({
         contractId: 'c1',
@@ -386,6 +396,13 @@ describe('update-perp-config props', () => {
 
   it('still rejects a request that changes nothing', () => {
     expect(props.safeParse({ contractId: 'c1' }).success).toBe(false)
+    expect(
+      props.safeParse({
+        contractId: 'c1',
+        expectedConfig: { maxLeverage: 10 },
+        expectedManagerId: 'u1',
+      }).success
+    ).toBe(false)
   })
 
   it('rejects an out-of-bounds takerFeeImpact at the schema', () => {

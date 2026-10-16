@@ -8,14 +8,23 @@ import {
   updateMakers,
 } from 'api/helpers/bets'
 import { onCreateBets } from 'api/on-create-bet'
-import { Answer } from 'common/answer'
+import { Answer, answerP } from 'common/answer'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
-import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
+import {
+  CPMM_MULTI_2_UNPRICED_ERROR,
+  cpmmMultiTradeMissesSumToOne,
+} from 'common/calculate-cpmm-arbitrage'
+import {
+  CpmmState,
+  getCpmmProbability,
+  isDrainedPool,
+} from 'common/calculate-cpmm'
 import {
   CPMM_MIN_POOL_QTY,
   MarketContract,
   MultiContract,
+  isMultiCpmm,
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { FLAT_TRADE_FEE } from 'common/fees'
@@ -199,8 +208,7 @@ export const placeBetMain = async (
     }
 
     const betGroupId =
-      lockedContract.mechanism === 'cpmm-multi-1' &&
-      lockedContract.shouldAnswersSumToOne
+      isMultiCpmm(lockedContract) && lockedContract.shouldAnswersSumToOne
         ? getNewBetId()
         : undefined
 
@@ -279,7 +287,7 @@ export const calculateBetResult = (
       expiresAt,
       expiresMillisAfter
     )
-  } else if (mechanism == 'cpmm-multi-1') {
+  } else if (isMultiCpmm(contract)) {
     const { shouldAnswersSumToOne } = contract
     if (!body.answerId || !answers) {
       throw new APIError(400, 'answerId must be specified for multi bets')
@@ -365,6 +373,38 @@ export const executeNewBetResult = async (
   ) {
     throw new APIError(403, 'Trade too large for current liquidity pool.')
   }
+  // A cpmm-multi-2 answer's p can sit as far from 0.5 as a binary market's, and a
+  // big enough trade drains a pool side outright. Refuse it as a binary market
+  // would, rather than let the answer write guard fail it with a 500. Not at
+  // cpmm-1's CPMM_MIN_POOL_QTY: these pools open with far smaller sides.
+  if (
+    mechanism === 'cpmm-multi-2' &&
+    [newPool, ...(otherBetResults ?? []).map((r) => r.cpmmState.pool)].some(
+      (pool) => pool && isDrainedPool(pool)
+    )
+  ) {
+    throw new APIError(403, 'Trade too large for current liquidity pool.')
+  }
+  // A single-answer cpmm-multi-2 trade the arbitrage couldn't price leaves the
+  // probabilities missing summing to one, as one through an answer split off a
+  // tiny Other can. Refuse it rather than write it. (A multi-answer trade
+  // writes its legs one call at a time.)
+  if (
+    mechanism === 'cpmm-multi-2' &&
+    isMultiCpmm(contract) &&
+    contract.shouldAnswersSumToOne &&
+    !isMultiBet &&
+    newBet.answerId &&
+    newPool &&
+    cpmmMultiTradeMissesSumToOne(contract.answers, {
+      [newBet.answerId]: newPool,
+      ...Object.fromEntries(
+        (otherBetResults ?? []).map((r) => [r.answer.id, r.cpmmState.pool])
+      ),
+    })
+  ) {
+    throw new APIError(403, CPMM_MULTI_2_UNPRICED_ERROR)
+  }
 
   if (
     !isFinite(newBet.amount) ||
@@ -429,8 +469,7 @@ export const executeNewBetResult = async (
     volume: number
   }[] = []
 
-  const sumsToOne =
-    contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+  const sumsToOne = isMultiCpmm(contract) && contract.shouldAnswersSumToOne
   let bonusTxnQuery = 'select 1 where false'
   if (
     (!isMultiBet || firstBetInMultiBet) &&
@@ -472,7 +511,9 @@ export const executeNewBetResult = async (
         })
 
         const { YES: poolYes, NO: poolNo } = cpmmState.pool
-        const prob = getCpmmProbability(cpmmState.pool, 0.5)
+        // Use the answer's own p (cpmm-multi-2) so the denormalized `prob`
+        // matches the read-path `probability`; p=0.5 ⇒ byte-identical for v1.
+        const prob = getCpmmProbability(cpmmState.pool, answerP(answer))
         answerUpdates.push({
           id: answer.id,
           poolYes,
@@ -495,11 +536,14 @@ export const executeNewBetResult = async (
   // Multi-cpmm-1 contract: add main bet's answer update
   if (newBet.answerId && newPool) {
     const { YES: poolYes, NO: poolNo } = newPool
-    const prob = getCpmmProbability(newPool, 0.5)
     const answer = (contract as MultiContract).answers.find(
       (a) => a.id === newBet.answerId
     )
     if (!answer) throw new APIError(404, 'Answer not found')
+    // newP is only set for cpmm-1; for multi the per-answer p is unchanged by a
+    // buy/sell, so use answer.p (= 0.5 for cpmm-multi-1 ⇒ byte-identical). This
+    // keeps the denormalized `prob` consistent with the read-path `probability`.
+    const prob = getCpmmProbability(newPool, answerP(answer))
     answerUpdates.push({
       id: newBet.answerId,
       poolYes,
@@ -529,7 +573,7 @@ export const executeNewBetResult = async (
             prob:
               newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
           }
-        : contract.mechanism === 'cpmm-multi-1' &&
+        : isMultiCpmm(contract) &&
           answerUpdates.length > 0 &&
           contract.answers.length > 0
         ? {

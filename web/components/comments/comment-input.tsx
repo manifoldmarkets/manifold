@@ -1,3 +1,5 @@
+import { richTextToString } from 'common/util/parse'
+import { RepostModal } from './repost-modal'
 import { PaperAirplaneIcon, ShieldCheckIcon } from '@heroicons/react/solid'
 import { Editor } from '@tiptap/react'
 import { useEvent } from 'client-common/hooks/use-event'
@@ -41,7 +43,11 @@ export function CommentInput(props: {
   replyToUserInfo?: ReplyToUserInfo
   // Reply to another comment
   parentCommentId?: string
-  onSubmitComment: (editor: Editor, type: CommentType) => Promise<void>
+  onSubmitComment: (
+    editor: Editor,
+    type: CommentType,
+    clearInput: () => void
+  ) => Promise<void>
   // unique id for autosave
   pageId: string
   className?: string
@@ -101,11 +107,16 @@ export function CommentInput(props: {
     }
 
     try {
-      await onSubmitComment?.(editor, type)
-      if (!editor.isDestroyed) editor.commands.clearContent(true)
-      // force clear save, because it can fail if editor unrenders
-      safeLocalStorage?.removeItem(`text ${key}`)
-      onClearInput?.()
+      const clearInput = () => {
+        if (!editor.isDestroyed) editor.commands.clearContent(true)
+        // Force clear save, because it can fail if the editor unmounts.
+        safeLocalStorage?.removeItem(`text ${key}`)
+        onClearInput?.()
+      }
+      await onSubmitComment?.(editor, type, clearInput)
+      // Sharing opens a second composer; keep the original draft until published.
+      if (type === 'repost') return
+      clearInput()
     } catch (e) {
       console.error(e)
       if (e instanceof APIError) {
@@ -254,11 +265,9 @@ export function CommentInputTextArea(props: {
     <TextEditor editor={editor} simple hideToolbar={hideToolbar}>
       <Row className={''}>
         {user && !isSubmitting && submit && commentTypes.includes('repost') && (
-          <Tooltip
-            text={'Post question & comment to your followers'}
-            className={'mt-2'}
-          >
+          <Tooltip text={'Post to Yap'} className={'mt-2'}>
             <button
+              aria-label="Post to Yap"
               disabled={!editor || editor.isEmpty}
               className="text-ink-500 hover:text-ink-700 active:bg-ink-300 disabled:text-ink-300 px-2 transition-colors"
               onClick={() => submit('repost')}
@@ -490,8 +499,12 @@ export function ContractCommentInput(props: {
   const isReplyToAnswer = replyTo && !isReplyToBet
   const replyToUserInfo =
     useDisplayUserById(replyTo?.userId) ?? props.replyToUserInfo
+  const [socialDraft, setSocialDraft] = useState<{
+    text: string
+    onPosted: () => void
+  }>()
   const onSubmitComment = useEvent(
-    async (editor: Editor, type: CommentType) => {
+    async (editor: Editor, type: CommentType, clearInput: () => void) => {
       if (!user) return
 
       let comment: ContractComment | undefined
@@ -504,12 +517,14 @@ export function ContractCommentInput(props: {
           replyToBetId: isReplyToBet ? replyTo.id : undefined,
         })
       } else {
-        comment = await api('post', {
-          contractId: playContract.id,
-          content: editor.getJSON(),
-          betId: isReplyToBet ? replyTo.id : undefined,
+        setSocialDraft({
+          text: richTextToString(editor.getJSON()),
+          onPosted: () => {
+            clearInput()
+            clearReply?.()
+          },
         })
-        if (comment) toast.success('Reposted to your followers!')
+        return
       }
       clearReply?.()
       onSubmit?.(comment)
@@ -550,6 +565,18 @@ export function ContractCommentInput(props: {
         <CommentOnAnswer answer={replyTo} clear={clearReply} />
       ) : null}
 
+      {socialDraft !== undefined && (
+        <RepostModal
+          playContract={playContract}
+          bet={isReplyToBet ? replyTo : undefined}
+          initialText={socialDraft.text}
+          onPosted={socialDraft.onPosted}
+          open
+          setOpen={(open) => {
+            if (!open) setSocialDraft(undefined)
+          }}
+        />
+      )}
       <CommentInput
         autoFocus={autoFocus}
         replyToUserInfo={replyToUserInfo}

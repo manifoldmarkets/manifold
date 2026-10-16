@@ -65,10 +65,17 @@ Endpoints are registered in `backend/api/src/routes.ts` and schemas live in
 - `POST /create-perp` (admin) — creates a new perp market. Launch-manifest
   feeds automatically receive their environment-specific required topic; the
   admin form defaults to unlisted and can apply the full reviewed launch
-  recommendation in one click. Launch feeds require the environment's official
-  Manifold creator account because residual backing returns to the creator.
-  New markets preserve their per-side initial backing for later preflight
-  auditing.
+  recommendation in one click. The caller must be the environment's official
+  Manifold account; the market's owner is the `creatorAccount` selection
+  (`common/src/perps/creator-accounts.ts`): `manifold` (default, the official
+  account) or `mnx` (the verified `@MNX` partner account, accepted only on MNX
+  feeds). Both are pinned by user id per environment (`MNX_CREATOR_IDS` in
+  `backend/shared/src/perps/creator-accounts.ts`); MNX stays unavailable
+  where no id is configured, and creation refuses a pinned id whose account
+  no longer carries the `MNX` name. The selected account pays the backing at
+  creation and receives the residual pool at settlement, so a partner owner
+  must already hold the backing. New markets preserve their per-side initial
+  backing for later preflight auditing.
 - `POST /place-perp-trade` — opens or adds to a position.
 - `POST /close-perp-position` — closes all of a position, or the
   `fraction` of it given (see Partial closes).
@@ -616,15 +623,70 @@ for feeds requiring a provider observation.
 Use `publish-mnx-now.ts` to inspect readiness or publish immediately (`--apply`);
 a fresh process bypasses the scheduler's in-memory backoff. Backfill and creation
 scripts are dry-run-first and environment-checked in DEV and PROD. Creation
-uses the MNX manifest recommendations, the official creator and unlisted
-visibility. New markets start paused until their first atomic live tick.
-The 3× recommendation is advisory; creation permits lower leverage and enforces
-MNX's supported leverage as a ceiling. Provider margin changes never freeze an
+uses the MNX manifest recommendations, the official creator as caller and
+unlisted visibility; `--creator=mnx` makes the `@MNX` partner account the
+owner (it must hold the backing, and the preflight accepts it as the creator
+of MNX-feed markets only). Before any write the script requires the API to
+advertise the creator option for every feed and agree on the owner, and it
+checks each created market's `creatorId`, because an older API silently
+strips the field. New markets start paused until their first atomic live
+tick.
+The 3× recommendation is advisory. MNX's supported leverage only lowers the
+creation script's default; it is not a ceiling, so `create-perp` and
+`update-perp-config` accept any leverage in the platform's (1, 100] range,
+including more than MNX offers. Provider margin changes never freeze an
 existing feed. MNX derivatives are the defined price target: valuation futures
 are quoted in USD billions and do not assert an externally verified company
 valuation; equity marks need not equal the underlying share or the venue oracle.
 See [the launch runbook](../../../../perps-launch-runbook.md#mnx-rollout-dev-and-prod)
 for the cohort, sources, deployment order and environment validation.
+
+### Outbound MNX links and click tracking
+
+`common/perps/mnx-cta.ts` owns every link that sends a reader to MNX, and
+`web/components/perps/mnx-cta.tsx` renders them. `MnxTradeCta` is the call to
+action — "Trade `<TICKER>` with real money" — shown below the market
+description. On the /perps terminal it sits after the position panel. The chart keeps its
+"Source: MNX" credit, with a compact UTC date/time and the full timestamp on
+hover. The CTA is withheld for non-MNX feeds and settled markets.
+
+The CTA wears MNX's colours, not Manifold's: their wordmark
+(`web/public/mnx-logo.svg`, white, the same asset the /jobs partner block uses)
+on a near-black panel, with the button inverted to white. One treatment serves
+both themes, so the white wordmark never needs an inverted copy — and the panel
+is `slate-950` rather than the /jobs tile's `slate-900` because dark-mode
+`canvas-0` is itself roughly `slate-900`, which would leave it level with the
+page instead of on top of it.
+
+From `sm` up the card is wordmark │ pitch and instrument line │ "Trade
+`<TICKER>` on MNX". A phone gets the wordmark, divider, heading and instrument
+line with no separate button. The entire mobile card is a link, and an
+external-link icon follows "money" in the heading. The mobile card and desktop
+button share the same URL and click tracking. Text can wrap on narrow screens.
+The card sits below the description, separate from the chart footnote and
+trading controls.
+
+Every one of those clicks writes a `user_events` row named **`click mnx link`**
+carrying the placement (`market page cta`, `market page credit`,
+`perps hub cta`, `perps hub credit`), the market in `contract_id`, and the feed
+id, MNX symbol and tagged url in `data` — so click-through counts and the
+identity of the clickers come from our own table rather than from MNX. Signed-out
+clicks land with a null `user_id` and the device id `track()` already attaches.
+The same href carries `utm_source=manifold&utm_medium=referral&utm_campaign=perps`
+plus a `utm_content` built from the same placement string, so MNX's own
+attribution can be reconciled with ours placement by placement.
+
+Read it with `backend/scripts/count-mnx-clicks.ts [days] [top]` (read-only;
+totals, per-placement and per-instrument breakdowns, and who clicked). Any
+ad-hoc query must bound `ts` — that is the only index on `user_events`, and the
+table is hundreds of millions of rows:
+
+```sql
+select data->>'location' as placement, count(*), count(distinct user_id)
+from user_events
+where name = 'click mnx link' and ts >= now() - interval '7 days'
+group by 1 order by 2 desc;
+```
 
 ## Scheduler
 

@@ -14,6 +14,7 @@ import {
   contractPath,
   getMainBinaryMCAnswer,
   isBinaryMulti,
+  isMultiCpmm,
 } from 'common/contract'
 import { getMultiBetPoints, getSingleBetPoints } from 'common/contract-params'
 import {
@@ -112,7 +113,7 @@ export async function getStaticProps(props: {
       contract.outcomeType === 'DATE'
     ) {
       const includeRedemptions =
-        contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+        isMultiCpmm(contract) && contract.shouldAnswersSumToOne
       const allBetPoints = await getBetPointsBetween(contract, {
         filterRedemptions: !includeRedemptions,
         includeZeroShareRedemptions: includeRedemptions,
@@ -397,7 +398,7 @@ function ContractSmolView(props: {
           >
             {(w, h) =>
               mainBinaryMCAnswer &&
-              contract.mechanism === 'cpmm-multi-1' &&
+              isMultiCpmm(contract) &&
               contract.outcomeType !== 'NUMBER' ? (
                 <div className="flex h-full flex-col justify-center">
                   {showMultiChart && (

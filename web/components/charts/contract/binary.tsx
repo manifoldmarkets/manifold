@@ -8,6 +8,7 @@ import { getAnswerProbability, getProbability } from 'common/calculate'
 import { HistoryPoint } from 'common/chart'
 import { ChartPosition } from 'common/chart-position'
 import { BinaryContract, CPMMMultiContract } from 'common/contract'
+import { getVersusAnswers } from 'common/versus'
 import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { buildArray } from 'common/util/array'
@@ -267,13 +268,19 @@ export const MultiBinaryChart = (props: {
 
   const start = first(betPoints)?.x ?? contract.createdTime
   const end = getEndDate(contract)
-  const mainBinaryMCAnswer = contract.answers[0]
+  const { main: mainBinaryMCAnswer, other: otherBinaryMCAnswer } =
+    getVersusAnswers(contract) ?? {
+      main: contract.answers[0],
+      other: contract.answers[1],
+    }
   const endP = getAnswerProbability(
     contract as CPMMMultiContract,
     mainBinaryMCAnswer.id
   )
 
-  const [bottom, top] = contract.answers.map(getAnswerColor)
+  const [bottom, top] = [mainBinaryMCAnswer, otherBinaryMCAnswer].map(
+    getAnswerColor
+  )
   const stringifiedBetPoints = JSON.stringify(betPoints)
   const now = useMemo(() => Date.now(), [stringifiedBetPoints, endP])
 
@@ -310,9 +317,9 @@ export const MultiBinaryChart = (props: {
           ttProps={props}
           xScale={zoomParams?.viewXScale ?? xScale}
           topColor={top}
-          topLabel={contract.answers[1].text}
+          topLabel={otherBinaryMCAnswer.text}
           bottomColor={bottom}
-          bottomLabel={contract.answers[0].text}
+          bottomLabel={mainBinaryMCAnswer.text}
         />
       )}
     />

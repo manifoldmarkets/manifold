@@ -4,6 +4,7 @@ import { Answer, MAX_ANSWERS } from 'common/answer'
 import { getAnswerProbability, getProbability } from 'common/calculate'
 import {
   Contract,
+  isMultiCpmm,
   MAX_QUESTION_LENGTH,
   MultiContract,
   RESOLUTIONS,
@@ -13,7 +14,9 @@ import { MINIMUM_BOUNTY } from 'common/economy'
 import { DOMAIN } from 'common/envs/constants'
 import { MAX_ID_LENGTH } from 'common/group'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
+import { MAX_ANSWER_PROB, MIN_ANSWER_PROB } from 'common/new-contract'
 import { MIN_PERP_LEVERAGE, PERP_MIN_CLOSE_FRACTION } from 'common/perps/amm'
+import { PERP_CREATOR_ACCOUNTS } from 'common/perps/creator-accounts'
 import {
   PERP_TICKER_MAX_LENGTH,
   PERP_TICKER_PATTERN,
@@ -23,6 +26,7 @@ import {
   getPerpEffectiveTakerFeeBps,
   getPerpTakerFeeBps,
   getPerpTakerFeeImpact,
+  PERP_TAKER_FEE_API_BPS_MAX,
   PERP_TAKER_FEE_IMPACT_MAX,
 } from 'common/perps/fees'
 import { getMappedValue } from 'common/pseudo-numeric'
@@ -197,7 +201,7 @@ export function toLiteMarket(
     numericValues = { value, min, max, isLogScale }
   }
   const answers =
-    includeLiteAnswers && contract.mechanism === 'cpmm-multi-1'
+    includeLiteAnswers && isMultiCpmm(contract)
       ? contract.answers?.map((answer) => ({
           id: answer.id,
           text: answer.text,
@@ -280,15 +284,14 @@ export function toLiteMarket(
 export function toFullMarket(contract: Contract): FullMarket {
   const liteMarket = toLiteMarket(contract)
   const { outcomeType } = contract
-  const answers =
-    contract.mechanism === 'cpmm-multi-1'
-      ? contract.answers.map((answer) =>
-          augmentAnswerWithProbability(contract, answer)
-        )
-      : undefined
+  const answers = isMultiCpmm(contract)
+    ? contract.answers.map((answer) =>
+        augmentAnswerWithProbability(contract, answer)
+      )
+    : undefined
 
   let multiValues = {}
-  if (contract.mechanism === 'cpmm-multi-1') {
+  if (isMultiCpmm(contract)) {
     multiValues = {
       shouldAnswersSumToOne: contract.shouldAnswersSumToOne,
       addAnswersMode: contract.addAnswersMode,
@@ -508,6 +511,14 @@ export const createMultiSchema = z.object({
     .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE'])
     .default('DISABLED'),
   shouldAnswersSumToOne: z.boolean().optional(),
+  // Starting probability of each answer, in percent, in the same order as
+  // `answers`. Defaults to an even split. For answers that sum to one these
+  // must add up to 100 — or to less than 100 when the market has an 'Other'
+  // answer, which takes the remainder.
+  answerProbs: z
+    .array(z.number().gte(MIN_ANSWER_PROB).lte(MAX_ANSWER_PROB))
+    .max(MAX_ANSWERS)
+    .optional(),
 })
 
 export const createNumberSchema = z.object({
@@ -710,15 +721,25 @@ export const createPerpSchema = z.object({
   subsidyLong: z.number().gt(0),
   subsidyShort: z.number().gt(0),
   // Open-side taker fee in bps of notional (closing is free). Omitted = the
-  // platform default (see PERP_TAKER_FEE_BPS_DEFAULT); the handler stamps
+  // feed default (MNX_DEFAULT_FEES for MNX, PERP_TAKER_FEE_BPS_DEFAULT
+  // otherwise); the handler stamps
   // the resolved value so later default changes cannot rewrite an existing
   // market's economics.
   takerFeeBps: z.number().min(0).max(100).optional(),
+  // API-key opens use max(web base, API base). MNX defaults to 20 bps;
+  // other feeds inherit the web base when this is omitted.
+  takerFeeApiBps: z.number().min(0).max(PERP_TAKER_FEE_API_BPS_MAX).optional(),
   // Size-impact coefficient of the taker fee (marginal rate is
   // takerFeeBps + takerFeeImpact·(share of pool)² bps). Omitted = the
-  // platform default (see PERP_TAKER_FEE_IMPACT_DEFAULT); stamped like
+  // feed default (10 on MNX, PERP_TAKER_FEE_IMPACT_DEFAULT otherwise); stamped like
   // takerFeeBps above.
   takerFeeImpact: z.number().min(0).max(PERP_TAKER_FEE_IMPACT_MAX).optional(),
+  // Which account owns the market. The owner pays the backing now and is paid
+  // the residual pool at settlement, so the caller must be the official
+  // Manifold account either way (it spends its own balance or acts for the
+  // partner). Omitted = 'manifold' (the handler owns the default, as with
+  // visibility); a partner is accepted only on its own feeds.
+  creatorAccount: z.enum(PERP_CREATOR_ACCOUNTS).optional(),
 })
 
 export const placePerpTradeSchema = z.object({

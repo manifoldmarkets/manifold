@@ -2,7 +2,12 @@ import { ArrowRightIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { OTHER_TOOLTIP_TEXT, sortAnswers, type Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
-import { CPMMMultiContract, MultiContract, contractPath } from 'common/contract'
+import {
+  CPMMMultiContract,
+  MultiContract,
+  contractPath,
+  isMultiCpmm,
+} from 'common/contract'
 import { User } from 'common/user'
 import Link from 'next/link'
 import { useUser } from 'web/hooks/use-user'
@@ -87,7 +92,7 @@ export function SmallAnswer(props: {
 
   const prob = getAnswerProbability(contract, answer.id)
 
-  const isCpmm = contract.mechanism === 'cpmm-multi-1'
+  const isCpmm = isMultiCpmm(contract)
 
   const { resolution, resolutions } = contract
   const resolvedProb =

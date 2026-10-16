@@ -3,7 +3,7 @@ import {
   calculateMetricsFromProbabilityChanges,
   isEmptyMetric,
 } from 'common/calculate-metrics'
-import { Contract, CPMMMultiContract } from 'common/contract'
+import { Contract, CPMMMultiContract, isMultiCpmm } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { PERP_METRIC_PERIOD_MS } from 'common/perps/metric-periods'
 import { convertBet } from 'common/supabase/bets'
@@ -18,6 +18,7 @@ import {
 import { contractColumnsToSelect, isProd, log } from 'shared/utils'
 import { calculatePerpPeriodMetricUpdates } from './perps/user-contract-metric-periods'
 import { bulkUpdateDataQuery, bulkUpdateQuery } from './supabase/utils'
+import { MULTI_CPMM_MECHANISMS_SQL } from 'common/contract'
 
 const CHUNK_SIZE = isProd() ? 400 : 10
 export async function updateUserMetricPeriods(
@@ -114,6 +115,14 @@ export async function updateUserMetricPeriods(
 
   log(`Loaded ${allActiveUserIds.length} active users.`)
   const chunks = chunk(allActiveUserIds, CHUNK_SIZE)
+  // The computed metrics are only returned for a caller that asked about
+  // specific users (the API's get-daily-changed-metrics-and-contracts, one
+  // user at a time). The nightly run has no userIds and nobody reads its
+  // return value, yet it kept every metric for all ~27k users, 15k-27k rows
+  // per chunk across 69 chunks with their period histories, for the whole
+  // two-hour run, on a process that dies at a 14 GB heap. Skip the hoard
+  // unless someone will read it.
+  const collectMetricsByUser = userIds != null
   const metricsByUser: Record<string, ContractMetric[]> = {}
   const contractsById: Record<string, Contract> = {}
 
@@ -199,7 +208,7 @@ export async function updateUserMetricPeriods(
     const contracts = results[0].map(convertContract)
     const answers = results[1].map(convertAnswer)
     contracts.forEach((c) => {
-      if (c.mechanism === 'cpmm-multi-1')
+      if (isMultiCpmm(c))
         contractsById[c.id] = {
           ...c,
           answers: answers.filter((a) => a.contractId === c.id),
@@ -292,10 +301,12 @@ export async function updateUserMetricPeriods(
         ...freshPerpMetricsForUser,
       ]
 
-      metricsByUser[userId] = uniqBy(
-        [...freshMetrics, ...currentMetricsForUser],
-        (m) => m.contractId + m.answerId
-      )
+      if (collectMetricsByUser) {
+        metricsByUser[userId] = uniqBy(
+          [...freshMetrics, ...currentMetricsForUser],
+          (m) => m.contractId + m.answerId
+        )
+      }
       for (const freshMetric of freshMetrics) {
         const currentMetric = currentMetricsForUser.find(
           (metric) =>
@@ -467,7 +478,7 @@ const getUnresolvedOrRecentlyResolvedBets = async (
     where
       cb.user_id in ($1:list)
       and cb.contract_id in ($3:list)
-      and (c.mechanism != 'cpmm-multi-1' or not cb.is_redemption)
+      and (c.mechanism not in ${MULTI_CPMM_MECHANISMS_SQL} or not cb.is_redemption)
       and (c.resolution_time is null or c.resolution_time > $2)
       and (a is null or a.resolution_time is null or a.resolution_time > $2)
     `,

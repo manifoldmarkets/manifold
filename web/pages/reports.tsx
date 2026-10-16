@@ -48,7 +48,7 @@ const STATUS_LABELS: { [status in ReportStatus]: string } = {
   resolved: 'Resolved',
 }
 
-const USER_REPORT_TYPES = ['contract', 'comment', 'user', 'post']
+const USER_REPORT_TYPES = ['contract', 'comment', 'user', 'post', 'social_post']
 
 type Filters<T extends string> = { [key in T]: FilterState }
 
@@ -326,7 +326,9 @@ export default function ReportsPage() {
               setTypeFilters((prev) => ({ ...prev, [type]: state }))
             }
           >
-            {type[0].toUpperCase() + type.slice(1)}
+            {type === 'social_post'
+              ? 'Yap posts'
+              : type[0].toUpperCase() + type.slice(1)}
           </FilterPill>
         ))}
         <FilterPill state={userBannedFilter} onChange={setUserBannedFilter}>

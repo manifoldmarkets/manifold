@@ -1,5 +1,6 @@
 import {
   ArrowRightIcon,
+  CashIcon,
   ChatIcon,
   ChevronDownIcon,
   DotsVerticalIcon,
@@ -26,8 +27,11 @@ import { getAnswerProbability } from 'common/calculate'
 import {
   CPMMMultiContract,
   Contract,
+  MarketContract,
   MultiContract,
   contractPath,
+  convertsToCpmmMulti2,
+  isMultiCpmm,
   tradingAllowed,
 } from 'common/contract'
 import { ContractMetric, isSummary } from 'common/contract-metric'
@@ -68,6 +72,7 @@ import {
   getOrderBookButtonLabel,
 } from '../bet/order-book'
 import { getAnswerColor } from '../charts/contract/choice'
+import { AddLiquidityModal } from '../contract/liquidity-modal'
 import { Col } from '../layout/col'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { UserHovercard } from '../user/user-hovercard'
@@ -471,8 +476,17 @@ export function SimpleAnswerBars(props: {
   maxAnswers?: number
   barColor?: string
   feedReason?: string
+  // Per-answer color overrides by answer id, for pages that color answers by
+  // meaning (e.g. party). Answers not listed keep their usual color.
+  answerColors?: Record<string, string>
 }) {
-  const { contract, maxAnswers = Infinity, barColor, feedReason } = props
+  const {
+    contract,
+    maxAnswers = Infinity,
+    barColor,
+    feedReason,
+    answerColors,
+  } = props
 
   const shouldAnswersSumToOne = getShouldAnswersSumToOne(contract)
   const user = useUser()
@@ -502,7 +516,7 @@ export function SimpleAnswerBars(props: {
               key={answer.id}
               answer={answer}
               contract={contract}
-              color={getAnswerColor(answer)}
+              color={answerColors?.[answer.id] ?? getAnswerColor(answer)}
               barColor={barColor}
               shouldShowLimitOrderChart={isAdvancedTrader}
               feedReason={feedReason}
@@ -590,6 +604,20 @@ export function AnswerComponent(props: {
 
   const [tradesModalOpen, setTradesModalOpen] = useState(false)
   const [limitBetModalOpen, setLimitBetModalOpen] = useState(false)
+  const [addLiquidityOpen, setAddLiquidityOpen] = useState(false)
+
+  // Per-answer subsidy: deepen this answer's own binary CPMM (open market). Only
+  // where it's lossless, as add-liquidity enforces: cpmm-multi-2 markets, or
+  // cpmm-multi-1 ones the add would convert. And only on public markets, the
+  // only ones the liquidity modal takes adds on.
+  const canSubsidizeAnswer =
+    isMultiCpmm(contract) &&
+    (contract.mechanism === 'cpmm-multi-2' || convertsToCpmmMulti2(contract)) &&
+    contract.visibility === 'public' &&
+    !contract.isResolved &&
+    !answer.resolution &&
+    (contract.closeTime ?? Infinity) > Date.now() &&
+    answer.poolYes != undefined
 
   const hasLimitOrders = unfilledBets?.length && limitOrderVolume
   const answerCreator = useDisplayUserByIdOrAnswer(answer)
@@ -656,6 +684,11 @@ export function AnswerComponent(props: {
       icon: <ScaleIcon className="h-4 w-4" />,
       name: getOrderBookButtonLabel(unfilledBets),
       onClick: () => setLimitBetModalOpen(true),
+    },
+    canSubsidizeAnswer && {
+      icon: <CashIcon className="h-4 w-4" />,
+      name: 'Add liquidity',
+      onClick: () => setAddLiquidityOpen(true),
     }
   )
 
@@ -767,6 +800,15 @@ export function AnswerComponent(props: {
           modalOpen={tradesModalOpen}
           setModalOpen={setTradesModalOpen}
           answer={answer}
+        />
+      )}
+      {addLiquidityOpen && isMultiCpmm(contract) && (
+        <AddLiquidityModal
+          contract={contract as MarketContract}
+          isOpen={addLiquidityOpen}
+          setOpen={setAddLiquidityOpen}
+          answerId={answer.id}
+          answerText={answer.text}
         />
       )}
       {!!hasLimitOrders && (

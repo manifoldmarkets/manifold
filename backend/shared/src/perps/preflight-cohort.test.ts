@@ -2,6 +2,7 @@ import { SupabaseDirectClient } from '../supabase/init'
 import { log } from '../utils'
 import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { PerpContract } from 'common/contract'
+import { MNX_INSTRUMENTS } from 'common/perps/mnx'
 jest.mock('../../../scripts/run-script', () => ({ runScript: jest.fn() }))
 jest.mock('../init-admin', () => ({ getLocalEnv: () => 'DEV' }))
 jest.mock('../mnx', () => ({
@@ -121,3 +122,149 @@ it.each(
     }
   }
 )
+
+const partnerRow = {
+  id: 'mnx-user',
+  username: 'MNX',
+  name: 'MNX',
+  balance: 0,
+  cash_balance: 0,
+  spice_balance: 0,
+  total_deposits: 0,
+  total_cash_deposits: 0,
+  created_time: '2026-01-01T00:00:00Z',
+  data: {},
+}
+
+// Runs the MNX-cohort feeds audit with the partner id pinned for DEV. The
+// preflight is loaded in an isolated registry, so the pin is applied by a
+// mock factory on that registry's copy of the module.
+const auditWithPinnedPartner = async (
+  partnerExists: boolean,
+  mnxTitle = 'fixture'
+) => {
+  process.argv = ['node', 'preflight', '--phase=feeds', '--cohort=mnx']
+  jest.doMock('./creator-accounts', () => {
+    const actual = jest.requireActual('./creator-accounts')
+    actual.MNX_CREATOR_IDS.DEV = 'mnx-user'
+    return actual
+  })
+  let audit!: (pg: SupabaseDirectClient) => Promise<void>
+  try {
+    jest.isolateModules(() => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      audit = require('../../../scripts/perp-launch-preflight').auditPerpLaunch
+    })
+  } finally {
+    jest.dontMock('./creator-accounts')
+  }
+  const now = Date.now()
+  const contracts = ['btc-usd', 'mnx-anthropic-mark'].map(
+    (feedId) =>
+      ({
+        id: feedId,
+        slug: feedId,
+        oracleFeedId: feedId,
+        mechanism: 'perp',
+        question: feedId === 'btc-usd' ? 'fixture' : mnxTitle,
+        creatorId: 'mnx-user',
+        token: 'MANA',
+        oraclePrice: feedId === 'btc-usd' ? 100000 : 2104,
+        oraclePriceTime: now,
+        maxOraclePriceAgeMs: 5 * MINUTE_MS,
+        fundingPeriodMs: HOUR_MS,
+        maxLeverage: 3,
+        maxFundingRate: 0.0001,
+        fundingSensitivity: 1,
+        poolLong: 25000,
+        poolShort: 25000,
+        initialSubsidy: 50000,
+        createdTime: now,
+      } as unknown as PerpContract)
+  )
+  const pg = {
+    manyOrNone: jest.fn(async (sql: string) => {
+      if (sql.includes('select data, token from contracts'))
+        return contracts.map((data) => ({ data, token: 'MANA' }))
+      return []
+    }),
+    oneOrNone: jest.fn(
+      async (sql: string, values?: unknown[], cb?: (r: unknown) => unknown) =>
+        partnerExists &&
+        sql.includes('from users where id = $1') &&
+        values?.[0] === 'mnx-user' &&
+        cb
+          ? cb(partnerRow)
+          : null
+    ),
+    one: jest.fn(async (sql: string) =>
+      sql.includes('from txns')
+        ? { balance: 0 }
+        : { group_slugs: [], has_embedding: false, count: 0 }
+    ),
+  }
+  await expect(audit(pg as unknown as SupabaseDirectClient)).rejects.toThrow(
+    /preflight failed/
+  )
+  expect(pg.oneOrNone).not.toHaveBeenCalledWith(
+    expect.stringContaining('username'),
+    expect.anything(),
+    expect.anything()
+  )
+}
+
+it('accepts the pinned MNX partner as creator of MNX-feed markets only', async () => {
+  await auditWithPinnedPartner(true)
+  expect(log).toHaveBeenCalledWith(
+    '[PASS] creator accounts: official DEV account MxyCh2xvsFMFywwjg3Az0w4xP5B3; MNX partner account @MNX (mnx-user) may own MNX feeds'
+  )
+  expect(log).toHaveBeenCalledWith(
+    '[PASS] market mnx-anthropic-mark launch creator: MNX partner account @MNX (mnx-user)'
+  )
+  expect(log).toHaveBeenCalledWith(
+    '[INFO] market mnx-anthropic-mark launch title: stored="fixture", template="Anthropic IPO Market Cap (MNX)"; MNX-owned display titles are editable'
+  )
+  expect(log).not.toHaveBeenCalledWith(
+    expect.stringContaining('[PASS] market mnx-anthropic-mark launch title:')
+  )
+  expect(log.warn).not.toHaveBeenCalledWith(
+    expect.stringContaining('market mnx-anthropic-mark launch title')
+  )
+  expect(log.error).not.toHaveBeenCalledWith(
+    expect.stringContaining('market mnx-anthropic-mark launch title')
+  )
+  expect(log.error).toHaveBeenCalledWith(
+    expect.stringContaining('[FAIL] market btc-usd launch title:')
+  )
+  expect(log.error).toHaveBeenCalledWith(
+    expect.stringContaining('[FAIL] market mnx-anthropic-mark launch ticker:')
+  )
+  expect(log.error).toHaveBeenCalledWith(
+    expect.stringContaining(
+      '[FAIL] market btc-usd launch creator: creator mnx-user is not an allowed creator account for btc-usd (MxyCh2xvsFMFywwjg3Az0w4xP5B3)'
+    )
+  )
+})
+
+it('reports a matching MNX launch title as PASS', async () => {
+  const title = MNX_INSTRUMENTS.find(
+    (instrument) => instrument.feedId === 'mnx-anthropic-mark'
+  )!.question
+  await auditWithPinnedPartner(true, title)
+  expect(log).toHaveBeenCalledWith(
+    `[PASS] market mnx-anthropic-mark launch title: ${title}`
+  )
+  expect(log).not.toHaveBeenCalledWith(
+    expect.stringContaining('[INFO] market mnx-anthropic-mark launch title:')
+  )
+})
+
+it('keeps markets owned by the pinned id valid when its row cannot be resolved', async () => {
+  await auditWithPinnedPartner(false)
+  expect(log.warn).toHaveBeenCalledWith(
+    '[WARN] creator accounts [warning-key=creator-accounts]: MNX partner account mnx-user may own MNX feeds but MNX account mnx-user does not exist in DEV'
+  )
+  expect(log).toHaveBeenCalledWith(
+    '[PASS] market mnx-anthropic-mark launch creator: MNX partner account mnx-user'
+  )
+})

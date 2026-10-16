@@ -8,6 +8,9 @@
 #
 # Important split:
 # - MIG autohealing uses /healthz/live so saturated-but-live instances are not restarted.
+#   Liveness is deliberately slow to fire (10s timeout, 6 failures, ~60s): a
+#   recreate takes every API process down for ~9 min, and 5-10s event-loop
+#   stalls tripped the old 5s x 3 check on a working VM (2026-10-15 outages).
 # - Load balancer backend services use /healthz/ready so saturated instances are drained.
 #
 # Note: the liveness health check intentionally uses fixed port 80 instead of
@@ -69,7 +72,7 @@ create_or_update_http_health_check_port() {
             --port "${port}" \
             --request-path "${request_path}" \
             --check-interval "${check_interval}" \
-            --timeout 5s \
+            --timeout 10s \
             --healthy-threshold 2 \
             --unhealthy-threshold "${unhealthy_threshold}"
     else
@@ -80,7 +83,7 @@ create_or_update_http_health_check_port() {
             --port "${port}" \
             --request-path "${request_path}" \
             --check-interval "${check_interval}" \
-            --timeout 5s \
+            --timeout 10s \
             --healthy-threshold 2 \
             --unhealthy-threshold "${unhealthy_threshold}"
     fi

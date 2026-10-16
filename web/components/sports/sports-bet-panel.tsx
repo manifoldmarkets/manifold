@@ -15,7 +15,7 @@ import { db } from 'web/lib/supabase/db'
 import { formatMoney } from 'common/util/format'
 import { EXPIRATION_OPTIONS } from 'web/components/bet/order-expiration-options'
 import { getContract, getAnswersForContracts } from 'common/supabase/contracts'
-import { CPMMMultiContract } from 'common/contract'
+import { CPMMMultiContract, isMultiCpmm } from 'common/contract'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { Input } from 'web/components/widgets/input'
 import { ProbabilitySlider } from 'web/components/widgets/probability-input'
@@ -34,9 +34,12 @@ const expirationOptions = EXPIRATION_OPTIONS.filter((o) => o.value !== -1)
 export function SportsVersusBetDialog({
   contractId,
   onClose,
+  initialAnswerId,
 }: {
   contractId: string | undefined
   onClose: () => void
+  /** The answer (team) the dialog opens on; defaults to the first answer. */
+  initialAnswerId?: string
 }) {
   const [contract, setContract] = useState<CPMMMultiContract | null>(null)
 
@@ -45,7 +48,8 @@ export function SportsVersusBetDialog({
     let cancelled = false
     getContract(db, contractId)
       .then(async (c) => {
-        if (cancelled || !c || c.mechanism !== 'cpmm-multi-1') return
+        // isMultiCpmm: a converted cpmm-multi-2 game would otherwise render a silent null.
+        if (cancelled || !c || !isMultiCpmm(c)) return
         const answerMap = await getAnswersForContracts(db, [c.id])
         if (cancelled) return
         const multi = c as CPMMMultiContract
@@ -61,6 +65,13 @@ export function SportsVersusBetDialog({
   }, [contractId])
 
   if (!contract) return null
+  // The versus panel treats the first answer as YES and the second as NO, so
+  // the side is decided by where the answer sits in the fetched market, not
+  // by which team is home ("Lakers @ Celtics" lists the away team first).
+  const initialOutcome =
+    initialAnswerId && contract.answers[1]?.id === initialAnswerId
+      ? 'NO'
+      : 'YES'
   return (
     <MultiBetDialog
       contract={contract}
@@ -68,6 +79,7 @@ export function SportsVersusBetDialog({
       setOpen={(open) => {
         if (!open) onClose()
       }}
+      initialOutcome={initialOutcome}
     />
   )
 }
@@ -89,7 +101,7 @@ export function SportsBetPanel({
     let cancelled = false
     getContract(db, match.contractId)
       .then(async (c) => {
-        if (cancelled || !c || c.mechanism !== 'cpmm-multi-1') return
+        if (cancelled || !c || !isMultiCpmm(c)) return
         const answerMap = await getAnswersForContracts(db, [c.id])
         if (cancelled) return
         const multi = c as CPMMMultiContract

@@ -1,3 +1,11 @@
+import {
+  createSocialPost,
+  editSocialPost,
+  deleteSocialPost,
+  getSocialPosts,
+  getSocialPost,
+  getSocialLikers,
+} from './social-posts'
 import { createPublicChatMessage } from 'api/create-public-chat-message'
 import { createuser } from 'api/create-user'
 import { getActiveUserManaStats } from 'api/get-active-user-mana-stats'
@@ -76,6 +84,7 @@ import { placePerpTrade } from './place-perp-trade'
 import { closePerpPosition } from './close-perp-position'
 import { updatePerpConfig } from './update-perp-config'
 import { addPerpSubsidy } from './add-perp-subsidy'
+import { getMnxDashboard } from './get-mnx-dashboard'
 import {
   getModelClassifications,
   setModelClassification,
@@ -90,6 +99,7 @@ import { internalWriteOraclePrice } from './internal-write-oracle-price'
 import { getPerpPositions } from './get-perp-positions'
 import { getPerpQuote } from './get-perp-quote'
 import { internalPerpBroadcast } from './internal-perp-broadcast'
+import { internalSportsBroadcast } from './internal-sports-broadcast'
 import { getPerpFundingEvents } from './get-perp-funding-events'
 import { getPerpEvents } from './get-perp-events'
 import {
@@ -194,6 +204,7 @@ import { updateNotifSettings } from './update-notif-settings'
 import { updatePrivateUser } from './update-private-user'
 import { setJobInterest } from './set-job-interest'
 import { getJobInterest } from './get-job-interest'
+import { getMnxInviteLink } from './get-mnx-invite-link'
 
 import { createCategory } from './create-category'
 import { createTask } from './create-task'
@@ -231,7 +242,17 @@ import { adminGetTopWhaleUsers } from './admin-get-top-whale-users'
 import { adminGetNewUsers } from './admin-get-new-users'
 import { adminSportsFixtures } from './admin-sports-fixtures'
 import { adminSportsCreateMarkets } from './admin-sports-create-markets'
+import { adminSportsCreateOddsMarkets } from './admin-sports-create-odds-markets'
+import {
+  adminSportsCompetitionSwitches,
+  adminSportsSetCompetitionSwitch,
+} from './admin-sports-competition-switches'
+import {
+  adminSportsScorePolling,
+  adminSportsSetScorePolling,
+} from './admin-sports-score-polling'
 import { sportsMarkets } from './sports-markets'
+import { sportsSchedule } from './sports-schedule'
 import { adminSportsResolve } from './admin-sports-resolve'
 import { adminSportsCommunityMarket } from './admin-sports-community-market'
 import { adminSportsInitCommunity } from './admin-sports-init-community'
@@ -426,6 +447,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'update-notif-settings': updateNotifSettings,
   'set-job-interest': setJobInterest,
   'get-job-interest': getJobInterest,
+  'get-mnx-invite-link': getMnxInviteLink,
   headlines: getHeadlines,
   'politics-headlines': getPoliticsHeadlines,
   post: post,
@@ -460,6 +482,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'close-perp-position': closePerpPosition,
   'update-perp-config': updatePerpConfig,
   'add-perp-subsidy': addPerpSubsidy,
+  'get-mnx-dashboard': getMnxDashboard,
   'get-model-classifications': getModelClassifications,
   'set-model-classification': setModelClassification,
   'get-openrouter-lab-classifications': getOpenRouterLabClassifications,
@@ -471,6 +494,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-perp-positions': getPerpPositions,
   'get-perp-quote': getPerpQuote,
   'internal-perp-broadcast': internalPerpBroadcast,
+  'internal-sports-broadcast': internalSportsBroadcast,
   'get-perp-funding-events': getPerpFundingEvents,
   'get-perp-events': getPerpEvents,
   'get-perp-suggestions': getPerpSuggestions,
@@ -556,6 +580,12 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refer-user': referUser,
   'get-referral-earnings': getReferralEarnings,
   'create-post-comment': createPostComment,
+  'create-social-post': createSocialPost,
+  'edit-social-post': editSocialPost,
+  'delete-social-post': deleteSocialPost,
+  'get-social-posts': getSocialPosts,
+  'get-social-post': getSocialPost,
+  'get-social-likers': getSocialLikers,
   'create-post': createPost,
   'update-post': updatePost,
   'update-post-comment': updatePostComment,
@@ -613,7 +643,13 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'admin-get-new-users': adminGetNewUsers,
   'admin-sports-fixtures': adminSportsFixtures,
   'admin-sports-create-markets': adminSportsCreateMarkets,
+  'admin-sports-create-odds-markets': adminSportsCreateOddsMarkets,
+  'admin-sports-competition-switches': adminSportsCompetitionSwitches,
+  'admin-sports-set-competition-switch': adminSportsSetCompetitionSwitch,
+  'admin-sports-score-polling': adminSportsScorePolling,
+  'admin-sports-set-score-polling': adminSportsSetScorePolling,
   'sports-markets': sportsMarkets,
+  'sports-schedule': sportsSchedule,
   'admin-sports-resolve': adminSportsResolve,
   'admin-sports-community-market': adminSportsCommunityMarket,
   'admin-sports-init-community': adminSportsInitCommunity,

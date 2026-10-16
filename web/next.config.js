@@ -158,6 +158,11 @@ module.exports = {
         permanent: true,
       },
       {
+        source: '/data',
+        destination: 'https://docs.manifold.markets/data',
+        permanent: true,
+      },
+      {
         source: '/umami',
         destination:
           'https://analytics.umami.is/share/ARwUIC9GWLNyowjq/Manifold%20Markets',

@@ -2,7 +2,12 @@ import { ImageResponse } from '@vercel/og'
 
 type ImageResponseOptions = ConstructorParameters<typeof ImageResponse>[1]
 import { NextRequest } from 'next/server'
-import { OgElection, OgElectionProps } from 'web/components/og/og-election'
+import { OG_CARD_WIDTH } from 'common/edge/og'
+import {
+  OgElection,
+  OgElectionProps,
+  OG_ELECTION_WIDTH,
+} from 'web/components/og/og-election'
 import { classToTw } from 'web/components/og/utils'
 import { getCardOptions } from './market'
 
@@ -11,7 +16,8 @@ export const config = { runtime: 'edge' }
 export default async function handler(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const options = await getCardOptions()
+    // Laid out natively at 1200x630 (2x the base card), not scaled up.
+    const options = await getCardOptions(OG_ELECTION_WIDTH / OG_CARD_WIDTH)
     const ogElectionProps = Object.fromEntries(
       searchParams.entries()
     ) as OgElectionProps

@@ -1,4 +1,10 @@
-import { getMnxInstrument } from 'common/perps/mnx'
+import {
+  DEFAULT_PERP_CREATOR_ACCOUNT,
+  PERP_CREATOR_ACCOUNT_LABELS,
+  getAllowedPerpCreatorAccounts,
+  isPerpCreatorAccountAllowed,
+} from 'common/perps/creator-accounts'
+import { getMnxInstrument, MNX_DEFAULT_FEES } from 'common/perps/mnx'
 import { OracleFeedHealth } from 'common/perps/oracle-health'
 import { fetchMnxSnapshot, requireMnxReady } from 'shared/mnx'
 import { advisoryLockQuery } from 'shared/perps/queries'
@@ -26,6 +32,10 @@ import { camelCase, first, uniqBy } from 'lodash'
 import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { getMinTradingMarkAgeMs, getOracleFeed } from 'shared/oracle-feeds'
+import {
+  getPerpCreatorAccountMismatch,
+  resolvePerpCreatorAccount,
+} from 'shared/perps/creator-accounts'
 import { assertPerpEscrowBalance } from 'shared/perps/escrow'
 import {
   ALL_PERP_LAUNCH_MARKETS,
@@ -38,7 +48,7 @@ import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { broadcastNewContract } from 'shared/websockets/helpers'
 import { convertUser } from 'common/supabase/users'
-import { getUser, htmlToRichText, log } from 'shared/utils'
+import { htmlToRichText, log } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { assertPerpExposureIncreaseEnabled } from './helpers/perp-trading-mode'
 
@@ -85,7 +95,9 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
     subsidyLong,
     subsidyShort,
     takerFeeBps,
+    takerFeeApiBps,
     takerFeeImpact,
+    creatorAccount = DEFAULT_PERP_CREATOR_ACCOUNT,
   } = body
 
   const totalSubsidy = subsidyLong + subsidyShort
@@ -99,10 +111,25 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
   const launchDefinition = ALL_PERP_LAUNCH_MARKETS.find(
     (market) => market.feedId === oracleFeedId
   )
-  if (launchDefinition && auth.uid !== getPerpLaunchCreatorId(ENV))
+  // The owner is a selected account, never the calling admin: it pays the
+  // backing and residual backing returns to it at settlement. Spending that
+  // balance (its own, or the partner's on the partner's behalf) is reserved
+  // for the official Manifold account, so a personal admin session cannot
+  // create a PERP under either name. Every creation-enabled feed is a launch
+  // feed today, so this is the same gate the launch manifest always had.
+  if (auth.uid !== getPerpLaunchCreatorId(ENV))
     throw new APIError(
       403,
-      'Launch PERPs must be created by the official Manifold account because residual backing returns to the creator.'
+      'PERPs must be created by the official Manifold account: the selected creator account pays the backing and residual backing returns to it.'
+    )
+  if (!isPerpCreatorAccountAllowed(creatorAccount, oracleFeedId))
+    throw new APIError(
+      400,
+      `${
+        PERP_CREATOR_ACCOUNT_LABELS[creatorAccount]
+      } cannot own a market on ${oracleFeedId}; allowed creator accounts: ${getAllowedPerpCreatorAccounts(
+        oracleFeedId
+      ).join(', ')}.`
     )
   if (launchDefinition && question !== launchDefinition.question)
     throw new APIError(
@@ -127,12 +154,26 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
   const ticker =
     canonicalTicker ?? requestedTicker ?? derivePerpTicker(oracleFeedId)
 
-  const user = await getUser(auth.uid)
-  if (!user) throw new APIError(404, 'User not found')
-  if (user.balance < totalSubsidy)
-    throw new APIError(403, `Balance must be at least ${totalSubsidy}.`)
-
   const pg = createSupabaseDirectClient()
+  const creator = await resolvePerpCreatorAccount(creatorAccount, ENV, pg)
+  const creatorProblem = creator.user
+    ? getPerpCreatorAccountMismatch(creator)
+    : creator.reason
+  if (!creator.user || creatorProblem)
+    throw new APIError(
+      400,
+      `Cannot create as ${PERP_CREATOR_ACCOUNT_LABELS[creatorAccount]}: ${creatorProblem}.`
+    )
+  const user = creator.user
+  if (user.balance < totalSubsidy)
+    throw new APIError(
+      403,
+      `${PERP_CREATOR_ACCOUNT_LABELS[creatorAccount]} (@${
+        user.username
+      }) pays the backing and has M${Math.floor(
+        user.balance
+      )}; it must hold at least M${totalSubsidy}.`
+    )
 
   // Implicit feed existence check: at least one oracle_prices row must exist.
   const oracle = await pg.oneOrNone<{
@@ -232,24 +273,19 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
   )
 
   // Fetch live provider readiness before opening a transaction. Candles alone
-  // cannot authorize creation, and provider-margin failures affect launches only.
+  // cannot authorize creation, and provider-margin failures affect launches
+  // only. MNX's own leverage is not a ceiling on this market's maxLeverage.
   let oracleFeedHealth: OracleFeedHealth | undefined
   if (getMnxInstrument(oracleFeedId)) {
     const snapshot = await fetchMnxSnapshot()
-    let ready
     try {
-      ready = requireMnxReady(snapshot, oracleFeedId)
+      requireMnxReady(snapshot, oracleFeedId)
     } catch (error) {
       throw new APIError(
         400,
         error instanceof Error ? error.message : String(error)
       )
     }
-    if (maxLeverage > ready.supportedLeverage!)
-      throw new APIError(
-        400,
-        `MNX launch leverage must be at most MNX’s supported ${ready.supportedLeverage}×`
-      )
     if (Date.now() - oraclePoint.ts > maxOraclePriceAgeMs)
       throw new APIError(
         400,
@@ -266,19 +302,24 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
   const proposedSlug = slugify(question)
 
   const contract = await pg.tx(async (tx) => {
-    if (getMnxInstrument(oracleFeedId)) {
-      await tx.one(advisoryLockQuery(`create-perp:${oracleFeedId}`))
-      const existing = await tx.oneOrNone<{ id: string }>(
-        `select id from contracts where mechanism = 'perp' and resolution_time is null
-         and data->>'oracleFeedId' = $1`,
-        [oracleFeedId]
+    // One live market per feed, for every feed — not just MNX. A second perp
+    // on the same oracle splits backing and open interest across two books
+    // that quote the same price, so the duplicate is never the market anyone
+    // meant to trade. The advisory lock makes the check-then-insert atomic:
+    // without it two concurrent creations both read "no existing market" and
+    // both insert. Held to the end of the transaction, keyed by feed, so
+    // creations on different feeds never wait on each other.
+    await tx.one(advisoryLockQuery(`create-perp:${oracleFeedId}`))
+    const existing = await tx.oneOrNone<{ id: string }>(
+      `select id from contracts where mechanism = 'perp' and resolution_time is null
+       and data->>'oracleFeedId' = $1`,
+      [oracleFeedId]
+    )
+    if (existing)
+      throw new APIError(
+        409,
+        `A live market already exists for ${oracleFeedId}: ${existing.id}`
       )
-      if (existing)
-        throw new APIError(
-          409,
-          `A live market already exists for ${oracleFeedId}: ${existing.id}`
-        )
-    }
     const collision = await tx.oneOrNone<{ id: string }>(
       `select 1 as id from contracts where slug = $1 limit 1`,
       [proposedSlug]
@@ -298,8 +339,21 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
       // Stamp the resolved values so a later change to the platform defaults
       // cannot silently rewrite this market's economics (same reasoning as
       // fundingPeriodMs above).
-      takerFeeBps: takerFeeBps ?? PERP_TAKER_FEE_BPS_DEFAULT,
-      takerFeeImpact: takerFeeImpact ?? PERP_TAKER_FEE_IMPACT_DEFAULT,
+      takerFeeBps:
+        takerFeeBps ??
+        (getMnxInstrument(oracleFeedId)
+          ? MNX_DEFAULT_FEES.takerFeeBps
+          : PERP_TAKER_FEE_BPS_DEFAULT),
+      takerFeeApiBps:
+        takerFeeApiBps ??
+        (getMnxInstrument(oracleFeedId)
+          ? MNX_DEFAULT_FEES.takerFeeApiBps
+          : undefined),
+      takerFeeImpact:
+        takerFeeImpact ??
+        (getMnxInstrument(oracleFeedId)
+          ? MNX_DEFAULT_FEES.takerFeeImpact
+          : PERP_TAKER_FEE_IMPACT_DEFAULT),
       fundingPeriodMs,
       poolLong: subsidyLong,
       poolShort: subsidyShort,
@@ -378,7 +432,7 @@ export const createPerp: APIHandler<'create-perp'> = async (body, auth) => {
     )
     await tx.none(contractQuery)
 
-    // Creator pays the subsidy into the contract pools.
+    // The selected creator account pays the subsidy into the contract pools.
     await runTxnOutsideBetQueue(tx, {
       fromId: user.id,
       fromType: 'USER',

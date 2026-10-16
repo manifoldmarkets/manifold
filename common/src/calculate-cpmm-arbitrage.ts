@@ -1,19 +1,293 @@
 import { MAX_CPMM_PROB, MIN_CPMM_PROB } from 'common/contract'
 import { Dictionary, first, groupBy, mapValues, sum, sumBy } from 'lodash'
-import { Answer } from './answer'
+import { Answer, answerP } from './answer'
 import { Bet, LimitBet, maker } from './bet'
 import {
   calculateAmountToBuySharesFixedP,
+  calculateCpmmAmountToProbIncludingFees,
   computeFills,
   getCpmmProbability,
 } from './calculate-cpmm'
 import { Fees, getFeesSplit, getTakerFee, noFees, sumAllFees } from './fees'
-import { binarySearch } from './util/algos'
+import { BINARY_SEARCH_NAN_ERROR, binarySearch, findRoot } from './util/algos'
 import { floatingEqual } from './util/math'
 import { addObjects } from './util/object'
 
+// (GPnn labels cite machine-checked proofs: https://github.com/evand/manifold-math/tree/main/cpmm-multi-2/proofs)
+
+// Answers can come from the contract's cached copy, written before answers had
+// a p, so read p with answerP (or default it to 0.5 where it's destructured):
+// 0.5 is what cpmm-multi-1 has always priced at.
 const DEBUG = false
 export type ArbitrageBetArray = ReturnType<typeof combineBetsOnSameAnswers>
+// An answer's probability after a fill, at the answer's own p. computeFills
+// re-derives p from the pool after every step, which can leave it a few ulps off;
+// a trade never changes an answer's p, so the answer's is the exact one (0.5 on
+// cpmm-multi-1, which keeps these sums bit-for-bit what they were before p).
+const probAfterFill = (r: {
+  cpmmState: { pool: { [outcome: string]: number } }
+  answer: Answer
+}) => getCpmmProbability(r.cpmmState.pool, answerP(r.answer))
+// Whether any answer prices at a p other than 0.5, as cpmm-multi-2 answers do.
+const hasGeneralP = (answers: Answer[]) =>
+  answers.some((a) => !floatingEqual(answerP(a), 0.5))
+
+// Whether an amount the arbitrage worked out is zero but for rounding.
+// cpmm-multi-1 allows Ṁ0.001, as it always has. At a general p an answer can
+// move a long way on less than that, so cpmm-multi-2 allows only the rounding
+// error of the amounts it came from (`scale`).
+const isArbitrageZero = (amount: number, scale: number, generalP: boolean) =>
+  generalP
+    ? Math.abs(amount) <= 1e-12 * scale
+    : floatingArbitrageEqual(amount, 0)
+
+// Bounds for the share searches below, where `comparator` is positive once
+// `shares` is past the solution. cpmm-multi-1 bounds them by pricing every share
+// at the current probability, exactly as it always has. That price is a poor
+// guide at a general p, where an answer can sit at 1e-20 and still move a long
+// way on a small bet, and it cancels to 0 or below once the answer being bought
+// is lost in the rounding of the others' probabilities. cpmm-multi-2 starts from
+// the bet amount instead and doubles until the comparator turns positive, so the
+// search bisects an interval within a factor of two of the answer.
+const shareSearchBounds = (
+  answers: Answer[],
+  betAmount: number,
+  priceBound: number,
+  comparator: (shares: number) => number
+) => {
+  if (!hasGeneralP(answers)) return { min: 0, max: priceBound }
+  if (!(betAmount > 0)) return { min: 0, max: 0 }
+  let min = 0
+  let max = betAmount
+  for (let i = 0; i < 1100; i++) {
+    const comparison = comparator(max)
+    if (isNaN(comparison))
+      throw new Error(
+        BINARY_SEARCH_NAN_ERROR + ' at ' + JSON.stringify({ min, max, i })
+      )
+    if (comparison > 0) break
+    min = max
+    max *= 2
+  }
+  return { min, max }
+}
+
+// The searches leave a cpmm-multi-2 market's probabilities within about 1e-13
+// of summing to one. A single-answer buy or sale that misses by more than
+// SUM_TO_ONE_TOLERANCE is solved again (priceLedArbitrage, splitSaleExactly),
+// and placeBet refuses one that still misses by more than SUM_TO_ONE_REFUSAL
+// (cpmmMultiTradeMissesSumToOne). Multi-sell and multi-bet aren't solved again;
+// they're refused on the same test, over all their results (poolsAfterResults).
+const SUM_TO_ONE_TOLERANCE = 1e-9
+const SUM_TO_ONE_REFUSAL = 1e-6
+export const CPMM_MULTI_2_UNPRICED_ERROR =
+  "This trade can't be priced accurately at these odds. Try a different amount."
+const sumToOneError = (legs: Parameters<typeof probAfterFill>[0][]) =>
+  Math.abs(1 - sumBy(legs, probAfterFill))
+
+// Whether a trade leaves a sum-to-one market's probabilities further from
+// summing to one than SUM_TO_ONE_REFUSAL and than it found them. `poolsAfter`
+// holds the pools of the answers it traded, by id; the rest keep theirs. Only
+// unresolved answers count, as cpmm-multi-2 reserves resolving linked answers
+// NO one at a time (see CPMMMulti in contract.ts).
+export const cpmmMultiTradeMissesSumToOne = (
+  answers: Answer[],
+  poolsAfter: { [answerId: string]: { [outcome: string]: number } }
+) => {
+  const unresolved = answers.filter((a) => !a.resolution)
+  const sumOf = (poolOf: (a: Answer) => { [outcome: string]: number }) =>
+    sumBy(unresolved, (a) => getCpmmProbability(poolOf(a), answerP(a)))
+  const before = sumOf((a) => ({ YES: a.poolYes, NO: a.poolNo }))
+  const after = sumOf(
+    (a) => poolsAfter[a.id] ?? { YES: a.poolYes, NO: a.poolNo }
+  )
+  return (
+    Math.abs(after - 1) > Math.max(SUM_TO_ONE_REFUSAL, Math.abs(before - 1))
+  )
+}
+
+// The pools a trade written as several bet results leaves, by answer id, in
+// the order executeNewBetResult writes them: each result's other answers, then
+// its own, with later results last. For cpmmMultiTradeMissesSumToOne on trades
+// that check can't see one result at a time, as multi-sell's.
+export const poolsAfterResults = (
+  results: {
+    newBet: { answerId?: string }
+    newPool?: { [outcome: string]: number }
+    otherBetResults?: {
+      answer: { id: string }
+      cpmmState: { pool: { [outcome: string]: number } }
+    }[]
+  }[]
+) => {
+  const pools: { [answerId: string]: { [outcome: string]: number } } = {}
+  for (const { newBet, newPool, otherBetResults } of results) {
+    for (const { answer, cpmmState } of otherBetResults ?? [])
+      pools[answer.id] = cpmmState.pool
+    if (newBet.answerId && newPool) pools[newBet.answerId] = newPool
+  }
+  return pools
+}
+
+// A price-led buy's leg in the answer being bought (see priceLedArbitrage):
+// buy `outcome` until its price reaches `target`, filling resting orders on the
+// way as any trade does. Undefined if that costs more than `budget`. Orders rest
+// within 1%-99%, so a target past those bounds is the pool's alone, at a cost
+// exact however lopsided the pool. Within them the cost is found by filling
+// with up to `cap`.
+const buyToPrice = (
+  answer: Answer,
+  outcome: 'YES' | 'NO',
+  target: number,
+  budget: number,
+  cap: number,
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number },
+  collectedFees: Fees
+) => {
+  if (!isFinite(target) || !(budget >= 0)) return undefined
+  const p = answerP(answer)
+  const state = {
+    pool: { YES: answer.poolYes, NO: answer.poolNo },
+    p,
+    collectedFees,
+  }
+  const before = getCpmmProbability(state.pool, p)
+  if (outcome === 'YES' ? !(target > before) : !(target < before))
+    return computeFills(
+      state,
+      outcome,
+      0,
+      undefined,
+      unfilledBets,
+      balanceByUserId
+    )
+  if (outcome === 'YES' ? target < MIN_CPMM_PROB : target > MAX_CPMM_PROB) {
+    const cost = calculateCpmmAmountToProbIncludingFees(state, target, outcome)
+    if (!(cost <= budget)) return undefined
+    return computeFills(
+      state,
+      outcome,
+      cost,
+      undefined,
+      unfilledBets,
+      balanceByUserId
+    )
+  }
+  const fills = computeFills(
+    state,
+    outcome,
+    cap,
+    target,
+    unfilledBets,
+    balanceByUserId
+  )
+  if (!(sumBy(fills.takers, 'amount') <= budget)) return undefined
+  // The pool lands on the target to about 1e-10 of it (its updated side is a
+  // difference of much larger ones); one that stops well short of it, as a
+  // pool too degenerate to fill does, doesn't count.
+  const after = getCpmmProbability(fills.cpmmState.pool, p)
+  const reached =
+    outcome === 'YES'
+      ? after >= target * (1 - 1e-9)
+      : 1 - after >= (1 - target) * (1 - 1e-9)
+  return reached ? fills : undefined
+}
+
+// cpmm-multi-2's second solve of a single-answer buy. An answer split off a
+// tiny Other is priced by a sliver of one side of its pool, so its whole move
+// from 1% to 99% can cost less than the rounding of the other answers' legs.
+// The usual search hands the answer's own leg what's left of the bet after
+// those legs, which there is mostly rounding, so the answer lands wherever that
+// falls. Here the other answers' legs set the price instead: with `shares` in
+// each of them, the answer must end at one minus the sum of theirs, and its own
+// leg buys it to exactly that (`legsAt`). The search is then for the most
+// shares the bet affords, and the cost of that moves smoothly with `shares`.
+const priceLedArbitrage = <T>(
+  answers: Answer[],
+  betAmount: number,
+  legsAt: (shares: number) => T | undefined
+) => {
+  const affordable: { shares: number; result?: T } = { shares: -1 }
+  const comparator = (shares: number) => {
+    const result = legsAt(shares)
+    if (!result) return 1
+    if (shares > affordable.shares) {
+      affordable.shares = shares
+      affordable.result = result
+    }
+    return -1
+  }
+  const { min, max } = shareSearchBounds(
+    answers,
+    betAmount,
+    betAmount,
+    comparator
+  )
+  // Down to adjacent floats: a leg priced by a sliver of its pool can make the
+  // last few halvings worth a noticeable part of the bet.
+  binarySearch(min, max, comparator, 200)
+  return affordable.result ?? legsAt(0)
+}
+
+// cpmm-multi-2: keep a single-answer buy's result while its probabilities sum
+// to one; otherwise solve it price-led, and keep whichever is closer.
+const checkSumsToOne = <T>(
+  answers: Answer[],
+  betAmount: number,
+  result: T,
+  legsOf: (result: T) => Parameters<typeof probAfterFill>[0][],
+  priceLedLegsAt: (shares: number) => T | undefined
+) => {
+  if (!hasGeneralP(answers)) return result
+  const error = sumToOneError(legsOf(result))
+  if (error <= SUM_TO_ONE_TOLERANCE) return result
+  const priceLed = priceLedArbitrage(answers, betAmount, priceLedLegsAt)
+  return priceLed && sumToOneError(legsOf(priceLed)) < error ? priceLed : result
+}
+
+// cpmm-multi-2: a sale splits the shares sold between the answer's own leg
+// (`own` shares) and a leg in every other answer (`others` shares in each),
+// and the sells below search `own`, leaving `others` to the rounding of
+// total - own. Once an answer in the sale has an all-but-empty pool, as one
+// split off a tiny Other has after it's bought up, the last bits of its leg's
+// shares move it a long way, and the probabilities miss summing to one. Past
+// SUM_TO_ONE_TOLERANCE, search each leg's shares directly, down to adjacent
+// floats, and keep the closest. `sumErrorAt` is signed, and positive while
+// `own` is too many.
+const splitSaleExactly = (
+  total: number,
+  own: number,
+  sumErrorAt: (own: number, others: number) => number
+) => {
+  let best = { own, others: total - own }
+  let error = Math.abs(sumErrorAt(own, total - own))
+  if (error <= SUM_TO_ONE_TOLERANCE) return best
+  const ownSearched = binarySearch(
+    0,
+    total,
+    (own) => sumErrorAt(own, total - own),
+    200
+  )
+  const othersSearched = binarySearch(
+    0,
+    total,
+    (others) => -sumErrorAt(total - others, others),
+    200
+  )
+  for (const split of [
+    { own: ownSearched, others: total - ownSearched },
+    { own: total - othersSearched, others: othersSearched },
+  ]) {
+    const splitError = Math.abs(sumErrorAt(split.own, split.others))
+    if (splitError < error) {
+      best = split
+      error = splitError
+    }
+  }
+  return best
+}
+
 const noFillsReturn = (
   outcome: string,
   answer: Answer,
@@ -27,7 +301,7 @@ const noFillsReturn = (
     ordersToCancel: [] as LimitBet[],
     cpmmState: {
       pool: { YES: answer.poolYes, NO: answer.poolNo },
-      p: 0.5,
+      p: answerP(answer),
       collectedFees,
     },
     totalFees: { creatorFee: 0, liquidityFee: 0, platformFee: 0 },
@@ -94,7 +368,13 @@ export function calculateCpmmMultiArbitrageYesBets(
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
-  collectedFees: Fees
+  collectedFees: Fees,
+  // cpmm-multi-2 (per-answer p + reversible-limit auto-arb) routes the basket buy through the
+  // direct, non-overshooting "Approach C" solve; cpmm-multi-1 keeps the frozen v1 nested
+  // search byte-identically. REQUIRED — pass contract.mechanism. Deliberately no default:
+  // a silent v1 default let a preview path (numeric-bet-panel) show v1 fills for a v2
+  // market; the compiler now forces every caller to say which market it is pricing.
+  arbVersion: 'cpmm-multi-1' | 'cpmm-multi-2'
 ) {
   const result = calculateCpmmMultiArbitrageBetsYes(
     answers,
@@ -103,7 +383,8 @@ export function calculateCpmmMultiArbitrageYesBets(
     limitProb,
     unfilledBets,
     balanceByUserId,
-    collectedFees
+    collectedFees,
+    arbVersion
   )
   if (
     floatingEqual(
@@ -189,8 +470,20 @@ function calculateCpmmMultiArbitrageBetsYes(
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
-  collectedFees: Fees
+  collectedFees: Fees,
+  arbVersion: 'cpmm-multi-1' | 'cpmm-multi-2'
 ) {
+  if (arbVersion === 'cpmm-multi-2') {
+    return calculateCpmmMultiArbitrageBetsYesV2(
+      initialAnswers,
+      initialAnswersToBuy,
+      initialBetAmount,
+      limitProb,
+      unfilledBets,
+      balanceByUserId,
+      collectedFees
+    )
+  }
   // Maintain mutable snapshots of unfilled orders and maker balances across the whole multi-buy
   let workingUnfilledBetsByAnswer = groupBy(unfilledBets, (bet) => bet.answerId)
   let workingBalanceByUserId = { ...balanceByUserId }
@@ -209,9 +502,9 @@ function calculateCpmmMultiArbitrageBetsYes(
     const maxYesShares = amountToBet / yesSharePriceSum
     let yesAmounts: number[] = []
     binarySearch(0, maxYesShares, (yesShares) => {
-      yesAmounts = answersToBuy.map(({ id, poolYes, poolNo }) =>
+      yesAmounts = answersToBuy.map(({ id, poolYes, poolNo, p = 0.5 }) =>
         calculateAmountToBuySharesFixedP(
-          { pool: { YES: poolYes, NO: poolNo }, p: 0.5, collectedFees },
+          { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
           yesShares,
           'YES',
           workingUnfilledBetsByAnswer[id] ?? [],
@@ -287,6 +580,471 @@ function calculateCpmmMultiArbitrageBetsYes(
   return { newBetResults, otherBetResults, updatedAnswers }
 }
 
+// cpmm-multi-2 multi-buy: the direct, non-overshooting "Approach C" solve (GP12 / reference
+// `tasks/cpmm_multi_2/proofs/reference_solve_c.py`). The DOLLAR-CENTRIC decomposition makes it
+// correct-by-construction under resting limits:
+//   * each basket answer is bought ONCE, straight up start -> final  (a single rising YES sweep)
+//   * each non-basket answer moves ONCE, straight down start -> final (a single falling NO sweep)
+// No answer is ever pushed past its settled price, so every resting maker is crossed exactly once,
+// in one direction (pinning included). This eliminates v1's transient-overshoot fills: the
+// iterate-buy-arb-reinvest loop in calculateCpmmMultiArbitrageBetsYes drives basket answers UP PAST
+// their final price and back down, consuming and keeping makers in the transient band (the bug).
+//
+// Because each answer is touched by exactly one leg (basket = YES, others = NO) and a resting order
+// lives on a single answerId, the per-answer maker books are disjoint — there is no cross-leg
+// working-state maker mutation to reason about (unlike the v1 share-centric "NO in all" loop).
+//
+//   solve g (equal YES shares per basket answer) s.t. net spend == budget        [outer search]
+//     buy g YES shares in each basket answer (limit-aware single rising sweep)
+//     solve eta (NO shares in each non-basket answer) s.t. Sum prob == 1          [inner search]
+//       buy eta NO shares in each non-basket answer (limit-aware single falling sweep)
+//     net = basketCost + othersCost - eta*(n - m - 1)   (dollar-centric redemption; m = |basket|)
+//
+// net is strictly increasing in g (GP12a: dt/dg = Sum_basket prob > 0) and Sum_others prob is
+// strictly decreasing in eta (GP5a) — so both searches are on monotone objectives. Each
+// brackets its root by doubling and closes in with findRoot (regula falsi, safeguarded by
+// bisection), in about a dozen probes where bisection takes 50.
+//
+// Precondition: `initialAnswers` is the FULL LIVE answer set — every answer participating in
+// the sum-to-one constraint. Today that is all of the contract's answers by construction
+// (linked answers cannot be individually resolved). If cpmm-multi-2 per-answer NO resolution
+// ships (reserved — see the CPMMMulti doc comment in contract.ts), callers must pass the
+// unresolved subset; every identity here (n, m, eta*(n - m - 1)) is relative to this array.
+function calculateCpmmMultiArbitrageBetsYesV2(
+  initialAnswers: Answer[],
+  initialAnswersToBuy: Answer[],
+  betAmount: number,
+  limitProb: number | undefined,
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number },
+  collectedFees: Fees
+) {
+  const unfilledBetsByAnswer = groupBy(unfilledBets, (b) => b.answerId)
+  const basketIds = new Set(initialAnswersToBuy.map((a) => a.id))
+  const others = initialAnswers.filter((a) => !basketIds.has(a.id))
+  const n = initialAnswers.length
+  const m = initialAnswersToBuy.length
+
+  // m = n is the one structurally infeasible basket: with no other answers to arb down, any
+  // g > 0 pushes Sum p past 1, so every evalG is undefined and the bisection collapses to a
+  // denormal g where calculateAmountToBuySharesFixedP degenerates to NaN — surfacing as a
+  // stack-leaking 'Invalid bet amount' deep in computeFills. Reject up front with the typed
+  // error instead (new-bet.ts maps it to a 503).
+  if (others.length === 0) {
+    throw new CpmmMulti2InvariantError(
+      'cpmm-multi-2 YES basket cannot include every answer (m = n is infeasible)',
+      { n, m }
+    )
+  }
+
+  // Evaluate one g: realize the basket YES legs + the arbed OTHER NO legs at the eta that pins
+  // Sum prob == 1. Returns undefined when g is infeasible (basket alone already sums >= 1).
+  const evalG = (g: number) => {
+    // Fresh working snapshots so each g-probe is independent (no maker capacity bleed across probes).
+    const workingUnfilledBetsByAnswer = mapValues(
+      unfilledBetsByAnswer,
+      (bets) => [...bets]
+    )
+    const workingBalanceByUserId = { ...balanceByUserId }
+
+    // --- basket: buy g YES shares in each basket answer (single rising sweep, limit-aware) ---
+    let basketCost = 0
+    const yesBetResults = initialAnswersToBuy.map((answer) => {
+      const pool = { YES: answer.poolYes, NO: answer.poolNo }
+      const state = { pool, p: answerP(answer), collectedFees }
+      const yesAmount = calculateAmountToBuySharesFixedP(
+        state,
+        g,
+        'YES',
+        workingUnfilledBetsByAnswer[answer.id] ?? [],
+        workingBalanceByUserId
+      )
+      const result = {
+        ...computeFills(
+          state,
+          'YES',
+          yesAmount,
+          limitProb,
+          workingUnfilledBetsByAnswer[answer.id] ?? [],
+          workingBalanceByUserId
+        ),
+        answer,
+      }
+      applyMakersToWorkingState(
+        result.makers,
+        result.ordersToCancel,
+        workingUnfilledBetsByAnswer,
+        workingBalanceByUserId
+      )
+      basketCost += sumBy(result.takers, 'amount')
+      return result
+    })
+    const basketSum = sumBy(yesBetResults, probAfterFill)
+    const target = 1 - basketSum // required Sum over the non-basket answers
+    if (target <= 1e-9) {
+      return undefined // basket alone sums to >= 1: this g is infeasible
+    }
+
+    // --- inner: eta NO shares in each OTHER answer so their prob-sum == target. Read-only preview
+    // (never applies makers) — Sum_others prob is strictly decreasing in eta => unique eta. ---
+    const othersSumAtEta = (eta: number) =>
+      sumBy(others, (answer) => {
+        const pool = { YES: answer.poolYes, NO: answer.poolNo }
+        const state = { pool, p: answerP(answer), collectedFees }
+        const noAmount = calculateAmountToBuySharesFixedP(
+          state,
+          eta,
+          'NO',
+          workingUnfilledBetsByAnswer[answer.id] ?? [],
+          workingBalanceByUserId,
+          true
+        )
+        const { cpmmState } = computeFills(
+          state,
+          'NO',
+          noAmount,
+          undefined,
+          workingUnfilledBetsByAnswer[answer.id] ?? [],
+          workingBalanceByUserId,
+          undefined,
+          true
+        )
+        return getCpmmProbability(cpmmState.pool, answerP(answer))
+      })
+
+    // The search revisits the points the doubling found.
+    const sums = new Map<number, number>()
+    const othersSum = (eta: number) => {
+      if (!sums.has(eta)) sums.set(eta, othersSumAtEta(eta))
+      return sums.get(eta)!
+    }
+    let eta = 0
+    if (othersSum(0) > target) {
+      let [lo, hi] = [0, 1]
+      while (othersSum(hi) > target && hi < 1e12) [lo, hi] = [hi, 2 * hi]
+      // othersSum decreasing in eta => comparator (target - othersSum) increasing in eta.
+      eta = findRoot(lo, hi, (e) => target - othersSum(e))
+    }
+
+    // --- realize the OTHER NO legs at eta, this time applying maker fills to working state ---
+    let othersCost = 0
+    const noBetResults = others.map((answer) => {
+      const pool = { YES: answer.poolYes, NO: answer.poolNo }
+      const state = { pool, p: answerP(answer), collectedFees }
+      const noAmount = calculateAmountToBuySharesFixedP(
+        state,
+        eta,
+        'NO',
+        workingUnfilledBetsByAnswer[answer.id] ?? [],
+        workingBalanceByUserId,
+        true
+      )
+      const result = {
+        ...computeFills(
+          state,
+          'NO',
+          noAmount,
+          undefined,
+          workingUnfilledBetsByAnswer[answer.id] ?? [],
+          workingBalanceByUserId,
+          undefined,
+          true
+        ),
+        answer,
+      }
+      applyMakersToWorkingState(
+        result.makers,
+        result.ordersToCancel,
+        workingUnfilledBetsByAnswer,
+        workingBalanceByUserId
+      )
+      othersCost += sumBy(result.takers, 'amount')
+      return result
+    })
+
+    // Dollar-centric redemption credit: eta NO shares in each of the (n - m) other answers, with g
+    // YES shares in each of the m basket answers, forms complete sets worth eta*(n - m - 1) mana.
+    // (For m = 1 this is eta*(n - 2), matching the single-answer calculateCpmmMultiArbitrageBetYes.)
+    const net = basketCost + othersCost - eta * (n - m - 1)
+    return { yesBetResults, noBetResults, eta, net }
+  }
+
+  // outer: net strictly increasing in g (and undefined past the feasibility boundary, which is an
+  // upper bound) => bracket by doubling, then search for net == betAmount.
+  // evalG depends on g alone, and the search revisits the points the doubling
+  // found and ends on one it has tried.
+  const evaluated = new Map<number, ReturnType<typeof evalG>>()
+  const evalAt = (g: number) => {
+    if (!evaluated.has(g)) evaluated.set(g, evalG(g))
+    return evaluated.get(g)
+  }
+  let [gLo, gHi] = [0, 1]
+  while (true) {
+    const r = evalAt(gHi)
+    if (!r || r.net >= betAmount) break
+    ;[gLo, gHi] = [gHi, 2 * gHi]
+    if (gHi > 1e9) {
+      throw new Error('budget unreachable in cpmm-multi-2 YES basket solve')
+    }
+  }
+  const g = findRoot(gLo, gHi, (gg) => {
+    const r = evalAt(gg)
+    return r ? r.net - betAmount : 1 // infeasible g overshoots Sum p => push g lower
+  })
+  const solved = evalAt(g)
+  if (!solved) {
+    // Reachable e.g. when the basket is ALL answers (m = n: every g is infeasible, target <= 0).
+    // Typed so new-bet.ts maps it to a 503 instead of leaking a 500 stack to the API caller.
+    throw new CpmmMulti2InvariantError(
+      'Invariant failed in cpmm-multi-2 YES basket solve',
+      { g, betAmount, n, m }
+    )
+  }
+  const { yesBetResults, noBetResults, eta } = solved
+
+  // Redemption fills (mirrors the single-answer path): the NO-in-others legs are internal
+  // arbitrage that nets to zero mana/shares; the redemption credit flows to the basket YES legs.
+  // netOthers = othersCost - eta*(n - m - 1); summed taker amount across all legs == betAmount.
+  const othersCost = sumBy(noBetResults, (r) => sumBy(r.takers, 'amount'))
+  const netOthers = othersCost - eta * (n - m - 1)
+  for (const noBetResult of noBetResults) {
+    noBetResult.takers.push({
+      matchedBetId: null,
+      amount: -sumBy(noBetResult.takers, 'amount'),
+      shares: -sumBy(noBetResult.takers, 'shares'),
+      timestamp: Date.now(),
+      fees: noFees,
+    })
+  }
+  // Redemption credit to the basket YES legs. The eta NO shares held in each of the (n-m)
+  // other answers pay eta*(n-m) iff a basket answer wins and eta*(n-m-1) iff an other wins;
+  // the guaranteed floor eta*(n-m-1) is redeemed above, leaving a residual worth eta iff ANY
+  // basket answer wins. That residual is eta YES shares in EACH basket answer (whichever basket
+  // answer wins pays eta), NOT eta/m: with eta/m a winning basket answer would pay only eta/m,
+  // breaking sum-to-one conservation (T_i^YES - T_i^NO must be constant across answers) and
+  // destroying mana at resolution to a basket answer. The net mana (netOthers) still splits
+  // equally across the m basket legs so summed taker amount == betAmount. For m = 1 this is
+  // identical to the single-answer redemption fill (eta shares, netOthers mana).
+  for (const yesBetResult of yesBetResults) {
+    yesBetResult.takers.push({
+      matchedBetId: null,
+      amount: netOthers / m,
+      shares: eta,
+      timestamp: Date.now(),
+      fees: noFees,
+    })
+  }
+
+  const updatedAnswers = initialAnswers.map((answer) => {
+    const r =
+      yesBetResults.find((b) => b.answer.id === answer.id) ??
+      noBetResults.find((b) => b.answer.id === answer.id)
+    if (!r) return answer
+    const { pool, p } = r.cpmmState
+    return {
+      ...answer,
+      poolYes: pool.YES,
+      poolNo: pool.NO,
+      prob: getCpmmProbability(pool, p),
+    }
+  })
+
+  const newBetResults = combineBetsOnSameAnswers(
+    yesBetResults,
+    'YES',
+    updatedAnswers.filter((a) => basketIds.has(a.id)),
+    collectedFees
+  )
+  const otherBetResults = combineBetsOnSameAnswers(
+    noBetResults,
+    'NO',
+    updatedAnswers.filter((a) => !basketIds.has(a.id)),
+    collectedFees
+  )
+
+  // Always-on post-hoc verification (cost is one pass over the result vs. the 20-40 evalG
+  // probes to produce it). Throws CpmmMulti2InvariantError; new-bet.ts maps it to a retryable
+  // 503, so a wrong solve fails the bet instead of committing a mis-priced fill.
+  verifyCpmmMulti2BetResult(
+    betAmount,
+    newBetResults,
+    otherBetResults,
+    updatedAnswers,
+    unfilledBets
+  )
+
+  return { newBetResults, otherBetResults, updatedAnswers }
+}
+
+// --- cpmm-multi-2 post-hoc solve verification -------------------------------------------------
+// The v2 solve above searches on the premise that net(g) is strictly increasing. That premise is
+// proven only at p = 1/2 with no resting limits (GP12a); production runs general p against a live
+// limit book. If the premise ever fails, the search returns a wrong g SILENTLY — the taker is
+// mis-charged with no error anywhere. But verifying a claimed equilibrium is trivial even where
+// finding it is hard, so we check the returned result and fail the bet (which the client can
+// retry) rather than commit a wrong fill. This demotes monotonicity from a correctness assumption
+// to a performance assumption.
+//
+// Deliberately a typed error rather than common/api/utils APIError: importing api/utils here
+// would close the module cycle api/utils -> api/schema -> new-bet -> this file. new-bet.ts
+// (which already imports APIError) maps it to APIError(503, ...), so API callers see a retryable
+// error instead of a stack-leaking 500.
+export class CpmmMulti2InvariantError extends Error {
+  details?: unknown
+  constructor(message: string, details?: unknown) {
+    super(message)
+    this.name = 'CpmmMulti2InvariantError'
+    this.details = details
+  }
+}
+
+// Tolerances calibrated 2026-07-01 against the 50-iteration bisection's observed residuals on
+// this repo's v2 jest fixtures plus the net(g) monotonicity probe's 152-call sweep (p = 1/2 and
+// general-p pools, m = 1..4 baskets, balanced/skewed/extreme creation pools, resting makers,
+// bets M$1..M$100k). Worst observed: cost 1.5e-9 absolute (M$100k whale; <= 1.1e-11 for bets
+// <= 500), basket share spread 2.2e-13 (relative), maker price / order overfill exactly 0.
+// Cost and shares are relative with an absolute floor (residuals scale with bet size).
+//
+// PROB-SUM CAVEAT — why its tolerance is loose (1e-2) while cost is tight: when a maker holds
+// YES bids on TWO+ non-basket answers but has balance for only one leg, the inner eta solve
+// previews the NO legs with per-leg balance copies yet realizes them against a shared decremented
+// balance, so realized Sum_others prob lands short of target — final Sum q deviates from 1 by up
+// to ~2e-3 (observed 1.73e-3 at bet 500). This is PRE-EXISTING behavior shared with frozen v1
+// (same config shows -1.03e-3 on v1) and the taker charge stays exact (cost residual 2.3e-12);
+// the market is merely left with a small open arb. A tight Sum q check would make v2 refuse bets
+// v1 accepts — a functional regression — so the tolerance sits above the balance-binding
+// deviation. In every non-balance-bound config |Sum q - 1| <= 8.9e-16.
+// TODO: recalibrate against the whale-bet probe (cpmm-perf-bench) before raising bet-size caps.
+const V2_VERIFY_COST_EPS = 1e-8 // relative to betAmount, floored at V2_VERIFY_COST_EPS_ABS
+const V2_VERIFY_COST_EPS_ABS = 1e-6 // absolute floor (observed worst 1.5e-9 at M$100k)
+const V2_VERIFY_PROB_SUM_EPS = 1e-2 // absolute on Sum_i prob_i — loose, see caveat above
+const V2_VERIFY_SHARES_EPS = 1e-9 // relative, basket equal-shares spread & other-leg net shares
+const V2_VERIFY_MAKER_EPS = 1e-9 // maker fill bookkeeping (exact identities up to roundoff)
+
+// Checks the v2 result exactly as downstream consumes it (executeNewBetResult / the conservation
+// grid): taker fills = `takers`, maker fills = `makers`, final pools = per-answer cpmmState.
+// NOT checkable post-hoc: the no-overshoot path property (a maker strictly outside an answer's
+// [initial, final] excursion must not be crossed) — the result carries no price path, so the
+// conservation grid's falsification sweep owns that invariant, not this verifier.
+export const verifyCpmmMulti2BetResult = (
+  betAmount: number,
+  newBetResults: ArbitrageBetArray,
+  otherBetResults: ArbitrageBetArray,
+  updatedAnswers: Answer[],
+  unfilledBets: LimitBet[]
+) => {
+  const fail = (check: string, details: unknown): never => {
+    throw new CpmmMulti2InvariantError(
+      `cpmm-multi-2 solve verification failed: ${check}`,
+      details
+    )
+  }
+
+  // (a) Cost conservation. The taker's whole spend lives on the basket YES legs: each other-
+  // answer NO leg carries an appended redemption fill that nets it to exactly zero mana AND zero
+  // shares (the eta*(n-m-1) credit plus the residual eta YES/leg flow to the basket legs). So
+  // Sum_basket takers.amount == betAmount — the same identity new-bet.ts uses for isFilled and
+  // the conservation grid's `Sum(balance deltas) + fees == 0` closure. A wrong g from a
+  // non-monotone net(g) surfaces HERE: the inner eta solve re-pins Sum p == 1 for any g, so
+  // mis-solves mis-charge rather than mis-price.
+  const spend = sumBy(
+    newBetResults.flatMap((r) => r.takers),
+    'amount'
+  )
+  const costTol = Math.max(
+    V2_VERIFY_COST_EPS_ABS,
+    V2_VERIFY_COST_EPS * betAmount
+  )
+  if (Math.abs(spend - betAmount) > costTol) {
+    fail('taker spend != betAmount (wrong g?)', { spend, betAmount })
+  }
+  for (const r of otherBetResults) {
+    const netAmount = sumBy(r.takers, 'amount')
+    const netShares = sumBy(r.takers, 'shares')
+    const grossShares = sumBy(r.takers, (t) => Math.abs(t.shares))
+    if (
+      Math.abs(netAmount) > costTol ||
+      Math.abs(netShares) > V2_VERIFY_SHARES_EPS * Math.max(1, grossShares)
+    ) {
+      fail('other-answer NO leg does not net to zero', {
+        answerId: r.answer.id,
+        netAmount,
+        netShares,
+      })
+    }
+  }
+
+  // (b) Sum-to-one + (c) positivity on the final state of EVERY answer. updatedAnswers is the
+  // solve's own final state (basket + others both realized), the same pools executeNewBetResult
+  // persists. The Sum q tolerance is deliberately loose — see the balance-bound-maker caveat at
+  // the EPS definitions above (legitimate ~2e-3 deviation shared with v1).
+  let probSum = 0
+  for (const a of updatedAnswers) {
+    const p = answerP(a)
+    if (!(a.poolYes > 0) || !(a.poolNo > 0) || !(p > 0 && p < 1)) {
+      fail('final pool not positive / p outside (0,1)', {
+        answerId: a.id,
+        poolYes: a.poolYes,
+        poolNo: a.poolNo,
+        p,
+      })
+    }
+    probSum += getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, p)
+  }
+  if (Math.abs(probSum - 1) > V2_VERIFY_PROB_SUM_EPS) {
+    fail('final probabilities do not sum to 1', { probSum })
+  }
+
+  // (d) Maker-fill sanity. A limit fill is priced AT the maker's limitProb (computeFill:
+  // maker.amount = shares * makerPrice), and the fills against one order cannot exceed what was
+  // left unfilled on the book when the solve started. Each answer's book is touched by exactly
+  // one leg in v2, but group by order id anyway so the check doesn't depend on that.
+  const bookById = new Map(unfilledBets.map((b) => [b.id, b]))
+  const allMakers = [...newBetResults, ...otherBetResults].flatMap(
+    (r) => r.makers
+  )
+  for (const m of allMakers) {
+    const price =
+      m.bet.outcome === 'YES' ? m.bet.limitProb : 1 - m.bet.limitProb
+    if (
+      m.shares < -V2_VERIFY_MAKER_EPS ||
+      m.amount < -V2_VERIFY_MAKER_EPS ||
+      Math.abs(m.amount - m.shares * price) >
+        V2_VERIFY_MAKER_EPS * Math.max(1, m.amount)
+    ) {
+      fail('maker fill not priced at its limitProb / negative fill', {
+        orderId: m.bet.id,
+        amount: m.amount,
+        shares: m.shares,
+        limitProb: m.bet.limitProb,
+      })
+    }
+  }
+  for (const [orderId, fills] of Object.entries(
+    groupBy(allMakers, (m) => m.bet.id)
+  )) {
+    const order = bookById.get(orderId) ?? fills[0].bet
+    const remaining = order.orderAmount - order.amount
+    const filled = sumBy(fills, 'amount')
+    if (filled > remaining + V2_VERIFY_MAKER_EPS * Math.max(1, remaining)) {
+      fail('maker order filled beyond its remaining size', {
+        orderId,
+        filled,
+        remaining,
+      })
+    }
+  }
+
+  // (e) Equal shares — the multi-bet contract: every basket answer acquires the same YES shares
+  // (g from the sweep + eta from the redemption residual).
+  const basketShares = newBetResults.map((r) => sumBy(r.takers, 'shares'))
+  const maxShares = Math.max(...basketShares)
+  const spread = maxShares - Math.min(...basketShares)
+  if (spread > V2_VERIFY_SHARES_EPS * Math.max(1, maxShares)) {
+    fail('basket YES shares not equal across answers', { basketShares })
+  }
+}
+
 export const getBetResultsAndUpdatedAnswers = (
   answersToBuy: Answer[],
   yesAmounts: number[],
@@ -308,7 +1066,7 @@ export const getBetResultsAndUpdatedAnswers = (
     const pool = { YES: answerToBuy.poolYes, NO: answerToBuy.poolNo }
     const yesBetResult = {
       ...computeFills(
-        { pool, p: 0.5, collectedFees },
+        { pool, p: answerP(answerToBuy), collectedFees },
         'YES',
         yesAmounts[i],
         limitProb,
@@ -435,7 +1193,11 @@ export const combineBetsOnSameAnswers = (
       makers: betsForAnswer.flatMap((r) => r.makers),
       ordersToCancel: betsForAnswer.flatMap((r) => r.ordersToCancel),
       outcome,
-      cpmmState: { p: 0.5, pool: { YES: poolYes, NO: poolNo }, collectedFees },
+      cpmmState: {
+        p: answerP(answer),
+        pool: { YES: poolYes, NO: poolNo },
+        collectedFees,
+      },
       answer,
       totalFees,
     }
@@ -460,7 +1222,9 @@ function calculateCpmmMultiArbitrageBetYes(
   // If you spend all of amount on NO shares at current price. Subtract out from the price the redemption mana.
   const maxNoShares = betAmount / (noSharePriceSum - answers.length + 2)
 
-  const noShares = binarySearch(0, maxNoShares, (noShares) => {
+  // The most shares tried that fit within the bet without overshooting.
+  let affordable = 0
+  const comparator = (noShares: number) => {
     const result = buyNoSharesInOtherAnswersThenYesInAnswer(
       answers,
       answerToBuy,
@@ -474,38 +1238,73 @@ function calculateCpmmMultiArbitrageBetYes(
     if (!result) {
       return 1
     }
-    const newPools = [
-      ...result.noBetResults.map((r) => r.cpmmState.pool),
-      result.yesBetResult.cpmmState.pool,
-    ]
-    const diff = 1 - sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5))
+    const newStates = [...result.noBetResults, result.yesBetResult]
+    const diff = 1 - sumBy(newStates, probAfterFill)
+    if (
+      diff <= 0 &&
+      noShares > affordable &&
+      sumBy(result.yesBetResult.takers, 'amount') <= betAmount
+    )
+      affordable = noShares
     return diff
-  })
-
-  const result = buyNoSharesInOtherAnswersThenYesInAnswer(
+  }
+  const { min, max } = shareSearchBounds(
     answers,
-    answerToBuy,
-    unfilledBetsByAnswer,
-    balanceByUserId,
     betAmount,
-    limitProb,
-    noShares,
-    collectedFees
+    maxNoShares,
+    comparator
   )
+  let noShares = binarySearch(min, max, comparator)
+
+  const buyNoShares = (noShares: number) =>
+    buyNoSharesInOtherAnswersThenYesInAnswer(
+      answers,
+      answerToBuy,
+      unfilledBetsByAnswer,
+      balanceByUserId,
+      betAmount,
+      limitProb,
+      noShares,
+      collectedFees
+    )
+  let result = buyNoShares(noShares)
+  // When the answer is exactly where the bet runs out, as when an order resting
+  // at the current price can take all of it, the search can stop a hair past
+  // that point; take the closest affordable point it tried instead. (Not on
+  // cpmm-multi-1, which fails there as it always has.)
+  if (!result && hasGeneralP(answers)) {
+    noShares = affordable
+    result = buyNoShares(noShares)
+  }
   if (!result) {
     console.log('no result', result)
     throw new Error('Invariant failed in calculateCpmmMultiArbitrageBetYes')
   }
 
-  const { noBetResults, yesBetResult } = result
+  const { noBetResults, yesBetResult } = checkSumsToOne(
+    answers,
+    betAmount,
+    result,
+    (r) => [...r.noBetResults, r.yesBetResult],
+    (shares) =>
+      buyNoSharesInOtherAnswersThenYesInAnswer(
+        answers,
+        answerToBuy,
+        unfilledBetsByAnswer,
+        balanceByUserId,
+        betAmount,
+        limitProb,
+        shares,
+        collectedFees,
+        true
+      )
+  )
 
   if (DEBUG) {
     const endTime = Date.now()
 
-    const newPools = [
-      ...noBetResults.map((r) => r.cpmmState.pool),
-      yesBetResult.cpmmState.pool,
-    ]
+    const newStates = [...noBetResults, yesBetResult]
+    const newPools = newStates.map((r) => r.cpmmState.pool)
 
     console.log('time', endTime - startTime, 'ms')
 
@@ -528,9 +1327,11 @@ function calculateCpmmMultiArbitrageBetYes(
     console.log(
       'getBinaryBuyYes after',
       newPools,
-      newPools.map((pool) => getCpmmProbability(pool, 0.5)),
+      newStates.map((r) => getCpmmProbability(r.cpmmState.pool, r.cpmmState.p)),
       'prob total',
-      sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5)),
+      sumBy(newStates, (r) =>
+        getCpmmProbability(r.cpmmState.pool, r.cpmmState.p)
+      ),
       'pool shares',
       newPools.map((pool) => `${pool.YES}, ${pool.NO}`),
       'no shares',
@@ -553,12 +1354,14 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
   betAmount: number,
   limitProb: number | undefined,
   noShares: number,
-  collectedFees: Fees
+  collectedFees: Fees,
+  // Price the answer's own leg from the other legs (priceLedArbitrage).
+  priceLed = false
 ) => {
   const otherAnswers = answers.filter((a) => a.id !== answerToBuy.id)
-  const noAmounts = otherAnswers.map(({ id, poolYes, poolNo }) =>
+  const noAmounts = otherAnswers.map(({ id, poolYes, poolNo, p = 0.5 }) =>
     calculateAmountToBuySharesFixedP(
-      { pool: { YES: poolYes, NO: poolNo }, p: 0.5, collectedFees },
+      { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
       noShares,
       'NO',
       unfilledBetsByAnswer[id] ?? [],
@@ -578,7 +1381,7 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
     const pool = { YES: answer.poolYes, NO: answer.poolNo }
     const result = {
       ...computeFills(
-        { pool, p: 0.5, collectedFees },
+        { pool, p: answerP(answer), collectedFees },
         'NO',
         noAmount,
         undefined,
@@ -602,11 +1405,36 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
   const redeemedAmount = noShares * (answers.length - 2)
   const netNoAmount = totalNoAmount - redeemedAmount
   let yesBetAmount = betAmount - netNoAmount
-  if (floatingArbitrageEqual(yesBetAmount, 0)) {
-    yesBetAmount = 0
-  }
-  if (yesBetAmount < 0) {
-    return undefined
+  let pricedFills: ReturnType<typeof computeFills> | undefined
+  if (priceLed) {
+    // The answer ends at one minus the other answers' prices, bought there
+    // from what's left of the bet.
+    const target = 1 - sumBy(noBetResults, probAfterFill)
+    if (limitProb !== undefined && target > limitProb) return undefined
+    pricedFills = buyToPrice(
+      answerToBuy,
+      'YES',
+      target,
+      yesBetAmount,
+      betAmount,
+      workingUnfilledBetsByAnswer[answerToBuy.id] ?? [],
+      workingBalanceByUserId,
+      collectedFees
+    )
+    if (!pricedFills) return undefined
+  } else {
+    if (
+      isArbitrageZero(
+        yesBetAmount,
+        Math.max(betAmount, totalNoAmount, redeemedAmount),
+        hasGeneralP(answers)
+      )
+    ) {
+      yesBetAmount = 0
+    }
+    if (yesBetAmount < 0) {
+      return undefined
+    }
   }
 
   for (const noBetResult of noBetResults) {
@@ -622,14 +1450,15 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
 
   const pool = { YES: answerToBuy.poolYes, NO: answerToBuy.poolNo }
   const yesBetResult = {
-    ...computeFills(
-      { pool, p: 0.5, collectedFees },
-      'YES',
-      yesBetAmount,
-      limitProb,
-      workingUnfilledBetsByAnswer[answerToBuy.id] ?? [],
-      workingBalanceByUserId
-    ),
+    ...(pricedFills ??
+      computeFills(
+        { pool, p: answerP(answerToBuy), collectedFees },
+        'YES',
+        yesBetAmount,
+        limitProb,
+        workingUnfilledBetsByAnswer[answerToBuy.id] ?? [],
+        workingBalanceByUserId
+      )),
     answer: answerToBuy,
   }
 
@@ -664,7 +1493,9 @@ function calculateCpmmMultiArbitrageBetNo(
   )
   const maxYesShares = betAmount / yesSharePriceSum
 
-  const yesShares = binarySearch(0, maxYesShares, (yesShares) => {
+  // The most shares tried that fit within the bet without overshooting.
+  let affordable = 0
+  const comparator = (yesShares: number) => {
     const result = buyYesSharesInOtherAnswersThenNoInAnswer(
       answers,
       answerToBuy,
@@ -677,36 +1508,69 @@ function calculateCpmmMultiArbitrageBetNo(
     )
     if (!result) return 1
     const { yesBetResults, noBetResult } = result
-    const newPools = [
-      ...yesBetResults.map((r) => r.cpmmState.pool),
-      noBetResult.cpmmState.pool,
-    ]
-    const diff = sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5)) - 1
+    const newStates = [...yesBetResults, noBetResult]
+    const diff = sumBy(newStates, probAfterFill) - 1
+    if (
+      diff <= 0 &&
+      yesShares > affordable &&
+      sumBy(noBetResult.takers, 'amount') <= betAmount
+    )
+      affordable = yesShares
     return diff
-  })
-
-  const result = buyYesSharesInOtherAnswersThenNoInAnswer(
+  }
+  const { min, max } = shareSearchBounds(
     answers,
-    answerToBuy,
-    unfilledBetsByAnswer,
-    balanceByUserId,
     betAmount,
-    limitProb,
-    yesShares,
-    collectedFees
+    maxYesShares,
+    comparator
   )
+  let yesShares = binarySearch(min, max, comparator)
+
+  const buyYesShares = (yesShares: number) =>
+    buyYesSharesInOtherAnswersThenNoInAnswer(
+      answers,
+      answerToBuy,
+      unfilledBetsByAnswer,
+      balanceByUserId,
+      betAmount,
+      limitProb,
+      yesShares,
+      collectedFees
+    )
+  let result = buyYesShares(yesShares)
+  // As in calculateCpmmMultiArbitrageBetYes: step back from a hair past the
+  // point where the bet runs out.
+  if (!result && hasGeneralP(answers)) {
+    yesShares = affordable
+    result = buyYesShares(yesShares)
+  }
   if (!result) {
     throw new Error('Invariant failed in calculateCpmmMultiArbitrageBetNo')
   }
-  const { yesBetResults, noBetResult } = result
+  const { yesBetResults, noBetResult } = checkSumsToOne(
+    answers,
+    betAmount,
+    result,
+    (r) => [...r.yesBetResults, r.noBetResult],
+    (shares) =>
+      buyYesSharesInOtherAnswersThenNoInAnswer(
+        answers,
+        answerToBuy,
+        unfilledBetsByAnswer,
+        balanceByUserId,
+        betAmount,
+        limitProb,
+        shares,
+        collectedFees,
+        true
+      )
+  )
 
   if (DEBUG) {
     const endTime = Date.now()
 
-    const newPools = [
-      ...yesBetResults.map((r) => r.cpmmState.pool),
-      noBetResult.cpmmState.pool,
-    ]
+    const newStates = [...yesBetResults, noBetResult]
+    const newPools = newStates.map((r) => r.cpmmState.pool)
 
     console.log('time', endTime - startTime, 'ms')
 
@@ -729,9 +1593,11 @@ function calculateCpmmMultiArbitrageBetNo(
     console.log(
       'getBinaryBuyNo after',
       newPools,
-      newPools.map((pool) => getCpmmProbability(pool, 0.5)),
+      newStates.map((r) => getCpmmProbability(r.cpmmState.pool, r.cpmmState.p)),
       'prob total',
-      sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5)),
+      sumBy(newStates, (r) =>
+        getCpmmProbability(r.cpmmState.pool, r.cpmmState.p)
+      ),
       'pool shares',
       newPools.map((pool) => `${pool.YES}, ${pool.NO}`),
       'yes shares',
@@ -754,12 +1620,14 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
   betAmount: number,
   limitProb: number | undefined,
   yesShares: number,
-  collectedFees: Fees
+  collectedFees: Fees,
+  // Price the answer's own leg from the other legs (priceLedArbitrage).
+  priceLed = false
 ) => {
   const otherAnswers = answers.filter((a) => a.id !== answerToBuy.id)
-  const yesAmounts = otherAnswers.map(({ id, poolYes, poolNo }) =>
+  const yesAmounts = otherAnswers.map(({ id, poolYes, poolNo, p = 0.5 }) =>
     calculateAmountToBuySharesFixedP(
-      { pool: { YES: poolYes, NO: poolNo }, p: 0.5, collectedFees },
+      { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
       yesShares,
       'YES',
       unfilledBetsByAnswer[id] ?? [],
@@ -779,7 +1647,11 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
     const { poolYes, poolNo } = answer
     const result = {
       ...computeFills(
-        { pool: { YES: poolYes, NO: poolNo }, p: 0.5, collectedFees },
+        {
+          pool: { YES: poolYes, NO: poolNo },
+          p: answerP(answer),
+          collectedFees,
+        },
         'YES',
         yesAmount,
         undefined,
@@ -800,11 +1672,36 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
   })
   //{"id": "tQudZcEtlp", "slug": "whos-gonna-win-gn8sCuyRpl", "volume": 0, "answers": [{"id": "Ncus9Qtty2", "prob": 0.16666666666666666, "text": "a", "index": 0, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "CAqyQ8AOSn", "prob": 0.16666666666666666, "text": "b", "index": 1, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "Pc86OAUEsn", "prob": 0.16666666666666666, "text": "c", "index": 2, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "dn0gpUIzpq", "prob": 0.16666666666666666, "text": "d", "index": 3, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "uq5uZd5O0A", "prob": 0.16666666666666666, "text": "e", "index": 4, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "ACNE8CLyyS", "prob": 0.16666666666666666, "text": "Other", "index": 5, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": true, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}], "isRanked": false, "question": "Who's gonna win?", "closeTime": 1767254340000, "creatorId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "mechanism": "cpmm-multi-1", "elasticity": 4.99, "groupSlugs": ["nonpredictive"], "isResolved": false, "visibility": "public", "createdTime": 1755714659073, "creatorName": "Ian Bobby", "description": {"type": "doc", "content": [{"type": "paragraph"}]}, "outcomeType": "MULTIPLE_CHOICE", "subsidyPool": 0, "collectedFees": {"creatorFee": 0, "platformFee": 0, "liquidityFee": 0}, "volume24Hours": 0, "addAnswersMode": "ANYONE", "totalLiquidity": 1000, "creatorUsername": "IanPhilip", "lastUpdatedTime": 1755714659519, "popularityScore": 0, "creatorAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/dev-mantic-markets.appspot.com/o/user-images%2FIanPhilip%2FEyIU8AZ2RC.png?alt=media&token=ff41c9e8-21d5-412d-ac19-854a90cce076", "uniqueBettorCount": 0, "creatorCreatedTime": 1668811545000, "uniqueBettorCountDay": 0, "shouldAnswersSumToOne": true}
   let noBetAmount = betAmount - totalYesAmount
-  if (floatingArbitrageEqual(noBetAmount, 0)) {
-    noBetAmount = 0
-  }
-  if (noBetAmount < 0) {
-    return undefined
+  let pricedFills: ReturnType<typeof computeFills> | undefined
+  if (priceLed) {
+    // The answer ends at one minus the other answers' prices, bought there
+    // from what's left of the bet.
+    const target = 1 - sumBy(yesBetResults, probAfterFill)
+    if (limitProb !== undefined && target < limitProb) return undefined
+    pricedFills = buyToPrice(
+      answerToBuy,
+      'NO',
+      target,
+      noBetAmount,
+      betAmount,
+      workingUnfilledBetsByAnswer[answerToBuy.id] ?? [],
+      workingBalanceByUserId,
+      collectedFees
+    )
+    if (!pricedFills) return undefined
+  } else {
+    if (
+      isArbitrageZero(
+        noBetAmount,
+        Math.max(betAmount, totalYesAmount),
+        hasGeneralP(answers)
+      )
+    ) {
+      noBetAmount = 0
+    }
+    if (noBetAmount < 0) {
+      return undefined
+    }
   }
 
   for (const yesBetResult of yesBetResults) {
@@ -820,14 +1717,15 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
 
   const pool = { YES: answerToBuy.poolYes, NO: answerToBuy.poolNo }
   const noBetResult = {
-    ...computeFills(
-      { pool, p: 0.5, collectedFees },
-      'NO',
-      noBetAmount,
-      limitProb,
-      workingUnfilledBetsByAnswer[answerToBuy.id] ?? [],
-      workingBalanceByUserId
-    ),
+    ...(pricedFills ??
+      computeFills(
+        { pool, p: answerP(answerToBuy), collectedFees },
+        'NO',
+        noBetAmount,
+        limitProb,
+        workingUnfilledBetsByAnswer[answerToBuy.id] ?? [],
+        workingBalanceByUserId
+      )),
     answer: answerToBuy,
   }
   // Redeem YES shares in other answers to NO shares in this answer.
@@ -863,8 +1761,7 @@ export const buyNoSharesUntilAnswersSumToOne = (
       answerIdsWithFees,
       false // don't mutate orders during binary search
     )
-    const newPools = result.noBetResults.map((r) => r.cpmmState.pool)
-    const probSum = sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5))
+    const probSum = sumBy(result.noBetResults, probAfterFill)
     if (probSum < 1) break
     maxNoShares *= 10
   } while (true)
@@ -879,8 +1776,7 @@ export const buyNoSharesUntilAnswersSumToOne = (
       answerIdsWithFees,
       false // don't mutate orders during binary search
     )
-    const newPools = result.noBetResults.map((r) => r.cpmmState.pool)
-    const diff = 1 - sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5))
+    const diff = 1 - sumBy(result.noBetResults, probAfterFill)
     return diff
   })
 
@@ -911,7 +1807,7 @@ const buyNoSharesInAnswers = (
     const { id, poolYes, poolNo } = answer
     const pool = { YES: poolYes, NO: poolNo }
     const noAmount = calculateAmountToBuySharesFixedP(
-      { pool, p: 0.5, collectedFees },
+      { pool, p: answerP(answer), collectedFees },
       noShares,
       'NO',
       unfilledBetsByAnswer[id] ?? [],
@@ -922,7 +1818,7 @@ const buyNoSharesInAnswers = (
 
     const res = {
       ...computeFills(
-        { pool, p: 0.5, collectedFees },
+        { pool, p: answerP(answer), collectedFees },
         'NO',
         noAmount,
         undefined,
@@ -987,19 +1883,18 @@ export function calculateCpmmMultiArbitrageSellNo(
   // We buy some yes shares in the answer directly, and the rest is from converting No shares of all the other answers.
   // The proportion of each is dependent on what leaves the final probability sum at 1.
   // Which is what this binary search is discovering.
-  const yesShares = binarySearch(0, noShares, (yesShares) => {
-    const noSharesInOtherAnswers = noShares - yesShares
+  const sumErrorAt = (yesShares: number, noSharesInOtherAnswers: number) => {
     const yesAmount = calculateAmountToBuySharesFixedP(
-      { pool, p: 0.5, collectedFees },
+      { pool, p: answerP(answerToSell), collectedFees },
       yesShares,
       'YES',
       unfilledBetsByAnswer[id] ?? [],
       balanceByUserId
     )
     const noAmounts = answersWithoutAnswerToSell.map(
-      ({ id, poolYes, poolNo }) =>
+      ({ id, poolYes, poolNo, p = 0.5 }) =>
         calculateAmountToBuySharesFixedP(
-          { pool: { YES: poolYes, NO: poolNo }, p: 0.5, collectedFees },
+          { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
           noSharesInOtherAnswers,
           'NO',
           unfilledBetsByAnswer[id] ?? [],
@@ -1008,20 +1903,23 @@ export function calculateCpmmMultiArbitrageSellNo(
         )
     )
 
-    const yesResult = computeFills(
-      { pool, p: 0.5, collectedFees },
-      'YES',
-      yesAmount,
-      limitProb,
-      unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId
-    )
+    const yesResult = {
+      ...computeFills(
+        { pool, p: answerP(answerToSell), collectedFees },
+        'YES',
+        yesAmount,
+        limitProb,
+        unfilledBetsByAnswer[id] ?? [],
+        balanceByUserId
+      ),
+      answer: answerToSell,
+    }
     const noResults = answersWithoutAnswerToSell.map((answer, i) => {
       const noAmount = noAmounts[i]
       const pool = { YES: answer.poolYes, NO: answer.poolNo }
       return {
         ...computeFills(
-          { pool, p: 0.5, collectedFees },
+          { pool, p: answerP(answer), collectedFees },
           'NO',
           noAmount,
           undefined,
@@ -1034,34 +1932,38 @@ export function calculateCpmmMultiArbitrageSellNo(
       }
     })
 
-    const newPools = [
-      yesResult.cpmmState.pool,
-      ...noResults.map((r) => r.cpmmState.pool),
-    ]
-    const diff = sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5)) - 1
+    const newStates = [yesResult, ...noResults]
+    const diff = sumBy(newStates, probAfterFill) - 1
     return diff
-  })
-
-  const noSharesInOtherAnswers = noShares - yesShares
+  }
+  const searched = binarySearch(0, noShares, (yesShares) =>
+    sumErrorAt(yesShares, noShares - yesShares)
+  )
+  const { own: yesShares, others: noSharesInOtherAnswers } = hasGeneralP(
+    answers
+  )
+    ? splitSaleExactly(noShares, searched, sumErrorAt)
+    : { own: searched, others: noShares - searched }
   const yesAmount = calculateAmountToBuySharesFixedP(
-    { pool, p: 0.5, collectedFees },
+    { pool, p: answerP(answerToSell), collectedFees },
     yesShares,
     'YES',
     unfilledBetsByAnswer[id] ?? [],
     balanceByUserId
   )
-  const noAmounts = answersWithoutAnswerToSell.map(({ id, poolYes, poolNo }) =>
-    calculateAmountToBuySharesFixedP(
-      { pool: { YES: poolYes, NO: poolNo }, p: 0.5, collectedFees },
-      noSharesInOtherAnswers,
-      'NO',
-      unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId,
-      true
-    )
+  const noAmounts = answersWithoutAnswerToSell.map(
+    ({ id, poolYes, poolNo, p = 0.5 }) =>
+      calculateAmountToBuySharesFixedP(
+        { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
+        noSharesInOtherAnswers,
+        'NO',
+        unfilledBetsByAnswer[id] ?? [],
+        balanceByUserId,
+        true
+      )
   )
   const yesBetResult = computeFills(
-    { pool, p: 0.5, collectedFees },
+    { pool, p: answerP(answerToSell), collectedFees },
     'YES',
     yesAmount,
     limitProb,
@@ -1073,7 +1975,7 @@ export function calculateCpmmMultiArbitrageSellNo(
     const pool = { YES: answer.poolYes, NO: answer.poolNo }
     return {
       ...computeFills(
-        { pool, p: 0.5, collectedFees },
+        { pool, p: answerP(answer), collectedFees },
         'NO',
         noAmount,
         undefined,
@@ -1121,10 +2023,8 @@ export function calculateCpmmMultiArbitrageSellNo(
   if (DEBUG) {
     const endTime = Date.now()
 
-    const newPools = [
-      ...noBetResults.map((r) => r.cpmmState.pool),
-      yesBetResult.cpmmState.pool,
-    ]
+    const newStates = [...noBetResults, yesBetResult]
+    const newPools = newStates.map((r) => r.cpmmState.pool)
 
     console.log('time', endTime - startTime, 'ms')
 
@@ -1147,9 +2047,11 @@ export function calculateCpmmMultiArbitrageSellNo(
     console.log(
       'getBinaryBuyYes after',
       newPools,
-      newPools.map((pool) => getCpmmProbability(pool, 0.5)),
+      newStates.map((r) => getCpmmProbability(r.cpmmState.pool, r.cpmmState.p)),
       'prob total',
-      sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5)),
+      sumBy(newStates, (r) =>
+        getCpmmProbability(r.cpmmState.pool, r.cpmmState.p)
+      ),
       'pool shares',
       newPools.map((pool) => `${pool.YES}, ${pool.NO}`),
       'no shares',
@@ -1182,19 +2084,18 @@ export function calculateCpmmMultiArbitrageSellYes(
     (a) => a.id !== answerToSell.id
   )
 
-  const noShares = binarySearch(0, yesShares, (noShares) => {
-    const yesSharesInOtherAnswers = yesShares - noShares
+  const sumErrorAt = (noShares: number, yesSharesInOtherAnswers: number) => {
     const noAmount = calculateAmountToBuySharesFixedP(
-      { pool, p: 0.5, collectedFees },
+      { pool, p: answerP(answerToSell), collectedFees },
       noShares,
       'NO',
       unfilledBetsByAnswer[id] ?? [],
       balanceByUserId
     )
     const yesAmounts = answersWithoutAnswerToSell.map(
-      ({ id, poolYes, poolNo }) =>
+      ({ id, poolYes, poolNo, p = 0.5 }) =>
         calculateAmountToBuySharesFixedP(
-          { pool: { YES: poolYes, NO: poolNo }, p: 0.5, collectedFees },
+          { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
           yesSharesInOtherAnswers,
           'YES',
           unfilledBetsByAnswer[id] ?? [],
@@ -1203,20 +2104,23 @@ export function calculateCpmmMultiArbitrageSellYes(
         )
     )
 
-    const noResult = computeFills(
-      { pool, p: 0.5, collectedFees },
-      'NO',
-      noAmount,
-      limitProb,
-      unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId
-    )
+    const noResult = {
+      ...computeFills(
+        { pool, p: answerP(answerToSell), collectedFees },
+        'NO',
+        noAmount,
+        limitProb,
+        unfilledBetsByAnswer[id] ?? [],
+        balanceByUserId
+      ),
+      answer: answerToSell,
+    }
     const yesResults = answersWithoutAnswerToSell.map((answer, i) => {
       const yesAmount = yesAmounts[i]
       const pool = { YES: answer.poolYes, NO: answer.poolNo }
       return {
         ...computeFills(
-          { pool, p: 0.5, collectedFees },
+          { pool, p: answerP(answer), collectedFees },
           'YES',
           yesAmount,
           undefined,
@@ -1229,34 +2133,38 @@ export function calculateCpmmMultiArbitrageSellYes(
       }
     })
 
-    const newPools = [
-      noResult.cpmmState.pool,
-      ...yesResults.map((r) => r.cpmmState.pool),
-    ]
-    const diff = 1 - sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5))
+    const newStates = [noResult, ...yesResults]
+    const diff = 1 - sumBy(newStates, probAfterFill)
     return diff
-  })
-
-  const yesSharesInOtherAnswers = yesShares - noShares
+  }
+  const searched = binarySearch(0, yesShares, (noShares) =>
+    sumErrorAt(noShares, yesShares - noShares)
+  )
+  const { own: noShares, others: yesSharesInOtherAnswers } = hasGeneralP(
+    answers
+  )
+    ? splitSaleExactly(yesShares, searched, sumErrorAt)
+    : { own: searched, others: yesShares - searched }
   const noAmount = calculateAmountToBuySharesFixedP(
-    { pool, p: 0.5, collectedFees },
+    { pool, p: answerP(answerToSell), collectedFees },
     noShares,
     'NO',
     unfilledBetsByAnswer[id] ?? [],
     balanceByUserId
   )
-  const yesAmounts = answersWithoutAnswerToSell.map(({ id, poolYes, poolNo }) =>
-    calculateAmountToBuySharesFixedP(
-      { pool: { YES: poolYes, NO: poolNo }, p: 0.5, collectedFees },
-      yesSharesInOtherAnswers,
-      'YES',
-      unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId,
-      true
-    )
+  const yesAmounts = answersWithoutAnswerToSell.map(
+    ({ id, poolYes, poolNo, p = 0.5 }) =>
+      calculateAmountToBuySharesFixedP(
+        { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
+        yesSharesInOtherAnswers,
+        'YES',
+        unfilledBetsByAnswer[id] ?? [],
+        balanceByUserId,
+        true
+      )
   )
   const noBetResult = computeFills(
-    { pool, p: 0.5, collectedFees },
+    { pool, p: answerP(answerToSell), collectedFees },
     'NO',
     noAmount,
     limitProb,
@@ -1268,7 +2176,7 @@ export function calculateCpmmMultiArbitrageSellYes(
     const pool = { YES: answer.poolYes, NO: answer.poolNo }
     return {
       ...computeFills(
-        { pool, p: 0.5, collectedFees },
+        { pool, p: answerP(answer), collectedFees },
         'YES',
         yesAmount,
         undefined,
@@ -1315,10 +2223,8 @@ export function calculateCpmmMultiArbitrageSellYes(
   if (DEBUG) {
     const endTime = Date.now()
 
-    const newPools = [
-      ...yesBetResults.map((r) => r.cpmmState.pool),
-      noBetResult.cpmmState.pool,
-    ]
+    const newStates = [...yesBetResults, noBetResult]
+    const newPools = newStates.map((r) => r.cpmmState.pool)
 
     console.log('time', endTime - startTime, 'ms')
 
@@ -1341,9 +2247,11 @@ export function calculateCpmmMultiArbitrageSellYes(
     console.log(
       'getBinaryBuyYes after',
       newPools,
-      newPools.map((pool) => getCpmmProbability(pool, 0.5)),
+      newStates.map((r) => getCpmmProbability(r.cpmmState.pool, r.cpmmState.p)),
       'prob total',
-      sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5)),
+      sumBy(newStates, (r) =>
+        getCpmmProbability(r.cpmmState.pool, r.cpmmState.p)
+      ),
       'pool shares',
       newPools.map((pool) => `${pool.YES}, ${pool.NO}`),
       'no shares',
@@ -1394,9 +2302,9 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
     let saleBets: PreliminaryBetResults[]
     if (answersToSellNow.length !== initialAnswers.length) {
       const yesAmounts = oppositeAnswersFromSaleToBuyYesShares.map(
-        ({ id, poolYes, poolNo }) => {
+        ({ id, poolYes, poolNo, p = 0.5 }) => {
           return calculateAmountToBuySharesFixedP(
-            { pool: { YES: poolYes, NO: poolNo }, p: 0.5, collectedFees },
+            { pool: { YES: poolYes, NO: poolNo }, p, collectedFees },
             sharesToSell,
             'YES',
             unfilledBetsByAnswer[id] ?? [],
@@ -1456,7 +2364,7 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
               //...betResult.takers, these are takers in the opposite outcome, not sure where to put them
             ],
             cpmmState: {
-              p: 0.5,
+              p: answerP(answer),
               pool: { YES: poolYes, NO: poolNo },
               collectedFees,
             },
@@ -1529,7 +2437,11 @@ export const getSellAllRedemptionPreliminaryBets = (
       ],
       makers: [],
       totalFees: noFees,
-      cpmmState: { p: 0.5, pool: { YES: poolYes, NO: poolNo }, collectedFees },
+      cpmmState: {
+        p: answerP(answer),
+        pool: { YES: poolYes, NO: poolNo },
+        collectedFees,
+      },
       ordersToCancel: [],
       answer,
     }

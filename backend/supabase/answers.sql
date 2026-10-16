@@ -25,7 +25,8 @@ create table if not exists
     total_liquidity numeric default 0,
     user_id text,
     midpoint numeric,
-    volume numeric default 0
+    volume numeric default 0,
+    p numeric default 0.5 not null
   );
 
 -- Row Level Security

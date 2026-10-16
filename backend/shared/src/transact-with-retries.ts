@@ -25,6 +25,14 @@ export type TransactionRetryOptions = {
    * deliberately induced from the same error code arising anywhere else.
    */
   tag?: string
+  /**
+   * Transaction mode: SERIAL_MODE unless given. 'default' runs at Postgres's
+   * default READ COMMITTED level, for a caller that wants the deadlock retry
+   * but must not fail to serialize against unrelated concurrent writes to the
+   * rows it increments (add-liquidity, whose snapshot would start before it
+   * waits in the bets queue, so every bet committing meanwhile would abort it).
+   */
+  mode?: typeof SERIAL_MODE | 'default'
 }
 
 export const runTransactionWithRetries = async <T>(
@@ -50,7 +58,12 @@ async function transactWithRetries<T>(
       // cadence this line would otherwise repeat forever for no information.
       if (maxAttempts > 1) log(`Attempt ${attempt} of ${maxAttempts}`)
       return await pg.tx(
-        { mode: SERIAL_MODE, ...(options?.tag ? { tag: options.tag } : {}) },
+        {
+          ...(options?.mode === 'default'
+            ? {}
+            : { mode: options?.mode ?? SERIAL_MODE }),
+          ...(options?.tag ? { tag: options.tag } : {}),
+        },
         fn
       )
     } catch (error: unknown) {

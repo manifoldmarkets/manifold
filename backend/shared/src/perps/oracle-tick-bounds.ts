@@ -27,7 +27,7 @@ export type OracleUpdateBounds = {
   lockTimeoutMs: number
   /** Backstop for a single pathological statement. */
   statementTimeoutMs: number
-  /** Attempts INCLUDING the first. See FAST_TICK_ORACLE_BOUNDS for why 1. */
+  /** Attempts INCLUDING the first. See FAST_TICK_ORACLE_BOUNDS for why 2. */
   maxAttempts: number
 }
 
@@ -46,12 +46,21 @@ export const FAST_TICK_ORACLE_BOUNDS: OracleUpdateBounds = {
   // Generous next to the lock timeout, because legitimate liquidation and ADL
   // work on a busy market is real work rather than a wait.
   statementTimeoutMs: 4_000,
-  // One attempt, NOT the engine's default. The retry wrapper backs off
-  // exponentially, so eight attempts can spend ~17s retrying — far past the
-  // deadline these bounds exist to enforce, with every tick behind it skipped
-  // by the in-flight guard. On a fast feed the next tick IS the retry, and it
-  // carries a better price than the one being retried.
-  maxAttempts: 1,
+  // Two attempts, NOT the engine's default of eight. The retry wrapper backs
+  // off exponentially, so eight attempts can spend ~17s retrying — far past
+  // the deadline these bounds exist to enforce, with every tick behind it
+  // skipped by the in-flight guard. On a fast feed the next tick IS the
+  // retry, and it carries a better price than the one being retried.
+  //
+  // The one retry exists for serialization failures (40001), the only code
+  // the wrapper retries besides deadlock; a lock or statement timeout still
+  // gives up at once. Ticks on DIFFERENT contracts abort each other under
+  // SERIALIZABLE when their rows share an index page: MNX publishes all its
+  // instruments from one poll, so two heartbeats in the same 2s slot ran
+  // concurrently and one lost (anthropic vs deepseek, 2026-09). The winner
+  // has already committed by the time the abort arrives, so a second attempt
+  // after the wrapper's 50–150ms first backoff succeeds well inside the slot.
+  maxAttempts: 2,
 }
 
 /** lock_timeout expiry. */
@@ -61,10 +70,10 @@ const QUERY_CANCELED = '57014'
 /**
  * Serialization failure. Included because the engine's own pg error handler
  * already documents it as ordinary contention under the advisory-lock +
- * SERIALIZABLE pattern and logs it at WARN. A bounded tick takes one attempt,
- * so it surfaces here instead of being retried away — and it means exactly
- * what the other two mean: someone else is writing, skip and let the next
- * tick carry a fresher price.
+ * SERIALIZABLE pattern and logs it at WARN. A bounded tick retries once, so
+ * this surfaces only when both attempts lost — and it means exactly what the
+ * other two mean: someone else is writing, skip and let the next tick carry
+ * a fresher price.
  */
 const SERIALIZATION_FAILURE = '40001'
 

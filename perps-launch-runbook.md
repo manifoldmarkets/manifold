@@ -147,14 +147,14 @@ See [MNX oracle methodology](https://docs.mnx.fi/contracts/oracle-methodology),
 [market specifications](https://docs.mnx.fi/contracts/market-specs) and
 [API reference](https://docs.mnx.fi/openapi-public.json).
 
-Launch at the manifest's 3× recommendation (or lower if MNX's margin ceiling
-requires it), M25,000 per side, funding sensitivity 1 and a nominal annual
+Launch at the manifest's 3× recommendation (or MNX's margin ceiling, if
+lower), M25,000 per side, funding sensitivity 1 and a nominal annual
 funding cap of 1. Funding runs hourly for all sixteen. The normal 10bps web
 opening fee and API-effective `max(web, configured API)` fee apply; there is
 no fee waiver. Thinness and public marks still permit latency arbitrage even
 at a 2s tick, so retain the existing fee and exposure controls. Preflight warns
-above the recommendation. Creation rejects leverage above MNX's actual ceiling,
-without forcing operators to use the recommended maximum.
+above the recommendation, and MNX's ceiling is not a limit: creation and later
+rule changes (e.g. in `/admin/mnx`) accept leverage above it, up to 100×.
 
 One shared request per 2s means approximately 30 requests/minute per scheduler
 process, briefly 60 during deployment overlap, plus API and script calls.
@@ -201,6 +201,7 @@ npx.cmd ts-node publish-mnx-now.ts --apply
 npx.cmd ts-node perp-launch-preflight.ts --cohort=mnx --phase=feeds
 npx.cmd ts-node create-mnx-perps.ts
 npx.cmd ts-node create-mnx-perps.ts --apply
+npx.cmd ts-node create-mnx-perps.ts --creator=mnx            # MNX-owned variant (dry run)
 npx.cmd ts-node perp-launch-preflight.ts --cohort=mnx --phase=unlisted --allow-warning=external-alert-policies
 ```
 
@@ -217,7 +218,16 @@ instrument is unavailable. It exits nonzero on unavailable/rejected publication.
 Repair discovery prerequisites with
 `backfill-perp-launch-discovery.ts --cohort=mnx` (dry run), then `--apply`.
 Creation requires `MANIFOLD_API_KEY` belonging to the environment's official
-Manifold creator and sufficient backing (M800,000 for all sixteen). It prints
+Manifold creator and sufficient backing (M800,000 for all sixteen). By default
+the official account owns the markets; `--creator=mnx` makes the verified
+`@MNX` partner account the owner instead, in which case that account must hold
+the backing (the owner pays it at creation and receives the residual pool at
+settlement) while the API key stays the official creator's. The partner's user
+id must first be pinned for the environment in `MNX_CREATOR_IDS`
+(`backend/shared/src/perps/creator-accounts.ts`); until then the option is
+unavailable everywhere. The script refuses to apply against an API that does
+not advertise the option and verifies each created market's creator. The
+admin form offers the same choice as its **Creator account** selector. It prints
 per-instrument readiness and exact request bodies, refuses a partially ready
 apply before any creation, and checks duplicates before applying; reruns skip existing
 markets. Do not run these commands until ready to perform their indicated writes.
@@ -364,10 +374,13 @@ Keep that redesign separate from the capped day-one launch.
    announcement QA; generated iframe URLs must target that deployed
    environment, not localhost.
 
-Sign in as the environment's official Manifold account; residual backing
-returns to the creator at settlement, and both the form and API reject another
-admin for launch feeds. Confirm that account has at least M100,000 available
-before creation. The form defaults to unlisted. For each manifest feed, click
+Sign in as the environment's official Manifold account; both the form and API
+reject any other admin, because the selected creator account's balance is
+spent. The **Creator account** selector defaults to the official account and
+offers `@MNX` on MNX feeds only; whichever is selected pays the backing and
+receives the residual at settlement. Confirm that account has at least
+M100,000 available before creation. The form defaults to unlisted. For each
+manifest feed, click
 **Apply launch recommendation**; it sets leverage, annual funding cap,
 sensitivity, oracle-age tolerance, per-side backing, and unlisted visibility.
 The API automatically attaches the required DEV/PROD topic atomically.

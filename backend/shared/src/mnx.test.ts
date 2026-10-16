@@ -133,12 +133,17 @@ it('pins identity and chronology across missing/disabled intervals', () => {
     first
   )
   expect(conflicting.feeds[spec.feedId].health.reason).toMatch(/immutable/)
+  // A lagging load-balanced node is not an incident: keep the prior
+  // observation and stay available rather than withdrawing the feed.
   const older = parseMnxSnapshot(
     [market({ mark_price_timestamp: new Date(now - 1).toISOString() })],
     now,
     first
   )
-  expect(older.feeds[spec.feedId].health.reason).toMatch(/regressed/)
+  expect(older.feeds[spec.feedId].health.status).toBe('available')
+  expect(older.feeds[spec.feedId].health.reason).toBeUndefined()
+  expect(older.feeds[spec.feedId].point).toEqual(first.feeds[spec.feedId].point)
+  expect(older.feeds[spec.feedId].marketId).toBe(11)
   const recovered = parseMnxSnapshot([market()], now + MINUTE_MS, missing)
   expect(recovered.feeds[spec.feedId].health.checkedAt).toBe(now + MINUTE_MS)
   expect(recovered.feeds[spec.feedId].point?.ts).toBe(now + MINUTE_MS)

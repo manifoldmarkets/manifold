@@ -7,6 +7,7 @@ import {
   // MultiContract,
   OutcomeType,
   resolution,
+  isMultiCpmmMechanism,
 } from 'common/contract'
 import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { Bet } from 'common/bet'
@@ -87,7 +88,7 @@ export function OutcomeLabel(props: {
     )
   }
 
-  if (mechanism === 'cpmm-multi-1') {
+  if (isMultiCpmmMechanism(mechanism)) {
     return (
       <span>
         {answerText && (

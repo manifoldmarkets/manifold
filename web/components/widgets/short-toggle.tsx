@@ -10,8 +10,18 @@ export default function ShortToggle(props: {
   className?: string
   colorMode?: ToggleColorMode
   size?: 'sm'
+  // Accessible name for the switch — it renders no visible text of its own.
+  ariaLabel?: string
 }) {
-  const { on, size, setOn, disabled, className, colorMode = 'primary' } = props
+  const {
+    on,
+    size,
+    setOn,
+    disabled,
+    className,
+    colorMode = 'primary',
+    ariaLabel,
+  } = props
 
   const toggleBaseClasses =
     'group relative inline-flex flex-shrink-0 rounded-full border-2 border-transparent ring-offset-2 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2'
@@ -41,6 +51,7 @@ export default function ShortToggle(props: {
       disabled={disabled}
       checked={on}
       onChange={setOn}
+      aria-label={ariaLabel}
       className={clsx(
         toggleBaseClasses,
         toggleColorClasses,

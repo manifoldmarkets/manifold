@@ -7,13 +7,13 @@ import {
   TransitionChild,
 } from '@headlessui/react'
 import {
-  GiftIcon,
+  ChatAlt2Icon,
   QuestionMarkCircleIcon,
   SearchIcon,
   UserCircleIcon,
 } from '@heroicons/react/outline'
 import {
-  GiftIcon as GiftIconSolid,
+  ChatAlt2Icon as ChatAlt2IconSolid,
   MenuAlt3Icon,
   QuestionMarkCircleIcon as QuestionMarkCircleIconSolid,
   // SearchIcon as SearchIconSolid,
@@ -26,16 +26,13 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Fragment, useState } from 'react'
 import { FaSearch as SearchIconSolid } from 'react-icons/fa'
-import { IoCompass, IoCompassOutline } from 'react-icons/io5'
 import { NotificationsIcon } from 'web/components/notifications-icon'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import {
   mergeEntitlements,
   useOptimisticEntitlements,
 } from 'web/hooks/use-optimistic-entitlements'
 import { useUser } from 'web/hooks/use-user'
-import { getTotalPrizePool, SweepstakesPrize } from 'common/sweepstakes'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Col } from '../layout/col'
@@ -52,8 +49,7 @@ const itemClass =
 const selectedItemClass = 'text-primary-700'
 const touchItemClass = 'touch-press-effect'
 const iconClassName = 'mx-auto my-1 h-[1.6rem] w-[1.6rem]'
-const exploreIconClassName =
-  ' h-[1.8rem] w-[1.8rem] !mb-[0.19rem] !mt-[0.135rem]'
+const yapIconClassName = ' h-[1.8rem] w-[1.8rem] !mb-[0.19rem] !mt-[0.135rem]'
 
 // Wrapper components for NotificationsIcon to work with the navigation system
 const NotificationsIconOutline = (props: { className?: string }) => (
@@ -72,11 +68,11 @@ function getNavigation(user: User) {
       solidIcon: SearchIconSolid,
     },
     {
-      name: 'Explore',
-      href: '/explore',
-      icon: IoCompassOutline,
-      solidIcon: IoCompass,
-      iconClassName: exploreIconClassName,
+      name: 'Yap',
+      href: '/yap',
+      icon: ChatAlt2Icon,
+      solidIcon: ChatAlt2IconSolid,
+      iconClassName: yapIconClassName,
     },
     {
       name: 'Profile',
@@ -91,41 +87,13 @@ function getNavigation(user: User) {
   ]
 }
 
-function formatPrizePoolLabel(
-  prizes: SweepstakesPrize[] | undefined
-): string | undefined {
-  if (!prizes) return undefined
-  const total = getTotalPrizePool(prizes)
-  if (!Number.isFinite(total) || total <= 0) return undefined
-  if (total < 1000) return `$${total}`
-  const thousands = total / 1000
-  return `$${thousands.toLocaleString(undefined, {
-    maximumFractionDigits: 1,
-  })}k`
-}
-
-const signedOutNavigation = (prizePoolLabel: string | undefined) => [
+const signedOutNavigation = [
   {
     name: 'Browse',
     href: '/browse',
     icon: SearchIcon,
     solidIcon: SearchIconSolid,
     alwaysShowName: true,
-  },
-  {
-    name: 'Prize',
-    subLabel: prizePoolLabel,
-    href: '/prize',
-    icon: GiftIcon,
-    solidIcon: GiftIconSolid,
-    itemClassName: '!px-1',
-  },
-  {
-    name: 'Explore',
-    href: '/explore',
-    icon: IoCompassOutline,
-    solidIcon: IoCompass,
-    iconClassName: exploreIconClassName,
   },
   {
     name: 'About',
@@ -149,21 +117,12 @@ export function BottomNavBar() {
 
   const user = useUser()
 
-  const { data: sweepstakesData } = useAPIGetter('get-sweepstakes', {})
-  const prizeCloseTime = sweepstakesData?.sweepstakes?.closeTime
-  const prizePoolLabel =
-    prizeCloseTime && prizeCloseTime > Date.now()
-      ? formatPrizePoolLabel(sweepstakesData?.sweepstakes?.prizes)
-      : undefined
-
   const isIframe = useIsIframe()
   if (isIframe) {
     return null
   }
 
-  const navigationOptions = user
-    ? getNavigation(user)
-    : signedOutNavigation(prizePoolLabel)
+  const navigationOptions = user ? getNavigation(user) : signedOutNavigation
 
   return (
     <nav

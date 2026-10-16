@@ -33,6 +33,17 @@ export const removeLiquidity: APIHandler<
       if (contract.mechanism !== 'cpmm-1')
         throw new APIError(403, 'Only cpmm-1 is supported')
 
+      // Resolution pays each liquidity provider out of pool[outcome] +
+      // subsidyPool but never zeroes contract.pool, so a resolved market's
+      // pool is still fully funded. Withdrawing against it here would pay the
+      // provider a second time (the REMOVE_SUBSIDY txn is drawn from the
+      // contract with no balance check). Re-checked inside the transaction so
+      // a withdraw racing a resolution can't slip through on a stale read.
+      if (contract.isResolved)
+        throw new APIError(403, 'Cannot remove liquidity from a resolved market')
+      if (contract.deleted)
+        throw new APIError(403, 'Market is deleted')
+
       // TODO: this should be based on liquidity providers instead ...
       if (contract.token === 'CASH') {
         if (

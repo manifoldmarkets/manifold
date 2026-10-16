@@ -13,6 +13,8 @@ export type notification_preferences = {
   poll_close_on_watched_markets: notification_destination_types[]
   all_comments_on_followed_posts: notification_destination_types[]
 
+  social_replies: notification_destination_types[]
+
   // Comments
   all_replies_to_my_comments_on_watched_markets: notification_destination_types[]
   all_replies_to_my_answers_on_watched_markets: notification_destination_types[]
@@ -147,6 +149,8 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     bounty_canceled: constructPref(true, false, false),
     poll_close_on_watched_markets: constructPref(true, false, false),
     market_movements: constructPref(true, true, true),
+
+    social_replies: constructPref(true, false, false),
 
     // Balance Changes
     loan_income: constructPref(true, false, false),

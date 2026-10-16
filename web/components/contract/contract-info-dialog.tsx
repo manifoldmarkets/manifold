@@ -3,7 +3,12 @@ import { formatTimeWithTimezone } from 'client-common/lib/time'
 import clsx from 'clsx'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
 import { getPerpTicker } from 'common/perps/ticker'
-import { Contract, PerpContract, contractPool } from 'common/contract'
+import {
+  Contract,
+  PerpContract,
+  contractPool,
+  isMultiCpmm,
+} from 'common/contract'
 import {
   ENV_CONFIG,
   isAdminId,
@@ -66,12 +71,12 @@ export const Stats = (props: {
 }) => {
   const { contract, user, onRequestCreatorBan } = props
   const { creatorId } = contract
-  const shouldAnswersSumToOne =
-    contract.mechanism === 'cpmm-multi-1'
-      ? contract.shouldAnswersSumToOne
-      : false
-  const addAnswersMode =
-    contract.mechanism === 'cpmm-multi-1' ? contract.addAnswersMode : 'DISABLED'
+  const shouldAnswersSumToOne = isMultiCpmm(contract)
+    ? contract.shouldAnswersSumToOne
+    : false
+  const addAnswersMode = isMultiCpmm(contract)
+    ? contract.addAnswersMode
+    : 'DISABLED'
   const isCashContract = contract.token === 'CASH'
 
   const hideAdvanced = !user
@@ -81,7 +86,7 @@ export const Stats = (props: {
   const isMod = isAdmin || isTrusty
   const isCreator = user?.id === creatorId
   const isPublic = contract.visibility === 'public'
-  const isMulti = contract.mechanism === 'cpmm-multi-1'
+  const isMulti = isMultiCpmm(contract)
   const perpContract =
     contract.mechanism === 'perp' ? (contract as PerpContract) : null
   const addAnswersPossible =
@@ -124,7 +129,7 @@ export const Stats = (props: {
           label: 'Fixed',
           desc: `Each YES share is worth ${ENV_CONFIG.moneyMoniker}1 if YES wins`,
         }
-      : mechanism === 'cpmm-multi-1'
+      : isMultiCpmm(contract)
       ? contract.shouldAnswersSumToOne
         ? {
             label: 'Dependent',
@@ -144,7 +149,7 @@ export const Stats = (props: {
       : { label: 'Mistake', desc: "Likely one of Austin's bad ideas" }
 
   const isBettingContract = contract.mechanism !== 'none'
-  const drizzler = mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1'
+  const drizzler = mechanism === 'cpmm-1' || isMultiCpmm(contract)
   const drizzled = drizzler
     ? contract.totalLiquidity -
       contract.subsidyPool -

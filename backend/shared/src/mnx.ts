@@ -42,7 +42,6 @@ export type MnxFeedSnapshot = {
   marketId?: number
   health: OracleFeedHealth
   point?: OraclePoint
-  supportedLeverage?: number
   maxLeverage?: number
   markPriceRaw?: string
 }
@@ -133,8 +132,33 @@ export const parseMnxSnapshot = (
       // authoritative. Revalidate this tolerance if MNX changes its encoding.
       if (Math.abs(price - market.mark_price) > Math.max(1e-8, price * 1e-12))
         throw new Error('MNX numeric and exact mark prices disagree')
-      if (prior?.point && ts < prior.point.sourceTs!)
-        throw new Error('MNX source timestamp regressed')
+      // A stamp older than one we have already seen is NOT a provider fault.
+      // MNX serves /v0/markets from load-balanced nodes that lag each other by
+      // up to a minute, so consecutive polls routinely retrieve an older
+      // observation than the last one (reproduced 2026-09-11: GOOGL read
+      // 21:59:12 then 21:58:11 four seconds later). Treating that as an
+      // incident marked every instrument unavailable and paged hourly.
+      //
+      // Carry the prior observation forward instead, exactly as the
+      // fetchLatest feeds do in update-oracle-feeds' shouldWrite (`point.ts <=
+      // prev.ts` → skip, silently). A served response is the liveness signal;
+      // staleness is decided by the maxAgeMs gate above and by the failure
+      // budget in publish-oracle-observation, not by whether the number moved.
+      if (prior?.point && ts < prior.point.sourceTs!) {
+        feeds[spec.feedId] = {
+          ...prior,
+          ...identity,
+          health: {
+            checkedAt: fetchedAt,
+            status: 'available',
+            expiresAt: Math.min(
+              fetchedAt + ORACLE_HEALTH_MAX_AGE_MS,
+              prior.point.sourceTs! + spec.maxAgeMs
+            ),
+          },
+        }
+        continue
+      }
       if (
         prior?.point &&
         ts === prior.point.sourceTs &&
@@ -143,13 +167,10 @@ export const parseMnxSnapshot = (
       )
         throw new Error('MNX price conflicts at an immutable timestamp')
       const point: OraclePoint = { ts: fetchedAt, sourceTs: ts, price }
-      // Margin configuration affects new launches only, never an existing feed.
-      let supportedLeverage: number | undefined
+      // Margin configuration only sets the launch script's default leverage.
+      // It never caps a market's leverage or gates an existing feed.
       let maxLeverage: number | undefined
       try {
-        supportedLeverage = mnxSupportedLeverage(
-          String(market.initial_margin_ratio_e18_raw)
-        )
         maxLeverage = mnxLaunchLeverage(
           String(market.initial_margin_ratio_e18_raw)
         )
@@ -160,7 +181,6 @@ export const parseMnxSnapshot = (
         ...identity,
         point,
         maxLeverage,
-        supportedLeverage,
         markPriceRaw: market.mark_price_e18_raw,
         health: {
           checkedAt: fetchedAt,

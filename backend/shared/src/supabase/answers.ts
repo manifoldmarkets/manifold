@@ -15,6 +15,23 @@ export const getAnswer = async (pg: SupabaseDirectClient, id: string) => {
   return row ? convertAnswer(row) : null
 }
 
+// Like getAnswer, but takes a row lock (SELECT ... FOR UPDATE). Required whenever a
+// transaction read-modify-writes answer fields with concrete values, as the scheduler's
+// drizzleAnswer does with subsidyPool: the betsQueue serializes only within one process,
+// so another process's write (the per-answer addLiquidity path, which increments
+// subsidyPool atomically) would otherwise land between the read and the write, and
+// subsidy mana would be created or destroyed.
+export const getAnswerForUpdate = async (
+  pg: SupabaseDirectClient,
+  id: string
+) => {
+  const row = await pg.oneOrNone(
+    `select * from answers where id = $1 for update`,
+    [id]
+  )
+  return row ? convertAnswer(row) : null
+}
+
 export const getAnswersForContractsDirect = async (
   pg: SupabaseDirectClient,
   contractIds: string[]
@@ -46,18 +63,31 @@ export const getAnswersForContract = async (
   )
 }
 
+export type AnswerWriteOptions = {
+  // Each write below is broadcast over the websocket as soon as its SQL runs.
+  // Inside a transaction that may be retried (runTransactionWithRetries), pass
+  // false and broadcast the returned value once the transaction has committed:
+  // an attempt that rolls back after the write would otherwise announce an
+  // answer, or prices, that never existed.
+  broadcast?: boolean
+}
+
 export const insertAnswer = async (
   pg: SupabaseDirectClient,
-  ans: Omit<Answer, 'id'>
+  ans: Omit<Answer, 'id'>,
+  options?: AnswerWriteOptions
 ) => {
   const row = await insert(pg, 'answers', answerToRow(ans))
-  broadcastNewAnswer(convertAnswer(row))
+  const answer = convertAnswer(row)
+  if (options?.broadcast !== false) broadcastNewAnswer(answer)
+  return answer
 }
 
 export const updateAnswer = async (
   pg: SupabaseDirectClient,
   answerId: string,
-  data: Partial<Answer>
+  data: Partial<Answer>,
+  options?: AnswerWriteOptions
 ) => {
   const row = await update(
     pg,
@@ -66,18 +96,21 @@ export const updateAnswer = async (
     partialAnswerToRow({ ...data, id: answerId })
   )
   const answer = convertAnswer(row)
-  broadcastUpdatedAnswers(answer.contractId, [answer])
+  if (options?.broadcast !== false) {
+    broadcastUpdatedAnswers(answer.contractId, [answer])
+  }
   return answer
 }
 
 export const updateAnswers = async (
   pg: SupabaseDirectClient,
   contractId: string,
-  updates: (Partial<Answer> & { id: string })[]
+  updates: (Partial<Answer> & { id: string })[],
+  options?: AnswerWriteOptions
 ) => {
   await bulkUpdate(pg, 'answers', ['id'], updates.map(partialAnswerToRow))
 
-  broadcastUpdatedAnswers(contractId, updates)
+  if (options?.broadcast !== false) broadcastUpdatedAnswers(contractId, updates)
 }
 
 // Can update answers across multiple contracts.
@@ -121,6 +154,7 @@ export const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => {
     color: answer.color,
     pool_yes: answer.poolYes,
     pool_no: answer.poolNo,
+    p: answer.p,
     prob: answer.prob,
     total_liquidity: answer.totalLiquidity,
     subsidy_pool: answer.subsidyPool,

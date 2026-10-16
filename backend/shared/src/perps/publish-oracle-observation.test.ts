@@ -106,7 +106,6 @@ it('refreshes health at a flat price and writes the normal heartbeat when due', 
 })
 
 it.each([
-  ['regression', { ...point, sourceTs: point.sourceTs + 1 }],
   ['same-source conflict', { ...point, price: 2105 }],
   ['same-observation conflict', { ...point, price: 2105, ts: now + 1 }],
 ])('never publishes a %s over immutable history', async (_name, previous) => {
@@ -119,6 +118,27 @@ it.each([
   await publishOracleObservation(pg, feed, { point: incoming, health })
   expect(insertOraclePrices).not.toHaveBeenCalled()
   expect(applyOraclePointToLivePerps).not.toHaveBeenCalled()
+})
+
+// A provider served from load-balanced nodes hands back observations that lag
+// each other, so a poll can retrieve a stamp older than one already published.
+// That is "nothing new", not an incident: keep the published point, keep the
+// feed available, and do not spend the failure budget that pages at five
+// minutes. Only an identical stamp carrying a DIFFERENT price is corruption.
+it('carries the published point forward when a lagging node serves an older stamp', async () => {
+  const published = { ...point, sourceTs: point.sourceTs + 60_000 }
+  const { pg } = database({ ...published, ts: now - 1000 })
+  await publishOracleObservation(pg, feed, { point, health })
+  expect(insertOraclePrices).not.toHaveBeenCalled()
+  expect(applyOraclePointToLivePerps).toHaveBeenCalledWith(
+    pg,
+    feed.id,
+    expect.objectContaining({ sourceTs: published.sourceTs }),
+    undefined,
+    health
+  )
+  expect(log.error).not.toHaveBeenCalled()
+  expect(log.warn).not.toHaveBeenCalled()
 })
 
 it('refuses a malformed point through the shared registry bounds', async () => {

@@ -45,6 +45,7 @@ import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { ChevronDownIcon } from '@heroicons/react/solid'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { Slider } from 'web/components/widgets/slider'
 import { api } from 'web/lib/api/api'
@@ -440,7 +441,6 @@ const PositionSummary = (props: {
   const pnlPct = getUserFacingPnlPercent(position, markPrice) * 100
 
   const isLong = p.direction === 'long'
-  const accentText = isLong ? 'text-teal-600' : 'text-scarlet-600'
   const pnlColor = pnl >= 0 ? 'text-teal-600' : 'text-scarlet-600'
 
   // What the next funding transfer does to this position, in mana
@@ -564,135 +564,194 @@ const PositionSummary = (props: {
       : 'text-ink-900'
 
   return (
-    // Use the same unboxed, wrapping holdings row as UserBetSummary. Keep
-    // perp-specific labels: notional exposure is not a binary market's payout.
-    <Col className="gap-2 py-1">
-      <Row className="flex-wrap items-center gap-4">
-        <Col>
-          <div className="text-ink-500 whitespace-nowrap text-sm">
-            Position{' '}
-            <InfoTooltip text="Notional exposure of your remaining open position, including leverage. This is not the amount returned when you close." />
-          </div>
-          <div className="whitespace-nowrap tabular-nums">
-            {formatMoney(p.size)}{' '}
-            <span className={clsx('capitalize', accentText)}>
-              {p.direction} {formatLeverage(p.leverage)}×
+    <Col className="border-ink-200 bg-canvas-0 overflow-hidden rounded-xl border">
+      <div className="px-4 pb-4 pt-3 sm:px-5">
+        <Row className="items-center justify-between gap-3">
+          <Row className="flex-wrap items-center gap-x-2.5 gap-y-1">
+            <h3 className="text-ink-700 text-sm font-medium">Your position</h3>
+            <span
+              className={clsx(
+                'rounded-md px-2 py-0.5 text-xs font-medium',
+                isLong
+                  ? 'bg-teal-500/10 text-teal-600'
+                  : 'bg-scarlet-500/10 text-scarlet-600'
+              )}
+            >
+              {isLong ? 'Long' : 'Short'} · {formatLeverage(p.leverage)}×
             </span>
-          </div>
-        </Col>
-        <Col>
-          <div className="text-ink-500 whitespace-nowrap text-sm">
-            Margin{' '}
-            <InfoTooltip text="Original margin allocated to the portion of your position still open, excluding opening fees. Closing part of a position reduces this proportionally." />
-          </div>
-          <div className="whitespace-nowrap tabular-nums">
-            {formatMoney(p.originalCostBasis)}
-          </div>
-        </Col>
-        <Col>
-          <div className="text-ink-500 whitespace-nowrap text-sm">
-            Unrealized P&amp;L{' '}
-            <InfoTooltip text="Profit or loss on your remaining open position, including funding and opening fees. Does not include portions you have already closed." />
-          </div>
-          <div className={clsx('whitespace-nowrap tabular-nums', pnlColor)}>
-            {pnl >= 0 ? '+' : ''}
-            {formatMoneyPrecise(pnl)}{' '}
-            <span className="text-xs">
-              ({pnl >= 0 ? '+' : ''}
-              {pnlPct.toFixed(2)}%)
-            </span>
-          </div>
-        </Col>
-        <Col>
-          <div className="text-ink-500 whitespace-nowrap text-sm">
-            Value{' '}
-            <InfoTooltip text="Amount returned if you close the entire remaining position at the current oracle price. Closing is free; the price can change before execution." />
-          </div>
-          <div className="whitespace-nowrap tabular-nums">
-            {formatMoneyPrecise(fullPayout)}
-          </div>
-        </Col>
-        <Button
-          color="gray-outline"
-          onClick={() => {
-            setCloseAmount(
-              perpCloseAmountFromFraction(1, 'percent', fullPayout)
-            )
-            setCloseModalOpen(true)
-          }}
-          loading={closing}
-          disabled={anyClosing || oracleTradingPaused}
-          size="xs"
-          className="shrink-0 !py-1"
-        >
-          Close
-        </Button>
-      </Row>
-
-      <Row className="text-ink-500 flex-wrap gap-x-4 gap-y-1 text-xs tabular-nums">
-        <span>
-          Entry{' '}
-          <span className="text-ink-700">
-            {formatOraclePrice(
-              contract.oracleFeedId,
-              p.entryPrice,
-              priceDecimals
-            )}
-          </span>
-        </span>
-        <span>
-          Mark{' '}
-          <span className="text-ink-700">
-            {formatOraclePrice(contract.oracleFeedId, markPrice, priceDecimals)}
-          </span>
-        </span>
-        <span>
-          Liquidation{' '}
-          <span className={liqDangerClass}>
-            {formatOraclePrice(
-              contract.oracleFeedId,
-              p.liquidationPrice,
-              priceDecimals
-            )}
-            {' ('}
-            {distToLiq > 0
-              ? `${(distToLiq * 100).toFixed(1)}% away`
-              : 'at risk'}
-            {')'}
-          </span>
-        </span>
-      </Row>
-
-      {/* One left-aligned sentence — a lone "Funding" label with a
-            paragraph-length value right-aligned across the summary read as two
-            disconnected columns. */}
-      {Math.abs(fundingMana) >= MONEY_PRECISE_DUST && (
-        <div className="text-xs">
-          <span
-            className={clsx(
-              'tabular-nums',
-              fundingMana > 0 ? 'text-teal-600' : 'text-scarlet-600'
-            )}
+          </Row>
+          <Button
+            color="gray-outline"
+            onClick={() => {
+              setCloseAmount(
+                perpCloseAmountFromFraction(1, 'percent', fullPayout)
+              )
+              setCloseModalOpen(true)
+            }}
+            loading={closing}
+            disabled={anyClosing || oracleTradingPaused}
+            size="sm"
+            className="min-h-[40px] shrink-0"
+            aria-label={`Close ${p.direction} position`}
           >
-            {fundingMana > 0 ? 'Earning ' : 'Paying '}
-            {formatMoneyPrecise(Math.abs(fundingMana))}/
-            {fundingPeriodUnit(fundingPeriodMs)}{' '}
-            {fundingMana > 0 ? 'from funding' : 'in funding'}
+            Close
+          </Button>
+        </Row>
+
+        <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
+          <div className="min-w-0">
+            <dt className="text-ink-500 text-xs">
+              Position value{' '}
+              <InfoTooltip
+                size="sm"
+                text="Amount returned if you close the entire remaining position at the current oracle price. Closing is free; the price can change before execution."
+              />
+            </dt>
+            <dd className="text-ink-900 mt-1 break-words text-xl font-semibold tabular-nums sm:text-2xl">
+              {formatMoneyPrecise(fullPayout)}
+            </dd>
+          </div>
+          <div className="min-w-0">
+            <dt className="text-ink-500 text-xs">
+              Unrealized P&amp;L{' '}
+              <InfoTooltip
+                size="sm"
+                text="Profit or loss on your remaining open position, including funding and opening fees. Does not include portions you have already closed."
+              />
+            </dt>
+            <dd
+              className={clsx(
+                'mt-1 flex flex-wrap items-baseline gap-x-2',
+                pnlColor
+              )}
+            >
+              <span className="break-words text-xl font-semibold tabular-nums sm:text-2xl">
+                {pnl >= 0 ? '+' : ''}
+                {formatMoneyPrecise(pnl)}
+              </span>
+              <span className="text-xs tabular-nums">
+                {pnl >= 0 ? '+' : ''}
+                {pnlPct.toFixed(2)}%
+              </span>
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <details className="border-ink-200 group border-t">
+        <summary className="text-ink-500 hover:bg-canvas-50 focus-visible:ring-primary-500 flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset sm:px-5 [&::-webkit-details-marker]:hidden">
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+            {Math.abs(fundingMana) >= MONEY_PRECISE_DUST && (
+              <span className="tabular-nums">
+                Funding: {fundingMana > 0 ? 'earning' : 'paying'}{' '}
+                <span className="text-ink-700 font-medium">
+                  {formatMoneyPrecise(Math.abs(fundingMana))}/
+                  {fundingPeriodUnit(fundingPeriodMs)}
+                </span>
+              </span>
+            )}
+            <span
+              className={clsx(
+                'tabular-nums',
+                distToLiq < 0.15 && liqDangerClass
+              )}
+            >
+              {distToLiq > 0
+                ? `Liquidation ${(distToLiq * 100).toFixed(1)}% away`
+                : 'At liquidation price'}
+            </span>
+          </div>
+          <span className="text-ink-600 flex shrink-0 items-center gap-1 font-medium">
+            Details
+            <ChevronDownIcon
+              aria-hidden="true"
+              className="h-4 w-4 transition-transform group-open:rotate-180"
+            />
           </span>
-          <span className="text-ink-400">
-            {fundingDailyPct >= 0.05 &&
-              ` (${
-                fundingDailyPct >= 10
-                  ? fundingDailyPct.toFixed(0)
-                  : fundingDailyPct.toFixed(1)
-              }%/day of margin)`}
-            {fundingCountdown != null && ` · next in ${fundingCountdown}`}
-          </span>
+        </summary>
+
+        <div className="border-ink-200 border-t px-4 py-4 sm:px-5">
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-4 text-sm">
+            <div>
+              <dt className="text-ink-500 text-xs">
+                Margin{' '}
+                <InfoTooltip
+                  size="sm"
+                  text="Original margin allocated to the portion of your position still open, excluding opening fees. Closing part of a position reduces this proportionally."
+                />
+              </dt>
+              <dd className="text-ink-900 mt-1 tabular-nums">
+                {formatMoney(p.originalCostBasis)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-ink-500 text-xs">
+                Notional exposure{' '}
+                <InfoTooltip
+                  size="sm"
+                  text="Notional exposure of your remaining open position, including leverage. This is not the amount returned when you close."
+                />
+              </dt>
+              <dd className="text-ink-900 mt-1 tabular-nums">
+                {formatMoney(p.size)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-ink-500 text-xs">Entry price</dt>
+              <dd className="text-ink-900 mt-1 tabular-nums">
+                {formatOraclePrice(
+                  contract.oracleFeedId,
+                  p.entryPrice,
+                  priceDecimals
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-ink-500 text-xs">Mark price</dt>
+              <dd className="text-ink-900 mt-1 tabular-nums">
+                {formatOraclePrice(
+                  contract.oracleFeedId,
+                  markPrice,
+                  priceDecimals
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-ink-500 text-xs">Liquidation price</dt>
+              <dd className={clsx('mt-1 tabular-nums', liqDangerClass)}>
+                {formatOraclePrice(
+                  contract.oracleFeedId,
+                  p.liquidationPrice,
+                  priceDecimals
+                )}
+              </dd>
+            </div>
+            {Math.abs(fundingMana) >= MONEY_PRECISE_DUST && (
+              <div>
+                <dt className="text-ink-500 text-xs">
+                  Next funding
+                  {fundingCountdown != null && ` in ${fundingCountdown}`}
+                </dt>
+                <dd className="text-ink-900 mt-1 tabular-nums">
+                  {fundingMana > 0 ? 'Receive ' : 'Pay '}
+                  {formatMoneyPrecise(Math.abs(fundingMana))}
+                </dd>
+                {fundingDailyPct >= 0.05 && (
+                  <p className="text-ink-500 mt-1 text-xs tabular-nums">
+                    {fundingDailyPct >= 10
+                      ? fundingDailyPct.toFixed(0)
+                      : fundingDailyPct.toFixed(1)}
+                    % of margin / day at this rate
+                  </p>
+                )}
+              </div>
+            )}
+          </dl>
         </div>
-      )}
+      </details>
 
       {distToLiq < 0.05 && (
-        <div className="bg-scarlet-50 text-scarlet-600 rounded-md px-2.5 py-1.5 text-xs font-medium">
+        <div className="bg-scarlet-50 text-scarlet-600 mx-4 mb-4 rounded-md px-3 py-2 text-xs font-medium sm:mx-5">
           {distToLiq > 0
             ? `A ${(distToLiq * 100).toFixed(
                 1
@@ -702,7 +761,7 @@ const PositionSummary = (props: {
       )}
 
       {oracleTradingPaused && (
-        <div className="text-ink-500 text-xs">
+        <div className="text-ink-500 px-4 pb-4 text-xs sm:px-5">
           Closing is paused until the oracle updates.
         </div>
       )}

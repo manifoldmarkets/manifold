@@ -14,6 +14,7 @@ import {
   MatchOutcome,
   SportsDashboardTabButton,
 } from 'web/components/sports/sports-match-card'
+import { splitFlag as parseAnswerText } from 'common/sports-schedule'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { api, updateDashboard } from 'web/lib/api/api'
 import { useAdminOrMod, useDev } from 'web/hooks/use-admin'
@@ -23,7 +24,7 @@ import { useUser } from 'web/hooks/use-user'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import type { DropResult } from '@hello-pangea/dnd'
 import { Dashboard, DashboardItem, DashboardTextItem } from 'common/dashboard'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { shortFormatNumber } from 'common/util/format'
 import { ContractRow } from 'web/components/contract/contracts-table'
 import {
@@ -115,19 +116,6 @@ function MarketCardSkeletonGrid() {
       ))}
     </div>
   )
-}
-
-function parseAnswerText(text: string): { flag: string; name: string } {
-  const chars = [...text.trim()]
-  const isRegionalIndicator = (c?: string) => {
-    const cp = c?.codePointAt(0)
-    return cp !== undefined && cp >= 0x1f1e6 && cp <= 0x1f1ff
-  }
-  if (isRegionalIndicator(chars[0]) && isRegionalIndicator(chars[1])) {
-    const flag = chars[0] + chars[1]
-    return { flag, name: text.trim().slice(flag.length).trim() }
-  }
-  return { flag: '', name: text.trim() }
 }
 
 // football-data live statuses (no HALF_TIME exists — the break is PAUSED).
@@ -301,9 +289,9 @@ function CommunityTab({
       const ids = fetched.map((c) => c.id)
       const answersByContractId = await getAnswersForContracts(db, ids)
       for (const c of fetched) {
-        // Merge answers for all cpmm-multi-1 markets (MC, NUMBER, MULTI_NUMERIC, DATE)
+        // Merge answers for all multiple choice CPMM markets (MC, NUMBER, MULTI_NUMERIC, DATE)
         // regardless of whether 'answers' is already in the data blob
-        if ((c as any).mechanism === 'cpmm-multi-1') {
+        if (isMultiCpmm(c)) {
           ;(c as any).answers =
             answersByContractId[c.id] ?? (c as any).answers ?? []
         }
@@ -946,22 +934,6 @@ export function SportsDashboardPage({
 
   return (
     <Page trackPageView={trackPageView}>
-      <style>{`
-        :root {
-          --sports-team-a: #1A7A9A;
-          --sports-team-a-vibrant: #0A8FAD;
-          --sports-team-b: #8B3A52;
-          --sports-team-b-vibrant: #C4436E;
-          --sports-draw: #6B7A8E;
-          --sports-draw-vibrant: #7A8CA0;
-        }
-        .dark {
-          --sports-team-a-vibrant: #25C4E8;
-          --sports-team-b-vibrant: #E85A8A;
-          --sports-draw: #7A8A9E;
-          --sports-draw-vibrant: #A8AABF;
-        }
-      `}</style>
       <Head>
         <title>{title} | Manifold</title>
       </Head>

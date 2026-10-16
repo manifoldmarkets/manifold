@@ -5,12 +5,15 @@ import {
 } from './oracle-tick-bounds'
 
 describe('FAST_TICK_ORACLE_BOUNDS', () => {
-  it('allows exactly one attempt', () => {
+  it('allows exactly one retry', () => {
     // Guards a specific regression: with the engine's default of 8 attempts,
     // the retry wrapper's exponential backoff can spend ~17s before giving up
     // — an order of magnitude past the deadline these bounds enforce, with
-    // every tick behind it skipped by the in-flight guard.
-    expect(FAST_TICK_ORACLE_BOUNDS.maxAttempts).toBe(1)
+    // every tick behind it skipped by the in-flight guard. One retry costs at
+    // most the wrapper's first backoff (150ms) and absorbs the serialization
+    // failure two concurrent ticks on neighbouring contracts induce on each
+    // other.
+    expect(FAST_TICK_ORACLE_BOUNDS.maxAttempts).toBe(2)
   })
 
   it('waits for the lock for less than one tick interval', () => {
@@ -32,13 +35,13 @@ describe('FAST_TICK_ORACLE_BOUNDS', () => {
 })
 
 describe('isOracleTickTimeout', () => {
-  it('recognises the codes a bounded single-attempt tick induces', () => {
+  it('recognises the codes a bounded tick induces on itself', () => {
     expect(isOracleTickTimeout({ code: '55P03' })).toBe(true) // lock_timeout
     expect(isOracleTickTimeout({ code: '57014' })).toBe(true) // statement_timeout
     // Serialization failure means the same thing here as the other two —
     // someone else is writing. The pg error handler already documents it as
-    // ordinary contention; with one attempt it surfaces rather than being
-    // retried away, and it must not then be reported twice as an error.
+    // ordinary contention; after the single retry it surfaces rather than
+    // being retried away, and it must not then be reported twice as an error.
     expect(isOracleTickTimeout({ code: '40001' })).toBe(true)
   })
 

@@ -5,7 +5,13 @@ import {
 import { onCreateBets } from 'api/on-create-bet'
 import { executeNewBetResult } from 'api/place-bet'
 import { ValidatedAPIParams } from 'common/api/schema'
+import {
+  CPMM_MULTI_2_UNPRICED_ERROR,
+  cpmmMultiTradeMissesSumToOne,
+  poolsAfterResults,
+} from 'common/calculate-cpmm-arbitrage'
 import { getNewMultiCpmmBetsInfo } from 'common/new-bet'
+import { isMultiCpmm } from 'common/contract'
 import * as crypto from 'crypto'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
@@ -47,9 +53,7 @@ export const placeMultiBetMain = async (
       isApi
     )
 
-    const { mechanism } = contract
-
-    if (mechanism != 'cpmm-multi-1' || !('shouldAnswersSumToOne' in contract)) {
+    if (!isMultiCpmm(contract) || !('shouldAnswersSumToOne' in contract)) {
       throw new APIError(400, 'Contract type/mechanism not supported')
     }
     if (!answers) throw new APIError(404, 'Answers not found')
@@ -61,6 +65,17 @@ export const placeMultiBetMain = async (
 
     const betOnAnswers = answers.filter((a) => answerIds.includes(a.id))
     if (!betOnAnswers) throw new APIError(404, 'Answers not found')
+    // cpmm-multi-2's basket solve fails its own verification on about 1% of
+    // fuzzed baskets: where a large order rests on an answer outside the basket,
+    // the cost jumps past the bet amount at the order's price, which its search
+    // can't land in. It also takes 2-4x as long as cpmm-multi-1's (about 70ms at
+    // 10 answers). Single-answer bets don't use it, and the site only sends
+    // multi-answer bets on numeric markets, which are never cpmm-multi-2.
+    if (contract.mechanism === 'cpmm-multi-2' && betOnAnswers.length > 1)
+      throw new APIError(
+        400,
+        "Buying several answers at once isn't available on this market yet."
+      )
     if ('resolution' in betOnAnswers && betOnAnswers.resolution)
       throw new APIError(403, 'Answer is resolved and cannot be bet on')
     if (shouldAnswersSumToOne && answers.length < 2)
@@ -82,6 +97,18 @@ export const placeMultiBetMain = async (
       balanceByUserId,
       expiresAt
     )
+
+    // As in multi-sell: executeNewBetResult checks single-answer trades only,
+    // so check what all the results leave before writing any of them.
+    if (
+      contract.mechanism === 'cpmm-multi-2' &&
+      shouldAnswersSumToOne &&
+      cpmmMultiTradeMissesSumToOne(
+        contract.answers,
+        poolsAfterResults(newBetResults)
+      )
+    )
+      throw new APIError(403, CPMM_MULTI_2_UNPRICED_ERROR)
 
     const results = []
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)

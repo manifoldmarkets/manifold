@@ -183,6 +183,7 @@ const userInteractions: NotificationSectionData = {
     'on_new_follow',
     'contract_from_followed_user',
     'user_liked_your_content',
+    'social_replies',
   ],
 }
 const leagues: NotificationSectionData = {

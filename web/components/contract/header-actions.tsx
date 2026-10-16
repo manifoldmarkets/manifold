@@ -4,7 +4,7 @@ import {
   EyeOffIcon,
   InformationCircleIcon,
 } from '@heroicons/react/solid'
-import { Contract, contractPath } from 'common/contract'
+import { Contract, contractPath, isMultiCpmm } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getShareUrl } from 'common/util/share'
 import { useEffect, useState } from 'react'
@@ -42,11 +42,15 @@ import { AddLiquidityModal } from './liquidity-modal'
 
 export function HeaderActions(props: {
   contract: Contract
+  // Whether contract.answers holds every answer the market has (see
+  // duplicateContractHref)
+  hasAllAnswers: boolean
   initialHideGraph: boolean
   hideGraph: boolean
   setHideGraph: (hideGraph: boolean) => void
 }) {
-  const { contract, initialHideGraph, hideGraph, setHideGraph } = props
+  const { contract, hasAllAnswers, initialHideGraph, hideGraph, setHideGraph } =
+    props
   const user = useUser()
   const privateUser = usePrivateUser()
   const { isNative } = useNativeInfo()
@@ -58,7 +62,7 @@ export function HeaderActions(props: {
   const [liquidityOpen, setLiquidityOpen] = useState(false)
   const [tippingOpen, setTippingOpen] = useState(false)
 
-  const duplicateHref = duplicateContractHref(contract)
+  const duplicateHref = duplicateContractHref(contract, hasAllAnswers)
 
   const isBlocked =
     privateUser && privateUser.blockedContractIds?.includes(contract.id)
@@ -88,7 +92,7 @@ export function HeaderActions(props: {
   }
 
   const addLiquidityPossible =
-    contract.mechanism == 'cpmm-1' || contract.mechanism == 'cpmm-multi-1'
+    contract.mechanism == 'cpmm-1' || isMultiCpmm(contract)
 
   const [following, setFollowing] = useState<boolean>()
   const [followingOpen, setFollowingOpen] = useState(false)
@@ -139,7 +143,7 @@ export function HeaderActions(props: {
             ),
           },
           {
-            name: 'Repost',
+            name: 'Post to Yap',
             onClick: () => {
               setRepostOpen(true)
             },

@@ -1,4 +1,4 @@
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { Col } from 'components/layout/col'
 import { PositionRow } from './position-row'
 import { useAPIGetter } from 'hooks/use-api-getter'
@@ -132,13 +132,13 @@ export function Positions(props: { user: User }) {
               }}
             >
               {contractMetrics.map((metric) => {
-                if (contract.mechanism === 'cpmm-multi-1' && !metric.answerId) {
+                if (isMultiCpmm(contract) && !metric.answerId) {
                   return null
                 }
 
                 const { answerId } = metric
                 const answer =
-                  contract?.mechanism === 'cpmm-multi-1' && answerId
+                  isMultiCpmm(contract) && answerId
                     ? contract.answers.find((a) => a.id === answerId)
                     : undefined
 

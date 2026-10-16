@@ -60,6 +60,7 @@ import { unbanUsers } from './unban-users'
 import { updateLeague } from './update-league'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
+import { checkStatsFreshness } from './check-stats-freshness'
 import { updatePerps } from './update-perps'
 import {
   ORACLE_TICK_PERIOD_MS,
@@ -75,6 +76,8 @@ import { updateFearGreed } from './update-fear-greed'
 import { resolveSportsMarkets } from './sports-resolve'
 import { createUpcomingSportsMarkets } from './sports-create-markets'
 import { pollSportsLiveScores } from './sports-live'
+import { createOddsSportsMarkets } from './sports-odds-create'
+import { resolveOddsSportsMarkets } from './sports-odds-resolve'
 
 // Which subset of jobs this process runs. The 2s oracle tick (and the other
 // PERP jobs that apply funding and liquidations) must not share an event loop
@@ -400,6 +403,11 @@ export function createJobs(jobSet: SchedulerJobSet) {
       () => updateStatsCore(7)
     ),
     createJob(
+      'check-stats-freshness',
+      '0 0 8 * * *', // daily at 8:00 AM LA, a few hours after update-stats
+      checkStatsFreshness
+    ),
+    createJob(
       'update-trump-approval',
       // Every 5 minutes, which is VoteHub's OWN freshness bound: their
       // averages endpoint serves `Cache-Control: max-age=300`, so polling
@@ -491,6 +499,22 @@ export function createJobs(jobSet: SchedulerJobSet) {
       'sports-create-markets',
       '0 0 7 * * *', // daily at 7:00 AM LA
       createUpcomingSportsMarkets
+    ),
+    // The Odds API sports (NFL, college football, MLB, NBA, WNBA, EPL, MLS):
+    // create the coming two weeks' game markets daily
+    createJob(
+      'sports-odds-create',
+      '0 0 6 * * *', // daily at 6:00 AM LA
+      createOddsSportsMarkets
+    ),
+    // ...and while a game is on, ask for its sport's scores as often as
+    // /admin/sports says (live scores, and finals once a game is due to end),
+    // write them onto the market and resolve from the final. The tick only
+    // checks what's due; one scores call per sport, none while nothing is.
+    createJob(
+      'sports-odds-resolve',
+      '*/10 * * * * *', // every 10 seconds
+      resolveOddsSportsMarkets
     ),
     // Poll in-play scores every 10s and broadcast them over websockets. No-op
     // (no football-data call, just a cheap DB count) outside a tournament's
