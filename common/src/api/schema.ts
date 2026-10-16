@@ -5266,15 +5266,24 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
+    preferAuth: true,
     props: z
       .object({
         category: z.string().optional(),
         limit: z.coerce.number().gte(1).lte(200).optional(),
         offset: z.coerce.number().gte(0).optional(),
         includeUnlinked: coerceBoolean.optional(),
+        sort: z.enum(['newest', 'top', 'liked']).optional(),
       })
       .strict(),
     returns: {} as NewsFeedResponse,
+  },
+  'like-news-story': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ storyId: z.string(), liked: z.boolean() }).strict(),
+    returns: {} as { likeCount: number },
   },
   'refresh-news-feed': {
     method: 'POST',

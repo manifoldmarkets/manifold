@@ -7,9 +7,10 @@ import { log } from 'shared/utils'
 import { buildNewsFeed, NewsFeedBuild } from './pipeline'
 
 /**
- * One build of the feed per process, refreshed on a timer. The build is
- * cached on disk (minus embeddings) so a restart serves the last feed at once
- * instead of spending two minutes and a few cents rebuilding it.
+ * One build of the feed per process, refreshed on a timer, plus the likes
+ * readers give stories. Both are cached on disk (minus embeddings) so a
+ * restart serves the last feed at once instead of spending two minutes and a
+ * few cents rebuilding it.
  *
  * Prototype scope: in-process state, no DB writes. The design doc moves this
  * to tables and a scheduler job.
@@ -22,17 +23,26 @@ export const NEWS_FEED_REFRESH_MS = 10 * MINUTE_MS
 const CACHE_MAX_AGE_MS = 24 * 60 * MINUTE_MS
 /** A refresh still "running" after this long is assumed wedged. */
 const REFRESH_BUDGET_MS = 25 * MINUTE_MS
+const SAVE_DEBOUNCE_MS = 2_000
+
+/** Story id to the ids of the users who liked it. */
+type Likes = Record<string, string[]>
+
+type CacheFile = NewsFeedBuild & { likes?: Likes }
 
 type State = {
   build?: NewsFeedBuild
+  likes: Likes
   refreshing: boolean
   lastError?: string
   lastRefreshStarted: number
   timer?: NodeJS.Timeout
+  saveTimer?: NodeJS.Timeout
   loadedFromDisk: boolean
 }
 
 const state: State = {
+  likes: {},
   refreshing: false,
   lastRefreshStarted: 0,
   loadedFromDisk: false,
@@ -46,18 +56,22 @@ function loadFromDisk() {
   if (state.loadedFromDisk) return
   state.loadedFromDisk = true
   try {
-    const parsed = JSON.parse(
-      fs.readFileSync(cachePath(), 'utf8')
-    ) as NewsFeedBuild
+    const parsed = JSON.parse(fs.readFileSync(cachePath(), 'utf8')) as CacheFile
+    if (parsed?.likes && typeof parsed.likes === 'object') {
+      state.likes = mapValues(parsed.likes, (ids) =>
+        Array.isArray(ids) ? ids.filter((id) => typeof id === 'string') : []
+      )
+    }
     if (
       parsed &&
       Array.isArray(parsed.stories) &&
       parsed.contractsById &&
       Date.now() - parsed.updatedTime < CACHE_MAX_AGE_MS
     ) {
-      state.build = parsed
+      state.build = omit(parsed, 'likes')
       log('news-feed: loaded cached build', {
         stories: parsed.stories.length,
+        likedStories: Object.keys(state.likes).length,
         updatedTime: new Date(parsed.updatedTime).toISOString(),
       })
     }
@@ -66,16 +80,27 @@ function loadFromDisk() {
   }
 }
 
-function saveToDisk(build: NewsFeedBuild) {
+function saveToDisk() {
+  if (!state.build) return
   try {
-    const slim: NewsFeedBuild = {
-      ...build,
-      memos: mapValues(build.memos, (m) => omit(m, 'embedding')),
+    const slim: CacheFile = {
+      ...state.build,
+      memos: mapValues(state.build.memos, (m) => omit(m, 'embedding')),
+      likes: state.likes,
     }
     fs.writeFileSync(cachePath(), JSON.stringify(slim))
   } catch (e) {
     log.warn('news-feed: could not write cache', { error: String(e) })
   }
+}
+
+function scheduleSave() {
+  if (state.saveTimer) return
+  state.saveTimer = setTimeout(() => {
+    state.saveTimer = undefined
+    saveToDisk()
+  }, SAVE_DEBOUNCE_MS)
+  state.saveTimer.unref?.()
 }
 
 export function getNewsFeedBuild() {
@@ -92,6 +117,30 @@ export function getNewsFeedStatus() {
   }
 }
 
+export function getNewsLikes(): Readonly<Likes> {
+  loadFromDisk()
+  return state.likes
+}
+
+/** Record or withdraw a user's like on a story; returns the new count. */
+export function setNewsStoryLike(
+  storyId: string,
+  userId: string,
+  liked: boolean
+) {
+  loadFromDisk()
+  const current = state.likes[storyId] ?? []
+  const next = liked
+    ? current.includes(userId)
+      ? current
+      : [...current, userId]
+    : current.filter((id) => id !== userId)
+  if (next.length === 0) delete state.likes[storyId]
+  else state.likes[storyId] = next
+  scheduleSave()
+  return next.length
+}
+
 async function runRefresh(reason: string) {
   state.refreshing = true
   state.lastRefreshStarted = Date.now()
@@ -101,7 +150,11 @@ async function runRefresh(reason: string) {
     const build = await buildNewsFeed(state.build)
     state.build = build
     state.lastError = undefined
-    saveToDisk(build)
+    // Likes on stories that dropped off the feed go with them.
+    const kept = new Set(build.stories.map((s) => s.id))
+    for (const id of Object.keys(state.likes))
+      if (!kept.has(id)) delete state.likes[id]
+    saveToDisk()
     log('news-feed: refresh done', {
       reason,
       stories: build.stories.length,

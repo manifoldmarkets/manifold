@@ -58,12 +58,12 @@ export type NewsFeedBuild = {
   contractsById: Record<string, Contract>
   memos: Record<string, StoryMemo>
   updatedTime: number
-  spotlight?: { contractId: string; storyId: string }
 }
 
 /** Stories older than this drop off the feed. */
 const KEEP_STORIES_MS = 3 * DAY_MS
-const MAX_STORIES = 400
+/** Three days of the wire, newest first; the cap drops the oldest. */
+const MAX_STORIES = 1200
 /** Same story from another outlet, by embedding similarity. */
 const MERGE_SIMILARITY = 0.82
 /** Raw item ids remembered per story after merging. */
@@ -79,7 +79,6 @@ const REVERIFY_AFTER_MS = 12 * HOUR_MS
 const IMAGES_PER_REFRESH = 24
 const IMAGE_TIMEOUT_MS = 6_000
 const FRESHNESS_HALF_LIFE_H = 36
-const SPOTLIGHT_WINDOW_MS = 2 * DAY_MS
 
 const EMBED_CONCURRENCY = 6
 const DB_CONCURRENCY = 6
@@ -111,7 +110,11 @@ const embeddingText = (s: {
     s.summary && s.summary !== s.headline ? ' ' + s.summary : ''
   }`
 
-const toStory = (id: string, r: RawStory): NewsStory => ({
+const isSameUtcDay = (a: number, b: number) =>
+  new Date(a).toISOString().slice(0, 10) ===
+  new Date(b).toISOString().slice(0, 10)
+
+const toStory = (id: string, r: RawStory, now: number): NewsStory => ({
   id,
   headline: r.headline,
   summary: r.summary,
@@ -119,7 +122,12 @@ const toStory = (id: string, r: RawStory): NewsStory => ({
   category: r.category,
   origin: r.origin,
   publishedTime: r.publishedTime,
-  updatedTime: r.publishedTime,
+  // The portal has no times; a bullet that appears today counts from when
+  // it appeared, so the feed stays chronological.
+  updatedTime:
+    r.origin === 'wikipedia' && isSameUtcDay(r.publishedTime, now)
+      ? now
+      : r.publishedTime,
   sources: dedupeSources(r.sources),
   contractIds: [],
   candidateIds: [],
@@ -398,7 +406,7 @@ export async function buildNewsFeed(
     // API keeps serving requests while this runs in-process.
     if (++processed % 20 === 0) await new Promise((r) => setImmediate(r))
     if (!f.embedding) {
-      stories.set(f.id, toStory(f.id, f.raw))
+      stories.set(f.id, toStory(f.id, f.raw, now))
       memos[f.id] = {
         id: f.id,
         candidateIds: [],
@@ -423,7 +431,7 @@ export async function buildNewsFeed(
       merged++
       continue
     }
-    stories.set(f.id, toStory(f.id, f.raw))
+    stories.set(f.id, toStory(f.id, f.raw, now))
     memos[f.id] = {
       id: f.id,
       embedding: f.embedding,
@@ -559,26 +567,12 @@ export async function buildNewsFeed(
   )
 
   // 6. Rank, cap, and pick the spotlight.
-  const ranked = sortBy(assembled, (s) => -s.score).slice(0, MAX_STORIES)
+  const ranked = sortBy(assembled, (s) => -s.updatedTime).slice(0, MAX_STORIES)
   const kept = new Set(ranked.map((s) => s.id))
   for (const id of Object.keys(memos)) if (!kept.has(id)) delete memos[id]
   const usedContractIds = new Set(ranked.flatMap((s) => s.contractIds))
   for (const id of Object.keys(contractsById))
     if (!usedContractIds.has(id)) delete contractsById[id]
 
-  let spotlight: NewsFeedBuild['spotlight']
-  let bestBettors = -1
-  for (const s of ranked) {
-    if (now - s.updatedTime > SPOTLIGHT_WINDOW_MS) continue
-    for (const id of s.contractIds) {
-      const c = contractsById[id]
-      const bettors = c?.uniqueBettorCount ?? 0
-      if (c && c.outcomeType === 'BINARY' && bettors > bestBettors) {
-        bestBettors = bettors
-        spotlight = { contractId: id, storyId: s.id }
-      }
-    }
-  }
-
-  return { stories: ranked, contractsById, memos, updatedTime: now, spotlight }
+  return { stories: ranked, contractsById, memos, updatedTime: now }
 }

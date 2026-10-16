@@ -6,7 +6,6 @@ import { removeEmojis } from 'common/util/string'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { RelatedMarketRow } from 'web/components/sports/game-related-markets'
 import { Carousel } from 'web/components/widgets/carousel'
 import { useLiveContract } from 'web/hooks/use-contract'
 
@@ -81,36 +80,4 @@ const closesIn = (closeTime: number | undefined) => {
   if (ms >= DAY_MS) return `${Math.round(ms / DAY_MS)}d`
   if (ms >= HOUR_MS) return `${Math.round(ms / HOUR_MS)}h`
   return `${Math.max(1, Math.round(ms / 60_000))}m`
-}
-
-/** The most-traded market in the news right now, with the story behind it. */
-export function SpotlightQuestion(props: {
-  contract: Contract
-  story?: NewsStory
-}) {
-  const { contract, story } = props
-  return (
-    <section className="border-primary-300 bg-canvas-0 rounded-lg border">
-      <div className="px-3 pt-2.5">
-        <Row className="items-baseline justify-between gap-2">
-          <span className="text-primary-700 text-[11px] font-semibold uppercase tracking-wide">
-            Today's question
-          </span>
-          {story && (
-            <a
-              href={story.sources[0]?.url}
-              target="_blank"
-              rel="noreferrer"
-              className="text-ink-500 hover:text-primary-700 line-clamp-1 min-w-0 text-xs"
-            >
-              {story.headline}
-            </a>
-          )}
-        </Row>
-      </div>
-      <div className="px-0.5 pb-0.5">
-        <RelatedMarketRow contract={contract} />
-      </div>
-    </section>
-  )
 }

@@ -3,7 +3,13 @@ import { keyBy, sum } from 'lodash'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Contract } from 'common/contract'
-import { NewsStory } from 'common/news-feed'
+import {
+  NEWS_SORTS,
+  NewsSort,
+  NewsSpotlight,
+  NewsStory,
+} from 'common/news-feed'
+import { shortFormatNumber } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -15,7 +21,7 @@ import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { CategoryFilter, CategoryRail } from './category-rail'
-import { ResolvingSoon, SpotlightQuestion } from './resolving-soon'
+import { ResolvingSoon } from './resolving-soon'
 import { StoryCard, StoryCardSkeleton } from './story-card'
 
 const PAGE_SIZE = 40
@@ -25,22 +31,27 @@ const POLL_MS = 60_000
 const BUILDING_POLL_MS = 8_000
 const NEW_HIGHLIGHT_MS = 45_000
 
+type LikeState = { liked: boolean; count: number }
+
 /**
- * /news: the wire, with markets. Stories arrive at the top as the server's
- * refresher finds them; prices on the rows update live.
+ * /news: the wire with markets. Newest first by default, with the day's top
+ * story leading. Stories arrive at the top as the server's refresher finds
+ * them; prices on the rows update live.
  */
 export function NewsFeedPage() {
   const user = useUser()
   const [category, setCategory] = useState<CategoryFilter>('all')
+  const [sort, setSort] = useState<NewsSort>('newest')
   const [includeUnlinked, setIncludeUnlinked] = useState(false)
   const [limit, setLimit] = useState(PAGE_SIZE)
   const props = useMemo(
     () => ({
       category: category === 'all' ? undefined : category,
+      sort,
       limit,
       includeUnlinked,
     }),
-    [category, limit, includeUnlinked]
+    [category, sort, limit, includeUnlinked]
   )
   const { data, error, refresh } = useAPIGetter(
     'get-news-feed',
@@ -80,6 +91,41 @@ export function NewsFeedPage() {
     return () => clearTimeout(t)
   }, [data])
 
+  // Likes: the server's counts, with the reader's own taps applied at once.
+  const [likeOverrides, setLikeOverrides] = useState<Record<string, LikeState>>(
+    {}
+  )
+  useEffect(() => setLikeOverrides({}), [data])
+  const likeState = (storyId: string): LikeState =>
+    likeOverrides[storyId] ?? {
+      liked: data?.likedStoryIds.includes(storyId) ?? false,
+      count: data?.likes[storyId] ?? 0,
+    }
+  const onLike = async (story: NewsStory, liked: boolean) => {
+    const before = likeState(story.id)
+    setLikeOverrides((o) => ({
+      ...o,
+      [story.id]: {
+        liked,
+        count: Math.max(0, before.count + (liked ? 1 : -1)),
+      },
+    }))
+    track('news feed like story', { storyId: story.id, liked })
+    try {
+      const { likeCount } = await api('like-news-story', {
+        storyId: story.id,
+        liked,
+      })
+      setLikeOverrides((o) => ({
+        ...o,
+        [story.id]: { liked, count: likeCount },
+      }))
+    } catch (e) {
+      console.error(e)
+      setLikeOverrides((o) => ({ ...o, [story.id]: before }))
+    }
+  }
+
   const contractsById = useMemo(
     () => keyBy(data?.contracts ?? [], 'id'),
     [data?.contracts]
@@ -90,17 +136,17 @@ export function NewsFeedPage() {
       for (const id of s.contractIds) if (!byId[id]) byId[id] = s
     return byId
   }, [data?.stories])
-  const stories = data?.stories ?? []
-  const hasMore = !!data && data.total > stories.length && limit < MAX_LIMIT
+  const spotlight =
+    category === 'all' && !includeUnlinked ? data?.spotlight : undefined
+  // The top story leads the page; it is not repeated in the list below.
+  const stories = (data?.stories ?? []).filter(
+    (s) => s.id !== spotlight?.story.id
+  )
+  const hasMore =
+    !!data && data.total > data.stories.length && limit < MAX_LIMIT
   const linkedCount = data
     ? sum(Object.values(data.counts).map((n) => n ?? 0))
     : 0
-  const spotlightContract = data?.spotlight
-    ? contractsById[data.spotlight.contractId]
-    : undefined
-  const spotlightStory = data?.spotlight
-    ? stories.find((s) => s.id === data.spotlight?.storyId)
-    : undefined
   const resolvingSoon = (data?.resolvingSoon ?? [])
     .map((id) => contractsById[id])
     .filter((c): c is Contract => !!c)
@@ -126,6 +172,15 @@ export function NewsFeedPage() {
     'news-feed-headlines'
   )
 
+  const cardProps = (s: NewsStory) => ({
+    story: s,
+    contractsById,
+    isNew: fresh.has(s.id),
+    likeCount: likeState(s.id).count,
+    liked: likeState(s.id).liked,
+    onLike: (liked: boolean) => onLike(s, liked),
+  })
+
   return (
     <Page trackPageView="news feed">
       <SEO
@@ -140,8 +195,7 @@ export function NewsFeedPage() {
               Manifold News
             </h1>
             <p className="text-ink-500 text-sm">
-              Every story on the wire, with the markets it moves. Tap a price to
-              bet.
+              Every story on the wire, with the markets it moves.
             </p>
           </Col>
           <Row className="shrink-0 items-center gap-2">
@@ -190,11 +244,11 @@ export function NewsFeedPage() {
           <Notice tone="error">Last refresh failed: {data.lastError}</Notice>
         )}
 
-        {category === 'all' && !includeUnlinked && spotlightContract && (
-          <SpotlightQuestion
-            contract={spotlightContract}
-            story={spotlightStory}
-          />
+        {spotlight && (
+          <Col className="gap-1.5">
+            <SpotlightLabel spotlight={spotlight} />
+            <StoryCard {...cardProps(spotlight.story)} hero defaultOpen />
+          </Col>
         )}
         {category === 'all' && resolvingSoon.length > 0 && (
           <ResolvingSoon
@@ -204,6 +258,13 @@ export function NewsFeedPage() {
         )}
 
         <Col className="gap-3">
+          <SortControl
+            sort={sort}
+            onChange={(s) => {
+              setSort(s)
+              setLimit(PAGE_SIZE)
+            }}
+          />
           {building && stories.length === 0 ? (
             <>
               <Notice>
@@ -228,15 +289,7 @@ export function NewsFeedPage() {
               )}
             </Notice>
           ) : (
-            stories.map((s, i) => (
-              <StoryCard
-                key={s.id}
-                story={s}
-                contractsById={contractsById}
-                hero={i === 0 && category === 'all' && !includeUnlinked}
-                isNew={fresh.has(s.id)}
-              />
-            ))
+            stories.map((s) => <StoryCard key={s.id} {...cardProps(s)} />)
           )}
         </Col>
 
@@ -275,6 +328,58 @@ export function NewsFeedPage() {
         </p>
       </Col>
     </Page>
+  )
+}
+
+/** Newest (the default), the ranking, or the readers' likes. */
+function SortControl(props: {
+  sort: NewsSort
+  onChange: (sort: NewsSort) => void
+}) {
+  const { sort, onChange } = props
+  return (
+    <Row
+      className="items-center gap-1 px-1 pt-1"
+      role="group"
+      aria-label="Sort"
+    >
+      {NEWS_SORTS.map((o) => (
+        <button
+          key={o.key}
+          type="button"
+          aria-pressed={sort === o.key}
+          onClick={() => {
+            track('news feed sort', { sort: o.key })
+            onChange(o.key)
+          }}
+          className={clsx(
+            'rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
+            sort === o.key
+              ? 'bg-ink-900 text-ink-0'
+              : 'text-ink-600 hover:bg-canvas-50'
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </Row>
+  )
+}
+
+/** Why this story leads the page today. */
+function SpotlightLabel(props: { spotlight: NewsSpotlight }) {
+  const { reason, value } = props.spotlight
+  return (
+    <Row className="items-baseline justify-between gap-2 px-1">
+      <h2 className="text-primary-700 text-[11px] font-semibold uppercase tracking-wide">
+        Top story today
+      </h2>
+      <span className="text-ink-400 text-xs">
+        {reason === 'likes'
+          ? `${value} ${value === 1 ? 'like' : 'likes'}`
+          : `Ṁ${shortFormatNumber(value)} traded on its markets today`}
+      </span>
+    </Row>
   )
 }
 

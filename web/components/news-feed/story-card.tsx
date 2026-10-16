@@ -1,5 +1,8 @@
-import { PlusIcon } from '@heroicons/react/outline'
-import { ChevronDownIcon } from '@heroicons/react/solid'
+import { HeartIcon as HeartOutline, PlusIcon } from '@heroicons/react/outline'
+import {
+  ChevronDownIcon,
+  HeartIcon as HeartSolid,
+} from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -11,6 +14,8 @@ import { Row } from 'web/components/layout/row'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { RelatedMarketRow } from 'web/components/sports/game-related-markets'
 import { LinkFavicon } from 'web/components/widgets/site-link'
+import { useUser } from 'web/hooks/use-user'
+import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 
 const ROWS = 3
@@ -25,9 +30,23 @@ export function StoryCard(props: {
   hero?: boolean
   /** Arrived since the page loaded. */
   isNew?: boolean
+  likeCount?: number
+  liked?: boolean
+  onLike?: (liked: boolean) => void
+  /** Start with the markets open (the top story). */
+  defaultOpen?: boolean
 }) {
-  const { story, contractsById, hero, isNew } = props
-  const [open, setOpen] = useState(false)
+  const {
+    story,
+    contractsById,
+    hero,
+    isNew,
+    likeCount = 0,
+    liked = false,
+    onLike,
+    defaultOpen,
+  } = props
+  const [open, setOpen] = useState(!!defaultOpen)
   const [showAll, setShowAll] = useState(false)
   const contracts = story.contractIds
     .map((id) => contractsById[id])
@@ -73,6 +92,7 @@ export function StoryCard(props: {
               shortened
               className="text-ink-500"
             />
+            <LikeButton count={likeCount} liked={liked} onToggle={onLike} />
           </Row>
         </Row>
 
@@ -268,5 +288,39 @@ export function StoryCardSkeleton(props: { hero?: boolean }) {
         <div className="bg-ink-100 h-9 w-full rounded-md" />
       </div>
     </div>
+  )
+}
+
+/** A like for the story itself, kept by the feed server. */
+function LikeButton(props: {
+  count: number
+  liked: boolean
+  onToggle?: (liked: boolean) => void
+}) {
+  const { count, liked, onToggle } = props
+  const user = useUser()
+  const Icon = liked ? HeartSolid : HeartOutline
+  return (
+    <button
+      type="button"
+      aria-pressed={liked}
+      aria-label={liked ? 'Unlike this story' : 'Like this story'}
+      onClick={() => {
+        if (!user) {
+          firebaseLogin()
+          return
+        }
+        onToggle?.(!liked)
+      }}
+      className={clsx(
+        'flex items-center gap-1 rounded-full px-1.5 py-0.5 text-xs transition-colors',
+        liked
+          ? 'text-scarlet-600 hover:bg-scarlet-50'
+          : 'text-ink-400 hover:bg-canvas-100 hover:text-scarlet-600'
+      )}
+    >
+      <Icon className="h-4 w-4" />
+      {count > 0 && <span className="tabular-nums">{count}</span>}
+    </button>
   )
 }

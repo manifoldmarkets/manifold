@@ -46,7 +46,7 @@ export type NewsStory = {
   origin: NewsStoryOrigin
   /** When the story first appeared (ms). */
   publishedTime: number
-  /** Latest coverage seen (ms). Developing stories stay near the top. */
+  /** Latest coverage seen (ms). The feed is ordered by this, newest first. */
   updatedTime: number
   /** Outlets reporting it, one link each, deduped by host. */
   sources: NewsSourceLink[]
@@ -57,11 +57,29 @@ export type NewsStory = {
   candidateIds: string[]
   /** Whether the story implies an open question that could become a market. */
   forecastable?: boolean
-  /** Ranking score: freshness times how much there is to trade on. */
+  /** Freshness times how much there is to trade on; used for thumbnails. */
   score: number
 }
 
 export type NewsFeedCounts = Partial<Record<NewsCategory, number>>
+
+/** How the feed is ordered. Newest is the default. */
+export const NEWS_SORTS = [
+  { key: 'newest', label: 'Newest' },
+  { key: 'top', label: 'Top' },
+  { key: 'liked', label: 'Most liked' },
+] as const
+
+export type NewsSort = (typeof NEWS_SORTS)[number]['key']
+
+/** The day's top story and why it was picked. */
+export type NewsSpotlight = {
+  story: NewsStory
+  /** Most liked today, or else the most traded on its markets today. */
+  reason: 'likes' | 'volume'
+  /** The like count, or the day's volume in mana. */
+  value: number
+}
 
 export type NewsFeedResponse = {
   /** False when the server is not running the feed (NEWS_FEED_ENABLED). */
@@ -69,6 +87,7 @@ export type NewsFeedResponse = {
   refreshing: boolean
   updatedTime: number | null
   lastError?: string
+  /** Newest first. */
   stories: NewsStory[]
   /** Stories matching the filter before paging. */
   total: number
@@ -79,8 +98,11 @@ export type NewsFeedResponse = {
   contracts: Contract[]
   /** Linked markets closing within a week, soonest first. */
   resolvingSoon: string[]
-  /** The most-traded linked market, for the headline question slot. */
-  spotlight?: { contractId: string; storyId: string }
+  spotlight?: NewsSpotlight
+  /** Likes per story, for the stories in this response. */
+  likes: Record<string, number>
+  /** Stories the signed-in caller has liked. */
+  likedStoryIds: string[]
 }
 
 export const NEWS_FEED_RESOLVING_SOON_MS = 7 * 24 * 60 * 60 * 1000
