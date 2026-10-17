@@ -1,7 +1,12 @@
-import { LockClosedIcon, LockOpenIcon, XIcon } from '@heroicons/react/outline'
+import {
+  ChevronDownIcon,
+  LockClosedIcon,
+  LockOpenIcon,
+  XIcon,
+} from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { capitalize, uniq } from 'lodash'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 
 import {
@@ -258,6 +263,7 @@ export const BuyPanelBody = (
   } = props
 
   const [showOrders, setShowOrders] = useState(false)
+  const ordersId = useId()
   const tradeFormRef = useRef<HTMLDivElement>(null)
 
   const user = useUser()
@@ -469,11 +475,17 @@ export const BuyPanelBody = (
     })
     setOutcome(outcome)
     setBetTypeSetting('Limit')
-    setShowOrders(false)
-    if (compact && !isIOS() && !isAndroid()) {
-      requestAnimationFrame(() =>
-        tradeFormRef.current?.querySelector('input')?.focus()
-      )
+    if (compact) {
+      // The book stays open below; bring the prefilled ticket back into view.
+      requestAnimationFrame(() => {
+        const form = tradeFormRef.current
+        form?.firstElementChild?.scrollIntoView({
+          block: 'nearest',
+          behavior: 'smooth',
+        })
+        if (!isIOS() && !isAndroid())
+          form?.querySelector('input')?.focus({ preventScroll: true })
+      })
     }
     toast('Expiration set to immediate', { icon: '⏱️' })
   })
@@ -803,17 +815,13 @@ export const BuyPanelBody = (
     <Row className="ml-auto shrink-0 items-center justify-end gap-2">
       {!isStonk && (
         <ChoicesToggleGroup
-          // null, not undefined: no selection while the RadioGroup stays controlled.
-          currentChoice={compact && showOrders ? null : betType}
+          currentChoice={betType}
           color="gray"
           choicesMap={{
             Quick: 'Market',
             Limit: 'Limit',
           }}
-          setChoice={(val) => {
-            setBetTypeSetting(val as 'Market' | 'Limit')
-            setShowOrders(false)
-          }}
+          setChoice={(val) => setBetTypeSetting(val as 'Market' | 'Limit')}
         />
       )}
       {onClose && (
@@ -846,7 +854,7 @@ export const BuyPanelBody = (
         />
       )}
       {compact && activeOrderCount === 0 && (
-        <p className="text-ink-500 py-8 text-center text-sm">
+        <p className="text-ink-500 py-4 text-center text-sm">
           No open orders yet.
         </p>
       )}
@@ -868,22 +876,20 @@ export const BuyPanelBody = (
         className={className}
         compact={compact}
         showOrders={showOrders}
-        setShowOrders={setShowOrders}
-        orderCount={activeOrderCount}
+        ordersId={ordersId}
         header={typeof children === 'function' ? children(outcome) : children}
         orders={orders}
         tradeFormRef={tradeFormRef}
-        controls={betTypeControls}
       >
         <Row
           className={clsx(
-            'mb-2 flex-wrap items-center justify-between gap-x-2 gap-y-1',
-            !compact && 'mt-2'
+            'mb-2 items-center justify-between gap-x-2 gap-y-1',
+            !compact && 'mt-2 flex-wrap'
           )}
         >
           {compact && props.pseudonym ? (
             <Row
-              className="w-full min-w-0 gap-1"
+              className="min-w-0 flex-1 gap-1"
               role="group"
               aria-label="Choose an outcome"
             >
@@ -936,7 +942,7 @@ export const BuyPanelBody = (
               </Row>
             )
           )}
-          {!compact && betTypeControls}
+          {betTypeControls}
         </Row>
         {betType === 'Market' ? (
           <>
@@ -1263,24 +1269,47 @@ export const BuyPanelBody = (
           />
         )}
 
-        {user && (
+        {(user || compact) && (
           <Row
             className={clsx(
-              compact ? 'mt-2' : 'mt-5',
-              'items-start justify-between text-sm'
+              compact ? 'mt-2 items-center' : 'mt-5 items-start',
+              'justify-between gap-2 text-sm'
             )}
           >
-            <Row className={''}>
-              <span className={clsx('text-ink-600 mr-1 whitespace-nowrap ')}>
-                Your mana balance
-              </span>
-              <span className="text-ink-600 font-semibold">
-                <MoneyDisplay
-                  amount={balance}
-                  isCashContract={isCashContract}
+            {user ? (
+              <Row className={''}>
+                <span className={clsx('text-ink-600 mr-1 whitespace-nowrap ')}>
+                  Your mana balance
+                </span>
+                <span className="text-ink-600 font-semibold">
+                  <MoneyDisplay
+                    amount={balance}
+                    isCashContract={isCashContract}
+                  />
+                </span>
+              </Row>
+            ) : (
+              <span />
+            )}
+            {/* Where the inline panel's book would be: expands it below. */}
+            {compact && (
+              <button
+                type="button"
+                aria-expanded={showOrders}
+                aria-controls={ordersId}
+                onClick={() => setShowOrders(!showOrders)}
+                className="text-primary-700 hover:bg-primary-50 -mr-2 flex shrink-0 items-center gap-1 rounded-md px-2 py-1 font-medium"
+              >
+                Order book ({activeOrderCount})
+                <ChevronDownIcon
+                  className={clsx(
+                    'h-4 w-4 transition-transform',
+                    showOrders && 'rotate-180'
+                  )}
+                  aria-hidden
                 />
-              </span>
-            </Row>
+              </button>
+            )}
           </Row>
         )}
       </TradePanelLayout>

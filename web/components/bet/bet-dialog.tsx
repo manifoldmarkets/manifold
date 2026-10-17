@@ -31,6 +31,7 @@ import { ArrowLeftIcon } from '@heroicons/react/solid'
 import { keyBy, maxBy, sortBy } from 'lodash'
 import { Button } from 'web/components/buttons/button'
 import { Input } from 'web/components/widgets/input'
+import { AnswerBar } from 'web/components/answers/answer-components'
 import { MultiBetProps } from 'client-common/lib/bet'
 import { getAnswerColor } from '../charts/contract/choice'
 
@@ -457,35 +458,51 @@ function MultiChoiceTradeDialog(props: {
               className="w-full"
             />
           )}
-          <Col className="divide-ink-200 divide-y">
-            {shown.map((a) => (
-              <Row key={a.id} className="items-center gap-2 py-2">
-                <span className="line-clamp-2 min-w-0 flex-1 text-sm">
-                  {a.text}
-                </span>
-                <span className="shrink-0 font-semibold tabular-nums">
-                  {formatPercent(getAnswerProbability(contract, a.id))}
-                </span>
-                <Button
-                  size="2xs"
-                  color="green-outline"
-                  aria-label={`Bet Yes on ${a.text}`}
-                  onClick={() =>
-                    setSelected({ answerId: a.id, outcome: 'YES' })
+          {/* Probability bars, as in the market page's answer list. */}
+          <Col className="gap-1.5">
+            {shown.map((a) => {
+              const prob = getAnswerProbability(contract, a.id)
+              return (
+                <AnswerBar
+                  key={a.id}
+                  className="group"
+                  color={getAnswerColor(a)}
+                  prob={prob}
+                  label={
+                    <span className="line-clamp-2 text-sm leading-tight">
+                      {a.text}
+                    </span>
                   }
-                >
-                  Yes
-                </Button>
-                <Button
-                  size="2xs"
-                  color="red-outline"
-                  aria-label={`Bet No on ${a.text}`}
-                  onClick={() => setSelected({ answerId: a.id, outcome: 'NO' })}
-                >
-                  No
-                </Button>
-              </Row>
-            ))}
+                  end={
+                    <>
+                      <span className="font-semibold tabular-nums">
+                        {formatPercent(prob)}
+                      </span>
+                      <Button
+                        size="2xs"
+                        color="green-outline"
+                        aria-label={`Bet Yes on ${a.text}`}
+                        onClick={() =>
+                          setSelected({ answerId: a.id, outcome: 'YES' })
+                        }
+                      >
+                        Yes
+                      </Button>
+                      <Button
+                        size="2xs"
+                        color="red-outline"
+                        aria-label={`Bet No on ${a.text}`}
+                        onClick={() =>
+                          setSelected({ answerId: a.id, outcome: 'NO' })
+                        }
+                      >
+                        No
+                      </Button>
+                    </>
+                  }
+                />
+              )
+            })}
           </Col>
           {query && matching.length === 0 && (
             <p className="text-ink-500 py-4 text-center text-sm">
