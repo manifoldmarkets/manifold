@@ -7,6 +7,7 @@ import {
   matchRelatedMarket,
   mentionsTeam,
   NBA_TOPIC_ID,
+  WNBA_TOPIC_ID,
   parseSportsStart,
   RelatedCandidate,
   relatedGroupFor,
@@ -421,7 +422,7 @@ describe('pipeline handoff fields', () => {
       'ncaaf'
     )
     expect(sportForMarket({ sportsLeague: 'basketball_nba' })).toBe('nba')
-    expect(sportForMarket({ sportsLeague: 'basketball_wnba' })).toBe('nba')
+    expect(sportForMarket({ sportsLeague: 'basketball_wnba' })).toBe('wnba')
     expect(sportForMarket({ sportsLeague: 'basketball_ncaab' })).toBe('ncaab')
     expect(sportForMarket({ sportsLeague: 'baseball_mlb' })).toBe('mlb')
     expect(sportForMarket({ sportsLeague: 'icehockey_nhl' })).toBe('nhl')
@@ -434,12 +435,24 @@ describe('pipeline handoff fields', () => {
     )
     expect(sportForMarket({ sportsLeague: 'boxing_boxing' })).toBe('other')
   })
-  it('tags WNBA games with basketball but not the NBA topic', () => {
-    const nba = sportTagIds('nba', 'NBA')
-    const wnba = sportTagIds('nba', 'WNBA')
+  it('keeps WNBA games apart from the NBA', () => {
+    expect(sportForMarket({ sportsLeague: 'WNBA' })).toBe('wnba')
+    expect(sportForMarket({ sportsLeague: 'NBA' })).toBe('nba')
+    // Tagged with Basketball, but not with the NBA topic.
+    const nba = sportTagIds('nba')
+    const wnba = sportTagIds('wnba')
     expect(nba).toContain(NBA_TOPIC_ID)
-    expect(wnba).toEqual(nba.filter((id) => id !== NBA_TOPIC_ID))
-    expect(wnba.length).toBeGreaterThan(1)
+    expect(wnba).toContain(WNBA_TOPIC_ID)
+    expect(wnba).not.toContain(NBA_TOPIC_ID)
+    expect(wnba.filter((id) => nba.includes(id)).length).toBeGreaterThan(1)
+    // A market in both the WNBA and Basketball topics is a WNBA market,
+    // whichever order the topics come back in.
+    for (const groupIds of [
+      [WNBA_TOPIC_ID, ...nba],
+      [...nba, WNBA_TOPIC_ID],
+    ]) {
+      expect(sportForMarket({ groupIds })).toBe('wnba')
+    }
   })
   it('files a market by its stamped sportsMarketType before guessing', () => {
     expect(

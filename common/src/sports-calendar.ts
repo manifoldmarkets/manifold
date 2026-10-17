@@ -710,7 +710,7 @@ export const SPORT_ID_TO_SPORT_KEY: Record<SportId, SportKey> = {
   cfb: 'ncaaf',
   mlb: 'mlb',
   nba: 'nba',
-  wnba: 'nba',
+  wnba: 'wnba',
   soccer: 'soccer',
   f1: 'f1',
   tdf: 'other',
