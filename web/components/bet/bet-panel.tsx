@@ -1272,8 +1272,11 @@ export const BuyPanelBody = (
         {(user || compact) && (
           <Row
             className={clsx(
-              compact ? 'mt-2 items-center' : 'mt-5 items-start',
-              'justify-between gap-2 text-sm'
+              // Compact rows wrap on narrow screens, keeping the toggle right.
+              compact
+                ? 'mt-2 flex-wrap items-center gap-y-1'
+                : 'mt-5 items-start',
+              'justify-between gap-x-2 text-sm'
             )}
           >
             {user ? (
@@ -1298,7 +1301,7 @@ export const BuyPanelBody = (
                 aria-expanded={showOrders}
                 aria-controls={ordersId}
                 onClick={() => setShowOrders(!showOrders)}
-                className="text-primary-700 hover:bg-primary-50 -mr-2 flex shrink-0 items-center gap-1 rounded-md px-2 py-1 font-medium"
+                className="text-primary-700 hover:bg-primary-50 -mr-2 ml-auto flex shrink-0 items-center gap-1 rounded-md px-2 py-1 font-medium"
               >
                 Order book ({activeOrderCount})
                 <ChevronDownIcon

@@ -469,7 +469,8 @@ function MultiChoiceTradeDialog(props: {
                   color={getAnswerColor(a)}
                   prob={prob}
                   label={
-                    <span className="line-clamp-2 text-sm leading-tight">
+                    // Break long words so the label shrinks, not the buttons.
+                    <span className="line-clamp-2 text-sm leading-tight [overflow-wrap:anywhere]">
                       {a.text}
                     </span>
                   }
