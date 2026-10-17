@@ -541,11 +541,13 @@ async function querySportsMarkets(
     importance_score: number
     sports_event_id: string | null
     sports_market_type: string | null
+    sports_league: string | null
     group_ids: string[]
   }>(
     `select c.id, c.question, c.close_time, c.importance_score,
             c.data->>'sportsEventId' as sports_event_id,
             c.data->>'sportsMarketType' as sports_market_type,
+            c.data->>'sportsLeague' as sports_league,
             (select coalesce(array_agg(g.group_id), '{}')
                from group_contracts g
               where g.contract_id = c.id) as group_ids
@@ -572,7 +574,11 @@ async function querySportsMarkets(
     closeTime: r.close_time ? tsToMillis(r.close_time) : null,
     sportsEventId: r.sports_event_id,
     marketType: r.sports_market_type,
-    sport: sportForMarket({ groupIds: r.group_ids }, index),
+    // The league first: a WNBA game sits in Basketball, which is the NBA's.
+    sport: sportForMarket(
+      { sportsLeague: r.sports_league, groupIds: r.group_ids },
+      index
+    ),
     importanceScore: Number(r.importance_score ?? 0),
   }))
 }
