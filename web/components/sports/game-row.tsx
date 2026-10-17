@@ -24,7 +24,7 @@ import {
   SportsMatch,
 } from 'web/components/sports/sports-match-card'
 import {
-  SportsBetPanel,
+  SportsThreeWayBetDialog,
   SportsVersusBetDialog,
 } from 'web/components/sports/sports-bet-panel'
 import { useUser } from 'web/hooks/use-user'
@@ -198,62 +198,78 @@ export function GameRow(props: {
     setBetOutcome(outcome)
   }
 
-  const teams = (
-    <div
-      className={clsx(
-        'min-w-0',
-        variant === 'compact'
-          ? 'grid gap-x-5 gap-y-2 sm:grid-cols-2'
-          : 'flex flex-col gap-1.5 sm:gap-1'
-      )}
-    >
-      {displayTeams.map(({ team, side, outcome }) => (
-        <TeamLine
-          key={team.answerId}
-          team={team}
-          score={score?.[side] ?? null}
-          won={game.winnerAnswerId === team.answerId}
-          lost={
-            finished && game.isResolved && game.winnerAnswerId !== team.answerId
-          }
-          live={live}
-          finished={finished}
-          canBet={canBet}
-          onBet={() => onBet(outcome)}
-        />
-      ))}
-      {game.draw && (
-        <Row className="items-center gap-2 pl-10">
-          <span
-            className={clsx(
-              'text-xs',
-              drawWon ? 'text-ink-900 font-semibold' : 'text-ink-500'
-            )}
-          >
-            Draw{drawWon && ' ✓'}
-          </span>
-          <PriceChip
-            prob={game.draw.prob}
-            muted
-            disabled={!canBet}
-            onClick={(e) => {
-              e.stopPropagation()
-              onBet('draw')
-            }}
-            label="Bet on a draw"
-            className="ml-auto"
-          />
-        </Row>
-      )}
-    </div>
+  const [firstTeam, secondTeam] = displayTeams.map(
+    ({ team, side, outcome }) => (
+      <TeamLine
+        key={team.answerId}
+        team={team}
+        score={score?.[side] ?? null}
+        won={game.winnerAnswerId === team.answerId}
+        lost={
+          finished && game.isResolved && game.winnerAnswerId !== team.answerId
+        }
+        live={live}
+        finished={finished}
+        canBet={canBet}
+        onBet={() => onBet(outcome)}
+      />
+    )
   )
+  // Home, Draw, away: the order of the three-way ticket's picker.
+  const teams =
+    variant === 'compact' && game.draw ? (
+      <ThreeWayStrip
+        game={game}
+        teams={displayTeams}
+        score={score}
+        live={live}
+        finished={finished}
+        canBet={canBet}
+        onBet={onBet}
+      />
+    ) : (
+      <div
+        className={clsx(
+          'min-w-0',
+          variant === 'compact'
+            ? 'grid gap-x-5 gap-y-2 sm:grid-cols-2'
+            : 'flex flex-col gap-1.5 sm:gap-1'
+        )}
+      >
+        {firstTeam}
+        {game.draw && (
+          <Row className="items-center gap-2 pl-10">
+            <span
+              className={clsx(
+                'text-xs',
+                drawWon ? 'text-ink-900 font-semibold' : 'text-ink-500'
+              )}
+            >
+              Draw{drawWon && ' ✓'}
+            </span>
+            <PriceChip
+              prob={game.draw.prob}
+              muted
+              disabled={!canBet}
+              onClick={(e) => {
+                e.stopPropagation()
+                onBet('draw')
+              }}
+              label="Bet on a draw"
+              className="ml-auto"
+            />
+          </Row>
+        )}
+        {secondTeam}
+      </div>
+    )
 
   // Kept outside the clickable row: clicks in a portal still bubble up the
   // React tree, and would open the game.
   const dialog =
     betOutcome &&
     (game.draw ? (
-      <SportsBetPanel
+      <SportsThreeWayBetDialog
         match={toSportsMatch(game)}
         initialOutcome={betOutcome}
         onClose={() => setBetOutcome(null)}
@@ -587,16 +603,144 @@ function TeamLine(props: {
   )
 }
 
+/**
+ * A three-way game's compact row: home, Draw and away side by side, each a
+ * name over its price, so the Draw sits between the teams at any width.
+ */
+function ThreeWayStrip(props: {
+  game: ScheduleGame
+  teams: ReturnType<typeof getGameDisplayTeams>
+  score: { home: number; away: number } | null
+  live: boolean
+  finished: boolean
+  canBet: boolean
+  onBet: (outcome: MatchOutcome) => void
+}) {
+  const { game, teams, score, live, finished, canBet, onBet } = props
+  const [first, second] = teams.map(({ team, side, outcome }) => {
+    const won = game.winnerAnswerId === team.answerId
+    const teamScore = score?.[side]
+    return (
+      <StripCell
+        key={team.answerId}
+        prob={team.prob}
+        betLabel={`Bet on ${team.name}`}
+        won={won}
+        lost={finished && game.isResolved && !won}
+        finished={finished}
+        canBet={canBet}
+        onBet={() => onBet(outcome)}
+      >
+        <span className="@[7rem]:inline-flex hidden shrink-0">
+          <TeamBadge team={team} small />
+        </span>
+        <span className="min-w-0 truncate">
+          <span className="@[12rem]:hidden">{mobileTeamName(team)}</span>
+          <span className="@[12rem]:inline hidden">{team.name}</span>
+        </span>
+        {teamScore != null && (
+          <span
+            className={clsx(
+              'shrink-0 font-semibold tabular-nums',
+              live && 'text-red-600'
+            )}
+          >
+            {teamScore}
+          </span>
+        )}
+      </StripCell>
+    )
+  })
+  const draw = game.draw
+  const drawWon = !!draw && game.winnerAnswerId === draw.answerId
+  return (
+    <div className="grid min-w-0 grid-cols-3 gap-2">
+      {first}
+      {draw && (
+        <StripCell
+          prob={draw.prob}
+          betLabel="Bet on a draw"
+          muted
+          won={drawWon}
+          lost={finished && game.isResolved && !drawWon}
+          finished={finished}
+          canBet={canBet}
+          onBet={() => onBet('draw')}
+        >
+          Draw
+        </StripCell>
+      )}
+      {second}
+    </div>
+  )
+}
+
+function StripCell(props: {
+  prob: number
+  betLabel: string
+  muted?: boolean
+  won: boolean
+  lost: boolean
+  finished: boolean
+  canBet: boolean
+  onBet: () => void
+  children: ReactNode
+}) {
+  const { prob, betLabel, muted, won, lost, finished, canBet, onBet } = props
+  return (
+    <div className="@container flex min-w-0 flex-col gap-1">
+      <Row
+        className={clsx(
+          'h-5 min-w-0 items-center justify-center gap-1.5 text-xs',
+          won
+            ? 'text-ink-1000 font-semibold'
+            : lost || muted
+            ? 'text-ink-500'
+            : 'text-ink-900 font-medium'
+        )}
+      >
+        {props.children}
+        {won && (
+          <span className="shrink-0" aria-label="winner">
+            ✓
+          </span>
+        )}
+      </Row>
+      {finished ? (
+        <span className="text-ink-500 flex min-h-[40px] items-center justify-center text-xs tabular-nums">
+          {Math.round(prob * 100)}%
+        </span>
+      ) : (
+        <PriceChip
+          prob={prob}
+          muted={muted}
+          disabled={!canBet}
+          onClick={(e) => {
+            e.stopPropagation()
+            onBet()
+          }}
+          label={betLabel}
+          className="!w-full"
+        />
+      )}
+    </div>
+  )
+}
+
 function TeamBadge({
   team,
   featured = false,
+  small = false,
 }: {
   team: ScheduleTeam
   featured?: boolean
+  small?: boolean
 }) {
   const [failed, setFailed] = useState(false)
   const size = featured
     ? 'h-8 w-8 @[18rem]/scoreboard:h-10 @[18rem]/scoreboard:w-10'
+    : small
+    ? 'h-5 w-5'
     : 'h-8 w-8'
   if (team.imageUrl && !failed) {
     return (
@@ -624,7 +768,7 @@ function TeamBadge({
       className={clsx(
         size,
         'flex flex-shrink-0 items-center justify-center rounded-lg font-bold',
-        featured ? 'text-xs' : 'text-[10px]',
+        featured ? 'text-xs' : small ? 'text-[7px]' : 'text-[10px]',
         !color && 'bg-ink-100 text-ink-600'
       )}
       style={
