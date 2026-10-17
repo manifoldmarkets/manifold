@@ -888,8 +888,10 @@ export const BuyPanelBody = (
           )}
         >
           {compact && props.pseudonym ? (
+            // Looks like the light-green/light-red ChoicesToggleGroup below,
+            // but keyed by side, so sides sharing a name still get two buttons.
             <Row
-              className="min-w-0 flex-1 gap-1"
+              className="min-w-0 rounded-lg p-1 text-sm"
               role="group"
               aria-label="Choose an outcome"
             >
@@ -904,10 +906,18 @@ export const BuyPanelBody = (
                     cancelDismissTimerFn()
                   }}
                   className={clsx(
-                    'min-w-0 flex-1 rounded-md border px-2 py-2 text-sm font-medium',
+                    'ring-primary-500 text-ink-900 my-0.5 min-w-0 rounded-md py-2 outline-none transition-all focus-visible:ring-2',
+                    outcomeLabels.YES === 'YES'
+                      ? 'px-4'
+                      : 'px-2 text-xs sm:px-4 sm:text-sm',
                     outcome === side
-                      ? 'border-primary-500 bg-primary-50 text-primary-800'
-                      : 'text-ink-600 hover:bg-canvas-50 border-transparent'
+                      ? clsx(
+                          'shadow',
+                          side === 'YES'
+                            ? 'bg-teal-500/20'
+                            : 'bg-scarlet-500/20'
+                        )
+                      : 'hover:bg-canvas-50/70'
                   )}
                 >
                   <span className="line-clamp-2">{outcomeLabels[side]}</span>
