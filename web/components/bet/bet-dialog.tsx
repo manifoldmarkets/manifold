@@ -13,7 +13,7 @@ import {
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { BinaryOutcomes, BuyPanel } from './bet-panel'
-import { Answer, getDefaultSort, MultiSort } from 'common/answer'
+import { Answer, getDefaultSort, MultiSort, sortAnswers } from 'common/answer'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
@@ -392,8 +392,10 @@ function MultiChoiceTradeDialog(props: {
   contract: CPMMMultiContract
   open: boolean
   setOpen: (open: boolean) => void
+  /** The market page's answer sort, so the list matches its order. */
+  sort: MultiSort
 }) {
-  const { contract, open, setOpen } = props
+  const { contract, open, setOpen, sort } = props
   const [selected, setSelected] = useState<{
     answerId: string
     outcome: 'YES' | 'NO'
@@ -401,12 +403,17 @@ function MultiChoiceTradeDialog(props: {
   const [query, setQuery] = useState('')
   const [showAll, setShowAll] = useState(false)
 
-  const answers = sortBy(
-    contract.answers.filter((a) => !a.resolution),
-    (a) => -getAnswerProbability(contract, a.id)
+  const unresolved = contract.answers.filter((a) => !a.resolution)
+  const answers = sortAnswers(
+    contract,
+    unresolved.map((a) => ({
+      ...a,
+      prob: getAnswerProbability(contract, a.id),
+    })),
+    sort
   )
   const selectedAnswer =
-    selected && answers.find((a) => a.id === selected.answerId)
+    selected && unresolved.find((a) => a.id === selected.answerId)
   const matching = query
     ? answers.filter((a) => a.text.toLowerCase().includes(query.toLowerCase()))
     : answers
@@ -581,7 +588,12 @@ export function MultiBetDialog(props: {
         trackingLocation="three-way bet dialog"
       />
     ) : (
-      <MultiChoiceTradeDialog contract={multi} open={open} setOpen={setOpen} />
+      <MultiChoiceTradeDialog
+        contract={multi}
+        open={open}
+        setOpen={setOpen}
+        sort={sort}
+      />
     )
   }
   return (
