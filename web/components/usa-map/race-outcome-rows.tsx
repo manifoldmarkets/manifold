@@ -10,7 +10,8 @@ import {
 } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
 import { floatingEqual } from 'common/util/math'
-import { BetDialog, TradeDialog } from 'web/components/bet/bet-dialog'
+import { BetDialog } from 'web/components/bet/bet-dialog'
+import { TradeDialog } from 'web/components/bet/trade-ticket'
 import { Button } from 'web/components/buttons/button'
 import {
   BinaryUserPosition,
