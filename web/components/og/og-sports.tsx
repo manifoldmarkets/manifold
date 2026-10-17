@@ -1,5 +1,9 @@
 import { OG_CARD_HEIGHT, OG_CARD_WIDTH } from 'common/edge/og'
-import { formatSportsOgAsOf, SportsOgMarket } from 'common/sports-og'
+import {
+  formatSportsOgAsOf,
+  SportsOgMarket,
+  sportsOgTitle,
+} from 'common/sports-og'
 import { readableTextColor } from 'common/sports-team-colors'
 import Logo from 'web/public/logo.svg'
 import { OgSportGraphic } from './og-sport-graphic'
@@ -109,7 +113,7 @@ function SportsMarketPreview({ market }: { market: SportsOgMarket }) {
           : {}),
       }).format(new Date(market.startTime)) +
       (market.kickoffKnown ? ' UTC' : '')
-    : shorten(market.question.replace(/\s*\[official\]\s*$/i, ''), 48)
+    : shorten(sportsOgTitle(market.question), 48)
   return (
     <div
       className="relative flex shrink-0 flex-col overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-lg"
@@ -137,10 +141,21 @@ function SportsMarketPreview({ market }: { market: SportsOgMarket }) {
           </span>
         </div>
         <span
-          className="mt-2 flex justify-center text-gray-600"
+          className="mt-2 flex items-center justify-center text-gray-600"
           style={{ fontSize: 17 }}
         >
-          {when}
+          {market.live ? (
+            // As the feed marks a live game; the kickoff time is in the past.
+            <span className="flex items-center font-semibold text-red-600">
+              <span
+                className="mr-2 flex rounded-full bg-red-500"
+                style={{ width: 10, height: 10 }}
+              />
+              LIVE
+            </span>
+          ) : (
+            when
+          )}
         </span>
         <div className="relative mt-4 flex" style={{ width: 434 }}>
           {teams.map((team, i) => (

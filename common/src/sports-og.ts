@@ -1,13 +1,15 @@
 import { z } from 'zod'
 import { getGameDisplayTeams, selectFeaturedGame } from './sports-game-feed'
+import { removeUndefinedProps } from './util/object'
 
 const timestamp = z.number().finite().int().positive().max(8.64e15)
 const probability = z.number().finite().min(0).max(1)
 // Use colours and text badges in the embed; strip team image URLs from snapshots.
+// Invalid values become null, never undefined: getStaticProps rejects undefined.
 const team = z.object({
   name: z.string().trim().min(1).max(120),
   prob: probability,
-  shortName: z.string().trim().min(1).max(24).optional().catch(undefined),
+  shortName: z.string().trim().min(1).max(24).nullish().catch(null),
   color: z
     .string()
     .regex(/^#[\da-f]{6}$/i)
@@ -37,6 +39,7 @@ const marketSchema = z.object({
   sport: z.string().max(64).optional(),
   startTime: timestamp.optional(),
   kickoffKnown: z.boolean().optional(),
+  live: z.boolean().optional(),
   outcomes: z.array(team).min(2).max(3),
   asOf: timestamp,
 })
@@ -68,17 +71,22 @@ export function selectSportsOgMarket(
   if (!game) return null
   const outcomes = getGameDisplayTeams(game).map(({ team }) => team)
   if (game.draw) outcomes.push({ name: 'Draw', prob: game.draw.prob })
-  return {
+  return removeUndefinedProps({
     id: game.id,
     question: game.question,
     league: game.league,
     sport: game.sport,
     startTime: game.startTime,
     kickoffKnown: game.kickoffKnown,
+    live: game.status === 'live',
     outcomes,
     asOf: snapshotTime,
-  }
+  })
 }
+
+/** Older game titles end in " [official]"; the league label replaced it. */
+export const sportsOgTitle = (question: string) =>
+  question.replace(/\s*\[official\]\s*$/i, '')
 
 /** The public image URL is untrusted; bound and validate every displayed field. */
 export function parseSportsOgMarket(
@@ -112,9 +120,9 @@ export function formatSportsOgAsOf(asOf: number) {
 export function sportsOgImageAlt(market: SportsOgMarket | null) {
   const intro = 'Manifold Sports. Know the game? Make the call. Free to play.'
   if (!market) return intro
-  return `${intro} Featured ${market.league} market: ${
-    market.question
-  }. ${market.outcomes
+  return `${intro} Featured ${market.live ? 'live ' : ''}${
+    market.league
+  } market: ${sportsOgTitle(market.question)}. ${market.outcomes
     .map(({ name, prob }) => `${name} ${Math.round(prob * 100)}%`)
     .join(', ')}. Odds as of ${formatSportsOgAsOf(market.asOf)}.`
 }
