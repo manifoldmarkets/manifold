@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/solid'
+import { PlusIcon } from '@heroicons/react/solid'
 import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { ComponentProps, ReactNode } from 'react'
@@ -8,17 +8,13 @@ import {
   SportInfo,
   UpcomingMarketRef,
 } from 'common/sports-schedule'
+import { BackButton } from 'web/components/contract/back-button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
 import { SportsRailData } from 'web/hooks/use-sports-schedule'
-import {
-  SportRail,
-  SportSelection,
-  sportPath,
-  useSportHref,
-} from './sport-rail'
+import { SportRail, SportSelection, sportPath } from './sport-rail'
 import { SportsMarketSections } from './sports-market-sections'
 import { UpcomingMarkets } from './upcoming-markets'
 
@@ -34,39 +30,26 @@ export function SportsShell(props: {
   heading: ReactNode
   /** One line; truncated rather than wrapped. */
   subheading?: ReactNode
-  /** A back arrow to all sports beside the heading, on a sport's page. */
-  backToAll?: boolean
   seo: ComponentProps<typeof SEO>
   trackPageView: string
   children: ReactNode
 }) {
-  const {
-    selected,
-    rail,
-    heading,
-    subheading,
-    backToAll,
-    seo,
-    trackPageView,
-    children,
-  } = props
-  const sportHref = useSportHref()
+  const { selected, rail, heading, subheading, seo, trackPageView, children } =
+    props
   return (
     <Page trackPageView={trackPageView} className="min-w-0 lg:col-span-10">
       <SEO {...seo} />
       <Col className="w-full min-w-0 gap-3 px-3 pt-5 sm:px-6 sm:pt-7">
         <Row className="items-center justify-between gap-2 px-1">
-          <Row className="min-w-0 items-center gap-2">
-            {backToAll && (
-              <Link
-                href={sportHref('all')}
-                aria-label="Back to all sports"
-                title="All sports"
-                className="border-ink-200 text-ink-600 hover:bg-canvas-50 hover:text-primary-700 focus-visible:ring-primary-500 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border focus-visible:ring-2"
-              >
-                <ArrowLeftIcon className="h-5 w-5" />
-              </Link>
-            )}
+          <Row className="min-w-0 items-center gap-1">
+            {/* Goes back in history (to the previous sport, or wherever the
+                visitor came from), or Home when they arrived from off-site.
+                The button only appears once it can tell which, so it gets a
+                fixed slot and the heading never moves. Remount when the sport
+                changes so its history check stays current on Back/Forward. */}
+            <div className="-ml-2.5 h-8 w-10 shrink-0">
+              <BackButton key={selected} size="xs" homeFallback />
+            </div>
             <h1 className="text-ink-1000 min-w-0 truncate text-3xl font-bold tracking-tight sm:text-4xl">
               {heading}
             </h1>
