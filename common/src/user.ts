@@ -136,6 +136,9 @@ export type User = {
   // Last state of the "Hide API trades" toggle on trade lists, saved so it
   // sticks across markets and devices (see useHideApiTrades).
   hideApiTrades?: boolean
+  // Whether trade tickets open with the order book expanded, saved so it
+  // sticks across markets and devices (see useShowOrderBook).
+  showOrderBook?: boolean
   signupBonusPaid?: number
   isBot?: boolean
   isAdvancedTrader?: boolean

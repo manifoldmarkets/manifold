@@ -99,8 +99,3 @@ export const formattingPrompt = `
     - addAnswersMode ("DISABLED", "ONLY_CREATOR", or "ANYONE", required if one of the "DEPENDENT_MULTIPLE_CHOICE" or "INDEPENDENT_MULTIPLE_CHOICE" types is provided)
       ${addAnswersModeDescription}
     - reasoning (string, required - extract the reasoning section from each market suggestion)`
-
-export const perplexitySystemPrompt = `You are a helpful assistant that creates engaging prediction markets on Manifold Markets.
-Your role is to transform a user's prompt into at least approximately 6 well-structured prediction markets that encourage participation and meaningful forecasting.
-`
-export const claudeSystemPrompt = `You are a helpful assistant that refines and converts market ideas into valid JSON objects following Manifold's schema. ONLY return a valid JSON array of market objects.`

@@ -19,10 +19,7 @@ import { FilterPill } from './search/filter-pills'
 import { ElectionsPageProps } from 'web/public/data/elections-data'
 import { SectionInView } from './us-elections/section-in-view'
 import { PollingPerpsRow } from './us-elections/polling-perps-row'
-import {
-  ConditionalMarketsGrid,
-  MarketSpotlightGrid,
-} from './us-elections/market-spotlight'
+import { MarketSpotlightGrid } from './us-elections/market-spotlight'
 import {
   ConditionalMatrix,
   LiveConditionOdds,
@@ -40,10 +37,13 @@ import {
 } from 'web/lib/politics/election-curation'
 import type { MidtermSpotlightProps } from 'web/lib/politics/home'
 import {
+  BOTH_2026_COLUMNS,
   CongressChamber,
   congressChambers,
+  congressViewSelection,
   ConditionalMatrixRow,
   HOUSE_2026_COLUMNS,
+  MatrixColumns,
   PRESIDENT_2028_COLUMNS,
   SENATE_2026_COLUMNS,
   withConditionProbs,
@@ -113,9 +113,10 @@ export function USElectionsPage(
     pollingPerpContracts,
     trendingContracts,
     contestContracts = [],
-    conditionalRows = [],
+    unprecedentedContracts = [],
     senateMatrixRows = [],
     houseMatrixRows = [],
+    bothMatrixRows = [],
     presidencyMatrixRows = [],
     hideTitle,
   } = props
@@ -255,11 +256,14 @@ export function USElectionsPage(
           Balance of Power slot; until either chamber has two complete rows
           (e.g. before the markets are created) the joint-distribution market
           shows here instead. */}
-      {senateMatrixRows.length > 0 || houseMatrixRows.length > 0 ? (
+      {senateMatrixRows.length > 0 ||
+      houseMatrixRows.length > 0 ||
+      bothMatrixRows.length > 0 ? (
         <SectionInView section="conditional matrix 2026" className="gap-3">
           <CongressConditionalSection
             senateRows={senateMatrixRows}
             houseRows={houseMatrixRows}
+            bothRows={bothMatrixRows}
             senateControlContract={senateControlContract}
             houseControlContract={houseControlContract}
           />
@@ -278,17 +282,19 @@ export function USElectionsPage(
         )
       )}
 
-      {/* What follows the result: markets conditional on who wins. A curated
-          list (web/lib/politics/midterm-conditionals.ts); pairs of "If
-          Democrats win / If Republicans win" markets sit side by side. */}
-      {conditionalRows.length > 0 && (
-        <SectionInView section="conditional markets" className="gap-3">
-          <SectionHeader subtitle="Bets on what happens next, depending on who wins. Each is refunded (resolves N/A) if its condition isn't met.">
-            If Democrats win… or Republicans do
+      {/* Unprecedented politics: community markets on things that have not
+          happened before in American politics (troops at polling places, a
+          third term, a president defying the Supreme Court…). A curated,
+          ordered list (web/lib/politics/unprecedented-politics.ts); spares
+          slide in as markets close. */}
+      {unprecedentedContracts.length > 0 && (
+        <SectionInView section="unprecedented politics" className="gap-3">
+          <SectionHeader subtitle="Things that have never happened in American politics, with the market's live odds that they do.">
+            Unprecedented politics
           </SectionHeader>
-          <ConditionalMarketsGrid
-            rows={conditionalRows}
-            trackingPostfix="election conditional"
+          <MarketSpotlightGrid
+            contracts={unprecedentedContracts}
+            trackingPostfix="election unprecedented"
           />
         </SectionInView>
       )}
@@ -380,42 +386,79 @@ export function USElectionsPage(
 const MATRIX_FOOTNOTE =
   "Each market resolves N/A if its condition doesn't happen, so bets only count in that world."
 
-const CHAMBER_CHOICES: Record<string, CongressChamber> = {
-  Senate: 'senate',
-  House: 'house',
+const MIDTERMS_MATRIX_FOOTNOTE =
+  'Depression markets do not define "win the midterms" or say whether they resolve N/A if that condition fails. Their timelines may extend beyond 2028. The $5,000 market requires 50+ Republican Senate seats and a House majority; otherwise it resolves N/A. Read each market\'s rules before betting.'
+
+// What each view of the Congress section says and shows. The condition odds in
+// the column headers come from the map's control cards' markets for a chamber
+// (YES is a Republican majority in both). The broader Midterms view has no
+// shared condition, so it shows neither condition odds nor a blanket N/A rule.
+const CHAMBER_VIEWS: Record<
+  CongressChamber,
+  { subtitle: string; caption: string; columns: MatrixColumns }
+> = {
+  senate: {
+    subtitle:
+      'The same questions, asked under each outcome of the Senate race. Click a chance to bet on it.',
+    caption: 'Chances by Senate result',
+    columns: SENATE_2026_COLUMNS,
+  },
+  house: {
+    subtitle:
+      'The same questions, asked under each outcome of the House race. Click a chance to bet on it.',
+    caption: 'Chances by House result',
+    columns: HOUSE_2026_COLUMNS,
+  },
+  both: {
+    subtitle:
+      "These markets use different midterm conditions. Click a chance to open its market, and read each market's rules before betting.",
+    caption: 'Market-specific midterm conditions',
+    columns: BOTH_2026_COLUMNS,
+  },
 }
 
-// The 2026 Congress matrices under one header, with a Senate | House switch
-// when both chambers have rows. Column headers carry the live control odds of
-// the chosen chamber (the map's control cards' markets: YES is a Republican
-// majority in both).
+// The 2026 Congress matrices under one header, with a Senate | House | Midterms
+// switch for the views that have rows.
 function CongressConditionalSection(props: {
   senateRows: ConditionalMatrixRow[]
   houseRows: ConditionalMatrixRow[]
+  bothRows: ConditionalMatrixRow[]
   senateControlContract: Contract | null
   houseControlContract: Contract | null
 }) {
   const chambers = congressChambers({
     senate: props.senateRows,
     house: props.houseRows,
+    both: props.bothRows,
   })
   const [choice, setChoice] = usePersistentInMemoryState<CongressChamber>(
     'senate',
     'election-conditional-matrix-chamber'
   )
-  const chamber = chambers.includes(choice) ? choice : chambers[0]
-  const senate = chamber === 'senate'
+  const { chamber, choicesMap } = congressViewSelection(chambers, choice)
+  if (!chamber) return null
+  const view = CHAMBER_VIEWS[chamber]
+  const rows =
+    chamber === 'senate'
+      ? props.senateRows
+      : chamber === 'house'
+      ? props.houseRows
+      : props.bothRows
+  const conditionContract =
+    chamber === 'senate'
+      ? props.senateControlContract
+      : chamber === 'house'
+      ? props.houseControlContract
+      : null
   return (
     <>
       <SectionHeader
-        subtitle={`The same questions, asked under each outcome of the ${
-          senate ? 'Senate' : 'House'
-        } race. Click a chance to bet on it.`}
+        subtitle={view.subtitle}
         action={
           chambers.length > 1 && (
             <ChoicesToggleGroup
               currentChoice={chamber}
-              choicesMap={CHAMBER_CHOICES}
+              choicesMap={choicesMap}
               setChoice={(value) => {
                 setChoice(value as CongressChamber)
                 track('toggle election conditional matrix chamber', {
@@ -433,21 +476,18 @@ function CongressConditionalSection(props: {
       </SectionHeader>
       <LiveConditionOdds
         key={chamber}
-        contract={
-          senate ? props.senateControlContract : props.houseControlContract
-        }
-        read={(c) => electionOdds(c, true)}
+        contract={conditionContract}
+        read={(contract) => electionOdds(contract, true)}
       >
         {(odds) => (
           <ConditionalMatrix
-            caption={`Chances by ${senate ? 'Senate' : 'House'} result`}
-            columns={withConditionProbs(
-              senate ? SENATE_2026_COLUMNS : HOUSE_2026_COLUMNS,
-              odds
-            )}
-            rows={senate ? props.senateRows : props.houseRows}
+            caption={view.caption}
+            columns={withConditionProbs(view.columns, odds)}
+            rows={rows}
             trackingName={`election conditional matrix 2026 ${chamber}`}
-            footnote={MATRIX_FOOTNOTE}
+            footnote={
+              chamber === 'both' ? MIDTERMS_MATRIX_FOOTNOTE : MATRIX_FOOTNOTE
+            }
           />
         )}
       </LiveConditionOdds>

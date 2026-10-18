@@ -99,6 +99,7 @@ import { internalWriteOraclePrice } from './internal-write-oracle-price'
 import { getPerpPositions } from './get-perp-positions'
 import { getPerpQuote } from './get-perp-quote'
 import { internalPerpBroadcast } from './internal-perp-broadcast'
+import { internalSportsBroadcast } from './internal-sports-broadcast'
 import { getPerpFundingEvents } from './get-perp-funding-events'
 import { getPerpEvents } from './get-perp-events'
 import {
@@ -241,7 +242,17 @@ import { adminGetTopWhaleUsers } from './admin-get-top-whale-users'
 import { adminGetNewUsers } from './admin-get-new-users'
 import { adminSportsFixtures } from './admin-sports-fixtures'
 import { adminSportsCreateMarkets } from './admin-sports-create-markets'
+import { adminSportsCreateOddsMarkets } from './admin-sports-create-odds-markets'
+import {
+  adminSportsCompetitionSwitches,
+  adminSportsSetCompetitionSwitch,
+} from './admin-sports-competition-switches'
+import {
+  adminSportsScorePolling,
+  adminSportsSetScorePolling,
+} from './admin-sports-score-polling'
 import { sportsMarkets } from './sports-markets'
+import { sportsSchedule } from './sports-schedule'
 import { adminSportsResolve } from './admin-sports-resolve'
 import { adminSportsCommunityMarket } from './admin-sports-community-market'
 import { adminSportsInitCommunity } from './admin-sports-init-community'
@@ -483,6 +494,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-perp-positions': getPerpPositions,
   'get-perp-quote': getPerpQuote,
   'internal-perp-broadcast': internalPerpBroadcast,
+  'internal-sports-broadcast': internalSportsBroadcast,
   'get-perp-funding-events': getPerpFundingEvents,
   'get-perp-events': getPerpEvents,
   'get-perp-suggestions': getPerpSuggestions,
@@ -631,7 +643,13 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'admin-get-new-users': adminGetNewUsers,
   'admin-sports-fixtures': adminSportsFixtures,
   'admin-sports-create-markets': adminSportsCreateMarkets,
+  'admin-sports-create-odds-markets': adminSportsCreateOddsMarkets,
+  'admin-sports-competition-switches': adminSportsCompetitionSwitches,
+  'admin-sports-set-competition-switch': adminSportsSetCompetitionSwitch,
+  'admin-sports-score-polling': adminSportsScorePolling,
+  'admin-sports-set-score-polling': adminSportsSetScorePolling,
   'sports-markets': sportsMarkets,
+  'sports-schedule': sportsSchedule,
   'admin-sports-resolve': adminSportsResolve,
   'admin-sports-community-market': adminSportsCommunityMarket,
   'admin-sports-init-community': adminSportsInitCommunity,

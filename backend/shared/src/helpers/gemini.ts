@@ -2,18 +2,38 @@ import { GoogleGenAI } from '@google/genai'
 import { APIError } from 'common/api/utils'
 import { log } from 'shared/utils'
 
+// Two tiers, cheapest first. Paid-tier prices per 1M tokens as of Oct 2026
+// (https://ai.google.dev/gemini-api/docs/pricing):
+//   flashLite  gemini-3.5-flash-lite  $0.30 in / $2.50 out
+//              yes/no checks, ID lists, short JSON — the bulk of our calls
+//   flash      gemini-3.8-flash       $0.75 / $3.75 until 2026-12-31, then $1.50 / $7.50
+//              grounded (Google Search) generation and the clarification check
+//
+// gemini-3.1-flash-lite retires 2027-05-07 (Google names 3.5 Flash-Lite as the
+// replacement). gemini-3.5-flash is superseded by 3.8 Flash, which Google says
+// to prefer for capacity; 3.5 Flash was returning "high demand" 503s in prod.
 export const models = {
-  flashLite: 'gemini-3.1-flash-lite' as const,
-  flash: 'gemini-3.5-flash' as const,
-  pro: 'gemini-3.1-pro-preview' as const,
+  flashLite: 'gemini-3.5-flash-lite' as const,
+  flash: 'gemini-3.8-flash' as const,
 }
 
 export type model_types = (typeof models)[keyof typeof models]
 
-// Thinking levels for Gemini 3 models
-// 'minimal' and 'medium' are only supported by Gemini 3 Flash
-// Default is 'high' when not specified
+// Thinking levels for Gemini 3 models (https://ai.google.dev/gemini-api/docs/thinking).
+// Defaults when unspecified: flash -> 'medium', flashLite -> 'minimal'.
 export type GeminiThinkingLevel = 'minimal' | 'low' | 'medium' | 'high'
+
+// 3.8 Flash accepts only low / medium / high; 'minimal' is a Flash-Lite level
+// (3.5 Flash supported it, 3.8 rejects it with a 400). Clamp instead of
+// failing so call sites can ask for the cheapest level without knowing which
+// Gemini model the tier currently points at.
+export const resolveGeminiThinkingLevel = (
+  model: model_types,
+  level: GeminiThinkingLevel | undefined
+): GeminiThinkingLevel | undefined => {
+  if (level === 'minimal' && model === models.flash) return 'low'
+  return level
+}
 
 export type GeminiOptions = {
   system?: string
@@ -56,8 +76,9 @@ export const promptGemini = async (
   if (webSearch) {
     config.tools = [{ googleSearch: {} }]
   }
-  if (thinkingLevel) {
-    config.thinkingConfig = { thinkingLevel }
+  const resolvedThinkingLevel = resolveGeminiThinkingLevel(model, thinkingLevel)
+  if (resolvedThinkingLevel) {
+    config.thinkingConfig = { thinkingLevel: resolvedThinkingLevel }
   }
 
   try {

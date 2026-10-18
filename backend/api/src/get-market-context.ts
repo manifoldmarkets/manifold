@@ -53,7 +53,7 @@ Format your response using markdown with minimal formatting (no headers) where a
       const markdown = await promptGemini(prompt, {
         model: aiModels.flash,
         webSearch: true,
-        thinkingLevel: 'minimal',
+        thinkingLevel: 'low',
       })
 
       const richText = anythingToRichText({ markdown })

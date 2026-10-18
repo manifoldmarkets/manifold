@@ -44,7 +44,6 @@ import { EPSILON, floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
 import { first, isEqual, maxBy, sumBy } from 'lodash'
 import { betsQueue, ordersQueue } from 'shared/helpers/fn-queue'
-import { assertUnderUnfilledApiOrderCap } from 'shared/helpers/unfilled-api-order-cap'
 import {
   bulkUpdateContractMetricsQuery,
   bulkUpdateUserMetricsWithNewBetsOnly,
@@ -79,10 +78,6 @@ import { redeemShares } from './redeem-shares'
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
   const { deps, contractId, dryRun } = props
-
-  if (isApi && props.limitProb !== undefined && !dryRun) {
-    await assertUnderUnfilledApiOrderCap(createSupabaseDirectClient(), auth.uid)
-  }
 
   if (deps === undefined || dryRun) {
     return queueDependenciesThenBet(props, auth, isApi)

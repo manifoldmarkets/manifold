@@ -14,18 +14,12 @@ import { getNewMultiCpmmBetsInfo } from 'common/new-bet'
 import { isMultiCpmm } from 'common/contract'
 import * as crypto from 'crypto'
 import { betsQueue } from 'shared/helpers/fn-queue'
-import { assertUnderUnfilledApiOrderCap } from 'shared/helpers/unfilled-api-order-cap'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { log } from 'shared/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
 
 export const placeMultiBet: APIHandler<'multi-bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
-
-  if (isApi && props.limitProb !== undefined) {
-    await assertUnderUnfilledApiOrderCap(createSupabaseDirectClient(), auth.uid)
-  }
 
   return await betsQueue.enqueueFn(
     () => placeMultiBetMain(props, auth.uid, isApi),
