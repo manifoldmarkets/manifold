@@ -593,9 +593,9 @@ export const createMarketProps = z
     sportsEventId: z.string().optional(),
     sportsLeague: z.string().optional(),
     takerAPIOrdersDisabled: coerceBoolean.optional(),
-    // The market this one is about (see common/market-links). Without a close
-    // time, the new market closes when that one does, unless a poll explicitly
-    // requests neverCloses.
+    // The market this one is about (see common/market-links). Without an
+    // explicit close time, ordinary markets and polls inherit its deadline.
+    // Polls can request neverCloses; STONKs/bounties keep native defaults.
     linkedToContractId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
     linkRelation: z.enum(MARKET_LINK_RELATIONS).optional(),
   })

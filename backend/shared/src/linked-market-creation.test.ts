@@ -41,9 +41,10 @@ import { createMarketHelper } from 'api/create-market'
 import { linkMarket } from 'api/link-market'
 import { AuthedUser } from 'api/helpers/endpoint'
 import { ValidatedAPIParams } from 'common/api/schema'
+import { createMarketProps } from 'common/api/market-types'
 import { Contract } from 'common/contract'
 import { DEV_HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
-import { FREE_MARKET_USER_ID } from 'common/economy'
+import { FREE_MARKET_USER_ID, MINIMUM_BOUNTY } from 'common/economy'
 import { getCloseDate } from 'shared/helpers/ai-close-date'
 import { getContractsDirect } from 'shared/supabase/contracts'
 import { betsQueue } from 'shared/helpers/fn-queue'
@@ -478,6 +479,57 @@ it('keeps an inferred ordinary deadline when the parent has no close time', asyn
   )
   expect(getCloseDate).toHaveBeenCalledTimes(1)
 })
+
+describe.each(['STONK', 'BOUNTIED_QUESTION'] as const)(
+  '%s native close-time behavior',
+  (outcomeType) => {
+    const request = () =>
+      createMarketProps.parse({
+        ...body,
+        outcomeType,
+        totalBounty: MINIMUM_BOUNTY,
+      })
+
+    it('keeps no close time when created without a parent', async () => {
+      database()
+      const { contract } = await createMarketHelper(
+        { ...request(), linkedToContractId: undefined },
+        auth
+      )
+      expect(contract.closeTime).toBeUndefined()
+      expect(getCloseDate).not.toHaveBeenCalled()
+    })
+
+    it('does not inherit either the preflight or locked parent deadline', async () => {
+      const db = database({
+        afterLock: async () => {
+          db.parents.get('game')!.close_time = new Date(
+            parentCloseTime + 60_000
+          ).toISOString()
+        },
+      })
+      const { contract } = await createMarketHelper(request(), auth)
+      expect(contract.closeTime).toBeUndefined()
+      expect(getCloseDate).not.toHaveBeenCalled()
+      expect(db.links.get(contract.id)).toBe('game')
+      expect(db.committedInserts).toHaveLength(1)
+      expect(db.committedAntes).toEqual([
+        outcomeType === 'BOUNTIED_QUESTION' ? MINIMUM_BOUNTY : 100,
+      ])
+    })
+
+    it('preserves an explicitly supplied deadline', async () => {
+      database()
+      const explicitCloseTime = parentCloseTime + 120_000
+      const { contract } = await createMarketHelper(
+        { ...request(), closeTime: explicitCloseTime },
+        auth
+      )
+      expect(contract.closeTime).toBe(explicitCloseTime)
+      expect(getCloseDate).not.toHaveBeenCalled()
+    })
+  }
+)
 
 it('does not keep a stale inherited poll deadline when the parent removes it', async () => {
   const db = database({

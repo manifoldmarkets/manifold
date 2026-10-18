@@ -275,12 +275,16 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const totalMarketCost = ante + (extraLiquidity ?? 0)
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
 
-  // Copy the parent's deadline as a creation default unless explicitly overridden.
-  // Later parent updates do not change the created market's deadline.
+  // Copy the parent's deadline once unless explicitly overridden. STONKs and
+  // bounties keep their native no-close default; polls can inherit or opt out.
+  const shouldInheritCloseTime =
+    closeTimeRaw === undefined &&
+    !neverCloses &&
+    (outcomeType === 'POLL' || !NO_CLOSE_TIME_TYPES.includes(outcomeType))
   const defaultCloseTime = neverCloses
     ? undefined
     : await getCloseTimestamp(
-        closeTimeRaw ?? linkParentCloseTime,
+        shouldInheritCloseTime ? linkParentCloseTime : closeTimeRaw,
         question,
         outcomeType,
         utcOffset
@@ -316,7 +320,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
         const parent = await getLinkParentCandidate(tx, linkedToContractId)
         const linkError = getLinkParentError(parent)
         if (linkError) throw new APIError(400, linkError)
-        if (closeTimeRaw === undefined && !neverCloses)
+        if (shouldInheritCloseTime)
           closeTime =
             parent?.closeTime ??
             (NO_CLOSE_TIME_TYPES.includes(outcomeType)
