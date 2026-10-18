@@ -256,7 +256,8 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const totalMarketCost = ante + (extraLiquidity ?? 0)
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
 
-  // A linked market closes with the market it's about unless told otherwise.
+  // Copy the parent's deadline as a creation default unless explicitly overridden.
+  // Later parent updates do not change the created market's deadline.
   const defaultCloseTime = neverCloses
     ? undefined
     : await getCloseTimestamp(

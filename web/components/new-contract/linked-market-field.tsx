@@ -18,8 +18,9 @@ import { useEvent } from 'client-common/hooks/use-event'
 
 /**
  * "This is about…": the market a new market is linked to. A linked market
- * shows next to that one (under a game on /sports, for example) and closes
- * when it does, unless the creator picks another close time.
+ * can appear next to that one (under a game on /sports, for example).
+ * The parent's deadline supplies the creation default unless overridden;
+ * later parent updates do not change the created market's deadline.
  */
 export function LinkedMarketField(props: {
   contractId: string | undefined

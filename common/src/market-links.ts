@@ -1,7 +1,8 @@
 // A market can be linked to one other market, its parent: a prop or a line on
 // a game, a sub-market of an election race, anything that's about a specific
-// other market. A linked market shows next to its parent and takes its
-// timing, so feeds can sort it by the event it belongs to.
+// other market. Feeds can use links to show related markets beside a parent.
+// Creation uses the parent's close time as a default unless overridden.
+// Linking existing markets and later parent updates do not change deadlines.
 //
 // Links are one level deep: a parent is never itself linked to another
 // market, so there are no chains and no loops.
