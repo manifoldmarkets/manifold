@@ -50,7 +50,7 @@ const SuperBanControl = (props: {
   return (
     <>
       <Button
-        color="purple"
+        color="red"
         size="xs"
         onClick={() => setConfirmModal(true)}
         disabled={loading || disabled}

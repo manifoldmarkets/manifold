@@ -31,6 +31,8 @@ export type DropdownItem = {
   modAction?: boolean
   // Only available because the user is an admin
   adminAction?: boolean
+  // A mod/admin action severe enough to stay red (e.g. superban)
+  destructive?: boolean
 }
 
 export default function DropdownMenu(props: {
@@ -130,9 +132,11 @@ export default function DropdownMenu(props: {
                             : item.modAction || item.adminAction
                             ? 'data-[focus]:bg-ink-100'
                             : 'data-[focus]:bg-ink-100 data-[focus]:text-ink-900',
-                          item.modAction || item.adminAction
-                            ? MOD_ACTION_TEXT_CLASS
-                            : 'text-ink-700',
+                          !(item.modAction || item.adminAction)
+                            ? 'text-ink-700'
+                            : item.destructive
+                            ? 'text-scarlet-600'
+                            : MOD_ACTION_TEXT_CLASS,
                           'flex w-full items-center gap-2 px-4 py-2 text-left text-sm',
                           item.className
                         )}

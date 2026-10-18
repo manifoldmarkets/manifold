@@ -70,6 +70,7 @@ export function PostCard(props: { post: TopLevelPost; className?: string }) {
       icon: <IoWarning className="h-5 w-5" />,
       onClick: handleSuperban,
       modAction: true,
+      destructive: true,
     }
   )
 
