@@ -18,7 +18,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "0.60.0",
+    "@anthropic-ai/sdk": "0.132.1",
     "@google-cloud/monitoring": "4.0.0",
     "@google-cloud/secret-manager": "4.2.1",
     "@google/genai": "2.6.0",

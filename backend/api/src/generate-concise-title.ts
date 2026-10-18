@@ -49,7 +49,7 @@ Example transformations:
 Your concise version, without any other text or commentary:`
 
       const response = await promptAI(prompt, {
-        model: aiModels.flashLite,
+        model: aiModels.haiku,
         system,
         thinkingLevel: 'low',
       })
