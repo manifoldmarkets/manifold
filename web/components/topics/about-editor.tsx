@@ -7,6 +7,7 @@ import { JSONEmpty } from '../contract/contract-description'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Content, TextEditor, useTextEditor } from '../widgets/editor'
+import { ModActionBadge, ModActionTag } from '../moderation/mod-action'
 
 export const AboutEditor = (props: {
   initialContent?: JSONContent | string | undefined
@@ -14,8 +15,11 @@ export const AboutEditor = (props: {
   editing: boolean
   setEditing: (editing: boolean) => void
   canEdit: boolean
+  // Only editable because the user is a mod
+  modAction?: boolean
 }) => {
-  const { initialContent, onSave, editing, setEditing, canEdit } = props
+  const { initialContent, onSave, editing, setEditing, canEdit, modAction } =
+    props
   const [content, setContent] = useState(initialContent)
 
   const isEmpty = !content || JSONEmpty(content)
@@ -33,6 +37,7 @@ export const AboutEditor = (props: {
       {canEdit &&
         (editing ? (
           <Row className="mt-4 justify-end gap-2">
+            {modAction && <ModActionTag className="mr-auto self-center" />}
             <Button
               onClick={() => {
                 setEditing(false)
@@ -51,8 +56,16 @@ export const AboutEditor = (props: {
             </Button>
           </Row>
         ) : (
-          <Button className="mt-4 gap-1" onClick={() => setEditing(true)}>
-            <PencilIcon className="h-4 w-4" />
+          <Button
+            className="mt-4 gap-1"
+            color={modAction ? 'purple' : undefined}
+            onClick={() => setEditing(true)}
+          >
+            {modAction ? (
+              <ModActionBadge />
+            ) : (
+              <PencilIcon className="h-4 w-4" />
+            )}
             {isEmpty ? 'Add' : 'Edit'} description
           </Button>
         ))}

@@ -13,6 +13,11 @@ import { SEO } from 'web/components/SEO'
 import { useAdmin } from 'web/hooks/use-admin'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
+import clsx from 'clsx'
+import {
+  MOD_ACTION_TEXT_CLASS,
+  ModActionBadge,
+} from 'web/components/moderation/mod-action'
 import { api } from '../lib/api/api'
 import { Column, Row as rowfor } from 'common/supabase/utils'
 import { BonusSummary } from 'web/components/stats/bonus-summary'
@@ -474,7 +479,11 @@ function ActivityTab(props: {
         first 24 hours?
       </p>
       {isAdmin && (
-        <Link className={linkClass} href={'/admin/journeys'}>
+        <Link
+          className={clsx(linkClass, MOD_ACTION_TEXT_CLASS)}
+          href={'/admin/journeys'}
+        >
+          <ModActionBadge admin className="mr-1 align-middle" />
           Check out the new user journerys page to see what they did.
         </Link>
       )}

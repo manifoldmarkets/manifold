@@ -2,6 +2,7 @@ import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Title } from 'web/components/widgets/title'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
@@ -34,7 +35,10 @@ export default function AdminNewUsersPage() {
   return (
     <Page trackPageView="admin-new-users">
       <Col className="gap-6">
-        <Title>New Users</Title>
+        <Title>
+          New Users
+          <ModActionTag admin className="ml-2 align-middle" />
+        </Title>
         <NewUsersTable />
       </Col>
     </Page>

@@ -6,6 +6,7 @@ import { Row } from 'web/components/layout/row'
 import { NoSEO } from 'web/components/NoSEO'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { Title } from 'web/components/widgets/title'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { handleCreateSportsMarkets } from 'web/lib/admin/create-sports-markets'
@@ -49,7 +50,10 @@ export default function AdminPage() {
     <Page trackPageView={'admin page'}>
       <NoSEO />
       <div className="mx-8">
-        <Title>Admin</Title>
+        <Title>
+          Admin
+          <ModActionTag admin className="ml-2 align-middle" />
+        </Title>
         <Row className="mb-4 flex items-center justify-around gap-2 p-2">
           <span> Toggles: {togglesEnabled ? 'Unlocked' : 'Locked'} </span>
           <ShortToggle
