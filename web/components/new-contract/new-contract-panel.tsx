@@ -54,6 +54,9 @@ import {
   applySuggestedCloseTime,
   getCloseTimeFields,
   getCreateMarketCloseParams,
+  getLinkedCloseTimeDescription,
+  isLinkedCloseTimePending,
+  selectLinkedMarket,
   hasManualCloseTime,
   restoreMarketDraft,
 } from './utils/linked-market-state'
@@ -400,6 +403,7 @@ export function NewContractPanel(props: {
         closeHoursMinutes: formState.closeHoursMinutes,
         neverCloses: formState.neverCloses,
         hasManuallyEditedCloseDate,
+        inheritedCloseTimeFrom: formState.inheritedCloseTimeFrom,
         linkedToContractId: formState.linkedToContractId,
         linkRelation: formState.linkRelation,
         visibility: formState.visibility,
@@ -1182,14 +1186,10 @@ export function NewContractPanel(props: {
           contractId={formState.linkedToContractId}
           relation={formState.linkRelation}
           onChange={(link) => {
-            setFormState((prev) => ({
-              ...prev,
-              linkedToContractId: link?.contractId,
-              linkRelation: link?.relation,
-            }))
+            setFormState((prev) => selectLinkedMarket(prev, link))
           }}
           onParentLoaded={(parent) => {
-            // Close with the linked market unless the creator chose a time.
+            // Preview the default; the API copies it once under the parent lock.
             if (applyLinkedMarketCloseTime(formState, parent) === formState)
               return
             setFormState((prev) => applyLinkedMarketCloseTime(prev, parent))
@@ -1220,6 +1220,7 @@ export function NewContractPanel(props: {
               setHasManuallyEditedCloseDate(true)
             }}
             neverCloses={formState.neverCloses}
+            closeTimeDescription={getLinkedCloseTimeDescription(formState)}
             setNeverCloses={(never) => {
               updateField('neverCloses', never)
               setHasManuallyEditedCloseDate(true)
@@ -1611,6 +1612,7 @@ export function NewContractPanel(props: {
             Set Close Date
           </h2>
           <CloseTimeSection
+            inheritedCloseTimePending={isLinkedCloseTimePending(formState)}
             closeDate={formState.closeDate}
             setCloseDate={(date) => {
               updateField('closeDate', date)
@@ -1633,7 +1635,10 @@ export function NewContractPanel(props: {
           <Button
             color="indigo"
             onClick={() => {
-              setHasManuallyEditedCloseDate(true)
+              // Opening and dismissing this dialog is not a date override.
+              if (!formState.linkedToContractId)
+                setHasManuallyEditedCloseDate(true)
+              setHasLowConfidenceCloseDate(false)
               setIsCloseDateModalOpen(false)
             }}
             className="mt-4"

@@ -15,6 +15,7 @@ export type MarketDraft = {
     closeHoursMinutes?: string
     neverCloses?: boolean
     hasManuallyEditedCloseDate?: boolean
+    inheritedCloseTimeFrom?: string
     linkedToContractId?: string
     linkRelation?: MarketLinkRelation
     visibility: Visibility

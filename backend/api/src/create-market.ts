@@ -85,6 +85,8 @@ type Body = ValidatedAPIParams<'market'>
 
 class LinkedCreationFundingBusy extends Error {}
 
+const LINKED_CREATION_MAX_ATTEMPTS = 5
+
 async function runLinkedCreationTransaction<T>(
   pg: SupabaseDirectClient,
   run: (tx: SupabaseTransaction) => Promise<T>
@@ -96,12 +98,16 @@ async function runLinkedCreationTransaction<T>(
       // Only the deliberate NOWAIT preflight is retryable here. Never rerun
       // a creation that has reached ante movement or other side effects.
       if (!(error instanceof LinkedCreationFundingBusy)) throw error
-      if (attempt === 1)
+      if (attempt + 1 === LINKED_CREATION_MAX_ATTEMPTS)
         throw new APIError(
           503,
           'The funding account is busy. Please try again.'
         )
-      await new Promise((resolve) => setTimeout(resolve, 100))
+      // The failed transaction has rolled back and released the parent lock.
+      // Give normal payouts time to finish, with jitter to avoid replicas
+      // retrying together. Four waits total 1.5–3 seconds; no writes retry.
+      const delayMs = 100 * 2 ** attempt * (1 + Math.random())
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
     }
   }
 }
@@ -226,6 +232,19 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
   const pg = createSupabaseDirectClient()
 
+  // A retry must identify the already-created market even if its parent has
+  // since closed, resolved, or become ineligible. Do this before defaults too.
+  const duplicateSubmissionUrl = await getDuplicateSubmissionUrl(
+    idempotencyKey,
+    pg
+  )
+  if (duplicateSubmissionUrl) {
+    throw new APIError(
+      400,
+      'Contract has already been created at ' + duplicateSubmissionUrl
+    )
+  }
+
   // The market this one is about. Checked before any mana moves; the link is
   // written in the same transaction as the market.
   let linkParentCloseTime: number | undefined
@@ -272,17 +291,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     (!Number.isFinite(defaultCloseTime) || defaultCloseTime <= Date.now())
   )
     throw new APIError(400, 'Question must close in the future')
-
-  const duplicateSubmissionUrl = await getDuplicateSubmissionUrl(
-    idempotencyKey,
-    pg
-  )
-  if (duplicateSubmissionUrl) {
-    throw new APIError(
-      400,
-      'Contract has already been created at ' + duplicateSubmissionUrl
-    )
-  }
 
   const isFree = userId === FREE_MARKET_USER_ID && totalMarketCost <= 100
   const house = isProd()

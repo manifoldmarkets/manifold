@@ -1,6 +1,7 @@
 -- A market linked to the market it's about, its parent: a prop on a game, a
 -- sub-market of an election race. One parent per market (the primary key),
 -- and one level deep: the API refuses a parent that is itself a child.
+-- Apply before the linked-market API and web rollout.
 create table if not exists market_links (
   child_contract_id text primary key references contracts(id) on delete cascade,
   parent_contract_id text not null references contracts(id) on delete cascade,

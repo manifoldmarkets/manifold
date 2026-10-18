@@ -8,6 +8,9 @@ import {
   getCloseTimeFields,
   getCreateMarketCloseParams,
   restoreMarketDraft,
+  selectLinkedMarket,
+  getLinkedCloseTimeDescription,
+  isLinkedCloseTimePending,
 } from './linked-market-state'
 
 const closeTime = new Date(2026, 9, 15, 0, 15).getTime()
@@ -114,6 +117,7 @@ test('a linked draft takes its parent time until the creator explicitly changes 
   })
   assert.equal(inherited.closeDate, '2026-10-15')
   assert.equal(inherited.closeHoursMinutes, '00:15')
+  assert.deepEqual(getCreateMarketCloseParams(inherited), {})
   const manuallyChanged = {
     ...inherited,
     closeHoursMinutes: '01:30',
@@ -124,6 +128,96 @@ test('a linked draft takes its parent time until the creator explicitly changes 
     applyLinkedMarketCloseTime(reloaded, { id: 'game', closeTime }),
     reloaded
   )
+})
+
+test('switching or removing a parent clears an inherited deadline and its provenance', () => {
+  const inherited = applyLinkedMarketCloseTime(
+    { ...state, linkedToContractId: 'a' },
+    { id: 'a', closeTime }
+  )
+  assert.equal(inherited.inheritedCloseTimeFrom, 'a')
+  for (const link of [
+    undefined,
+    { contractId: 'b', relation: 'related' as const },
+  ]) {
+    const next = selectLinkedMarket(inherited, link)
+    assert.equal(next.closeDate, undefined)
+    assert.equal(next.inheritedCloseTimeFrom, undefined)
+    assert.deepEqual(getCreateMarketCloseParams(next), {})
+  }
+  const changed = selectLinkedMarket(inherited, {
+    contractId: 'b',
+    relation: 'related',
+  })
+  const noDeadline = applyLinkedMarketCloseTime(changed, { id: 'b' })
+  assert.equal(noDeadline.closeDate, undefined)
+  assert.equal(noDeadline.inheritedCloseTimeFrom, 'b')
+  assert.deepEqual(getCreateMarketCloseParams(noDeadline), {})
+  assert.strictEqual(
+    applyLinkedMarketCloseTime(noDeadline, { id: 'a', closeTime }),
+    noDeadline
+  )
+})
+
+test('manual dates and explicit Never survive switching/removing parents', () => {
+  const inherited = applyLinkedMarketCloseTime(
+    { ...state, linkedToContractId: 'a' },
+    { id: 'a', closeTime }
+  )
+  const manual = { ...inherited, hasManuallyEditedCloseDate: true }
+  for (const link of [
+    undefined,
+    { contractId: 'b', relation: 'prop' as const },
+  ]) {
+    assert.deepEqual(
+      getCreateMarketCloseParams(selectLinkedMarket(manual, link)),
+      { closeTime }
+    )
+    assert.deepEqual(
+      getCreateMarketCloseParams(
+        selectLinkedMarket(
+          { ...manual, outcomeType: 'POLL', neverCloses: true },
+          link
+        )
+      ),
+      { neverCloses: true }
+    )
+  }
+})
+
+test('a linked poll shows pending parent timing, not Never, until loaded', () => {
+  const poll = {
+    ...state,
+    outcomeType: 'POLL' as const,
+    linkedToContractId: 'a',
+  }
+  assert.match(getLinkedCloseTimeDescription(poll)!, /loading/)
+  assert.equal(isLinkedCloseTimePending(poll), true)
+  assert.deepEqual(getCreateMarketCloseParams(poll), {})
+  const loaded = applyLinkedMarketCloseTime(poll, { id: 'a', closeTime })
+  assert.equal(getLinkedCloseTimeDescription(loaded), undefined)
+  assert.equal(isLinkedCloseTimePending(loaded), false)
+  assert.equal(loaded.closeDate, '2026-10-15')
+  assert.deepEqual(getCreateMarketCloseParams(loaded), {})
+  assert.equal(
+    getLinkedCloseTimeDescription(
+      applyLinkedMarketCloseTime(poll, { id: 'a' })
+    ),
+    'Never'
+  )
+})
+
+test('restoring an inherited draft keeps its date a default while manual edits remain overrides', () => {
+  const loaded = restoreMarketDraft(state, {
+    ...draft,
+    linkedToContractId: 'a',
+    inheritedCloseTimeFrom: 'a',
+    closeDate: '2026-10-15',
+    closeHoursMinutes: '00:15',
+    hasManuallyEditedCloseDate: false,
+  })
+  assert.deepEqual(getCreateMarketCloseParams(loaded), {})
+  assert.equal(selectLinkedMarket(loaded, undefined).closeDate, undefined)
 })
 
 test('a delayed parent response cannot overwrite a newly selected parent', () => {

@@ -45,6 +45,7 @@ import { Contract } from 'common/contract'
 import { DEV_HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { FREE_MARKET_USER_ID } from 'common/economy'
 import { getCloseDate } from 'shared/helpers/ai-close-date'
+import { getContractsDirect } from 'shared/supabase/contracts'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import {
   createSupabaseDirectClient,
@@ -243,6 +244,7 @@ function database(
 
 beforeEach(() => {
   jest.clearAllMocks()
+  jest.mocked(getContractsDirect).mockResolvedValue([])
   jest.spyOn(Date, 'now').mockReturnValue(NOW)
   jest
     .mocked(getCloseDate)
@@ -348,7 +350,7 @@ it('retries payer contention before writes and commits the child, ante and link 
   ])
 })
 
-it('bounds repeated payer contention to two attempts without writes or ante movement', async () => {
+it('bounds repeated payer contention to five attempts without writes or ante movement', async () => {
   const db = database({
     onFundingLock: async () => {
       throw databaseError('55P03')
@@ -357,13 +359,55 @@ it('bounds repeated payer contention to two attempts without writes or ante move
   await expect(createMarketHelper(body, auth)).rejects.toMatchObject({
     code: 503,
   })
-  expect(db.fundingLocks).toEqual(['alice', 'alice'])
+  expect(db.fundingLocks).toEqual(Array(5).fill('alice'))
   expect(db.insertAttempts).toEqual([])
   expect(db.committedInserts).toEqual([])
   expect(db.committedAntes).toEqual([])
   expect(db.links.size).toBe(0)
   expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
 })
+
+it('survives contention lasting beyond the original two attempts and charges once', async () => {
+  const db = database({
+    onFundingLock: async (transaction) => {
+      if (transaction < 4) throw databaseError('55P03')
+    },
+  })
+  await createMarketHelper(body, auth)
+  expect(db.fundingLocks).toHaveLength(4)
+  expect(db.committedInserts).toEqual([4])
+  expect(db.committedAntes).toHaveLength(1)
+  expect(runTxnOutsideBetQueue).toHaveBeenCalledTimes(1)
+})
+
+it.each([
+  { close_time: new Date(NOW - 1).toISOString() },
+  { resolution: 'YES' },
+  { visibility: 'private' },
+])(
+  'returns the existing URL on an idempotent retry after parent eligibility changes: %p',
+  async (change) => {
+    const db = database()
+    Object.assign(db.parents.get('game')!, change)
+    jest.mocked(getContractsDirect).mockResolvedValue([
+      {
+        id: body.idempotencyKey,
+        slug: 'existing-market',
+        creatorUsername: 'alice',
+      } as Contract,
+    ])
+    await expect(
+      createMarketHelper({ ...body, closeTime: NOW - 1 }, auth)
+    ).rejects.toMatchObject({
+      code: 400,
+      message: expect.stringContaining('/alice/existing-market'),
+    })
+    expect(db.fundingLocks).toEqual([])
+    expect(db.insertAttempts).toEqual([])
+    expect(getCloseDate).not.toHaveBeenCalled()
+    expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
+  }
+)
 
 it('rechecks a parent resolved while the payer contention retry was waiting', async () => {
   const db = database({

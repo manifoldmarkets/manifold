@@ -55,6 +55,7 @@ beforeEach(() => {
     .mocked(getContract)
     .mockImplementation(async (_pg, id) => contracts[id] as Contract)
   jest.mocked(getLinkedChildCount).mockResolvedValue(0)
+  jest.mocked(deleteMarketLink).mockResolvedValue(true)
   jest.mocked(getLinkParentCandidate).mockResolvedValue(openParent)
 })
 
@@ -144,4 +145,15 @@ describe('unlink-market', () => {
     ).resolves.toEqual({ success: true })
     expect(deleteMarketLink).not.toHaveBeenCalled()
   })
+
+  it.each(['alice', 'sports', 'mod'])(
+    'returns conflict to %s when the authorized link changed before deletion',
+    async (uid) => {
+      jest.mocked(deleteMarketLink).mockResolvedValue(false)
+      await expect(
+        unlink({ contractId: 'prop' }, { uid })
+      ).rejects.toMatchObject({ code: 409 })
+      expect(deleteMarketLink).toHaveBeenCalledTimes(1)
+    }
+  )
 })

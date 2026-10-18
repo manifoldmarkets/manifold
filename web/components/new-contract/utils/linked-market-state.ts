@@ -6,11 +6,19 @@ import type { FormState } from '../contextual-editor-panel'
 export function getCreateMarketCloseParams(
   state: Pick<
     FormState,
-    'outcomeType' | 'neverCloses' | 'closeDate' | 'closeHoursMinutes'
+    | 'outcomeType'
+    | 'neverCloses'
+    | 'closeDate'
+    | 'closeHoursMinutes'
+    | 'linkedToContractId'
+    | 'hasManuallyEditedCloseDate'
   >
 ): { closeTime?: number; neverCloses?: true } {
   if (state.outcomeType === 'POLL' && state.neverCloses)
     return { neverCloses: true }
+  // The displayed parent date is a preview. Let the server copy the current
+  // parent deadline under lock unless the creator explicitly chose a date.
+  if (state.linkedToContractId && !hasManualCloseTime(state)) return {}
   if (!state.closeDate) return {}
   const closeTime = new Date(
     state.closeDate + 'T' + (state.closeHoursMinutes || '23:59')
@@ -31,11 +39,57 @@ export function getCloseTimeFields(closeTime: number | undefined) {
   }
 }
 
-export function hasManualCloseTime(state: FormState) {
+export function hasManualCloseTime(
+  state: Pick<
+    FormState,
+    'hasManuallyEditedCloseDate' | 'closeDate' | 'neverCloses'
+  >
+) {
   // Old local drafts have no flag. Preserve their existing date conservatively.
   return (
     state.hasManuallyEditedCloseDate ?? (!!state.closeDate || state.neverCloses)
   )
+}
+
+export function selectLinkedMarket(
+  state: FormState,
+  link:
+    | { contractId: string; relation: NonNullable<FormState['linkRelation']> }
+    | undefined
+): FormState {
+  const clearDefault =
+    state.linkedToContractId !== link?.contractId && !hasManualCloseTime(state)
+  return {
+    ...state,
+    linkedToContractId: link?.contractId,
+    linkRelation: link?.relation,
+    ...(clearDefault
+      ? {
+          closeDate: undefined,
+          closeHoursMinutes: undefined,
+          neverCloses: false,
+          inheritedCloseTimeFrom: undefined,
+        }
+      : {}),
+  }
+}
+
+export function isLinkedCloseTimePending(state: FormState) {
+  return (
+    !!state.linkedToContractId &&
+    !hasManualCloseTime(state) &&
+    state.inheritedCloseTimeFrom !== state.linkedToContractId
+  )
+}
+
+export function getLinkedCloseTimeDescription(state: FormState) {
+  if (state.outcomeType === 'POLL' && state.neverCloses) return 'Never'
+  if (!state.linkedToContractId || hasManualCloseTime(state)) return undefined
+  if (isLinkedCloseTimePending(state))
+    return 'Uses linked market deadline (loading…)'
+  if (!state.closeDate)
+    return state.outcomeType === 'POLL' ? 'Never' : 'Choose a close date'
+  return undefined
 }
 
 export function applyLinkedMarketCloseTime(
@@ -43,13 +97,16 @@ export function applyLinkedMarketCloseTime(
   parent: Pick<Contract, 'id' | 'closeTime'>
 ): FormState {
   const closeTimeFields = getCloseTimeFields(parent.closeTime)
-  if (
-    state.linkedToContractId !== parent.id ||
-    hasManualCloseTime(state) ||
-    !closeTimeFields
-  )
+  if (state.linkedToContractId !== parent.id || hasManualCloseTime(state))
     return state
-  return { ...state, ...closeTimeFields }
+  return {
+    ...state,
+    closeDate: undefined,
+    closeHoursMinutes: undefined,
+    neverCloses: false,
+    ...closeTimeFields,
+    inheritedCloseTimeFrom: parent.id,
+  }
 }
 
 export function applySuggestedCloseTime(
@@ -82,6 +139,7 @@ export function restoreMarketDraft(
     answerProbs: undefined,
     closeDate: data.closeDate,
     closeHoursMinutes: data.closeHoursMinutes,
+    inheritedCloseTimeFrom: data.inheritedCloseTimeFrom,
     neverCloses: data.neverCloses ?? false,
     hasManuallyEditedCloseDate:
       data.hasManuallyEditedCloseDate ??

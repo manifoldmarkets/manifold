@@ -1,4 +1,5 @@
 import { LinkParentCandidate, MarketLinkRelation } from 'common/market-links'
+import { OutcomeType } from 'common/contract'
 import { tsToMillis } from 'common/supabase/utils'
 import { SupabaseDirectClient, SupabaseTransaction } from './init'
 
@@ -111,11 +112,12 @@ export async function deleteMarketLink(
   // A concurrent reparent must not let the previous parent's owner remove
   // the replacement link. PostgreSQL rechecks this predicate after waiting
   // for a concurrent update of the same row.
-  await pg.none(
+  const result = await pg.result(
     `delete from market_links
      where child_contract_id = $1 and parent_contract_id = $2`,
     [childId, authorizedParentId]
   )
+  return result.rowCount > 0
 }
 
 export async function getMarketLinkParent(
@@ -132,20 +134,6 @@ export async function getMarketLinkParent(
   )
 }
 
-/** Which of `ids` are linked to some market. */
-export async function getIdsWithParents(
-  pg: SupabaseDirectClient,
-  ids: string[]
-): Promise<Set<string>> {
-  if (ids.length === 0) return new Set()
-  const rows = await pg.manyOrNone<{ id: string }>(
-    `select child_contract_id as id from market_links
-     where child_contract_id = any($1)`,
-    [ids]
-  )
-  return new Set(rows.map((r) => r.id))
-}
-
 export type LinkedChild = {
   id: string
   parentId: string
@@ -153,32 +141,64 @@ export type LinkedChild = {
 }
 
 /**
- * The public, undeleted markets linked to any of `parentIds`, most important
- * first within each parent.
+ * Eligible explicit children and heuristic exclusions from ONE statement
+ * snapshot. A concurrent reparent cannot make these two views disagree.
+ * Explicit links establish relevance without requiring topic membership.
+ * Each feed supplies its close window and supported market types.
  */
-export async function getLinkedChildren(
+export async function getMarketLinksForFeed(
   pg: SupabaseDirectClient,
-  parentIds: string[]
-): Promise<LinkedChild[]> {
-  if (parentIds.length === 0) return []
-  const rows = await pg.manyOrNone<{
-    id: string
-    parent_id: string
-    relation: MarketLinkRelation
+  parentIds: string[],
+  candidateIds: string[],
+  options: {
+    closeTimeFrom: number
+    closeTimeTo: number
+    limitPerParent: number
+    outcomeTypes: OutcomeType[]
+  }
+): Promise<{ linked: LinkedChild[]; withParents: Set<string> }> {
+  const result = await pg.one<{
+    linked: { id: string; parent_id: string; relation: MarketLinkRelation }[]
+    with_parents: string[]
   }>(
-    `select l.child_contract_id as id, l.parent_contract_id as parent_id,
-       l.relation
-     from market_links l
-     join contracts c on c.id = l.child_contract_id
-     where l.parent_contract_id = any($1)
-       and c.visibility = 'public'
-       and not coalesce(c.deleted, false)
-     order by l.parent_contract_id, c.importance_score desc, c.id`,
-    [parentIds]
+    `with eligible_links as (
+       select child.* from unnest($1::text[]) as parent(id)
+       cross join lateral (
+         select c.id, l.parent_contract_id as parent_id, l.relation,
+                c.importance_score
+         from market_links l
+         join contracts c on c.id = l.child_contract_id
+         where l.parent_contract_id = parent.id
+           and c.token = 'MANA'
+           and c.visibility = 'public'
+           and not coalesce(c.deleted, false)
+           and c.resolution is null
+           and c.close_time > $3 and c.close_time < $4
+           and c.outcome_type = any($6::text[])
+         order by c.importance_score desc nulls last, c.id
+         limit $5
+       ) child
+     )
+     select coalesce((select jsonb_agg(l order by l.parent_id,
+                        l.importance_score desc nulls last, l.id)
+                      from eligible_links l), '[]'::jsonb) as linked,
+            array(select child_contract_id from market_links
+                  where child_contract_id = any($2::text[])) as with_parents`,
+    [
+      parentIds,
+      candidateIds,
+      new Date(options.closeTimeFrom),
+      new Date(options.closeTimeTo),
+      options.limitPerParent,
+      options.outcomeTypes,
+    ]
   )
-  return rows.map((r) => ({
-    id: r.id,
-    parentId: r.parent_id,
-    relation: r.relation,
-  }))
+  return {
+    linked: result.linked.map((r) => ({
+      id: r.id,
+      parentId: r.parent_id,
+      relation: r.relation,
+    })),
+    withParents: new Set(result.with_parents),
+  }
 }

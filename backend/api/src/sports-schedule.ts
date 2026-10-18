@@ -2,12 +2,9 @@ import { groupBy, sortBy } from 'lodash'
 import { type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { contractColumnsToSelect, log } from 'shared/utils'
-import {
-  getIdsWithParents,
-  getLinkedChildren,
-} from 'shared/supabase/market-links'
+import { getMarketLinksForFeed } from 'shared/supabase/market-links'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
-import { Contract, isMultiCpmm } from 'common/contract'
+import { Contract, isMultiCpmm, OutcomeType } from 'common/contract'
 import { Answer } from 'common/answer'
 import { tsToMillis } from 'common/supabase/utils'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
@@ -50,8 +47,13 @@ const MAX_UPCOMING = 300
 // The page loads these through markets-by-ids, which takes 100 ids at most.
 const MAX_UPCOMING_RETURNED = 100
 
-const MARKET_OUTCOME_TYPES =
-  "'BINARY', 'MULTIPLE_CHOICE', 'NUMBER', 'MULTI_NUMERIC', 'PSEUDO_NUMERIC'"
+const MARKET_OUTCOME_TYPES: OutcomeType[] = [
+  'BINARY',
+  'MULTIPLE_CHOICE',
+  'NUMBER',
+  'MULTI_NUMERIC',
+  'PSEUDO_NUMERIC',
+]
 
 type Pg = ReturnType<typeof createSupabaseDirectClient>
 
@@ -90,27 +92,24 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   // so rail counts and the week feed don't change when the user switches tabs.
   const attached = new Set<string>()
   if (ordered.length > 0) {
-    // Markets linked to a game go under it first, where their creator put
-    // them. A market linked to anything is left out of the team-name
+    // Markets linked to a game go under it, where their creator put them.
+    // A market linked to anything is left out of the team-name
     // matching, so it can't be guessed onto another game.
     const allCandidates = await getRelatedCandidates(pg, index)
-    // Both reads must succeed before using links. Otherwise a child can be
-    // listed under its explicit parent and guessed onto another game, or
-    // disappear when only the exclusion read succeeds.
+    // Read both views in one snapshot; fall back completely if unavailable.
     const { linked, withParents } = await orWithoutLinks(
-      async () => {
-        const [linked, withParents] = await Promise.all([
-          getLinkedChildren(
-            pg,
-            ordered.map((g) => g.id)
-          ),
-          getIdsWithParents(
-            pg,
-            allCandidates.map((c) => c.id)
-          ),
-        ])
-        return { linked, withParents }
-      },
+      () =>
+        getMarketLinksForFeed(
+          pg,
+          ordered.map((g) => g.id),
+          allCandidates.map((c) => c.id),
+          {
+            closeTimeFrom: now - FINISHED_GRACE_HOURS * HOUR_MS,
+            closeTimeTo: now + 45 * DAY_MS,
+            limitPerParent: MAX_RELATED_PER_GAME,
+            outcomeTypes: MARKET_OUTCOME_TYPES,
+          }
+        ),
       { linked: [], withParents: new Set<string>() }
     )
     const candidates = allCandidates.filter((c) => !withParents.has(c.id))
@@ -152,13 +151,18 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
         kind: 'linked' as const,
         group: relatedGroupForLink(l.relation),
       }))
-      const linkedIds = new Set(links.map((l) => l.id))
+      const officialMatches = matchesByGame[i].filter(
+        (m) => m.kind === 'official'
+      )
+      const explicitIds = new Set(
+        [...officialMatches, ...links].map((m) => m.id)
+      )
       const matches = [
+        ...officialMatches,
         ...links,
         ...matchesByGame[i].filter(
           (m) =>
-            !linkedIds.has(m.id) &&
-            (m.kind === 'official' || bestGameFor.get(m.id)?.gameId === g.id)
+            !explicitIds.has(m.id) && bestGameFor.get(m.id)?.gameId === g.id
         ),
       ].slice(0, MAX_RELATED_PER_GAME)
       if (props.includeRelated !== false) {
@@ -582,12 +586,12 @@ async function querySportsMarkets(
        and c.visibility = 'public'
        and coalesce(c.deleted, false) = false
        and c.resolution is null
-       and c.outcome_type in (${MARKET_OUTCOME_TYPES})
+       and c.outcome_type = any($4::text[])
        and c.close_time > now() + $2::interval
        and c.close_time < now() + $3::interval
      order by ${order}
      limit ${opts.limit}`,
-    [opts.groupIds, opts.closeFrom, opts.closeTo]
+    [opts.groupIds, opts.closeFrom, opts.closeTo, MARKET_OUTCOME_TYPES]
   )
   return rows.map((r) => ({
     id: r.id,

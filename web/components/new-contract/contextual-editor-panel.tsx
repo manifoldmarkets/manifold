@@ -28,6 +28,8 @@ export type FormState = {
   neverCloses: boolean
   // Persist creator intent so reloading a linked draft preserves its close time.
   hasManuallyEditedCloseDate?: boolean
+  // Parent whose deadline was loaded for preview; this is not an override.
+  inheritedCloseTimeFrom?: string
   selectedGroups: Group[]
   visibility: 'public' | 'unlisted'
   liquidityTier: number

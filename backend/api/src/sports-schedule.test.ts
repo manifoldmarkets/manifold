@@ -85,6 +85,16 @@ beforeEach(() => {
   linksMissing = false
   failedLinkRead = undefined
   jest.mocked(createSupabaseDirectClient).mockReturnValue({
+    one: async (sql: string) => {
+      expect(sql).toContain('with eligible_links')
+      expect(sql).toContain('as with_parents')
+      if (linksMissing || failedLinkRead)
+        throw new Error('Link snapshot unavailable')
+      return {
+        linked: linkRows,
+        with_parents: linkedElsewhere.map((l) => l.id),
+      }
+    },
     manyOrNone: async (sql: string) => {
       if (linksMissing && sql.includes('market_links'))
         throw new Error('relation "market_links" does not exist')
@@ -312,15 +322,34 @@ describe('linked markets', () => {
     props: Parameters<typeof sportsSchedule>[0]
   ) => ReturnType<typeof sportsSchedule>
 
-  it('lists markets linked to a game first, grouped by their relation', async () => {
+  it('keeps official lines before explicit links, preserving each relation', async () => {
     linkRows = [{ id: 'nfl-line', parent_id: 'nfl', relation: 'line' }]
     const response = await getSchedule({ sport: 'nfl' })
     const result = 'result' in response ? response.result : response
     expect(result.games[0].related).toEqual([
-      { id: 'nfl-line', kind: 'linked', group: 'game-lines' },
       { id: 'nfl-prop', kind: 'official', group: 'game-lines' },
+      { id: 'nfl-line', kind: 'linked', group: 'game-lines' },
     ])
     expect(result.games[0].relatedCount).toBe(2)
+  })
+
+  it('reserves official slots even when explicit line links fill the per-game cap', async () => {
+    linkRows = Array.from({ length: 25 }, (_, i) => ({
+      id: `user-line-${i}`,
+      parent_id: 'nfl',
+      relation: 'line',
+    }))
+    const response = await getSchedule({ sport: 'nfl' })
+    const result = 'result' in response ? response.result : response
+    expect(result.games[0].related).toHaveLength(25)
+    expect(result.games[0].related[0]).toEqual({
+      id: 'nfl-prop',
+      kind: 'official',
+      group: 'game-lines',
+    })
+    expect(
+      result.games[0].related.filter((m) => m.kind === 'linked')
+    ).toHaveLength(24)
   })
 
   it('keeps a market linked elsewhere off a game it would otherwise match', async () => {

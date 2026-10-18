@@ -77,6 +77,15 @@ export const unlinkMarket: APIHandler<'unlink-market'> =
         "Only the market's creator, the linked market's creator or a mod can unlink it"
       )
 
-    await deleteMarketLink(pg, contractId, link.parent_contract_id)
+    const removed = await deleteMarketLink(
+      pg,
+      contractId,
+      link.parent_contract_id
+    )
+    if (!removed)
+      throw new APIError(
+        409,
+        'The link changed while unlinking. Please refresh and try again.'
+      )
     return { success: true as const }
   })

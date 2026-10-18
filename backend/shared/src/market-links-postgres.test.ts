@@ -12,6 +12,7 @@ import {
 } from './supabase/init'
 import {
   getLinkParentCandidate,
+  getMarketLinksForFeed,
   lockMarketLinkContracts,
   lockMarketLinkFundingUser,
   upsertMarketLink,
@@ -197,14 +198,17 @@ describeLocalPostgres('market-link concurrency on actual PostgreSQL', () => {
         visibility text not null default 'public',
         deleted boolean not null default false,
         resolution text,
-        close_time timestamptz default now() + interval '1 day'
+        close_time timestamptz default now() + interval '1 day',
+        token text not null default 'MANA',
+        outcome_type text not null default 'BINARY',
+        importance_score numeric default 1
       );
     `)
     await observer.none(
       readFileSync(
         resolve(
           __dirname,
-          '../../supabase/migrations/2026100701_market_links.sql'
+          '../../supabase/migrations/2026101901_market_links.sql'
         ),
         'utf8'
       )
@@ -261,6 +265,110 @@ describeLocalPostgres('market-link concurrency on actual PostgreSQL', () => {
     await pgp.end()
   })
 
+  const feedOptions = () => ({
+    closeTimeFrom: Date.now() - 18 * 60 * 60_000,
+    closeTimeTo: Date.now() + 45 * 24 * 60 * 60_000,
+    limitPerParent: 3,
+    outcomeTypes: ['BINARY' as const],
+  })
+
+  it('filters ineligible linked children before applying a deterministic per-parent cap', async () => {
+    await observer.none(`
+      insert into contracts (id, creator_id, importance_score)
+      select 'valid-' || i, 'owner', 1 from generate_series(0, 29) i;
+      insert into market_links (child_contract_id, parent_contract_id, created_by)
+      select id, 'a', 'owner' from contracts where id like 'valid-%';
+      insert into contracts (id, creator_id, importance_score) values
+        ('resolved', 'owner', 100), ('old', 'owner', 100),
+        ('far', 'owner', 100), ('private', 'owner', 100),
+        ('deleted', 'owner', 100), ('poll', 'owner', 100),
+        ('cash', 'owner', 100), ('no-date', 'owner', 100),
+        ('live', 'owner', 2);
+      insert into market_links (child_contract_id, parent_contract_id, created_by)
+      select id, 'a', 'owner' from contracts where importance_score >= 2;
+      update contracts set resolution = 'YES' where id = 'resolved';
+      update contracts set close_time = now() - interval '19 hours' where id = 'old';
+      update contracts set close_time = now() + interval '46 days' where id = 'far';
+      update contracts set close_time = now() - interval '1 hour' where id = 'live';
+      update contracts set close_time = null where id = 'no-date';
+      update contracts set visibility = 'unlisted' where id = 'private';
+      update contracts set deleted = true where id = 'deleted';
+      update contracts set outcome_type = 'POLL' where id = 'poll';
+      update contracts set token = 'CASH' where id = 'cash';
+      insert into market_links (child_contract_id, parent_contract_id, created_by)
+      values ('c', 'b', 'owner');
+    `)
+    const result = await getMarketLinksForFeed(
+      first,
+      ['a', 'b'],
+      ['valid-0', 'old', 'c'],
+      feedOptions()
+    )
+    // No topic assignment is needed: the explicit parent supplies relevance.
+    expect(result.linked.map((c) => [c.parentId, c.id])).toEqual([
+      ['a', 'live'],
+      ['a', 'valid-0'],
+      ['a', 'valid-1'],
+      ['b', 'c'],
+    ])
+    expect([...result.withParents].sort()).toEqual(['c', 'old', 'valid-0'])
+    expect(await getMarketLinksForFeed(first, [], [], feedOptions())).toEqual({
+      linked: [],
+      withParents: new Set(),
+    })
+  })
+
+  it('keeps explicit children and exclusions in one snapshot across a concurrent reparent', async () => {
+    await observer.none(`insert into market_links
+      (child_contract_id, parent_contract_id, created_by) values ('c', 'a', 'owner')`)
+    // A test-only advisory barrier blocks inside the actual SELECT, after
+    // PostgreSQL takes its statement snapshot. Commit the reparent meanwhile.
+    const gatedReader = new Proxy(first, {
+      get(target, property, receiver) {
+        if (property !== 'one') return Reflect.get(target, property, receiver)
+        return (query: string, values: unknown[]) =>
+          first.one(
+            query
+              .replace(
+                'with eligible_links as (',
+                'with barrier as materialized (select pg_advisory_xact_lock(413405)), eligible_links as ('
+              )
+              .replace('as parent(id)', 'as parent(id) cross join barrier'),
+            values
+          )
+      },
+    })
+    let reading: ReturnType<typeof getMarketLinksForFeed> | undefined
+    await observer.tx(async (tx) => {
+      await tx.one('select pg_advisory_xact_lock(413405)')
+      reading = getMarketLinksForFeed(
+        gatedReader,
+        ['a', 'b'],
+        ['c'],
+        feedOptions()
+      )
+      track(reading)
+      await waitForLock('pr4134-first', 'with barrier')
+      jest.mocked(createSupabaseDirectClient).mockReturnValueOnce(second)
+      await link({ contractId: 'c', parentContractId: 'b' }, { uid: 'owner' })
+    })
+    const snapshot = await reading!
+    expect(snapshot.linked).toEqual([
+      { id: 'c', parentId: 'a', relation: 'related' },
+    ])
+    expect([...snapshot.withParents]).toEqual(['c'])
+    const fresh = await getMarketLinksForFeed(
+      first,
+      ['a', 'b'],
+      ['c'],
+      feedOptions()
+    )
+    expect(fresh.linked).toEqual([
+      { id: 'c', parentId: 'b', relation: 'related' },
+    ])
+    expect([...fresh.withParents]).toEqual(['c'])
+  })
+
   it.each([
     ['opposing links', 'a', 'b', 'b', 'a'],
     ['a child later gaining a child', 'a', 'b', 'c', 'a'],
@@ -312,31 +420,36 @@ describeLocalPostgres('market-link concurrency on actual PostgreSQL', () => {
     ])
   })
 
-  it('rechecks a waiting stale-owner DELETE against the committed replacement parent', async () => {
-    await observer.none(`insert into market_links
+  it.each(['old-owner', 'owner'])(
+    'rechecks a waiting DELETE by %s and reports conflict after reparenting',
+    async (uid) => {
+      await observer.none(`insert into market_links
       (child_contract_id, parent_contract_id, created_by)
       values ('a', 'old-parent', 'owner')`)
-    const gate = newGate()
-    jest
-      .mocked(createSupabaseDirectClient)
-      .mockReturnValueOnce(beforeCommitClient(first, gate))
-      .mockReturnValueOnce(second)
-    const replacing = track(
-      link(
-        { contractId: 'a', parentContractId: 'new-parent' },
-        { uid: 'owner' }
+      const gate = newGate()
+      jest
+        .mocked(createSupabaseDirectClient)
+        .mockReturnValueOnce(beforeCommitClient(first, gate))
+        .mockReturnValueOnce(second)
+      const replacing = track(
+        link(
+          { contractId: 'a', parentContractId: 'new-parent' },
+          { uid: 'owner' }
+        )
       )
-    )
-    await gate.reached.promise
-    const removing = track(unlink({ contractId: 'a' }, { uid: 'old-owner' }))
-    await waitForLock('pr4134-second', 'delete from market_links')
-    gate.release.resolve()
-    expect((await replacing).ok).toBe(true)
-    expect((await removing).ok).toBe(true)
-    expect(await rows()).toEqual([
-      { child_contract_id: 'a', parent_contract_id: 'new-parent' },
-    ])
-  })
+      await gate.reached.promise
+      const removing = track(unlink({ contractId: 'a' }, { uid }))
+      await waitForLock('pr4134-second', 'delete from market_links')
+      gate.release.resolve()
+      expect((await replacing).ok).toBe(true)
+      const removed = await removing
+      expect(removed.ok).toBe(false)
+      if (!removed.ok) expect(removed.error).toMatchObject({ code: 409 })
+      expect(await rows()).toEqual([
+        { child_contract_id: 'a', parent_contract_id: 'new-parent' },
+      ])
+    }
+  )
 
   it('a create-side parent lock makes a competing link reread the new child', async () => {
     const gate = newGate()
