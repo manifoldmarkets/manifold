@@ -10,6 +10,7 @@ import { NoSEO } from 'web/components/NoSEO'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { api } from 'web/lib/api/api'
@@ -298,7 +299,10 @@ export default function AdminUserInfoPage() {
     <Page trackPageView={'admin user info page'}>
       <NoSEO />
       <div className="mx-8">
-        <Title>Admin - User Info & Account Management</Title>
+        <Title>
+          Admin - User Info & Account Management
+          <ModActionTag admin className="ml-2 align-middle" />
+        </Title>
 
         <Col className="gap-6">
           {/* Info Section */}

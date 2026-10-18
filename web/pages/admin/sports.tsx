@@ -4,6 +4,7 @@ import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Title } from 'web/components/widgets/title'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { Button } from 'web/components/buttons/button'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Table } from 'web/components/widgets/table'
@@ -722,7 +723,10 @@ export default function SportsAdminPage() {
     <Page trackPageView={'sports admin page'}>
       <NoSEO />
       <div className="mx-auto max-w-5xl px-4 pb-16">
-        <Title>Sports Admin</Title>
+        <Title>
+          Sports Admin
+          {admin && <ModActionTag admin className="ml-2 align-middle" />}
+        </Title>
 
         <div className="border-ink-200 bg-ink-50 text-ink-600 mb-6 rounded-lg border p-4 text-sm">
           <p className="text-ink-800 mb-1 font-medium">How this works</p>
