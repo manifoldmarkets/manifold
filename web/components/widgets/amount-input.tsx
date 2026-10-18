@@ -164,6 +164,7 @@ export function BuyAmountInput(props: {
   token?: InputTokenType
   sliderColor?: SliderColor
   fieldLabel?: string
+  compact?: boolean
 }) {
   const {
     amount,
@@ -187,6 +188,7 @@ export function BuyAmountInput(props: {
     token = 'M$',
     sliderColor,
     fieldLabel = 'Bet amount',
+    compact = false,
   } = props
   const user = useUser()
 
@@ -268,7 +270,11 @@ export function BuyAmountInput(props: {
         />
         <AmountInput
           className={className}
-          inputClassName={clsx('w-full !text-xl h-[60px]', inputClassName)}
+          inputClassName={clsx(
+            'w-full !text-xl',
+            compact ? 'h-12' : 'h-[60px]',
+            inputClassName
+          )}
           label={
             token === 'SPICE' ? (
               <SpiceCoin />
@@ -288,7 +294,12 @@ export function BuyAmountInput(props: {
           ariaLabel={fieldLabel}
         />
         {!disableQuickButtons && (
-          <Row className="absolute right-2 top-3.5 gap-1.5 sm:gap-2">
+          <Row
+            className={clsx(
+              'absolute right-2 gap-1.5 sm:gap-2',
+              compact ? 'top-2' : 'top-3.5'
+            )}
+          >
             {values.map((v) => (
               <button
                 type="button"
@@ -308,7 +319,7 @@ export function BuyAmountInput(props: {
         )}
         {showSlider && (
           <BetSlider
-            className="mt-3"
+            className={compact ? 'mt-2' : 'mt-3'}
             amount={amount}
             onAmountChange={onChange}
             binaryOutcome={binaryOutcome}
