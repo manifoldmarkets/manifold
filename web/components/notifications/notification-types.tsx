@@ -467,6 +467,15 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
+  } else if (reason === 'liquidity_returned') {
+    return (
+      <LiquidityReturnedNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
   } else if (ReactionNotificationTypes.includes(sourceType)) {
     return (
       <UserLikeNotification
@@ -1781,6 +1790,56 @@ function LiquidityNotification(props: {
             to <PrimaryNotificationLink text={sourceContractTitle} />
           </span>
         )}
+      </div>
+    </NotificationFrame>
+  )
+}
+
+function LiquidityReturnedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const {
+    sourceId,
+    sourceUserName,
+    sourceUserUsername,
+    sourceText,
+    sourceContractTitle,
+    data,
+  } = notification
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'💧'} />
+      }
+      link={getSourceUrl(notification)}
+    >
+      <div className="line-clamp-3">
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
+        />{' '}
+        withdrew liquidity
+        {!isChildOfGroup && (
+          <span>
+            {' '}
+            from <PrimaryNotificationLink text={sourceContractTitle} />
+          </span>
+        )}
+        , returning{' '}
+        {sourceText && (
+          <span>{formatMoney(parseFloat(sourceText), data?.token)} of</span>
+        )}{' '}
+        your liquidity to your balance. You can add it back to the market if you
+        want to keep it there.
       </div>
     </NotificationFrame>
   )

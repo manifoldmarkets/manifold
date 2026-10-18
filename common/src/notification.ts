@@ -192,6 +192,11 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: `Quest completion rewards`,
     detailed: `Bonuses paid out for completing quests`,
   },
+  liquidity_returned: {
+    simple: 'Your liquidity was returned',
+    detailed:
+      'When a question creator withdraws liquidity and your share of it is returned to you',
+  },
   contract_from_followed_user: {
     simple: 'New questions from users you follow',
     detailed: 'New questions from users you follow',
@@ -651,6 +656,7 @@ export const BalanceChangeNotificationTypes: NotificationReason[] = [
   'quest_payout',
   'bet_fill',
   'mana_payment_received',
+  'liquidity_returned',
 ]
 
 export const DELETE_PUSH_TOKEN = 'delete'
