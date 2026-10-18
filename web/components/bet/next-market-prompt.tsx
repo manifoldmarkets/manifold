@@ -2,8 +2,9 @@ import { XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { maxBy } from 'lodash'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getForcedABTestVariant } from 'common/ab-test'
+import { Bet } from 'common/bet'
 import { getProbability } from 'common/calculate'
 import {
   BinaryContract,
@@ -306,6 +307,7 @@ function NextMarketRow(props: {
   const { contract, position, sourceContractId, amount, userId } = props
   const [openOutcome, setOpenOutcome] = useState<'YES' | 'NO' | undefined>()
   const [openMulti, setOpenMulti] = useState(false)
+  const trackedBetIds = useRef(new Set<string>())
   const isBinary =
     contract.outcomeType === 'BINARY' && contract.mechanism === 'cpmm-1'
   const yesProb =
@@ -325,6 +327,28 @@ function NextMarketRow(props: {
       position,
       outcome,
     })
+
+  const trackBetPlaced = (bet: Bet) => {
+    if (
+      bet.userId !== userId ||
+      bet.contractId !== contract.id ||
+      !isABTestAssignmentCurrent(`user:${userId}`) ||
+      !Number.isFinite(bet.amount) ||
+      bet.amount <= 0 ||
+      trackedBetIds.current.has(bet.id)
+    )
+      return
+    trackedBetIds.current.add(bet.id)
+    trackPromptEvent(userId, NEXT_MARKET_PROMPT_BET_EVENT, {
+      contractId: contract.id,
+      sourceContractId,
+      position,
+      betId: bet.id,
+      betAmount: bet.amount,
+      outcome: bet.outcome,
+      answerId: bet.answerId,
+    })
+  }
 
   return (
     <Row className="items-center justify-between gap-3 py-2">
@@ -391,16 +415,7 @@ function NextMarketRow(props: {
           trackingLocation="next market prompt"
           initialOutcome={openOutcome}
           initialAmount={amount}
-          onBetPlaced={(bet) =>
-            trackPromptEvent(userId, NEXT_MARKET_PROMPT_BET_EVENT, {
-              contractId: contract.id,
-              sourceContractId,
-              position,
-              betId: bet.id,
-              betAmount: bet.amount,
-              outcome: bet.outcome,
-            })
-          }
+          onBetPlaced={trackBetPlaced}
         />
       )}
       {!isBinary && openMulti && (
@@ -409,6 +424,7 @@ function NextMarketRow(props: {
           open={openMulti}
           setOpen={setOpenMulti}
           trackingLocation="next market prompt"
+          onBetPlaced={trackBetPlaced}
         />
       )}
     </Row>

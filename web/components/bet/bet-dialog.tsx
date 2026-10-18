@@ -143,6 +143,7 @@ export function ThreeWayTradeDialog(props: {
   open: boolean
   setOpen: (open: boolean) => void
   trackingLocation: string
+  onBetPlaced?: (bet: Bet) => void
   initialAnswerId?: string
   /** Picker order, e.g. home / draw / away. Defaults to the market's order. */
   answerOrder?: (string | undefined)[]
@@ -153,6 +154,7 @@ export function ThreeWayTradeDialog(props: {
     open,
     setOpen,
     trackingLocation,
+    onBetPlaced,
     initialAnswerId,
     answerOrder,
     description,
@@ -180,6 +182,7 @@ export function ThreeWayTradeDialog(props: {
       open={open}
       setOpen={setOpen}
       trackingLocation={trackingLocation}
+      onBetPlaced={onBetPlaced}
       description={description}
       probabilityLabel={`${answer.text} probability`}
       below={
@@ -251,8 +254,9 @@ function MultiChoiceTradeDialog(props: {
   /** The market page's answer sort, so the list matches its order. */
   sort: MultiSort
   trackingLocation?: string
+  onBetPlaced?: (bet: Bet) => void
 }) {
-  const { contract, open, setOpen, sort, trackingLocation } = props
+  const { contract, open, setOpen, sort, trackingLocation, onBetPlaced } = props
   const [selected, setSelected] = useState<{
     answerId: string
     outcome: 'YES' | 'NO'
@@ -287,6 +291,7 @@ function MultiChoiceTradeDialog(props: {
             answerToBuy: selectedAnswer,
           }}
           trackingLocation={trackingLocation ?? 'multi bet dialog'}
+          onBetPlaced={onBetPlaced}
           onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
           initialOutcome={selected.outcome}
           title={selectedAnswer.text}
@@ -396,8 +401,16 @@ export function MultiBetDialog(props: {
   /** For two-answer "versus" markets: open on this side. */
   initialOutcome?: 'YES' | 'NO'
   trackingLocation?: string
+  onBetPlaced?: (bet: Bet) => void
 }) {
-  const { contract, open, setOpen, initialOutcome, trackingLocation } = props
+  const {
+    contract,
+    open,
+    setOpen,
+    initialOutcome,
+    trackingLocation,
+    onBetPlaced,
+  } = props
   const { question } = contract
   const [query, setQuery] = usePersistentInMemoryState(
     '',
@@ -423,6 +436,7 @@ export function MultiBetDialog(props: {
         setOpen={setOpen}
         initialOutcome={initialOutcome}
         trackingLocation={trackingLocation ?? 'versus bet dialog'}
+        onBetPlaced={onBetPlaced}
         pseudonym={{
           YES: {
             pseudonymName: main.text,
@@ -444,6 +458,7 @@ export function MultiBetDialog(props: {
         open={open}
         setOpen={setOpen}
         trackingLocation={trackingLocation ?? 'three-way bet dialog'}
+        onBetPlaced={onBetPlaced}
       />
     ) : (
       <MultiChoiceTradeDialog
@@ -452,6 +467,7 @@ export function MultiBetDialog(props: {
         setOpen={setOpen}
         sort={sort}
         trackingLocation={trackingLocation}
+        onBetPlaced={onBetPlaced}
       />
     )
   }
