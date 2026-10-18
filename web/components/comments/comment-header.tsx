@@ -585,7 +585,7 @@ function DotMenu(props: {
           },
           isMod &&
             !comment.deleted && {
-              name: 'Delete',
+              name: 'Delete spam',
               icon: <TrashIcon className="h-5 w-5 text-red-600" />,
               onClick: async () => {
                 const commentPath = `contracts/${playContract.id}/comments/${comment.id}`
