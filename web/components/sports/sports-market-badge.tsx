@@ -13,11 +13,15 @@ export function isOfficialSportsMarket(market: MarketCreator) {
     : market.creatorUsername === 'ManifoldSports'
 }
 
+/** Also the hover text of the league label in front of an official title. */
+export const OFFICIAL_SPORTS_MARKET_DESCRIPTION =
+  'Official Manifold market. Created by Manifold Sports. Check the market rules for how it resolves.'
+
 /** Creator provenance, deliberately independent of resolution method. */
 export function SportsMarketBadge({ market }: { market: MarketCreator }) {
   const official = isOfficialSportsMarket(market)
   const description = official
-    ? 'Official Manifold market. Created by Manifold Sports. Check the market rules for how it resolves.'
+    ? OFFICIAL_SPORTS_MARKET_DESCRIPTION
     : `Created by @${market.creatorUsername}. Check the market rules for how it resolves.`
   if (official) {
     return (

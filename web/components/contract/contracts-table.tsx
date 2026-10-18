@@ -36,7 +36,7 @@ import { ContractMinibar } from '../charts/minibar'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
-import { PerpMarketBadge } from '../perps/perp-market-badge'
+import { MarketTitleLabel } from './market-title-label'
 import { UserHovercard } from '../user/user-hovercard'
 import { Avatar } from '../widgets/avatar'
 import { Tooltip } from '../widgets/tooltip'
@@ -576,9 +576,7 @@ function ContractQuestion(props: {
           </span>
         )}
         <VisibilityIcon className="mr-1" contract={contract} />
-        {contract.outcomeType === 'PERP' && (
-          <PerpMarketBadge contract={contract} className="mr-1" />
-        )}
+        <MarketTitleLabel contract={contract} className="mr-1" />
         {removeEmojis(contract.question)}
       </span>
     </Row>

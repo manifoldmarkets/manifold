@@ -72,6 +72,7 @@ export default function LimitOrderPanel(props: {
   initialProb?: number
   expiration?: number
   prefillTimestamp?: number
+  compact?: boolean
 }) {
   const {
     contract,
@@ -85,6 +86,7 @@ export default function LimitOrderPanel(props: {
     location = 'bet panel',
     pseudonym,
     expiration,
+    compact = false,
   } = props
   const limitProbInputId = useId()
   const { pseudonymColor } = pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
@@ -396,6 +398,7 @@ export default function LimitOrderPanel(props: {
           {capitalize(TRADE_TERM)} amount
         </Row>
         <BuyAmountInput
+          compact={compact}
           parentClassName="max-w-full mt-1"
           amount={betAmount}
           onChange={onBetChange}
@@ -407,7 +410,7 @@ export default function LimitOrderPanel(props: {
           sliderColor={pseudonymColor}
         />
       </Col>
-      <Col className="relative mt-6 w-full gap-1">
+      <Col className={clsx('relative w-full gap-1', compact ? 'mt-2' : 'mt-6')}>
         <label htmlFor={limitProbInputId} className="text-ink-600">
           {isPseudoNumeric ? 'Value' : `Probability (%)`}
         </label>
@@ -415,11 +418,14 @@ export default function LimitOrderPanel(props: {
           <div className="font-sm md:font-lg relative w-full">
             <Input
               id={limitProbInputId}
+              aria-label={
+                isPseudoNumeric ? 'Limit value' : 'Limit probability (%)'
+              }
               type="number"
               min={isPseudoNumeric ? contract.min : 1}
               max={isPseudoNumeric ? contract.max : 99}
               step={1}
-              className="h-[60px] w-full !text-xl"
+              className={clsx('w-full !text-xl', compact ? 'h-12' : 'h-[60px]')}
               value={limitProbInt ?? ''}
               onChange={(e) => {
                 const val =
@@ -427,7 +433,12 @@ export default function LimitOrderPanel(props: {
                 setLimitProbIntClamped(val)
               }}
             />
-            <Row className="absolute right-2 top-3.5 gap-1.5 sm:gap-2">
+            <Row
+              className={clsx(
+                'absolute right-2 gap-1.5 sm:gap-2',
+                compact ? 'top-2' : 'top-3.5'
+              )}
+            >
               <button
                 className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1.5 text-sm sm:px-3"
                 onClick={() => {
@@ -481,7 +492,7 @@ export default function LimitOrderPanel(props: {
         />
       </Col>
 
-      <Col className="mt-6 gap-2">
+      <Col className={clsx('gap-2', compact ? 'mt-2' : 'mt-6')}>
         <DropdownMenu
           buttonContent={
             <Row className="items-center gap-1">
@@ -628,13 +639,21 @@ export default function LimitOrderPanel(props: {
                   size="xl"
                   disabled={betDisabled}
                   color={
-                    (pseudonymColor as any) ??
-                    (hideYesNo ? 'none' : outcome === 'YES' ? 'green' : 'red')
+                    compact
+                      ? 'indigo'
+                      : (pseudonymColor as any) ??
+                        (hideYesNo
+                          ? 'none'
+                          : outcome === 'YES'
+                          ? 'green'
+                          : 'red')
                   }
                   loading={isSubmitting}
                   className={clsx('flex-1 text-white')}
                   style={{
-                    backgroundColor: binaryMCColors?.[outcome == 'YES' ? 0 : 1],
+                    backgroundColor: compact
+                      ? undefined
+                      : binaryMCColors?.[outcome == 'YES' ? 0 : 1],
                   }}
                   onClick={submitBet}
                 >

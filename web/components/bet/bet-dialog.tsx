@@ -5,14 +5,17 @@ import { AnswerBetTrackingLocationContext } from 'web/hooks/use-answer-bet-track
 import {
   contractPath,
   BinaryContract,
+  Contract,
   CPMMMultiContract,
   CPMMNumericContract,
   isBinaryMulti,
+  isMultiCpmm,
+  getMainBinaryMCAnswer,
 } from 'common/contract'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { BinaryOutcomes, BuyPanel } from './bet-panel'
-import { getDefaultSort, MultiSort } from 'common/answer'
+import { Answer, getDefaultSort, MultiSort, sortAnswers } from 'common/answer'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
@@ -22,9 +25,17 @@ import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import { Row } from 'web/components/layout/row'
 import { NumberResolutionOrExpectation } from 'web/components/contract/contract-price'
 import { SliderColor } from '../widgets/slider'
-import { getProbability } from 'common/calculate'
+import { getAnswerProbability, getProbability } from 'common/calculate'
 import { formatPercent } from 'common/util/format'
 import { showsSideProbability, versusSideProb } from 'common/versus'
+import { ReactNode, useState } from 'react'
+import { ArrowLeftIcon } from '@heroicons/react/solid'
+import { keyBy, maxBy, sortBy } from 'lodash'
+import { Button } from 'web/components/buttons/button'
+import { Input } from 'web/components/widgets/input'
+import { AnswerBar } from 'web/components/answers/answer-components'
+import { getAnswerColor } from '../charts/contract/choice'
+import { TradeDialog, TradeModal, TradeTicket } from './trade-ticket'
 
 export function BetDialog(props: {
   contract: BinaryContract
@@ -118,6 +129,266 @@ export function BetDialog(props: {
   )
 }
 
+/** Three answers that sum to 100%, e.g. home / draw / away. */
+export const isThreeWayMulti = (contract: Contract) =>
+  isMultiCpmm(contract) &&
+  contract.outcomeType === 'MULTIPLE_CHOICE' &&
+  contract.answers.length === 3 &&
+  contract.addAnswersMode === 'DISABLED' &&
+  contract.shouldAnswersSumToOne
+
+/** One ticket for a three-way market: pick an answer, then Yes or No. */
+export function ThreeWayTradeDialog(props: {
+  contract: CPMMMultiContract
+  open: boolean
+  setOpen: (open: boolean) => void
+  trackingLocation: string
+  initialAnswerId?: string
+  /** Picker order, e.g. home / draw / away. Defaults to the market's order. */
+  answerOrder?: (string | undefined)[]
+  description?: ReactNode
+}) {
+  const {
+    contract,
+    open,
+    setOpen,
+    trackingLocation,
+    initialAnswerId,
+    answerOrder,
+    description,
+  } = props
+  const byId = keyBy(contract.answers, 'id')
+  const ordered = (answerOrder ?? []).flatMap((id) =>
+    id && byId[id] ? [byId[id]] : []
+  )
+  const choices =
+    ordered.length === contract.answers.length
+      ? ordered
+      : drawInMiddle(sortBy(contract.answers, 'index'))
+  // Without a requested answer, open on the most likely one.
+  const [answerId, setAnswerId] = useState(
+    initialAnswerId && byId[initialAnswerId]
+      ? initialAnswerId
+      : maxBy(choices, (a) => getAnswerProbability(contract, a.id))!.id
+  )
+  const answer = byId[answerId] ?? choices[0]
+
+  return (
+    <TradeDialog
+      contract={contract}
+      multiProps={{ answers: contract.answers, answerToBuy: answer }}
+      open={open}
+      setOpen={setOpen}
+      trackingLocation={trackingLocation}
+      description={description}
+      probabilityLabel={`${answer.text} probability`}
+      below={
+        <AnswerPicker
+          contract={contract}
+          answers={choices}
+          selectedId={answer.id}
+          onSelect={setAnswerId}
+        />
+      }
+    />
+  )
+}
+
+// Soccer markets list Draw last; the sports page shows it between the teams.
+const drawInMiddle = (answers: Answer[]) => {
+  const draw = answers.find((a) => a.text === 'Draw')
+  if (!draw || answers.length < 3) return answers
+  const [first, ...rest] = answers.filter((a) => a.id !== draw.id)
+  return [first, draw, ...rest]
+}
+
+function AnswerPicker(props: {
+  contract: CPMMMultiContract
+  answers: Answer[]
+  selectedId: string
+  onSelect: (answerId: string) => void
+}) {
+  const { contract, answers, selectedId, onSelect } = props
+  return (
+    <Row role="group" aria-label="Choose an answer" className="mt-1 gap-1">
+      {answers.map((a) => {
+        const selected = a.id === selectedId
+        return (
+          <button
+            key={a.id}
+            type="button"
+            title={a.text}
+            aria-pressed={selected}
+            onClick={() => onSelect(a.id)}
+            className={clsx(
+              'flex min-w-0 flex-1 flex-col items-center rounded-md border px-1 py-1.5 text-sm',
+              selected
+                ? 'border-primary-500 bg-primary-50 text-primary-800'
+                : 'text-ink-600 hover:bg-canvas-50 border-ink-200'
+            )}
+          >
+            <span className="line-clamp-2 text-center font-medium leading-tight">
+              {a.text}
+            </span>
+            <span className="text-xs tabular-nums">
+              {formatPercent(getAnswerProbability(contract, a.id))}
+            </span>
+          </button>
+        )
+      })}
+    </Row>
+  )
+}
+
+const ANSWER_LIST_LIMIT = 6
+const ANSWER_SEARCH_THRESHOLD = 8
+
+/** Answer list for a multiple choice market. Yes or No swaps in a ticket. */
+function MultiChoiceTradeDialog(props: {
+  contract: CPMMMultiContract
+  open: boolean
+  setOpen: (open: boolean) => void
+  /** The market page's answer sort, so the list matches its order. */
+  sort: MultiSort
+  trackingLocation?: string
+}) {
+  const { contract, open, setOpen, sort, trackingLocation } = props
+  const [selected, setSelected] = useState<{
+    answerId: string
+    outcome: 'YES' | 'NO'
+  }>()
+  const [query, setQuery] = useState('')
+  const [showAll, setShowAll] = useState(false)
+
+  const unresolved = contract.answers.filter((a) => !a.resolution)
+  const answers = sortAnswers(
+    contract,
+    unresolved.map((a) => ({
+      ...a,
+      prob: getAnswerProbability(contract, a.id),
+    })),
+    sort
+  )
+  const selectedAnswer =
+    selected && unresolved.find((a) => a.id === selected.answerId)
+  const matching = query
+    ? answers.filter((a) => a.text.toLowerCase().includes(query.toLowerCase()))
+    : answers
+  const shown =
+    showAll || query ? matching : matching.slice(0, ANSWER_LIST_LIMIT)
+
+  return (
+    <TradeModal open={open} setOpen={setOpen} title={contract.question}>
+      {selected && selectedAnswer ? (
+        <TradeTicket
+          contract={contract}
+          multiProps={{
+            answers: contract.answers,
+            answerToBuy: selectedAnswer,
+          }}
+          trackingLocation={trackingLocation ?? 'multi bet dialog'}
+          onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
+          initialOutcome={selected.outcome}
+          title={selectedAnswer.text}
+          question={contract.question}
+          above={
+            <button
+              type="button"
+              onClick={() => setSelected(undefined)}
+              className="text-primary-700 hover:bg-primary-50 -ml-2 flex items-center gap-1 self-start rounded-md px-2 py-1 text-sm font-medium"
+            >
+              <ArrowLeftIcon className="h-4 w-4" aria-hidden />
+              All answers
+            </button>
+          }
+        />
+      ) : (
+        <Col className="gap-2">
+          <Link
+            className="line-clamp-2 pr-7 text-lg font-semibold leading-snug hover:underline"
+            href={contractPath(contract)}
+            title={contract.question}
+          >
+            {contract.question}
+          </Link>
+          {(answers.length > ANSWER_SEARCH_THRESHOLD || query) && (
+            <Input
+              type="search"
+              placeholder="Search answers"
+              aria-label="Search answers"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              showSearchIcon
+              className="w-full"
+            />
+          )}
+          {/* Probability bars, as in the market page's answer list. */}
+          <Col className="gap-1.5">
+            {shown.map((a) => {
+              const prob = getAnswerProbability(contract, a.id)
+              return (
+                <AnswerBar
+                  key={a.id}
+                  className="group"
+                  color={getAnswerColor(a)}
+                  prob={prob}
+                  label={
+                    // Break long words so the label shrinks, not the buttons.
+                    <span className="line-clamp-2 text-sm leading-tight [overflow-wrap:anywhere]">
+                      {a.text}
+                    </span>
+                  }
+                  end={
+                    <>
+                      <span className="font-semibold tabular-nums">
+                        {formatPercent(prob)}
+                      </span>
+                      <Button
+                        size="2xs"
+                        color="green-outline"
+                        aria-label={`Bet Yes on ${a.text}`}
+                        onClick={() =>
+                          setSelected({ answerId: a.id, outcome: 'YES' })
+                        }
+                      >
+                        Yes
+                      </Button>
+                      <Button
+                        size="2xs"
+                        color="red-outline"
+                        aria-label={`Bet No on ${a.text}`}
+                        onClick={() =>
+                          setSelected({ answerId: a.id, outcome: 'NO' })
+                        }
+                      >
+                        No
+                      </Button>
+                    </>
+                  }
+                />
+              )
+            })}
+          </Col>
+          {query && matching.length === 0 && (
+            <p className="text-ink-500 py-4 text-center text-sm">
+              No answers match.
+            </p>
+          )}
+          {!showAll && !query && matching.length > ANSWER_LIST_LIMIT && (
+            <button
+              type="button"
+              onClick={() => setShowAll(true)}
+              className="text-primary-700 hover:bg-primary-50 self-start rounded-md px-2 py-1 text-sm font-medium"
+            >
+              Show {matching.length - ANSWER_LIST_LIMIT} more
+            </button>
+          )}
+        </Col>
+      )}
+    </TradeModal>
+  )
+}
+
 export function MultiBetDialog(props: {
   contract: CPMMMultiContract | CPMMNumericContract
   open: boolean
@@ -126,13 +397,7 @@ export function MultiBetDialog(props: {
   initialOutcome?: 'YES' | 'NO'
   trackingLocation?: string
 }) {
-  const {
-    contract,
-    open,
-    setOpen,
-    initialOutcome,
-    trackingLocation = 'contract table',
-  } = props
+  const { contract, open, setOpen, initialOutcome, trackingLocation } = props
   const { question } = contract
   const [query, setQuery] = usePersistentInMemoryState(
     '',
@@ -146,6 +411,50 @@ export function MultiBetDialog(props: {
   )
 
   const isBinaryMC = isBinaryMulti(contract)
+  if (isBinaryMC && !contract.isResolved) {
+    const versusContract = contract as CPMMMultiContract
+    const main = getMainBinaryMCAnswer(versusContract)!
+    const other = versusContract.answers.find((a) => a.id !== main.id)!
+    return (
+      <TradeDialog
+        contract={versusContract}
+        multiProps={{ answers: versusContract.answers, answerToBuy: main }}
+        open={open}
+        setOpen={setOpen}
+        initialOutcome={initialOutcome}
+        trackingLocation={trackingLocation ?? 'versus bet dialog'}
+        pseudonym={{
+          YES: {
+            pseudonymName: main.text,
+            pseudonymColor: getAnswerColor(main) as `#${string}`,
+          },
+          NO: {
+            pseudonymName: other.text,
+            pseudonymColor: getAnswerColor(other) as `#${string}`,
+          },
+        }}
+      />
+    )
+  }
+  if (contract.outcomeType === 'MULTIPLE_CHOICE' && !contract.isResolved) {
+    const multi = contract as CPMMMultiContract
+    return isThreeWayMulti(multi) ? (
+      <ThreeWayTradeDialog
+        contract={multi}
+        open={open}
+        setOpen={setOpen}
+        trackingLocation={trackingLocation ?? 'three-way bet dialog'}
+      />
+    ) : (
+      <MultiChoiceTradeDialog
+        contract={multi}
+        open={open}
+        setOpen={setOpen}
+        sort={sort}
+        trackingLocation={trackingLocation}
+      />
+    )
+  }
   return (
     <Modal
       open={open}
@@ -157,7 +466,9 @@ export function MultiBetDialog(props: {
         'pointer-events-auto max-h-[32rem] overflow-auto'
       )}
     >
-      <AnswerBetTrackingLocationContext.Provider value={trackingLocation}>
+      <AnswerBetTrackingLocationContext.Provider
+        value={trackingLocation ?? 'contract table'}
+      >
         <Col>
           {contract.outcomeType === 'NUMBER' ? (
             <NumericBetDialog contract={contract as CPMMNumericContract} />
@@ -172,9 +483,6 @@ export function MultiBetDialog(props: {
               {isBinaryMC ? (
                 <BinaryMultiAnswersPanel
                   contract={contract as CPMMMultiContract}
-                  preselect
-                  preselectOutcome={initialOutcome}
-                  onClose={() => setOpen(false)}
                 />
               ) : (
                 <AnswersPanel

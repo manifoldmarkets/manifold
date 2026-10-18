@@ -13,7 +13,7 @@ import { track } from 'web/lib/service/analytics'
 import { ContractStatusLabel } from './contracts-table'
 import { getTextColor } from './text-color'
 import { LogoIcon } from '../icons/logo-icon'
-import { PerpMarketBadge } from '../perps/perp-market-badge'
+import { MarketTitleLabel } from './market-title-label'
 
 export function ContractMention(props: {
   contract: Contract
@@ -49,7 +49,7 @@ export function ContractMention(props: {
         aria-hidden
         className="mr-1 inline h-[1em] w-[1em] stroke-indigo-700 align-text-bottom dark:stroke-white"
       />
-      {isPerp && <PerpMarketBadge contract={contract} className="mr-1" />}
+      <MarketTitleLabel contract={contract} className="mr-1" />
       <span
         className={clsx(
           'break-anywhere group-hover/mention:text-primary-500 group-focus/mention:text-primary-500 text-primary-800  mr-0.5 whitespace-normal font-medium transition-colors',

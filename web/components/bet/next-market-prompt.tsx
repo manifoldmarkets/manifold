@@ -26,7 +26,10 @@ import {
 } from 'common/next-market-prompt'
 import { User } from 'common/user'
 import { formatPercent } from 'common/util/format'
-import { useABTestAssignment } from 'web/hooks/use-ab-test'
+import {
+  isABTestAssignmentCurrent,
+  useABTestAssignment,
+} from 'web/hooks/use-ab-test'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { useIsMarketPageBet } from 'web/hooks/use-answer-bet-tracking-location'
 import {
@@ -49,6 +52,16 @@ const PROMPT_TTL_MS = 15 * 60 * 1000
 // One trigger event per bet, even if the page remounts.
 const trackedTriggerBets = new Set<string>()
 
+// Analytics uses Firebase's current identity, which can change before the
+// app's user context catches up (including while candidate requests run).
+const trackPromptEvent = (
+  userId: string,
+  name: string,
+  properties: Parameters<typeof track>[1]
+) => {
+  if (isABTestAssignmentCurrent(`user:${userId}`)) track(name, properties)
+}
+
 /**
  * After a bet on the market page, offers three related markets the user has
  * not bet on, each with one-tap bet buttons. Renders nothing until a bet is
@@ -69,6 +82,7 @@ export function NextMarketPrompt(props: {
   if (
     !isMarketPageBet ||
     !user ||
+    !isABTestAssignmentCurrent(`user:${user.id}`) ||
     !lastBet ||
     lastBet.userId !== user.id ||
     lastBet.contractId !== contract.id ||
@@ -116,9 +130,14 @@ function TriggeredNextMarketPrompt(props: {
   const triggerKey = lastBet.betId ?? String(lastBet.time)
 
   useEffect(() => {
-    if (!variant || trackedTriggerBets.has(triggerKey)) return
+    if (
+      !variant ||
+      !isABTestAssignmentCurrent(`user:${user.id}`) ||
+      trackedTriggerBets.has(triggerKey)
+    )
+      return
     trackedTriggerBets.add(triggerKey)
-    track(NEXT_MARKET_PROMPT_TRIGGER_EVENT, {
+    trackPromptEvent(user.id, NEXT_MARKET_PROMPT_TRIGGER_EVENT, {
       contractId: contract.id,
       variant,
       forced: forcedVariant !== undefined,
@@ -131,7 +150,12 @@ function TriggeredNextMarketPrompt(props: {
   }, [variant])
 
   useEffectCheckEquality(() => {
-    if (variant !== 'treatment' || !privateUser) return
+    if (
+      variant !== 'treatment' ||
+      !privateUser ||
+      !isABTestAssignmentCurrent(`user:${user.id}`)
+    )
+      return
     let cancelled = false
     const load = async () => {
       const [related, recentlyBet] = await Promise.all([
@@ -144,10 +168,12 @@ function TriggeredNextMarketPrompt(props: {
           order: 'lastBetTime',
         })
           .then((r) => Object.keys(r.metricsByContract))
-          .catch(() => [] as string[]),
+          .catch(() => undefined),
       ])
-      if (cancelled) return
-      const picked = pickNextMarketCandidates(related, {
+      if (cancelled || !isABTestAssignmentCurrent(`user:${user.id}`)) return
+      // Unknown history is not an empty history: do not recommend markets
+      // we could not check against the user's recent bets.
+      const picked = pickNextMarketCandidates(recentlyBet ? related : [], {
         sourceContractId: contract.id,
         token: lastBet.token,
         excludeContractIds: new Set(recentlyBet),
@@ -162,7 +188,7 @@ function TriggeredNextMarketPrompt(props: {
             () => [] as Contract[]
           )
         : []
-      if (cancelled) return
+      if (cancelled || !isABTestAssignmentCurrent(`user:${user.id}`)) return
       const ready = pickNextMarketCandidates(picked, {
         sourceContractId: contract.id,
         token: lastBet.token,
@@ -175,7 +201,8 @@ function TriggeredNextMarketPrompt(props: {
         related: related.length,
         afterFilters: picked.length,
         afterHydration: ready.length,
-        recentlyBetExcluded: related.filter((c) => recentlyBet.includes(c.id))
+        recentlyBetFailed: recentlyBet === undefined,
+        recentlyBetExcluded: related.filter((c) => recentlyBet?.includes(c.id))
           .length,
       }
       if (override !== undefined) {
@@ -188,7 +215,7 @@ function TriggeredNextMarketPrompt(props: {
         })
       }
       if (ready.length > 0) {
-        track(NEXT_MARKET_PROMPT_SHOWN_EVENT, {
+        trackPromptEvent(user.id, NEXT_MARKET_PROMPT_SHOWN_EVENT, {
           contractId: contract.id,
           candidateIds: ready.map((c) => c.id),
           candidateCount: ready.length,
@@ -196,7 +223,7 @@ function TriggeredNextMarketPrompt(props: {
           location: lastBet.location,
         })
       } else {
-        track(NEXT_MARKET_PROMPT_EMPTY_EVENT, {
+        trackPromptEvent(user.id, NEXT_MARKET_PROMPT_EMPTY_EVENT, {
           contractId: contract.id,
           ...counts,
           location: lastBet.location,
@@ -244,7 +271,7 @@ function TriggeredNextMarketPrompt(props: {
           aria-label="Dismiss"
           onClick={() => {
             setDismissed(true)
-            track(NEXT_MARKET_PROMPT_DISMISS_EVENT, {
+            trackPromptEvent(user.id, NEXT_MARKET_PROMPT_DISMISS_EVENT, {
               contractId: contract.id,
               candidateCount: candidates.length,
             })
@@ -260,6 +287,7 @@ function TriggeredNextMarketPrompt(props: {
             contract={candidate}
             position={position}
             sourceContractId={contract.id}
+            userId={user.id}
             amount={lastBet.amount}
           />
         ))}
@@ -272,9 +300,10 @@ function NextMarketRow(props: {
   contract: Contract
   position: number
   sourceContractId: string
+  userId: string
   amount: number
 }) {
-  const { contract, position, sourceContractId, amount } = props
+  const { contract, position, sourceContractId, amount, userId } = props
   const [openOutcome, setOpenOutcome] = useState<'YES' | 'NO' | undefined>()
   const [openMulti, setOpenMulti] = useState(false)
   const isBinary =
@@ -290,7 +319,7 @@ function NextMarketRow(props: {
       : undefined
 
   const trackClick = (outcome: 'YES' | 'NO' | 'bet' | 'link') =>
-    track(NEXT_MARKET_PROMPT_CLICK_EVENT, {
+    trackPromptEvent(userId, NEXT_MARKET_PROMPT_CLICK_EVENT, {
       contractId: contract.id,
       sourceContractId,
       position,
@@ -363,7 +392,7 @@ function NextMarketRow(props: {
           initialOutcome={openOutcome}
           initialAmount={amount}
           onBetPlaced={(bet) =>
-            track(NEXT_MARKET_PROMPT_BET_EVENT, {
+            trackPromptEvent(userId, NEXT_MARKET_PROMPT_BET_EVENT, {
               contractId: contract.id,
               sourceContractId,
               position,
