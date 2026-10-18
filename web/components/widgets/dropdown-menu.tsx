@@ -10,6 +10,10 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { Fragment, ReactNode } from 'react'
 import { AnimationOrNothing } from './customizeable-dropdown'
+import {
+  MOD_ACTION_TEXT_CLASS,
+  ModActionBadge,
+} from 'web/components/moderation/mod-action'
 
 type AnchorProps = NonNullable<MenuItemsProps['anchor']>
 
@@ -23,6 +27,8 @@ export type DropdownItem = {
   className?: string
   nonButtonContent?: ReactNode
   closeOnClick?: boolean
+  // Only available because the user is a mod or admin
+  modAction?: boolean
 }
 
 export default function DropdownMenu(props: {
@@ -119,14 +125,21 @@ export default function DropdownMenu(props: {
                         className={clsx(
                           selectedItemName && item.name === selectedItemName
                             ? 'bg-primary-100'
+                            : item.modAction
+                            ? 'data-[focus]:bg-ink-100'
                             : 'data-[focus]:bg-ink-100 data-[focus]:text-ink-900',
-                          'text-ink-700',
+                          item.modAction
+                            ? MOD_ACTION_TEXT_CLASS
+                            : 'text-ink-700',
                           'flex w-full items-center gap-2 px-4 py-2 text-left text-sm',
                           item.className
                         )}
                       >
                         {item.icon && <div className="w-5">{item.icon}</div>}
                         {item.buttonContent ?? item.name}
+                        {item.modAction && (
+                          <ModActionBadge className="ml-auto" />
+                        )}
                       </button>
                     )}
                   </MenuItem>

@@ -19,6 +19,7 @@ import { Row } from '../layout/row'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import clsx from 'clsx'
 import { TopicTag } from '../topics/topic-tag'
+import { MOD_ACTION_TEXT_CLASS } from '../moderation/mod-action'
 
 const DashboardLink = (props: {
   dashboard: { slug: string; title: string }
@@ -72,6 +73,7 @@ export function MarketTopics(props: TopicRowProps) {
   const isMod = useAdminOrMod()
   const canEdit =
     isMod || isCreator || (myEditableGroupIds && myEditableGroupIds.length > 0)
+  const modAction = isMod && !isCreator && !myEditableGroupIds?.length
 
   const topicPickerProps = useTopicsWithContract(contract.id, props.topics)
   const { topics } = topicPickerProps
@@ -115,7 +117,8 @@ export function MarketTopics(props: TopicRowProps) {
               setOpen(true)
             }}
             className={clsx(
-              'hover:bg-ink-400/20 text-ink-500 flex items-center rounded-md text-xs sm:text-sm',
+              'hover:bg-ink-400/20 flex items-center rounded-md text-xs sm:text-sm',
+              modAction ? MOD_ACTION_TEXT_CLASS : 'text-ink-500',
               topics.length ? 'px-1' : 'px-2'
             )}
           >

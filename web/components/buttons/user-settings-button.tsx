@@ -28,6 +28,7 @@ import { EditProfile } from '../profile/edit-profile'
 import { AccountSettings } from '../profile/settings'
 import SuperBanControl from '../SuperBanControl'
 import { BanModal } from '../moderation/ban-modal'
+import { ModActionBadge } from '../moderation/mod-action'
 import { api } from 'web/lib/api/api'
 
 export function UserSettingButton(props: { user: User }) {
@@ -117,25 +118,27 @@ export function UserSettingButton(props: { user: User }) {
                 <Row className="flex-wrap gap-2">
                   {isAdmin && (
                     <Button
-                      color="green"
+                      color="purple"
                       size="xs"
                       onClick={() =>
                         router.push(`/admin/user-info?userId=${userId}`)
                       }
                     >
+                      <ModActionBadge className="mr-1" />
                       Manage Account
                     </Button>
                   )}
                   <SuperBanControl userId={userId} />
                   <Button
-                    color={'red'}
+                    color="purple"
                     size="xs"
                     onClick={() => setShowBanModal(true)}
                   >
+                    <ModActionBadge className="mr-1" />
                     Manage Bans
                   </Button>
                   <Button
-                    color={user.isBot ? 'green' : 'yellow'}
+                    color="purple"
                     size="xs"
                     disabled={togglingBot}
                     onClick={async () => {
@@ -162,6 +165,7 @@ export function UserSettingButton(props: { user: User }) {
                       }
                     }}
                   >
+                    <ModActionBadge className="mr-1" />
                     {user.isBot ? 'Unmark Bot' : 'Mark Bot'}
                   </Button>
                 </Row>

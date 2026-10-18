@@ -15,6 +15,7 @@ import { useUser } from 'web/hooks/use-user'
 import { Button } from '../buttons/button'
 import { DeleteMarketButton } from '../buttons/delete-market-button'
 import { UnresolveButton } from '../buttons/unresolve-button'
+import { ModActionBadge } from '../moderation/mod-action'
 import { Row } from '../layout/row'
 
 export function DangerZone(props: {
@@ -183,13 +184,22 @@ export function DangerZone(props: {
       {canDelete && <DeleteMarketButton contractId={contract.id} />}
       {canResolve && !showResolver && (
         <Button
-          color={highlightResolver ? 'indigo' : 'gray'}
+          color={
+            !isCreator
+              ? highlightResolver
+                ? 'purple'
+                : 'purple-outline'
+              : highlightResolver
+              ? 'indigo'
+              : 'gray'
+          }
           size="xs"
           onClick={() => {
             setShowUnresolver(false)
             setShowResolver(!showResolver)
           }}
         >
+          {!isCreator && <ModActionBadge className="mr-1" />}
           {isCreator
             ? 'Resolve'
             : isAdmin
@@ -199,17 +209,23 @@ export function DangerZone(props: {
             : ''}
         </Button>
       )}
-      {canUnresolve && <UnresolveButton contractId={contract.id} />}
+      {canUnresolve && (
+        <UnresolveButton
+          contractId={contract.id}
+          modAction={!(isCreator && creatorCanUnresolve)}
+        />
+      )}
       {canUnresolveIndependentAnswers && (
         <>
           <Button
             size="2xs"
-            color="gray"
+            color={isCreator ? 'gray' : 'purple-outline'}
             onClick={() => {
               setShowResolver(false)
               setShowUnresolver(!showUnresolver)
             }}
           >
+            {!isCreator && <ModActionBadge className="mr-1" />}
             Unresolve
           </Button>
         </>

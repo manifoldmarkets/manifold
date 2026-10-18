@@ -85,6 +85,8 @@ export const Stats = (props: {
   const isTrusty = !!user && isModId(user?.id)
   const isMod = isAdmin || isTrusty
   const isCreator = user?.id === creatorId
+  // Purple marks settings you can only change because you're a mod
+  const modOverridesCreator = isMod && !isCreator
   const isPublic = contract.visibility === 'public'
   const isMulti = isMultiCpmm(contract)
   const perpContract =
@@ -406,7 +408,7 @@ export const Stats = (props: {
         )}
 
         {addAnswersPossible && (isCreator || isAdmin || isMod) && (
-          <tr className={clsx(isMod && 'bg-purple-500/30')}>
+          <tr className={clsx(modOverridesCreator && 'bg-purple-500/30')}>
             <td>
               Creator only{' '}
               <InfoTooltip
@@ -434,7 +436,7 @@ export const Stats = (props: {
         )}
 
         {!hideAdvanced && (
-          <tr className={clsx(isMod && 'bg-purple-500/30')}>
+          <tr className={clsx(modOverridesCreator && 'bg-purple-500/30')}>
             <td>
               🔎 Publicly listed{' '}
               <InfoTooltip
@@ -500,7 +502,7 @@ export const Stats = (props: {
         )}
 
         {!hideAdvanced && isBettingContract && (
-          <tr className={clsx(isMod && 'bg-purple-500/30')}>
+          <tr className={clsx(modOverridesCreator && 'bg-purple-500/30')}>
             <td>
               🚫 Disable creator betting{' '}
               <InfoTooltip
@@ -540,7 +542,7 @@ export const Stats = (props: {
         )}
 
         {!hideAdvanced && contract.outcomeType === 'DATE' && (
-          <tr className={clsx(isMod && 'bg-purple-500/30')}>
+          <tr className={clsx(modOverridesCreator && 'bg-purple-500/30')}>
             <td>
               🕒 Clock mode{' '}
               <InfoTooltip

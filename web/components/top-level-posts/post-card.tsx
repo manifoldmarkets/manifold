@@ -63,11 +63,13 @@ export function PostCard(props: { post: TopLevelPost; className?: string }) {
       name: post.visibility === 'unlisted' ? 'List' : 'Unlist',
       icon: <EyeOffIcon className="h-5 w-5" />,
       onClick: handleSetUnlisted,
+      modAction: true,
     },
     isAdminOrMod && {
       name: 'Superban',
       icon: <IoWarning className="h-5 w-5" />,
       onClick: handleSuperban,
+      modAction: true,
     }
   )
 
