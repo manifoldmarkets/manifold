@@ -213,6 +213,7 @@ export function DangerZone(props: {
         <UnresolveButton
           contractId={contract.id}
           modAction={!(isCreator && creatorCanUnresolve)}
+          adminOnly={token === 'CASH'}
         />
       )}
       {canUnresolveIndependentAnswers && (
@@ -225,7 +226,9 @@ export function DangerZone(props: {
               setShowUnresolver(!showUnresolver)
             }}
           >
-            {!isCreator && <ModActionBadge className="mr-1" />}
+            {!isCreator && (
+              <ModActionBadge admin={token === 'CASH'} className="mr-1" />
+            )}
             Unresolve
           </Button>
         </>

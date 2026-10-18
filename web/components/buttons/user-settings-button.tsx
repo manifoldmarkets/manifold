@@ -124,7 +124,7 @@ export function UserSettingButton(props: { user: User }) {
                         router.push(`/admin/user-info?userId=${userId}`)
                       }
                     >
-                      <ModActionBadge className="mr-1" />
+                      <ModActionBadge admin className="mr-1" />
                       Manage Account
                     </Button>
                   )}

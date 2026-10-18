@@ -29,6 +29,8 @@ export type DropdownItem = {
   closeOnClick?: boolean
   // Only available because the user is a mod or admin
   modAction?: boolean
+  // Only available because the user is an admin
+  adminAction?: boolean
 }
 
 export default function DropdownMenu(props: {
@@ -125,10 +127,10 @@ export default function DropdownMenu(props: {
                         className={clsx(
                           selectedItemName && item.name === selectedItemName
                             ? 'bg-primary-100'
-                            : item.modAction
+                            : item.modAction || item.adminAction
                             ? 'data-[focus]:bg-ink-100'
                             : 'data-[focus]:bg-ink-100 data-[focus]:text-ink-900',
-                          item.modAction
+                          item.modAction || item.adminAction
                             ? MOD_ACTION_TEXT_CLASS
                             : 'text-ink-700',
                           'flex w-full items-center gap-2 px-4 py-2 text-left text-sm',
@@ -137,8 +139,11 @@ export default function DropdownMenu(props: {
                       >
                         {item.icon && <div className="w-5">{item.icon}</div>}
                         {item.buttonContent ?? item.name}
-                        {item.modAction && (
-                          <ModActionBadge className="ml-auto" />
+                        {(item.modAction || item.adminAction) && (
+                          <ModActionBadge
+                            admin={item.adminAction}
+                            className="ml-auto"
+                          />
                         )}
                       </button>
                     )}

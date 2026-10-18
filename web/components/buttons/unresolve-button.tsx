@@ -9,8 +9,9 @@ import { ModActionBadge } from '../moderation/mod-action'
 export function UnresolveButton(props: {
   contractId: string
   modAction?: boolean
+  adminOnly?: boolean
 }) {
-  const { contractId, modAction } = props
+  const { contractId, modAction, adminOnly } = props
 
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
@@ -24,7 +25,7 @@ export function UnresolveButton(props: {
         color={modAction ? 'purple-outline' : 'gray'}
         onClick={() => setOpen(true)}
       >
-        {modAction && <ModActionBadge className="mr-1" />}
+        {modAction && <ModActionBadge admin={adminOnly} className="mr-1" />}
         Unresolve
       </Button>
       <Modal

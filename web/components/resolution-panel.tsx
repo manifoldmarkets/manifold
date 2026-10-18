@@ -329,9 +329,7 @@ export function MiniResolutionPanel(props: {
 
   return (
     <Row className="mt-2 flex-wrap gap-4">
-      {isAdmin && !isCreator && (
-        <ModActionTag label="Admin" className="self-start" />
-      )}
+      {isAdmin && !isCreator && <ModActionTag admin className="self-start" />}
       <Col className="gap-1">
         <YesNoCancelSelector selected={outcome} onSelect={toggleOutcome} />
         {outcome === 'MKT' && (

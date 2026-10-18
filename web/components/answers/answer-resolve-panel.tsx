@@ -1229,7 +1229,7 @@ function IndependentResolutionAnswerItem(props: {
       <div className="mt-2">
         <Row className="flex-wrap gap-4">
           {isAdmin && !isCreator && (
-            <ModActionTag label="Admin" className="self-start" />
+            <ModActionTag admin className="self-start" />
           )}
           <YesNoCancelSelector
             selected={selectedResolution as resolution | undefined}

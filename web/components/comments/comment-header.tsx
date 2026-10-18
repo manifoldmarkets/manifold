@@ -534,7 +534,7 @@ function DotMenu(props: {
               name: 'Edit',
               icon: <PencilIcon className="h-5 w-5" />,
               onClick: () => setEditingComment(true),
-              modAction: comment.userId !== user.id,
+              adminAction: comment.userId !== user.id,
             },
           isContractCreator && {
             name: 'Add to chart',
