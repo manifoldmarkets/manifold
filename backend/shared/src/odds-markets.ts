@@ -527,9 +527,17 @@ export const newScorePollState = (): ScorePollState => ({
  * nothing is due. Live scores are written onto the markets that want them,
  * and a game is resolved once the provider marks it completed.
  */
+/**
+ * One resolver tick. `isCurrent` lets the scheduler abandon a run that has
+ * overrun its deadline (a dead database connection held one for the full
+ * 60-minute client timeout on 2026-10-17, four times): once it returns false
+ * the run stops at its next checkpoint without reading scores or writing
+ * anything, so the fresh run the next tick started is the only one acting.
+ */
 export async function pollOddsScoresAndResolve(
   pg: SupabaseDirectClient,
-  state: ScorePollState
+  state: ScorePollState,
+  isCurrent: () => boolean = () => true
 ): Promise<{
   polled: number
   live: number
@@ -562,6 +570,7 @@ export async function pollOddsScoresAndResolve(
     pending.push({ contract, ...parsed, startTime })
   }
   const stats = { polled: 0, live: 0, resolved: 0, pending: 0, errors: 0 }
+  if (!isCurrent()) return stats
   // Forget games the resolver no longer watches.
   const pendingIds = new Set(pending.map((game) => game.contract.id))
   for (const id of Object.keys(state.missing)) {
@@ -585,6 +594,7 @@ export async function pollOddsScoresAndResolve(
       )
     }
   }
+  if (!isCurrent()) return stats
   const sportOf = (game: PendingGame) =>
     sportForLeague((game.contract as any).sportsLeague)
   const plan = scorePollPlan(
@@ -606,6 +616,7 @@ export async function pollOddsScoresAndResolve(
   const bySport = groupBy(pending, (p) => p.sportKey)
   const resolved = new Set<string>()
   const creator = plan.length > 0 ? await sportsCreator() : undefined
+  if (!isCurrent()) return stats
   for (const { sportKey, withFinished } of plan) {
     // Counted even if the call fails, so a failing provider is retried at
     // the set interval, doubled per failure in a row, not on every tick.
@@ -636,6 +647,7 @@ export async function pollOddsScoresAndResolve(
     // left to the finals check, so they don't add a call to every live poll.
     // If the follow-up call fails the live response still counts, and the
     // game is flagged below so the finals check takes it from there.
+    if (!isCurrent()) return stats
     const listed = new Set(scores.map((s) => s.id))
     const dropped = games.some(
       (g) => !listed.has(g.eventId) && !(g.contract.id in state.missing)
@@ -649,6 +661,7 @@ export async function pollOddsScoresAndResolve(
         log(`[sports-odds-resolve] finished games for ${sportKey} failed: ${e}`)
       }
     }
+    if (!isCurrent()) return stats
     const scoreById = new Map(scores.map((s) => [s.id, s]))
     for (const game of games) {
       const id = game.contract.id
@@ -659,6 +672,7 @@ export async function pollOddsScoresAndResolve(
         continue
       }
       try {
+        if (!isCurrent()) return stats
         if (score.completed) {
           await finishGame(pg, game, score, creator!)
           resolved.add(id)

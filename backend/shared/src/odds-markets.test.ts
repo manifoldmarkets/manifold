@@ -515,6 +515,52 @@ it('does not request scores when there are no in-play markets', async () => {
   expect(getUser).not.toHaveBeenCalled()
 })
 
+it('an abandoned run stops at its next checkpoint without reading scores or writing', async () => {
+  const db = database()
+  db.pg.manyOrNone.mockResolvedValueOnce([
+    {
+      data: {
+        id: 'game',
+        mechanism: 'cpmm-multi-1',
+        outcomeType: 'MULTIPLE_CHOICE',
+        sportsHomeTeam: 'Home',
+        sportsAwayTeam: 'Away',
+        sportsEventId: 'odds:americanfootball_nfl:event',
+        sportsStartTimestamp: new Date(Date.now() - 1000).toISOString(),
+      },
+    },
+  ])
+  jest.mocked(getScores).mockResolvedValue([
+    {
+      ...event,
+      completed: true,
+      scores: [
+        { name: 'Away', score: '3' },
+        { name: 'Home', score: '10' },
+      ],
+      last_update: null,
+    },
+  ])
+  // Still current when the game list has loaded, abandoned by the time the
+  // polling settings have been read: the scheduler's deadline fired meanwhile.
+  const isCurrent = jest.fn().mockReturnValueOnce(true).mockReturnValue(false)
+  const stats = await pollOddsScoresAndResolve(
+    db.client,
+    newScorePollState(),
+    isCurrent
+  )
+  expect(stats).toEqual({
+    polled: 0,
+    live: 0,
+    resolved: 0,
+    pending: 0,
+    errors: 0,
+  })
+  expect(getScores).not.toHaveBeenCalled()
+  expect(resolveMarketHelper).not.toHaveBeenCalled()
+  expect(db.writes).toEqual([])
+})
+
 it('only looks for multiple choice game markets to resolve', async () => {
   // Binary game markets from an early build (dev only) are left for a person.
   const db = database()
