@@ -9,6 +9,8 @@ import { Col } from '../layout/col'
 export function TradePanelLayout(props: {
   compact: boolean
   showOrders: boolean
+  /** Changes each time the user opens the book; only then is it revealed. */
+  revealOrders: number
   ordersId: string
   header: ReactNode
   orders: ReactNode
@@ -19,6 +21,7 @@ export function TradePanelLayout(props: {
   const {
     compact,
     showOrders,
+    revealOrders,
     ordersId,
     header,
     orders,
@@ -27,16 +30,19 @@ export function TradePanelLayout(props: {
     tradeFormRef,
   } = props
   const ordersRef = useRef<HTMLDivElement>(null)
+  const revealed = useRef(revealOrders)
 
   // On a small screen the expanded book can start below the fold; scroll it up
-  // so people see it opened.
+  // so people see it opened. Only after the user opens it: a ticket that opens
+  // with the book already expanded stays scrolled to the top.
   useEffect(() => {
-    if (!compact || !showOrders) return
+    if (!compact || !showOrders || revealOrders === revealed.current) return
     const frame = requestAnimationFrame(() => {
+      revealed.current = revealOrders
       if (ordersRef.current) revealBelowToggle(ordersRef.current)
     })
     return () => cancelAnimationFrame(frame)
-  }, [compact, showOrders])
+  }, [compact, showOrders, revealOrders])
 
   return (
     <>

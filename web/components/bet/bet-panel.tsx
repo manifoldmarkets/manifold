@@ -59,6 +59,7 @@ import { useFocus } from 'web/hooks/use-focus'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { useShowOrderBook } from 'web/hooks/use-show-order-book'
 import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api, APIError } from 'web/lib/api/api'
@@ -262,7 +263,10 @@ export const BuyPanelBody = (
     compact = false,
   } = props
 
-  const [showOrders, setShowOrders] = useState(false)
+  // Dialogs remember whether the book was left open, on the account.
+  const [showOrders, setShowOrders] = useShowOrderBook(compact)
+  // Bumped when the user opens the book, so only that scrolls it into view.
+  const [revealOrders, setRevealOrders] = useState(0)
   const ordersId = useId()
   const tradeFormRef = useRef<HTMLDivElement>(null)
 
@@ -875,7 +879,8 @@ export const BuyPanelBody = (
       <TradePanelLayout
         className={className}
         compact={compact}
-        showOrders={showOrders}
+        showOrders={compact && showOrders}
+        revealOrders={revealOrders}
         ordersId={ordersId}
         header={typeof children === 'function' ? children(outcome) : children}
         orders={orders}
@@ -1310,7 +1315,10 @@ export const BuyPanelBody = (
                 type="button"
                 aria-expanded={showOrders}
                 aria-controls={ordersId}
-                onClick={() => setShowOrders(!showOrders)}
+                onClick={() => {
+                  if (!showOrders) setRevealOrders((n) => n + 1)
+                  setShowOrders(!showOrders)
+                }}
                 className="text-primary-700 hover:bg-primary-50 -mr-2 ml-auto flex shrink-0 items-center gap-1 rounded-md px-2 py-1 font-medium"
               >
                 Order book ({activeOrderCount})
