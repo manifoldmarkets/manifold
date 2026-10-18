@@ -3,6 +3,10 @@ import clsx from 'clsx'
 import Link from 'next/link'
 
 import { track } from 'web/lib/service/analytics'
+import {
+  MOD_ACTION_TEXT_CLASS,
+  ModActionBadge,
+} from 'web/components/moderation/mod-action'
 
 export type NavItem = {
   name: string
@@ -20,6 +24,8 @@ export type NavItem = {
   subLabel?: string
   /** Optional class applied to the nav item container (e.g. for tighter padding). */
   itemClassName?: string
+  /** Only shown because the user is a mod or admin. */
+  modAction?: boolean
 }
 
 export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
@@ -41,7 +47,12 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
   }
 
   const sidebarClass = clsx(
-    isCurrentPage
+    item.modAction
+      ? [
+          MOD_ACTION_TEXT_CLASS,
+          isCurrentPage ? 'bg-ink-200' : 'hover:bg-primary-100',
+        ]
+      : isCurrentPage
       ? 'bg-ink-200 text-ink-900'
       : 'text-ink-600 hover:bg-primary-100 hover:text-ink-700',
     'group flex w-full items-center rounded-md px-3 py-2 text-sm font-medium',
@@ -53,7 +64,9 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
       {item.icon && (
         <item.icon
           className={clsx(
-            isCurrentPage
+            item.modAction
+              ? undefined
+              : isCurrentPage
               ? 'text-ink-600'
               : 'text-ink-500 group-hover:text-ink-600',
             '  -ml-1 mr-3 h-6 w-6 flex-shrink-0',
@@ -66,6 +79,7 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
       {item.external && (
         <ExternalLinkIcon className="ml-2 h-4 w-4" aria-hidden="true" />
       )}
+      {item.modAction && <ModActionBadge className="ml-auto pl-2" />}
     </>
   )
 

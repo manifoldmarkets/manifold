@@ -413,6 +413,7 @@ export function ContractPageContent(props: ContractParams) {
                   question={props.contract.question}
                   financeContract={liveContract}
                   editable={isCreator || isAdmin || isMod}
+                  modAction={!isCreator}
                   isCashContract={isCashContract}
                 />
               </Row>

@@ -137,6 +137,7 @@ export function MarketTopics(props: TopicRowProps) {
           <ContractTopicsList
             canEdit={!!canEdit}
             canEditTopic={canEditGroup}
+            modAction={modAction}
             {...topicPickerProps}
           />
         </Col>

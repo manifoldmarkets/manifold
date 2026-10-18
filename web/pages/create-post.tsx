@@ -23,6 +23,7 @@ import ShortToggle from 'web/components/widgets/short-toggle'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
 import { useAdmin } from 'web/hooks/use-admin'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { useUser } from 'web/hooks/use-user'
 import { api, APIError } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
@@ -150,6 +151,7 @@ export function CreatePostForm(props: {
                     >
                       Announcement (sends a notification to all users)
                     </span>
+                    <ModActionTag admin />
                   </Row>
                   <Row className="items-center gap-2 px-1 py-2">
                     <ShortToggle on={isChangeLog} setOn={setIsChangeLog} />
@@ -163,6 +165,7 @@ export function CreatePostForm(props: {
                       </Link>
                       )
                     </span>
+                    <ModActionTag admin />
                   </Row>
                 </>
               )}

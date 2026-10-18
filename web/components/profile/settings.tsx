@@ -23,6 +23,7 @@ import { ENV_CONFIG, isAdminId, TRADE_TERM } from 'common/envs/constants'
 import { useNativeInfo } from '../native-message-provider'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { useRouter } from 'next/router'
+import { ModActionTag } from '../moderation/mod-action'
 
 export const AccountSettings = (props: {
   user: User
@@ -78,7 +79,7 @@ export const AccountSettings = (props: {
       </div>
       {isAdmin && isNative && (
         <div>
-          Native url
+          Native url <ModActionTag admin />
           <Input value={appUrl} onChange={(e) => setAppUrl(e.target.value)} />
           <Button onClick={sendAppUrl}>Send</Button>
         </div>

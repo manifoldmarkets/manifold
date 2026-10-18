@@ -30,6 +30,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { api } from 'web/lib/api/api'
 import { getUserById } from 'web/lib/supabase/users'
 import { useAdmin } from 'web/hooks/use-admin'
+import { ModActionTag } from './mod-action'
 
 export function BanModal({
   user,
@@ -282,7 +283,10 @@ export function BanModal({
       className="bg-canvas-0 rounded-md"
     >
       <Col className={clsx(SCROLLABLE_MODAL_CLASS, 'gap-4 p-6')}>
-        <Title>Ban User: {user.name}</Title>
+        <Title>
+          <ModActionTag className="mr-2" />
+          Ban User: {user.name}
+        </Title>
 
         {/* Bonus Eligibility Section */}
         <BonusEligibilityControl user={user} />
@@ -292,6 +296,7 @@ export function BanModal({
             <div className="space-y-3 p-3">
               <div>
                 <span className="font-semibold">Signup IP</span>
+                <ModActionTag admin className="ml-2" />
                 <p className="text-ink-600 mt-1 text-sm">
                   Admin-only action. Adds this user's recorded signup IP to the
                   signup blocklist to prevent future account creation.
@@ -1144,6 +1149,7 @@ function BonusEligibilityControl({ user }: { user: User }) {
       >
         <Row className="items-center gap-2">
           <span className="font-semibold">Bonus Eligibility</span>
+          <ModActionTag admin />
           <span
             className={`rounded-full px-2 py-0.5 text-xs font-medium ${
               user.bonusEligibility === 'verified'

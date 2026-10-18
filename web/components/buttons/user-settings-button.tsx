@@ -28,7 +28,11 @@ import { EditProfile } from '../profile/edit-profile'
 import { AccountSettings } from '../profile/settings'
 import SuperBanControl from '../SuperBanControl'
 import { BanModal } from '../moderation/ban-modal'
-import { ModActionBadge } from '../moderation/mod-action'
+import {
+  MOD_ACTION_TEXT_CLASS,
+  ModActionBadge,
+  ModActionTag,
+} from '../moderation/mod-action'
 import { api } from 'web/lib/api/api'
 
 export function UserSettingButton(props: { user: User }) {
@@ -173,6 +177,7 @@ export function UserSettingButton(props: { user: User }) {
             </Row>
             {isAdmin && (
               <Row className="mt-3 flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/70">
+                <ModActionTag admin />
                 <a
                   className="hover:text-white hover:underline"
                   href={supabaseUserConsolePath(user.id)}
@@ -244,6 +249,17 @@ export function UserSettingButton(props: { user: User }) {
                     ],
                 isAdmin && {
                   title: 'Admin',
+                  titleElement: (
+                    <span
+                      className={clsx(
+                        'inline-flex items-center gap-1',
+                        MOD_ACTION_TEXT_CLASS
+                      )}
+                    >
+                      <ModActionBadge admin />
+                      Admin
+                    </span>
+                  ),
                   content: <AdminPrivateUserData userId={userId} />,
                 },
                 {

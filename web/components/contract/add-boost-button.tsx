@@ -113,13 +113,14 @@ function AdminRemoveBoostButton(props: {
 
   return (
     <Button
-      color="red-outline"
+      color="purple-outline"
       size="xs"
       className="self-start"
       loading={isRemoving}
       disabled={isRemoving}
       onClick={removeBoost}
     >
+      <ModActionBadge admin className="mr-1" />
       Remove boost
     </Button>
   )

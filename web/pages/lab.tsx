@@ -1,4 +1,5 @@
 import { ExternalLinkIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import Link from 'next/link'
 import Masonry from 'react-masonry-css'
@@ -9,6 +10,10 @@ import { Card } from 'web/components/widgets/card'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { Title } from 'web/components/widgets/title'
 import { useAdmin } from 'web/hooks/use-admin'
+import {
+  MOD_ACTION_TEXT_CLASS,
+  ModActionBadge,
+} from 'web/components/moderation/mod-action'
 
 export default function LabsPage() {
   return (
@@ -18,7 +23,19 @@ export default function LabsPage() {
         <Title>🧪 The Lab</Title>
         <div className="bg-primary-100 text-ink-700 mb-2 flex items-center self-start overflow-hidden rounded-lg">
           <LabLink href="/about">About</LabLink>
-          {useAdmin() && <LabLink href="/admin">Admin</LabLink>}
+          {useAdmin() && (
+            <LabLink href="/admin">
+              <span
+                className={clsx(
+                  'inline-flex items-center gap-1',
+                  MOD_ACTION_TEXT_CLASS
+                )}
+              >
+                <ModActionBadge admin />
+                Admin
+              </span>
+            </LabLink>
+          )}
           <LabLink href="/stats">Stats</LabLink>
           <LabLink href="https://github.com/manifoldmarkets/manifold">
             Github

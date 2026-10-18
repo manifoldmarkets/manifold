@@ -1037,6 +1037,9 @@ export const IndependentAnswersUnresolvePanel = (props: {
           </Button>
         </Row>
         <div className="text-lg">
+          {user?.id !== contract.creatorId && (
+            <ModActionTag admin={contract.token === 'CASH'} className="mr-2" />
+          )}
           Unresolve answers for &ldquo;{contract.question}&rdquo;
         </div>
         <div className="text-ink-600 text-sm">
