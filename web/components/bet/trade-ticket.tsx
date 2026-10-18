@@ -26,6 +26,8 @@ type TradeTicketProps = {
   onBuySuccess: () => void
   initialOutcome?: BinaryOutcomes
   title?: string
+  /** For an answer's ticket: the market question, shown small above it. */
+  question?: string
   description?: ReactNode
   /** Shown above the title, e.g. a link back to the answer list. */
   above?: ReactNode
@@ -87,6 +89,7 @@ export function TradeTicket(props: TradeTicketProps) {
     onBuySuccess,
     initialOutcome,
     title = contract.question,
+    question,
     description,
     above,
     below,
@@ -105,6 +108,9 @@ export function TradeTicket(props: TradeTicketProps) {
   const heading = (
     <>
       {above}
+      {question && (
+        <div className="text-ink-600 line-clamp-2 pr-7 text-sm">{question}</div>
+      )}
       <Link
         className="line-clamp-2 pr-7 text-lg font-semibold leading-snug hover:underline"
         href={contractPath(contract)}

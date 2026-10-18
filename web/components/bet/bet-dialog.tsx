@@ -281,7 +281,7 @@ function MultiChoiceTradeDialog(props: {
           onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
           initialOutcome={selected.outcome}
           title={selectedAnswer.text}
-          description={contract.question}
+          question={contract.question}
           above={
             <button
               type="button"

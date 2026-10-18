@@ -285,7 +285,7 @@ const YesNoBetButtons = (props: {
         trackingLocation="contract page answer"
         feedReason={feedReason}
         title={answer.text}
-        description={contract.question}
+        question={contract.question}
       />
 
       <Button
