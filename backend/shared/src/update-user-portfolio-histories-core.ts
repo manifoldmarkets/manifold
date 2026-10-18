@@ -297,9 +297,13 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
       updatedMetricsByContract: {},
     }
   }
+  // Index once instead of scanning every metric again for each contract.
+  const metricsByContractId = groupBy(metrics, (m) => m.contractId)
   const contractsWithMetrics = contracts.map((c) => ({
     contract: c,
-    metrics: metrics.filter((m) => m.contractId === c.id),
+    metrics: Object.prototype.hasOwnProperty.call(metricsByContractId, c.id)
+      ? metricsByContractId[c.id]
+      : [],
   }))
   const { metricsByContract } =
     calculateUpdatedMetricsForContracts(contractsWithMetrics)
