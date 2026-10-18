@@ -438,6 +438,9 @@ export const HIDE_FROM_LEADERBOARD_USER_IDS = [
 
 export const INSTITUTIONAL_PARTNER_USER_IDS: string[] = []
 
+// @mods: tagging this account in a comment files a mod report
+export const MODS_USER_ID = 'WQJ92QkoqDPuyj6DAZ5lR6g1x573'
+
 export const BEING_DEAD_HEADS = [
   '6hHpzvRG0pMq8PNJs7RZj2qlZGn2',
   'AJwLWoo3xue32XIiAVrL5SyR1WB2',
