@@ -112,6 +112,32 @@ export const pickNextMarketCandidates = (
   return picked
 }
 
+/** Related-market snapshots can omit token, answers and topic metadata.
+ * Fetch authoritative contracts before applying eligibility or currency checks.
+ */
+export const loadNextMarketCandidates = async (
+  candidates: readonly Contract[],
+  opts: Omit<
+    Parameters<typeof pickNextMarketCandidates>[1],
+    'hydratedContracts' | 'count'
+  >,
+  loadContracts: (ids: string[]) => Promise<Contract[]>
+) => {
+  const ids = [...new Set(candidates.map((c) => c.id))].filter(
+    (id) => id !== opts.sourceContractId && !opts.excludeContractIds.has(id)
+  )
+  const full = ids.length ? await loadContracts(ids) : []
+  return {
+    requestedCount: ids.length,
+    hydratedCount: full.length,
+    ready: pickNextMarketCandidates(candidates, {
+      ...opts,
+      hydratedContracts: full,
+      count: candidates.length,
+    }),
+  }
+}
+
 export type NextMarketPromptQueue = {
   shown: Contract[]
   remaining: Contract[]

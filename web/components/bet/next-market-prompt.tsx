@@ -15,6 +15,7 @@ import {
 import {
   getNextMarketPromptPlacement,
   isNextMarketPromptCandidate,
+  loadNextMarketCandidates,
   NEXT_MARKET_PROMPT_BET_EVENT,
   NEXT_MARKET_PROMPT_CLICK_EVENT,
   NEXT_MARKET_PROMPT_DISMISS_EVENT,
@@ -25,7 +26,6 @@ import {
   NEXT_MARKET_PROMPT_VARIANTS,
   NextMarketPromptPlacement,
   NextMarketPromptQueue,
-  pickNextMarketCandidates,
   updateNextMarketPromptQueue,
 } from 'common/next-market-prompt'
 import { User } from 'common/user'
@@ -195,26 +195,10 @@ function TriggeredNextMarketPrompt(props: {
       // Each seed is fetched at most once while these filters are current.
       // Intent warms the pool; only a completed trade earns another reveal.
       const requestedIds = new Set([contract.id])
-      const hydrate = async (related: Contract[]) => {
-        const picked = pickNextMarketCandidates(related, {
-          ...options,
-          isBlocked: undefined,
-          count: related.length,
-        })
-        const full = picked.length
-          ? await api('markets-by-ids', { ids: picked.map((c) => c.id) }).catch(
-              () => [] as Contract[]
-            )
-          : []
-        return {
-          picked,
-          ready: pickNextMarketCandidates(picked, {
-            ...options,
-            hydratedContracts: full,
-            count: picked.length,
-          }),
-        }
-      }
+      const hydrate = (related: Contract[]) =>
+        loadNextMarketCandidates(related, options, (ids) =>
+          api('markets-by-ids', { ids }).catch(() => [] as Contract[])
+        )
       if (recentlyBet) {
         recentlyBetIds.current = options.excludeContractIds
         loadMore.current = (seedId) => {
@@ -237,13 +221,16 @@ function TriggeredNextMarketPrompt(props: {
       }
       // Unknown history is not an empty history: do not recommend markets
       // we could not check against the user's recent bets.
-      const { picked, ready } = await hydrate(recentlyBet ? related : [])
+      const { requestedCount, hydratedCount, ready } = await hydrate(
+        recentlyBet ? related : []
+      )
       if (!isCurrent()) return
       setQueue((q) => updateNextMarketPromptQueue(q, ready, options))
       const counts = {
         related: related.length,
-        afterFilters: picked.length,
-        afterHydration: ready.length,
+        requestedForHydration: requestedCount,
+        afterHydration: hydratedCount,
+        afterFilters: ready.length,
         recentlyBetFailed: recentlyBet === undefined,
         recentlyBetExcluded: related.filter((c) => recentlyBet?.includes(c.id))
           .length,

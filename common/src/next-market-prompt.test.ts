@@ -2,6 +2,7 @@ import { Contract } from './contract'
 import {
   getNextMarketPromptPlacement,
   isNextMarketPromptLocation,
+  loadNextMarketCandidates,
   pickNextMarketCandidates,
   NextMarketPromptQueue,
   updateNextMarketPromptQueue,
@@ -186,6 +187,63 @@ describe('pickNextMarketCandidates', () => {
         count: 3,
       })
     ).toEqual(['v1', 'v2'])
+  })
+})
+
+describe('loadNextMarketCandidates', () => {
+  const options = {
+    sourceContractId: 'source',
+    token: 'MANA' as const,
+    excludeContractIds: new Set(['recent']),
+    now: NOW,
+  }
+
+  it('hydrates missing currency before filtering, preserving order and excluding known IDs', async () => {
+    const answers = [{ id: 'answer', text: 'Answer', prob: 0.5 }]
+    const loadContracts = jest.fn(async () => [
+      binary('second'),
+      multi('first', { answers }),
+    ])
+    const result = await loadNextMarketCandidates(
+      [
+        binary('source'),
+        binary('recent'),
+        multi('first', { token: undefined, answers: [] }),
+        binary('second', { token: undefined }),
+        binary('second'),
+      ],
+      options,
+      loadContracts
+    )
+    expect(loadContracts).toHaveBeenCalledWith(['first', 'second'])
+    expect(result.ready.map((c) => c.id)).toEqual(['first', 'second'])
+    expect(result.requestedCount).toBe(2)
+  })
+
+  it('never assumes missing currency is mana or bypasses authoritative eligibility', async () => {
+    const result = await loadNextMarketCandidates(
+      ['cash', 'missing-token', 'missing', 'closed'].map((id) =>
+        binary(id, { token: undefined })
+      ),
+      options,
+      async () => [
+        binary('cash', { token: 'CASH' }),
+        binary('missing-token', { token: undefined }),
+        binary('closed', { closeTime: NOW - 1 }),
+      ]
+    )
+    expect(result.ready).toEqual([])
+  })
+
+  it('does not fetch an empty or entirely excluded pool', async () => {
+    const loadContracts = jest.fn(async () => [])
+    const result = await loadNextMarketCandidates(
+      [binary('source'), binary('recent')],
+      options,
+      loadContracts
+    )
+    expect(loadContracts).not.toHaveBeenCalled()
+    expect(result.ready).toEqual([])
   })
 })
 
