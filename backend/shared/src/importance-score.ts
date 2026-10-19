@@ -322,9 +322,10 @@ export async function calculateImportanceScore(
 
 // Last day's discussion per market: its comments plus the Yaps that attach it.
 // A Yap counts like a comment, once per author, so one member cannot inflate a
-// market with repeated posts. A Yap also posted as a comment on its source
-// market already counts there through that comment; its other attached markets
-// still count the Yap.
+// market with repeated posts. A Yap also posted as a comment already counts on
+// that comment's market, through the comment; its other attached markets still
+// count the Yap. The comment's own market decides, since editing a Yap can
+// clear its quoted source and attach that market again.
 export const getTodayDiscussion = async (pg: SupabaseDirectClient) => {
   const [comments, yaps] = await Promise.all([
     pg.func<{ contract_id: string; comment_count: number }[]>(
@@ -337,8 +338,11 @@ export const getTodayDiscussion = async (pg: SupabaseDirectClient) => {
        join users u on u.id = s.user_id
        where s.created_time >= now() - interval '1 day'
          and s.deleted_time is null
-         and (s.market_comment_id is null
-           or s.source_contract_id is distinct from m.contract_id)
+         and not exists (
+           select 1 from contract_comments cc
+           where cc.comment_id = s.market_comment_id
+             and cc.contract_id = m.contract_id
+         )
          and u.is_bot = false
        group by m.contract_id`
     ),

@@ -56,9 +56,11 @@ test('Yaps count toward the same discussion total as comments', async () => {
   // Once per author, live posts only, and not again where mirrored as a comment.
   expect(sql).toContain('count(distinct s.user_id)')
   expect(sql).toContain('s.deleted_time is null')
-  expect(sql).toContain('s.market_comment_id is null')
-  // A mirrored Yap still counts for its other attached markets.
-  expect(sql).toContain('s.source_contract_id is distinct from m.contract_id')
+  // Excluded only on the market that holds its comment, whatever the Yap's
+  // quote context says after edits.
+  expect(sql).toContain('cc.comment_id = s.market_comment_id')
+  expect(sql).toContain('cc.contract_id = m.contract_id')
+  expect(sql).not.toContain('source_contract_id')
 })
 
 test('a Yap raises importance exactly as much as a comment', () => {

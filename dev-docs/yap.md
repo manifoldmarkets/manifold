@@ -100,11 +100,15 @@ is run by the application or by the development tests.
   thread, to the quoted trade, or at the top level; it carries `isRepost` and
   `socialPostId` and links back to the Yap. The comment rules (new-account gate,
   mana markets only, the market creator's blocks, comment size) are checked
-  before the Yap is written, and the link is written with the Yap. Mentions
-  notify through the comment, not the Yap. Yap edits update the comment in the
-  same transaction. Authors cannot delete market comments, so deleting their own
-  Yap leaves the comment; a moderator removal deletes it too, except comments by
-  admins and moderators, which hide-comment also refuses to delete.
+  before the Yap is written. The Yap, its comment and its repost rows are written
+  in one transaction, so a failed comment fails the whole post; the comment is
+  announced, and its bet and position fields merged in, after that commits.
+  `alsoComment` is rejected for replies, quoted Yap posts and posts with nothing
+  to say. Mentions notify through the comment, not the Yap. Yap edits update the
+  comment in the same transaction. Authors cannot delete market comments, so
+  deleting their own Yap leaves the comment; a moderator removal deletes it too,
+  except comments by admins and moderators, which hide-comment also refuses to
+  delete.
 - A Yap with a market source writes a `page repost` contract interaction (topic
   interests, conversion score). When it creates a comment, or quotes one the
   repost card may show (no embedded markets or multiple iframes, as before), it
@@ -115,8 +119,9 @@ is run by the application or by the development tests.
   embedded videos, link previews and tweets carry over as visible URLs.
 - Importance scoring counts the last day's Yaps per attached market like
   comments, once per non-bot author. A Yap also posted as a comment counts once
-  on its source market, through the comment, and still counts on its other
-  attached markets.
+  on that comment's market, through the comment, and still counts on its other
+  attached markets. The comment's market decides, not the Yap's quote context,
+  which an edit can clear.
 
 ## API
 

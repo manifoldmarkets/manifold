@@ -81,6 +81,11 @@ export const createSocialPost: APIHandler<'create-social-post'> =
         canCommentFromSocialPost(content, source)
           ? source
           : undefined
+      if (alsoComment && !commentSource)
+        throw new APIError(
+          400,
+          'Only top-level posts shared from a market, with text or an image, can also comment on it'
+        )
       // Check the market comment is allowed before publishing, so an ineligible
       // comment fails the whole request rather than leaving a Yap without it.
       if (commentSource) {
@@ -99,10 +104,10 @@ export const createSocialPost: APIHandler<'create-social-post'> =
             'You cannot comment on this market because of a block'
           )
       }
-      // Link the comment in the same write as the Yap, so a comment can never
-      // exist without the link that edits and moderation follow.
+      // The Yap, its market comment and its repost rows commit together or not
+      // at all, so an edit or a removal never finds one without the others.
       const commentId = commentSource ? newCommentId() : null
-      const { row, parent } = await pg.tx(async (tx) => {
+      const { row, parent, marketComment, repost } = await pg.tx(async (tx) => {
         const parent = parentId ? await lockSocialThread(tx, parentId) : null
         if (parent) await assertSocialInteraction(tx, parent, viewer, true)
         await limitSocialWrite(
@@ -151,51 +156,28 @@ export const createSocialPost: APIHandler<'create-social-post'> =
           ]
         )
         await writeSocialMarkets(tx, id, content.marketIds)
-        return { row, parent }
+        const marketComment =
+          commentSource && commentId
+            ? await commentFromSocialPost(
+                tx,
+                row,
+                commentSource,
+                commentId,
+                auth
+              )
+            : undefined
+        const repost =
+          !parent && isSocialMarketSource(source)
+            ? await recordSocialRepost(
+                tx,
+                id,
+                source,
+                author,
+                marketComment?.comment
+              )
+            : undefined
+        return { row, parent, marketComment, repost }
       })
-      const marketComment =
-        commentSource && commentId
-          ? await commentFromSocialPost(
-              pg,
-              row,
-              commentSource,
-              commentId,
-              auth
-            ).catch(async (e) => {
-              // The Yap is published; drop the link if no comment was written.
-              log.error('Failed to post Yap as a market comment', {
-                e,
-                postId: id,
-              })
-              await pg
-                .none(
-                  `update social_posts set market_comment_id=null where id=$1 and market_comment_id=$2
-                and not exists (select 1 from contract_comments where comment_id=$2)`,
-                  [id, commentId]
-                )
-                .catch((err) =>
-                  log.error('Failed to unlink a missing Yap market comment', {
-                    err,
-                    postId: id,
-                  })
-                )
-              return undefined
-            })
-          : undefined
-      const repostSource =
-        !parent && isSocialMarketSource(source) ? source : undefined
-      const repost = repostSource
-        ? await recordSocialRepost(
-            pg,
-            id,
-            repostSource,
-            author,
-            marketComment?.comment
-          ).catch((e) => {
-            log.error('Failed to record Yap repost', { e, postId: id })
-            return undefined
-          })
-        : undefined
       return {
         result: (await hydrateSocialPosts(pg, [row], viewer))[0],
         continue: async () => {
@@ -215,16 +197,17 @@ export const createSocialPost: APIHandler<'create-social-post'> =
   )
 
 // Posts a Yap's text on its source market: in the quoted comment's thread, as
-// a reply to the quoted trade, or as a new top-level comment.
+// a reply to the quoted trade, or as a new top-level comment. The comment is
+// written in the Yap's transaction and announced by the continuation.
 async function commentFromSocialPost(
-  pg: SupabaseDirectClient,
+  tx: SupabaseTransaction,
   row: SocialRow,
   source: SocialMarketSource,
   commentId: string,
   auth: AuthedUser
 ) {
   const replyToCommentId = source.commentId
-    ? await pg.one<string>(
+    ? await tx.one<string>(
         `select coalesce(data->>'replyToCommentId', comment_id) as id
         from contract_comments where comment_id = $1`,
         [source.commentId],
@@ -245,7 +228,8 @@ async function commentFromSocialPost(
       isRepost: true,
       socialPostId: row.id,
       id: commentId,
-    }
+    },
+    tx
   )
   return { comment: result, continue: next }
 }
@@ -254,7 +238,7 @@ async function commentFromSocialPost(
 // 'page repost' interaction (topic interests, conversion score). Keep both.
 // The `posts` row names its Yap, so deleting the Yap withdraws the repost.
 async function recordSocialRepost(
-  pg: SupabaseDirectClient,
+  tx: SupabaseTransaction,
   postId: string,
   source: SocialMarketSource,
   author: User,
@@ -264,7 +248,7 @@ async function recordSocialRepost(
   const betId = marketComment?.betId ?? source.betId
   const quoted =
     !marketComment && source.commentId
-      ? await pg.oneOrNone<{ user_id: string; content: JSONContent }>(
+      ? await tx.oneOrNone<{ user_id: string; content: JSONContent }>(
           `select user_id, data->'content' as content from contract_comments where comment_id = $1`,
           [source.commentId]
         )
@@ -274,7 +258,7 @@ async function recordSocialRepost(
     marketComment?.id ??
     (quoted && !hasNaughtyEmbeds(quoted.content) ? source.commentId : null)
   if (feedCommentId)
-    await pg.none(
+    await tx.none(
       `insert into posts (contract_id, contract_comment_id, bet_id, user_id, user_name, user_username, user_avatar_url, social_post_id)
       values ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
@@ -288,7 +272,7 @@ async function recordSocialRepost(
         postId,
       ]
     )
-  await pg.none(
+  await tx.none(
     `insert into user_contract_interactions (user_id, contract_id, name, comment_id, bet_id)
     values ($1, $2, 'page repost', $3, $4)`,
     [author.id, source.contractId, commentId ?? null, betId ?? null]

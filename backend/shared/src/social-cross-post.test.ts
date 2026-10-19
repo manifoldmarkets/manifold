@@ -107,6 +107,9 @@ const quotedComment = (content: object = { type: 'doc', content: [] }) => ({
   content,
 })
 let inTx = false
+// Whether each pg.none call, and the market comment, ran inside the transaction.
+let noneInTx: boolean[] = []
+let commentInTx: boolean | undefined
 const sqlCalls = (pattern: RegExp) =>
   pg.none.mock.calls.filter(([sql]) => pattern.test(sql))
 
@@ -139,9 +142,14 @@ beforeEach(() => {
       /replyToCommentId/.test(sql) ? map!({ id: 'thread' }) : row
     ),
     oneOrNone: jest.fn().mockResolvedValue(quotedComment()),
-    none: jest.fn().mockResolvedValue(null),
+    none: jest.fn(async () => {
+      noneInTx.push(inTx)
+      return null
+    }),
     manyOrNone: jest.fn().mockResolvedValue([]),
   }
+  noneInTx = []
+  commentInTx = undefined
   jest
     .mocked(createSupabaseDirectClient)
     .mockReturnValue(
@@ -157,9 +165,10 @@ beforeEach(() => {
   jest.mocked(validateComment).mockResolvedValue({
     contract: { creatorId: 'creator' },
   } as Awaited<ReturnType<typeof validateComment>>)
-  jest
-    .mocked(createCommentOnContractInternal)
-    .mockResolvedValue({ result: mirror, continue: commentContinue })
+  jest.mocked(createCommentOnContractInternal).mockImplementation(async () => {
+    commentInTx = inTx
+    return { result: mirror, continue: commentContinue }
+  })
   jest.mocked(getContract).mockResolvedValue({ id: 'market' } as Contract)
 })
 afterEach(() => jest.restoreAllMocks())
@@ -169,8 +178,9 @@ test('a Yap shared from a comment also replies in that comment thread', async ()
   expect(jest.mocked(validateComment).mock.invocationCallOrder[0]).toBeLessThan(
     pg.tx.mock.invocationCallOrder[0]
   )
-  // The link is written with the Yap, before the comment exists.
+  // The Yap, its link, the comment and the repost rows share one transaction.
   expect(pg.one.mock.calls[0][1][11]).toBe('mirror')
+  expect(commentInTx).toBe(true)
   expect(createCommentOnContractInternal).toHaveBeenCalledWith(
     'market',
     auth,
@@ -180,17 +190,22 @@ test('a Yap shared from a comment also replies in that comment thread', async ()
       replyToBetId: undefined,
       isRepost: true,
       socialPostId: 'post',
-    })
+    }),
+    pg
   )
   const content = jest.mocked(createCommentOnContractInternal).mock.calls[0][2]
     .content
   expect(JSON.stringify(content)).toContain('"href":"https://x.io"')
-  // Repost bookkeeping is durable before the response, not left to the
-  // notification continuation, and the repost row names its Yap.
+  // The repost row names its Yap.
   const yapId = pg.one.mock.calls[0][1][0]
   const repostRow = sqlCalls(/insert into posts/)[0][1]
   expect(repostRow.slice(0, 4)).toEqual(['market', 'mirror', null, 'author'])
   expect(repostRow[7]).toBe(yapId)
+  expect(
+    noneInTx[
+      pg.none.mock.calls.findIndex(([sql]) => /insert into posts/.test(sql))
+    ]
+  ).toBe(true)
   expect(sqlCalls(/'page repost'/)[0][1]).toEqual([
     'author',
     'market',
@@ -285,18 +300,18 @@ test('a post too large for a comment is rejected up front when commenting', asyn
   expect(pg.tx).not.toHaveBeenCalled()
 })
 
-test('a failed comment insert unlinks it and still returns the published Yap', async () => {
+test('a failed market comment fails the whole post, so nothing is half-published', async () => {
   jest
     .mocked(createCommentOnContractInternal)
     .mockRejectedValue(new Error('insert failed'))
-  const result = await create({ alsoComment: true })
-  expect('result' in result && result.result).toEqual({ id: 'post' })
-  const [sql, values] = sqlCalls(/set market_comment_id=null/)[0]
-  expect(sql).toContain('not exists (select 1 from contract_comments')
-  expect(values).toEqual([pg.one.mock.calls[0][1][0], 'mirror'])
+  await expect(create({ alsoComment: true })).rejects.toThrow('insert failed')
+  // The rejection aborts the transaction holding the Yap insert.
+  expect(pg.tx).toHaveBeenCalledTimes(1)
+  await expect(pg.tx.mock.results[0].value).rejects.toThrow('insert failed')
+  expect(sqlCalls(/insert into posts/)).toHaveLength(0)
 })
 
-test('market-only shares comment at the top level; replies never comment', async () => {
+test('a trade share replies to the trade', async () => {
   await create({
     alsoComment: true,
     source: { contractId: 'market', betId: 'bet' },
@@ -304,12 +319,26 @@ test('market-only shares comment at the top level; replies never comment', async
   expect(
     jest.mocked(createCommentOnContractInternal).mock.calls[0][2]
   ).toMatchObject({ replyToCommentId: undefined, replyToBetId: 'bet' })
-
-  jest.clearAllMocks()
-  jest.mocked(lockSocialThread).mockResolvedValue(row)
-  await create({ alsoComment: true, parentId: 'post' })
-  expect(createCommentOnContractInternal).not.toHaveBeenCalled()
 })
+
+test.each([
+  ['a reply', { parentId: 'post' }],
+  ['a quoted Yap post', { source: { postId: 'other' } }],
+  [
+    'a post with nothing to say',
+    { content: { text: '', marketIds: ['market'] } },
+  ],
+])(
+  'asking to comment from %s is rejected rather than ignored',
+  async (_case, props) => {
+    jest.mocked(lockSocialThread).mockResolvedValue(row)
+    await expect(create({ alsoComment: true, ...props })).rejects.toThrow(
+      /can also comment on it/
+    )
+    expect(pg.tx).not.toHaveBeenCalled()
+    expect(createCommentOnContractInternal).not.toHaveBeenCalled()
+  }
+)
 
 const edit = (text: string) =>
   editSocialPost(

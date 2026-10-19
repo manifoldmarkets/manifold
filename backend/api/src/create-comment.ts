@@ -15,7 +15,9 @@ import { first } from 'lodash'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
+  SupabaseTransaction,
 } from 'shared/supabase/init'
+import { updateData } from 'shared/supabase/utils'
 import { anythingToRichText } from 'shared/tiptap'
 import { sanitizeJsonContent } from 'shared/utils'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
@@ -67,7 +69,10 @@ export const createCommentOnContractInternal = async (
     socialPostId?: string
     // Callers that must link the comment before it exists can assign its id
     id?: string
-  }
+  },
+  // Writes the comment in the caller's transaction. It is announced in the
+  // continuation, which runs once that transaction has committed.
+  tx?: SupabaseTransaction
 ) => {
   const {
     content,
@@ -88,10 +93,11 @@ export const createCommentOnContractInternal = async (
   } = await validateComment(contractId, auth.uid, content, html, markdown)
 
   const pg = createSupabaseDirectClient()
+  const db = tx ?? pg
   const now = Date.now()
 
   if (replyToCommentId) {
-    const repliedComment = await pg.oneOrNone<{
+    const repliedComment = await db.oneOrNone<{
       comment_id: string
       reply_to_comment_id: string | null
     }>(
@@ -109,7 +115,7 @@ export const createCommentOnContractInternal = async (
   }
 
   const bet = replyToBetId
-    ? await pg
+    ? await db
         .one(`select * from contract_bets where bet_id = $1`, [replyToBetId])
         .then(convertBet)
     : undefined
@@ -140,7 +146,7 @@ export const createCommentOnContractInternal = async (
     isRepost,
     socialPostId,
   } as ContractComment)
-  await pg
+  await db
     .none(
       `insert into contract_comments (contract_id, comment_id, user_id, created_time, data)
               values ($1, $2, $3, $4, $5)`,
@@ -150,11 +156,14 @@ export const createCommentOnContractInternal = async (
       log.error(e)
       throw new APIError(500, 'Failed to create comment')
     })
-  broadcastNewComment(contractId, contract.visibility, creator, comment)
+  if (!tx)
+    broadcastNewComment(contractId, contract.visibility, creator, comment)
 
   return {
     result: comment,
     continue: async () => {
+      if (tx)
+        broadcastNewComment(contractId, contract.visibility, creator, comment)
       if (isApi) {
         await pg.tx((tx) =>
           runTxnInBetQueue(tx, {
@@ -181,8 +190,7 @@ export const createCommentOnContractInternal = async (
 
         const position = await getLargestPosition(pg, contract.id, creator.id)
 
-        updatedComment = removeUndefinedProps({
-          ...comment,
+        const denormalized = removeUndefinedProps({
           commentorPositionShares: position?.shares,
           commentorPositionOutcome: position?.outcome,
           commentorPositionAnswerId: position?.answer_id,
@@ -192,10 +200,12 @@ export const createCommentOnContractInternal = async (
               : undefined,
           ...denormalizeBet(bet, contract),
         })
-        await pg.none(
-          `update contract_comments set data = $1 where comment_id = $2`,
-          [updatedComment, comment.id]
-        )
+        updatedComment = { ...comment, ...denormalized }
+        // Merge these fields only: an edit or moderation since the insert stands.
+        await updateData(pg, 'contract_comments', 'comment_id', {
+          comment_id: comment.id,
+          ...denormalized,
+        })
       }
 
       await onCreateCommentOnContract({

@@ -5072,8 +5072,9 @@ export const API = (_apiTypeCheck = {
         content: socialPostDraftSchema,
         parentId: z.string().optional(),
         source: socialPostSourceSchema.optional(),
-        // Also post the text and images as a comment on the source market.
-        // Ignored for replies, quoted Yap posts, and posts with nothing to say.
+        // Also post the text and images as a comment on the source market, in
+        // the same transaction. Rejected unless the post is top-level, shared
+        // from a market, and has text or an image.
         alsoComment: z.boolean().optional(),
       })
       .strict()
