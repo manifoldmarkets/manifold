@@ -184,16 +184,18 @@ export const createSocialPost: APIHandler<'create-social-post'> =
       return {
         result: (await hydrateSocialPosts(pg, [row], viewer))[0],
         continue: async () => {
-          if (parent) await notifySocial(pg, parent, author, 'reply', id)
-          // The market comment notifies the same tagged users.
-          if (marketComment) await marketComment.continue()
-          else await notifySocialMentions(pg, row, author, parent?.user_id)
+          // First, so a later failure (an API caller's comment fee, say) cannot
+          // skip it. It logs its own errors rather than throwing.
           if (repost)
             await trackPublicEvent(author.id, 'repost', {
               ...repost,
               content: !!row.text,
               socialPostId: id,
             })
+          if (parent) await notifySocial(pg, parent, author, 'reply', id)
+          // The market comment notifies the same tagged users.
+          if (marketComment) await marketComment.continue()
+          else await notifySocialMentions(pg, row, author, parent?.user_id)
         },
       }
     }

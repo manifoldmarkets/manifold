@@ -245,6 +245,19 @@ test('a Yap shared from a comment also replies in that comment thread', async ()
   )
 })
 
+test('a failing comment continuation does not skip the repost audit', async () => {
+  // An API caller's comment fee can fail after the repost has committed.
+  commentContinue.mockRejectedValueOnce(new Error('insufficient balance'))
+  const result = await create({ alsoComment: true })
+  if (!('continue' in result)) throw new Error('Expected continuation')
+  await expect(result.continue()).rejects.toThrow('insufficient balance')
+  expect(trackPublicEvent).toHaveBeenCalledWith(
+    'author',
+    'repost',
+    expect.objectContaining({ commentId: 'mirror' })
+  )
+})
+
 test('without the market comment, a quote still records the legacy repost', async () => {
   const result = await create({})
   expect(validateComment).not.toHaveBeenCalled()
