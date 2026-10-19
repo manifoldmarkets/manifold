@@ -42,7 +42,13 @@ import { broadcastUpdatedContract } from 'shared/websockets/helpers'
 import { getAnswerContractSubsidyShare, unresolveMain } from './unresolve'
 
 const creatorId = 'creator'
+// Every answer's current resolution, as the answers table holds it.
 const recently = Date.now() - 60 * 1000
+// The resolution's own edit lands just after it commits; others are earlier
+// or later resolutions of other answers.
+const ownEdit = recently + 50
+const earlierEdit = recently - 30 * 1000
+const laterEdit = recently + 30 * 1000
 
 type SnapshotAnswer = {
   id: string
@@ -66,12 +72,16 @@ const latest = (edits: Edit[]) =>
   [...edits].sort((a, b) => b.createdTime - a.createdTime)[0]
 
 // The two contract_edits lookups, honouring the predicates their SQL states.
-const answerSnapshotRow = (edits: Edit[], answerId: unknown) => {
+const answerSnapshotRow = (sql: string, edits: Edit[], answerId: unknown) => {
+  const sinceResolution = /created_time >= \(\s*select resolution_time/.test(
+    sql
+  )
   const edit = latest(
     edits.filter(
       (e) =>
         e.updatedKeys.includes('subsidyPool') &&
-        e.data.answers.some((a) => a.id === answerId && !a.resolution)
+        e.data.answers.some((a) => a.id === answerId && !a.resolution) &&
+        (!sinceResolution || e.createdTime >= recently)
     )
   )
   if (!edit) return null
@@ -98,12 +108,13 @@ const fakeTx = (
   // Like pg-promise, the mapper is called with null when no row matches.
   oneOrNone: jest.fn(
     async (sql: string, params: unknown[], cb?: (r: any) => unknown) => {
-      const r = /from answers/.test(sql)
-        ? { resolution_time: recently }
-        : /from contract_edits/.test(sql)
+      // contract_edits first: the snapshot lookup reads answers in a subquery.
+      const r = /from contract_edits/.test(sql)
         ? /answer_data->>'id' = \$1/.test(sql)
-          ? answerSnapshotRow(edits, params[0])
+          ? answerSnapshotRow(sql, edits, params[0])
           : marketSnapshotRow(edits)
+        : /from answers/.test(sql)
+        ? { resolution_time: recently }
         : null
       return cb ? cb(r) : r
     }
@@ -185,7 +196,7 @@ describe('unresolving an answer of an independent market', () => {
     // and B, the last answer, took all 150, resolving the market.
     const edits: Edit[] = [
       {
-        createdTime: 1,
+        createdTime: ownEdit,
         updatedKeys: answerResolutionKeys,
         data: {
           isResolved: false,
@@ -197,7 +208,7 @@ describe('unresolving an answer of an independent market', () => {
         },
       },
       {
-        createdTime: 2,
+        createdTime: laterEdit,
         updatedKeys: marketResolutionKeys,
         data: {
           isResolved: false,
@@ -232,7 +243,7 @@ describe('unresolving an answer of an independent market', () => {
     // B took half of 100, then A, the last answer, took the remaining 50.
     const edits: Edit[] = [
       {
-        createdTime: 1,
+        createdTime: earlierEdit,
         updatedKeys: answerResolutionKeys,
         data: {
           isResolved: false,
@@ -244,7 +255,7 @@ describe('unresolving an answer of an independent market', () => {
         },
       },
       {
-        createdTime: 2,
+        createdTime: ownEdit,
         updatedKeys: marketResolutionKeys,
         data: {
           isResolved: false,
@@ -273,7 +284,7 @@ describe('unresolving an answer of an independent market', () => {
     // A took a third of 90; B and C are still trading on the other 60.
     const edits: Edit[] = [
       {
-        createdTime: 1,
+        createdTime: ownEdit,
         updatedKeys: answerResolutionKeys,
         data: {
           isResolved: false,
@@ -301,7 +312,7 @@ describe('unresolving an answer of an independent market', () => {
   it('adds to the pool rather than replacing what is there now', async () => {
     const edits: Edit[] = [
       {
-        createdTime: 1,
+        createdTime: ownEdit,
         updatedKeys: answerResolutionKeys,
         data: {
           isResolved: false,
@@ -335,12 +346,40 @@ describe('unresolving an answer of an independent market', () => {
     expect(contractRow.subsidyPool).toBe(0)
     expect(restoredAnswerPools).toEqual({ a: 0 })
   })
+
+  it("ignores another answer's earlier snapshot when its own is missing", async () => {
+    // B took a third of 90, the drizzle then spent all but 12, and A took 6
+    // of that, but A's resolution never recorded its edit. B's, from before
+    // A resolved, still shows A unresolved, with 90 among three answers.
+    const edits: Edit[] = [
+      {
+        createdTime: earlierEdit,
+        updatedKeys: answerResolutionKeys,
+        data: {
+          isResolved: false,
+          subsidyPool: 90,
+          answers: [
+            { id: 'a', subsidyPool: 4 },
+            { id: 'b', subsidyPool: 0 },
+            { id: 'c', subsidyPool: 0 },
+          ],
+        },
+      },
+    ]
+    const contractRow = indieMulti({ isResolved: false, subsidyPool: 6 })
+
+    const { restoredAnswerPools } = await run(contractRow, edits, 'a')
+
+    // Not 6 + 30: what A took can't be read from B's snapshot.
+    expect(contractRow.subsidyPool).toBe(6)
+    expect(restoredAnswerPools).toEqual({ a: 0 })
+  })
 })
 
 it('restores a whole market from its last unresolved snapshot, as before', async () => {
   const edits: Edit[] = [
     {
-      createdTime: 1,
+      createdTime: ownEdit,
       updatedKeys: marketResolutionKeys,
       data: { isResolved: false, subsidyPool: 40, answers: [] },
     },

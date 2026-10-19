@@ -291,7 +291,10 @@ const undoResolution = async (
   // while the answer was unresolved. Later edits hold it resolved. That
   // resolution took the answer's own subsidyPool and an even share of the
   // market's among the answers then unresolved (resolveMarketHelper), and
-  // undoing it puts back both.
+  // undoing it puts back both. The edit must be the one this resolution
+  // recorded, after it committed and so after its resolution_time: when
+  // that write failed, an earlier one, from another answer's resolution, can
+  // hold a pool the drizzle has since spent, and nothing is put back.
   const answerSnapshot = answerId
     ? await pg.oneOrNone(
         `select (answer_data->>'subsidyPool')::numeric as answer_subsidy_pool,
@@ -305,6 +308,10 @@ const undoResolution = async (
            and 'subsidyPool' = any(updated_keys)
            and answer_data->>'id' = $1
            and answer_data->>'resolution' is null
+           and created_time >= (
+             select resolution_time from answers
+             where id = $1 and contract_id = $2
+           )
          order by created_time desc
          limit 1`,
         [answerId, contractId],
