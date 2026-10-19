@@ -94,6 +94,11 @@ const auth = { uid: 'author' } as AuthedUser
 const req = {} as Request
 const mirror = { id: 'mirror', betId: undefined } as ContractComment
 const commentContinue = jest.fn()
+// Records whether the comment was announced inside the transaction.
+let announcedInTx: boolean | undefined
+const commentAnnounce = jest.fn(() => {
+  announcedInTx = inTx
+})
 let pg: {
   tx: jest.Mock
   one: jest.Mock
@@ -150,6 +155,7 @@ beforeEach(() => {
   }
   noneInTx = []
   commentInTx = undefined
+  announcedInTx = undefined
   jest
     .mocked(createSupabaseDirectClient)
     .mockReturnValue(
@@ -167,7 +173,11 @@ beforeEach(() => {
   } as Awaited<ReturnType<typeof validateComment>>)
   jest.mocked(createCommentOnContractInternal).mockImplementation(async () => {
     commentInTx = inTx
-    return { result: mirror, continue: commentContinue }
+    return {
+      result: mirror,
+      announce: commentAnnounce,
+      continue: commentContinue,
+    }
   })
   jest.mocked(getContract).mockResolvedValue({ id: 'market' } as Contract)
 })
@@ -181,6 +191,12 @@ test('a Yap shared from a comment also replies in that comment thread', async ()
   // The Yap, its link, the comment and the repost rows share one transaction.
   expect(pg.one.mock.calls[0][1][11]).toBe('mirror')
   expect(commentInTx).toBe(true)
+  // Announced once, right after the commit and before anything else runs.
+  expect(commentAnnounce).toHaveBeenCalledTimes(1)
+  expect(announcedInTx).toBe(false)
+  expect(commentAnnounce.mock.invocationCallOrder[0]).toBeLessThan(
+    jest.mocked(hydrateSocialPosts).mock.invocationCallOrder[0]
+  )
   expect(createCommentOnContractInternal).toHaveBeenCalledWith(
     'market',
     auth,

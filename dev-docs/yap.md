@@ -100,9 +100,11 @@ is run by the application or by the development tests.
   thread, to the quoted trade, or at the top level; it carries `isRepost` and
   `socialPostId` and links back to the Yap. The comment rules (new-account gate,
   mana markets only, the market creator's blocks, comment size) are checked
-  before the Yap is written. The Yap, its comment and its repost rows are written
-  in one transaction, so a failed comment fails the whole post; the comment is
-  announced, and its bet and position fields merged in, after that commits.
+  before the Yap is written, and again inside the transaction through its own
+  connection. The Yap, its comment and its repost rows are written in one
+  transaction, so a failed comment fails the whole post. The comment is
+  announced as soon as that commits, as an ordinary comment is after its
+  insert; its bet and position fields are merged in afterwards.
   `alsoComment` is rejected for replies, quoted Yap posts and posts with nothing
   to say. Mentions notify through the comment, not the Yap. Yap edits update the
   comment in the same transaction. Authors cannot delete market comments, so

@@ -178,19 +178,22 @@ export const createSocialPost: APIHandler<'create-social-post'> =
             : undefined
         return { row, parent, marketComment, repost }
       })
+      // Announce the comment as soon as it is committed, as an ordinary comment
+      // is, before anything else can edit or remove it.
+      marketComment?.announce()
       return {
         result: (await hydrateSocialPosts(pg, [row], viewer))[0],
         continue: async () => {
+          if (parent) await notifySocial(pg, parent, author, 'reply', id)
+          // The market comment notifies the same tagged users.
+          if (marketComment) await marketComment.continue()
+          else await notifySocialMentions(pg, row, author, parent?.user_id)
           if (repost)
             await trackPublicEvent(author.id, 'repost', {
               ...repost,
               content: !!row.text,
               socialPostId: id,
             })
-          if (parent) await notifySocial(pg, parent, author, 'reply', id)
-          // The market comment notifies the same tagged users.
-          if (marketComment) await marketComment.continue()
-          else await notifySocialMentions(pg, row, author, parent?.user_id)
         },
       }
     }
@@ -198,7 +201,7 @@ export const createSocialPost: APIHandler<'create-social-post'> =
 
 // Posts a Yap's text on its source market: in the quoted comment's thread, as
 // a reply to the quoted trade, or as a new top-level comment. The comment is
-// written in the Yap's transaction and announced by the continuation.
+// written in the Yap's transaction and announced once that commits.
 async function commentFromSocialPost(
   tx: SupabaseTransaction,
   row: SocialRow,
@@ -214,7 +217,11 @@ async function commentFromSocialPost(
         (r) => r.id
       )
     : undefined
-  const { result, continue: next } = await createCommentOnContractInternal(
+  const {
+    result,
+    announce,
+    continue: next,
+  } = await createCommentOnContractInternal(
     source.contractId,
     auth,
     {
@@ -231,7 +238,7 @@ async function commentFromSocialPost(
     },
     tx
   )
-  return { comment: result, continue: next }
+  return { comment: result, announce, continue: next }
 }
 
 // Before Yap, reposts wrote a `posts` row (followers' Explore feed) and a

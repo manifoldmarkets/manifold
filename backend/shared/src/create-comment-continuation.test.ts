@@ -85,22 +85,43 @@ beforeEach(() => {
   jest.mocked(getContract).mockResolvedValue(contract)
 })
 
-test("in a caller's transaction, the comment is written there and announced after", async () => {
-  const { result, continue: next } = await createCommentOnContractInternal(
+test("in a caller's transaction, the comment is read, written and announced through it", async () => {
+  const {
+    result,
+    announce,
+    continue: next,
+  } = await createCommentOnContractInternal(
     'market',
     auth,
     { content, id: 'c1', socialPostId: 'p1', isRepost: true },
     tx as unknown as SupabaseTransaction
   )
+  // Validation reads use the transaction's connection, not another one.
+  expect(getUser).toHaveBeenCalledWith('author', tx)
+  expect(getContract).toHaveBeenCalledWith(tx, 'market')
   expect(tx.none).toHaveBeenCalledWith(
     expect.stringContaining('insert into contract_comments'),
     expect.arrayContaining(['market', 'c1'])
   )
   expect(pg.none).not.toHaveBeenCalled()
-  // Not announced before the caller's transaction commits.
+  // Not announced until the caller says its transaction has committed.
   expect(broadcastNewComment).not.toHaveBeenCalled()
   expect(result).toMatchObject({ id: 'c1', socialPostId: 'p1', isRepost: true })
 
+  announce()
+  expect(broadcastNewComment).toHaveBeenCalledTimes(1)
+  // The continuation does not announce it twice.
+  await next()
+  expect(broadcastNewComment).toHaveBeenCalledTimes(1)
+})
+
+test('the continuation announces a comment its caller did not', async () => {
+  const { continue: next } = await createCommentOnContractInternal(
+    'market',
+    auth,
+    { content, id: 'c1' },
+    tx as unknown as SupabaseTransaction
+  )
   await next()
   expect(broadcastNewComment).toHaveBeenCalledTimes(1)
 })
@@ -140,10 +161,17 @@ test('the continuation merges only its own fields, so later edits and moderation
 })
 
 test('without a transaction, the comment is written and announced at once', async () => {
-  await createCommentOnContractInternal('market', auth, { content })
+  const { continue: next } = await createCommentOnContractInternal(
+    'market',
+    auth,
+    { content }
+  )
+  expect(getContract).toHaveBeenCalledWith(pg, 'market')
   expect(pg.none).toHaveBeenCalledWith(
     expect.stringContaining('insert into contract_comments'),
     expect.anything()
   )
+  expect(broadcastNewComment).toHaveBeenCalledTimes(1)
+  await next()
   expect(broadcastNewComment).toHaveBeenCalledTimes(1)
 })

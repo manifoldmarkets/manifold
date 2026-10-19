@@ -70,8 +70,8 @@ export const createCommentOnContractInternal = async (
     // Callers that must link the comment before it exists can assign its id
     id?: string
   },
-  // Writes the comment in the caller's transaction. It is announced in the
-  // continuation, which runs once that transaction has committed.
+  // Reads and writes through the caller's transaction, without taking another
+  // connection. The caller announces the comment once it has committed.
   tx?: SupabaseTransaction
 ) => {
   const {
@@ -86,14 +86,14 @@ export const createCommentOnContractInternal = async (
     id,
   } = options
 
+  const pg = createSupabaseDirectClient()
+  const db = tx ?? pg
   const {
     you: creator,
     contract,
     contentJson,
-  } = await validateComment(contractId, auth.uid, content, html, markdown)
+  } = await validateComment(contractId, auth.uid, content, html, markdown, db)
 
-  const pg = createSupabaseDirectClient()
-  const db = tx ?? pg
   const now = Date.now()
 
   if (replyToCommentId) {
@@ -156,14 +156,22 @@ export const createCommentOnContractInternal = async (
       log.error(e)
       throw new APIError(500, 'Failed to create comment')
     })
-  if (!tx)
+  let announced = false
+  const announce = () => {
+    if (announced) return
+    announced = true
     broadcastNewComment(contractId, contract.visibility, creator, comment)
+  }
+  if (!tx) announce()
 
   return {
     result: comment,
+    // In a caller's transaction, call this as soon as it commits, as an
+    // ordinary comment is announced right after its insert. The continuation
+    // announces it otherwise.
+    announce,
     continue: async () => {
-      if (tx)
-        broadcastNewComment(contractId, contract.visibility, creator, comment)
+      announce()
       if (isApi) {
         await pg.tx((tx) =>
           runTxnInBetQueue(tx, {
@@ -248,10 +256,11 @@ export const validateComment = async (
   userId: string,
   content: JSONContent | undefined,
   html: string | undefined,
-  markdown: string | undefined
+  markdown: string | undefined,
+  // A caller's transaction reads through its own connection.
+  pg: SupabaseDirectClient = createSupabaseDirectClient()
 ) => {
-  const pg = createSupabaseDirectClient()
-  const you = await getUser(userId)
+  const you = await getUser(userId, pg)
   const contract = await getContract(pg, contractId)
 
   if (!you) throw new APIError(401, 'Your account was not found')
