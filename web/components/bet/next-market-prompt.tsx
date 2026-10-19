@@ -166,7 +166,7 @@ function TriggeredNextMarketPrompt(props: {
     return next
   }
   const loadMore = useRef<(contractId: string) => void>()
-  const intentIds = useRef(new Set<string>())
+  const prefetchedSeedIds = useRef(new Set<string>())
   const recentlyBetIds = useRef(new Set<string>())
   const trackedShownIds = useRef(new Set<string>())
   const [dismissed, setDismissed] = useState(false)
@@ -224,7 +224,7 @@ function TriggeredNextMarketPrompt(props: {
         isBlocked: (c: Contract) => isContractBlocked(privateUser, c),
       }
       // Each seed is fetched at most once while these filters are current.
-      // Intent warms the pool; only a completed trade earns another reveal.
+      // A visible pick warms one level ahead; only a trade earns a reveal.
       const requests = new Map<string, Promise<void>>()
       const hydrate = (
         candidates: Contract[],
@@ -252,6 +252,7 @@ function TriggeredNextMarketPrompt(props: {
       let fallbackOffset = 0
       let fallbackExhausted = false
       let fallbackRequest: Promise<void> | undefined
+      let fallbackSeedId: string | undefined
       let fallbackCandidates = 0
       const needsFallback = (seedId?: string) => {
         const q = queueRef.current
@@ -270,8 +271,15 @@ function TriggeredNextMarketPrompt(props: {
       const loadFallback = (seedId?: string): Promise<void> => {
         if (!isCurrent() || !recentlyBet || !needsFallback(seedId))
           return Promise.resolve()
-        if (fallbackRequest) return fallbackRequest
+        if (fallbackRequest) {
+          // A newly revealed pick may need its own reserve after the previous
+          // seed's request finishes. Same-seed calls only share the request.
+          return fallbackSeedId === seedId
+            ? fallbackRequest
+            : fallbackRequest.then(() => loadFallback(seedId))
+        }
         if (fallbackExhausted) return Promise.resolve()
+        fallbackSeedId = seedId
         fallbackRequest = (async () => {
           for (let page = 0; page < FALLBACK_MAX_PAGES; page++) {
             if (!isCurrent() || !needsFallback(seedId)) return
@@ -318,7 +326,13 @@ function TriggeredNextMarketPrompt(props: {
             })
               .then(async (r) => {
                 if (!isCurrent()) return
-                const { ready } = await hydrate(r.marketsFromEmbeddings)
+                const { ready } = await hydrate(
+                  r.marketsFromEmbeddings,
+                  new Set([
+                    ...options.excludeContractIds,
+                    ...queueRef.current.shown.map((c) => c.id),
+                  ])
+                )
                 if (!isCurrent()) return
                 addCandidates(ready, 'related')
               })
@@ -327,7 +341,10 @@ function TriggeredNextMarketPrompt(props: {
               })
             requests.set(seedId, request)
           }
-          void request.then(() => loadFallback(seedId))
+          // With no ready reserve, start the personalized fallback alongside
+          // the related lookup instead of putting both waits after the trade.
+          // If a related result arrives first, it still takes priority.
+          void loadFallback(seedId)
         }
       }
       // Unknown history is not an empty history: do not recommend markets
@@ -341,8 +358,8 @@ function TriggeredNextMarketPrompt(props: {
       }))
       if (!isCurrent()) return
       addCandidates(ready, 'related')
-      // Preserve intent if filters refreshed while a dialog was open.
-      intentIds.current.forEach((id) => loadMore.current?.(id))
+      // Rewarm visible/intended seeds after a filter refresh.
+      prefetchedSeedIds.current.forEach((id) => loadMore.current?.(id))
       await loadFallback()
       if (!isCurrent()) return
       const counts = {
@@ -405,6 +422,13 @@ function TriggeredNextMarketPrompt(props: {
     )
     if (!newlyShown.length) return
     newlyShown.forEach((c) => trackedShownIds.current.add(c.id))
+    // Only visible, actionable picks become seeds. Fetching hidden reserves
+    // cannot recursively expand them or create additional impressions.
+    newlyShown.forEach((c) => {
+      if (queue.completedIds.includes(c.id)) return
+      prefetchedSeedIds.current.add(c.id)
+      loadMore.current?.(c.id)
+    })
     trackPromptEvent(user.id, NEXT_MARKET_PROMPT_SHOWN_EVENT, {
       contractId: contract.id,
       candidateIds: newlyShown.map((c) => c.id),
@@ -460,7 +484,7 @@ function TriggeredNextMarketPrompt(props: {
             amount={lastBet.amount}
             completed={queue.completedIds.includes(candidate.id)}
             onBetIntent={() => {
-              intentIds.current.add(candidate.id)
+              prefetchedSeedIds.current.add(candidate.id)
               loadMore.current?.(candidate.id)
             }}
             onTradeCompleted={() => {
