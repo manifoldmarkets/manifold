@@ -71,19 +71,28 @@ const marketResolutionKeys = ['id', 'isResolved', 'subsidyPool', 'answers']
 const latest = (edits: Edit[]) =>
   [...edits].sort((a, b) => b.createdTime - a.createdTime)[0]
 
-// The two contract_edits lookups, honouring the predicates their SQL states.
+const resolvedCount = (e: Edit) =>
+  e.data.answers.filter((a) => a.resolutionTime).length
+
+// The two contract_edits lookups, honouring the predicates and the order their
+// SQL states.
 const answerSnapshotRow = (sql: string, edits: Edit[], answerId: unknown) => {
   const sinceResolution = /created_time >= \(\s*select resolution_time/.test(
     sql
   )
-  const edit = latest(
-    edits.filter(
-      (e) =>
-        e.updatedKeys.includes('subsidyPool') &&
-        e.data.answers.some((a) => a.id === answerId && !a.resolution) &&
-        (!sinceResolution || e.createdTime >= recently)
-    )
+  const mostResolvedFirst = /is not null\) desc,\s*created_time desc/.test(sql)
+  const candidates = edits.filter(
+    (e) =>
+      e.updatedKeys.includes('subsidyPool') &&
+      e.data.answers.some((a) => a.id === answerId && !a.resolution) &&
+      (!sinceResolution || e.createdTime >= recently)
   )
+  const edit = mostResolvedFirst
+    ? [...candidates].sort(
+        (a, b) =>
+          resolvedCount(b) - resolvedCount(a) || b.createdTime - a.createdTime
+      )[0]
+    : latest(candidates)
   if (!edit) return null
   return {
     answer_subsidy_pool: edit.data.answers.find((a) => a.id === answerId)!
@@ -373,6 +382,45 @@ describe('unresolving an answer of an independent market', () => {
     // Not 6 + 30: what A took can't be read from B's snapshot.
     expect(contractRow.subsidyPool).toBe(6)
     expect(restoredAnswerPools).toEqual({ a: 0 })
+  })
+
+  it("prefers its own snapshot to another answer's recorded after it", async () => {
+    // As above, but A's resolution recorded its edit, and B's resolution,
+    // which committed first, recorded its own only afterwards.
+    const edits: Edit[] = [
+      {
+        createdTime: ownEdit,
+        updatedKeys: answerResolutionKeys,
+        data: {
+          isResolved: false,
+          subsidyPool: 12,
+          answers: [
+            { id: 'a', subsidyPool: 1 },
+            { id: 'b', subsidyPool: 0, resolution: 'NO', resolutionTime: 1 },
+            { id: 'c', subsidyPool: 0 },
+          ],
+        },
+      },
+      {
+        createdTime: laterEdit,
+        updatedKeys: answerResolutionKeys,
+        data: {
+          isResolved: false,
+          subsidyPool: 90,
+          answers: [
+            { id: 'a', subsidyPool: 4 },
+            { id: 'b', subsidyPool: 0 },
+            { id: 'c', subsidyPool: 0 },
+          ],
+        },
+      },
+    ]
+    const contractRow = indieMulti({ isResolved: false, subsidyPool: 6 })
+
+    const { restoredAnswerPools } = await run(contractRow, edits, 'a')
+
+    expect(contractRow.subsidyPool).toBe(12)
+    expect(restoredAnswerPools).toEqual({ a: 1 })
   })
 })
 
