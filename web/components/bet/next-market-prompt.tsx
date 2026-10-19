@@ -26,6 +26,7 @@ import {
   NEXT_MARKET_PROMPT_VARIANTS,
   NextMarketPromptPlacement,
   NextMarketPromptQueue,
+  pickNextMarketCandidates,
   updateNextMarketPromptQueue,
 } from 'common/next-market-prompt'
 import { User } from 'common/user'
@@ -53,6 +54,10 @@ import { BetDialog, MultiBetDialog } from './bet-dialog'
 // A bet older than this no longer counts as "just placed" when the user
 // navigates back to the page.
 const PROMPT_TTL_MS = 15 * 60 * 1000
+// The feed combines up to five ranked lists; 20 per list fits the hydration
+// endpoint's 100-ID limit. Bound empty-pool searches per interaction.
+const FALLBACK_PAGE_SIZE = 20
+const FALLBACK_MAX_PAGES = 3
 // One trigger event per bet, even if the page remounts.
 const trackedTriggerBets = new Set<string>()
 
@@ -67,8 +72,8 @@ const trackPromptEvent = (
 }
 
 /**
- * After a bet on the market page, offers one related market the user has
- * not bet on, then another after each suggested-market trade. Renders nothing until a bet is
+ * After a bet on the market page, offers one related or personalized market
+ * the user has not bet on, then another after each suggested-market trade. Renders nothing until a bet is
  * placed on this page, and nothing at all in the control arm.
  *
  * Mount one instance per placement: `panel` inside the binary bet panel,
@@ -134,6 +139,32 @@ function TriggeredNextMarketPrompt(props: {
     remaining: [],
     completedIds: [],
   })
+  const queueRef = useRef(queue)
+  const candidateSources = useRef(
+    new Map<string, 'related' | 'personalized-feed'>()
+  )
+  const updateQueue = (
+    candidates: Contract[],
+    options: Parameters<typeof updateNextMarketPromptQueue>[2],
+    completedId?: string
+  ) => {
+    const current = queueRef.current
+    // Related neighbours discovered on the next intent outrank feed reserves.
+    const priority = (c: Contract) =>
+      candidateSources.current.get(c.id) === 'personalized-feed' ? 1 : 0
+    const pool = [...current.remaining, ...candidates].sort(
+      (a, b) => priority(a) - priority(b)
+    )
+    const next = updateNextMarketPromptQueue(
+      { ...current, remaining: [] },
+      pool,
+      options,
+      completedId
+    )
+    queueRef.current = next
+    setQueue(next)
+    return next
+  }
   const loadMore = useRef<(contractId: string) => void>()
   const intentIds = useRef(new Set<string>())
   const recentlyBetIds = useRef(new Set<string>())
@@ -194,43 +225,132 @@ function TriggeredNextMarketPrompt(props: {
       }
       // Each seed is fetched at most once while these filters are current.
       // Intent warms the pool; only a completed trade earns another reveal.
-      const requestedIds = new Set([contract.id])
-      const hydrate = (related: Contract[]) =>
-        loadNextMarketCandidates(related, options, (ids) =>
-          api('markets-by-ids', { ids }).catch(() => [] as Contract[])
+      const requests = new Map<string, Promise<void>>()
+      const hydrate = (
+        candidates: Contract[],
+        excludeContractIds = options.excludeContractIds
+      ) =>
+        loadNextMarketCandidates(
+          candidates,
+          { ...options, excludeContractIds },
+          (ids) => api('markets-by-ids', { ids })
         )
+      const addCandidates = (
+        candidates: Contract[],
+        source: 'related' | 'personalized-feed'
+      ) => {
+        candidates.forEach((c) => {
+          if (
+            !candidateSources.current.has(c.id) ||
+            (source === 'related' &&
+              !queueRef.current.shown.some((shown) => shown.id === c.id))
+          )
+            candidateSources.current.set(c.id, source)
+        })
+        updateQueue(candidates, options)
+      }
+      let fallbackOffset = 0
+      let fallbackExhausted = false
+      let fallbackRequest: Promise<void> | undefined
+      let fallbackCandidates = 0
+      const needsFallback = (seedId?: string) => {
+        const q = queueRef.current
+        return (
+          pickNextMarketCandidates([...q.remaining, ...q.shown], {
+            ...options,
+            excludeContractIds: new Set([
+              ...options.excludeContractIds,
+              ...q.completedIds,
+              ...(seedId ? [seedId] : []),
+            ]),
+            count: 1,
+          }).length === 0
+        )
+      }
+      const loadFallback = (seedId?: string): Promise<void> => {
+        if (!isCurrent() || !recentlyBet || !needsFallback(seedId))
+          return Promise.resolve()
+        if (fallbackRequest) return fallbackRequest
+        if (fallbackExhausted) return Promise.resolve()
+        fallbackRequest = (async () => {
+          for (let page = 0; page < FALLBACK_MAX_PAGES; page++) {
+            if (!isCurrent() || !needsFallback(seedId)) return
+            const { contracts } = await api('get-feed', {
+              userId: user.id,
+              limit: FALLBACK_PAGE_SIZE,
+              offset: fallbackOffset,
+            })
+            if (!isCurrent()) return
+            if (!contracts.length) {
+              fallbackExhausted = true
+              return
+            }
+            const { ready } = await hydrate(
+              contracts.slice(0, 100),
+              new Set([
+                ...options.excludeContractIds,
+                ...queueRef.current.shown.map((c) => c.id),
+              ])
+            )
+            if (!isCurrent()) return
+            fallbackOffset += FALLBACK_PAGE_SIZE
+            fallbackCandidates += ready.length
+            addCandidates(ready, 'personalized-feed')
+          }
+        })()
+          .catch(() => {
+            // Keep existing picks usable; a later intent/completion can retry.
+          })
+          .finally(() => {
+            fallbackRequest = undefined
+          })
+        return fallbackRequest
+      }
       if (recentlyBet) {
         recentlyBetIds.current = options.excludeContractIds
         loadMore.current = (seedId) => {
-          if (!isCurrent() || requestedIds.has(seedId)) return
-          requestedIds.add(seedId)
-          void api('get-related-markets', { contractId: seedId, limit: 25 })
-            .then(async (r) => {
-              if (!isCurrent()) return
-              const { ready } = await hydrate(r.marketsFromEmbeddings)
-              if (!isCurrent()) return
-              setQueue((q) => updateNextMarketPromptQueue(q, ready, options))
+          if (!isCurrent()) return
+          let request = requests.get(seedId)
+          if (!request) {
+            request = api('get-related-markets', {
+              contractId: seedId,
+              limit: 25,
             })
-            .catch(() => {
-              // Allow a later intent to retry without interrupting the trade.
-              requestedIds.delete(seedId)
-            })
+              .then(async (r) => {
+                if (!isCurrent()) return
+                const { ready } = await hydrate(r.marketsFromEmbeddings)
+                if (!isCurrent()) return
+                addCandidates(ready, 'related')
+              })
+              .catch(() => {
+                requests.delete(seedId)
+              })
+            requests.set(seedId, request)
+          }
+          void request.then(() => loadFallback(seedId))
         }
-        // Preserve intent if filters refreshed while a dialog was open.
-        intentIds.current.forEach(loadMore.current)
       }
       // Unknown history is not an empty history: do not recommend markets
       // we could not check against the user's recent bets.
       const { requestedCount, hydratedCount, ready } = await hydrate(
         recentlyBet ? related : []
-      )
+      ).catch(() => ({
+        requestedCount: related.length,
+        hydratedCount: 0,
+        ready: [] as Contract[],
+      }))
       if (!isCurrent()) return
-      setQueue((q) => updateNextMarketPromptQueue(q, ready, options))
+      addCandidates(ready, 'related')
+      // Preserve intent if filters refreshed while a dialog was open.
+      intentIds.current.forEach((id) => loadMore.current?.(id))
+      await loadFallback()
+      if (!isCurrent()) return
       const counts = {
         related: related.length,
         requestedForHydration: requestedCount,
         afterHydration: hydratedCount,
         afterFilters: ready.length,
+        fallbackCandidates,
         recentlyBetFailed: recentlyBet === undefined,
         recentlyBetExcluded: related.filter((c) => recentlyBet?.includes(c.id))
           .length,
@@ -241,10 +361,10 @@ function TriggeredNextMarketPrompt(props: {
           variant,
           market: contract.id,
           ...counts,
-          eligible: ready.map((c) => c.question),
+          eligible: queueRef.current.shown.map((c) => c.question),
         })
       }
-      if (ready.length === 0) {
+      if (needsFallback()) {
         trackPromptEvent(user.id, NEXT_MARKET_PROMPT_EMPTY_EVENT, {
           contractId: contract.id,
           ...counts,
@@ -288,6 +408,9 @@ function TriggeredNextMarketPrompt(props: {
     trackPromptEvent(user.id, NEXT_MARKET_PROMPT_SHOWN_EVENT, {
       contractId: contract.id,
       candidateIds: newlyShown.map((c) => c.id),
+      candidateSources: Object.fromEntries(
+        newlyShown.map((c) => [c.id, candidateSources.current.get(c.id)])
+      ),
       candidateCount: newlyShown.length,
       betId: lastBet.betId,
       betAmount: lastBet.amount,
@@ -344,18 +467,15 @@ function TriggeredNextMarketPrompt(props: {
               if (!privateUser || !isABTestAssignmentCurrent(`user:${user.id}`))
                 return
               loadMore.current?.(candidate.id)
-              setQueue((q) =>
-                updateNextMarketPromptQueue(
-                  q,
-                  [],
-                  {
-                    sourceContractId: contract.id,
-                    token: lastBet.token,
-                    excludeContractIds: recentlyBetIds.current,
-                    isBlocked: (c) => isContractBlocked(privateUser, c),
-                  },
-                  candidate.id
-                )
+              updateQueue(
+                [],
+                {
+                  sourceContractId: contract.id,
+                  token: lastBet.token,
+                  excludeContractIds: recentlyBetIds.current,
+                  isBlocked: (c) => isContractBlocked(privateUser, c),
+                },
+                candidate.id
               )
             }}
           />
