@@ -264,7 +264,7 @@ function TriggeredNextMarketPrompt(props: {
     >
       <Row className="items-center justify-between">
         <span className="text-primary-700 text-xs font-semibold uppercase tracking-wide">
-          While you're here
+          Picked for you
         </span>
         <button
           type="button"
