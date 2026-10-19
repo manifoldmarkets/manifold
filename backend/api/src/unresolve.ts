@@ -6,6 +6,7 @@ import { getCpmmProbability } from 'common/calculate-cpmm'
 import {
   Contract,
   MINUTES_ALLOWED_TO_UNRESOLVE,
+  MarketContract,
   isMultiCpmm,
 } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
@@ -285,23 +286,63 @@ const undoResolution = async (
   let contractWebsocketUpdates: Partial<Contract> | undefined = undefined
   let answerUpdates: (Partial<Answer> & { id: string })[] = []
 
+  // An answer (of an independent market, the only kind that takes one): the
+  // market as this answer's resolution found it, the latest edit recorded
+  // while the answer was unresolved. Later edits hold it resolved. That
+  // resolution took the answer's own subsidyPool and an even share of the
+  // market's among the answers then unresolved (resolveMarketHelper), and
+  // undoing it puts back both.
+  const answerSnapshot = answerId
+    ? await pg.oneOrNone(
+        `select (answer_data->>'subsidyPool')::numeric as answer_subsidy_pool,
+           (data->>'subsidyPool')::numeric as contract_subsidy_pool,
+           (select count(*)
+            from jsonb_array_elements(data->'answers') as a
+            where a->>'resolutionTime' is null) as unresolved_count
+         from contract_edits
+         cross join lateral jsonb_array_elements(data->'answers') as answer_data
+         where contract_id = $2
+           and 'subsidyPool' = any(updated_keys)
+           and answer_data->>'id' = $1
+           and answer_data->>'resolution' is null
+         order by created_time desc
+         limit 1`,
+        [answerId, contractId],
+        (r) =>
+          r
+            ? {
+                answerSubsidyPool: r.answer_subsidy_pool as number | null,
+                contractSubsidyPool: r.contract_subsidy_pool as number | null,
+                unresolvedCount: r.unresolved_count as number,
+              }
+            : null
+      )
+    : null
+  const contractSubsidyShare = getAnswerContractSubsidyShare(answerSnapshot)
+
   if (contract.isResolved || contract.resolutionTime) {
     // Restore subsidyPool from the contract state before resolution: the
     // latest edit recorded while the market was unresolved. An unresolve
     // attempt that failed after recording its own edit (recordContractEdit
     // writes outside this transaction) has left a later one holding the
-    // resolved market, with subsidyPool 0, which this must skip.
-    const preResolutionSubsidyPool = await pg.oneOrNone(
-      `select (data->>'subsidyPool')::numeric as subsidy_pool
-       from contract_edits
-       where contract_id = $1
-         and 'subsidyPool' = any(updated_keys)
-         and coalesce((data->>'isResolved')::boolean, false) = false
-       order by created_time desc
-       limit 1`,
-      [contractId],
-      (r) => r?.subsidy_pool as number | null
-    )
+    // resolved market, with subsidyPool 0, which this must skip. Not for an
+    // answer: when a later answer resolved the market, that edit is the later
+    // answer's, whose resolution took the rest of the pool and stands. The
+    // answer adds back only its own share, as an increment, so nothing else
+    // writing the pool meanwhile is lost.
+    const preResolutionSubsidyPool = answerId
+      ? null
+      : await pg.oneOrNone(
+          `select (data->>'subsidyPool')::numeric as subsidy_pool
+           from contract_edits
+           where contract_id = $1
+             and 'subsidyPool' = any(updated_keys)
+             and coalesce((data->>'isResolved')::boolean, false) = false
+           order by created_time desc
+           limit 1`,
+          [contractId],
+          (r) => r?.subsidy_pool as number | null
+        )
 
     const updatedAttrs = removeUndefinedProps({
       isResolved: false,
@@ -315,9 +356,15 @@ const undoResolution = async (
         contract.mechanism === 'cpmm-1'
           ? getCpmmProbability(contract.pool, contract.p)
           : undefined,
-      subsidyPool: preResolutionSubsidyPool ?? 0,
+      subsidyPool: answerId
+        ? FieldVal.increment(contractSubsidyShare)
+        : preResolutionSubsidyPool ?? 0,
     })
-    await updateContract(pg, contractId, updatedAttrs)
+    const updatedContract = (await updateContract(
+      pg,
+      contractId,
+      updatedAttrs
+    )) as MarketContract
     await recordContractEdit(contract, userId, Object.keys(updatedAttrs))
     contractWebsocketUpdates = {
       isResolved: false,
@@ -331,8 +378,19 @@ const undoResolution = async (
         contract.mechanism === 'cpmm-1'
           ? getCpmmProbability(contract.pool, contract.p)
           : undefined,
-      subsidyPool: preResolutionSubsidyPool ?? 0,
+      subsidyPool: updatedContract.subsidyPool,
     }
+  } else if (contractSubsidyShare > 0) {
+    // The market is still open to the other answers, and splits its pool
+    // among the unresolved ones, this one again included, as each resolves.
+    // An increment, as the drizzle writes the pool in its own transaction.
+    const updatedContract = (await updateContract(
+      pg,
+      contractId,
+      { subsidyPool: FieldVal.increment(contractSubsidyShare) },
+      { broadcast: false }
+    )) as MarketContract
+    contractWebsocketUpdates = { subsidyPool: updatedContract.subsidyPool }
   }
   if (!answerId) {
     const contractMetrics = await getContractMetricsForContract(
@@ -422,22 +480,9 @@ const undoResolution = async (
       profit: metric.previousProfit ?? metric.profit,
     }))
     await bulkUpdateContractMetrics(updateMetrics, pg)
-    // Restore subsidyPool from contract_edits if available: the answer's pool in
-    // the latest edit recorded while it was unresolved, which is the snapshot
-    // its resolution took. Later edits hold it resolved, with its subsidy paid.
-    const preResolutionSubsidyPool = await pg.oneOrNone(
-      `select (answer_data->>'subsidyPool')::numeric as subsidy_pool
-       from contract_edits
-       cross join lateral jsonb_array_elements(data->'answers') as answer_data
-       where contract_id = $2
-         and 'subsidyPool' = any(updated_keys)
-         and answer_data->>'id' = $1
-         and answer_data->>'resolution' is null
-       order by created_time desc
-       limit 1`,
-      [answerId, contractId],
-      (r) => r?.subsidy_pool as number | null
-    )
+    // Restore the answer's own subsidyPool from the snapshot its resolution
+    // took, if one was recorded.
+    const preResolutionSubsidyPool = answerSnapshot?.answerSubsidyPool ?? null
     const answer = await pg.one(
       `
       update answers
@@ -479,6 +524,22 @@ const undoResolution = async (
 
   log('updated contract')
   return { answerUpdates, contractWebsocketUpdates }
+}
+
+// The share of an independent market's subsidyPool that resolving one of its
+// answers took, from the market as that resolution found it: the pool split
+// evenly among the answers then unresolved, as resolveMarketHelper splits it.
+// Zero with no snapshot, or one that can't produce a positive amount.
+export function getAnswerContractSubsidyShare(
+  snapshot: {
+    contractSubsidyPool: number | null
+    unresolvedCount: number
+  } | null
+) {
+  if (!snapshot) return 0
+  const share =
+    (snapshot.contractSubsidyPool ?? 0) / Math.max(1, snapshot.unresolvedCount)
+  return Number.isFinite(share) && share > 0 ? share : 0
 }
 
 export function getUndoOldContractPayout(
