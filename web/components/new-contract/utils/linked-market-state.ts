@@ -86,6 +86,29 @@ export function isLinkedCloseTimePending(state: FormState) {
   )
 }
 
+/** Whether the loaded parent should supply the form's inherited deadline. */
+export function shouldApplyLinkedMarketCloseTime(
+  state: FormState,
+  parent: Pick<Contract, 'id' | 'closeTime'>
+) {
+  if (
+    state.linkedToContractId !== parent.id ||
+    hasManualCloseTime(state) ||
+    !canInheritLinkedCloseTime(state.outcomeType) ||
+    (state.outcomeType === 'POLL' && state.neverCloses)
+  )
+    return false
+  const fields = getCloseTimeFields(parent.closeTime)
+  // Provenance can survive a restore while the parent's deadline has moved.
+  // Compare the displayed fields too; once current, no further update is needed.
+  return (
+    state.inheritedCloseTimeFrom !== parent.id ||
+    state.closeDate !== fields?.closeDate ||
+    state.closeHoursMinutes !== fields?.closeHoursMinutes ||
+    state.neverCloses
+  )
+}
+
 export function getLinkedCloseTimeDescription(state: FormState) {
   if (state.outcomeType === 'POLL' && state.neverCloses) return 'Never'
   if (!state.linkedToContractId || hasManualCloseTime(state)) return undefined
@@ -101,13 +124,8 @@ export function applyLinkedMarketCloseTime(
   state: FormState,
   parent: Pick<Contract, 'id' | 'closeTime'>
 ): FormState {
+  if (!shouldApplyLinkedMarketCloseTime(state, parent)) return state
   const closeTimeFields = getCloseTimeFields(parent.closeTime)
-  if (
-    state.linkedToContractId !== parent.id ||
-    hasManualCloseTime(state) ||
-    !canInheritLinkedCloseTime(state.outcomeType)
-  )
-    return state
   return {
     ...state,
     closeDate: undefined,

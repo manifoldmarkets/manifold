@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { MarketDraft } from 'common/drafts'
 import { API } from 'common/api/schema'
+import type { Contract } from 'common/contract'
+import { validateContractForm } from 'web/lib/validation/contract-validation'
 import type { FormState } from '../contextual-editor-panel'
 import {
   applyLinkedMarketCloseTime,
@@ -12,6 +14,7 @@ import {
   selectLinkedMarket,
   getLinkedCloseTimeDescription,
   isLinkedCloseTimePending,
+  shouldApplyLinkedMarketCloseTime,
 } from './linked-market-state'
 
 const closeTime = new Date(2026, 9, 15, 0, 15).getTime()
@@ -140,6 +143,10 @@ test('native no-close types never preview an inherited deadline or wait for one'
   for (const outcomeType of ['STONK', 'BOUNTIED_QUESTION'] as const) {
     const linked = { ...state, outcomeType, linkedToContractId: 'game' }
     assert.equal(isLinkedCloseTimePending(linked), false)
+    assert.equal(
+      shouldApplyLinkedMarketCloseTime(linked, { id: 'game', closeTime }),
+      false
+    )
     assert.equal(getLinkedCloseTimeDescription(linked), 'Never')
     const inherited = applyLinkedMarketCloseTime(linked, {
       id: 'game',
@@ -282,10 +289,123 @@ test('restoring an inherited draft keeps its date a default while manual edits r
 
 test('a delayed parent response cannot overwrite a newly selected parent', () => {
   const linked = { ...state, linkedToContractId: 'other-game' }
+  assert.equal(
+    shouldApplyLinkedMarketCloseTime(linked, { id: 'game', closeTime }),
+    false
+  )
   assert.strictEqual(
     applyLinkedMarketCloseTime(linked, { id: 'game', closeTime }),
     linked
   )
+})
+
+// Use the same pure decision as LinkedMarketField's effect. Server rendering
+// does not run effects, so renderToStaticMarkup cannot exercise this lifecycle.
+function loadParentDefault(
+  state: FormState,
+  parent: Pick<Contract, 'id' | 'closeTime'>
+) {
+  return shouldApplyLinkedMarketCloseTime(state, parent)
+    ? applyLinkedMarketCloseTime(state, parent)
+    : state
+}
+
+const day = 24 * 60 * 60 * 1000
+const today = new Date().setHours(12, 0, 0, 0)
+const movedParent = { id: 'game', closeTime: today + 5 * day }
+
+for (const source of ['server draft', 'local persisted state'] as const) {
+  for (const oldDate of ['future', 'past'] as const) {
+    test(`RR-01: ${source} refreshes an inherited ${oldDate} deadline from the current cached parent`, () => {
+      const oldDeadline = today + (oldDate === 'past' ? -2 : 2) * day
+      const savedState = applyLinkedMarketCloseTime(
+        selectLinkedMarket(state, { contractId: 'game', relation: 'prop' }),
+        { id: 'game', closeTime: oldDeadline }
+      )
+      // The parent is already cached and has supplied NEW before OLD is restored.
+      const current = loadParentDefault(
+        { ...state, linkedToContractId: 'game' },
+        movedParent
+      )
+      let restored: FormState
+      if (source === 'server draft') {
+        const data = API['save-market-draft'].props.parse({
+          data: {
+            ...draft,
+            ...savedState,
+            savedAt: today,
+          },
+        }).data
+        assert.equal(data.visibility, 'public')
+        restored = restoreMarketDraft(current, {
+          ...data,
+          visibility: 'public',
+          answers: data.answers ?? [],
+        })
+      } else {
+        // usePersistentLocalState restores this JSON without changing provenance.
+        restored = JSON.parse(JSON.stringify(savedState)) as FormState
+      }
+      assert.equal(isLinkedCloseTimePending(restored), false)
+      if (oldDate === 'past') {
+        assert.equal(
+          validateContractForm({ ...restored, outcomeType: 'BINARY' }).errors
+            .closeDate,
+          'Close date must be in the future'
+        )
+      }
+      const refreshed = loadParentDefault(restored, movedParent)
+      assert.equal(
+        refreshed.closeDate,
+        getCloseTimeFields(movedParent.closeTime)?.closeDate
+      )
+      assert.equal(
+        refreshed.closeHoursMinutes,
+        getCloseTimeFields(movedParent.closeTime)?.closeHoursMinutes
+      )
+      assert.equal(refreshed.inheritedCloseTimeFrom, 'game')
+      assert.equal(refreshed.hasManuallyEditedCloseDate, false)
+      assert.equal(
+        shouldApplyLinkedMarketCloseTime(refreshed, movedParent),
+        false
+      )
+      assert.strictEqual(loadParentDefault(refreshed, movedParent), refreshed)
+      assert.deepEqual(getCreateMarketCloseParams(refreshed), {})
+      assert.equal(
+        validateContractForm({ ...refreshed, outcomeType: 'BINARY' }).errors
+          .closeDate,
+        undefined
+      )
+    })
+  }
+}
+
+test('RR-01: a moved parent preserves manual dates and the poll Never override', () => {
+  const manualDeadline = today + 3 * day
+  const manual = {
+    ...state,
+    linkedToContractId: 'game',
+    ...getCloseTimeFields(manualDeadline),
+    hasManuallyEditedCloseDate: true,
+  }
+  assert.strictEqual(loadParentDefault(manual, movedParent), manual)
+  assert.deepEqual(getCreateMarketCloseParams(manual), {
+    closeTime: manualDeadline,
+  })
+  const never = { ...manual, outcomeType: 'POLL' as const, neverCloses: true }
+  assert.strictEqual(loadParentDefault(never, movedParent), never)
+  assert.deepEqual(getCreateMarketCloseParams(never), { neverCloses: true })
+})
+
+test('RR-01: resetting a cached parent still reapplies its default', () => {
+  const loaded = loadParentDefault(
+    { ...state, linkedToContractId: 'game' },
+    movedParent
+  )
+  assert.equal(isLinkedCloseTimePending(loaded), false)
+  const reset = { ...state, linkedToContractId: 'game' }
+  assert.equal(isLinkedCloseTimePending(reset), true)
+  assert.deepEqual(loadParentDefault(reset, movedParent), loaded)
 })
 
 test('pending AI suggestions are discarded after linking, editing the time, or changing the question', () => {

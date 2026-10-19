@@ -15,6 +15,11 @@ import { Row } from 'web/components/layout/row'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useEvent } from 'client-common/hooks/use-event'
+import type { FormState } from './contextual-editor-panel'
+import {
+  isLinkedCloseTimePending,
+  shouldApplyLinkedMarketCloseTime,
+} from './utils/linked-market-state'
 
 /**
  * "This is about…": the market a new market is linked to. A linked market
@@ -25,8 +30,8 @@ import { useEvent } from 'client-common/hooks/use-event'
 export function LinkedMarketField(props: {
   contractId: string | undefined
   relation: MarketLinkRelation | undefined
-  /** Reapply a cached parent's default after a draft/form reset. */
-  closeTimePending: boolean
+  /** Current form state, including restored or persisted inherited timing. */
+  closeTimeState: FormState
   onChange: (
     link: { contractId: string; relation: MarketLinkRelation } | undefined
   ) => void
@@ -36,7 +41,7 @@ export function LinkedMarketField(props: {
   const {
     contractId,
     relation = 'related',
-    closeTimePending,
+    closeTimeState,
     onChange,
     onParentLoaded,
   } = props
@@ -50,9 +55,18 @@ export function LinkedMarketField(props: {
   )
   const parent = contractId ? data?.find((c) => c.id === contractId) : undefined
   const onLoaded = useEvent(onParentLoaded)
+  const closeTimePending = isLinkedCloseTimePending(closeTimeState)
+  const shouldApplyCloseTime =
+    !!parent && shouldApplyLinkedMarketCloseTime(closeTimeState, parent)
   useEffect(() => {
-    if (parent && closeTimePending) onLoaded(parent)
-  }, [parent?.id, parent?.closeTime, closeTimePending, onLoaded])
+    if (parent && shouldApplyCloseTime) onLoaded(parent)
+  }, [
+    parent?.id,
+    parent?.closeTime,
+    closeTimePending,
+    shouldApplyCloseTime,
+    onLoaded,
+  ])
 
   const pick = (contracts: Contract[]) => {
     setPicking(false)
