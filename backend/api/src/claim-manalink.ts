@@ -9,18 +9,16 @@ import { getUser } from 'shared/utils'
 
 const bodySchema = z.object({ slug: z.string() }).strict()
 
-// don't tell the users but you can double redeem via race conditions.
-// the money still gets taken from the creator correctly though so no money is created
-
 export const claimmanalink = authEndpoint(async (req, auth) => {
   const { slug } = validate(bodySchema, req.body)
 
   const pg = createSupabaseDirectClient()
 
   await pg.tx(async (tx) => {
-    // Look up the manalink
+    // Lock the manalink row so concurrent claims of the same link run one at a
+    // time: each one then counts the claims committed before it.
     const manalink = await tx.oneOrNone<Row<'manalinks'>>(
-      `select * from manalinks where id = $1`,
+      `select * from manalinks where id = $1 for update`,
       [slug]
     )
 
@@ -30,12 +28,13 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
 
     const { amount, creator_id, expires_time, max_uses } = manalink
 
+    // The claimant is the txn's to_id column; txn data holds only the description.
     const claimedUserIds = await tx.map(
-      `select txns.data from manalink_claims
+      `select txns.to_id from manalink_claims
          join txns on txns.id = manalink_claims.txn_id
          where manalink_id = $1`,
       [slug],
-      (r) => r.data.toId as string
+      (r: { to_id: string }) => r.to_id
     )
 
     if (auth.uid === creator_id)
@@ -86,7 +85,8 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       amount,
       token: 'M$',
       category: 'MANALINK',
-      description: `Manalink ${slug} claimed: ${amount} from ${toUser.username} to ${auth.uid}`,
+      // The slug is a bearer secret, so keep it out of the description.
+      description: `Manalink claimed: ${amount} by ${toUser.username}`,
     } as const
 
     const txn = await runTxnInBetQueue(tx, data)
