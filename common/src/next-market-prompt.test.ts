@@ -3,6 +3,8 @@ import {
   getNextMarketPromptPlacement,
   isNextMarketPromptLocation,
   pickNextMarketCandidates,
+  NextMarketPromptQueue,
+  updateNextMarketPromptQueue,
 } from './next-market-prompt'
 
 const NOW = 1_800_000_000_000
@@ -44,12 +46,11 @@ const pick = (
   }).map((c) => c.id)
 
 describe('pickNextMarketCandidates', () => {
-  it('keeps the supplied order and caps at three', () => {
-    expect(pick([binary('a'), multi('b'), binary('c'), binary('d')])).toEqual([
-      'a',
-      'b',
-      'c',
-    ])
+  it('starts with one suggestion and retains ranked order for a larger pool', () => {
+    const candidates = [binary('a'), multi('b'), binary('c'), binary('d')]
+    expect(pick(candidates)).toEqual(['a'])
+    expect(pick(candidates, { count: 3 })).toEqual(['a', 'b', 'c'])
+    expect(pick(candidates, { count: 0 })).toEqual([])
   })
 
   it('skips the market just bet on and duplicates', () => {
@@ -78,12 +79,15 @@ describe('pickNextMarketCandidates', () => {
 
   it('skips binary markets at or beyond 5% and 95%', () => {
     expect(
-      pick([
-        binary('low', { prob: 0.04 }),
-        binary('high', { prob: 0.96 }),
-        binary('edge-low', { prob: 0.05 }),
-        binary('edge-high', { prob: 0.95 }),
-      ])
+      pick(
+        [
+          binary('low', { prob: 0.04 }),
+          binary('high', { prob: 0.96 }),
+          binary('edge-low', { prob: 0.05 }),
+          binary('edge-high', { prob: 0.95 }),
+        ],
+        { count: 3 }
+      )
     ).toEqual(['edge-low', 'edge-high'])
   })
 
@@ -128,6 +132,7 @@ describe('pickNextMarketCandidates', () => {
           binary('a'),
         ],
         isBlocked: (c) => c.groupSlugs?.includes('blocked-topic') ?? false,
+        count: 3,
       })
     ).toEqual(['a', 'b', 'c'])
   })
@@ -178,8 +183,104 @@ describe('pickNextMarketCandidates', () => {
           multi('v1', { answers }),
           multi('v2', { mechanism: 'cpmm-multi-2', answers }),
         ],
+        count: 3,
       })
     ).toEqual(['v1', 'v2'])
+  })
+})
+
+describe('updateNextMarketPromptQueue', () => {
+  const empty = (): NextMarketPromptQueue => ({
+    shown: [],
+    remaining: [],
+    completedIds: [],
+  })
+  const options = {
+    sourceContractId: 'source',
+    token: 'MANA' as const,
+    excludeContractIds: new Set<string>(),
+    now: NOW,
+  }
+  const update = (
+    queue: NextMarketPromptQueue,
+    ids: string[],
+    completedId?: string
+  ) =>
+    updateNextMarketPromptQueue(
+      queue,
+      ids.map((id) => binary(id)),
+      options,
+      completedId
+    )
+  const shown = (queue: NextMarketPromptQueue) => queue.shown.map((c) => c.id)
+
+  it('keeps reserves hidden until a trade and appends just one each time', () => {
+    let queue = update(empty(), ['a', 'b', 'c'])
+    expect(shown(queue)).toEqual(['a'])
+    queue = update(queue, ['d']) // Bet intent prefetch, not a completed trade.
+    expect(shown(queue)).toEqual(['a'])
+    queue = update(queue, [], 'a')
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(shown(update(queue, [], 'b'))).toEqual(['a', 'b', 'c'])
+  })
+
+  it('replenishes a single-result pool even when prefetch finishes after the trade', () => {
+    let queue = update(empty(), ['a'])
+    queue = update(queue, [], 'a')
+    expect(shown(queue)).toEqual(['a'])
+    queue = update(queue, ['source', 'a', 'b', 'b', 'c'])
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.remaining.map((c) => c.id)).toEqual(['c'])
+  })
+
+  it('does not refill twice for repeated completion callbacks or unseen markets', () => {
+    let queue = update(empty(), ['a', 'b', 'c'])
+    queue = update(queue, [], 'a')
+    queue = update(queue, [], 'a')
+    queue = update(queue, [], 'not-shown')
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.completedIds).toEqual(['a'])
+  })
+
+  it('deduplicates overlapping responses and never reoffers a completed pick', () => {
+    let queue = update(empty(), ['a', 'b'])
+    queue = update(queue, ['b', 'c', 'c'])
+    queue = update(queue, ['a', 'c', 'd'], 'a')
+    queue = update(queue, ['a', 'b'], 'b')
+    expect(shown(queue)).toEqual(['a', 'b', 'c'])
+    expect(queue.remaining.map((c) => c.id)).toEqual(['d'])
+  })
+
+  it('rechecks closed, blocked and recently traded reserves before revealing', () => {
+    const queue = updateNextMarketPromptQueue(
+      empty(),
+      [
+        binary('a'),
+        binary('closed', { closeTime: NOW + 1 }),
+        binary('blocked'),
+        binary('recent'),
+        binary('next'),
+      ],
+      options
+    )
+    const next = updateNextMarketPromptQueue(
+      queue,
+      [],
+      {
+        ...options,
+        now: NOW + 2,
+        excludeContractIds: new Set(['recent']),
+        isBlocked: (c) => c.id === 'blocked',
+      },
+      'a'
+    )
+    expect(shown(next)).toEqual(['a', 'next'])
+  })
+
+  it('stops quietly when no further eligible candidate exists', () => {
+    const queue = update(update(empty(), ['a']), [], 'a')
+    expect(shown(update(queue, ['source', 'a']))).toEqual(['a'])
+    expect(queue.remaining).toEqual([])
   })
 })
 

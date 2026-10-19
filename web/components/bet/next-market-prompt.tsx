@@ -14,6 +14,7 @@ import {
 } from 'common/contract'
 import {
   getNextMarketPromptPlacement,
+  isNextMarketPromptCandidate,
   NEXT_MARKET_PROMPT_BET_EVENT,
   NEXT_MARKET_PROMPT_CLICK_EVENT,
   NEXT_MARKET_PROMPT_DISMISS_EVENT,
@@ -23,7 +24,9 @@ import {
   NEXT_MARKET_PROMPT_TRIGGER_EVENT,
   NEXT_MARKET_PROMPT_VARIANTS,
   NextMarketPromptPlacement,
+  NextMarketPromptQueue,
   pickNextMarketCandidates,
+  updateNextMarketPromptQueue,
 } from 'common/next-market-prompt'
 import { User } from 'common/user'
 import { formatPercent } from 'common/util/format'
@@ -64,8 +67,8 @@ const trackPromptEvent = (
 }
 
 /**
- * After a bet on the market page, offers three related markets the user has
- * not bet on, each with one-tap bet buttons. Renders nothing until a bet is
+ * After a bet on the market page, offers one related market the user has
+ * not bet on, then another after each suggested-market trade. Renders nothing until a bet is
  * placed on this page, and nothing at all in the control arm.
  *
  * Mount one instance per placement: `panel` inside the binary bet panel,
@@ -126,7 +129,15 @@ function TriggeredNextMarketPrompt(props: {
     }
   )
   const variant = assignment?.variant
-  const [candidates, setCandidates] = useState<Contract[] | undefined>()
+  const [queue, setQueue] = useState<NextMarketPromptQueue>({
+    shown: [],
+    remaining: [],
+    completedIds: [],
+  })
+  const loadMore = useRef<(contractId: string) => void>()
+  const intentIds = useRef(new Set<string>())
+  const recentlyBetIds = useRef(new Set<string>())
+  const trackedShownIds = useRef(new Set<string>())
   const [dismissed, setDismissed] = useState(false)
   const triggerKey = lastBet.betId ?? String(lastBet.time)
 
@@ -153,11 +164,14 @@ function TriggeredNextMarketPrompt(props: {
   useEffectCheckEquality(() => {
     if (
       variant !== 'treatment' ||
+      dismissed ||
       !privateUser ||
       !isABTestAssignmentCurrent(`user:${user.id}`)
     )
       return
     let cancelled = false
+    const isCurrent = () =>
+      !cancelled && isABTestAssignmentCurrent(`user:${user.id}`)
     const load = async () => {
       const [related, recentlyBet] = await Promise.all([
         api('get-related-markets', { contractId: contract.id, limit: 25 })
@@ -171,33 +185,61 @@ function TriggeredNextMarketPrompt(props: {
           .then((r) => Object.keys(r.metricsByContract))
           .catch(() => undefined),
       ])
-      if (cancelled || !isABTestAssignmentCurrent(`user:${user.id}`)) return
+      if (!isCurrent()) return
+      const options = {
+        sourceContractId: contract.id,
+        token: lastBet.token,
+        excludeContractIds: new Set(recentlyBet),
+        isBlocked: (c: Contract) => isContractBlocked(privateUser, c),
+      }
+      // Each seed is fetched at most once while these filters are current.
+      // Intent warms the pool; only a completed trade earns another reveal.
+      const requestedIds = new Set([contract.id])
+      const hydrate = async (related: Contract[]) => {
+        const picked = pickNextMarketCandidates(related, {
+          ...options,
+          isBlocked: undefined,
+          count: related.length,
+        })
+        const full = picked.length
+          ? await api('markets-by-ids', { ids: picked.map((c) => c.id) }).catch(
+              () => [] as Contract[]
+            )
+          : []
+        return {
+          picked,
+          ready: pickNextMarketCandidates(picked, {
+            ...options,
+            hydratedContracts: full,
+            count: picked.length,
+          }),
+        }
+      }
+      if (recentlyBet) {
+        recentlyBetIds.current = options.excludeContractIds
+        loadMore.current = (seedId) => {
+          if (!isCurrent() || requestedIds.has(seedId)) return
+          requestedIds.add(seedId)
+          void api('get-related-markets', { contractId: seedId, limit: 25 })
+            .then(async (r) => {
+              if (!isCurrent()) return
+              const { ready } = await hydrate(r.marketsFromEmbeddings)
+              if (!isCurrent()) return
+              setQueue((q) => updateNextMarketPromptQueue(q, ready, options))
+            })
+            .catch(() => {
+              // Allow a later intent to retry without interrupting the trade.
+              requestedIds.delete(seedId)
+            })
+        }
+        // Preserve intent if filters refreshed while a dialog was open.
+        intentIds.current.forEach(loadMore.current)
+      }
       // Unknown history is not an empty history: do not recommend markets
       // we could not check against the user's recent bets.
-      const picked = pickNextMarketCandidates(recentlyBet ? related : [], {
-        sourceContractId: contract.id,
-        token: lastBet.token,
-        excludeContractIds: new Set(recentlyBet),
-        // Hydrate the eligible pool before applying topic blocks and the cap:
-        // get-related-markets strips both answers and groupSlugs.
-        count: related.length,
-      })
-      // The related-markets endpoint strips answers from multiple-choice
-      // markets, which the bet dialog needs. Hydrate the picks.
-      const full = picked.length
-        ? await api('markets-by-ids', { ids: picked.map((c) => c.id) }).catch(
-            () => [] as Contract[]
-          )
-        : []
-      if (cancelled || !isABTestAssignmentCurrent(`user:${user.id}`)) return
-      const ready = pickNextMarketCandidates(picked, {
-        sourceContractId: contract.id,
-        token: lastBet.token,
-        excludeContractIds: new Set(recentlyBet),
-        hydratedContracts: full,
-        isBlocked: (c) => isContractBlocked(privateUser, c),
-      })
-      setCandidates(ready)
+      const { picked, ready } = await hydrate(recentlyBet ? related : [])
+      if (!isCurrent()) return
+      setQueue((q) => updateNextMarketPromptQueue(q, ready, options))
       const counts = {
         related: related.length,
         afterFilters: picked.length,
@@ -212,18 +254,10 @@ function TriggeredNextMarketPrompt(props: {
           variant,
           market: contract.id,
           ...counts,
-          shown: ready.map((c) => c.question),
+          eligible: ready.map((c) => c.question),
         })
       }
-      if (ready.length > 0) {
-        trackPromptEvent(user.id, NEXT_MARKET_PROMPT_SHOWN_EVENT, {
-          contractId: contract.id,
-          candidateIds: ready.map((c) => c.id),
-          candidateCount: ready.length,
-          betAmount: lastBet.amount,
-          location: lastBet.location,
-        })
-      } else {
+      if (ready.length === 0) {
         trackPromptEvent(user.id, NEXT_MARKET_PROMPT_EMPTY_EVENT, {
           contractId: contract.id,
           ...counts,
@@ -234,9 +268,11 @@ function TriggeredNextMarketPrompt(props: {
     load()
     return () => {
       cancelled = true
+      loadMore.current = undefined
     }
   }, [
     variant,
+    dismissed,
     contract.id,
     user.id,
     !!privateUser,
@@ -246,12 +282,34 @@ function TriggeredNextMarketPrompt(props: {
     privateUser?.blockedGroupSlugs,
   ])
 
-  if (
-    variant !== 'treatment' ||
-    dismissed ||
-    !candidates ||
-    candidates.length === 0
-  ) {
+  const latestCompletedId = queue.completedIds[queue.completedIds.length - 1]
+  const candidates = queue.shown.filter(
+    (c) =>
+      (!queue.completedIds.includes(c.id) || c.id === latestCompletedId) &&
+      isNextMarketPromptCandidate(c, { now: Date.now() }) &&
+      privateUser &&
+      isABTestAssignmentCurrent(`user:${user.id}`) &&
+      !isContractBlocked(privateUser, c)
+  )
+  useEffect(() => {
+    if (variant !== 'treatment' || dismissed) return
+    const newlyShown = candidates.filter(
+      (c) => !trackedShownIds.current.has(c.id)
+    )
+    if (!newlyShown.length) return
+    newlyShown.forEach((c) => trackedShownIds.current.add(c.id))
+    trackPromptEvent(user.id, NEXT_MARKET_PROMPT_SHOWN_EVENT, {
+      contractId: contract.id,
+      candidateIds: newlyShown.map((c) => c.id),
+      candidateCount: newlyShown.length,
+      betId: lastBet.betId,
+      betAmount: lastBet.amount,
+      location: lastBet.location,
+      replenishmentIndex: queue.completedIds.length,
+    })
+  }, [candidates, dismissed, variant])
+
+  if (variant !== 'treatment' || dismissed || candidates.length === 0) {
     return null
   }
 
@@ -282,14 +340,37 @@ function TriggeredNextMarketPrompt(props: {
         </button>
       </Row>
       <Col className="divide-ink-200 divide-y">
-        {candidates.map((candidate, position) => (
+        {candidates.map((candidate) => (
           <NextMarketRow
             key={candidate.id}
             contract={candidate}
-            position={position}
+            position={queue.shown.findIndex((c) => c.id === candidate.id)}
             sourceContractId={contract.id}
             userId={user.id}
             amount={lastBet.amount}
+            completed={queue.completedIds.includes(candidate.id)}
+            onBetIntent={() => {
+              intentIds.current.add(candidate.id)
+              loadMore.current?.(candidate.id)
+            }}
+            onTradeCompleted={() => {
+              if (!privateUser || !isABTestAssignmentCurrent(`user:${user.id}`))
+                return
+              loadMore.current?.(candidate.id)
+              setQueue((q) =>
+                updateNextMarketPromptQueue(
+                  q,
+                  [],
+                  {
+                    sourceContractId: contract.id,
+                    token: lastBet.token,
+                    excludeContractIds: recentlyBetIds.current,
+                    isBlocked: (c) => isContractBlocked(privateUser, c),
+                  },
+                  candidate.id
+                )
+              )
+            }}
           />
         ))}
       </Col>
@@ -303,11 +384,32 @@ function NextMarketRow(props: {
   sourceContractId: string
   userId: string
   amount: number
+  completed: boolean
+  onBetIntent: () => void
+  onTradeCompleted: () => void
 }) {
-  const { contract, position, sourceContractId, amount, userId } = props
+  const {
+    contract,
+    position,
+    sourceContractId,
+    amount,
+    userId,
+    completed,
+    onBetIntent,
+    onTradeCompleted,
+  } = props
   const [openOutcome, setOpenOutcome] = useState<'YES' | 'NO' | undefined>()
   const [openMulti, setOpenMulti] = useState(false)
   const trackedBetIds = useRef(new Set<string>())
+  const placedBet = useRef(false)
+  const onTradeCompletedRef = useRef(onTradeCompleted)
+  onTradeCompletedRef.current = onTradeCompleted
+  const closeDialog = () => {
+    setOpenOutcome(undefined)
+    setOpenMulti(false)
+    // Dialogs can auto-close on a timer; use the latest block/history filters.
+    if (placedBet.current) onTradeCompletedRef.current()
+  }
   const isBinary =
     contract.outcomeType === 'BINARY' && contract.mechanism === 'cpmm-1'
   const yesProb =
@@ -339,6 +441,7 @@ function NextMarketRow(props: {
     )
       return
     trackedBetIds.current.add(bet.id)
+    placedBet.current = true
     trackPromptEvent(userId, NEXT_MARKET_PROMPT_BET_EVENT, {
       contractId: contract.id,
       sourceContractId,
@@ -369,13 +472,16 @@ function NextMarketRow(props: {
           </span>
         )}
       </Col>
-      {isBinary && yesProb !== undefined ? (
+      {completed ? (
+        <span className="text-ink-500 shrink-0 text-xs">Traded ✓</span>
+      ) : isBinary && yesProb !== undefined ? (
         <Row className="shrink-0 gap-1">
           <Button
             size="xs"
             color="green"
             onClick={() => {
               trackClick('YES')
+              onBetIntent()
               setOpenOutcome('YES')
             }}
           >
@@ -386,6 +492,7 @@ function NextMarketRow(props: {
             color="red"
             onClick={() => {
               trackClick('NO')
+              onBetIntent()
               setOpenOutcome('NO')
             }}
           >
@@ -399,6 +506,7 @@ function NextMarketRow(props: {
           className="shrink-0"
           onClick={() => {
             trackClick('bet')
+            onBetIntent()
             setOpenMulti(true)
           }}
         >
@@ -410,7 +518,7 @@ function NextMarketRow(props: {
           contract={contract as BinaryContract}
           open
           setOpen={(open) => {
-            if (!open) setOpenOutcome(undefined)
+            if (!open) closeDialog()
           }}
           trackingLocation="next market prompt"
           initialOutcome={openOutcome}
@@ -422,7 +530,9 @@ function NextMarketRow(props: {
         <MultiBetDialog
           contract={contract as CPMMMultiContract}
           open={openMulti}
-          setOpen={setOpenMulti}
+          setOpen={(open) => {
+            if (!open) closeDialog()
+          }}
           trackingLocation="next market prompt"
           onBetPlaced={trackBetPlaced}
         />

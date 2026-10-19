@@ -1,7 +1,7 @@
 import { Contract, isMultiCpmm } from './contract'
 
-// A/B test: after a bet placed on the market page, offer three related
-// markets with one-tap bet buttons. Motivation (Sept 2026 analysis): 55% of
+// A/B test: after a bet placed on the market page, offer one related market
+// and another after each suggested-market trade. Motivation (Sept 2026 analysis): 55% of
 // betting days involve exactly one market, and only 26% of users bet on
 // another market within 30 minutes of their first bet of the day, versus
 // 60% after any later bet.
@@ -16,8 +16,7 @@ export const NEXT_MARKET_PROMPT_TRIGGER_EVENT = 'next market prompt trigger'
 export const NEXT_MARKET_PROMPT_SHOWN_EVENT = 'next market prompt shown'
 // A tap on a candidate's question, Yes, No or Bet.
 export const NEXT_MARKET_PROMPT_CLICK_EVENT = 'next market prompt click'
-// A bet placed through the dialog the strip opened (binary markets only;
-// multi-choice bets are attributed by time in the analysis).
+// A bet placed through the binary or multiple-choice dialog the strip opened.
 export const NEXT_MARKET_PROMPT_BET_EVENT = 'next market prompt bet'
 // The user closed the strip with its X.
 export const NEXT_MARKET_PROMPT_DISMISS_EVENT = 'next market prompt dismiss'
@@ -25,7 +24,7 @@ export const NEXT_MARKET_PROMPT_DISMISS_EVENT = 'next market prompt dismiss'
 // counts at each filtering step, so the empty rate is measurable.
 export const NEXT_MARKET_PROMPT_EMPTY_EVENT = 'next market prompt empty'
 
-export const NEXT_MARKET_PROMPT_COUNT = 3
+export const NEXT_MARKET_PROMPT_COUNT = 1
 export const NEXT_MARKET_PROMPT_MIN_PROB = 0.05
 export const NEXT_MARKET_PROMPT_MAX_PROB = 0.95
 
@@ -86,6 +85,7 @@ export const pickNextMarketCandidates = (
 ): Contract[] => {
   const now = opts.now ?? Date.now()
   const count = opts.count ?? NEXT_MARKET_PROMPT_COUNT
+  if (count <= 0) return []
   const hydratedById = opts.hydratedContracts
     ? new Map(opts.hydratedContracts.map((c) => [c.id, c]))
     : undefined
@@ -110,4 +110,46 @@ export const pickNextMarketCandidates = (
     if (picked.length >= count) break
   }
   return picked
+}
+
+export type NextMarketPromptQueue = {
+  shown: Contract[]
+  remaining: Contract[]
+  completedIds: string[]
+}
+
+/** Keep ranked reserves, revealing one new pick per distinct completed market.
+ * A completion can arrive before its prefetched candidates; the unfilled slot
+ * survives until a later update. Previously shown markets never reappear.
+ */
+export const updateNextMarketPromptQueue = (
+  queue: NextMarketPromptQueue,
+  candidates: readonly Contract[],
+  opts: Parameters<typeof pickNextMarketCandidates>[1],
+  completedId?: string
+): NextMarketPromptQueue => {
+  const completedIds =
+    completedId &&
+    queue.shown.some((c) => c.id === completedId) &&
+    !queue.completedIds.includes(completedId)
+      ? [...queue.completedIds, completedId]
+      : queue.completedIds
+  const pool = [...queue.remaining, ...candidates]
+  const remaining = pickNextMarketCandidates(pool, {
+    ...opts,
+    excludeContractIds: new Set([
+      ...opts.excludeContractIds,
+      ...queue.shown.map((c) => c.id),
+    ]),
+    count: pool.length,
+  })
+  const slots = Math.max(
+    0,
+    NEXT_MARKET_PROMPT_COUNT + completedIds.length - queue.shown.length
+  )
+  return {
+    shown: [...queue.shown, ...remaining.slice(0, slots)],
+    remaining: remaining.slice(slots),
+    completedIds,
+  }
 }
