@@ -1,6 +1,6 @@
 import { JSONContent } from '@tiptap/core'
 import { Bet } from 'common/bet'
-import { ContractComment } from 'common/comment'
+import { ContractComment, MAX_COMMENT_JSON_LENGTH } from 'common/comment'
 import { type Contract } from 'common/contract'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { convertBet } from 'common/supabase/bets'
@@ -25,7 +25,8 @@ import { APIError, type APIHandler, AuthedUser } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { onCreateCommentOnContract } from './on-create-comment-on-contract'
 
-export const MAX_COMMENT_JSON_LENGTH = 20000
+// TODO: generate ids in supabase instead
+export const newCommentId = () => Math.random().toString(36).substring(2, 15)
 
 // Creates a new comment on a contract.
 // Posts and chats are not supported yet.
@@ -63,6 +64,9 @@ export const createCommentOnContractInternal = async (
     replyToAnswerId?: string
     replyToBetId?: string
     isRepost?: boolean
+    socialPostId?: string
+    // Callers that must link the comment before it exists can assign its id
+    id?: string
   }
 ) => {
   const {
@@ -73,6 +77,8 @@ export const createCommentOnContractInternal = async (
     replyToAnswerId,
     replyToBetId,
     isRepost,
+    socialPostId,
+    id,
   } = options
 
   const {
@@ -111,8 +117,7 @@ export const createCommentOnContractInternal = async (
   const isApi = auth.creds.kind === 'key'
 
   const comment = removeUndefinedProps({
-    // TODO: generate ids in supabase instead
-    id: Math.random().toString(36).substring(2, 15),
+    id: id ?? newCommentId(),
     content: contentJson,
     createdTime: now,
 
@@ -133,6 +138,7 @@ export const createCommentOnContractInternal = async (
 
     isApi,
     isRepost,
+    socialPostId,
   } as ContractComment)
   await pg
     .none(

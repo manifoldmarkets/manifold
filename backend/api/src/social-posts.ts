@@ -6,20 +6,48 @@ import {
   hasSocialPostContent,
   isSocialPostEditable,
   SOCIAL_FEED_PAGE_SIZE,
+  canCommentFromSocialPost,
+  isSocialMarketSource,
+  SocialMarketSource,
+  socialCommentFits,
+  SOCIAL_COMMENT_TOO_LONG,
 } from 'common/social-post'
+import { JSONContent } from '@tiptap/core'
 import { ValidatedAPIParams } from 'common/api/schema'
+import { ContractComment } from 'common/comment'
 import { isAdminId, isModId } from 'common/envs/constants'
-import { APIHandler, APIError } from './helpers/endpoint'
+import { User } from 'common/user'
+import { APIHandler, APIError, AuthedUser } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
+import {
+  createCommentOnContractInternal,
+  newCommentId,
+  validateComment,
+} from './create-comment'
+import { editCommentContentInternal } from './edit-comment'
+import { hasNaughtyEmbeds } from './post'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
+  SupabaseTransaction,
 } from 'shared/supabase/init'
 import { nanoid } from 'common/util/random'
 import { DisplayUser } from 'common/api/user-types'
 import { convertEntitlement } from 'common/shop/types'
-import { socialRichContentToText } from 'common/social-rich-content'
+import {
+  socialPostToCommentContent,
+  socialRichContentToText,
+} from 'common/social-rich-content'
+import { trackPublicEvent } from 'shared/analytics'
 import { notifySocialMentions } from 'shared/social-mentions'
+import { getComment } from 'shared/supabase/contract-comments'
+import { updateData } from 'shared/supabase/utils'
+import {
+  getContract,
+  log,
+  revalidateContractStaticProps,
+  sanitizeJsonContent,
+} from 'shared/utils'
 import {
   assertSocialInteraction,
   getSocialRow,
@@ -41,11 +69,39 @@ import {
 export const createSocialPost: APIHandler<'create-social-post'> =
   onlyUsersWhoCanPerformAction(
     'post',
-    async ({ content, parentId, source }, auth) => {
+    async ({ content, parentId, source, alsoComment }, auth) => {
       const pg = createSupabaseDirectClient()
       const author = await socialAuthor(auth.uid, true)
       const viewer = await getSocialViewer(auth.uid)
       const id = nanoid(16)
+      const commentSource =
+        alsoComment &&
+        !parentId &&
+        isSocialMarketSource(source) &&
+        canCommentFromSocialPost(content, source)
+          ? source
+          : undefined
+      // Check the market comment is allowed before publishing, so an ineligible
+      // comment fails the whole request rather than leaving a Yap without it.
+      if (commentSource) {
+        if (!socialCommentFits(content))
+          throw new APIError(400, SOCIAL_COMMENT_TOO_LONG)
+        const { contract } = await validateComment(
+          commentSource.contractId,
+          auth.uid,
+          socialPostToCommentContent(content),
+          undefined,
+          undefined
+        )
+        if (viewer.blocked.includes(contract.creatorId))
+          throw new APIError(
+            403,
+            'You cannot comment on this market because of a block'
+          )
+      }
+      // Link the comment in the same write as the Yap, so a comment can never
+      // exist without the link that edits and moderation follow.
+      const commentId = commentSource ? newCommentId() : null
       const { row, parent } = await pg.tx(async (tx) => {
         const parent = parentId ? await lockSocialThread(tx, parentId) : null
         if (parent) await assertSocialInteraction(tx, parent, viewer, true)
@@ -62,15 +118,27 @@ export const createSocialPost: APIHandler<'create-social-post'> =
           viewer
         )
         await validateSocialSource(tx, source, content.marketIds, viewer)
-        const marketSource =
-          source && 'contractId' in source ? source : undefined
+        const text = richContent
+          ? socialRichContentToText(richContent)
+          : content.text
+        // Mentions now carry their current labels: size the comment as written.
+        if (
+          commentSource &&
+          !socialCommentFits({
+            text,
+            richContent,
+            imageUrls: content.imageUrls,
+          })
+        )
+          throw new APIError(400, SOCIAL_COMMENT_TOO_LONG)
+        const marketSource = isSocialMarketSource(source) ? source : undefined
         const row = await tx.one<SocialRow>(
-          `insert into social_posts(id, user_id, text, parent_id, root_id, source_contract_id, source_comment_id, source_bet_id, image_urls, source_post_id, rich_content)
-      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) returning *`,
+          `insert into social_posts(id, user_id, text, parent_id, root_id, source_contract_id, source_comment_id, source_bet_id, image_urls, source_post_id, rich_content, market_comment_id)
+      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) returning *`,
           [
             id,
             auth.uid,
-            richContent ? socialRichContentToText(richContent) : content.text,
+            text,
             parent?.id ?? null,
             parent?.root_id ?? id,
             marketSource?.contractId ?? null,
@@ -79,27 +147,200 @@ export const createSocialPost: APIHandler<'create-social-post'> =
             content.imageUrls ?? [],
             source && 'postId' in source ? source.postId : null,
             richContent,
+            commentId,
           ]
         )
         await writeSocialMarkets(tx, id, content.marketIds)
         return { row, parent }
       })
+      const marketComment =
+        commentSource && commentId
+          ? await commentFromSocialPost(
+              pg,
+              row,
+              commentSource,
+              commentId,
+              auth
+            ).catch(async (e) => {
+              // The Yap is published; drop the link if no comment was written.
+              log.error('Failed to post Yap as a market comment', {
+                e,
+                postId: id,
+              })
+              await pg
+                .none(
+                  `update social_posts set market_comment_id=null where id=$1 and market_comment_id=$2
+                and not exists (select 1 from contract_comments where comment_id=$2)`,
+                  [id, commentId]
+                )
+                .catch((err) =>
+                  log.error('Failed to unlink a missing Yap market comment', {
+                    err,
+                    postId: id,
+                  })
+                )
+              return undefined
+            })
+          : undefined
+      const repostSource =
+        !parent && isSocialMarketSource(source) ? source : undefined
+      const repost = repostSource
+        ? await recordSocialRepost(
+            pg,
+            id,
+            repostSource,
+            author,
+            marketComment?.comment
+          ).catch((e) => {
+            log.error('Failed to record Yap repost', { e, postId: id })
+            return undefined
+          })
+        : undefined
       return {
         result: (await hydrateSocialPosts(pg, [row], viewer))[0],
         continue: async () => {
+          if (repost)
+            await trackPublicEvent(author.id, 'repost', {
+              ...repost,
+              content: !!row.text,
+              socialPostId: id,
+            })
           if (parent) await notifySocial(pg, parent, author, 'reply', id)
-          await notifySocialMentions(pg, row, author, parent?.user_id)
+          // The market comment notifies the same tagged users.
+          if (marketComment) await marketComment.continue()
+          else await notifySocialMentions(pg, row, author, parent?.user_id)
         },
       }
     }
   )
+
+// Posts a Yap's text on its source market: in the quoted comment's thread, as
+// a reply to the quoted trade, or as a new top-level comment.
+async function commentFromSocialPost(
+  pg: SupabaseDirectClient,
+  row: SocialRow,
+  source: SocialMarketSource,
+  commentId: string,
+  auth: AuthedUser
+) {
+  const replyToCommentId = source.commentId
+    ? await pg.one<string>(
+        `select coalesce(data->>'replyToCommentId', comment_id) as id
+        from contract_comments where comment_id = $1`,
+        [source.commentId],
+        (r) => r.id
+      )
+    : undefined
+  const { result, continue: next } = await createCommentOnContractInternal(
+    source.contractId,
+    auth,
+    {
+      content: socialPostToCommentContent({
+        text: row.text,
+        richContent: row.rich_content,
+        imageUrls: row.image_urls,
+      }),
+      replyToCommentId,
+      replyToBetId: replyToCommentId ? undefined : source.betId,
+      isRepost: true,
+      socialPostId: row.id,
+      id: commentId,
+    }
+  )
+  return { comment: result, continue: next }
+}
+
+// Before Yap, reposts wrote a `posts` row (followers' Explore feed) and a
+// 'page repost' interaction (topic interests, conversion score). Keep both.
+// The `posts` row names its Yap, so deleting the Yap withdraws the repost.
+async function recordSocialRepost(
+  pg: SupabaseDirectClient,
+  postId: string,
+  source: SocialMarketSource,
+  author: User,
+  marketComment: ContractComment | undefined
+) {
+  const commentId = marketComment?.id ?? source.commentId
+  const betId = marketComment?.betId ?? source.betId
+  const quoted =
+    !marketComment && source.commentId
+      ? await pg.oneOrNone<{ user_id: string; content: JSONContent }>(
+          `select user_id, data->'content' as content from contract_comments where comment_id = $1`,
+          [source.commentId]
+        )
+      : null
+  // The feed renders reposts as full comment cards: only comments it may show.
+  const feedCommentId =
+    marketComment?.id ??
+    (quoted && !hasNaughtyEmbeds(quoted.content) ? source.commentId : null)
+  if (feedCommentId)
+    await pg.none(
+      `insert into posts (contract_id, contract_comment_id, bet_id, user_id, user_name, user_username, user_avatar_url, social_post_id)
+      values ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        source.contractId,
+        feedCommentId,
+        betId ?? null,
+        author.id,
+        author.name,
+        author.username,
+        author.avatarUrl ?? '',
+        postId,
+      ]
+    )
+  await pg.none(
+    `insert into user_contract_interactions (user_id, contract_id, name, comment_id, bet_id)
+    values ($1, $2, 'page repost', $3, $4)`,
+    [author.id, source.contractId, commentId ?? null, betId ?? null]
+  )
+  return {
+    contractId: source.contractId,
+    commentId,
+    betId,
+    isContentOwner: marketComment
+      ? true
+      : quoted
+      ? quoted.user_id === author.id
+      : undefined,
+  }
+}
+
+// Keeps the market comment in step with a Yap edit. Runs inside the edit's
+// thread lock, so concurrent edits cannot leave the two out of order. Removing
+// the text and images leaves the last comment rather than blanking it.
+async function syncSocialComment(
+  tx: SupabaseTransaction,
+  row: SocialRow,
+  editorId: string
+) {
+  if (!row.market_comment_id || (!row.text && !row.image_urls.length)) return
+  const comment = await getComment(tx, row.market_comment_id).catch(() => null)
+  if (!comment || comment.deleted) return
+  const contract = await getContract(tx, comment.contractId)
+  if (!contract) return
+  const content = {
+    text: row.text,
+    richContent: row.rich_content,
+    imageUrls: row.image_urls,
+  }
+  if (!socialCommentFits(content))
+    throw new APIError(400, SOCIAL_COMMENT_TOO_LONG)
+  await editCommentContentInternal(
+    tx,
+    contract,
+    comment,
+    editorId,
+    sanitizeJsonContent(socialPostToCommentContent(content))
+  )
+  return contract
+}
 
 export const editSocialPost: APIHandler<'edit-social-post'> =
   onlyUsersWhoCanPerformAction('editComment', async ({ id, content }, auth) => {
     const pg = createSupabaseDirectClient()
     await socialAuthor(auth.uid)
     const viewer = await getSocialViewer(auth.uid)
-    const row = await pg.tx(async (tx) => {
+    const { row, commentContract } = await pg.tx(async (tx) => {
       const post = await lockSocialThread(tx, id)
       if (post.user_id !== auth.uid)
         throw new APIError(403, 'Only the author can edit this post')
@@ -125,7 +366,7 @@ export const editSocialPost: APIHandler<'edit-social-post'> =
             )
       await writeSocialMarkets(tx, id, content.marketIds)
       // Removing the original attachment also removes the repost context.
-      return tx.one<SocialRow>(
+      const row = await tx.one<SocialRow>(
         `update social_posts set text=$2, image_urls=$4, rich_content=$5, edited_time=clock_timestamp(),
       source_contract_id=case when source_contract_id=any($3::text[]) then source_contract_id else null end,
       source_comment_id=case when source_contract_id=any($3::text[]) then source_comment_id else null end,
@@ -139,7 +380,15 @@ export const editSocialPost: APIHandler<'edit-social-post'> =
           richContent ?? null,
         ]
       )
+      return {
+        row,
+        commentContract: await syncSocialComment(tx, row, auth.uid),
+      }
     })
+    if (commentContract)
+      await revalidateContractStaticProps(commentContract).catch((e) =>
+        log.error('Failed to revalidate market after Yap edit', { e, id })
+      )
     return (await hydrateSocialPosts(pg, [row], viewer))[0]
   })
 
@@ -149,7 +398,7 @@ export const deleteSocialPost: APIHandler<'delete-social-post'> = async (
 ) => {
   const pg = createSupabaseDirectClient()
   await socialAuthor(auth.uid)
-  await pg.tx(async (tx) => {
+  const removed = await pg.tx(async (tx) => {
     const post = await lockSocialThread(tx, id)
     const moderator = isAdminId(auth.uid) || isModId(auth.uid)
     if (post.user_id !== auth.uid && !moderator)
@@ -157,7 +406,7 @@ export const deleteSocialPost: APIHandler<'delete-social-post'> = async (
         403,
         'Only the author or a moderator can remove this post'
       )
-    if (post.deleted_time) return
+    if (post.deleted_time) return undefined
     await tx.none(
       `update social_posts set text='', rich_content=null, image_urls='{}', deleted_time=clock_timestamp(), deleted_by=$2, removed_by_moderator=$3,
       source_contract_id=null, source_comment_id=null, source_bet_id=null, source_post_id=null where id=$1`,
@@ -178,8 +427,52 @@ export const deleteSocialPost: APIHandler<'delete-social-post'> = async (
     await tx.none('delete from user_notifications where notification_id=$1', [
       `social-mention-${id}`,
     ])
+    // Deleting a Yap withdraws its repost from followers' feeds.
+    await tx.none('delete from posts where social_post_id=$1', [id])
+    // Authors cannot delete market comments, so deleting their own Yap leaves
+    // its market comment. A moderator removal takes the comment with it.
+    return post.market_comment_id && post.user_id !== auth.uid
+      ? deleteSocialComment(tx, post.market_comment_id, auth.uid)
+      : null
   })
+  if (removed) {
+    await revalidateContractStaticProps(removed.contract).catch((e) =>
+      log.error('Failed to revalidate market after Yap removal', { e, id })
+    )
+    await trackPublicEvent(auth.uid, 'delete_comment', {
+      contractId: removed.contract.id,
+      commentId: removed.commentId,
+      deleted: true,
+      userId: auth.uid,
+      socialPostId: id,
+    })
+  }
   return { success: true }
+}
+
+// Deletes a moderated Yap's market comment as hide-comment's delete action
+// would, including its refusal to delete comments by admins and moderators.
+async function deleteSocialComment(
+  tx: SupabaseTransaction,
+  commentId: string,
+  moderatorId: string
+) {
+  const comment = await getComment(tx, commentId).catch(() => null)
+  if (
+    !comment ||
+    comment.deleted ||
+    isAdminId(comment.userId) ||
+    isModId(comment.userId)
+  )
+    return null
+  await updateData(tx, 'contract_comments', 'comment_id', {
+    comment_id: commentId,
+    deleted: true,
+    deletedTime: Date.now(),
+    deleterId: moderatorId,
+  })
+  const contract = await getContract(tx, comment.contractId)
+  return contract ? { contract, commentId } : null
 }
 
 // Share only viewer-neutral data, behind API authentication. Coalesce concurrent

@@ -124,7 +124,7 @@ export async function calculateImportanceScore(
     'previously active contracts'
   )
 
-  const todayComments = await getTodayComments(pg)
+  const todayDiscussion = await getTodayDiscussion(pg)
   const todayLikesByContract = await getRecentContractLikes(pg, dayAgo)
   const thisWeekLikesByContract = await getRecentContractLikes(pg, weekAgo)
 
@@ -159,7 +159,7 @@ export async function calculateImportanceScore(
     } = computeContractScores(
       now,
       contract,
-      todayComments[contract.id] ?? 0,
+      todayDiscussion[contract.id] ?? 0,
       todayLikesByContract[contract.id] ?? 0,
       thisWeekLikesByContract[contract.id] ?? 0,
       todayTradersByContract[contract.id] ?? 0,
@@ -320,12 +320,40 @@ export async function calculateImportanceScore(
   }
 }
 
-export const getTodayComments = async (pg: SupabaseDirectClient) => {
-  const counts = await pg.func<
-    { contract_id: string; comment_count: number }[]
-  >('count_recent_comments_by_contract')
+// Last day's discussion per market: its comments plus the Yaps that attach it.
+// A Yap counts like a comment, once per author, so one member cannot inflate a
+// market with repeated posts. A Yap also posted as a comment on its source
+// market already counts there through that comment; its other attached markets
+// still count the Yap.
+export const getTodayDiscussion = async (pg: SupabaseDirectClient) => {
+  const [comments, yaps] = await Promise.all([
+    pg.func<{ contract_id: string; comment_count: number }[]>(
+      'count_recent_comments_by_contract'
+    ),
+    pg.manyOrNone<{ contract_id: string; n: number }>(
+      `select m.contract_id, count(distinct s.user_id)::int as n
+       from social_posts s
+       join social_post_markets m on m.post_id = s.id
+       join users u on u.id = s.user_id
+       where s.created_time >= now() - interval '1 day'
+         and s.deleted_time is null
+         and (s.market_comment_id is null
+           or s.source_contract_id is distinct from m.contract_id)
+         and u.is_bot = false
+       group by m.contract_id`
+    ),
+  ])
+  return mergeCounts(
+    comments.map((c) => [c.contract_id, Number(c.comment_count)]),
+    yaps.map((y) => [y.contract_id, y.n])
+  )
+}
 
-  return Object.fromEntries(counts.map((c) => [c.contract_id, c.comment_count]))
+export const mergeCounts = (...sources: [string, number][][]) => {
+  const totals: Record<string, number> = {}
+  for (const [id, n] of sources.flat())
+    if (Number.isFinite(n)) totals[id] = (totals[id] ?? 0) + n
+  return totals
 }
 
 export const getContractTraders = async (

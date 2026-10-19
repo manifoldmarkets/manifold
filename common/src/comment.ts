@@ -72,7 +72,12 @@ export type OnContract = {
   betReplyAmountsByOutcome?: { [outcome: string]: number }
 
   isRepost?: boolean
+  // The Yap post this comment was posted alongside
+  socialPostId?: string
 }
+
+// Comment content is capped by its serialized JSON size.
+export const MAX_COMMENT_JSON_LENGTH = 20000
 
 export type ContractComment = Comment<OnContract>
 

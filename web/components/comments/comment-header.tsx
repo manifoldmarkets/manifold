@@ -14,8 +14,10 @@ import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { isAdminId } from 'common/envs/constants'
+import { socialPostPath } from 'common/social-post'
 import { buildArray } from 'common/util/array'
 import { formatPercent, formatWithToken } from 'common/util/format'
+import Link from 'next/link'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { BiRepost } from 'react-icons/bi'
@@ -79,6 +81,7 @@ export function FeedCommentHeader(props: {
     isApi,
     bountyAwarded,
     isRepost,
+    socialPostId,
     betOrderAmount,
     betLimitProb,
     betToken,
@@ -141,14 +144,21 @@ export function FeedCommentHeader(props: {
               />
             </span>
           )}
-          {isRepost && !inTimeline && (
+          {isRepost && !inTimeline && socialPostId ? (
+            <Link
+              href={socialPostPath(socialPostId)}
+              className="text-ink-500 hover:text-primary-700 ml-1 whitespace-nowrap"
+            >
+              <BiRepost className="inline h-4 w-4" /> on Yap
+            </Link>
+          ) : isRepost && !inTimeline ? (
             <span>
               <Tooltip text={'Reposted to followers'}>
                 <BiRepost className=" inline h-4 w-4" />
                 {commenterIsBettor ? '' : ' reposted'}
               </Tooltip>
             </span>
-          )}
+          ) : null}
           {/* Hide my status if replying to a bet, it's too much clutter*/}
           {!isReplyToBet && !inTimeline && (
             <span className="text-ink-500">

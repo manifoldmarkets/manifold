@@ -55,6 +55,7 @@ export const getFollowedReposts = async (
             and (contracts.close_time is null or contracts.close_time > now())
             and contracts.resolution_time is null
             and coalesce((contract_comments.data->'hidden')::boolean, false) = false
+            and coalesce((contract_comments.data->'deleted')::boolean, false) = false
             and contracts.outcome_type != 'STONK'
             and contracts.visibility = 'public'
             ${userBlockSql}
@@ -174,6 +175,7 @@ export const getTopicReposts = async (
              and (contracts.close_time is null or contracts.close_time > now())
              and contracts.resolution_time is null
              and coalesce((contract_comments.data->'hidden')::boolean, false) = false
+             and coalesce((contract_comments.data->'deleted')::boolean, false) = false
              and contracts.outcome_type != 'STONK' 
              and contracts.visibility = 'public'
              ${userBlockSql}

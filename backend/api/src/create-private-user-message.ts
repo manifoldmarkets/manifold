@@ -1,4 +1,4 @@
-import { MAX_COMMENT_JSON_LENGTH } from 'api/create-comment'
+import { MAX_COMMENT_JSON_LENGTH } from 'common/comment'
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
 import { contentSchema } from 'common/api/zod-types'
 import { isAdminId } from 'common/envs/constants'
