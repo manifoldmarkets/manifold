@@ -19,7 +19,6 @@ import { removeEmojis } from 'common/util/string'
 import { capitalize, intersection, orderBy, uniq, uniqBy } from 'lodash'
 import { Button } from 'web/components/buttons/button'
 import { PillButton } from 'web/components/buttons/pill-button'
-import { IdentityVerificationPage } from 'web/components/onboarding/identity-verification-page'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useUser } from 'web/hooks/use-user'
 import { api, followTopic, followUser, updateUser } from 'web/lib/api/api'
@@ -54,8 +53,6 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
       track('welcome screen: how it works')
     } else if (page === 3) {
       track('welcome screen: topic selection')
-    } else if (page === 4) {
-      track('welcome screen: identity verification')
     }
     setPage(page)
   }
@@ -90,13 +87,8 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
         goBack={() => handleSetPage(page - 1)}
       />
     ),
-    <IdentityVerificationPage
-      user={user}
-      onSkip={finishOnboarding}
-      onComplete={finishOnboarding}
-    />,
   ])
-  // Pages 0, 1, 2 show bottom buttons; pages 3 (TopicsPage) and 4 (IdentityVerificationPage) have their own
+  // Pages 0, 1, 2 show bottom buttons; page 3 (TopicsPage) has its own
   const showBottomButtons = page < 3
 
   const getTrendingAndUserCategories = async (userId: string) => {
