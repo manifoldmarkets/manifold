@@ -847,6 +847,66 @@ export type Database = {
         }
         Relationships: []
       }
+      perp_orders: {
+        Row: {
+          id: string
+          contract_id: string
+          user_id: string
+          idempotency_key: string
+          fingerprint: string
+          request: Json
+          is_api: boolean
+          expected_opened_time: number | null
+          reserved_mana: number
+          created_time: string
+          expires_time: string
+          status: string
+          result: Json | null
+          error: string | null
+          execution_point: Json | null
+          completed_time: string | null
+          participation_applied_at: string | null
+        }
+        Insert: {
+          id: string
+          contract_id: string
+          user_id: string
+          idempotency_key: string
+          fingerprint: string
+          request: Json
+          is_api: boolean
+          expected_opened_time?: number | null
+          reserved_mana: number
+          created_time?: string
+          expires_time: string
+          status?: string
+          result?: Json | null
+          error?: string | null
+          execution_point?: Json | null
+          completed_time?: string | null
+          participation_applied_at?: string | null
+        }
+        Update: {
+          id?: string
+          contract_id?: string
+          user_id?: string
+          idempotency_key?: string
+          fingerprint?: string
+          request?: Json
+          is_api?: boolean
+          expected_opened_time?: number | null
+          reserved_mana?: number
+          created_time?: string
+          expires_time?: string
+          status?: string
+          result?: Json | null
+          error?: string | null
+          execution_point?: Json | null
+          completed_time?: string | null
+          participation_applied_at?: string | null
+        }
+        Relationships: []
+      }
       contract_perp_positions: {
         Row: {
           contract_id: string

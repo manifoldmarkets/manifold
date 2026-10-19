@@ -95,14 +95,10 @@ export const publishVoteHubPoint = async (
   const { feedId, rules } = spec
   const today = voteHubDay(spec)
 
-  // The price. Fetched first so a failure here costs one request, not two.
-  const averages = await fetchVoteHubAverage(spec)
-  // Stamp the observation the moment it arrives, NOT after the cross-check
-  // below. With the timestamp taken later, a publisher that stalled in the
-  // canary fetch could write its stale reading with a timestamp newer than a
-  // concurrent publisher's fresher one, and the older observation would
-  // become the executable mark. The point is when we saw the value.
+  // Keep request start, so an in-flight response cannot fill orders that
+  // arrived after sampling had already begun.
   const observedAt = Date.now()
+  const averages = await fetchVoteHubAverage(spec)
   const published = readPublishedAverage(averages, today, {
     answerKey: spec.answerKey,
     maxAgeDays: rules.maxSourceAgeDays,

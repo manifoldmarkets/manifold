@@ -161,6 +161,7 @@ export const fetchBtcUsdSpot = async (): Promise<{
   ts: number
   price: number
 } | null> => {
+  const sampledAt = Date.now()
   const results = await Promise.allSettled(
     SOURCES.map(async (s) => {
       const price = await s.fetchPrice()
@@ -194,5 +195,5 @@ export const fetchBtcUsdSpot = async (): Promise<{
     )
     return null
   }
-  return { ts: Date.now(), price }
+  return { ts: sampledAt, price }
 }

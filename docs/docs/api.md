@@ -1693,68 +1693,33 @@ trade with mana only, positions carry leverage and can be liquidated, and the
 API surface below is in beta — endpoints and shapes may change while the
 feature is new. Market creation is admin-only.
 
+### Next-price execution
+
+All perpetual opens, adds, closes and flips are queued, non-cancellable market orders. Submission is not execution. The displayed price is indicative; the order fills at the next eligible oracle observation, which can be unchanged in value. Slow feeds may take hours between accepted updates. An unavailable feed can cause expiry.
+
+Existing positions continue to receive funding and may be liquidated or auto-deleveraged while a close or flip is pending. Risk transitions run before voluntary orders at the new price. An atomic flip either closes the surviving original position and opens its replacement, or rejects both voluntary legs.
+
+Only one order per user and market may be pending. Reuse the same idempotency key after an uncertain response. Use a new key only for a new instruction. A pending order cannot be cancelled, including by closing the page.
+
 ### `POST /v0/place-perp-trade`
 
-Open a new position, or add to an existing position in the same direction, on
-a perp market. Adding merges into your position at the units-weighted
-(harmonic mean) entry price.
+Requires auth. Submit `contractId`, `direction` (`long` or `short`), positive `mana`, `leverage`, and a random 10-character alphanumeric `idempotencyKey`. Include `maxFee` in mana for a size-dependent-fee market. This is a fee allowance, not a price limit.
 
-Requires auth.
-
-Parameters:
-
-- `contractId`: Required. The perp market to trade on.
-- `direction`: Required. `long` or `short`.
-- `mana`: Required. Margin to commit, in mana. Must be positive.
-- `leverage`: Required. Position leverage. Must be positive and at most the
-  market's `maxLeverage`.
-- `idempotencyKey`: Required. A random 10-character alphanumeric string.
-  Retrying a request with the same key returns the original result instead of
-  opening a second position.
-
-Response type:
-
-```tsx
-type PlacePerpTradeResponse = {
-  position: {
-    userId: string
-    direction: 'long' | 'short'
-    size: number // mana notional (margin × leverage)
-    costBasis: number
-    originalCostBasis: number
-    entryPrice: number
-    leverage: number
-    liquidationPrice: number
-  }
-}
-```
+Same-side exposure adds to the position. Opposite-side exposure queues a flip. Reserve cash is deducted from available mana and held outside market backing. A flip can also use its actual closing payout; insufficient funds at execution reject both voluntary legs.
 
 ### `POST /v0/close-perp-position`
 
-Close your entire position in one direction on a perp market. Partial closes
-are not supported.
+Requires auth. Submit `contractId`, `direction`, `idempotencyKey`, and the target position's `expectedOpenedTime`. Optional `fraction` is between 0.01 and 1; partial closes also require the displayed `expectedSize` to validate the initial instruction. The fraction applies to the surviving position at execution after automatic funding or ADL changes. The dust rule may promote a partial close to a full close. A close never targets a replacement position.
 
-Requires auth.
+Both submission endpoints return `{ order: PerpOrder }`, replacing their previous immediate trade result. `PerpOrder` contains `id`, `contractId`, `status`, `createdTime`, `expiresTime`, `reservedMana`, `request`, `result`, and `error`. Status is `pending`, `filled`, `rejected`, or `expired`.
 
-Parameters:
+### `GET /v0/get-perp-order`
 
-- `contractId`: Required.
-- `direction`: Required. `long` or `short` — which of your positions to close.
-- `idempotencyKey`: Required. A random 10-character alphanumeric string, same
-  semantics as `place-perp-trade`.
-- `expectedOpenedTime`: Required. The `openedTime` of the position you intend
-  to close. If the position at the server no longer matches (for example it
-  was liquidated and a new one opened), the close is rejected instead of
-  closing the wrong position.
+Requires auth. Pass `contractId` and optionally `orderId`. Returns `{ order: PerpOrder | null }`. Without an ID this returns the caller's latest order on the market. Orders belonging to other users are never returned. Responses are not cached.
 
-Response type:
+Poll until terminal. A filled trade result has `kind: 'trade'`, `position`, `fee`, and optional `feeBps` and `poolShareAfter`. A filled close has `kind: 'close'`, `payout`, `pnl`, `fraction`, and `remainingSize`. A rejected or expired order has an `error`, with its reservation released. It does not mean an existing position was closed.
 
-```tsx
-type ClosePerpPositionResponse = {
-  payout: number // mana returned to your balance
-  pnl: number // profit relative to original cost basis
-}
-```
+Orders are attempted once at the next eligible accepted observation. If infrastructure misses that observation, the order is rejected and refunded rather than silently filled at a later price. Expiry is serviced independently of oracle health.
 
 ### `GET /v0/get-perp-positions`
 
@@ -1893,7 +1858,7 @@ Parameters:
 
 Response is an array of `{ ts: number, price: number }`, ascending by `ts`.
 
-A request always returns the *newest* points in the window, so `since` alone
+A request always returns the _newest_ points in the window, so `since` alone
 cannot reach further back than `limit` points from now. To page through a full
 feed history, walk backwards with `before`: omit it on the first request, then
 pass the `ts` of the first (oldest) point you received as the next request's

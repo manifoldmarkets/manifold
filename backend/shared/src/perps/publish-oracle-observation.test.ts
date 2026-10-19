@@ -35,13 +35,17 @@ const health = {
   status: 'available' as const,
   expiresAt: now + MINUTE_MS,
 }
-const database = (previous?: OraclePoint) => {
+const database = (previous?: OraclePoint, hasPending = false) => {
   const one = jest.fn(async (_sql: string) => ({}))
   const tx = {
     one,
     none: jest.fn(),
-    oneOrNone: jest.fn(async () =>
-      previous
+    oneOrNone: jest.fn(async (sql: string) =>
+      sql.includes('from perp_orders')
+        ? hasPending
+          ? { id: 'order' }
+          : null
+        : previous
         ? {
             ts: new Date(previous.ts).toISOString(),
             price: previous.price,
@@ -60,6 +64,13 @@ const database = (previous?: OraclePoint) => {
 beforeEach(() => {
   jest.clearAllMocks()
   jest.spyOn(Date, 'now').mockReturnValue(now)
+})
+
+it('persists a new unchanged observation while a market order is waiting', async () => {
+  const previous = { ...point, ts: now - 2000 }
+  const { pg, tx } = database(previous, true)
+  await publishOracleObservation(pg, feed, { point, health })
+  expect(insertOraclePrices).toHaveBeenCalledWith(tx, feed.id, [point])
 })
 afterEach(() => jest.restoreAllMocks())
 

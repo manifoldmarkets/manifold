@@ -48,6 +48,8 @@ function loadJob(source: 'fetchLatest' | 'fetchObservation' = 'fetchLatest') {
     [source]: fetchLatest,
   }
   const imports: Record<string, unknown> = {
+    'shared/perps/orders': { expirePerpOrders: async () => {} },
+    'shared/perps/order-effects': { deliverPerpOrderEffects: async () => {} },
     'common/util/time': { MINUTE_MS },
     'common/perps/oracle': { normalizeOraclePointBatch: jest.fn() },
     'shared/oracle': { insertOraclePrices },

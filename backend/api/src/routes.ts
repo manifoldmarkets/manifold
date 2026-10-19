@@ -80,6 +80,8 @@ import { createComment } from './create-comment'
 import { createManalink } from './create-manalink'
 import { createMarket } from './create-market'
 import { createPerp } from './create-perp'
+import { internalPerpOrderEffects } from './internal-perp-order-effects'
+import { getPerpOrder } from './get-perp-order'
 import { placePerpTrade } from './place-perp-trade'
 import { closePerpPosition } from './close-perp-position'
 import { updatePerpConfig } from './update-perp-config'
@@ -478,6 +480,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'create-public-chat-message': createPublicChatMessage,
   unresolve: unresolve,
   'create-perp': createPerp,
+  'internal-perp-order-effects': internalPerpOrderEffects,
+  'get-perp-order': getPerpOrder,
   'place-perp-trade': placePerpTrade,
   'close-perp-position': closePerpPosition,
   'update-perp-config': updatePerpConfig,

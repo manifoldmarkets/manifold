@@ -226,8 +226,13 @@ export const publishOracleObservation = async (
         throw new InvalidOracleObservation(
           'Provider source timestamp conflicts with published history'
         )
+      const pending = await tx.oneOrNone(
+        "select id from perp_orders o join contracts c on c.id=o.contract_id where c.data->>'oracleFeedId'=$1 and o.status='pending' limit 1",
+        [feed.id]
+      )
       // Price changes and flat-price heartbeats follow the normal fast-tick rule.
       if (
+        !pending &&
         previous &&
         point.price === previous.price &&
         point.ts - previous.ts < feed.staleAfterMs / 2

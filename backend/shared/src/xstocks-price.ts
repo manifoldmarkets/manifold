@@ -188,15 +188,16 @@ const ALL_POOL_ADDRESSES: string[] = Array.from(
 
 type PoolSnapshot = Map<string, SolanaAccount | null>
 
-let sharedSnapshot: {
+type SharedPoolSnapshot = {
   startedAt: number
   promise: Promise<PoolSnapshot>
-} | null = null
+}
+let sharedSnapshot: SharedPoolSnapshot | null = null
 
-const fetchPoolSnapshot = (): Promise<PoolSnapshot> => {
+const fetchPoolSnapshot = (): SharedPoolSnapshot => {
   const now = Date.now()
   if (sharedSnapshot && now - sharedSnapshot.startedAt < POOL_SNAPSHOT_SHARE_MS)
-    return sharedSnapshot.promise
+    return sharedSnapshot
   const promise = getMultipleAccounts(
     ALL_POOL_ADDRESSES,
     FETCH_TIMEOUT_MS
@@ -208,7 +209,7 @@ const fetchPoolSnapshot = (): Promise<PoolSnapshot> => {
     return snapshot
   })
   sharedSnapshot = { startedAt: now, promise }
-  return promise
+  return sharedSnapshot
 }
 
 type XStockSource = {
@@ -216,11 +217,14 @@ type XStockSource = {
   fetchPrice: () => Promise<number>
 }
 
-const buildSources = (spec: XStockSpec): XStockSource[] =>
+const buildSources = (
+  spec: XStockSpec,
+  snapshot: Promise<PoolSnapshot>
+): XStockSource[] =>
   spec.pools.map((pool) => ({
     name: `${pool.kind}:${pool.address.slice(0, 6)}`,
     fetchPrice: async () => {
-      const account = (await fetchPoolSnapshot()).get(pool.address)
+      const account = (await snapshot).get(pool.address)
       if (!account) throw new Error('no account at pool address')
       return readPoolSpotPrice({
         kind: pool.kind,
@@ -237,7 +241,10 @@ const buildSources = (spec: XStockSpec): XStockSource[] =>
 export const fetchXStockUsdPrice = async (
   spec: XStockSpec
 ): Promise<{ ts: number; price: number } | null> => {
-  const sources = buildSources(spec)
+  // Every feed sharing a cached RPC snapshot must retain its original stamp.
+  // A later caller must not present an already sampled price as a future tick.
+  const snapshot = fetchPoolSnapshot()
+  const sources = buildSources(spec, snapshot.promise)
   const results = await Promise.allSettled(
     sources.map(async (s) => {
       const price = await s.fetchPrice()
@@ -274,5 +281,5 @@ export const fetchXStockUsdPrice = async (
     )
     return null
   }
-  return { ts: Date.now(), price }
+  return { ts: snapshot.startedAt, price }
 }

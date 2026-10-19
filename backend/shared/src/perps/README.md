@@ -10,6 +10,20 @@ decide to sunset perps. Nothing under `backend/shared/src/perps/` is imported by
 the existing CPMM / multi / numeric code paths; integration points are narrow and
 explicit (see "Integration points" below).
 
+## Next-price market orders
+
+Public `openOrAddPosition` and `closePosition` enqueue all user orders. There is no synchronous cached-price execution path. `runOracleUpdate` performs liquidation and ADL, then settles eligible queued orders in the same serialized transaction. Existing private settlement math handles fees, margin, partial closes, harmonic entry merging and atomic flips.
+
+The `perp_orders` migration is required before deploying the API or scheduler. One pending instruction per user and contract is enforced by a partial unique index. Orders cannot be cancelled. Idempotent retries return the same instruction. A missing bound position rejects an add, close or flip instead of creating an unintended fresh position.
+
+BTC, xStocks and daily publisher sampling timestamps use request start. Shared xStocks snapshots retain that original timestamp across feeds. MNX additionally requires its provider mark timestamp to be after submission; re-received cached marks do not qualify. Daily source timestamps describe reporting periods, so those feeds use their accepted observation time. This execution rule does not claim to remove all upstream cache latency or predictable published-index moves.
+
+While an order waits, `USER -> BANK:PERP_ORDER_ESCROW` holds its cash. `PERP_ORDER_RELEASE` returns it inside the same transaction as fill, rejection or expiry. The ordinary margin and fee transfers then execute. Pending cash never enters long or short backing, so the existing contract-ledger-equals-pools invariant remains unchanged. Pending cash is included at face value in authoritative user-contract metrics with zero profit.
+
+Pending orders cause unchanged-price observations to be persisted, avoiding a wait-for-a-different-number deadlock on fast feeds. If a previously published eligible observation was missed, refund and reject rather than selecting a later price. Database and invariant faults roll back the whole tick; ordinary user validation failures roll back only that voluntary instruction and refund it. Expiry runs from oracle dispatcher housekeeping even during provider outages. Successful fills create durable participation work, relayed to the API writer for the existing streak and creator-bonus helpers; yesterday's fills cannot farm today's streak on retries.
+
+Deployment requires a coordinated cutover: stop exposure increases, apply the migration, deploy API and scheduler, then deploy the web client and invalidate old bundles before reopening. Both trade endpoints now return `{order}`. Old clients must migrate; do not keep an immediate-fill compatibility route. Roll back by pausing trading and refunding unresolved pending instructions, never by selectively repricing them at the current cache. No deployment is performed by the implementation branch.
+
 ## Files
 
 - `engine.ts` — the authoritative entry point. Exports:
@@ -17,9 +31,9 @@ explicit (see "Integration points" below).
   - `openOrAddPosition(contractId, userId, direction, mana, leverage, idempotencyKey?)`
     — opens a new position or adds to an existing same-side position. An opposite-side
     position is closed atomically before the new side opens. Returns
-    `{ position, event, isNewUniqueBettor }`.
+    a durable next-price order; submission does not open a position.
   - `closePosition(contractId, userId, direction, idempotencyKey?, expectedOpenedTime?)`
-    — closes a user's position at the current oracle price, credits/debits mana, and
+    — queues a close of the bound position at the next eligible oracle price, credits/debits mana, and
     writes a `close` event. The optional opening timestamp prevents a stale client
     from closing a replacement position. Receipt/event `pnl` is settlement payout
     minus original deposited margin, so it includes funding; `pricePnl` preserves
@@ -166,8 +180,9 @@ reduces open interest, and its state is asserted with the same
 
 ## Taker fee
 
-`common/src/perps/fees.ts`. Trades execute at the cached oracle price, and
-with zero fees that price is a free option for latency bots (2026-08-07: two
+`common/src/perps/fees.ts`. Fees still apply to queued execution. The following
+history describes the earlier immediate-fill model: trades executed at the
+cached oracle price, and with zero fees that price was a free option for latency bots (2026-08-07: two
 bots extracted ~M$70k from the BTC perp pools by sniping the then-15s tick at
 a measured edge of ~1.5 bps of notional per round trip).
 
@@ -284,7 +299,7 @@ Why per-channel: the 2026-08-19/20 BTC drain was API-key flow (5 API accounts
 were 85% of opening notional over that week against 135 web traders), so a
 flat raise would tax the honest web majority for the bots' edge. A bot can
 still dodge by scripting a session token — this is a raised bar and a clean
-ToS line, not a wall; the structural fix is next-tick execution.
+ToS line, not a wall; next-price execution now addresses the cached-fill window.
 
 The two rates carry different domains — `PERP_TAKER_FEE_BPS_MAX` = 100,
 `PERP_TAKER_FEE_API_BPS_MAX` = 300 — and neither is validated against
@@ -682,10 +697,19 @@ ad-hoc query must bound `ts` — that is the only index on `user_events`, and th
 table is hundreds of millions of rows:
 
 ```sql
-select data->>'location' as placement, count(*), count(distinct user_id)
-from user_events
-where name = 'click mnx link' and ts >= now() - interval '7 days'
-group by 1 order by 2 desc;
+select
+  data - > > 'location' as placement,
+  count(*),
+  count(distinct user_id)
+from
+  user_events
+where
+  name = 'click mnx link'
+  and ts >= now () - interval '7 days'
+group by
+  1
+order by
+  2 desc;
 ```
 
 ## Scheduler

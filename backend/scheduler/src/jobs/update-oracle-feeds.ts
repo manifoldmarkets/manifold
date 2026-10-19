@@ -1,3 +1,5 @@
+import { deliverPerpOrderEffects } from 'shared/perps/order-effects'
+import { expirePerpOrders } from 'shared/perps/orders'
 import {
   publishOracleObservation,
   reportOracleTickFailure,
@@ -25,7 +27,7 @@ import { FAST_TICK_ORACLE_BOUNDS } from 'shared/perps/oracle-tick-bounds'
 //      ordering, and upsert into oracle_prices.
 //   2. Apply the price to every live perp on the feed via runOracleUpdate
 //      (liquidation + ADL run atomically with the price write — do NOT add a
-//      cheaper price-only path; closes settle against the cached price).
+//      cheaper price-only path; pending trades settle after this risk pass).
 //   3. Alert (log.error → GCP log-based alerting) when a feed goes stale.
 // `daily` feeds are written by their own jobs; their staleness is checked by
 // the hourly update-perps job, which sees which live contracts they back.
@@ -40,7 +42,21 @@ import { FAST_TICK_ORACLE_BOUNDS } from 'shared/perps/oracle-tick-bounds'
 // in-flight guard below is a strictly finer-grained `protect`: it still
 // prevents a feed from stacking on ITSELF, without coupling feeds to each
 // other.
+let orderHousekeepingRunning = false
 export async function updateOracleFeeds() {
+  if (!orderHousekeepingRunning) {
+    orderHousekeepingRunning = true
+    void Promise.allSettled([expirePerpOrders(), deliverPerpOrderEffects()])
+      .then((results) => {
+        for (const result of results)
+          if (result.status === 'rejected')
+            log.error('[perp-orders] housekeeping failed', result.reason)
+      })
+      .finally(() => {
+        orderHousekeepingRunning = false
+      })
+  }
+
   const pg = createSupabaseDirectClient()
   const now = Date.now()
 
@@ -269,11 +285,8 @@ const probeDailyFeedStaleness = async (
 }
 
 // An abandoned run publishes nothing. Checked after every fetch, since the
-// fetch is where a run hangs and some adapters stamp the point when it returns
-// (fetchBtcUsdSpot waits on every venue, then takes Date.now()). A run that
-// came back after its replacement had published would otherwise carry old
-// quotes under the newest timestamp, and the ordering checks would take it as
-// the current price.
+// fetch is where a run can hang. Even with sampling timestamps retained, an
+// abandoned run must not resume publishing after its replacement takes over.
 const discardIfAbandoned = (feed: OracleFeedDef, isCurrent: () => boolean) => {
   if (isCurrent()) return false
   log.warn(
@@ -354,7 +367,13 @@ const tickOneFeed = async (
               point.ts
             ).toISOString()} — ${rejection}`
           )
-        } else if (shouldWrite(feed, prev, point)) {
+        } else if (
+          shouldWrite(feed, prev, point) ||
+          (await pg.oneOrNone(
+            "select o.id from perp_orders o join contracts c on c.id=o.contract_id where c.data->>'oracleFeedId'=$1 and o.status='pending' limit 1",
+            [feed.id]
+          ))
+        ) {
           await insertOraclePrices(pg, feed.id, [point])
           latest = point
         }
