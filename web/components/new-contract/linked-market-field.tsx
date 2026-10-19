@@ -25,13 +25,21 @@ import { useEvent } from 'client-common/hooks/use-event'
 export function LinkedMarketField(props: {
   contractId: string | undefined
   relation: MarketLinkRelation | undefined
+  /** Reapply a cached parent's default after a draft/form reset. */
+  closeTimePending: boolean
   onChange: (
     link: { contractId: string; relation: MarketLinkRelation } | undefined
   ) => void
   /** The linked market, once loaded: its close time becomes the default. */
   onParentLoaded: (parent: Contract) => void
 }) {
-  const { contractId, relation = 'related', onChange, onParentLoaded } = props
+  const {
+    contractId,
+    relation = 'related',
+    closeTimePending,
+    onChange,
+    onParentLoaded,
+  } = props
   const [picking, setPicking] = useState(false)
   const { data, error, refresh } = useAPIGetter(
     'markets-by-ids',
@@ -43,8 +51,8 @@ export function LinkedMarketField(props: {
   const parent = contractId ? data?.find((c) => c.id === contractId) : undefined
   const onLoaded = useEvent(onParentLoaded)
   useEffect(() => {
-    if (parent) onLoaded(parent)
-  }, [parent?.id, parent?.closeTime, onLoaded])
+    if (parent && closeTimePending) onLoaded(parent)
+  }, [parent?.id, parent?.closeTime, closeTimePending, onLoaded])
 
   const pick = (contracts: Contract[]) => {
     setPicking(false)
@@ -148,7 +156,7 @@ export function LinkedMarketField(props: {
             What market is this about?
           </span>
           <span className="text-ink-500 text-sm">
-            Your market will be linked to it and use its close time by default.
+            Your market will be linked to it.
           </span>
           <SelectMarkets
             maxSelections={1}

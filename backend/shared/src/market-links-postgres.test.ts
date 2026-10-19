@@ -451,6 +451,34 @@ describeLocalPostgres('market-link concurrency on actual PostgreSQL', () => {
     }
   )
 
+  it('two authorized concurrent unlinks of the same link both succeed', async () => {
+    await observer.none(`insert into market_links
+      (child_contract_id, parent_contract_id, created_by)
+      values ('a', 'old-parent', 'owner')`)
+    const gate = newGate()
+    const one = track(
+      first.tx(async (tx) => {
+        jest
+          .mocked(createSupabaseDirectClient)
+          .mockReturnValueOnce(
+            tx as unknown as ReturnType<typeof createSupabaseDirectClient>
+          )
+        const result = await unlink({ contractId: 'a' }, { uid: 'old-owner' })
+        gate.reached.resolve()
+        await gate.release.promise
+        return result
+      })
+    )
+    await gate.reached.promise
+    jest.mocked(createSupabaseDirectClient).mockReturnValueOnce(second)
+    const two = track(unlink({ contractId: 'a' }, { uid: 'owner' }))
+    await waitForLock('pr4134-second', 'delete from market_links')
+    gate.release.resolve()
+    expect(await one).toMatchObject({ ok: true, value: { success: true } })
+    expect(await two).toMatchObject({ ok: true, value: { success: true } })
+    expect(await rows()).toEqual([])
+  })
+
   it('a create-side parent lock makes a competing link reread the new child', async () => {
     const gate = newGate()
     const creating = track(createChildProtocol(first, 'new-child', 'b', gate))

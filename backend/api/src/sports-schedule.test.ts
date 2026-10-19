@@ -12,6 +12,7 @@ import {
   SPORTS_DEFAULT_GROUP_ID,
 } from 'common/sports-schedule'
 import { sportsSchedule } from './sports-schedule'
+import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 
 const kickoff = Date.now() + 60 * 60 * 1000
 const groupId = (sport: string) =>
@@ -35,6 +36,7 @@ const official = ['nfl', 'soccer'].map((sport) => ({
 }))
 const props = ['nfl', 'soccer'].map((sport) => ({
   id: `${sport}-prop`,
+  creator_id: MANIFOLD_SPORTS_USER_IDS[0],
   question: 'Total points?',
   sports_event_id: `event-${sport}`,
   sports_market_type: 'total',
@@ -149,6 +151,7 @@ it('gives every Sports subtopic a sport and files markets from deeper topics', a
     ...props,
     {
       id: 'stage-9',
+      creator_id: 'community',
       question: 'Who wins stage 9?',
       sports_event_id: null as unknown as string,
       sports_market_type: null as unknown as string,
@@ -351,6 +354,44 @@ describe('linked markets', () => {
       result.games[0].related.filter((m) => m.kind === 'linked')
     ).toHaveLength(24)
   })
+
+  it.each(MANIFOLD_SPORTS_USER_IDS)(
+    'reserves official priority for %s, not forged event metadata',
+    async (trustedCreator) => {
+      marketRows = [
+        ...props.map((row) => ({ ...row, creator_id: trustedCreator })),
+        {
+          ...props[0],
+          id: 'forged',
+          creator_id: 'untrusted',
+          question: 'Will nfl Home beat nfl Away?',
+          importance_score: 1000000,
+        },
+      ]
+      linkRows = Array.from({ length: 24 }, (_, i) => ({
+        id: `linked-${i}`,
+        parent_id: 'nfl',
+        relation: 'prop',
+      }))
+      const response = await getSchedule({ sport: 'nfl' })
+      const result = 'result' in response ? response.result : response
+      expect(result.games[0].related).toHaveLength(25)
+      expect(result.games[0].related[0]).toEqual({
+        id: 'nfl-prop',
+        kind: 'official',
+        group: 'game-lines',
+      })
+      expect(
+        result.games[0].related.filter((m) => m.kind === 'linked')
+      ).toHaveLength(24)
+      linkRows = []
+      const uncapped = await getSchedule({ sport: 'nfl' })
+      const available = 'result' in uncapped ? uncapped.result : uncapped
+      expect(
+        available.games[0].related.find((m) => m.id === 'forged')?.kind
+      ).toBe('both-teams')
+    }
+  )
 
   it('keeps a market linked elsewhere off a game it would otherwise match', async () => {
     // nfl-prop carries the game's event id, but its creator linked it to

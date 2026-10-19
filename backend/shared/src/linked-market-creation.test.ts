@@ -327,6 +327,48 @@ it.each([
 
 const databaseError = (code: string) => Object.assign(new Error(code), { code })
 
+it('releases the real local queue while a pre-write funding retry waits', async () => {
+  const { createFnQueue } = jest.requireActual<
+    typeof import('shared/helpers/fn-queue')
+  >('shared/helpers/fn-queue')
+  const queue = createFnQueue()
+  jest.mocked(betsQueue.enqueueFn).mockImplementation(queue.enqueueFn)
+  jest.useFakeTimers({ now: NOW, doNotFake: ['nextTick', 'setImmediate'] })
+  jest.spyOn(Math, 'random').mockReturnValue(0)
+  const db = database({
+    onFundingLock: async (attempt) => {
+      if (attempt === 1) throw databaseError('55P03')
+    },
+  })
+  const creating = createMarketHelper(body, auth)
+  try {
+    // Flush promises until the retry timer is scheduled, without advancing it.
+    for (let i = 0; i < 100 && jest.getTimerCount() === 0; i++)
+      await Promise.resolve()
+    expect(jest.getTimerCount()).toBe(1)
+    expect(db.insertAttempts).toEqual([])
+    let betRan = false
+    let userWorkRan = false
+    const bet = queue.enqueueFn(async () => {
+      betRan = true
+    }, ['bob', 'game'])
+    const userWork = queue.enqueueFn(async () => {
+      userWorkRan = true
+    }, ['alice'])
+    await Promise.resolve()
+    expect(betRan).toBe(true)
+    expect(userWorkRan).toBe(true)
+    await Promise.all([bet, userWork])
+  } finally {
+    jest.runAllTimers()
+    await creating
+    jest.useRealTimers()
+    jest.mocked(betsQueue.enqueueFn).mockImplementation(async (run) => run())
+  }
+  expect(db.committedInserts).toEqual([2])
+  expect(db.committedAntes).toHaveLength(1)
+})
+
 it('retries payer contention before writes and commits the child, ante and link once', async () => {
   const db = database({
     onFundingLock: async (transaction) => {

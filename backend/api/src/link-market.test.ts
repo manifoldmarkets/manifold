@@ -110,7 +110,7 @@ describe('link-market', () => {
 
 describe('unlink-market', () => {
   beforeEach(() => {
-    jest.mocked(getMarketLinkParent).mockResolvedValue({
+    jest.mocked(getMarketLinkParent).mockReset().mockResolvedValue({
       parent_contract_id: 'game',
       relation: 'prop',
     })
@@ -145,6 +145,21 @@ describe('unlink-market', () => {
     ).resolves.toEqual({ success: true })
     expect(deleteMarketLink).not.toHaveBeenCalled()
   })
+
+  it.each(['alice', 'sports', 'mod'])(
+    'succeeds for %s if another request already removed the authorized link',
+    async (uid) => {
+      jest
+        .mocked(getMarketLinkParent)
+        .mockResolvedValueOnce({ parent_contract_id: 'game', relation: 'prop' })
+        .mockResolvedValueOnce(null)
+      jest.mocked(deleteMarketLink).mockResolvedValue(false)
+      await expect(unlink({ contractId: 'prop' }, { uid })).resolves.toEqual({
+        success: true,
+      })
+      expect(deleteMarketLink).toHaveBeenCalledTimes(1)
+    }
+  )
 
   it.each(['alice', 'sports', 'mod'])(
     'returns conflict to %s when the authorized link changed before deletion',

@@ -41,7 +41,11 @@ import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { camelCase, first } from 'lodash'
-import { getLinkChildError, getLinkParentError } from 'common/market-links'
+import {
+  canInheritLinkedCloseTime,
+  getLinkChildError,
+  getLinkParentError,
+} from 'common/market-links'
 import { generateAntes } from 'shared/create-contract-helpers'
 import { getCloseDate } from 'shared/helpers/ai-close-date'
 import { betsQueue } from 'shared/helpers/fn-queue'
@@ -52,7 +56,6 @@ import {
 } from 'shared/supabase/contracts'
 import {
   SupabaseDirectClient,
-  SupabaseTransaction,
   createSupabaseDirectClient,
   pgp,
 } from 'shared/supabase/init'
@@ -87,13 +90,10 @@ class LinkedCreationFundingBusy extends Error {}
 
 const LINKED_CREATION_MAX_ATTEMPTS = 5
 
-async function runLinkedCreationTransaction<T>(
-  pg: SupabaseDirectClient,
-  run: (tx: SupabaseTransaction) => Promise<T>
-) {
+async function retryLinkedCreation<T>(run: () => Promise<T>) {
   for (let attempt = 0; ; attempt++) {
     try {
-      return await pg.tx(run)
+      return await run()
     } catch (error) {
       // Only the deliberate NOWAIT preflight is retryable here. Never rerun
       // a creation that has reached ante movement or other side effects.
@@ -103,7 +103,7 @@ async function runLinkedCreationTransaction<T>(
           503,
           'The funding account is busy. Please try again.'
         )
-      // The failed transaction has rolled back and released the parent lock.
+      // The failed transaction and local queue slot have both been released.
       // Give normal payouts time to finish, with jitter to avoid replicas
       // retrying together. Four waits total 1.5–3 seconds; no writes retry.
       const delayMs = 100 * 2 ** attempt * (1 + Math.random())
@@ -280,7 +280,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const shouldInheritCloseTime =
     closeTimeRaw === undefined &&
     !neverCloses &&
-    (outcomeType === 'POLL' || !NO_CLOSE_TIME_TYPES.includes(outcomeType))
+    canInheritLinkedCloseTime(outcomeType)
   const defaultCloseTime = neverCloses
     ? undefined
     : await getCloseTimestamp(
@@ -301,8 +301,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     ? HOUSE_LIQUIDITY_PROVIDER_ID
     : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
   const providerId = isFree ? house : userId
-  const transact = <T>(run: (tx: SupabaseTransaction) => Promise<T>) =>
-    linkedToContractId ? runLinkedCreationTransaction(pg, run) : pg.tx(run)
   // Resolution pays users before updating the parent. Share its queue key
   // locally; the NOWAIT payer preflight prevents the inverse lock order
   // from deadlocking across replicas.
@@ -310,8 +308,12 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     ? [userId, linkedToContractId]
     : [userId]
 
-  return await betsQueue.enqueueFn(async () => {
-    return transact(async (tx) => {
+  const enqueueCreation = <T>(run: () => Promise<T>) => {
+    const attempt = () => betsQueue.enqueueFn(run, queueDependencies)
+    return linkedToContractId ? retryLinkedCreation(attempt) : attempt()
+  }
+  return await enqueueCreation(async () => {
+    return pg.tx(async (tx) => {
       let closeTime = defaultCloseTime
       if (linkedToContractId) {
         // The child does not exist yet. Lock the existing parent before any
@@ -497,7 +499,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
       return { contract, user }
     })
-  }, queueDependencies)
+  })
 }
 
 async function getDuplicateSubmissionUrl(

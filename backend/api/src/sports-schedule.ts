@@ -569,9 +569,10 @@ async function querySportsMarkets(
     importance_score: number
     sports_event_id: string | null
     sports_market_type: string | null
+    creator_id: string
     group_ids: string[]
   }>(
-    `select c.id, c.question, c.close_time, c.importance_score,
+    `select c.id, c.question, c.close_time, c.importance_score, c.creator_id,
             c.data->>'sportsEventId' as sports_event_id,
             c.data->>'sportsMarketType' as sports_market_type,
             (select coalesce(array_agg(g.group_id), '{}')
@@ -598,8 +599,14 @@ async function querySportsMarkets(
     question: r.question,
     questionLower: r.question.toLowerCase(),
     closeTime: r.close_time ? tsToMillis(r.close_time) : null,
-    sportsEventId: r.sports_event_id,
-    marketType: r.sports_market_type,
+    // API callers can set sports metadata. Only pipeline-owned markets may
+    // consume the reserved official slots; others can still match by topic.
+    sportsEventId: MANIFOLD_SPORTS_USER_IDS.includes(r.creator_id)
+      ? r.sports_event_id
+      : null,
+    marketType: MANIFOLD_SPORTS_USER_IDS.includes(r.creator_id)
+      ? r.sports_market_type
+      : null,
     sport: sportForMarket({ groupIds: r.group_ids }, index),
     importanceScore: Number(r.importance_score ?? 0),
   }))

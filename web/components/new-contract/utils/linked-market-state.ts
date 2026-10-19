@@ -1,5 +1,6 @@
 import type { Contract } from 'common/contract'
 import type { MarketDraft } from 'common/drafts'
+import { canInheritLinkedCloseTime } from 'common/market-links'
 import dayjs from 'dayjs'
 import type { FormState } from '../contextual-editor-panel'
 
@@ -29,7 +30,9 @@ export function getCreateMarketCloseParams(
 }
 
 export function getCloseTimeFields(closeTime: number | undefined) {
-  if (closeTime === undefined || !Number.isFinite(closeTime)) return undefined
+  // Duplicated markets use zero to mean no reusable deadline.
+  if (closeTime === undefined || !Number.isFinite(closeTime) || closeTime <= 0)
+    return undefined
   const date = dayjs(closeTime)
   if (!date.isValid()) return undefined
   return {
@@ -77,6 +80,7 @@ export function selectLinkedMarket(
 export function isLinkedCloseTimePending(state: FormState) {
   return (
     !!state.linkedToContractId &&
+    canInheritLinkedCloseTime(state.outcomeType) &&
     !hasManualCloseTime(state) &&
     state.inheritedCloseTimeFrom !== state.linkedToContractId
   )
@@ -85,6 +89,7 @@ export function isLinkedCloseTimePending(state: FormState) {
 export function getLinkedCloseTimeDescription(state: FormState) {
   if (state.outcomeType === 'POLL' && state.neverCloses) return 'Never'
   if (!state.linkedToContractId || hasManualCloseTime(state)) return undefined
+  if (!canInheritLinkedCloseTime(state.outcomeType)) return 'Never'
   if (isLinkedCloseTimePending(state))
     return 'Uses linked market deadline (loading…)'
   if (!state.closeDate)
@@ -97,7 +102,11 @@ export function applyLinkedMarketCloseTime(
   parent: Pick<Contract, 'id' | 'closeTime'>
 ): FormState {
   const closeTimeFields = getCloseTimeFields(parent.closeTime)
-  if (state.linkedToContractId !== parent.id || hasManualCloseTime(state))
+  if (
+    state.linkedToContractId !== parent.id ||
+    hasManualCloseTime(state) ||
+    !canInheritLinkedCloseTime(state.outcomeType)
+  )
     return state
   return {
     ...state,
@@ -118,6 +127,7 @@ export function applySuggestedCloseTime(
   if (
     state.question !== question ||
     state.outcomeType === 'POLL' ||
+    !canInheritLinkedCloseTime(state.outcomeType) ||
     state.linkedToContractId ||
     hasManualCloseTime(state) ||
     !closeTimeFields

@@ -8,6 +8,18 @@
 // Links are one level deep: a parent is never itself linked to another
 // market, so there are no chains and no loops.
 
+import { NO_CLOSE_TIME_TYPES, OutcomeType } from './contract'
+
+/** Polls may inherit a deadline; native no-close market types keep their default. */
+export function canInheritLinkedCloseTime(
+  outcomeType: OutcomeType | null | undefined
+) {
+  return (
+    outcomeType != null &&
+    (outcomeType === 'POLL' || !NO_CLOSE_TIME_TYPES.includes(outcomeType))
+  )
+}
+
 export const MARKET_LINK_RELATIONS = ['line', 'prop', 'related'] as const
 export type MarketLinkRelation = (typeof MARKET_LINK_RELATIONS)[number]
 

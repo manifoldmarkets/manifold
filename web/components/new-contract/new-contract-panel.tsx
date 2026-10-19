@@ -1185,6 +1185,7 @@ export function NewContractPanel(props: {
         <LinkedMarketField
           contractId={formState.linkedToContractId}
           relation={formState.linkRelation}
+          closeTimePending={isLinkedCloseTimePending(formState)}
           onChange={(link) => {
             setFormState((prev) => selectLinkedMarket(prev, link))
           }}

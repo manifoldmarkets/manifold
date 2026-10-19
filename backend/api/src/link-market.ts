@@ -82,7 +82,9 @@ export const unlinkMarket: APIHandler<'unlink-market'> =
       contractId,
       link.parent_contract_id
     )
-    if (!removed)
+    // Another authorized unlink already satisfied this request. A replacement
+    // still conflicts: do not silently claim to have removed the new link.
+    if (!removed && (await getMarketLinkParent(pg, contractId)))
       throw new APIError(
         409,
         'The link changed while unlinking. Please refresh and try again.'

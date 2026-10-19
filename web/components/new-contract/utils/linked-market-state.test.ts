@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { MarketDraft } from 'common/drafts'
+import { API } from 'common/api/schema'
 import type { FormState } from '../contextual-editor-panel'
 import {
   applyLinkedMarketCloseTime,
@@ -97,6 +98,65 @@ test('invalid dates fail before constructing a non-finite API deadline', () => {
     () => getCreateMarketCloseParams({ ...state, closeDate: 'invalid-date' }),
     /valid close date and time/
   )
+})
+
+test('duplicate URL closeTime zero means no supplied date for polls and native no-close types', () => {
+  for (const outcomeType of ['POLL', 'STONK', 'BOUNTIED_QUESTION'] as const) {
+    const params = JSON.parse('{"closeTime":0}') as { closeTime: number }
+    const duplicated = {
+      ...state,
+      outcomeType,
+      ...getCloseTimeFields(params.closeTime),
+    }
+    assert.equal(duplicated.closeDate, undefined)
+    assert.deepEqual(getCreateMarketCloseParams(duplicated), {})
+  }
+})
+
+test('inherited server drafts survive API validation and restore without a pending deadline', () => {
+  const inherited = applyLinkedMarketCloseTime(
+    { ...state, linkedToContractId: 'game' },
+    { id: 'game', closeTime }
+  )
+  const saved = API['save-market-draft'].props.parse({
+    data: {
+      ...draft,
+      ...inherited,
+      savedAt: closeTime,
+    },
+  }).data
+  assert.equal(saved.visibility, 'public')
+  const restored = restoreMarketDraft(state, {
+    ...saved,
+    visibility: 'public',
+    answers: saved.answers ?? [],
+  })
+  assert.equal(restored.inheritedCloseTimeFrom, 'game')
+  assert.equal(isLinkedCloseTimePending(restored), false)
+  assert.deepEqual(getCreateMarketCloseParams(restored), {})
+})
+
+test('native no-close types never preview an inherited deadline or wait for one', () => {
+  for (const outcomeType of ['STONK', 'BOUNTIED_QUESTION'] as const) {
+    const linked = { ...state, outcomeType, linkedToContractId: 'game' }
+    assert.equal(isLinkedCloseTimePending(linked), false)
+    assert.equal(getLinkedCloseTimeDescription(linked), 'Never')
+    const inherited = applyLinkedMarketCloseTime(linked, {
+      id: 'game',
+      closeTime,
+    })
+    assert.equal(inherited.closeDate, undefined)
+    assert.deepEqual(getCreateMarketCloseParams(inherited), {})
+    const stale = {
+      ...linked,
+      ...getCloseTimeFields(closeTime),
+      inheritedCloseTimeFrom: 'game',
+    }
+    assert.equal(getLinkedCloseTimeDescription(stale), 'Never')
+    const manual = { ...stale, hasManuallyEditedCloseDate: true }
+    assert.equal(getLinkedCloseTimeDescription(manual), undefined)
+    assert.deepEqual(getCreateMarketCloseParams(manual), { closeTime })
+  }
 })
 
 test('URL/parent close times retain the local date and minute, including after midnight', () => {
@@ -234,6 +294,8 @@ test('pending AI suggestions are discarded after linking, editing the time, or c
     { ...state, hasManuallyEditedCloseDate: true },
     { ...state, question: 'A newer question?' },
     { ...state, outcomeType: 'POLL' },
+    { ...state, outcomeType: 'STONK' },
+    { ...state, outcomeType: 'BOUNTIED_QUESTION' },
   ]
   for (const updated of updatedStates)
     assert.strictEqual(

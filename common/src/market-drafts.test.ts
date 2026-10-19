@@ -25,6 +25,18 @@ describe('linked market drafts', () => {
     ).toEqual(linkedDraft)
   })
 
+  it('retains an inherited deadline marker without turning it into an override', () => {
+    const inheritedDraft = {
+      ...data,
+      linkedToContractId: 'game',
+      inheritedCloseTimeFrom: 'game',
+      hasManuallyEditedCloseDate: false,
+    }
+    expect(
+      API['save-market-draft'].props.parse({ data: inheritedDraft }).data
+    ).toEqual(inheritedDraft)
+  })
+
   it('still accepts drafts saved before links existed', () => {
     expect(API['save-market-draft'].props.parse({ data }).data).toEqual(data)
   })

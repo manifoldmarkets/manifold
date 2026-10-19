@@ -3663,6 +3663,7 @@ export const API = (_apiTypeCheck = {
           closeHoursMinutes: z.string().optional(),
           neverCloses: z.boolean().optional(),
           hasManuallyEditedCloseDate: z.boolean().optional(),
+          inheritedCloseTimeFrom: z.string().optional(),
           linkedToContractId: z.string().optional(),
           linkRelation: z.enum(MARKET_LINK_RELATIONS).optional(),
           visibility: z.string(),
