@@ -1,3 +1,4 @@
+import { PGlite } from '@electric-sql/pglite'
 import { OracleProviderError } from '../oracle-provider'
 import { OraclePoint } from 'common/perps/oracle'
 import { MINUTE_MS } from 'common/util/time'
@@ -67,10 +68,38 @@ beforeEach(() => {
 })
 
 it('persists a new unchanged observation while a market order is waiting', async () => {
-  const previous = { ...point, ts: now - 2000 }
-  const { pg, tx } = database(previous, true)
-  await publishOracleObservation(pg, feed, { point, health })
-  expect(insertOraclePrices).toHaveBeenCalledWith(tx, feed.id, [point])
+  const db = new PGlite()
+  try {
+    await db.exec(`
+      create table contracts(id text, data jsonb);
+      create table perp_orders(id text, contract_id text, status text);
+      create table oracle_prices(feed_id text, ts timestamptz, price numeric, source_ts timestamptz);
+      insert into perp_orders values('order','market','pending');
+    `)
+    await db.query('insert into contracts values($1,$2)', [
+      'market',
+      { oracleFeedId: feed.id },
+    ])
+    await db.query('insert into oracle_prices values($1,$2,$3,$4)', [
+      feed.id,
+      new Date(now - 2000),
+      point.price,
+      new Date(point.sourceTs),
+    ])
+    const tx = {
+      one: jest.fn(async () => ({})),
+      oneOrNone: async (sql: string, values: unknown[]) =>
+        (await db.query(sql, values)).rows[0] ?? null,
+    }
+    const pg = {
+      tx: async (_options: unknown, run: (t: typeof tx) => Promise<unknown>) =>
+        run(tx),
+    } as unknown as SupabaseDirectClient
+    await publishOracleObservation(pg, feed, { point, health })
+    expect(insertOraclePrices).toHaveBeenCalledWith(tx, feed.id, [point])
+  } finally {
+    await db.close()
+  }
 })
 afterEach(() => jest.restoreAllMocks())
 

@@ -227,7 +227,7 @@ export const publishOracleObservation = async (
           'Provider source timestamp conflicts with published history'
         )
       const pending = await tx.oneOrNone(
-        "select id from perp_orders o join contracts c on c.id=o.contract_id where c.data->>'oracleFeedId'=$1 and o.status='pending' limit 1",
+        "select o.id from perp_orders o join contracts c on c.id=o.contract_id where c.data->>'oracleFeedId'=$1 and o.status='pending' limit 1",
         [feed.id]
       )
       // Price changes and flat-price heartbeats follow the normal fast-tick rule.
