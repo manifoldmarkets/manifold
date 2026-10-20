@@ -189,8 +189,8 @@ export const resolveMarketHelper = async (
       if (isIndieMC) {
         // What this resolution takes from the pending subsidy: the answer's
         // own, and from the market's, its share, or all of it when it resolves
-        // the market. Recorded with the payouts, so undoing it can put back
-        // exactly that.
+        // the market. Recorded with the payouts, for unresolve (which puts back
+        // exactly the answer's own, and refuses once it took the market's).
         subsidyTaken = {
           resolutionTime,
           answerSubsidyPool:

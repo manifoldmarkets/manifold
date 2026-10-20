@@ -23,6 +23,7 @@ type AnyTxnType =
   | SignupBonus
   | ContractOldResolutionPayout
   | ContractResolutionSubsidy
+  | ContractUndoResolutionSubsidy
   | ContractProduceSpice
   | ContractUndoProduceSpice
   | ConsumeSpice
@@ -331,7 +332,8 @@ type ContractOldResolutionPayout = {
 
 // Not a payment (amount 0): what resolving an answer of an independent market
 // took from the pending subsidy, written with that resolution's payouts, even
-// when it has none, so unresolving the answer puts back exactly that.
+// when it has none. Unresolving the answer puts back exactly the answer's
+// own, and isn't allowed once it took part of the market's.
 type ContractResolutionSubsidy = {
   fromType: 'CONTRACT'
   toType: 'CONTRACT'
@@ -347,6 +349,18 @@ type ContractResolutionSubsidy = {
     answerSubsidyPool: number
     // From the market's pending subsidy.
     contractSubsidyShare: number
+  }
+}
+
+// Not a payment (amount 0): marks a CONTRACT_RESOLUTION_SUBSIDY record undone
+// by an unresolve, so it's never read again.
+type ContractUndoResolutionSubsidy = {
+  fromType: 'CONTRACT'
+  toType: 'CONTRACT'
+  category: 'CONTRACT_UNDO_RESOLUTION_SUBSIDY'
+  token: 'M$' | 'CASH'
+  data: {
+    revertsTxnId: string
   }
 }
 
@@ -868,6 +882,8 @@ export type ManaPurchaseTxn = Txn & ManaPurchase
 export type SignupBonusTxn = Txn & SignupBonus
 export type ContractOldResolutionPayoutTxn = Txn & ContractOldResolutionPayout
 export type ContractResolutionSubsidyTxn = Txn & ContractResolutionSubsidy
+export type ContractUndoResolutionSubsidyTxn = Txn &
+  ContractUndoResolutionSubsidy
 export type ContractUndoOldResolutionPayoutTxn = Txn &
   ContractUndoOldResolutionPayout
 export type ContractProduceSpiceTxn = Txn & ContractProduceSpice

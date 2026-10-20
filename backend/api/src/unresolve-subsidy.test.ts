@@ -77,16 +77,18 @@ import {
   getContractAndMetricsAndLiquidities,
   getUser,
 } from 'shared/utils'
-import { getResolutionSubsidyToRestore, unresolveMain } from './unresolve'
+import {
+  getAnswerSubsidyToRestore,
+  tookMarketSubsidy,
+  unresolveMain,
+} from './unresolve'
 
 const M = 'M'
 const creatorId = 'creator'
 const provider = 'provider'
 
-type StoredTxn = Omit<Txn, 'id' | 'createdTime'> & {
-  id: string
-  createdTime: number
-}
+type TxnData = Omit<Txn, 'id' | 'createdTime'>
+type StoredTxn = TxnData & { id: string; createdTime: number }
 
 // A row of contract_edits: the market as a resolution found it, which unresolve
 // once read an answer's subsidy from.
@@ -116,8 +118,11 @@ type Db = {
 const answerById = (db: Db, id: string) => db.answers.find((a) => a.id === id)!
 const txnsOf = (db: Db, category: string) =>
   db.txns.filter((t) => t.category === category)
-const contractOf = (db: Db) =>
+const contractOf = (db: Db): Record<string, unknown> =>
   JSON.parse(JSON.stringify({ ...db.contract, answers: db.answers }))
+// Txns some txn of this category names as reverted.
+const revertedBy = (db: Db, category: string) =>
+  new Set(txnsOf(db, category).map((t) => t.data?.revertsTxnId as string))
 
 const answerRow = (a: Answer) => ({
   id: a.id,
@@ -153,7 +158,7 @@ const txnRow = (t: StoredTxn) => ({
   data: { data: t.data, description: t.description },
 })
 
-const insert = (db: Db, txns: Omit<Txn, 'id' | 'createdTime'>[]) => {
+const insert = (db: Db, txns: TxnData[]) => {
   for (const t of txns)
     db.txns.push({ ...t, id: `t${db.txns.length}`, createdTime: Date.now() })
 }
@@ -208,21 +213,24 @@ const fakeTx = (db: Db) => {
       /'resolutionTime'\)::numeric =\s+ts_to_millis\(a\.resolution_time\)/.test(
         sql
       )
-    const records = db.txns.filter(
+    const skipsUndone = /'CONTRACT_UNDO_RESOLUTION_SUBSIDY'/.test(sql)
+    const undone = revertedBy(db, 'CONTRACT_UNDO_RESOLUTION_SUBSIDY')
+    const records = txnsOf(db, 'CONTRACT_RESOLUTION_SUBSIDY').filter(
       (t) =>
-        t.category === 'CONTRACT_RESOLUTION_SUBSIDY' &&
         t.fromId === contractId &&
         t.toId === contractId &&
         t.data?.answerId === answerId &&
         (!matchesResolution ||
           (a.resolutionTime !== undefined &&
-            t.data?.resolutionTime === a.resolutionTime))
+            t.data?.resolutionTime === a.resolutionTime)) &&
+        (!skipsUndone || !undone.has(t.id))
     )
     const record = /order by t\.created_time desc/.test(sql)
       ? records[records.length - 1]
       : records[0]
     const row = {
       resolution_time: a.resolutionTime ?? null,
+      record_id: record?.id ?? null,
       payout_start_time: record?.data?.payoutStartTime ?? null,
       answer_subsidy_pool: record?.data?.answerSubsidyPool ?? null,
       contract_subsidy_share: record?.data?.contractSubsidyShare ?? null,
@@ -285,6 +293,27 @@ const fakeTx = (db: Db) => {
     return null
   }
 
+  // An answer's payouts, as its query states which: those not yet reverted.
+  const answerPayouts = (sql: string, [contractId, answerId]: unknown[]) => {
+    const skipsReverted = /'CONTRACT_UNDO_RESOLUTION_PAYOUT'/.test(sql)
+    const reverted = revertedBy(db, 'CONTRACT_UNDO_RESOLUTION_PAYOUT')
+    return txnsOf(db, 'CONTRACT_RESOLUTION_PAYOUT').filter(
+      (t) =>
+        t.fromId === contractId &&
+        t.data?.answerId === answerId &&
+        (!skipsReverted || !reverted.has(t.id))
+    )
+  }
+  // A market's payouts: those of one payoutStartTime, if given.
+  const marketPayouts = ([contractId, payoutStartTime, answerId]: unknown[]) =>
+    txnsOf(db, 'CONTRACT_RESOLUTION_PAYOUT').filter(
+      (t) =>
+        t.fromId === contractId &&
+        (payoutStartTime == null ||
+          t.data?.payoutStartTime === payoutStartTime) &&
+        (answerId == null || t.data?.answerId === answerId)
+    )
+
   const updateAnswerRow = (sql: string, params: unknown[]) => {
     const [answerId, contractId, amount, resolvedAt] = params
     const a = answerOf(
@@ -312,13 +341,13 @@ const fakeTx = (db: Db) => {
   return {
     // Like pg-promise, the mapper is called with null when no row matches.
     oneOrNone: jest.fn(
-      async (sql: string, params: unknown[], cb?: (r: any) => unknown) => {
+      async (sql: string, params: unknown[], cb?: (r: unknown) => unknown) => {
         const r = oneOrNoneRow(sql, params)
         return cb ? cb(r) : r
       }
     ),
     one: jest.fn(
-      async (sql: string, params: unknown[], cb?: (r: any) => unknown) => {
+      async (sql: string, params: unknown[], cb?: (r: unknown) => unknown) => {
         if (!/update answers/.test(sql)) throw new Error(`unexpected: ${sql}`)
         const r = updateAnswerRow(sql, params)
         if (!r) throw new Error('No data returned from the query.')
@@ -326,19 +355,12 @@ const fakeTx = (db: Db) => {
       }
     ),
     map: jest.fn(
-      async (sql: string, params: unknown[], cb: (r: any) => unknown) => {
+      async (sql: string, params: unknown[], cb: (r: unknown) => unknown) => {
         if (!/category = 'CONTRACT_RESOLUTION_PAYOUT'/.test(sql)) return []
-        const [contractId, payoutStartTime, answerId] = params
-        return txnsOf(db, 'CONTRACT_RESOLUTION_PAYOUT')
-          .filter(
-            (t) =>
-              t.fromId === contractId &&
-              (payoutStartTime == null ||
-                t.data?.payoutStartTime === payoutStartTime) &&
-              (answerId == null || t.data?.answerId === answerId)
-          )
-          .map(txnRow)
-          .map(cb)
+        const payouts = /from txns p\b/.test(sql)
+          ? answerPayouts(sql, params)
+          : marketPayouts(params)
+        return payouts.map(txnRow).map(cb)
       }
     ),
     many: jest.fn(async (sql: string) =>
@@ -353,7 +375,7 @@ const fakeTx = (db: Db) => {
         .map((s) => {
           if (s.startsWith('BALANCES ')) return applyBalances(db, s)
           if (s.startsWith('INSERT txns ')) {
-            insert(db, JSON.parse(s.slice('INSERT txns '.length)))
+            insert(db, JSON.parse(s.slice('INSERT txns '.length)) as TxnData[])
             return []
           }
           if (s.startsWith('UPDATE ')) {
@@ -361,7 +383,7 @@ const fakeTx = (db: Db) => {
               id: _id,
               answers: _answers,
               ...attrs
-            } = JSON.parse(s.slice('UPDATE '.length))
+            } = JSON.parse(s.slice('UPDATE '.length)) as Record<string, unknown>
             Object.assign(db.contract, attrs)
             return []
           }
@@ -396,8 +418,7 @@ const useDb = (db: Db) => {
       applyUpdate(db.contract, update)
   )
   ;(insertTxns as jest.Mock).mockImplementation(
-    async (_pg: unknown, txns: Omit<Txn, 'id' | 'createdTime'>[]) =>
-      insert(db, txns)
+    async (_pg: unknown, txns: TxnData[]) => insert(db, txns)
   )
   // As recordContractEdit records it, after the transaction: the contract it
   // was given.
@@ -406,7 +427,7 @@ const useDb = (db: Db) => {
       db.edits.push({
         createdTime: Date.now(),
         updatedKeys,
-        data: JSON.parse(JSON.stringify(contract)),
+        data: JSON.parse(JSON.stringify(contract)) as Edit['data'],
       })
   )
 }
@@ -431,9 +452,36 @@ const unresolve = (db: Db, answerId?: string) => {
   useDb(db)
   return unresolveMain(
     { contractId: M, answerId },
-    { uid: creatorId } as any,
-    {} as any
+    { uid: creatorId } as Parameters<typeof unresolveMain>[1],
+    {} as Parameters<typeof unresolveMain>[2]
   )
+}
+
+// A resolution by the code from before the records: its payouts, no record.
+const resolveWithoutRecord = (
+  db: Db,
+  answerId: string,
+  payout: number,
+  { resolutionTime = Date.now(), payoutStartTime = Date.now() } = {}
+) => {
+  Object.assign(answerById(db, answerId), {
+    resolution: 'YES',
+    resolutionTime,
+    subsidyPool: 0,
+  })
+  db.balances[provider] = (db.balances[provider] ?? 0) + payout
+  insert(db, [
+    {
+      category: 'CONTRACT_RESOLUTION_PAYOUT',
+      fromType: 'CONTRACT',
+      fromId: M,
+      toType: 'USER',
+      toId: provider,
+      amount: payout,
+      token: 'M$',
+      data: { deposit: payout, payoutStartTime, answerId },
+    },
+  ])
 }
 
 // The drizzle: the market's pending subsidy goes to its open answers, as their
@@ -502,21 +550,24 @@ const indieMarket = (
   balances: {},
 })
 
-// Three answers sharing a whole-market provision of 90, still pending in the
-// market's pool, and 6 of A's own.
-const threeAnswers = () =>
+// Three answers sharing a whole-market provision of 90, and 6 of A's own
+// pending subsidy. The market's own pool holds `pool`.
+const threeAnswers = (pool = 0) =>
   indieMarket(
-    90,
+    pool,
     [answer('A', { subsidyPool: 6 }), answer('B'), answer('C')],
     [wholeMarket(90)]
   )
 
+const refusal = "took part of the market's pending subsidy"
+
+let clock: number
 let dateNow: jest.SpyInstance
 let consoleLog: jest.SpyInstance
 beforeEach(() => {
   jest.clearAllMocks()
-  // Every call a millisecond on, so no two resolutions share a time.
-  let clock = 1_800_000_000_000
+  // Every call a millisecond on, unless a test holds it.
+  clock = 1_800_000_000_000
   dateNow = jest.spyOn(Date, 'now').mockImplementation(() => (clock += 1))
   consoleLog = jest.spyOn(console, 'log').mockImplementation(() => undefined)
   ;(getUser as jest.Mock).mockResolvedValue({ id: creatorId })
@@ -528,7 +579,7 @@ afterEach(() => {
 
 describe('resolving an answer of an independent market', () => {
   it('records what it took from the pending subsidy, with its payouts', async () => {
-    const db = threeAnswers()
+    const db = threeAnswers(90)
     // Read before the transaction: the record holds what the transaction read.
     const stale = { ...contractOf(db), subsidyPool: 0 }
 
@@ -592,83 +643,100 @@ describe('resolving an answer of an independent market', () => {
 })
 
 describe('unresolving an answer of an independent market', () => {
-  it('puts back everything its resolution took, on the answer', async () => {
-    const db = threeAnswers()
+  it("is refused once its resolution took part of the market's pending subsidy", async () => {
+    // A and B have M$10 of liquidity each, and M$100 more is still pending in
+    // the market's pool: M$120 in all.
+    const db = indieMarket(
+      100,
+      [answer('A'), answer('B')],
+      [toAnswer('A', 10), toAnswer('B', 10), wholeMarket(100)]
+    )
+    await resolve(db, 'A', 'YES')
+    expect(db.balances[provider]).toBe(60)
+
+    await expect(unresolve(db, 'A')).rejects.toThrow(refusal)
+
+    expect(answerById(db, 'A')).toMatchObject({ resolution: 'YES' })
+    // Cancelling B refunds its M$10 and its half of the M$100: M$120 out,
+    // as went in. Reopened, A would have taken a share of B's half again.
+    await resolve(db, 'B', 'CANCEL')
+    expect(db.balances[provider]).toBe(120)
+  })
+
+  it('is refused on what the resolution took, though the pool has drained since', async () => {
+    const db = threeAnswers(90)
     await resolve(db, 'A', 'YES')
     drizzle(db)
+
+    await expect(unresolve(db, 'A')).rejects.toThrow(refusal)
+    expect(txnsOf(db, 'CONTRACT_UNDO_RESOLUTION_PAYOUT')).toEqual([])
+  })
+
+  it('puts back its own pending subsidy when it took none of the market', async () => {
+    const db = threeAnswers()
+    await resolve(db, 'A', 'YES')
+    expect(db.balances[provider]).toBe(16)
 
     await unresolve(db, 'A')
 
     expect(db.balances[provider]).toBe(0)
-    expect(answerById(db, 'A')).toMatchObject({ subsidyPool: 36 })
+    expect(answerById(db, 'A')).toMatchObject({ subsidyPool: 6 })
     expect(answerById(db, 'A').resolutionTime).toBeUndefined()
-    // Not the market's: the drizzle has given B and C the rest of it.
     expect(db.contract.subsidyPool).toBe(0)
+    // Its record, undone.
+    const [record] = txnsOf(db, 'CONTRACT_RESOLUTION_SUBSIDY')
+    expect(txnsOf(db, 'CONTRACT_UNDO_RESOLUTION_SUBSIDY')).toEqual([
+      expect.objectContaining({ amount: 0, data: { revertsTxnId: record.id } }),
+    ])
   })
 
   it('then pays out on a cancellation what a cancellation alone pays', async () => {
     const cancelled = threeAnswers()
     await resolve(cancelled, 'A', 'CANCEL')
-    drizzle(cancelled)
     await resolve(cancelled, 'B', 'YES')
     await resolve(cancelled, 'C', 'YES')
 
     const undone = threeAnswers()
     await resolve(undone, 'A', 'YES')
-    drizzle(undone)
     await unresolve(undone, 'A')
     await resolve(undone, 'A', 'CANCEL')
     await resolve(undone, 'B', 'YES')
     await resolve(undone, 'C', 'YES')
 
-    // The refund of A's third, 30, and B and C's pools with 30 each.
-    expect(cancelled.balances[provider]).toBe(110)
-    expect(undone.balances[provider]).toBe(110)
+    // The refund of A's third, 30, and B and C's pools of 10.
+    expect(cancelled.balances[provider]).toBe(50)
+    expect(undone.balances[provider]).toBe(50)
   })
 
-  it('leaves the market its pool when a later answer resolved the market', async () => {
+  it('reopens the market when it had resolved it, leaving later answers be', async () => {
     const db = indieMarket(
-      100,
+      0,
       [answer('A', { subsidyPool: 7 }), answer('B')],
       [wholeMarket(100)]
     )
     await resolve(db, 'A', 'YES')
-    // More whole-market liquidity, which B, the last answer, takes in full.
-    db.contract.subsidyPool = (db.contract.subsidyPool as number) + 100
     await resolve(db, 'B', 'YES')
-    expect(db.balances[provider]).toBe(67 + 160)
+    expect(db.contract).toMatchObject({ isResolved: true })
+    expect(db.balances[provider]).toBe(17 + 10)
 
     await unresolve(db, 'A')
 
     expect(db.contract).toMatchObject({ isResolved: false, subsidyPool: 0 })
-    expect(answerById(db, 'A').subsidyPool).toBe(57)
+    expect(answerById(db, 'A').subsidyPool).toBe(7)
     // Resolved again, A pays out what it did the first time; B's stands.
     await resolve(db, 'A', 'YES')
-    expect(db.balances[provider]).toBe(67 + 160)
+    expect(db.balances[provider]).toBe(17 + 10)
   })
 
-  describe("ignores the snapshots in the market's edits", () => {
-    // A resolved at its first edit below's time, with B and C open; what an
-    // edit says doesn't change what goes back.
-    it.each([
-      [
-        "another resolution's, recorded late",
-        // It committed before A's but recorded after, showing A open, with
-        // more in the market's pool and less in A's.
-        [{ createdTime: 2e12, pool: 90, a: 1, resolved: [] as string[] }],
-      ],
-      [
-        'reordered ones',
-        // Answers unresolved between resolutions leave fewer resolved in a
-        // later edit.
-        [
-          { createdTime: 2e12, pool: 12, a: 2, resolved: ['B', 'C'] },
-          { createdTime: 2e12 + 1, pool: 70, a: 9, resolved: [] as string[] },
-        ],
-      ],
-    ])('%s', async (_, edits) => {
-      const db = threeAnswers()
-      db.edits = edits.map(({ createdTime, pool, a, resolved }) => ({
+  describe("decides on the record, not the market's edits", () => {
+    // Snapshots of the market as resolutions found it, showing A open: a
+    // late one, which another resolution that committed first recorded after
+    // A's, and reordered ones, which answers unresolved meanwhile leave with
+    // fewer answers resolved.
+    const snapshots = (
+      edits: { createdTime: number; pool: number; resolved: string[] }[]
+    ): Edit[] =>
+      edits.map(({ createdTime, pool, resolved }) => ({
         createdTime,
         updatedKeys: ['id', 'subsidyPool', 'answers'],
         data: {
@@ -676,24 +744,43 @@ describe('unresolving an answer of an independent market', () => {
           subsidyPool: pool,
           answers: ['A', 'B', 'C'].map((id) => ({
             id,
-            subsidyPool: id === 'A' ? a : 0,
+            subsidyPool: id === 'A' ? 1 : 0,
             resolutionTime: resolved.includes(id) ? 1 : undefined,
           })),
         },
       }))
+    const late = [{ createdTime: 2e12, pool: 90, resolved: [] }]
+    const reordered = [
+      { createdTime: 2e12, pool: 12, resolved: ['B', 'C'] },
+      { createdTime: 2e12 + 1, pool: 70, resolved: [] },
+    ]
+
+    it.each([
+      ['a late snapshot', late],
+      ['reordered snapshots', reordered],
+    ])('puts back what the record says, with %s', async (_, edits) => {
+      const db = threeAnswers()
+      db.edits = snapshots(edits)
       await resolve(db, 'A', 'YES')
-      drizzle(db)
 
       await unresolve(db, 'A')
 
-      expect(answerById(db, 'A').subsidyPool).toBe(36)
+      expect(answerById(db, 'A').subsidyPool).toBe(6)
       expect(db.contract.subsidyPool).toBe(0)
+    })
+
+    it('refuses on the record, though a snapshot shows an empty pool', async () => {
+      const db = threeAnswers(90)
+      db.edits = snapshots([{ createdTime: 2e12, pool: 0, resolved: [] }])
+      await resolve(db, 'A', 'YES')
+
+      await expect(unresolve(db, 'A')).rejects.toThrow(refusal)
     })
   })
 
   it('puts back what a resolution that paid nobody took, reverting nothing', async () => {
     const db = indieMarket(
-      30,
+      0,
       [answer('A', { subsidyPool: 4 }), answer('B'), answer('C')],
       [toAnswer('B', 20)]
     )
@@ -701,8 +788,7 @@ describe('unresolving an answer of an independent market', () => {
 
     await unresolve(db, 'A')
 
-    expect(answerById(db, 'A').subsidyPool).toBe(14)
-    expect(db.contract.subsidyPool).toBe(20)
+    expect(answerById(db, 'A').subsidyPool).toBe(4)
     expect(txnsOf(db, 'CONTRACT_UNDO_RESOLUTION_PAYOUT')).toEqual([])
   })
 
@@ -722,6 +808,47 @@ describe('unresolving an answer of an independent market', () => {
     expect(txnsOf(db, 'CONTRACT_UNDO_RESOLUTION_PAYOUT')).toHaveLength(1)
   })
 
+  it('reverts only payouts not yet reverted, whatever their payoutStartTime', async () => {
+    const db = indieMarket(0, [answer('A'), answer('B')], [toAnswer('A', 20)])
+    await resolve(db, 'A', 'YES')
+    const first = txnsOf(db, 'CONTRACT_RESOLUTION_PAYOUT')[0]
+    await unresolve(db, 'A')
+    // Resolved again on a clock a little behind: its payouts carry an earlier
+    // payoutStartTime than the first resolution's.
+    resolveWithoutRecord(db, 'A', 20, {
+      payoutStartTime: (first.data?.payoutStartTime as number) - 10,
+    })
+
+    await unresolve(db, 'A')
+
+    expect(db.balances[provider]).toBe(0)
+    expect(txnsOf(db, 'CONTRACT_UNDO_RESOLUTION_PAYOUT')).toHaveLength(2)
+  })
+
+  it('reverts each of two resolutions in the same millisecond once', async () => {
+    const db = indieMarket(
+      0,
+      [answer('A', { subsidyPool: 3 }), answer('B')],
+      [toAnswer('A', 20)]
+    )
+    const at = clock
+    const atOneTime = (fn: () => Promise<unknown>) => {
+      dateNow.mockImplementation(() => at)
+      return fn().finally(() => dateNow.mockImplementation(() => (clock += 1)))
+    }
+    await atOneTime(() => resolve(db, 'A', 'YES'))
+    await unresolve(db, 'A')
+    await atOneTime(() => resolve(db, 'A', 'YES'))
+    const [first, second] = txnsOf(db, 'CONTRACT_RESOLUTION_SUBSIDY')
+    expect(second.data).toEqual(first.data)
+
+    await unresolve(db, 'A')
+
+    expect(db.balances[provider]).toBe(0)
+    expect(txnsOf(db, 'CONTRACT_UNDO_RESOLUTION_PAYOUT')).toHaveLength(2)
+    expect(answerById(db, 'A').subsidyPool).toBe(3)
+  })
+
   it('puts back nothing for a resolution from before the records', async () => {
     const db = indieMarket(
       0,
@@ -732,31 +859,32 @@ describe('unresolving an answer of an independent market', () => {
     await resolve(db, 'A', 'YES')
     await unresolve(db, 'A')
     expect(answerById(db, 'A').subsidyPool).toBe(5)
-    // Resolved again by code that wrote payouts and no record.
-    const a = answerById(db, 'A')
-    Object.assign(a, { resolution: 'YES', resolutionTime: Date.now() })
-    a.subsidyPool = 0
-    db.balances[provider] += 15
-    insert(db, [
-      {
-        category: 'CONTRACT_RESOLUTION_PAYOUT',
-        fromType: 'CONTRACT',
-        fromId: M,
-        toType: 'USER',
-        toId: provider,
-        amount: 15,
-        token: 'M$',
-        data: { deposit: 15, payoutStartTime: Date.now(), answerId: 'A' },
-      },
-    ])
+    resolveWithoutRecord(db, 'A', 15)
 
     await unresolve(db, 'A')
 
     // Never more than it took, which nothing recorded.
     expect(answerById(db, 'A').subsidyPool).toBe(0)
-    // Its payouts are the latest, reverted as before.
+    // Its payouts are reverted as before.
     expect(db.balances[provider]).toBe(0)
     expect(txnsOf(db, 'CONTRACT_UNDO_RESOLUTION_PAYOUT')).toHaveLength(2)
+  })
+
+  it('never reads an undone record again, even in the same millisecond', async () => {
+    const db = indieMarket(
+      0,
+      [answer('A', { subsidyPool: 5 }), answer('B')],
+      [toAnswer('A', 20)]
+    )
+    await resolve(db, 'A', 'YES')
+    const resolvedAt = answerById(db, 'A').resolutionTime
+    await unresolve(db, 'A')
+    // Resolved again, without a record, at the first resolution's time.
+    resolveWithoutRecord(db, 'A', 15, { resolutionTime: resolvedAt })
+
+    await unresolve(db, 'A')
+
+    expect(answerById(db, 'A').subsidyPool).toBe(0)
   })
 
   it('puts nothing back once the answer holds another resolution', async () => {
@@ -807,32 +935,33 @@ it('restores a whole market from its last unresolved snapshot, as before', async
   expect(db.contract.subsidyPool).toBe(40)
 })
 
-describe('getResolutionSubsidyToRestore', () => {
-  it("adds the answer's own and its share of the market's", () => {
-    expect(
-      getResolutionSubsidyToRestore({
-        answerSubsidyPool: 6,
-        contractSubsidyShare: 30,
-      })
-    ).toBe(36)
+describe('tookMarketSubsidy', () => {
+  it("is true for a positive share of the market's pool", () => {
+    expect(tookMarketSubsidy({ contractSubsidyShare: 0.01 })).toBe(true)
+  })
+
+  it('is false for none', () => {
+    expect(tookMarketSubsidy({ contractSubsidyShare: 0 })).toBe(false)
+  })
+
+  it('is true when the record holds no usable amount', () => {
+    expect(tookMarketSubsidy({ contractSubsidyShare: null })).toBe(true)
+    expect(tookMarketSubsidy({ contractSubsidyShare: NaN })).toBe(true)
+  })
+})
+
+describe('getAnswerSubsidyToRestore', () => {
+  it("is the answer's own, as recorded", () => {
+    expect(getAnswerSubsidyToRestore({ answerSubsidyPool: 6 })).toBe(6)
   })
 
   it('is zero without a record', () => {
-    expect(getResolutionSubsidyToRestore(null)).toBe(0)
+    expect(getAnswerSubsidyToRestore(null)).toBe(0)
   })
 
-  it('counts only finite, positive amounts', () => {
-    expect(
-      getResolutionSubsidyToRestore({
-        answerSubsidyPool: null,
-        contractSubsidyShare: 5,
-      })
-    ).toBe(5)
-    expect(
-      getResolutionSubsidyToRestore({
-        answerSubsidyPool: -3,
-        contractSubsidyShare: NaN,
-      })
-    ).toBe(0)
+  it('counts only a finite, positive amount', () => {
+    expect(getAnswerSubsidyToRestore({ answerSubsidyPool: null })).toBe(0)
+    expect(getAnswerSubsidyToRestore({ answerSubsidyPool: -3 })).toBe(0)
+    expect(getAnswerSubsidyToRestore({ answerSubsidyPool: NaN })).toBe(0)
   })
 })
