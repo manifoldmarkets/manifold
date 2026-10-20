@@ -28,6 +28,7 @@ import {
 } from 'common/txn'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
+import { randomString } from 'common/util/random'
 import { groupBy, keyBy, mapValues, sum, sumBy, uniqBy } from 'lodash'
 import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
@@ -553,6 +554,8 @@ async function undoUniqueBettorRewardsIfCancelResolution(
   log(`Cancel Bonus txn for user: ${contract.creatorId} completed: ${txn.id}`)
 }
 
+const RESOLUTION_ID_LENGTH = 16
+
 // What resolving an answer of an independent market took from the pending
 // subsidy, as a CONTRACT_RESOLUTION_SUBSIDY txn records it.
 export type ResolutionSubsidyTaken = Pick<
@@ -572,6 +575,9 @@ export const getPayUsersQueries = (
   const payoutToken = token === 'CASH' ? 'CASH' : 'M$'
   const mergedPayouts = checkAndMergePayouts(payouts)
   const payoutStartTime = Date.now()
+  // Ties a recorded resolution's payouts to its record, as no time can.
+  const resolutionId =
+    answerId && subsidyTaken ? randomString(RESOLUTION_ID_LENGTH) : undefined
 
   const balanceUpdates: {
     id: string
@@ -609,6 +615,7 @@ export const getPayUsersQueries = (
         deposit: deposit ?? 0,
         payoutStartTime,
         answerId,
+        resolutionId,
       }),
       description: 'Contract payout for resolution: ' + contractId,
     })
@@ -643,7 +650,7 @@ export const getPayUsersQueries = (
 
   // One per resolution, even one that pays nobody, inserted with the payouts.
   // It moves nothing.
-  if (answerId && subsidyTaken) {
+  if (answerId && subsidyTaken && resolutionId) {
     txns.push({
       category: 'CONTRACT_RESOLUTION_SUBSIDY',
       fromType: 'CONTRACT',
@@ -652,7 +659,7 @@ export const getPayUsersQueries = (
       toId: contractId,
       amount: 0,
       token: payoutToken,
-      data: { answerId, payoutStartTime, ...subsidyTaken },
+      data: { answerId, resolutionId, payoutStartTime, ...subsidyTaken },
       description: 'Pending subsidy taken by resolution: ' + contractId,
     })
   }

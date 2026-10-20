@@ -232,14 +232,14 @@ const undoResolution = async (
       )
     : null
   // Each of its resolutions recorded, in its own transaction, what it took
-  // from the pending subsidy. Those not undone yet: an unresolve marks the
-  // record it goes by, and code from before the records, which doesn't,
-  // still reverts all of the resolution's payouts. A resolution from before
-  // the records has none.
+  // from the pending subsidy, with an id its payouts carry too. Those not
+  // undone yet: an unresolve marks the record it goes by, and code from
+  // before the records, which doesn't, still reverts all of the resolution's
+  // payouts. A resolution from before the records has none.
   const resolutionRecords = answerId
     ? await pg.map(
         `with payouts as (
-           select (p.data->'data'->>'payoutStartTime')::numeric as payout_start_time,
+           select p.data->'data'->>'resolutionId' as resolution_id,
              exists (
                select 1 from txns u
                where u.category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
@@ -252,8 +252,8 @@ const undoResolution = async (
              and p.data->'data'->>'answerId' = $1
          )
          select t.id,
+           t.data->'data'->>'resolutionId' as resolution_id,
            (t.data->'data'->>'resolutionTime')::numeric as resolution_time,
-           (t.data->'data'->>'payoutStartTime')::numeric as payout_start_time,
            (t.data->'data'->>'answerSubsidyPool')::numeric as answer_subsidy_pool,
            (t.data->'data'->>'contractSubsidyShare')::numeric as contract_subsidy_share
          from txns t
@@ -270,21 +270,19 @@ const undoResolution = async (
            and (
              not exists (
                select 1 from payouts
-               where payout_start_time =
-                 (t.data->'data'->>'payoutStartTime')::numeric
+               where resolution_id = t.data->'data'->>'resolutionId'
              )
              or exists (
                select 1 from payouts
-               where payout_start_time =
-                   (t.data->'data'->>'payoutStartTime')::numeric
+               where resolution_id = t.data->'data'->>'resolutionId'
                  and not reverted
              )
            )`,
         [answerId, contractId],
         (r) => ({
           id: r.id as string,
+          resolutionId: r.resolution_id as string | null,
           resolutionTime: r.resolution_time as number | null,
-          payoutStartTime: r.payout_start_time as number | null,
           answerSubsidyPool: r.answer_subsidy_pool as number | null,
           contractSubsidyShare: r.contract_subsidy_share as number | null,
         })
@@ -334,7 +332,7 @@ const undoResolution = async (
     ? getRecordToUndo(
         answerResolutionTime,
         resolutionRecords,
-        manaTxns.map((txn) => txn.data?.payoutStartTime)
+        manaTxns.map(getPayoutResolution)
       )
     : null
   if (resolutionRecord && tookMarketSubsidy(resolutionRecord))
@@ -615,30 +613,35 @@ const undoResolution = async (
   return { answerUpdates, contractWebsocketUpdates }
 }
 
+// Which resolution a payout is from: the id a recorded resolution gives its
+// payouts and its record, or, for an older payout, its payoutStartTime.
+export function getPayoutResolution(txn: {
+  data?: { resolutionId?: string; payoutStartTime?: number }
+}) {
+  return txn.data?.resolutionId ?? txn.data?.payoutStartTime ?? null
+}
+
 // The record that undoing an answer's current resolution goes by, or none for
 // a resolution from before the records. That resolution must be the only one
 // of the answer not undone yet, by its records and by its payouts, so that
 // what's reverted and what's put back are the same resolution's. An answer
-// resolved again over a standing resolution, or one undone some other way,
+// resolved again over a standing resolution, or holding another one's record,
 // can't be unresolved.
 export function getRecordToUndo<
-  T extends { resolutionTime: number | null; payoutStartTime: number | null }
+  T extends { resolutionTime: number | null; resolutionId: string | null }
 >(
   resolutionTime: number | null,
   records: T[],
-  payoutStartTimes: (number | null | undefined)[]
+  payoutResolutions: (string | number | null)[]
 ) {
-  const payoutResolutions = [
-    ...new Set(payoutStartTimes.map((time) => time ?? null)),
-  ]
+  const resolutions = [...new Set(payoutResolutions)]
   const [record, ...others] = records
   if (
     others.length > 0 ||
-    payoutResolutions.length > 1 ||
+    resolutions.length > 1 ||
     (record &&
       (record.resolutionTime !== resolutionTime ||
-        (payoutResolutions.length === 1 &&
-          payoutResolutions[0] !== record.payoutStartTime)))
+        (resolutions.length === 1 && resolutions[0] !== record.resolutionId)))
   )
     throw new APIError(
       403,

@@ -327,6 +327,9 @@ type ContractOldResolutionPayout = {
     deposit?: number
     payoutStartTime?: number
     answerId?: string
+    // On an independent answer's resolution: shared with its
+    // CONTRACT_RESOLUTION_SUBSIDY record.
+    resolutionId?: string
   }
 }
 
@@ -341,6 +344,8 @@ type ContractResolutionSubsidy = {
   token: 'M$' | 'CASH'
   data: {
     answerId: string
+    // As on the resolution's payouts, and unique to it.
+    resolutionId: string
     // As on the resolution's payouts.
     payoutStartTime: number
     // As on the answer, while this resolution stands.

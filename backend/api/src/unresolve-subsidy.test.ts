@@ -79,6 +79,7 @@ import {
 } from 'shared/utils'
 import {
   getAnswerSubsidyToRestore,
+  getPayoutResolution,
   getRecordToUndo,
   tookMarketSubsidy,
   unresolveMain,
@@ -212,10 +213,14 @@ const fakeTx = (db: Db) => {
     )
 
   // An answer's resolution records, as its query states which: those not
-  // marked undone, nor with all their payouts reverted.
+  // marked undone, nor with all their payouts (by the id they share)
+  // reverted.
   const readRecords = (sql: string, [answerId, contractId]: unknown[]) => {
     const skipsMarked = /'CONTRACT_UNDO_RESOLUTION_SUBSIDY'/.test(sql)
-    const skipsReverted = /and not reverted/.test(sql)
+    const skipsReverted =
+      /resolution_id = t\.data->'data'->>'resolutionId'\s+and not reverted/.test(
+        sql
+      )
     const marked = revertedBy(db, 'CONTRACT_UNDO_RESOLUTION_SUBSIDY')
     const reverted = revertedBy(db, 'CONTRACT_UNDO_RESOLUTION_PAYOUT')
     const rows = txnsOf(db, 'CONTRACT_RESOLUTION_SUBSIDY')
@@ -231,7 +236,7 @@ const fakeTx = (db: Db) => {
           (p) =>
             p.fromId === contractId &&
             p.data?.answerId === answerId &&
-            p.data?.payoutStartTime === t.data?.payoutStartTime
+            p.data?.resolutionId === t.data?.resolutionId
         )
         return (
           !skipsReverted ||
@@ -241,8 +246,8 @@ const fakeTx = (db: Db) => {
       })
       .map((t) => ({
         id: t.id,
+        resolution_id: t.data?.resolutionId ?? null,
         resolution_time: t.data?.resolutionTime ?? null,
-        payout_start_time: t.data?.payoutStartTime ?? null,
         answer_subsidy_pool: t.data?.answerSubsidyPool ?? null,
         contract_subsidy_share: t.data?.contractSubsidyShare ?? null,
       }))
@@ -497,6 +502,8 @@ const writeResolution = (
   })
   for (const payout of payouts)
     db.balances[provider] = (db.balances[provider] ?? 0) + payout
+  // As resolveMarketHelper ties a recorded resolution's payouts to its record.
+  const resolutionId = record ? `r${db.txns.length}` : undefined
   insert(db, [
     ...payouts.map(
       (payout): TxnData => ({
@@ -507,7 +514,7 @@ const writeResolution = (
         toId: provider,
         amount: payout,
         token: 'M$',
-        data: { deposit: payout, payoutStartTime, answerId },
+        data: { deposit: payout, payoutStartTime, answerId, resolutionId },
       })
     ),
     ...(record
@@ -520,7 +527,13 @@ const writeResolution = (
             toId: M,
             amount: 0,
             token: 'M$',
-            data: { answerId, payoutStartTime, resolutionTime, ...record },
+            data: {
+              answerId,
+              resolutionId,
+              payoutStartTime,
+              resolutionTime,
+              ...record,
+            },
           } as TxnData,
         ]
       : []),
@@ -675,6 +688,7 @@ describe('resolving an answer of an independent market', () => {
         token: 'M$',
         data: {
           answerId: 'A',
+          resolutionId: payout.data?.resolutionId,
           payoutStartTime: payout.data?.payoutStartTime,
           resolutionTime: answerById(db, 'A').resolutionTime,
           answerSubsidyPool: 6,
@@ -682,6 +696,7 @@ describe('resolving an answer of an independent market', () => {
         },
       }),
     ])
+    expect(payout.data?.resolutionId).toEqual(expect.any(String))
     expect(db.contract.subsidyPool).toBe(60)
   })
 
@@ -917,7 +932,10 @@ describe('unresolving an answer of an independent market', () => {
     await unresolve(db, 'A')
     await atOneTime(() => resolve(db, 'A', 'YES'))
     const [first, second] = txnsOf(db, 'CONTRACT_RESOLUTION_SUBSIDY')
-    expect(second.data).toEqual(first.data)
+    // The same times, told apart only by their ids.
+    expect(second.data?.resolutionTime).toBe(first.data?.resolutionTime)
+    expect(second.data?.payoutStartTime).toBe(first.data?.payoutStartTime)
+    expect(second.data?.resolutionId).not.toBe(first.data?.resolutionId)
 
     await unresolve(db, 'A')
 
@@ -972,13 +990,16 @@ describe('unresolving an answer of an independent market', () => {
       [toAnswer('A', 20)]
     )
     await resolve(db, 'A', 'YES')
-    const resolvedAt = answerById(db, 'A').resolutionTime
+    const [record] = txnsOf(db, 'CONTRACT_RESOLUTION_SUBSIDY')
     // Undone by code that marks no records, which puts back the 100. The
     // drizzle then spends 20 of it, and code without records resolves A
-    // again, in the same millisecond as before.
+    // again, its clocks reading the same milliseconds as the first's.
     unresolveWithoutRecords(db, 'A', 100)
     answerById(db, 'A').subsidyPool = 80
-    writeResolution(db, 'A', [110], { resolutionTime: resolvedAt })
+    writeResolution(db, 'A', [110], {
+      resolutionTime: record.data?.resolutionTime,
+      payoutStartTime: record.data?.payoutStartTime,
+    })
 
     await unresolve(db, 'A')
 
@@ -1072,17 +1093,28 @@ it('restores a whole market from its last unresolved snapshot, as before', async
   expect(db.contract.subsidyPool).toBe(40)
 })
 
+describe('getPayoutResolution', () => {
+  it("is a recorded resolution's id, or an older payout's start time", () => {
+    const data = { payoutStartTime: 120 }
+    expect(getPayoutResolution({ data: { ...data, resolutionId: 'r' } })).toBe(
+      'r'
+    )
+    expect(getPayoutResolution({ data })).toBe(120)
+    expect(getPayoutResolution({})).toBeNull()
+  })
+})
+
 describe('getRecordToUndo', () => {
-  const record = { resolutionTime: 100, payoutStartTime: 120 }
+  const record = { resolutionTime: 100, resolutionId: 'r' }
 
   it("is the current resolution's record, with or without its payouts", () => {
-    expect(getRecordToUndo(100, [record], [120, 120])).toBe(record)
+    expect(getRecordToUndo(100, [record], ['r', 'r'])).toBe(record)
     expect(getRecordToUndo(100, [record], [])).toBe(record)
   })
 
   it('is none for a resolution from before the records', () => {
     expect(getRecordToUndo(100, [], [90, 90])).toBeNull()
-    expect(getRecordToUndo(100, [], [undefined])).toBeNull()
+    expect(getRecordToUndo(100, [], [null])).toBeNull()
   })
 
   it('refuses more than one resolution not undone', () => {
@@ -1090,10 +1122,14 @@ describe('getRecordToUndo', () => {
       moreThanOne
     )
     expect(() => getRecordToUndo(100, [], [90, 120])).toThrow(moreThanOne)
-    expect(() => getRecordToUndo(100, [], [90, undefined])).toThrow(moreThanOne)
-    // Another resolution's record, or another resolution's payouts.
+    expect(() => getRecordToUndo(100, [], [90, null])).toThrow(moreThanOne)
+    // Another resolution's record, or another resolution's payouts, even in
+    // the record's millisecond.
     expect(() => getRecordToUndo(200, [record], [])).toThrow(moreThanOne)
     expect(() => getRecordToUndo(100, [record], [90])).toThrow(moreThanOne)
+    expect(() => getRecordToUndo(100, [record], ['r', 100])).toThrow(
+      moreThanOne
+    )
   })
 })
 
