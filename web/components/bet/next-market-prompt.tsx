@@ -95,13 +95,12 @@ export function NextMarketPrompt(props: {
     !lastBet ||
     lastBet.userId !== user.id ||
     lastBet.contractId !== contract.id ||
-    getNextMarketPromptPlacement(lastBet.location) !== placement ||
-    Date.now() - lastBet.time > PROMPT_TTL_MS
+    getNextMarketPromptPlacement(lastBet.location) !== placement
   ) {
     return null
   }
   return (
-    <TriggeredNextMarketPrompt
+    <FreshNextMarketPrompt
       // Remount per bet so each one is its own trigger.
       key={lastBet.betId ?? lastBet.time}
       contract={contract}
@@ -110,6 +109,17 @@ export function NextMarketPrompt(props: {
       className={className}
     />
   )
+}
+
+// Freshness is decided once, when a bet's strip mounts. Later re-renders (live
+// market updates, balance changes) keep a mounted strip and its open dialog.
+function FreshNextMarketPrompt(
+  props: Parameters<typeof TriggeredNextMarketPrompt>[0]
+) {
+  const [fresh] = useState(
+    () => Date.now() - props.lastBet.time <= PROMPT_TTL_MS
+  )
+  return fresh ? <TriggeredNextMarketPrompt {...props} /> : null
 }
 
 function TriggeredNextMarketPrompt(props: {
