@@ -47,12 +47,12 @@ Respond with ONLY "yes" if this is spam, or "no" if it's a legitimate comment.`
 
   try {
     const response = await promptAI(prompt, {
-      model: aiModels.flash,
+      model: aiModels.haiku,
       thinkingLevel: 'minimal',
     })
     return response.toLowerCase().trim() === 'yes'
   } catch (e) {
-    log.error('Error calling Gemini:', { error: e })
+    log.error('Error calling AI model:', { error: e })
     return false
   }
 }

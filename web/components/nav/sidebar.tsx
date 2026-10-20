@@ -354,6 +354,7 @@ const getDesktopNav = (
         name: 'Shop',
         href: '/shop',
         icon: LuGem,
+        modAction: !SPEND_MANA_ENABLED,
         children: options.showShopNewBadge ? (
           <>
             Shop
@@ -367,6 +368,7 @@ const getDesktopNav = (
         name: 'Reports',
         href: '/reports',
         icon: ReportsIcon,
+        modAction: true,
       }
     )
 
@@ -425,12 +427,14 @@ const getMobileNav = (
       name: 'Reports',
       href: '/reports',
       icon: ReportsIcon,
+      modAction: true,
     },
     // Show shop when enabled OR for admins (testing).
     (SPEND_MANA_ENABLED || isAdminOrMod) && {
       name: 'Shop',
       href: '/shop',
       icon: LuGem,
+      modAction: !SPEND_MANA_ENABLED,
       children: showShopNewBadge ? (
         <>
           Shop

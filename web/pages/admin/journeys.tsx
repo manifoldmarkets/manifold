@@ -13,6 +13,7 @@ import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import clsx from 'clsx'
 import { useAdmin } from 'web/hooks/use-admin'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { formatPercent } from 'common/util/format'
 import { Input } from 'web/components/widgets/input'
@@ -162,7 +163,10 @@ export default function Journeys() {
     <Row>
       <NoSEO />
       <div className="text-ink-900 mx-8">
-        <div className={'text-primary-700 my-1 text-2xl'}>User Journeys</div>
+        <div className={'text-primary-700 my-1 text-2xl'}>
+          User Journeys
+          <ModActionTag admin className="ml-2 align-middle" />
+        </div>
         <Row className={'items-center gap-2'}>
           Viewing journeys from {unBannedUsers.length} users. You're not seeing{' '}
           {bannedUsers.length} more that are banned. Showing users created:{' '}

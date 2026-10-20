@@ -1,7 +1,10 @@
+import { ChevronDownIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { AnySportKey, SportInfo } from 'common/sports-schedule'
 import { Carousel } from 'web/components/widgets/carousel'
+import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import { Row } from 'web/components/layout/row'
 import { track } from 'web/lib/service/analytics'
 
@@ -9,6 +12,13 @@ export type SportSelection = AnySportKey | 'all'
 
 export const sportPath = (sport: SportSelection) =>
   sport === 'all' ? '/sports' : `/sports/${sport}`
+
+/** Links between sports keep the Markets tab open when it is. */
+export function useSportHref() {
+  const router = useRouter()
+  return (sport: SportSelection) =>
+    sportPath(sport) + (router.query.tab === 'markets' ? '?tab=markets' : '')
+}
 
 /**
  * The sports navigation: "All" opens the upcoming feed, every other chip its
@@ -21,6 +31,7 @@ export function SportRail(props: {
   className?: string
 }) {
   const { sports, selected, counts, className } = props
+  const hrefFor = useSportHref()
 
   const withGames = sports.filter((s) => (counts[s.key] ?? 0) > 0)
   const withoutGames = sports.filter(
@@ -37,6 +48,7 @@ export function SportRail(props: {
       <Row className="bg-canvas-0 relative z-10 shrink-0 gap-1.5 py-2 pr-1.5">
         <SportChip
           sport="all"
+          href={hrefFor('all')}
           active={selected === 'all'}
           emoji="🏟️"
           label="All"
@@ -54,6 +66,7 @@ export function SportRail(props: {
           <SportChip
             key={s.key}
             sport={s.key}
+            href={hrefFor(s.key)}
             active={selected === s.key}
             emoji={s.emoji}
             label={s.label}
@@ -67,27 +80,56 @@ export function SportRail(props: {
           <SportChip
             key={s.key}
             sport={s.key}
+            href={hrefFor(s.key)}
             active={selected === s.key}
             emoji={s.emoji}
             label={s.label}
           />
         ))}
       </Carousel>
+      <DropdownMenu
+        className="ml-1.5 shrink-0"
+        buttonClass="border-ink-200 bg-canvas-0 hover:bg-canvas-50 min-h-[40px] gap-1 rounded-md border px-2 text-xs font-medium"
+        buttonContent={
+          <>
+            All sports <ChevronDownIcon className="h-4 w-4" />
+          </>
+        }
+        anchor={{ to: 'bottom end', gap: 8, padding: 8 }}
+        menuWidth="w-56"
+        menuItemsClass="!max-h-[60vh] overflow-y-auto"
+        selectedItemName={selected}
+        items={[
+          { key: 'all', label: 'All sports', emoji: '🏟️' },
+          ...sports.filter((s) => s.key !== 'other'),
+        ].map((s) => ({
+          name: s.key,
+          isLink: true,
+          linkProps: {
+            href: hrefFor(s.key),
+            'aria-current': selected === s.key ? 'page' : undefined,
+            onClick: () => track('sports rail select', { sport: s.key }),
+          },
+          icon: <span aria-hidden>{s.emoji}</span>,
+          buttonContent: <span>{s.label}</span>,
+        }))}
+      />
     </Row>
   )
 }
 
 function SportChip(props: {
   sport: SportSelection
+  href: string
   active: boolean
   label: string
   emoji?: string
   count?: number
 }) {
-  const { sport, active, label, emoji, count } = props
+  const { sport, href, active, label, emoji, count } = props
   return (
     <Link
-      href={sportPath(sport)}
+      href={href}
       aria-current={active ? 'page' : undefined}
       onClick={() => track('sports rail select', { sport })}
       className={clsx(

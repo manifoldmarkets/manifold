@@ -391,8 +391,13 @@ function toOfficialGame(
   const drawAnswer = ordered.find((a) => isDrawAnswer(a.text))
   const teams = ordered.filter((a) => a !== drawAnswer)
   if (teams.length !== 2) return null
-  const home = toTeam(teams[0], d.sportsLeague)
-  const away = toTeam(teams[1], d.sportsLeague)
+  const [homeAnswer, awayAnswer] = homeAndAway(
+    teams,
+    d.sportsHomeTeam,
+    d.sportsAwayTeam
+  )
+  const home = toTeam(homeAnswer, d.sportsLeague)
+  const away = toTeam(awayAnswer, d.sportsLeague)
   const draw = drawAnswer
     ? { answerId: drawAnswer.id, prob: drawAnswer.prob }
     : null
@@ -460,6 +465,26 @@ function toOfficialGame(
     related: [] as RelatedRef[],
     relatedCount: 0,
   }
+}
+
+/**
+ * A game market's two team answers as [home, away]. Versus markets list away
+ * first and soccer lists home first, so the stored team names decide; markets
+ * without them (or whose answers were renamed) were created home first.
+ */
+export function homeAndAway(
+  teams: Answer[],
+  homeTeam: string | undefined,
+  awayTeam: string | undefined
+): [Answer, Answer] {
+  const norm = (s: string) => splitFlag(s).name.trim().toLowerCase()
+  const byName = (name: string | undefined) =>
+    name ? teams.find((a) => norm(a.text) === norm(name)) : undefined
+  const home = byName(homeTeam)
+  const away = byName(awayTeam)
+  if (home && home !== teams[0] && away !== home) return [teams[1], teams[0]]
+  if (!home && away === teams[0]) return [teams[1], teams[0]]
+  return [teams[0], teams[1]]
 }
 
 // Markets made before every league had team codes fall back to the code for

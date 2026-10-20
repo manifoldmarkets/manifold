@@ -16,6 +16,10 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { api, APIError } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
+import {
+  ModActionBadge,
+  ModActionTag,
+} from 'web/components/moderation/mod-action'
 import { Input } from 'web/components/widgets/input'
 import { SelectDropdown } from 'web/components/widgets/select-dropdown'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -397,9 +401,10 @@ export default function SweepstakesPage() {
           </p>
           {isAdmin && (
             <Button
-              color="indigo"
+              color="purple"
               onClick={() => setShowCreateSweepstakesModal(true)}
             >
+              <ModActionBadge admin className="mr-1" />
               Create New Drawing
             </Button>
           )}
@@ -499,10 +504,11 @@ export default function SweepstakesPage() {
                   activeSweepstakes.sweepstakesNum ===
                     sweepstakes.sweepstakesNum) && (
                   <Button
-                    color="indigo"
+                    color="purple"
                     size="sm"
                     onClick={() => setShowCreateSweepstakesModal(true)}
                   >
+                    <ModActionBadge admin className="mr-1" />
                     Create New Drawing
                   </Button>
                 )}
@@ -749,12 +755,13 @@ export default function SweepstakesPage() {
                 winners.
               </p>
               <Button
-                color="indigo"
+                color="purple"
                 size="lg"
                 onClick={handleSelectWinners}
                 loading={isSelectingWinners}
                 disabled={isSelectingWinners}
               >
+                <ModActionBadge admin className="mr-1" />
                 🎟️ Draw Winners
               </Button>
             </Col>
@@ -852,8 +859,9 @@ function AnnouncePrizeDrawingSection(props: {
   return (
     <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4 dark:border-indigo-800 dark:bg-indigo-950/20">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h3 className="text-ink-900 text-sm font-semibold uppercase tracking-wide">
-          Admin · Announce to subscribers
+        <h3 className="text-ink-900 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide">
+          <ModActionTag admin />
+          Announce to subscribers
         </h3>
         <span className="text-ink-500 text-xs">
           Only users opted in to <code>prize_drawings</code> notifications will

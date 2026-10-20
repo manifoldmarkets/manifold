@@ -304,8 +304,9 @@ export interface OddsMarketParams {
   /** Markdown */
   description: string
   /**
-   * Home first, then away, then Draw where the sport allows one. The schedule
-   * reads the first answer as the home team.
+   * In title order: home, away, Draw for a three-way (soccer) game; away,
+   * home for a versus game. The schedule tells the teams apart by
+   * sportsHomeTeam / sportsAwayTeam, not by position.
    */
   answers: string[]
   /**
@@ -330,7 +331,7 @@ export interface OddsMarketParams {
 
 /**
  * Every game becomes a multiple-choice market that sums to one: a versus
- * market (home, away) where a tie is rare and resolves 50/50, or home, away,
+ * market (away, home) where a tie is rare and resolves 50/50, or home, away,
  * Draw for soccer. Answers open at the bookmakers' consensus.
  */
 export function buildOddsMarketParams(
@@ -345,7 +346,9 @@ export function buildOddsMarketParams(
   })
   const home = event.home_team
   const away = event.away_team
-  const answers = threeWay ? [home, away, DRAW_ANSWER] : [home, away]
+  // Answers follow the title: "Home vs Away" for soccer, "Away at Home"
+  // (away on the left) for everything else.
+  const answers = threeWay ? [home, away, DRAW_ANSWER] : [away, home]
   // Percent, unrounded: rounding can push a pinned 1% answer under the
   // floor once the pools rescale the total to exactly 100.
   const answerProbs = fairProbs(event, answers)?.map((p) => p * 100)
@@ -356,14 +359,17 @@ export function buildOddsMarketParams(
     homeShort && awayShort
       ? threeWay
         ? [homeShort, awayShort, DRAW_ANSWER]
-        : [homeShort, awayShort]
+        : [awayShort, homeShort]
       : undefined
-  const answerColors = gameAnswerColors(entry.sport, home, away, threeWay)
+  const colors = gameAnswerColors(entry.sport, home, away, threeWay)
+  const answerColors = colors && (threeWay ? colors : [colors[1], colors[0]])
 
-  // The date tells repeat fixtures apart (series, rematches).
+  // The date tells repeat fixtures apart (series, rematches). The league
+  // label in front of the title marks the market as official, so the title
+  // doesn't say it.
   const question = threeWay
-    ? `${home} vs ${away}, ${date} [official]`
-    : `${away} at ${home}, ${date} [official]`
+    ? `${home} vs ${away}, ${date}`
+    : `${away} at ${home}, ${date}`
 
   const sportParam = SPORT_ID_TO_SPORT_KEY[entry.sport]
   const manifoldSportsLink =

@@ -33,7 +33,12 @@ export const createIdenfySession: APIHandler<'create-idenfy-session'> = async (
     [auth.uid]
   )
 
-  if (existingVerification?.status === 'approved') {
+  // An admin can flag a user who already passed iDenfy; verifying again is
+  // their only way to clear the flag, so let them start a new session.
+  if (
+    existingVerification?.status === 'approved' &&
+    user.bonusEligibility !== 'requires_verification'
+  ) {
     throw new APIError(400, 'User is already verified')
   }
 

@@ -17,6 +17,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Content } from 'web/components/widgets/editor'
 import { PaginationNextPrev } from 'web/components/widgets/pagination'
 import { Title } from 'web/components/widgets/title'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { BannedBadge, UserLink } from 'web/components/widgets/user-link'
 import { useAdmin } from 'web/hooks/use-admin'
@@ -45,7 +46,10 @@ function ReportsContent() {
   return (
     <Page trackPageView={false} className="px-2">
       <NoSEO />
-      <Title>Reports</Title>
+      <Title>
+        Reports
+        <ModActionTag admin className="ml-2 align-middle" />
+      </Title>
       <div className="flex w-full flex-col">
         <PaginationNextPrev {...pagination} />
 

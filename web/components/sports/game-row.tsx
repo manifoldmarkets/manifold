@@ -1,14 +1,13 @@
-import { ChevronRightIcon } from '@heroicons/react/solid'
+import { ChevronRightIcon, HeartIcon, UsersIcon } from '@heroicons/react/solid'
+import { HeartIcon as OutlineHeartIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { formatJustTime } from 'client-common/lib/time'
 import {
   ScheduleGame,
   ScheduleTeam,
-  SPORT_BY_KEY,
   teamDisplayName,
 } from 'common/sports-schedule'
 import { readableTextColor } from 'common/sports-team-colors'
@@ -16,14 +15,16 @@ import { shortFormatNumber } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { GameLinkedMarkets } from 'web/components/sports/game-related-markets'
-import { sportPath } from 'web/components/sports/sport-rail'
+import { SportsMarketBadge } from './sports-market-badge'
+import { SportHeroBackground } from './sport-hero-background'
+import { getGameDisplayTeams } from './game-feed-utils'
 import {
   Flag,
   MatchOutcome,
   SportsMatch,
 } from 'web/components/sports/sports-match-card'
 import {
-  SportsBetPanel,
+  SportsThreeWayBetDialog,
   SportsVersusBetDialog,
 } from 'web/components/sports/sports-bet-panel'
 import { useUser } from 'web/hooks/use-user'
@@ -88,19 +89,29 @@ const gameAnchor = (game: Pick<ScheduleGame, 'id'>) => `game-${game.id}`
 /**
  * One game: when it starts (or the live score), the two teams with their
  * prices as the bet buttons, and the draw for soccer.
- *  - `list`: a compact row for the all-sports feed; the row opens the game.
- *  - `card`: a card for a sport's page, with the markets on the game below.
+ * Card, compact row, or featured scoreboard, with related markets below.
  */
 export function GameRow(props: {
   game: ScheduleGame
-  variant?: 'list' | 'card'
+  variant?: 'card' | 'featured' | 'compact'
   showLeague?: boolean
   className?: string
+  liked?: boolean
+  likeDisabled?: boolean
+  onToggleLike?: () => void
 }) {
-  const { game, variant = 'list', showLeague, className } = props
-  const router = useRouter()
+  const {
+    game,
+    variant = 'card',
+    showLeague,
+    className,
+    liked,
+    likeDisabled,
+    onToggleLike,
+  } = props
   const [betOutcome, setBetOutcome] = useState<MatchOutcome | null>(null)
   const user = useUser()
+  const LikeIcon = liked ? HeartIcon : OutlineHeartIcon
 
   const live = game.status === 'live'
   const finished = game.status === 'finished'
@@ -114,9 +125,69 @@ export function GameRow(props: {
       ? { home: game.liveScore.home, away: game.liveScore.away }
       : null)
 
-  const homeWon = game.winnerAnswerId === game.home.answerId
-  const awayWon = game.winnerAnswerId === game.away.answerId
   const drawWon = !!game.draw && game.winnerAnswerId === game.draw.answerId
+  const displayTeams = getGameDisplayTeams(game)
+  const matchupLabel = game.draw
+    ? `${game.home.name} vs ${game.away.name}`
+    : `${game.away.name} at ${game.home.name}`
+
+  const gameControlClassName =
+    'text-ink-500 inline-flex h-8 min-w-[2rem] shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-lg border px-2 text-xs font-medium tabular-nums'
+  const gameActionClassName =
+    'border-transparent hover:bg-primary-100 hover:text-primary-700 focus-visible:ring-primary-500 transition-colors focus-visible:ring-2'
+  const likeButton = onToggleLike && (
+    <button
+      type="button"
+      onClick={onToggleLike}
+      disabled={likeDisabled}
+      aria-pressed={!!liked}
+      aria-label={`${liked ? 'Unlike' : 'Like'} ${matchupLabel}`}
+      title={liked ? 'Unlike' : 'Like'}
+      className={clsx(
+        gameControlClassName,
+        gameActionClassName,
+        'w-8 !px-0 disabled:opacity-50',
+        liked && '!text-primary-600'
+      )}
+    >
+      <LikeIcon className="h-4 w-4" aria-hidden />
+    </button>
+  )
+  const gameLink = (
+    <Link
+      href={gamePath(game)}
+      aria-label={`Open ${matchupLabel} game page`}
+      title="Game page"
+      className={clsx(gameControlClassName, gameActionClassName, 'w-8 !px-0')}
+    >
+      <ChevronRightIcon className="h-4 w-4" aria-hidden />
+    </Link>
+  )
+  const gameControls = (
+    <div
+      role="group"
+      aria-label="Game activity and actions"
+      className="flex shrink-0 items-center gap-1"
+    >
+      <span
+        className={clsx(gameControlClassName, 'border-transparent')}
+        title={`Ṁ${shortFormatNumber(game.volume)} traded`}
+      >
+        Ṁ{shortFormatNumber(game.volume)}
+        <span className="sr-only">traded</span>
+      </span>
+      <span
+        className={clsx(gameControlClassName, 'border-transparent')}
+        title={`${game.uniqueBettorCount} traders`}
+      >
+        <UsersIcon className="h-4 w-4" aria-hidden />
+        {shortFormatNumber(game.uniqueBettorCount)}
+        <span className="sr-only">traders</span>
+      </span>
+      {likeButton}
+      {gameLink}
+    </div>
+  )
 
   const onBet = (outcome: MatchOutcome) => {
     if (!user) {
@@ -127,60 +198,78 @@ export function GameRow(props: {
     setBetOutcome(outcome)
   }
 
-  const teams = (
-    <Col className="min-w-0 gap-1.5 sm:gap-1">
+  const [firstTeam, secondTeam] = displayTeams.map(
+    ({ team, side, outcome }) => (
       <TeamLine
-        team={game.home}
-        score={score?.home ?? null}
-        won={homeWon}
-        lost={finished && game.isResolved && !homeWon}
+        key={team.answerId}
+        team={team}
+        score={score?.[side] ?? null}
+        won={game.winnerAnswerId === team.answerId}
+        lost={
+          finished && game.isResolved && game.winnerAnswerId !== team.answerId
+        }
         live={live}
         finished={finished}
         canBet={canBet}
-        onBet={() => onBet('teamA')}
+        onBet={() => onBet(outcome)}
       />
-      <TeamLine
-        team={game.away}
-        score={score?.away ?? null}
-        won={awayWon}
-        lost={finished && game.isResolved && !awayWon}
-        live={live}
-        finished={finished}
-        canBet={canBet}
-        onBet={() => onBet('teamB')}
-      />
-      {game.draw && (
-        <Row className="items-center gap-2 pl-8">
-          <span
-            className={clsx(
-              'text-xs',
-              drawWon ? 'text-ink-900 font-semibold' : 'text-ink-500'
-            )}
-          >
-            Draw{drawWon && ' ✓'}
-          </span>
-          <PriceChip
-            prob={game.draw.prob}
-            muted
-            disabled={!canBet}
-            onClick={(e) => {
-              e.stopPropagation()
-              onBet('draw')
-            }}
-            label="Bet on a draw"
-            className="ml-auto"
-          />
-        </Row>
-      )}
-    </Col>
+    )
   )
+  // Home, Draw, away: the order of the three-way ticket's picker.
+  const teams =
+    variant === 'compact' && game.draw ? (
+      <ThreeWayStrip
+        game={game}
+        teams={displayTeams}
+        score={score}
+        live={live}
+        finished={finished}
+        canBet={canBet}
+        onBet={onBet}
+      />
+    ) : (
+      <div
+        className={clsx(
+          'min-w-0',
+          variant === 'compact'
+            ? 'grid gap-x-5 gap-y-2 sm:grid-cols-2'
+            : 'flex flex-col gap-1.5 sm:gap-1'
+        )}
+      >
+        {firstTeam}
+        {game.draw && (
+          <Row className="items-center gap-2 pl-10">
+            <span
+              className={clsx(
+                'text-xs',
+                drawWon ? 'text-ink-900 font-semibold' : 'text-ink-500'
+              )}
+            >
+              Draw{drawWon && ' ✓'}
+            </span>
+            <PriceChip
+              prob={game.draw.prob}
+              muted
+              disabled={!canBet}
+              onClick={(e) => {
+                e.stopPropagation()
+                onBet('draw')
+              }}
+              label="Bet on a draw"
+              className="ml-auto"
+            />
+          </Row>
+        )}
+        {secondTeam}
+      </div>
+    )
 
   // Kept outside the clickable row: clicks in a portal still bubble up the
   // React tree, and would open the game.
   const dialog =
     betOutcome &&
     (game.draw ? (
-      <SportsBetPanel
+      <SportsThreeWayBetDialog
         match={toSportsMatch(game)}
         initialOutcome={betOutcome}
         onClose={() => setBetOutcome(null)}
@@ -195,76 +284,189 @@ export function GameRow(props: {
       />
     ))
 
-  if (variant === 'card') {
+  if (variant === 'compact') {
     return (
-      <div
+      <section
         id={gameAnchor(game)}
         className={clsx(
-          'bg-canvas-0 border-ink-200 scroll-mt-32 rounded-lg border',
+          'bg-canvas-0 border-ink-200 scroll-mt-32 overflow-hidden rounded-xl border',
           className
         )}
       >
-        <Row className="border-ink-100 min-h-[2.5rem] items-center gap-2 border-b px-3 py-1.5">
-          <GameWhen game={game} layout="inline" />
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 p-3 sm:grid-cols-[7rem_minmax(0,1fr)_auto]">
+          <div className="col-span-2 mb-2 flex flex-wrap items-center gap-2 sm:col-span-1 sm:mb-0 sm:flex-col sm:items-start">
+            <div className="flex flex-wrap items-center gap-1.5 sm:items-start">
+              <SportsMarketBadge market={game} />
+              <GameWhen game={game} stackOnWide />
+            </div>
+            {showLeague && (
+              <span className="text-ink-400 text-[10px] font-semibold">
+                {game.league}
+              </span>
+            )}
+          </div>
+          {teams}
+          <div className="flex flex-col items-end gap-2">
+            {likeButton}
+            <Link
+              href={gamePath(game)}
+              aria-label={`Open ${matchupLabel}`}
+              className={clsx(gameControlClassName, gameActionClassName)}
+            >
+              Ṁ{shortFormatNumber(game.volume)}
+              <ChevronRightIcon className="h-4 w-4" aria-hidden />
+            </Link>
+          </div>
+        </div>
+        <GameLinkedMarkets game={game} />
+        {dialog}
+      </section>
+    )
+  }
+
+  if (variant === 'featured') {
+    return (
+      <section
+        id={gameAnchor(game)}
+        className={clsx(
+          'border-primary-200 bg-primary-50 scroll-mt-32 overflow-hidden rounded-2xl border',
+          className
+        )}
+      >
+        <GameLinkedMarkets
+          game={game}
+          matchup={
+            <div className="relative isolate flex min-w-0 flex-col overflow-hidden">
+              <SportHeroBackground sport={game.sport} scoreboard />
+              <div className="flex items-center gap-2 px-4 py-2 sm:px-5">
+                <div className="@container flex min-w-[1rem] flex-1 items-center gap-2">
+                  <SportsMarketBadge market={game} />
+                  <span className="text-primary-700 @[5rem]:not-sr-only sr-only whitespace-nowrap text-[10px] font-bold uppercase tracking-wide">
+                    Featured
+                  </span>
+                </div>
+                {gameControls}
+              </div>
+              <div className="@container/scoreboard mx-auto my-auto w-full max-w-md px-4 pb-5 pt-3 sm:px-5">
+                <div className="text-ink-500 mb-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs">
+                  <span>
+                    {game.league} · {dayjs(game.startTime).format('ddd, MMM D')}
+                  </span>
+                  <GameWhen game={game} />
+                </div>
+                <div className="grid grid-cols-2 items-center gap-x-6 gap-y-2 text-center">
+                  {displayTeams.map(({ team }, index) => (
+                    <div
+                      key={team.answerId}
+                      className={clsx(
+                        'row-start-1 justify-self-center',
+                        index === 0 ? 'col-start-1' : 'col-start-2'
+                      )}
+                    >
+                      <TeamBadge team={team} featured />
+                    </div>
+                  ))}
+                  <div className="col-span-2 col-start-1 row-start-1 justify-self-center">
+                    {score ? (
+                      <span
+                        className={clsx(
+                          'text-ink-1000 @[22rem]/scoreboard:text-3xl whitespace-nowrap font-bold tabular-nums',
+                          score.home >= 100 || score.away >= 100
+                            ? '@[18rem]/scoreboard:text-2xl text-lg'
+                            : 'text-2xl'
+                        )}
+                        aria-label={displayTeams
+                          .map(
+                            ({ team, side }) => `${team.name} ${score[side]}`
+                          )
+                          .join(', ')}
+                      >
+                        {score[displayTeams[0].side]}
+                        <span className="text-ink-400 mx-1.5 font-normal">
+                          –
+                        </span>
+                        {score[displayTeams[1].side]}
+                      </span>
+                    ) : (
+                      <span className="text-ink-400 text-sm font-medium">
+                        vs
+                      </span>
+                    )}
+                  </div>
+                  {displayTeams.map(({ team }, index) => (
+                    <div
+                      key={team.answerId}
+                      className={clsx(
+                        'row-start-2 min-w-0',
+                        index === 0 ? 'col-start-1' : 'col-start-2'
+                      )}
+                    >
+                      <h3 className="text-ink-1000 @[18rem]/scoreboard:text-base @[22rem]/scoreboard:text-lg flex min-h-[2.75rem] items-center justify-center text-sm font-bold leading-tight [text-wrap:balance]">
+                        {team.name}
+                      </h3>
+                    </div>
+                  ))}
+                  {displayTeams.map(({ team, outcome }, index) => (
+                    <PriceChip
+                      key={team.answerId}
+                      prob={team.prob}
+                      disabled={!canBet}
+                      label={`Bet on ${team.name}`}
+                      onClick={() => onBet(outcome)}
+                      className={clsx(
+                        '!bg-canvas-0 hover:!bg-primary-600 hover:!text-ink-0 row-start-3 max-w-full justify-self-center shadow-sm',
+                        game.draw ? '@[22rem]/scoreboard:!w-24 !w-20' : '!w-24',
+                        index === 0 ? 'col-start-1' : 'col-start-2'
+                      )}
+                    />
+                  ))}
+                  {game.draw && (
+                    <button
+                      type="button"
+                      disabled={!canBet}
+                      onClick={() => onBet('draw')}
+                      aria-label={`Bet on a draw (${Math.round(
+                        game.draw.prob * 100
+                      )}%)`}
+                      className="text-primary-700 hover:bg-primary-100 focus-visible:ring-primary-500 col-span-2 col-start-1 row-start-3 min-h-[40px] justify-self-center rounded-lg px-2 text-xs font-semibold focus-visible:ring-2 disabled:opacity-60"
+                    >
+                      Draw
+                      <br />
+                      {Math.round(game.draw.prob * 100)}%
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          }
+        />
+        {dialog}
+      </section>
+    )
+  }
+
+  return (
+    <div
+      id={gameAnchor(game)}
+      className={clsx(
+        'bg-canvas-0 border-ink-200 hover:border-primary-300 scroll-mt-32 overflow-hidden rounded-xl border transition-colors',
+        className
+      )}
+    >
+      <Row className="min-h-[3rem] flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+          <GameWhen game={game} />
+          <SportsMarketBadge market={game} />
           {showLeague && (
             <span className="text-ink-400 truncate text-[10px] font-semibold uppercase tracking-wide">
               {game.league}
             </span>
           )}
-          <Link
-            href={gamePath(game)}
-            className="text-ink-500 hover:text-primary-700 ml-auto flex shrink-0 items-center gap-1 text-xs"
-          >
-            <span className="hidden tabular-nums sm:inline">
-              Ṁ{shortFormatNumber(game.volume)} · {game.uniqueBettorCount}{' '}
-              {game.uniqueBettorCount === 1 ? 'trader' : 'traders'} ·
-            </span>
-            Game page
-            <ChevronRightIcon className="h-3.5 w-3.5" />
-          </Link>
-        </Row>
-        <div className="px-3 py-3">{teams}</div>
-        <GameLinkedMarkets game={game} />
-        {dialog}
-      </div>
-    )
-  }
-
-  return (
-    <div className={className}>
-      {/* The row opens the game (a mouse convenience); the link on the right
-          is the keyboard and screen-reader way in. */}
-      <div
-        role="presentation"
-        onClick={() => router.push(gamePath(game))}
-        className="hover:bg-canvas-50 grid cursor-pointer grid-cols-[3.75rem_minmax(0,1fr)_auto] items-center gap-x-2 px-2 py-2.5 transition-colors sm:grid-cols-[4.5rem_minmax(0,1fr)_4.5rem] sm:gap-x-3 sm:px-3"
-      >
-        <GameWhen game={game} layout="column" showLeague={showLeague} />
-        {teams}
-        <Col className="items-end gap-1 self-center">
-          <Link
-            href={gamePath(game)}
-            onClick={(e) => e.stopPropagation()}
-            aria-label={`Open ${game.home.name} vs ${game.away.name}`}
-            className="text-ink-400 hover:text-primary-700 flex items-center gap-0.5 text-[11px] tabular-nums"
-          >
-            <span className="hidden sm:inline">
-              Ṁ{shortFormatNumber(game.volume)}
-            </span>
-            <ChevronRightIcon className="h-4 w-4" />
-          </Link>
-          {game.relatedCount > 0 && (
-            <Link
-              href={`${sportPath(game.sport)}#${gameAnchor(game)}`}
-              onClick={(e) => e.stopPropagation()}
-              className="text-primary-700 hover:bg-primary-50 rounded px-1 text-[11px] font-medium"
-            >
-              +{game.relatedCount}
-              <span className="hidden sm:inline"> markets</span>
-            </Link>
-          )}
-        </Col>
-      </div>
+        </div>
+        {gameControls}
+      </Row>
+      <div className="px-4 pb-3">{teams}</div>
+      <GameLinkedMarkets game={game} />
       {dialog}
     </div>
   )
@@ -272,20 +474,19 @@ export function GameRow(props: {
 
 /**
  * When a game is: the kickoff time (and how soon), "LIVE" with the clock, or
- * the final. A column in a feed row, one line in a card header.
+ * the final, displayed inline in a card header.
  */
 function GameWhen(props: {
   game: ScheduleGame
-  layout: 'column' | 'inline'
-  showLeague?: boolean
+  /** From sm up, put "in 1h 45m" under the time (the compact row's column). */
+  stackOnWide?: boolean
 }) {
-  const { game, layout, showLeague } = props
+  const { game, stackOnWide } = props
   const live = game.status === 'live'
   // A live feed (score / clock) is only available for some leagues; without
   // it the game says "In progress" rather than pretending to have a clock.
   const hasFeed = live && !!game.liveScore
   const finished = game.status === 'finished'
-  const sport = SPORT_BY_KEY[game.sport]
   const time = formatJustTime(game.startTime).replace(':00', '')
 
   let primary: ReactNode
@@ -329,30 +530,18 @@ function GameWhen(props: {
     secondary = startsSoonLabel(game.startTime)
   }
 
-  if (layout === 'inline') {
-    return (
-      <Row className="min-w-0 items-baseline gap-2">
-        {primary}
-        {secondary && (
-          <span className="text-ink-500 text-xs tabular-nums">{secondary}</span>
-        )}
-      </Row>
-    )
-  }
   return (
-    <Col className="items-start gap-0.5 self-start pt-1">
+    <Row
+      className={clsx(
+        'min-w-0 items-baseline gap-2',
+        stackOnWide && 'sm:flex-col sm:items-start sm:gap-0'
+      )}
+    >
       {primary}
       {secondary && (
-        <span className="text-ink-500 text-[11px] tabular-nums">
-          {secondary}
-        </span>
+        <span className="text-ink-500 text-xs tabular-nums">{secondary}</span>
       )}
-      {showLeague && sport && (
-        <span className="text-ink-400 mt-0.5 text-[10px] font-semibold uppercase tracking-wide">
-          {sport.label}
-        </span>
-      )}
-    </Col>
+    </Row>
   )
 }
 
@@ -414,8 +603,145 @@ function TeamLine(props: {
   )
 }
 
-function TeamBadge({ team }: { team: ScheduleTeam }) {
+/**
+ * A three-way game's compact row: home, Draw and away side by side, each a
+ * name over its price, so the Draw sits between the teams at any width.
+ */
+function ThreeWayStrip(props: {
+  game: ScheduleGame
+  teams: ReturnType<typeof getGameDisplayTeams>
+  score: { home: number; away: number } | null
+  live: boolean
+  finished: boolean
+  canBet: boolean
+  onBet: (outcome: MatchOutcome) => void
+}) {
+  const { game, teams, score, live, finished, canBet, onBet } = props
+  const [first, second] = teams.map(({ team, side, outcome }) => {
+    const won = game.winnerAnswerId === team.answerId
+    const teamScore = score?.[side]
+    return (
+      <StripCell
+        key={team.answerId}
+        prob={team.prob}
+        betLabel={`Bet on ${team.name}`}
+        won={won}
+        lost={finished && game.isResolved && !won}
+        finished={finished}
+        canBet={canBet}
+        onBet={() => onBet(outcome)}
+      >
+        <span className="@[7rem]:inline-flex hidden shrink-0">
+          <TeamBadge team={team} small />
+        </span>
+        <span className="min-w-0 truncate">
+          <span className="@[12rem]:hidden">{mobileTeamName(team)}</span>
+          <span className="@[12rem]:inline hidden">{team.name}</span>
+        </span>
+        {teamScore != null && (
+          <span
+            className={clsx(
+              'shrink-0 font-semibold tabular-nums',
+              live && 'text-red-600'
+            )}
+          >
+            {teamScore}
+          </span>
+        )}
+      </StripCell>
+    )
+  })
+  const draw = game.draw
+  const drawWon = !!draw && game.winnerAnswerId === draw.answerId
+  return (
+    <div className="grid min-w-0 grid-cols-3 gap-2">
+      {first}
+      {draw && (
+        <StripCell
+          prob={draw.prob}
+          betLabel="Bet on a draw"
+          muted
+          won={drawWon}
+          lost={finished && game.isResolved && !drawWon}
+          finished={finished}
+          canBet={canBet}
+          onBet={() => onBet('draw')}
+        >
+          Draw
+        </StripCell>
+      )}
+      {second}
+    </div>
+  )
+}
+
+function StripCell(props: {
+  prob: number
+  betLabel: string
+  muted?: boolean
+  won: boolean
+  lost: boolean
+  finished: boolean
+  canBet: boolean
+  onBet: () => void
+  children: ReactNode
+}) {
+  const { prob, betLabel, muted, won, lost, finished, canBet, onBet } = props
+  return (
+    <div className="@container flex min-w-0 flex-col gap-1">
+      <Row
+        className={clsx(
+          'h-5 min-w-0 items-center justify-center gap-1.5 text-xs',
+          won
+            ? 'text-ink-1000 font-semibold'
+            : lost || muted
+            ? 'text-ink-500'
+            : 'text-ink-900 font-medium'
+        )}
+      >
+        {props.children}
+        {won && (
+          <span className="shrink-0" aria-label="winner">
+            ✓
+          </span>
+        )}
+      </Row>
+      {finished ? (
+        <span className="text-ink-500 flex min-h-[40px] items-center justify-center text-xs tabular-nums">
+          {Math.round(prob * 100)}%
+        </span>
+      ) : (
+        <PriceChip
+          prob={prob}
+          muted={muted}
+          disabled={!canBet}
+          onClick={(e) => {
+            e.stopPropagation()
+            onBet()
+          }}
+          label={betLabel}
+          className="!w-full"
+        />
+      )}
+    </div>
+  )
+}
+
+function TeamBadge({
+  team,
+  featured = false,
+  small = false,
+}: {
+  team: ScheduleTeam
+  featured?: boolean
+  small?: boolean
+}) {
   const [failed, setFailed] = useState(false)
+  const size = featured
+    ? 'h-8 w-8 @[18rem]/scoreboard:h-10 @[18rem]/scoreboard:w-10'
+    : small
+    ? 'h-5 w-5'
+    : 'h-8 w-8'
   if (team.imageUrl && !failed) {
     return (
       <img
@@ -423,13 +749,15 @@ function TeamBadge({ team }: { team: ScheduleTeam }) {
         alt=""
         loading="lazy"
         onError={() => setFailed(true)}
-        className="h-6 w-6 flex-shrink-0 rounded-full object-contain"
+        className={clsx(size, 'flex-shrink-0 rounded-full object-contain')}
       />
     )
   }
   if (team.flag) {
     return (
-      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center">
+      <span
+        className={clsx(size, 'flex flex-shrink-0 items-center justify-center')}
+      >
         <Flag emoji={team.flag} name={team.name} />
       </span>
     )
@@ -438,7 +766,9 @@ function TeamBadge({ team }: { team: ScheduleTeam }) {
   return (
     <span
       className={clsx(
-        'flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold',
+        size,
+        'flex flex-shrink-0 items-center justify-center rounded-lg font-bold',
+        featured ? 'text-xs' : small ? 'text-[7px]' : 'text-[10px]',
         !color && 'bg-ink-100 text-ink-600'
       )}
       style={
@@ -471,7 +801,7 @@ function PriceChip(props: {
       disabled={disabled}
       onClick={onClick}
       className={clsx(
-        'w-14 shrink-0 rounded-md py-1.5 text-center text-sm font-semibold tabular-nums transition-colors sm:w-16 sm:py-1',
+        'focus-visible:ring-primary-500 min-h-[40px] w-16 shrink-0 rounded-lg py-2 text-center text-base font-bold tabular-nums transition-colors focus-visible:ring-2 sm:w-20',
         className,
         flash === 'up' && '!bg-teal-500/30 !text-teal-700',
         flash === 'down' && '!bg-scarlet-500/30 !text-scarlet-700',
@@ -517,8 +847,8 @@ function useProbFlash(pct: number): 'up' | 'down' | null {
   return flash
 }
 
-export function GameRowSkeleton(props: { variant?: 'list' | 'card' }) {
-  const { variant = 'list' } = props
+export function GameRowSkeleton(props: { variant?: 'compact' | 'card' }) {
+  const { variant = 'card' } = props
   const teams = (
     <Col className="gap-2">
       <div className="bg-ink-100 h-5 w-2/3 rounded" />
@@ -539,7 +869,7 @@ export function GameRowSkeleton(props: { variant?: 'list' | 'card' }) {
     )
   }
   return (
-    <div className="animate-pulse px-3 py-2.5">
+    <div className="border-ink-200 bg-canvas-0 animate-pulse rounded-xl border px-3 py-2.5">
       <div className="grid grid-cols-[4.5rem_minmax(0,1fr)_4.5rem] gap-3">
         <div className="bg-ink-100 h-4 w-12 rounded" />
         {teams}

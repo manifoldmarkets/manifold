@@ -256,8 +256,8 @@ export const API = (_apiTypeCheck = {
       .object({
         userId: z.string(),
         // true = flag (bonusEligibility = 'requires_verification' + reason).
-        // false = clear (restore prior bonus state if one was snapshotted,
-        // else revert to undefined; clears the reason either way).
+        // false = clear (restore the pre-flag bonus state, else revert to
+        // undefined; clears the reason either way).
         flag: z.boolean(),
         // Optional free-text note shown to other admins in the user-info
         // page. Examples: "suspected alt of @other-user", "fraud signal from
@@ -274,6 +274,7 @@ export const API = (_apiTypeCheck = {
         | 'verified'
         | 'grandfathered'
         | 'eligible'
+        | 'ineligible'
         | 'requires_verification'
     },
   },
@@ -1916,6 +1917,7 @@ export const API = (_apiTypeCheck = {
       optOutBetWarnings: z.boolean().optional(),
       isAdvancedTrader: z.boolean().optional(),
       hideApiTrades: z.boolean().optional(),
+      showOrderBook: z.boolean().optional(),
       //internal
       seenStreakModal: z.boolean().optional(),
       shouldShowWelcome: z.boolean().optional(),
@@ -3635,9 +3637,10 @@ export const API = (_apiTypeCheck = {
           amount: number
           maxMultiplier: number
           // Which bonus types this referrer has been paid for this referred
-          // user. 'first_bet'/'verify' are the new split; 'legacy' means a
-          // pre-split single-payment txn exists (treated as fully paid).
-          bonusTypes: ('first_bet' | 'verify' | 'legacy')[]
+          // user. 'signup' is the full bonus paid when the referral was
+          // recorded; 'first_bet'/'verify' are the legacy split; 'legacy' means
+          // a pre-split single-payment txn exists (treated as fully paid).
+          bonusTypes: ('signup' | 'first_bet' | 'verify' | 'legacy')[]
         }
       >
     },

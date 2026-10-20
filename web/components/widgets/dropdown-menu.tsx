@@ -10,6 +10,10 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { Fragment, ReactNode } from 'react'
 import { AnimationOrNothing } from './customizeable-dropdown'
+import {
+  MOD_ACTION_TEXT_CLASS,
+  ModActionBadge,
+} from 'web/components/moderation/mod-action'
 
 type AnchorProps = NonNullable<MenuItemsProps['anchor']>
 
@@ -23,6 +27,12 @@ export type DropdownItem = {
   className?: string
   nonButtonContent?: ReactNode
   closeOnClick?: boolean
+  // Only available because the user is a mod or admin
+  modAction?: boolean
+  // Only available because the user is an admin
+  adminAction?: boolean
+  // A mod/admin action severe enough to stay red (e.g. superban)
+  destructive?: boolean
 }
 
 export default function DropdownMenu(props: {
@@ -119,14 +129,26 @@ export default function DropdownMenu(props: {
                         className={clsx(
                           selectedItemName && item.name === selectedItemName
                             ? 'bg-primary-100'
+                            : item.modAction || item.adminAction
+                            ? 'data-[focus]:bg-ink-100'
                             : 'data-[focus]:bg-ink-100 data-[focus]:text-ink-900',
-                          'text-ink-700',
+                          !(item.modAction || item.adminAction)
+                            ? 'text-ink-700'
+                            : item.destructive
+                            ? 'text-scarlet-600'
+                            : MOD_ACTION_TEXT_CLASS,
                           'flex w-full items-center gap-2 px-4 py-2 text-left text-sm',
                           item.className
                         )}
                       >
                         {item.icon && <div className="w-5">{item.icon}</div>}
                         {item.buttonContent ?? item.name}
+                        {(item.modAction || item.adminAction) && (
+                          <ModActionBadge
+                            admin={item.adminAction}
+                            className="ml-auto"
+                          />
+                        )}
                       </button>
                     )}
                   </MenuItem>

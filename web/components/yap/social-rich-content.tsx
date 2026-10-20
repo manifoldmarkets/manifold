@@ -8,6 +8,7 @@ import {
 } from 'common/social-rich-content'
 import { getSocialLinks, SocialText } from './social-text'
 import { SocialUserLink } from './social-user-link'
+import { SocialLink } from './social-link'
 
 export const socialMarketMentionLabel = (path: string) => {
   const slug = path.split('/').pop() ?? path
@@ -25,14 +26,12 @@ function renderText(text: string) {
       {links.map((link, index) => (
         <Fragment key={link.start}>
           {text.slice(links[index - 1]?.end ?? 0, link.start)}
-          <a
+          <SocialLink
             href={link.href}
-            target="_blank"
-            rel="noopener noreferrer ugc"
             className="text-primary-700 hover:underline"
           >
             {link.value}
-          </a>
+          </SocialLink>
         </Fragment>
       ))}
       {text.slice(links[links.length - 1]?.end ?? 0)}

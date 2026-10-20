@@ -3,6 +3,7 @@ import { useContractBets } from 'client-common/hooks/use-bets'
 import { getMultiBetPointsFromBets } from 'client-common/lib/choice'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
+import { hasAllAnswersForCopy } from 'common/answer-probs'
 import { Bet } from 'common/bet'
 import {
   HistoryPoint,
@@ -20,6 +21,7 @@ import {
 import { shouldHideGraph } from 'common/contract-params'
 import { base64toPoints } from 'common/edge/og'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
+import { getSportsLeagueLabel } from 'common/sports-league-label'
 import { DAY_MS } from 'common/util/time'
 import { mergeWith, uniqBy } from 'lodash'
 import Image from 'next/image'
@@ -54,7 +56,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
-import { PerpMarketBadge } from 'web/components/perps/perp-market-badge'
+import { MarketTitleLabel } from 'web/components/contract/market-title-label'
 import { PerpMarketExplainer } from 'web/components/perps/perp-market-explainer'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Rating, ReviewPanel } from 'web/components/reviews/stars'
@@ -62,7 +64,7 @@ import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { precacheAnswers } from 'web/hooks/use-answers'
-import { useLiveContract } from 'web/hooks/use-contract'
+import { useLiveContractWithStatus } from 'web/hooks/use-contract'
 import { useGraphUserFromUrl } from 'web/hooks/use-graph-user'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
@@ -100,10 +102,21 @@ export function ContractPageContent(props: ContractParams) {
     dashboards,
     pinnedComments,
     totalComments,
+    totalAnswers,
   } = props
 
   // Just use the contract that was navigated to directly
-  const liveContract = useLiveContract(props.contract)
+  const { contract: liveContract, hasLoaded } = useLiveContractWithStatus(
+    props.contract
+  )
+  // The server renders a big market with only its top answers; the rest arrive
+  // with the live contract. Until then a duplicate would copy only those
+  const hasAllAnswers = hasAllAnswersForCopy(
+    props.contract,
+    liveContract,
+    totalAnswers,
+    hasLoaded
+  )
 
   const user = useUser()
 
@@ -318,12 +331,10 @@ export function ContractPageContent(props: ContractParams) {
                       </Tooltip>
                     )}
                     <VisibilityIcon contract={props.contract} />{' '}
-                    {isPerp && (
-                      <PerpMarketBadge
-                        contract={liveContract}
-                        className="mr-1"
-                      />
-                    )}
+                    <MarketTitleLabel
+                      contract={liveContract}
+                      className="mr-1"
+                    />
                     {props.contract.question}
                   </span>
                 )}
@@ -331,6 +342,7 @@ export function ContractPageContent(props: ContractParams) {
               {(headerStuck || !coverImageUrl) && (
                 <HeaderActions
                   contract={liveContract}
+                  hasAllAnswers={hasAllAnswers}
                   initialHideGraph={initialHideGraph}
                   hideGraph={hideGraph}
                   setHideGraph={setHideGraph}
@@ -352,6 +364,7 @@ export function ContractPageContent(props: ContractParams) {
               </div>
               <HeaderActions
                 contract={liveContract}
+                hasAllAnswers={hasAllAnswers}
                 initialHideGraph={initialHideGraph}
                 hideGraph={hideGraph}
                 setHideGraph={setHideGraph}
@@ -371,11 +384,14 @@ export function ContractPageContent(props: ContractParams) {
                   <EditableQuestionTitle
                     contract={liveContract}
                     canEdit={isAdmin || isCreator || isMod}
+                    modAction={!isCreator}
                     prefix={
                       isPerp ? (
                         <PerpMarketExplainer
                           contract={liveContract as PerpContract}
                         />
+                      ) : getSportsLeagueLabel(liveContract) ? (
+                        <MarketTitleLabel contract={liveContract} />
                       ) : undefined
                     }
                   />
@@ -397,6 +413,7 @@ export function ContractPageContent(props: ContractParams) {
                   question={props.contract.question}
                   financeContract={liveContract}
                   editable={isCreator || isAdmin || isMod}
+                  modAction={!isCreator}
                   isCashContract={isCashContract}
                 />
               </Row>

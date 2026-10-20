@@ -97,8 +97,11 @@ export const createCommentOnContractNotification = async (
     }) as Notification
   }
 
-  const needNotFollowContractReasons = ['tagged_user']
+  const needNotFollowContractReasons = ['tagged_user', 'tagged_all_traders']
 
+  // Users reached only through @traders get their own preference, so they can
+  // keep these pings without the push alerts they want for direct tags.
+  let allTradersTaggedUserIds: string[] = []
   if (
     taggedUserIds?.includes(ALL_TRADERS_ID) &&
     (sourceUser.id === sourceContract.creatorId ||
@@ -107,8 +110,9 @@ export const createCommentOnContractNotification = async (
   ) {
     const allBettors = await getUniqueBettorIds(sourceContract.id, pg)
     const allVoters = await getUniqueVoterIds(sourceContract.id, pg)
-    const allUsers = uniq(allBettors.concat(allVoters))
-    taggedUserIds.push(...allUsers)
+    allTradersTaggedUserIds = uniq(allBettors.concat(allVoters)).filter(
+      (id) => !taggedUserIds.includes(id)
+    )
   }
   const bettorIds = await getUniqueBettorIds(sourceContract.id, pg)
 
@@ -116,6 +120,7 @@ export const createCommentOnContractNotification = async (
     ...followerIds,
     sourceContract.creatorId,
     ...(taggedUserIds ?? []),
+    ...allTradersTaggedUserIds,
     ...(repliedUsersInfo ? Object.keys(repliedUsersInfo) : []),
     ...bettorIds,
   ])
@@ -216,6 +221,11 @@ export const createCommentOnContractNotification = async (
       )
     )
   }
+  await Promise.all(
+    allTradersTaggedUserIds.map(async (userId) =>
+      sendNotificationsIfSettingsPermit(userId, 'tagged_all_traders')
+    )
+  )
   log('notifying creator')
   await sendNotificationsIfSettingsPermit(
     sourceContract.creatorId,

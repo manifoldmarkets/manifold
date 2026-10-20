@@ -78,7 +78,7 @@ export default function SportsPage() {
       selected="all"
       rail={rail}
       heading="Sports"
-      subheading="Every game in the next two weeks, in kickoff order. Tap a price to bet."
+      subheading="Pick a game. Make a call. Trade with the crowd."
       seo={{
         title: 'Sports',
         description:
@@ -100,7 +100,6 @@ export default function SportsPage() {
                   loading={loading || !schedule}
                   hasMore={hasMore}
                   loadMore={loadMore}
-                  variant="list"
                   showLeague
                   empty={
                     <div className="flex flex-col gap-6">
