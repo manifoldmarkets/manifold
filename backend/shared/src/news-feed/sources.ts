@@ -31,13 +31,30 @@ const USER_AGENT = 'ManifoldNewsFeed/0.1 (prototype; https://manifold.markets)'
 const FETCH_TIMEOUT_MS = 10_000
 const MAX_REDIRECTS = 3
 
+/** Which URLs a fetch may touch, redirects included. */
+export type UrlCheck = (url: URL) => boolean
+
+const PRIVATE_HOST =
+  /^(localhost|.*\.local|.*\.internal|0\.0\.0\.0|127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|169\.254\.\d+\.\d+|\[?::1\]?|\[?f[cd][0-9a-f]{2}:.*|\[?fe80:.*)$/i
+
+/** Public https on the default port: no internal hosts, no IP-literal
+ * private ranges. (A name that resolves to a private address still gets
+ * through; production fetching belongs behind an egress proxy.) */
+export const isPublicHttps: UrlCheck = (u) =>
+  u.protocol === 'https:' && !u.port && !PRIVATE_HOST.test(u.hostname)
+
 /** GET a URL as text over one IP family (0 lets the OS choose). */
 function httpsGet(
   url: string,
   family: 0 | 4 | 6,
+  allow: UrlCheck,
   redirects = 0
 ): Promise<string> {
   return new Promise((resolve, reject) => {
+    if (!allow(new URL(url))) {
+      reject(new Error(`refusing to fetch ${url}`))
+      return
+    }
     // One options object plus callback: a dependency patches https.request
     // and mishandles the (url, options, callback) form.
     const req = https.get(
@@ -55,10 +72,13 @@ function httpsGet(
             reject(new Error(`too many redirects for ${url}`))
             return
           }
+          // The next hop is checked like the first, so an allowed page
+          // cannot bounce the server somewhere else.
           resolve(
             httpsGet(
               new URL(res.headers.location, url).toString(),
               family,
+              allow,
               redirects + 1
             )
           )
@@ -87,11 +107,11 @@ function httpsGet(
  * then IPv4: on at least one dev box Wikipedia's IPv4 edge times out for
  * Node while IPv6 answers, and the global fetch gives up before trying it.
  */
-export async function fetchText(url: string) {
+export async function fetchText(url: string, allow: UrlCheck = isPublicHttps) {
   const errors: string[] = []
   for (const family of [0, 6, 4] as const) {
     try {
-      return await httpsGet(url, family)
+      return await httpsGet(url, family, allow)
     } catch (e) {
       errors.push(
         `${family || 'auto'}: ${e instanceof Error ? e.message : String(e)}`

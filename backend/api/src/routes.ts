@@ -303,6 +303,8 @@ import { getSportsGames } from './get-sports-games'
 import { getNewsFeed } from './get-news-feed'
 import { refreshNewsFeedHandler } from './refresh-news-feed'
 import { likeNewsStory } from './like-news-story'
+import { newsFeedback } from './news-feedback'
+import { attachNewsMarketHandler } from './attach-news-market'
 import { getSuspectedSpamComments } from './get-suspected-spam-comments'
 import { getUserAchievements } from './get-user-achievements'
 import { getUserCalibration } from './get-user-calibration'
@@ -566,6 +568,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-news-feed': getNewsFeed,
   'refresh-news-feed': refreshNewsFeedHandler,
   'like-news-story': likeNewsStory,
+  'news-feedback': newsFeedback,
+  'attach-news-market': attachNewsMarketHandler,
   'get-market-props': getMarketProps,
   'get-user-contract-metrics-with-contracts':
     getUserContractMetricsWithContracts,

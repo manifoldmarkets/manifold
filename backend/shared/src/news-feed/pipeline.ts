@@ -15,6 +15,14 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { contractColumnsToSelectWithPrefix, log } from 'shared/utils'
+import { ClaimsMemo, findArticlesAndClaims } from './claims'
+import {
+  Candidate,
+  cosine,
+  describeMarket,
+  findCandidateMarkets,
+  withTimeout,
+} from './markets'
 import {
   dedupeSources,
   gatherRawStories,
@@ -32,13 +40,15 @@ import {
  *    that are the same story from another outlet.
  * 3. For each story, pull the nearest open markets from `contract_embeddings`
  *    and ask Gemini which of them the story actually bears on.
- * 4. Refetch the linked contracts, drop any no longer open, rank, and keep
+ * 4. For linked stories, find an outlet's article on the story and read the
+ *    checkable claims in it (see claims.ts).
+ * 5. Refetch the linked contracts, drop any no longer open, rank, and keep
  *    the top few hundred stories.
  *
  * Reads prod; writes nothing to the database.
  */
 
-export type StoryMemo = {
+export type StoryMemo = ClaimsMemo & {
   id: string
   /** In memory only; not written to the disk cache. */
   embedding?: number[]
@@ -70,8 +80,6 @@ const MERGE_SIMILARITY = 0.82
 const MAX_ALIASES = 40
 /** A verifier call that takes longer than this is treated as failed. */
 const VERIFY_TIMEOUT_MS = 60_000
-/** Below this no market is worth asking the verifier about. */
-const CANDIDATE_FLOOR = 0.35
 const CANDIDATES_PER_STORY = 12
 /** Without the verifier, keep only near-certain neighbours. */
 const FALLBACK_SIMILARITY = 0.6
@@ -87,19 +95,6 @@ const IMAGE_CONCURRENCY = 3
 
 const storyIdFor = (origin: string, key: string) =>
   createHash('sha1').update(`${origin}|${key}`).digest('hex').slice(0, 16)
-
-const cosine = (a: number[], b: number[]) => {
-  let dot = 0
-  let na = 0
-  let nb = 0
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i]
-    na += a[i] * a[i]
-    nb += b[i] * b[i]
-  }
-  const denom = Math.sqrt(na) * Math.sqrt(nb)
-  return denom > 0 ? dot / denom : 0
-}
 
 const embeddingText = (s: {
   topic?: string
@@ -151,54 +146,6 @@ const absorb = (story: NewsStory, r: RawStory) => {
   }
 }
 
-type Candidate = { contract: Contract; similarity: number }
-
-/** The nearest open, public, unresolved markets to a story's embedding. */
-async function findCandidateMarkets(
-  pg: SupabaseDirectClient,
-  embedding: number[]
-): Promise<Candidate[]> {
-  const rows = await pg.tx(async (t) => {
-    // The HNSW scan returns at most ef_search rows before the join filters
-    // closed and unlisted markets out, so widen it.
-    await t.none('set local hnsw.ef_search = 300')
-    return t.map(
-      `select ${contractColumnsToSelectWithPrefix('c')},
-              1 - (ce.embedding <=> $1::vector) as similarity
-       from contract_embeddings ce
-       join contracts c on c.id = ce.contract_id
-       where c.resolution_time is null
-         and c.visibility = 'public'
-         and c.deleted = false
-         and c.close_time > now()
-         and c.outcome_type in ('BINARY', 'MULTIPLE_CHOICE', 'PSEUDO_NUMERIC', 'NUMBER', 'MULTI_NUMERIC', 'DATE')
-       order by ce.embedding <=> $1::vector
-       limit $2`,
-      [JSON.stringify(embedding), CANDIDATES_PER_STORY],
-      (r) => ({
-        contract: convertContract(r) as Contract,
-        similarity: Number(r.similarity),
-      })
-    )
-  })
-  return rows.filter(
-    (r) =>
-      Number.isFinite(r.similarity) &&
-      r.similarity >= CANDIDATE_FLOOR &&
-      isEligibleRelatedMarket(r.contract)
-  )
-}
-
-const describePrice = (c: Contract) => {
-  if (c.outcomeType === 'BINARY' && 'prob' in c && Number.isFinite(c.prob))
-    return `${Math.round(c.prob * 100)}% yes`
-  if ('answers' in c && Array.isArray(c.answers) && c.answers.length > 0) {
-    const top = [...c.answers].sort((a, b) => b.prob - a.prob)[0]
-    return `top answer "${top.text}" ${Math.round(top.prob * 100)}%`
-  }
-  return c.outcomeType.toLowerCase()
-}
-
 type Verdict = {
   contractIds: string[]
   forecastable?: boolean
@@ -212,14 +159,7 @@ async function verifyLinks(
 ): Promise<Verdict> {
   if (candidates.length === 0) return { contractIds: [] }
   const list = candidates
-    .map(
-      (c, i) =>
-        `${i + 1}. id=${c.contract.id} | ${c.contract.question} | closes ${
-          c.contract.closeTime
-            ? new Date(c.contract.closeTime).toISOString().slice(0, 10)
-            : 'n/a'
-        } | ${describePrice(c.contract)}`
-    )
+    .map((c, i) => `${i + 1}. ${describeMarket(c.contract)}`)
     .join('\n')
   const prompt = `You match news stories to prediction markets on Manifold Markets.
 
@@ -288,7 +228,7 @@ Rules:
 }
 
 /** The contracts the page needs, without the heavy fields. */
-const stripContract = (c: Contract): Contract => {
+export const stripContract = (c: Contract): Contract => {
   const slim = { ...c, description: '' } as Contract & {
     coverImageUrl?: string
   }
@@ -296,7 +236,7 @@ const stripContract = (c: Contract): Contract => {
   return slim
 }
 
-async function fetchContracts(pg: SupabaseDirectClient, ids: string[]) {
+export async function fetchContracts(pg: SupabaseDirectClient, ids: string[]) {
   if (ids.length === 0) return [] as Contract[]
   return pg.map(
     `select ${contractColumnsToSelectWithPrefix('c')}
@@ -305,14 +245,6 @@ async function fetchContracts(pg: SupabaseDirectClient, ids: string[]) {
     (r) => convertContract(r) as Contract
   )
 }
-
-const withTimeout = <T>(p: Promise<T>, ms: number) =>
-  Promise.race([
-    p,
-    new Promise<undefined>((resolve) =>
-      setTimeout(() => resolve(undefined), ms)
-    ),
-  ])
 
 const scoreStory = (story: NewsStory, contracts: Contract[], now: number) => {
   const ageHours = Math.max(0, now - story.updatedTime) / HOUR_MS
@@ -329,7 +261,10 @@ const scoreStory = (story: NewsStory, contracts: Contract[], now: number) => {
 
 export async function buildNewsFeed(
   prev: NewsFeedBuild | undefined,
-  now = Date.now()
+  now = Date.now(),
+  /** Contracts to load and keep even when no story links them: markets
+   * readers attached. */
+  keepContractIds: string[] = []
 ): Promise<NewsFeedBuild> {
   const pg = createSupabaseDirectClient()
   const raw = await gatherRawStories(now)
@@ -469,7 +404,11 @@ export async function buildNewsFeed(
       const m = memos[s.id]
       if (!m.embedding) return
       try {
-        const candidates = await findCandidateMarkets(pg, m.embedding)
+        const candidates = await findCandidateMarkets(
+          pg,
+          m.embedding,
+          CANDIDATES_PER_STORY
+        )
         candidatesByStory.set(s.id, candidates)
         for (const c of candidates)
           candidateContracts.set(c.contract.id, c.contract)
@@ -502,9 +441,29 @@ export async function buildNewsFeed(
     linked: toVerify.filter((s) => memos[s.id].contractIds.length > 0).length,
   })
 
-  // 4. Fresh contract state for everything linked; drop what closed.
+  // 4. Claims, for stories with markets: the feed shows those by default.
+  let claimContractIds: string[] = []
+  try {
+    claimContractIds = await findArticlesAndClaims(
+      pg,
+      [...stories.values()]
+        .filter((s) => (memos[s.id]?.contractIds.length ?? 0) > 0)
+        .map((s) => ({ story: s, memo: memos[s.id] })),
+      now
+    )
+  } catch (e) {
+    log.error('news-feed: claims step failed', {
+      error: e instanceof Error ? e.message : String(e),
+    })
+  }
+
+  // 5. Fresh contract state for everything linked; drop what closed.
   const linkedIds = [
-    ...new Set(Object.values(memos).flatMap((m) => m.contractIds)),
+    ...new Set([
+      ...Object.values(memos).flatMap((m) => m.contractIds),
+      ...claimContractIds,
+      ...keepContractIds,
+    ]),
   ]
   const contracts = await fetchContracts(pg, linkedIds)
   const contractsById: Record<string, Contract> = {}
@@ -516,6 +475,15 @@ export async function buildNewsFeed(
   for (const s of stories.values()) {
     const m = memos[s.id]
     const contractIds = (m?.contractIds ?? []).filter((id) => contractsById[id])
+    // A claim whose market has since closed has nothing to show beside it;
+    // its draft was dropped when the match was made, so the claim goes.
+    const claims = (m?.claims ?? [])
+      .filter((c) => !c.matchId || contractsById[c.matchId])
+      .map((c) => ({
+        ...c,
+        similarIds: c.similarIds.filter((id) => contractsById[id]),
+      }))
+    const read = m?.claimsStatus === 'found' || m?.claimsStatus === 'none'
     const story: NewsStory = {
       ...s,
       category: s.category === 'other' && m?.category ? m.category : s.category,
@@ -523,6 +491,14 @@ export async function buildNewsFeed(
       candidateIds: m?.candidateIds ?? [],
       forecastable: m?.forecastable,
       score: 0,
+      article: read ? m?.article : undefined,
+      image: (read ? m?.article?.image : undefined) ?? s.image,
+      claims: read ? claims : undefined,
+      claimsStatus: read
+        ? claims.length > 0
+          ? 'found'
+          : 'none'
+        : m?.claimsStatus ?? 'no-article',
     }
     story.score = scoreStory(
       story,
@@ -532,7 +508,7 @@ export async function buildNewsFeed(
     assembled.push(story)
   }
 
-  // 5. Thumbnails for linked stories whose first link is a known outlet. The
+  // 6. Thumbnails for linked stories whose first link is a known outlet. The
   //    favicon allowlist doubles as the set of hosts we are willing to fetch
   //    from: citations are user-editable on the portal, so never follow an
   //    arbitrary host from the server.
@@ -566,11 +542,20 @@ export async function buildNewsFeed(
     IMAGE_CONCURRENCY
   )
 
-  // 6. Rank, cap, and pick the spotlight.
+  // 7. Rank and cap. The API picks the spotlight per request.
   const ranked = sortBy(assembled, (s) => -s.updatedTime).slice(0, MAX_STORIES)
   const kept = new Set(ranked.map((s) => s.id))
   for (const id of Object.keys(memos)) if (!kept.has(id)) delete memos[id]
-  const usedContractIds = new Set(ranked.flatMap((s) => s.contractIds))
+  const usedContractIds = new Set([
+    ...ranked.flatMap((s) => [
+      ...s.contractIds,
+      ...(s.claims ?? []).flatMap((c) => [
+        ...(c.matchId ? [c.matchId] : []),
+        ...c.similarIds,
+      ]),
+    ]),
+    ...keepContractIds,
+  ])
   for (const id of Object.keys(contractsById))
     if (!usedContractIds.has(id)) delete contractsById[id]
 

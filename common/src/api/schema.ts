@@ -16,7 +16,7 @@ import { randomStringRegex } from 'common/util/random'
 import type { BrowsePersonalization } from 'common/browse-personalization'
 import { MAX_ANSWER_LENGTH, type Answer } from 'common/answer'
 import { coerceBoolean, contentSchema } from 'common/api/zod-types'
-import { NewsFeedResponse } from 'common/news-feed'
+import { NEWS_FEEDBACK_KINDS, NewsFeedResponse } from 'common/news-feed'
 import { AnyBalanceChangeType } from 'common/balance-change'
 import type { Bet, LimitBet } from 'common/bet'
 import { ChatMessage, PrivateChatMessage } from 'common/chat-message'
@@ -5295,6 +5295,41 @@ export const API = (_apiTypeCheck = {
       refreshing: boolean
       updatedTime: number | null
     },
+  },
+  // A reader's report that a market shown on a story is wrong for it, with
+  // an optional better market. Signed-out readers can report too.
+  'news-feedback': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: false,
+    preferAuth: true,
+    props: z
+      .object({
+        storyId: z.string().max(64),
+        contractId: z.string().max(64).optional(),
+        claimId: z.string().max(64).optional(),
+        kind: z.enum(NEWS_FEEDBACK_KINDS),
+        suggestedContractId: z.string().max(64).optional(),
+        note: z.string().max(500).optional(),
+      })
+      .strict(),
+    returns: {} as { ok: true },
+  },
+  // Link an existing market to a story: as the direct test of one of its
+  // claims, or as a related forecast.
+  'attach-news-market': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        storyId: z.string().max(64),
+        claimId: z.string().max(64).optional(),
+        contractId: z.string().max(64),
+        relation: z.enum(['direct', 'related']),
+      })
+      .strict(),
+    returns: {} as { ok: true },
   },
 } as const)
 

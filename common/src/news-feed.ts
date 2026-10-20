@@ -2,7 +2,8 @@ import { Contract } from './contract'
 
 /**
  * The news feed: stories gathered from public news indexes, each shown with
- * the open markets whose outcome the story bears on. Prototype; see
+ * the open markets whose outcome the story bears on, and the checkable
+ * claims quoted from its article. Prototype; see
  * dev-docs/news-feed-prototype.md.
  */
 
@@ -35,6 +36,75 @@ export type NewsSourceLink = {
 
 export type NewsStoryOrigin = 'wikipedia' | 'google-news'
 
+/**
+ * The article a card leads with, when we found one we can read: its own
+ * headline, outlet, time and picture. Claims are quoted from its body.
+ */
+export type NewsArticle = {
+  url: string
+  title: string
+  publisher: string
+  /** The outlet's home page, for the favicon. */
+  site: string
+  publishedTime: number
+  image?: string
+}
+
+export const NEWS_SPEAKER_KINDS = [
+  'author',
+  'official',
+  'politician',
+  'expert',
+  'organization',
+  'other',
+] as const
+
+export type NewsSpeakerKind = (typeof NEWS_SPEAKER_KINDS)[number]
+
+/** A market drafted from a claim, for a reader to review, edit and publish.
+ * Nothing is created until a reader publishes it. */
+export type NewsMarketDraft = {
+  /** A standalone yes/no question with its threshold and deadline. */
+  question: string
+  /** When it resolves YES, when NO, and what happens if it is unclear. */
+  criteria: string
+  definitions: { term: string; meaning: string }[]
+  /** Proposed close (ms). */
+  closeTime: number
+  /** When and how it resolves after close. */
+  resolution: string
+  /** Public sources anyone can check. */
+  evidence: { name: string; url?: string }[]
+}
+
+/** A checkable claim quoted from an article. */
+export type NewsClaim = {
+  id: string
+  /** Verbatim from the article body; checked against the text. */
+  excerpt: string
+  /** Who makes the claim: a person, an organisation, or the outlet itself. */
+  speaker: string
+  speakerRole?: string
+  speakerKind: NewsSpeakerKind
+  /** A market whose resolution turns on exactly what the claim asserts. */
+  matchId?: string
+  /** Who linked the match: the matcher, or a reader. */
+  matchBy?: 'ai' | 'reader'
+  /** Offered for creation when no market tests the claim. */
+  draft?: NewsMarketDraft
+  /** Existing markets near the claim, offered for reuse while drafting. */
+  similarIds: string[]
+}
+
+/**
+ * Whether a story's claims were looked for, and what came of it:
+ * no-article: we hold no full text for the story, so claims were not read;
+ * pending: an article was found and is waiting to be read;
+ * none: the article was read and nothing in it makes a resolvable market;
+ * found: at least one claim is matched or can be drafted.
+ */
+export type NewsClaimsStatus = 'no-article' | 'pending' | 'none' | 'found'
+
 export type NewsStory = {
   id: string
   headline: string
@@ -59,6 +129,15 @@ export type NewsStory = {
   forecastable?: boolean
   /** Freshness times how much there is to trade on; used for thumbnails. */
   score: number
+  /** The article the card leads with, when one was found and read. */
+  article?: NewsArticle
+  claims?: NewsClaim[]
+  claimsStatus?: NewsClaimsStatus
+  /** The one market shown on the folded card, when one stands out on
+   * relevance, trading and freshness. Set per request by the API. */
+  featuredId?: string
+  /** Related markets readers attached to the story. */
+  readerContractIds?: string[]
 }
 
 export type NewsFeedCounts = Partial<Record<NewsCategory, number>>
@@ -103,6 +182,34 @@ export type NewsFeedResponse = {
   likes: Record<string, number>
   /** Stories the signed-in caller has liked. */
   likedStoryIds: string[]
+  /** For markets in this response that more than one story links: how many
+   * stories link them. The same market serves every article on an event. */
+  storyCounts: Record<string, number>
+  /** The view this response answers, so a page can tell a stale response
+   * (still showing while a new filter loads) from a fresh one. */
+  view: {
+    categories: NewsCategory[]
+    sort: NewsSort
+    includeUnlinked: boolean
+  }
 }
 
 export const NEWS_FEED_RESOLVING_SOON_MS = 7 * 24 * 60 * 60 * 1000
+
+/** Below this many traders a price is an early guess, not a crowd forecast,
+ * and the feed says so. */
+export const NEWS_FEW_TRADERS = 10
+
+/** What a reader can say is wrong with a market shown on a story. */
+export const NEWS_FEEDBACK_KINDS = [
+  'not-relevant',
+  'not-direct',
+  'missing-context',
+  'other',
+] as const
+
+export type NewsFeedbackKind = (typeof NEWS_FEEDBACK_KINDS)[number]
+
+/** How a market a reader adds relates to the story: a direct test of a
+ * claim, or a broader forecast shown under the related outlook. */
+export type NewsMarketRelation = 'direct' | 'related'
