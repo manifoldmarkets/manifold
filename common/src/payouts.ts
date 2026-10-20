@@ -145,25 +145,33 @@ export const getFixedPayouts = (
 // written a moment after its own provision, in the same transaction.
 const UNRECORDED_PROVISION_GRACE_MS = 5 * 1000
 
-// The answers a whole-market provision went to, which share it equally. One
-// that doesn't record them is credited to the answers open when it was made,
-// which the drizzle moved it into. An older market's unrecorded ante is
-// different: it funded the market's answers that have no ante of their own,
-// and is dated at the market's creation whenever they were added.
-const getProvisionAnswerIds = (
+// What a cancelled answer gets back of a whole-market provision. One that
+// records its answers went to them in equal shares. One that doesn't is
+// credited in equal shares to the answers open when it was made, which the
+// drizzle moved it into. An older market's unrecorded ante is different: it
+// stands for the funding of its answers at creation and of answers added
+// later, all dated at the market's creation, in amounts it doesn't break down.
+// It keeps its old share, amount / number of answers, for answers without an
+// ante of their own.
+const getCancelRefundShare = (
   l: LiquidityProvision,
+  answer: Answer,
   answers: Answer[],
   ownAnteAnswerIds: Set<string>
-) =>
-  l.answerIds ??
-  answers
-    .filter((a) =>
-      l.isAnte
-        ? !ownAnteAnswerIds.has(a.id)
-        : a.createdTime <= l.createdTime + UNRECORDED_PROVISION_GRACE_MS &&
-          (a.resolutionTime ?? Infinity) >= l.createdTime
-    )
-    .map((a) => a.id)
+) => {
+  if (l.answerIds)
+    return l.answerIds.includes(answer.id) ? l.amount / l.answerIds.length : 0
+  if (l.isAnte)
+    return ownAnteAnswerIds.has(answer.id) ? 0 : l.amount / answers.length
+  const openThen = answers.filter(
+    (a) =>
+      a.createdTime <= l.createdTime + UNRECORDED_PROVISION_GRACE_MS &&
+      (a.resolutionTime ?? Infinity) >= l.createdTime
+  )
+  return openThen.some((a) => a.id === answer.id)
+    ? l.amount / openThen.length
+    : 0
+}
 
 export const getIndependentMultiFixedPayouts = (
   answer: Answer,
@@ -211,23 +219,22 @@ export const getIndependentMultiFixedPayouts = (
     case 'CANCEL': {
       // A cancellation refunds what providers put into this answer, where the
       // outcomes above pay out its pool by their weights: its own provisions,
-      // and an equal share of each whole-market provision that went to it.
+      // and its share of each whole-market provision (getCancelRefundShare).
       // Unresolving an answer is refused once an unrecorded whole-market
-      // provision came after it first resolved (unresolve.ts), so an answer
-      // open now that was there when one was made was open then.
+      // provision came while it was resolved (unresolve.ts), so an answer open
+      // now that was there when one was made was open then.
       const ownAnteAnswerIds = new Set(
         liquidities.flatMap((l) => (l.isAnte && l.answerId ? [l.answerId] : []))
       )
       const refundableLiquidities = answerLiquidities.concat(
         wholeMarketLiquidities.flatMap((l) => {
-          const answerIds = getProvisionAnswerIds(
+          const amount = getCancelRefundShare(
             l,
+            answer,
             contract.answers,
             ownAnteAnswerIds
           )
-          return answerIds.includes(answer.id)
-            ? [{ ...l, amount: l.amount / answerIds.length }]
-            : []
+          return amount !== 0 ? [{ ...l, amount }] : []
         })
       )
       return getFixedCancelPayouts(

@@ -169,30 +169,70 @@ const verifyUserCanUnresolve = async (
 
     // A cancellation credits a whole-market provision that doesn't record its
     // answers to the answers open when it was made
-    // (getIndependentMultiFixedPayouts). One made after this answer first
-    // resolved, in this resolution or one since undone, didn't reach it, so
-    // the answer can't reopen.
-    const addedSinceResolution = await pg.oneOrNone(
-      `select exists (
-         select 1 from contract_liquidity
-         where contract_id = $1
-           and data->>'answerId' is null
-           and data->'answerIds' is null
-           and created_time > millis_to_ts(least($2, (
-             select min((data->'data'->>'payoutStartTime')::numeric)
-             from txns
-             where from_id = $1
-               and category = 'CONTRACT_RESOLUTION_PAYOUT'
-               and data->'data'->>'answerId' = $3
-           ))::bigint)
-       ) as added`,
+    // (getIndependentMultiFixedPayouts). One made while this answer was
+    // resolved, now or in a resolution since undone, didn't reach it, so the
+    // answer can't reopen. An undone resolution lasted from its payouts until
+    // the unresolve that reverted them.
+    // Nor can it reopen if its resolution took a share of the market's own
+    // pending subsidy, which only such provisions fill. The snapshot that
+    // resolution recorded holds the market as it found it, with this answer
+    // open. Putting that share back, then cancelling the answer, would pay it
+    // twice: the cancellation refunds the answer's credit in full, and leaves
+    // most of the share to the answers still open.
+    const refusal = await pg.oneOrNone(
+      `with resolutions as (
+         select (p.data->'data'->>'payoutStartTime')::bigint as started,
+           min(u.created_time) as undone
+         from txns p
+         left join txns u
+           on u.category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
+           and u.to_id = $1
+           and u.data->'data'->>'revertsTxnId' = p.id
+         where p.from_id = $1
+           and p.category = 'CONTRACT_RESOLUTION_PAYOUT'
+           and p.data->'data'->>'answerId' = $3
+         group by 1
+       )
+       select exists (
+         select 1 from contract_liquidity l
+         where l.contract_id = $1
+           and l.data->>'answerId' is null
+           and l.data->'answerIds' is null
+           and (
+             l.created_time > millis_to_ts($2)
+             or exists (
+               select 1 from resolutions r
+               where l.created_time > millis_to_ts(r.started)
+                 and (r.undone is null or l.created_time < r.undone)
+             )
+           )
+       ) as added,
+       exists (
+         select 1 from contract_edits e
+         where e.contract_id = $1
+           and 'subsidyPool' = any(e.updated_keys)
+           and e.created_time >= millis_to_ts($2)
+           and (e.data->>'subsidyPool')::numeric > 0
+           and exists (
+             select 1 from jsonb_array_elements(e.data->'answers') as a
+             where a->>'id' = $3 and a->>'resolution' is null
+           )
+       ) as took_market_subsidy`,
       [contract.id, resolutionTime, answerId],
-      (r) => r?.added === true
+      (r) => ({
+        addedWhileResolved: r?.added === true,
+        tookMarketSubsidy: r?.took_market_subsidy === true,
+      })
     )
-    if (addedSinceResolution)
+    if (refusal?.addedWhileResolved)
       throw new APIError(
         403,
         `Liquidity was added to the whole market after this answer resolved, so it can't be unresolved.`
+      )
+    if (refusal?.tookMarketSubsidy)
+      throw new APIError(
+        403,
+        `This answer resolved while the market had subsidy still to drizzle in, so it can't be unresolved.`
       )
   }
 

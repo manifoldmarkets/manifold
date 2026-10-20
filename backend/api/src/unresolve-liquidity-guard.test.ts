@@ -52,34 +52,62 @@ type Provision = {
   createdTime: number
 }
 
+// An earlier resolution of the answer, from its payouts until the unresolve
+// that reverted them.
+type UndoneResolution = { started: number; undone: number }
+
+// A row of contract_edits: the market as a resolution found it.
+type Snapshot = {
+  createdTime: number
+  subsidyPool: number
+  answerOpen: boolean
+}
+
+// The guard's snapshot lookup, honouring each predicate its SQL states.
+const resolutionTookMarketSubsidy = (
+  sql: string,
+  params: unknown[],
+  snapshots: Snapshot[]
+) => {
+  if (!/as took_market_subsidy/.test(sql)) return false
+  const resolvedAt = params[1] as number
+  return snapshots.some(
+    (s) =>
+      (!/e\.created_time >= millis_to_ts\(\$2\)/.test(sql) ||
+        s.createdTime >= resolvedAt) &&
+      (!/\(e\.data->>'subsidyPool'\)::numeric > 0/.test(sql) ||
+        s.subsidyPool > 0) &&
+      (!/a->>'resolution' is null/.test(sql) || s.answerOpen)
+  )
+}
+
 // The guard's lookup, honouring each predicate its SQL states, so dropping one
-// changes what it finds. The answer's first resolution comes from its
-// resolution payouts, when the SQL reads them.
-const liquidityAddedSince = (
+// changes what it finds.
+const liquidityAddedWhileResolved = (
   sql: string,
   params: unknown[],
   provisions: Provision[],
-  firstResolvedAt: number | undefined
+  undone: UndoneResolution[]
 ) => {
   const resolvedAt = params[1] as number
-  const since =
-    /least\(\$2, \(\s*select min\(\(data->'data'->>'payoutStartTime'\)/.test(
-      sql
-    ) && firstResolvedAt !== undefined
-      ? Math.min(resolvedAt, firstResolvedAt)
-      : resolvedAt
+  const readsUndone = /from resolutions r/.test(sql)
   return provisions.some(
     (p) =>
       (!/data->>'answerId' is null/.test(sql) || p.answerId === undefined) &&
       (!/data->'answerIds' is null/.test(sql) || p.answerIds === undefined) &&
-      (!/created_time > millis_to_ts\(/.test(sql) || p.createdTime > since)
+      (p.createdTime > resolvedAt ||
+        (readsUndone &&
+          undone.some(
+            (r) => p.createdTime > r.started && p.createdTime < r.undone
+          )))
   )
 }
 
 const fakeTx = (
   provisions: Provision[],
   resolvedAt: number,
-  firstResolvedAt: number | undefined
+  undone: UndoneResolution[],
+  snapshots: Snapshot[]
 ) => {
   const updatedAnswers: string[] = []
   const tx = {
@@ -88,11 +116,16 @@ const fakeTx = (
       async (sql: string, params: unknown[], cb?: (r: any) => unknown) => {
         const r = /from contract_liquidity/.test(sql)
           ? {
-              added: liquidityAddedSince(
+              added: liquidityAddedWhileResolved(
                 sql,
                 params,
                 provisions,
-                firstResolvedAt
+                undone
+              ),
+              took_market_subsidy: resolutionTookMarketSubsidy(
+                sql,
+                params,
+                snapshots
               ),
             }
           : /from contract_edits/.test(sql)
@@ -121,10 +154,16 @@ const run = async (
   {
     userId = creatorId,
     resolvedAt = Date.now() - MINUTE,
-    firstResolvedAt = undefined as number | undefined,
+    undone = [] as UndoneResolution[],
+    snapshots = [] as Snapshot[],
   } = {}
 ) => {
-  const { tx, updatedAnswers } = fakeTx(provisions, resolvedAt, firstResolvedAt)
+  const { tx, updatedAnswers } = fakeTx(
+    provisions,
+    resolvedAt,
+    undone,
+    snapshots
+  )
   ;(createSupabaseDirectClient as jest.Mock).mockReturnValue({
     tx: (fn: (t: typeof tx) => unknown) => fn(tx),
   })
@@ -198,13 +237,64 @@ describe('unresolving an answer of an independent multiple choice market', () =>
     await expect(result).resolves.toMatchObject({ success: true })
   })
 
-  it('is refused when the liquidity came during an earlier resolution, since undone', async () => {
-    // Resolved half an hour ago, unresolved, and resolved again a minute ago.
-    const firstResolvedAt = Date.now() - 30 * MINUTE
-    const { result } = await run([{ createdTime: firstResolvedAt + MINUTE }], {
-      resolvedAt,
-      firstResolvedAt,
+  describe('after an earlier resolution was undone', () => {
+    // Resolved half an hour ago, unresolved 20 minutes later, and resolved
+    // again a minute ago.
+    const undone = [
+      { started: Date.now() - 30 * MINUTE, undone: Date.now() - 10 * MINUTE },
+    ]
+
+    it('is refused when the liquidity came during that resolution', async () => {
+      const { result } = await run(
+        [{ createdTime: Date.now() - 20 * MINUTE }],
+        {
+          resolvedAt,
+          undone,
+        }
+      )
+      await expect(result).rejects.toThrow('Liquidity was added')
     })
-    await expect(result).rejects.toThrow('Liquidity was added')
+
+    it('goes ahead when the liquidity came while it was open again', async () => {
+      const { result } = await run([{ createdTime: Date.now() - 5 * MINUTE }], {
+        resolvedAt,
+        undone,
+      })
+      await expect(result).resolves.toMatchObject({ success: true })
+    })
+  })
+
+  describe("with the market's own pending subsidy", () => {
+    // What this answer's resolution recorded, just after it committed.
+    const snapshot = (subsidyPool: number, answerOpen = true) => ({
+      createdTime: resolvedAt + 50,
+      subsidyPool,
+      answerOpen,
+    })
+
+    it('is refused when its resolution took a share of it', async () => {
+      const { result, updatedAnswers } = await run([], {
+        resolvedAt,
+        snapshots: [snapshot(60)],
+      })
+      await expect(result).rejects.toThrow('subsidy still to drizzle in')
+      expect(updatedAnswers).toEqual([])
+    })
+
+    it('goes ahead when there was none at its resolution', async () => {
+      const { result } = await run([], {
+        resolvedAt,
+        snapshots: [snapshot(0)],
+      })
+      await expect(result).resolves.toMatchObject({ success: true })
+    })
+
+    it('ignores later edits that show it resolved', async () => {
+      const { result } = await run([], {
+        resolvedAt,
+        snapshots: [snapshot(60, false)],
+      })
+      await expect(result).resolves.toMatchObject({ success: true })
+    })
   })
 })

@@ -167,7 +167,7 @@ describe('cancelling an answer of an independent multiple choice market', () => 
     })
   })
 
-  it("refunds an older market's unrecorded ante to the answers it funded", () => {
+  it("keeps an older market's unrecorded ante at its old share", () => {
     // Before antes recorded their answer, they were dated at the market's
     // creation. An answer listed since then has an ante of its own.
     const answers = [
@@ -182,30 +182,51 @@ describe('cancelling an answer of an independent multiple choice market', () => 
       provision('x3', 'early', 50, T0, { isAnte: true }),
       ante('F', 'adder', T0 + 3 * DAY),
     ]
-    const e = providerPayouts('CANCEL', answers, liquidities, 'E')
-    expect(Object.keys(e).sort()).toEqual(['creator', 'early'])
-    expect(e.creator).toBeCloseTo(50 / 3)
-    expect(e.early).toBeCloseTo(100 / 3)
+    expect(providerPayouts('CANCEL', answers, liquidities, 'E')).toEqual({
+      creator: 12.5,
+      early: 25,
+    })
     expect(providerPayouts('CANCEL', answers, liquidities, 'F')).toEqual({
       adder: 50,
     })
   })
 
-  it("returns an older market's ante in full when every answer is cancelled", () => {
+  it("pays out no more of an older market's antes than went in", () => {
+    // The market's creation funded A and B with 50 each. C's 25 was recorded
+    // the old way, dated at the market's creation. D and E have their own.
+    const funded = (id: string, index: number, at: number, pool: number) => ({
+      ...answer(id, index, at),
+      poolYes: pool,
+      poolNo: pool,
+    })
     const answers = [
-      answer('A', 0, T0),
-      answer('B', 1, T0),
-      answer('C', 2, T0 + DAY),
+      funded('A', 0, T0, 50),
+      funded('B', 1, T0, 50),
+      funded('C', 2, T0 + DAY, 25),
+      funded('D', 3, T0 + 2 * DAY, 25),
+      funded('E', 4, T0 + 2 * DAY, 25),
     ]
     const liquidities = [
-      provision('x1', 'creator', 50, T0, { isAnte: true }),
-      provision('x2', 'creator', 50, T0, { isAnte: true }),
-      ante('C', 'creator', T0 + DAY),
+      provision('x', 'creator', 100, T0, { isAnte: true }),
+      provision('c', 'adder', 25, T0, { isAnte: true }),
+      provision('d', 'creator', 25, T0 + 2 * DAY, {
+        answerId: 'D',
+        isAnte: true,
+      }),
+      provision('e', 'creator', 25, T0 + 2 * DAY, {
+        answerId: 'E',
+        isAnte: true,
+      }),
     ]
-    const refunds = ['A', 'B', 'C'].map(
-      (id) => providerPayouts('CANCEL', answers, liquidities, id).creator
-    )
-    expect(refunds).toEqual([50, 50, 50])
+    const paid = (outcome: string, id: string) =>
+      sum(Object.values(providerPayouts(outcome, answers, liquidities, id)))
+    const total =
+      paid('YES', 'A') +
+      paid('YES', 'B') +
+      paid('CANCEL', 'C') +
+      paid('CANCEL', 'D') +
+      paid('CANCEL', 'E')
+    expect(total).toBeLessThanOrEqual(175 + 1e-9)
   })
 })
 
