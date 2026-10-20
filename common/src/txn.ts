@@ -22,6 +22,7 @@ type AnyTxnType =
   | ManaPurchase
   | SignupBonus
   | ContractOldResolutionPayout
+  | ContractResolutionSubsidy
   | ContractProduceSpice
   | ContractUndoProduceSpice
   | ConsumeSpice
@@ -325,6 +326,27 @@ type ContractOldResolutionPayout = {
     deposit?: number
     payoutStartTime?: number
     answerId?: string
+  }
+}
+
+// Not a payment (amount 0): what resolving an answer of an independent market
+// took from the pending subsidy, written with that resolution's payouts, even
+// when it has none, so unresolving the answer puts back exactly that.
+type ContractResolutionSubsidy = {
+  fromType: 'CONTRACT'
+  toType: 'CONTRACT'
+  category: 'CONTRACT_RESOLUTION_SUBSIDY'
+  token: 'M$' | 'CASH'
+  data: {
+    answerId: string
+    // As on the resolution's payouts.
+    payoutStartTime: number
+    // As on the answer, while this resolution stands.
+    resolutionTime: number
+    // The answer's own pending subsidy.
+    answerSubsidyPool: number
+    // From the market's pending subsidy.
+    contractSubsidyShare: number
   }
 }
 
@@ -845,6 +867,7 @@ export type CharityFeeTxn = Txn & CharityFee
 export type ManaPurchaseTxn = Txn & ManaPurchase
 export type SignupBonusTxn = Txn & SignupBonus
 export type ContractOldResolutionPayoutTxn = Txn & ContractOldResolutionPayout
+export type ContractResolutionSubsidyTxn = Txn & ContractResolutionSubsidy
 export type ContractUndoOldResolutionPayoutTxn = Txn &
   ContractUndoOldResolutionPayout
 export type ContractProduceSpiceTxn = Txn & ContractProduceSpice
