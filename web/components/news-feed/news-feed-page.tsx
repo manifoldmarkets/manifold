@@ -1,5 +1,6 @@
+import { ArrowUpIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { keyBy, sum } from 'lodash'
+import { sum } from 'lodash'
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Contract } from 'common/contract'
@@ -22,6 +23,13 @@ import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { CategoryRail } from './category-rail'
+import type { SimulatedMarket } from './create-from-claim'
+import {
+  useScrollAnchor,
+  useSessionState,
+  useStableOrder,
+} from './feed-view-state'
+import { trackNews } from './news-events'
 import { ResolvingSoon } from './resolving-soon'
 import { StoryCard, StoryCardSkeleton } from './story-card'
 
@@ -34,18 +42,43 @@ const NEW_HIGHLIGHT_MS = 45_000
 
 type LikeState = { liked: boolean; count: number }
 
+type View = {
+  categories: NewsCategory[]
+  sort: NewsSort
+  includeUnlinked: boolean
+  limit: number
+}
+
+const DEFAULT_VIEW: View = {
+  categories: [],
+  sort: 'newest',
+  includeUnlinked: false,
+  limit: PAGE_SIZE,
+}
+
 /**
  * /news: the wire with markets. Newest first by default, with the day's top
- * story leading. Stories arrive at the top as the server's refresher finds
- * them; prices on the rows update live.
+ * story leading. Each card is the article plus a bar that opens Manifold's
+ * context for it: the related outlook, and the claims quoted from the
+ * article with the markets that test them.
+ *
+ * The page keeps the reader's place: the view, open panels and published
+ * markets live in session storage, stories hold their order while the
+ * reader is here, and new ones wait behind a button.
  */
 export function NewsFeedPage() {
   const user = useUser()
-  // Empty means every category.
-  const [categories, setCategories] = useState<NewsCategory[]>([])
-  const [sort, setSort] = useState<NewsSort>('newest')
-  const [includeUnlinked, setIncludeUnlinked] = useState(false)
-  const [limit, setLimit] = useState(PAGE_SIZE)
+  const [view, setView, viewReady] = useSessionState<View>('view', DEFAULT_VIEW)
+  const { categories, sort, includeUnlinked, limit } = view
+  const [expanded, setExpanded] = useSessionState<Record<string, boolean>>(
+    'expanded',
+    {}
+  )
+  const [published, setPublished] = useSessionState<SimulatedMarket[]>(
+    'published',
+    []
+  )
+
   const props = useMemo(
     () => ({
       categories: categories.length > 0 ? categories : undefined,
@@ -55,9 +88,10 @@ export function NewsFeedPage() {
     }),
     [categories, sort, limit, includeUnlinked]
   )
+  // Wait for the stored view so the first request is the right one.
   const { data, error, refresh } = useAPIGetter(
     'get-news-feed',
-    props,
+    viewReady ? props : undefined,
     undefined,
     'news-feed'
   )
@@ -66,32 +100,13 @@ export function NewsFeedPage() {
   // Poll while the tab is visible; faster while the first build is running.
   const visible = useIsPageVisible()
   useEffect(() => {
-    if (!visible) return
+    if (!visible || !viewReady) return
     const id = setInterval(
       () => refresh(),
       building ? BUILDING_POLL_MS : POLL_MS
     )
     return () => clearInterval(id)
-  }, [visible, building, props])
-
-  // Stories that arrive on a poll get a short highlight. A filter change
-  // shows different stories, which is not an arrival.
-  const seen = useRef<Set<string>>(new Set())
-  const lastPropsKey = useRef<string | undefined>(undefined)
-  const [fresh, setFresh] = useState<Set<string>>(() => new Set())
-  useEffect(() => {
-    if (!data) return
-    const key = JSON.stringify(props)
-    const ids = data.stories.map((s) => s.id)
-    const isPoll = lastPropsKey.current === key && seen.current.size > 0
-    lastPropsKey.current = key
-    const arrived = isPoll ? ids.filter((id) => !seen.current.has(id)) : []
-    ids.forEach((id) => seen.current.add(id))
-    if (arrived.length === 0) return
-    setFresh(new Set(arrived))
-    const t = setTimeout(() => setFresh(new Set()), NEW_HIGHLIGHT_MS)
-    return () => clearTimeout(t)
-  }, [data])
+  }, [visible, building, props, viewReady])
 
   // Likes: the server's counts, with the reader's own taps applied at once.
   const [likeOverrides, setLikeOverrides] = useState<Record<string, LikeState>>(
@@ -128,22 +143,83 @@ export function NewsFeedPage() {
     }
   }
 
-  const contractsById = useMemo(
-    () => keyBy(data?.contracts ?? [], 'id'),
-    [data?.contracts]
-  )
+  // Stories held on screen can drop out of the latest response; keep the
+  // markets they show, with the freshest copy of each.
+  const seenContracts = useRef(new Map<string, Contract>())
+  const contractsById = useMemo(() => {
+    for (const c of data?.contracts ?? []) seenContracts.current.set(c.id, c)
+    return Object.fromEntries(seenContracts.current) as Record<string, Contract>
+  }, [data?.contracts])
+  const storyCounts = data?.storyCounts ?? {}
   const storiesByContractId = useMemo(() => {
     const byId: Record<string, NewsStory> = {}
     for (const s of data?.stories ?? [])
       for (const id of s.contractIds) if (!byId[id]) byId[id] = s
     return byId
   }, [data?.stories])
-  const spotlight =
-    categories.length === 0 && !includeUnlinked ? data?.spotlight : undefined
-  // The top story leads the page; it is not repeated in the list below.
-  const stories = (data?.stories ?? []).filter(
-    (s) => s.id !== spotlight?.story.id
+
+  // The top story holds still too: a new pick waits with the new stories.
+  const showSpotlight = categories.length === 0 && !includeUnlinked
+  const spotlightRef = useRef<NewsSpotlight>()
+  if (
+    data?.spotlight &&
+    (!spotlightRef.current ||
+      spotlightRef.current.story.id === data.spotlight.story.id)
   )
+    spotlightRef.current = data.spotlight
+  const spotlight = showSpotlight ? spotlightRef.current : undefined
+
+  const viewKey = JSON.stringify([
+    [...categories].sort(),
+    sort,
+    includeUnlinked,
+  ])
+  const dataViewKey = data?.view
+    ? JSON.stringify([
+        [...data.view.categories].sort(),
+        data.view.sort,
+        data.view.includeUnlinked,
+      ])
+    : undefined
+  const loadingView = !!data && dataViewKey !== viewKey
+
+  // The top story leads the page; it is not repeated in the list below.
+  const listed = useMemo(
+    () =>
+      loadingView
+        ? undefined
+        : data?.stories.filter((s) => s.id !== spotlight?.story.id),
+    [data?.stories, spotlight?.story.id, loadingView]
+  )
+  const order = useStableOrder(listed, viewKey)
+  const stories = order.visible.filter((s) => s.id !== spotlight?.story.id)
+  const pending = order.pending
+
+  const [fresh, setFresh] = useState<Set<string>>(() => new Set())
+  useEffect(() => {
+    if (fresh.size === 0) return
+    const t = setTimeout(() => setFresh(new Set()), NEW_HIGHLIGHT_MS)
+    return () => clearTimeout(t)
+  }, [fresh])
+  const pendingCount = pending.length
+  useEffect(() => {
+    if (pendingCount > 0) trackNews('news new stories shown', { pendingCount })
+  }, [pendingCount > 0])
+  const showNewStories = () => {
+    trackNews('news new stories show', { pendingCount })
+    setFresh(new Set(pending.map((s) => s.id)))
+    // The new top story leads; take it out of the list order explicitly.
+    spotlightRef.current = data?.spotlight
+    const hero = showSpotlight ? data?.spotlight?.story.id : undefined
+    order.showPending(
+      (data?.stories ?? []).filter((s) => s.id !== hero).map((s) => s.id)
+    )
+    const box = document.querySelector<HTMLElement>('.page-scroll-container')
+    ;(box ?? window).scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const saveAnchor = useScrollAnchor(stories.map((s) => s.id))
+
   const hasMore =
     !!data && data.total > data.stories.length && limit < MAX_LIMIT
   const linkedCount = data
@@ -174,13 +250,35 @@ export function NewsFeedPage() {
     'news-feed-headlines'
   )
 
-  const cardProps = (s: NewsStory) => ({
+  const cardProps = (s: NewsStory, position: number) => ({
     story: s,
     contractsById,
+    storyCounts,
     isNew: fresh.has(s.id),
     likeCount: likeState(s.id).count,
     liked: likeState(s.id).liked,
     onLike: (liked: boolean) => onLike(s, liked),
+    open: !!expanded[s.id],
+    onToggle: () => {
+      const open = !expanded[s.id]
+      trackNews(open ? 'news panel expand' : 'news panel collapse', {
+        storyId: s.id,
+        position,
+        featured: !!s.featuredId,
+        markets: s.contractIds.length,
+        claims: s.claims?.length ?? 0,
+      })
+      setExpanded((e) => {
+        const next = { ...e }
+        if (open) next[s.id] = true
+        else delete next[s.id]
+        return next
+      })
+    },
+    published: published.filter((m) => m.storyId === s.id),
+    onPublished: (m: SimulatedMarket) => setPublished((p) => [...p, m]),
+    onAttached: () => refresh(),
+    onLeave: saveAnchor,
   })
 
   return (
@@ -203,7 +301,13 @@ export function NewsFeedPage() {
           <Row className="shrink-0 items-center gap-2">
             <button
               type="button"
-              onClick={() => setIncludeUnlinked((v) => !v)}
+              onClick={() =>
+                setView((v) => ({
+                  ...v,
+                  includeUnlinked: !v.includeUnlinked,
+                  limit: PAGE_SIZE,
+                }))
+              }
               aria-pressed={includeUnlinked}
               title="Stories without a market are hidden unless you ask for them"
               className={clsx(
@@ -227,19 +331,35 @@ export function NewsFeedPage() {
         <div className="bg-canvas-0 border-ink-100 sticky top-0 z-20 -mx-2 border-b px-2 sm:-mx-4 sm:px-4">
           <CategoryRail
             selected={categories}
-            onToggle={(c) => {
-              setCategories((prev) =>
-                c === 'all'
-                  ? []
-                  : prev.includes(c)
-                  ? prev.filter((k) => k !== c)
-                  : [...prev, c]
-              )
-              setLimit(PAGE_SIZE)
-            }}
+            onToggle={(c) =>
+              setView((v) => ({
+                ...v,
+                categories:
+                  c === 'all'
+                    ? []
+                    : v.categories.includes(c)
+                    ? v.categories.filter((k) => k !== c)
+                    : [...v.categories, c],
+                limit: PAGE_SIZE,
+              }))
+            }
             counts={data?.counts ?? {}}
           />
         </div>
+
+        {/* Arrivals wait here rather than pushing the page down. */}
+        {pendingCount > 0 && (
+          <div className="sticky top-14 z-30 flex h-0 justify-center">
+            <button
+              type="button"
+              onClick={showNewStories}
+              className="bg-primary-600 hover:bg-primary-700 text-ink-0 flex h-8 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold shadow-lg transition-colors"
+            >
+              <ArrowUpIcon className="h-3.5 w-3.5" />
+              {pendingCount} new {pendingCount === 1 ? 'story' : 'stories'}
+            </button>
+          </div>
+        )}
 
         {data && !data.enabled && (
           <Notice>
@@ -255,7 +375,7 @@ export function NewsFeedPage() {
         {spotlight && (
           <Col className="gap-1.5">
             <SpotlightLabel spotlight={spotlight} />
-            <StoryCard {...cardProps(spotlight.story)} hero defaultOpen />
+            <StoryCard {...cardProps(spotlight.story, 0)} hero />
           </Col>
         )}
         {categories.length === 0 && resolvingSoon.length > 0 && (
@@ -268,12 +388,11 @@ export function NewsFeedPage() {
         <Col className="gap-3">
           <SortControl
             sort={sort}
-            onChange={(s) => {
-              setSort(s)
-              setLimit(PAGE_SIZE)
-            }}
+            onChange={(s) =>
+              setView((v) => ({ ...v, sort: s, limit: PAGE_SIZE }))
+            }
           />
-          {building && stories.length === 0 ? (
+          {(building || loadingView) && stories.length === 0 ? (
             <>
               <Notice>
                 Gathering the wire and matching markets. The first build takes a
@@ -290,21 +409,30 @@ export function NewsFeedPage() {
                 <button
                   type="button"
                   className="text-primary-700 underline"
-                  onClick={() => setIncludeUnlinked(true)}
+                  onClick={() =>
+                    setView((v) => ({ ...v, includeUnlinked: true }))
+                  }
                 >
                   Show unlinked stories too
                 </button>
               )}
             </Notice>
           ) : (
-            stories.map((s) => <StoryCard key={s.id} {...cardProps(s)} />)
+            stories.map((s, i) => (
+              <StoryCard key={s.id} {...cardProps(s, i + 1)} />
+            ))
           )}
         </Col>
 
         {hasMore && (
           <button
             type="button"
-            onClick={() => setLimit((l) => Math.min(l + PAGE_SIZE, MAX_LIMIT))}
+            onClick={() =>
+              setView((v) => ({
+                ...v,
+                limit: Math.min(v.limit + PAGE_SIZE, MAX_LIMIT),
+              }))
+            }
             className="border-ink-200 text-ink-700 hover:bg-canvas-50 mx-auto rounded-full border px-4 py-1.5 text-sm font-medium"
           >
             Show more stories
@@ -330,7 +458,10 @@ export function NewsFeedPage() {
           Prototype. Stories come from Wikipedia's Current Events portal (CC
           BY-SA) and Google News; headlines link out to the outlets. Markets are
           matched by embedding similarity against every open market and verified
-          by an AI pass before they appear.
+          by an AI pass before they appear. Claims are short quotes from the
+          article's full text (a stand-in for a licensed full-text feed),
+          checked word for word against it. Publishing a market here is
+          simulated.
           {linkedCount > 0 &&
             ` ${linkedCount} stories currently have a market.`}
         </p>

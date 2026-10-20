@@ -22,8 +22,20 @@ export function BetButton(props: {
   className?: string
   labels?: { yes: string; no: string }
   questionTitle?: string
+  /** Where the trade starts, for analytics. Defaults to the feed card. */
+  location?: string
+  onBuySuccess?: () => void
 }) {
-  const { contract, labels, user, className, feedReason, questionTitle } = props
+  const {
+    contract,
+    labels,
+    user,
+    className,
+    feedReason,
+    questionTitle,
+    location = 'feed card',
+    onBuySuccess,
+  } = props
   const { closeTime } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const customYesText = getCustomYesButtonText(user?.entitlements)
@@ -40,7 +52,7 @@ export function BetButton(props: {
       return
     }
     track('bet intent', {
-      location: 'feed card',
+      location,
       outcome,
       token: contract.token,
     })
@@ -93,10 +105,11 @@ export function BetButton(props: {
             <BuyPanel
               contract={contract}
               initialOutcome={dialogueThatIsOpen === 'YES' ? 'YES' : 'NO'}
-              onBuySuccess={() =>
+              onBuySuccess={() => {
+                onBuySuccess?.()
                 setTimeout(() => setDialogueThatIsOpen(undefined), 500)
-              }
-              location={'feed card'}
+              }}
+              location={location}
               inModal={true}
               feedReason={feedReason}
             />
