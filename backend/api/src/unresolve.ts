@@ -166,6 +166,27 @@ const verifyUserCanUnresolve = async (
       throw new APIError(400, `Answer ${answerId} is not resolved`)
 
     resolutionTime = answerResolutionTime
+
+    // A cancellation refunds a whole-market provision that doesn't record its
+    // answers to every answer that was there when it was made
+    // (getIndependentMultiFixedPayouts). One made while this answer was
+    // resolved went to the open answers only, so this answer can't reopen.
+    const addedSinceResolution = await pg.one(
+      `select exists (
+         select 1 from contract_liquidity
+         where contract_id = $1
+           and data->>'answerId' is null
+           and data->'answerIds' is null
+           and created_time > millis_to_ts($2)
+       ) as added`,
+      [contract.id, resolutionTime],
+      (r) => r.added as boolean
+    )
+    if (addedSinceResolution)
+      throw new APIError(
+        403,
+        `Liquidity was added to the whole market after this answer resolved, so it can't be unresolved.`
+      )
   }
 
   if (resolutionTime < TXNS_PR_MERGED_ON)

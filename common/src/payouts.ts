@@ -140,6 +140,12 @@ export const getFixedPayouts = (
   }
 }
 
+// An answer added this soon after a whole-market provision that doesn't record
+// its answers counts as open when it was made. These are the answers listed at
+// creation, written just after the market's own provision, and answers added
+// within a minute, mostly before the drizzle (every 7 minutes) moved any of it.
+const UNRECORDED_PROVISION_GRACE_MS = 60 * 1000
+
 export const getIndependentMultiFixedPayouts = (
   answer: Answer,
   outcome: string | undefined,
@@ -148,14 +154,18 @@ export const getIndependentMultiFixedPayouts = (
   liquidities: LiquidityProvision[],
   resolutionProbability: number
 ) => {
-  const filteredLiquidities = liquidities
-    .filter((l) => l.answerId === answer.id)
-    // Also include liquidity that is not assigned to an answer, and divide it by the number of answers.
-    .concat(
-      liquidities
-        .filter((l) => !l.answerId)
-        .map((l) => ({ ...l, amount: l.amount / contract.answers.length }))
-    )
+  const answerLiquidities = liquidities.filter((l) => l.answerId === answer.id)
+  const wholeMarketLiquidities = liquidities.filter((l) => !l.answerId)
+  // A whole-market provision went to the answers it records, in equal shares.
+  // One that doesn't record them is divided by the number of answers.
+  const sharedLiquidities = wholeMarketLiquidities.flatMap((l) =>
+    l.answerIds
+      ? l.answerIds.includes(answer.id)
+        ? [{ ...l, amount: l.amount / l.answerIds.length }]
+        : []
+      : [{ ...l, amount: l.amount / contract.answers.length }]
+  )
+  const filteredLiquidities = answerLiquidities.concat(sharedLiquidities)
   // Divide contract's subsidy pool among UNRESOLVED answers only
   const unresolvedAnswers = contract.answers.filter((a) => !a.resolution)
   const numUnresolved = unresolvedAnswers.length || 1 // Avoid division by zero
@@ -179,11 +189,31 @@ export const getIndependentMultiFixedPayouts = (
         contractSubsidyPoolShare
       )
     default:
-    case 'CANCEL':
+    case 'CANCEL': {
+      // A cancellation refunds what providers put into this answer, where the
+      // outcomes above pay out its pool by their weights. A whole-market
+      // provision that doesn't record its answers reached the answers open as
+      // the drizzle moved it, so it's refunded only to answers that were there
+      // when it was made. Unresolving an answer is refused once one is made
+      // after it resolved (unresolve.ts), so those answers were open then. An
+      // unrecorded ante is an older market's funding of its answers, dated at
+      // its creation, so an answer with an ante of its own takes none of it.
+      const hasOwnAnte = answerLiquidities.some((l) => l.isAnte)
+      const refundableLiquidities = answerLiquidities.concat(
+        sharedLiquidities.filter(
+          (l) =>
+            l.answerIds !== undefined ||
+            (l.isAnte
+              ? !hasOwnAnte
+              : answer.createdTime <=
+                l.createdTime + UNRECORDED_PROVISION_GRACE_MS)
+        )
+      )
       return getFixedCancelPayouts(
         contractMetrics.filter((metric) => metric.answerId === answer.id),
-        filteredLiquidities
+        refundableLiquidities
       )
+    }
   }
 }
 

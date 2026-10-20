@@ -6,6 +6,8 @@ import {
   CPMMMultiContract,
   isMultiCpmm,
 } from 'common/contract'
+import { APIError } from 'common/api/utils'
+import { addSubsidyToOpenAnswers } from './supabase/answers'
 import { updateContract } from './supabase/contracts'
 import { SupabaseDirectClient } from './supabase/init'
 import { insertLiquidity } from './supabase/liquidity'
@@ -66,6 +68,31 @@ export async function generateAntes(
         token: 'M$',
         fromType: 'USER',
       })
+      if (isMultiCpmm(contract) && !contract.shouldAnswersSumToOne) {
+        // The answers take it as their own pending subsidy, in equal shares,
+        // as a later whole-market add does (addSubsidyToOpenAnswers).
+        await updateContract(tx, contract.id, {
+          totalLiquidity: FieldVal.increment(drizzledAmount),
+        })
+        const answers = await addSubsidyToOpenAnswers(
+          tx,
+          contract.id,
+          drizzledAmount
+        )
+        if (answers.length === 0)
+          throw new APIError(400, 'Multiple choice markets need an answer')
+        await insertLiquidity(
+          tx,
+          getNewLiquidityProvision(
+            providerId,
+            drizzledAmount,
+            contract,
+            undefined,
+            answers.map((a) => a.id)
+          )
+        )
+        return
+      }
       const newLiquidityProvision = getNewLiquidityProvision(
         providerId,
         drizzledAmount,
