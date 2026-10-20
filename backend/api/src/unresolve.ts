@@ -20,6 +20,7 @@ import {
 import { assert } from 'common/util/assert'
 import { removeUndefinedProps } from 'common/util/object'
 import { MINUTE_MS } from 'common/util/time'
+import { groupBy, sumBy } from 'lodash'
 import { trackPublicEvent } from 'shared/analytics'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { getUser } from 'shared/utils'
@@ -217,62 +218,78 @@ const undoResolution = async (
 ) => {
   const contractId = contract.id
   // An answer (of an independent market, the only kind that takes one) is
-  // undone to before its current resolution, which recorded, in its own
-  // transaction, what it took from the pending subsidy and the resolutionTime
-  // the answer holds while it stands. Undoing it marks the record undone, so
-  // it's never read again, even for a later resolution in the same
-  // millisecond. A resolution from before these records has none.
-  const answerResolution = answerId
+  // undone to before its current resolution. Its row stays locked until this
+  // commits, so nothing resolves or unresolves it meanwhile.
+  const answerResolutionTime = answerId
     ? await pg.oneOrNone(
-        `select ts_to_millis(a.resolution_time) as resolution_time,
-           t.id as record_id,
+        `select ts_to_millis(resolution_time) as resolution_time
+         from answers
+         where id = $1
+           and contract_id = $2
+         for update`,
+        [answerId, contractId],
+        (r) => (r?.resolution_time ?? null) as number | null
+      )
+    : null
+  // Each of its resolutions recorded, in its own transaction, what it took
+  // from the pending subsidy. Those not undone yet: an unresolve marks the
+  // record it goes by, and code from before the records, which doesn't,
+  // still reverts all of the resolution's payouts. A resolution from before
+  // the records has none.
+  const resolutionRecords = answerId
+    ? await pg.map(
+        `with payouts as (
+           select (p.data->'data'->>'payoutStartTime')::numeric as payout_start_time,
+             exists (
+               select 1 from txns u
+               where u.category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
+                 and u.to_id = $2
+                 and u.data->'data'->>'revertsTxnId' = p.id
+             ) as reverted
+           from txns p
+           where p.category = 'CONTRACT_RESOLUTION_PAYOUT'
+             and p.from_id = $2
+             and p.data->'data'->>'answerId' = $1
+         )
+         select t.id,
+           (t.data->'data'->>'resolutionTime')::numeric as resolution_time,
+           (t.data->'data'->>'payoutStartTime')::numeric as payout_start_time,
            (t.data->'data'->>'answerSubsidyPool')::numeric as answer_subsidy_pool,
            (t.data->'data'->>'contractSubsidyShare')::numeric as contract_subsidy_share
-         from answers a
-         left join txns t
-           on t.category = 'CONTRACT_RESOLUTION_SUBSIDY'
-           and t.from_id = a.contract_id
-           and t.to_id = a.contract_id
-           and t.data->'data'->>'answerId' = a.id
-           and (t.data->'data'->>'resolutionTime')::numeric =
-             ts_to_millis(a.resolution_time)
+         from txns t
+         where t.category = 'CONTRACT_RESOLUTION_SUBSIDY'
+           and t.from_id = $2
+           and t.to_id = $2
+           and t.data->'data'->>'answerId' = $1
            and not exists (
              select 1 from txns u
              where u.category = 'CONTRACT_UNDO_RESOLUTION_SUBSIDY'
-               and u.to_id = a.contract_id
+               and u.to_id = $2
                and u.data->'data'->>'revertsTxnId' = t.id
            )
-         where a.id = $1
-           and a.contract_id = $2
-         order by t.created_time desc nulls last
-         limit 1`,
+           and (
+             not exists (
+               select 1 from payouts
+               where payout_start_time =
+                 (t.data->'data'->>'payoutStartTime')::numeric
+             )
+             or exists (
+               select 1 from payouts
+               where payout_start_time =
+                   (t.data->'data'->>'payoutStartTime')::numeric
+                 and not reverted
+             )
+           )`,
         [answerId, contractId],
-        (r) =>
-          r
-            ? {
-                resolutionTime: (r.resolution_time ?? null) as number | null,
-                record:
-                  r.record_id == null
-                    ? null
-                    : {
-                        id: r.record_id as string,
-                        answerSubsidyPool: r.answer_subsidy_pool as
-                          | number
-                          | null,
-                        contractSubsidyShare: r.contract_subsidy_share as
-                          | number
-                          | null,
-                      },
-              }
-            : null
+        (r) => ({
+          id: r.id as string,
+          resolutionTime: r.resolution_time as number | null,
+          payoutStartTime: r.payout_start_time as number | null,
+          answerSubsidyPool: r.answer_subsidy_pool as number | null,
+          contractSubsidyShare: r.contract_subsidy_share as number | null,
+        })
       )
-    : null
-  const resolutionRecord = answerResolution?.record ?? null
-  if (resolutionRecord && tookMarketSubsidy(resolutionRecord))
-    throw new APIError(
-      403,
-      `This answer's resolution took part of the market's pending subsidy, so it can't be unresolved.`
-    )
+    : []
   // mana and cash payouts. An answer's: all those no unresolve has reverted,
   // which are its current resolution's (none, if that one paid nobody). A
   // market's: its latest resolution's.
@@ -313,6 +330,18 @@ const undoResolution = async (
         [contractId, maxManaPayoutStartTime, answerId],
         (r) => convertTxn(r) as ContractOldResolutionPayoutTxn
       )
+  const resolutionRecord = answerId
+    ? getRecordToUndo(
+        answerResolutionTime,
+        resolutionRecords,
+        manaTxns.map((txn) => txn.data?.payoutStartTime)
+      )
+    : null
+  if (resolutionRecord && tookMarketSubsidy(resolutionRecord))
+    throw new APIError(
+      403,
+      `This answer's resolution took part of the market's pending subsidy, so it can't be unresolved.`
+    )
 
   // // Get resolution fee txns to revert
   // const feeTxns = await pg.map(
@@ -371,7 +400,14 @@ const undoResolution = async (
     const balanceUpdatesQuery = bulkIncrementBalancesQuery(balanceUpdates)
     const userUpdates = await pg.many<UserUpdate>(balanceUpdatesQuery)
     if (!isAdminId(userId) && !isModId(userId)) {
-      checkForNegativeBalancesAndPayouts(userUpdates, balanceUpdates)
+      // Per user, as the query sums them: a user can have several payouts.
+      const balanceDeltas = Object.values(groupBy(balanceUpdates, 'id')).map(
+        (updates) => ({
+          id: updates[0].id,
+          balance: sumBy(updates, (update) => update.balance ?? 0),
+        })
+      )
+      checkForNegativeBalancesAndPayouts(userUpdates, balanceDeltas)
     }
   }
 
@@ -559,7 +595,7 @@ const undoResolution = async (
         answerId,
         contractId,
         getAnswerSubsidyToRestore(resolutionRecord),
-        answerResolution?.resolutionTime ?? null,
+        answerResolutionTime,
       ],
       convertAnswer
     )
@@ -577,6 +613,38 @@ const undoResolution = async (
 
   log('updated contract')
   return { answerUpdates, contractWebsocketUpdates }
+}
+
+// The record that undoing an answer's current resolution goes by, or none for
+// a resolution from before the records. That resolution must be the only one
+// of the answer not undone yet, by its records and by its payouts, so that
+// what's reverted and what's put back are the same resolution's. An answer
+// resolved again over a standing resolution, or one undone some other way,
+// can't be unresolved.
+export function getRecordToUndo<
+  T extends { resolutionTime: number | null; payoutStartTime: number | null }
+>(
+  resolutionTime: number | null,
+  records: T[],
+  payoutStartTimes: (number | null | undefined)[]
+) {
+  const payoutResolutions = [
+    ...new Set(payoutStartTimes.map((time) => time ?? null)),
+  ]
+  const [record, ...others] = records
+  if (
+    others.length > 0 ||
+    payoutResolutions.length > 1 ||
+    (record &&
+      (record.resolutionTime !== resolutionTime ||
+        (payoutResolutions.length === 1 &&
+          payoutResolutions[0] !== record.payoutStartTime)))
+  )
+    throw new APIError(
+      403,
+      `This answer has more than one resolution that hasn't been undone, so it can't be unresolved.`
+    )
+  return record ?? null
 }
 
 // Whether an answer's recorded resolution took part of the market's pending
