@@ -542,12 +542,14 @@ async function querySportsMarkets(
     sports_event_id: string | null
     sports_market_type: string | null
     sports_league: string | null
+    official: boolean
     group_ids: string[]
   }>(
     `select c.id, c.question, c.close_time, c.importance_score,
             c.data->>'sportsEventId' as sports_event_id,
             c.data->>'sportsMarketType' as sports_market_type,
             c.data->>'sportsLeague' as sports_league,
+            c.creator_id = any($4) as official,
             (select coalesce(array_agg(g.group_id), '{}')
                from group_contracts g
               where g.contract_id = c.id) as group_ids
@@ -565,7 +567,7 @@ async function querySportsMarkets(
        and c.close_time < now() + $3::interval
      order by ${order}
      limit ${opts.limit}`,
-    [opts.groupIds, opts.closeFrom, opts.closeTo]
+    [opts.groupIds, opts.closeFrom, opts.closeTo, MANIFOLD_SPORTS_USER_IDS]
   )
   return rows.map((r) => ({
     id: r.id,
@@ -574,9 +576,14 @@ async function querySportsMarkets(
     closeTime: r.close_time ? tsToMillis(r.close_time) : null,
     sportsEventId: r.sports_event_id,
     marketType: r.sports_market_type,
-    // The league first: a WNBA game sits in Basketball, which is the NBA's.
+    // A pipeline's league first: its WNBA games sit in Basketball, which is
+    // the NBA's. Anyone can stamp a sportsLeague through the API, so other
+    // markets go by their topics.
     sport: sportForMarket(
-      { sportsLeague: r.sports_league, groupIds: r.group_ids },
+      {
+        sportsLeague: r.official ? r.sports_league : null,
+        groupIds: r.group_ids,
+      },
       index
     ),
     importanceScore: Number(r.importance_score ?? 0),

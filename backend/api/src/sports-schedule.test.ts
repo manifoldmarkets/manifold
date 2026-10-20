@@ -10,12 +10,15 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   SPORT_CATEGORIES,
   SPORTS_DEFAULT_GROUP_ID,
+  WNBA_TOPIC_ID,
 } from 'common/sports-schedule'
 import { sportsSchedule } from './sports-schedule'
 
 const kickoff = Date.now() + 60 * 60 * 1000
 const groupId = (sport: string) =>
   SPORT_CATEGORIES.find((s) => s.key === sport)!.groupIds[0]
+// 🏀 Basketball: the NBA's topic, which WNBA games are tagged with too.
+const basketball = 'NjkFkdkvRvBHoeMDQ5NB'
 const official = ['nfl', 'soccer'].map((sport) => ({
   data: {
     id: sport,
@@ -55,9 +58,19 @@ const tree = [
   name,
   total_members: 10,
 }))
-let marketRows: typeof props = props
+type MarketRow = (typeof props)[number] & {
+  sports_league?: string | null
+  official?: boolean
+}
+let marketRows: MarketRow[] = props
 let officialRows: { data: Record<string, unknown> }[] = official
 let answerRows: Record<string, unknown>[] = []
+// The official games' topics, unless a test sets gameGroups.
+const defaultGameGroups = ['nfl', 'soccer'].map((sport) => ({
+  contract_id: sport,
+  group_id: groupId(sport),
+}))
+let gameGroups = defaultGameGroups
 // Each game's two answers, home first, unless a test sets answerRows.
 const gameAnswers = (data: Record<string, unknown>) =>
   (['sportsHomeTeam', 'sportsAwayTeam'] as const).map((team, index) => ({
@@ -75,6 +88,7 @@ beforeEach(() => {
   marketRows = props
   officialRows = official
   answerRows = []
+  gameGroups = defaultGameGroups
   jest.mocked(createSupabaseDirectClient).mockReturnValue({
     manyOrNone: async (sql: string) => {
       if (sql.includes("where data->>'sportsEventId'")) return officialRows
@@ -84,11 +98,7 @@ beforeEach(() => {
           : officialRows.flatMap(({ data }) => gameAnswers(data))
       if (sql.includes('select c.id, c.question')) return marketRows
       if (sql.includes('from group_groups')) return tree
-      if (sql.includes('from group_contracts'))
-        return ['nfl', 'soccer'].map((sport) => ({
-          contract_id: sport,
-          group_id: groupId(sport),
-        }))
+      if (sql.includes('from group_contracts')) return gameGroups
       return []
     },
   } as unknown as ReturnType<typeof createSupabaseDirectClient>)
@@ -217,6 +227,86 @@ it('badges a team made without a code with its league code', async () => {
     home: { name: 'New York Yankees', shortName: 'NYY' },
     away: { name: 'Tampa Bay Rays', shortName: 'RAYS' },
   })
+})
+
+// A market in the week's list, with no event of its own.
+const weekMarket = (id: string, extra: Partial<MarketRow>): MarketRow => ({
+  id,
+  question: `Who takes ${id}?`,
+  sports_event_id: null as unknown as string,
+  sports_market_type: null as unknown as string,
+  close_time: new Date(kickoff + 3 * 60 * 60 * 1000).toISOString(),
+  importance_score: 1,
+  group_ids: [],
+  ...extra,
+})
+
+it("takes a market's league only from the pipelines", async () => {
+  // Anyone can stamp a sportsLeague through the API, so a community market
+  // goes by its topics; a pipeline's own market goes by its league.
+  marketRows = [
+    weekMarket('stamped', {
+      sports_league: 'NBA',
+      group_ids: [groupId('soccer')],
+    }),
+    weekMarket('guessed', {
+      sports_league: 'basketball_euroleague',
+      group_ids: ['tdf'],
+    }),
+    weekMarket('pipeline', {
+      sports_league: 'WNBA',
+      official: true,
+      sports_event_id: 'event-wnba-prop',
+      group_ids: [basketball],
+    }),
+  ]
+  const getSchedule = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const response = await getSchedule({ sport: 'all' })
+  const result = 'result' in response ? response.result : response
+  expect(
+    Object.fromEntries(result.upcoming.map((m) => [m.id, m.sport]))
+  ).toEqual({
+    stamped: 'soccer',
+    guessed: 'road-bicycle-racing',
+    pipeline: 'wnba',
+  })
+})
+
+it('hangs a WNBA-topic bet on a WNBA game, but not a Basketball or NBA one', async () => {
+  // Basketball is the NBA's topic. A bet in it alone stays an NBA bet: NBA and
+  // WNBA teams share codes (ATL), and WNBA nicknames are everyday words.
+  officialRows = [
+    {
+      data: {
+        ...official[0].data,
+        id: 'game',
+        slug: 'game',
+        sportsEventId: 'event-wnba',
+        sportsLeague: 'WNBA',
+        sportsHomeTeam: 'Golden State Valkyries',
+        sportsAwayTeam: 'Atlanta Dream',
+      },
+    },
+  ]
+  gameGroups = [SPORTS_DEFAULT_GROUP_ID, basketball].map((group_id) => ({
+    contract_id: 'game',
+    group_id,
+  }))
+  const question = 'Valkyries vs Dream: who scores first?'
+  marketRows = [
+    weekMarket('wnba', { question, group_ids: [WNBA_TOPIC_ID, basketball] }),
+    weekMarket('basketball', { question, group_ids: [basketball] }),
+    weekMarket('nba', { question, group_ids: [groupId('nba'), basketball] }),
+  ]
+  const getSchedule = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const response = await getSchedule({ sport: 'wnba' })
+  const result = 'result' in response ? response.result : response
+  expect(result.games.map((g) => g.sport)).toEqual(['wnba'])
+  expect(result.games[0].related.map((r) => r.id)).toEqual(['wnba'])
 })
 
 const nflGame = (

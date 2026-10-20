@@ -584,6 +584,15 @@ describe('sports from the topic tree', () => {
     expect(sportOf(collegeFootball, football)).toBe('ncaaf')
   })
 
+  it('files WNBA apart from the NBA, though both use Basketball', () => {
+    // As on prod, the WNBA topic isn't in the tree; the sport claims it by id.
+    expect(sportOf(basketball, WNBA_TOPIC_ID)).toBe('wnba')
+    expect(sportOf(WNBA_TOPIC_ID, basketball)).toBe('wnba')
+    expect(sportOf(NBA_TOPIC_ID, basketball)).toBe('nba')
+    // Basketball alone is the NBA's.
+    expect(sportOf(basketball)).toBe('nba')
+  })
+
   it('never files a market by a topic that groups sports', () => {
     expect(sportOf(football, soccer)).toBe('soccer')
     expect(sportOf(football)).toBe('other')
