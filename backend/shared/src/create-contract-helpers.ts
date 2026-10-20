@@ -1,3 +1,4 @@
+import { keyBy } from 'lodash'
 import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { getCpmmInitialLiquidity } from 'common/antes'
 import {
@@ -81,6 +82,9 @@ export async function generateAntes(
         )
         if (answers.length === 0)
           throw new APIError(400, 'Multiple choice markets need an answer')
+        // The market's creation announces its answers with their subsidy.
+        const updatedById = keyBy(answers, 'id')
+        contract.answers = contract.answers.map((a) => updatedById[a.id] ?? a)
         await insertLiquidity(
           tx,
           getNewLiquidityProvision(

@@ -136,20 +136,35 @@ describe('cancelling an answer of an independent multiple choice market', () => 
     expect(laterRefunds).toEqual([50, 50, 50, 50, 50])
   })
 
-  it('still refunds unrecorded liquidity to answers there when it was made', () => {
+  it('refunds unrecorded liquidity in full to the answers open when it was made', () => {
     const answers = [
       answer('A', 0, T0),
       answer('B', 1, T0),
-      // Listed just after the provision, before the drizzle reached it.
-      answer('C', 2, T0 + HOUR + 30 * SECOND),
+      // Written with the provision, as a market's first answers can be.
+      answer('C', 2, T0 + HOUR + 2 * SECOND),
       answer('D', 3, T0 + HOUR + 2 * MINUTE),
     ]
     const liquidities = [provision('w', 'whale', 120, T0 + HOUR)]
-    const whaleRefund = (id: string) =>
-      providerPayouts('CANCEL', answers, liquidities, id).whale ?? 0
-    expect(whaleRefund('A')).toBe(30)
-    expect(whaleRefund('C')).toBe(30)
-    expect(whaleRefund('D')).toBe(0)
+    const whaleRefunds = ['A', 'B', 'C', 'D'].map(
+      (id) => providerPayouts('CANCEL', answers, liquidities, id).whale ?? 0
+    )
+    expect(whaleRefunds).toEqual([40, 40, 40, 0])
+  })
+
+  it('leaves out answers that had resolved before unrecorded liquidity came', () => {
+    const answers = [
+      {
+        ...answer('A', 0, T0),
+        resolution: 'YES' as const,
+        resolutionTime: T0 + MINUTE,
+      },
+      answer('B', 1, T0),
+      answer('C', 2, T0),
+    ]
+    const liquidities = [provision('w', 'whale', 120, T0 + HOUR)]
+    expect(providerPayouts('CANCEL', answers, liquidities, 'B')).toEqual({
+      whale: 60,
+    })
   })
 
   it("refunds an older market's unrecorded ante to the answers it funded", () => {
@@ -167,13 +182,30 @@ describe('cancelling an answer of an independent multiple choice market', () => 
       provision('x3', 'early', 50, T0, { isAnte: true }),
       ante('F', 'adder', T0 + 3 * DAY),
     ]
-    expect(providerPayouts('CANCEL', answers, liquidities, 'E')).toEqual({
-      creator: 12.5,
-      early: 25,
-    })
+    const e = providerPayouts('CANCEL', answers, liquidities, 'E')
+    expect(Object.keys(e).sort()).toEqual(['creator', 'early'])
+    expect(e.creator).toBeCloseTo(50 / 3)
+    expect(e.early).toBeCloseTo(100 / 3)
     expect(providerPayouts('CANCEL', answers, liquidities, 'F')).toEqual({
       adder: 50,
     })
+  })
+
+  it("returns an older market's ante in full when every answer is cancelled", () => {
+    const answers = [
+      answer('A', 0, T0),
+      answer('B', 1, T0),
+      answer('C', 2, T0 + DAY),
+    ]
+    const liquidities = [
+      provision('x1', 'creator', 50, T0, { isAnte: true }),
+      provision('x2', 'creator', 50, T0, { isAnte: true }),
+      ante('C', 'creator', T0 + DAY),
+    ]
+    const refunds = ['A', 'B', 'C'].map(
+      (id) => providerPayouts('CANCEL', answers, liquidities, id).creator
+    )
+    expect(refunds).toEqual([50, 50, 50])
   })
 })
 

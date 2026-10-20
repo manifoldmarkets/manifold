@@ -6,7 +6,7 @@ jest.mock('shared/websockets/helpers', () => ({
   broadcastUpdatedAnswers: jest.fn(),
 }))
 
-import { Contract } from 'common/contract'
+import { Contract, CPMMMultiContract } from 'common/contract'
 import { updateContract } from 'shared/supabase/contracts'
 import { insertLiquidity } from 'shared/supabase/liquidity'
 import { generateAntes } from './create-contract-helpers'
@@ -80,15 +80,14 @@ beforeEach(() => jest.clearAllMocks())
 describe('extra liquidity on a new multiple choice market', () => {
   it('goes to the answers of an independent market in equal shares', async () => {
     const answers = [answerRow('A', 0), answerRow('B', 1), answerRow('C', 2)]
-    await generateAntes(
-      fakePg(answers) as any,
-      'creator',
-      market(false, ['A', 'B', 'C']),
-      150,
-      450
-    )
+    const contract = market(false, ['A', 'B', 'C'])
+    await generateAntes(fakePg(answers) as any, 'creator', contract, 150, 450)
 
     expect(answers.map((a) => a.subsidy_pool)).toEqual([100, 100, 100])
+    // The market's creation announces its answers with their subsidy.
+    expect(
+      (contract as CPMMMultiContract).answers.map((a) => a.subsidyPool)
+    ).toEqual([100, 100, 100])
     const provisions = insertedProvisions()
     // One ante per answer, then the extra, recorded with its answers.
     expect(provisions.map((lp) => lp.answerId)).toEqual([

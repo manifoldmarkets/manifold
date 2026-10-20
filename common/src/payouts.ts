@@ -141,10 +141,29 @@ export const getFixedPayouts = (
 }
 
 // An answer added this soon after a whole-market provision that doesn't record
-// its answers counts as open when it was made. These are the answers listed at
-// creation, written just after the market's own provision, and answers added
-// within a minute, mostly before the drizzle (every 7 minutes) moved any of it.
-const UNRECORDED_PROVISION_GRACE_MS = 60 * 1000
+// its answers counts as one it was made for: a market's first answers can be
+// written a moment after its own provision, in the same transaction.
+const UNRECORDED_PROVISION_GRACE_MS = 5 * 1000
+
+// The answers a whole-market provision went to, which share it equally. One
+// that doesn't record them is credited to the answers open when it was made,
+// which the drizzle moved it into. An older market's unrecorded ante is
+// different: it funded the market's answers that have no ante of their own,
+// and is dated at the market's creation whenever they were added.
+const getProvisionAnswerIds = (
+  l: LiquidityProvision,
+  answers: Answer[],
+  ownAnteAnswerIds: Set<string>
+) =>
+  l.answerIds ??
+  answers
+    .filter((a) =>
+      l.isAnte
+        ? !ownAnteAnswerIds.has(a.id)
+        : a.createdTime <= l.createdTime + UNRECORDED_PROVISION_GRACE_MS &&
+          (a.resolutionTime ?? Infinity) >= l.createdTime
+    )
+    .map((a) => a.id)
 
 export const getIndependentMultiFixedPayouts = (
   answer: Answer,
@@ -191,23 +210,25 @@ export const getIndependentMultiFixedPayouts = (
     default:
     case 'CANCEL': {
       // A cancellation refunds what providers put into this answer, where the
-      // outcomes above pay out its pool by their weights. A whole-market
-      // provision that doesn't record its answers reached the answers open as
-      // the drizzle moved it, so it's refunded only to answers that were there
-      // when it was made. Unresolving an answer is refused once one is made
-      // after it resolved (unresolve.ts), so those answers were open then. An
-      // unrecorded ante is an older market's funding of its answers, dated at
-      // its creation, so an answer with an ante of its own takes none of it.
-      const hasOwnAnte = answerLiquidities.some((l) => l.isAnte)
+      // outcomes above pay out its pool by their weights: its own provisions,
+      // and an equal share of each whole-market provision that went to it.
+      // Unresolving an answer is refused once an unrecorded whole-market
+      // provision came after it first resolved (unresolve.ts), so an answer
+      // open now that was there when one was made was open then.
+      const ownAnteAnswerIds = new Set(
+        liquidities.flatMap((l) => (l.isAnte && l.answerId ? [l.answerId] : []))
+      )
       const refundableLiquidities = answerLiquidities.concat(
-        sharedLiquidities.filter(
-          (l) =>
-            l.answerIds !== undefined ||
-            (l.isAnte
-              ? !hasOwnAnte
-              : answer.createdTime <=
-                l.createdTime + UNRECORDED_PROVISION_GRACE_MS)
-        )
+        wholeMarketLiquidities.flatMap((l) => {
+          const answerIds = getProvisionAnswerIds(
+            l,
+            contract.answers,
+            ownAnteAnswerIds
+          )
+          return answerIds.includes(answer.id)
+            ? [{ ...l, amount: l.amount / answerIds.length }]
+            : []
+        })
       )
       return getFixedCancelPayouts(
         contractMetrics.filter((metric) => metric.answerId === answer.id),

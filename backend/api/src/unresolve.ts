@@ -167,20 +167,27 @@ const verifyUserCanUnresolve = async (
 
     resolutionTime = answerResolutionTime
 
-    // A cancellation refunds a whole-market provision that doesn't record its
-    // answers to every answer that was there when it was made
-    // (getIndependentMultiFixedPayouts). One made while this answer was
-    // resolved went to the open answers only, so this answer can't reopen.
-    const addedSinceResolution = await pg.one(
+    // A cancellation credits a whole-market provision that doesn't record its
+    // answers to the answers open when it was made
+    // (getIndependentMultiFixedPayouts). One made after this answer first
+    // resolved, in this resolution or one since undone, didn't reach it, so
+    // the answer can't reopen.
+    const addedSinceResolution = await pg.oneOrNone(
       `select exists (
          select 1 from contract_liquidity
          where contract_id = $1
            and data->>'answerId' is null
            and data->'answerIds' is null
-           and created_time > millis_to_ts($2)
+           and created_time > millis_to_ts(least($2, (
+             select min((data->'data'->>'payoutStartTime')::numeric)
+             from txns
+             where from_id = $1
+               and category = 'CONTRACT_RESOLUTION_PAYOUT'
+               and data->'data'->>'answerId' = $3
+           ))::bigint)
        ) as added`,
-      [contract.id, resolutionTime],
-      (r) => r.added as boolean
+      [contract.id, resolutionTime, answerId],
+      (r) => r?.added === true
     )
     if (addedSinceResolution)
       throw new APIError(
