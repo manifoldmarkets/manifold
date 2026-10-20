@@ -173,13 +173,7 @@ const verifyUserCanUnresolve = async (
     // resolved, now or in a resolution since undone, didn't reach it, so the
     // answer can't reopen. An undone resolution lasted from its payouts until
     // the unresolve that reverted them.
-    // Nor can it reopen if its resolution took a share of the market's own
-    // pending subsidy, which only such provisions fill. The snapshot that
-    // resolution recorded holds the market as it found it, with this answer
-    // open. Putting that share back, then cancelling the answer, would pay it
-    // twice: the cancellation refunds the answer's credit in full, and leaves
-    // most of the share to the answers still open.
-    const refusal = await pg.oneOrNone(
+    const addedWhileResolved = await pg.oneOrNone(
       `with resolutions as (
          select (p.data->'data'->>'payoutStartTime')::bigint as started,
            min(u.created_time) as undone
@@ -206,33 +200,14 @@ const verifyUserCanUnresolve = async (
                  and (r.undone is null or l.created_time < r.undone)
              )
            )
-       ) as added,
-       exists (
-         select 1 from contract_edits e
-         where e.contract_id = $1
-           and 'subsidyPool' = any(e.updated_keys)
-           and e.created_time >= millis_to_ts($2)
-           and (e.data->>'subsidyPool')::numeric > 0
-           and exists (
-             select 1 from jsonb_array_elements(e.data->'answers') as a
-             where a->>'id' = $3 and a->>'resolution' is null
-           )
-       ) as took_market_subsidy`,
+       ) as added`,
       [contract.id, resolutionTime, answerId],
-      (r) => ({
-        addedWhileResolved: r?.added === true,
-        tookMarketSubsidy: r?.took_market_subsidy === true,
-      })
+      (r) => r?.added === true
     )
-    if (refusal?.addedWhileResolved)
+    if (addedWhileResolved)
       throw new APIError(
         403,
         `Liquidity was added to the whole market after this answer resolved, so it can't be unresolved.`
-      )
-    if (refusal?.tookMarketSubsidy)
-      throw new APIError(
-        403,
-        `This answer resolved while the market had subsidy still to drizzle in, so it can't be unresolved.`
       )
   }
 
