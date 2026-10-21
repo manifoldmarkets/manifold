@@ -10,6 +10,24 @@ decide to sunset perps. Nothing under `backend/shared/src/perps/` is imported by
 the existing CPMM / multi / numeric code paths; integration points are narrow and
 explicit (see "Integration points" below).
 
+## Next-price market orders
+
+Public `openOrAddPosition` and `closePosition` enqueue all user orders. There is no synchronous cached-price execution path. `runOracleUpdate` performs liquidation and ADL, then settles eligible queued orders in the same serialized transaction. Existing private settlement math handles fees, margin, partial closes, harmonic entry merging and atomic flips.
+
+The `perp_orders` migration is required before deploying the API or scheduler. One pending trade and one pending close per user and contract are enforced by a partial unique index, so a waiting open or add never blocks an exit; closes settle first. Orders cannot be cancelled. Idempotent retries return the same instruction. A missing bound position rejects an add, close or flip instead of creating an unintended fresh position.
+
+Submission changes no market state, so it takes no contract lock: it runs at READ COMMITTED under the user's row lock, and the unique indexes decide replays and one-per-kind. Submissions to one market therefore run side by side and never queue the oracle tick. (Under SERIALIZABLE behind the contract lock, each snapshot predated its wait, so a burst aborted and requeued itself and starved the tick.) On a size-fee market, an allowance below the fee at the current pools is refused at submission rather than accepted to fail at execution.
+
+BTC, xStocks and daily publisher sampling timestamps use request start. Shared xStocks snapshots retain that original timestamp across feeds. MNX additionally requires its provider mark timestamp to be after submission; re-received cached marks do not qualify. Daily source timestamps describe reporting periods, so those feeds use their accepted observation time. This execution rule does not claim to remove all upstream cache latency or predictable published-index moves.
+
+While an order waits, `USER -> BANK:PERP_ORDER_ESCROW` holds its cash. `PERP_ORDER_RELEASE` returns it inside the same transaction as fill, rejection or expiry. The ordinary margin and fee transfers then execute. Pending cash never enters long or short backing, so the existing contract-ledger-equals-pools invariant remains unchanged. Pending cash is included at face value in authoritative user-contract metrics with zero profit.
+
+Pending orders cause unchanged-price observations to be persisted, avoiding a wait-for-a-different-number deadlock on fast feeds. If a previously published eligible observation was missed, refund and reject rather than selecting a later price. To keep misses rare, a bounded fast tick that gives up while orders wait is retried without bounds (applied late rather than skipped). The mark also advances only once nothing still waits on it. Under the contract lock, before writing anything, an update checks for an order still eligible at the current mark, and for a persisted point the mark skipped while an order waits on it (an overlapping scheduler, or an apply that failed after persisting). If either exists, it rolls back, catches up (settles that backlog, or replays the skipped point as its own update, gated by the incoming point's provider health and notified at its own price), and retries. A backlog past one tick's budget, an order committed while a tick ran, or a point another scheduler landed first then fills at its own price instead of being rejected. The check can only see committed orders, so submission stamps `created_time` as its last statement: an order becomes visible within the commit of its stamp, long before the tick of the next point sampled after it. Catch-up and the post-tick follow-ups are bounded as the update is. Orders still contended after their attempts are no longer waited on. All rounds for one incoming point share a single `MAX_CATCH_UP_ROUNDS` budget, after which the update advances regardless, so waiting orders cannot hold back the mark and the liquidations it carries; whatever still waits is then rejected as before. Each order settles in its own savepoint: lock or serialization contention leaves it pending at the same price for a follow-up transaction (and scheduler housekeeping), and any other failure, including an engine invariant, rejects and refunds that order only; neither can roll back the price, liquidations or ADL. At most `PERP_ORDERS_PER_SETTLEMENT` orders settle per transaction; the rest continue at the same price in follow-up transactions. Expiry runs from oracle dispatcher housekeeping even during provider outages. Completed orders create durable outbox work relayed to the API writer, which pays creator bonuses for fills, broadcasts the new balance (scheduler broadcasts reach no browser), and notifies the trader when an order is rejected or expires. The betting streak is credited on submission, the trader's own action, as immediate trades did.
+
+`PERP_TRADING_MODE` gates submissions only; orders already queued still fill. To stop them, drain with `backend/scripts/refund-pending-perp-orders.ts --apply` (or toggle MANA trading off site-wide). Roll back by pausing trading and running that drain before deploying code that does not know `perp_orders`, never by selectively repricing orders at the current cache.
+
+Deployment requires a coordinated cutover, in this order: stop exposure increases (`PERP_TRADING_MODE=reduce-only` on the API), apply the migration, deploy **both** scheduler instances (`prod perps` settles fast feeds and daily publishers; `prod main` applies the DAU feed through update-stats), deploy the API from a clean checkout at the PR head, then merge, which deploys the web client through Vercel. The new schedulers are inert while no orders exist, and an API that queues orders before `scheduler-perps` can settle them would strand closes. Invalidate old bundles before reopening. Both trade endpoints now return `{order}`. Old clients must migrate; do not keep an immediate-fill compatibility route. No deployment is performed by the implementation branch.
+
 ## Files
 
 - `engine.ts` — the authoritative entry point. Exports:
@@ -17,9 +35,9 @@ explicit (see "Integration points" below).
   - `openOrAddPosition(contractId, userId, direction, mana, leverage, idempotencyKey?)`
     — opens a new position or adds to an existing same-side position. An opposite-side
     position is closed atomically before the new side opens. Returns
-    `{ position, event, isNewUniqueBettor }`.
+    a durable next-price order; submission does not open a position.
   - `closePosition(contractId, userId, direction, idempotencyKey?, expectedOpenedTime?)`
-    — closes a user's position at the current oracle price, credits/debits mana, and
+    — queues a close of the bound position at the next eligible oracle price, credits/debits mana, and
     writes a `close` event. The optional opening timestamp prevents a stale client
     from closing a replacement position. Receipt/event `pnl` is settlement payout
     minus original deposited margin, so it includes funding; `pricePnl` preserves
@@ -36,7 +54,8 @@ explicit (see "Integration points" below).
     margin and payout (not lifetime market turnover).
 
   Every mutating call acquires a `pg_advisory_xact_lock` keyed on the contract id
-  so per-contract state transitions are serialized.
+  so per-contract state transitions are serialized. Order submission is the
+  exception: it changes no market state (see the order queue above).
 
 - `queries.ts` — small SQL helpers used by `engine.ts` to keep the engine focused
   on state transitions rather than SQL construction. Row ↔ object converters live
@@ -166,8 +185,9 @@ reduces open interest, and its state is asserted with the same
 
 ## Taker fee
 
-`common/src/perps/fees.ts`. Trades execute at the cached oracle price, and
-with zero fees that price is a free option for latency bots (2026-08-07: two
+`common/src/perps/fees.ts`. Fees still apply to queued execution. The following
+history describes the earlier immediate-fill model: trades executed at the
+cached oracle price, and with zero fees that price was a free option for latency bots (2026-08-07: two
 bots extracted ~M$70k from the BTC perp pools by sniping the then-15s tick at
 a measured edge of ~1.5 bps of notional per round trip).
 
@@ -284,7 +304,7 @@ Why per-channel: the 2026-08-19/20 BTC drain was API-key flow (5 API accounts
 were 85% of opening notional over that week against 135 web traders), so a
 flat raise would tax the honest web majority for the bots' edge. A bot can
 still dodge by scripting a session token — this is a raised bar and a clean
-ToS line, not a wall; the structural fix is next-tick execution.
+ToS line, not a wall; next-price execution now addresses the cached-fill window.
 
 The two rates carry different domains — `PERP_TAKER_FEE_BPS_MAX` = 100,
 `PERP_TAKER_FEE_API_BPS_MAX` = 300 — and neither is validated against
@@ -682,10 +702,19 @@ ad-hoc query must bound `ts` — that is the only index on `user_events`, and th
 table is hundreds of millions of rows:
 
 ```sql
-select data->>'location' as placement, count(*), count(distinct user_id)
-from user_events
-where name = 'click mnx link' and ts >= now() - interval '7 days'
-group by 1 order by 2 desc;
+select
+  data - > > 'location' as placement,
+  count(*),
+  count(distinct user_id)
+from
+  user_events
+where
+  name = 'click mnx link'
+  and ts >= now () - interval '7 days'
+group by
+  1
+order by
+  2 desc;
 ```
 
 ## Scheduler
@@ -739,6 +768,10 @@ The API reads `PERP_TRADING_MODE` on each request:
 - `enabled` permits creation, opens, adds, flips, and closes;
 - `reduce-only` blocks creation and exposure increases while preserving closes;
 - `halted` blocks all user-initiated PERP trading, including closes.
+
+These gate submission only: orders already queued still execute at their next
+eligible observation. Drain them with `refund-pending-perp-orders.ts` (see
+"Next-price market orders").
 
 An absent value is `enabled` only when the compiled `PERPS_ENABLED` switch is
 true. A false compiled switch cannot be overridden at runtime and remains at

@@ -525,6 +525,20 @@ export const perpMaxFeeFor = (previewedFee: number, notional: number) => {
 }
 
 /**
+ * A fee or allowance in whole cents, for messages. Fees round up and
+ * allowances down, so a fee above its allowance never prints as the same
+ * amount (a 0.04-cent shortfall used to read "M$0.60 … more than M$0.60").
+ * The epsilon keeps float noise (0.6 × 100 = 60.000000000000007) on its cent.
+ */
+export const formatPerpFeeCents = (amount: number, round: 'up' | 'down') => {
+  const cents =
+    round === 'up'
+      ? Math.ceil(amount * 100 - 1e-6)
+      : Math.floor(amount * 100 + 1e-6)
+  return (cents / 100).toFixed(2)
+}
+
+/**
  * The own-contribution half of `perpOpenFeeQuote`'s inputs, derived from the
  * trader's standing SAME-direction position at the trade's mark.
  *

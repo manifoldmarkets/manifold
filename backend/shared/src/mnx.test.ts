@@ -9,6 +9,7 @@ import {
   parseMnxCandles,
   createMnxSnapshotFetcher,
 } from './mnx'
+import { log } from './utils'
 
 jest.mock('./utils', () => ({
   log: Object.assign(jest.fn(), { warn: jest.fn(), error: jest.fn() }),
@@ -266,6 +267,47 @@ it('caps excessive retry headers, retries after the cap, and a new process start
   await fetchSnapshot()
   expect(fetcher).toHaveBeenCalledTimes(3)
   expect(mnxRetryDelay(new MnxHttpError(429, 'nonsense'), 1, now, 0)).toBe(2000)
+})
+
+it("stamps a snapshot from its starting caller's clock before requesting, and a clock failure is not an MNX outage", async () => {
+  jest.spyOn(Date, 'now').mockReturnValue(now)
+  const order: string[] = []
+  const fetcher = jest.fn(async () => {
+    order.push('request')
+    return [market()]
+  })
+  const fetchSnapshot = createMnxSnapshotFetcher(fetcher)
+  await expect(
+    fetchSnapshot(async () => {
+      throw new Error('database unavailable')
+    })
+  ).rejects.toThrow('database unavailable')
+  expect(fetcher).not.toHaveBeenCalled()
+  // No provider backoff: the next poll requests as usual.
+  jest.spyOn(Date, 'now').mockReturnValue(now + 2_000)
+  const snapshot = await fetchSnapshot(async () => {
+    order.push('clock')
+    return now + 1_500
+  })
+  expect(order).toEqual(['clock', 'request'])
+  expect(snapshot.feeds[spec.feedId].point?.ts).toBe(now + 1_500)
+  // A caller sharing the snapshot keeps its stamp.
+  expect(await fetchSnapshot(async () => now + 9_999)).toBe(snapshot)
+  expect(fetcher).toHaveBeenCalledTimes(1)
+})
+
+it('warns when MNX stamps a mark after we receive it, well before the eligibility allowance', async () => {
+  jest.spyOn(Date, 'now').mockReturnValue(now)
+  const fetchSnapshot = createMnxSnapshotFetcher(async () => [
+    market({ mark_price_timestamp: new Date(now + 1_200).toISOString() }),
+  ])
+  await fetchSnapshot(async () => now)
+  expect(log.warn).toHaveBeenCalledWith(
+    expect.stringContaining('MNX stamped a mark 1200ms after we received it')
+  )
+  expect(log.error).not.toHaveBeenCalledWith(
+    expect.stringContaining('MNX stamped a mark')
+  )
 })
 
 it('keeps H100 candle provenance behind a live mark older than the latest bucket', () => {
