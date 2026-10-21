@@ -382,12 +382,57 @@ checks `L + S` against one contract balance, so the split is an accounting
 convention, not a custody boundary; the transfer conserves total escrow and
 moves no user balance. It is all-or-nothing: a partial transfer cannot make the
 book representable but would change the ADL factors on the way to the same
-throw, so it can only ever turn a failure into a success.
+throw, so it can only ever turn a failure into a success. The donor is then
+held at no less than its own reserve (see below). "At least that much" stays
+exact: the hold mints whatever the donor lacks, so any allowance there would
+let a real shortfall that grows a little each tick mint its way past escrow
+tolerance on ticks that never check escrow. A surplus that is the deficit
+exactly can therefore still round an ulp short of it (`64.1 − 0.1 < 64`) and
+be declined, as before.
 
 This does NOT stop principal being spent against an opposing side's unrealized
 loss in the first place — it lets the pot honour the resulting claim out of its
 own surplus. Reserving at full cost basis would prevent the spend, at the cost
 of much lower profit capacity on every market. That is a separate decision.
+
+## Solvency dust
+
+ADL lands a side's factor a few ulps under 1 about a quarter of the time,
+inside the `1e-12` relative tolerance. A debit far larger than the pool it
+leaves then turns ulps of that debit into a shortfall the remaining book cannot
+size: paying a 50,000 profit out of a 50,001 pool leaves the pool 7e-12 under
+the 1-mana reserve it still holds, which `solvencyFactor` reads as `-Infinity`.
+That used to fail a legitimate close right after ADL, and failed `resolvePerp`
+deterministically, since it closes every position at one fixed price. A
+factor-zero ADL settlement does the same to its own pool, and so does the
+cross-side transfer to its donor: `100,000.01 − 100,000` lands 5e-12 under a
+0.01 reserve.
+
+Tolerating that dust is not enough. The later debit that drains the pool is far
+smaller than the one that left the gap, and funding scales a receiving pool
+and its positions by the same `1 + g`, so a gap below a reserve grows with the
+pool until it is no longer dust. So `debitPool` reconciles it where it is made:
+when a close or settlement would leave a pool short of what it owes (its own
+side's reserve plus the other side's profit) by no more than the dust the check
+could already have passed, the pool is assigned exactly what it owes and the
+debited leg pays what actually left it. The payout falls short of the bare
+profit by at most that dust (one ulp, usually), and escrow moves by at most an
+ulp. A larger gap is a real deficit and still fails closed, as does anything
+non-finite. The transfer's donor is held at its own reserve the same way.
+
+What is left is residue at the book's own scale: an ulp of a 100-mana pool
+against 5e-6 of remaining profit reads as a factor of `1 − 3e-9`. So
+`assertPerpStateSolvent` and the open path share one predicate,
+`isPerpSideSolvent`, that also forgives `getPerpSolvencyDust`: 1e-12 of the
+largest pool, reserve or profit on the book, capped at 1e-6 mana.
+
+**Deploy order:** both schedulers before the API, and roll back the API first.
+`scheduler-perps` runs ticks and funding, and the main scheduler's
+`update-stats` applies the DAU feed's points. Old code has no absolute
+tolerance, so old funding refuses the residue a new close can leave on a tiny
+profit, and an old tick can occasionally fail on it too. In the other window,
+new schedulers with the old API, nothing is worse than before: dust closes
+just keep failing as they did.
 
 ## Solvency halt (tick liveness)
 

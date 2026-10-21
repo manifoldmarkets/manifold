@@ -12,10 +12,12 @@ import {
   getPerpOpenInterest,
   getPerpOpenInterestCapacity,
   getPerpOpenInterestCapacityForOpen,
+  getPerpSolvencyDust,
   getPositionValue,
   getUnrealizedEquity,
   imbalance,
   isLiquidated,
+  isPerpSideSolvent,
   liquidationPrice,
   mergedEntryPrice,
   MIN_PERP_LEVERAGE,
@@ -24,6 +26,7 @@ import {
   PERP_MIN_CLOSE_FRACTION,
   PERP_MIN_REMAINDER_COST_BASIS,
   PERP_OPEN_INTEREST_COVER_MULTIPLE,
+  PERP_SOLVENCY_FACTOR_TOLERANCE,
   PerpState,
   perpSizeMatchesExpectation,
   processLiquidations,
@@ -1908,5 +1911,751 @@ describe('applyADL cross-side deficit transfer', () => {
     expect(result.crossSideTransfer).toBe(0)
     expect(result.state.pool).toEqual(thinDonor.pool)
     expect(() => assertPerpStateSolvent(result.state, 110)).toThrow()
+  })
+})
+
+describe('solvency dust after ADL', () => {
+  const price = 100
+
+  // Opposing pool less the opposing side's refundable reserve.
+  const coverFor = (side: PerpDirection, state: PerpState) => {
+    const opposite = side === 'long' ? 'short' : 'long'
+    const reserve = state.positions
+      .filter((p) => p.direction === opposite && p.size > 0)
+      .reduce(
+        (sum, p) => sum + Math.min(p.costBasis, getPositionValue(p, price)),
+        0
+      )
+    return (side === 'long' ? state.pool.S : state.pool.L) - reserve
+  }
+
+  // A 100x long from 60 holds 66,667 of profit at 100, more than the 50,000
+  // the short pool holds above its one flat 1-mana short, so ADL trims it to
+  // put the long factor on exactly 1. In float it lands one ulp under.
+  const drainedBook = () =>
+    applyADL(
+      {
+        pool: { L: 1000, S: 50_001 },
+        positions: [
+          makePosition({
+            userId: 'winner',
+            direction: 'long',
+            size: 100_000,
+            costBasis: 1000,
+            entryPrice: 60,
+          }),
+          makePosition({
+            userId: 'flat',
+            direction: 'short',
+            size: 1,
+            costBasis: 1,
+            entryPrice: 100,
+          }),
+        ],
+      },
+      price
+    )
+
+  it('lands the pool on the reserve when the last winner closes after ADL', () => {
+    const adl = drainedBook()
+    // Premise: the factor sits a hair UNDER 1, inside the relative tolerance,
+    // so paying the whole profit would leave the short pool an ulp of 50,001
+    // under the short's 1-mana reserve, with no profit left to measure it
+    // against. The bare ratio reads that as -Infinity: this close used to 500.
+    expect(adl.adlFactorLong).toBeCloseTo(0.75, 12)
+    const factor = solvencyFactor('long', adl.state, price)
+    expect(factor).toBeLessThan(1)
+    expect(factor).toBeGreaterThanOrEqual(1 - PERP_SOLVENCY_FACTOR_TOLERANCE)
+    const winner = adl.state.positions[0]
+    const profit = getUnrealizedEquity(winner, price)
+    expect(adl.state.pool.S - profit).toBeLessThan(1)
+
+    // The close pays what the pool can give and leaves it holding exactly the
+    // reserve: one ulp of 51,000 less than the bare profit.
+    const closed = closePosition(adl.state, winner, price)
+    expect(closed.state.pool).toEqual({ L: 0, S: 1 })
+    expect(closed.pnl).toBe(profit)
+    expect(closed.payout).toBeLessThan(1000 + profit)
+    expect(closed.payout).toBeGreaterThan(1000 + profit - 1e-10)
+    expect(coverFor('long', closed.state)).toBe(0)
+    expect(solvencyFactor('long', closed.state, price)).toBe(Infinity)
+    expect(() => assertPerpStateSolvent(closed.state, price)).not.toThrow()
+  })
+
+  it('lets the opposing side then drain that pool to exactly zero', () => {
+    const adl = drainedBook()
+    const afterWinner = closePosition(adl.state, adl.state.positions[0], price)
+
+    const afterShort = closePosition(
+      afterWinner.state,
+      afterWinner.state.positions[0],
+      price
+    )
+    expect(afterShort.payout).toBe(1)
+    expect(afterShort.state.pool).toEqual({ L: 0, S: 0 })
+    // Everything paid out came out of the escrow the book started with.
+    expect(afterWinner.payout + afterShort.payout).toBe(51_001)
+
+    // Or a tick to 99 makes the short a winner with nothing to pay it from
+    // (the long pool is empty), and ADL settles its margin from the same pool.
+    const tick = applyADL(processLiquidations(afterWinner.state, 99).state, 99)
+    expect(tick.adlFactorShort).toBe(0)
+    expect(tick.settled.map((s) => s.payout)).toEqual([1])
+    expect(tick.state.pool).toEqual({ L: 0, S: 0 })
+    expect(() => assertPerpStateSolvent(tick.state, 99)).not.toThrow()
+  })
+
+  it('lands a pool drained by a factor-zero settlement on what it still owes', () => {
+    // No short cover at all, so ADL settles the winning long at its 50,000 of
+    // margin, out of a 50,001.1 pool that also holds a flat 1.1 long. Straight
+    // subtraction leaves the pool an ulp of 50,001.1 short of that 1.1.
+    expect(50_001.1 - 50_000).toBeLessThan(1.1)
+    const adl = applyADL(
+      {
+        pool: { L: 50_001.1, S: 0 },
+        positions: [
+          makePosition({
+            userId: 'winner',
+            direction: 'long',
+            size: 100_000,
+            costBasis: 50_000,
+            entryPrice: 60,
+          }),
+          makePosition({
+            userId: 'flat',
+            direction: 'long',
+            size: 1.1,
+            costBasis: 1.1,
+            entryPrice: 100,
+          }),
+        ],
+      },
+      price
+    )
+    expect(adl.adlFactorLong).toBe(0)
+    expect(adl.settled.map((s) => s.payout)).toEqual([50_000])
+    expect(adl.state.pool).toEqual({ L: 1.1, S: 0 })
+    expect(() => assertPerpStateSolvent(adl.state, price)).not.toThrow()
+
+    const closed = closePosition(adl.state, adl.state.positions[0], price)
+    expect(closed.payout).toBe(1.1)
+    expect(closed.state.pool).toEqual({ L: 0, S: 0 })
+  })
+
+  it('trims settlements the pool cannot quite pay, the largest first', () => {
+    // No short cover, so ADL settles both winning longs at their margin, 1
+    // and 100, out of a pool 1.5e-10 short of the 101 they total.
+    const state: PerpState = {
+      pool: { L: 101 - 1.5e-10, S: 0 },
+      positions: [
+        makePosition({
+          userId: 'small',
+          direction: 'long',
+          size: 1,
+          costBasis: 1,
+          entryPrice: 50,
+        }),
+        makePosition({
+          userId: 'large',
+          direction: 'long',
+          size: 100,
+          costBasis: 100,
+          entryPrice: 50,
+        }),
+      ],
+    }
+    const adl = applyADL(state, price)
+    expect(adl.adlFactorLong).toBe(0)
+    expect(adl.settled.map((s) => [s.position.userId, s.payout])).toEqual([
+      ['small', 1],
+      ['large', 99.99999999985],
+    ])
+    expect(adl.state.pool).toEqual({ L: 0, S: 0 })
+    // The pool pays out every mana it held, and not a fraction more.
+    expect(adl.settled[0].payout + adl.settled[1].payout).toBe(state.pool.L)
+  })
+
+  it('never mints a shortfall through the transfer, however small', () => {
+    // The donor is held at its reserve after a transfer, so anything its
+    // surplus lacks would be minted into the pools. A real shortfall must
+    // still be declined, even one that grows by 1e-8 a tick: a long of
+    // 100,000 from 100 and a short of 50,000.00005 from 50 sit exactly on
+    // their pools at 75, and each 0.01 fall leaves the pot 1e-8 short.
+    const book: PerpState = {
+      pool: { L: 75_000, S: 25_000.000025 },
+      positions: [
+        makePosition({
+          direction: 'long',
+          size: 100_000,
+          costBasis: 100_000,
+          entryPrice: 100,
+        }),
+        makePosition({
+          userId: 'u2',
+          direction: 'short',
+          size: 50_000.00005,
+          costBasis: 50_000.00005,
+          entryPrice: 50,
+        }),
+      ],
+    }
+    expect(() => assertPerpStateSolvent(book, 75)).not.toThrow()
+    const tick = applyADL(book, 74.99)
+    expect(tick.crossSideTransfer).toBe(0)
+    expect(tick.state.pool).toEqual(book.pool)
+    expect(() => assertPerpStateSolvent(tick.state, 74.99)).toThrow(
+      'long solvency factor must be finite or +Infinity'
+    )
+
+    // Nor 1e-6 short on a million-mana book...
+    const million = applyADL(
+      {
+        pool: { L: 0, S: 999_999.999999 },
+        positions: [
+          makePosition({
+            direction: 'long',
+            size: 1e6,
+            costBasis: 1e6,
+            entryPrice: 100,
+          }),
+        ],
+      },
+      price
+    )
+    expect(million.crossSideTransfer).toBe(0)
+
+    // ...and a surplus that is the deficit exactly but rounds an ulp short of
+    // it (64.1 - 0.1 < 64) is still declined, as it always was.
+    expect(64.1 - 0.1).toBeLessThan(64)
+    const boundary = applyADL(
+      {
+        pool: { L: 36, S: 64.1 },
+        positions: [
+          makePosition({
+            direction: 'long',
+            size: 100,
+            costBasis: 100,
+            entryPrice: 100,
+          }),
+          makePosition({
+            userId: 'u2',
+            direction: 'short',
+            size: 0.1,
+            costBasis: 0.1,
+            entryPrice: 100,
+          }),
+        ],
+      },
+      price
+    )
+    expect(boundary.crossSideTransfer).toBe(0)
+  })
+
+  it.each(['long', 'short'] as const)(
+    'holds a %s donor of the cross-side transfer at its own reserve',
+    (donor) => {
+      // The other side's pool is empty against a 100,000 flat reserve, and the
+      // donor holds exactly that much above its own 0.01 reserve, so the
+      // transfer drains it down to that reserve. Straight subtraction lands an
+      // ulp of 100,000.01 under it, a gap that funding into the donor's small
+      // side would grow past dust within twenty periods.
+      expect(100_000.01 - 100_000).toBeLessThan(0.01)
+      const recipient = donor === 'long' ? 'short' : 'long'
+      const adl = applyADL(
+        {
+          pool:
+            donor === 'short'
+              ? { L: 0, S: 100_000.01 }
+              : { L: 100_000.01, S: 0 },
+          positions: [
+            makePosition({
+              userId: 'large',
+              direction: recipient,
+              size: 100_000,
+              costBasis: 100_000,
+              entryPrice: 100,
+            }),
+            makePosition({
+              userId: 'small',
+              direction: donor,
+              size: 1,
+              costBasis: 0.01,
+              entryPrice: 100,
+            }),
+          ],
+        },
+        price
+      )
+      expect(Math.abs(adl.crossSideTransfer)).toBe(100_000)
+      expect(adl.state.pool).toEqual(
+        donor === 'short' ? { L: 100_000, S: 0.01 } : { L: 0.01, S: 100_000 }
+      )
+
+      let state = adl.state
+      for (let i = 0; i < 40; i++) {
+        const oi = getPerpOpenInterest(state.positions)
+        const rate = computeFundingRate(oi.long, oi.short, 1, 1 / 8760)
+        state = applyFundingWithSolvency(state, rate, price).state
+        state = applyADL(processLiquidations(state, price).state, price).state
+        assertPerpStateSolvent(state, price)
+      }
+    }
+  )
+
+  it('reconciles the gap rather than tolerating it, so funding cannot grow it', () => {
+    // Pools of 102,500 and 100,000.01. ADL trims the winning long so that
+    // closing it would leave the short pool 2e-11 under its flat short's 0.01
+    // reserve, with the long side's flat 100,000 leaving no surplus to move.
+    const adl = applyADL(
+      {
+        pool: { L: 102_500, S: 100_000.01 },
+        positions: [
+          makePosition({
+            userId: 'winner',
+            direction: 'long',
+            size: 250_000,
+            costBasis: 2_500,
+            entryPrice: 60,
+          }),
+          makePosition({
+            userId: 'flatLong',
+            direction: 'long',
+            size: 100_000,
+            costBasis: 100_000,
+            entryPrice: 100,
+          }),
+          makePosition({
+            userId: 'flatShort',
+            direction: 'short',
+            size: 1,
+            costBasis: 0.01,
+            entryPrice: 100,
+          }),
+        ],
+      },
+      price
+    )
+    const winner = adl.state.positions[0]
+    const dustShort: PerpState = {
+      pool: {
+        L: adl.state.pool.L - winner.costBasis,
+        S: adl.state.pool.S - getUnrealizedEquity(winner, price),
+      },
+      positions: adl.state.positions.slice(1),
+    }
+    const gap = coverFor('long', dustShort)
+    expect(gap).toBeLessThan(0)
+    expect(gap).toBeGreaterThan(-1e-10)
+
+    // Why tolerating it is not enough: the shorts receive funding, which
+    // scales their pool AND their reserve by the same 1 + g, and g is huge
+    // against a 0.01 pool. Two periods grow the gap a thousandfold.
+    let tolerated = dustShort
+    for (let i = 0; i < 2; i++) {
+      const oi = getPerpOpenInterest(tolerated.positions)
+      tolerated = applyFunding(
+        tolerated,
+        computeFundingRate(oi.long, oi.short, 1, 1 / 8760)
+      )
+    }
+    expect(coverFor('long', tolerated)).toBeLessThan(1000 * gap)
+
+    // The close instead lands the pool exactly on the reserve, so funding has
+    // nothing to grow, period after period.
+    let state = closePosition(adl.state, winner, price).state
+    expect(state.pool.S).toBe(0.01)
+    for (let i = 0; i < 8; i++) {
+      const oi = getPerpOpenInterest(state.positions)
+      const rate = computeFundingRate(oi.long, oi.short, 1, 1 / 8760)
+      expect(rate).toBeGreaterThan(0)
+      state = applyFundingWithSolvency(state, rate, price).state
+      expect(coverFor('long', state)).toBeGreaterThanOrEqual(0)
+    }
+  })
+
+  it('reconciles a shortfall the check accepted when its pool is drained', () => {
+    // A long with 10,000 of profit and a short pool 1.5e-8 under it. That is
+    // past the relative tolerance (1e-8 on this profit) but inside it plus the
+    // book's dust, so the check accepts the book...
+    const state: PerpState = {
+      pool: { L: 100, S: 9_999.999999985 },
+      positions: [
+        makePosition({
+          direction: 'long',
+          size: 10_000,
+          costBasis: 100,
+          entryPrice: 50,
+        }),
+      ],
+    }
+    expect(solvencyFactor('long', state, price)).toBeLessThan(
+      1 - PERP_SOLVENCY_FACTOR_TOLERANCE
+    )
+    expect(() => assertPerpStateSolvent(state, price)).not.toThrow()
+
+    // ...and closing the long must not then drive the pool negative: the
+    // payout falls short of the bare 10,100 by exactly that 1.5e-8.
+    const closed = closePosition(state, state.positions[0], price)
+    expect(closed.state.pool).toEqual({ L: 0, S: 0 })
+    expect(closed.payout).toBe(10_099.999999985)
+    expect(closed.pnl).toBe(10_000)
+    expect(() => assertPerpStateSolvent(closed.state, price)).not.toThrow()
+  })
+
+  it('does not reconcile a real deficit', () => {
+    // A cent short is no rounding error: the pool goes negative and the
+    // assert refuses it, as before.
+    const state: PerpState = {
+      pool: { L: 100, S: 9_999.99 },
+      positions: [
+        makePosition({
+          direction: 'long',
+          size: 10_000,
+          costBasis: 100,
+          entryPrice: 50,
+        }),
+      ],
+    }
+    expect(() => assertPerpStateSolvent(state, price)).toThrow(
+      /long solvency factor .* is below/
+    )
+    const closed = closePosition(state, state.positions[0], price)
+    expect(closed.payout).toBe(10_100)
+    expect(closed.state.pool.S).toBeCloseTo(-0.01, 9)
+    expect(() => assertPerpStateSolvent(closed.state, price)).toThrow(
+      'perp pools must be non-negative'
+    )
+  })
+
+  it('does not reconcile a profit that overflows', () => {
+    // An entry price of 1e-308 passes every row check, but its profit
+    // overflows to Infinity. An infinite gap fits an infinite budget, and
+    // reconciling it would pay out the whole short pool; instead the pool goes
+    // non-finite and the assert refuses the close, as it always did.
+    const long = makePosition({
+      direction: 'long',
+      size: 100,
+      costBasis: 100,
+      entryPrice: 1e-308,
+    })
+    const state: PerpState = {
+      pool: { L: 100, S: 50_000 },
+      positions: [long],
+    }
+    expect(() => assertPerpStateNumbers(state, price)).not.toThrow()
+    expect(getUnrealizedEquity(long, price)).toBe(Infinity)
+
+    const closed = closePosition(state, long, price)
+    expect(closed.state.pool.S).toBe(-Infinity)
+    expect(() => assertPerpStateSolvent(closed.state, price)).toThrow(
+      'short pool must be finite'
+    )
+  })
+
+  it('absorbs the residue a near-full partial close leaves on a tiny profit', () => {
+    const adl = applyADL(
+      {
+        pool: { L: 1_000_100, S: 147.601 },
+        positions: [
+          makePosition({
+            userId: 'winner',
+            direction: 'long',
+            size: 1_000_000,
+            costBasis: 1_000_000,
+            entryPrice: 50.1277,
+          }),
+          makePosition({
+            userId: 'flat',
+            direction: 'short',
+            size: 100,
+            costBasis: 100,
+            entryPrice: 100,
+          }),
+        ],
+      },
+      price
+    )
+    expect(solvencyFactor('long', adl.state, price)).toBeLessThan(1)
+
+    // Closing 0.9999999 of the winner leaves 4.8e-6 of profit against a
+    // 100-mana pool, finer than that pool's own ulp can express: the factor
+    // reads 1 - 7e-10, far past the relative tolerance, on a shortfall of
+    // under one ulp.
+    const closed = closePosition(
+      adl.state,
+      adl.state.positions[0],
+      price,
+      0.9999999
+    )
+    expect(closed.fraction).toBe(0.9999999)
+    expect(solvencyFactor('long', closed.state, price)).toBeLessThan(
+      1 - PERP_SOLVENCY_FACTOR_TOLERANCE
+    )
+    expect(() => assertPerpStateSolvent(closed.state, price)).not.toThrow()
+    // The engine's open check is the same predicate, so the book does not
+    // refuse every long open until the next tick re-runs ADL.
+    expect(isPerpSideSolvent('long', closed.state, price)).toBe(true)
+  })
+
+  it('still fails closed on a reserve deficit beyond the dust', () => {
+    // No long profit, and a short pool `shortfall` below the short's refund.
+    const deficient = (shortfall: number): PerpState => ({
+      pool: { L: 0, S: 100 - shortfall },
+      positions: [
+        makePosition({
+          direction: 'short',
+          size: 100,
+          costBasis: 100,
+          entryPrice: 100,
+        }),
+      ],
+    })
+    const dust = getPerpSolvencyDust(deficient(0), price)
+    expect(dust).toBeCloseTo(1e-10, 20)
+
+    expect(() =>
+      assertPerpStateSolvent(deficient(dust / 2), price)
+    ).not.toThrow()
+    expect(() => assertPerpStateSolvent(deficient(2 * dust), price)).toThrow(
+      'long solvency factor must be finite or +Infinity'
+    )
+    expect(() => assertPerpStateSolvent(deficient(0.01), price)).toThrow(
+      'long solvency factor must be finite or +Infinity'
+    )
+  })
+
+  it('still fails closed on a profit shortfall beyond the dust', () => {
+    // A long with 10 of profit, and a short pool `shortfall` below that.
+    const underCovered = (shortfall: number): PerpState => ({
+      pool: { L: 10, S: 10 - shortfall },
+      positions: [
+        makePosition({
+          direction: 'long',
+          size: 10,
+          costBasis: 10,
+          entryPrice: 50,
+        }),
+      ],
+    })
+    // The book's dust plus the relative tolerance on that profit.
+    const allowance =
+      getPerpSolvencyDust(underCovered(0), price) +
+      PERP_SOLVENCY_FACTOR_TOLERANCE * 10
+
+    expect(() =>
+      assertPerpStateSolvent(underCovered(allowance / 2), price)
+    ).not.toThrow()
+    expect(() =>
+      assertPerpStateSolvent(underCovered(2 * allowance), price)
+    ).toThrow(/long solvency factor .* is below/)
+  })
+
+  it('scales the allowance with the book, under a 1e-6 cap', () => {
+    const withShortPool = (S: number): PerpState => ({
+      pool: { L: 0, S },
+      positions: [],
+    })
+    expect(getPerpSolvencyDust(withShortPool(0.5), price)).toBeCloseTo(
+      1e-12,
+      24
+    )
+    expect(getPerpSolvencyDust(withShortPool(1e5), price)).toBeCloseTo(1e-7, 20)
+    expect(getPerpSolvencyDust(withShortPool(1e12), price)).toBe(1e-6)
+
+    // So a 2e-6 hole in a 1e9 book is not dust, however large the book.
+    const bigShort = makePosition({
+      direction: 'short',
+      size: 1e9,
+      costBasis: 1e9,
+      entryPrice: 100,
+    })
+    expect(() =>
+      assertPerpStateSolvent(
+        { pool: { L: 0, S: 1e9 - 2e-6 }, positions: [bigShort] },
+        price
+      )
+    ).toThrow('long solvency factor')
+  })
+
+  it('forgives nothing on a book whose magnitudes are not finite', () => {
+    const pools = (L: number): PerpState => ({
+      pool: { L, S: 100 },
+      positions: [],
+    })
+    expect(getPerpSolvencyDust(pools(NaN), price)).toBe(0)
+    expect(getPerpSolvencyDust(pools(Infinity), price)).toBe(0)
+  })
+
+  // Random books, priced so that most of them need ADL.
+  const randomBooks = (seed: number, count: number) => {
+    const random = () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+      return seed / 2 ** 32
+    }
+    const logUniform = (lo: number, hi: number) =>
+      lo * Math.exp(random() * Math.log(hi / lo))
+    const books: PerpState[] = []
+    for (let i = 0; i < count; i++) {
+      let L = random() < 0.5 ? logUniform(10, 1e6) : 0
+      let S = random() < 0.5 ? logUniform(10, 1e6) : 0
+      const positions: PerpPosition[] = []
+      const size = 1 + Math.floor(random() * (random() < 0.25 ? 40 : 6))
+      for (let j = 0; j < size; j++) {
+        const direction: PerpDirection = random() < 0.5 ? 'long' : 'short'
+        const costBasis = logUniform(0.5, 1e5)
+        positions.push(
+          makePosition({
+            userId: `u${j}`,
+            direction,
+            size: costBasis * Math.round(logUniform(1, 100)),
+            costBasis,
+            entryPrice: price * logUniform(0.4, 2.5),
+          })
+        )
+        if (direction === 'long') L += costBasis
+        else S += costBasis
+      }
+      books.push({ pool: { L, S }, positions })
+    }
+    return books
+  }
+
+  it('closes out post-ADL books at one price without tripping on dust', () => {
+    // resolvePerp's shape: liquidations and ADL at the final price, then every
+    // position closed in stored order with the assert after each close.
+    // Without reconciliation about one such book in seven failed on dust, and
+    // a failed resolution re-derives the same failure on every retry.
+
+    // The allowance only ever loosens the check: whatever the bare ratio
+    // accepted still passes. Probed off the clearing price too, where many
+    // of these books are genuinely insolvent.
+    const expectNoNewRejection = (state: PerpState) => {
+      for (const atPrice of [price * 0.9, price, price * 1.1])
+        for (const side of ['long', 'short'] as const)
+          if (
+            solvencyFactor(side, state, atPrice) >=
+            1 - PERP_SOLVENCY_FACTOR_TOLERANCE
+          )
+            expect(isPerpSideSolvent(side, state, atPrice)).toBe(true)
+    }
+
+    let adlBooks = 0
+    for (const book of randomBooks(0x0d057, 400)) {
+      const escrow = book.pool.L + book.pool.S
+      const adl = applyADL(processLiquidations(book, price).state, price)
+      if (adl.adlFactorLong < 1 || adl.adlFactorShort < 1) adlBooks++
+      assertPerpStateSolvent(adl.state, price)
+      expectNoNewRejection(adl.state)
+
+      let state = adl.state
+      let paid = adl.settled.reduce((sum, s) => sum + s.payout, 0)
+      for (const position of adl.state.positions) {
+        if (position.size <= 0) continue
+        const closed = closePosition(state, position, price)
+        assertPerpStateSolvent(closed.state, price)
+        expectNoNewRejection(closed.state)
+        state = closed.state
+        paid += closed.payout
+      }
+      expect(state.positions.every((p) => p.size <= 0)).toBe(true)
+      expect(
+        Math.abs(paid + state.pool.L + state.pool.S - escrow)
+      ).toBeLessThan(1e-9 * escrow)
+    }
+    // Guards the premise: most of these books needed ADL.
+    expect(adlBooks).toBeGreaterThan(200)
+  })
+
+  it('keeps post-ADL books solvent through closes and repeated funding', () => {
+    // Funding scales a receiving pool and its positions together, so any gap
+    // left below a reserve would grow period by period. Close part of each
+    // book, then fund it repeatedly at the real rate.
+    for (const book of randomBooks(0xf00d, 200)) {
+      let state = applyADL(processLiquidations(book, price).state, price).state
+      assertPerpStateSolvent(state, price)
+      state.positions.forEach((position, j) => {
+        if (j % 2 === 1 || position.size <= 0) return
+        const live = state.positions.find(
+          (p) =>
+            p.userId === position.userId && p.direction === position.direction
+        )
+        if (!live) return
+        state = closePosition(state, live, price, j % 4 === 0 ? 1 : 0.5).state
+        assertPerpStateSolvent(state, price)
+      })
+      for (let i = 0; i < 10; i++) {
+        const oi = getPerpOpenInterest(state.positions)
+        const rate = computeFundingRate(oi.long, oi.short, 1, 1 / 24)
+        state = applyFundingWithSolvency(state, rate, price).state
+      }
+    }
+  })
+
+  it('keeps cross-side transfers that drain their donor solvent under funding', () => {
+    // The transfer's hardest case: one side's flat book is short of its
+    // reserve by exactly the other side's surplus, so the transfer leaves the
+    // donor holding only its own reserve, typically tiny. Any gap under that
+    // reserve is what funding grows. Random sizes, either side as donor.
+    let seed = 0xd0d0
+    const random = () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+      return seed / 2 ** 32
+    }
+    const logUniform = (lo: number, hi: number) =>
+      lo * Math.exp(random() * Math.log(hi / lo))
+    const flat = (direction: PerpDirection, costBasis: number, j: number) =>
+      makePosition({
+        userId: `${direction}${j}`,
+        direction,
+        size: costBasis * Math.max(1, Math.round(logUniform(1, 20))),
+        costBasis,
+        entryPrice: price,
+      })
+
+    let declined = 0
+    for (let i = 0; i < 150; i++) {
+      const recipient: PerpDirection = random() < 0.5 ? 'long' : 'short'
+      const donor = recipient === 'long' ? 'short' : 'long'
+      const large = [0, 1, 2]
+        .slice(0, 1 + Math.floor(random() * 3))
+        .map((j) => flat(recipient, logUniform(1e2, 1e6), j))
+      const small = [0, 1, 2]
+        .slice(0, 1 + Math.floor(random() * 3))
+        .map((j) => flat(donor, logUniform(1e-3, 10), j))
+      const recipientReserve = large.reduce((sum, p) => sum + p.costBasis, 0)
+      const donorReserve = small.reduce((sum, p) => sum + p.costBasis, 0)
+      const recipientPool = recipientReserve * random()
+      const donorPool = donorReserve + (recipientReserve - recipientPool)
+
+      const adl = applyADL(
+        {
+          pool:
+            recipient === 'long'
+              ? { L: recipientPool, S: donorPool }
+              : { L: donorPool, S: recipientPool },
+          positions: [...large, ...small],
+        },
+        price
+      )
+      // A surplus that rounds an ulp short of the deficit is declined, and
+      // the book fails closed exactly as before (see the test above).
+      if (adl.crossSideTransfer === 0) {
+        declined++
+        expect(() => assertPerpStateSolvent(adl.state, price)).toThrow()
+        continue
+      }
+      let state = adl.state
+      assertPerpStateSolvent(state, price)
+      const cap = [1 / 8760, 1e-3, 1e-2][i % 3]
+      for (let k = 0; k < 40; k++) {
+        const oi = getPerpOpenInterest(state.positions)
+        const rate = computeFundingRate(oi.long, oi.short, 1, cap)
+        state = applyFundingWithSolvency(state, rate, price).state
+        state = applyADL(processLiquidations(state, price).state, price).state
+        assertPerpStateSolvent(state, price)
+      }
+    }
+    // Guards the premise: nearly every one of these books transfers.
+    expect(declined).toBeLessThan(10)
   })
 })
