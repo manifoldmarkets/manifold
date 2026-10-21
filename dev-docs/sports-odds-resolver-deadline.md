@@ -19,6 +19,16 @@ after the deadline, but the old run cannot initiate the next side effect or alte
 the replacement's polling state. Reservations are released after confirmed
 completion, including a read-only or pre-mutation failure.
 
+At the three-minute deadline, the job error includes its run ID and a snapshot
+of every reserved market ID, the owning run, current stage, stage start time
+(Unix milliseconds), and `pending` or `unknown` status. It includes reservations
+carried over from earlier runs. `pending` means the helper has not settled; it
+does not mean the database work was cancelled or its outcome is unknown. Score
+connection acquisition and writes, publication, answer reads, resolution
+connection acquisition, the transaction, and post-commit effects have separate
+stages. A later genuinely unknown outcome logs the same market/run/stage with
+recovery instructions. Successful replacement ticks do not repeat these alerts.
+
 ## Unknown mutation outcomes
 
 A rejected promise does not always prove that database work stopped. In
@@ -72,3 +82,7 @@ exercise timeout/replacement ownership with controlled timers.
 `backend/shared/src/resolve-market-lifecycle.test.ts` additionally exercises the
 real resolution helper across connection failure, delayed/lost COMMIT
 acknowledgment and post-commit revalidation failure with an offline adapter.
+`backend/shared/src/sports-odds-deadline.test.ts` runs the real scheduler and
+resolver with controlled timers and unresolved promises. It verifies immediate
+market identification, later unknown outcomes, reservation carryover, no repeat
+alerts on normal ticks, and unchanged fencing/cleanup after late settlement.

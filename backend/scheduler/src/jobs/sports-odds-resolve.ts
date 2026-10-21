@@ -33,7 +33,8 @@ let warnedNoKey = false
 // past the final whistle. Three minutes still leaves room for a slow
 // resolution write on a busy morning.
 const RUN_DEADLINE_MS = 3 * MINUTE_MS
-let current: { startedAt: number } | undefined
+let current: { id: string } | undefined
+let nextRunId = 0
 
 export async function resolveOddsSportsMarkets() {
   if (!hasOddsApiKey()) {
@@ -43,29 +44,36 @@ export async function resolveOddsSportsMarkets() {
     }
     return
   }
-  const run = { startedAt: Date.now() }
+  const run = { id: `${Date.now()}-${++nextRunId}` }
   current = run
   const isCurrent = () => current === run
   const pg = createSupabaseDirectClient()
-  const work = pollOddsScoresAndResolve(pg, state, isCurrent)
+  const work = pollOddsScoresAndResolve(pg, state, isCurrent, run.id)
   // An abandoned run settles eventually, at the latest when its connection
   // times out; keep that from becoming an unhandled rejection and say so.
   work.catch((err) => {
-    if (!isCurrent()) log(`[sports-odds-resolve] abandoned run ended: ${err}`)
+    if (!isCurrent())
+      log(`[sports-odds-resolve] abandoned run ended: run=${run.id} ${err}`)
   })
   let timer: NodeJS.Timeout | undefined
   const deadline = new Promise<never>((_, reject) => {
-    timer = setTimeout(
-      () =>
-        reject(
-          new Error(
-            `[sports-odds-resolve] run exceeded ${
-              RUN_DEADLINE_MS / 1000
-            }s and was abandoned; the next tick polls afresh`
-          )
-        ),
-      RUN_DEADLINE_MS
-    )
+    timer = setTimeout(() => {
+      // Include older reservations too, without alerting on every skipped
+      // tick. Pending is not an unknown outcome or evidence of cancellation.
+      const reservations = Array.from(state.inFlight, (id) => ({
+        id,
+        ...state.inFlightDetails.get(id),
+      }))
+      reject(
+        new Error(
+          `[sports-odds-resolve] run exceeded ${
+            RUN_DEADLINE_MS / 1000
+          }s and was abandoned; run=${run.id}; reservations=${JSON.stringify(
+            reservations
+          )}. Pending work may still finish; the deadline does not cancel database work. Inspect these markets and their original database work before recovery. The next tick polls unreserved markets.`
+        )
+      )
+    }, RUN_DEADLINE_MS)
   })
   try {
     const r = await Promise.race([work, deadline])

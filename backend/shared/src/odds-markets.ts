@@ -485,6 +485,23 @@ interface PendingGame {
   startTime: number
 }
 
+type ScorePollStage =
+  | 'preparing'
+  | 'score-connection'
+  | 'score-write'
+  | 'score-publication'
+  | 'answer-read'
+  | 'resolution-connection'
+  | 'resolution-transaction'
+  | 'resolution-post-commit'
+
+interface ScorePollReservationDetails {
+  runId: string
+  stage: ScorePollStage
+  stageStartedAt: number
+  status: 'pending' | 'unknown'
+}
+
 /**
  * What the resolver remembers between ticks: when it last asked for each
  * sport key's scores, how many of those calls failed in a row, which started
@@ -518,6 +535,8 @@ export interface ScorePollState {
    * the scheduler; see withGameReservation. This is not a distributed lock.
    */
   inFlight: Set<string>
+  /** Diagnostic metadata only; inFlight remains the reservation authority. */
+  inFlightDetails: Map<string, ScorePollReservationDetails>
 }
 
 export const newScorePollState = (): ScorePollState => ({
@@ -527,6 +546,7 @@ export const newScorePollState = (): ScorePollState => ({
   missing: {},
   lastOverdueAlert: {},
   inFlight: new Set(),
+  inFlightDetails: new Map(),
 })
 
 /**
@@ -548,7 +568,8 @@ export const newScorePollState = (): ScorePollState => ({
 export async function pollOddsScoresAndResolve(
   pg: SupabaseDirectClient,
   state: ScorePollState,
-  isCurrent: () => boolean = () => true
+  isCurrent: () => boolean = () => true,
+  runId = String(Date.now())
 ): Promise<{
   polled: number
   live: number
@@ -703,7 +724,7 @@ export async function pollOddsScoresAndResolve(
       try {
         if (!isCurrent()) return stats
         if (score.completed) {
-          await withGameReservation(state, id, isCurrent, (run) =>
+          await withGameReservation(state, id, runId, isCurrent, (run) =>
             finishGame(pg, game, score, creator!, run)
           )
           if (!isCurrent()) return stats
@@ -714,7 +735,7 @@ export async function pollOddsScoresAndResolve(
           score.scores.length > 0 &&
           liveInterval({ contractId: id, sport: sportOf(game) }, settings) > 0
         ) {
-          await withGameReservation(state, id, isCurrent, (run) =>
+          await withGameReservation(state, id, runId, isCurrent, (run) =>
             writeLiveScore(pg, game, score, now, run)
           )
           if (!isCurrent()) return stats
@@ -744,6 +765,7 @@ export async function pollOddsScoresAndResolve(
 
 interface ScoreGameRun {
   isCurrent: () => boolean
+  setStage: (stage: ScorePollStage) => void
   mutate: (
     work: () => Promise<unknown>,
     outcomeIsKnown?: () => boolean
@@ -772,14 +794,26 @@ function mutationDefinitelyEnded(error: unknown) {
 async function withGameReservation(
   state: ScorePollState,
   id: string,
+  runId: string,
   isCurrent: () => boolean,
   work: (run: ScoreGameRun) => Promise<void>
 ) {
   state.inFlight.add(id)
+  const details: ScorePollReservationDetails = {
+    runId,
+    stage: 'preparing',
+    stageStartedAt: Date.now(),
+    status: 'pending',
+  }
+  state.inFlightDetails.set(id, details)
   let uncertainMutation = false
   try {
     await work({
       isCurrent,
+      setStage: (stage) => {
+        details.stage = stage
+        details.stageStartedAt = Date.now()
+      },
       mutate: async (mutation, outcomeIsKnown) => {
         uncertainMutation = true
         try {
@@ -794,13 +828,15 @@ async function withGameReservation(
     })
   } finally {
     if (uncertainMutation) {
+      details.status = 'unknown'
       // Keep this ERROR even for a stale run: suppressing it would leave a
       // market silently skipped forever. Never clear a reservation by timer.
       log.error(
-        `[sports-odds-resolve] ${id}: mutation outcome unknown; automatic polling is suspended for this market in this process. Verify the old database work has ended and inspect the market before restarting the scheduler or resolving manually.`
+        `[sports-odds-resolve] ${id}: mutation outcome unknown; run=${runId} stage=${details.stage}. Automatic polling is suspended for this market in this process. Verify the old database work has ended and inspect the market before restarting the scheduler or resolving manually.`
       )
     } else {
       state.inFlight.delete(id)
+      state.inFlightDetails.delete(id)
     }
   }
 }
@@ -844,12 +880,14 @@ async function writeScorePatch(
   run: ScoreGameRun
 ) {
   let issued = false
+  run.setStage('score-connection')
   await run.mutate(
     () =>
       // A task acquires a connection before entering this callback, without
       // adding a transaction. Acquisition failures cannot have sent this write.
       pg.task(async (task) => {
         if (!run.isCurrent()) return
+        run.setStage('score-write')
         issued = true
         await task.none(
           `update contracts set data = data || $1::jsonb where id = $2`,
@@ -885,6 +923,7 @@ async function writeLiveScore(
   if (!run.isCurrent()) return
   await writeScorePatch(pg, game.contract.id, patch, run)
   if (!run.isCurrent()) return
+  run.setStage('score-publication')
   await run.mutate(() => publishSportsLiveScore(game.contract.id, patch))
 }
 
@@ -928,9 +967,11 @@ async function finishGame(
   if (!run.isCurrent()) return
   await writeScorePatch(pg, contract.id, patch, run)
   if (!run.isCurrent()) return
+  run.setStage('score-publication')
   await run.mutate(() => publishSportsLiveScore(contract.id, patch))
   if (!run.isCurrent()) return
 
+  run.setStage('answer-read')
   const answers = (
     await pg.manyOrNone(`select * from answers where contract_id = $1`, [
       contract.id,
@@ -948,10 +989,16 @@ async function finishGame(
   const multi = { ...(contract as CPMMMultiContract), answers }
   if (!run.isCurrent()) return
   let resolutionMayBeRunning = false
+  run.setStage('resolution-connection')
   await run.mutate(
     () =>
       resolveMarketHelper(multi, creator, creator, args, (transactionState) => {
         resolutionMayBeRunning = transactionState === 'started'
+        run.setStage(
+          transactionState === 'started'
+            ? 'resolution-transaction'
+            : 'resolution-post-commit'
+        )
       }),
     // Before the transaction callback no mutation has run. After COMMIT,
     // notification/revalidation errors cannot make the payout outcome unknown.
