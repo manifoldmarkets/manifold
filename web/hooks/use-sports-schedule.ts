@@ -214,7 +214,15 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
                 ...prev,
                 [id]: {
                   ...prev[id],
-                  liveScore: { value: liveScore, at: scoreTime, status },
+                  liveScore: {
+                    value: liveScore,
+                    at: scoreTime,
+                    status,
+                    scoreUpdatedTime:
+                      typeof data.sportsScoreUpdatedTime === 'number'
+                        ? data.sportsScoreUpdatedTime
+                        : null,
+                  },
                 },
               }
         )

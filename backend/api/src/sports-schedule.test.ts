@@ -115,6 +115,30 @@ it('rail counts and the week feed stay stable across sports, limits and includeR
   }
 })
 
+it('returns the provider observation time as well as the receipt time', async () => {
+  const received = Date.now()
+  officialRows = [
+    {
+      data: {
+        ...official[0].data,
+        sportsStartTimestamp: new Date(received - 60_000).toISOString(),
+        sportsLiveStatus: 'IN_PLAY',
+        sportsHomeScore: 7,
+        sportsAwayScore: 3,
+        sportsLiveUpdatedTime: received,
+        sportsScoreUpdatedTime: received - 300_000,
+      },
+    },
+  ]
+  const getSchedule = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const response = await getSchedule({ sport: 'nfl' })
+  const result = 'result' in response ? response.result : response
+  expect(result.games[0].liveUpdatedTime).toBe(received)
+  expect(result.games[0].scoreUpdatedTime).toBe(received - 300_000)
+})
+
 it('gives every Sports subtopic a sport and files markets from deeper topics', async () => {
   marketRows = [
     ...props,

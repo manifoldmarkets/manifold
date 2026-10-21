@@ -408,6 +408,7 @@ function toOfficialGame(
     uniqueBettorCount: c.uniqueBettorCount ?? 0,
     liveScore,
     liveUpdatedTime,
+    scoreUpdatedTime: d.sportsScoreUpdatedTime ?? null,
     finalScore,
     related: [] as RelatedRef[],
     relatedCount: 0,

@@ -15,6 +15,7 @@ import { contractColumnsToSelect, getUser, isProd, log } from 'shared/utils'
 import { anythingToRichText } from 'shared/tiptap'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
+import { scoreUpdatedTime } from 'common/sports-score-freshness'
 import { publishSportsLiveScore } from 'shared/publish-sports-live-score'
 import {
   createSportsContract,
@@ -590,6 +591,7 @@ export async function pollOddsScoresAndResolve(
   const plan = scorePollPlan(
     pending.map((game) => ({
       contractId: game.contract.id,
+      eventId: game.eventId,
       sportKey: game.sportKey,
       sport: sportOf(game),
       startTime: game.startTime,
@@ -740,9 +742,10 @@ async function writeLiveScore(
     sportsHomeScore: home,
     sportsAwayScore: away,
     sportsLiveStatus: 'IN_PLAY',
-    // The Odds API has no clock; the page shows "LIVE" without a minute.
+    // The Odds API has no clock; show the score observation time instead.
     sportsLiveMinute: null,
     sportsLiveUpdatedTime: now,
+    sportsScoreUpdatedTime: scoreUpdatedTime(score.last_update, now),
   }
   await pg.none(`update contracts set data = data || $1::jsonb where id = $2`, [
     JSON.stringify(patch),
@@ -786,6 +789,7 @@ async function finishGame(
     sportsLiveStatus: 'FINISHED',
     sportsLiveMinute: null,
     sportsLiveUpdatedTime: Date.now(),
+    sportsScoreUpdatedTime: scoreUpdatedTime(score.last_update, Date.now()),
   }
   await pg.none(`update contracts set data = data || $1::jsonb where id = $2`, [
     JSON.stringify(patch),

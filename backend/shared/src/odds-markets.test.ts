@@ -1214,6 +1214,30 @@ describe('score polling settings', () => {
     ])
   })
 
+  it('publishes the source score age separately from the successful poll time', async () => {
+    const db = database()
+    db.pg.manyOrNone.mockResolvedValueOnce(nflGame(60 * MINUTE))
+    jest.mocked(getScores).mockResolvedValueOnce([
+      {
+        ...event,
+        completed: false,
+        scores: [
+          { name: 'Home', score: '7' },
+          { name: 'Away', score: '3' },
+        ],
+        last_update: new Date(NOW - 5 * MINUTE).toISOString(),
+      },
+    ])
+    await pollOddsScoresAndResolve(db.client, newScorePollState())
+    expect(publishSportsLiveScore).toHaveBeenCalledWith(
+      'game',
+      expect.objectContaining({
+        sportsLiveUpdatedTime: NOW,
+        sportsScoreUpdatedTime: NOW - 5 * MINUTE,
+      })
+    )
+  })
+
   it("keeps asking for finished games, in one call, for a completed game it can't resolve", async () => {
     // An NHL game comes back completed and level, which the resolver leaves
     // for a person. Later polls include finished games in their one call

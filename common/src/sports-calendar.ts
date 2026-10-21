@@ -1,3 +1,4 @@
+import { additionalFeedCalendar } from './sports-feeds'
 import type { SportKey } from './sports-schedule'
 import { ENV } from './envs/constants'
 
@@ -19,6 +20,14 @@ export type SportId =
   | 'wnba'
   | 'nhl'
   | 'cbb'
+  | 'football'
+  | 'basketball'
+  | 'wcbb'
+  | 'hockey'
+  | 'afl'
+  | 'nrl'
+  | 'handball'
+  | 'tennis'
 
 export type SportsCalendarStatus = 'upcoming' | 'active' | 'completed'
 
@@ -91,6 +100,7 @@ const ODDS_KEY_BY_COMPETITION: Record<string, string> = {
   'ligue1-2026-27': 'soccer_france_ligue_one',
   'nhl-2026-27': 'icehockey_nhl',
   'ncaab-tournament-2027': 'basketball_ncaab',
+  'ncaab-season-2026-27': 'basketball_ncaab',
 }
 
 const ENTRIES: CalendarInput[] = [
@@ -507,7 +517,19 @@ const ENTRIES: CalendarInput[] = [
   },
 
   // ── College basketball ───────────────────────────────────────────────────────
-  // March Madness only, not the ~5,000-game regular season.
+  // The provider includes all college tournaments on the same feed.
+  {
+    sport: 'cbb',
+    competition: 'NCAA Basketball 2026–27',
+    competitionId: 'ncaab-season-2026-27',
+    phase: 'Regular Season',
+    startDate: '2026-11-01',
+    endDate: '2027-03-14',
+    autoCreate: false,
+    autoResolve: true,
+    notes:
+      'Priority 1. Includes conference tournaments. High market volume: check creator funding before enabling.',
+  },
   {
     sport: 'cbb',
     competition: 'NCAA Tournament 2027',
@@ -548,10 +570,13 @@ const ENTRIES: CalendarInput[] = [
   },
 ]
 
-export const SPORTS_CALENDAR: SportsCalendarEntry[] = ENTRIES.map((e) => ({
-  ...e,
-  oddsKey: ODDS_KEY_BY_COMPETITION[e.competitionId],
-}))
+export const SPORTS_CALENDAR: SportsCalendarEntry[] = [
+  ...ENTRIES.map((e) => ({
+    ...e,
+    oddsKey: ODDS_KEY_BY_COMPETITION[e.competitionId],
+  })),
+  ...additionalFeedCalendar(),
+]
 
 export function calendarStatus(
   entry: Pick<SportsCalendarEntry, 'startDate' | 'endDate'>,
@@ -702,6 +727,14 @@ export const SPORT_LEAGUE_LABEL: Record<SportId, string> = {
   tdf: 'Tour de France',
   nhl: 'NHL',
   cbb: 'NCAAB',
+  football: 'Football',
+  basketball: 'Basketball',
+  wcbb: 'WNCAAB',
+  hockey: 'Ice Hockey',
+  afl: 'AFL',
+  nrl: 'NRL',
+  handball: 'Handball',
+  tennis: 'Tennis',
 }
 
 /** Which chip on /sports a calendar sport belongs to. */
@@ -716,6 +749,14 @@ export const SPORT_ID_TO_SPORT_KEY: Record<SportId, SportKey> = {
   tdf: 'other',
   nhl: 'nhl',
   cbb: 'ncaab',
+  football: 'football',
+  basketball: 'basketball',
+  wcbb: 'wncaab',
+  hockey: 'hockey',
+  afl: 'afl',
+  nrl: 'nrl',
+  handball: 'handball',
+  tennis: 'tennis',
 }
 
 // Hours after the start before the market closes: the longest realistic game
@@ -731,4 +772,12 @@ export const CLOSE_BUFFER_HOURS: Record<SportId, number> = {
   tdf: 1,
   nhl: 4,
   cbb: 3,
+  football: 4,
+  basketball: 3,
+  wcbb: 3,
+  hockey: 4,
+  afl: 4,
+  nrl: 3,
+  handball: 3,
+  tennis: 6,
 }

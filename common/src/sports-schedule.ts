@@ -25,6 +25,13 @@ export type SportKey =
   | 'golf'
   | 'cricket'
   | 'other'
+  | 'football'
+  | 'basketball'
+  | 'wncaab'
+  | 'hockey'
+  | 'afl'
+  | 'nrl'
+  | 'handball'
 
 /**
  * A sport on the /sports page: a curated `SportKey`, or the slug of a Sports
@@ -73,6 +80,62 @@ const NOT_A_SPORT_TOPIC_IDS = [
 ]
 
 export const SPORT_CATEGORIES: SportCategory[] = [
+  {
+    key: 'football',
+    label: 'Football',
+    longLabel: 'Football',
+    emoji: '🏈',
+    groupIds: [],
+    leagues: ['Football'],
+  },
+  {
+    key: 'basketball',
+    label: 'Basketball',
+    longLabel: 'Basketball',
+    emoji: '🏀',
+    groupIds: [],
+    leagues: ['Basketball'],
+  },
+  {
+    key: 'wncaab',
+    label: 'WNCAAB',
+    longLabel: 'WNCAAB',
+    emoji: '🏀',
+    groupIds: [],
+    leagues: ['WNCAAB'],
+  },
+  {
+    key: 'hockey',
+    label: 'Ice Hockey',
+    longLabel: 'Ice Hockey',
+    emoji: '🏒',
+    groupIds: [],
+    leagues: ['Ice Hockey'],
+  },
+  {
+    key: 'afl',
+    label: 'AFL',
+    longLabel: 'AFL',
+    emoji: '🏉',
+    groupIds: [],
+    leagues: ['AFL'],
+  },
+  {
+    key: 'nrl',
+    label: 'NRL',
+    longLabel: 'NRL',
+    emoji: '🏉',
+    groupIds: [],
+    leagues: ['NRL'],
+  },
+  {
+    key: 'handball',
+    label: 'Handball',
+    longLabel: 'Handball',
+    emoji: '🤾',
+    groupIds: [],
+    leagues: ['Handball'],
+  },
   {
     key: 'nfl',
     label: 'NFL',
@@ -254,9 +317,17 @@ const ODDS_API_KEY_PREFIXES: [string, SportKey][] = [
   ['americanfootball_nfl', 'nfl'],
   ['americanfootball_ncaaf', 'ncaaf'],
   ['basketball_ncaab', 'ncaab'],
-  ['basketball_', 'nba'],
+  ['basketball_wncaab', 'wncaab'],
+  ['basketball_nba', 'nba'],
+  ['basketball_wnba', 'nba'],
+  ['basketball_', 'basketball'],
+  ['americanfootball_', 'football'],
+  ['aussierules_', 'afl'],
+  ['rugbyleague_', 'nrl'],
+  ['handball_', 'handball'],
   ['baseball_', 'mlb'],
-  ['icehockey_', 'nhl'],
+  ['icehockey_nhl', 'nhl'],
+  ['icehockey_', 'hockey'],
   ['soccer_', 'soccer'],
   ['tennis_', 'tennis'],
   ['mma_', 'mma'],
@@ -980,6 +1051,8 @@ export interface SportsLiveScore {
   sportsLiveStatus: string
   sportsLiveMinute: string | null
   sportsLiveUpdatedTime: number
+  /** Provider observation time; null when unavailable. */
+  sportsScoreUpdatedTime?: number | null
 }
 
 export interface ScheduleTeam {
@@ -1022,7 +1095,9 @@ export interface ScheduleGame {
     status: string
   } | null
   finalScore: { home: number; away: number } | null
-  /** Persisted provider update time, including terminal scores. */
+  /** Provider observation time, separate from our receipt/order timestamp. */
+  scoreUpdatedTime?: number | null
+  /** Persisted receipt time, including terminal scores. */
   liveUpdatedTime?: number | null
   /** Related markets, best matches first. */
   related: RelatedRef[]

@@ -48,6 +48,28 @@ export function AdminScorePolling() {
   return (
     <Col className="gap-6">
       <Credits usage={data.usage} />
+      <Col className="gap-1">
+        <label className="text-ink-800 flex items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            checked={
+              pollingTarget.adaptive in pending
+                ? pending[pollingTarget.adaptive] === 1
+                : data.adaptive ?? false
+            }
+            disabled={pollingTarget.adaptive in pending}
+            onChange={(e) =>
+              save(pollingTarget.adaptive, e.target.checked ? 1 : 0)
+            }
+          />
+          Adaptive score polling
+        </label>
+        <span className="text-ink-500 text-xs">
+          Per league: 2 minutes for one game, 1 minute for 2–3, 30 seconds for
+          4+. Applies to default settings only; explicit sport and game settings
+          win. Budget 30–120 credits per active league-hour, plus finals checks.
+        </span>
+      </Col>
       <LiveBySport data={data} pending={pending} save={save} />
       <Row className="flex-wrap items-center gap-2 text-sm">
         <span className="text-ink-800 font-medium">Check for finals every</span>
@@ -196,9 +218,21 @@ function LiveBySport(props: {
               onChange={(v) => save(target, v)}
             />
             <span className="text-ink-500 text-xs">
-              {creditsPerHour(s.intervalSeconds)}
+              {data.adaptive && s.isDefault
+                ? 'Adaptive · 30–120 credits per active league-hour'
+                : creditsPerHour(s.intervalSeconds)}
               {s.isDefault && ' · default'}
             </span>
+            {!s.isDefault && (
+              <button
+                type="button"
+                className="text-primary-600 text-xs hover:underline"
+                disabled={target in pending}
+                onClick={() => save(target, null)}
+              >
+                Use default
+              </button>
+            )}
           </Row>
         )
       })}
