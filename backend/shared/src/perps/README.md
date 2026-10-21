@@ -446,13 +446,28 @@ against 5e-6 of remaining profit reads as a factor of `1 − 3e-9`. So
 `isPerpSideSolvent`, that also forgives `getPerpSolvencyDust`: 1e-12 of the
 largest pool, reserve or profit on the book, capped at 1e-6 mana.
 
-**Deploy order:** both schedulers before the API, and roll back the API first.
-`scheduler-perps` runs ticks and funding, and the main scheduler's
-`update-stats` applies the DAU feed's points. Old code has no absolute
-tolerance, so old funding refuses the residue a new close can leave on a tiny
-profit, and an old tick can occasionally fail on it too. In the other window,
-new schedulers with the old API, nothing is worse than before: dust closes
-just keep failing as they did.
+**Deploy order:** `scheduler-perps` first, then the main scheduler, then the
+API, back to back from one SHA. Stay clear of the daily `update-stats` run
+(scheduled to start at 04:20 America/Los_Angeles), and don't trigger it by
+hand during the deploy. Queued orders execute inside the oracle tick, so every
+process that applies oracle points can leave the residue above:
+
+- `scheduler-perps`: the fast feeds, and the hourly `update-perps` fallback.
+- The main scheduler: `update-stats` applies the DAU point.
+- The API: the admin `internal-write-oracle-price`, and `resolvePerp`.
+
+Old code has no absolute tolerance. Its only path that refuses such a state on
+its input is funding (`applyFundingWithSolvency`), and only `scheduler-perps`
+runs funding. Until all three are on new code, an old process that meets the
+residue may fail closed, as prod already does on dust: the order is refunded
+as an execution fault, an open is rejected and its reserve returned, a
+resolution fails and can be retried, or the tick halts until the next
+successful new-code tick clears it.
+
+Roll back in reverse, with `scheduler-perps` last. Old funding can then refuse
+a book that new code left with residue, until a later successful ADL pass or a
+small `add-perp-subsidy` top-up clears it. Watch for
+`[update-perps] error updating <slug>`.
 
 ## Solvency halt (tick liveness)
 
