@@ -234,10 +234,11 @@ export const createPerpOrderFailedNotification = async (
   if (!sendToBrowser) return
 
   const { request } = data
+  // A trade order can be an open, an add or a flip: name it, not the outcome.
   const what =
     request.kind === 'close'
-      ? `close your ${request.direction}`
-      : `open ${formatMoney(request.mana)} ${request.direction}`
+      ? `order to close your ${request.direction}`
+      : `${formatMoney(request.mana)} ${request.direction} order`
   // A close can fail because the position is already gone (liquidated), so
   // don't claim it is still open.
   const consequence =
@@ -247,7 +248,7 @@ export const createPerpOrderFailedNotification = async (
   // Order errors are not all full sentences ("No eligible price arrived
   // before expiry"), so end the reason before the next one starts.
   const reason = (data.error ?? 'it could not be filled').trim()
-  const sourceText = `Your order to ${what} on ${
+  const sourceText = `Your ${what} on ${
     contract.question
   } did not execute: ${reason}${
     /[.!?]$/.test(reason) ? '' : '.'

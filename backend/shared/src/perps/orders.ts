@@ -445,6 +445,10 @@ export const enqueuePerpOrder = async (
         : undefined
     if (code === '55P03')
       throw new APIError(503, 'Your account is busy; try again in a moment')
+    // Postgres out of connections (too many clients, or the slots left are
+    // reserved): nothing was recorded, and a retry may well get through.
+    if (code === '53300')
+      throw new APIError(503, 'The server is busy; try again in a moment')
     // A backstop: the user row lock already serializes the submissions these
     // indexes compare, so this means a concurrent writer outside that lock.
     if (code === '23505') {
@@ -487,26 +491,28 @@ const release = async (tx: SupabaseTransaction, o: StoredOrder) => {
     )
 }
 
-export const hasPendingPerpOrders = async (
-  pg: SupabaseDirectClient,
-  contractId: string
-) =>
+// A client or a transaction: the oracle tick runs these under its own lock.
+type Reader = Pick<SupabaseDirectClient, 'oneOrNone'>
+
+export const hasPendingPerpOrders = async (pg: Reader, contractId: string) =>
   !!(await pg.oneOrNone(
     "select 1 from perp_orders where contract_id=$1 and status='pending' limit 1",
     [contractId]
   ))
 
-// Whether a waiting order is owed a fill at `point`, by settlement's cutoff.
+// Whether a waiting order is owed a fill at `point`, by settlement's cutoff,
+// leaving out orders the caller has stopped waiting on.
 export const hasEligiblePendingPerpOrder = async (
-  pg: SupabaseDirectClient,
+  pg: Reader,
   contract: Pick<PerpContract, 'id' | 'oracleFeedId'>,
-  point: OraclePoint
+  point: OraclePoint,
+  exclude: ReadonlySet<string> = new Set()
 ) => {
   const cutoff = perpEligibilityCutoff(contract.oracleFeedId, point)
   if (cutoff == null) return false
   return !!(await pg.oneOrNone(
-    "select 1 from perp_orders where contract_id=$1 and status='pending' and created_time < $2::timestamptz limit 1",
-    [contract.id, new Date(cutoff).toISOString()]
+    "select 1 from perp_orders where contract_id=$1 and status='pending' and created_time < $2::timestamptz and not (id = any($3::text[])) limit 1",
+    [contract.id, new Date(cutoff).toISOString(), [...exclude]]
   ))
 }
 
@@ -516,7 +522,7 @@ export const hasEligiblePendingPerpOrder = async (
 // persisted. Settlement at a later point would reject that order as having
 // missed it; the predicate mirrors that check (and perpEligibilityCutoff).
 export const findSkippedPerpObservation = async (
-  pg: SupabaseDirectClient,
+  pg: Reader,
   contract: Pick<PerpContract, 'id' | 'oracleFeedId'>,
   afterTs: number,
   beforeTs: number
@@ -749,8 +755,9 @@ export const readPerpOrder = async (
 export const refundPendingPerpOrders = (contractId: string, reason: string) =>
   runTransactionWithRetries(async (tx) => {
     await tx.one(advisoryLockQuery(contractId))
+    // NO KEY UPDATE, as the engine locks it (see selectContractForUpdateQuery).
     const row = await tx.one<{ data: PerpContract }>(
-      'select data from contracts where id=$1 for update',
+      'select data from contracts where id=$1 for no key update',
       [contractId]
     )
     return settlePendingPerpOrders(

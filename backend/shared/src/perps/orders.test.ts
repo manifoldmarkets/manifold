@@ -152,7 +152,15 @@ beforeEach(async () => {
     sqlLog.push(sql)
     if (sql.includes('advisory')) return { rows: [{ lock: null }] }
     await beforeQuery?.(sql)
-    const result = await db.query<Record<string, unknown>>(sql, values)
+    // pg-promise sends a parameterless multi-statement string as one simple
+    // query (the bounded tick's timeouts); PGlite's prepared path takes one.
+    let result: Query
+    if (values === undefined && sql.includes(';')) {
+      const results = await db.exec(sql)
+      result = (results[results.length - 1] as Query | undefined) ?? {
+        rows: [],
+      }
+    } else result = await db.query<Record<string, unknown>>(sql, values)
     await afterQuery?.(sql)
     return result
   }
@@ -711,6 +719,16 @@ it('answers an order that committed while the submission waited for the user row
   await expect(submit()).rejects.toThrow(/already have an order waiting/)
   expect(await balance()).toBe(1000)
 })
+it('answers a database out of connections with a 503 to retry', async () => {
+  beforeQuery = async () => {
+    beforeQuery = undefined
+    throw Object.assign(new Error('sorry, too many clients already'), {
+      code: '53300',
+    })
+  }
+  await expect(submit()).rejects.toMatchObject({ code: 503 })
+  expect(await balance()).toBe(1000)
+})
 it('refuses at submission an allowance below the size fee at the current pools', async () => {
   await db.query('update contracts set data = data || $1::jsonb', [
     { takerFeeBps: 10, takerFeeImpact: 10 },
@@ -917,9 +935,14 @@ type Engine = {
   runOracleUpdate: (
     contractId: string,
     price: number,
-    ts: number
+    ts: number,
+    sourceTs?: number,
+    bounds?: object,
+    health?: object
   ) => Promise<unknown>
 }
+// The engine's notifications for points it replays itself.
+let notifyOracle: jest.Mock
 // The real engine on the test database. Reuse the production query builders,
 // settlement math and escrow assertions; only external transaction/broadcast
 // infrastructure is replaced by PGlite.
@@ -959,6 +982,9 @@ const loadEngine = async (): Promise<Engine> => {
     './orders': orders,
     'shared/utils': {
       log: Object.assign(jest.fn(), { error: jest.fn(), warn: jest.fn() }),
+    },
+    'shared/notifications/perps': {
+      notifyPerpOracleResult: (notifyOracle = jest.fn(async () => undefined)),
     },
   }
   runInNewContext(
@@ -1222,4 +1248,168 @@ it('fills at a tick an order that committed after that tick read the queue', asy
   await engine.runOracleUpdate('market', 103, t1)
   expect(await statuses()).toEqual({ filled: 2 })
   expect((await executionPoints()).every((p) => p.ts === t1)).toBe(true)
+})
+const fastTickBounds = {
+  lockTimeoutMs: 1_000,
+  statementTimeoutMs: 4_000,
+  maxAttempts: 2,
+}
+it('catches up, under the lock, a point another scheduler landed just before this tick (N3)', async () => {
+  const engine = await loadEngine()
+  const { order } = await engine.openOrAddPosition(
+    'market',
+    'alice',
+    'long',
+    100,
+    2,
+    'raceopen01',
+    false,
+    0
+  )
+  const t1 = order.createdTime + 10
+  // Another scheduler commits P1, without settling the order yet, just
+  // before this tick takes the contract lock.
+  beforeQuery = async (sql) => {
+    if (!/from contracts where id = .* for no key update/.test(sql)) return
+    beforeQuery = undefined
+    await db.exec('commit')
+    await db.query('update contracts set data = data || $1::jsonb', [
+      { oraclePrice: 104, oraclePriceTime: t1 },
+    ])
+    await db.query('insert into oracle_prices values($1,$2,$3,null)', [
+      'btc-usd',
+      new Date(t1),
+      104,
+    ])
+    await db.exec('begin')
+  }
+  sqlLog.length = 0
+  await engine.runOracleUpdate(
+    'market',
+    108,
+    t1 + 500,
+    undefined,
+    fastTickBounds
+  )
+  // Filled at P1, not rejected as having missed it.
+  expect(await statuses()).toEqual({ filled: 1 })
+  expect(await executionPoints()).toEqual([{ ts: t1, price: 104 }])
+  // The tick, the catch-up settlement and the retried tick all ran bounded.
+  expect(
+    sqlLog.filter((sql) => sql.includes('statement_timeout = 4000')).length
+  ).toBeGreaterThanOrEqual(3)
+  // No engine statement takes the KEY SHARE-blocking contract lock.
+  expect(
+    sqlLog.filter(
+      (sql) =>
+        /from contracts/.test(sql) &&
+        /for update/.test(sql) &&
+        !/for no key update/.test(sql)
+    )
+  ).toEqual([])
+})
+it("replays a skipped point by the incoming point's provider health (N3)", async () => {
+  const engine = await loadEngine()
+  const now = Date.now()
+  // The provider was down; the incoming point is its recovery.
+  await db.query('update contracts set data = data || $1::jsonb', [
+    {
+      oraclePrice: 100,
+      oraclePriceTime: now - 1000,
+      oracleFeedHealth: {
+        status: 'unavailable',
+        checkedAt: now - 60_000,
+        reason: 'Provider timeout',
+      },
+    },
+  ])
+  const { order } = await engine.openOrAddPosition(
+    'market',
+    'alice',
+    'long',
+    100,
+    2,
+    'healopen01',
+    false,
+    0
+  )
+  const t1 = order.createdTime + 5
+  await db.query('insert into oracle_prices values($1,$2,$3,null)', [
+    'btc-usd',
+    new Date(t1),
+    104,
+  ])
+  const health = {
+    status: 'available',
+    checkedAt: Date.now(),
+    expiresAt: Date.now() + 60_000,
+  }
+  await engine.runOracleUpdate(
+    'market',
+    108,
+    t1 + 10,
+    undefined,
+    undefined,
+    health
+  )
+  expect(await statuses()).toEqual({ filled: 1 })
+  expect(await executionPoints()).toEqual([{ ts: t1, price: 104 }])
+  const data = (
+    await db.query<{
+      data: { oraclePriceTime: number; oracleFeedHealth: object }
+    }>('select data from contracts')
+  ).rows[0].data
+  expect(data.oraclePriceTime).toBe(t1 + 10)
+  // The incoming apply recorded the real health after the replay.
+  expect(data.oracleFeedHealth).toEqual(health)
+})
+it('notifies liquidations at a replayed point at its own price (N3)', async () => {
+  const engine = await loadEngine()
+  const { order: open } = await engine.openOrAddPosition(
+    'market',
+    'alice',
+    'long',
+    100,
+    10,
+    'liqopen001',
+    false,
+    0
+  )
+  await engine.runOracleUpdate('market', 100, open.createdTime + 10)
+  await new Promise((resolve) => setTimeout(resolve, 20))
+  // bob waits on P1, so P1 is replayed when a newer point skips it.
+  const { order: waiting } = await engine.openOrAddPosition(
+    'market',
+    'bob',
+    'short',
+    100,
+    2,
+    'liqwait001',
+    false,
+    0
+  )
+  const t1 = waiting.createdTime + 5
+  await db.query('insert into oracle_prices values($1,$2,$3,null)', [
+    'btc-usd',
+    new Date(t1),
+    80,
+  ])
+  notifyOracle.mockClear()
+  await engine.runOracleUpdate('market', 81, t1 + 10)
+  // alice's 10x long was liquidated at the replayed 80, and is notified at 80.
+  expect(notifyOracle).toHaveBeenCalledWith(
+    expect.anything(),
+    expect.objectContaining({ id: 'market' }),
+    80,
+    expect.objectContaining({
+      liquidated: [expect.objectContaining({ userId: 'alice' })],
+    })
+  )
+  expect(
+    (
+      await db.query<{ execution_point: { price: number } }>(
+        "select execution_point from perp_orders where user_id='bob'"
+      )
+    ).rows[0].execution_point.price
+  ).toBe(80)
 })

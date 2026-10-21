@@ -80,6 +80,7 @@ import { MNX_SOURCE_CLOCK_ALLOWANCE_MS } from 'common/perps/orders'
 import { removeUndefinedProps } from 'common/util/object'
 import { randomStringRegex } from 'common/util/random'
 import { UserBan } from 'common/user'
+import { notifyPerpOracleResult } from 'shared/notifications/perps'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import {
   SupabaseDirectClient,
@@ -1969,6 +1970,36 @@ export const applyOracleUpdate = (
   }
 }
 
+// N3. An order is owed the first eligible price after it, and settlement at a
+// later point rejects it as having missed that one. So the mark advances only
+// once nothing still waits on it: no order eligible at the current mark (a
+// burst past the follow-up budget, a failed or abandoned follow-up, an order
+// committed while that tick ran) and no persisted point the mark skipped while
+// an order waits on it (an overlapping scheduler applied a newer point first,
+// or an apply failed after its point was persisted). The tick checks under the
+// contract lock, before writing anything, so no other writer can land a point
+// or an order in between, and throws this; runOracleUpdate catches up (settles
+// the mark's backlog, or replays the skipped point) and retries.
+class PerpCatchUpNeeded extends Error {
+  constructor(
+    readonly point: OraclePoint,
+    readonly skipped: boolean,
+    readonly contract: PerpContract
+  ) {
+    super(`Orders wait at ${point.ts}; catching up before advancing`)
+  }
+}
+// Catch-up rounds (a backlog pass or one replayed point each) before an update
+// advances regardless, so waiting orders cannot hold back the mark and the
+// liquidations it carries; what still waits is then rejected as before.
+const MAX_CATCH_UP_ROUNDS = 6
+type OracleCatchUp = {
+  // Rounds already spent on this incoming point.
+  round: number
+  // Orders that stayed contended through their attempts: not waited on again.
+  exhausted: Set<string>
+}
+
 export const runOracleUpdate = async (
   contractId: string,
   newPrice: number,
@@ -1976,14 +2007,12 @@ export const runOracleUpdate = async (
   sourceTs?: number,
   /** Fast tick only. Omit to wait; see OracleUpdateBounds. */
   bounds?: OracleUpdateBounds,
-  oracleFeedHealth?: OracleFeedHealth
+  oracleFeedHealth?: OracleFeedHealth,
+  /** Internal to the N3 catch-up; callers omit it. */
+  catchUpState?: OracleCatchUp
 ): Promise<OracleUpdateResult | null> => {
   const point = { price: newPrice, ts, sourceTs }
-  await catchUpBeforeAdvancing(contractId, point, bounds).catch((error) =>
-    log.warn(
-      `[perp-orders] catch-up before ${contractId} @ ${ts} failed; applying it anyway: ${error}`
-    )
-  )
+  const catchUp = catchUpState ?? { round: 0, exhausted: new Set<string>() }
   let backlog = false
   let deferredAtTick: string[] = []
   // The contract as this point's settlement saw it, when it got that far.
@@ -2098,6 +2127,33 @@ export const runOracleUpdate = async (
             poolShortBefore: state.pool.S,
             poolShortAfter: state.pool.S,
           }
+        }
+
+        // N3 (see PerpCatchUpNeeded): nothing is written yet, so throwing here
+        // rolls back only this attempt.
+        if (
+          currentPoint &&
+          ts > currentPoint.ts &&
+          contract.solvencyHaltTime == null &&
+          catchUp.round < MAX_CATCH_UP_ROUNDS &&
+          (await hasPendingPerpOrders(pgTrans, contractId))
+        ) {
+          if (
+            await hasEligiblePendingPerpOrder(
+              pgTrans,
+              contract,
+              currentPoint,
+              catchUp.exhausted
+            )
+          )
+            throw new PerpCatchUpNeeded(currentPoint, false, contract)
+          const skipped = await findSkippedPerpObservation(
+            pgTrans,
+            contract,
+            currentPoint.ts,
+            ts
+          )
+          if (skipped) throw new PerpCatchUpNeeded(skipped, true, contract)
         }
 
         const poolLongBefore = state.pool.L
@@ -2304,12 +2360,30 @@ export const runOracleUpdate = async (
       return result
     },
     bounds?.maxAttempts,
-    // Only a bounded caller can produce these, and it handles them itself.
-    // Unbounded callers keep ERROR for every failure.
-    bounds
-      ? { isExpectedError: isOracleTickTimeout, tag: FAST_TICK_TX_TAG }
-      : undefined
-  )
+    // Timeouts: only a bounded caller can produce these, and it handles them
+    // itself. The catch-up signal is handled below. Anything else is ERROR.
+    {
+      isExpectedError: (error) =>
+        error instanceof PerpCatchUpNeeded ||
+        (!!bounds && isOracleTickTimeout(error)),
+      ...(bounds ? { tag: FAST_TICK_TX_TAG } : {}),
+    }
+  ).catch((error: unknown) => {
+    if (error instanceof PerpCatchUpNeeded) return error
+    throw error
+  })
+  if (update instanceof PerpCatchUpNeeded) {
+    await catchUpTo(update, catchUp, bounds, oracleFeedHealth)
+    return runOracleUpdate(
+      contractId,
+      newPrice,
+      ts,
+      sourceTs,
+      bounds,
+      oracleFeedHealth,
+      { ...catchUp, round: catchUp.round + 1 }
+    )
+  }
   // Orders the tick deferred (contention) or did not reach (the settlement
   // cap), and orders that committed after it read the queue, still fill at
   // this price before this feed's next tick can move it.
@@ -2317,8 +2391,72 @@ export const runOracleUpdate = async (
     settledContract &&
     (backlog || (await backlogRemainsAt(settledContract, point)))
   )
-    await settleBacklogAtPoint(contractId, point, deferredAtTick)
+    await settleBacklogAtPoint(
+      contractId,
+      point,
+      deferredAtTick,
+      catchUp.exhausted
+    )
   return update
+}
+
+// One catch-up round (see PerpCatchUpNeeded): settle the mark's backlog, or
+// replay the skipped point as an update of its own. Bounded as the update is.
+const catchUpTo = async (
+  needed: PerpCatchUpNeeded,
+  catchUp: OracleCatchUp,
+  bounds: OracleUpdateBounds | undefined,
+  incomingHealth: OracleFeedHealth | undefined
+) => {
+  const { contract, point } = needed
+  if (!needed.skipped) {
+    await settleBacklogAtPoint(
+      contract.id,
+      point,
+      [],
+      catchUp.exhausted,
+      bounds
+    )
+    return
+  }
+  // The replay carries the incoming point's provider health, the current
+  // word on the provider: the contract's own may be the outage the incoming
+  // point recovers from, and its fills check it. Dated a millisecond earlier,
+  // so the incoming apply, which records the real one, is still the newer.
+  const replayHealth = incomingHealth && {
+    ...incomingHealth,
+    checkedAt: incomingHealth.checkedAt - 1,
+  }
+  const replayed = await runOracleUpdate(
+    contract.id,
+    point.price,
+    point.ts,
+    point.sourceTs,
+    bounds,
+    replayHealth,
+    { ...catchUp, round: catchUp.round + 1 }
+  ).catch((error) => {
+    log.warn(
+      `[perp-orders] replaying skipped point ${contract.id} @ ${point.ts} failed: ${error}`
+    )
+    return null
+  })
+  // Liquidations and ADL at the replayed point happened at its own price,
+  // and callers notify only for the point they applied.
+  if (replayed) {
+    try {
+      await notifyPerpOracleResult(
+        createSupabaseDirectClient(),
+        contract,
+        point.price,
+        replayed
+      )
+    } catch (error) {
+      log.error(
+        `[perp-orders] notifications for replayed point ${contract.id} @ ${point.ts} failed: ${error}`
+      )
+    }
+  }
 }
 
 // Whether orders still wait at `point` once its tick has committed. The tick
@@ -2352,51 +2490,69 @@ const lockPerpContract = async (
 
 // Settles pending orders at `point` only while it is still the contract's
 // mark; once a newer tick lands, that tick settles them. Waits for the
-// contract lock (these orders are owed this price); settlement itself bounds
-// row waits.
+// contract lock (these orders are owed this price) unless the caller is
+// bounded; settlement itself bounds row waits.
 const settleAtPoint = (
   contractId: string,
   point: OraclePoint,
-  skip: ReadonlySet<string>
+  skip: ReadonlySet<string>,
+  bounds?: OracleUpdateBounds
 ) =>
-  runPerpTransaction(async (pgTrans) => {
-    const contract = await lockPerpContract(pgTrans, contractId)
-    if (
-      contract.oraclePriceTime !== point.ts ||
-      contract.solvencyHaltTime != null
-    )
-      return null
-    return settlePendingPerpOrders(
-      pgTrans,
-      contract,
-      point,
-      executeQueuedPerpOrder,
-      { skip }
-    )
-  }, 3)
+  runPerpTransaction(
+    async (pgTrans) => {
+      if (bounds)
+        await pgTrans.none(
+          oracleTickTimeoutsQuery(
+            bounds.lockTimeoutMs,
+            bounds.statementTimeoutMs
+          )
+        )
+      const contract = await lockPerpContract(pgTrans, contractId)
+      if (
+        contract.oraclePriceTime !== point.ts ||
+        contract.solvencyHaltTime != null
+      )
+        return null
+      return settlePendingPerpOrders(
+        pgTrans,
+        contract,
+        point,
+        executeQueuedPerpOrder,
+        { skip }
+      )
+    },
+    bounds?.maxAttempts ?? 3,
+    bounds
+      ? { isExpectedError: isOracleTickTimeout, tag: FAST_TICK_TX_TAG }
+      : undefined
+  )
 
 // Settles what still waits at `point`, each pass in its own fresh transaction,
 // for as long as `point` is the contract's mark. A contended order is retried
 // a few times, so one busy row cannot cancel its order by outlasting a single
-// attempt, then skipped so the orders behind it get their turn; housekeeping
-// retries whatever is left.
+// attempt, then marked exhausted (and skipped) so the orders behind it get
+// their turn; housekeeping retries whatever is left.
 const settleBacklogAtPoint = async (
   contractId: string,
   point: OraclePoint,
-  deferredAtTick: string[] = []
+  deferredAtTick: string[] = [],
+  exhausted = new Set<string>(),
+  bounds?: OracleUpdateBounds
 ) => {
   const attempts = new Map(deferredAtTick.map((id) => [id, 1]))
-  const exhausted = new Set<string>()
   let backlog = true
   for (let pass = 0; backlog && pass < 50; pass++) {
-    const settled = await settleAtPoint(contractId, point, exhausted).catch(
-      (error) => {
-        log.warn(
-          `[perp-orders] follow-up settlement for ${contractId} @ ${point.ts} failed; housekeeping will retry: ${error}`
-        )
-        return null
-      }
-    )
+    const settled = await settleAtPoint(
+      contractId,
+      point,
+      exhausted,
+      bounds
+    ).catch((error) => {
+      log.warn(
+        `[perp-orders] follow-up settlement for ${contractId} @ ${point.ts} failed; housekeeping will retry: ${error}`
+      )
+      return null
+    })
     if (!settled) break
     for (const id of settled.deferred) {
       const n = (attempts.get(id) ?? 0) + 1
@@ -2405,69 +2561,6 @@ const settleBacklogAtPoint = async (
     }
     backlog =
       settled.remaining > 0 || settled.deferred.some((id) => !exhausted.has(id))
-  }
-}
-
-// Persisted points the mark skipped that one update applies before its own.
-const MAX_SKIPPED_POINTS_PER_UPDATE = 5
-
-// N3. An order is owed the first eligible price after it, and settlement at a
-// later point rejects it as having missed that one. So before `incoming`
-// moves the mark, settle what still waits at the current mark (a burst past
-// the follow-up budget, a failed or abandoned follow-up, an order committed
-// while that tick ran), then apply, oldest first, any persisted point the mark
-// skipped while an order waits on it (an overlapping publisher applied a newer
-// point first, or an apply failed after its point was persisted). Both use the
-// follow-up budget and skip self-contended orders, so one busy row cannot hold
-// back the mark and the liquidations it carries; what is left is rejected as
-// before. Applying `incoming` never depends on this succeeding.
-const catchUpBeforeAdvancing = async (
-  contractId: string,
-  incoming: OraclePoint,
-  bounds?: OracleUpdateBounds
-) => {
-  const pg = createSupabaseDirectClient()
-  if (!(await hasPendingPerpOrders(pg, contractId))) return
-  let expectedMark = -Infinity
-  for (let skipped = 0; ; skipped++) {
-    const row = await pg.oneOrNone<{ data: PerpContract }>(
-      'select data from contracts where id=$1',
-      [contractId]
-    )
-    const contract = row?.data
-    if (
-      !contract ||
-      contract.isResolved ||
-      contract.solvencyHaltTime != null ||
-      contract.oraclePriceTime == null ||
-      !(incoming.ts > contract.oraclePriceTime) ||
-      // A skipped point whose apply was refused left the mark behind it.
-      contract.oraclePriceTime < expectedMark
-    )
-      return
-    const mark: OraclePoint = {
-      price: contract.oraclePrice,
-      ts: contract.oraclePriceTime,
-      sourceTs: contract.oracleSourceTime ?? undefined,
-    }
-    if (await hasEligiblePendingPerpOrder(pg, contract, mark))
-      await settleBacklogAtPoint(contractId, mark)
-    if (skipped >= MAX_SKIPPED_POINTS_PER_UPDATE) return
-    const next = await findSkippedPerpObservation(
-      pg,
-      contract,
-      mark.ts,
-      incoming.ts
-    )
-    if (!next) return
-    await runOracleUpdate(
-      contractId,
-      next.price,
-      next.ts,
-      next.sourceTs,
-      bounds
-    )
-    expectedMark = next.ts
   }
 }
 
