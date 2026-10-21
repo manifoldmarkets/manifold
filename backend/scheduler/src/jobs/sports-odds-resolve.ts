@@ -21,7 +21,11 @@ let warnedNoKey = false
 // A run still going after this long is abandoned: the cron's promise settles
 // with an error (so the job-crash alert fires), the next 10-second tick starts
 // a fresh run, and the abandoned one is told through isCurrent to stop at its
-// next checkpoint without writing. A normal run is a few seconds: one scores
+// next checkpoint without starting another side effect. An already-issued
+// write/publish/resolution retains its market's reservation until it settles;
+// the shared state lets fresh ticks skip that market and process the rest.
+// An unknown mutation outcome stays reserved and logs an actionable ERROR.
+// A normal run is a few seconds: one scores
 // call per sport in play and a handful of row updates. On 2026-10-17 four runs
 // instead sat for exactly the 60-minute client query_timeout on a dead
 // database connection while `protect` skipped every tick, so Everton-Chelsea

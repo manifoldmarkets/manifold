@@ -63,6 +63,7 @@ import {
   MULTI_CPMM_MECHANISMS_SQL,
 } from 'common/contract'
 import { User } from 'common/user'
+import { APIError } from 'common/api/utils'
 import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 
 const ROLLING_WINDOW_DAYS = 14
@@ -488,8 +489,9 @@ interface PendingGame {
  * What the resolver remembers between ticks: when it last asked for each
  * sport key's scores, how many of those calls failed in a row, which started
  * games have gone missing from the feed, and when it last reported each
- * overdue game. The scheduler job keeps one for its lifetime; a restart only
- * means one early call and one early alert.
+ * overdue game, plus the markets still owned by an earlier tick. The scheduler
+ * keeps one for its lifetime. Do not reset it to recover an uncertain mutation
+ * until the old server work has been confirmed finished.
  */
 export interface ScorePollState {
   /** Any /scores call per sport key. */
@@ -509,6 +511,13 @@ export interface ScorePollState {
   lastOverdueAlert: Record<string, number>
   /** When the polling settings last failed to load; logged hourly. */
   lastSettingsError?: number
+  /**
+   * Per-market reservations shared by every tick in this scheduler process.
+   * A deadline cannot release an issued mutation. Unknown mutation outcomes
+   * stay reserved until an operator verifies server completion and restarts
+   * the scheduler; see withGameReservation. This is not a distributed lock.
+   */
+  inFlight: Set<string>
 }
 
 export const newScorePollState = (): ScorePollState => ({
@@ -517,6 +526,7 @@ export const newScorePollState = (): ScorePollState => ({
   failures: {},
   missing: {},
   lastOverdueAlert: {},
+  inFlight: new Set(),
 })
 
 /**
@@ -531,8 +541,9 @@ export const newScorePollState = (): ScorePollState => ({
  * One resolver tick. `isCurrent` lets the scheduler abandon a run that has
  * overrun its deadline (a dead database connection held one for the full
  * 60-minute client timeout on 2026-10-17, four times): once it returns false
- * the run stops at its next checkpoint without reading scores or writing
- * anything, so the fresh run the next tick started is the only one acting.
+ * the run starts no further work. An already-issued mutation may still finish:
+ * its market stays reserved across the deadline, while other markets proceed.
+ * All scheduler ticks must share the same state (including reservations).
  */
 export async function pollOddsScoresAndResolve(
   pg: SupabaseDirectClient,
@@ -546,6 +557,10 @@ export async function pollOddsScoresAndResolve(
   errors: number
 }> {
   const now = Date.now()
+  // A read started while another run owns a market may return its old row
+  // after that run has settled. Skip it for this whole tick, even if the
+  // reservation is released before we get to the game; the next tick re-reads.
+  const reservedAtStart = new Set(state.inFlight)
   const rows = await pg.manyOrNone(
     `select ${contractColumnsToSelect}
      from contracts
@@ -586,6 +601,7 @@ export async function pollOddsScoresAndResolve(
   try {
     settings = await getScorePollingSettings(pg)
   } catch (e) {
+    if (!isCurrent()) return stats
     settings = finalsOnlySettings()
     if (now - (state.lastSettingsError ?? -Infinity) >= HOUR_MS) {
       state.lastSettingsError = now
@@ -598,14 +614,16 @@ export async function pollOddsScoresAndResolve(
   const sportOf = (game: PendingGame) =>
     sportForLeague((game.contract as any).sportsLeague)
   const plan = scorePollPlan(
-    pending.map((game) => ({
-      contractId: game.contract.id,
-      sportKey: game.sportKey,
-      sport: sportOf(game),
-      startTime: game.startTime,
-      closeTime: game.contract.closeTime,
-      missing: game.contract.id in state.missing,
-    })),
+    pending
+      .filter((game) => !reservedAtStart.has(game.contract.id))
+      .map((game) => ({
+        contractId: game.contract.id,
+        sportKey: game.sportKey,
+        sport: sportOf(game),
+        startTime: game.startTime,
+        closeTime: game.contract.closeTime,
+        missing: game.contract.id in state.missing,
+      })),
     settings,
     state.lastPolled,
     now,
@@ -618,20 +636,25 @@ export async function pollOddsScoresAndResolve(
   const creator = plan.length > 0 ? await sportsCreator() : undefined
   if (!isCurrent()) return stats
   for (const { sportKey, withFinished } of plan) {
+    if (!isCurrent()) return stats
     // Counted even if the call fails, so a failing provider is retried at
     // the set interval, doubled per failure in a row, not on every tick.
     state.lastPolled[sportKey] = now
     if (withFinished) state.lastFinished[sportKey] = now
     stats.polled++
-    const games = bySport[sportKey] ?? []
+    const games = (bySport[sportKey] ?? []).filter(
+      (game) => !reservedAtStart.has(game.contract.id)
+    )
     let scores: OddsApiScore[]
     try {
       scores = await getScores(
         sportKey,
         withFinished ? { finishedDays: LOOKBACK_DAYS } : {}
       )
+      if (!isCurrent()) return stats
       delete state.failures[sportKey]
     } catch (e) {
+      if (!isCurrent()) return stats
       state.failures[sportKey] = (state.failures[sportKey] ?? 0) + 1
       log(
         `[sports-odds-resolve] scores for ${sportKey} failed (${state.failures[sportKey]} in a row): ${e}`
@@ -658,13 +681,19 @@ export async function pollOddsScoresAndResolve(
       try {
         scores = await getScores(sportKey, { finishedDays: LOOKBACK_DAYS })
       } catch (e) {
+        if (!isCurrent()) return stats
         log(`[sports-odds-resolve] finished games for ${sportKey} failed: ${e}`)
       }
     }
     if (!isCurrent()) return stats
     const scoreById = new Map(scores.map((s) => [s.id, s]))
     for (const game of games) {
+      if (!isCurrent()) return stats
       const id = game.contract.id
+      if (reservedAtStart.has(id) || state.inFlight.has(id)) {
+        stats.pending++
+        continue
+      }
       const score = scoreById.get(game.eventId)
       if (!score) {
         if (!(id in state.missing)) state.missing[id] = now
@@ -674,7 +703,10 @@ export async function pollOddsScoresAndResolve(
       try {
         if (!isCurrent()) return stats
         if (score.completed) {
-          await finishGame(pg, game, score, creator!)
+          await withGameReservation(state, id, isCurrent, (run) =>
+            finishGame(pg, game, score, creator!, run)
+          )
+          if (!isCurrent()) return stats
           resolved.add(id)
           stats.resolved++
         } else if (
@@ -682,13 +714,17 @@ export async function pollOddsScoresAndResolve(
           score.scores.length > 0 &&
           liveInterval({ contractId: id, sport: sportOf(game) }, settings) > 0
         ) {
-          await writeLiveScore(pg, game, score, now)
+          await withGameReservation(state, id, isCurrent, (run) =>
+            writeLiveScore(pg, game, score, now, run)
+          )
+          if (!isCurrent()) return stats
           stats.live++
         } else {
           stats.pending++
         }
         delete state.missing[id]
       } catch (e) {
+        if (!isCurrent()) return stats
         // A completed game that can't be resolved (a level final in a sport
         // that can't end level, a team mismatch) counts as missing: no live
         // polls, and the finals check keeps asking for finished games, so it
@@ -699,10 +735,70 @@ export async function pollOddsScoresAndResolve(
       }
     }
   }
+  if (!isCurrent()) return stats
   for (const game of pending) {
     if (!resolved.has(game.contract.id)) alertIfOverdue(game, state, now)
   }
   return stats
+}
+
+interface ScoreGameRun {
+  isCurrent: () => boolean
+  mutate: (work: () => Promise<unknown>) => Promise<void>
+}
+
+// These errors establish that the server rejected the command. pg-promise's
+// tx() awaits ROLLBACK before returning the callback error, and replaces it
+// with the rollback error if that fails. In particular, a client read timeout
+// or connection loss is NOT evidence that the server stopped executing.
+function mutationDefinitelyEnded(error: unknown) {
+  if (error instanceof APIError) return true
+  if (typeof error !== 'object' || error === null || !('code' in error))
+    return false
+  return [
+    '40001',
+    '40P01',
+    '55P03',
+    '57014',
+    '23503',
+    '23505',
+    '23514',
+  ].includes(String(error.code))
+}
+
+async function withGameReservation(
+  state: ScorePollState,
+  id: string,
+  isCurrent: () => boolean,
+  work: (run: ScoreGameRun) => Promise<void>
+) {
+  state.inFlight.add(id)
+  let uncertainMutation = false
+  try {
+    await work({
+      isCurrent,
+      mutate: async (mutation) => {
+        uncertainMutation = true
+        try {
+          await mutation()
+          uncertainMutation = false
+        } catch (error) {
+          uncertainMutation = !mutationDefinitelyEnded(error)
+          throw error
+        }
+      },
+    })
+  } finally {
+    if (uncertainMutation) {
+      // Keep this ERROR even for a stale run: suppressing it would leave a
+      // market silently skipped forever. Never clear a reservation by timer.
+      log.error(
+        `[sports-odds-resolve] ${id}: mutation outcome unknown; automatic polling is suspended for this market in this process. Verify the old database work has ended and inspect the market before restarting the scheduler or resolving manually.`
+      )
+    } else {
+      state.inFlight.delete(id)
+    }
+  }
 }
 
 /**
@@ -741,7 +837,8 @@ async function writeLiveScore(
   pg: SupabaseDirectClient,
   game: PendingGame,
   score: OddsApiScore,
-  now: number
+  now: number,
+  run: ScoreGameRun
 ) {
   const teams = gameTeams(game)
   const scores = teamScores(score, teams)
@@ -758,18 +855,23 @@ async function writeLiveScore(
     sportsLiveMinute: null,
     sportsLiveUpdatedTime: now,
   }
-  await pg.none(`update contracts set data = data || $1::jsonb where id = $2`, [
-    JSON.stringify(patch),
-    game.contract.id,
-  ])
-  await publishSportsLiveScore(game.contract.id, patch)
+  if (!run.isCurrent()) return
+  await run.mutate(() =>
+    pg.none(`update contracts set data = data || $1::jsonb where id = $2`, [
+      JSON.stringify(patch),
+      game.contract.id,
+    ])
+  )
+  if (!run.isCurrent()) return
+  await run.mutate(() => publishSportsLiveScore(game.contract.id, patch))
 }
 
 async function finishGame(
   pg: SupabaseDirectClient,
   game: PendingGame,
   score: OddsApiScore,
-  creator: User
+  creator: User,
+  run: ScoreGameRun
 ) {
   const { contract } = game
   const d = contract as any
@@ -801,17 +903,23 @@ async function finishGame(
     sportsLiveMinute: null,
     sportsLiveUpdatedTime: Date.now(),
   }
-  await pg.none(`update contracts set data = data || $1::jsonb where id = $2`, [
-    JSON.stringify(patch),
-    contract.id,
-  ])
-  await publishSportsLiveScore(contract.id, patch)
+  if (!run.isCurrent()) return
+  await run.mutate(() =>
+    pg.none(`update contracts set data = data || $1::jsonb where id = $2`, [
+      JSON.stringify(patch),
+      contract.id,
+    ])
+  )
+  if (!run.isCurrent()) return
+  await run.mutate(() => publishSportsLiveScore(contract.id, patch))
+  if (!run.isCurrent()) return
 
   const answers = (
     await pg.manyOrNone(`select * from answers where contract_id = $1`, [
       contract.id,
     ])
   ).map(convertAnswer)
+  if (!run.isCurrent()) return
   const args = gameResolution(answers, side, d.sportsHomeTeam, d.sportsAwayTeam)
   if (!args) {
     throw new Error(
@@ -821,5 +929,6 @@ async function finishGame(
     )
   }
   const multi = { ...(contract as CPMMMultiContract), answers }
-  await resolveMarketHelper(multi, creator, creator, args)
+  if (!run.isCurrent()) return
+  await run.mutate(() => resolveMarketHelper(multi, creator, creator, args))
 }
