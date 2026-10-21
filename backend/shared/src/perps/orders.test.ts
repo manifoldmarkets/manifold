@@ -1377,7 +1377,7 @@ it("replays a skipped point by the incoming point's provider health (N3)", async
   // The incoming apply recorded the real health after the replay.
   expect(data.oracleFeedHealth).toEqual(health)
 })
-it('replays two skipped points with health that keeps advancing (N3)', async () => {
+it('replays two skipped points, each by the incoming check (N3)', async () => {
   const engine = await loadEngine()
   const now = Date.now()
   await db.query('update contracts set data = data || $1::jsonb', [
@@ -1438,8 +1438,8 @@ it('replays two skipped points with health that keeps advancing (N3)', async () 
     undefined,
     health
   )
-  // Each replay's health is newer than the last one's, so neither is refused
-  // as an older fetch.
+  // Each replay answers to the incoming check, not to the health the replay
+  // before it recorded, so neither is refused as an older fetch.
   expect(
     (
       await db.query<{
@@ -1536,8 +1536,8 @@ it('applies a replay retried after a nested replay, liquidation included (N3)', 
     undefined,
     health
   )
-  // P2's retry is newer than P1's nested replay, so it still applies: the
-  // 10x long is liquidated at 80, and notified there.
+  // P2's retry answers to the incoming check, as P1's nested replay did, so it
+  // still applies: the 10x long is liquidated at 80, and notified there.
   expect(notifyOracle).toHaveBeenCalledWith(
     expect.anything(),
     expect.objectContaining({ id: 'market' }),
@@ -1610,4 +1610,152 @@ it('notifies liquidations at a replayed point at its own price (N3)', async () =
       )
     ).rows[0].execution_point.price
   ).toBe(80)
+})
+it('replays a skipped point after another check recorded health just before the incoming one (N3)', async () => {
+  const engine = await loadEngine()
+  const { order: open } = await engine.openOrAddPosition(
+    'market',
+    'alice',
+    'long',
+    100,
+    10,
+    'closeopen1',
+    false,
+    0
+  )
+  await engine.runOracleUpdate('market', 100, open.createdTime + 10)
+  await new Promise((resolve) => setTimeout(resolve, 20))
+  const { order: waiting } = await engine.openOrAddPosition(
+    'market',
+    'bob',
+    'short',
+    100,
+    2,
+    'closewait1',
+    false,
+    0
+  )
+  const t1 = waiting.createdTime + 5
+  await db.query('insert into oracle_prices values($1,$2,$3,null)', [
+    'btc-usd',
+    new Date(t1),
+    80,
+  ])
+  const checkedAt = Date.now()
+  // An overlapping check failed 5 ms before the incoming one succeeded.
+  await db.query('update contracts set data = data || $1::jsonb', [
+    {
+      oracleFeedHealth: {
+        status: 'unavailable',
+        checkedAt: checkedAt - 5,
+        reason: 'Provider timeout',
+      },
+    },
+  ])
+  const health = {
+    status: 'available',
+    checkedAt,
+    expiresAt: checkedAt + 60_000,
+  }
+  notifyOracle.mockClear()
+  await engine.runOracleUpdate(
+    'market',
+    100,
+    t1 + 10,
+    undefined,
+    undefined,
+    health
+  )
+  // The replay still applies: alice's 10x long is liquidated at 80, where
+  // bob's order fills.
+  expect(notifyOracle).toHaveBeenCalledWith(
+    expect.anything(),
+    expect.objectContaining({ id: 'market' }),
+    80,
+    expect.objectContaining({
+      liquidated: [expect.objectContaining({ userId: 'alice' })],
+    })
+  )
+  expect(
+    (
+      await db.query<{ execution_point: object }>(
+        "select execution_point from perp_orders where user_id='bob'"
+      )
+    ).rows[0].execution_point
+  ).toEqual({ ts: t1, price: 80 })
+  const data = (
+    await db.query<{
+      data: { oraclePriceTime: number; oracleFeedHealth: object }
+    }>('select data from contracts')
+  ).rows[0].data
+  expect(data.oraclePriceTime).toBe(t1 + 10)
+  expect(data.oracleFeedHealth).toEqual(health)
+})
+it('leaves a skipped point to a newer check recorded while its replay waits (N3)', async () => {
+  const engine = await loadEngine()
+  const { order: open } = await engine.openOrAddPosition(
+    'market',
+    'alice',
+    'long',
+    100,
+    10,
+    'neweropen1',
+    false,
+    0
+  )
+  await engine.runOracleUpdate('market', 100, open.createdTime + 10)
+  await new Promise((resolve) => setTimeout(resolve, 20))
+  const { order: waiting } = await engine.openOrAddPosition(
+    'market',
+    'bob',
+    'short',
+    100,
+    2,
+    'newerwait1',
+    false,
+    0
+  )
+  const t1 = waiting.createdTime + 5
+  await db.query('insert into oracle_prices values($1,$2,$3,null)', [
+    'btc-usd',
+    new Date(t1),
+    80,
+  ])
+  const checkedAt = Date.now()
+  const newer = {
+    status: 'unavailable',
+    checkedAt: checkedAt + 5,
+    reason: 'Provider timeout',
+  }
+  // A newer check fails, and records that, once this update has found the
+  // skipped point and before its replay takes the contract lock.
+  let locks = 0
+  beforeQuery = async (sql) => {
+    if (!/from contracts where id = .* for no key update/.test(sql)) return
+    if (++locks < 2) return
+    beforeQuery = undefined
+    await db.exec('commit')
+    await db.query('update contracts set data = data || $1::jsonb', [
+      { oracleFeedHealth: newer },
+    ])
+    await db.exec('begin')
+  }
+  const result = await engine.runOracleUpdate(
+    'market',
+    100,
+    t1 + 10,
+    undefined,
+    undefined,
+    { status: 'available', checkedAt, expiresAt: checkedAt + 60_000 }
+  )
+  // Neither the replay nor the incoming point may clear the newer outage.
+  expect(result).toBeNull()
+  expect(await statuses()).toEqual({ filled: 1, pending: 1 })
+  const data = (
+    await db.query<{
+      data: { oraclePriceTime: number; oracleFeedHealth: object }
+    }>('select data from contracts')
+  ).rows[0].data
+  expect(data.oraclePriceTime).toBe(open.createdTime + 10)
+  expect(data.oracleFeedHealth).toEqual(newer)
 })
