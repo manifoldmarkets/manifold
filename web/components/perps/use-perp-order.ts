@@ -26,20 +26,28 @@ export const usePerpOrder = (contractId: string, onFilled?: () => void) => {
       if (loading) return
       loading = true
       const startedRevision = revision.current
+      // A pending order is followed by id until it finishes, so its outcome is
+      // never missed. Otherwise the server answers with its newest order,
+      // waiting ones first: a trade and a close can both be pending, and the
+      // newer one finishing must not hide the other.
+      const watching = seen.current
+      let finished = false
       try {
         const { order: next } = await api(
           'get-perp-order',
-          { contractId },
+          watching ? { contractId, orderId: watching } : { contractId },
           { cache: 'no-store' }
         )
         // A response started before submission must not clear the new pending
-        // state. Nor may an older poll turn a completed order pending again.
+        // state. Nor may an older poll turn a completed order pending again,
+        // or replace a newer order with an older one that is not waiting.
         if (disposed || startedRevision !== revision.current) return
         const previous = current.current
         if (
           previous &&
           (!next ||
-            next.createdTime < previous.createdTime ||
+            (next.createdTime < previous.createdTime &&
+              next.status !== 'pending') ||
             (next.id === previous.id &&
               previous.status !== 'pending' &&
               next.status === 'pending'))
@@ -48,6 +56,7 @@ export const usePerpOrder = (contractId: string, onFilled?: () => void) => {
         current.current = next
         setOrder(next)
         if (next && next.status !== 'pending' && seen.current === next.id) {
+          finished = true
           onFilledRef.current?.()
           if (next.status === 'filled')
             toast.success('Order filled at the next price', {
@@ -64,6 +73,8 @@ export const usePerpOrder = (contractId: string, onFilled?: () => void) => {
       } finally {
         loading = false
       }
+      // Another of the user's orders may still be waiting behind this one.
+      if (finished && !disposed) void load()
     }
     void load()
     const timer = setInterval(load, 2000)

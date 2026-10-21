@@ -1699,11 +1699,13 @@ All perpetual opens, adds, closes and flips are queued, non-cancellable market o
 
 Existing positions continue to receive funding and may be liquidated or auto-deleveraged while a close or flip is pending. Risk transitions run before voluntary orders at the new price. An atomic flip either closes the surviving original position and opens its replacement, or rejects both voluntary legs.
 
-At most one trade and one close per user and market may be pending; a pending close settles before a pending trade. Reuse the same idempotency key after an uncertain response (`maxFee` may differ on the retry). Use a new key only for a new instruction. A pending order cannot be cancelled, including by closing the page.
+At most one trade and one close per user and market may be pending; a pending close settles before a pending trade. A pending add or flip is bound to the position it was placed against, so if a pending close fully closes that position first, the add or flip is rejected and refunded. Reuse the same idempotency key after an uncertain response (`maxFee` may differ on the retry). Use a new key only for a new instruction. A pending order cannot be cancelled, including by closing the page.
 
 ### `POST /v0/place-perp-trade`
 
 Requires auth. Submit `contractId`, `direction` (`long` or `short`), positive `mana`, `leverage`, and a random 10-character alphanumeric `idempotencyKey`. Include `maxFee` in mana for a size-dependent-fee market. This is a fee allowance, not a price limit.
+
+Requests made with an API key pay the market's `takerFeeApiBps` when it is higher than `takerFeeBps` (10 if unset). The flat fee is `mana × leverage × rate / 10,000`. On a size-dependent-fee market, the fee at execution adds a size component that grows with the order's share of the pool. `maxFee` must cover the fee at the current pools when you submit (a flip must cover the flat fee), or the request is rejected with a 400. Leave room for the pools to move before the next price.
 
 Same-side exposure adds to the position. Opposite-side exposure queues a flip. Reserve cash is deducted from available mana and held outside market backing. A flip can also use its actual closing payout; insufficient funds at execution reject both voluntary legs.
 

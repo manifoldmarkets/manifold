@@ -3,7 +3,7 @@ import {
   PERP_NEXT_PRICE_NOTICE,
   PERP_PENDING_CLOSE_NOTICE,
 } from 'common/perps/orders'
-import { formatMoney } from 'common/util/format'
+import { formatMoneyPrecise } from 'common/util/format'
 
 export function PerpExecutionNotice({
   order,
@@ -38,7 +38,7 @@ export function PerpExecutionNotice({
       {failed && <p className="mt-1">Any reserved mana has been returned.</p>}
       {pending && order.reservedMana > 0 && (
         <p className="mt-1">
-          {formatMoney(order.reservedMana)} reserved until execution.
+          {formatMoneyPrecise(order.reservedMana)} reserved until execution.
         </p>
       )}
       {pending && (

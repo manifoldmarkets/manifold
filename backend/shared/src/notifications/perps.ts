@@ -244,9 +244,14 @@ export const createPerpOrderFailedNotification = async (
     request.kind === 'close'
       ? 'Any position you still hold stays open.'
       : 'Any reserved mana was returned.'
+  // Order errors are not all full sentences ("No eligible price arrived
+  // before expiry"), so end the reason before the next one starts.
+  const reason = (data.error ?? 'it could not be filled').trim()
   const sourceText = `Your order to ${what} on ${
     contract.question
-  } did not execute: ${data.error ?? 'it could not be filled.'} ${consequence}`
+  } did not execute: ${reason}${
+    /[.!?]$/.test(reason) ? '' : '.'
+  } ${consequence}`
 
   const notification: Notification = {
     // Order-derived, so a redelivered outbox entry inserts nothing new.

@@ -4,10 +4,13 @@ import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import { runInNewContext } from 'vm'
 import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
+import { getPerpBackingPool } from 'common/perps/amm'
 import {
   calcPerpTakerFee,
   getPerpEffectiveTakerFeeBps,
+  formatPerpFeeCents,
   perpMaxFeeFor,
+  perpOpenFeeQuote,
 } from 'common/perps/fees'
 import {
   isEligiblePerpTick,
@@ -73,6 +76,11 @@ let db: PGlite
 let orders: OrderModule
 let adapter: object
 let modules: Record<string, unknown>
+// Every statement the code under test sends, and one-shot hooks around them
+// that stand in for another connection committing at that moment.
+let sqlLog: string[]
+let beforeQuery: ((sql: string) => Promise<void>) | undefined
+let afterQuery: ((sql: string) => Promise<void>) | undefined
 const contract = {
   id: 'market',
   mechanism: 'perp',
@@ -137,9 +145,16 @@ beforeEach(async () => {
       'utf8'
     )
   )
+  sqlLog = []
+  beforeQuery = undefined
+  afterQuery = undefined
   const query = async (sql: string, values?: unknown[]): Promise<Query> => {
+    sqlLog.push(sql)
     if (sql.includes('advisory')) return { rows: [{ lock: null }] }
-    return db.query(sql, values)
+    await beforeQuery?.(sql)
+    const result = await db.query<Record<string, unknown>>(sql, values)
+    await afterQuery?.(sql)
+    return result
   }
   adapter = {
     one: async (sql: string, values?: unknown[]) => {
@@ -173,11 +188,10 @@ beforeEach(async () => {
       MNX_SOURCE_CLOCK_ALLOWANCE_MS,
       perpEligibilityCutoff,
     },
-    'common/perps/fees': {
-      calcPerpTakerFee,
-      getPerpEffectiveTakerFeeBps,
-      perpMaxFeeFor,
-    },
+    'common/perps/fees':
+      jest.requireActual<Record<string, unknown>>('common/perps/fees'),
+    'common/perps/amm':
+      jest.requireActual<Record<string, unknown>>('common/perps/amm'),
     lodash: jest.requireActual('lodash'),
     'shared/utils': {
       log: Object.assign(jest.fn(), { error: jest.fn(), warn: jest.fn() }),
@@ -673,6 +687,99 @@ it('accepts a payout-funded flip from zero cash but not from a negative balance'
 it('refuses a fee allowance below the configured fee, which could never fill', async () => {
   await expect(submit('abcdefghij', 0)).rejects.toThrow(/maxFee must cover/)
 })
+it('submits without the market lock or a contract row lock', async () => {
+  sqlLog.length = 0
+  await submit()
+  // Submissions to one market run side by side and never queue the tick.
+  expect(sqlLog.some((sql) => sql.includes('advisory'))).toBe(false)
+  expect(sqlLog.some((sql) => /from contracts[^;]*for update/.test(sql))).toBe(
+    false
+  )
+  expect(sqlLog).toContain(
+    'select balance,data from users where id=$1 for update'
+  )
+})
+it('answers an order that committed while the submission waited for the user row', async () => {
+  beforeQuery = async (sql) => {
+    if (!sql.includes('from users where id=$1 for update')) return
+    beforeQuery = undefined
+    await db.query(
+      `insert into perp_orders(id,contract_id,user_id,idempotency_key,fingerprint,request,is_api,reserved_mana,expires_time)
+      values('raced','market','alice','racedkey01','{}','{"kind":"trade"}',false,0,now()+interval '10 minutes')`
+    )
+  }
+  await expect(submit()).rejects.toThrow(/already have an order waiting/)
+  expect(await balance()).toBe(1000)
+})
+it('refuses at submission an allowance below the size fee at the current pools', async () => {
+  await db.query('update contracts set data = data || $1::jsonb', [
+    { takerFeeBps: 10, takerFeeImpact: 10 },
+  ])
+  const flat = calcPerpTakerFee(300, 10)
+  const quote = perpOpenFeeQuote({
+    grossPoolDepth: getPerpBackingPool(5000, 5000),
+    existingSize: 0,
+    existingCostBasis: 0,
+    existingPositionValue: 0,
+    existingTakerFeeCostBasis: 0,
+    addedNotional: 300,
+    baseBps: 10,
+    impact: 10,
+  }).fee
+  expect(quote).toBeGreaterThan(flat)
+  // It used to be accepted, earn the submission's rewards, and then be
+  // refused at execution.
+  await expect(submit('abcdefghij', flat)).rejects.toThrow(
+    `maxFee must be at least M$${formatPerpFeeCents(quote, 'up')}`
+  )
+  expect(await balance()).toBe(1000)
+  await expect(submit('klmnopqrst', quote)).resolves.toMatchObject({
+    status: 'pending',
+  })
+})
+it('records the price that rejected an order', async () => {
+  const o = await submit()
+  const point = { ts: o.createdTime + 10, price: 101 }
+  await settle(point, async () => {
+    throw new TestAPIError(400, 'Fee changed')
+  })
+  expect(
+    (
+      await db.query<{ status: string; execution_point: unknown }>(
+        'select status,execution_point from perp_orders'
+      )
+    ).rows[0]
+  ).toEqual({ status: 'rejected', execution_point: point })
+})
+it('recovers a waiting trade after a newer close completes first', async () => {
+  const opened = await holdLong()
+  const trade = await submit()
+  const { order: close } = await orders.enqueuePerpOrder(
+    'market',
+    'alice',
+    { kind: 'close', direction: 'long', fraction: 1 },
+    'closekey01',
+    false,
+    opened
+  )
+  // Closes settle first: this pass completes the close and leaves the add.
+  await transaction(() =>
+    orders.settlePendingPerpOrders(
+      adapter,
+      contract,
+      { ts: Date.now() + 10, price: 101 },
+      async () => filled(),
+      { limit: 1 }
+    )
+  )
+  expect(await orders.readPerpOrder('market', 'alice')).toMatchObject({
+    id: trade.id,
+    status: 'pending',
+  })
+  expect(await orders.readPerpOrder('market', 'alice', close.id)).toMatchObject(
+    { status: 'filled' }
+  )
+})
 
 it('rejects a flip after liquidation without opening its replacement', async () => {
   const opened = Date.now() - 10000
@@ -786,9 +893,37 @@ it('expires orders atomically when the market resolves', async () => {
   ).toBe('expired')
 })
 
-it('runs real engine opens, adds, flips and closes only at the next price', async () => {
-  // Reuse the production query builders, settlement math and escrow assertions.
-  // Only external transaction/broadcast infrastructure is replaced by PGlite.
+type Engine = {
+  openOrAddPosition: (
+    contractId: string,
+    userId: string,
+    direction: string,
+    mana: number,
+    leverage: number,
+    key: string,
+    isApi: boolean,
+    maxFee: number
+  ) => Promise<{ order: { createdTime: number; id: string } }>
+  closePosition: (
+    contractId: string,
+    userId: string,
+    direction: string,
+    key: string,
+    openedTime: number,
+    isApi: boolean,
+    fraction: number,
+    size: number
+  ) => Promise<{ order: { createdTime: number; id: string } }>
+  runOracleUpdate: (
+    contractId: string,
+    price: number,
+    ts: number
+  ) => Promise<unknown>
+}
+// The real engine on the test database. Reuse the production query builders,
+// settlement math and escrow assertions; only external transaction/broadcast
+// infrastructure is replaced by PGlite.
+const loadEngine = async (): Promise<Engine> => {
   await db.exec(`
     update contracts set data=data || '{"takerFeeBps":0,"takerFeeImpact":0}'::jsonb;
     alter table contract_perp_positions add primary key(contract_id,user_id,direction);
@@ -847,33 +982,11 @@ it('runs real engine opens, adds, flips and closes only at the next price', asyn
       Error,
     }
   )
-  const engine = exports as unknown as {
-    openOrAddPosition: (
-      contractId: string,
-      userId: string,
-      direction: string,
-      mana: number,
-      leverage: number,
-      key: string,
-      isApi: boolean,
-      maxFee: number
-    ) => Promise<{ order: { createdTime: number; id: string } }>
-    closePosition: (
-      contractId: string,
-      userId: string,
-      direction: string,
-      key: string,
-      openedTime: number,
-      isApi: boolean,
-      fraction: number,
-      size: number
-    ) => Promise<{ order: { createdTime: number; id: string } }>
-    runOracleUpdate: (
-      contractId: string,
-      price: number,
-      ts: number
-    ) => Promise<unknown>
-  }
+  return exports as unknown as Engine
+}
+
+it('runs real engine opens, adds, flips and closes only at the next price', async () => {
+  const engine = await loadEngine()
   const position = async () =>
     (
       await db.query<{
@@ -972,4 +1085,141 @@ it('runs real engine opens, adds, flips and closes only at the next price', asyn
       )
     ).rows.map((r) => Number(r.oracle_price))
   ).toEqual([110, 120, 115, 115, 105, 110])
+})
+
+const statuses = async () =>
+  Object.fromEntries(
+    (
+      await db.query<{ status: string; n: number }>(
+        'select status,count(*)::int as n from perp_orders group by status'
+      )
+    ).rows.map((r) => [r.status, r.n])
+  )
+const executionPoints = async () =>
+  (
+    await db.query<{ execution_point: { ts: number; price: number } }>(
+      'select execution_point from perp_orders'
+    )
+  ).rows.map((r) => r.execution_point)
+
+it('fills a backlog left at the mark before a newer point moves it (N3)', async () => {
+  const engine = await loadEngine()
+  const placed: { createdTime: number }[] = []
+  for (let i = 0; i < 11; i++) {
+    await db.query('insert into users values($1,1000,null)', [`trader${i}`])
+    placed.push(
+      (
+        await engine.openOrAddPosition(
+          'market',
+          `trader${i}`,
+          'long',
+          10,
+          2,
+          `n3order${String(i).padStart(3, '0')}`,
+          false,
+          0
+        )
+      ).order
+    )
+  }
+  const t1 = Math.max(...placed.map((o) => o.createdTime)) + 10
+  // P1's own transaction settled the first ten; before its follow-up ran, a
+  // newer point arrived (a second scheduler, a failed or abandoned pass).
+  await db.query('update contracts set data = data || $1::jsonb', [
+    { oraclePrice: 100, oraclePriceTime: t1 },
+  ])
+  await db.query('insert into oracle_prices values($1,$2,$3,null)', [
+    'btc-usd',
+    new Date(t1),
+    100,
+  ])
+  await transaction(() =>
+    orders.settlePendingPerpOrders(
+      adapter,
+      { ...contract, oraclePriceTime: t1 },
+      { ts: t1, price: 100 },
+      async () => filled(),
+      { limit: 10 }
+    )
+  )
+  expect(await statuses()).toEqual({ filled: 10, pending: 1 })
+  await engine.runOracleUpdate('market', 105, t1 + 2000)
+  // The eleventh fills at P1 instead of being rejected as having missed it.
+  expect(await statuses()).toEqual({ filled: 11 })
+  expect((await executionPoints()).every((p) => p.ts === t1)).toBe(true)
+})
+it('applies a persisted point the mark skipped before a newer one (N3)', async () => {
+  const engine = await loadEngine()
+  await db.query('update contracts set data = data || $1::jsonb', [
+    { oraclePrice: 100, oraclePriceTime: Date.now() - 1000 },
+  ])
+  const { order } = await engine.openOrAddPosition(
+    'market',
+    'alice',
+    'long',
+    100,
+    2,
+    'skipopen01',
+    false,
+    0
+  )
+  const t1 = order.createdTime + 10
+  // Persisted by one scheduler and never applied: another scheduler applied a
+  // newer point first.
+  await db.query('insert into oracle_prices values($1,$2,$3,null)', [
+    'btc-usd',
+    new Date(t1),
+    104,
+  ])
+  await engine.runOracleUpdate('market', 108, t1 + 500)
+  expect(await statuses()).toEqual({ filled: 1 })
+  expect(await executionPoints()).toEqual([{ ts: t1, price: 104 }])
+  expect(
+    Number(
+      (
+        await db.query<{ entry_price: number }>(
+          'select entry_price from contract_perp_positions'
+        )
+      ).rows[0].entry_price
+    )
+  ).toBe(104)
+  expect(
+    (
+      await db.query<{ data: { oraclePriceTime: number } }>(
+        'select data from contracts'
+      )
+    ).rows[0].data.oraclePriceTime
+  ).toBe(t1 + 500)
+})
+it('fills at a tick an order that committed after that tick read the queue', async () => {
+  const engine = await loadEngine()
+  const { order: first } = await engine.openOrAddPosition(
+    'market',
+    'alice',
+    'long',
+    100,
+    2,
+    'lateopen01',
+    false,
+    0
+  )
+  const t1 = first.createdTime + 10
+  // bob's order was stamped before the point, but its transaction commits
+  // only after the tick's settlement has read the queue.
+  afterQuery = async (sql) => {
+    if (!sql.includes('limit $5::bigint for update')) return
+    afterQuery = undefined
+    await db.query("update users set balance=balance-100 where id='bob'")
+    await db.query(
+      `insert into perp_orders(id,contract_id,user_id,idempotency_key,fingerprint,request,is_api,reserved_mana,created_time,expires_time)
+      values('lateorder','market','bob','latekey001','{}',$1,false,100,$2,now()+interval '10 minutes')`,
+      [
+        { kind: 'trade', direction: 'long', mana: 100, leverage: 2, maxFee: 0 },
+        new Date(t1 - 5),
+      ]
+    )
+  }
+  await engine.runOracleUpdate('market', 103, t1)
+  expect(await statuses()).toEqual({ filled: 2 })
+  expect((await executionPoints()).every((p) => p.ts === t1)).toBe(true)
 })
