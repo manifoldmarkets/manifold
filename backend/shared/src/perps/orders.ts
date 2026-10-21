@@ -390,9 +390,11 @@ export const enqueuePerpOrder = async (
     const id = randomBytes(16).toString('hex')
     // Slow daily feeds need enough time to produce their next observation.
     const ttl = Math.max(10 * 60_000, 2 * contract.maxOraclePriceAgeMs)
-    const order = await tx.one<StoredOrder>(
-      `insert into perp_orders(id,contract_id,user_id,idempotency_key,fingerprint,request,is_api,expected_opened_time,reserved_mana,expires_time)
-    values($1,$2,$3,$4,$5,$6,$7,$8,$9,clock_timestamp()+($10*interval '1 millisecond')) returning *`,
+    // Inserted unstamped; created_time is set as this transaction's last
+    // statement, below.
+    await tx.none(
+      `insert into perp_orders(id,contract_id,user_id,idempotency_key,fingerprint,request,is_api,expected_opened_time,reserved_mana,created_time,expires_time)
+    values($1,$2,$3,$4,$5,$6,$7,$8,$9,'infinity','infinity')`,
       [
         id,
         contractId,
@@ -403,7 +405,6 @@ export const enqueuePerpOrder = async (
         isApi,
         position?.openedTime ?? null,
         reserve,
-        ttl,
       ]
     )
     if (reserve > 0)
@@ -422,6 +423,17 @@ export const enqueuePerpOrder = async (
         true
       )
     await refreshMetrics(tx, contract, userId)
+    // An order is owed the first point sampled after created_time, but a tick
+    // can settle (or wait for) only the orders it can see, and with no market
+    // lock nothing makes it wait for this commit. Stamped last, so all that
+    // separates the stamp from visibility is the commit itself, far shorter
+    // than the next sample's tick (the scheduler runs a feed's ticks one at a
+    // time) rather than every lock wait and write above.
+    const order = await tx.one<StoredOrder>(
+      `update perp_orders set created_time=clock_timestamp(),expires_time=clock_timestamp()+($2*interval '1 millisecond')
+      where id=$1 returning *`,
+      [id, ttl]
+    )
     return { order: publicPerpOrder(order), created: true }
   }
   // READ COMMITTED with no market lock, as add-liquidity does for the same

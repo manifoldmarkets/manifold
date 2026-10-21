@@ -37,6 +37,7 @@ type Executor = (tx: unknown, order: { id: string }) => Promise<PerpOrderResult>
 type QueuedOrder = {
   id: string
   createdTime: number
+  expiresTime: number
   reservedMana: number
   status: string
   request: object
@@ -719,6 +720,19 @@ it('answers an order that committed while the submission waited for the user row
   await expect(submit()).rejects.toThrow(/already have an order waiting/)
   expect(await balance()).toBe(1000)
 })
+it('stamps an order as the last statement of its submission', async () => {
+  sqlLog.length = 0
+  const order = await submit()
+  // Every lock wait and write comes before the stamp, so a tick can see the
+  // order within its commit of the stamp.
+  expect(sqlLog[sqlLog.length - 1]).toMatch(
+    /^update perp_orders set created_time=clock_timestamp\(\)/
+  )
+  expect(order.expiresTime - order.createdTime).toBeGreaterThanOrEqual(
+    600_000 - 1
+  )
+  expect(order.expiresTime - order.createdTime).toBeLessThan(600_000 + 1_000)
+})
 it('answers a database out of connections with a 503 to retry', async () => {
   beforeQuery = async () => {
     beforeQuery = undefined
@@ -1362,6 +1376,92 @@ it("replays a skipped point by the incoming point's provider health (N3)", async
   expect(data.oraclePriceTime).toBe(t1 + 10)
   // The incoming apply recorded the real health after the replay.
   expect(data.oracleFeedHealth).toEqual(health)
+})
+it('replays two skipped points with health that keeps advancing (N3)', async () => {
+  const engine = await loadEngine()
+  const now = Date.now()
+  await db.query('update contracts set data = data || $1::jsonb', [
+    {
+      oraclePrice: 100,
+      oraclePriceTime: now - 1000,
+      oracleFeedHealth: {
+        status: 'unavailable',
+        checkedAt: now - 60_000,
+        reason: 'Provider timeout',
+      },
+    },
+  ])
+  const { order: first } = await engine.openOrAddPosition(
+    'market',
+    'alice',
+    'long',
+    100,
+    2,
+    'twoskip001',
+    false,
+    0
+  )
+  const t1 = first.createdTime + 5
+  await db.query('insert into oracle_prices values($1,$2,$3,null)', [
+    'btc-usd',
+    new Date(t1),
+    104,
+  ])
+  await new Promise((resolve) => setTimeout(resolve, 10))
+  // Placed after P1, so first owed P2.
+  const { order: second } = await engine.openOrAddPosition(
+    'market',
+    'bob',
+    'long',
+    100,
+    2,
+    'twoskip002',
+    false,
+    0
+  )
+  const t2 = second.createdTime + 5
+  await db.query('insert into oracle_prices values($1,$2,$3,null)', [
+    'btc-usd',
+    new Date(t2),
+    106,
+  ])
+  const health = {
+    status: 'available',
+    checkedAt: Date.now(),
+    expiresAt: Date.now() + 60_000,
+  }
+  await engine.runOracleUpdate(
+    'market',
+    108,
+    t2 + 10,
+    undefined,
+    undefined,
+    health
+  )
+  // Each replay's health is newer than the last one's, so neither is refused
+  // as an older fetch.
+  expect(
+    (
+      await db.query<{
+        user_id: string
+        status: string
+        execution_point: object
+      }>(
+        'select user_id,status,execution_point from perp_orders order by user_id'
+      )
+    ).rows
+  ).toEqual([
+    {
+      user_id: 'alice',
+      status: 'filled',
+      execution_point: { ts: t1, price: 104 },
+    },
+    {
+      user_id: 'bob',
+      status: 'filled',
+      execution_point: { ts: t2, price: 106 },
+    },
+  ])
 })
 it('notifies liquidations at a replayed point at its own price (N3)', async () => {
   const engine = await loadEngine()
