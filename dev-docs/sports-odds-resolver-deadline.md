@@ -37,6 +37,14 @@ foreign-key/unique/check violations) release the reservation. A resolution
 callback error and substitutes the rollback error if rollback fails. Unknown
 errors remain conservative; this is not a general error classifier.
 
+Connection acquisition failures release the reservation because the write has
+not been issued. Score writes acquire a task connection first and recheck run
+ownership inside its callback. Resolution observes entry into its transaction
+callback and successful COMMIT. Failures before callback entry or after confirmed
+COMMIT (for example notification or page revalidation failures) release the
+reservation; they do not claim an uncertain payout outcome. A lost COMMIT
+acknowledgment remains unknown.
+
 An operator must inspect the named market and establish that its old database
 session/transaction has ended before manually resolving it or restarting the
 scheduler to reset reservations. Restarting alone is not proof of cancellation.
@@ -61,3 +69,6 @@ success/failure and follow-up requests, shared state, unknown mutation outcomes
 and confirmed failures. Dependencies are mocked; no live provider, API or
 production database validation is implied. Scheduler deadline probes separately
 exercise timeout/replacement ownership with controlled timers.
+`backend/shared/src/resolve-market-lifecycle.test.ts` additionally exercises the
+real resolution helper across connection failure, delayed/lost COMMIT
+acknowledgment and post-commit revalidation failure with an offline adapter.

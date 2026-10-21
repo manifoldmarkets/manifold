@@ -1,4 +1,4 @@
-import { APIError } from 'common//api/utils'
+import { APIError } from 'common/api/utils'
 import { Answer } from 'common/answer'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -65,7 +65,10 @@ export const resolveMarketHelper = async (
   unresolvedContract: MarketContract,
   resolver: User,
   creator: User,
-  { value, resolutions, probabilityInt, outcome, answerId }: ResolutionParams
+  { value, resolutions, probabilityInt, outcome, answerId }: ResolutionParams,
+  // Synchronous observer for callers that must distinguish acquisition failures
+  // and post-commit side-effect failures from an uncertain transaction outcome.
+  onTransactionState?: (state: 'started' | 'committed') => void
 ) => {
   const pg = createSupabaseDirectClient()
 
@@ -77,6 +80,7 @@ export const resolveMarketHelper = async (
     updatedContractAttrs,
     userUpdates,
   } = await pg.tx({ mode: SERIAL_MODE }, async (tx) => {
+    onTransactionState?.('started')
     const { closeTime, id: contractId } = unresolvedContract
     const {
       contract: c,
@@ -308,6 +312,7 @@ export const resolveMarketHelper = async (
     }
   })
 
+  onTransactionState?.('committed')
   broadcastUpdatedContract(resolvedContract.visibility, updatedContractAttrs)
   broadcastUpdatedMetrics(updatedContractMetrics)
   const userPayoutsWithoutLoans = groupPayoutsByUser(payoutsWithoutLoans)

@@ -744,7 +744,10 @@ export async function pollOddsScoresAndResolve(
 
 interface ScoreGameRun {
   isCurrent: () => boolean
-  mutate: (work: () => Promise<unknown>) => Promise<void>
+  mutate: (
+    work: () => Promise<unknown>,
+    outcomeIsKnown?: () => boolean
+  ) => Promise<void>
 }
 
 // These errors establish that the server rejected the command. pg-promise's
@@ -777,13 +780,14 @@ async function withGameReservation(
   try {
     await work({
       isCurrent,
-      mutate: async (mutation) => {
+      mutate: async (mutation, outcomeIsKnown) => {
         uncertainMutation = true
         try {
           await mutation()
           uncertainMutation = false
         } catch (error) {
-          uncertainMutation = !mutationDefinitelyEnded(error)
+          uncertainMutation =
+            !outcomeIsKnown?.() && !mutationDefinitelyEnded(error)
           throw error
         }
       },
@@ -833,6 +837,29 @@ function teamMismatch(
   return `[sports-odds-resolve] ${game.contract.id}: the score feed has ${score.home_team} v ${score.away_team} for event ${game.eventId}, but the market is ${teams.home} v ${teams.away}. Not scoring or resolving it; check the game and resolve it by hand.`
 }
 
+async function writeScorePatch(
+  pg: SupabaseDirectClient,
+  id: string,
+  patch: Record<string, unknown>,
+  run: ScoreGameRun
+) {
+  let issued = false
+  await run.mutate(
+    () =>
+      // A task acquires a connection before entering this callback, without
+      // adding a transaction. Acquisition failures cannot have sent this write.
+      pg.task(async (task) => {
+        if (!run.isCurrent()) return
+        issued = true
+        await task.none(
+          `update contracts set data = data || $1::jsonb where id = $2`,
+          [JSON.stringify(patch), id]
+        )
+      }),
+    () => !issued
+  )
+}
+
 async function writeLiveScore(
   pg: SupabaseDirectClient,
   game: PendingGame,
@@ -856,12 +883,7 @@ async function writeLiveScore(
     sportsLiveUpdatedTime: now,
   }
   if (!run.isCurrent()) return
-  await run.mutate(() =>
-    pg.none(`update contracts set data = data || $1::jsonb where id = $2`, [
-      JSON.stringify(patch),
-      game.contract.id,
-    ])
-  )
+  await writeScorePatch(pg, game.contract.id, patch, run)
   if (!run.isCurrent()) return
   await run.mutate(() => publishSportsLiveScore(game.contract.id, patch))
 }
@@ -904,12 +926,7 @@ async function finishGame(
     sportsLiveUpdatedTime: Date.now(),
   }
   if (!run.isCurrent()) return
-  await run.mutate(() =>
-    pg.none(`update contracts set data = data || $1::jsonb where id = $2`, [
-      JSON.stringify(patch),
-      contract.id,
-    ])
-  )
+  await writeScorePatch(pg, contract.id, patch, run)
   if (!run.isCurrent()) return
   await run.mutate(() => publishSportsLiveScore(contract.id, patch))
   if (!run.isCurrent()) return
@@ -930,5 +947,14 @@ async function finishGame(
   }
   const multi = { ...(contract as CPMMMultiContract), answers }
   if (!run.isCurrent()) return
-  await run.mutate(() => resolveMarketHelper(multi, creator, creator, args))
+  let resolutionMayBeRunning = false
+  await run.mutate(
+    () =>
+      resolveMarketHelper(multi, creator, creator, args, (transactionState) => {
+        resolutionMayBeRunning = transactionState === 'started'
+      }),
+    // Before the transaction callback no mutation has run. After COMMIT,
+    // notification/revalidation errors cannot make the payout outcome unknown.
+    () => !resolutionMayBeRunning
+  )
 }

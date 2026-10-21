@@ -103,10 +103,15 @@ const event: OddsApiEvent = {
 }
 
 function database() {
+  const none = jest.fn().mockResolvedValue(undefined)
   const pg = {
     manyOrNone: jest.fn().mockResolvedValue([]),
     map: jest.fn().mockResolvedValue([]),
-    none: jest.fn().mockResolvedValue(undefined),
+    none,
+    task: jest.fn(
+      async (work: (task: { none: typeof none }) => Promise<void>) =>
+        work({ none })
+    ),
   }
   return {
     pg,
@@ -457,7 +462,15 @@ it.each(['write', 'resolve'] as const)(
       throw new Error('Query read timeout')
     }
     if (boundary === 'write') db.pg.none.mockImplementationOnce(fail)
-    else jest.mocked(resolveMarketHelper).mockImplementationOnce(fail)
+    else
+      jest
+        .mocked(resolveMarketHelper)
+        .mockImplementationOnce(
+          async (_contract, _resolver, _creator, _args, onTransactionState) => {
+            onTransactionState?.('started')
+            return fail()
+          }
+        )
     jest
       .mocked(getScores)
       .mockResolvedValue([reviewScore(boundary === 'resolve')])
@@ -525,6 +538,77 @@ it('a failed answer read releases its reservation and stale failure cannot mark 
   expect(state.missing).toEqual({ game: NOW + 180_000 })
   expect(db.pg.none).toHaveBeenCalledTimes(1)
   expect(resolveMarketHelper).not.toHaveBeenCalled()
+})
+
+it.each([false, true])(
+  'a post-commit resolution error releases its reservation (abandoned: %s)',
+  async (abandoned) => {
+    const db = liveDatabase()
+    const state = newScorePollState()
+    let current = true
+    jest.mocked(getScores).mockResolvedValue([reviewScore(true)])
+    jest
+      .mocked(resolveMarketHelper)
+      .mockImplementationOnce(
+        async (_contract, _resolver, _creator, _args, onTransactionState) => {
+          onTransactionState?.('started')
+          onTransactionState?.('committed')
+          if (abandoned) {
+            current = false
+            state.missing.game = NOW + 180_000
+          }
+          throw new Error('revalidation connection failed after commit')
+        }
+      )
+    await pollOddsScoresAndResolve(db.client, state, () => current)
+    expect(state.inFlight.size).toBe(0)
+    expect(log.error).not.toHaveBeenCalledWith(
+      expect.stringContaining('mutation outcome unknown')
+    )
+    if (abandoned) expect(state.missing.game).toBe(NOW + 180_000)
+    else
+      expect(log).toHaveBeenCalledWith(
+        expect.stringContaining('revalidation connection failed after commit')
+      )
+  }
+)
+
+it.each(['write', 'resolve'] as const)(
+  'a connection acquisition failure before %s releases its reservation for retry',
+  async (boundary) => {
+    const db = liveDatabase()
+    const state = newScorePollState()
+    const error = new Error('connection acquisition failed')
+    if (boundary === 'write') db.pg.task.mockRejectedValueOnce(error)
+    else jest.mocked(resolveMarketHelper).mockRejectedValueOnce(error)
+    jest
+      .mocked(getScores)
+      .mockResolvedValue([reviewScore(boundary === 'resolve')])
+    await pollOddsScoresAndResolve(db.client, state)
+    expect(state.inFlight.size).toBe(0)
+    expect(log.error).not.toHaveBeenCalledWith(
+      expect.stringContaining('mutation outcome unknown')
+    )
+    expect(db.pg.none).toHaveBeenCalledTimes(boundary === 'write' ? 0 : 1)
+    jest.mocked(Date.now).mockReturnValue(NOW + 5 * 60_000)
+    const result = await pollOddsScoresAndResolve(db.client, state)
+    expect(boundary === 'write' ? result.live : result.resolved).toBe(1)
+  }
+)
+
+it('abandonment during connection acquisition skips the score write', async () => {
+  const db = liveDatabase()
+  const state = newScorePollState()
+  let current = true
+  db.pg.task.mockImplementationOnce(async (work) => {
+    current = false
+    await work({ none: db.pg.none })
+  })
+  jest.mocked(getScores).mockResolvedValue([reviewScore(false)])
+  await pollOddsScoresAndResolve(db.client, state, () => current)
+  expect(db.pg.none).not.toHaveBeenCalled()
+  expect(publishSportsLiveScore).not.toHaveBeenCalled()
+  expect(state.inFlight.size).toBe(0)
 })
 
 it('R4178-01/02: a stale provider result cannot overwrite a replacement final', async () => {

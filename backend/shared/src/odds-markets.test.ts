@@ -124,13 +124,16 @@ function database(opts: { onLock?: () => void } = {}) {
       return { id: 'official', slug: 'official', privacy_status: 'curated' }
     return null
   })
+  const none = jest.fn(async (sql: string) => {
+    writes.push(sql)
+  })
   const pg = {
     oneOrNone,
     manyOrNone: jest.fn().mockResolvedValue([]),
     map: jest.fn().mockResolvedValue([]),
-    none: jest.fn(async (sql: string) => {
-      writes.push(sql)
-    }),
+    none,
+    task: async (work: (task: { none: typeof none }) => Promise<void>) =>
+      work({ none }),
     tx: async (run: (tx: SupabaseDirectClient) => Promise<Contract>) => {
       let unlock: (() => void) | undefined
       const inserted: Contract[] = []
@@ -622,7 +625,8 @@ it.each([
       expect.objectContaining({ id: 'game' }),
       creator,
       creator,
-      resolution
+      resolution,
+      expect.any(Function)
     )
   }
 )
@@ -673,7 +677,8 @@ it.each([
       expect.objectContaining({ id: 'game' }),
       creator,
       creator,
-      { outcome: answerId, resolutions: { [answerId]: 100 } }
+      { outcome: answerId, resolutions: { [answerId]: 100 } },
+      expect.any(Function)
     )
   }
 )
@@ -856,7 +861,8 @@ describe('score feeds that disagree with the market', () => {
       expect.objectContaining({ id: 'game' }),
       creator,
       creator,
-      { outcome: 'home-answer', resolutions: { 'home-answer': 100 } }
+      { outcome: 'home-answer', resolutions: { 'home-answer': 100 } },
+      expect.any(Function)
     )
     expect(publishSportsLiveScore).toHaveBeenCalledWith(
       'game',
@@ -1348,7 +1354,8 @@ describe('score polling settings', () => {
       expect.objectContaining({ id: 'game' }),
       creator,
       creator,
-      { outcome: 'home-answer', resolutions: { 'home-answer': 100 } }
+      { outcome: 'home-answer', resolutions: { 'home-answer': 100 } },
+      expect.any(Function)
     )
   })
 
