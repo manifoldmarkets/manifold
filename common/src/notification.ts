@@ -419,6 +419,11 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed:
       'When your perpetual futures position is auto-deleveraged (ADL) because the opposing pool is insolvent',
   },
+  perp_order_failed: {
+    simple: 'Perp orders that did not fill',
+    detailed:
+      'When a queued perpetual futures order is rejected or expires instead of filling',
+  },
 }
 
 export type BettingStreakData = {

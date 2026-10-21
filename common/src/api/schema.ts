@@ -9,6 +9,7 @@ import {
   SocialPostDetail,
   SocialLikerPage,
 } from '../social-post'
+import { PerpOrder } from '../perps/orders'
 import { PerpSuggestion } from '../perps/suggestion'
 import { MNX_LINK_LOCATIONS } from 'common/perps/mnx-cta'
 import { MnxDashboard, perpConfigFields } from 'common/perps/management'
@@ -1075,46 +1076,38 @@ export const API = (_apiTypeCheck = {
     returns: {} as LiteMarket,
     props: createPerpSchema,
   },
+  'internal-perp-order-effects': {
+    method: 'POST',
+    visibility: 'private',
+    authed: false,
+    returns: {} as { processed: number },
+    props: z
+      .object({
+        apiSecret: z.string().min(1),
+        orderIds: z.array(z.string().min(1)).max(25),
+      })
+      .strict(),
+  },
+  'get-perp-order': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { order: PerpOrder | null },
+    props: z.object({ contractId: z.string(), orderId: z.string().optional() }),
+    cache: 'no-store',
+  },
   'place-perp-trade': {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    returns: {} as {
-      position: {
-        userId: string
-        direction: 'long' | 'short'
-        size: number
-        costBasis: number
-        originalCostBasis: number
-        entryPrice: number
-        leverage: number
-        liquidationPrice: number
-      }
-      // Open-side taker fee charged on this call, in mana. Closing is free;
-      // a flip pays the fee on its newly opened leg only.
-      fee: number
-      // Effective rate actually charged (fee / added notional × 10_000) and
-      // the position's resulting share of the pool depth it was priced
-      // against — the authoritative numbers for bots and analytics. Absent
-      // only on idempotent replays of trades stored before these existed.
-      feeBps?: number
-      poolShareAfter?: number
-    },
+    returns: {} as { order: PerpOrder },
     props: placePerpTradeSchema,
   },
   'close-perp-position': {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    returns: {} as {
-      payout: number
-      pnl: number
-      /** Fraction actually closed, which can exceed the requested one when
-       * the remainder would have been dust. */
-      fraction: number
-      /** Notional left open; 0 when the whole position was closed. */
-      remainingSize: number
-    },
+    returns: {} as { order: PerpOrder },
     props: closePerpPositionSchema,
   },
   // The open-weight index halts on models it cannot classify. These two

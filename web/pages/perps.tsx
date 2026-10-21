@@ -2904,7 +2904,7 @@ const MarketParameters = (props: { contract: PerpContract }) => {
     {
       label: 'Oracle',
       value: `pauses after ${formatCountdown(contract.maxOraclePriceAgeMs)}`,
-      note: 'Trades execute at the latest accepted oracle price. If the feed goes quiet for longer than this, opening and closing pause until it recovers.',
+      note: 'Orders wait for the next eligible oracle update. The displayed price is indicative; slow feeds may take longer.',
     },
   ]
   return (
