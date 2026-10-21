@@ -36,7 +36,14 @@ const BaseMention = Mention.extend({
           // The just-typed character isn't in the doc yet, so "@mods" ends at range.to
           const from = range.to - '@mods'.length
           // Bail if text is selected or part of "@mods" arrived with this input
-          if (!selection.empty || from < range.from) return null
+          if (
+            !selection.empty ||
+            from < range.from ||
+            // Compositionend runs after insertion; batched input can include
+            // part of the token. Only replace a complete token already in the doc.
+            state.doc.textBetween(from, range.to).toLowerCase() !== '@mods'
+          )
+            return null
           tr.replaceWith(
             from,
             range.to,
