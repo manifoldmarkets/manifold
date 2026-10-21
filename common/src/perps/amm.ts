@@ -429,7 +429,9 @@ export const applyADL = (state: PerpState, price: number) => {
   // reserve, which funding grows (see debitPool).
   //
   // Each assignment moves escrow by at most about an ULP of the pool it
-  // adjusts, which assertPerpEscrowBalance tolerates.
+  // adjusts. assertPerpEscrowBalance tolerates that on pools under about 4e12
+  // mana; past that an ULP outgrows its 1e-3 cap, as the recipient's
+  // assignment alone always has.
   const adjustedL =
     transferToL > 0 ? CL : transferToS > 0 ? Math.max(L - transferToS, CL) : L
   const adjustedS =
