@@ -67,40 +67,52 @@ beforeEach(() => {
   jest.spyOn(Date, 'now').mockReturnValue(now)
 })
 
-it('persists a new unchanged observation while a market order is waiting', async () => {
-  const db = new PGlite()
-  try {
-    await db.exec(`
+// The stamp is unchanged in both cases. Only a first copy that arrived stamped
+// ahead of its own receipt (ineligible then) can still advance a waiting order.
+it.each([
+  ['re-persists a mark first received stamped ahead', now - 2000, true],
+  ['skips a re-received mark orders already saw', now - 500, false],
+])(
+  'while a market order is waiting, %s',
+  async (_name, previousTs, persisted) => {
+    const db = new PGlite()
+    try {
+      await db.exec(`
       create table contracts(id text, data jsonb);
       create table perp_orders(id text, contract_id text, status text);
       create table oracle_prices(feed_id text, ts timestamptz, price numeric, source_ts timestamptz);
       insert into perp_orders values('order','market','pending');
     `)
-    await db.query('insert into contracts values($1,$2)', [
-      'market',
-      { oracleFeedId: feed.id },
-    ])
-    await db.query('insert into oracle_prices values($1,$2,$3,$4)', [
-      feed.id,
-      new Date(now - 2000),
-      point.price,
-      new Date(point.sourceTs),
-    ])
-    const tx = {
-      one: jest.fn(async () => ({})),
-      oneOrNone: async (sql: string, values: unknown[]) =>
-        (await db.query(sql, values)).rows[0] ?? null,
+      await db.query('insert into contracts values($1,$2)', [
+        'market',
+        { oracleFeedId: feed.id },
+      ])
+      await db.query('insert into oracle_prices values($1,$2,$3,$4)', [
+        feed.id,
+        new Date(previousTs),
+        point.price,
+        new Date(point.sourceTs),
+      ])
+      const tx = {
+        one: jest.fn(async () => ({})),
+        oneOrNone: async (sql: string, values: unknown[]) =>
+          (await db.query(sql, values)).rows[0] ?? null,
+      }
+      const pg = {
+        tx: async (
+          _options: unknown,
+          run: (t: typeof tx) => Promise<unknown>
+        ) => run(tx),
+      } as unknown as SupabaseDirectClient
+      await publishOracleObservation(pg, feed, { point, health })
+      if (persisted)
+        expect(insertOraclePrices).toHaveBeenCalledWith(tx, feed.id, [point])
+      else expect(insertOraclePrices).not.toHaveBeenCalled()
+    } finally {
+      await db.close()
     }
-    const pg = {
-      tx: async (_options: unknown, run: (t: typeof tx) => Promise<unknown>) =>
-        run(tx),
-    } as unknown as SupabaseDirectClient
-    await publishOracleObservation(pg, feed, { point, health })
-    expect(insertOraclePrices).toHaveBeenCalledWith(tx, feed.id, [point])
-  } finally {
-    await db.close()
   }
-})
+)
 afterEach(() => jest.restoreAllMocks())
 
 it('publishes before applying, and hands health to the same engine transition', async () => {

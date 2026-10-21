@@ -1,6 +1,7 @@
 import { getConsensusMedian } from 'common/perps/oracle'
 import { PoolKind, readPoolSpotPrice } from 'common/perps/solana-pools'
 
+import { localOracleClock, OracleClock } from './oracle-clock'
 import { SolanaAccount, getMultipleAccounts } from './solana-rpc'
 import { log } from './utils'
 
@@ -189,26 +190,32 @@ const ALL_POOL_ADDRESSES: string[] = Array.from(
 type PoolSnapshot = Map<string, SolanaAccount | null>
 
 type SharedPoolSnapshot = {
+  // Local time, for the share window only.
   startedAt: number
+  // The observation stamp, read from the creating caller's clock before the RPC.
+  sampledAt: Promise<number>
   promise: Promise<PoolSnapshot>
 }
 let sharedSnapshot: SharedPoolSnapshot | null = null
 
-const fetchPoolSnapshot = (): SharedPoolSnapshot => {
+const fetchPoolSnapshot = (clock: OracleClock): SharedPoolSnapshot => {
   const now = Date.now()
   if (sharedSnapshot && now - sharedSnapshot.startedAt < POOL_SNAPSHOT_SHARE_MS)
     return sharedSnapshot
-  const promise = getMultipleAccounts(
-    ALL_POOL_ADDRESSES,
-    FETCH_TIMEOUT_MS
-  ).then(({ accounts }) => {
-    const snapshot: PoolSnapshot = new Map()
-    ALL_POOL_ADDRESSES.forEach((address, i) =>
-      snapshot.set(address, accounts[i] ?? null)
-    )
-    return snapshot
-  })
-  sharedSnapshot = { startedAt: now, promise }
+  const sampledAt = clock()
+  const promise = sampledAt
+    .then(() => getMultipleAccounts(ALL_POOL_ADDRESSES, FETCH_TIMEOUT_MS))
+    .then(({ accounts }) => {
+      const snapshot: PoolSnapshot = new Map()
+      ALL_POOL_ADDRESSES.forEach((address, i) =>
+        snapshot.set(address, accounts[i] ?? null)
+      )
+      return snapshot
+    })
+  // A failed clock read reaches callers through sampledAt; do not let the
+  // read that depends on it become an unhandled rejection.
+  promise.catch(() => {})
+  sharedSnapshot = { startedAt: now, sampledAt, promise }
   return sharedSnapshot
 }
 
@@ -239,11 +246,13 @@ const buildSources = (
   }))
 
 export const fetchXStockUsdPrice = async (
-  spec: XStockSpec
+  spec: XStockSpec,
+  clock: OracleClock = localOracleClock
 ): Promise<{ ts: number; price: number } | null> => {
   // Every feed sharing a cached RPC snapshot must retain its original stamp.
   // A later caller must not present an already sampled price as a future tick.
-  const snapshot = fetchPoolSnapshot()
+  const snapshot = fetchPoolSnapshot(clock)
+  const ts = await snapshot.sampledAt
   const sources = buildSources(spec, snapshot.promise)
   const results = await Promise.allSettled(
     sources.map(async (s) => {
@@ -281,5 +290,5 @@ export const fetchXStockUsdPrice = async (
     )
     return null
   }
-  return { ts: snapshot.startedAt, price }
+  return { ts, price }
 }

@@ -29,7 +29,7 @@ export function PerpExecutionNotice({
       </p>
       <p className="mt-1">
         {pending
-          ? 'Order submitted. You can leave this page; execution continues automatically. Orders cannot be cancelled.'
+          ? 'Order submitted. It executes automatically even if you leave this page; if it cannot fill, you will be notified and any reserve is returned. Orders cannot be cancelled.'
           : failed
           ? order.error ??
             'Your order could not execute. Reserved mana was returned.'

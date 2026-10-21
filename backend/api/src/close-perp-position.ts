@@ -1,6 +1,8 @@
 import { HOUR_MS } from 'common/util/time'
 import { closePosition } from 'shared/perps/engine'
+import { log } from 'shared/utils'
 import { APIHandler } from './helpers/endpoint'
+import { advancePerpBettingStreak } from './helpers/perp-streak'
 import { assertPerpCloseEnabled } from './helpers/perp-trading-mode'
 import { rateLimitByUser } from './helpers/rate-limit'
 
@@ -17,17 +19,28 @@ const closePerpPositionInner: APIHandler<'close-perp-position'> = async (
     fraction,
     expectedSize,
   } = body
+  const isApi = auth.creds.kind === 'key'
+  const { order, created } = await closePosition(
+    contractId,
+    auth.uid,
+    direction,
+    idempotencyKey,
+    expectedOpenedTime,
+    isApi,
+    fraction ?? 1,
+    expectedSize
+  )
   return {
-    order: await closePosition(
-      contractId,
-      auth.uid,
-      direction,
-      idempotencyKey,
-      expectedOpenedTime,
-      auth.creds.kind === 'key',
-      fraction ?? 1,
-      expectedSize
-    ),
+    result: { order },
+    continue: async () => {
+      // See place-perp-trade: the submission earns the day's streak.
+      if (!created) return
+      try {
+        await advancePerpBettingStreak(auth.uid, contractId, isApi)
+      } catch (err) {
+        log('perp streak update failed (non-fatal):', err)
+      }
+    },
   }
 }
 

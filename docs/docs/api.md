@@ -1699,7 +1699,7 @@ All perpetual opens, adds, closes and flips are queued, non-cancellable market o
 
 Existing positions continue to receive funding and may be liquidated or auto-deleveraged while a close or flip is pending. Risk transitions run before voluntary orders at the new price. An atomic flip either closes the surviving original position and opens its replacement, or rejects both voluntary legs.
 
-Only one order per user and market may be pending. Reuse the same idempotency key after an uncertain response. Use a new key only for a new instruction. A pending order cannot be cancelled, including by closing the page.
+At most one trade and one close per user and market may be pending; a pending close settles before a pending trade. Reuse the same idempotency key after an uncertain response (`maxFee` may differ on the retry). Use a new key only for a new instruction. A pending order cannot be cancelled, including by closing the page.
 
 ### `POST /v0/place-perp-trade`
 
@@ -1719,7 +1719,7 @@ Requires auth. Pass `contractId` and optionally `orderId`. Returns `{ order: Per
 
 Poll until terminal. A filled trade result has `kind: 'trade'`, `position`, `fee`, and optional `feeBps` and `poolShareAfter`. A filled close has `kind: 'close'`, `payout`, `pnl`, `fraction`, and `remainingSize`. A rejected or expired order has an `error`, with its reservation released. It does not mean an existing position was closed.
 
-Orders are attempted once at the next eligible accepted observation. If infrastructure misses that observation, the order is rejected and refunded rather than silently filled at a later price. Expiry is serviced independently of oracle health.
+Orders fill at the next eligible accepted observation; momentary database contention retries at that same price. If that observation is missed entirely, the order is rejected and refunded rather than silently filled at a later price. Expiry is serviced independently of oracle health, and a rejected or expired order notifies its owner.
 
 ### `GET /v0/get-perp-positions`
 

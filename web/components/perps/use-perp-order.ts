@@ -75,7 +75,9 @@ export const usePerpOrder = (contractId: string, onFilled?: () => void) => {
   return {
     order,
     pending: order?.status === 'pending',
-    acceptOrder: (next: PerpOrder) => {
+    // Optional: an API still on immediate execution answers without `order`.
+    acceptOrder: (next: PerpOrder | undefined) => {
+      if (!next) return
       revision.current++
       current.current = next
       seen.current = next.id

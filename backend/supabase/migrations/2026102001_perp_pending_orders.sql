@@ -24,7 +24,9 @@ create table
     unique (user_id, contract_id, idempotency_key)
   );
 
-create unique index perp_orders_one_pending on public.perp_orders (contract_id, user_id)
+-- One pending trade and one pending close per user and market, so a waiting
+-- open or add never blocks an exit.
+create unique index perp_orders_one_pending on public.perp_orders (contract_id, user_id, (request ->> 'kind'))
 where
   status = 'pending';
 
@@ -36,7 +38,7 @@ create index perp_orders_owner on public.perp_orders (user_id, contract_id, crea
 
 create index perp_orders_participation on public.perp_orders (completed_time, id)
 where
-  status = 'filled'
+  status in ('filled', 'rejected', 'expired')
   and participation_applied_at is null;
 
 alter table public.perp_orders enable row level security;

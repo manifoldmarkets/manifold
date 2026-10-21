@@ -511,7 +511,7 @@ export const PerpBetPanel = (props: {
         maxFee,
       })
       acceptOrder(res.order)
-      if (res.order.status === 'pending')
+      if (res.order?.status === 'pending')
         toast('Order submitted — waiting for the next price')
       pendingTrade.current = null
       onTrade?.()

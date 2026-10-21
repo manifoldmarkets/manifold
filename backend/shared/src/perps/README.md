@@ -14,15 +14,17 @@ explicit (see "Integration points" below).
 
 Public `openOrAddPosition` and `closePosition` enqueue all user orders. There is no synchronous cached-price execution path. `runOracleUpdate` performs liquidation and ADL, then settles eligible queued orders in the same serialized transaction. Existing private settlement math handles fees, margin, partial closes, harmonic entry merging and atomic flips.
 
-The `perp_orders` migration is required before deploying the API or scheduler. One pending instruction per user and contract is enforced by a partial unique index. Orders cannot be cancelled. Idempotent retries return the same instruction. A missing bound position rejects an add, close or flip instead of creating an unintended fresh position.
+The `perp_orders` migration is required before deploying the API or scheduler. One pending trade and one pending close per user and contract are enforced by a partial unique index, so a waiting open or add never blocks an exit; closes settle first. Orders cannot be cancelled. Idempotent retries return the same instruction. A missing bound position rejects an add, close or flip instead of creating an unintended fresh position.
 
 BTC, xStocks and daily publisher sampling timestamps use request start. Shared xStocks snapshots retain that original timestamp across feeds. MNX additionally requires its provider mark timestamp to be after submission; re-received cached marks do not qualify. Daily source timestamps describe reporting periods, so those feeds use their accepted observation time. This execution rule does not claim to remove all upstream cache latency or predictable published-index moves.
 
 While an order waits, `USER -> BANK:PERP_ORDER_ESCROW` holds its cash. `PERP_ORDER_RELEASE` returns it inside the same transaction as fill, rejection or expiry. The ordinary margin and fee transfers then execute. Pending cash never enters long or short backing, so the existing contract-ledger-equals-pools invariant remains unchanged. Pending cash is included at face value in authoritative user-contract metrics with zero profit.
 
-Pending orders cause unchanged-price observations to be persisted, avoiding a wait-for-a-different-number deadlock on fast feeds. If a previously published eligible observation was missed, refund and reject rather than selecting a later price. Database and invariant faults roll back the whole tick; ordinary user validation failures roll back only that voluntary instruction and refund it. Expiry runs from oracle dispatcher housekeeping even during provider outages. Successful fills create durable participation work, relayed to the API writer for the existing streak and creator-bonus helpers; yesterday's fills cannot farm today's streak on retries.
+Pending orders cause unchanged-price observations to be persisted, avoiding a wait-for-a-different-number deadlock on fast feeds. If a previously published eligible observation was missed, refund and reject rather than selecting a later price. To keep misses rare, a bounded fast tick that gives up while orders wait is retried without bounds (applied late rather than skipped). Each order settles in its own savepoint: lock or serialization contention leaves it pending at the same price for a follow-up transaction (and scheduler housekeeping), and any other failure, including an engine invariant, rejects and refunds that order only; neither can roll back the price, liquidations or ADL. At most `PERP_ORDERS_PER_SETTLEMENT` orders settle per transaction; the rest continue at the same price in follow-up transactions. Expiry runs from oracle dispatcher housekeeping even during provider outages. Completed orders create durable outbox work relayed to the API writer, which pays creator bonuses for fills, broadcasts the new balance (scheduler broadcasts reach no browser), and notifies the trader when an order is rejected or expires. The betting streak is credited on submission, the trader's own action, as immediate trades did.
 
-Deployment requires a coordinated cutover: stop exposure increases, apply the migration, deploy API and scheduler, then deploy the web client and invalidate old bundles before reopening. Both trade endpoints now return `{order}`. Old clients must migrate; do not keep an immediate-fill compatibility route. Roll back by pausing trading and refunding unresolved pending instructions, never by selectively repricing them at the current cache. No deployment is performed by the implementation branch.
+`PERP_TRADING_MODE` gates submissions only; orders already queued still fill. To stop them, drain with `backend/scripts/refund-pending-perp-orders.ts --apply` (or toggle MANA trading off site-wide). Roll back by pausing trading and running that drain before deploying code that does not know `perp_orders`, never by selectively repricing orders at the current cache.
+
+Deployment requires a coordinated cutover, in this order: stop exposure increases (`PERP_TRADING_MODE=reduce-only` on the API), apply the migration, deploy **both** scheduler instances (`prod perps` settles fast feeds and daily publishers; `prod main` applies the DAU feed through update-stats), deploy the API from a clean checkout at the PR head, then merge, which deploys the web client through Vercel. The new schedulers are inert while no orders exist, and an API that queues orders before `scheduler-perps` can settle them would strand closes. Invalidate old bundles before reopening. Both trade endpoints now return `{order}`. Old clients must migrate; do not keep an immediate-fill compatibility route. No deployment is performed by the implementation branch.
 
 ## Files
 
@@ -763,6 +765,10 @@ The API reads `PERP_TRADING_MODE` on each request:
 - `enabled` permits creation, opens, adds, flips, and closes;
 - `reduce-only` blocks creation and exposure increases while preserving closes;
 - `halted` blocks all user-initiated PERP trading, including closes.
+
+These gate submission only: orders already queued still execute at their next
+eligible observation. Drain them with `refund-pending-perp-orders.ts` (see
+"Next-price market orders").
 
 An absent value is `enabled` only when the compiled `PERPS_ENABLED` switch is
 true. A false compiled switch cannot be overridden at runtime and remains at

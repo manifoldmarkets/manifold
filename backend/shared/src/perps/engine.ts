@@ -69,6 +69,7 @@ import {
   OraclePoint,
   validateBasicOraclePoint,
 } from 'common/perps/oracle'
+import { MNX_SOURCE_CLOCK_ALLOWANCE_MS } from 'common/perps/orders'
 import { removeUndefinedProps } from 'common/util/object'
 import { randomStringRegex } from 'common/util/random'
 import { UserBan } from 'common/user'
@@ -396,6 +397,7 @@ const getIdempotentEvent = async (
      from contract_perp_events
      where contract_id = $1
        and user_id = $2
+       and data ? 'idempotencyKey'
        and data->>'idempotencyKey' = $3
        and event_type = any($4)
      limit 1`,
@@ -520,7 +522,11 @@ const executePerpTrade = async (
    * part of the idempotency fingerprint: a replay returns the stored result
    * of a trade that already happened. */
   maxFee: number | undefined,
-  executionTx: SupabaseTransaction
+  executionTx: SupabaseTransaction,
+  /** A queued order's reserve. Affordability counts no cash beyond it, so a
+   * balance change after the execution price is public cannot decide whether
+   * the order fills. */
+  fundingCap?: number
 ) => {
   assertIdempotencyKey(idempotencyKey)
   if (!Number.isFinite(mana) || mana <= 0)
@@ -883,7 +889,12 @@ const executePerpTrade = async (
     // client's affordability check is exactly this one: margin plus the fee
     // as priced above, funded by balance plus a flip's free close payout.
     const cashFlow = calculatePerpOpenCashFlow({
-      balance: trader.balance,
+      // The reserve sits a float step under the exact balance; the tolerance
+      // covers that and nothing a trader could use.
+      balance:
+        fundingCap === undefined
+          ? trader.balance
+          : Math.min(trader.balance, fundingCap * (1 + 1e-12) + 1e-9),
       margin: mana,
       openFee,
       closePayout,
@@ -1962,7 +1973,10 @@ export const runOracleUpdate = async (
   bounds?: OracleUpdateBounds,
   oracleFeedHealth?: OracleFeedHealth
 ): Promise<OracleUpdateResult | null> => {
-  return runPerpTransaction(
+  const point = { price: newPrice, ts, sourceTs }
+  let backlog = false
+  let deferredAtTick: string[] = []
+  const update = await runPerpTransaction(
     async (pgTrans) => {
       const applyTick = async () => {
         // Bounded callers fail fast rather than queue behind whoever holds the
@@ -2251,12 +2265,14 @@ export const runOracleUpdate = async (
           [contractId]
         )
         if (!row) throw new Error('Perp disappeared during execution')
-        await settlePendingPerpOrders(
+        const settled = await settlePendingPerpOrders(
           pgTrans,
           row.data,
-          { price: newPrice, ts, sourceTs },
+          point,
           executeQueuedPerpOrder
         )
+        backlog = settled.deferred.length + settled.remaining > 0
+        deferredAtTick = settled.deferred
         const current = await pgTrans.oneOrNone<{ data: PerpContract }>(
           'select data from contracts where id=$1',
           [contractId]
@@ -2277,6 +2293,119 @@ export const runOracleUpdate = async (
       ? { isExpectedError: isOracleTickTimeout, tag: FAST_TICK_TX_TAG }
       : undefined
   )
+  // Orders the tick deferred (contention) or did not reach (the settlement
+  // cap) still fill at this price, each pass in its own fresh transaction,
+  // before this feed's next tick can move it. A contended order is retried a
+  // few times, so one busy row cannot cancel its order by outlasting a single
+  // attempt, then skipped so the orders behind it get their turn; housekeeping
+  // retries whatever is left.
+  const attempts = new Map(deferredAtTick.map((id) => [id, 1]))
+  const exhausted = new Set<string>()
+  for (let pass = 0; backlog && pass < 50; pass++) {
+    const settled = await settleAtPoint(contractId, point, exhausted).catch(
+      (error) => {
+        log.warn(
+          `[perp-orders] follow-up settlement for ${contractId} @ ${ts} failed; housekeeping will retry: ${error}`
+        )
+        return null
+      }
+    )
+    if (!settled) break
+    for (const id of settled.deferred) {
+      const n = (attempts.get(id) ?? 0) + 1
+      attempts.set(id, n)
+      if (n >= 4) exhausted.add(id)
+    }
+    backlog =
+      settled.remaining > 0 || settled.deferred.some((id) => !exhausted.has(id))
+  }
+  return update
+}
+
+const lockPerpContract = async (
+  pgTrans: SupabaseTransaction,
+  contractId: string
+) => {
+  await pgTrans.one(advisoryLockQuery(contractId))
+  const row = await pgTrans.one<{ data: PerpContract }>(
+    selectContractForUpdateQuery(contractId)
+  )
+  return row.data
+}
+
+// Settles pending orders at `point` only while it is still the contract's
+// mark; once a newer tick lands, that tick settles them. Waits for the
+// contract lock (these orders are owed this price); settlement itself bounds
+// row waits.
+const settleAtPoint = (
+  contractId: string,
+  point: OraclePoint,
+  skip: ReadonlySet<string>
+) =>
+  runPerpTransaction(async (pgTrans) => {
+    const contract = await lockPerpContract(pgTrans, contractId)
+    if (
+      contract.oraclePriceTime !== point.ts ||
+      contract.solvencyHaltTime != null
+    )
+      return null
+    return settlePendingPerpOrders(
+      pgTrans,
+      contract,
+      point,
+      executeQueuedPerpOrder,
+      { skip }
+    )
+  }, 3)
+
+// Scheduler housekeeping, independent of provider health: refunds orders a
+// dead feed can never fill, and retries orders a contended tick left pending
+// at the contract's current price. One contract's failure skips only it.
+export const settlePerpOrderBacklog = async () => {
+  const pg = createSupabaseDirectClient()
+  // The current-price arm mirrors perpEligibilityCutoff, so a contract whose
+  // mark no waiting order may use is not locked for nothing.
+  const rows = await pg.manyOrNone<{ contract_id: string }>(
+    `select distinct o.contract_id from perp_orders o join contracts c on c.id = o.contract_id
+    where o.status = 'pending'
+      and (o.expires_time <= clock_timestamp()
+        or (c.data->>'isResolved')::boolean is true
+        or (c.data->>'solvencyHaltTime' is null
+          and o.created_time < to_timestamp((c.data->>'oraclePriceTime')::double precision / 1000)
+          and (c.data->>'oracleFeedId' not like 'mnx-%'
+            or ((c.data->>'oracleSourceTime')::double precision <= (c.data->>'oraclePriceTime')::double precision
+              and o.created_time < to_timestamp(((c.data->>'oracleSourceTime')::double precision - $1) / 1000)))))
+    limit 100`,
+    [MNX_SOURCE_CLOCK_ALLOWANCE_MS]
+  )
+  for (const { contract_id } of rows) {
+    try {
+      await runPerpTransaction(async (pgTrans) => {
+        // Never hold the contract lock the oracle tick needs while waiting on
+        // a busy row; a timed-out order is just retried on the next pass.
+        await pgTrans.none(oracleTickTimeoutsQuery(1_000, 4_000))
+        const contract = await lockPerpContract(pgTrans, contract_id)
+        const current =
+          contract.solvencyHaltTime == null && contract.oraclePriceTime != null
+            ? {
+                price: contract.oraclePrice,
+                ts: contract.oraclePriceTime,
+                sourceTs: contract.oracleSourceTime ?? undefined,
+              }
+            : null
+        await settlePendingPerpOrders(
+          pgTrans,
+          contract,
+          current,
+          executeQueuedPerpOrder
+        )
+      })
+    } catch (error) {
+      const message = `[perp-orders] backlog settlement failed for ${contract_id}: ${error}`
+      if (isOracleTickTimeout(error)) log.warn(message)
+      else log.error(message)
+    }
+  }
 }
 
 // -----------------------------------------------------------------------
@@ -2554,7 +2683,8 @@ export const resolvePerp = async (
       pgTrans,
       { ...contract, isResolved: true },
       null,
-      executeQueuedPerpOrder
+      executeQueuedPerpOrder,
+      { limit: Infinity }
     )
     // Operational prototype replacement can require an empty market. This
     // check runs after acquiring the same contract lock as trades, closing
@@ -2862,7 +2992,8 @@ const executeQueuedPerpOrder = async (
       o.idempotency_key,
       o.is_api,
       req.maxFee,
-      tx
+      tx,
+      Number(o.reserved_mana)
     )
     return {
       kind: 'trade' as const,

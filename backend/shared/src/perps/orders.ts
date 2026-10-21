@@ -1,4 +1,5 @@
 import { randomBytes } from 'crypto'
+import { omit } from 'lodash'
 import { APIError } from 'common/api/utils'
 import {
   BANNED_TRADING_USER_IDS,
@@ -9,23 +10,28 @@ import { isUserBanned, getUserBanMessage } from 'common/ban-utils'
 import { UserBan } from 'common/user'
 import { PerpContract } from 'common/contract'
 import {
+  MNX_SOURCE_CLOCK_ALLOWANCE_MS,
   PerpOrder,
   PerpOrderRequest,
   PerpOrderResult,
   isEligiblePerpTick,
+  perpEligibilityCutoff,
 } from 'common/perps/orders'
 import { OraclePoint } from 'common/perps/oracle'
 import { PerpPosition } from 'common/perps/position'
 import {
   getPerpEffectiveTakerFeeBps,
   calcPerpTakerFee,
+  perpMaxFeeFor,
 } from 'common/perps/fees'
 import {
   createSupabaseDirectClient,
+  SupabaseDirectClient,
   SupabaseTransaction,
 } from 'shared/supabase/init'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
+import { log } from 'shared/utils'
 import { advisoryLockQuery, rowToPosition } from './queries'
 import { buildPerpUserContractMetricsQuery } from './user-contract-metrics'
 
@@ -58,14 +64,31 @@ export const publicPerpOrder = (o: StoredOrder): PerpOrder => ({
 })
 
 const escrowId = 'PERP_ORDER_ESCROW'
+// Orders settled per transaction. The rest wait at the same price for
+// follow-up transactions, so a burst cannot hold the contract lock that the
+// next oracle tick and every submission need.
+export const PERP_ORDERS_PER_SETTLEMENT = 10
+// Numeric sanity floor: margins far below a cent underflow the entry-price math.
+const PERP_MIN_ORDER_MARGIN = 0.01
+
+// Lock or serialization contention says nothing about the order: it stays
+// pending at this price for a fresh transaction, instead of rolling back the
+// risk pass it shares a transaction with.
+const RETRYABLE_DB_ERRORS = ['40001', '40P01', '55P03', '57014']
+const isRetryableDbError = (error: unknown) =>
+  typeof error === 'object' &&
+  error !== null &&
+  'code' in error &&
+  RETRYABLE_DB_ERRORS.includes(String(error.code))
+
 const refreshMetrics = async (
   tx: SupabaseTransaction,
   contract: PerpContract,
   userId: string
 ) => {
   const rows = await tx.any(
-    'select * from contract_perp_positions where contract_id=$1',
-    [contract.id]
+    'select * from contract_perp_positions where contract_id=$1 and user_id=$2',
+    [contract.id, userId]
   )
   await tx.multi(
     await buildPerpUserContractMetricsQuery(tx, {
@@ -74,6 +97,27 @@ const refreshMetrics = async (
       finalPositions: rows.map(rowToPosition),
     })
   )
+}
+// Metrics are derived and rebuilt by the next trade or funding run, so failing
+// to refresh them must not undo an order's money movement.
+const refreshMetricsSafely = async (
+  tx: SupabaseTransaction,
+  contract: PerpContract,
+  userId: string
+) => {
+  await tx.none('savepoint perp_order_metrics')
+  try {
+    await refreshMetrics(tx, contract, userId)
+    await tx.none('release savepoint perp_order_metrics')
+  } catch (error) {
+    await tx.none('rollback to savepoint perp_order_metrics')
+    await tx.none('release savepoint perp_order_metrics')
+    log.error(
+      `[perp-orders] metrics refresh failed for ${userId} on ${contract.id}: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    )
+  }
 }
 
 export const enqueuePerpOrder = async (
@@ -88,14 +132,18 @@ export const enqueuePerpOrder = async (
   isApi: boolean,
   expectedOpenedTime?: number,
   expectedSize?: number
-) =>
-  runTransactionWithRetries(async (tx) => {
-    await tx.one(advisoryLockQuery(contractId))
-    const fingerprint = JSON.stringify({
-      input,
-      expectedOpenedTime,
-      expectedSize,
-    })
+): Promise<{ order: PerpOrder; created: boolean }> => {
+  // maxFee is a consent bound clients recompute from live pools on retry, so,
+  // as in the immediate engine, it is not part of the idempotency fingerprint.
+  const fingerprint = JSON.stringify({
+    input: omit(input, 'maxFee'),
+    expectedOpenedTime,
+    expectedSize,
+  })
+  // Replays and a second order of the same kind are answered from the order
+  // table alone: once before the contract lock the oracle tick needs, so
+  // retries cannot queue against it, and again under the lock.
+  const existing = async (tx: SupabaseTransaction) => {
     const prior = await tx.oneOrNone<StoredOrder>(
       'select * from perp_orders where contract_id=$1 and user_id=$2 and idempotency_key=$3',
       [contractId, userId, idempotencyKey]
@@ -105,6 +153,36 @@ export const enqueuePerpOrder = async (
         throw new APIError(409, 'This idempotency key belongs to another order')
       return publicPerpOrder(prior)
     }
+    const pending = await tx.oneOrNone(
+      "select id from perp_orders where contract_id=$1 and user_id=$2 and status='pending' and request->>'kind'=$3",
+      [contractId, userId, input.kind]
+    )
+    if (pending)
+      throw new APIError(
+        409,
+        input.kind === 'close'
+          ? 'You already have a close waiting for the next price'
+          : 'You already have an order waiting for the next price'
+      )
+    return null
+  }
+  return runTransactionWithRetries(async (tx) => {
+    const early = await existing(tx)
+    if (early) return { order: early, created: false }
+    await tx
+      .one(`set local lock_timeout = 3000; ${advisoryLockQuery(contractId)}`)
+      .catch((error: unknown) => {
+        if (
+          typeof error === 'object' &&
+          error !== null &&
+          'code' in error &&
+          error.code === '55P03'
+        )
+          throw new APIError(503, 'This market is busy; try again in a moment')
+        throw error
+      })
+    const prior = await existing(tx)
+    if (prior) return { order: prior, created: false }
     const row = await tx.oneOrNone<{ data: PerpContract; token: string }>(
       'select data,token from contracts where id=$1 for update',
       [contractId]
@@ -112,10 +190,13 @@ export const enqueuePerpOrder = async (
     if (!row || row.data.mechanism !== 'perp' || row.token !== 'MANA')
       throw new APIError(404, 'Perpetual market not found')
     const contract = { ...row.data, token: row.token } as PerpContract
+    // A close time stops new exposure only: holders could always exit.
     if (
       contract.isResolved ||
       contract.solvencyHaltTime != null ||
-      (contract.closeTime && Date.now() >= contract.closeTime)
+      (input.kind === 'trade' &&
+        contract.closeTime &&
+        Date.now() >= contract.closeTime)
     )
       throw new APIError(400, 'Trading is unavailable on this market')
     const system = await tx.oneOrNone<{ status: boolean }>(
@@ -143,15 +224,6 @@ export const enqueuePerpOrder = async (
         getUserBanMessage(bans, 'trading') ??
           'Trading is disabled for this account'
       )
-    const pending = await tx.oneOrNone(
-      "select id from perp_orders where contract_id=$1 and user_id=$2 and status='pending'",
-      [contractId, userId]
-    )
-    if (pending)
-      throw new APIError(
-        409,
-        'You already have an order waiting for the next price'
-      )
     const user = await tx.oneOrNone<{
       balance: number | string
       data: { userDeleted?: boolean } | null
@@ -160,7 +232,11 @@ export const enqueuePerpOrder = async (
       throw new APIError(400, 'Account balance unavailable')
     if (user.data?.userDeleted)
       throw new APIError(403, 'This account is deleted')
-    if (contract.creatorBannedFromBetting && userId === contract.creatorId)
+    if (
+      input.kind === 'trade' &&
+      contract.creatorBannedFromBetting &&
+      userId === contract.creatorId
+    )
       throw new APIError(
         403,
         'You have blocked yourself from trading on this market'
@@ -179,7 +255,10 @@ export const enqueuePerpOrder = async (
         409,
         'Your position changed; refresh before submitting'
       )
+    // Only a partial close is a fraction OF a previewed size.
     if (
+      input.kind === 'close' &&
+      input.fraction < 1 &&
       expectedSize !== undefined &&
       position &&
       Math.abs(position.size - expectedSize) > Math.max(1, position.size) * 1e-9
@@ -193,7 +272,7 @@ export const enqueuePerpOrder = async (
     if (input.kind === 'trade') {
       if (
         !Number.isFinite(input.mana) ||
-        input.mana <= 0 ||
+        input.mana < PERP_MIN_ORDER_MARGIN ||
         !Number.isFinite(input.leverage) ||
         input.leverage < 1 ||
         input.leverage > contract.maxLeverage
@@ -201,28 +280,44 @@ export const enqueuePerpOrder = async (
         throw new APIError(400, 'Invalid margin or leverage')
       if ((contract.takerFeeImpact ?? 0) > 0 && input.maxFee === undefined)
         throw new APIError(400, 'Pass maxFee for this market')
-      const maxFee =
-        input.maxFee ??
-        calcPerpTakerFee(
-          input.mana * input.leverage,
-          getPerpEffectiveTakerFeeBps(contract, isApi)
-        )
+      const notional = input.mana * input.leverage
+      const flatFee = calcPerpTakerFee(
+        notional,
+        getPerpEffectiveTakerFeeBps(contract, isApi)
+      )
+      // Execution prices the fee along a different float path, so a defaulted
+      // bound carries the same slippage room the web client sends.
+      const maxFee = input.maxFee ?? perpMaxFeeFor(flatFee, notional)
       if (
         !Number.isFinite(maxFee) ||
         maxFee < 0 ||
         !Number.isFinite(input.mana + maxFee)
       )
         throw new APIError(400, 'Invalid fee allowance')
+      // An allowance below the configured fee can never fill.
+      if (maxFee < flatFee)
+        throw new APIError(
+          400,
+          `maxFee must cover this market's M$${flatFee.toFixed(2)} fee`
+        )
       request = { ...input, maxFee }
+      const balance = Number(user.balance)
       const flip = position && position.direction !== input.direction
-      reserve = flip
-        ? Math.min(Number(user.balance), input.mana + maxFee)
-        : input.mana + maxFee
-      if (reserve > Number(user.balance) || reserve < 0)
+      // An open or add must afford its margin and configured fee now, as the
+      // immediate engine required. A flip may be funded by its own payout,
+      // but not from below zero: its fill would then turn on later deposits.
+      if (flip ? balance < 0 : balance < input.mana + flatFee)
         throw new APIError(
           403,
           'Insufficient balance to reserve margin and fees'
         )
+      // The reserve is debited from the exact numeric balance, which the
+      // parsed float can exceed by half a step: stay a step below it, and
+      // reserve the fee allowance only as far as the balance reaches.
+      reserve = Math.min(
+        Math.max(0, balance - Math.abs(balance) * Number.EPSILON),
+        input.mana + maxFee
+      )
     } else {
       if (!position || position.direction !== input.direction)
         throw new APIError(404, 'No matching position to close')
@@ -234,8 +329,13 @@ export const enqueuePerpOrder = async (
         throw new APIError(400, 'Invalid close fraction')
       request = input
     }
+    // Keys used by the immediate engine live on events; each arm matches one
+    // of the two partial unique idempotency indexes.
     const legacy = await tx.oneOrNone(
-      "select id from contract_perp_events where contract_id=$1 and user_id=$2 and data->>'idempotencyKey'=$3 limit 1",
+      `select id from contract_perp_events where contract_id=$1 and user_id=$2 and event_type in ('open','add') and data ? 'idempotencyKey' and data->>'idempotencyKey'=$3
+      union all
+      select id from contract_perp_events where contract_id=$1 and user_id=$2 and event_type='close' and data ? 'idempotencyKey' and data->>'idempotencyKey'=$3
+      limit 1`,
       [contractId, userId, idempotencyKey]
     )
     if (legacy)
@@ -287,8 +387,9 @@ export const enqueuePerpOrder = async (
         true
       )
     await refreshMetrics(tx, contract, userId)
-    return publicPerpOrder(order)
+    return { order: publicPerpOrder(order), created: true }
   }, 8)
+}
 
 type Execute = (
   tx: SupabaseTransaction,
@@ -315,21 +416,69 @@ const release = async (tx: SupabaseTransaction, o: StoredOrder) => {
     )
 }
 
-// Caller holds the contract lock. Successful risk transitions and these fills
-// commit together, so later ticks cannot overtake voluntary execution.
+export const hasPendingPerpOrders = async (
+  pg: SupabaseDirectClient,
+  contractId: string
+) =>
+  !!(await pg.oneOrNone(
+    "select 1 from perp_orders where contract_id=$1 and status='pending' limit 1",
+    [contractId]
+  ))
+
+export type PerpOrderSettlement = { deferred: string[]; remaining: number }
+
+// Caller holds the contract lock. Fills commit with the risk transition at the
+// same price. An order this transaction cannot finish (`deferred`: contention;
+// `remaining`: past `limit`, counted to the first) stays pending for follow-up
+// transactions at that price; a later tick that lands first rejects what is
+// left as having missed its window. `skip` lets a caller stop retrying a
+// contended order so the orders behind it get their turn.
 export const settlePendingPerpOrders = async (
   tx: SupabaseTransaction,
   contract: PerpContract,
   point: OraclePoint | null,
-  execute: Execute
-) => {
-  const orders = await tx.manyOrNone<StoredOrder>(
-    "select * from perp_orders where contract_id=$1 and status='pending' order by (request->>'kind'='close') desc,created_time,id for update",
-    [contract.id]
+  execute: Execute,
+  options: {
+    limit?: number
+    drainReason?: string
+    skip?: ReadonlySet<string>
+  } = {}
+): Promise<PerpOrderSettlement> => {
+  const { limit = PERP_ORDERS_PER_SETTLEMENT, drainReason, skip } = options
+  const settleAll = drainReason !== undefined || !!contract.isResolved
+  const cutoff = point
+    ? perpEligibilityCutoff(contract.oracleFeedId, point)
+    : null
+  // Lock only what this pass can act on: orders expired (on the database clock
+  // that set their expiry) or eligible at this price, in settlement order,
+  // plus one to tell whether more remain. Waiting orders stay unlocked.
+  const orders = await tx.manyOrNone<StoredOrder & { is_expired: boolean }>(
+    `select *, expires_time <= statement_timestamp() as is_expired from perp_orders
+    where contract_id=$1 and status='pending' and not (id = any($2::text[]))
+      and ($3::boolean or expires_time <= statement_timestamp() or created_time < $4::timestamptz)
+    order by (request->>'kind'='close') desc,created_time,id
+    limit $5::bigint for update`,
+    [
+      contract.id,
+      [...(skip ?? [])],
+      settleAll,
+      cutoff == null ? null : new Date(cutoff).toISOString(),
+      Number.isFinite(limit) ? limit + 1 : null,
+    ]
   )
-  for (const o of orders) {
+  // A busy owner row is that order's contention, not the market's: bound the
+  // wait so no caller sits on the contract lock behind one user.
+  const { lock_timeout: callerLockTimeout } = await tx.one<{
+    lock_timeout: string
+  }>("select current_setting('lock_timeout') as lock_timeout")
+  await tx.one("select set_config('lock_timeout', '250', true)")
+  const deferred: string[] = []
+  for (const o of orders.slice(0, limit)) {
+    // Expiry is still checked as each order is reached, as before.
     const expired =
-      contract.isResolved || Date.now() >= new Date(o.expires_time).getTime()
+      settleAll ||
+      o.is_expired ||
+      Date.now() >= new Date(o.expires_time).getTime()
     if (
       !expired &&
       (!point ||
@@ -349,14 +498,16 @@ export const settlePendingPerpOrders = async (
       await release(tx, o)
       if (!expired) {
         // A failed/skipped tick must not silently execute at a later price.
+        // Mirrors isEligiblePerpTick, so a row it skipped is not "missed".
         const missed = await tx.oneOrNone(
           `select ts from oracle_prices where feed_id=$1 and ts> $2 and ts< $3
-          and ($4::boolean=false or source_ts>$2) order by ts limit 1`,
+          and ($4::boolean=false or (source_ts>$2::timestamptz+$5::float8*interval '1 millisecond' and source_ts<=ts)) order by ts limit 1`,
           [
             contract.oracleFeedId,
             o.created_time,
             new Date(point!.ts).toISOString(),
             contract.oracleFeedId.startsWith('mnx-'),
+            MNX_SOURCE_CLOCK_ALLOWANCE_MS,
           ]
         )
         if (missed)
@@ -390,31 +541,59 @@ export const settlePendingPerpOrders = async (
           'update perp_orders set error=$2,completed_time=clock_timestamp() where id=$1',
           [
             o.id,
-            contract.isResolved
-              ? 'Market settled before this order filled'
-              : 'No eligible price arrived before expiry',
+            drainReason ??
+              (contract.isResolved
+                ? 'Market settled before this order filled'
+                : 'No eligible price arrived before expiry'),
           ]
         )
+        await refreshMetricsSafely(tx, contract, o.user_id)
       }
       await tx.none('release savepoint perp_order')
     } catch (error) {
       await tx.none('rollback to savepoint perp_order')
-      // Database/invariant faults retry the whole tick; do not turn a failed
-      // transaction into a trader-selectable cancellation at a known price.
-      if (!(error instanceof APIError) || error.code >= 500) throw error
-      await tx.none(
-        "update perp_orders set status='rejected',error=$2,completed_time=clock_timestamp() where id=$1",
-        [o.id, error.message]
-      )
-      await release(tx, o)
-      await tx.none('release savepoint perp_order')
+      if (isRetryableDbError(error)) {
+        deferred.push(o.id)
+        await tx.none('release savepoint perp_order')
+        continue
+      }
+      // Anything else is this order's own failure, including an invariant the
+      // engine refused to cross: reject and refund it. Rethrowing would roll
+      // back the price, liquidations and ADL for the whole market (LIVENESS).
+      const userFacing = error instanceof APIError && error.code < 500
+      if (!userFacing)
+        log.error(
+          `[perp-orders] order ${o.id} on ${
+            contract.id
+          } rejected after an execution fault: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        )
+      try {
+        await tx.none(
+          "update perp_orders set status='rejected',error=$2,completed_time=clock_timestamp() where id=$1",
+          [
+            o.id,
+            error instanceof APIError && error.code < 500
+              ? error.message
+              : 'This order could not be executed. Your reserve has been returned.',
+          ]
+        )
+        await release(tx, o)
+        await refreshMetricsSafely(tx, contract, o.user_id)
+        await tx.none('release savepoint perp_order')
+      } catch (refundError) {
+        await tx.none('rollback to savepoint perp_order')
+        await tx.none('release savepoint perp_order')
+        if (!isRetryableDbError(refundError)) throw refundError
+        deferred.push(o.id)
+      }
     }
-    const current = await tx.one<{ data: PerpContract }>(
-      'select data from contracts where id=$1',
-      [contract.id]
-    )
-    await refreshMetrics(tx, current.data, o.user_id)
   }
+  await tx.one("select set_config('lock_timeout', $1, true)", [
+    callerLockTimeout,
+  ])
+  return { deferred, remaining: Math.max(0, orders.length - limit) }
 }
 
 export const readPerpOrder = async (
@@ -430,21 +609,23 @@ export const readPerpOrder = async (
   return row ? publicPerpOrder(row) : null
 }
 
-// Also runs independently of provider health, so a dead feed cannot trap cash.
-export const expirePerpOrders = async () => {
-  const pg = createSupabaseDirectClient()
-  const contracts = await pg.manyOrNone<{ contract_id: string }>(
-    "select distinct contract_id from perp_orders where status='pending' and expires_time<=clock_timestamp() limit 100"
-  )
-  for (const { contract_id } of contracts)
-    await runTransactionWithRetries(async (tx) => {
-      await tx.one(advisoryLockQuery(contract_id))
-      const row = await tx.one<{ data: PerpContract }>(
-        'select data from contracts where id=$1 for update',
-        [contract_id]
-      )
-      await settlePendingPerpOrders(tx, row.data, null, async () => {
-        throw new Error('An expiry cannot execute a trade')
-      })
-    })
-}
+// Operator drain for incidents and code rollbacks: refunds every pending order
+// on the contract without executing it. PERP_TRADING_MODE only gates new
+// submissions, so this is how queued orders are stopped.
+export const refundPendingPerpOrders = (contractId: string, reason: string) =>
+  runTransactionWithRetries(async (tx) => {
+    await tx.one(advisoryLockQuery(contractId))
+    const row = await tx.one<{ data: PerpContract }>(
+      'select data from contracts where id=$1 for update',
+      [contractId]
+    )
+    return settlePendingPerpOrders(
+      tx,
+      row.data,
+      null,
+      async () => {
+        throw new Error('A drain cannot execute an order')
+      },
+      { limit: Infinity, drainReason: reason }
+    )
+  }, 8)

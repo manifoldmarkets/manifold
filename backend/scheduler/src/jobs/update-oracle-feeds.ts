@@ -1,5 +1,5 @@
 import { deliverPerpOrderEffects } from 'shared/perps/order-effects'
-import { expirePerpOrders } from 'shared/perps/orders'
+import { settlePerpOrderBacklog } from 'shared/perps/engine'
 import {
   publishOracleObservation,
   reportOracleTickFailure,
@@ -8,6 +8,7 @@ import { normalizeOraclePointBatch } from 'common/perps/oracle'
 import { MINUTE_MS } from 'common/util/time'
 
 import { insertOraclePrices } from 'shared/oracle'
+import { databaseOracleClock } from 'shared/oracle-clock'
 import {
   ORACLE_FEEDS,
   OracleFeedDef,
@@ -42,18 +43,21 @@ import { FAST_TICK_ORACLE_BOUNDS } from 'shared/perps/oracle-tick-bounds'
 // in-flight guard below is a strictly finer-grained `protect`: it still
 // prevents a feed from stacking on ITSELF, without coupling feeds to each
 // other.
-let orderHousekeepingRunning = false
+// Independent guards, so a stalled backlog pass cannot hold up outbox
+// delivery for every market, or the reverse.
+const orderHousekeeping = {
+  backlog: { running: false, run: settlePerpOrderBacklog },
+  effects: { running: false, run: deliverPerpOrderEffects },
+}
 export async function updateOracleFeeds() {
-  if (!orderHousekeepingRunning) {
-    orderHousekeepingRunning = true
-    void Promise.allSettled([expirePerpOrders(), deliverPerpOrderEffects()])
-      .then((results) => {
-        for (const result of results)
-          if (result.status === 'rejected')
-            log.error('[perp-orders] housekeeping failed', result.reason)
-      })
+  for (const job of Object.values(orderHousekeeping)) {
+    if (job.running) continue
+    job.running = true
+    void job
+      .run()
+      .catch((error) => log.error('[perp-orders] housekeeping failed', error))
       .finally(() => {
-        orderHousekeepingRunning = false
+        job.running = false
       })
   }
 
@@ -300,9 +304,11 @@ const tickOneFeed = async (
   feed: OracleFeedDef,
   isCurrent: () => boolean
 ) => {
+  // Observations are stamped on the clock that stamps pending orders.
+  const clock = databaseOracleClock(pg)
   try {
     if (feed.fetchObservation) {
-      const observation = await feed.fetchObservation()
+      const observation = await feed.fetchObservation(clock)
       if (discardIfAbandoned(feed, isCurrent)) return
       await publishOracleObservation(
         pg,
@@ -357,7 +363,7 @@ const tickOneFeed = async (
         }
       }
     } else if (feed.fetchLatest) {
-      const point = await feed.fetchLatest()
+      const point = await feed.fetchLatest(clock)
       if (discardIfAbandoned(feed, isCurrent)) return
       if (point) {
         const rejection = validateOraclePoint(feed, prev, point)

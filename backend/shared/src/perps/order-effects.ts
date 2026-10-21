@@ -6,7 +6,7 @@ export const deliverPerpOrderEffects = async () => {
   if (LOCAL_DEV || !process.env.API_SECRET) return
   const pg = createSupabaseDirectClient()
   const rows = await pg.manyOrNone<{ id: string }>(
-    "select id from perp_orders where status='filled' and participation_applied_at is null order by completed_time,id limit 25"
+    "select id from perp_orders where status in ('filled','rejected','expired') and participation_applied_at is null order by completed_time,id limit 25"
   )
   if (!rows.length) return
   const response = await fetch(getApiUrl('internal-perp-order-effects'), {

@@ -7,8 +7,14 @@ import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
 import {
   calcPerpTakerFee,
   getPerpEffectiveTakerFeeBps,
+  perpMaxFeeFor,
 } from 'common/perps/fees'
-import { isEligiblePerpTick, PerpOrderResult } from 'common/perps/orders'
+import {
+  isEligiblePerpTick,
+  MNX_SOURCE_CLOCK_ALLOWANCE_MS,
+  perpEligibilityCutoff,
+  PerpOrderResult,
+} from 'common/perps/orders'
 
 class TestAPIError extends Error {
   constructor(public code: number, message: string) {
@@ -25,20 +31,30 @@ type CashTransfer = {
   category: string
 }
 type Executor = (tx: unknown, order: { id: string }) => Promise<PerpOrderResult>
+type QueuedOrder = {
+  id: string
+  createdTime: number
+  reservedMana: number
+  status: string
+  request: object
+}
 type OrderModule = {
   enqueuePerpOrder: (
     contract: string,
     user: string,
     request: object,
     key: string,
-    api: boolean
-  ) => Promise<{ id: string; createdTime: number; reservedMana: number }>
+    api: boolean,
+    expectedOpenedTime?: number,
+    expectedSize?: number
+  ) => Promise<{ order: QueuedOrder; created: boolean }>
   settlePendingPerpOrders: (
     tx: unknown,
     contract: object,
     point: object | null,
-    execute: Executor
-  ) => Promise<void>
+    execute: Executor,
+    options?: { limit?: number; skip?: ReadonlySet<string> }
+  ) => Promise<{ deferred: string[]; remaining: number }>
   readPerpOrder: (
     contract: string,
     user: string,
@@ -90,16 +106,17 @@ const balance = async () =>
   )
 
 beforeEach(async () => {
-  db = new PGlite()
+  // Production parses numeric (OID 1700) with parseFloat (supabase/init.ts).
+  db = new PGlite({ parsers: { 1700: (value: string) => parseFloat(value) } })
   await db.exec(`
     create role anon; create role authenticated;
-    create table users(id text primary key,balance double precision not null,data jsonb);
+    create table users(id text primary key,balance numeric not null,data jsonb);
     create table contracts(id text primary key,data jsonb,token text);
     create table contract_perp_positions(contract_id text,user_id text,direction text,size numeric,opened_time timestamptz);
     create table user_bans(user_id text,ended_at timestamptz,end_time timestamptz);
     create table system_trading_status(token text,status boolean);
     create table oracle_prices(feed_id text,ts timestamptz,price numeric,source_ts timestamptz);
-    create table contract_perp_events(id text,contract_id text,user_id text,data jsonb);
+    create table contract_perp_events(id text,contract_id text,user_id text,event_type text,data jsonb);
     create table cash_transfers(category text,amount numeric);
     create table txns(category text,amount numeric,from_type text,from_id text,to_type text,to_id text,token text);
     insert into txns values('CREATE_CONTRACT_ANTE',10000,'BANK','BANK','CONTRACT','market','M$');
@@ -151,8 +168,20 @@ beforeEach(async () => {
       PERPS_SKIP_ORACLE_FRESHNESS: true,
     },
     'common/perps/oracle': {},
-    'common/perps/orders': { isEligiblePerpTick },
-    'common/perps/fees': { calcPerpTakerFee, getPerpEffectiveTakerFeeBps },
+    'common/perps/orders': {
+      isEligiblePerpTick,
+      MNX_SOURCE_CLOCK_ALLOWANCE_MS,
+      perpEligibilityCutoff,
+    },
+    'common/perps/fees': {
+      calcPerpTakerFee,
+      getPerpEffectiveTakerFeeBps,
+      perpMaxFeeFor,
+    },
+    lodash: jest.requireActual('lodash'),
+    'shared/utils': {
+      log: Object.assign(jest.fn(), { error: jest.fn(), warn: jest.fn() }),
+    },
     'common/ban-utils': { isUserBanned: () => false },
     'shared/supabase/init': { createSupabaseDirectClient: () => adapter },
     'shared/transact-with-retries': {
@@ -161,11 +190,15 @@ beforeEach(async () => {
     },
     'shared/txn/run-txn': {
       runTxnOutsideBetQueue: async (_tx: unknown, t: CashTransfer) => {
-        if (t.fromType === 'USER')
-          await db.query('update users set balance=balance-$2 where id=$1', [
-            t.fromId,
-            t.amount,
-          ])
+        if (t.fromType === 'USER') {
+          // Exact numeric debit with run-txn's balance check.
+          const { rows } = await db.query<{ balance: string }>(
+            'update users set balance=balance-$2 where id=$1 returning balance::text',
+            [t.fromId, t.amount]
+          )
+          if (rows[0].balance.startsWith('-'))
+            throw new TestAPIError(403, 'Insufficient balance')
+        }
         if (t.toType === 'USER')
           await db.query('update users set balance=balance+$2 where id=$1', [
             t.toId,
@@ -229,14 +262,30 @@ afterEach(async () => {
   await db.close()
 })
 
-const submit = (key = 'abcdefghij') =>
-  orders.enqueuePerpOrder(
+const submit = async (key = 'abcdefghij', maxFee = 1) =>
+  (
+    await orders.enqueuePerpOrder(
+      'market',
+      'alice',
+      { kind: 'trade', direction: 'long', mana: 100, leverage: 3, maxFee },
+      key,
+      false
+    )
+  ).order
+const holdLong = async (size = 100) => {
+  const opened = Date.now() - 10000
+  await db.query('insert into contract_perp_positions values($1,$2,$3,$4,$5)', [
     'market',
     'alice',
-    { kind: 'trade', direction: 'long', mana: 100, leverage: 3, maxFee: 1 },
-    key,
-    false
-  )
+    'long',
+    size,
+    new Date(opened),
+  ])
+  return opened
+}
+const status = async () =>
+  (await db.query<{ status: string }>('select status from perp_orders')).rows[0]
+    .status
 const settle = (
   point: object | null,
   execute: Executor = async () => filled()
@@ -287,18 +336,85 @@ it('rolls back a failed voluntary transition before refunding exactly once', asy
   await settle({ ts: o.createdTime + 20, price: 102 })
   expect(await balance()).toBe(1000)
 })
-it('retries database faults without committing a refund or rejection', async () => {
+it('rejects and refunds an order whose execution faults, without failing the tick', async () => {
   const o = await submit()
   await expect(
     settle({ ts: o.createdTime + 10, price: 101 }, async () => {
-      throw new Error('Database disconnected')
+      throw new Error('long solvency factor must be finite or +Infinity')
     })
-  ).rejects.toThrow('Database disconnected')
+  ).resolves.toEqual({ deferred: [], remaining: 0 })
+  expect(await balance()).toBe(1000)
+  expect(await status()).toBe('rejected')
+})
+it('keeps a contended order pending to fill at the same price', async () => {
+  const o = await submit()
+  const point = { ts: o.createdTime + 10, price: 101 }
+  await expect(
+    settle(point, async () => {
+      throw Object.assign(new Error('could not serialize access'), {
+        code: '40001',
+      })
+    })
+  ).resolves.toEqual({ deferred: [o.id], remaining: 0 })
   expect(await balance()).toBe(899)
-  expect(
-    (await db.query<{ status: string }>('select status from perp_orders'))
-      .rows[0].status
-  ).toBe('pending')
+  expect(await status()).toBe('pending')
+  const execute = jest.fn(async () => filled())
+  await settle(point, execute)
+  expect(execute).toHaveBeenCalledTimes(1)
+  expect(await status()).toBe('filled')
+})
+it('skips an exhausted contended order so the orders behind it settle', async () => {
+  const o = await submit()
+  const { order: bob } = await orders.enqueuePerpOrder(
+    'market',
+    'bob',
+    { kind: 'trade', direction: 'long', mana: 100, leverage: 3, maxFee: 1 },
+    'bobsorder1',
+    false
+  )
+  const execute = jest.fn(async () => filled())
+  await expect(
+    transaction(() =>
+      orders.settlePendingPerpOrders(
+        adapter,
+        contract,
+        { ts: Date.now() + 10, price: 101 },
+        execute,
+        { limit: 1, skip: new Set([o.id]) }
+      )
+    )
+  ).resolves.toEqual({ deferred: [], remaining: 0 })
+  expect(execute).toHaveBeenCalledTimes(1)
+  const rows = (
+    await db.query<{ id: string; status: string }>(
+      'select id,status from perp_orders order by id'
+    )
+  ).rows
+  expect(rows.find((r) => r.id === bob.id)?.status).toBe('filled')
+  expect(rows.find((r) => r.id === o.id)?.status).toBe('pending')
+})
+it('settles at most the limit per transaction and reports the rest', async () => {
+  const o = await submit()
+  await orders.enqueuePerpOrder(
+    'market',
+    'bob',
+    { kind: 'trade', direction: 'long', mana: 100, leverage: 3, maxFee: 1 },
+    'bobsorder1',
+    false
+  )
+  const point = { ts: Date.now() + 10, price: 101 }
+  const execute = jest.fn(async () => filled())
+  await expect(
+    transaction(() =>
+      orders.settlePendingPerpOrders(adapter, contract, point, execute, {
+        limit: 1,
+      })
+    )
+  ).resolves.toEqual({ deferred: [], remaining: 1 })
+  expect(execute).toHaveBeenCalledTimes(1)
+  await settle(point, execute)
+  expect(execute).toHaveBeenCalledTimes(2)
+  expect(o.createdTime).toBeLessThan(point.ts)
 })
 it('expires and refunds without any oracle observation', async () => {
   await submit()
@@ -332,6 +448,231 @@ it("never exposes another account's order", async () => {
   const o = await submit()
   expect(await orders.readPerpOrder('market', 'bob', o.id)).toBeNull()
 })
+const mnxMarket = { ...contract, oracleFeedId: 'mnx-h100-mark' }
+const insertMnxRow = (ts: number, sourceTs: number) =>
+  db.query('insert into oracle_prices values($1,$2,$3,$4)', [
+    'mnx-h100-mark',
+    new Date(ts),
+    100,
+    new Date(sourceTs),
+  ])
+const settleMnx = (point: object, execute: Executor) =>
+  transaction(() =>
+    orders.settlePendingPerpOrders(adapter, mnxMarket, point, execute)
+  )
+const A = MNX_SOURCE_CLOCK_ALLOWANCE_MS
+
+it('does not count a future-stamped MNX row it skipped as a missed window', async () => {
+  const o = await submit()
+  const c = o.createdTime
+  await insertMnxRow(c + 5, c + A + 8)
+  const execute = jest.fn(async () => filled())
+  // First received stamped ahead of its own receipt: not eligible yet.
+  await settleMnx({ ts: c + 5, sourceTs: c + A + 8, price: 100 }, execute)
+  expect(execute).not.toHaveBeenCalled()
+  // The re-received copy is eligible and fills; the skipped row is not missed.
+  await settleMnx({ ts: c + A + 10, sourceTs: c + A + 8, price: 100 }, execute)
+  expect(execute).toHaveBeenCalledTimes(1)
+  expect(await status()).toBe('filled')
+})
+it("waits for an MNX mark stamped past MNX's clock lead, and does not count one inside it as missed", async () => {
+  const o = await submit()
+  const c = o.createdTime
+  // Stamped after the order by MNX's clock, but within the allowed lead.
+  await insertMnxRow(c + 100, c + 50)
+  const execute = jest.fn(async () => filled())
+  await settleMnx({ ts: c + 100, sourceTs: c + 50, price: 100 }, execute)
+  expect(execute).not.toHaveBeenCalled()
+  await settleMnx({ ts: c + A + 500, sourceTs: c + A + 1, price: 100 }, execute)
+  expect(execute).toHaveBeenCalledTimes(1)
+  expect(await status()).toBe('filled')
+})
+it('rejects an MNX order whose first mark past the allowance was missed', async () => {
+  const o = await submit()
+  const c = o.createdTime
+  await insertMnxRow(c + A + 2, c + A + 1)
+  const execute = jest.fn(async () => filled())
+  await settleMnx({ ts: c + A + 10, sourceTs: c + A + 5, price: 100 }, execute)
+  expect(execute).not.toHaveBeenCalled()
+  expect(await status()).toBe('rejected')
+})
+const queueFor = async (user: string) => {
+  await db.query(
+    'insert into users values($1,1000,null) on conflict do nothing',
+    [user]
+  )
+  return (
+    await orders.enqueuePerpOrder(
+      'market',
+      user,
+      { kind: 'trade', direction: 'long', mana: 100, leverage: 3, maxFee: 1 },
+      `${user}order01`,
+      false
+    )
+  ).order
+}
+it('locks only the orders one settlement pass acts on', async () => {
+  for (const user of ['alice', 'bob', 'carol', 'dave']) await queueFor(user)
+  const execute = jest.fn(async () => filled())
+  const locked = await transaction(async () => {
+    await orders.settlePendingPerpOrders(
+      adapter,
+      contract,
+      { ts: Date.now() + 10, price: 101 },
+      execute,
+      { limit: 1 }
+    )
+    // A row this transaction locked carries its xid in xmax.
+    return (
+      await db.query<{ locked: boolean }>(
+        "select xmax <> '0'::xid as locked from perp_orders where status='pending'"
+      )
+    ).rows.map((r) => r.locked)
+  })
+  expect(execute).toHaveBeenCalledTimes(1)
+  // Three wait; only the one read to learn that more remain is locked.
+  expect(locked.sort()).toEqual([false, false, true])
+})
+it('does not let orders waiting for a later price take the batch', async () => {
+  const opened = await holdLong()
+  const { order: close } = await orders.enqueuePerpOrder(
+    'market',
+    'alice',
+    { kind: 'close', direction: 'long', fraction: 1 },
+    'closekey01',
+    false,
+    opened
+  )
+  const bob = await queueFor('bob')
+  const point = { ts: bob.createdTime + 10, price: 101 }
+  // Closes settle first, but this one arrived after the point.
+  await db.query('update perp_orders set created_time=$2 where id=$1', [
+    close.id,
+    new Date(point.ts + 1_000),
+  ])
+  const execute = jest.fn(async () => filled())
+  await transaction(() =>
+    orders.settlePendingPerpOrders(adapter, contract, point, execute, {
+      limit: 1,
+    })
+  )
+  expect(execute).toHaveBeenCalledTimes(1)
+  const rows = (
+    await db.query<{ id: string; status: string }>(
+      'select id,status from perp_orders'
+    )
+  ).rows
+  expect(rows.find((r) => r.id === bob.id)?.status).toBe('filled')
+  expect(rows.find((r) => r.id === close.id)?.status).toBe('pending')
+})
+it('treats a retry with a recomputed maxFee as the same order', async () => {
+  const first = await submit('abcdefghij', 1)
+  await expect(
+    orders.enqueuePerpOrder(
+      'market',
+      'alice',
+      { kind: 'trade', direction: 'long', mana: 100, leverage: 3, maxFee: 2 },
+      'abcdefghij',
+      false
+    )
+  ).resolves.toEqual({
+    order: expect.objectContaining({ id: first.id }),
+    created: false,
+  })
+  expect(await balance()).toBe(899)
+})
+it('gives a defaulted fee allowance the slippage room the web client sends', async () => {
+  const { order } = await orders.enqueuePerpOrder(
+    'market',
+    'alice',
+    { kind: 'trade', direction: 'long', mana: 100, leverage: 3 },
+    'abcdefghij',
+    false
+  )
+  const flat = calcPerpTakerFee(300, getPerpEffectiveTakerFeeBps({}, false))
+  const maxFee = (order.request as { maxFee: number }).maxFee
+  expect(maxFee).toBe(perpMaxFeeFor(flat, 300))
+  expect(maxFee).toBeGreaterThan(flat)
+})
+it('lets holders close after the close time and while self-blocked', async () => {
+  const opened = await holdLong()
+  await db.query('update contracts set data = data || $1::jsonb', [
+    {
+      closeTime: Date.now() - 1000,
+      creatorBannedFromBetting: true,
+      creatorId: 'alice',
+    },
+  ])
+  await expect(submit()).rejects.toThrow(/unavailable/)
+  // A full close ignores a stale expectedSize, as the immediate engine did.
+  const { order } = await orders.enqueuePerpOrder(
+    'market',
+    'alice',
+    { kind: 'close', direction: 'long', fraction: 1 },
+    'closekey01',
+    false,
+    opened,
+    123
+  )
+  expect(order.status).toBe('pending')
+})
+it('queues a close alongside a waiting add, but only one close', async () => {
+  const opened = await holdLong()
+  await submit()
+  const close = (key: string) =>
+    orders.enqueuePerpOrder(
+      'market',
+      'alice',
+      { kind: 'close', direction: 'long', fraction: 1 },
+      key,
+      false,
+      opened
+    )
+  await expect(close('closekey01')).resolves.toMatchObject({ created: true })
+  await expect(close('closekey02')).rejects.toThrow(/close waiting/)
+})
+it('reserves a payout-funded flip without overdrawing an exact balance', async () => {
+  await holdLong()
+  await db.query(
+    "update users set balance='856.84285714285713996' where id='alice'"
+  )
+  const { order } = await orders.enqueuePerpOrder(
+    'market',
+    'alice',
+    { kind: 'trade', direction: 'short', mana: 1000, leverage: 1, maxFee: 1 },
+    'abcdefghij',
+    false
+  )
+  expect(order.reservedMana).toBeGreaterThan(856.8428571428)
+  const left = (
+    await db.query<{ b: string }>(
+      "select balance::text as b from users where id='alice'"
+    )
+  ).rows[0].b
+  expect(left.startsWith('-')).toBe(false)
+})
+it('accepts a payout-funded flip from zero cash but not from a negative balance', async () => {
+  await holdLong()
+  const flip = (key: string) =>
+    orders.enqueuePerpOrder(
+      'market',
+      'alice',
+      { kind: 'trade', direction: 'short', mana: 100, leverage: 2, maxFee: 1 },
+      key,
+      false
+    )
+  await db.query("update users set balance=0 where id='alice'")
+  await expect(flip('abcdefghij')).resolves.toMatchObject({
+    order: { reservedMana: 0 },
+  })
+  await db.query("delete from perp_orders where user_id='alice'")
+  // Below zero the fill would turn on deposits made after the price is public.
+  await db.query("update users set balance=-20 where id='alice'")
+  await expect(flip('klmnopqrst')).rejects.toThrow(/Insufficient balance/)
+})
+it('refuses a fee allowance below the configured fee, which could never fill', async () => {
+  await expect(submit('abcdefghij', 0)).rejects.toThrow(/maxFee must cover/)
+})
 
 it('rejects a flip after liquidation without opening its replacement', async () => {
   const opened = Date.now() - 10000
@@ -342,7 +683,7 @@ it('rejects a flip after liquidation without opening its replacement', async () 
     100,
     new Date(opened),
   ])
-  const o = await orders.enqueuePerpOrder(
+  const { order: o } = await orders.enqueuePerpOrder(
     'market',
     'alice',
     { kind: 'trade', direction: 'short', mana: 100, leverage: 2, maxFee: 1 },
@@ -371,7 +712,7 @@ it('rolls back BOTH voluntary legs when a flip cannot fund the replacement', asy
     new Date(opened),
   ])
   await db.query("update users set balance=0 where id='alice'")
-  const o = await orders.enqueuePerpOrder(
+  const { order: o } = await orders.enqueuePerpOrder(
     'market',
     'alice',
     { kind: 'trade', direction: 'short', mana: 100, leverage: 2, maxFee: 1 },
@@ -402,7 +743,7 @@ it('keeps a fractional close bound through automatic size changes', async () => 
     100,
     new Date(opened),
   ])
-  const o = await orders.enqueuePerpOrder(
+  const { order: o } = await orders.enqueuePerpOrder(
     'market',
     'alice',
     { kind: 'close', direction: 'long', fraction: 0.5 },
@@ -462,7 +803,6 @@ it('runs real engine opens, adds, flips and closes only at the next price', asyn
     alter table contract_perp_events drop column id;
     alter table contract_perp_events
       add column id bigint generated always as identity primary key,
-      add column event_type text,
       add column ts timestamptz,
       add column applied_ts timestamptz default clock_timestamp(),
       add column oracle_price numeric,
@@ -517,7 +857,7 @@ it('runs real engine opens, adds, flips and closes only at the next price', asyn
       key: string,
       isApi: boolean,
       maxFee: number
-    ) => Promise<{ createdTime: number; id: string }>
+    ) => Promise<{ order: { createdTime: number; id: string } }>
     closePosition: (
       contractId: string,
       userId: string,
@@ -527,7 +867,7 @@ it('runs real engine opens, adds, flips and closes only at the next price', asyn
       isApi: boolean,
       fraction: number,
       size: number
-    ) => Promise<{ createdTime: number; id: string }>
+    ) => Promise<{ order: { createdTime: number; id: string } }>
     runOracleUpdate: (
       contractId: string,
       price: number,
@@ -556,7 +896,7 @@ it('runs real engine opens, adds, flips and closes only at the next price', asyn
     ).rows[0]
     expect(row).toEqual({ status: 'filled', error: null })
   }
-  const open = await engine.openOrAddPosition(
+  const { order: open } = await engine.openOrAddPosition(
     'market',
     'alice',
     'long',
@@ -570,7 +910,7 @@ it('runs real engine opens, adds, flips and closes only at the next price', asyn
   await fillOrder(open, 110)
   expect(Number((await position()).entry_price)).toBe(110)
   expect(await balance()).toBe(900)
-  const add = await engine.openOrAddPosition(
+  const { order: add } = await engine.openOrAddPosition(
     'market',
     'alice',
     'long',
@@ -582,7 +922,7 @@ it('runs real engine opens, adds, flips and closes only at the next price', asyn
   )
   await fillOrder(add, 120)
   expect(Number((await position()).size)).toBe(300)
-  const flip = await engine.openOrAddPosition(
+  const { order: flip } = await engine.openOrAddPosition(
     'market',
     'alice',
     'short',
@@ -598,7 +938,7 @@ it('runs real engine opens, adds, flips and closes only at the next price', asyn
   const longProfit = 115 * (200 / 110 + 100 / 120) - 300
   expect(await balance()).toBeCloseTo(850 + longProfit, 8)
   let p = await position()
-  const partial = await engine.closePosition(
+  const { order: partial } = await engine.closePosition(
     'market',
     'alice',
     'short',
@@ -611,7 +951,7 @@ it('runs real engine opens, adds, flips and closes only at the next price', asyn
   await fillOrder(partial, 105)
   expect(Number((await position()).size)).toBe(150)
   p = await position()
-  const close = await engine.closePosition(
+  const { order: close } = await engine.closePosition(
     'market',
     'alice',
     'short',

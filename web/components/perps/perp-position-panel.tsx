@@ -81,6 +81,8 @@ export const PerpPositionPanel = (props: {
   const { contract, onAction, refreshKey, oracleTradingPaused = false } = props
   const user = useUser()
   const { order, pending, acceptOrder } = usePerpOrder(contract.id, onAction)
+  // A waiting open or add never blocks an exit; only one close waits at a time.
+  const closePending = pending && order?.request.kind === 'close'
   const positions = useMemo(
     () =>
       user && props.positions
@@ -146,7 +148,7 @@ export const PerpPositionPanel = (props: {
       toast.error('Closing is paused until the oracle publishes a fresh price')
       return false
     }
-    if (pending) return false
+    if (closePending) return false
     setClosing(direction)
     try {
       const position = positions.find((p) => p.direction === direction)
@@ -179,7 +181,7 @@ export const PerpPositionPanel = (props: {
         ...(fraction < 1 ? { fraction, expectedSize: position.size } : {}),
       })
       acceptOrder(res.order)
-      if (res.order.status === 'pending')
+      if (res.order?.status === 'pending')
         toast('Close submitted — your position remains exposed until it fills')
       delete pendingCloses.current[direction]
       onAction?.()
@@ -199,7 +201,7 @@ export const PerpPositionPanel = (props: {
 
   return (
     <Col className="gap-3">
-      {pending && order?.request.kind === 'close' && (
+      {closePending && (
         <p className="text-ink-600 text-xs" role="status">
           Close pending. Your position remains exposed until the next price.
         </p>
@@ -211,7 +213,7 @@ export const PerpPositionPanel = (props: {
           contract={contract}
           onClose={(fraction) => close(p.direction, fraction)}
           closing={closing === p.direction}
-          anyClosing={closing !== null || pending}
+          anyClosing={closing !== null || closePending}
           oracleTradingPaused={oracleTradingPaused}
         />
       ))}
