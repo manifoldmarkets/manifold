@@ -129,9 +129,7 @@ const LIVE_STATUSES = new Set(['IN_PLAY', 'PAUSED'])
 // ended while nobody was watching doesn't show as live.
 const LIVE_STALE_MS = 10 * 60 * 1000
 
-function liveScoreFromMarket(
-  m: SportsMarket
-):
+function liveScoreFromMarket(m: SportsMarket):
   | {
       home: number | null
       away: number | null
