@@ -9,6 +9,7 @@ import {
   SocialPostDetail,
   SocialLikerPage,
 } from '../social-post'
+import { PerpOrder } from '../perps/orders'
 import { PerpSuggestion } from '../perps/suggestion'
 import { MNX_LINK_LOCATIONS } from 'common/perps/mnx-cta'
 import { MnxDashboard, perpConfigFields } from 'common/perps/management'
@@ -255,8 +256,8 @@ export const API = (_apiTypeCheck = {
       .object({
         userId: z.string(),
         // true = flag (bonusEligibility = 'requires_verification' + reason).
-        // false = clear (restore prior bonus state if one was snapshotted,
-        // else revert to undefined; clears the reason either way).
+        // false = clear (restore the pre-flag bonus state, else revert to
+        // undefined; clears the reason either way).
         flag: z.boolean(),
         // Optional free-text note shown to other admins in the user-info
         // page. Examples: "suspected alt of @other-user", "fraud signal from
@@ -273,6 +274,7 @@ export const API = (_apiTypeCheck = {
         | 'verified'
         | 'grandfathered'
         | 'eligible'
+        | 'ineligible'
         | 'requires_verification'
     },
   },
@@ -1074,46 +1076,38 @@ export const API = (_apiTypeCheck = {
     returns: {} as LiteMarket,
     props: createPerpSchema,
   },
+  'internal-perp-order-effects': {
+    method: 'POST',
+    visibility: 'private',
+    authed: false,
+    returns: {} as { processed: number },
+    props: z
+      .object({
+        apiSecret: z.string().min(1),
+        orderIds: z.array(z.string().min(1)).max(25),
+      })
+      .strict(),
+  },
+  'get-perp-order': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { order: PerpOrder | null },
+    props: z.object({ contractId: z.string(), orderId: z.string().optional() }),
+    cache: 'no-store',
+  },
   'place-perp-trade': {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    returns: {} as {
-      position: {
-        userId: string
-        direction: 'long' | 'short'
-        size: number
-        costBasis: number
-        originalCostBasis: number
-        entryPrice: number
-        leverage: number
-        liquidationPrice: number
-      }
-      // Open-side taker fee charged on this call, in mana. Closing is free;
-      // a flip pays the fee on its newly opened leg only.
-      fee: number
-      // Effective rate actually charged (fee / added notional × 10_000) and
-      // the position's resulting share of the pool depth it was priced
-      // against — the authoritative numbers for bots and analytics. Absent
-      // only on idempotent replays of trades stored before these existed.
-      feeBps?: number
-      poolShareAfter?: number
-    },
+    returns: {} as { order: PerpOrder },
     props: placePerpTradeSchema,
   },
   'close-perp-position': {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    returns: {} as {
-      payout: number
-      pnl: number
-      /** Fraction actually closed, which can exceed the requested one when
-       * the remainder would have been dust. */
-      fraction: number
-      /** Notional left open; 0 when the whole position was closed. */
-      remainingSize: number
-    },
+    returns: {} as { order: PerpOrder },
     props: closePerpPositionSchema,
   },
   // The open-weight index halts on models it cannot classify. These two
@@ -1915,6 +1909,7 @@ export const API = (_apiTypeCheck = {
       optOutBetWarnings: z.boolean().optional(),
       isAdvancedTrader: z.boolean().optional(),
       hideApiTrades: z.boolean().optional(),
+      showOrderBook: z.boolean().optional(),
       //internal
       seenStreakModal: z.boolean().optional(),
       shouldShowWelcome: z.boolean().optional(),
@@ -3634,9 +3629,10 @@ export const API = (_apiTypeCheck = {
           amount: number
           maxMultiplier: number
           // Which bonus types this referrer has been paid for this referred
-          // user. 'first_bet'/'verify' are the new split; 'legacy' means a
-          // pre-split single-payment txn exists (treated as fully paid).
-          bonusTypes: ('first_bet' | 'verify' | 'legacy')[]
+          // user. 'signup' is the full bonus paid when the referral was
+          // recorded; 'first_bet'/'verify' are the legacy split; 'legacy' means
+          // a pre-split single-payment txn exists (treated as fully paid).
+          bonusTypes: ('signup' | 'first_bet' | 'verify' | 'legacy')[]
         }
       >
     },

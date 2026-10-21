@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { useState } from 'react'
 import Router from 'next/router'
@@ -15,6 +16,11 @@ import { removeUndefinedProps } from 'common/util/object'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { ScheduleItem } from './tv-schedule'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import {
+  MOD_ACTION_TEXT_CLASS,
+  ModActionBadge,
+  ModActionTag,
+} from '../moderation/mod-action'
 
 export function ScheduleTVModal(props: {
   open: boolean
@@ -118,8 +124,9 @@ export function ScheduleTVModal(props: {
   const isMod = useTrusted()
   const user = useUser()
 
+  const isStreamCreator = stream?.creator_id === user?.id
   const allowFeaturing = isAdmin || isMod
-  const allowDeletion = stream?.creator_id === user?.id || isAdmin || isMod
+  const allowDeletion = isStreamCreator || isAdmin || isMod
 
   return (
     <Modal
@@ -131,6 +138,7 @@ export function ScheduleTVModal(props: {
       <Col className="bg-canvas-0 gap-2.5  rounded p-4 pb-8 sm:gap-4">
         <Title className="!mb-2">
           {stream ? 'Modify' : 'Schedule'} TV event
+          {stream && !isStreamCreator && <ModActionTag className="ml-2" />}
         </Title>
 
         <Row className="items-center justify-between gap-2">
@@ -185,7 +193,10 @@ export function ScheduleTVModal(props: {
 
         {allowFeaturing && (
           <Row className="items-center justify-between gap-2">
-            <div>Featured</div>
+            <Row className={clsx('items-center gap-1', MOD_ACTION_TEXT_CLASS)}>
+              <ModActionBadge />
+              Featured
+            </Row>
             <ShortToggle on={isFeatured} setOn={(on) => setIsFeatured(on)} />
           </Row>
         )}
@@ -220,12 +231,13 @@ export function ScheduleTVModal(props: {
           {stream && allowDeletion && (
             <Button
               size="xs"
-              color="red-outline"
+              color={isStreamCreator ? 'red-outline' : 'purple-outline'}
               onClick={() =>
                 confirm('Are you want to delete this event?') && deleteStream()
               }
               disabled={isSubmitting}
             >
+              {!isStreamCreator && <ModActionBadge className="mr-1" />}
               Delete event
             </Button>
           )}

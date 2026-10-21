@@ -58,6 +58,7 @@ import { Button } from '../buttons/button'
 import SuperBanControl from '../SuperBanControl'
 import { useSweepstakes } from '../sweepstakes-provider'
 import { InfoBox } from '../widgets/info-box'
+import { MOD_ACTION_TEXT_CLASS, ModActionBadge } from '../moderation/mod-action'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import ShortToggle from '../widgets/short-toggle'
 import { linkClass } from '../widgets/site-link'
@@ -85,6 +86,8 @@ export const Stats = (props: {
   const isTrusty = !!user && isModId(user?.id)
   const isMod = isAdmin || isTrusty
   const isCreator = user?.id === creatorId
+  // Purple marks settings you can only change because you're a mod
+  const modOverridesCreator = isMod && !isCreator
   const isPublic = contract.visibility === 'public'
   const isMulti = isMultiCpmm(contract)
   const perpContract =
@@ -406,8 +409,11 @@ export const Stats = (props: {
         )}
 
         {addAnswersPossible && (isCreator || isAdmin || isMod) && (
-          <tr className={clsx(isMod && 'bg-purple-500/30')}>
-            <td>
+          <tr className={clsx(modOverridesCreator && 'bg-purple-500/30')}>
+            <td className={clsx(modOverridesCreator && MOD_ACTION_TEXT_CLASS)}>
+              {modOverridesCreator && (
+                <ModActionBadge className="mr-1 inline align-middle" />
+              )}
               Creator only{' '}
               <InfoTooltip
                 text={
@@ -434,8 +440,11 @@ export const Stats = (props: {
         )}
 
         {!hideAdvanced && (
-          <tr className={clsx(isMod && 'bg-purple-500/30')}>
-            <td>
+          <tr className={clsx(modOverridesCreator && 'bg-purple-500/30')}>
+            <td className={clsx(modOverridesCreator && MOD_ACTION_TEXT_CLASS)}>
+              {modOverridesCreator && (
+                <ModActionBadge className="mr-1 inline align-middle" />
+              )}
               🔎 Publicly listed{' '}
               <InfoTooltip
                 text={
@@ -463,7 +472,8 @@ export const Stats = (props: {
 
         {!hideAdvanced && isBettingContract && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
-            <td>
+            <td className={clsx(isMod && MOD_ACTION_TEXT_CLASS)}>
+              {isMod && <ModActionBadge className="mr-1 inline align-middle" />}
               🏆 Ranked{' '}
               <InfoTooltip
                 text={'Profit from this market count towards leagues'}
@@ -500,8 +510,11 @@ export const Stats = (props: {
         )}
 
         {!hideAdvanced && isBettingContract && (
-          <tr className={clsx(isMod && 'bg-purple-500/30')}>
-            <td>
+          <tr className={clsx(modOverridesCreator && 'bg-purple-500/30')}>
+            <td className={clsx(modOverridesCreator && MOD_ACTION_TEXT_CLASS)}>
+              {modOverridesCreator && (
+                <ModActionBadge className="mr-1 inline align-middle" />
+              )}
               🚫 Disable creator betting{' '}
               <InfoTooltip
                 text={
@@ -540,8 +553,11 @@ export const Stats = (props: {
         )}
 
         {!hideAdvanced && contract.outcomeType === 'DATE' && (
-          <tr className={clsx(isMod && 'bg-purple-500/30')}>
-            <td>
+          <tr className={clsx(modOverridesCreator && 'bg-purple-500/30')}>
+            <td className={clsx(modOverridesCreator && MOD_ACTION_TEXT_CLASS)}>
+              {modOverridesCreator && (
+                <ModActionBadge className="mr-1 inline align-middle" />
+              )}
               🕒 Clock mode{' '}
               <InfoTooltip
                 text={'Display date as a clock instead of the default view'}
@@ -572,7 +588,10 @@ export const Stats = (props: {
               />
             )}
             <tr className="bg-purple-500/30">
-              <td>Supabase link</td>
+              <td className={MOD_ACTION_TEXT_CLASS}>
+                <ModActionBadge className="mr-1 inline align-middle" />
+                Supabase link
+              </td>
               <td>
                 <a
                   href={supabaseConsoleContractPath(id)}
@@ -585,7 +604,10 @@ export const Stats = (props: {
               </td>
             </tr>
             <tr className="bg-purple-500/30">
-              <td>SQL query</td>
+              <td className={MOD_ACTION_TEXT_CLASS}>
+                <ModActionBadge className="mr-1 inline align-middle" />
+                SQL query
+              </td>
               <td>
                 <span className="truncate">select * from contracts...</span>
                 <CopyLinkOrShareButton
@@ -687,7 +709,12 @@ function PerpStatsRows(props: { contract: PerpContract }) {
         </td>
       </tr>
       <tr className={clsx(canEdit && 'bg-purple-500/30')}>
-        <td>Maximum leverage</td>
+        <td className={clsx(canEdit && MOD_ACTION_TEXT_CLASS)}>
+          {canEdit && (
+            <ModActionBadge admin className="mr-1 inline align-middle" />
+          )}
+          Maximum leverage
+        </td>
         <td>
           {canEdit ? (
             <MaxLeverageInput contract={contract} />
@@ -699,7 +726,10 @@ function PerpStatsRows(props: { contract: PerpContract }) {
         </td>
       </tr>
       <tr className={clsx(canEdit && 'bg-purple-500/30')}>
-        <td>
+        <td className={clsx(canEdit && MOD_ACTION_TEXT_CLASS)}>
+          {canEdit && (
+            <ModActionBadge admin className="mr-1 inline align-middle" />
+          )}
           Max funding rate{' '}
           <InfoTooltip text="Per-period cap on the funding haircut at full pool imbalance" />
         </td>
@@ -715,7 +745,10 @@ function PerpStatsRows(props: { contract: PerpContract }) {
         </td>
       </tr>
       <tr className={clsx(canEdit && 'bg-purple-500/30')}>
-        <td>
+        <td className={clsx(canEdit && MOD_ACTION_TEXT_CLASS)}>
+          {canEdit && (
+            <ModActionBadge admin className="mr-1 inline align-middle" />
+          )}
           Taker fee{' '}
           <InfoTooltip text="Charged on a position's notional (margin × leverage) when it is opened or added to; closing is free, so this is the whole round-trip cost. Paid into this market's backing pool, not to Manifold. Exists to price out oracle-tick sniping." />
         </td>
@@ -730,7 +763,10 @@ function PerpStatsRows(props: { contract: PerpContract }) {
         </td>
       </tr>
       <tr className={clsx(canEdit && 'bg-purple-500/30')}>
-        <td>
+        <td className={clsx(canEdit && MOD_ACTION_TEXT_CLASS)}>
+          {canEdit && (
+            <ModActionBadge admin className="mr-1 inline align-middle" />
+          )}
           API taker fee{' '}
           <InfoTooltip text="Rate for opens authenticated with an API key — the server selects it from the credential, not from whether the caller looks like a bot, so session-authenticated automation still pays the web rate. API opens pay the higher of this and the web taker fee, and the size term (if any) stacks on top of it. Closing is free on both channels." />
         </td>
@@ -745,7 +781,10 @@ function PerpStatsRows(props: { contract: PerpContract }) {
         </td>
       </tr>
       <tr className={clsx(canEdit && 'bg-purple-500/30')}>
-        <td>
+        <td className={clsx(canEdit && MOD_ACTION_TEXT_CLASS)}>
+          {canEdit && (
+            <ModActionBadge admin className="mr-1 inline align-middle" />
+          )}
           Fee size impact{' '}
           <InfoTooltip
             text={
@@ -789,7 +828,8 @@ function PerpStatsRows(props: { contract: PerpContract }) {
       </tr>
       {canEdit && (
         <tr className="bg-purple-500/30">
-          <td>
+          <td className={MOD_ACTION_TEXT_CLASS}>
+            <ModActionBadge admin className="mr-1 inline align-middle" />
             Pool subsidy{' '}
             <InfoTooltip text="Add mana from your balance into one side's backing pool. Use to restore a side's margin cover (pool below its side's total cost basis)." />
           </td>
@@ -800,7 +840,8 @@ function PerpStatsRows(props: { contract: PerpContract }) {
       )}
       {canEdit && (
         <tr className="bg-purple-500/30">
-          <td>
+          <td className={MOD_ACTION_TEXT_CLASS}>
+            <ModActionBadge admin className="mr-1 inline align-middle" />
             Resolve{' '}
             <InfoTooltip text="Settles every open position at the latest published oracle price and closes the market permanently. Perps are meant to run indefinitely — this is an escape hatch, not routine." />
           </td>
@@ -1505,17 +1546,24 @@ function AdminHomePageScoreAdjustmentRows(props: {
   return (
     <>
       <tr className="bg-purple-500/30">
-        <td>Importance score</td>
+        <td className={MOD_ACTION_TEXT_CLASS}>
+          <ModActionBadge className="mr-1 inline align-middle" />
+          Importance score
+        </td>
         <td>{contract.importanceScore.toFixed(3)}</td>
       </tr>
       <tr className="bg-purple-500/30">
-        <td>Freshness score</td>
+        <td className={MOD_ACTION_TEXT_CLASS}>
+          <ModActionBadge className="mr-1 inline align-middle" />
+          Freshness score
+        </td>
         <td>{contract.freshnessScore.toFixed(3)}</td>
       </tr>
       <tr className="bg-purple-500/30">
         <td colSpan={2} className="whitespace-normal">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-            <div>
+            <div className={MOD_ACTION_TEXT_CLASS}>
+              <ModActionBadge className="mr-1 inline align-middle" />
               Home page score adjustment{' '}
               <InfoTooltip text="Adds a value from -1 to 1 to both importance and freshness scores until it expires." />
             </div>
@@ -1544,7 +1592,10 @@ function AdminHomePageScoreAdjustmentRows(props: {
       <tr className="bg-purple-500/30 align-top">
         <td colSpan={2} className="whitespace-normal">
           <div className="flex max-w-full flex-col gap-3">
-            <div className="text-sm font-medium">Adjust home page score</div>
+            <div className={clsx('text-sm font-medium', MOD_ACTION_TEXT_CLASS)}>
+              <ModActionBadge className="mr-1 inline align-middle" />
+              Adjust home page score
+            </div>
             <div className="grid grid-cols-1 gap-2 sm:max-w-sm sm:grid-cols-2">
               <label className="flex flex-col gap-1 text-sm">
                 <span className="text-ink-600">Adjustment</span>

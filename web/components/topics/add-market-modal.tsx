@@ -14,6 +14,11 @@ import {
 } from '../new-contract/new-contract-panel'
 import { AddContractToGroupPermissionType } from './add-contract-to-group-modal'
 import { DAY_MS } from 'common/util/time'
+import {
+  MOD_ACTION_TEXT_CLASS,
+  ModActionBadge,
+  ModActionTag,
+} from '../moderation/mod-action'
 
 export function AddMarketToGroupModal(props: {
   group: Group
@@ -22,8 +27,23 @@ export function AddMarketToGroupModal(props: {
   setOpen: (open: boolean) => void
   onAddMarkets: (contracts: Contract[]) => void | Promise<void>
   addPermission: AddContractToGroupPermissionType
+  // What the user could do without site mod powers
+  nonModPermission?: AddContractToGroupPermissionType
 }) {
-  const { group, user, open, setOpen, onAddMarkets, addPermission } = props
+  const {
+    group,
+    user,
+    open,
+    setOpen,
+    onAddMarkets,
+    addPermission,
+    nonModPermission,
+  } = props
+  const modAction = addPermission !== 'none' && nonModPermission === 'none'
+  const modActionExisting =
+    addPermission === 'any' &&
+    nonModPermission !== undefined &&
+    nonModPermission !== 'any'
   const [groupContractIds, setGroupContractIds] = useState<string[]>([])
   useEffect(() => {
     getGroupContractIds(group.id).then((ids) => setGroupContractIds(ids))
@@ -32,6 +52,7 @@ export function AddMarketToGroupModal(props: {
     <Modal open={open} setOpen={setOpen} size="lg">
       <Col className="bg-canvas-0 gap-4 overflow-hidden rounded-md">
         <div className="bg-primary-100 text-primary-800 px-8 py-2">
+          {modAction && <ModActionTag className="mr-2" />}
           Add questions to {group.name}
         </div>
         {addPermission === 'none' && (
@@ -57,6 +78,17 @@ export function AddMarketToGroupModal(props: {
                 },
                 {
                   title: 'Existing question',
+                  titleElement: modActionExisting ? (
+                    <span
+                      className={clsx(
+                        'inline-flex items-center gap-1',
+                        MOD_ACTION_TEXT_CLASS
+                      )}
+                    >
+                      <ModActionBadge />
+                      Existing question
+                    </span>
+                  ) : undefined,
                   content: (
                     <SelectMarkets
                       submitLabel={(len) =>

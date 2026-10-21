@@ -29,6 +29,7 @@ import { DOMAIN, TRADE_TERM } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
 import { UserBetsSummary } from '../bet/user-bet-summary'
 import { MarketTitleLabel } from '../contract/market-title-label'
+import { ModActionBadge } from '../moderation/mod-action'
 
 export function TVDisplay(props: {
   contract: Contract
@@ -39,7 +40,8 @@ export function TVDisplay(props: {
   const user = useUser()
 
   const isMod = useAdminOrMod()
-  const showModify = user?.id === stream?.creator_id || isMod
+  const isStreamCreator = user?.id === stream?.creator_id
+  const showModify = isStreamCreator || isMod
 
   const isMobile = useIsMobile(1280) //xl
   const [showSettings, setShowSettings] = useState(false)
@@ -154,9 +156,10 @@ export function TVDisplay(props: {
           <Row className="m-4 gap-4">
             {showModify && (
               <Button
-                color="indigo-outline"
+                color={isStreamCreator ? 'indigo-outline' : 'purple-outline'}
                 onClick={() => setShowSettings(true)}
               >
+                {!isStreamCreator && <ModActionBadge className="mr-1" />}
                 Modify event
               </Button>
             )}

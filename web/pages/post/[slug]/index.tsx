@@ -310,6 +310,7 @@ export default function PostPage(props: {
                               <EyeOffIcon className="h-5 w-5" />
                             ),
                           onClick: togglePostVisibility,
+                          modAction: post.creatorId !== currentUser?.id,
                         },
                         {
                           name: 'Report',
@@ -332,7 +333,7 @@ export default function PostPage(props: {
                       ]}
                       buttonContent={<DotsHorizontalIcon className="h-5 w-5" />}
                       buttonClass="p-2"
-                      menuWidth="w-40"
+                      menuWidth={isAdminOrMod ? 'w-48' : 'w-40'}
                     />
                   )}
               </Row>

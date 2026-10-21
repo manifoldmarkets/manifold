@@ -372,7 +372,11 @@ export function NotificationItem(props: {
         isChildOfGroup={isChildOfGroup}
       />
     )
-  } else if (reason === 'perp_liquidation' || reason === 'perp_adl') {
+  } else if (
+    reason === 'perp_liquidation' ||
+    reason === 'perp_adl' ||
+    reason === 'perp_order_failed'
+  ) {
     // Must come before the contract/updated suppressor below — perp engine
     // notifications carry sourceType 'contract' + sourceUpdateType 'updated'
     // and were being swallowed into blank rows.

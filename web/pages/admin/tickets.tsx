@@ -4,6 +4,7 @@ import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Title } from 'web/components/widgets/title'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { NoSEO } from 'web/components/NoSEO'
 import { Button } from 'web/components/buttons/button'
 import { useAdmin } from 'web/hooks/use-admin'
@@ -53,7 +54,10 @@ export default function AdminTicketsPage() {
     <Page trackPageView="admin tickets page">
       <NoSEO />
       <Col className="mx-8 gap-6">
-        <Title>Manifest Ticket Orders</Title>
+        <Title>
+          Manifest Ticket Orders
+          <ModActionTag admin className="ml-2 align-middle" />
+        </Title>
 
         <div className="rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
           <span className="text-amber-700 dark:text-amber-300">

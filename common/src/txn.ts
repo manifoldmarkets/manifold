@@ -74,6 +74,8 @@ type AnyTxnType =
   | ShopRefund
   | MembershipPayment
   | PreKycBonus
+  | PerpOrderReserve
+  | PerpOrderRelease
   | PerpOpenMargin
   | PerpClosePayout
   | PerpTakerFee
@@ -153,8 +155,8 @@ type UniqueBettorBonus = {
     uniqueBettorIds?: string[]
     isPartner: boolean
     // Creator's effective tier at award time + multiplier applied. Used by
-    // the income notification to render the upsell line when the creator is
-    // unverified (and the amount is therefore reduced).
+    // the income notification to render the flagged line when the creator is
+    // flagged for verification.
     effectiveTier?: string
     uniqueTraderMultiplier?: number
   }
@@ -168,7 +170,7 @@ type BettingStreakBonus = {
     currentBettingStreak?: number
     contractId?: string
     // Effective tier at time of award + multiplier applied. Used by notifications
-    // to render the upsell line when the recipient is unverified.
+    // to render the flagged line when the recipient is flagged for verification.
     effectiveTier?: string
     streakMultiplier?: number
     supporterBonus?: boolean
@@ -895,3 +897,18 @@ export type SweepstakesTicketTxn = Txn & SweepstakesTicket
 export type ShopPurchaseTxn = Txn & ShopPurchase
 export type MembershipPaymentTxn = Txn & MembershipPayment
 export type PreKycBonusTxn = Txn & PreKycBonus
+
+type PerpOrderReserve = {
+  category: 'PERP_ORDER_RESERVE'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+  data: { orderId: string; contractId: string }
+}
+type PerpOrderRelease = {
+  category: 'PERP_ORDER_RELEASE'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
+  data: { orderId: string; contractId: string }
+}

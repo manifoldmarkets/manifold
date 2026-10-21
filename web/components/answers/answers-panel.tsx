@@ -261,6 +261,7 @@ export function AnswersPanel(props: {
           setSort={setSort}
           showDefaultSort={showSetDefaultSort && contract.sort !== sort}
           setDefaultSort={setDefaultSort}
+          defaultSortModAction={!!user && user.id !== contract.creatorId}
         />
       )}
       <Col ref={answersContainerRef}>
@@ -656,6 +657,7 @@ export function AnswerComponent(props: {
         icon: <PencilIcon className=" h-4 w-4" />,
         name: 'Edit',
         onClick: () => setEditingAnswer(answer),
+        modAction: isModAnswerEdit(answer, contract, user),
       },
 
     onCommentClick && {
@@ -866,6 +868,19 @@ export function canEditAnswer(
       isModId(user.id) ||
       user.id === contract.creatorId ||
       user.id === answer.userId)
+  )
+}
+
+// Can only edit the answer because the user is a mod or admin
+export function isModAnswerEdit(
+  answer: Answer,
+  contract: MultiContract,
+  user?: User | undefined | null
+) {
+  return (
+    !!canEditAnswer(answer, contract, user) &&
+    user?.id !== contract.creatorId &&
+    user?.id !== answer.userId
   )
 }
 

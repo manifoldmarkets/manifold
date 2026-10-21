@@ -7,7 +7,10 @@ import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { useUnfilledBets } from 'client-common/hooks/use-bets'
 import { flagImageCode } from 'common/sports'
 import { ContractMetric } from 'common/contract-metric'
-import { SportsBetPanel, SportsVersusBetDialog } from './sports-bet-panel'
+import {
+  SportsThreeWayBetDialog,
+  SportsVersusBetDialog,
+} from './sports-bet-panel'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import {
   PositionsHovercard,
@@ -539,6 +542,19 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
               (p) => p.name === match.teamA.name
             )}
           />
+          {(match.hasDraw ?? true) && (
+            <OutcomeRow
+              name="Draw"
+              prob={probs.draw}
+              isWinner={resolved && match.winner === 'draw'}
+              isDraw
+              resolved={resolved}
+              teamColor={SPORTS_COLORS.draw}
+              winnerColor={match.winner === 'draw' ? winnerColor : undefined}
+              onClick={!resolved ? () => setBetOutcome('draw') : undefined}
+              hasPosition={userData.positions.some((p) => p.name === 'Draw')}
+            />
+          )}
           <OutcomeRow
             flag={match.teamB.flag}
             name={match.teamB.name}
@@ -553,19 +569,6 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
               (p) => p.name === match.teamB.name
             )}
           />
-          {(match.hasDraw ?? true) && (
-            <OutcomeRow
-              name="Draw"
-              prob={probs.draw}
-              isWinner={resolved && match.winner === 'draw'}
-              isDraw
-              resolved={resolved}
-              teamColor={SPORTS_COLORS.draw}
-              winnerColor={match.winner === 'draw' ? winnerColor : undefined}
-              onClick={!resolved ? () => setBetOutcome('draw') : undefined}
-              hasPosition={userData.positions.some((p) => p.name === 'Draw')}
-            />
-          )}
         </Col>
 
         <Row className="border-ink-200 items-center justify-between border-t pt-2">
@@ -616,7 +619,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
           />
         ) : (
           // Standard 3-way soccer markets (home / draw / away).
-          <SportsBetPanel
+          <SportsThreeWayBetDialog
             match={{
               ...match,
               teamA: { ...match.teamA, prob: probs.teamA },

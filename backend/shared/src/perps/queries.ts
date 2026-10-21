@@ -24,10 +24,16 @@ export const selectLatestOraclePriceQuery = (feedId: string) =>
     [feedId]
   )
 
+// NO KEY UPDATE, the lock an update of `data` takes anyway: it still serializes
+// every writer of the row, but not the KEY SHARE lock that inserting a row
+// referencing the contract takes. FOR UPDATE made each order submission (a
+// perp_orders insert, under its user's row lock) wait for the tick, which
+// waits for that user's row: a deadlock cycle.
 export const selectContractForUpdateQuery = (contractId: string) =>
-  pgp.as.format(`select data, token from contracts where id = $1 for update`, [
-    contractId,
-  ])
+  pgp.as.format(
+    `select data, token from contracts where id = $1 for no key update`,
+    [contractId]
+  )
 
 export const selectPositionsForUpdateQuery = (contractId: string) =>
   pgp.as.format(

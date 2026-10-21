@@ -207,7 +207,7 @@ export const handleCommentNotifications = async (
       : `User ${commentCreator.id.substring(0, 4)}`
   }: ${richTextToString(comment.content)}`
 
-  // Check if comment needs response using Gemini, now with context
+  // Check if comment needs response using the cheap AI tier, with context
   const checkResult =
     comment.userId === contract.creatorId
       ? { needsResponse: false }
@@ -455,7 +455,7 @@ export const checkCommentNeedsResponse = async (
   try {
     const result = await promptAI<{ needsResponse: boolean; reason: string }>(
       prompt,
-      { model: aiModels.flash, parseAsJson: true }
+      { model: aiModels.haiku, parseAsJson: true }
     )
     return result
   } catch (error) {
