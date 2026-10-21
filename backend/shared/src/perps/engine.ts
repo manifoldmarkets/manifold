@@ -1993,6 +1993,9 @@ class PerpCatchUpNeeded extends Error {
 // advances regardless, so waiting orders cannot hold back the mark and the
 // liquidations it carries; what still waits is then rejected as before.
 const MAX_CATCH_UP_ROUNDS = 6
+// Replay attempts one incoming point can make: each round adds at most a
+// replay and a retry of the replay that found it.
+const MAX_REPLAY_ATTEMPTS = 2 * MAX_CATCH_UP_ROUNDS
 // Shared by an incoming point's retries and the replays they run.
 type OracleCatchUp = {
   // Rounds spent on the incoming point so far: one budget for all of them.
@@ -2001,6 +2004,10 @@ type OracleCatchUp = {
   exhausted: Set<string>
   // The incoming point's provider health, which its replays carry.
   health?: OracleFeedHealth
+  // Replay attempts started so far, which order their health stamps.
+  replays: { started: number }
+  // Set on a replay of a skipped point (and its retries).
+  replay?: boolean
 }
 
 export const runOracleUpdate = async (
@@ -2010,7 +2017,7 @@ export const runOracleUpdate = async (
   sourceTs?: number,
   /** Fast tick only. Omit to wait; see OracleUpdateBounds. */
   bounds?: OracleUpdateBounds,
-  oracleFeedHealth?: OracleFeedHealth,
+  suppliedHealth?: OracleFeedHealth,
   /** Internal to the N3 catch-up; callers omit it. */
   catchUpState?: OracleCatchUp
 ): Promise<OracleUpdateResult | null> => {
@@ -2018,8 +2025,26 @@ export const runOracleUpdate = async (
   const catchUp = catchUpState ?? {
     spent: { rounds: 0 },
     exhausted: new Set<string>(),
-    health: oracleFeedHealth,
+    health: suppliedHealth,
+    replays: { started: 0 },
   }
+  // A replay carries the incoming point's provider health, the current word
+  // on the provider: the contract's own may be the outage the incoming point
+  // recovers from, and the replay's fills check it. An older fetch may not
+  // overwrite a newer one, so each attempt is stamped as it starts, later
+  // than every attempt before it (a nested replay completes before the
+  // attempt that found it retries) and earlier than the incoming check,
+  // which the incoming apply then records.
+  const replayBase = catchUp.replay ? catchUp.health : undefined
+  const oracleFeedHealth = replayBase
+    ? {
+        ...replayBase,
+        checkedAt:
+          replayBase.checkedAt -
+          (MAX_REPLAY_ATTEMPTS + 1) +
+          Math.min(++catchUp.replays.started, MAX_REPLAY_ATTEMPTS),
+      }
+    : suppliedHealth
   let backlog = false
   let deferredAtTick: string[] = []
   // The contract as this point's settlement saw it, when it got that far.
@@ -2388,7 +2413,7 @@ export const runOracleUpdate = async (
       ts,
       sourceTs,
       bounds,
-      oracleFeedHealth,
+      suppliedHealth,
       catchUp
     )
   }
@@ -2428,26 +2453,16 @@ const catchUpTo = async (
     )
     return
   }
-  // The replay carries the incoming point's provider health, the current
-  // word on the provider: the contract's own may be the outage the incoming
-  // point recovers from, and its fills check it. Dated just earlier than the
-  // incoming check, by the rounds left, so each replay's health is newer than
-  // the last one's (an older fetch must not overwrite a newer one) and the
-  // incoming apply, which records the real one, is still the newest.
-  const base = catchUp.health
-  const replayHealth = base && {
-    ...base,
-    checkedAt:
-      base.checkedAt - (MAX_CATCH_UP_ROUNDS + 1) + catchUp.spent.rounds,
-  }
+  // Stamped with the incoming point's health as each attempt starts (see
+  // runOracleUpdate).
   const replayed = await runOracleUpdate(
     contract.id,
     point.price,
     point.ts,
     point.sourceTs,
     bounds,
-    replayHealth,
-    catchUp
+    undefined,
+    { ...catchUp, replay: true }
   ).catch((error) => {
     log.warn(
       `[perp-orders] replaying skipped point ${contract.id} @ ${point.ts} failed: ${error}`

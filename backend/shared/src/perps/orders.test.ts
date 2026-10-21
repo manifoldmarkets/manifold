@@ -1463,6 +1463,104 @@ it('replays two skipped points with health that keeps advancing (N3)', async () 
     },
   ])
 })
+it('applies a replay retried after a nested replay, liquidation included (N3)', async () => {
+  const engine = await loadEngine()
+  // alice holds a 10x long from 100.
+  const { order: open } = await engine.openOrAddPosition(
+    'market',
+    'alice',
+    'long',
+    100,
+    10,
+    'nestopen01',
+    false,
+    0
+  )
+  await engine.runOracleUpdate('market', 100, open.createdTime + 10)
+  await new Promise((resolve) => setTimeout(resolve, 20))
+  const now = Date.now()
+  await db.query('update contracts set data = data || $1::jsonb', [
+    {
+      oracleFeedHealth: {
+        status: 'available',
+        checkedAt: now - 30_000,
+        expiresAt: now + 60_000,
+      },
+    },
+  ])
+  await db.query("insert into users values('carol',1000,null)")
+  const { order: waiting } = await engine.openOrAddPosition(
+    'market',
+    'carol',
+    'short',
+    100,
+    2,
+    'nestwait01',
+    false,
+    0
+  )
+  const t1 = waiting.createdTime + 5
+  const t2 = t1 + 5
+  await db.query('insert into oracle_prices values($1,$2,$3,null)', [
+    'btc-usd',
+    new Date(t2),
+    80,
+  ])
+  // Another scheduler persists the earlier P1 only once P2's replay is under
+  // way, so P1 is replayed inside it and fills carol, leaving nothing that
+  // would bring an update back to P2.
+  let locks = 0
+  beforeQuery = async (sql) => {
+    if (!/from contracts where id = .* for no key update/.test(sql)) return
+    if (++locks < 2) return
+    beforeQuery = undefined
+    await db.exec('commit')
+    await db.query('insert into oracle_prices values($1,$2,$3,null)', [
+      'btc-usd',
+      new Date(t1),
+      95,
+    ])
+    await db.exec('begin')
+  }
+  const health = {
+    status: 'available',
+    checkedAt: Date.now(),
+    expiresAt: Date.now() + 60_000,
+  }
+  notifyOracle.mockClear()
+  await engine.runOracleUpdate(
+    'market',
+    100,
+    t2 + 10,
+    undefined,
+    undefined,
+    health
+  )
+  // P2's retry is newer than P1's nested replay, so it still applies: the
+  // 10x long is liquidated at 80, and notified there.
+  expect(notifyOracle).toHaveBeenCalledWith(
+    expect.anything(),
+    expect.objectContaining({ id: 'market' }),
+    80,
+    expect.objectContaining({
+      liquidated: [expect.objectContaining({ userId: 'alice' })],
+    })
+  )
+  expect(
+    (
+      await db.query<{ size: number | string }>(
+        "select size from contract_perp_positions where user_id='alice'"
+      )
+    ).rows.filter((r) => Number(r.size) > 0)
+  ).toEqual([])
+  expect(
+    (
+      await db.query<{ execution_point: object }>(
+        "select execution_point from perp_orders where user_id='carol'"
+      )
+    ).rows[0].execution_point
+  ).toEqual({ ts: t1, price: 95 })
+})
 it('notifies liquidations at a replayed point at its own price (N3)', async () => {
   const engine = await loadEngine()
   const { order: open } = await engine.openOrAddPosition(
