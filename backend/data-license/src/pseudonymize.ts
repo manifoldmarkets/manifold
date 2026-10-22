@@ -54,6 +54,21 @@ export class Pseudonymizer {
     return pseudonym as T
   }
 
+  /** Stands in for a username we can't tie to a user id (identity.ts). */
+  get unknown(): string {
+    return this.prefix + 'unknown'
+  }
+
+  /** True for this mapper's output, so rewrites are idempotent. */
+  isPseudonym(s: string): boolean {
+    if (!s.startsWith(this.prefix)) return false
+    const rest = s.slice(this.prefix.length)
+    return (
+      rest === 'unknown' ||
+      (rest.length >= this.hexLen && /^[0-9a-f]+$/.test(rest))
+    )
+  }
+
   /** Every raw user id mapped so far — an input to the leak scan. */
   rawIds(): Iterable<string> {
     return this.forward.keys()

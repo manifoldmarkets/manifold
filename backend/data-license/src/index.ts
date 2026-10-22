@@ -19,24 +19,34 @@ import { Writable } from 'stream'
 import QueryStream from 'pg-query-stream'
 import { bootstrapSecrets } from './bootstrap'
 import { loadConfig } from './config'
-import { connect, withSnapshot, shutdown } from './db'
+import { connect, withSnapshot, shutdown, Snapshot } from './db'
 import {
   setupScopeTable,
   loadDeletedUserIds,
   loadAllUserIds,
   loadDeliveredContractIds,
+  loadNameRecords,
   pickProbeContracts,
+  proseCorpusSql,
   streamSql,
 } from './extract'
 import { reconstructPaths, ProbePoint, ReconResult } from './reconstruct'
 import { Pseudonymizer } from './pseudonymize'
-import { RedactContext, REDACTORS, newStats, Row } from './redact'
+import {
+  RedactContext,
+  REDACTORS,
+  commentTextShips,
+  newStats,
+  Row,
+} from './redact'
+import { NameIndex, PROSE_TABLES, proseHandles } from './identity'
 import { ChunkedParquetWriter, OnBatch, OnChunk, WriterTotals } from './writer'
 import {
   scanBatch,
   emptyCounts,
   addCounts,
   chunkFailed,
+  nameScanSelfTest,
   ScanCounts,
 } from './validate'
 import { makeUploader } from './r2'
@@ -54,6 +64,33 @@ import { ALL_TABLES, COLUMN_TYPES, TableName } from './scope'
 // How many markets the probability-reconstruction spot check probes. Odd, so
 // "strict majority" is unambiguous; see reconstruct.ts for why it isn't 1.
 const PROBE_MARKETS = 5
+
+// Read a query through a server-side cursor, one row at a time.
+function forEachRow(
+  t: Snapshot,
+  sql: string,
+  fn: (row: Row) => void
+): Promise<void> {
+  const sink = new Writable({
+    objectMode: true,
+    write(row: Row, _enc, cb) {
+      try {
+        fn(row)
+        cb()
+      } catch (e) {
+        cb(e as Error)
+      }
+    },
+  })
+  return new Promise<void>((resolve, reject) => {
+    sink.on('finish', resolve)
+    sink.on('error', reject)
+    t.stream(new QueryStream(sql, [], { batchSize: 5000 }), (s) => {
+      s.on('error', reject)
+      s.pipe(sink)
+    }).catch(reject)
+  })
+}
 
 async function main() {
   const started = Date.now()
@@ -176,6 +213,39 @@ async function main() {
           }`
       )
 
+      // Usernames (current + historical) for the URL/path/prose rewrites and
+      // the name scan, then how many prose rows each handle appears in — the
+      // bare-word rule only touches rare ones. The tally is one extra read of
+      // the delivered markets and comments.
+      const nameSources = await loadNameRecords(t)
+      const names = NameIndex.fromRecords(nameSources.flatMap((s) => s.records))
+      if (tablesToRun.some((s) => PROSE_TABLES.includes(s.name))) {
+        for (const { table, sql } of proseCorpusSql()) {
+          await forEachRow(t, sql, (row) => {
+            const ships =
+              table !== 'contract_comments' ||
+              commentTextShips(row, deletedUserIds, cfg.blankModeratedComments)
+            if (ships) names.countProseRow(proseHandles(table, row, names))
+          })
+        }
+      }
+      names.setRareThreshold(cfg.bareUsernameMaxRows)
+      console.log(
+        `names: ${names.usernames.size} usernames (` +
+          nameSources.map((s) => `${s.source} ${s.records.length}`).join(', ') +
+          `); ${names.handles.size} handle-like; ${names.rareCount} rare ` +
+          `(<= ${cfg.bareUsernameMaxRows} prose rows); bare-username rewrite ` +
+          `${
+            cfg.bareUsernameRewrite
+              ? 'ON'
+              : 'OFF (rare handles reported, not gated)'
+          }` +
+          `; blank moderated comments ${
+            cfg.blankModeratedComments ? 'ON' : 'off'
+          }` +
+          `; scrub descriptions ${cfg.scrubDescriptions ? 'ON' : 'off'}`
+      )
+
       const ctx: RedactContext = {
         ps,
         stats,
@@ -183,11 +253,19 @@ async function main() {
         deletedAccountMode: cfg.deletedAccountMode,
         knownUserIds: allUserIds,
         scopedContractIds: deliveredContractIds,
+        names,
+        bareUsernames: cfg.bareUsernameRewrite,
+        blankModeratedComments: cfg.blankModeratedComments,
+        scrubDescriptions: cfg.scrubDescriptions,
       }
       const scanArgs = {
         deliveredContractIds,
         allUserIds: cfg.leakScanFull ? allUserIds : new Set<string>(),
         forbiddenStrings: cfg.forbiddenStrings,
+        names,
+        ps,
+        failOnBareNames: cfg.bareUsernameRewrite,
+        scrubDescriptions: cfg.scrubDescriptions,
       }
 
       // Self-test the leak scan: plant a real raw user id in a fake row and
@@ -203,6 +281,15 @@ async function main() {
         if (st.rawIdLeaks === 0) {
           throw new Error(
             'leak-scan self-test FAILED: planted raw user id was not detected'
+          )
+        }
+      }
+      // Same for usernames: one planted value per shape the name scan covers.
+      if (names.usernames.size > 0) {
+        const missed = nameScanSelfTest(scanArgs)
+        if (missed.length) {
+          throw new Error(
+            `name-scan self-test FAILED: not detected: ${missed.join(', ')}`
           )
         }
       }
@@ -332,6 +419,12 @@ async function main() {
     saltFingerprint,
     delivery: { bucket: cfg.r2.bucket, prefix: keyPrefix },
     writes: perTable,
+    redaction: {
+      bareUsernameRewrite: cfg.bareUsernameRewrite,
+      bareUsernameMaxRows: cfg.bareUsernameMaxRows,
+      blankModeratedComments: cfg.blankModeratedComments,
+      scrubDescriptions: cfg.scrubDescriptions,
+    },
     scrubStats: stats,
     recon,
   })

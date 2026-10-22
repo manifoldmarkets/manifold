@@ -8,7 +8,10 @@
 //          backend/supabase/*.sql
 // ---------------------------------------------------------------------------
 
-export const SCHEMA_VERSION = '1.1.0'
+// 1.2.0: usernames rewritten inside URLs, paths and prose (identity.ts);
+// contract_bets.cancel_time_reliable; perp/sports/multi keys vetted below;
+// answers.p typed.
+export const SCHEMA_VERSION = '1.2.0'
 
 export type Segment = 'A' | 'B' | 'C'
 
@@ -225,6 +228,32 @@ export const TABLES: Record<TableName, TableSpec> = {
       'volume24Hrs',
       'voterVisibility',
       'wasPrivate',
+      // Added on main after this export was written (common/src/contract.ts), vetted
+      // 2026-10-22 against the types and the dev key inventory. All are numbers,
+      // enums, provider strings or engine state; none names a user.
+      //   initialProbabilities  {answerId: number}, multi markets' opening probs
+      //   perps: fee/funding config, frozen launch pools, open interest, feed
+      //   health {checkedAt, status, reason?, expiresAt?}, solvency halt (time +
+      //   engine error message), short ticker label, resolution price
+      //   sportsHomeTeam/AwayTeam  provider team names; sportsMarketType enum
+      'initialProbabilities',
+      'fundingPeriodMs',
+      'takerFeeBps',
+      'takerFeeImpact',
+      'takerFeeApiBps',
+      'ticker',
+      'initialPoolLong',
+      'initialPoolShort',
+      'openInterestLong',
+      'openInterestShort',
+      'oracleSourceTime',
+      'oracleFeedHealth',
+      'resolvedOraclePrice',
+      'solvencyHaltTime',
+      'solvencyHaltReason',
+      'sportsHomeTeam',
+      'sportsAwayTeam',
+      'sportsMarketType',
     ],
   },
   // Segment B — answers are fully columnar (no data blob). common/src/answer.ts,
@@ -404,7 +433,7 @@ export const TABLES: Record<TableName, TableSpec> = {
     userIdColumns: [], // from_id/to_id are conditional — see redactTxn
     // Legacy txns duplicated the WHOLE txn into the blob, including raw
     // fromId/toId and a human-readable description with real display names
-    // ("Alice tipped M$10 to Bob…"). All are dupes of delivered columns —
+    // ("Wrenna tipped M$10 to Pikeling…"). All are dupes of delivered columns —
     // strip them. Found by DB key inventory.
     stripDataFields: [
       'fromId',
@@ -500,7 +529,7 @@ export const TXN_INNER_STRIP = [
   'isBulkPurchase',
   'isFirstCryptoPurchase',
   'betPaths',
-  // prod-only (full-clone key inventory, 2026-07-29):
+  // prod-only (full-clone key inventory):
   'offerId', // MANA_PURCHASE payment-offer token — payment metadata
   'reportId', // ADMIN_REWARD internal moderation-report reference
 ]
@@ -590,7 +619,7 @@ export const TXN_INNER_ALLOWED = [
   'sellProb',
   'yesShareDays',
   // prod-only, surfaced by the unknown-key gate / full-clone key inventory
-  // (2026-07-29), vetted against clone values — all identity-free:
+  // vetted against clone values — all identity-free:
   //   backfill             boolean, REFERRAL backfill marker (162)
   //   isJul24Reimbursement boolean, MANA_PAYMENT reimbursement marker (58)
   //   questAmount          number (4)
@@ -610,12 +639,23 @@ export const TXN_INNER_ALLOWED = [
   'personalizedOffer',
   'reverses',
   'updateType',
+  // perp txns added on main after this export was written (common/src/txn.ts):
+  //   feeBps / feeBase  PERP_TAKER_FEE effective and configured rate (numbers)
+  //   finalPrice        PERP_RESOLVE_RESIDUAL settlement price (number)
+  //   orderId           PERP_ORDER_RESERVE / RELEASE pending-order id (nanoid)
+  'feeBps',
+  'feeBase',
+  'finalPrice',
+  'orderId',
 ]
 
 // ---- contracts.data.answers[] (denormalized answer objects) ---------------
 // Legacy DPM-era answers embedded the answerer's full display identity.
 export const ANSWER_USER_ID_FIELDS = ['userId', 'resolverId', 'loverUserId']
-export const ANSWER_STRIP_FIELDS = ['username', 'name', 'avatarUrl']
+// textFts is a search vector of the answer text ("'word':1 …"), stripped like
+// the *_fts columns: noise for a licensee, and a second copy of any name the
+// prose rewrite (identity.ts) replaces in the text itself.
+export const ANSWER_STRIP_FIELDS = ['username', 'name', 'avatarUrl', 'textFts']
 export const ANSWER_ALLOWED_FIELDS = [
   'color',
   'contractId',
@@ -627,6 +667,7 @@ export const ANSWER_ALLOWED_FIELDS = [
   'isOther',
   'midpoint',
   'number',
+  'p',
   'poolNo',
   'poolYes',
   'prob',
@@ -640,7 +681,6 @@ export const ANSWER_ALLOWED_FIELDS = [
   'shortText',
   'subsidyPool',
   'text',
-  'textFts',
   'totalLiquidity',
   'totalSubsidy',
   'volume',
@@ -692,6 +732,7 @@ export const COLUMN_TYPES: Record<string, string> = {
   prob_change_week: 'DOUBLE',
   prob_change_month: 'DOUBLE',
   midpoint: 'DOUBLE',
+  p: 'DOUBLE', // answers.p (cpmm-multi-2), added on main 2026-09-23
   volume: 'DOUBLE',
   popularity_score: 'DOUBLE',
   importance_score: 'DOUBLE',
@@ -705,4 +746,142 @@ export const COLUMN_TYPES: Record<string, string> = {
   likes: 'BIGINT',
   dislikes: 'BIGINT',
   index: 'BIGINT',
+  // derived (redact.ts); null on rows that aren't cancelled orders, so a
+  // first part with no cancellations must not infer it as JSON
+  cancel_time_reliable: 'BOOLEAN',
 }
+
+// ---- limit-order cancellation times ---------------------------------------
+// contract_bets.updated_time is the cancellation time of a cancelled limit
+// order, EXCEPT while the updated_time trigger was broken: an AFTER UPDATE
+// trigger assigned NEW, which does nothing, so cancels left updated_time at
+// its insert value (= created_time). Introduced 2024-05-30 (last good stamp in
+// the data 2024-05-23 21:50 UTC), fixed by acca64b990 (stamping resumes
+// 2025-01-29 ~01:22 UTC). An order cancelled in that window can't be told
+// apart from one cancelled within a second of placement, so every cancelled
+// order placed before the fix with updated ≈ created is marked unreliable.
+export const CANCEL_STAMP_BROKEN_FROM = '2024-05-23T22:00:00Z'
+export const CANCEL_STAMP_FIXED_AT = '2025-01-29T01:20:00Z'
+// |updated_time - created_time| below this means "never restamped"
+export const CANCEL_STAMP_SAME_MS = 1000
+// fills are stamped in ms by the engine and updated_time by the db clock
+export const FILL_AFTER_CANCEL_SLACK_MS = 1000
+
+// ---- manifold.markets routes ----------------------------------------------
+// The first path segment of a manifold.markets link is a username unless it
+// is a route. common/envs/constants RESERVED_PATHS is the list usernames may
+// not take; this adds the top-level web/pages entries it doesn't cover (a
+// test checks the pages directory against both, so a new page fails CI).
+export const MANIFOLD_PAGE_ROUTES = [
+  'about',
+  'activity',
+  'add-funds',
+  'admin',
+  'ai',
+  'api',
+  'browse',
+  'calculator',
+  'calibration',
+  'charity',
+  'checkout',
+  'comments',
+  'community-guidelines',
+  'communityguidelines',
+  'complexsystems',
+  'cowp',
+  'create',
+  'create-post',
+  'dashboard',
+  'discord-bot',
+  'election',
+  'embed',
+  'explore',
+  'feed',
+  'home',
+  'jobs',
+  'lab',
+  'leaderboards',
+  'leagues',
+  'link',
+  'links',
+  'live',
+  'login',
+  'mana-auction',
+  'manachan',
+  'me',
+  'membership',
+  'messages',
+  'my-calibration',
+  'news',
+  'notifications',
+  'og-test',
+  'old-charity',
+  'pakman',
+  'payments',
+  'perps',
+  'post',
+  'posts',
+  'predictle',
+  'press',
+  'prize',
+  'public-messages',
+  'redeem',
+  'referrals',
+  'register-on-discord',
+  'reports',
+  'server-sitemap.xml',
+  'shop',
+  'sign-in-waiting',
+  'sitemap',
+  'sports',
+  'stats',
+  'styles',
+  'todo',
+  'topic',
+  'tv',
+  'twitch',
+  'websocket-live',
+  'welcomeoffer',
+  'wrapped',
+  'yap',
+  'yc-s23',
+  // web/public directories (files are skipped by rule: usernames have no dot)
+  '3d-coins',
+  'achievement-badges',
+  'buy-mana-graphics',
+  'cards',
+  'complex-systems',
+  'custom-components',
+  'data',
+  'fonts',
+  'group',
+  'images',
+  'landing',
+  'lottie',
+  'market-tiers',
+  'merch',
+  'mp3s',
+  'mtg',
+  'payment-icons',
+  'political-candidates',
+  'politics-party',
+  'sounds',
+  'testimonials',
+  'theoremone',
+  'welcome',
+]
+// manifold.markets/embed/<x>/…: <x> is a username except for these
+export const MANIFOLD_EMBED_ROUTES = ['grid']
+
+// Storage prefixes whose first segment names the uploader: a username
+// (web/lib/firebase/storage.ts uploadPublicImage; the retired DALL-E covers
+// in backend/api/src/helpers/on-create-market.ts) or a user id
+// (private-images). 'default' is the shared folder editor uploads use.
+export const STORAGE_USER_PREFIXES = [
+  'contract-images',
+  'user-images',
+  'comment-images',
+  'post-images',
+  'private-images',
+]
+export const STORAGE_SHARED_SEGMENTS = ['default']

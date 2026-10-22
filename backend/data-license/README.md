@@ -31,11 +31,32 @@ config → snapshot → (per table: stream → redact → chunk → scan → upl
 - **Redact** (`redact.ts`, `pseudonymize.ts`) — HMAC-SHA256 every user id
   (columns AND nested JSON: `contracts.data.answers[]`, comment `@mentions`,
   `txns.data.data`), strip denormalized identity (names/usernames/avatars/account
-  age), scrub comment text (emails, phones, @mentions), redact deleted-account
-  comments. `scope.ts` is the auditable catalog of every field touched. A final
-  **raw-id sweep** then tokenizes every remaining string and pseudonymizes any
-  token that is a real user id — the backstop for ids no field list can reach,
-  e.g. a `manifold.markets/leagues/…/<uid>` URL pasted into a description.
+  age), scrub comment text (emails, validated phone numbers, @mentions), redact
+  deleted-account comments. `scope.ts` is the auditable catalog of every field
+  touched. A final **raw-id sweep** then tokenizes every remaining string and
+  pseudonymizes any token that is a real user id — the backstop for ids no
+  field list can reach, e.g. a `manifold.markets/leagues/…/<uid>` URL pasted
+  into a description.
+- **Usernames in strings** (`identity.ts`) — every string is also searched for
+  usernames that no field list reaches: image paths (`contract-images/<user>/`,
+  `user-images/<user>/`, percent-encoded in Firebase URLs), links
+  (`manifold.markets/<user>/<slug>`, `/embed/<user>/…`, `/api/v0/user/<user>`),
+  link-preview params (`creatorName`, `creatorUsername`, `creatorAvatarUrl`,
+  dropped on any host) and referral params (`?r=<base64 username>`,
+  `?referrer=`, dropped). A username becomes its owner's pseudonym, so joins
+  survive; one we can't resolve becomes `User_unknown`. Slugs are kept.
+  Usernames come from `users` plus the old names that survive in denormalized
+  copies and edit snapshots (there is no rename-history table; see
+  `loadNameRecords`). In prose (questions, descriptions, answers, comments), a
+  **rare handle-like word** that matches a username is replaced too: 5+
+  characters with a digit, underscore or internal capital, appearing in at most
+  `BARE_USERNAME_MAX_ROWS` (20) prose rows, counted in an extra pass over the
+  delivered markets and comments.
+- **Limit-order cancel times** — `contract_bets.cancel_time_reliable` (derived)
+  is null unless the row is a cancelled order, and false where `updated_time`
+  can't be the cancellation time: placed before the 2025-01-29 trigger fix with
+  `updated_time ≈ created_time` (the trigger didn't stamp cancels from
+  2024-05-23), or a fill after `updated_time`. See `scope.ts`.
 - **Stream + chunk** (`extract.ts`, `writer.ts`) — server-side cursor
   (`pg-query-stream`); rows are written to zstd Parquet in ~fixed-size numbered
   parts (`contract_bets.0000.parquet`, …). Each part is scanned, hashed,
@@ -79,6 +100,9 @@ unset. See `.env.example`.
 | `EXPORT_SALT` **or** `SALT_SECRET_RESOURCE` | Pseudonymization salt: a literal (local) **or** a Secret Manager version resource (cloud). Exactly one. **It's an HMAC key** — user ids are public, so a guessable salt lets anyone reverse the pseudonym map. Real deliveries need 32+ random bytes (`openssl rand -hex 32`), fixed per client forever. |
 | `PSEUDONYM_PREFIX` / `PSEUDONYM_HEX_LEN` | Pseudonym format (default `User_`, 20 hex). |
 | `DELETED_ACCOUNT_MODE` | `redact` (default) or `remove` for deleted-account comments. |
+| `BARE_USERNAME_REWRITE` / `BARE_USERNAME_MAX_ROWS` | Replace rare handle-like words that match a username, and fail the batch on any left (default `true`, rare = in ≤ `20` prose rows). `false` reports them instead. |
+| `BLANK_MODERATED_COMMENTS` | Blank the text of moderator-deleted and hidden comments, keeping the row and flags (default `true`). |
+| `SCRUB_DESCRIPTIONS` | Scrub market descriptions: emails and phones, and @handles that are Manifold usernames rewritten to the user's pseudonym; other @handles are kept (default `true`). |
 | `SEGMENTS` | Which segments to include, e.g. `A,B,C` (default all). |
 | `ONLY_TABLES` | **Supplemental run**: rebuild only these tables (comma list) and *merge* the result into the delivery's existing manifest instead of replacing it — for repairing or adding one table without re-running a multi-hour export. See below. |
 | `SUBSET_LIMIT` | Cap contracts pulled (for dry runs). Empty = full. |
@@ -102,7 +126,7 @@ table come out wrong or empty:
 
 ```bash
 set -a; . ./.env; set +a
-DELIVERY_DATE=2026-07-29 ONLY_TABLES=bot_accounts yarn dev   # pin the ORIGINAL date
+DELIVERY_DATE=<original YYYY-MM-DD> ONLY_TABLES=bot_accounts yarn dev   # pin the ORIGINAL date
 ```
 
 The rebuilt table is uploaded, then the delivery's `manifest.json` is fetched
@@ -121,6 +145,10 @@ work happens — the run aborts if the existing manifest's `saltFingerprint`,
 `deliveryDate`, or `schemaVersion` doesn't match, or if no manifest is there to
 merge into (which is what stops a blank `DELIVERY_DATE` from silently opening a
 fresh, half-empty delivery prefix at UTC midnight).
+
+A schema-version change is a new delivery, not a supplemental run: ship it
+under a new `DELIVERY_DATE`. The `schemaVersion` guard is deliberate; don't
+relax it to merge a newer schema into an older delivery.
 
 ---
 
@@ -150,7 +178,10 @@ Set `SUBSET_LIMIT` small for a quick pass; leave `R2_*` unset to stay local-only
 (parts are kept under `LOCAL_OUT_DIR/<clientId>/<date>/`). Add the `R2_*` vars to
 also upload to a `_dryrun/<date>/` prefix.
 
-Typecheck: `npx tsc --noEmit -p backend/data-license/tsconfig.json --skipLibCheck`.
+Typecheck: `yarn typecheck:data-license`; lint: `yarn lint:data-license`;
+tests: `yarn test:data-license` (fixture tests for the redaction rules, the
+validator's name scan, the phone detector and the route list). All three run
+in CI.
 
 ---
 
@@ -245,7 +276,7 @@ The bucket is the access boundary (R2 API tokens scope to buckets, not prefixes)
    lifecycle rules → "Abort incomplete multipart uploads", 1 day). It can *not*
    be done with the job token: lifecycle is bucket-level configuration, and an
    Object Read & Write token gets `AccessDenied` on
-   `PutBucketLifecycleConfiguration` (verified 2026-07-29). Use the dashboard or
+   `PutBucketLifecycleConfiguration` (verified against R2). Use the dashboard or
    an Admin-scoped token.
 
    To clear one by hand instead: `list-multipart-uploads` → `abort-multipart-upload`
@@ -304,6 +335,13 @@ Before any part is uploaded (per chunk, on the redacted rows about to be written
   and txn `data.data`) must be in the vetted allowlist in `scope.ts`. A key we
   haven't reviewed fails the chunk; vet it and add it to the catalog. This is
   what turns "surprise legacy field" from a silent leak into a loud abort.
+- **Zero real usernames** — on the fully decoded row (so nested and
+  double-encoded URLs count): no current or historical username in an image
+  path, a link's user segment or a Manifold query string (including the
+  base64 `?r=`), no non-empty preview param on any URL, and, with
+  `BARE_USERNAME_REWRITE` on, no rare handle left in prose. Self-tested at
+  startup with one planted value of each shape. Usernames that left no record
+  at all (renamed before any surviving snapshot) can't be checked.
 - **Probability reconstruction** — the 5 busiest resolved binary markets in
   scope each have their `prob_before`/`prob_after` chain checked for continuity
   (per-market pass: no jump ≥ 0.02 and eps-level discontinuities rare). The gate

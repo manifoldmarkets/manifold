@@ -25,6 +25,15 @@ export interface FileMeta {
   sha256: string
 }
 
+// The policy switches a run used (config.ts), so the delivery says what was
+// done to its text rather than what the defaults are today.
+export interface RedactionPolicy {
+  bareUsernameRewrite: boolean
+  bareUsernameMaxRows: number
+  blankModeratedComments: boolean
+  scrubDescriptions: boolean
+}
+
 export interface TableMeta {
   segment: string
   rowCount: number
@@ -48,6 +57,8 @@ export interface Manifest {
   filter: typeof CONTRACT_FILTER_DEF
   segments: Record<string, { label: string; tables: string[] }>
   tables: Record<string, TableMeta>
+  // absent on manifests written before schema 1.2.0
+  redaction?: RedactionPolicy
   scrubStats: RedactStats
   checks: { probabilityReconstruction: ReconResult }
   // Appended by each supplemental (ONLY_TABLES) run. The top-level scrubStats
@@ -57,6 +68,7 @@ export interface Manifest {
   supplementalRuns?: {
     snapshotTime: string
     tables: string[]
+    redaction?: RedactionPolicy
     scrubStats: RedactStats
   }[]
 }
@@ -117,6 +129,7 @@ export function mergeManifest(base: Manifest, next: Manifest): Manifest {
       {
         snapshotTime: next.snapshotTime,
         tables: Object.keys(next.tables),
+        redaction: next.redaction,
         scrubStats: next.scrubStats,
       },
     ],
@@ -130,6 +143,7 @@ export function buildManifest(args: {
   saltFingerprint: string
   delivery: { bucket: string; prefix: string }
   writes: { table: TableName; totals: WriterTotals; files: FileMeta[] }[]
+  redaction: RedactionPolicy
   scrubStats: RedactStats
   recon: ReconResult
 }): Manifest {
@@ -160,6 +174,7 @@ export function buildManifest(args: {
     filter: CONTRACT_FILTER_DEF,
     segments,
     tables,
+    redaction: args.redaction,
     scrubStats: args.scrubStats,
     checks: { probabilityReconstruction: args.recon },
   }

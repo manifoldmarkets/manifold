@@ -11,6 +11,7 @@
 // ---------------------------------------------------------------------------
 
 import { Snapshot } from './db'
+import { NameRecord } from './identity'
 import { CONTRACT_FILTER_SQL, TableName } from './scope'
 
 export const SCOPE_TABLE = '_scope_contracts'
@@ -53,6 +54,99 @@ export async function loadDeletedUserIds(t: Snapshot): Promise<Set<string>> {
 export async function loadAllUserIds(t: Snapshot): Promise<Set<string>> {
   const rows = await t.any<{ id: string }>(`SELECT id FROM users`)
   return new Set(rows.map((r) => r.id))
+}
+
+/**
+ * Every username and display name we can tie to a user id, for identity.ts.
+ * There is no rename-history table: a rename rewrites the user's live market
+ * and comment rows (backend/api/src/update-me.ts) and nothing else, and
+ * anonymize-user rewrites neither. So old names survive in
+ *   - live market/comment rows of anonymized accounts (denormalized copies)
+ *   - pre-edit snapshots in contract_edits / contract_comment_edits
+ *   - DPM-era answers that embedded the answerer's name
+ * and that is the history we use. Reads all rows, in scope or not: a name is
+ * a name wherever we learned it. Returns one record list per source.
+ */
+export async function loadNameRecords(
+  t: Snapshot
+): Promise<{ source: string; records: NameRecord[] }[]> {
+  const sources: [string, string][] = [
+    ['users', `SELECT id, username, name FROM users`],
+    [
+      'contracts',
+      `SELECT DISTINCT creator_id AS id, data->>'creatorUsername' AS username,
+              data->>'creatorName' AS name
+         FROM contracts`,
+    ],
+    [
+      'contract_comments',
+      `SELECT DISTINCT user_id AS id, data->>'userUsername' AS username,
+              data->>'userName' AS name
+         FROM contract_comments`,
+    ],
+    [
+      'contracts.answers',
+      `SELECT DISTINCT a->>'userId' AS id, a->>'username' AS username, a->>'name' AS name
+         FROM contracts c,
+              jsonb_array_elements(CASE WHEN jsonb_typeof(c.data->'answers') = 'array'
+                                        THEN c.data->'answers' ELSE '[]'::jsonb END) a
+        WHERE jsonb_typeof(a) = 'object' AND (a ? 'username' OR a ? 'name')`,
+    ],
+    [
+      'contract_edits',
+      `SELECT DISTINCT data->>'creatorId' AS id, data->>'creatorUsername' AS username,
+              data->>'creatorName' AS name
+         FROM contract_edits`,
+    ],
+    [
+      'contract_comment_edits',
+      `SELECT DISTINCT data->>'userId' AS id, data->>'userUsername' AS username,
+              data->>'userName' AS name
+         FROM contract_comment_edits`,
+    ],
+  ]
+  const out: { source: string; records: NameRecord[] }[] = []
+  for (const [source, sql] of sources) {
+    const table = source.split('.')[0]
+    const { ok } = await t.one<{ ok: boolean }>(
+      `SELECT to_regclass($1) IS NOT NULL AS ok`,
+      [`public.${table}`]
+    )
+    if (ok) out.push({ source, records: await t.any<NameRecord>(sql) })
+  }
+  return out
+}
+
+/**
+ * The delivered prose, for the bare-username rarity tally (identity.ts
+ * proseHandles): each row carries only the fields mapProse reads. Answers come
+ * embedded in their market (the answers table holds the same text again), and
+ * a comment's copy of its market's question is left out, so each text counts
+ * once.
+ */
+export function proseCorpusSql(): { table: TableName; sql: string }[] {
+  return [
+    {
+      table: 'contracts',
+      sql: `SELECT c.question,
+                   jsonb_build_object(
+                     'question', c.data->'question',
+                     'description', c.data->'description',
+                     'answers', c.data->'answers',
+                     'options', c.data->'options',
+                     'gptCommentSummary', c.data->'gptCommentSummary',
+                     'aiDescription', c.data->'aiDescription') AS data
+              FROM contracts c JOIN ${SCOPE_TABLE} s ON c.id = s.id`,
+    },
+    {
+      table: 'contract_comments',
+      // author and moderation flags so text that won't ship is left out
+      sql: `SELECT c.user_id,
+                   jsonb_build_object('content', c.data->'content', 'text', c.data->'text',
+                     'deleted', c.data->'deleted', 'hidden', c.data->'hidden') AS data
+              FROM contract_comments c JOIN ${SCOPE_TABLE} s ON c.contract_id = s.id`,
+    },
+  ]
 }
 
 export async function loadDeliveredContractIds(
@@ -120,7 +214,7 @@ export function streamSql(table: TableName): string {
     // happens in SQL (`is_bot as "isBot"`, common/src/supabase/users.ts:63;
     // written as a column in backend/shared/src/supabase/users.ts:105).
     // Reading `data->>'isBot'` matches ZERO rows in prod and silently ships an
-    // empty table — verified against the clone, 2026-07-29.
+    // empty table — verified against a production clone.
     // The hardcoded BOT_USERNAMES fallback (common/src/api/user-types.ts:39)
     // needs no union: all 116 of those accounts already have is_bot = true.
     return `SELECT id AS user_id FROM users WHERE is_bot = true ORDER BY id`
