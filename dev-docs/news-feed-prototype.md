@@ -115,6 +115,43 @@ Linking only works against the real market pool, so the API runs against
 prod. It reads markets and embeddings; the feed writes nothing. Everything
 else the API can do is live, so bets placed through the local page are real.
 
+Credentials are Application Default Credentials for the `mantic-markets`
+project: `GOOGLE_APPLICATION_CREDENTIALS` pointing at a prod service-account
+key is the tested path; `gcloud auth application-default login` with an
+account that can read the project's secrets may also work. Never commit or
+paste a key.
+
+### On a normal checkout (macOS, Linux, or Windows)
+
+```bash
+git fetch origin && git checkout feat/news-feed-prototype
+yarn install --frozen-lockfile
+yarn --cwd backend/api compile   # Windows/Git Bash: see the worktree recipe below
+```
+
+API, then the web app, in two shells (PowerShell: set the same variables
+with `$env:NAME = 'value'`):
+
+```bash
+cd backend/api
+NEXT_PUBLIC_FIREBASE_ENV=PROD GOOGLE_CLOUD_PROJECT=mantic-markets \
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/prod-key.json \
+PORT=8088 NEWS_FEED_ENABLED=true node lib/serve.js
+```
+
+```bash
+cd web
+NEXT_PUBLIC_FIREBASE_ENV=PROD NEXT_PUBLIC_API_URL=localhost:8088 \
+npx next dev --webpack -p 3011
+```
+
+The API is ready when `curl localhost:8088/get-news-feed?limit=1` answers
+with `"enabled":true`; `"refreshing":false` with a non-zero `total` means
+the first build has landed (about five minutes from a cold start, two to
+three when the disk cache is under a day old).
+
+### In the nested worktree on the build machine
+
 Build (Windows, from the worktree; `yarn compile` does not work in Git Bash):
 
 ```bash
@@ -128,7 +165,7 @@ Run the API (PowerShell), then the web app:
 cd backend\api
 $env:NEXT_PUBLIC_FIREBASE_ENV = 'PROD'
 $env:GOOGLE_CLOUD_PROJECT = 'mantic-markets'
-$env:GOOGLE_APPLICATION_CREDENTIALS = 'C:\Projects\secretmanifoldkey\mantic-markets-5745edd3c5be.json'
+$env:GOOGLE_APPLICATION_CREDENTIALS = '<path to a prod service-account key .json>'
 $env:PORT = '8088'
 $env:NEWS_FEED_ENABLED = 'true'
 node lib/serve.js
