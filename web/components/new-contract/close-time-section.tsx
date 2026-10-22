@@ -17,6 +17,7 @@ export const CloseTimeSection = (props: {
   submitState: 'EDITING' | 'LOADING' | 'DONE'
   setNeverCloses: (neverCloses: boolean) => void
   neverCloses: boolean
+  inheritedCloseTimePending?: boolean
   initTime: string
 }) => {
   const closeDateMap: { [key: string]: number | string } = {
@@ -63,10 +64,18 @@ export const CloseTimeSection = (props: {
           }
         />
       </label>
+      {props.inheritedCloseTimePending && (
+        <p className="text-ink-500 mb-2 text-sm" role="status">
+          Loading the linked market's deadline. You can choose your own date
+          instead.
+        </p>
+      )}
       <Row className={'w-full items-center gap-2'}>
         <ChoicesToggleGroup
           currentChoice={
-            !closeDate
+            props.inheritedCloseTimePending
+              ? undefined
+              : !closeDate
               ? NEVER
               : dayjs(`${closeDate}T23:59`).diff(dayjs(), 'day')
           }
