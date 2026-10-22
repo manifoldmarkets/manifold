@@ -13,6 +13,8 @@ export type notification_preferences = {
   poll_close_on_watched_markets: notification_destination_types[]
   all_comments_on_followed_posts: notification_destination_types[]
 
+  social_replies: notification_destination_types[]
+
   // Comments
   all_replies_to_my_comments_on_watched_markets: notification_destination_types[]
   all_replies_to_my_answers_on_watched_markets: notification_destination_types[]
@@ -57,6 +59,11 @@ export type notification_preferences = {
   // Leagues
   league_changed: notification_destination_types[]
 
+  // Perps
+  perp_liquidation: notification_destination_types[]
+  perp_adl: notification_destination_types[]
+  perp_order_failed: notification_destination_types[]
+
   // Manifold.love
   new_match: notification_destination_types[]
   new_endorsement: notification_destination_types[]
@@ -66,6 +73,7 @@ export type notification_preferences = {
   // User-related
   new_message: notification_destination_types[]
   tagged_user: notification_destination_types[]
+  tagged_all_traders: notification_destination_types[]
   user_liked_your_content: notification_destination_types[]
   on_new_follow: notification_destination_types[]
   contract_from_followed_user: notification_destination_types[]
@@ -144,6 +152,8 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     poll_close_on_watched_markets: constructPref(true, false, false),
     market_movements: constructPref(true, true, true),
 
+    social_replies: constructPref(true, false, false),
+
     // Balance Changes
     loan_income: constructPref(true, false, false),
     betting_streaks: constructPref(true, false, true),
@@ -162,6 +172,11 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     // Leagues
     league_changed: constructPref(true, false, false),
 
+    // Perps
+    perp_liquidation: constructPref(true, true, true),
+    perp_adl: constructPref(true, false, false),
+    perp_order_failed: constructPref(true, false, false),
+
     // Manifold.love
     new_match: constructPref(true, true, true),
     new_endorsement: constructPref(true, true, true),
@@ -171,6 +186,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     // User-related
     new_message: constructPref(true, true, true),
     tagged_user: constructPref(true, true, true),
+    tagged_all_traders: constructPref(true, false, false),
     on_new_follow: constructPref(true, true, false),
     contract_from_followed_user: constructPref(true, false, false),
     user_liked_your_content: constructPref(true, false, false),
@@ -218,6 +234,27 @@ export const notificationReasonToSubscriptionType: Partial<
   reply_to_users_comment: 'all_replies_to_my_comments_on_watched_markets',
 }
 
+// Preferences split out of an older one. Users who haven't set the newer
+// preference keep whatever they chose for the one it was split from.
+const inheritedPreferences: Partial<
+  Record<notification_preference, notification_preference>
+> = {
+  tagged_all_traders: 'tagged_user',
+}
+
+export const getSavedNotificationDestinations = (
+  notificationSettings: Partial<notification_preferences>,
+  preference: notification_preference
+): notification_destination_types[] => {
+  const inheritFrom = inheritedPreferences[preference]
+  return (
+    notificationSettings[preference] ??
+    (inheritFrom ? notificationSettings[inheritFrom] : undefined) ??
+    getDefaultNotificationPreferences()[preference] ??
+    []
+  )
+}
+
 export function getNotificationPreference(reason: NotificationReason) {
   return (notificationReasonToSubscriptionType[
     reason as notification_reason_types
@@ -235,9 +272,10 @@ export const getNotificationDestinationsForUser = (
     const notificationPreference = getNotificationPreference(reason)
     // Get default destinations if user has no settings for this preference
     // TODO: write the default notif preferences to the user's settings when missing
-    const destinations =
-      notificationSettings[notificationPreference] ??
-      getDefaultNotificationPreferences()[notificationPreference]
+    const destinations = getSavedNotificationDestinations(
+      notificationSettings,
+      notificationPreference
+    )
     const optOutOfAllSettings = notificationSettings.opt_out_all
     // Your market closure notifications are high priority, opt-out doesn't affect their delivery
     const optedOutOfEmail =

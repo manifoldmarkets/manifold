@@ -74,6 +74,12 @@ type AnyTxnType =
   | ShopRefund
   | MembershipPayment
   | PreKycBonus
+  | PerpOrderReserve
+  | PerpOrderRelease
+  | PerpOpenMargin
+  | PerpClosePayout
+  | PerpTakerFee
+  | PerpResolveResidual
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -149,8 +155,8 @@ type UniqueBettorBonus = {
     uniqueBettorIds?: string[]
     isPartner: boolean
     // Creator's effective tier at award time + multiplier applied. Used by
-    // the income notification to render the upsell line when the creator is
-    // unverified (and the amount is therefore reduced).
+    // the income notification to render the flagged line when the creator is
+    // flagged for verification.
     effectiveTier?: string
     uniqueTraderMultiplier?: number
   }
@@ -164,7 +170,7 @@ type BettingStreakBonus = {
     currentBettingStreak?: number
     contractId?: string
     // Effective tier at time of award + multiplier applied. Used by notifications
-    // to render the upsell line when the recipient is unverified.
+    // to render the flagged line when the recipient is flagged for verification.
     effectiveTier?: string
     streakMultiplier?: number
     supporterBonus?: boolean
@@ -593,6 +599,71 @@ type RemoveSubsidy = {
   token: 'M$' | 'CASH'
 }
 
+// Perp (ManiPerp) cash movements. The txns ledger records only mana that
+// actually moves: margin in at open, payout out at close/flip/resolve, and
+// the residual pools to the creator at resolution. Liquidation/ADL/funding
+// move NO user mana (claims are scaled or extinguished; the margin stays in
+// the pools) and are deliberately absent here — except factor-zero ADL, which
+// closes the exposure and refunds its retained margin. The authoritative
+// transition record is the append-only contract_perp_events log. Invariant:
+// sum(txns into contract) - sum(txns out) = poolLong + poolShort.
+type PerpOpenMargin = {
+  category: 'PERP_OPEN_MARGIN'
+  fromType: 'USER'
+  toType: 'CONTRACT'
+  token: 'M$'
+  data: {
+    direction: 'long' | 'short'
+    leverage: number
+    sizeDelta: number
+    entryPrice: number
+  }
+}
+
+type PerpClosePayout = {
+  category: 'PERP_CLOSE_PAYOUT'
+  fromType: 'CONTRACT'
+  toType: 'USER'
+  token: 'M$'
+  data: {
+    direction: 'long' | 'short'
+    pnl: number
+    entryPrice: number
+    closePrice: number
+    reason: 'close' | 'partial-close' | 'flip' | 'resolve' | 'adl'
+  }
+}
+
+// Taker fee on opens and adds (closing a perp position is free): real mana
+// user -> contract, credited to the trader's side backing pool. The per-event
+// fee also lives in the contract_perp_events data.
+type PerpTakerFee = {
+  category: 'PERP_TAKER_FEE'
+  fromType: 'USER'
+  toType: 'CONTRACT'
+  token: 'M$'
+  data: {
+    direction: 'long' | 'short'
+    // EFFECTIVE rate actually paid (fee / sizeDelta × 10_000). Rows written
+    // before the size-dependent fee carry the configured base here — the two
+    // were equal back then, so the semantics are continuous.
+    feeBps: number
+    // Configured base rate at trade time; absent on pre-size-fee rows.
+    feeBase?: number
+    sizeDelta: number
+  }
+}
+
+type PerpResolveResidual = {
+  category: 'PERP_RESOLVE_RESIDUAL'
+  fromType: 'CONTRACT'
+  toType: 'USER'
+  token: 'M$'
+  data: {
+    finalPrice: number
+  }
+}
+
 type ReclaimMana = {
   category: 'RECLAIM_MANA'
   fromType: 'USER'
@@ -761,6 +832,10 @@ type MembershipPayment = {
 
 export type AddSubsidyTxn = Txn & AddSubsidy
 export type RemoveSubsidyTxn = Txn & RemoveSubsidy
+export type PerpOpenMarginTxn = Txn & PerpOpenMargin
+export type PerpClosePayoutTxn = Txn & PerpClosePayout
+export type PerpTakerFeeTxn = Txn & PerpTakerFee
+export type PerpResolveResidualTxn = Txn & PerpResolveResidual
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink
@@ -822,3 +897,18 @@ export type SweepstakesTicketTxn = Txn & SweepstakesTicket
 export type ShopPurchaseTxn = Txn & ShopPurchase
 export type MembershipPaymentTxn = Txn & MembershipPayment
 export type PreKycBonusTxn = Txn & PreKycBonus
+
+type PerpOrderReserve = {
+  category: 'PERP_ORDER_RESERVE'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+  data: { orderId: string; contractId: string }
+}
+type PerpOrderRelease = {
+  category: 'PERP_ORDER_RELEASE'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
+  data: { orderId: string; contractId: string }
+}

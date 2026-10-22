@@ -232,6 +232,7 @@ export function PostCommentItem(props: {
       name: 'Edit',
       icon: <PencilIcon className="h-5 w-5" />,
       onClick: () => setIsEditing(true),
+      modAction: !isCreator,
     },
     {
       name: 'Copy Link',
@@ -248,6 +249,7 @@ export function PostCommentItem(props: {
       ) : (
         <EyeOffIcon className="h-5 w-5" />
       ),
+      modAction: true,
       onClick: async () => {
         const currentlyHidden = optimisticallyHidden
         setOptimisticallyHidden(!currentlyHidden)
@@ -326,7 +328,7 @@ export function PostCommentItem(props: {
             <DropdownMenu
               items={menuItems}
               buttonContent={<DotsHorizontalIcon className="h-5 w-5" />}
-              menuWidth="w-40"
+              menuWidth={isAdminOrMod ? 'w-48' : 'w-40'}
               buttonClass="px-1 py-0"
               className="ml-auto self-start"
             />

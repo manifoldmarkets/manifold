@@ -11,7 +11,7 @@ export const onCreateLiquidityProvision = async (
 ) => {
   const pg = createSupabaseDirectClient()
   const contract = (await getContract(pg, liquidity.contractId)) as Contract & {
-    mechanism: 'cpmm-1' | 'cpmm-multi-1'
+    mechanism: 'cpmm-1' | 'cpmm-multi-1' | 'cpmm-multi-2'
   }
 
   if (!contract)

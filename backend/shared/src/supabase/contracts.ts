@@ -2,6 +2,7 @@ import { APIError } from 'common/api/utils'
 import {
   Contract,
   CPMMMultiContract,
+  isMultiCpmm,
   nativeContractColumnsArray,
 } from 'common/contract'
 import { isAdminId } from 'common/envs/constants'
@@ -35,10 +36,17 @@ export const getUniqueBettorIds = async (
 ) => {
   const res = await pg.manyOrNone(
     `
-      select
-          distinct user_id
+      select distinct user_id
       from contract_bets
-        where contract_id = $1`,
+      where contract_id = $1
+
+      union
+
+      select user_id
+      from contract_perp_events
+      where contract_id = $1
+        and user_id is not null
+        and event_type in ('open', 'add', 'close')`,
     [contractId]
   )
   return res.map((r) => r.user_id as string)
@@ -73,7 +81,7 @@ export const getContractsDirect = async (
   )
   const contracts = results[0].map(convertContract)
   const answers = results[1].map(convertAnswer)
-  const multiContracts = contracts.filter((c) => c.mechanism === 'cpmm-multi-1')
+  const multiContracts = contracts.filter((c) => isMultiCpmm(c))
   for (const contract of multiContracts) {
     // eslint-disable-next-line no-extra-semi
     ;(contract as CPMMMultiContract).answers = sortBy(
@@ -176,7 +184,7 @@ Respond with a JSON object containing:
     const result = await promptAI<{ isSelfReferential?: boolean }>(
       contract.question,
       {
-        model: aiModels.flash,
+        model: aiModels.haiku,
         system: systemPrompt,
         parseAsJson: true,
       }
@@ -230,6 +238,9 @@ export const getContractPrivacyWhereSQLFilter = (
      OR ${isAdminId(uid ?? '_')}
      OR exists(
          select 1 from contract_bets where contract_id = ${contractIdString} and user_id = '${uid}')
+     OR exists(
+         select 1 from contract_perp_events where contract_id = ${contractIdString} and user_id = '${uid}'
+           and event_type in ('open', 'add', 'close'))
      ))`
   return !!creatorId && !!uid && creatorId === uid
     ? ''
@@ -272,7 +283,13 @@ export const updateContract = async (
   pg: SupabaseDirectClient,
   contractId: string,
   // TODO: can't figure out how to exclude native columns from DataUpdate
-  update: DataUpdate<'contracts'>
+  update: DataUpdate<'contracts'>,
+  options?: {
+    // Pass false inside a transaction that may be retried, and broadcast the
+    // updated fields of the returned contract once it has committed (see
+    // AnswerWriteOptions in ./answers.ts).
+    broadcast?: boolean
+  }
 ) => {
   if (Object.keys(update).some((k) => nativeContractColumnsArray.includes(k))) {
     throw new APIError(500, 'Cannot update native columns via data update')
@@ -286,7 +303,9 @@ export const updateContract = async (
     fullUpdate,
     (_, k) => newContract[k as keyof Contract] ?? null
   ) as any
-  broadcastUpdatedContract(newContract.visibility, updatedValues)
+  if (options?.broadcast !== false) {
+    broadcastUpdatedContract(newContract.visibility, updatedValues)
+  }
   return newContract
 }
 

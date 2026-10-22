@@ -22,6 +22,7 @@ import { Animated } from 'react-native'
 import { useEffect, useRef } from 'react'
 import { getIsLive } from 'common/sports-info'
 import { TokenNumber } from 'components/token/token-number'
+import { PerpMarketSummary } from './perp-market-summary'
 
 function LiveDot() {
   const pulseAnim = useRef(new Animated.Value(0.4)).current
@@ -65,9 +66,11 @@ export function FeedCard(props: { contractPair: ContractPair }) {
   const definedContract = getDefinedContract(contractPair)
 
   const liveContract = useContract(definedContract)
-  const liveSiblingContract = useContract({
-    id: definedContract.siblingContractId!,
-  })
+  const liveSiblingContract = useContract(
+    definedContract.siblingContractId
+      ? { id: definedContract.siblingContractId }
+      : undefined
+  )
   const contract =
     filterDefined([liveContract, liveSiblingContract]).find(
       (c) => c.token === token
@@ -76,7 +79,8 @@ export function FeedCard(props: { contractPair: ContractPair }) {
   const router = useRouter()
   const isBinaryMc = isBinaryMulti(contract)
   const isMultipleChoice = outcomeType == 'MULTIPLE_CHOICE' && !isBinaryMc
-  const isBinary = !isBinaryMc && !isMultipleChoice
+  const isPerp = contract.mechanism === 'perp' && outcomeType === 'PERP'
+  const isBinary = !isPerp && !isBinaryMc && !isMultipleChoice
   const isSports = isSportsContract(contract)
 
   const color = useColor()
@@ -129,7 +133,9 @@ export function FeedCard(props: { contractPair: ContractPair }) {
         )}
       </Row>
 
-      {isMultipleChoice ? (
+      {isPerp ? (
+        <PerpMarketSummary market={contract} compact />
+      ) : isMultipleChoice ? (
         //   !isBinaryMc &&
         <>
           {contract.answers
@@ -181,7 +187,7 @@ export function FeedCard(props: { contractPair: ContractPair }) {
           </Row>
         </>
       ) : isBinary ? (
-        <BinaryBetButtons contract={contract} />
+        <BinaryBetButtons contract={contract as BinaryContract} />
       ) : (
         <MultiBinaryBetButtons contract={contract as CPMMMultiContract} />
       )}

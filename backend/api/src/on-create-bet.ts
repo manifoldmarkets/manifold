@@ -6,19 +6,19 @@ import {
   getUsers,
 } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
-import { Contract } from 'common/contract'
-import { User } from 'common/user'
+import { Contract, isMultiCpmm } from 'common/contract'
+import { paysLegacyReferralHalves, User } from 'common/user'
 import { groupBy, sortBy, sumBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import {
   createBetFillNotification,
   createBetReplyToCommentNotification,
-  createBettingStreakBonusNotification,
   createFollowSuggestionNotification,
   createLimitBetCanceledNotification,
   createNewBettorNotification,
   createReferralNotification,
 } from 'shared/create-notification'
+import { payBettingStreak } from 'shared/betting-streak-bonus'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
@@ -29,25 +29,13 @@ import { getCommentSafe } from 'shared/supabase/contract-comments'
 import { getBetsRepliedToComment } from 'shared/supabase/bets'
 import { updateData } from 'shared/supabase/utils'
 import {
-  BETTING_STREAK_BONUS_AMOUNT,
-  BETTING_STREAK_BONUS_MAX,
+  LEGACY_REFERRAL_BET_BONUS,
   MAX_TRADERS_FOR_BIG_BONUS,
-  REFERRAL_BET_BONUS,
   SMALL_UNIQUE_BETTOR_LIQUIDITY,
   UNIQUE_BETTOR_LIQUIDITY,
 } from 'common/economy'
-import {
-  BettingStreakBonusTxn,
-  ReferralTxn,
-  UniqueBettorBonusTxn,
-} from 'common/txn'
-import {
-  getEffectiveBonusMultiplier,
-  resolveEffectiveTier,
-  roundTierBonus,
-} from 'common/supporter-config'
-import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
-import { runTxnFromBank } from 'shared/txn/run-txn'
+import { UniqueBettorBonusTxn } from 'common/txn'
+import { payReferralBonus } from 'shared/referral-bonus'
 import { Answer } from 'common/answer'
 import {
   addHouseSubsidy,
@@ -133,7 +121,9 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
     const startNotifications = Date.now()
     await Promise.all(
       cancelledLimitOrders
-        .filter((order) => !order.silent)
+        // API orders can't be placed silent, so skip them here, as the
+        // expiry sweep does.
+        .filter((order) => !order.silent && !order.isApi)
         .map((order) => {
           createLimitBetCanceledNotification(
             originalBettor,
@@ -206,7 +196,12 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
       originalBettor.referredByUserId &&
       (await payReferralBetBonus(originalBettor)),
     streakIncremented &&
-      (await payBettingStreak(originalBettor, earliestBet, contract)),
+      (await payBettingStreak(
+        originalBettor,
+        contract,
+        `/${contract.creatorUsername}/${contract.slug}/bets/${earliestBet.id}`,
+        earliestBet.id
+      )),
     replyBet &&
       (await handleBetReplyToComment(replyBet, contract, originalBettor, pg)),
     creatorBonusTxn &&
@@ -223,12 +218,13 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
   ])
 }
 
-// Pays the referrer the first-bet portion (REFERRAL_BET_BONUS) when the
-// referred user places their very first bet. The remaining verify portion
-// is paid in idenfy/callback.ts when the user completes ID verification.
-const payReferralBetBonus = async (referredUser: User) => {
+// Pays the referrer the legacy first-bet half (LEGACY_REFERRAL_BET_BONUS) when
+// a user referred before signup-time referral payouts places their very first
+// bet. Referrals recorded since then were settled at signup (refer-user.ts),
+// even when the referrer's tier paid nothing, and never reach the payout.
+export const payReferralBetBonus = async (referredUser: User) => {
   const referrerId = referredUser.referredByUserId
-  if (!referrerId) return
+  if (!referrerId || !paysLegacyReferralHalves(referredUser)) return
   if (referrerId === referredUser.id) {
     log(`Skipped referral first-bet bonus - self-referral for ${referredUser.id}`)
     return
@@ -237,65 +233,18 @@ const payReferralBetBonus = async (referredUser: User) => {
   const referrer = await getUser(referrerId)
   if (!referrer) return
 
-  // SERIALIZABLE isolation + retry: protects the dedupe SELECT against
-  // concurrent first-bet calls (e.g. two tabs, parallel API requests) that
-  // would otherwise both miss the dedup and double-pay. Matches the pattern
-  // used in refer-user.ts and runTransactionWithRetries.
-  const result = await runTransactionWithRetries(async (tx) => {
-    // Dedupe against any prior REFERRAL payout for this referred user:
-    // - legacy single-payment txns (no bonusType) covered the full bonus
-    // - explicit 'first_bet' txns from this code path
-    const existing = await tx.oneOrNone(
-      `SELECT 1 FROM txns WHERE to_id = $1
-       AND category = 'REFERRAL'
-       AND data->'data'->>'referredUserId' = $2
-       AND (data->'data'->>'bonusType' IS NULL OR data->'data'->>'bonusType' = 'first_bet')`,
-      [referrer.id, referredUser.id]
-    )
-    if (existing) return null
-
-    // Referral multiplier comes from effective tier: unverified referrers
-    // get a reduced 0.2x, verified gets 1x, subscribers higher.
-    const entitlements = await getActiveSupporterEntitlements(tx, referrer.id)
-    const referrerTier = resolveEffectiveTier({
-      entitlements,
-      bonusEligibility: referrer.bonusEligibility,
+  // SERIALIZABLE isolation + retry: protects payReferralBonus's dedupe SELECT
+  // against concurrent first-bet calls (e.g. two tabs, parallel API requests)
+  // that would otherwise both miss the dedup and double-pay.
+  const result = await runTransactionWithRetries((tx) =>
+    payReferralBonus(tx, {
+      referrer,
+      referredUserId: referredUser.id,
+      referredContractId: referredUser.referredByContractId,
+      bonusType: 'first_bet',
+      baseAmount: LEGACY_REFERRAL_BET_BONUS,
     })
-    const referralMultiplier = getEffectiveBonusMultiplier(
-      referrerTier,
-      'referral'
-    )
-    const amount = roundTierBonus(REFERRAL_BET_BONUS * referralMultiplier)
-    if (amount <= 0) {
-      log(
-        `Skipped referral first-bet bonus for referrer ${referrerId} - effective tier ${referrerTier} (multiplier ${referralMultiplier})`
-      )
-      return null
-    }
-
-    const bonusTxn: Omit<ReferralTxn, 'id' | 'createdTime' | 'fromId'> = {
-      fromType: 'BANK',
-      toId: referrer.id,
-      toType: 'USER',
-      amount,
-      token: 'M$',
-      category: 'REFERRAL',
-      description: `Referral first-bet bonus for new user ${referredUser.id}: ${amount}`,
-      data: {
-        referredUserId: referredUser.id,
-        referredContractId: referredUser.referredByContractId,
-        bonusType: 'first_bet',
-        effectiveTier: referrerTier,
-        referralMultiplier,
-        supporterBonus: referralMultiplier > 1,
-      },
-    }
-    await runTxnFromBank(tx, bonusTxn)
-    log(
-      `Paid referral first-bet bonus of ${amount} to ${referrer.id} for ${referredUser.id}`
-    )
-    return amount
-  })
+  )
 
   if (result) {
     await createReferralNotification(
@@ -372,85 +321,6 @@ const handleBetReplyToComment = async (
   )
 }
 
-const payBettingStreak = async (
-  oldUser: User,
-  bet: Bet,
-  contract: Contract
-) => {
-  const pg = createSupabaseDirectClient()
-  const result = await pg.tx(async (tx) => {
-    const newBettingStreak = (oldUser.currentBettingStreak ?? 0) + 1
-
-    // Fetch user's supporter entitlements for bonus multiplier
-    const entitlements = await getActiveSupporterEntitlements(tx, oldUser.id)
-
-    // Effective tier (verification + subscription) drives the streak multiplier.
-    // Unverified users get 0.2x — the existing 5×streak / 25 cap naturally
-    // becomes 1, 2, 3, 4, 5 / capped at 5 mana per day.
-    const effectiveTier = resolveEffectiveTier({
-      entitlements,
-      bonusEligibility: oldUser.bonusEligibility,
-    })
-    const streakMultiplier = getEffectiveBonusMultiplier(
-      effectiveTier,
-      'streak'
-    )
-
-    // Send them the bonus times their streak, with effective-tier multiplier
-    const baseBonus = Math.min(
-      BETTING_STREAK_BONUS_AMOUNT * newBettingStreak,
-      BETTING_STREAK_BONUS_MAX
-    )
-    const bonusAmount = roundTierBonus(baseBonus * streakMultiplier)
-
-    if (bonusAmount <= 0) {
-      return {
-        bonusAmount: 0,
-        sweepsBonusAmount: 0,
-        newBettingStreak,
-        txn: { id: bet.id },
-        sweepsTxn: null,
-        effectiveTier,
-      }
-    }
-
-    const bonusTxnDetails = {
-      currentBettingStreak: newBettingStreak,
-      contractId: contract.id,
-      effectiveTier,
-      streakMultiplier,
-      supporterBonus: streakMultiplier > 1,
-    }
-
-    const bonusTxn: Omit<
-      BettingStreakBonusTxn,
-      'id' | 'createdTime' | 'fromId'
-    > = {
-      fromType: 'BANK',
-      toId: oldUser.id,
-      toType: 'USER',
-      amount: bonusAmount,
-      token: 'M$',
-      category: 'BETTING_STREAK_BONUS',
-      data: bonusTxnDetails,
-    }
-
-    const txn = await runTxnFromBank(tx, bonusTxn)
-
-    return { txn, bonusAmount, newBettingStreak, effectiveTier }
-  })
-
-  await createBettingStreakBonusNotification(
-    oldUser,
-    result.txn.id,
-    bet,
-    contract,
-    result.bonusAmount,
-    result.newBettingStreak,
-    result.effectiveTier
-  )
-}
-
 export const sendUniqueBettorNotificationToCreator = async (
   contract: Contract,
   bettor: User,
@@ -489,7 +359,7 @@ export const injectLiquidityBonus = async (
 
   if (contract.mechanism === 'cpmm-1') {
     await addHouseSubsidy(contract.id, subsidy)
-  } else if (contract.mechanism === 'cpmm-multi-1' && bet.answerId) {
+  } else if (isMultiCpmm(contract) && bet.answerId) {
     if (
       contract.shouldAnswersSumToOne &&
       (bet.probAfter < 0.15 || bet.probAfter > 0.95)

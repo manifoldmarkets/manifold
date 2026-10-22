@@ -18,6 +18,7 @@ import { api, APIError } from 'web/lib/api/api'
 import { Select } from 'web/components/widgets/select'
 import { SelectDropdown } from 'web/components/widgets/select-dropdown'
 import { Button } from 'web/components/buttons/button'
+import { ModActionBadge } from 'web/components/moderation/mod-action'
 import { Input } from 'web/components/widgets/input'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
@@ -52,8 +53,11 @@ function formatEntries(entries: number): string {
   }
 }
 
-// Horse charities to exclude from the giveaway
+// Charities to exclude from the giveaway: the horse charities, plus any fund
+// that has shut down and can no longer receive the prize.
 const EXCLUDED_CHARITY_IDS = [
+  // Closed by EA Funds; succeeded by the Transformative AI Fund.
+  'long-term-future-fund',
   'new-vocations',
   'stable-recovery',
   'thoroughbred-retirement-foundation',
@@ -390,9 +394,10 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
           </p>
           {isAdmin && (
             <Button
-              color="indigo"
+              color="purple"
               onClick={() => setShowCreateGiveawayModal(true)}
             >
+              <ModActionBadge admin className="mr-1" />
               Create New Giveaway
             </Button>
           )}
@@ -457,10 +462,11 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
               )}
               {isAdmin && (
                 <Button
-                  color="gray-outline"
+                  color="purple-outline"
                   size="sm"
                   onClick={handleOpenAdjustPrize}
                 >
+                  <ModActionBadge admin className="mr-1" />
                   Adjust prize
                 </Button>
               )}
@@ -469,10 +475,11 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
                 (!activeGiveaway ||
                   activeGiveaway.giveawayNum === giveaway.giveawayNum) && (
                   <Button
-                    color="indigo"
+                    color="purple"
                     size="sm"
                     onClick={() => setShowCreateGiveawayModal(true)}
                   >
+                    <ModActionBadge admin className="mr-1" />
                     Create New Giveaway
                   </Button>
                 )}
@@ -610,12 +617,13 @@ export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
                 winning charity.
               </p>
               <Button
-                color="indigo"
+                color="purple"
                 size="lg"
                 onClick={handleSelectWinner}
                 loading={isSelectingWinner}
                 disabled={isSelectingWinner}
               >
+                <ModActionBadge admin className="mr-1" />
                 🎟️ Draw Winning Entry
               </Button>
             </Col>

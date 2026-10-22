@@ -1,5 +1,5 @@
 import { Answer } from 'common/answer'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { Notification } from 'common/notification'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { Row } from 'common/supabase/utils'
@@ -38,10 +38,14 @@ export async function sendMarketMovementNotifications(debug = false) {
   const nowStart = now - nowPeriodHoursAgoStart * HOUR_MS
   const nowEnd = now
   // const where = `where c.id = ANY(ARRAY[${_TEST_CONTRACT_IDS}])`
+  // Perps use oracle-driven price movements which get their own notification
+  // path (update-perps + notifications/perps.ts); exclude from this job.
   const where = `
   where c.last_bet_time > now() - interval '${nowPeriodHoursAgoStart} hours'
   and c.resolution_time is null
-  and c.created_time < now() - interval '${pastPeriodHoursAgoStart} hours'`
+  and c.deleted = false
+  and c.created_time < now() - interval '${pastPeriodHoursAgoStart} hours'
+  and coalesce(c.data->>'mechanism', '') <> 'perp'`
   const results = await pg.multi(
     `
     select ${contractColumnsToSelect} from contracts c ${where};
@@ -53,7 +57,7 @@ export async function sendMarketMovementNotifications(debug = false) {
   )
   const allContracts = results[0].map(convertContract)
   const sumToOneContractIds = allContracts
-    .filter((c) => c.mechanism === 'cpmm-multi-1' && c.shouldAnswersSumToOne)
+    .filter((c) => isMultiCpmm(c) && c.shouldAnswersSumToOne)
     .map((c) => c.id)
   const answers = results[1].map(convertAnswer)
   for (const contract of allContracts) {
@@ -109,10 +113,7 @@ export async function sendMarketMovementNotifications(debug = false) {
           currentProb: prob,
         })
       }
-    } else if (
-      contract.mechanism === 'cpmm-multi-1' &&
-      contract.shouldAnswersSumToOne
-    ) {
+    } else if (isMultiCpmm(contract) && contract.shouldAnswersSumToOne) {
       const { answers: contractAnswers } = contract
       let maxChange = probThreshold
       let maxChangedAnswer = null
@@ -293,7 +294,6 @@ async function createMarketMovementNotifications(
     avgAfter,
     currentProb,
   } of probChanges) {
-    const { mechanism } = contract
     // Get users who are watching this market or have shares in it
     const usersInterestedInContract = allInterestedUsers
       .filter((u) => u.contractId === contract.id)
@@ -317,8 +317,7 @@ async function createMarketMovementNotifications(
       const { sendToBrowser, sendToMobile } =
         getNotificationDestinationsForUser(user, 'market_movements')
 
-      const sumsToOne =
-        mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+      const sumsToOne = isMultiCpmm(contract) && contract.shouldAnswersSumToOne
 
       // Check if a similar notification has already been sent recently for the relevant destination
       const existingNotificationsForUserAndContract =

@@ -79,7 +79,14 @@ FROM public.search_contract_embeddings(
 where contract_id != input_contract_id
   and resolution_time is null
   and contracts.visibility = 'public'
-  and contracts.close_time > now()
+  and (
+    contracts.close_time > now()
+    or (
+      contracts.mechanism = 'perp'
+      and contracts.close_time is null
+      and public.is_valid_contract(contracts)
+    )
+  )
 order by similarity * similarity * importance_score desc
 limit match_count;
 $function$;

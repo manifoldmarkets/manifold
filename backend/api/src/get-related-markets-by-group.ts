@@ -3,6 +3,10 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { APIHandler } from 'api/helpers/endpoint'
+import {
+  isEligibleRelatedMarket,
+  materializeEligibleRelatedMarkets,
+} from 'common/related-markets'
 import { convertContract } from 'common/supabase/contracts'
 import { HOUR_MS } from 'common/util/time'
 import { log } from 'shared/monitoring/log'
@@ -19,7 +23,7 @@ export const getRelatedMarketsByGroup: APIHandler<
   'get-related-markets-by-group'
 > = async (props) => {
   const { contractId, limit, offset } = props
-  const key = contractId + offset + limit
+  const key = `related-markets-by-group:v2:${contractId}:offset:${offset}:limit:${limit}`
   const pg = createSupabaseDirectClient()
   const cachedResults = cachedRelatedMarkets.get(key)
   if (cachedResults && cachedResults.lastUpdated > Date.now() - HOUR_MS) {
@@ -44,7 +48,16 @@ export const getRelatedMarketsByGroup: APIHandler<
           )
         )
       where contracts.id = $1
-        and is_valid_contract(other_contracts)
+        and other_contracts.resolution_time is null
+        and other_contracts.visibility = 'public'
+        and other_contracts.deleted = false
+        and (
+          other_contracts.close_time > now()
+          or (
+            other_contracts.mechanism = 'perp'
+            and other_contracts.close_time is null
+          )
+        )
         and other_contracts.id != $1
         and other_contracts.creator_id != contracts.creator_id
     ),
@@ -65,7 +78,16 @@ export const getRelatedMarketsByGroup: APIHandler<
           )
         )
       where contracts.id = $1
-        and is_valid_contract(other_contracts)
+        and other_contracts.resolution_time is null
+        and other_contracts.visibility = 'public'
+        and other_contracts.deleted = false
+        and (
+          other_contracts.close_time > now()
+          or (
+            other_contracts.mechanism = 'perp'
+            and other_contracts.close_time is null
+          )
+        )
         and other_contracts.id != $1
         and other_contracts.creator_id = contracts.creator_id
     ),
@@ -84,13 +106,16 @@ export const getRelatedMarketsByGroup: APIHandler<
     [contractId, limit, offset],
     convertContract
   )
+  const eligibleGroupContracts = groupContracts.filter((contract) =>
+    isEligibleRelatedMarket(contract)
+  )
 
   cachedRelatedMarkets.set(key, {
-    groupContractIds: groupContracts.map((c) => c.id),
+    groupContractIds: eligibleGroupContracts.map((contract) => contract.id),
     lastUpdated: Date.now(),
   })
   return {
-    groupContracts,
+    groupContracts: eligibleGroupContracts,
   }
 }
 
@@ -104,7 +129,11 @@ const refreshedRelatedMarkets = async (
     cachedResults.groupContractIds,
     pg
   )
+  const eligibleContracts = materializeEligibleRelatedMarkets(
+    cachedResults.groupContractIds,
+    refreshedContracts
+  )
   return {
-    groupContracts: refreshedContracts.map(cleanContractForStaticProps),
+    groupContracts: eligibleContracts.map(cleanContractForStaticProps),
   }
 }

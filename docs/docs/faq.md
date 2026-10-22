@@ -74,8 +74,8 @@ Mana can be earned by making correct predictions, successful trades, creating po
 - **Referrals** -
   Refer new users to Manifold and earn M1000 when they sign up using your referral link.
 
-- **Phone verification** -
-  Verify your phone number to receive a one-time bonus of M1000.
+- **Signup bonus** -
+  Every new account starts with M1000. No verification is needed — identity verification is optional and only required to enter prize drawings.
 
 You can find all available quests by navigating to your profile page and clicking on the streak/quest button.
 
@@ -291,7 +291,8 @@ The liquidity in a market is the amount of capital available for traders to trad
 ### How much mana will I get back from subsidising a market?
 
 - You should always expect to lose mana from subsidising a market.
-- Liquidity providers cannot withdraw the mana they have spent to subsidise a market, however, they will receive back some of their mana when the market resolves, if there's any left over.
+- The market creator can withdraw liquidity they have added to their own markets.
+- Liquidity providers who did not create the market, cannot withdraw the mana they have spent to subsidise a market. However, they will receive back some of their mana when the market resolves, if there's any left over.
 - The amount of mana you will get back depends on how much the probability has moved from when you subsidised the market. The more it has moved, the less you will get back.
 
 ### What are loans?

@@ -1,5 +1,7 @@
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
-import { Contract } from 'common/contract'
+import { auditedOdds, sourceAudit } from './audited-sources'
+import { Odds } from './election-odds'
+import { Contract, isMultiCpmm } from 'common/contract'
 import {
   MapContractsDictionary,
   StateElectionMarket,
@@ -32,9 +34,29 @@ export const ALSO_DEMOCRATIC = [
 // Party", "Democratic party", "Democratic", "Democrats", "Ashley Hinson
 // (Republican)", etc. Match defensively on the party stem rather than an exact
 // string so any of these render correctly on the map.
+// A trailing party tag, as used when a state market's answers are renamed from
+// "Democratic party" to the actual nominee — "Josh Turek (D)". Anchored on the
+// parentheses so "(D)" matches but "(Dem-leaning)" or a stray D does not, and
+// so "(R)" cannot match inside "(Rep)". No /g flag: these are reused across
+// calls and a sticky lastIndex would make .test() alternate true/false.
+const DEM_TAG = /\(\s*(?:D|DFL)\s*\)/i
+const REP_TAG = /\(\s*R\s*\)/i
+
+/**
+ * True when an answer names a candidate carrying a party tag ("Josh Turek (D)")
+ * rather than naming the party outright ("Democratic party").
+ *
+ * These markets resolve on PARTY regardless of who the nominee turns out to be,
+ * so wherever this is true the UI owes the reader that caveat — a named answer
+ * otherwise reads as a bet on the person.
+ */
+export const isCandidateLabelledAnswer = (text: string) =>
+  DEM_TAG.test(text) || REP_TAG.test(text)
+
 export const isDemocraticAnswer = (text: string) =>
-  /democrat/i.test(text) || ALSO_DEMOCRATIC.includes(text)
-export const isRepublicanAnswer = (text: string) => /republican/i.test(text)
+  /democrat/i.test(text) || DEM_TAG.test(text) || ALSO_DEMOCRATIC.includes(text)
+export const isRepublicanAnswer = (text: string) =>
+  /republican/i.test(text) || REP_TAG.test(text)
 
 // Returns the aggregate {dem, rep, other} probabilities for a state market,
 // or undefined if the contract can't be interpreted. Summing (rather than
@@ -42,8 +64,12 @@ export const isRepublicanAnswer = (text: string) => /republican/i.test(text)
 export const getPartyProbs = (
   contract: Contract | null,
   data?: StateElectionMarket
-): { dem: number; rep: number; other: number } | undefined => {
-  if (!contract) return undefined
+): Odds | undefined => {
+  if (!contract || contract.resolution === 'CANCEL') return undefined
+  const audited = sourceAudit(contract.slug)
+  // Use the same audited meanings as the explorer; do not recast NO or an
+  // independent as a Democratic win on homepage/OG maps.
+  if (audited) return auditedOdds(contract, audited)
 
   let dem: number
   let rep: number
@@ -55,7 +81,7 @@ export const getPartyProbs = (
   let hasDem: boolean
   let hasRep: boolean
 
-  if (contract.mechanism === 'cpmm-multi-1') {
+  if (isMultiCpmm(contract)) {
     const answers = contract.answers
     const demAnswers = answers.filter((a) => isDemocraticAnswer(a.text))
     const repAnswers = answers.filter((a) => isRepublicanAnswer(a.text))
@@ -115,6 +141,12 @@ export const probToColor = (
 ) => {
   const probs = getPartyProbs(contract, data)
   if (!probs) return undefined
+  const known = Math.max(probs.dem, probs.rep)
+  if (
+    Math.max(probs.notDem ?? 0, probs.notRep ?? 0, probs.unknown ?? 0) > known
+  )
+    return '#9e9fbd'
+  if (probs.other > known) return '#318b83'
   return partyProbsToColor(probs.dem, probs.rep)
 }
 

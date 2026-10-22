@@ -56,6 +56,7 @@ export function ProbabilityInput(props: {
   inputClassName?: string
   error?: boolean
   limitProbs?: { max: number; min: number }
+  ariaLabel?: string
 }) {
   const {
     prob,
@@ -66,6 +67,7 @@ export function ProbabilityInput(props: {
     inputClassName,
     error,
     limitProbs,
+    ariaLabel,
   } = props
   const maxBetProbInt = 100 * (limitProbs?.max ?? 0.99)
   const minBetProbInt = 100 * (limitProbs?.min ?? 0.01)
@@ -97,6 +99,7 @@ export function ProbabilityInput(props: {
         inputMode="numeric"
         maxLength={2}
         placeholder={placeholder ?? '0'}
+        aria-label={ariaLabel}
         value={prob ?? ''}
         disabled={disabled}
         onChange={(e) => onProbChange(e.target.value)}

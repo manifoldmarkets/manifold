@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
-import { MultiContract } from 'common/contract'
+import { MultiContract, isMultiCpmm } from 'common/contract'
 import { User } from 'common/user'
 import { sortBy } from 'lodash'
 import { useUser } from 'web/hooks/use-user'
@@ -31,6 +31,7 @@ import { useUserContractBets } from 'client-common/hooks/use-user-bets'
 import { api } from 'web/lib/api/api'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import {
+  isCandidateLabelledAnswer,
   isDemocraticAnswer,
   isRepublicanAnswer,
 } from 'web/components/usa-map/state-election-map'
@@ -39,10 +40,21 @@ import {
 export function PartyPanel(props: {
   contract: MultiContract
   maxAnswers?: number
+  answerColors?: Record<string, string>
+  hidePartyNote?: boolean
   includeNeedle?: boolean
   includeHead?: boolean
+  compact?: boolean
 }) {
-  const { contract, maxAnswers = Infinity, includeNeedle, includeHead } = props
+  const {
+    contract,
+    maxAnswers = Infinity,
+    includeNeedle,
+    includeHead,
+    answerColors,
+    hidePartyNote,
+    compact,
+  } = props
   const { resolutions, outcomeType } = contract
 
   const shouldAnswersSumToOne =
@@ -83,6 +95,20 @@ export function PartyPanel(props: {
   // and guard against a missing side rather than asserting non-null.
   const republicanAnswer = answers.find((a) => isRepublicanAnswer(a.text))
   const democraticAnswer = answers.find((a) => isDemocraticAnswer(a.text))
+
+  // Two conditions, both required.
+  //
+  // The answers must name candidates — on a market still labelled "Democratic
+  // party" the note would state the obvious. AND the market must actually be a
+  // party market: this panel also renders genuine candidate markets (Montana's
+  // three-way, where Seth Bodnar runs as an independent), and telling a reader
+  // those resolve by party would be flatly wrong. Keying off the question is
+  // crude but fails safe — an unrecognised wording hides a true note rather
+  // than showing a false one.
+  const namesCandidates =
+    !hidePartyNote &&
+    answers.some((a) => isCandidateLabelledAnswer(a.text)) &&
+    /which\s+party/i.test(contract.question)
 
   let democratToRepublicanRatio = 0.5
   if (republicanAnswer && democraticAnswer) {
@@ -169,14 +195,18 @@ export function PartyPanel(props: {
                   key={answer.id}
                   answer={answer}
                   contract={contract}
-                  color={getPartyColor(answer.text)}
+                  color={
+                    answerColors?.[answer.id] ?? getPartyColor(answer.text)
+                  }
                   user={user}
                   userBets={userBetsByAnswer[answer.id]}
                   includeHead={includeHead}
+                  compact={compact}
                 />
               ))}
             </>
           )}
+          {namesCandidates && <ResolvesByPartyNote />}
         </Col>
       </Col>
     )
@@ -193,15 +223,31 @@ export function PartyPanel(props: {
               key={answer.id}
               answer={answer}
               contract={contract}
-              color={getPartyColor(answer.text)}
+              color={answerColors?.[answer.id] ?? getPartyColor(answer.text)}
               user={user}
               userBets={userBetsByAnswer[answer.id]}
               includeHead={includeHead}
+              compact={compact}
             />
           ))}
         </>
       )}
+      {namesCandidates && <ResolvesByPartyNote />}
     </Col>
+  )
+}
+
+/**
+ * Named answers read as a bet on the person, but these markets settle on which
+ * party wins the seat. Maine 2026 is the cautionary case: the Democratic
+ * nominee changed twice before September and the market was unaffected.
+ */
+function ResolvesByPartyNote() {
+  return (
+    <div className="text-ink-500 text-xs">
+      Resolves by party, not by candidate — if a nominee changes, this still
+      settles on which party wins the seat.
+    </div>
   )
 }
 
@@ -220,6 +266,7 @@ function PartyAnswer(props: {
   userBets?: Bet[]
   user?: User | null
   includeHead?: boolean
+  compact?: boolean
 }) {
   const {
     answer,
@@ -230,6 +277,7 @@ function PartyAnswer(props: {
     userBets,
     user,
     includeHead,
+    compact,
   } = props
 
   const prob = getAnswerProbability(contract, answer.id)
@@ -248,7 +296,7 @@ function PartyAnswer(props: {
 
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
 
-  const isCpmm = contract.mechanism === 'cpmm-multi-1'
+  const isCpmm = isMultiCpmm(contract)
 
   const isDemocraticParty = answer.text == 'Democratic Party'
   const isRepublicanParty = answer.text == 'Republican Party'
@@ -279,11 +327,12 @@ function PartyAnswer(props: {
         resolvedProb={resolvedProb}
         onHover={onHover}
         className={clsx(
-          'cursor-pointer py-1.5',
+          'cursor-pointer',
+          compact ? 'py-1' : 'py-1.5',
           selected && 'ring-primary-600 ring-2'
         )}
         label={
-          <Row className="relative h-8">
+          <Row className={clsx('relative', compact ? 'min-h-6' : 'h-8')}>
             {!!includeHead && head}
             <Col className={clsx(includeHead ? 'ml-12' : '')}>
               <CreatorAndAnswerLabel
@@ -308,11 +357,17 @@ function PartyAnswer(props: {
         end={
           <Row className={'items-center gap-1 sm:gap-2'}>
             <div className="relative">
-              <AnswerStatus contract={contract} answer={answer} />
-              <PercentChangeToday
-                probChange={answer.probChanges.day}
-                className="absolute right-1 top-6 whitespace-nowrap text-xs"
+              <AnswerStatus
+                contract={contract}
+                answer={answer}
+                className={compact ? '!text-sm' : undefined}
               />
+              {!compact && (
+                <PercentChangeToday
+                  probChange={answer.probChanges.day}
+                  className="absolute right-1 top-6 whitespace-nowrap text-xs"
+                />
+              )}
             </div>
             <MultiBettor
               contract={contract as CPMMMultiContract}
@@ -342,9 +397,11 @@ function PartyAnswerSnippet(props: {
 
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
 
-  const isCpmm = contract.mechanism === 'cpmm-multi-1'
+  const isCpmm = isMultiCpmm(contract)
 
-  const isDemocraticParty = answer.text == 'Democratic Party'
+  // Which side of the head-to-head this is, so the layout still mirrors
+  // correctly once the answer is renamed to a candidate ("Josh Turek (D)").
+  const isDemocraticParty = isDemocraticAnswer(answer.text)
 
   return (
     <Col

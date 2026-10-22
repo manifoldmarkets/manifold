@@ -2,6 +2,7 @@ import { BETTING_STREAK_BONUS_MAX, REFERRAL_AMOUNT } from 'common/economy'
 import {
   getEffectiveBonusMultiplier,
   EffectiveTier,
+  normalizeRecordedTier,
 } from 'common/supporter-config'
 import {
   BettingStreakData,
@@ -54,12 +55,16 @@ import { TokenNumber } from 'web/components/widgets/token-number'
 import { first } from 'lodash'
 import { truncateText } from '../widgets/truncate'
 import { BettingStreakProgressModal } from '../profile/first-streak-modal'
+import { useStartIdentityVerification } from 'web/hooks/use-start-identity-verification'
 
-// Shown in place of a "reduced because unverified" / "come back for a bonus"
-// subtitle when the user is admin-flagged (effective tier 'restricted'): they
-// earn ZERO bonuses until they verify, so the messaging must say so rather than
-// nudge them toward a bonus they won't receive.
+// Shown in place of a "come back for a bonus" subtitle when the user is
+// admin-flagged (effective tier 'restricted'): they earn ZERO bonuses until
+// they verify, so the messaging must say so rather than nudge them toward a
+// bonus they won't receive.
 function FlaggedBonusSubtitle() {
+  const { start, loading, error } = useStartIdentityVerification(
+    'flagged bonus notification: verify clicked'
+  )
   // Forward-looking wording on purpose: this renders on the current user's whole
   // bonus-notification history (it keys off their live effective tier), so it
   // must NOT claim a past bonus "wasn't received" — only that new bonuses are
@@ -67,13 +72,19 @@ function FlaggedBonusSubtitle() {
   return (
     <span>
       Your account is flagged for verification, so new bonuses are paused.{' '}
-      <a
-        href="/membership"
-        className="text-primary-700 font-semibold hover:underline"
+      <button
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          start()
+        }}
+        disabled={loading}
+        className="text-primary-700 font-semibold hover:underline disabled:opacity-50"
       >
         Verify your identity
-      </a>{' '}
+      </button>{' '}
       to restore them.
+      {error && <span className="text-scarlet-600 block">{error}</span>}
     </span>
   )
 }
@@ -108,53 +119,20 @@ export function UniqueBettorBonusIncomeNotification(props: {
   const partnerBonusAmount = numNewTraders * partnerBonusPerTrader
   const showBet = data?.bet && data?.outcomeType
   // Use the creator's tier at award time (embedded in the txn/notification) so
-  // the "reduced" label is historically accurate; fall back to current tier for
+  // the flagged label is historically accurate; fall back to current tier for
   // notifications created before effectiveTier was recorded.
-  const txnTier = (data as { effectiveTier?: string } | undefined)
-    ?.effectiveTier
+  const txnTier = normalizeRecordedTier(
+    (data as { effectiveTier?: string } | undefined)?.effectiveTier
+  )
   const userTier = user ? getEffectiveTier(user) : undefined
-  const isUnverified =
-    txnTier === 'unverified' ||
-    (txnTier === undefined && userTier === 'unverified')
-  const isFlagged =
-    txnTier === 'restricted' ||
-    (txnTier === undefined && userTier === 'restricted')
+  const isFlagged = (txnTier ?? userTier) === 'restricted'
   return (
     <NotificationFrame
       notification={notification}
       highlighted={highlighted}
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
-      subtitle={
-        isFlagged ? (
-          <FlaggedBonusSubtitle />
-        ) : isUnverified ? (
-          <span>
-            Reduced because your account is unverified.{' '}
-            <a
-              href="/membership"
-              className="text-primary-700 font-semibold hover:underline"
-            >
-              Verify
-            </a>
-            ,{' '}
-            <a
-              href="/checkout"
-              className="text-primary-700 font-semibold hover:underline"
-            >
-              buy mana
-            </a>
-            , or{' '}
-            <a
-              href="/membership"
-              className="text-primary-700 font-semibold hover:underline"
-            >
-              subscribe
-            </a>{' '}
-            to earn the full unique-trader bonus.
-          </span>
-        ) : undefined
-      }
+      subtitle={isFlagged ? <FlaggedBonusSubtitle /> : undefined}
       icon={
         <MultipleAvatarIcons
           notification={notification}
@@ -330,51 +308,18 @@ export function QuestIncomeNotification(props: {
   // The bonus award embeds effectiveTier in the txn data — use it if present,
   // otherwise fall back to the current user's tier (notifications can outlive
   // tier transitions).
-  const txnTier = (data as { effectiveTier?: string } | undefined)
-    ?.effectiveTier
+  const txnTier = normalizeRecordedTier(
+    (data as { effectiveTier?: string } | undefined)?.effectiveTier
+  )
   const userTier = user ? getEffectiveTier(user) : undefined
-  const isUnverified =
-    txnTier === 'unverified' ||
-    (txnTier === undefined && userTier === 'unverified')
-  const isFlagged =
-    txnTier === 'restricted' ||
-    (txnTier === undefined && userTier === 'restricted')
+  const isFlagged = (txnTier ?? userTier) === 'restricted'
   return (
     <NotificationFrame
       notification={notification}
       highlighted={highlighted}
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
-      subtitle={
-        isFlagged ? (
-          <FlaggedBonusSubtitle />
-        ) : isUnverified ? (
-          <span>
-            This bonus is reduced because your account is unverified.{' '}
-            <a
-              href="/membership"
-              className="text-primary-700 font-semibold hover:underline"
-            >
-              Verify
-            </a>
-            ,{' '}
-            <a
-              href="/checkout"
-              className="text-primary-700 font-semibold hover:underline"
-            >
-              buy mana
-            </a>
-            , or{' '}
-            <a
-              href="/membership"
-              className="text-primary-700 font-semibold hover:underline"
-            >
-              subscribe
-            </a>{' '}
-            to earn the full amount.
-          </span>
-        ) : undefined
-      }
+      subtitle={isFlagged ? <FlaggedBonusSubtitle /> : undefined}
       icon={
         <NotificationIcon
           symbol={'🧭'}
@@ -430,16 +375,14 @@ export function BettingStreakBonusIncomeNotification(props: {
     }
   }
 
-  // Streak multiplier driven by effective tier (verification + subscription).
-  // Prefer the tier embedded at award time so the "reduced" label and amounts
-  // reflect history; fall back to current tier for older notifications.
+  // Streak multiplier driven by effective tier (account standing +
+  // subscription). Prefer the tier embedded at award time so the flagged label
+  // and amounts reflect history; fall back to current tier for older
+  // notifications.
   const effectiveTier: EffectiveTier =
-    (txnTier as EffectiveTier | undefined) ??
-    (user ? getEffectiveTier(user) : 'verified')
+    normalizeRecordedTier(txnTier) ?? (user ? getEffectiveTier(user) : 'free')
   const streakMultiplier = getEffectiveBonusMultiplier(effectiveTier, 'streak')
   const maxBonus = Math.floor(BETTING_STREAK_BONUS_MAX * streakMultiplier)
-  const verifiedMaxBonus = BETTING_STREAK_BONUS_MAX
-  const isUnverified = effectiveTier === 'unverified'
   const isFlagged = effectiveTier === 'restricted'
 
   return (
@@ -451,37 +394,6 @@ export function BettingStreakBonusIncomeNotification(props: {
       subtitle={
         isFlagged ? (
           <FlaggedBonusSubtitle />
-        ) : isUnverified ? (
-          <span>
-            This bonus is reduced because your account is unverified.{' '}
-            <a
-              href="/membership"
-              className="text-primary-700 font-semibold hover:underline"
-            >
-              Verify
-            </a>
-            ,{' '}
-            <a
-              href="/checkout"
-              className="text-primary-700 font-semibold hover:underline"
-            >
-              buy mana
-            </a>
-            , or{' '}
-            <a
-              href="/membership"
-              className="text-primary-700 font-semibold hover:underline"
-            >
-              subscribe
-            </a>{' '}
-            to earn up to{' '}
-            <TokenNumber
-              amount={verifiedMaxBonus}
-              className={'font-bold'}
-              isInline
-            />{' '}
-            per streak day.
-          </span>
         ) : (
           noBonus && (
             <span>Come back and predict again tomorrow for a bonus!</span>

@@ -13,6 +13,11 @@ import { SEO } from 'web/components/SEO'
 import { useAdmin } from 'web/hooks/use-admin'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
+import clsx from 'clsx'
+import {
+  MOD_ACTION_TEXT_CLASS,
+  ModActionBadge,
+} from 'web/components/moderation/mod-action'
 import { api } from '../lib/api/api'
 import { Column, Row as rowfor } from 'common/supabase/utils'
 import { BonusSummary } from 'web/components/stats/bonus-summary'
@@ -365,7 +370,19 @@ function ActivityTab(props: {
         tabs={[
           {
             title: `${capitalize(TRADE_TERM)}s`,
-            content: <DailyChart values={dataFor('bet_count')} />,
+            content: (
+              <>
+                <DailyChart values={dataFor('bet_count')} />
+                <p className="text-ink-500 mt-2 text-sm">
+                  As of October 8, 2026, {TRADE_TERM}s exclude API limit orders
+                  that never filled. Bots can post thousands of these a day
+                  without anyone trading against them, and at their peak they
+                  outnumbered real {TRADE_TERM}s more than 10 to 1. This is
+                  applied retroactively to all days since May 2023, when we
+                  started recording which orders come from the API.
+                </p>
+              </>
+            ),
           },
           {
             title: 'Questions created',
@@ -462,7 +479,11 @@ function ActivityTab(props: {
         first 24 hours?
       </p>
       {isAdmin && (
-        <Link className={linkClass} href={'/admin/journeys'}>
+        <Link
+          className={clsx(linkClass, MOD_ACTION_TEXT_CLASS)}
+          href={'/admin/journeys'}
+        >
+          <ModActionBadge admin className="mr-1 align-middle" />
           Check out the new user journerys page to see what they did.
         </Link>
       )}

@@ -7,11 +7,12 @@ import { APIError } from 'common/api/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { getProbability } from 'common/calculate'
 import {
-  getBinaryMCProb,
   isBinaryMulti,
+  isMultiCpmm,
   MarketContract,
   MultiContract,
 } from 'common/contract'
+import { showsSideProbability, versusSide, versusSideProb } from 'common/versus'
 import { TRADE_TERM } from 'common/envs/constants'
 import { CandidateBet } from 'common/new-bet'
 import { getPseudoProbability } from 'common/pseudo-numeric'
@@ -69,6 +70,7 @@ export default function LimitOrderPanel(props: {
   initialProb?: number
   expiration?: number
   prefillTimestamp?: number
+  compact?: boolean
 }) {
   const {
     contract,
@@ -80,21 +82,18 @@ export default function LimitOrderPanel(props: {
     onBuySuccess,
     pseudonym,
     expiration,
+    compact = false,
   } = props
-  const { pseudonymName, pseudonymColor } =
-    pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
+  const { pseudonymColor } = pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
   const isBinaryMC = isBinaryMulti(contract)
   const binaryMCColors = isBinaryMC
     ? (contract as MultiContract).answers.map(getAnswerColor)
     : undefined
 
-  const binaryMCOutcome =
-    isBinaryMC && multiProps
-      ? multiProps.answerText === multiProps.answerToBuy.text
-        ? 'YES'
-        : 'NO'
-      : undefined
-  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
+  // Versus markets and renamed binary sides take the price of the side being
+  // bought rather than the YES price (see showsSideProbability).
+  const showsSideProb = showsSideProbability(contract, pseudonym)
+  const isCpmmMulti = isMultiCpmm(contract)
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
   }
@@ -160,19 +159,24 @@ export default function LimitOrderPanel(props: {
       ? selectedExpiration
       : undefined
 
+  const answerProb = isCpmmMulti
+    ? multiProps!.answerToBuy.prob
+    : getProbability(contract)
   const initialProb =
     props.initialProb ??
-    (isBinaryMC && outcome === 'YES'
-      ? multiProps!.answerToBuy.prob
-      : isBinaryMC && outcome === 'NO'
-      ? 1 - multiProps!.answerToBuy.prob
-      : isCpmmMulti
-      ? multiProps!.answerToBuy.prob
-      : getProbability(contract))
+    (showsSideProb ? versusSideProb(outcome ?? 'YES', answerProb) : answerProb)
 
   const [limitProbInt, setLimitProbInt] = useState<number | undefined>(
     Math.round(initialProb * 100)
   )
+  const quoteKey = `${contract.id}-${multiProps?.answerToBuy.id}-${outcome}`
+  const previousQuoteKey = useRef(quoteKey)
+  useEffect(() => {
+    if (previousQuoteKey.current === quoteKey) return
+    previousQuoteKey.current = quoteKey
+    setLimitProbInt(Math.round(initialProb * 100))
+    setError(undefined)
+  }, [quoteKey, initialProb])
 
   // Track the last applied prefill timestamp to avoid re-applying or resetting
   const lastAppliedPrefillTimestamp = useRef<number | null>(null)
@@ -220,10 +224,11 @@ export default function LimitOrderPanel(props: {
           0.001,
           0.999
         )
+  // Convert the side's price back into the price of `answerToBuy` (or YES).
   const limitProb =
-    !preLimitProb || !isBinaryMC
+    !preLimitProb || !showsSideProb
       ? preLimitProb
-      : getBinaryMCProb(preLimitProb, outcome as 'YES' | 'NO')
+      : versusSideProb(outcome ?? 'YES', preLimitProb)
 
   const amount = betAmount ?? 0
 
@@ -387,6 +392,7 @@ export default function LimitOrderPanel(props: {
           {capitalize(TRADE_TERM)} amount
         </Row>
         <BuyAmountInput
+          compact={compact}
           parentClassName="max-w-full mt-1"
           amount={betAmount}
           onChange={onBetChange}
@@ -398,18 +404,21 @@ export default function LimitOrderPanel(props: {
           sliderColor={pseudonymColor}
         />
       </Col>
-      <Col className="relative mt-6 w-full gap-1">
+      <Col className={clsx('relative w-full gap-1', compact ? 'mt-2' : 'mt-6')}>
         <div className="text-ink-600">
           {isPseudoNumeric ? 'Value' : `Probability (%)`}
         </div>
         <Row>
           <label className="font-sm md:font-lg relative w-full">
             <Input
+              aria-label={
+                isPseudoNumeric ? 'Limit value' : 'Limit probability (%)'
+              }
               type="number"
               min={isPseudoNumeric ? contract.min : 1}
               max={isPseudoNumeric ? contract.max : 99}
               step={1}
-              className="h-[60px] w-full !text-xl"
+              className={clsx('w-full !text-xl', compact ? 'h-12' : 'h-[60px]')}
               value={limitProbInt ?? ''}
               onChange={(e) => {
                 const val =
@@ -417,7 +426,12 @@ export default function LimitOrderPanel(props: {
                 setLimitProbIntClamped(val)
               }}
             />
-            <Row className="absolute right-2 top-3.5 gap-1.5 sm:gap-2">
+            <Row
+              className={clsx(
+                'absolute right-2 gap-1.5 sm:gap-2',
+                compact ? 'top-2' : 'top-3.5'
+              )}
+            >
               <button
                 className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1.5 text-sm sm:px-3"
                 onClick={() => {
@@ -467,11 +481,11 @@ export default function LimitOrderPanel(props: {
           onProbChange={setLimitProbIntClamped}
           disabled={isSubmitting}
           color={pseudonymColor}
-          outcome={isBinaryMC ? 'YES' : outcome}
+          outcome={showsSideProb ? 'YES' : outcome}
         />
       </Col>
 
-      <Col className="mt-6 gap-2">
+      <Col className={clsx('gap-2', compact ? 'mt-2' : 'mt-6')}>
         <DropdownMenu
           buttonContent={
             <Row className="items-center gap-1">
@@ -614,13 +628,21 @@ export default function LimitOrderPanel(props: {
                   size="xl"
                   disabled={betDisabled}
                   color={
-                    (pseudonymColor as any) ??
-                    (hideYesNo ? 'none' : outcome === 'YES' ? 'green' : 'red')
+                    compact
+                      ? 'indigo'
+                      : (pseudonymColor as any) ??
+                        (hideYesNo
+                          ? 'none'
+                          : outcome === 'YES'
+                          ? 'green'
+                          : 'red')
                   }
                   loading={isSubmitting}
                   className={clsx('flex-1 text-white')}
                   style={{
-                    backgroundColor: binaryMCColors?.[outcome == 'YES' ? 0 : 1],
+                    backgroundColor: compact
+                      ? undefined
+                      : binaryMCColors?.[outcome == 'YES' ? 0 : 1],
                   }}
                   onClick={submitBet}
                 >
@@ -639,11 +661,9 @@ export default function LimitOrderPanel(props: {
                         amount={betAmount}
                         isCashContract={isCashContract}
                       />{' '}
-                      {!binaryMCOutcome && !pseudonymName ? outcome : ''} at{' '}
+                      {!showsSideProb ? outcome : ''} at{' '}
                       {formatPercent(
-                        binaryMCOutcome || pseudonymName
-                          ? preLimitProb ?? 0
-                          : limitProb
+                        showsSideProb ? preLimitProb ?? 0 : limitProb
                       )}
                     </span>
                   )}
@@ -687,12 +707,26 @@ export default function LimitOrderPanel(props: {
                   open={isSharing}
                   setOpen={setIsSharing}
                   questionText={contract.question}
-                  outcome={formatOutcomeLabel(
-                    contract,
-                    lastBetDetails.outcome as 'YES' | 'NO'
+                  outcome={
+                    isBinaryMC
+                      ? 'YES'
+                      : formatOutcomeLabel(
+                          contract,
+                          lastBetDetails.outcome as 'YES' | 'NO'
+                        )
+                  }
+                  answer={
+                    versusSide(contract, lastBetDetails)?.answer.text ??
+                    multiProps?.answerToBuy.text
+                  }
+                  avgPrice={formatPercent(
+                    showsSideProb
+                      ? versusSideProb(
+                          lastBetDetails.outcome,
+                          lastBetDetails.limitProb ?? 0
+                        )
+                      : lastBetDetails.limitProb ?? 0
                   )}
-                  answer={multiProps?.answerToBuy.text}
-                  avgPrice={formatPercent(lastBetDetails.limitProb ?? 0)}
                   betAmount={
                     lastBetDetails.orderAmount ?? lastBetDetails.amount
                   }

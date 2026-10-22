@@ -1,7 +1,12 @@
-import { LockClosedIcon, LockOpenIcon, XIcon } from '@heroicons/react/outline'
+import {
+  ChevronDownIcon,
+  LockClosedIcon,
+  LockOpenIcon,
+  XIcon,
+} from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { capitalize, uniq } from 'lodash'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 
 import {
@@ -15,6 +20,7 @@ import { Bet, LimitBet } from 'common/bet'
 import { calculateCpmmAmountToBuyShares } from 'common/calculate-cpmm'
 import {
   isBinaryMulti,
+  isMultiCpmm,
   MarketContract,
   MAX_CPMM_PROB,
   MAX_STONK_PROB,
@@ -53,15 +59,18 @@ import { useFocus } from 'web/hooks/use-focus'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { useShowOrderBook } from 'web/hooks/use-show-order-book'
 import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api, APIError } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { isAndroid, isIOS } from 'web/lib/util/device'
+import { showsSideProbability, versusSide, versusSideProb } from 'common/versus'
+import { getBetSharePrice } from 'common/share-bet'
 import { Button } from '../buttons/button'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
-import { getAnswerColor } from '../charts/contract/choice'
+import { getAnswerColor, getPseudonym } from '../charts/contract/choice'
 import { LocationMonitor } from '../gidx/location-monitor'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -79,6 +88,7 @@ import {
 } from './order-book'
 import { ShareBetModal } from './share-bet'
 import { YesNoSelector } from './yes-no-selector'
+import { TradePanelLayout } from './trade-panel-layout'
 
 const WAIT_TO_DISMISS = 3000
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
@@ -100,9 +110,11 @@ type BuyPanelProps = {
       pseudonymColor: SliderColor
     }
   }
-  children?: React.ReactNode
+  children?: React.ReactNode | ((outcome: BinaryOutcomes) => React.ReactNode)
   alwaysShowOutcomeSwitcher?: boolean
   className?: string
+  /** Keep the trade ticket compact and put orders in a separate view. */
+  compact?: boolean
 }
 
 export function BuyPanel(
@@ -132,7 +144,7 @@ export function BuyPanel(
   const isStonk = contract.outcomeType === 'STONK'
 
   const [outcome, setOutcome] = useState<BinaryOutcomes>(initialOutcome)
-  const [isPanelBodyVisible, setIsPanelBodyVisible] = useState(false)
+  const [isPanelBodyVisible, setIsPanelBodyVisible] = useState(!!initialOutcome)
   const cancelDismissTimerRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
@@ -230,6 +242,7 @@ export const BuyPanelBody = (
     outcome?: BinaryOutcomes
     setOutcome: (outcome: 'YES' | 'NO') => void
     onClose?: () => void
+    outcomeControl?: React.ReactNode
     cancelDismissTimerRef?: React.MutableRefObject<(() => void) | null>
   }
 ) => {
@@ -245,8 +258,17 @@ export const BuyPanelBody = (
     feedReason,
     className,
     children,
+    outcomeControl,
     cancelDismissTimerRef,
+    compact = false,
   } = props
+
+  // Dialogs remember whether the book was left open, on the account.
+  const [showOrders, setShowOrders] = useShowOrderBook(compact)
+  // Bumped when the user opens the book, so only that scrolls it into view.
+  const [revealOrders, setRevealOrders] = useState(0)
+  const ordersId = useId()
+  const tradeFormRef = useRef<HTMLDivElement>(null)
 
   const user = useUser()
   const isCreatorBanned =
@@ -292,15 +314,22 @@ export const BuyPanelBody = (
     ? (contract as MultiContract).answers.map(getAnswerColor)
     : undefined
 
-  const binaryMCOutcomeLabel =
-    isBinaryMC && multiProps
-      ? multiProps.answerText ?? multiProps.answerToBuy.text
+  // On a versus market `outcome` is relative to `answerToBuy`; this is the
+  // answer the user is actually backing.
+  const versusBetSide =
+    isBinaryMC && multiProps && outcome
+      ? versusSide(contract, { answerId: multiProps.answerToBuy.id, outcome })
       : undefined
+  const binaryMCOutcomeLabel = versusBetSide?.answer.text
+  // Versus markets and renamed binary sides (e.g. Republican/Democratic) show
+  // probabilities for the side being bought; otherwise buying NO reads as the
+  // answer's probability going down (see showsSideProbability).
+  const showsSideProb = showsSideProbability(contract, props.pseudonym)
   const isCashContract = contract.token === 'CASH'
 
   const quickAddButtonSize =
     liquidityTier === 0 ||
-    (contract.mechanism === 'cpmm-multi-1' &&
+    (isMultiCpmm(contract) &&
       liquidityTier === 1 &&
       !contract.shouldAnswersSumToOne)
       ? 'small'
@@ -349,7 +378,7 @@ export const BuyPanelBody = (
   const [dismissTimeoutRef, setDismissTimeoutRef] =
     useState<NodeJS.Timeout | null>(null)
 
-  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
+  const isCpmmMulti = isMultiCpmm(contract)
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
   }
@@ -424,13 +453,44 @@ export const BuyPanelBody = (
     amount: number
     timestamp: number // unique identifier for each click
   } | null>(null)
+  const matchingPrefillOrder =
+    prefillLimitOrder?.outcome === outcome ? prefillLimitOrder : null
 
   // Handle order book click to prefill limit order
   const handleOrderClick = useEvent((clickedOrder: OrderClickData) => {
     const fillParams = calculateOrderFillParams(clickedOrder)
-    setPrefillLimitOrder({ ...fillParams, timestamp: Date.now() })
-    setOutcome(fillParams.outcome)
+    // The versus order book quotes the main answer. Mirror the outcome when
+    // this ticket buys the other answer (e.g. a candidate opened from the map).
+    const outcome =
+      versusSide(contract, {
+        answerId: multiProps?.answerToBuy.id,
+        outcome: fillParams.outcome,
+      })?.sideOutcome ?? fillParams.outcome
+    // The limit order panel's probability input is the price of the side
+    // being bought when the sides are named, so mirror the NO side's price.
+    const limitProb = showsSideProb
+      ? versusSideProb(fillParams.outcome, fillParams.limitProb)
+      : fillParams.limitProb
+    setPrefillLimitOrder({
+      ...fillParams,
+      outcome,
+      limitProb,
+      timestamp: Date.now(),
+    })
+    setOutcome(outcome)
     setBetTypeSetting('Limit')
+    if (compact) {
+      // The book stays open below; bring the prefilled ticket back into view.
+      requestAnimationFrame(() => {
+        const form = tradeFormRef.current
+        form?.firstElementChild?.scrollIntoView({
+          block: 'nearest',
+          behavior: 'smooth',
+        })
+        if (!isIOS() && !isAndroid())
+          form?.querySelector('input')?.focus({ preventScroll: true })
+      })
+    }
     toast('Expiration set to immediate', { icon: '⏱️' })
   })
 
@@ -470,16 +530,14 @@ export const BuyPanelBody = (
     undefined,
     slippageProtection
   )
-  let probBefore = prob
-  let probAfter = newProbAfter
-  if (
-    multiProps &&
-    multiProps.answerToBuy.text !== multiProps.answerText &&
-    isBinaryMC
-  ) {
-    probBefore = 1 - prob
-    probAfter = 1 - newProbAfter
-  }
+  // `prob` and `newProbAfter` are prices of `answerToBuy` (or of YES on a
+  // binary market); show the price of the side being bought instead.
+  const probBefore = showsSideProb
+    ? versusSideProb(outcome ?? 'YES', prob)
+    : prob
+  const probAfter = showsSideProb
+    ? versusSideProb(outcome ?? 'YES', newProbAfter)
+    : newProbAfter
 
   useEffect(() => {
     if (calculationError) {
@@ -669,10 +727,19 @@ export const BuyPanelBody = (
     ? `Are you sure you want to move the market to ${displayedAfter}?`
     : undefined
 
-  // Toggle always shows Yes/No - only the main bet button shows custom text
-  const choicesMap: { [key: string]: string } = isStonk
-    ? { Buy: 'YES', Short: 'NO' }
-    : { Yes: 'YES', No: 'NO' }
+  // Keyed by side, so two sides that share a name still get a button each.
+  const outcomeLabels = isStonk
+    ? { YES: 'Buy', NO: 'Short' }
+    : props.pseudonym
+    ? {
+        YES: props.pseudonym.YES.pseudonymName,
+        NO: props.pseudonym.NO.pseudonymName,
+      }
+    : { YES: 'Yes', NO: 'No' }
+  const choicesMap: Record<string, 'YES' | 'NO'> = {
+    [outcomeLabels.YES]: 'YES',
+    [outcomeLabels.NO]: 'NO',
+  }
 
   const { pseudonymName: propPseudonymName, pseudonymColor } =
     props.pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
@@ -748,54 +815,149 @@ export const BuyPanelBody = (
     }
   }, [cancelDismissTimerRef, cancelDismissTimerFn])
 
+  const betTypeControls = (
+    <Row className="ml-auto shrink-0 items-center justify-end gap-2">
+      {!isStonk && (
+        <ChoicesToggleGroup
+          currentChoice={betType}
+          color="gray"
+          choicesMap={{
+            Quick: 'Market',
+            Limit: 'Limit',
+          }}
+          setChoice={(val) => setBetTypeSetting(val as 'Market' | 'Limit')}
+        />
+      )}
+      {onClose && (
+        <Button
+          color="gray-white"
+          size="sm"
+          onClick={onClose}
+          className="-mr-2"
+          aria-label="Close betting panel"
+        >
+          <XIcon className="h-5 w-5" />
+        </Button>
+      )}
+    </Row>
+  )
+
+  const orderBookBets = isBinaryMC
+    ? unfilledBets
+    : unfilledBets.filter((b) => b.answerId === multiProps?.answerToBuy?.id)
+  const activeOrderCount = orderBookBets.filter(
+    (b) => !b.silent && (!b.expiresAt || b.expiresAt > Date.now())
+  ).length
+  const orders = (
+    <>
+      {(compact || isMultiCpmm(contract)) && (
+        <YourOrders
+          className={compact ? 'mb-3' : 'mt-2 py-4'}
+          contract={contract}
+          bets={isBinaryMC ? allUnfilledBets : unfilledBetsMatchingAnswer}
+        />
+      )}
+      {compact && activeOrderCount === 0 && (
+        <p className="text-ink-500 py-4 text-center text-sm">
+          No open orders yet.
+        </p>
+      )}
+      <OrderBookPanel
+        contract={contract}
+        limitBets={orderBookBets}
+        answer={multiProps?.answerToBuy}
+        // Versus columns always refer to the main answer, even when the
+        // ticket itself is for the other answer. Use the market's side names.
+        pseudonym={isBinaryMC ? getPseudonym(contract) : props.pseudonym}
+        onOrderClick={handleOrderClick}
+      />
+    </>
+  )
+
   return (
     <>
-      <Col className={clsx(className, 'relative rounded-xl px-4 py-2')}>
-        {children}
-        <Row className={'mb-2 mt-2 justify-between'}>
-          <Row
-            className={clsx(
-              ' gap-1',
-              // Hide toggle for binary MC questions or prop-provided pseudonyms (but NOT for PAMPU skin)
-              (isBinaryMC || propPseudonymName) && 'invisible'
-            )}
-          >
-            <ChoicesToggleGroup
-              currentChoice={outcome}
-              color={outcome === 'YES' ? 'light-green' : 'light-red'}
-              choicesMap={choicesMap}
-              setChoice={(outcome) => {
-                setOutcome(outcome as 'YES' | 'NO')
-                // Cancel dismiss timer if user is switching outcomes
-                cancelDismissTimerFn()
-              }}
-            />
-          </Row>
-          <Row className="items-center justify-end gap-2">
-            {!isStonk && (
-              <ChoicesToggleGroup
-                currentChoice={betType}
-                color="gray"
-                choicesMap={{
-                  Quick: 'Market',
-                  Limit: 'Limit',
-                }}
-                setChoice={(val) => {
-                  setBetTypeSetting(val as 'Market' | 'Limit')
-                }}
-              />
-            )}
-            {onClose && (
-              <Button
-                color="gray-white"
-                size="sm"
-                onClick={onClose}
-                className="-mr-2"
+      <TradePanelLayout
+        className={className}
+        compact={compact}
+        showOrders={compact && showOrders}
+        revealOrders={revealOrders}
+        ordersId={ordersId}
+        header={typeof children === 'function' ? children(outcome) : children}
+        orders={orders}
+        tradeFormRef={tradeFormRef}
+      >
+        <Row
+          className={clsx(
+            'mb-2 items-center justify-between gap-x-2 gap-y-1',
+            !compact && 'mt-2 flex-wrap'
+          )}
+        >
+          {compact && props.pseudonym ? (
+            // Looks like the light-green/light-red ChoicesToggleGroup below,
+            // but keyed by side, so sides sharing a name still get two buttons.
+            <Row
+              className="min-w-0 rounded-lg p-1 text-sm"
+              role="group"
+              aria-label="Choose an outcome"
+            >
+              {(['YES', 'NO'] as const).map((side) => (
+                <button
+                  key={side}
+                  type="button"
+                  title={outcomeLabels[side]}
+                  aria-pressed={outcome === side}
+                  onClick={() => {
+                    setOutcome(side)
+                    cancelDismissTimerFn()
+                  }}
+                  className={clsx(
+                    'ring-primary-500 text-ink-900 my-0.5 min-w-0 rounded-md py-2 outline-none transition-all focus-visible:ring-2',
+                    outcomeLabels.YES === 'YES'
+                      ? 'px-4'
+                      : 'px-2 text-xs sm:px-4 sm:text-sm',
+                    outcome === side
+                      ? clsx(
+                          'shadow',
+                          side === 'YES'
+                            ? 'bg-teal-500/20'
+                            : 'bg-scarlet-500/20'
+                        )
+                      : 'hover:bg-canvas-50/70'
+                  )}
+                >
+                  <span className="line-clamp-2">{outcomeLabels[side]}</span>
+                </button>
+              ))}
+            </Row>
+          ) : (
+            outcomeControl ?? (
+              <Row
+                className={clsx(
+                  'gap-1',
+                  (isBinaryMC || propPseudonymName) &&
+                    !props.alwaysShowOutcomeSwitcher &&
+                    'invisible'
+                )}
               >
-                <XIcon className="h-5 w-5" />
-              </Button>
-            )}
-          </Row>
+                <ChoicesToggleGroup
+                  currentChoice={outcome}
+                  color={outcome === 'YES' ? 'light-green' : 'light-red'}
+                  choicesMap={choicesMap}
+                  toggleClassName={
+                    props.pseudonym
+                      ? 'px-2 text-xs sm:px-4 sm:text-sm'
+                      : undefined
+                  }
+                  setChoice={(outcome) => {
+                    setOutcome(outcome as 'YES' | 'NO')
+                    // Cancel dismiss timer if user is switching outcomes
+                    cancelDismissTimerFn()
+                  }}
+                />
+              </Row>
+            )
+          )}
+          {betTypeControls}
         </Row>
         {betType === 'Market' ? (
           <>
@@ -809,6 +971,7 @@ export const BuyPanelBody = (
               className={clsx('mb-2 flex-wrap items-center gap-x-8 gap-y-4')}
             >
               <BuyAmountInput
+                compact={compact}
                 parentClassName="max-w-full"
                 amount={betAmount}
                 onChange={onBetChange}
@@ -842,7 +1005,7 @@ export const BuyPanelBody = (
                     {!probStayedSame && !isPseudoNumeric && (
                       <>
                         <span className={clsx('ml-1', 'text-ink-600')}>
-                          {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
+                          {outcome !== 'NO' || showsSideProb ? '↑' : '↓'}
                           {getFormattedMappedValue(
                             contract,
                             Math.abs(probAfter - probBefore)
@@ -951,7 +1114,8 @@ export const BuyPanelBody = (
         ) : (
           <>
             <LimitOrderPanel
-              betAmount={prefillLimitOrder?.amount ?? betAmount}
+              compact={compact}
+              betAmount={matchingPrefillOrder?.amount ?? betAmount}
               contract={contract}
               multiProps={multiProps}
               user={user}
@@ -959,9 +1123,9 @@ export const BuyPanelBody = (
               balanceByUserId={balanceByUserId}
               outcome={outcome}
               pseudonym={props.pseudonym}
-              initialProb={prefillLimitOrder?.limitProb}
-              expiration={prefillLimitOrder ? 1 : undefined}
-              prefillTimestamp={prefillLimitOrder?.timestamp}
+              initialProb={matchingPrefillOrder?.limitProb}
+              expiration={matchingPrefillOrder ? 1 : undefined}
+              prefillTimestamp={matchingPrefillOrder?.timestamp}
             />
           </>
         )}
@@ -996,9 +1160,11 @@ export const BuyPanelBody = (
                     disabled={betDisabled}
                     size="xl"
                     color={
-                      pseudonymColor ??
-                      binaryMCColors?.[outcome == 'YES' ? 0 : 1] ??
-                      (outcome === 'NO' ? 'red' : 'green')
+                      compact
+                        ? 'indigo'
+                        : pseudonymColor ??
+                          binaryMCColors?.[outcome == 'YES' ? 0 : 1] ??
+                          (outcome === 'NO' ? 'red' : 'green')
                     }
                     actionLabel={
                       betDisabled && !outcome ? (
@@ -1031,7 +1197,7 @@ export const BuyPanelBody = (
                         </span>
                       )
                     }
-                    inModal={!!onClose}
+                    inModal={compact || !!onClose}
                   />
                 </>
               )
@@ -1086,15 +1252,24 @@ export const BuyPanelBody = (
             open={isSharing}
             setOpen={setIsSharing}
             questionText={contract.question}
-            outcome={formatOutcomeLabel(
-              contract,
-              lastBetDetails.outcome as 'YES' | 'NO'
-            )}
-            answer={multiProps?.answerToBuy.text}
+            outcome={
+              isBinaryMC
+                ? 'YES'
+                : formatOutcomeLabel(
+                    contract,
+                    lastBetDetails.outcome as 'YES' | 'NO'
+                  )
+            }
+            answer={
+              versusSide(contract, lastBetDetails)?.answer.text ??
+              multiProps?.answerToBuy.text
+            }
             avgPrice={formatPercent(
-              lastBetDetails.outcome === 'YES'
-                ? lastBetDetails.amount / lastBetDetails.shares
-                : 1 - lastBetDetails.amount / lastBetDetails.shares
+              getBetSharePrice(
+                contract,
+                lastBetDetails,
+                isBinaryMC ? 'limit' : 'average'
+              )
             )}
             betAmount={lastBetDetails.amount}
             winAmount={lastBetDetails.shares}
@@ -1109,39 +1284,56 @@ export const BuyPanelBody = (
           />
         )}
 
-        {user && (
-          <Row className="mt-5 items-start justify-between text-sm">
-            <Row className={''}>
-              <span className={clsx('text-ink-600 mr-1 whitespace-nowrap ')}>
-                Your mana balance
-              </span>
-              <span className="text-ink-600 font-semibold">
-                <MoneyDisplay
-                  amount={balance}
-                  isCashContract={isCashContract}
+        {(user || compact) && (
+          <Row
+            className={clsx(
+              // Compact rows wrap on narrow screens, keeping the toggle right.
+              compact
+                ? 'mt-2 flex-wrap items-center gap-y-1'
+                : 'mt-5 items-start',
+              'justify-between gap-x-2 text-sm'
+            )}
+          >
+            {user ? (
+              <Row className={''}>
+                <span className={clsx('text-ink-600 mr-1 whitespace-nowrap ')}>
+                  Your mana balance
+                </span>
+                <span className="text-ink-600 font-semibold">
+                  <MoneyDisplay
+                    amount={balance}
+                    isCashContract={isCashContract}
+                  />
+                </span>
+              </Row>
+            ) : (
+              <span />
+            )}
+            {/* Where the inline panel's book would be: expands it below. */}
+            {compact && (
+              <button
+                type="button"
+                aria-expanded={showOrders}
+                aria-controls={ordersId}
+                onClick={() => {
+                  if (!showOrders) setRevealOrders((n) => n + 1)
+                  setShowOrders(!showOrders)
+                }}
+                className="text-primary-700 hover:bg-primary-50 -mr-2 ml-auto flex shrink-0 items-center gap-1 rounded-md px-2 py-1 font-medium"
+              >
+                Order book ({activeOrderCount})
+                <ChevronDownIcon
+                  className={clsx(
+                    'h-4 w-4 transition-transform',
+                    showOrders && 'rotate-180'
+                  )}
+                  aria-hidden
                 />
-              </span>
-            </Row>
+              </button>
+            )}
           </Row>
         )}
-      </Col>
-
-      {contract.mechanism === 'cpmm-multi-1' && (
-        <YourOrders
-          className="mt-2 py-4"
-          contract={contract}
-          bets={unfilledBetsMatchingAnswer}
-        />
-      )}
-      <OrderBookPanel
-        contract={contract}
-        limitBets={unfilledBets.filter(
-          (b) => b.answerId === multiProps?.answerToBuy?.id
-        )}
-        answer={multiProps?.answerToBuy}
-        pseudonym={props.pseudonym}
-        onOrderClick={handleOrderClick}
-      />
+      </TradePanelLayout>
     </>
   )
 }

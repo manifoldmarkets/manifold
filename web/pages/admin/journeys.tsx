@@ -8,10 +8,12 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
 import { isUserLikelySpammer, User } from 'common/user'
+import { convertUser } from 'common/supabase/users'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import clsx from 'clsx'
 import { useAdmin } from 'web/hooks/use-admin'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { formatPercent } from 'common/util/format'
 import { Input } from 'web/components/widgets/input'
@@ -44,14 +46,15 @@ export default function Journeys() {
   const [bannedUsers, setBannedUsers] = useState<User[]>([])
   const [referrer, setReferrer] = useState<string>()
   const isAuthed = useIsAuthorized()
-  const usersThatBet = unBannedUsers.filter(
-    (u) => eventsByUser[u.id]?.filter((e) => e.name === 'bet').length > 0
-  )
-  const userIdsThatBet = unBannedUsers
-    .filter(
-      (u) => eventsByUser[u.id]?.filter((e) => e.name === 'bet').length > 0
+  // The plain 'bet' event now only fires for limit orders (limit-order-panel);
+  // every ordinary trade emits 'bet intent'. Keying activation on 'bet' alone
+  // scored virtually every real user as un-activated.
+  const hasBet = (u: User) =>
+    (eventsByUser[u.id] ?? []).some(
+      (e) => e.name === 'bet intent' || e.name === 'bet'
     )
-    .map((u) => u.id)
+  const usersThatBet = unBannedUsers.filter(hasBet)
+  const userIdsThatBet = usersThatBet.map((u) => u.id)
   const likelySpammers = unBannedUsers.filter((u) =>
     isUserLikelySpammer(u, userIdsThatBet.includes(u.id), false)
   )
@@ -62,10 +65,13 @@ export default function Journeys() {
 
   const getEvents = async () => {
     const start = Date.now() - hoursFromNow * HOUR_MS
+    const startIso = new Date(start).toISOString()
+    // Signup time lives in the `created_time` column; it is no longer mirrored
+    // into `data`, so filtering on `data->createdTime` matched zero users.
     let usersQ = db
       .from('users')
       .select('id')
-      .gt('data->createdTime', start)
+      .gt('created_time', startIso)
       .is('data->fromLove', null)
     if (referrer) {
       usersQ = usersQ
@@ -73,14 +79,23 @@ export default function Journeys() {
         .eq('data->>referredByUserId', referrer)
     }
     const users = await run(usersQ)
+    const userIds = users.data.map((u) => u.id)
+    if (!userIds.length) {
+      setMarkets([])
+      setMarketVisitsByUser({})
+      setEventsByUser({})
+      return
+    }
+    // user_events is ~330M rows / 95GB with no index on user_id, so a bare
+    // `.in('user_id', ...)` seq-scans the whole table and blows the 8s
+    // statement timeout. Bounding ts lets it use user_events_ts instead —
+    // and these users didn't exist before `start` anyway.
     const events = await run(
       db
         .from('user_events')
         .select('*')
-        .in(
-          'user_id',
-          users.data.map((u) => u.id)
-        )
+        .gte('ts', startIso)
+        .in('user_id', userIds)
     )
     const contractViews = await run(
       db
@@ -117,10 +132,17 @@ export default function Journeys() {
   }
 
   const getUsers = async () => {
-    const userData = await run(
-      db.from('users').select('data').in('id', Object.keys(eventsByUser))
-    )
-    const users = userData.data.map((d) => d.data as User)
+    const userIds = Object.keys(eventsByUser)
+    if (!userIds.length) {
+      setBannedUsers([])
+      setUnBannedUsers([])
+      return
+    }
+    // `data` alone no longer carries id/name/username/createdTime — select the
+    // whole row and let convertUser stitch the columns back in, or every
+    // journey renders with a blank avatar and name.
+    const userData = await run(db.from('users').select('*').in('id', userIds))
+    const users = userData.data.map(convertUser)
     setBannedUsers(users.filter((u) => u.isBannedFromPosting))
     setUnBannedUsers(users.filter((u) => !u.isBannedFromPosting))
   }
@@ -141,7 +163,10 @@ export default function Journeys() {
     <Row>
       <NoSEO />
       <div className="text-ink-900 mx-8">
-        <div className={'text-primary-700 my-1 text-2xl'}>User Journeys</div>
+        <div className={'text-primary-700 my-1 text-2xl'}>
+          User Journeys
+          <ModActionTag admin className="ml-2 align-middle" />
+        </div>
         <Row className={'items-center gap-2'}>
           Viewing journeys from {unBannedUsers.length} users. You're not seeing{' '}
           {bannedUsers.length} more that are banned. Showing users created:{' '}
@@ -158,9 +183,11 @@ export default function Journeys() {
         </Row>
         <Row>
           Fraction of (likely real) users that {TRADED_TERM}:{' '}
-          {(userIdsThatBet.length / unlikelySpammers.length).toPrecision(2)}. If
-          a user is highlighted in yellow, they're likely a spammer. If they're
-          highlighted in green, they've {TRADED_TERM}.
+          {unlikelySpammers.length
+            ? (userIdsThatBet.length / unlikelySpammers.length).toPrecision(2)
+            : '—'}
+          . If a user is highlighted in yellow, they're likely a spammer. If
+          they're highlighted in green, they've {TRADED_TERM}.
         </Row>
         <table>
           <thead>
@@ -279,7 +306,6 @@ export default function Journeys() {
                     (group) => group[0].ts,
                     'asc'
                   ).map((group, index) => {
-                    console.log(group)
                     const name = group[0].name
                     const times = group.length
                     const timePeriod =

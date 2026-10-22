@@ -5,7 +5,10 @@ import { QuestType } from 'common/quest'
 import { Answer } from 'common/answer'
 import { AnyTxnCategory, Txn } from './txn'
 
-export type AnyBalanceChangeType = BetBalanceChange | TxnBalanceChange
+export type AnyBalanceChangeType =
+  | BetBalanceChange
+  | TxnBalanceChange
+  | PerpBalanceChange
 
 export type BalanceChange = {
   type: string
@@ -48,20 +51,43 @@ export type TxnBalanceChange = BalanceChange & {
   answerText?: string
 }
 
+// Perp ledger annotations. A liquidation moves no mana at the moment it
+// happens (the margin left the balance at open), so amount is always 0 —
+// the row exists so the loss is visible in the ledger on the day it became
+// permanent, instead of the margin silently never coming back.
+export const PERP_BALANCE_CHANGE_TYPES = ['perp_liquidation'] as const
+
+export type PerpBalanceChange = BalanceChange & {
+  type: (typeof PERP_BALANCE_CHANGE_TYPES)[number]
+  contract: MinimalContract
+  // Human summary, e.g. "100× short liquidated at 62,613.10 — Ṁ280,000
+  // margin forfeited to the pool"
+  description: string
+}
+
 export const isBetChange = (
   change: AnyBalanceChangeType
 ): change is BetBalanceChange =>
   BET_BALANCE_CHANGE_TYPES.includes(change.type as any)
 
+export const isPerpChange = (
+  change: AnyBalanceChangeType
+): change is PerpBalanceChange =>
+  PERP_BALANCE_CHANGE_TYPES.includes(change.type as any)
+
 export const isTxnChange = (
   change: AnyBalanceChangeType
-): change is TxnBalanceChange => !('bet' in change)
+): change is TxnBalanceChange => !('bet' in change) && !isPerpChange(change)
 
 export const BALANCE_CHANGE_TYPE_LABELS: Record<
-  (typeof BET_BALANCE_CHANGE_TYPES)[number] | AnyTxnCategory,
+  | (typeof BET_BALANCE_CHANGE_TYPES)[number]
+  | (typeof PERP_BALANCE_CHANGE_TYPES)[number]
+  | AnyTxnCategory,
   string
 > = {
   // Bet types
+  PERP_ORDER_RESERVE: 'Reserve for pending perp order',
+  PERP_ORDER_RELEASE: 'Release perp order reserve',
   create_bet: 'Buy shares',
   sell_shares: 'Sell shares',
   redeem_shares: 'Redeem shares',
@@ -88,6 +114,12 @@ export const BALANCE_CHANGE_TYPE_LABELS: Record<
   UNIQUE_BETTOR_BONUS: 'Unique trader bonus',
   MANA_PAYMENT: 'User payment',
   QUEST_REWARD: 'Quest reward',
+  // Perp types
+  perp_liquidation: 'Perp position liquidated',
+  PERP_OPEN_MARGIN: 'Opened perp position',
+  PERP_CLOSE_PAYOUT: 'Closed perp position',
+  PERP_TAKER_FEE: 'Perp trading fee',
+  PERP_RESOLVE_RESIDUAL: 'Perp resolved (residual pools)',
   // Less-common txn types
   AD_CREATE: 'Ad created',
   AD_REDEEM: 'Ad reward redeemed',

@@ -10,6 +10,7 @@ import {
   LoadingContractResults,
   NoMoreResults,
   QUERY_KEY,
+  SearchErrorNotice,
   useSearchQueryState,
   useSearchResults,
 } from 'web/components/search'
@@ -60,14 +61,21 @@ export function UserContractsList(props: {
     defaultSweepies: '2',
   })
 
-  const { contracts, loading, shouldLoadMore, loadMoreContracts, posts } =
-    useSearchResults({
-      persistPrefix,
-      searchParams: params,
-      includeUsersAndTopics: false,
-      isReady,
-      additionalFilter: { creatorId: creator.id },
-    })
+  const {
+    contracts,
+    loading,
+    searchError,
+    retrySearch,
+    shouldLoadMore,
+    loadMoreContracts,
+    posts,
+  } = useSearchResults({
+    persistPrefix,
+    searchParams: params,
+    includeUsersAndTopics: false,
+    isReady,
+    additionalFilter: { creatorId: creator.id },
+  })
 
   const query = params[QUERY_KEY]
   const setQuery = (query: string) => updateParams({ [QUERY_KEY]: query })
@@ -158,7 +166,12 @@ export function UserContractsList(props: {
         />
       </Col>
       <Col className="w-full">
-        {loading && !contracts && !posts ? (
+        {searchError && (
+          <SearchErrorNotice onRetry={retrySearch} loading={loading} />
+        )}
+        {searchError && !contracts?.length && !posts?.length ? null : loading &&
+          !contracts &&
+          !posts ? (
           <LoadingContractResults />
         ) : (!contracts || contracts.length === 0) &&
           (!posts || posts.length === 0) ? (
@@ -180,9 +193,11 @@ export function UserContractsList(props: {
               searchParams={params}
               hideAvatars={true}
             />
-            <LoadMoreUntilNotVisible loadMore={loadMoreContracts} />
+            {!searchError && (
+              <LoadMoreUntilNotVisible loadMore={loadMoreContracts} />
+            )}
             {shouldLoadMore && <LoadingContractResults />}
-            {!shouldLoadMore && (
+            {!shouldLoadMore && !searchError && (
               <NoMoreResults params={params} onChange={updateParams} />
             )}
           </>

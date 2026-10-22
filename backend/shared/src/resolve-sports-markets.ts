@@ -1,6 +1,6 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
-import { SportsContract } from 'common/contract'
+import { isMultiCpmm, SportsContract } from 'common/contract'
 import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -84,7 +84,7 @@ export async function resolveSportsMarkets() {
 
       for (const contract of matchingContracts) {
         try {
-          if (contract.mechanism !== 'cpmm-multi-1') continue
+          if (!isMultiCpmm(contract)) continue
           const multiContract = contract
           const { answers, sportsLeague } = multiContract
           const isEPL = sportsLeague === 'English Premier League'

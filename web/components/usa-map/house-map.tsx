@@ -3,7 +3,13 @@ import clsx from 'clsx'
 import { useState } from 'react'
 import Link from 'next/link'
 import { Answer } from 'common/answer'
-import { Contract, contractPath, CPMMMultiContract } from 'common/contract'
+import { getAnswerProbability } from 'common/calculate'
+import {
+  Contract,
+  contractPath,
+  CPMMMultiContract,
+  isMultiCpmm,
+} from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -31,18 +37,31 @@ const STATES_BY_NAME_LENGTH = sortBy(
 )
 
 // "California 49" -> { stateCode: 'CA', district: '49' }; "Alaska at-large" too.
+//
+// Answers may also carry a " · <matchup>" suffix naming the candidates, e.g.
+// "Texas 15 · Bobby Pulido (D) v. Monica De La Cruz (R)". Split that off so the
+// district number keeps its own narrow column in "TX-15" and the names render
+// separately; without this the whole string lands in a 4.5rem grid cell.
+// Answers with no suffix simply have no matchup.
 export function parseDistrict(text: string) {
   const lower = text.toLowerCase()
   for (const [code, d] of STATES_BY_NAME_LENGTH) {
     if (lower.startsWith(d.name.toLowerCase())) {
-      return { stateCode: code, district: text.slice(d.name.length).trim() }
+      const rest = text.slice(d.name.length).trim()
+      const [district, ...matchupParts] = rest.split('·')
+      const matchup = matchupParts.join('·').trim()
+      return {
+        stateCode: code,
+        district: district.trim(),
+        matchup: matchup || undefined,
+      }
     }
   }
   return undefined
 }
 
 function districtsForState(contract: Contract, stateKey: string): Answer[] {
-  if (contract.mechanism !== 'cpmm-multi-1') return []
+  if (!isMultiCpmm(contract)) return []
   return contract.answers.filter(
     (a) => parseDistrict(a.text)?.stateCode === stateKey
   )
@@ -98,6 +117,11 @@ function HouseStateDistricts(props: {
   const districts = sortBy(districtsForState(contract, state), (a) =>
     Math.abs(a.prob - 0.5)
   )
+  // Only once the answers actually carry candidate names; on a bare
+  // "Texas 15" the note would state the obvious.
+  const namesCandidates = districts.some(
+    (a) => !!parseDistrict(a.text)?.matchup
+  )
 
   if (!districts.length) {
     return (
@@ -125,6 +149,11 @@ function HouseStateDistricts(props: {
         </div>
         <ChooseStateButton setTargetState={setTargetState} />
       </Row>
+      {namesCandidates && (
+        <div className="text-ink-500 text-xs">
+          Resolves by party, not by candidate.
+        </div>
+      )}
       <Col className="gap-0.5 overflow-y-auto pr-1">
         {districts.map((a) => (
           <HouseDistrictRow
@@ -140,7 +169,7 @@ function HouseStateDistricts(props: {
 }
 
 // A single district race; clicking the row opens the bet modal for that answer.
-function HouseDistrictRow(props: {
+export function HouseDistrictRow(props: {
   contract: CPMMMultiContract
   answer: Answer
   state: string
@@ -148,10 +177,12 @@ function HouseDistrictRow(props: {
   const { contract, answer, state } = props
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
-  const dem = answer.prob
+  const dem = getAnswerProbability(contract, answer.id)
   const rep = 1 - dem
   const demLeads = dem >= 0.5
-  const label = parseDistrict(answer.text)?.district ?? answer.text
+  const parsed = parseDistrict(answer.text)
+  const label = parsed?.district ?? answer.text
+  const matchup = parsed?.matchup
 
   return (
     <>
@@ -170,6 +201,7 @@ function HouseDistrictRow(props: {
             <div className="text-lg font-semibold">
               Will a Democrat win {state}-{label}?
             </div>
+            {matchup && <div className="text-ink-600 text-sm">{matchup}</div>}
             <Row className="text-ink-600 items-center gap-x-3 text-sm">
               <span>
                 <span className="font-semibold" style={{ color: DEM_COLOR }}>
@@ -215,9 +247,18 @@ function HouseDistrictRow(props: {
         <span className="text-sm font-medium">
           {state}-{label}
         </span>
-        <div className="flex h-2 w-full overflow-hidden rounded-full">
-          <div style={{ width: `${dem * 100}%`, backgroundColor: DEM_COLOR }} />
-          <div style={{ width: `${rep * 100}%`, backgroundColor: REP_COLOR }} />
+        <div className="flex w-full flex-col gap-1">
+          {matchup && (
+            <span className="text-ink-500 truncate text-xs">{matchup}</span>
+          )}
+          <div className="flex h-2 w-full overflow-hidden rounded-full">
+            <div
+              style={{ width: `${dem * 100}%`, backgroundColor: DEM_COLOR }}
+            />
+            <div
+              style={{ width: `${rep * 100}%`, backgroundColor: REP_COLOR }}
+            />
+          </div>
         </div>
         <span
           className="text-right text-sm font-semibold"

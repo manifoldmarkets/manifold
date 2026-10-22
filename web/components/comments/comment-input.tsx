@@ -1,4 +1,6 @@
-import { PaperAirplaneIcon, ShieldCheckIcon } from '@heroicons/react/solid'
+import { richTextToString } from 'common/util/parse'
+import { RepostModal } from './repost-modal'
+import { PaperAirplaneIcon } from '@heroicons/react/solid'
 import { Editor } from '@tiptap/react'
 import { useEvent } from 'client-common/hooks/use-event'
 import clsx from 'clsx'
@@ -6,30 +8,20 @@ import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { ContractComment, MAX_COMMENT_LENGTH } from 'common/comment'
 import { Contract } from 'common/contract'
-import { STARTING_BALANCE } from 'common/economy'
-import {
-  canCommentOnMarket,
-  hasAccountTrustSignal,
-  NEW_USER_COMMENT_GATE_MS,
-  User,
-} from 'common/user'
-import { formatMoney } from 'common/util/format'
-import Link from 'next/link'
+import { canPostSocially, User } from 'common/user'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { BiRepost } from 'react-icons/bi'
-import { Button } from 'web/components/buttons/button'
+import { NewAccountGateNotice } from 'web/components/user/new-account-gate-notice'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAnswer } from 'web/hooks/use-answers'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
-import { useIsClient } from 'web/hooks/use-is-client'
 import { api, APIError } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { CommentOnAnswer } from '../feed/comment-on-answer'
-import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import { TextEditor, useTextEditor } from '../widgets/editor'
@@ -41,7 +33,11 @@ export function CommentInput(props: {
   replyToUserInfo?: ReplyToUserInfo
   // Reply to another comment
   parentCommentId?: string
-  onSubmitComment: (editor: Editor, type: CommentType) => Promise<void>
+  onSubmitComment: (
+    editor: Editor,
+    type: CommentType,
+    clearInput: () => void
+  ) => Promise<void>
   // unique id for autosave
   pageId: string
   className?: string
@@ -51,9 +47,9 @@ export function CommentInput(props: {
   autoFocus: boolean
   onClearInput?: () => void
   priorityUserIds?: string[] // user IDs to prioritize in mention suggestions (e.g., contract creator first, then commenters)
-  // When true (market comments), also allows the age-based market-comment
-  // fallback. Post comments use the narrower account-trust gate.
-  allowPurchasedMana?: boolean
+  // Market creators can always comment on their own markets (create-comment
+  // exempts them from the new-account gate too).
+  skipNewAccountGate?: boolean
 }) {
   const {
     parentCommentId,
@@ -67,7 +63,7 @@ export function CommentInput(props: {
     commentTypes,
     onClearInput,
     priorityUserIds,
-    allowPurchasedMana,
+    skipNewAccountGate,
   } = props
   const user = useUser()
 
@@ -101,11 +97,16 @@ export function CommentInput(props: {
     }
 
     try {
-      await onSubmitComment?.(editor, type)
-      if (!editor.isDestroyed) editor.commands.clearContent(true)
-      // force clear save, because it can fail if editor unrenders
-      safeLocalStorage?.removeItem(`text ${key}`)
-      onClearInput?.()
+      const clearInput = () => {
+        if (!editor.isDestroyed) editor.commands.clearContent(true)
+        // Force clear save, because it can fail if the editor unmounts.
+        safeLocalStorage?.removeItem(`text ${key}`)
+        onClearInput?.()
+      }
+      await onSubmitComment?.(editor, type, clearInput)
+      // Sharing opens a second composer; keep the original draft until published.
+      if (type === 'repost') return
+      clearInput()
     } catch (e) {
       console.error(e)
       if (e instanceof APIError) {
@@ -118,20 +119,12 @@ export function CommentInput(props: {
 
   if (user?.isBannedFromPosting) return <></>
 
-  const canComment = user
-    ? allowPurchasedMana
-      ? canCommentOnMarket(user)
-      : hasAccountTrustSignal(user)
-    : true
-  const showVerifyPrompt =
-    user &&
-    !canComment &&
-    (allowPurchasedMana || user.bonusEligibility !== 'ineligible')
-  if (showVerifyPrompt)
+  // Market and post comments share the new-account social gate.
+  if (user && !skipNewAccountGate && !canPostSocially(user))
     return (
-      <VerifyToCommentPrompt
+      <NewAccountGateNotice
         user={user}
-        allowPurchasedMana={allowPurchasedMana}
+        action="Commenting"
         className={className}
       />
     )
@@ -254,11 +247,9 @@ export function CommentInputTextArea(props: {
     <TextEditor editor={editor} simple hideToolbar={hideToolbar}>
       <Row className={''}>
         {user && !isSubmitting && submit && commentTypes.includes('repost') && (
-          <Tooltip
-            text={'Post question & comment to your followers'}
-            className={'mt-2'}
-          >
+          <Tooltip text={'Post to Yap'} className={'mt-2'}>
             <button
+              aria-label="Post to Yap"
               disabled={!editor || editor.isEmpty}
               className="text-ink-500 hover:text-ink-700 active:bg-ink-300 disabled:text-ink-300 px-2 transition-colors"
               onClick={() => submit('repost')}
@@ -290,171 +281,6 @@ export function CommentInputTextArea(props: {
       </Row>
     </TextEditor>
   )
-}
-
-function VerifyToCommentPrompt(props: {
-  user: User
-  allowPurchasedMana?: boolean
-  className?: string
-}) {
-  const { user, allowPurchasedMana, className } = props
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const handleVerify = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      track('comment verification prompt: clicked')
-      const response = await api('create-idenfy-session', {})
-      window.location.href = response.redirectUrl
-    } catch (e) {
-      console.error('Failed to start verification:', e)
-      setError(
-        e instanceof APIError && e.code === 503
-          ? e.message
-          : 'Failed to start verification. Please try again.'
-      )
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Denied (failed KYC) — verification path is closed, surface that explicitly
-  // and point to support so the user has a path forward.
-  if (user.bonusEligibility === 'ineligible') {
-    return (
-      <Col
-        className={clsx(
-          className,
-          'border-scarlet-300 bg-scarlet-50 mb-2 w-full rounded-lg border p-3'
-        )}
-      >
-        <Row className="items-start gap-2">
-          <ShieldCheckIcon className="text-scarlet-500 mt-0.5 h-5 w-5 shrink-0" />
-          <span className="text-ink-700 flex-1 text-sm">
-            Identity verification was unsuccessful, so commenting on other
-            users' markets is unavailable. Email{' '}
-            <a
-              href="mailto:info@manifold.markets"
-              className="text-primary-700 font-semibold hover:underline"
-            >
-              info@manifold.markets
-            </a>{' '}
-            if you think this is a mistake.
-          </span>
-        </Row>
-      </Col>
-    )
-  }
-
-  // Market comments (allowPurchasedMana) show the 3-CTA prompt with a countdown.
-  // Post-comment prompts keep the simpler verify-only flow.
-  if (!allowPurchasedMana) {
-    return (
-      <Col
-        className={clsx(
-          className,
-          'border-primary-300 bg-primary-50 mb-2 w-full rounded-lg border p-3'
-        )}
-      >
-        <Row className="items-center gap-2">
-          <ShieldCheckIcon className="text-primary-500 h-5 w-5 shrink-0" />
-          <span className="text-ink-700 flex-1 text-sm">
-            Verify your identity to comment and get{' '}
-            <span className="font-semibold">
-              {formatMoney(STARTING_BALANCE, 'MANA')}
-            </span>
-          </span>
-          <Button
-            size="xs"
-            onClick={handleVerify}
-            loading={loading}
-            className="shrink-0"
-          >
-            Verify now
-          </Button>
-        </Row>
-        {error && <div className="text-scarlet-500 mt-1 text-xs">{error}</div>}
-      </Col>
-    )
-  }
-
-  const unlocksAt = user.createdTime + NEW_USER_COMMENT_GATE_MS
-  const countdown = useCountdown(unlocksAt)
-
-  return (
-    <Col
-      className={clsx(
-        className,
-        'border-primary-300 bg-primary-50 mb-2 w-full gap-2 rounded-lg border p-3'
-      )}
-    >
-      <Row className="items-center gap-2">
-        <ShieldCheckIcon className="text-primary-500 h-5 w-5 shrink-0" />
-        <Col className="flex-1 text-sm">
-          <span className="text-ink-700">
-            Commenting unlocks in{' '}
-            <span className="font-semibold tabular-nums">{countdown}</span>.
-          </span>
-          <span className="text-ink-600">
-            Unlock now:{' '}
-            <button
-              onClick={handleVerify}
-              disabled={loading}
-              className="text-primary-700 font-semibold hover:underline disabled:opacity-50"
-            >
-              verify
-            </button>
-            ,{' '}
-            <Link
-              href="/add-funds"
-              className="text-primary-700 font-semibold hover:underline"
-              onClick={() => track('comment gate: buy mana clicked')}
-            >
-              buy any amount of mana
-            </Link>
-            , or{' '}
-            <Link
-              href="/membership"
-              className="text-primary-700 font-semibold hover:underline"
-              onClick={() => track('comment gate: subscribe clicked')}
-            >
-              subscribe
-            </Link>
-            .
-          </span>
-        </Col>
-      </Row>
-      {error && <div className="text-scarlet-500 mt-1 text-xs">{error}</div>}
-    </Col>
-  )
-}
-
-function useCountdown(targetMs: number): string {
-  const isClient = useIsClient()
-  const [now, setNow] = useState(targetMs)
-  useEffect(() => {
-    setNow(Date.now())
-    const id = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(id)
-  }, [])
-  // Date.now() differs between the server render and the first client render,
-  // so reading it during hydration trips a mismatch. Render a stable
-  // placeholder until mounted, then swap in the live countdown.
-  if (!isClient) return 'a moment'
-  const remaining = Math.max(0, targetMs - now)
-  if (remaining <= 0) return 'a moment'
-  const days = Math.floor(remaining / (24 * 60 * 60 * 1000))
-  const hours = Math.floor(
-    (remaining % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000)
-  )
-  const mins = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000))
-  const secs = Math.floor((remaining % (60 * 1000)) / 1000)
-  if (days > 0) return `${days}d ${hours}h`
-  if (hours > 0) return `${hours}h ${mins}m`
-  if (mins > 0) return `${mins}m ${secs}s`
-  return `${secs}s`
 }
 
 export function ContractCommentInput(props: {
@@ -490,8 +316,12 @@ export function ContractCommentInput(props: {
   const isReplyToAnswer = replyTo && !isReplyToBet
   const replyToUserInfo =
     useDisplayUserById(replyTo?.userId) ?? props.replyToUserInfo
+  const [socialDraft, setSocialDraft] = useState<{
+    text: string
+    onPosted: () => void
+  }>()
   const onSubmitComment = useEvent(
-    async (editor: Editor, type: CommentType) => {
+    async (editor: Editor, type: CommentType, clearInput: () => void) => {
       if (!user) return
 
       let comment: ContractComment | undefined
@@ -504,12 +334,14 @@ export function ContractCommentInput(props: {
           replyToBetId: isReplyToBet ? replyTo.id : undefined,
         })
       } else {
-        comment = await api('post', {
-          contractId: playContract.id,
-          content: editor.getJSON(),
-          betId: isReplyToBet ? replyTo.id : undefined,
+        setSocialDraft({
+          text: richTextToString(editor.getJSON()),
+          onPosted: () => {
+            clearInput()
+            clearReply?.()
+          },
         })
-        if (comment) toast.success('Reposted to your followers!')
+        return
       }
       clearReply?.()
       onSubmit?.(comment)
@@ -550,6 +382,18 @@ export function ContractCommentInput(props: {
         <CommentOnAnswer answer={replyTo} clear={clearReply} />
       ) : null}
 
+      {socialDraft !== undefined && (
+        <RepostModal
+          playContract={playContract}
+          bet={isReplyToBet ? replyTo : undefined}
+          initialText={socialDraft.text}
+          onPosted={socialDraft.onPosted}
+          open
+          setOpen={(open) => {
+            if (!open) setSocialDraft(undefined)
+          }}
+        />
+      )}
       <CommentInput
         autoFocus={autoFocus}
         replyToUserInfo={replyToUserInfo}
@@ -568,7 +412,7 @@ export function ContractCommentInput(props: {
         commentTypes={commentTypes}
         onClearInput={onClearInput}
         priorityUserIds={[playContract.creatorId, ...(commenterUserIds ?? [])]}
-        allowPurchasedMana
+        skipNewAccountGate={user?.id === playContract.creatorId}
       />
     </>
   )

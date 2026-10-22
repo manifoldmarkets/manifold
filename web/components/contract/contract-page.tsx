@@ -3,6 +3,7 @@ import { useContractBets } from 'client-common/hooks/use-bets'
 import { getMultiBetPointsFromBets } from 'client-common/lib/choice'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
+import { hasAllAnswersForCopy } from 'common/answer-probs'
 import { Bet } from 'common/bet'
 import {
   HistoryPoint,
@@ -15,10 +16,12 @@ import {
   tradingAllowed,
   type Contract,
   type ContractParams,
+  type PerpContract,
 } from 'common/contract'
 import { shouldHideGraph } from 'common/contract-params'
 import { base64toPoints } from 'common/edge/og'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
+import { getSportsLeagueLabel } from 'common/sports-league-label'
 import { DAY_MS } from 'common/util/time'
 import { mergeWith, uniqBy } from 'lodash'
 import Image from 'next/image'
@@ -53,13 +56,15 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
+import { MarketTitleLabel } from 'web/components/contract/market-title-label'
+import { PerpMarketExplainer } from 'web/components/perps/perp-market-explainer'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { precacheAnswers } from 'web/hooks/use-answers'
-import { useLiveContract } from 'web/hooks/use-contract'
+import { useLiveContractWithStatus } from 'web/hooks/use-contract'
 import { useGraphUserFromUrl } from 'web/hooks/use-graph-user'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
@@ -84,7 +89,6 @@ import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { FollowMarketButton } from '../buttons/follow-market-button'
 import { LogoIcon } from '../icons/logo-icon'
 import { CreatorSharePanel, NonCreatorSharePanel } from './creator-share-panel'
-import { MarketContext } from './market-context'
 import { YourTrades } from './your-trades'
 
 export function ContractPageContent(props: ContractParams) {
@@ -98,10 +102,21 @@ export function ContractPageContent(props: ContractParams) {
     dashboards,
     pinnedComments,
     totalComments,
+    totalAnswers,
   } = props
 
   // Just use the contract that was navigated to directly
-  const liveContract = useLiveContract(props.contract)
+  const { contract: liveContract, hasLoaded } = useLiveContractWithStatus(
+    props.contract
+  )
+  // The server renders a big market with only its top answers; the rest arrive
+  // with the live contract. Until then a duplicate would copy only those
+  const hasAllAnswers = hasAllAnswersForCopy(
+    props.contract,
+    liveContract,
+    totalAnswers,
+    hasLoaded
+  )
 
   const user = useUser()
 
@@ -166,6 +181,7 @@ export function ContractPageContent(props: ContractParams) {
   }, [winNudgeEligible, tryOfferReview])
 
   const description = liveContract.description
+  const isPerp = liveContract.mechanism === 'perp'
 
   const isAdmin = useAdmin()
   const isMod = useTrusted()
@@ -192,11 +208,7 @@ export function ContractPageContent(props: ContractParams) {
     if (router.isReady && router.query.graph) setHideGraph(false)
   }, [router.isReady, router.query.graph])
 
-  const {
-    graphUser,
-    setGraphUser,
-    ready: graphUserReady,
-  } = useGraphUserFromUrl()
+  const { graphUser, setGraphUser } = useGraphUserFromUrl()
 
   useEffect(() => {
     if (replyTo) {
@@ -300,10 +312,18 @@ export function ContractPageContent(props: ContractParams) {
                 )}
                 {headerStuck && (
                   <span
+                    role="button"
+                    tabIndex={0}
                     className="text-ink-1000 line-clamp-2 cursor-pointer select-none first:ml-4"
                     onClick={() =>
                       window.scrollTo({ top: 0, behavior: 'smooth' })
                     }
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }
+                    }}
                   >
                     {isSpiceMarket && (
                       <Tooltip text={SPICE_MARKET_TOOLTIP}>
@@ -311,6 +331,10 @@ export function ContractPageContent(props: ContractParams) {
                       </Tooltip>
                     )}
                     <VisibilityIcon contract={props.contract} />{' '}
+                    <MarketTitleLabel
+                      contract={liveContract}
+                      className="mr-1"
+                    />
                     {props.contract.question}
                   </span>
                 )}
@@ -318,6 +342,7 @@ export function ContractPageContent(props: ContractParams) {
               {(headerStuck || !coverImageUrl) && (
                 <HeaderActions
                   contract={liveContract}
+                  hasAllAnswers={hasAllAnswers}
                   initialHideGraph={initialHideGraph}
                   hideGraph={hideGraph}
                   setHideGraph={setHideGraph}
@@ -339,6 +364,7 @@ export function ContractPageContent(props: ContractParams) {
               </div>
               <HeaderActions
                 contract={liveContract}
+                hasAllAnswers={hasAllAnswers}
                 initialHideGraph={initialHideGraph}
                 hideGraph={hideGraph}
                 setHideGraph={setHideGraph}
@@ -358,6 +384,16 @@ export function ContractPageContent(props: ContractParams) {
                   <EditableQuestionTitle
                     contract={liveContract}
                     canEdit={isAdmin || isCreator || isMod}
+                    modAction={!isCreator}
+                    prefix={
+                      isPerp ? (
+                        <PerpMarketExplainer
+                          contract={liveContract as PerpContract}
+                        />
+                      ) : getSportsLeagueLabel(liveContract) ? (
+                        <MarketTitleLabel contract={liveContract} />
+                      ) : undefined
+                    }
                   />
                 </div>
               </Col>
@@ -377,6 +413,7 @@ export function ContractPageContent(props: ContractParams) {
                   question={props.contract.question}
                   financeContract={liveContract}
                   editable={isCreator || isAdmin || isMod}
+                  modAction={!isCreator}
                   isCashContract={isCashContract}
                 />
               </Row>
@@ -406,21 +443,23 @@ export function ContractPageContent(props: ContractParams) {
                   setGraphUser={setGraphUser}
                 />
 
-                <UserBetsSummary
-                  className="border-ink-200 mb-2 "
-                  contract={liveContract}
-                  includeSellButton={
-                    tradingAllowed(liveContract) &&
-                    (outcomeType === 'NUMBER' ||
-                      outcomeType === 'MULTIPLE_CHOICE' ||
-                      isBinaryMulti(liveContract) ||
-                      outcomeType === 'BINARY' ||
-                      outcomeType === 'PSEUDO_NUMERIC' ||
-                      outcomeType === 'STONK')
-                      ? user
-                      : undefined
-                  }
-                />
+                {liveContract.mechanism !== 'perp' && (
+                  <UserBetsSummary
+                    className="border-ink-200 mb-2 "
+                    contract={liveContract}
+                    includeSellButton={
+                      tradingAllowed(liveContract) &&
+                      (outcomeType === 'NUMBER' ||
+                        outcomeType === 'MULTIPLE_CHOICE' ||
+                        isBinaryMulti(liveContract) ||
+                        outcomeType === 'BINARY' ||
+                        outcomeType === 'PSEUDO_NUMERIC' ||
+                        outcomeType === 'STONK')
+                        ? user
+                        : undefined
+                    }
+                  />
+                )}
 
                 <YourTrades
                   contract={liveContract}
@@ -487,6 +526,20 @@ export function ContractPageContent(props: ContractParams) {
               userHasBet={!!myContractMetrics}
               hasReviewed={!!userHasReviewed}
             />
+            {isPerp && (
+              // Perps render the description directly above the boost/share
+              // panel so the oracle context (e.g. "30-day trailing average
+              // Trump approval rating") is visible near the top of the page
+              // flow, rather than further down.
+              <ContractDescription
+                contractId={props.contract.id}
+                creatorId={props.contract.creatorId}
+                isSweeps={isCashContract}
+                description={description}
+                creatorBannedFromBetting={liveContract.creatorBannedFromBetting}
+                contract={liveContract}
+              />
+            )}
             {!isResolved && !isClosed && isCreator && (
               <>
                 {showResolver && <Spacer h={4} />}
@@ -504,7 +557,7 @@ export function ContractPageContent(props: ContractParams) {
                   {liveContract.question}
                 </Link>
               </span>
-            ) : (
+            ) : isPerp ? null : ( // perps render description above the boost panel instead
               <ContractDescription
                 contractId={props.contract.id}
                 creatorId={props.contract.creatorId}
@@ -514,9 +567,13 @@ export function ContractPageContent(props: ContractParams) {
                 contract={liveContract}
               />
             )}
-            {props.contract.isRanked !== false && (
-              <MarketContext contractId={props.contract.id} />
-            )}
+            {/* The "Market context" AI panel was removed here. The component
+                (./market-context) and its get-market-context endpoint are all
+                still in place — to bring the button back, restore the import
+                and re-add:
+                {props.contract.isRanked !== false && (
+                  <MarketContext contractId={props.contract.id} />
+                )} */}
 
             <Row className="mb-4 mt-2 items-center gap-2">
               <MarketTopics

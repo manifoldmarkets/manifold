@@ -4,7 +4,13 @@ import {
   getInitialProbability,
 } from 'common/calculate'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
-import { Contract, ContractParams, MultiContract } from 'common/contract'
+import {
+  Contract,
+  ContractParams,
+  isMultiCpmm,
+  MultiContract,
+} from 'common/contract'
+import { getContractOGProps } from 'common/contract-seo'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import {
   getPinnedComments,
@@ -15,10 +21,11 @@ import {
   getTopContractMetrics,
 } from 'common/supabase/contract-metrics'
 import { getTopicsOnContract } from 'common/supabase/groups'
+import { getPerpPositionCount, getPerpTradeCount } from 'common/supabase/perps'
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
-import { pointsToBase64 } from 'common/util/og'
+import { pointsToBase64, pointsToBase64Float32 } from 'common/util/og'
 import { groupBy, mapValues, omit, orderBy, sortBy } from 'lodash'
 import { getNumContractComments } from 'web/lib/supabase/comments'
 import {
@@ -71,8 +78,9 @@ export async function getContractParams(
   const contractSlug = contract.slug
   const isCpmm1 = contract.mechanism === 'cpmm-1'
   const hasMechanism = contract.mechanism !== 'none'
-  const isMulti = contract.mechanism === 'cpmm-multi-1'
+  const isMulti = isMultiCpmm(contract)
   const isNumber = contract.outcomeType === 'NUMBER'
+  const isPerp = contract.mechanism === 'perp'
   const numberContractBetCount = async () =>
     retryUnAuthedApi(contractSlug, 'unique-bet-group-count', async () =>
       unauthedApi('unique-bet-group-count', {
@@ -80,7 +88,7 @@ export async function getContractParams(
       }).then((res) => res.count)
     )
   const includeRedemptions =
-    contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+    isMultiCpmm(contract) && contract.shouldAnswersSumToOne
   const [
     totalBets,
     lastBetArray,
@@ -98,6 +106,10 @@ export async function getContractParams(
     hasMechanism
       ? isNumber
         ? numberContractBetCount()
+        : isPerp
+        ? // Perp trades live in contract_perp_events, not contract_bets, so
+          // the regular count is always 0 for them.
+          getPerpTradeCount(contract.id, db)
         : getTotalBetCount(contract.id)
       : 0,
     hasMechanism
@@ -122,17 +134,18 @@ export async function getContractParams(
     getPinnedComments(db, contract.id),
     getNumContractComments(contract.id),
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
-    isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
-    retryUnAuthedApi(
-      contractSlug,
-      'get-related-markets',
-      () =>
-        unauthedApi('get-related-markets', {
-          contractId: contract.id,
-          limit: 10,
-          question: contract.question,
-          uniqueBettorCount: contract.uniqueBettorCount,
-        })
+    isCpmm1 || isMulti
+      ? getContractMetricsCount(contract.id, db)
+      : isPerp
+      ? getPerpPositionCount(contract.id, db)
+      : 0,
+    retryUnAuthedApi(contractSlug, 'get-related-markets', () =>
+      unauthedApi('get-related-markets', {
+        contractId: contract.id,
+        limit: 10,
+        question: contract.question,
+        uniqueBettorCount: contract.uniqueBettorCount,
+      })
     ),
     getChartAnnotations(contract.id, db),
     getTopicsOnContract(contract.id, db),
@@ -144,13 +157,21 @@ export async function getContractParams(
   const multiPointsString = mapValues(multiPoints, (v) => pointsToBase64(v))
 
   const ogPoints = isMulti ? [] : binAvg(allBetPoints)
-  // Non-numeric markets don't need as much precision
-  const pointsString = pointsToBase64(ogPoints.map((p) => [p.x, p.y] as const))
+  const serializedPoints = ogPoints.map((p) => [p.x, p.y] as const)
+  const pointsString = pointsToBase64(serializedPoints)
+  // The social image doesn't need full precision, and its URL should stay short
+  const ogPointsString = pointsToBase64Float32(serializedPoints)
+  // Built before answers are truncated below so big markets rank all of them
+  const ogCardProps = removeUndefinedProps({
+    ...getContractOGProps(contract),
+    points: ogPointsString,
+  })
 
-  if (
-    contract.outcomeType === 'MULTIPLE_CHOICE' &&
-    contract.mechanism === 'cpmm-multi-1'
-  ) {
+  // Counted before the truncation below. The page loads the rest with the live
+  // contract, and until then knows from the count that it doesn't hold them all
+  const totalAnswers =
+    'answers' in contract ? contract.answers.length : undefined
+  if (contract.outcomeType === 'MULTIPLE_CHOICE' && isMultiCpmm(contract)) {
     contract.answers = sortAnswers(contract, contract.answers)
       .slice(0, 20)
       .map((a) => omit(a, ['textFts', 'fsUpdatedTime']) as any)
@@ -163,11 +184,13 @@ export async function getContractParams(
     contract,
     lastBetTime,
     pointsString,
+    ogCardProps,
     multiPointsString,
     comments,
     totalComments,
     totalPositions,
     totalBets,
+    totalAnswers,
     topContractMetrics,
     relatedContracts: relatedContracts.marketsFromEmbeddings as Contract[],
     chartAnnotations,
@@ -280,7 +303,7 @@ export const getAnswerProbAtEveryBetTime = (
 }
 
 export const shouldHideGraph = (contract: Contract) => {
-  if (contract.mechanism !== 'cpmm-multi-1') return false
+  if (!isMultiCpmm(contract)) return false
   if (
     contract.outcomeType == 'NUMBER' ||
     contract.outcomeType == 'MULTI_NUMERIC' ||

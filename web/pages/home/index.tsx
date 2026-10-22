@@ -7,7 +7,7 @@ import { Page } from 'web/components/layout/page'
 import { DowntimeBanner } from 'web/components/nav/banner'
 import { Welcome } from 'web/components/onboarding/welcome'
 import { VerificationResultModal } from 'web/components/onboarding/verification-result-modal'
-import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
+import { FlaggedAccountBanner } from 'web/components/user/flagged-account-banner'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
@@ -25,12 +25,9 @@ export default function Home() {
       <VerificationResultModal />
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
       <DowntimeBanner />
-      {/* Flagged users earn zero bonuses until they verify — make it evident on
-          the home page too (non-dismissible). Gated to flagged users only, so
-          there's no new banner for ordinary unverified users. */}
-      {user?.bonusEligibility === 'requires_verification' && (
-        <VerifyPhoneNumberBanner user={user} dismissible={false} compact />
-      )}
+      {/* Renders only for admin-flagged accounts, which earn zero bonuses
+          until they verify. Nobody else is prompted to verify here. */}
+      <FlaggedAccountBanner user={user} />
       <DailyStats className="z-50 mb-1 w-full px-2 py-2" user={user} />
       <BrowsePageContent />
       {user && (

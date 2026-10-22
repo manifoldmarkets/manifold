@@ -41,6 +41,7 @@ export const BetSlider = (props: {
   token?: InputTokenType
   sliderColor?: SliderColor
   ariaLabel?: string
+  showMarks?: boolean
 }) => {
   const {
     amount,
@@ -51,6 +52,7 @@ export const BetSlider = (props: {
     className,
     sliderColor,
     ariaLabel,
+    showMarks,
   } = props
 
   const token = props.token ?? 'M$'
@@ -107,6 +109,7 @@ export const BetSlider = (props: {
           : 'gray'
       }
       amount={sliderIndex}
+      marks={showMarks ? marks : undefined}
       ariaLabel={ariaLabel ?? 'Bet amount'}
       ariaValueText={formatWithToken({
         amount: sliderAmounts[sliderIndex] ?? sliderAmounts[0],

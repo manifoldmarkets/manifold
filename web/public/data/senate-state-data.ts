@@ -139,13 +139,13 @@ export const senate2024: StateElectionMarket[] = [
   },
 ]
 
-// 2026 midterm Senate races (Class 2 seats + the OH/VA/FL specials). These are
-// community-created "which party will win" markets — the best-trafficked
-// party-outcome market per state as of the 2026 rebuild. Answer labels vary
-// across creators ("Democrats" / "Democratic party" / "Democratic"); the map's
-// getPartyProbs() normalizes them, so any of these render correctly.
+// 2026 Class 2 seats plus the FL/OH specials. Audited source meanings and
+// answer affiliations live in election-source-audit-2026.json.
 export const senate2026: StateElectionMarket[] = [
   { state: 'AL', slug: 'which-party-will-win-the-2026-alaba' },
+  // Retain the current pool/order depth pending clarification of its named R
+  // answer. The party-only alternative needs a subsidy first. Sullivan
+  // himself is available separately in senateCandidates2026.
   { state: 'AK', slug: 'which-party-will-win-the-2026-alask' },
   { state: 'AR', slug: 'what-party-will-win-the-2026-arkans' },
   { state: 'CO', slug: 'which-party-will-win-the-2026-color' },
@@ -154,18 +154,41 @@ export const senate2026: StateElectionMarket[] = [
   // Binary market — YES = Republican wins, which getPartyProbs handles.
   { state: 'FL', slug: 'will-a-republican-win-the-us-senate' },
   { state: 'GA', slug: 'which-party-will-win-the-2026-us-se' },
-  { state: 'ID', slug: 'which-party-will-win-the-2026-idaho' },
+  // ID: another race with no Democrat on the ballot. David Roth won the
+  // Democratic nomination, then withdrew in July once independent former state
+  // rep Todd Achilles entered with Democratic leaders' backing — so it is
+  // Jim Risch (R) v. Achilles (I). The superseded market still lists
+  // "Republicans | Democrats"; this one lists "Republicans | Independent".
+  //
+  // Achilles remains independent in both the explorer and homepage maps.
+  {
+    state: 'ID',
+    slug: 'which-party-will-win-the-2026-idaho-2PNUOhCEyR',
+  },
   { state: 'IL', slug: 'which-party-will-win-the-2026-illin' },
-  { state: 'IA', slug: 'which-party-will-win-the-2026-iowa' },
+  // Plant's general-election candidate market: 10k liquidity at the October 2
+  // review, versus 100 in the previous source. Trade the named candidates;
+  // replacement-candidate settlement is not specified by this market.
+  { state: 'IA', slug: 'who-will-win-the-2026-united-states-u09U0PqQSn' },
   { state: 'KS', slug: 'which-party-will-win-the-2026-kansa' },
   { state: 'KY', slug: 'which-party-will-win-the-kentucky-s' },
   { state: 'LA', slug: 'which-party-will-win-the-2026-louis' },
-  { state: 'ME', slug: 'which-party-will-win-the-2026-maine' },
+  // Audit: Jack1's party binary, YES = "the winning candidate appears on the
+  // ballot as the Democratic Party candidate" (10k liquidity). YES = DEMOCRAT:
+  // read through audited-sources (binaryYes 'D'), never the YES = R default.
+  { state: 'ME', slug: 'will-the-democratic-party-candidate-NQOPZAnOA8' },
   { state: 'MA', slug: 'which-party-will-win-the-2026-us-se-dqI00SN65q' },
   { state: 'MI', slug: 'which-party-will-win-the-2026-michi' },
   { state: 'MN', slug: 'which-party-will-win-the-2026-senat-RLNdnAsdEg' },
   { state: 'MS', slug: 'which-party-will-win-the-2026-missi' },
-  { state: 'MT', slug: 'which-party-will-win-the-2026-monta' },
+  // MT: a three-way race the party markets cannot express. Steve Daines (R)
+  // withdrew minutes before the filing deadline and endorsed Kurt Alme (R);
+  // the Democratic nominee is Alani Bankhead; and the competitive alternative
+  // is Seth Bodnar, running as an INDEPENDENT with Jon Tester's backing. The
+  // party market here is "Republicans 97% / Democrats 3%" with no Other line,
+  // so a Bodnar win would N/A it — and it hides the only interesting contest.
+  // This candidate market carries all three plus Other.
+  { state: 'MT', slug: 'who-will-win-the-2026-montana-senat' },
   // NE: front-runner is independent Dan Osborn, who reads as "other" on the
   // map rather than a party color — known imperfection of reusing this market.
   { state: 'NE', slug: 'which-party-will-win-the-2026-nebra' },
@@ -174,7 +197,7 @@ export const senate2026: StateElectionMarket[] = [
   { state: 'NM', slug: 'which-party-will-win-the-2026-new-m' },
   { state: 'NC', slug: 'which-party-will-win-the-2026-north' },
   // OH: special election for JD Vance's seat.
-  { state: 'OH', slug: 'which-party-will-win-the-2026-us-se-pUEyL0RC5y' },
+  { state: 'OH', slug: 'what-party-will-win-the-special-ele' },
   { state: 'OK', slug: 'which-party-will-win-the-2026-senat-uSIZt2dAUq' },
   { state: 'OR', slug: 'which-party-will-win-the-2026-us-se-ltdn9uyhqI' },
   { state: 'RI', slug: 'which-party-will-win-the-2026-us-se-npU0Adq2gh' },
@@ -191,12 +214,13 @@ export const senate2026: StateElectionMarket[] = [
 // state detail card so people see and trade the actual candidates, not just the
 // party. Only races with a liquid general-election candidate market.
 export const senateCandidates2026: StateElectionMarket[] = [
+  { state: 'AK', slug: 'will-dan-sullivan-win-reelection-to' },
   { state: 'TX', slug: 'who-will-win-the-2026-senate-electi' },
-  { state: 'ME', slug: 'who-will-maines-us-senate-election' },
+  // Removed by the audit: who-will-maines-us-senate-election N/As unless
+  // Platner, Mills or Collins wins (creator b1w004pnjwk) and shows Collins 0.99.
   { state: 'MN', slug: 'who-will-win-minnesotas-2026-senate' },
   { state: 'OH', slug: 'who-will-win-the-2026-united-states' },
   { state: 'IA', slug: 'who-will-win-the-2026-united-states-u09U0PqQSn' },
-  { state: 'MT', slug: 'who-will-the-2026-montana-senate-el' },
 ]
 
 export interface CurrentSenateState {

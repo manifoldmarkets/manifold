@@ -1,15 +1,20 @@
 import { CheckIcon, XIcon, PencilIcon } from '@heroicons/react/solid'
 import { Contract, MAX_QUESTION_LENGTH } from 'common/contract'
-import { useState } from 'react'
+import { ReactNode, useState } from 'react'
 import { updateMarket } from 'web/lib/api/api'
 import { IconButton } from '../buttons/button'
 import { ExpandingInput } from '../widgets/expanding-input'
+import clsx from 'clsx'
+import { MOD_ACTION_TEXT_CLASS } from '../moderation/mod-action'
 
 export const EditableQuestionTitle = (props: {
   contract: Contract
   canEdit?: boolean
+  // Can only edit because the user is a mod or admin
+  modAction?: boolean
+  prefix?: ReactNode
 }) => {
-  const { contract, canEdit } = props
+  const { contract, canEdit, modAction, prefix } = props
 
   const [isEditing, setEditing] = useState(false)
   const [text, setText] = useState(props.contract.question)
@@ -26,12 +31,14 @@ export const EditableQuestionTitle = (props: {
 
   return isEditing ? (
     <div className="flex items-center gap-2">
+      {prefix}
       <ExpandingInput
         className="grow"
         rows={1}
         maxLength={MAX_QUESTION_LENGTH}
         value={text}
         onChange={(e) => setText(e.target.value || '')}
+        // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus
         onFocus={(e) =>
           // Focus starts at end of text.
@@ -60,13 +67,21 @@ export const EditableQuestionTitle = (props: {
     </div>
   ) : (
     <div className="group text-xl font-medium sm:text-2xl">
+      {prefix && (
+        <span className="mr-2 inline-flex align-baseline">{prefix}</span>
+      )}
       {contract.question}
       {canEdit && (
         <button
           type="button"
           aria-label="Edit question"
           onClick={edit}
-          className="align-center hover:bg-ink-100 hover:text-ink-600 text-ink-500 ml-1 rounded p-1 transition-colors lg:hidden lg:group-hover:inline lg:[@media(hover:none)]:inline"
+          className={clsx(
+            'align-center hover:bg-ink-100 ml-1 rounded p-1 transition-colors lg:hidden lg:group-hover:inline lg:[@media(hover:none)]:inline',
+            modAction
+              ? MOD_ACTION_TEXT_CLASS
+              : 'hover:text-ink-600 text-ink-500'
+          )}
         >
           <PencilIcon className="h-4 w-4 sm:h-5 sm:w-5" />
         </button>

@@ -24,6 +24,9 @@ export function Page(props: {
   hideBottomBar?: boolean
   hideFooter?: boolean
   banner?: ReactNode
+  // Skip the Google One Tap sign-in prompt on this page (e.g. a landing page
+  // where it would cover the content on a first visit).
+  hideGoogleOneTap?: boolean
 }) {
   const {
     trackPageView,
@@ -33,6 +36,7 @@ export function Page(props: {
     hideSidebar,
     hideBottomBar,
     banner,
+    hideGoogleOneTap,
   } = props
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -64,7 +68,9 @@ export function Page(props: {
   return (
     <>
       <ConfettiOnDemand />
-      <GoogleOneTapLogin className="fixed bottom-12 right-4 z-[1000]" />
+      {!hideGoogleOneTap && (
+        <GoogleOneTapLogin className="fixed bottom-12 right-4 z-[1000]" />
+      )}
       <FirstStreakModalManager />
       <Col
         className={clsx(

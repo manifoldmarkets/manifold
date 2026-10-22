@@ -4,10 +4,11 @@ import {
   maximumRemovableLiquidity,
   removeCpmmLiquidity,
 } from 'common/calculate-cpmm'
-import { type MarketContract } from 'common/contract'
+import { isMultiCpmm, type MarketContract } from 'common/contract'
 import { isAdminId } from 'common/envs/constants'
-import { formatMoney, formatWithCommas } from 'common/util/format'
+import { formatWithCommas } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
+import { sumBy } from 'lodash'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { FeedLiquidity } from 'web/components/feed/feed-liquidity'
@@ -22,15 +23,23 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { MOD_ACTION_TEXT_CLASS, ModActionBadge } from '../moderation/mod-action'
 
 export function AddLiquidityModal(props: {
   contract: MarketContract
   isOpen: boolean
   setOpen: (open: boolean) => void
+  // When set, subsidize a single answer (its own binary CPMM) instead of the whole market.
+  answerId?: string
+  answerText?: string
 }) {
-  const { contract, isOpen, setOpen } = props
+  const { contract, isOpen, setOpen, answerId, answerText } = props
 
-  const lps = useLiquidity(contract.id) ?? []
+  // Opened for an answer, its own contributors: those who subsidized it, and
+  // whoever added it.
+  const lps = (useLiquidity(contract.id) ?? []).filter(
+    (lp) => !answerId || lp.answerId === answerId
+  )
 
   const [amount, setAmount] = useState<number | undefined>(0)
 
@@ -43,18 +52,23 @@ export function AddLiquidityModal(props: {
             Liquidity
           </h2>
           <p className="text-ink-500 mt-1 text-sm">
-            Subsidize this market to incentivize more accurate predictions
+            {answerId
+              ? `Subsidize "${
+                  answerText ?? 'this answer'
+                }" to incentivize more accurate predictions`
+              : 'Subsidize this market to incentivize more accurate predictions'}
           </p>
         </div>
 
         {/* Stats Section */}
-        <LiquidityStats contract={contract} />
+        <LiquidityStats contract={contract} answerId={answerId} />
 
         {/* Action Section */}
         <AddLiquidityControl
           contract={contract}
           amount={amount}
           setAmount={setAmount}
+          answerId={answerId}
         />
 
         {/* Contributors Section */}
@@ -81,20 +95,34 @@ export function AddLiquidityModal(props: {
   )
 }
 
-function LiquidityStats(props: { contract: MarketContract }) {
-  const { contract } = props
+function LiquidityStats(props: {
+  contract: MarketContract
+  answerId?: string
+}) {
+  const { contract, answerId } = props
   const isCashContract = contract.token === 'CASH'
 
-  // Calculate drizzled amount (total minus pending)
-  const drizzled =
-    contract.mechanism === 'cpmm-1'
-      ? contract.totalLiquidity - contract.subsidyPool
-      : contract.totalLiquidity
+  // Active liquidity is the total less subsidy still waiting to drizzle in:
+  // the market's own and, on a multiple choice market, each open answer's.
+  const openAnswers = isMultiCpmm(contract)
+    ? contract.answers.filter((a) => !a.resolution)
+    : []
+  const pending =
+    contract.mechanism === 'cpmm-1' || isMultiCpmm(contract)
+      ? (contract.subsidyPool ?? 0) +
+        sumBy(openAnswers, (a) => a.subsidyPool ?? 0)
+      : 0
+  const drizzled = contract.totalLiquidity - pending
+  const answer = answerId
+    ? openAnswers.find((a) => a.id === answerId)
+    : undefined
 
   return (
     <Row className="bg-canvas-50 text-ink-600 flex-wrap gap-x-6 gap-y-2 rounded-lg border px-4 py-3 text-sm">
       <Row className="items-center gap-1.5">
-        <span className="text-ink-500">Liquidity:</span>
+        <span className="text-ink-500">
+          {answerId ? 'Market liquidity:' : 'Liquidity:'}
+        </span>
         <span className="text-ink-900 font-medium">
           <MoneyDisplay amount={drizzled} isCashContract={isCashContract} />
           {' / '}
@@ -108,6 +136,21 @@ function LiquidityStats(props: { contract: MarketContract }) {
           size="sm"
         />
       </Row>
+      {!!answer?.subsidyPool && (
+        <Row className="items-center gap-1.5">
+          <span className="text-ink-500">Pending for this answer:</span>
+          <span className="text-ink-900 font-medium">
+            <MoneyDisplay
+              amount={answer.subsidyPool}
+              isCashContract={isCashContract}
+            />
+          </span>
+          <InfoTooltip
+            text="Subsidy for this answer trickles into its pool over time."
+            size="sm"
+          />
+        </Row>
+      )}
       {contract.mechanism === 'cpmm-1' && (
         <Row className="items-center gap-1.5">
           <span className="text-ink-500">Pool:</span>
@@ -125,8 +168,10 @@ export function AddLiquidityControl(props: {
   contract: MarketContract
   amount: number | undefined
   setAmount: (amount: number | undefined) => void
+  // When set, the subsidy targets a single answer (its own binary CPMM).
+  answerId?: string
 }) {
-  const { contract, amount, setAmount } = props
+  const { contract, amount, setAmount, answerId } = props
   const { id: contractId, slug, totalLiquidity } = contract
 
   const [error, setError] = useState<string | undefined>(undefined)
@@ -140,7 +185,7 @@ export function AddLiquidityControl(props: {
 
   const addLiquidityEnabled =
     user &&
-    (contract.mechanism == 'cpmm-1' || contract.mechanism == 'cpmm-multi-1') &&
+    (contract.mechanism == 'cpmm-1' || isMultiCpmm(contract)) &&
     contractOpenAndPublic
   const [mode, setMode] = useState<'add' | 'remove'>('add')
   const canWithdraw =
@@ -148,6 +193,10 @@ export function AddLiquidityControl(props: {
     !!user &&
     ((user.id === contract.creatorId && contract.token !== 'CASH') ||
       isAdminId(user.id))
+  // Can only withdraw because the user is an admin
+  const withdrawIsAdminAction =
+    canWithdraw &&
+    !(user?.id === contract.creatorId && contract.token !== 'CASH')
   const maxWithdrawable = !canWithdraw
     ? 0
     : contract.subsidyPool + maximumRemovableLiquidity(contract.pool)
@@ -180,6 +229,7 @@ export function AddLiquidityControl(props: {
         await api('market/:contractId/add-liquidity', {
           amount,
           contractId,
+          ...(answerId ? { answerId } : {}),
         })
         toast.success(
           <>
@@ -247,11 +297,19 @@ export function AddLiquidityControl(props: {
             }}
             className={clsx(
               'rounded-md px-4 py-1.5 text-sm font-medium transition-all',
+              withdrawIsAdminAction && [
+                'inline-flex items-center',
+                MOD_ACTION_TEXT_CLASS,
+              ],
               mode === 'remove'
-                ? 'bg-canvas-0 text-ink-900 shadow-sm'
-                : 'text-ink-500 hover:text-ink-700'
+                ? [
+                    'bg-canvas-0 shadow-sm',
+                    !withdrawIsAdminAction && 'text-ink-900',
+                  ]
+                : !withdrawIsAdminAction && 'text-ink-500 hover:text-ink-700'
             )}
           >
+            {withdrawIsAdminAction && <ModActionBadge admin className="mr-1" />}
             Withdraw
           </button>
         </div>

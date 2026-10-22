@@ -1,4 +1,31 @@
+import { OG_CARD_HEIGHT, OG_CARD_WIDTH } from 'common/edge/og'
 import { createElement, ReactElement, ReactNode } from 'react'
+
+/** Wraps a card laid out at the base size so satori rasterizes it at `scale`x */
+export function scaleCard(card: ReactElement, scale: number) {
+  if (scale === 1) return card
+  return (
+    <div
+      style={{
+        display: 'flex',
+        width: OG_CARD_WIDTH * scale,
+        height: OG_CARD_HEIGHT * scale,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          width: OG_CARD_WIDTH,
+          height: OG_CARD_HEIGHT,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+        }}
+      >
+        {card}
+      </div>
+    </div>
+  )
+}
 
 // new function for type reasons
 export function classToTw(element: ReactElement) {
