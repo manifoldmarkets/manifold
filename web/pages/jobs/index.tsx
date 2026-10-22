@@ -1,32 +1,26 @@
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 import {
   ArrowRightIcon,
   BriefcaseIcon,
   ExternalLinkIcon,
-  LocationMarkerIcon,
 } from '@heroicons/react/outline'
-import clsx from 'clsx'
-import { useId, useState } from 'react'
+
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { JobInterestCard } from 'web/components/jobs/job-interest-card'
+import { JobCard } from 'web/components/jobs/job-card'
+import {
+  type Job,
+  UPSTART_JOBS,
+  UPSTART_EMAIL,
+  UPSTART_APPLY_URL,
+} from 'web/lib/jobs'
 
-// All job data lives here. To add, edit, or remove a listing, change this array
+// MNX job data lives here; Upstart listings live in web/lib/jobs.ts.
+// To add, edit, or remove a listing, change its array
 // and open a PR — there is intentionally no database or employer-facing editor.
 // Employers email us to list a role or tell us when one is filled.
-type Job = {
-  title: string
-  location: string
-  comp: string
-  blurb: string
-  intro: string
-  whatYoullDo: string[]
-  whatWereLookingFor: string[]
-  contactEmail: string
-}
-
 const JOBS: Job[] = [
   {
     title: 'Backend Engineer',
@@ -84,124 +78,6 @@ const JOBS: Job[] = [
   },
 ]
 
-function JobCard({ job }: { job: Job }) {
-  const [open, setOpen] = useState(false)
-  const detailsId = useId()
-
-  return (
-    <article
-      className={clsx(
-        'bg-canvas-0 overflow-hidden rounded-2xl border transition-colors dark:bg-slate-800/60 dark:shadow-sm dark:shadow-black/20',
-        open
-          ? 'border-primary-300 shadow-sm dark:border-indigo-400/50'
-          : 'border-ink-200 hover:border-ink-300 hover:shadow-sm dark:border-slate-700/70 dark:hover:border-slate-500'
-      )}
-    >
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="hover:bg-canvas-50 focus-visible:ring-primary-500 group w-full cursor-pointer px-5 py-6 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset dark:hover:bg-slate-700/30 sm:px-6"
-        aria-expanded={open}
-        aria-controls={detailsId}
-      >
-        <Col className="gap-3">
-          <Row className="items-start justify-between gap-3">
-            <h4 className="text-ink-1000 text-xl font-semibold tracking-tight dark:text-slate-100 sm:text-2xl">
-              {job.title}
-            </h4>
-            <span className="bg-ink-100 text-ink-600 shrink-0 rounded-md px-2 py-1 text-xs font-medium dark:bg-slate-700/50 dark:text-slate-300">
-              Full time
-            </span>
-          </Row>
-          <p className="text-ink-600 text-base leading-relaxed dark:text-slate-300">
-            {job.blurb}
-          </p>
-
-          <dl className="text-ink-600 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm dark:text-slate-300">
-            <div className="flex items-center gap-1.5">
-              <dt className="sr-only">Location</dt>
-              <LocationMarkerIcon
-                className="text-ink-500 h-4 w-4 dark:text-slate-400"
-                aria-hidden
-              />
-              <dd>{job.location}</dd>
-            </div>
-            <div>
-              <dt className="sr-only">Compensation</dt>
-              <dd>{job.comp}</dd>
-            </div>
-          </dl>
-          <div className="border-ink-100 mt-2 flex items-center justify-end border-t pt-4 dark:border-slate-700/60">
-            <span className="text-primary-600 group-hover:text-primary-700 flex items-center gap-1.5 text-sm font-semibold dark:text-indigo-300 dark:group-hover:text-indigo-200">
-              {open ? 'Hide details' : 'Explore role'}
-              {open ? (
-                <ChevronUpIcon className="h-4 w-4" aria-hidden />
-              ) : (
-                <ChevronDownIcon className="h-4 w-4" aria-hidden />
-              )}
-            </span>
-          </div>
-        </Col>
-      </button>
-
-      <div
-        id={detailsId}
-        hidden={!open}
-        className="border-ink-100 bg-canvas-50/50 border-t px-5 pb-6 pt-5 dark:border-slate-700/60 dark:bg-slate-900/50 sm:px-6"
-      >
-        <p className="text-ink-700 mb-6 text-base leading-relaxed dark:text-slate-300">
-          {job.intro}
-        </p>
-
-        <section className="mb-6">
-          <h5 className="text-ink-900 mb-3 text-sm font-semibold dark:text-slate-100">
-            What you'll do
-          </h5>
-          <ul className="marker:text-primary-400 flex list-disc flex-col gap-2 pl-5 dark:marker:text-indigo-400">
-            {job.whatYoullDo.map((item, i) => (
-              <li
-                key={i}
-                className="text-ink-700 text-base leading-relaxed dark:text-slate-300"
-              >
-                {item}
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="mb-6">
-          <h5 className="text-ink-900 mb-3 text-sm font-semibold dark:text-slate-100">
-            What we're looking for
-          </h5>
-          <ul className="marker:text-primary-400 flex list-disc flex-col gap-2 pl-5 dark:marker:text-indigo-400">
-            {job.whatWereLookingFor.map((item, i) => (
-              <li
-                key={i}
-                className="text-ink-700 text-base leading-relaxed dark:text-slate-300"
-              >
-                {item}
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <p className="text-ink-700 mb-6 select-text text-base leading-relaxed dark:text-slate-300">
-          To apply, email {job.contactEmail}.
-        </p>
-
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="text-primary-600 hover:text-primary-700 focus-visible:ring-primary-500 flex items-center gap-1 rounded text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 dark:text-indigo-300 dark:hover:text-indigo-200"
-        >
-          Hide details
-          <ChevronUpIcon className="h-4 w-4" aria-hidden />
-        </button>
-      </div>
-    </article>
-  )
-}
-
 export default function JobsPage() {
   return (
     <Page trackPageView="/jobs" className="!col-span-7">
@@ -234,9 +110,49 @@ export default function JobsPage() {
                 Open roles
               </h2>
               <span className="bg-ink-100 text-ink-600 rounded-full px-2.5 py-0.5 text-xs font-semibold dark:bg-slate-700/50 dark:text-slate-300">
-                {JOBS.length}
+                {JOBS.length + UPSTART_JOBS.length}
               </span>
             </Row>
+
+            {UPSTART_JOBS.length > 0 && (
+              <section aria-labelledby="upstart-heading" className="mb-10">
+                <div className="mb-5">
+                  <h3
+                    id="upstart-heading"
+                    className="text-ink-900 text-xl font-semibold dark:text-slate-100"
+                  >
+                    Upstart
+                  </h3>
+                  <p className="text-ink-600 mt-3 text-sm leading-relaxed dark:text-slate-300">
+                    Apply broadly for any/all suitable roles by emailing your
+                    resume to Joe Orsini at{' '}
+                    <a
+                      href={UPSTART_APPLY_URL}
+                      className="text-primary-600 focus-visible:ring-primary-500 break-all rounded underline focus:outline-none focus-visible:ring-2 dark:text-indigo-300"
+                    >
+                      {UPSTART_EMAIL}
+                    </a>
+                    . You do not need to choose a role. Mention that you found
+                    Upstart on Manifold.
+                  </p>
+                  <p className="text-ink-500 mt-2 text-sm dark:text-slate-400">
+                    The email link opens a draft. Attach your resume before
+                    sending.
+                  </p>
+                  <a
+                    href={UPSTART_APPLY_URL}
+                    className="bg-primary-600 hover:bg-primary-700 focus-visible:ring-primary-500 mt-4 inline-flex rounded-lg px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                  >
+                    Apply to Upstart by email
+                  </a>
+                </div>
+                <div className="flex flex-col gap-4">
+                  {UPSTART_JOBS.map((job) => (
+                    <JobCard key={job.sourceUrl} job={job} />
+                  ))}
+                </div>
+              </section>
+            )}
 
             <section aria-labelledby="mnx-heading">
               <div className="mb-5">
