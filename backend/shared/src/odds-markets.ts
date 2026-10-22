@@ -806,9 +806,21 @@ async function withGameReservation<T>(
         try {
           return await mutation()
         } catch (error) {
-          log.error(
-            `[sports-odds-resolve] ${id}: helper rejected; run=${runId} stage=${details.stage}. Later ticks may retry through guarded writes and transactional resolution; rejection does not prove rollback. ${error}`
-          )
+          // Match the pool's warning severity for routine serialization retries.
+          if (
+            typeof error === 'object' &&
+            error !== null &&
+            'code' in error &&
+            error.code === '40001'
+          ) {
+            log.warn(
+              `[sports-odds-resolve] ${id}: serialization failure; run=${runId} stage=${details.stage}. Later ticks may retry. ${error}`
+            )
+          } else {
+            log.error(
+              `[sports-odds-resolve] ${id}: helper rejected; run=${runId} stage=${details.stage}. Later ticks may retry through guarded writes and transactional resolution; rejection does not prove rollback. ${error}`
+            )
+          }
           throw error
         }
       },

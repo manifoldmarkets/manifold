@@ -5,7 +5,7 @@
 jest.mock('shared/utils', () => ({
   getUser: jest.fn(),
   isProd: () => false,
-  log: Object.assign(jest.fn(), { error: jest.fn() }),
+  log: Object.assign(jest.fn(), { error: jest.fn(), warn: jest.fn() }),
   contractColumnsToSelect: 'data',
 }))
 jest.mock('shared/supabase/init', () => ({
@@ -485,6 +485,39 @@ it.each(['write', 'resolve'] as const)(
     jest.mocked(Date.now).mockReturnValue(NOW + 31 * 60_000)
     await pollOddsScoresAndResolve(db.client, state)
     expect(getScores).toHaveBeenCalledTimes(2)
+    expect(db.pg.none).toHaveBeenCalledTimes(writes + 1)
+    expect(resolveMarketHelper).toHaveBeenCalledTimes(
+      resolves + (boundary === 'resolve' ? 1 : 0)
+    )
+  }
+)
+
+it.each(['write', 'resolve'] as const)(
+  'serialization rejection at %s warns and retries without an ERROR',
+  async (boundary) => {
+    const db = liveDatabase()
+    const state = newScorePollState()
+    const failure = Object.assign(new Error('serialization failure'), {
+      code: '40001',
+    })
+    if (boundary === 'write') db.pg.none.mockRejectedValueOnce(failure)
+    else jest.mocked(resolveMarketHelper).mockRejectedValueOnce(failure)
+    jest
+      .mocked(getScores)
+      .mockResolvedValue([reviewScore(boundary === 'resolve')])
+
+    await pollOddsScoresAndResolve(db.client, state)
+
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringMatching(/game: serialization failure; run=.* stage=/)
+    )
+    expect(log.error).not.toHaveBeenCalled()
+    expect(state.inFlight.size).toBe(0)
+    expect(state.inFlightDetails.size).toBe(0)
+    const writes = db.pg.none.mock.calls.length
+    const resolves = jest.mocked(resolveMarketHelper).mock.calls.length
+    jest.mocked(Date.now).mockReturnValue(NOW + 31 * 60_000)
+    await pollOddsScoresAndResolve(db.client, state)
     expect(db.pg.none).toHaveBeenCalledTimes(writes + 1)
     expect(resolveMarketHelper).toHaveBeenCalledTimes(
       resolves + (boundary === 'resolve' ? 1 : 0)
