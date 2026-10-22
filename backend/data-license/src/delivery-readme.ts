@@ -12,26 +12,30 @@ const mb = (b: number) => `${(b / 1e6).toFixed(1)} MB`
 // Assumed column notes per table. Replace with the final data dictionary.
 const TABLE_DOCS: Record<string, { blurb: string; columns: string }> = {
   contracts: {
-    blurb: 'One row per market (question). The canonical record is the `data` JSON column.',
+    blurb:
+      'One row per market (question). The canonical record is the `data` JSON column.',
     columns:
       '`id`, `creator_id` (pseudonymized), `question`, `created_time`, `close_time`, ' +
       '`resolution`, `resolution_time`, `resolution_probability`, `outcome_type`, ' +
       '`mechanism`, `visibility`, `token`, `data` (full JSON record).',
   },
   answers: {
-    blurb: 'Answers for multiple-choice / multi markets. Binary markets have none.',
+    blurb:
+      'Answers for multiple-choice / multi markets. Binary markets have none.',
     columns:
       '`id`, `contract_id`, `user_id` (pseudonymized), `resolver_id` (pseudonymized), ' +
       '`text`, `prob`, `created_time`.',
   },
   contract_comments: {
-    blurb: 'Comments on markets. Author identity is pseudonymized; free text is scrubbed.',
+    blurb:
+      'Comments on markets. Author identity is pseudonymized; free text is scrubbed.',
     columns:
       '`comment_id`, `contract_id`, `user_id` (pseudonymized), `created_time`, ' +
       '`data` (full JSON, incl. scrubbed rich-text `content`).',
   },
   contract_bets: {
-    blurb: 'The order/trade log — the probability series. One row per bet/fill event.',
+    blurb:
+      'The order/trade log — the probability series. One row per bet/fill event.',
     columns:
       '`bet_id`, `contract_id`, `answer_id`, `user_id` (pseudonymized), `created_time`, ' +
       '`amount` (mana), `outcome`, `shares`, `prob_before`, `prob_after`, ' +
@@ -39,7 +43,8 @@ const TABLE_DOCS: Record<string, { blurb: string; columns: string }> = {
   },
   contract_liquidity: {
     blurb: 'Liquidity provision events per market.',
-    columns: '`contract_id`, `liquidity_id`, `user_id` (pseudonymized), `amount`, `data`.',
+    columns:
+      '`contract_id`, `liquidity_id`, `user_id` (pseudonymized), `amount`, `data`.',
   },
   txns: {
     blurb:
@@ -68,7 +73,9 @@ export function buildDeliveryReadme(m: Manifest): string {
   L.push(`- **Delivery date:** ${m.deliveryDate}`)
   L.push(`- **Snapshot time (UTC):** ${m.snapshotTime}`)
   L.push(`- **Schema version:** ${m.schemaVersion}`)
-  L.push(`- **Delivery fingerprint:** \`${m.saltFingerprint}\` (identifies the pseudonymization salt for this delivery)`)
+  L.push(
+    `- **Delivery fingerprint:** \`${m.saltFingerprint}\` (identifies the pseudonymization salt for this delivery)`
+  )
   L.push('')
   L.push(`## Scope`)
   L.push('')
@@ -82,10 +89,12 @@ export function buildDeliveryReadme(m: Manifest): string {
   L.push('')
   L.push(`## Contents`)
   L.push('')
-  L.push(`Files are zstd-compressed Parquet, split into ~fixed-size numbered parts ` +
-    `(e.g. \`contract_bets.0000.parquet\`). Timestamps are typed columns in UTC; ` +
-    `monetary/probability fields are numeric; the \`data\` column is a JSON string. ` +
-    `Product segments:`)
+  L.push(
+    `Files are zstd-compressed Parquet, split into ~fixed-size numbered parts ` +
+      `(e.g. \`contract_bets.0000.parquet\`). Timestamps are typed columns in UTC; ` +
+      `monetary/probability fields are numeric; the \`data\` column is a JSON string. ` +
+      `Product segments:`
+  )
   L.push('')
   for (const [seg, info] of Object.entries(m.segments)) {
     L.push(`- **Segment ${seg} — ${info.label}:** ${info.tables.join(', ')}`)
@@ -94,7 +103,11 @@ export function buildDeliveryReadme(m: Manifest): string {
   L.push(`| Table | Segment | Rows | Size | Parts |`)
   L.push(`|---|---|---:|---:|---:|`)
   for (const [name, t] of Object.entries(m.tables)) {
-    L.push(`| ${name} | ${t.segment} | ${t.rowCount.toLocaleString()} | ${mb(t.bytes)} | ${t.parts} |`)
+    L.push(
+      `| ${name} | ${t.segment} | ${t.rowCount.toLocaleString()} | ${mb(
+        t.bytes
+      )} | ${t.parts} |`
+    )
   }
   L.push('')
   L.push(`### Tables`)

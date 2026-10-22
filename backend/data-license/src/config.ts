@@ -79,7 +79,9 @@ async function resolveSalt(): Promise<Buffer> {
   }
   if (literal) return Buffer.from(literal, 'utf8')
   if (resource) return Buffer.from(await accessSecret(resource), 'utf8')
-  throw new Error('no salt: set EXPORT_SALT (local) or SALT_SECRET_RESOURCE (cloud)')
+  throw new Error(
+    'no salt: set EXPORT_SALT (local) or SALT_SECRET_RESOURCE (cloud)'
+  )
 }
 
 async function resolveForbiddenStrings(): Promise<string[]> {
@@ -90,9 +92,7 @@ async function resolveForbiddenStrings(): Promise<string[]> {
   if (resource) parts.push(...(await accessSecret(resource)).split(','))
   // lowercased here; the validator lowercases each row blob to match, so
   // "betty mctestface" in a comment still trips a "Betty McTestface" entry.
-  return parts
-    .map((s) => s.trim().toLowerCase())
-    .filter((s) => s.length > 0)
+  return parts.map((s) => s.trim().toLowerCase()).filter((s) => s.length > 0)
 }
 
 function today(): string {
@@ -117,11 +117,16 @@ export async function loadConfig(): Promise<Config> {
   const onlyTables = (() => {
     const raw = opt('ONLY_TABLES')
     if (!raw) return undefined
-    const names = raw.split(',').map((s) => s.trim()).filter((s) => s.length > 0)
+    const names = raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
     const bad = names.filter((n) => !(n in TABLES))
     if (bad.length) {
       throw new Error(
-        `ONLY_TABLES has unknown table(s): ${bad.join(', ')}. Valid: ${Object.keys(TABLES).join(', ')}`
+        `ONLY_TABLES has unknown table(s): ${bad.join(
+          ', '
+        )}. Valid: ${Object.keys(TABLES).join(', ')}`
       )
     }
     if (!names.length) throw new Error('ONLY_TABLES is set but empty')

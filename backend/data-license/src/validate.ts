@@ -111,14 +111,19 @@ function checkKeys(
     if (!allowed.has(k)) {
       counts.unknownKeys++
       const name = `${label}.${k}`
-      if (!counts.unknownKeyNames.includes(name)) counts.unknownKeyNames.push(name)
+      if (!counts.unknownKeyNames.includes(name))
+        counts.unknownKeyNames.push(name)
     }
   }
 }
 
 /** Scan a redacted, about-to-be-written batch. `data` is still a JS object here
  *  (pg returns int8 as string, so JSON.stringify is safe — no BigInt). */
-export function scanBatch(table: TableName, rows: Row[], args: ScanArgs): ScanCounts {
+export function scanBatch(
+  table: TableName,
+  rows: Row[],
+  args: ScanArgs
+): ScanCounts {
   const spec = TABLES[table]
   // txns association is indirect; contracts has no parent — RI only for children.
   const cidCol =
@@ -131,7 +136,8 @@ export function scanBatch(table: TableName, rows: Row[], args: ScanArgs): ScanCo
   for (const row of rows) {
     if (cidCol) {
       const cid = row[cidCol]
-      if (cid != null && !args.deliveredContractIds.has(String(cid))) counts.riViolations++
+      if (cid != null && !args.deliveredContractIds.has(String(cid)))
+        counts.riViolations++
     }
     // unknown-key gate (check 4)
     if (allowed) {
@@ -154,7 +160,8 @@ export function scanBatch(table: TableName, rows: Row[], args: ScanArgs): ScanCo
     }
     const tokens = blob.match(ID_TOKEN_RE)
     if (tokens) {
-      for (const tok of tokens) if (args.allUserIds.has(tok)) counts.rawIdLeaks++
+      for (const tok of tokens)
+        if (args.allUserIds.has(tok)) counts.rawIdLeaks++
     }
   }
   return counts

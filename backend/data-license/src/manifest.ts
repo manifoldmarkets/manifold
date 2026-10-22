@@ -97,7 +97,10 @@ export function mergeManifest(base: Manifest, next: Manifest): Manifest {
   }
 
   const segments: Manifest['segments'] = {}
-  for (const [seg, info] of Object.entries({ ...base.segments, ...next.segments })) {
+  for (const [seg, info] of Object.entries({
+    ...base.segments,
+    ...next.segments,
+  })) {
     const names = new Set([
       ...(base.segments[seg]?.tables ?? []),
       ...(next.segments[seg]?.tables ?? []),

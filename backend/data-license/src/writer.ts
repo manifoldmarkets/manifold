@@ -102,13 +102,18 @@ export class ChunkedParquetWriter {
   }
 
   private conn(): Promise<DuckDBConnection> {
-    return (this.connPromise ??= DuckDBInstance.create(':memory:').then((i) => i.connect()))
+    return (this.connPromise ??= DuckDBInstance.create(':memory:').then((i) =>
+      i.connect()
+    ))
   }
 
   async add(row: Row): Promise<void> {
     this.batch.push(row)
     if (this.batch.length >= BATCH_ROWS) await this.stageBatch()
-    if (this.partRows >= this.opts.maxRows || this.partBytes >= this.opts.maxStagedBytes) {
+    if (
+      this.partRows >= this.opts.maxRows ||
+      this.partBytes >= this.opts.maxStagedBytes
+    ) {
       await this.flush()
     }
   }
@@ -124,11 +129,18 @@ export class ChunkedParquetWriter {
     // An empty table writes NO file (a zero-row Parquet would need the real
     // column schema, which we only learn from rows); the manifest records
     // rowCount 0 / parts 0 for it.
-    return { totalRows: this.totalRows, totalBytes: this.totalBytes, parts: this.part }
+    return {
+      totalRows: this.totalRows,
+      totalBytes: this.totalBytes,
+      parts: this.part,
+    }
   }
 
   private partPath(part: number): string {
-    return join(this.outDir, `${this.table}.${String(part).padStart(4, '0')}.parquet`)
+    return join(
+      this.outDir,
+      `${this.table}.${String(part).padStart(4, '0')}.parquet`
+    )
   }
 
   private isTimestampColumn(name: string): boolean {
@@ -170,15 +182,20 @@ export class ChunkedParquetWriter {
     if (this.opts.onBatch) await this.opts.onBatch(rows, outPath)
 
     this.staging ??= (() => {
-      const path = join(tmpdir(), `dl-${this.table}-${this.part}-${process.pid}.ndjson`)
+      const path = join(
+        tmpdir(),
+        `dl-${this.table}-${this.part}-${process.pid}.ndjson`
+      )
       return { path, stream: createWriteStream(path) }
     })()
 
     // One string per batch (~a few MB), never per part — see the header note.
-    const text = rows.map((r) => JSON.stringify(this.stageRow(r))).join('\n') + '\n'
+    const text =
+      rows.map((r) => JSON.stringify(this.stageRow(r))).join('\n') + '\n'
     this.partRows += rows.length
     this.partBytes += Buffer.byteLength(text)
-    if (!this.staging.stream.write(text)) await once(this.staging.stream, 'drain')
+    if (!this.staging.stream.write(text))
+      await once(this.staging.stream, 'drain')
   }
 
   /** Convert the staged NDJSON into one Parquet part and hand it to onChunk. */
@@ -225,6 +242,7 @@ export class ChunkedParquetWriter {
     const bytes = statSync(outPath).size
     this.totalRows += rowCount
     this.totalBytes += bytes
-    if (this.opts.onChunk) await this.opts.onChunk({ path: outPath, part, rowCount, bytes })
+    if (this.opts.onChunk)
+      await this.opts.onChunk({ path: outPath, part, rowCount, bytes })
   }
 }

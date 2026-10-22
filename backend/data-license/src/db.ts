@@ -30,7 +30,9 @@ export function connect(): Db {
   // Explicit host (PITR clone / local) wins; otherwise derive it from the
   // instance id exactly like shared/supabase/init.ts (db.${id}.supabase.co).
   const instanceId = env('SUPABASE_INSTANCE_ID')
-  const host = env('SUPABASE_HOST') ?? (instanceId ? `db.${instanceId}.supabase.co` : undefined)
+  const host =
+    env('SUPABASE_HOST') ??
+    (instanceId ? `db.${instanceId}.supabase.co` : undefined)
   const password = env('SUPABASE_PASSWORD')
   if (!host || !password) {
     throw new Error(
@@ -39,7 +41,9 @@ export function connect(): Db {
   }
   const port = Number(env('SUPABASE_PORT') ?? '5432')
   if (!Number.isInteger(port) || port <= 0) {
-    throw new Error(`SUPABASE_PORT must be a positive integer, got: ${process.env.SUPABASE_PORT}`)
+    throw new Error(
+      `SUPABASE_PORT must be a positive integer, got: ${process.env.SUPABASE_PORT}`
+    )
   }
   return pgp({
     host,

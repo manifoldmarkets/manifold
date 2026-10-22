@@ -36,7 +36,10 @@ export class Pseudonymizer {
     let len = this.hexLen
     let pseudonym = this.prefix + digest.slice(0, len)
     // Resolve the (astronomically unlikely) truncation collision deterministically.
-    while (this.reverse.has(pseudonym) && this.reverse.get(pseudonym) !== rawId) {
+    while (
+      this.reverse.has(pseudonym) &&
+      this.reverse.get(pseudonym) !== rawId
+    ) {
       len += 4
       if (len > digest.length) {
         throw new Error(

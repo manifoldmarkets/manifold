@@ -40,7 +40,13 @@ import {
   ScanCounts,
 } from './validate'
 import { makeUploader } from './r2'
-import { buildManifest, mergeManifest, writeManifest, FileMeta, Manifest } from './manifest'
+import {
+  buildManifest,
+  mergeManifest,
+  writeManifest,
+  FileMeta,
+  Manifest,
+} from './manifest'
 import { buildDeliveryReadme } from './delivery-readme'
 import { fileSha256 } from './checksum'
 import { ALL_TABLES, COLUMN_TYPES, TableName } from './scope'
@@ -57,9 +63,15 @@ async function main() {
   const outDir = join(cfg.localOutDir, cfg.clientId, cfg.deliveryDate)
   // One bucket per licensee is the access boundary, so the key path carries no
   // client id — just the (optionally dry-run) delivery date.
-  const keyPrefix = cfg.dryRun ? `_dryrun/${cfg.deliveryDate}` : cfg.deliveryDate
+  const keyPrefix = cfg.dryRun
+    ? `_dryrun/${cfg.deliveryDate}`
+    : cfg.deliveryDate
 
-  const ps = new Pseudonymizer(cfg.salt, cfg.pseudonymPrefix, cfg.pseudonymHexLen)
+  const ps = new Pseudonymizer(
+    cfg.salt,
+    cfg.pseudonymPrefix,
+    cfg.pseudonymHexLen
+  )
   const stats = newStats()
   const uploader = makeUploader(cfg)
 
@@ -67,11 +79,16 @@ async function main() {
   // result into the delivery's existing manifest; everything else is untouched.
   const tablesToRun = ALL_TABLES.filter(
     (s) =>
-      cfg.segments.includes(s.segment) && (!cfg.onlyTables || cfg.onlyTables.includes(s.name))
+      cfg.segments.includes(s.segment) &&
+      (!cfg.onlyTables || cfg.onlyTables.includes(s.name))
   )
-  if (!tablesToRun.length) throw new Error('no tables selected: check SEGMENTS / ONLY_TABLES')
+  if (!tablesToRun.length)
+    throw new Error('no tables selected: check SEGMENTS / ONLY_TABLES')
 
-  const saltFingerprint = createHash('sha256').update(cfg.salt).digest('hex').slice(0, 16)
+  const saltFingerprint = createHash('sha256')
+    .update(cfg.salt)
+    .digest('hex')
+    .slice(0, 16)
 
   // Pre-flight for a supplemental run: fetch the manifest we will merge into and
   // check it BEFORE exporting anything. Doing this at merge time (i.e. at the
@@ -84,11 +101,16 @@ async function main() {
       : undefined
     const localManifest = join(outDir, 'manifest.json')
     baseManifestRaw =
-      remote ?? (existsSync(localManifest) ? readFileSync(localManifest, 'utf8') : undefined)
+      remote ??
+      (existsSync(localManifest)
+        ? readFileSync(localManifest, 'utf8')
+        : undefined)
     if (!baseManifestRaw) {
       throw new Error(
         `ONLY_TABLES is set but no existing manifest was found at ` +
-          `${uploader.enabled ? `${keyPrefix}/manifest.json or ` : ''}${localManifest} — ` +
+          `${
+            uploader.enabled ? `${keyPrefix}/manifest.json or ` : ''
+          }${localManifest} — ` +
           `refusing to write a partial manifest over a delivery.`
       )
     }
@@ -101,20 +123,30 @@ async function main() {
       )
     }
     console.log(
-      `SUPPLEMENTAL RUN — rebuilding only: ${tablesToRun.map((s) => s.name).join(', ')}\n` +
-        `  merging into existing manifest (${remote ? 'delivered copy' : 'local file'}), ` +
+      `SUPPLEMENTAL RUN — rebuilding only: ${tablesToRun
+        .map((s) => s.name)
+        .join(', ')}\n` +
+        `  merging into existing manifest (${
+          remote ? 'delivered copy' : 'local file'
+        }), ` +
         `salt fingerprint ${saltFingerprint} matches`
     )
   }
 
   const db = connect()
   let snapshotTime = ''
-  const perTable: { table: TableName; totals: WriterTotals; files: FileMeta[] }[] = []
+  const perTable: {
+    table: TableName
+    totals: WriterTotals
+    files: FileMeta[]
+  }[] = []
   const scanByTable: Record<string, ScanCounts> = {}
   // probability-reconstruction spot check: capture several markets' bets as they
   // stream. Holder object (not a bare `let`) so the value survives narrowing
   // across the snapshot callback where it's assigned.
-  const probe: { markets: { id: string; resolution: string }[] } = { markets: [] }
+  const probe: { markets: { id: string; resolution: string }[] } = {
+    markets: [],
+  }
   const probePoints = new Map<string, ProbePoint[]>()
 
   try {
@@ -139,7 +171,8 @@ async function main() {
       console.log(
         `deleted accounts: ${deletedUserIds.size}; leak-scan user ids: ${allUserIds.size}` +
           `; probe markets: ${
-            probe.markets.map((m) => `${m.id} (${m.resolution})`).join(', ') || 'none in scope'
+            probe.markets.map((m) => `${m.id} (${m.resolution})`).join(', ') ||
+            'none in scope'
           }`
       )
 
@@ -162,9 +195,15 @@ async function main() {
       // this makes a tokenizer/regex regression abort the run at startup.
       if (scanArgs.allUserIds.size > 0) {
         const canary = scanArgs.allUserIds.values().next().value as string
-        const st = scanBatch('contracts', [{ id: 'selftest', data: { question: canary } }], scanArgs)
+        const st = scanBatch(
+          'contracts',
+          [{ id: 'selftest', data: { question: canary } }],
+          scanArgs
+        )
         if (st.rawIdLeaks === 0) {
-          throw new Error('leak-scan self-test FAILED: planted raw user id was not detected')
+          throw new Error(
+            'leak-scan self-test FAILED: planted raw user id was not detected'
+          )
         }
       }
 
@@ -182,7 +221,9 @@ async function main() {
           addCounts(running, counts)
           if (chunkFailed(counts)) {
             throw new Error(
-              `VALIDATION FAILED on ${basename(partPath)}: ${JSON.stringify(counts)}`
+              `VALIDATION FAILED on ${basename(partPath)}: ${JSON.stringify(
+                counts
+              )}`
             )
           }
         }
@@ -192,7 +233,10 @@ async function main() {
           const sha256 = await fileSha256(chunk.path)
           files.push({ name: basename(chunk.path), bytes: chunk.bytes, sha256 })
           if (uploader.enabled) {
-            await uploader.upload(chunk.path, `${keyPrefix}/${basename(chunk.path)}`)
+            await uploader.upload(
+              chunk.path,
+              `${keyPrefix}/${basename(chunk.path)}`
+            )
             if (!cfg.keepLocalParts) rmSync(chunk.path, { force: true })
           }
         }
@@ -259,7 +303,9 @@ async function main() {
         // empty on dev/subset runs, so this warns rather than aborts — but it
         // must be loud enough to catch in the run log.
         if (totals.totalRows === 0) {
-          console.warn(`  WARNING: ${table} produced 0 rows — no file is written for it`)
+          console.warn(
+            `  WARNING: ${table} produced 0 rows — no file is written for it`
+          )
         }
       }
     })
@@ -272,7 +318,10 @@ async function main() {
     ? reconstructPaths(probe.markets, probePoints)
     : { ran: false, note: 'no resolved binary market in scope' }
   if (recon.ran && !recon.ok) {
-    console.error('\nPROBABILITY RECONSTRUCTION FAILED:', JSON.stringify(recon, null, 2))
+    console.error(
+      '\nPROBABILITY RECONSTRUCTION FAILED:',
+      JSON.stringify(recon, null, 2)
+    )
     process.exit(1)
   }
 
@@ -288,7 +337,9 @@ async function main() {
   })
   if (baseManifestRaw) {
     manifest = mergeManifest(JSON.parse(baseManifestRaw), manifest)
-    console.log(`merged manifest; tables now: ${Object.keys(manifest.tables).join(', ')}`)
+    console.log(
+      `merged manifest; tables now: ${Object.keys(manifest.tables).join(', ')}`
+    )
   }
 
   const manifestPath = writeManifest(outDir, manifest)
@@ -303,10 +354,15 @@ async function main() {
 
   const runtimeS = ((Date.now() - started) / 1000).toFixed(1)
   console.log('\n=== shape report ===')
-  console.log(JSON.stringify({ manifest, validation: scanByTable, runtimeS }, null, 2))
   console.log(
-    `\n${uploader.enabled ? `Uploaded to r2://${cfg.r2.bucket}/${keyPrefix}/` : `Local only: ${outDir}`}` +
-      `${cfg.dryRun ? ' (dry run)' : ''}`
+    JSON.stringify({ manifest, validation: scanByTable, runtimeS }, null, 2)
+  )
+  console.log(
+    `\n${
+      uploader.enabled
+        ? `Uploaded to r2://${cfg.r2.bucket}/${keyPrefix}/`
+        : `Local only: ${outDir}`
+    }` + `${cfg.dryRun ? ' (dry run)' : ''}`
   )
 }
 

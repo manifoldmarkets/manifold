@@ -70,11 +70,18 @@ function reconstructOne(
   // maker limit rows both slot into a continuous price chain.
   const pts = rawPoints
     .filter((p) => !p.isRedemption)
-    .filter((p) => Number.isFinite(p.probBefore) && Number.isFinite(p.probAfter))
+    .filter(
+      (p) => Number.isFinite(p.probBefore) && Number.isFinite(p.probAfter)
+    )
     .sort((a, b) => a.createdTime - b.createdTime)
 
   if (pts.length < 2) {
-    return { contractId, resolution, ran: false, note: 'not enough bets to reconstruct' }
+    return {
+      contractId,
+      resolution,
+      ran: false,
+      note: 'not enough bets to reconstruct',
+    }
   }
 
   let continuityViolations = 0

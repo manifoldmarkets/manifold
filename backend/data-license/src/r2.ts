@@ -21,7 +21,13 @@ export interface Uploader {
 export function makeUploader(cfg: Config): Uploader {
   const { endpoint, accessKeyId, secretAccessKey, bucket } = cfg.r2
   if (!endpoint || !accessKeyId || !secretAccessKey || !bucket) {
-    return { enabled: false, async upload() {}, async getText() { return undefined } }
+    return {
+      enabled: false,
+      async upload() {},
+      async getText() {
+        return undefined
+      },
+    }
   }
   // Normalize the endpoint to the account origin only. R2's S3 API endpoint is
   // https://<accountid>.r2.cloudflarestorage.com; the bucket is addressed via
@@ -48,10 +54,13 @@ export function makeUploader(cfg: Config): Uploader {
     },
     async getText(key: string): Promise<string | undefined> {
       try {
-        const res = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }))
+        const res = await client.send(
+          new GetObjectCommand({ Bucket: bucket, Key: key })
+        )
         return await res.Body?.transformToString()
       } catch (e: any) {
-        if (e?.name === 'NoSuchKey' || e?.$metadata?.httpStatusCode === 404) return undefined
+        if (e?.name === 'NoSuchKey' || e?.$metadata?.httpStatusCode === 404)
+          return undefined
         throw e
       }
     },

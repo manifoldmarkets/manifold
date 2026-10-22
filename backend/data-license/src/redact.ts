@@ -184,7 +184,8 @@ export function redactContract(row: Row, ctx: RedactContext): Row {
     }
     // description rich text may embed @mention ids (must be pseudonymized).
     // Text scrub is comment-only per spec, so mention-id replacement only here.
-    if (data.description) walkRichText(data.description, ctx, { scrubText: false })
+    if (data.description)
+      walkRichText(data.description, ctx, { scrubText: false })
   }
   return row
 }
@@ -225,7 +226,8 @@ export function redactComment(row: Row, ctx: RedactContext): Row | null {
   }
 
   // scrub the comment body (rich text) + deprecated flat text field
-  if (row.data?.content) walkRichText(row.data.content, ctx, { scrubText: true })
+  if (row.data?.content)
+    walkRichText(row.data.content, ctx, { scrubText: true })
   if (typeof row.data?.text === 'string') {
     row.data.text = scrubPlainText(row.data.text, ctx.stats)
   }
@@ -247,10 +249,16 @@ export function redactTxn(row: Row, ctx: RedactContext): Row {
   // house uid under a CONTRACT-typed endpoint (dev: 4 CONTRACT_RESOLUTION_PAYOUTs),
   // so any remaining raw house uid is normalized too. (USER-typed house
   // endpoints were already pseudonymized above, so this only hits raw values.)
-  if (row.from_id != null && (row.from_type === 'BANK' || HOUSE_IDS.has(row.from_id))) {
+  if (
+    row.from_id != null &&
+    (row.from_type === 'BANK' || HOUSE_IDS.has(row.from_id))
+  ) {
     row.from_id = 'BANK'
   }
-  if (row.to_id != null && (row.to_type === 'BANK' || HOUSE_IDS.has(row.to_id))) {
+  if (
+    row.to_id != null &&
+    (row.to_type === 'BANK' || HOUSE_IDS.has(row.to_id))
+  ) {
     row.to_id = 'BANK'
   }
   // Legacy txns duplicated the whole txn into the blob: raw fromId/toId plus a
@@ -285,7 +293,8 @@ export function redactTxn(row: Row, ctx: RedactContext): Row {
     if (Array.isArray(inner.distributions)) {
       for (const d of inner.distributions) {
         if (
-          d && typeof d === 'object' &&
+          d &&
+          typeof d === 'object' &&
           d.contractId != null &&
           !ctx.scopedContractIds.has(String(d.contractId))
         ) {
@@ -334,7 +343,8 @@ function sweepRawUserIds(node: any, ctx: RedactContext): any {
   if (typeof node === 'string') return sweepString(node, ctx)
   if (!node || typeof node !== 'object') return node
   if (Array.isArray(node)) {
-    for (let i = 0; i < node.length; i++) node[i] = sweepRawUserIds(node[i], ctx)
+    for (let i = 0; i < node.length; i++)
+      node[i] = sweepRawUserIds(node[i], ctx)
     return node
   }
   for (const [k, v] of Object.entries(node)) {

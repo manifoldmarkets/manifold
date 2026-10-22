@@ -16,7 +16,10 @@ import { CONTRACT_FILTER_SQL, TableName } from './scope'
 export const SCOPE_TABLE = '_scope_contracts'
 
 /** Materialize the in-scope contract ids into an indexed temp table. */
-export async function setupScopeTable(t: Snapshot, limit?: number): Promise<number> {
+export async function setupScopeTable(
+  t: Snapshot,
+  limit?: number
+): Promise<number> {
   await t.none(
     `CREATE TEMP TABLE ${SCOPE_TABLE} (id text PRIMARY KEY) ON COMMIT DROP`
   )
@@ -52,7 +55,9 @@ export async function loadAllUserIds(t: Snapshot): Promise<Set<string>> {
   return new Set(rows.map((r) => r.id))
 }
 
-export async function loadDeliveredContractIds(t: Snapshot): Promise<Set<string>> {
+export async function loadDeliveredContractIds(
+  t: Snapshot
+): Promise<Set<string>> {
   const rows = await t.any<{ id: string }>(`SELECT id FROM ${SCOPE_TABLE}`)
   return new Set(rows.map((r) => r.id))
 }
