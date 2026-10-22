@@ -132,7 +132,7 @@ function MakeAMarket(props: { sport: SportInfo | 'all' }) {
     q: '',
     description: '',
     visibility: 'public',
-    groupSlugs: slug ? [slug] : undefined,
+    groupSlugs: [slug ?? 'sports-default'],
     rand: sport === 'all' ? 'sports' : sport.key.slice(0, 12),
   }
   return (
