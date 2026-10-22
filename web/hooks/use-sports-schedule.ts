@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { useEvent } from 'client-common/hooks/use-event'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { SPORTS_SCHEDULE_PAGE_SIZE as SCHEDULE_PAGE_SIZE } from 'common/sports-game-feed'
 import {
   AnySportKey,
   LIVE_STATUSES,
@@ -20,8 +21,6 @@ import { HOUR_MS } from 'common/util/time'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { api } from 'web/lib/api/api'
 
-/** Upcoming games per request; more load as the feed scrolls. */
-const SCHEDULE_PAGE_SIZE = 20
 /** The endpoint's largest `limit`: a refresh re-reads at most this many. */
 const MAX_SCHEDULE_LIMIT = 400
 /** Refetch cadence while something is live or about to start… */
