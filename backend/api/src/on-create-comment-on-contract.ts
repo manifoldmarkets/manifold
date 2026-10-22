@@ -2,6 +2,7 @@ import { followContractInternal } from 'api/follow-contract'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract, contractPath } from 'common/contract'
+import { MODS_USER_ID } from 'common/envs/constants'
 import { PendingClarification } from 'common/pending-clarification'
 import { User } from 'common/user'
 import {
@@ -129,9 +130,8 @@ export const handleCommentNotifications = async (
 ) => {
   const replyInfo = await getReplyInfo(pg, comment, contract)
 
-  const modsId = 'WQJ92QkoqDPuyj6DAZ5lR6g1x573'
   const mentionedUsers = compact(parseMentions(comment.content))
-  const mentionedMods = mentionedUsers.includes(modsId)
+  const mentionedMods = mentionedUsers.includes(MODS_USER_ID)
 
   const repliedUsers: replied_users_info = {}
   if (replyInfo) {

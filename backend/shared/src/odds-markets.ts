@@ -43,7 +43,6 @@ import {
   CompetitionSwitches,
   phaseWindow,
   SPORT_ID_TO_SPORT_KEY,
-  SPORT_LEAGUE_LABEL,
   SPORTS_CALENDAR,
 } from 'common/sports-calendar'
 import {
@@ -290,10 +289,7 @@ export async function createOddsMarketsForCompetition(
         )
         groupIds = uniq([
           group.id,
-          ...sportTagIds(
-            SPORT_ID_TO_SPORT_KEY[entry.sport],
-            SPORT_LEAGUE_LABEL[entry.sport]
-          ),
+          ...sportTagIds(SPORT_ID_TO_SPORT_KEY[entry.sport]),
         ])
       }
       const contract = await createSportsContract(
