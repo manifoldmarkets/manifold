@@ -7,6 +7,7 @@ import { validateBasicOraclePoint } from 'common/perps/oracle'
 import { FEAR_GREED_MAX } from 'common/perps/fear-greed'
 
 import { fetchBtcUsdSpot } from './btc-price'
+import { OracleClock } from './oracle-clock'
 import {
   BTC_USD_FEED_ID,
   CRYPTO_FEAR_GREED_FEED_ID,
@@ -89,10 +90,12 @@ export type OracleFeedDef = {
    * holders too). Trade it off against the source's rate limits: poll faster
    * than the source publishes and you spend quota for no new information. */
   pollPeriodMs?: number
-  fetchLatest?: () => Promise<OraclePoint | null>
+  /** `clock` stamps the observation; the tick passes the database clock that
+   * also stamps perp orders (see oracle-clock). */
+  fetchLatest?: (clock: OracleClock) => Promise<OraclePoint | null>
   /** A provider can withdraw availability independently of its last price.
    * The fast tick commits successful health and price in one engine update. */
-  fetchObservation?: () => Promise<{
+  fetchObservation?: (clock: OracleClock) => Promise<{
     point?: OraclePoint
     health: OracleFeedHealth
   }>
@@ -116,7 +119,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
       marketCreationEnabled: true,
       cadence: 'fast',
       pollPeriodMs: MNX_POLL_MS,
-      fetchObservation: () => fetchMnxObservation(i.feedId),
+      fetchObservation: (clock) => fetchMnxObservation(i.feedId, clock),
       minPrice: i.minPrice,
       maxPrice: i.maxPrice,
       staleAfterMs: i.maxAgeMs,
@@ -192,7 +195,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     staleAfterMs: 5 * MINUTE_MS,
     updatePeriodMs: 2_000,
     pollPeriodMs: 2_000,
-    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.SPYX),
+    fetchLatest: (clock) => fetchXStockUsdPrice(XSTOCK_SPECS.SPYX, clock),
   },
   {
     id: QQQX_USD_FEED_ID,
@@ -205,7 +208,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     staleAfterMs: 5 * MINUTE_MS,
     updatePeriodMs: 2_000,
     pollPeriodMs: 2_000,
-    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.QQQX),
+    fetchLatest: (clock) => fetchXStockUsdPrice(XSTOCK_SPECS.QQQX, clock),
   },
   {
     id: GLDX_USD_FEED_ID,
@@ -218,7 +221,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     staleAfterMs: 5 * MINUTE_MS,
     updatePeriodMs: 2_000,
     pollPeriodMs: 2_000,
-    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.GLDX),
+    fetchLatest: (clock) => fetchXStockUsdPrice(XSTOCK_SPECS.GLDX, clock),
   },
   {
     id: NVDAX_USD_FEED_ID,
@@ -231,7 +234,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     staleAfterMs: 5 * MINUTE_MS,
     updatePeriodMs: 2_000,
     pollPeriodMs: 2_000,
-    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.NVDAX),
+    fetchLatest: (clock) => fetchXStockUsdPrice(XSTOCK_SPECS.NVDAX, clock),
   },
   // Daily feeds use a 26h threshold (one missed daily run + slack) rather
   // than a lazy 3d: the hourly update-perps job turns feed staleness into

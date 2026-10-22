@@ -76,6 +76,10 @@ import { usePerpPositions } from 'web/components/perps/use-perp-positions'
 import { Avatar } from 'web/components/widgets/avatar'
 import { TokenNumber } from 'web/components/widgets/token-number'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import {
+  MOD_ACTION_TEXT_CLASS,
+  ModActionBadge,
+} from 'web/components/moderation/mod-action'
 import { api } from 'web/lib/api/api'
 import { db } from 'web/lib/supabase/db'
 import { PerpSuggestion } from 'common/perps/suggestion'
@@ -734,6 +738,7 @@ export default function PerpsPage(props: { perps: Contract[] }) {
   const week = useWeekSeries(open)
   const activity = useRecentActivity(HUB_FEATURES.activity ? open : [])
   const user = useUser()
+  const isMnxCreator = !!user && user.id === getMnxCreatorId(ENV)
   // Nothing records referrals globally — every shareable page wires up both
   // halves itself. Incoming: a visitor who landed here from someone's link
   // carries their ?r= code, and this banks it so a sign-up in this session
@@ -989,11 +994,17 @@ export default function PerpsPage(props: { perps: Contract[] }) {
               </button>
             </div>
           </Col>
-          {user && (isAdminId(user.id) || user.id === getMnxCreatorId(ENV)) && (
+          {user && (isAdminId(user.id) || isMnxCreator) && (
             <Link
               href="/admin/mnx"
-              className="text-primary-600 text-sm hover:underline"
+              className={clsx(
+                'text-sm hover:underline',
+                isMnxCreator
+                  ? 'text-primary-600'
+                  : ['inline-flex items-center gap-1', MOD_ACTION_TEXT_CLASS]
+              )}
             >
+              {!isMnxCreator && <ModActionBadge admin />}
               Manage MNX markets
             </Link>
           )}
@@ -2503,7 +2514,10 @@ const SuggestionRow = (props: {
           <button
             onClick={() => onHide(s)}
             aria-label={`Hide "${s.name}"`}
-            className="text-ink-300 hover:text-scarlet-500 rounded p-1 transition-colors"
+            className={clsx(
+              'rounded p-1 transition-opacity hover:opacity-70',
+              MOD_ACTION_TEXT_CLASS
+            )}
           >
             <XIcon className="h-4 w-4" />
           </button>
@@ -2512,8 +2526,12 @@ const SuggestionRow = (props: {
       {onUnhide && (
         <button
           onClick={() => onUnhide(s)}
-          className="text-ink-500 hover:text-primary-500 shrink-0 rounded px-1 py-1 text-xs transition-colors"
+          className={clsx(
+            'flex shrink-0 items-center gap-1 rounded px-1 py-1 text-xs transition-opacity hover:opacity-70',
+            MOD_ACTION_TEXT_CLASS
+          )}
         >
+          <ModActionBadge />
           Unhide
         </button>
       )}
@@ -2731,8 +2749,12 @@ const Suggestions = () => {
             <Col className="border-ink-200 dark:border-ink-300 border-t">
               <button
                 onClick={() => setShowHidden((v) => !v)}
-                className="text-ink-400 hover:bg-canvas-50 hover:text-ink-600 px-3 py-2 text-left text-xs"
+                className={clsx(
+                  'hover:bg-canvas-50 flex items-center gap-1 px-3 py-2 text-left text-xs',
+                  MOD_ACTION_TEXT_CLASS
+                )}
               >
+                <ModActionBadge />
                 {hiddenList.length} hidden {showHidden ? '▾' : '▸'}
               </button>
               {showHidden && (
@@ -2882,7 +2904,7 @@ const MarketParameters = (props: { contract: PerpContract }) => {
     {
       label: 'Oracle',
       value: `pauses after ${formatCountdown(contract.maxOraclePriceAgeMs)}`,
-      note: 'Trades execute at the latest accepted oracle price. If the feed goes quiet for longer than this, opening and closing pause until it recovers.',
+      note: 'Orders wait for the next eligible oracle update. The displayed price is indicative; slow feeds may take longer.',
     },
   ]
   return (

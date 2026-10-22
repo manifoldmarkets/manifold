@@ -12,6 +12,7 @@ import {
   SPORTS_DEFAULT_GROUP_ID,
 } from 'common/sports-schedule'
 import { sportsSchedule } from './sports-schedule'
+import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 
 const kickoff = Date.now() + 60 * 60 * 1000
 const groupId = (sport: string) =>
@@ -35,6 +36,7 @@ const official = ['nfl', 'soccer'].map((sport) => ({
 }))
 const props = ['nfl', 'soccer'].map((sport) => ({
   id: `${sport}-prop`,
+  creator_id: MANIFOLD_SPORTS_USER_IDS[0],
   question: 'Total points?',
   sports_event_id: `event-${sport}`,
   sports_market_type: 'total',
@@ -58,6 +60,11 @@ const tree = [
 let marketRows: typeof props = props
 let officialRows: { data: Record<string, unknown> }[] = official
 let answerRows: Record<string, unknown>[] = []
+let linkRows: { id: string; parent_id: string; relation: string }[] = []
+let linkedElsewhere: { id: string }[] = []
+let linksMissing = false
+let failedLinkRead: 'children' | 'parents' | undefined
+
 // Each game's two answers, home first, unless a test sets answerRows.
 const gameAnswers = (data: Record<string, unknown>) =>
   (['sportsHomeTeam', 'sportsAwayTeam'] as const).map((team, index) => ({
@@ -75,8 +82,32 @@ beforeEach(() => {
   marketRows = props
   officialRows = official
   answerRows = []
+  linkRows = []
+  linkedElsewhere = []
+  linksMissing = false
+  failedLinkRead = undefined
   jest.mocked(createSupabaseDirectClient).mockReturnValue({
+    one: async (sql: string) => {
+      expect(sql).toContain('with eligible_links')
+      expect(sql).toContain('as with_parents')
+      if (linksMissing || failedLinkRead)
+        throw new Error('Link snapshot unavailable')
+      return {
+        linked: linkRows,
+        with_parents: linkedElsewhere.map((l) => l.id),
+      }
+    },
     manyOrNone: async (sql: string) => {
+      if (linksMissing && sql.includes('market_links'))
+        throw new Error('relation "market_links" does not exist')
+      if (sql.includes('from market_links l')) {
+        if (failedLinkRead === 'children') throw new Error('Link read failed')
+        return linkRows
+      }
+      if (sql.includes('select child_contract_id as id from market_links')) {
+        if (failedLinkRead === 'parents') throw new Error('Link read failed')
+        return linkedElsewhere
+      }
       if (sql.includes("where data->>'sportsEventId'")) return officialRows
       if (sql.includes('from answers'))
         return answerRows.length > 0
@@ -120,6 +151,7 @@ it('gives every Sports subtopic a sport and files markets from deeper topics', a
     ...props,
     {
       id: 'stage-9',
+      creator_id: 'community',
       question: 'Who wins stage 9?',
       sports_event_id: null as unknown as string,
       sports_market_type: null as unknown as string,
@@ -286,4 +318,111 @@ describe('paging', () => {
     expect(all.counts.nfl).toBe(6)
     expect(all.liveCount).toBe(1)
   })
+})
+
+describe('linked markets', () => {
+  const getSchedule = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+
+  it('keeps official lines before explicit links, preserving each relation', async () => {
+    linkRows = [{ id: 'nfl-line', parent_id: 'nfl', relation: 'line' }]
+    const response = await getSchedule({ sport: 'nfl' })
+    const result = 'result' in response ? response.result : response
+    expect(result.games[0].related).toEqual([
+      { id: 'nfl-prop', kind: 'official', group: 'game-lines' },
+      { id: 'nfl-line', kind: 'linked', group: 'game-lines' },
+    ])
+    expect(result.games[0].relatedCount).toBe(2)
+  })
+
+  it('reserves official slots even when explicit line links fill the per-game cap', async () => {
+    linkRows = Array.from({ length: 25 }, (_, i) => ({
+      id: `user-line-${i}`,
+      parent_id: 'nfl',
+      relation: 'line',
+    }))
+    const response = await getSchedule({ sport: 'nfl' })
+    const result = 'result' in response ? response.result : response
+    expect(result.games[0].related).toHaveLength(25)
+    expect(result.games[0].related[0]).toEqual({
+      id: 'nfl-prop',
+      kind: 'official',
+      group: 'game-lines',
+    })
+    expect(
+      result.games[0].related.filter((m) => m.kind === 'linked')
+    ).toHaveLength(24)
+  })
+
+  it.each(MANIFOLD_SPORTS_USER_IDS)(
+    'reserves official priority for %s, not forged event metadata',
+    async (trustedCreator) => {
+      marketRows = [
+        ...props.map((row) => ({ ...row, creator_id: trustedCreator })),
+        {
+          ...props[0],
+          id: 'forged',
+          creator_id: 'untrusted',
+          question: 'Will nfl Home beat nfl Away?',
+          importance_score: 1000000,
+        },
+      ]
+      linkRows = Array.from({ length: 24 }, (_, i) => ({
+        id: `linked-${i}`,
+        parent_id: 'nfl',
+        relation: 'prop',
+      }))
+      const response = await getSchedule({ sport: 'nfl' })
+      const result = 'result' in response ? response.result : response
+      expect(result.games[0].related).toHaveLength(25)
+      expect(result.games[0].related[0]).toEqual({
+        id: 'nfl-prop',
+        kind: 'official',
+        group: 'game-lines',
+      })
+      expect(
+        result.games[0].related.filter((m) => m.kind === 'linked')
+      ).toHaveLength(24)
+      linkRows = []
+      const uncapped = await getSchedule({ sport: 'nfl' })
+      const available = 'result' in uncapped ? uncapped.result : uncapped
+      expect(
+        available.games[0].related.find((m) => m.id === 'forged')?.kind
+      ).toBe('both-teams')
+    }
+  )
+
+  it('keeps a market linked elsewhere off a game it would otherwise match', async () => {
+    // nfl-prop carries the game's event id, but its creator linked it to
+    // another market.
+    linkedElsewhere = [{ id: 'nfl-prop' }]
+    const response = await getSchedule({ sport: 'nfl' })
+    const result = 'result' in response ? response.result : response
+    expect(result.games[0].related).toEqual([])
+  })
+
+  it('still serves the page, matching by team, before the links table exists', async () => {
+    linksMissing = true
+    const response = await getSchedule({ sport: 'nfl' })
+    const result = 'result' in response ? response.result : response
+    expect(result.games[0].related.map((r) => r.id)).toEqual(['nfl-prop'])
+  })
+
+  it.each(['children', 'parents'] as const)(
+    'uses the complete heuristic fallback when the %s read fails',
+    async (failedRead) => {
+      failedLinkRead = failedRead
+      linkRows = [{ id: 'nfl-prop', parent_id: 'soccer', relation: 'prop' }]
+      linkedElsewhere = [{ id: 'nfl-prop' }]
+      const response = await getSchedule({ sport: 'all' })
+      const result = 'result' in response ? response.result : response
+      const appearances = result.games.flatMap((game) =>
+        game.related
+          .filter((market) => market.id === 'nfl-prop')
+          .map((market) => ({ gameId: game.id, kind: market.kind }))
+      )
+      expect(appearances).toEqual([{ gameId: 'nfl', kind: 'official' }])
+    }
+  )
 })

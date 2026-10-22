@@ -107,6 +107,15 @@ export function useGroupRole(
   groupId: string | undefined,
   user: User | null | undefined
 ) {
+  return useGroupRoleInfo(groupId, user).role
+}
+
+// Also returns the user's own role in the topic, so callers can tell when the
+// user only has admin rights because they're a site mod/admin
+export function useGroupRoleInfo(
+  groupId: string | undefined,
+  user: User | null | undefined
+) {
   const [userRole, setUserRole] = useState<GroupRole | null | undefined>(
     undefined
   )
@@ -115,7 +124,8 @@ export function useGroupRole(
     getTranslatedMemberRole(groupId, user).then((role) => setUserRole(role))
   }, [user, groupId])
 
-  return isMod ? 'admin' : userRole
+  const role: GroupRole | null | undefined = isMod ? 'admin' : userRole
+  return { role, topicRole: userRole, isSiteMod: isMod }
 }
 
 export async function getTranslatedMemberRole(

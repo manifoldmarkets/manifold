@@ -1,5 +1,6 @@
 import { getConsensusMedian } from 'common/perps/oracle'
 
+import { localOracleClock, OracleClock } from './oracle-clock'
 import { log } from './utils'
 
 // BTC/USD spot from four independent, free, no-auth, US-accessible exchanges.
@@ -157,10 +158,14 @@ export const getBtcConsensusPrice = (
     maxDivergenceFrac
   )
 
-export const fetchBtcUsdSpot = async (): Promise<{
+export const fetchBtcUsdSpot = async (
+  clock: OracleClock = localOracleClock
+): Promise<{
   ts: number
   price: number
 } | null> => {
+  // Read before any venue request, so the stamp never postdates the sample.
+  const sampledAt = await clock()
   const results = await Promise.allSettled(
     SOURCES.map(async (s) => {
       const price = await s.fetchPrice()
@@ -194,5 +199,5 @@ export const fetchBtcUsdSpot = async (): Promise<{
     )
     return null
   }
-  return { ts: Date.now(), price }
+  return { ts: sampledAt, price }
 }

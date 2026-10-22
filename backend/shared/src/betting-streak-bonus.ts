@@ -33,9 +33,9 @@ export const payBettingStreak = async (
     // Fetch user's supporter entitlements for bonus multiplier
     const entitlements = await getActiveSupporterEntitlements(tx, oldUser.id)
 
-    // Effective tier (verification + subscription) drives the streak multiplier.
-    // Unverified users get 0.2x — the existing 5×streak / 25 cap naturally
-    // becomes 1, 2, 3, 4, 5 / capped at 5 mana per day.
+    // Effective tier (account standing + subscription) drives the streak
+    // multiplier. Bonus-blocked users get 0.2x — the existing 5×streak / 25
+    // cap becomes 1, 2, 3, 4, 5 / capped at 5 mana per day; flagged get 0.
     const effectiveTier = resolveEffectiveTier({
       entitlements,
       bonusEligibility: oldUser.bonusEligibility,

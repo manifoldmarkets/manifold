@@ -24,6 +24,7 @@ import { TopicSelector } from 'web/components/topics/topic-selector'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { api } from 'web/lib/api/api'
@@ -361,7 +362,10 @@ export default function AdminCreatePerpPage() {
     <Page trackPageView={'admin create perp page'}>
       <NoSEO />
       <div className="mx-8 max-w-2xl">
-        <Title>Admin — Create perp market</Title>
+        <Title>
+          Admin — Create perp market
+          <ModActionTag admin className="ml-2 align-middle" />
+        </Title>
         <form onSubmit={submit} className="space-y-4">
           <LabeledInput
             label="Question"

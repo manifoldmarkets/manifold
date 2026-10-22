@@ -384,6 +384,7 @@ export function ContractPageContent(props: ContractParams) {
                   <EditableQuestionTitle
                     contract={liveContract}
                     canEdit={isAdmin || isCreator || isMod}
+                    modAction={!isCreator}
                     prefix={
                       isPerp ? (
                         <PerpMarketExplainer
@@ -412,6 +413,7 @@ export function ContractPageContent(props: ContractParams) {
                   question={props.contract.question}
                   financeContract={liveContract}
                   editable={isCreator || isAdmin || isMod}
+                  modAction={!isCreator}
                   isCashContract={isCashContract}
                 />
               </Row>

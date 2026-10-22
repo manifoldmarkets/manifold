@@ -194,6 +194,14 @@ export const buildPerpUserContractMetrics = async (
     positionsByUser[p.userId].push(p)
   }
 
+  const holds = await pgTrans.manyOrNone<{
+    user_id: string
+    amount: string | number
+  }>(
+    "select user_id,sum(reserved_mana) as amount from perp_orders where contract_id=$1 and status='pending' and user_id=any($2) group by user_id",
+    [contract.id, userIds]
+  )
+  const reserved = new Map(holds.map((r) => [r.user_id, Number(r.amount)]))
   return userIds.map((uid) => {
     const agg = aggByUser[uid] ?? emptyAgg(uid)
     const positions = positionsByUser[uid] ?? []
@@ -205,7 +213,11 @@ export const buildPerpUserContractMetrics = async (
       else shortSize += p.size
       payout += getPositionValue(p, contract.oraclePrice)
     }
-    const invested = agg.totalInvested
+    const held = reserved.get(uid) ?? 0
+    if (!Number.isFinite(held) || held < 0)
+      throw new Error('Invalid pending PERP reserve')
+    payout += held
+    const invested = agg.totalInvested + held
     const sold = agg.totalSold
     const profit = payout + sold - invested
     const profitPercent = invested > 0 ? (profit / invested) * 100 : 0
@@ -218,7 +230,7 @@ export const buildPerpUserContractMetrics = async (
       // rebuild time here made passive holders look like weekly traders.
       lastBetTime: agg.lastBetTime,
       lastProb: null,
-      hasShares: longSize > 0 || shortSize > 0,
+      hasShares: longSize > 0 || shortSize > 0 || held > 0,
       hasYesShares: false,
       hasNoShares: false,
       invested,
