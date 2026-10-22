@@ -18,23 +18,49 @@ import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { Welcome } from 'web/components/onboarding/welcome'
 import { VerificationResultModal } from 'web/components/onboarding/verification-result-modal'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { BrowseV2 } from 'web/components/browse-v2/browse-v2'
+import {
+  BrowseViewState,
+  useBrowseView,
+} from 'web/components/browse-v2/use-browse-view'
 export default function BrowsePage() {
   const user = useUser()
   useSaveReferral(user)
+  const browseView = useBrowseView()
 
   return (
-    <Page trackPageView={'questions page'} className="lg:px-4">
+    <Page
+      trackPageView={'questions page'}
+      className={browseViewPageClass(browseView)}
+    >
       {/* only show logo on mobile, since there's no sidebar */}
       {!user && <ManifoldLogo className="m-2 flex lg:hidden" />}
       <div className="lg:mb-4"></div>
       <Welcome />
       <VerificationResultModal />
-      <BrowsePageContent />
+      <BrowsePageContent browseView={browseView} />
     </Page>
   )
 }
 
-export function BrowsePageContent() {
+// The redesign takes the empty right-hand columns of the page grid.
+export const browseViewPageClass = (browseView: BrowseViewState) =>
+  clsx(
+    browseView.ready && browseView.view === 'new'
+      ? 'lg:col-span-10 lg:px-6'
+      : 'lg:px-4'
+  )
+
+export function BrowsePageContent(props: { browseView: BrowseViewState }) {
+  const { browseView } = props
+  if (!browseView.ready) return <LoadingContractResults />
+  if (browseView.view === 'new')
+    return <BrowseV2 onClassicView={() => browseView.setView('legacy')} />
+  return <LegacyBrowseContent onNewView={() => browseView.setView('new')} />
+}
+
+function LegacyBrowseContent(props: { onNewView: () => void }) {
+  const { onNewView } = props
   const user = useUser()
   const browseDefault = useBrowseDefault(user)
   const isMobile = useIsMobile()
@@ -63,6 +89,15 @@ export function BrowsePageContent() {
 
   return (
     <Col className={clsx('relative col-span-8 mx-auto w-full')}>
+      <div className="flex justify-end px-2 pb-2">
+        <button
+          type="button"
+          onClick={onNewView}
+          className="text-primary-700 hover:text-primary-800 text-sm font-medium"
+        >
+          Try the new browse →
+        </button>
+      </div>
       <Search
         key={browseDefault.persistPrefix}
         showTopicsFilterPills

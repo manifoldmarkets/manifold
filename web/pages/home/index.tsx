@@ -12,15 +12,17 @@ import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { BrowsePageContent } from '../browse'
+import { BrowsePageContent, browseViewPageClass } from '../browse'
+import { useBrowseView } from 'web/components/browse-v2/use-browse-view'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 export default function Home() {
   const user = useUser()
   useSaveReferral(user)
   useRedirectIfSignedOut()
+  const browseView = useBrowseView()
 
   return (
-    <Page trackPageView={'home'} className="lg:px-4">
+    <Page trackPageView={'home'} className={browseViewPageClass(browseView)}>
       <Welcome />
       <VerificationResultModal />
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
@@ -29,7 +31,7 @@ export default function Home() {
           until they verify. Nobody else is prompted to verify here. */}
       <FlaggedAccountBanner user={user} />
       <DailyStats className="z-50 mb-1 w-full px-2 py-2" user={user} />
-      <BrowsePageContent />
+      <BrowsePageContent browseView={browseView} />
       {user && (
         <button
           type="button"
