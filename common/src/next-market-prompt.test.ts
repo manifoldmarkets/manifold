@@ -252,6 +252,7 @@ describe('updateNextMarketPromptQueue', () => {
     shown: [],
     remaining: [],
     completedIds: [],
+    retiredIds: [],
   })
   const options = {
     sourceContractId: 'source',
@@ -339,6 +340,134 @@ describe('updateNextMarketPromptQueue', () => {
     const queue = update(update(empty(), ['a']), [], 'a')
     expect(shown(update(queue, ['source', 'a']))).toEqual(['a'])
     expect(queue.remaining).toEqual([])
+  })
+
+  it('replaces a closed untraded pick once while retaining its seen ID', () => {
+    let queue = updateNextMarketPromptQueue(
+      empty(),
+      [binary('a', { closeTime: NOW + 1 }), binary('b'), binary('c')],
+      options
+    )
+    const later = { ...options, now: NOW + 2 }
+    queue = updateNextMarketPromptQueue(queue, [], later)
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.retiredIds).toEqual(['a'])
+    expect(queue.completedIds).toEqual([])
+    queue = updateNextMarketPromptQueue(queue, [binary('a')], later)
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.remaining.map((c) => c.id)).toEqual(['c'])
+    expect(queue.retiredIds).toEqual(['a'])
+  })
+
+  it('keeps a blocked pick retired after unblocking without creating another slot', () => {
+    const blocked = { ...options, isBlocked: (c: Contract) => c.id === 'a' }
+    let queue = updateNextMarketPromptQueue(
+      update(empty(), ['a', 'b', 'c']),
+      [],
+      blocked
+    )
+    expect(queue.retiredIds).toEqual(['a'])
+    queue = update(queue, ['a'])
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.retiredIds).toEqual(['a'])
+    expect(queue.remaining.map((c) => c.id)).toEqual(['c'])
+  })
+
+  it('fills a retired slot from a late response, excluding ineligible reserves', () => {
+    const blocked = { ...options, isBlocked: (c: Contract) => c.id === 'a' }
+    let queue = updateNextMarketPromptQueue(update(empty(), ['a']), [], blocked)
+    expect(queue.retiredIds).toEqual(['a'])
+    queue = updateNextMarketPromptQueue(
+      queue,
+      [
+        binary('a'),
+        binary('closed', { closeTime: NOW }),
+        binary('b'),
+        binary('c'),
+      ],
+      blocked
+    )
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.completedIds).toEqual([])
+    expect(queue.remaining.map((c) => c.id)).toEqual(['c'])
+  })
+
+  it('does not retire an already traded pick or award its slot twice', () => {
+    let queue = update(update(empty(), ['a', 'b', 'c']), [], 'a')
+    const blocked = { ...options, isBlocked: (c: Contract) => c.id === 'a' }
+    queue = updateNextMarketPromptQueue(queue, [], blocked, 'a')
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.completedIds).toEqual(['a'])
+    expect(queue.retiredIds).toEqual([])
+  })
+
+  it('preserves one earned reveal after trading a replacement', () => {
+    const blocked = { ...options, isBlocked: (c: Contract) => c.id === 'a' }
+    let queue = updateNextMarketPromptQueue(
+      update(empty(), ['a', 'b', 'c', 'd']),
+      [],
+      blocked
+    )
+    queue = updateNextMarketPromptQueue(queue, [], blocked, 'b')
+    queue = updateNextMarketPromptQueue(queue, [], blocked, 'b')
+    expect(shown(queue)).toEqual(['a', 'b', 'c'])
+    expect(queue.completedIds).toEqual(['b'])
+    expect(queue.remaining.map((c) => c.id)).toEqual(['d'])
+  })
+
+  it('ignores a stale completion callback for a retired pick', () => {
+    const blocked = { ...options, isBlocked: (c: Contract) => c.id === 'a' }
+    let queue = updateNextMarketPromptQueue(
+      update(empty(), ['a', 'b', 'c']),
+      [],
+      blocked
+    )
+    queue = updateNextMarketPromptQueue(queue, [], blocked, 'a')
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.completedIds).toEqual([])
+    expect(queue.retiredIds).toEqual(['a'])
+  })
+
+  it('keeps an ineligible pick while its dialog is open, then replaces on cancellation', () => {
+    const blocked = { ...options, isBlocked: (c: Contract) => c.id === 'a' }
+    let queue = updateNextMarketPromptQueue(
+      update(empty(), ['a', 'b', 'c']),
+      [],
+      { ...blocked, activeDialogContractId: 'a' }
+    )
+    expect(shown(queue)).toEqual(['a'])
+    expect(queue.retiredIds).toEqual([])
+    queue = updateNextMarketPromptQueue(queue, [], blocked)
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.completedIds).toEqual([])
+    expect(queue.retiredIds).toEqual(['a'])
+  })
+
+  it('counts a trade before retirement when an ineligible dialog closes', () => {
+    const blocked = { ...options, isBlocked: (c: Contract) => c.id === 'a' }
+    const queue = updateNextMarketPromptQueue(
+      update(empty(), ['a', 'b', 'c']),
+      [],
+      blocked,
+      'a'
+    )
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.completedIds).toEqual(['a'])
+    expect(queue.retiredIds).toEqual([])
+  })
+
+  it('replaces successive untraded picks without showing two actionable picks', () => {
+    let queue = update(empty(), ['a', 'b', 'c', 'd'])
+    for (const ids of [['a'], ['a', 'b']]) {
+      queue = updateNextMarketPromptQueue(queue, [], {
+        ...options,
+        isBlocked: (c) => ids.includes(c.id),
+      })
+    }
+    expect(shown(queue)).toEqual(['a', 'b', 'c'])
+    expect(queue.retiredIds).toEqual(['a', 'b'])
+    expect(queue.completedIds).toEqual([])
+    expect(queue.remaining.map((c) => c.id)).toEqual(['d'])
   })
 })
 

@@ -148,8 +148,10 @@ function TriggeredNextMarketPrompt(props: {
     shown: [],
     remaining: [],
     completedIds: [],
+    retiredIds: [],
   })
   const queueRef = useRef(queue)
+  const activeDialogId = useRef<string>()
   const candidateSources = useRef(
     new Map<string, 'related' | 'personalized-feed'>()
   )
@@ -168,7 +170,7 @@ function TriggeredNextMarketPrompt(props: {
     const next = updateNextMarketPromptQueue(
       { ...current, remaining: [] },
       pool,
-      options,
+      { ...options, activeDialogContractId: activeDialogId.current },
       completedId
     )
     queueRef.current = next
@@ -272,6 +274,7 @@ function TriggeredNextMarketPrompt(props: {
             excludeContractIds: new Set([
               ...options.excludeContractIds,
               ...q.completedIds,
+              ...q.retiredIds,
               ...(seedId ? [seedId] : []),
             ]),
             count: 1,
@@ -417,13 +420,46 @@ function TriggeredNextMarketPrompt(props: {
   ])
 
   const latestCompletedId = queue.completedIds[queue.completedIds.length - 1]
+  const isEligible = (c: Contract) =>
+    isNextMarketPromptCandidate(c, { now: Date.now() }) &&
+    privateUser &&
+    !isContractBlocked(privateUser, c)
+  // Reconcile on renders too: a pick can reach its close time without a fetch.
+  // Keep a dialog mounted until close reports its trade (or cancellation).
+  useEffect(() => {
+    if (
+      variant !== 'treatment' ||
+      dismissed ||
+      !privateUser ||
+      !isABTestAssignmentCurrent(`user:${user.id}`)
+    ) {
+      activeDialogId.current = undefined
+      return
+    }
+    if (
+      !queue.shown.some(
+        (c) =>
+          !queue.completedIds.includes(c.id) &&
+          !queue.retiredIds.includes(c.id) &&
+          c.id !== activeDialogId.current &&
+          !isEligible(c)
+      )
+    )
+      return
+    updateQueue([], {
+      sourceContractId: contract.id,
+      token: lastBet.token,
+      excludeContractIds: recentlyBetIds.current,
+      isBlocked: (c) => isContractBlocked(privateUser, c),
+    })
+  })
   const candidates = queue.shown.filter(
     (c) =>
       (!queue.completedIds.includes(c.id) || c.id === latestCompletedId) &&
-      isNextMarketPromptCandidate(c, { now: Date.now() }) &&
+      !queue.retiredIds.includes(c.id) &&
       privateUser &&
       isABTestAssignmentCurrent(`user:${user.id}`) &&
-      !isContractBlocked(privateUser, c)
+      (isEligible(c) || c.id === activeDialogId.current)
   )
   useEffect(() => {
     if (variant !== 'treatment' || dismissed) return
@@ -497,10 +533,18 @@ function TriggeredNextMarketPrompt(props: {
               prefetchedSeedIds.current.add(candidate.id)
               loadMore.current?.(candidate.id)
             }}
-            onTradeCompleted={() => {
-              if (!privateUser || !isABTestAssignmentCurrent(`user:${user.id}`))
+            onDialogOpen={() => {
+              activeDialogId.current = candidate.id
+            }}
+            onDialogClose={(traded) => {
+              if (
+                !privateUser ||
+                !isABTestAssignmentCurrent(`user:${user.id}`) ||
+                activeDialogId.current !== candidate.id
+              )
                 return
-              loadMore.current?.(candidate.id)
+              activeDialogId.current = undefined
+              if (traded) loadMore.current?.(candidate.id)
               updateQueue(
                 [],
                 {
@@ -509,7 +553,7 @@ function TriggeredNextMarketPrompt(props: {
                   excludeContractIds: recentlyBetIds.current,
                   isBlocked: (c) => isContractBlocked(privateUser, c),
                 },
-                candidate.id
+                traded ? candidate.id : undefined
               )
             }}
           />
@@ -527,7 +571,8 @@ function NextMarketRow(props: {
   amount: number
   completed: boolean
   onBetIntent: () => void
-  onTradeCompleted: () => void
+  onDialogOpen: () => void
+  onDialogClose: (traded: boolean) => void
 }) {
   const {
     contract,
@@ -537,19 +582,20 @@ function NextMarketRow(props: {
     userId,
     completed,
     onBetIntent,
-    onTradeCompleted,
+    onDialogOpen,
+    onDialogClose,
   } = props
   const [openOutcome, setOpenOutcome] = useState<'YES' | 'NO' | undefined>()
   const [openMulti, setOpenMulti] = useState(false)
   const trackedBetIds = useRef(new Set<string>())
   const placedBet = useRef(false)
-  const onTradeCompletedRef = useRef(onTradeCompleted)
-  onTradeCompletedRef.current = onTradeCompleted
+  const onDialogCloseRef = useRef(onDialogClose)
+  onDialogCloseRef.current = onDialogClose
   const closeDialog = () => {
     setOpenOutcome(undefined)
     setOpenMulti(false)
     // Dialogs can auto-close on a timer; use the latest block/history filters.
-    if (placedBet.current) onTradeCompletedRef.current()
+    onDialogCloseRef.current(placedBet.current)
   }
   const isBinary =
     contract.outcomeType === 'BINARY' && contract.mechanism === 'cpmm-1'
@@ -622,6 +668,7 @@ function NextMarketRow(props: {
             color="green"
             onClick={() => {
               trackClick('YES')
+              onDialogOpen()
               onBetIntent()
               setOpenOutcome('YES')
             }}
@@ -633,6 +680,7 @@ function NextMarketRow(props: {
             color="red"
             onClick={() => {
               trackClick('NO')
+              onDialogOpen()
               onBetIntent()
               setOpenOutcome('NO')
             }}
@@ -647,6 +695,7 @@ function NextMarketRow(props: {
           className="shrink-0"
           onClick={() => {
             trackClick('bet')
+            onDialogOpen()
             onBetIntent()
             setOpenMulti(true)
           }}

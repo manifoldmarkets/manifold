@@ -142,24 +142,43 @@ export type NextMarketPromptQueue = {
   shown: Contract[]
   remaining: Contract[]
   completedIds: string[]
+  retiredIds: string[]
 }
 
 /** Keep ranked reserves, revealing one new pick per distinct completed market.
  * A completion can arrive before its prefetched candidates; the unfilled slot
- * survives until a later update. Previously shown markets never reappear.
+ * survives until a later update. Retire ineligible untraded picks to free their
+ * slots, but keep an open dialog until it can report a trade or cancellation.
+ * Previously shown markets never reappear.
  */
 export const updateNextMarketPromptQueue = (
   queue: NextMarketPromptQueue,
   candidates: readonly Contract[],
-  opts: Parameters<typeof pickNextMarketCandidates>[1],
+  opts: Parameters<typeof pickNextMarketCandidates>[1] & {
+    activeDialogContractId?: string
+  },
   completedId?: string
 ): NextMarketPromptQueue => {
+  const now = opts.now ?? Date.now()
   const completedIds =
     completedId &&
     queue.shown.some((c) => c.id === completedId) &&
+    !queue.retiredIds.includes(completedId) &&
     !queue.completedIds.includes(completedId)
       ? [...queue.completedIds, completedId]
       : queue.completedIds
+  const retiredIds = [
+    ...queue.retiredIds,
+    ...queue.shown
+      .filter(
+        (c) =>
+          !completedIds.includes(c.id) &&
+          !queue.retiredIds.includes(c.id) &&
+          c.id !== opts.activeDialogContractId &&
+          (!isNextMarketPromptCandidate(c, { now }) || opts.isBlocked?.(c))
+      )
+      .map((c) => c.id),
+  ]
   const pool = [...queue.remaining, ...candidates]
   const remaining = pickNextMarketCandidates(pool, {
     ...opts,
@@ -171,11 +190,15 @@ export const updateNextMarketPromptQueue = (
   })
   const slots = Math.max(
     0,
-    NEXT_MARKET_PROMPT_COUNT + completedIds.length - queue.shown.length
+    NEXT_MARKET_PROMPT_COUNT +
+      completedIds.length +
+      retiredIds.length -
+      queue.shown.length
   )
   return {
     shown: [...queue.shown, ...remaining.slice(0, slots)],
     remaining: remaining.slice(slots),
     completedIds,
+    retiredIds,
   }
 }
