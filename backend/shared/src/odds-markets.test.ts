@@ -132,8 +132,8 @@ function database(opts: { onLock?: () => void } = {}) {
     manyOrNone: jest.fn().mockResolvedValue([]),
     map: jest.fn().mockResolvedValue([]),
     none,
-    task: async (work: (task: { none: typeof none }) => Promise<void>) =>
-      work({ none }),
+    task: async (work: (task: { oneOrNone: typeof none }) => Promise<void>) =>
+      work({ oneOrNone: none }),
     tx: async (run: (tx: SupabaseDirectClient) => Promise<Contract>) => {
       let unlock: (() => void) | undefined
       const inserted: Contract[] = []

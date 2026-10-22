@@ -190,15 +190,15 @@ afterEach(() => {
 })
 
 it.each(['score-write', 'resolution-transaction'] as const)(
-  'identifies a pending %s at the deadline, then distinguishes unknown carryover without repeating alerts',
+  'identifies pending %s carryover, retains exclusion until settlement, then permits retry',
   async (stage) => {
     const entered = deferred<void>()
     const operation = deferred<void>()
-    const none = jest.fn().mockResolvedValue(undefined)
+    const none = jest.fn().mockResolvedValue({ id: 'game' })
     const pg = {
       none,
-      task: async (work: (task: { none: typeof none }) => Promise<void>) =>
-        work({ none }),
+      task: async (work: (task: { oneOrNone: typeof none }) => Promise<void>) =>
+        work({ oneOrNone: none }),
       map: jest.fn(
         async (
           _sql: string,
@@ -270,46 +270,15 @@ it.each(['score-write', 'resolution-transaction'] as const)(
     expect(state.inFlight.has('affected')).toBe(true)
     expect(log.error).not.toHaveBeenCalled()
 
-    // SQL/resolution (including any rollback wait) is still pending when the
-    // deadline identifies the market. Only this later rejection is unknown.
-    state.missing.affected = NOW + DEADLINE
-    jest.advanceTimersByTime(60_000)
-    operation.reject(new Error('Query read timeout'))
-    await oldWork
-    expect(state.inFlight.has('affected')).toBe(true)
-    expect(state.missing.affected).toBe(NOW + DEADLINE)
-    expect(state.inFlightDetails.get('affected')).toEqual({
-      runId: owner,
-      stage,
-      stageStartedAt: NOW,
-      status: 'unknown',
-    })
-    expect(log.error).toHaveBeenCalledTimes(1)
-    expect(log.error).toHaveBeenCalledWith(
-      expect.stringContaining(
-        `affected: mutation outcome unknown; run=${owner} stage=${stage}`
-      )
-    )
-    expect(log.error).toHaveBeenCalledWith(
-      expect.stringContaining('Verify the old database work has ended')
-    )
-    const unknownLog = JSON.parse(output[output.length - 1].line) as {
-      severity: string
-      message: string
-    }
-    expect(unknownLog.severity).toBe('ERROR')
-    expect(unknownLog.message).toContain(
-      `affected: mutation outcome unknown; run=${owner} stage=${stage}`
-    )
+    // A deadline alone never releases an unresolved helper. Normal ticks skip it.
     const publishes = jest.mocked(publishSportsLiveScore).mock.calls.length
     for (let i = 0; i < 3; i++) await resolveOddsSportsMarkets()
-    expect(log.error).toHaveBeenCalledTimes(1)
     expect(getScores).toHaveBeenCalledTimes(1)
-    expect(publishSportsLiveScore).toHaveBeenCalledTimes(publishes)
+    expect(log.error).not.toHaveBeenCalled()
+    expect(state.inFlight.has('affected')).toBe(true)
 
-    // A later deadline includes both its own pending market and the old
-    // unknown reservation, correlated to different runs. No extra alert fires
-    // just because a normal replacement tick skipped the old reservation.
+    // Another market can proceed, while a second deadline identifies both owners.
+    jest.advanceTimersByTime(60_000)
     const otherEntered = deferred<void>()
     const otherOperation = deferred<void>()
     pg.manyOrNone.mockResolvedValue([game('affected'), game('other')])
@@ -333,7 +302,7 @@ it.each(['score-write', 'resolution-transaction'] as const)(
         runId: owner,
         stage,
         stageStartedAt: NOW,
-        status: 'unknown',
+        status: 'pending',
       },
       {
         id: 'other',
@@ -343,13 +312,38 @@ it.each(['score-write', 'resolution-transaction'] as const)(
         status: 'pending',
       },
     ])
+
+    // Rejection settles the helper, not necessarily the server. Later retries
+    // use guarded writes/serializable resolution; there is no permanent quarantine.
+    state.missing.affected = Date.now()
+    const missingBefore = state.missing.affected
+    operation.reject(new Error('Query read timeout'))
+    await oldWork
+    expect(state.inFlight.has('affected')).toBe(false)
+    expect(state.inFlightDetails.has('affected')).toBe(false)
+    expect(state.missing.affected).toBe(missingBefore)
+    const rejectedLog = JSON.parse(output[output.length - 1].line) as {
+      severity: string
+      message: string
+    }
+    expect(rejectedLog.severity).toBe('ERROR')
+    expect(rejectedLog.message).toContain(
+      `affected: helper rejected; run=${owner} stage=${stage}`
+    )
+    expect(rejectedLog.message).toContain('rejection does not prove rollback')
     otherOperation.resolve()
     await replacementWork
-    expect(state.inFlight.has('affected')).toBe(true)
-    expect(state.inFlight.has('other')).toBe(false)
-    expect(state.inFlightDetails.has('other')).toBe(false)
+    expect(state.inFlight.size).toBe(0)
+    expect(state.inFlightDetails.size).toBe(0)
     expect(publishSportsLiveScore).toHaveBeenCalledTimes(publishes)
-    expect(log.error).toHaveBeenCalledTimes(1)
+
+    // Observe a fresh eligible retry, not just deletion from an in-memory Set.
+    jest.setSystemTime(NOW + 35 * 60_000)
+    const callsBefore = jest.mocked(getScores).mock.calls.length
+    await resolveOddsSportsMarkets()
+    expect(getScores).toHaveBeenCalledTimes(callsBefore + 1)
+    expect(publishSportsLiveScore).toHaveBeenCalledTimes(publishes + 2)
+    expect(state.inFlight.size).toBe(0)
     expect(jest.getTimerCount()).toBe(0)
   }
 )

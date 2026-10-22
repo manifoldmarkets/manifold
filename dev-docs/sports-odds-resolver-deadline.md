@@ -1,88 +1,86 @@
-# Odds resolver deadline and mutation ownership
+# Odds resolver deadline, retries and score ordering
 
 The main scheduler runs the Odds API resolver every ten seconds. Its three-minute
-deadline releases Croner's protection so a dead connection cannot block every
-game for the client's one-hour query timeout. The deadline is a limit on the
-scheduler's wait, **not cancellation of SQL, an HTTP request, or a resolution
-transaction that has already started**.
+deadline releases Croner's protection so a stalled run cannot block unrelated
+markets for the client's query timeout. The deadline ends the scheduler's wait;
+it does not cancel SQL, HTTP requests or an already-started resolution.
 
-All ticks in this scheduler process share one `ScorePollState`. Only the current
-run may start further requests, update polling/backoff state, publish a score or
-enter resolution. Each awaited boundary checks that ownership again.
+All ticks in one process share ScorePollState. Only the current run may start
+further work, publish scores or change polling/backoff state. Each awaited boundary
+rechecks ownership. A per-market reservation excludes replacement work while that
+market's helper is pending. A tick also skips markets reserved when its initial
+row read began, even if the reservation is released during that read; a later tick
+must obtain fresh state.
 
-Before processing a market, a tick reserves it through its score write,
-publication, answer read and resolution. A replacement tick skips that market
-while processing other games. It also skips markets reserved when its initial
-row read began, even if the reservation is released during the read: only a later
-tick with a fresh row can process those markets. The original mutation can finish
-after the deadline, but the old run cannot initiate the next side effect or alter
-the replacement's polling state. Reservations are released after confirmed
-completion, including a read-only or pre-mutation failure.
+Reservations are released in finally when the helper fulfills or rejects, even
+if its run has expired. A client timeout or lost acknowledgement does not prove
+rollback. Later attempts rely on the database protections below, rather than
+permanently quarantining the market or assuming a timer canceled old work.
 
-At the three-minute deadline, the job error includes its run ID and a snapshot
-of every reserved market ID, the owning run, current stage, stage start time
-(Unix milliseconds), and `pending` or `unknown` status. It includes reservations
-carried over from earlier runs. `pending` means the helper has not settled; it
-does not mean the database work was cancelled or its outcome is unknown. Score
-connection acquisition and writes, publication, answer reads, resolution
-connection acquisition, the transaction, and post-commit effects have separate
-stages. A later genuinely unknown outcome logs the same market/run/stage with
-recovery instructions. Successful replacement ticks do not repeat these alerts.
+## Database protections
 
-## Unknown mutation outcomes
+Score writes update only unresolved markets with an older sportsLiveUpdatedTime.
+The SQL checks both the native resolution column and JSON isResolved flag, and
+requires a strictly newer finite timestamp. PostgreSQL rechecks the predicates
+when a concurrent row update releases its lock. A delayed old write therefore
+cannot overwrite a newer score or a committed resolution. UPDATE RETURNING tells
+the caller whether its patch was accepted. Rejected patches are neither published
+nor followed by resolution; the next eligible tick reads the market again.
 
-A rejected promise does not always prove that database work stopped. In
-particular, the client's `Query read timeout` or connection loss may leave a
-statement running or its commit result unknown. The resolver retains that
-market's reservation for the life of the process and emits an ERROR naming the
-market and recovery steps, even if the run has already expired. No timer clears
-the reservation. Other games continue; this market receives no automatic score
-writes or resolution attempts from subsequent ticks in the same process.
-It may remain unresolved and tradable until operator intervention; retaining
-the reservation does not automatically close trading.
+Whole-market sports resolution uses the existing serializable transaction. It
+re-reads the contract, answers, metrics and liquidity, rejects an already-resolved
+contract, and commits answer changes, balances, payout ledger, resolution and
+metrics atomically. Concurrent attempts can fail serialization; a later retry
+reads the committed state and cannot pay the same whole-market resolution twice.
+This is not a new transaction policy or a general reconciliation service.
 
-Known server rejections (serialization/deadlock failure, lock/statement timeout,
-foreign-key/unique/check violations) release the reservation. A resolution
-`APIError` also releases it: `pg-promise` awaits rollback before propagating the
-callback error and substitutes the rollback error if rollback fails. Unknown
-errors remain conservative; this is not a general error classifier.
+The three-minute ERROR includes all currently reserved market IDs, owner run IDs,
+stages, stage-start timestamps and pending status, including earlier runs. A
+helper rejection logs its market/run/stage and explicitly does not claim rollback.
+Diagnostic metadata does not govern release. The optional transaction observer
+remains only to distinguish acquisition, transaction and post-commit log stages;
+the previous unknown-outcome classifier and issuance/commit release flags are gone.
 
-Connection acquisition failures release the reservation because the write has
-not been issued. Score writes acquire a task connection first and recheck run
-ownership inside its callback. Resolution observes entry into its transaction
-callback and successful COMMIT. Failures before callback entry or after confirmed
-COMMIT (for example notification or page revalidation failures) release the
-reservation; they do not claim an uncertain payout outcome. A lost COMMIT
-acknowledgment remains unknown.
+## Retry limits
 
-An operator must inspect the named market and establish that its old database
-session/transaction has ended before manually resolving it or restarting the
-scheduler to reset reservations. Restarting alone is not proof of cancellation.
-There is no automatic reconciliation or durable cross-process fence here. Normal
-deployment/restart overlap, multiple scheduler instances, and other market
-writers remain outside this process-local contract.
+Ordinary missing or corrected scores and provider errors retain their polling and
+backoff behavior. Invalid finals are left unresolved rather than guessed. Query
+eligibility ends three days after the stored close time. The accepted fallback is
+to leave an uncertain market unresolved, whether open or closed; no trading
+suspension or forced settlement is added. Accepting delay is not a promise of
+unbounded retries or immediate recovery.
 
-Score publication retains the existing bounded, best-effort HTTP helper. The
-reservation covers the awaited helper call; this does not add delivery
-acknowledgments or ordering for requests already sent over the network. Already
-received score updates are ordered by `sportsLiveUpdatedTime` in the existing
-schedule UI; the resolver does not change that consumer contract. Already
-entered resolution is allowed to complete with the score accepted at entry;
-this change does not revise payouts after a later provider correction.
+A restart is not proof of cancellation. Application reservations are process-local;
+SQL guards and the existing settlement transaction provide the tested database
+protections. Score publication remains bounded and best-effort. This change does
+not add acknowledgements or ordering for already-sent network messages, revise a
+payout after a later provider correction, or cover arbitrary writers that bypass
+these paths.
 
-## Offline validation
+## Validation
 
-`backend/shared/src/odds-markets-review.test.ts` preserves the four reproduced
-race conditions and exercises deferred score writes, publication, answer reads
-and resolution, stale read snapshots, replacement finals, stale provider
-success/failure and follow-up requests, shared state, unknown mutation outcomes
-and confirmed failures. Dependencies are mocked; no live provider, API or
-production database validation is implied. Scheduler deadline probes separately
-exercise timeout/replacement ownership with controlled timers.
-`backend/shared/src/resolve-market-lifecycle.test.ts` additionally exercises the
-real resolution helper across connection failure, delayed/lost COMMIT
-acknowledgment and post-commit revalidation failure with an offline adapter.
-`backend/shared/src/sports-odds-deadline.test.ts` runs the real scheduler and
-resolver with controlled timers and unresolved promises. It verifies immediate
-market identification, later unknown outcomes, reservation carryover, no repeat
-alerts on normal ticks, and unchanged fencing/cleanup after late settlement.
+The resolver race suite preserves stale-run and polling-state fences and verifies
+fresh retries after settled rejection. The deadline suite exercises the real
+scheduler, configured cron catch and production JSON serializer using controlled
+timers; Cron scheduling and external services are stubbed. It checks pending
+carryover, later release, retry, and no publication after an abandoned helper.
+
+The opt-in local PostgreSQL regression executes actual settlement/payout math,
+query generators, converters and SQL transactions with a synthetic schema and a
+nonzero two-user payout fixture. It verifies concurrent settlement, rollback then
+retry, a real COMMIT followed by an injected application acknowledgement failure,
+delayed score writes after newer scores or resolution, and publication only after
+SQL acceptance. The injected acknowledgement failure is not a physical network
+fault; full production migrations, triggers, live providers and deployed alert
+delivery are outside this fixture.
+
+Use a disposable PostgreSQL 15 database named pr4178_test on an explicit loopback
+port, user postgres without a password, and no mounted production data. The harness
+rejects other targets and recreates its fixture tables. Set
+SPORTS_ODDS_TEST_DATABASE_URL=postgres://postgres@127.0.0.1:<port>/pr4178_test and
+optionally SPORTS_ODDS_TEST_EVIDENCE_DIR, then run
+`node backend/shared/test/sports-odds-postgres.cjs` from the repository root.
+No environment files or production credentials are loaded. Unrelated external
+services are disabled. Selected utility exports are loaded directly from their
+source to avoid unrelated Firebase/HTML initialization; the settlement helper,
+payout calculations and database persistence functions themselves are real.

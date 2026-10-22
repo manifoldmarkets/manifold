@@ -66,8 +66,8 @@ export const resolveMarketHelper = async (
   resolver: User,
   creator: User,
   { value, resolutions, probabilityInt, outcome, answerId }: ResolutionParams,
-  // Synchronous observer for callers that must distinguish acquisition failures
-  // and post-commit side-effect failures from an uncertain transaction outcome.
+  // Synchronous diagnostic observer for acquisition, transaction and post-commit
+  // stages. It does not control reservation release or retries.
   onTransactionState?: (state: 'started' | 'committed') => void
 ) => {
   const pg = createSupabaseDirectClient()

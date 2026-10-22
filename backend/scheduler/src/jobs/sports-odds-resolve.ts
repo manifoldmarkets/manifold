@@ -24,7 +24,7 @@ let warnedNoKey = false
 // next checkpoint without starting another side effect. An already-issued
 // write/publish/resolution retains its market's reservation until it settles;
 // the shared state lets fresh ticks skip that market and process the rest.
-// An unknown mutation outcome stays reserved and logs an actionable ERROR.
+// Rejected helpers release reservations for later guarded/transactional retries.
 // A normal run is a few seconds: one scores
 // call per sport in play and a handful of row updates. On 2026-10-17 four runs
 // instead sat for exactly the 60-minute client query_timeout on a dead

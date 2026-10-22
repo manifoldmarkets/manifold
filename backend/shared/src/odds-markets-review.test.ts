@@ -103,14 +103,14 @@ const event: OddsApiEvent = {
 }
 
 function database() {
-  const none = jest.fn().mockResolvedValue(undefined)
+  const none = jest.fn().mockResolvedValue({ id: 'game' })
   const pg = {
     manyOrNone: jest.fn().mockResolvedValue([]),
     map: jest.fn().mockResolvedValue([]),
     none,
     task: jest.fn(
-      async (work: (task: { none: typeof none }) => Promise<void>) =>
-        work({ none })
+      async (work: (task: { oneOrNone: typeof none }) => Promise<void>) =>
+        work({ oneOrNone: none })
     ),
   }
   return {
@@ -451,7 +451,7 @@ it.each(['success', 'failure'] as const)(
 )
 
 it.each(['write', 'resolve'] as const)(
-  'R4178-01: uncertain %s outcome stays reserved and alerts even after abandonment',
+  'R4178-01: settled %s rejection releases for a later retry even after abandonment',
   async (boundary) => {
     const db = liveDatabase()
     const state = newScorePollState()
@@ -475,18 +475,20 @@ it.each(['write', 'resolve'] as const)(
       .mocked(getScores)
       .mockResolvedValue([reviewScore(boundary === 'resolve')])
     await pollOddsScoresAndResolve(db.client, state, () => current)
-    expect(state.inFlight.has('game')).toBe(true)
+    expect(state.inFlight.has('game')).toBe(false)
     expect(state.missing.game).toBe(NOW + 180_000)
     expect(log.error).toHaveBeenCalledWith(
-      expect.stringContaining('game: mutation outcome unknown')
+      expect.stringContaining('game: helper rejected')
     )
     const writes = db.pg.none.mock.calls.length
     const resolves = jest.mocked(resolveMarketHelper).mock.calls.length
-    advanceTick()
+    jest.mocked(Date.now).mockReturnValue(NOW + 31 * 60_000)
     await pollOddsScoresAndResolve(db.client, state)
-    expect(getScores).toHaveBeenCalledTimes(1)
-    expect(db.pg.none).toHaveBeenCalledTimes(writes)
-    expect(resolveMarketHelper).toHaveBeenCalledTimes(resolves)
+    expect(getScores).toHaveBeenCalledTimes(2)
+    expect(db.pg.none).toHaveBeenCalledTimes(writes + 1)
+    expect(resolveMarketHelper).toHaveBeenCalledTimes(
+      resolves + (boundary === 'resolve' ? 1 : 0)
+    )
   }
 )
 
@@ -602,7 +604,7 @@ it('abandonment during connection acquisition skips the score write', async () =
   let current = true
   db.pg.task.mockImplementationOnce(async (work) => {
     current = false
-    await work({ none: db.pg.none })
+    await work({ oneOrNone: db.pg.none })
   })
   jest.mocked(getScores).mockResolvedValue([reviewScore(false)])
   await pollOddsScoresAndResolve(db.client, state, () => current)
@@ -650,3 +652,19 @@ it('R4178-01/02: a stale provider result cannot overwrite a replacement final', 
   expect(resolveMarketHelper).toHaveBeenCalledTimes(1)
   expect(state.lastPolled.americanfootball_nfl).toBe(NOW + 180_000)
 })
+
+it.each([false, true])(
+  'a rejected guarded score write is neither published nor resolved (final: %s)',
+  async (completed) => {
+    const db = liveDatabase()
+    db.pg.none.mockResolvedValueOnce(null)
+    jest.mocked(getScores).mockResolvedValue([reviewScore(completed)])
+    const state = newScorePollState()
+    const result = await pollOddsScoresAndResolve(db.client, state)
+    expect(result).toMatchObject({ live: 0, resolved: 0, pending: 1 })
+    expect(publishSportsLiveScore).not.toHaveBeenCalled()
+    expect(resolveMarketHelper).not.toHaveBeenCalled()
+    expect(state.inFlight.size).toBe(0)
+    expect(state.inFlightDetails.size).toBe(0)
+  }
+)
