@@ -536,16 +536,21 @@ function TriggeredNextMarketPrompt(props: {
             onDialogOpen={() => {
               activeDialogId.current = candidate.id
             }}
-            onDialogClose={(traded) => {
+            onDialogClose={(traded, closedActiveDialog) => {
               if (
                 !privateUser ||
                 !isABTestAssignmentCurrent(`user:${user.id}`) ||
-                activeDialogId.current !== candidate.id
+                (!traded &&
+                  (!closedActiveDialog ||
+                    activeDialogId.current !== candidate.id))
               )
                 return
-              activeDialogId.current = undefined
-              if (traded) loadMore.current?.(candidate.id)
-              updateQueue(
+              if (closedActiveDialog && activeDialogId.current === candidate.id)
+                activeDialogId.current = undefined
+              // A placement can finish after its dialog was dismissed. Credit
+              // it without releasing a newer dialog or counting a retired slot twice.
+              const completedCount = queueRef.current.completedIds.length
+              const next = updateQueue(
                 [],
                 {
                   sourceContractId: contract.id,
@@ -555,6 +560,8 @@ function TriggeredNextMarketPrompt(props: {
                 },
                 traded ? candidate.id : undefined
               )
+              if (next.completedIds.length > completedCount)
+                loadMore.current?.(candidate.id)
             }}
           />
         ))}
@@ -562,6 +569,8 @@ function TriggeredNextMarketPrompt(props: {
     </Col>
   )
 }
+
+type PromptDialogSession = { placedBet: boolean }
 
 function NextMarketRow(props: {
   contract: Contract
@@ -572,7 +581,7 @@ function NextMarketRow(props: {
   completed: boolean
   onBetIntent: () => void
   onDialogOpen: () => void
-  onDialogClose: (traded: boolean) => void
+  onDialogClose: (traded: boolean, closedActiveDialog: boolean) => void
 }) {
   const {
     contract,
@@ -588,14 +597,25 @@ function NextMarketRow(props: {
   const [openOutcome, setOpenOutcome] = useState<'YES' | 'NO' | undefined>()
   const [openMulti, setOpenMulti] = useState(false)
   const trackedBetIds = useRef(new Set<string>())
-  const placedBet = useRef(false)
+  const activeDialog = useRef<PromptDialogSession>()
+  const session = activeDialog.current
   const onDialogCloseRef = useRef(onDialogClose)
   onDialogCloseRef.current = onDialogClose
-  const closeDialog = () => {
-    setOpenOutcome(undefined)
-    setOpenMulti(false)
+  const openDialog = () => {
+    activeDialog.current = { placedBet: false }
+    onDialogOpen()
+    onBetIntent()
+  }
+  const closeDialog = (closedSession: PromptDialogSession) => {
+    const closedActiveDialog = activeDialog.current === closedSession
+    if (closedActiveDialog) {
+      activeDialog.current = undefined
+      setOpenOutcome(undefined)
+      setOpenMulti(false)
+    }
     // Dialogs can auto-close on a timer; use the latest block/history filters.
-    onDialogCloseRef.current(placedBet.current)
+    // An older timer must not close a reopened dialog or borrow its trade status.
+    onDialogCloseRef.current(closedSession.placedBet, closedActiveDialog)
   }
   const isBinary =
     contract.outcomeType === 'BINARY' && contract.mechanism === 'cpmm-1'
@@ -617,7 +637,7 @@ function NextMarketRow(props: {
       outcome,
     })
 
-  const trackBetPlaced = (bet: Bet) => {
+  const trackBetPlaced = (bet: Bet, session: PromptDialogSession) => {
     if (
       bet.userId !== userId ||
       bet.contractId !== contract.id ||
@@ -628,7 +648,7 @@ function NextMarketRow(props: {
     )
       return
     trackedBetIds.current.add(bet.id)
-    placedBet.current = true
+    session.placedBet = true
     trackPromptEvent(userId, NEXT_MARKET_PROMPT_BET_EVENT, {
       contractId: contract.id,
       sourceContractId,
@@ -668,8 +688,7 @@ function NextMarketRow(props: {
             color="green"
             onClick={() => {
               trackClick('YES')
-              onDialogOpen()
-              onBetIntent()
+              openDialog()
               setOpenOutcome('YES')
             }}
           >
@@ -680,8 +699,7 @@ function NextMarketRow(props: {
             color="red"
             onClick={() => {
               trackClick('NO')
-              onDialogOpen()
-              onBetIntent()
+              openDialog()
               setOpenOutcome('NO')
             }}
           >
@@ -695,36 +713,35 @@ function NextMarketRow(props: {
           className="shrink-0"
           onClick={() => {
             trackClick('bet')
-            onDialogOpen()
-            onBetIntent()
+            openDialog()
             setOpenMulti(true)
           }}
         >
           Bet
         </Button>
       )}
-      {isBinary && openOutcome && (
+      {isBinary && openOutcome && session && (
         <BetDialog
           contract={contract as BinaryContract}
           open
           setOpen={(open) => {
-            if (!open) closeDialog()
+            if (!open) closeDialog(session)
           }}
           trackingLocation="next market prompt"
           initialOutcome={openOutcome}
           initialAmount={amount}
-          onBetPlaced={trackBetPlaced}
+          onBetPlaced={(bet) => trackBetPlaced(bet, session)}
         />
       )}
-      {!isBinary && openMulti && (
+      {!isBinary && openMulti && session && (
         <MultiBetDialog
           contract={contract as CPMMMultiContract}
           open={openMulti}
           setOpen={(open) => {
-            if (!open) closeDialog()
+            if (!open) closeDialog(session)
           }}
           trackingLocation="next market prompt"
-          onBetPlaced={trackBetPlaced}
+          onBetPlaced={(bet) => trackBetPlaced(bet, session)}
         />
       )}
     </Row>
