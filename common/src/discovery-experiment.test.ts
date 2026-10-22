@@ -1,41 +1,41 @@
 import {
+  DISCOVERY_EXPERIMENT_ACTIVE_VARIANTS,
   getDiscoveryExperimentAssignment,
   getEffectiveDiscoveryExperimentVariant,
   getDiscoveryQueryLengthBucket,
 } from './discovery-experiment'
 
-describe('discovery experiment assignment', () => {
-  it('forces Gen into treatment and Manifold into control', () => {
+describe('discovery experiment assignment after the experiment concluded', () => {
+  it('puts the former QA accounts in control like everyone else', () => {
     expect(
       getDiscoveryExperimentAssignment({
         userId: 'cA1JupYR5AR8btHUs2xvkui7jA93',
       })
-    ).toEqual({ variant: 'treatment', source: 'forced' })
+    ).toEqual({ variant: 'control', source: 'user-hash' })
     expect(
       getDiscoveryExperimentAssignment({
         userId: 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2',
       })
-    ).toEqual({ variant: 'control', source: 'forced' })
+    ).toEqual({ variant: 'control', source: 'user-hash' })
   })
 
-  it('keeps signed-in assignment stable across devices', () => {
+  it('puts signed-in users in control regardless of device', () => {
+    // 'ordinary-user' hashed into treatment while the experiment ran.
     expect(
       getDiscoveryExperimentAssignment({
         userId: 'ordinary-user',
         deviceId: 'device-one',
       })
-    ).toEqual(
+    ).toEqual({ variant: 'control', source: 'user-hash' })
+    expect(
       getDiscoveryExperimentAssignment({
         userId: 'ordinary-user',
         deviceId: 'device-two',
       })
-    )
+    ).toEqual({ variant: 'control', source: 'user-hash' })
   })
 
-  it('keeps frozen assignment fixtures stable', () => {
-    expect(
-      getDiscoveryExperimentAssignment({ userId: 'ordinary-user' })
-    ).toEqual({ variant: 'treatment', source: 'user-hash' })
+  it('puts anonymous devices in control and keeps the device unit', () => {
     expect(
       getDiscoveryExperimentAssignment({ deviceId: 'anonymous-device' })
     ).toEqual({ variant: 'control', source: 'device-hash' })
@@ -43,6 +43,10 @@ describe('discovery experiment assignment', () => {
 
   it('waits when neither identity is available', () => {
     expect(getDiscoveryExperimentAssignment({})).toBeUndefined()
+  })
+
+  it('offers the web hook only the control variant', () => {
+    expect(DISCOVERY_EXPERIMENT_ACTIVE_VARIANTS).toEqual(['control'])
   })
 })
 
@@ -53,36 +57,30 @@ describe('effective discovery experiment variant', () => {
     ).toBe('control')
   })
 
-  it('reproduces signed-in assignment instead of trusting the request', () => {
+  it('ignores a treatment request from a signed-in client', () => {
     expect(
       getEffectiveDiscoveryExperimentVariant({
         userId: 'ordinary-user',
-        requestedVariant: 'control',
-      })
-    ).toBe('treatment')
-  })
-
-  it('enforces both forced QA assignments on the server', () => {
-    expect(
-      getEffectiveDiscoveryExperimentVariant({
-        userId: 'cA1JupYR5AR8btHUs2xvkui7jA93',
-        requestedVariant: 'control',
-      })
-    ).toBe('treatment')
-    expect(
-      getEffectiveDiscoveryExperimentVariant({
-        userId: 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2',
         requestedVariant: 'treatment',
       })
     ).toBe('control')
   })
 
-  it('uses the device-assigned arm supplied by an anonymous client', () => {
+  it('ignores a treatment request from the former forced QA account', () => {
+    expect(
+      getEffectiveDiscoveryExperimentVariant({
+        userId: 'cA1JupYR5AR8btHUs2xvkui7jA93',
+        requestedVariant: 'treatment',
+      })
+    ).toBe('control')
+  })
+
+  it('ignores a treatment request from an anonymous client', () => {
     expect(
       getEffectiveDiscoveryExperimentVariant({
         requestedVariant: 'treatment',
       })
-    ).toBe('treatment')
+    ).toBe('control')
   })
 })
 

@@ -38,26 +38,35 @@ export const BETTING_STREAK_SWEEPS_BONUS_AMOUNT = 0.05
 export const BETTING_STREAK_SWEEPS_BONUS_MAX = 0.25
 
 /* Mana bonuses */
-// Unverified users now get a usable starting balance so they can participate.
-// On KYC verification they receive STARTING_BALANCE as a top-up — the total
-// mana a fully-verified new user receives is PRE_KYC_STARTING_BALANCE + STARTING_BALANCE.
-export const PRE_KYC_STARTING_BALANCE = 500
-export const STARTING_BALANCE = 500
-// Also the dedupe key for the verification bonus txn: the SIGNUP_BONUS
-// category is shared with the next-day signup bonus, so payment checks must
-// match on this description too, not category alone.
+// Every new account gets the full starting balance at signup. Identity
+// verification is optional and pays nothing extra.
+export const STARTING_BALANCE = 1000
+export const SIGNUP_BONUS_DESCRIPTION = 'Signup bonus'
+// Accounts created before signup paid STARTING_BALANCE up front got
+// LEGACY_PRE_KYC_STARTING_BALANCE at signup and were promised the
+// LEGACY_VERIFIED_SIGNUP_TOP_UP on identity verification. idenfy/callback.ts
+// still honors that for them; new accounts (signupBonusPaid set at creation)
+// never receive it.
+export const LEGACY_PRE_KYC_STARTING_BALANCE = 500
+export const LEGACY_VERIFIED_SIGNUP_TOP_UP = 500
+// Also the dedupe key for the legacy verification top-up txn: the
+// SIGNUP_BONUS category is shared with the next-day signup bonus, so payment
+// checks must match on this description too, not category alone.
 export const VERIFIED_SIGNUP_BONUS_DESCRIPTION =
   'Signup bonus (identity verified)'
 // for sus users, i.e. multiple sign ups for same person
 export const SUS_STARTING_BALANCE = 10
 export const PHONE_VERIFICATION_BONUS = 1000
 
-// Referral payout is split: M250 when the referred user places their first bet,
-// M1000 when they complete identity verification.
-export const REFERRAL_BET_BONUS = 250
-export const REFERRAL_VERIFY_BONUS = 1000
-// Total a referrer can earn per referred user across both events.
-export const REFERRAL_AMOUNT = REFERRAL_BET_BONUS + REFERRAL_VERIFY_BONUS
+// A referral pays the referrer REFERRAL_AMOUNT (scaled by their effective
+// tier) as soon as the referred user signs up with their link.
+export const REFERRAL_AMOUNT = 1000
+// Referrals recorded before signup-time payouts were split into M250 on the
+// referred user's first bet + M1000 when they verified their identity. Both
+// legacy halves are still honored for those referrals (on-create-bet.ts,
+// idenfy/callback.ts) and skipped for any referral already paid at signup.
+export const LEGACY_REFERRAL_BET_BONUS = 250
+export const LEGACY_REFERRAL_VERIFY_BONUS = 1000
 
 const TRADER_BONUS_PROMO_MULTIPLIER = 2
 const uniqueBettorBonusAmounts = [3, 10, 15, 20].map(

@@ -12,6 +12,7 @@ import {
 } from 'common/perps/oracle'
 import { notifyPerpOracleResult } from 'shared/notifications/perps'
 import { runOracleUpdate } from 'shared/perps/engine'
+import { hasPendingPerpOrders } from 'shared/perps/orders'
 import {
   isOracleTickTimeout,
   OracleUpdateBounds,
@@ -180,7 +181,28 @@ export const applyOraclePointToLivePerps = async (
         persistedPoint.sourceTs,
         bounds,
         health
-      )
+      ).catch(async (err) => {
+        // A bounded tick that gives up leaves this persisted point unapplied,
+        // and every order waiting on it would then be rejected as having
+        // missed its window. With orders waiting, apply late, not never.
+        if (
+          bounds == null ||
+          !isOracleTickTimeout(err) ||
+          !(await hasPendingPerpOrders(pg, contract.id))
+        )
+          throw err
+        log.warn(
+          `[oracle-feeds] ${contract.slug}: bounded apply of ${feedId} @ ${persistedPoint.ts} gave up with orders waiting; applying without bounds`
+        )
+        return runOracleUpdate(
+          contract.id,
+          persistedPoint.price,
+          persistedPoint.ts,
+          persistedPoint.sourceTs,
+          undefined,
+          health
+        )
+      })
       if (!result) continue
 
       if (result.solvencyHalt) {

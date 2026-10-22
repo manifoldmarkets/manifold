@@ -40,6 +40,7 @@ import { useRouter } from 'next/router'
 import { filterDefined } from 'common/util/array'
 import { UserHovercard } from 'web/components/user/user-hovercard'
 import clsx from 'clsx'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 
 import { TokenNumber } from 'web/components/widgets/token-number'
 
@@ -432,7 +433,13 @@ export const PaymentsModal = (props: {
 
           {/* Amount Section */}
           <Col className="gap-2">
-            <label className="text-ink-600 text-sm font-medium">Amount</label>
+            <label className="text-ink-600 text-sm font-medium">
+              Amount
+              {/* Only admins can send negative or sub-minimum amounts */}
+              {isAdmin && !!amount && amount < 10 && (
+                <ModActionTag admin className="ml-2" />
+              )}
+            </label>
             <AmountInput
               amount={amount}
               allowNegative={isAdmin}

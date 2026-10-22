@@ -1,4 +1,5 @@
 import { PencilIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
 import { Answer } from 'common/answer'
 import { CPMMMultiContract, getMainBinaryMCAnswer } from 'common/contract'
 import { formatPercent } from 'common/util/format'
@@ -9,10 +10,12 @@ import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { getAnswerColor } from '../charts/contract/choice'
 import { Row } from '../layout/row'
+import { MOD_ACTION_TEXT_CLASS } from '../moderation/mod-action'
 import {
   AnswerComponent,
   EditAnswerModal,
   canEditAnswer,
+  isModAnswerEdit,
 } from './answers-panel'
 
 export function BinaryMultiAnswersPanel(props: {
@@ -56,6 +59,7 @@ export function BinaryMultiAnswersPanel(props: {
               contract={contract}
               color={getAnswerColor(answer)}
               canEdit={!!canEditAnswer(answer, contract, user)}
+              modAction={isModAnswerEdit(answer, contract, user)}
             />
           ))}
         </div>
@@ -80,8 +84,19 @@ const BetButton = (props: {
   color?: string
   size?: SizeType
   canEdit?: boolean
+  // Can only edit because the user is a mod or admin
+  modAction?: boolean
 }) => {
-  const { answer, contract, size, outcome, setOutcome, color, canEdit } = props
+  const {
+    answer,
+    contract,
+    size,
+    outcome,
+    setOutcome,
+    color,
+    canEdit,
+    modAction,
+  } = props
   const user = useUser()
   const isCreatorBanned =
     !!user &&
@@ -127,7 +142,12 @@ const BetButton = (props: {
             setEditing(true)
           }}
         >
-          <PencilIcon className="text-primary-700 h-4 w-4" />
+          <PencilIcon
+            className={clsx(
+              'h-4 w-4',
+              modAction ? MOD_ACTION_TEXT_CLASS : 'text-primary-700'
+            )}
+          />
         </button>
       )}
       <EditAnswerModal
@@ -154,6 +174,7 @@ function BinaryMultiChoiceBetPanel(props: {
   const color = getAnswerColor(answer)
   const user = useUser()
   const canEdit = canEditAnswer(answer, contract, user)
+  const isModEdit = isModAnswerEdit(answer, contract, user)
   const mainAnswer = getMainBinaryMCAnswer(contract)!
   const otherAnswer = contract.answers.find((a) => a.id !== mainAnswer.id)!
   const mainAnswerColor = getAnswerColor(mainAnswer) as `#${string}`
@@ -200,7 +221,12 @@ function BinaryMultiChoiceBetPanel(props: {
                 size="xs"
                 onClick={() => setEditing(true)}
               >
-                <PencilIcon className="text-primary-700 h-4 w-4" />
+                <PencilIcon
+                  className={clsx(
+                    'h-4 w-4',
+                    isModEdit ? MOD_ACTION_TEXT_CLASS : 'text-primary-700'
+                  )}
+                />
               </Button>
               <EditAnswerModal
                 open={editing}

@@ -106,7 +106,8 @@ export const isOracleTickTimeout = (err: unknown) =>
  *
  * Safe to abort at any point: the transaction rolls back whole, and
  * decideOracleTransition orders points by timestamp, so a skipped tick costs
- * nothing beyond its own interval.
+ * nothing beyond its own interval — except to queued orders, which would miss
+ * their window; apply-oracle-point retries without bounds when any are waiting.
  *
  * Inlined rather than parameterised because SET LOCAL does not accept bind
  * parameters. Both values are floored to integers first, so nothing but digits
