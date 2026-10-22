@@ -20,5 +20,7 @@ export async function bootstrapSecrets(): Promise<void> {
   const hasLocalKey =
     !!process.env[`GOOGLE_APPLICATION_CREDENTIALS_${env}`] ||
     !!process.env[`${env}_FIREBASE_SERVICE_ACCOUNT_KEY`]
-  await loadSecretsToEnv(hasLocalKey ? getServiceAccountCredentials(env) : undefined)
+  await loadSecretsToEnv(
+    hasLocalKey ? getServiceAccountCredentials(env) : undefined
+  )
 }

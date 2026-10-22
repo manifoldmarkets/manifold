@@ -1,9 +1,16 @@
-import { useState } from 'react'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
+import {
+  ArrowRightIcon,
+  BriefcaseIcon,
+  ExternalLinkIcon,
+  LocationMarkerIcon,
+} from '@heroicons/react/outline'
+import clsx from 'clsx'
+import { useId, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { BackButton } from 'web/components/contract/back-button'
 import { JobInterestCard } from 'web/components/jobs/job-interest-card'
 
 // All job data lives here. To add, edit, or remove a listing, change this array
@@ -13,7 +20,6 @@ type Job = {
   title: string
   location: string
   comp: string
-  stage: string
   blurb: string
   intro: string
   whatYoullDo: string[]
@@ -24,9 +30,8 @@ type Job = {
 const JOBS: Job[] = [
   {
     title: 'Backend Engineer',
-    location: 'SF / remote',
+    location: 'San Francisco',
     comp: 'Base + equity',
-    stage: 'Pre-launch',
     blurb:
       'Build the high-performance backend infra that turns onchain contracts into a real trading platform.',
     intro:
@@ -49,38 +54,9 @@ const JOBS: Job[] = [
     contactEmail: 'dev@mnx.fi',
   },
   {
-    title: 'Head of Growth',
-    location: 'SF / remote',
-    comp: 'Base + equity',
-    stage: 'Pre-launch',
-    blurb:
-      'Own the MNX narrative end to end — a 0→1 brand and growth seat reporting directly to the founders.',
-    intro:
-      'Early stage growth is storytelling. You own the MNX narrative end to end. ' +
-      "You'll speak fluently to AI enthusiasts, crypto-natives, and institutional " +
-      'trading desks alike, build the community around our markets. This is a 0→1 ' +
-      'brand and growth seat reporting directly to the founders.',
-    whatYoullDo: [
-      'Own messaging, brand voice, and the public narrative across X, long-form writing, podcasts, and press',
-      'Manage contractors to produce high quality content',
-      'Coordinate ecosystem partnerships',
-      'Design the acquisition and activation funnel: who we reach, how they land, and what gets them placing real size',
-      "Set up the analytics to know what's actually working, and kill what isn't",
-    ],
-    whatWereLookingFor: [
-      'A high agency generalist with excellent communication skills',
-      "Experience building an audience, whether that's for a company, event, or personal brand",
-      'Fluency in some subset of finance, AI, and crypto',
-      'Comfort with ambiguity and operating in a fast-pace startup environment',
-      'Bonus: existing audience or relationships across crypto-trading and AI communities',
-    ],
-    contactEmail: 'growth@mnx.fi',
-  },
-  {
     title: 'Quantitative Trader',
-    location: 'SF / remote',
+    location: 'San Francisco',
     comp: 'Base + equity + carry',
-    stage: 'Pre-launch',
     blurb:
       'Run the liquidity vault and make markets across novel, illiquid instruments — high-ownership and performance-based.',
     intro:
@@ -108,113 +84,121 @@ const JOBS: Job[] = [
   },
 ]
 
-function MetaField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-row items-baseline gap-3 sm:flex-col sm:items-start sm:gap-0">
-      <span className="text-ink-400 w-20 shrink-0 font-mono text-[10px] uppercase tracking-widest sm:w-auto">
-        {label}
-      </span>
-      <span className="text-ink-700 text-sm font-medium">{value}</span>
-    </div>
-  )
-}
-
 function JobCard({ job }: { job: Job }) {
   const [open, setOpen] = useState(false)
+  const detailsId = useId()
 
   return (
-    <div className="border-ink-200 bg-canvas-0 overflow-hidden rounded-lg border transition-shadow hover:shadow-sm">
-      {/* Card header — always visible */}
+    <article
+      className={clsx(
+        'bg-canvas-0 overflow-hidden rounded-2xl border transition-colors dark:bg-slate-800/60 dark:shadow-sm dark:shadow-black/20',
+        open
+          ? 'border-primary-300 shadow-sm dark:border-indigo-400/50'
+          : 'border-ink-200 hover:border-ink-300 hover:shadow-sm dark:border-slate-700/70 dark:hover:border-slate-500'
+      )}
+    >
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full px-6 py-5 text-left"
+        className="hover:bg-canvas-50 focus-visible:ring-primary-500 group w-full cursor-pointer px-5 py-6 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset dark:hover:bg-slate-700/30 sm:px-6"
         aria-expanded={open}
+        aria-controls={detailsId}
       >
-        <Col className="gap-2">
+        <Col className="gap-3">
           <Row className="items-start justify-between gap-3">
-            <h2 className="text-ink-1000 text-lg font-bold sm:text-xl md:text-2xl">
+            <h4 className="text-ink-1000 text-xl font-semibold tracking-tight dark:text-slate-100 sm:text-2xl">
               {job.title}
-            </h2>
-            <span className="text-ink-400 shrink-0 pt-1 font-mono text-[10px] uppercase tracking-widest">
+            </h4>
+            <span className="bg-ink-100 text-ink-600 shrink-0 rounded-md px-2 py-1 text-xs font-medium dark:bg-slate-700/50 dark:text-slate-300">
               Full time
             </span>
           </Row>
-          <p className="text-ink-600 text-sm leading-relaxed">{job.blurb}</p>
+          <p className="text-ink-600 text-base leading-relaxed dark:text-slate-300">
+            {job.blurb}
+          </p>
 
-          {/* Compact vertical stack on mobile; horizontal spread on desktop.
-              Toggle drops below on mobile, inline bottom-right on sm+. */}
-          <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
-            <div className="flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:gap-8">
-              <MetaField label="Location" value={job.location} />
-              <MetaField label="Comp" value={job.comp} />
-              <MetaField label="Stage" value={job.stage} />
+          <dl className="text-ink-600 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm dark:text-slate-300">
+            <div className="flex items-center gap-1.5">
+              <dt className="sr-only">Location</dt>
+              <LocationMarkerIcon
+                className="text-ink-500 h-4 w-4 dark:text-slate-400"
+                aria-hidden
+              />
+              <dd>{job.location}</dd>
             </div>
-
-            <span className="text-primary-600 shrink-0 self-end font-mono text-sm font-medium">
-              {open ? 'Hide ↑' : 'Show role ↓'}
+            <div>
+              <dt className="sr-only">Compensation</dt>
+              <dd>{job.comp}</dd>
+            </div>
+          </dl>
+          <div className="border-ink-100 mt-2 flex items-center justify-end border-t pt-4 dark:border-slate-700/60">
+            <span className="text-primary-600 group-hover:text-primary-700 flex items-center gap-1.5 text-sm font-semibold dark:text-indigo-300 dark:group-hover:text-indigo-200">
+              {open ? 'Hide details' : 'Explore role'}
+              {open ? (
+                <ChevronUpIcon className="h-4 w-4" aria-hidden />
+              ) : (
+                <ChevronDownIcon className="h-4 w-4" aria-hidden />
+              )}
             </span>
           </div>
         </Col>
       </button>
 
-      {/* Expandable body */}
-      {open && (
-        <div className="border-ink-100 border-t px-6 pb-6 pt-5">
-          <p className="text-ink-700 mb-6 text-sm leading-relaxed">
-            {job.intro}
-          </p>
+      <div
+        id={detailsId}
+        hidden={!open}
+        className="border-ink-100 bg-canvas-50/50 border-t px-5 pb-6 pt-5 dark:border-slate-700/60 dark:bg-slate-900/50 sm:px-6"
+      >
+        <p className="text-ink-700 mb-6 text-base leading-relaxed dark:text-slate-300">
+          {job.intro}
+        </p>
 
-          <div className="mb-5">
-            <span className="text-ink-400 mb-3 block font-mono text-xs uppercase tracking-widest">
-              What you'll do
-            </span>
-            <ul className="flex flex-col gap-2">
-              {job.whatYoullDo.map((item, i) => (
-                <li
-                  key={i}
-                  className="text-ink-700 flex gap-2.5 text-sm leading-relaxed"
-                >
-                  <span className="text-ink-300 mt-0.5 shrink-0">·</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <section className="mb-6">
+          <h5 className="text-ink-900 mb-3 text-sm font-semibold dark:text-slate-100">
+            What you'll do
+          </h5>
+          <ul className="marker:text-primary-400 flex list-disc flex-col gap-2 pl-5 dark:marker:text-indigo-400">
+            {job.whatYoullDo.map((item, i) => (
+              <li
+                key={i}
+                className="text-ink-700 text-base leading-relaxed dark:text-slate-300"
+              >
+                {item}
+              </li>
+            ))}
+          </ul>
+        </section>
 
-          <div className="mb-6">
-            <span className="text-ink-400 mb-3 block font-mono text-xs uppercase tracking-widest">
-              What we're looking for
-            </span>
-            <ul className="flex flex-col gap-2">
-              {job.whatWereLookingFor.map((item, i) => (
-                <li
-                  key={i}
-                  className="text-ink-700 flex gap-2.5 text-sm leading-relaxed"
-                >
-                  <span className="text-ink-300 mt-0.5 shrink-0">·</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <section className="mb-6">
+          <h5 className="text-ink-900 mb-3 text-sm font-semibold dark:text-slate-100">
+            What we're looking for
+          </h5>
+          <ul className="marker:text-primary-400 flex list-disc flex-col gap-2 pl-5 dark:marker:text-indigo-400">
+            {job.whatWereLookingFor.map((item, i) => (
+              <li
+                key={i}
+                className="text-ink-700 text-base leading-relaxed dark:text-slate-300"
+              >
+                {item}
+              </li>
+            ))}
+          </ul>
+        </section>
 
-          <Row className="items-center justify-between">
-            <button
-              onClick={() => setOpen(false)}
-              className="text-primary-600 font-mono text-sm font-medium"
-            >
-              Hide ↑
-            </button>
-            <a
-              href={`mailto:${job.contactEmail}`}
-              className="bg-primary-600 hover:bg-primary-700 rounded-md px-5 py-2 font-mono text-sm text-white transition-colors"
-            >
-              Apply →
-            </a>
-          </Row>
-        </div>
-      )}
-    </div>
+        <p className="text-ink-700 mb-6 select-text text-base leading-relaxed dark:text-slate-300">
+          To apply, email {job.contactEmail}.
+        </p>
+
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="text-primary-600 hover:text-primary-700 focus-visible:ring-primary-500 flex items-center gap-1 rounded text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 dark:text-indigo-300 dark:hover:text-indigo-200"
+        >
+          Hide details
+          <ChevronUpIcon className="h-4 w-4" aria-hidden />
+        </button>
+      </div>
+    </article>
   )
 }
 
@@ -226,50 +210,114 @@ export default function JobsPage() {
         description="Curated jobs by employers who value forecasting."
         url="/jobs"
       />
-      <Col className="mx-auto w-full max-w-3xl gap-8 p-4 py-8">
-        <Row className="items-center gap-2">
-          <BackButton />
-          <Col className="gap-2">
-            <h1 className="text-ink-1000 text-3xl font-semibold sm:text-4xl">
-              Job Board
-            </h1>
-            <p className="text-ink-500 max-w-xl text-base leading-relaxed">
-              Curated jobs by employers who value forecasting
-            </p>
-          </Col>
-        </Row>
-
-        <JobInterestCard />
-
-        <Col className="gap-3">
-          <Col className="gap-1">
-            <h2 className="text-ink-1000 text-xl font-semibold">
-              MNX - The AI Exchange
-            </h2>
-            <p className="text-ink-500 text-sm leading-relaxed">
-              MNX is building the financial architecture for the AI era. We are
-              a small, highly talented, and maximally AI-pilled team based in
-              San Francisco.
-            </p>
-            <span className="text-ink-400 mt-1 font-mono text-xs uppercase tracking-wider">
-              {JOBS.length} open role{JOBS.length !== 1 ? 's' : ''}
-            </span>
-          </Col>
-          {JOBS.map((job) => (
-            <JobCard key={job.title} job={job} />
-          ))}
-        </Col>
-
-        <div className="border-ink-100 border-t pt-6">
-          <p className="text-ink-400 text-sm">
-            Hiring in trading, AI, or fintech?{' '}
-            <a
-              href="mailto:info@manifold.markets"
-              className="text-primary-600 hover:text-primary-700"
-            >
-              Get in touch to list a role.
-            </a>
+      <Col className="mx-auto w-full max-w-3xl gap-10 p-4">
+        <header className="border-ink-200 border-b pb-8 dark:border-slate-700/70 sm:pb-10">
+          <h1 className="text-ink-900 max-w-2xl text-4xl font-semibold leading-tight tracking-tight dark:text-slate-100 sm:text-5xl">
+            Manifold Job Board
+          </h1>
+          <p className="text-primary-600 mt-3 text-xl font-medium dark:text-indigo-300 sm:text-2xl">
+            Put your foresight to work
           </p>
+          <p className="text-ink-600 mt-3 max-w-xl text-base leading-relaxed dark:text-slate-300 sm:text-lg">
+            Opportunities for people who think in probabilities. Find your next
+            role with employers who value forecasting.
+          </p>
+        </header>
+
+        <div className="flex flex-col gap-10">
+          <section aria-labelledby="open-roles-heading" className="min-w-0">
+            <Row className="mb-5 items-center gap-2.5">
+              <h2
+                id="open-roles-heading"
+                className="text-ink-900 text-lg font-semibold dark:text-slate-100"
+              >
+                Open roles
+              </h2>
+              <span className="bg-ink-100 text-ink-600 rounded-full px-2.5 py-0.5 text-xs font-semibold dark:bg-slate-700/50 dark:text-slate-300">
+                {JOBS.length}
+              </span>
+            </Row>
+
+            <section aria-labelledby="mnx-heading">
+              <div className="mb-5">
+                <Row className="items-center gap-3">
+                  <div
+                    aria-hidden
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-900 dark:ring-1 dark:ring-slate-700"
+                  >
+                    <img
+                      src="/mnx-logo.svg"
+                      alt=""
+                      width={300}
+                      height={103}
+                      className="h-auto w-10"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3
+                      id="mnx-heading"
+                      className="text-ink-900 font-semibold dark:text-slate-100"
+                    >
+                      MNX{' '}
+                      <span className="text-ink-500 font-normal dark:text-slate-400">
+                        / The AI Exchange
+                      </span>
+                    </h3>
+                    <a
+                      href="https://mnx.fi"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Visit the MNX website"
+                      className="text-ink-500 hover:text-primary-600 mt-0.5 inline-flex items-center gap-1 rounded text-sm dark:text-slate-400 dark:hover:text-indigo-200"
+                    >
+                      mnx.fi{' '}
+                      <ExternalLinkIcon className="h-3.5 w-3.5" aria-hidden />
+                    </a>
+                  </div>
+                </Row>
+                <p className="text-ink-600 mt-4 text-sm leading-relaxed dark:text-slate-300">
+                  Building the financial architecture for the AI era. A small,
+                  ambitious team in San Francisco, working at the intersection
+                  of AI, trading, and crypto.
+                </p>
+              </div>
+              <div className="flex flex-col gap-4">
+                {JOBS.map((job) => (
+                  <JobCard key={job.title} job={job} />
+                ))}
+              </div>
+            </section>
+            <p className="text-ink-500 mt-5 text-center text-xs dark:text-slate-400">
+              Curated for the Manifold community. Apply directly with the team.
+            </p>
+          </section>
+
+          <aside
+            aria-label="For job seekers and employers"
+            className="border-ink-200 grid min-w-0 gap-5 border-t pt-8 dark:border-slate-700/70 md:grid-cols-2"
+          >
+            <JobInterestCard />
+            <div className="border-ink-200 bg-canvas-0 flex flex-col rounded-2xl border p-5 dark:border-slate-700/70 dark:bg-slate-800/60">
+              <div className="bg-ink-100 text-ink-600 mb-4 flex h-10 w-10 items-center justify-center rounded-xl dark:bg-slate-700/50 dark:text-slate-300">
+                <BriefcaseIcon className="h-5 w-5" aria-hidden />
+              </div>
+              <h2 className="text-ink-900 text-base font-semibold dark:text-slate-100">
+                Find your next great hire.
+              </h2>
+              <p className="text-ink-600 mt-2 text-sm leading-relaxed dark:text-slate-300">
+                Hiring in trading, AI, or fintech? Reach a community of curious,
+                analytical thinkers.
+              </p>
+              <div className="mt-auto pt-5">
+                <a
+                  href="mailto:info@manifold.markets"
+                  className="border-primary-200 text-primary-600 hover:bg-primary-50 focus-visible:ring-primary-500 inline-flex items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:border-indigo-400/30 dark:text-indigo-300 dark:hover:bg-indigo-400/10 dark:focus-visible:ring-offset-slate-900"
+                >
+                  Post a role <ArrowRightIcon className="h-4 w-4" aria-hidden />
+                </a>
+              </div>
+            </div>
+          </aside>
         </div>
       </Col>
     </Page>

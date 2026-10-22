@@ -4,7 +4,12 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const getModReports: APIHandler<'get-mod-reports'> = async (props) => {
   const pg = createSupabaseDirectClient()
-  const { statuses, limit, offset, count } = props
+  const { statuses, limit, offset, count, order, cursorTime, cursorId } = props
+  const direction = order === 'asc' ? 'asc' : 'desc'
+
+  if (statuses.length === 0) {
+    return { status: 'success', count: 0, reports: [] }
+  }
 
   if (count) {
     const total = await pg.one<{ count: number }>(
@@ -20,6 +25,7 @@ export const getModReports: APIHandler<'get-mod-reports'> = async (props) => {
     `
     select
       mr.*,
+      to_char(mr.created_time at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as created_time,
       cc.data->'content' as comment_content,
       c.question as contract_question,
       c.slug as contract_slug,
@@ -34,11 +40,14 @@ export const getModReports: APIHandler<'get-mod-reports'> = async (props) => {
     join users creator on creator.id = c.creator_id
     join users owner on owner.id = mr.user_id
     where mr.status in ($1:list)
-    order by mr.created_time desc
+      and ($4::timestamptz is null or
+        (mr.created_time, mr.report_id) ${order === 'asc' ? '>' : '<'}
+        ($4::timestamptz, $5::int))
+    order by mr.created_time ${direction}, mr.report_id ${direction}
     limit $2
     offset $3
   `,
-    [statuses, limit, offset]
+    [statuses, limit, offset, cursorTime ?? null, cursorId ?? null]
   )
 
   return { status: 'success', reports }

@@ -7,6 +7,7 @@ import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { prefixedContractColumnsToSelect } from 'shared/utils'
 import { APIHandler } from './helpers/endpoint'
+import { MULTI_CPMM_MECHANISMS_SQL } from 'common/contract'
 
 export const getUserContractMetricsWithContracts: APIHandler<
   'get-user-contract-metrics-with-contracts'
@@ -14,11 +15,9 @@ export const getUserContractMetricsWithContracts: APIHandler<
   const { userId, limit, offset = 0, perAnswer = false, order } = props
   const visibilitySQL = getContractPrivacyWhereSQLFilter(auth?.uid, 'c.id')
   const pg = createSupabaseDirectClient()
-  const metricFilterSQL = `(c.mechanism <> 'cpmm-multi-1' OR ucm.answer_id is not null)`
+  const metricFilterSQL = `(c.mechanism not in ${MULTI_CPMM_MECHANISMS_SQL} OR ucm.answer_id is not null)`
   const rankedOrderBySQL =
-    order === 'profit'
-      ? `total_profit DESC`
-      : `last_bet_time DESC NULLS LAST`
+    order === 'profit' ? `total_profit DESC` : `last_bet_time DESC NULLS LAST`
   const finalOrderBySQL =
     order === 'profit'
       ? `rc.total_profit DESC`
@@ -87,6 +86,16 @@ export const getUserContractMetricsWithContracts: APIHandler<
       'max',
       'isLogScale',
       'unit',
+      // Official sports league labels in the profile bets table.
+      'sportsEventId',
+      'sportsLeague',
+      // Perp fields ('perp' mechanism): the profile table shows the oracle
+      // price where CPMM rows show prob, and marks position PnL against it.
+      'oraclePrice',
+      'oraclePriceTime',
+      'poolLong',
+      'poolShort',
+      'maxLeverage',
     ])
   )
 

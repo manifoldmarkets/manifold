@@ -29,6 +29,8 @@ pathMatchers:
           - pathTemplateMatch: /v0/markets
           - pathTemplateMatch: /v0/search-markets
           - pathTemplateMatch: /search-markets-full
+          - pathTemplateMatch: /sports-schedule
+          - pathTemplateMatch: /sports-markets
           - pathTemplateMatch: /get-related-markets
           - pathTemplateMatch: /get-related-markets-by-group
           - pathTemplateMatch: /v0/groups
@@ -97,6 +99,11 @@ pathMatchers:
           - pathTemplateMatch: /get-mana-supply
           - pathTemplateMatch: /get-txn-summary-stats
           - pathTemplateMatch: /get-mana-summary-stats
+          - pathTemplateMatch: /v0/get-oracle-price-series
+          - pathTemplateMatch: /v0/get-perp-positions
+          - pathTemplateMatch: /v0/get-perp-funding-events
+          - pathTemplateMatch: /v0/get-perp-events
+          - pathTemplateMatch: /get-perp-suggestions
           - pathTemplateMatch: /v0/get-user-contract-metrics-with-contracts
           - pathTemplateMatch: /v0/check-sports-event
           - pathTemplateMatch: /v0/comment-reactions

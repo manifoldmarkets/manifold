@@ -36,7 +36,10 @@ export class Pseudonymizer {
     let len = this.hexLen
     let pseudonym = this.prefix + digest.slice(0, len)
     // Resolve the (astronomically unlikely) truncation collision deterministically.
-    while (this.reverse.has(pseudonym) && this.reverse.get(pseudonym) !== rawId) {
+    while (
+      this.reverse.has(pseudonym) &&
+      this.reverse.get(pseudonym) !== rawId
+    ) {
       len += 4
       if (len > digest.length) {
         throw new Error(
@@ -49,6 +52,21 @@ export class Pseudonymizer {
     this.forward.set(rawId, pseudonym)
     this.reverse.set(pseudonym, rawId)
     return pseudonym as T
+  }
+
+  /** Stands in for a username we can't tie to a user id (identity.ts). */
+  get unknown(): string {
+    return this.prefix + 'unknown'
+  }
+
+  /** True for this mapper's output, so rewrites are idempotent. */
+  isPseudonym(s: string): boolean {
+    if (!s.startsWith(this.prefix)) return false
+    const rest = s.slice(this.prefix.length)
+    return (
+      rest === 'unknown' ||
+      (rest.length >= this.hexLen && /^[0-9a-f]+$/.test(rest))
+    )
   }
 
   /** Every raw user id mapped so far — an input to the leak scan. */

@@ -7,19 +7,23 @@ import {
   calculateMarketLoanMax,
   calculatePositionFreeLoan,
   canClaimDailyFreeLoan,
+  filterLoanEquityMetrics,
   isMarketEligibleForLoan,
   getMidnightPacific,
+  sumExcludedPerpEquity,
 } from 'common/loans'
 import {
   getUnresolvedContractMetricsContractsAnswers,
   getUnresolvedStatsForToken,
 } from 'shared/update-user-portfolio-histories-core'
 import { keyBy, sumBy } from 'lodash'
+import { isMultiCpmm } from 'common/contract'
 import {
   getFreeLoanRate,
   getMaxLoanNetWorthPercent,
 } from 'common/supporter-config'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
+import { Contract } from 'common/contract'
 
 export const getFreeLoanAvailable: APIHandler<
   'get-free-loan-available'
@@ -64,12 +68,15 @@ export const getFreeLoanAvailable: APIHandler<
     await getUnresolvedContractMetricsContractsAnswers(pg, [userId])
   const contractsById = keyBy(contracts, 'id')
 
-  // Calculate portfolio value (net of loans)
+  // Calculate portfolio value (net of loans).
+  // Perps neither receive loans nor collateralize them — exclude from equity.
   const { value: portfolioValueNet } = getUnresolvedStatsForToken(
     'MANA',
-    metrics,
+    filterLoanEquityMetrics(metrics, contractsById),
     contractsById
   )
+  // Reported so the UI can explain why perp-only portfolios earn no free loan.
+  const perpValueExcluded = sumExcludedPerpEquity(metrics, contractsById)
 
   // Calculate equity from net portfolio value (already excludes loans).
   // Using equity prevents the compounding loop where borrowing increases borrowing capacity.
@@ -109,6 +116,7 @@ export const getFreeLoanAvailable: APIHandler<
     if (!contract) return false
     if (contract.token !== 'MANA') return false
     if (contract.isResolved) return false
+    if ((contract as Contract).mechanism === 'perp') return false // perps excluded from loans
     if ((m.payout ?? 0) <= 0 && (m.invested ?? 0) <= 0) return false
 
     // Check market eligibility
@@ -147,7 +155,7 @@ export const getFreeLoanAvailable: APIHandler<
     const contractMetrics = metricsGroupedByContract[contractId]
     const contract = contractsById[contractId]
     const isIndependent =
-      contract?.mechanism === 'cpmm-multi-1' && !contract?.shouldAnswersSumToOne
+      contract && isMultiCpmm(contract) && !contract.shouldAnswersSumToOne
 
     if (isIndependent) {
       // For independent markets, calculate limits per answer
@@ -190,7 +198,7 @@ export const getFreeLoanAvailable: APIHandler<
 
     const contract = contractsById[m.contractId]
     const isIndependent =
-      contract?.mechanism === 'cpmm-multi-1' && !contract?.shouldAnswersSumToOne
+      contract && isMultiCpmm(contract) && !contract.shouldAnswersSumToOne
 
     let freeLoanContribution = baseFreeLoan
 
@@ -255,5 +263,6 @@ export const getFreeLoanAvailable: APIHandler<
     dailyLimit,
     todayLoans,
     todaysFreeLoan,
+    perpValueExcluded,
   }
 }

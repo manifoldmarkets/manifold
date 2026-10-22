@@ -1,0 +1,43 @@
+-- Expression index on contracts ((data->>'oracleFeedId')), partial to live perp
+-- markets. Powers the per-tick lookup in apply-oracle-point.ts, which resolves
+-- "which markets does this feed back?" on EVERY oracle tick.
+--
+-- Without it that query is a bitmap heap scan: prod EXPLAIN ANALYZE measured
+-- 28,499 shared buffers (~223 MB) and 185 ms per execution, discarding 46,344
+-- rows to return 1. The BTC feed alone runs it every 5 seconds today and every
+-- 2 seconds once the faster tick ships, so the churn lands continuously on the
+-- shared buffer cache of the table every bet also writes — the same cache the
+-- nightly stall incident traced its eviction pressure to. 185 ms is also ~9%
+-- of a 2,000 ms tick budget, and it sits OUTSIDE the tick's lock/statement
+-- timeouts, which only bound the transaction that follows.
+--
+-- The predicate is byte-identical to the query's WHERE clause; the planner
+-- will not use a partial index it cannot prove covers the query.
+--
+-- ALREADY APPLIED on dev and prod (2026-08-20), created CONCURRENTLY by hand to
+-- avoid locking the live table. Verified there: indisvalid = true, and the tick
+-- query went from a 28,499-buffer bitmap heap scan at 185 ms to a 30-buffer
+-- index scan at 0.5 ms. The name below MUST stay byte-identical to what was
+-- created by hand — IF NOT EXISTS matches on name, so a differently-named copy
+-- of the same index would be silently created a second time, doubling write
+-- cost on contracts for nothing. The command used was:
+--
+--   create index concurrently if not exists contracts_perp_oracle_feed
+--     on contracts ((data->>'oracleFeedId'))
+--     where mechanism = 'perp' and resolution_time is null;
+--   analyze contracts;
+--
+-- Run it as a bare statement (NOT inside a transaction — CONCURRENTLY cannot
+-- run in one) and in a quiet window, away from update-league and update-stats.
+-- An aborted CONCURRENTLY build leaves an INVALID index that the planner
+-- silently ignores, so verify afterwards:
+--
+--   select indisvalid from pg_index
+--    where indexrelid = 'contracts_perp_oracle_feed'::regclass;
+--
+-- This file uses the plain (transaction-safe) form for fresh / CI databases,
+-- where the contracts table is small so a brief lock is fine. IF NOT EXISTS
+-- makes it a no-op wherever the index already exists (incl. prod).
+create index if not exists contracts_perp_oracle_feed
+  on contracts ((data->>'oracleFeedId'))
+  where mechanism = 'perp' and resolution_time is null;

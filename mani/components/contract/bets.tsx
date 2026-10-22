@@ -1,5 +1,10 @@
 import { Bet } from 'common/bet'
-import { Contract, getBinaryMCProb, isBinaryMulti } from 'common/contract'
+import {
+  Contract,
+  getBinaryMCProb,
+  isBinaryMulti,
+  isMultiCpmm,
+} from 'common/contract'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { Row } from 'components/layout/row'
 import { Col } from 'components/layout/col'
@@ -24,7 +29,7 @@ export function Bets(props: { contract: Contract; totalBets: number }) {
     useContractBets(
       contract.id,
       {
-        includeZeroShareRedemptions: contract.mechanism === 'cpmm-multi-1',
+        includeZeroShareRedemptions: isMultiCpmm(contract),
         filterRedemptions: true,
       },
       useIsPageVisible,
@@ -152,10 +157,9 @@ export function FeedBet(props: { contract: Contract; bet: Bet }) {
     ? getFormattedMappedValue(contract, probBefore)
     : getFormattedMappedValue(contract, limitProb ?? probBefore)
 
-  const answer =
-    contract.mechanism === 'cpmm-multi-1'
-      ? contract.answers?.find((a) => a.id === answerId)
-      : undefined
+  const answer = isMultiCpmm(contract)
+    ? contract.answers?.find((a) => a.id === answerId)
+    : undefined
 
   // ignore empty limit orders or if user doesn't exist
   if (bet.amount <= 0 || !betUser) {

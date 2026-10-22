@@ -38,6 +38,7 @@ jobs:
             common/node_modules
             web/node_modules
             backend/api/node_modules
+            backend/data-license/node_modules
             backend/discord-bot/node_modules
             backend/scheduler/node_modules
             backend/scripts/node_modules

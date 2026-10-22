@@ -25,5 +25,8 @@ export const OLD_USER_FOLLOWED_TOPIC_SCORE_BOOST = 0.3
 
 // 70/30 max/avg blend across a market's matching tags — keeps a strong
 // niche match from being diluted by broad parent tags also on the market.
+export const nicheBlendTopicScoreSql = (scoreExpr: string) =>
+  `(0.7 * max(${scoreExpr}) + 0.3 * avg(${scoreExpr}))`
+
 export const NICHE_BLEND_TOPIC_SCORE_SQL =
-  '(0.7 * max(uti.topic_score) + 0.3 * avg(uti.topic_score))'
+  nicheBlendTopicScoreSql('uti.topic_score')

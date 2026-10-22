@@ -6,22 +6,30 @@
 // paid.
 //
 // This script pays:
-//  - REFERRAL_BET_BONUS to the referrer for every user with referredByUserId
+//  - LEGACY_REFERRAL_BET_BONUS to the referrer for every user with referredByUserId
 //    set who has placed at least one bet, if no first-bet/legacy REFERRAL txn
 //    already exists for that referrer/referredUser pair.
-//  - REFERRAL_VERIFY_BONUS to the referrer for every such user who is also
+//  - LEGACY_REFERRAL_VERIFY_BONUS to the referrer for every such user who is also
 //    identity-verified (verified or grandfathered), if no verify/legacy REFERRAL
 //    txn already exists.
-// Referrer must have full bonus access in both cases. Supporter multiplier is
+// Referrer must be KYC'd, grandfathered, or purchase/admin-granted in both
+// cases. Supporter multiplier is
 // applied using the referrer's current entitlements.
+//
+// Referrals recorded since signup-time referral payouts are skipped: they were
+// settled in full at signup (a 'signup' REFERRAL txn, or nothing if the
+// referrer's tier paid zero), so neither legacy half applies to them.
 
 import { runScript } from 'run-script'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 import { getBenefit } from 'common/supporter-config'
-import { hasFullBonusAccess, isIdentityVerified, User } from 'common/user'
+import { isIdentityVerified, paysLegacyReferralHalves, User } from 'common/user'
 import { convertUser } from 'common/supabase/users'
-import { REFERRAL_BET_BONUS, REFERRAL_VERIFY_BONUS } from 'common/economy'
+import {
+  LEGACY_REFERRAL_BET_BONUS,
+  LEGACY_REFERRAL_VERIFY_BONUS,
+} from 'common/economy'
 import { ReferralTxn } from 'common/txn'
 import { createReferralNotification } from 'shared/create-notification'
 import { SupabaseDirectClient } from 'shared/supabase/init'
@@ -66,7 +74,7 @@ if (require.main === module) {
     for (const user of referredUsers) {
       const referrerId = user.referredByUserId
       if (!referrerId) continue
-      if (referrerId === user.id) {
+      if (referrerId === user.id || !paysLegacyReferralHalves(user)) {
         skipped++
         continue
       }
@@ -80,7 +88,14 @@ if (require.main === module) {
         skipped++
         continue
       }
-      if (!hasFullBonusAccess(referrer)) {
+      // The gate this script originally ran with: full bonus access meant
+      // KYC'd, grandfathered, or purchase/admin-granted. hasFullBonusAccess
+      // now admits every never-verified account too, so using it would make
+      // a re-run an unapproved retroactive grant.
+      if (
+        !isIdentityVerified(referrer) &&
+        referrer.bonusEligibility !== 'eligible'
+      ) {
         skipped++
         continue
       }
@@ -94,7 +109,10 @@ if (require.main === module) {
         [referrer.id, user.id]
       )
 
-      const hasLegacy = existingTxns.some((t) => t.bonus_type == null)
+      // A pre-split single payment or a signup-time payment covers both halves.
+      const hasLegacy = existingTxns.some(
+        (t) => t.bonus_type == null || t.bonus_type === 'signup'
+      )
       const hasFirstBet =
         hasLegacy || existingTxns.some((t) => t.bonus_type === 'first_bet')
       const hasVerify =
@@ -122,7 +140,7 @@ if (require.main === module) {
     console.log(
       `Done. first_bet payouts: ${firstBetPaid} (M${firstBetTotalMana} total), ` +
         `verify payouts: ${verifyPaid} (M${verifyTotalMana} total), ` +
-        `skipped (no referrer or referrer ineligible): ${skipped}`
+        `skipped (self-referral, settled at signup, no referrer or referrer ineligible): ${skipped}`
     )
     if (DRY_RUN) console.log('DRY_RUN was on — nothing was actually written.')
   })
@@ -135,7 +153,9 @@ async function payBonus(
   bonusType: BonusType
 ): Promise<number> {
   const baseAmount =
-    bonusType === 'first_bet' ? REFERRAL_BET_BONUS : REFERRAL_VERIFY_BONUS
+    bonusType === 'first_bet'
+      ? LEGACY_REFERRAL_BET_BONUS
+      : LEGACY_REFERRAL_VERIFY_BONUS
 
   if (DRY_RUN) {
     console.log(
@@ -150,7 +170,7 @@ async function payBonus(
       `SELECT 1 FROM txns WHERE to_id = $1
        AND category = 'REFERRAL'
        AND data->'data'->>'referredUserId' = $2
-       AND (data->'data'->>'bonusType' IS NULL OR data->'data'->>'bonusType' = $3)`,
+       AND (data->'data'->>'bonusType' IS NULL OR data->'data'->>'bonusType' IN ($3, 'signup'))`,
       [referrer.id, referredUser.id, bonusType]
     )
     if (dup) return 0

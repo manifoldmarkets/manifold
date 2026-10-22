@@ -8,6 +8,7 @@ import {
   CPMMMultiContract,
   MultiContract,
   contractPath,
+  isMultiCpmm,
 } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { sortBy } from 'lodash'
@@ -62,32 +63,36 @@ export function Presidency2028Section(props: {
 
   return (
     <Col className="bg-canvas-0 overflow-hidden rounded-xl">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="hover:bg-canvas-50 group flex flex-col gap-2 px-4 py-3 text-left transition-colors sm:flex-row sm:items-center sm:justify-between"
-      >
-        <Row className="min-w-0 items-center gap-1.5">
-          <ChevronDownIcon
-            className={clsx(
-              'text-ink-400 group-hover:text-ink-700 h-5 w-5 shrink-0 transition-transform',
-              !expanded && '-rotate-90'
-            )}
-          />
-          <span className="group-hover:text-primary-700 truncate font-semibold transition-colors sm:text-lg">
-            Who will be president in 2028?
-          </span>
-        </Row>
-        {!expanded && (
-          <Row className="ml-[26px] flex-wrap items-center gap-x-4 gap-y-1.5 sm:ml-0">
-            {partyProbs && (
-              <PartyMiniPreview dem={partyProbs.dem} rep={partyProbs.rep} />
-            )}
-            {leaders.map((l) => (
-              <LeaderChip key={l.text} {...l} />
-            ))}
+      {/* Accordion pattern: the toggle button sits inside the section's h2. */}
+      <h2 className="contents">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          aria-expanded={expanded}
+          className="hover:bg-canvas-50 group flex w-full flex-col gap-2 px-4 py-3 text-left transition-colors sm:flex-row sm:items-center sm:justify-between"
+        >
+          <Row className="min-w-0 items-center gap-1.5">
+            <ChevronDownIcon
+              className={clsx(
+                'text-ink-400 group-hover:text-ink-700 h-5 w-5 shrink-0 transition-transform',
+                !expanded && '-rotate-90'
+              )}
+            />
+            <span className="group-hover:text-primary-700 truncate font-semibold transition-colors sm:text-lg">
+              Who will be president in 2028?
+            </span>
           </Row>
-        )}
-      </button>
+          {!expanded && (
+            <Row className="ml-[26px] flex-wrap items-center gap-x-4 gap-y-1.5 sm:ml-0">
+              {partyProbs && (
+                <PartyMiniPreview dem={partyProbs.dem} rep={partyProbs.rep} />
+              )}
+              {leaders.map((l) => (
+                <LeaderChip key={l.text} {...l} />
+              ))}
+            </Row>
+          )}
+        </button>
+      </h2>
       {expanded && (
         <Col className="border-ink-200 gap-3 border-t px-4 py-4">
           {props.partyContract && (
@@ -204,7 +209,7 @@ function PresidencyPartyBar(props: { contract: Contract }) {
   const [betAnswer, setBetAnswer] = useState<Answer | undefined>()
 
   const probs = getPartyProbs(contract)
-  if (!probs || contract.mechanism !== 'cpmm-multi-1') return null
+  if (!probs || !isMultiCpmm(contract)) return null
 
   const { dem, rep, other } = probs
   const demAnswer = contract.answers.find((a) => isDemocraticAnswer(a.text))
@@ -281,21 +286,30 @@ function PresidencyPartyBar(props: { contract: Contract }) {
       <Row className="mt-1 items-stretch gap-2">
         <PartyBetButton
           label="Bet Democratic"
-          color={DEM_COLOR}
+          ariaLabel={`Bet Democratic for president in 2028, ${formatPercent(
+            dem
+          )}`}
+          party="dem"
           disabled={!demAnswer}
           onClick={() => openBet(demAnswer)}
         />
         {otherAnswer && (
           <button
             onClick={() => openBet(otherAnswer)}
-            className="hover:bg-canvas-100 text-ink-500 border-ink-300 shrink-0 rounded-md border px-3 text-sm font-semibold transition-colors"
+            aria-label={`Bet on another party for president in 2028, ${formatPercent(
+              other
+            )}`}
+            className="hover:bg-canvas-100 text-ink-600 border-ink-300 shrink-0 rounded-md border px-3 text-sm font-semibold transition-colors"
           >
             Other {formatPercent(other)}
           </button>
         )}
         <PartyBetButton
           label="Bet Republican"
-          color={REP_COLOR}
+          ariaLabel={`Bet Republican for president in 2028, ${formatPercent(
+            rep
+          )}`}
+          party="rep"
           disabled={!repAnswer}
           onClick={() => openBet(repAnswer)}
         />
@@ -320,19 +334,29 @@ function PresidencyPartyBar(props: { contract: Contract }) {
   )
 }
 
+// Party-colored outline button. The party hues are fixed (not theme tokens),
+// so dark mode switches to their light tints: the 600 shades read at only
+// about 3:1 on the dark canvas.
 function PartyBetButton(props: {
   label: string
-  color: string
+  ariaLabel: string
+  party: 'dem' | 'rep'
   disabled?: boolean
   onClick: () => void
 }) {
-  const { label, color, disabled, onClick } = props
+  const { label, ariaLabel, party, disabled, onClick } = props
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className="hover:bg-canvas-100 flex-1 rounded-md border py-1.5 text-sm font-semibold transition-colors disabled:opacity-50"
-      style={{ color, borderColor: color + '66' }}
+      aria-label={ariaLabel}
+      aria-haspopup="dialog"
+      className={clsx(
+        'hover:bg-canvas-100 flex-1 rounded-md border py-1.5 text-sm font-semibold transition-colors disabled:opacity-50',
+        party === 'dem'
+          ? 'text-azure-600 border-azure-600/40 dark:text-azure-300 dark:border-azure-300/40'
+          : 'text-sienna-600 border-sienna-600/40 dark:text-sienna-300 dark:border-sienna-300/40'
+      )}
     >
       {label}
     </button>

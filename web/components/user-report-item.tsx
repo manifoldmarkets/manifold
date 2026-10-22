@@ -1,3 +1,7 @@
+import { SocialQuoteCard } from 'web/components/yap/social-quote-card'
+import { SocialImageCarousel } from 'web/components/yap/social-image-carousel'
+import { SocialText } from './yap/social-text'
+import { SocialRichContent } from './yap/social-rich-content'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { UserHovercard } from 'web/components/user/user-hovercard'
@@ -12,6 +16,7 @@ import { useAdminOrMod } from 'web/hooks/use-admin'
 import { api } from 'web/lib/api/api'
 import toast from 'react-hot-toast'
 import { Button } from 'web/components/buttons/button'
+import { ModActionBadge } from 'web/components/moderation/mod-action'
 
 export default function UserReportItem(props: {
   report: LiteReport
@@ -21,6 +26,9 @@ export default function UserReportItem(props: {
   const {
     slug,
     text,
+    richContent,
+    imageUrls,
+    source,
     owner,
     reporter,
     contentType,
@@ -90,7 +98,7 @@ export default function UserReportItem(props: {
                   was reported for this{' '}
                 </Tooltip>
                 <Link href={slug} className="text-primary-700 text-md my-1">
-                  {contentType}
+                  {contentType === 'social_post' ? 'post on Yap' : contentType}
                 </Link>
               </>
             )}
@@ -102,13 +110,38 @@ export default function UserReportItem(props: {
             onBan={() => onBan(owner.id)}
             disabled={isBanned}
           />
+          {isMod && contentType === 'social_post' && (
+            <Button
+              color="purple-outline"
+              size="xs"
+              onClick={async () => {
+                try {
+                  await toast.promise(
+                    api('delete-social-post', { id: props.report.contentId }),
+                    {
+                      loading: 'Removing…',
+                      success: 'Post removed',
+                      error: 'Could not remove post',
+                    }
+                  )
+                  await handleDismiss()
+                } catch {
+                  /* toast displays the failure */
+                }
+              }}
+            >
+              <ModActionBadge className="mr-1" />
+              Remove post
+            </Button>
+          )}
           {isMod && (
             <Button
-              color="red-outline"
+              color="purple-outline"
               size="xs"
               onClick={handleDismiss}
               className="whitespace-nowrap"
             >
+              <ModActionBadge className="mr-1" />
               Dismiss Report
             </Button>
           )}
@@ -128,7 +161,27 @@ export default function UserReportItem(props: {
           )}
           {showContent && (
             <div className="bg-canvas-0 my-2 max-h-[300px] overflow-y-auto rounded-lg p-2">
-              <Content size="md" content={text} />
+              {contentType === 'social_post' ? (
+                <>
+                  {richContent ? (
+                    <SocialRichContent
+                      content={richContent}
+                      fallbackText={String(text)}
+                    />
+                  ) : (
+                    <SocialText text={String(text)} />
+                  )}
+                  {source && <SocialQuoteCard quote={source} />}
+                  {!!imageUrls?.length && (
+                    <SocialImageCarousel
+                      key={imageUrls.join('|')}
+                      images={imageUrls}
+                    />
+                  )}
+                </>
+              ) : (
+                <Content size="md" content={text} />
+              )}
             </div>
           )}
         </>

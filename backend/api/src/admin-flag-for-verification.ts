@@ -15,8 +15,9 @@ import { isAdminId } from 'common/envs/constants'
 //     / ineligible without overloading it with the flag-with-reason workflow.
 //
 // flag: true  → bonusEligibility = 'requires_verification', stores reason
-// flag: false → clears both fields; user reverts to default (still
-//               bonus-blocked until they verify, but without flag context)
+// flag: false → clears the flag and reason, restoring the eligibility the user
+//               had before the flag (unset if they had none — a default
+//               account with full bonuses)
 //
 // Important: this endpoint does not write prizeEligibility directly. Prize
 // access remains on its own field when an explicit override is set; when it is
@@ -47,17 +48,14 @@ export const adminFlagForVerification: APIHandler<
     if (reason !== undefined) {
       update.verificationFlagReason = reason
     }
-    // Snapshot a restorable prior state so clearing the flag later doesn't
-    // silently destroy KYC ('verified'/'grandfathered') or purchase/admin-
-    // granted ('eligible') eligibility. Only stash genuinely-restorable values,
-    // and don't clobber an existing snapshot when re-flagging an already-flagged
-    // user (current bonusEligibility would be 'requires_verification').
-    if (
-      user.bonusEligibility === 'verified' ||
-      user.bonusEligibility === 'grandfathered' ||
-      user.bonusEligibility === 'eligible'
-    ) {
-      update.previousBonusEligibility = user.bonusEligibility
+    // Snapshot the prior state so clearing the flag later restores it. Every
+    // non-flag value is restorable — including 'ineligible', which would
+    // otherwise come back unset (now full default bonuses). An unset prior
+    // state deletes any stale snapshot so it can't resurrect an older value.
+    // Re-flagging an already-flagged user keeps the existing snapshot.
+    if (user.bonusEligibility !== 'requires_verification') {
+      update.previousBonusEligibility =
+        user.bonusEligibility ?? FieldVal.delete()
     }
     await updateUser(pg, userId, update as any)
     log(
@@ -68,7 +66,7 @@ export const adminFlagForVerification: APIHandler<
     return { success: true, bonusEligibility: 'requires_verification' as const }
   } else {
     // Restore the pre-flag eligibility if we stashed one; otherwise revert to
-    // undefined (the prior behavior for users who had no restorable state).
+    // unset (the user had no eligibility before the flag).
     const restored = user.previousBonusEligibility
     await updateUser(pg, userId, {
       bonusEligibility: (restored ?? FieldVal.delete()) as any,

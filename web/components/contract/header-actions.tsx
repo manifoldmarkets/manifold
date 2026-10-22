@@ -4,7 +4,7 @@ import {
   EyeOffIcon,
   InformationCircleIcon,
 } from '@heroicons/react/solid'
-import { Contract, contractPath } from 'common/contract'
+import { Contract, contractPath, isMultiCpmm } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getShareUrl } from 'common/util/share'
 import { useEffect, useState } from 'react'
@@ -18,6 +18,7 @@ import { MdOutlineReport } from 'react-icons/md'
 import { TiVolumeMute } from 'react-icons/ti'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { RepostButton, RepostModal } from 'web/components/comments/repost-modal'
+import { useNativeInfo } from 'web/components/native-message-provider'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api, updateUserDisinterestEmbedding } from 'web/lib/api/api'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
@@ -41,13 +42,18 @@ import { AddLiquidityModal } from './liquidity-modal'
 
 export function HeaderActions(props: {
   contract: Contract
+  // Whether contract.answers holds every answer the market has (see
+  // duplicateContractHref)
+  hasAllAnswers: boolean
   initialHideGraph: boolean
   hideGraph: boolean
   setHideGraph: (hideGraph: boolean) => void
 }) {
-  const { contract, initialHideGraph, hideGraph, setHideGraph } = props
+  const { contract, hasAllAnswers, initialHideGraph, hideGraph, setHideGraph } =
+    props
   const user = useUser()
   const privateUser = usePrivateUser()
+  const { isNative } = useNativeInfo()
   const isCreator = user?.id === contract.creatorId
 
   const [detailsOpen, setDetailsOpen] = useState(false)
@@ -56,7 +62,7 @@ export function HeaderActions(props: {
   const [liquidityOpen, setLiquidityOpen] = useState(false)
   const [tippingOpen, setTippingOpen] = useState(false)
 
-  const duplicateHref = duplicateContractHref(contract)
+  const duplicateHref = duplicateContractHref(contract, hasAllAnswers)
 
   const isBlocked =
     privateUser && privateUser.blockedContractIds?.includes(contract.id)
@@ -86,7 +92,7 @@ export function HeaderActions(props: {
   }
 
   const addLiquidityPossible =
-    contract.mechanism == 'cpmm-1' || contract.mechanism == 'cpmm-multi-1'
+    contract.mechanism == 'cpmm-1' || isMultiCpmm(contract)
 
   const [following, setFollowing] = useState<boolean>()
   const [followingOpen, setFollowingOpen] = useState(false)
@@ -137,7 +143,7 @@ export function HeaderActions(props: {
             ),
           },
           {
-            name: 'Repost',
+            name: 'Post to Yap',
             onClick: () => {
               setRepostOpen(true)
             },
@@ -175,7 +181,7 @@ export function HeaderActions(props: {
             },
             linkProps: {
               href: duplicateHref,
-              target: getLinkTarget(duplicateHref, true),
+              target: getLinkTarget(duplicateHref, true, isNative),
             },
             icon: <IoDuplicate className="h-5 w-5" />,
           },

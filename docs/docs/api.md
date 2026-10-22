@@ -339,7 +339,7 @@ type LiteMarket = {
   url: string
 
   outcomeType: string // BINARY, FREE_RESPONSE, MULTIPLE_CHOICE, NUMERIC, PSEUDO_NUMERIC, BOUNTIED_QUESTION, POLL, or ...
-  mechanism: string // dpm-2, cpmm-1, or cpmm-multi-1
+  mechanism: string // dpm-2, cpmm-1, cpmm-multi-1, or cpmm-multi-2. A cpmm-multi-2 market is a multiple choice market whose answers each carry their own p (see Answer); cpmm-multi-1 answers are all at p = 0.5.
 
   probability: number
   pool: { outcome: number } // For CPMM markets, the number of shares in the liquidity pool. For DPM markets, the amount of mana invested in each answer.
@@ -462,7 +462,10 @@ Response type: A `FullMarket`
 ```tsx
 // A complete market, along with answers (for free response markets)
 type FullMarket = LiteMarket & {
-  answers?: Answer[] // multi markets only
+  answers?: Answer[] // multi markets only. Each answer carries its pool (pool.YES, pool.NO) and
+  // its CPMM parameter p (probability = p * pool.NO / ((1 - p) * pool.YES + p * pool.NO)); p is
+  // 0.5 on cpmm-multi-1 answers and varies on cpmm-multi-2. Lite answers in search results carry
+  // only id, text and probability.
   shouldAnswersSumToOne?: boolean // multi markets only, whether answers are dependant (that is add up to 100%, typically used when only one answer should win). Always true for dpm-2 multiple choice and free response
   addAnswersMode?: 'ANYONE' | 'ONLY_CREATOR' | 'DISABLED' // multi markets only, who can add answers
 
@@ -998,7 +1001,7 @@ Response type: A `Bet`.
 
 Place multiple YES bets on a sums-to-one multiple choice market, targeting the same number of shares on each selected answer.
 
-This is only available on `cpmm-multi-1` markets with `shouldAnswersSumToOne=true` and requires at least two answers in the market. The provided `amount` is spent across the selected answers to purchase equal shares per answer at execution time. If a `limitProb` is provided, each leg will only execute up to that price; any unfilled remainder stays as open limit orders until `expiresAt` or cancellation.
+This is only available on `cpmm-multi-1` markets with `shouldAnswersSumToOne=true` and requires at least two answers in the market. `cpmm-multi-2` markets refuse baskets of more than one answer (400) for now: place single-answer bets instead. The provided `amount` is spent across the selected answers to purchase equal shares per answer at execution time. If a `limitProb` is provided, each leg will only execute up to that price; any unfilled remainder stays as open limit orders until `expiresAt` or cancellation.
 
 Parameters:
 
@@ -1255,7 +1258,10 @@ For multiple choice markets, you must also provide:
 
 - `answers`: An array of strings, each of which will be a valid answer for the market.
 - `addAnswersMode`: Optional. Controls who can add answers to the market after it has been created. Must be one of `'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'`. Defaults to `'DISABLED'`.
-- `shouldAnswersSumToOne`: Optional. If `true`, makes this market auto-arbitrage so that probabilities add up to 100% and restricts market resolution accordingly.
+- `shouldAnswersSumToOne`: Optional. Defaults to `true`. If `true`, makes this market auto-arbitrage so that probabilities add up to 100% and restricts market resolution accordingly.
+- `answerProbs`: Optional. An array of starting probabilities in percent, one per entry in `answers` and in the same order, each between 1 and 99. Defaults to an even split. The market's liquidity is spread around whatever probabilities you set. When `shouldAnswersSumToOne` is `true` (the default) these must add up to 100 — or to less than 100 when `addAnswersMode` is not `'DISABLED'`, in which case the `Other` answer takes the remainder.
+
+The automatically added `Other` answer counts toward the creation cost. **Compatibility note:** API requests that set `addAnswersMode` to `'ANYONE'` or `'ONLY_CREATOR'` and omit `shouldAnswersSumToOne` now include `Other` in the charged answer count. For example, at `liquidityTier: 100`, five listed answers plus `Other` cost M$150; those requests previously charged M$125.
 
 For bountied questions, you must also provide:
 
@@ -1283,9 +1289,10 @@ Parameter:
 
 Add mana to liquidity pool. Does not boost.
 
-Parameter:
+Parameters:
 
 - `amount`: Amount of M$ to add
+- `answerId`: Optional. On a `cpmm-multi-2` market, subsidize this one answer's pool instead of the whole market. Refused (403) on other markets and on a resolved answer.
 
 [Requires Auth](#authentication).
 
@@ -1395,7 +1402,7 @@ This approach treats each answer as an independent binary resolution, ensuring t
 
 Rebalances your position in a sum-to-one multi-choice market. This collapses mixed YES/NO positions into an all-YES position and redeems the minimum amount across outcomes. This is purely an accounting operation and does not affect the AMM or incur fees.
 
-Only applicable to `cpmm-multi-1` markets when `shouldAnswersSumToOne` is true. The equivalent operation is done automatically on binary markets.
+Only applicable to `cpmm-multi-1` and `cpmm-multi-2` markets when `shouldAnswersSumToOne` is true. The equivalent operation is done automatically on binary markets.
 
 [Requires Auth](#authentication).
 
@@ -1679,6 +1686,207 @@ Example request:
 curl "https://api.manifold.markets/v0/get-boost-history?limit=50&includePending=true"
 ```
 
+## Perpetual futures (beta)
+
+Perps are pool-based perpetual futures priced by an external oracle feed. They
+trade with mana only, positions carry leverage and can be liquidated, and the
+API surface below is in beta — endpoints and shapes may change while the
+feature is new. Market creation is admin-only.
+
+### Next-price execution
+
+All perpetual opens, adds, closes and flips are queued, non-cancellable market orders. Submission is not execution. The displayed price is indicative; the order fills at the next eligible oracle observation, which can be unchanged in value. Slow feeds may take hours between accepted updates. An unavailable feed can cause expiry.
+
+Existing positions continue to receive funding and may be liquidated or auto-deleveraged while a close or flip is pending. Risk transitions run before voluntary orders at the new price. An atomic flip either closes the surviving original position and opens its replacement, or rejects both voluntary legs.
+
+At most one trade and one close per user and market may be pending; a pending close settles before a pending trade. A pending add or flip is bound to the position it was placed against, so if a pending close fully closes that position first, the add or flip is rejected and refunded. Reuse the same idempotency key after an uncertain response (`maxFee` may differ on the retry). Use a new key only for a new instruction. A pending order cannot be cancelled, including by closing the page.
+
+### `POST /v0/place-perp-trade`
+
+Requires auth. Submit `contractId`, `direction` (`long` or `short`), positive `mana`, `leverage`, and a random 10-character alphanumeric `idempotencyKey`. Include `maxFee` in mana for a size-dependent-fee market. This is a fee allowance, not a price limit.
+
+Requests made with an API key pay the market's `takerFeeApiBps` when it is higher than `takerFeeBps` (10 if unset). The flat fee is `mana × leverage × rate / 10,000`. On a size-dependent-fee market, the fee at execution adds a size component that grows with the order's share of the pool. `maxFee` must cover the fee at the current pools when you submit (a flip must cover the flat fee), or the request is rejected with a 400. Leave room for the pools to move before the next price.
+
+Same-side exposure adds to the position. Opposite-side exposure queues a flip. Reserve cash is deducted from available mana and held outside market backing. A flip can also use its actual closing payout; insufficient funds at execution reject both voluntary legs.
+
+### `POST /v0/close-perp-position`
+
+Requires auth. Submit `contractId`, `direction`, `idempotencyKey`, and the target position's `expectedOpenedTime`. Optional `fraction` is between 0.01 and 1; partial closes also require the displayed `expectedSize` to validate the initial instruction. The fraction applies to the surviving position at execution after automatic funding or ADL changes. The dust rule may promote a partial close to a full close. A close never targets a replacement position.
+
+Both submission endpoints return `{ order: PerpOrder }`, replacing their previous immediate trade result. `PerpOrder` contains `id`, `contractId`, `status`, `createdTime`, `expiresTime`, `reservedMana`, `request`, `result`, and `error`. Status is `pending`, `filled`, `rejected`, or `expired`.
+
+### `GET /v0/get-perp-order`
+
+Requires auth. Pass `contractId` and optionally `orderId`. Returns `{ order: PerpOrder | null }`. Without an ID this returns the caller's latest order on the market. Orders belonging to other users are never returned. Responses are not cached.
+
+Poll until terminal. A filled trade result has `kind: 'trade'`, `position`, `fee`, and optional `feeBps` and `poolShareAfter`. A filled close has `kind: 'close'`, `payout`, `pnl`, `fraction`, and `remainingSize`. A rejected or expired order has an `error`, with its reservation released. It does not mean an existing position was closed.
+
+Orders fill at the next eligible accepted observation; momentary database contention retries at that same price. If that observation is missed entirely, the order is rejected and refunded rather than silently filled at a later price. Expiry is serviced independently of oracle health, and a rejected or expired order notifies its owner.
+
+### `GET /v0/get-perp-positions`
+
+List open positions on a perp market.
+
+Requires no auth.
+
+Parameters:
+
+- `contractId`: Required.
+- `userId`: Optional. Only return this user's positions.
+
+Response is an array of:
+
+```tsx
+type PerpPosition = {
+  userId: string
+  direction: 'long' | 'short'
+  size: number
+  costBasis: number
+  originalCostBasis: number
+  entryPrice: number
+  leverage: number
+  liquidationPrice: number
+  openedTime: number
+  updatedTime: number
+  userName: string | null
+  username: string | null
+  avatarUrl: string | null
+}
+```
+
+### `GET /v0/get-perp-events`
+
+Paginated trade history for a perp market: opens, adds, closes, liquidations,
+and ADL (auto-deleverage) events. Funding events are excluded — use
+`get-perp-funding-events` for those.
+
+Requires no auth.
+
+Parameters:
+
+- `contractId`: Required.
+- `userId`: Optional. Only return this user's events.
+- `beforeId`: Optional. Return events with `id` lower than this — pass the
+  smallest `id` from the previous page to paginate backward.
+- `limit`: Optional. Default `50`, max `200`.
+
+Response is an array of:
+
+```tsx
+type PerpEvent = {
+  id: number
+  ts: number
+  userId: string | null
+  direction: 'long' | 'short' | null
+  eventType: 'open' | 'add' | 'close' | 'liquidation' | 'adl' | 'funding'
+  oraclePrice: number
+  sizeDelta: number
+  costBasisDelta: number
+  originalCostBasisDelta: number
+  leverage: number | null
+  payout: number | null
+  pnl: number | null
+  adlFactor: number | null
+  userName: string | null
+  username: string | null
+  avatarUrl: string | null
+}
+```
+
+### `GET /v0/get-perp-funding-events`
+
+Per-period funding history for a perp market.
+
+Requires no auth.
+
+Parameters:
+
+- `contractId`: Required.
+- `since`: Optional. Only return events at or after this timestamp (ms).
+- `limit`: Optional. Max `5000`.
+
+Response is an array of:
+
+```tsx
+type PerpFundingEvent = {
+  ts: number
+  fundingRate: number
+  oraclePrice: number
+  numLiquidations: number
+  adlFactorLong: number
+  adlFactorShort: number
+}
+```
+
+### `GET /v0/get-oracle-price`
+
+Latest price point for an oracle feed.
+
+Requires no auth.
+
+Parameters:
+
+- `feedId`: Required. The feed id, e.g. `btc-usd`.
+
+Response type:
+
+```tsx
+type OraclePriceResponse = {
+  latest: {
+    feedId: string
+    price: number
+    ts: number
+    sourceTs?: number
+  } | null
+}
+```
+
+### `GET /v0/get-oracle-price-series`
+
+Historical price series for an oracle feed.
+
+Requires no auth.
+
+Parameters:
+
+- `feedId`: Required.
+- `since`: Optional. Only return points at or after this timestamp (ms).
+- `before`: Optional. Only return points strictly before this timestamp (ms).
+- `limit`: Optional. Max `5000`.
+- `bucketSeconds`: Optional, max `86400`. Server-side downsampling: return
+  the last point of each bucket instead of raw rows. Fast feeds emit a point
+  every ~15 seconds, so request week-plus windows bucketed or the `limit` cap
+  will truncate the window.
+
+Response is an array of `{ ts: number, price: number }`, ascending by `ts`.
+
+A request always returns the _newest_ points in the window, so `since` alone
+cannot reach further back than `limit` points from now. To page through a full
+feed history, walk backwards with `before`: omit it on the first request, then
+pass the `ts` of the first (oldest) point you received as the next request's
+`before`, until a page comes back empty.
+
+```
+GET /v0/get-oracle-price-series?feedId=btc-usd&limit=5000
+GET /v0/get-oracle-price-series?feedId=btc-usd&limit=5000&before=<oldest ts from previous page>
+```
+
+To get the whole history in one request instead, pass `bucketSeconds` — e.g.
+`bucketSeconds=3600` returns hourly points, which covers years of a fast feed
+inside the `limit` cap.
+
+### `POST /v0/create-perp`
+
+Create a perp market. Admin-only; documented for completeness. Takes the
+market question and description, an `oracleFeedId` from the registered feeds,
+an optional `ticker` (the market's short identifier, e.g. `BTC`: one
+alphanumeric token of at most 8 characters, shown in place of the market type
+and matched by search; a feed that already has a canonical ticker accepts only
+that one, and it is the default when omitted), and the risk parameters
+`maxLeverage`, `maxFundingRate`, `fundingSensitivity`, `maxOraclePriceAgeMs`,
+`subsidyLong`, and `subsidyShort`. Returns the created market as a
+`LiteMarket`; perp markets carry their `ticker` there.
+
 ## Websockets
 
 Manifold provides a real-time websocket server that allows you to subscribe to updates about markets, bets, and other events. The websocket endpoint is available at `wss://api.manifold.markets/ws` and `wss://api.dev.manifold.markets/ws`.
@@ -1823,6 +2031,7 @@ Parameters:
 
 ## Changelog
 
+- 2026-08-05: Add perpetual futures (beta) endpoint documentation
 - 2026-03-09: Add `/get-boost-history` documentation
 - 2024-10-30: Remove undefined parameter from `/v0/market/[marketId]/sell` and remove `sell-shares-dpm` endpoint
 - 2023-12-19: Formatting & copy improvements. Updated parameters and return types.

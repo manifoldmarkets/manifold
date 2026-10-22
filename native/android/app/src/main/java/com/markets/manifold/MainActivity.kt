@@ -1,4 +1,6 @@
 package com.markets.manifold
+import android.content.res.Configuration
+import android.content.pm.ActivityInfo
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build
@@ -12,6 +14,21 @@ import com.facebook.react.defaults.DefaultReactActivityDelegate
 import expo.modules.ReactActivityDelegateWrapper
 
 class MainActivity : ReactActivity() {
+  // @generated begin manifold-orientation-lock - expo prebuild (DO NOT MODIFY) sync-eb96d5c0c70df6406b4960b51ff8624e18748ede
+  private fun applyPhoneOrientationLock() {
+    requestedOrientation =
+      if (resources.configuration.smallestScreenWidthDp < 600)
+        ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+      else
+        ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+  }
+
+  override fun onConfigurationChanged(newConfig: Configuration) {
+    super.onConfigurationChanged(newConfig)
+    applyPhoneOrientationLock()
+  }
+
+  // @generated end manifold-orientation-lock
   override fun onCreate(savedInstanceState: Bundle?) {
     // Set the theme to AppTheme BEFORE onCreate to support
     // coloring the background, status bar, and navigation bar.
@@ -20,6 +37,9 @@ class MainActivity : ReactActivity() {
     // @generated begin expo-splashscreen - expo prebuild (DO NOT MODIFY) sync-f3ff59a738c56c9a6119210cb55f0b613eb8b6af
     SplashScreenManager.registerOnActivity(this)
     // @generated end expo-splashscreen
+    // @generated begin manifold-orientation-lock-init - expo prebuild (DO NOT MODIFY) sync-d9f766094846e90d1d1ec58d0bb428cf5353f4ce
+    applyPhoneOrientationLock()
+    // @generated end manifold-orientation-lock-init
     super.onCreate(null)
   }
 

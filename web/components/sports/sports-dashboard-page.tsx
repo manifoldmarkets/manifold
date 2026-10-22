@@ -14,6 +14,7 @@ import {
   MatchOutcome,
   SportsDashboardTabButton,
 } from 'web/components/sports/sports-match-card'
+import { splitFlag as parseAnswerText } from 'common/sports-schedule'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { api, updateDashboard } from 'web/lib/api/api'
 import { useAdminOrMod, useDev } from 'web/hooks/use-admin'
@@ -23,7 +24,7 @@ import { useUser } from 'web/hooks/use-user'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import type { DropResult } from '@hello-pangea/dnd'
 import { Dashboard, DashboardItem, DashboardTextItem } from 'common/dashboard'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { shortFormatNumber } from 'common/util/format'
 import { ContractRow } from 'web/components/contract/contracts-table'
 import {
@@ -53,6 +54,10 @@ import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { referralQuery } from 'common/util/share'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import {
+  MOD_ACTION_TEXT_CLASS,
+  ModActionBadge,
+} from 'web/components/moderation/mod-action'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -115,19 +120,6 @@ function MarketCardSkeletonGrid() {
       ))}
     </div>
   )
-}
-
-function parseAnswerText(text: string): { flag: string; name: string } {
-  const chars = [...text.trim()]
-  const isRegionalIndicator = (c?: string) => {
-    const cp = c?.codePointAt(0)
-    return cp !== undefined && cp >= 0x1f1e6 && cp <= 0x1f1ff
-  }
-  if (isRegionalIndicator(chars[0]) && isRegionalIndicator(chars[1])) {
-    const flag = chars[0] + chars[1]
-    return { flag, name: text.trim().slice(flag.length).trim() }
-  }
-  return { flag: '', name: text.trim() }
 }
 
 // football-data live statuses (no HALF_TIME exists — the break is PAUSED).
@@ -301,9 +293,9 @@ function CommunityTab({
       const ids = fetched.map((c) => c.id)
       const answersByContractId = await getAnswersForContracts(db, ids)
       for (const c of fetched) {
-        // Merge answers for all cpmm-multi-1 markets (MC, NUMBER, MULTI_NUMERIC, DATE)
+        // Merge answers for all multiple choice CPMM markets (MC, NUMBER, MULTI_NUMERIC, DATE)
         // regardless of whether 'answers' is already in the data blob
-        if ((c as any).mechanism === 'cpmm-multi-1') {
+        if (isMultiCpmm(c)) {
           ;(c as any).answers =
             answersByContractId[c.id] ?? (c as any).answers ?? []
         }
@@ -464,15 +456,19 @@ function CommunityTab({
           <Row className="items-center gap-2">
             <button
               onClick={() => setEditMode((v) => !v)}
-              className="border-ink-200 text-ink-500 hover:bg-canvas-50 rounded border px-2 py-0.5 text-xs transition-colors"
+              className={clsx(
+                'hover:bg-canvas-50 flex items-center gap-1 rounded border border-purple-300 px-2 py-0.5 text-xs transition-colors dark:border-purple-700',
+                MOD_ACTION_TEXT_CLASS
+              )}
             >
+              <ModActionBadge />
               {editMode ? 'done' : 'edit'}
             </button>
             <button
               onClick={() => setShowAdd(true)}
-              className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-indigo-700"
+              className="flex items-center gap-1 rounded-md bg-purple-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-purple-700"
             >
-              + Add market
+              <ModActionBadge />+ Add market
             </button>
           </Row>
         )}
@@ -480,7 +476,8 @@ function CommunityTab({
 
       {/* Not initialized hint for admins */}
       {dashboard === null && isAdmin && (
-        <p className="text-ink-400 text-xs">
+        <p className={clsx('text-xs', MOD_ACTION_TEXT_CLASS)}>
+          <ModActionBadge className="mr-1 align-middle" />
           No community dashboard yet — adding the first market will create it
           automatically.
         </p>
@@ -524,7 +521,10 @@ function CommunityTab({
                   {isAdmin && editMode && (
                     <button
                       onClick={() => handleRemove(contract)}
-                      className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0 z-10 transition-colors"
+                      className={clsx(
+                        MOD_ACTION_TEXT_CLASS,
+                        'absolute -top-2 right-0 z-10 transition-opacity hover:opacity-70'
+                      )}
                       title="Remove from community tab"
                     >
                       <XCircleIcon className="h-5 w-5" />
@@ -579,7 +579,10 @@ function CommunityTab({
                               </div>
                               <button
                                 onClick={() => handleRemove(contract)}
-                                className="text-ink-500 hover:text-ink-700 absolute -right-2 -top-2 z-10 transition-colors"
+                                className={clsx(
+                                  MOD_ACTION_TEXT_CLASS,
+                                  'absolute -right-2 -top-2 z-10 transition-opacity hover:opacity-70'
+                                )}
                                 title="Remove from community tab"
                               >
                                 <XCircleIcon className="h-5 w-5" />
@@ -601,7 +604,10 @@ function CommunityTab({
                     {isAdmin && editMode && (
                       <button
                         onClick={() => handleRemove(contract)}
-                        className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0 z-10 transition-colors"
+                        className={clsx(
+                          MOD_ACTION_TEXT_CLASS,
+                          'absolute -top-2 right-0 z-10 transition-opacity hover:opacity-70'
+                        )}
                         title="Remove from community tab"
                       >
                         <XCircleIcon className="h-5 w-5" />
@@ -629,7 +635,10 @@ function CommunityTab({
                     {isAdmin && editMode && (
                       <button
                         onClick={() => handleRemove(contract)}
-                        className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0 z-10 transition-colors"
+                        className={clsx(
+                          MOD_ACTION_TEXT_CLASS,
+                          'absolute -top-2 right-0 z-10 transition-opacity hover:opacity-70'
+                        )}
                         title="Remove from community tab"
                       >
                         <XCircleIcon className="h-5 w-5" />
@@ -660,7 +669,10 @@ function CommunityTab({
                       {isAdmin && editMode && (
                         <button
                           onClick={() => handleRemove(contract)}
-                          className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0 z-10 transition-colors"
+                          className={clsx(
+                            MOD_ACTION_TEXT_CLASS,
+                            'absolute -top-2 right-0 z-10 transition-opacity hover:opacity-70'
+                          )}
                           title="Remove from community tab"
                         >
                           <XCircleIcon className="h-5 w-5" />
@@ -946,22 +958,6 @@ export function SportsDashboardPage({
 
   return (
     <Page trackPageView={trackPageView}>
-      <style>{`
-        :root {
-          --sports-team-a: #1A7A9A;
-          --sports-team-a-vibrant: #0A8FAD;
-          --sports-team-b: #8B3A52;
-          --sports-team-b-vibrant: #C4436E;
-          --sports-draw: #6B7A8E;
-          --sports-draw-vibrant: #7A8CA0;
-        }
-        .dark {
-          --sports-team-a-vibrant: #25C4E8;
-          --sports-team-b-vibrant: #E85A8A;
-          --sports-draw: #7A8A9E;
-          --sports-draw-vibrant: #A8AABF;
-        }
-      `}</style>
       <Head>
         <title>{title} | Manifold</title>
       </Head>
@@ -1041,8 +1037,12 @@ export function SportsDashboardPage({
                     {isAdmin && (
                       <button
                         onClick={() => setEditingDesc(true)}
-                        className="text-ink-400 hover:text-ink-600 shrink-0 text-xs transition-colors"
+                        className={clsx(
+                          'flex shrink-0 items-center gap-1 text-xs transition-opacity hover:opacity-70',
+                          MOD_ACTION_TEXT_CLASS
+                        )}
                       >
+                        <ModActionBadge />
                         {officialDescription && !JSONEmpty(officialDescription)
                           ? 'edit'
                           : '+ add description'}

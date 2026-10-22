@@ -1,3 +1,11 @@
+import {
+  createSocialPost,
+  editSocialPost,
+  deleteSocialPost,
+  getSocialPosts,
+  getSocialPost,
+  getSocialLikers,
+} from './social-posts'
 import { createPublicChatMessage } from 'api/create-public-chat-message'
 import { createuser } from 'api/create-user'
 import { getActiveUserManaStats } from 'api/get-active-user-mana-stats'
@@ -5,6 +13,7 @@ import { getBalanceChanges } from 'api/get-balance-changes'
 import { getBestComments } from 'api/get-best-comments'
 import { getBoostAnalytics } from 'api/get-boost-analytics'
 import { getBoostHistory } from 'api/get-boost-history'
+import { getBrowsePersonalization } from 'api/get-browse-personalization'
 import { getFeed } from 'api/get-feed'
 import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
 import { getManaSummaryStats } from 'api/get-mana-summary-stats'
@@ -70,6 +79,37 @@ import { createAnswerCPMM } from './create-answer-cpmm'
 import { createComment } from './create-comment'
 import { createManalink } from './create-manalink'
 import { createMarket } from './create-market'
+import { createPerp } from './create-perp'
+import { internalPerpOrderEffects } from './internal-perp-order-effects'
+import { getPerpOrder } from './get-perp-order'
+import { placePerpTrade } from './place-perp-trade'
+import { closePerpPosition } from './close-perp-position'
+import { updatePerpConfig } from './update-perp-config'
+import { addPerpSubsidy } from './add-perp-subsidy'
+import { getMnxDashboard } from './get-mnx-dashboard'
+import {
+  getModelClassifications,
+  setModelClassification,
+} from './model-classifications'
+import {
+  getOpenRouterLabClassifications,
+  setOpenRouterLabClassification,
+} from './openrouter-lab-classifications'
+import { getOraclePrice, getOraclePriceSeries } from './get-oracle-price'
+import { getKnownOracleFeeds } from './get-known-oracle-feeds'
+import { internalWriteOraclePrice } from './internal-write-oracle-price'
+import { getPerpPositions } from './get-perp-positions'
+import { getPerpQuote } from './get-perp-quote'
+import { internalPerpBroadcast } from './internal-perp-broadcast'
+import { internalSportsBroadcast } from './internal-sports-broadcast'
+import { getPerpFundingEvents } from './get-perp-funding-events'
+import { getPerpEvents } from './get-perp-events'
+import {
+  createPerpSuggestion,
+  getPerpSuggestions,
+  hidePerpSuggestion,
+  votePerpSuggestion,
+} from './perp-suggestions'
 import { deleteGroup } from './delete-group'
 import { deleteMe } from './delete-me'
 import { dismissmodalert } from './dismiss-mod-alert'
@@ -166,6 +206,7 @@ import { updateNotifSettings } from './update-notif-settings'
 import { updatePrivateUser } from './update-private-user'
 import { setJobInterest } from './set-job-interest'
 import { getJobInterest } from './get-job-interest'
+import { getMnxInviteLink } from './get-mnx-invite-link'
 
 import { createCategory } from './create-category'
 import { createTask } from './create-task'
@@ -203,7 +244,18 @@ import { adminGetTopWhaleUsers } from './admin-get-top-whale-users'
 import { adminGetNewUsers } from './admin-get-new-users'
 import { adminSportsFixtures } from './admin-sports-fixtures'
 import { adminSportsCreateMarkets } from './admin-sports-create-markets'
+import { adminSportsCreateOddsMarkets } from './admin-sports-create-odds-markets'
+import { linkMarket, unlinkMarket } from './link-market'
+import {
+  adminSportsCompetitionSwitches,
+  adminSportsSetCompetitionSwitch,
+} from './admin-sports-competition-switches'
+import {
+  adminSportsScorePolling,
+  adminSportsSetScorePolling,
+} from './admin-sports-score-polling'
 import { sportsMarkets } from './sports-markets'
+import { sportsSchedule } from './sports-schedule'
 import { adminSportsResolve } from './admin-sports-resolve'
 import { adminSportsCommunityMarket } from './admin-sports-community-market'
 import { adminSportsInitCommunity } from './admin-sports-init-community'
@@ -398,6 +450,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'update-notif-settings': updateNotifSettings,
   'set-job-interest': setJobInterest,
   'get-job-interest': getJobInterest,
+  'get-mnx-invite-link': getMnxInviteLink,
   headlines: getHeadlines,
   'politics-headlines': getPoliticsHeadlines,
   post: post,
@@ -427,6 +480,32 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-dashboard-from-slug': getDashboardFromSlug,
   'create-public-chat-message': createPublicChatMessage,
   unresolve: unresolve,
+  'create-perp': createPerp,
+  'internal-perp-order-effects': internalPerpOrderEffects,
+  'get-perp-order': getPerpOrder,
+  'place-perp-trade': placePerpTrade,
+  'close-perp-position': closePerpPosition,
+  'update-perp-config': updatePerpConfig,
+  'add-perp-subsidy': addPerpSubsidy,
+  'get-mnx-dashboard': getMnxDashboard,
+  'get-model-classifications': getModelClassifications,
+  'set-model-classification': setModelClassification,
+  'get-openrouter-lab-classifications': getOpenRouterLabClassifications,
+  'set-openrouter-lab-classification': setOpenRouterLabClassification,
+  'get-oracle-price': getOraclePrice,
+  'get-oracle-price-series': getOraclePriceSeries,
+  'get-known-oracle-feeds': getKnownOracleFeeds,
+  'internal-write-oracle-price': internalWriteOraclePrice,
+  'get-perp-positions': getPerpPositions,
+  'get-perp-quote': getPerpQuote,
+  'internal-perp-broadcast': internalPerpBroadcast,
+  'internal-sports-broadcast': internalSportsBroadcast,
+  'get-perp-funding-events': getPerpFundingEvents,
+  'get-perp-events': getPerpEvents,
+  'get-perp-suggestions': getPerpSuggestions,
+  'create-perp-suggestion': createPerpSuggestion,
+  'vote-perp-suggestion': votePerpSuggestion,
+  'hide-perp-suggestion': hidePerpSuggestion,
   'get-followed-groups': getFollowedGroups,
   'get-watched-markets': getWatchedMarkets,
   'unique-bet-group-count': getUniqueBetGroupCount,
@@ -438,6 +517,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'request-otp': requestOTP,
   'multi-sell': multiSell,
   'get-feed': getFeed,
+  'get-browse-personalization': getBrowsePersonalization,
   'get-unified-feed': getUnifiedFeed,
   'get-mana-supply': getManaSupply,
   'update-mod-report': updateModReport,
@@ -505,6 +585,12 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refer-user': referUser,
   'get-referral-earnings': getReferralEarnings,
   'create-post-comment': createPostComment,
+  'create-social-post': createSocialPost,
+  'edit-social-post': editSocialPost,
+  'delete-social-post': deleteSocialPost,
+  'get-social-posts': getSocialPosts,
+  'get-social-post': getSocialPost,
+  'get-social-likers': getSocialLikers,
   'create-post': createPost,
   'update-post': updatePost,
   'update-post-comment': updatePostComment,
@@ -562,7 +648,15 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'admin-get-new-users': adminGetNewUsers,
   'admin-sports-fixtures': adminSportsFixtures,
   'admin-sports-create-markets': adminSportsCreateMarkets,
+  'admin-sports-create-odds-markets': adminSportsCreateOddsMarkets,
+  'link-market': linkMarket,
+  'unlink-market': unlinkMarket,
+  'admin-sports-competition-switches': adminSportsCompetitionSwitches,
+  'admin-sports-set-competition-switch': adminSportsSetCompetitionSwitch,
+  'admin-sports-score-polling': adminSportsScorePolling,
+  'admin-sports-set-score-polling': adminSportsSetScorePolling,
   'sports-markets': sportsMarkets,
+  'sports-schedule': sportsSchedule,
   'admin-sports-resolve': adminSportsResolve,
   'admin-sports-community-market': adminSportsCommunityMarket,
   'admin-sports-init-community': adminSportsInitCommunity,

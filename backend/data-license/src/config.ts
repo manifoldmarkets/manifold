@@ -18,6 +18,16 @@ export interface Config {
   pseudonymPrefix: string
   pseudonymHexLen: number
   deletedAccountMode: 'remove' | 'redact'
+  // Replace rare handle-like words that match a username (identity.ts) and
+  // gate on any left. Rare = in at most bareUsernameMaxRows prose rows.
+  bareUsernameRewrite: boolean
+  bareUsernameMaxRows: number
+  // Blank the text of moderator-deleted and hidden comments, keeping the row
+  // and its flags (default on).
+  blankModeratedComments: boolean
+  // Scrub market descriptions: emails and phones, and @handles that are
+  // Manifold usernames rewritten to the user's pseudonym (default on).
+  scrubDescriptions: boolean
   subsetLimit: number | undefined
   dryRun: boolean
   localOutDir: string
@@ -79,7 +89,9 @@ async function resolveSalt(): Promise<Buffer> {
   }
   if (literal) return Buffer.from(literal, 'utf8')
   if (resource) return Buffer.from(await accessSecret(resource), 'utf8')
-  throw new Error('no salt: set EXPORT_SALT (local) or SALT_SECRET_RESOURCE (cloud)')
+  throw new Error(
+    'no salt: set EXPORT_SALT (local) or SALT_SECRET_RESOURCE (cloud)'
+  )
 }
 
 async function resolveForbiddenStrings(): Promise<string[]> {
@@ -90,9 +102,16 @@ async function resolveForbiddenStrings(): Promise<string[]> {
   if (resource) parts.push(...(await accessSecret(resource)).split(','))
   // lowercased here; the validator lowercases each row blob to match, so
   // "betty mctestface" in a comment still trips a "Betty McTestface" entry.
-  return parts
-    .map((s) => s.trim().toLowerCase())
-    .filter((s) => s.length > 0)
+  return parts.map((s) => s.trim().toLowerCase()).filter((s) => s.length > 0)
+}
+
+function flag(name: string, dflt: boolean): boolean {
+  const v = opt(name)
+  if (v === undefined) return dflt
+  if (v !== 'true' && v !== 'false') {
+    throw new Error(`${name} must be true or false, got: ${v}`)
+  }
+  return v === 'true'
 }
 
 function today(): string {
@@ -117,11 +136,16 @@ export async function loadConfig(): Promise<Config> {
   const onlyTables = (() => {
     const raw = opt('ONLY_TABLES')
     if (!raw) return undefined
-    const names = raw.split(',').map((s) => s.trim()).filter((s) => s.length > 0)
+    const names = raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
     const bad = names.filter((n) => !(n in TABLES))
     if (bad.length) {
       throw new Error(
-        `ONLY_TABLES has unknown table(s): ${bad.join(', ')}. Valid: ${Object.keys(TABLES).join(', ')}`
+        `ONLY_TABLES has unknown table(s): ${bad.join(
+          ', '
+        )}. Valid: ${Object.keys(TABLES).join(', ')}`
       )
     }
     if (!names.length) throw new Error('ONLY_TABLES is set but empty')
@@ -135,6 +159,10 @@ export async function loadConfig(): Promise<Config> {
     pseudonymPrefix: opt('PSEUDONYM_PREFIX') ?? 'User_',
     pseudonymHexLen: num('PSEUDONYM_HEX_LEN', 20),
     deletedAccountMode: mode,
+    bareUsernameRewrite: flag('BARE_USERNAME_REWRITE', true),
+    bareUsernameMaxRows: num('BARE_USERNAME_MAX_ROWS', 20),
+    blankModeratedComments: flag('BLANK_MODERATED_COMMENTS', true),
+    scrubDescriptions: flag('SCRUB_DESCRIPTIONS', true),
     subsetLimit: opt('SUBSET_LIMIT') ? num('SUBSET_LIMIT', 0) : undefined,
     dryRun: (opt('DRY_RUN') ?? 'true') !== 'false',
     localOutDir: opt('LOCAL_OUT_DIR') ?? './out',

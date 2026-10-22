@@ -15,6 +15,7 @@ import { NotificationFrame } from './notification-frame'
 import { extractTextFromContent } from 'components/content/content-utils'
 import { truncateText } from 'lib/truncate-text'
 import { LogoAvatar } from 'components/ui/logo-avatar'
+import { contractPathWithoutContract } from 'common/contract'
 
 // export const ignoredReasons = [
 //   'unique_bettors_on_your_contract',
@@ -144,6 +145,25 @@ export function NotificationItem({
         notification={notification}
         isChildOfGroup={isChildOfGroup}
       />
+    )
+  } else if (reason === 'perp_liquidation' || reason === 'perp_adl') {
+    const { sourceContractCreatorUsername, sourceContractSlug } = notification
+    const link =
+      sourceContractCreatorUsername && sourceContractSlug
+        ? contractPathWithoutContract(
+            sourceContractCreatorUsername,
+            sourceContractSlug
+          )
+        : undefined
+    return (
+      <NotificationFrame
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        icon={<LogoAvatar size="md" />}
+        link={link}
+      >
+        <>{truncateText(extractTextFromContent(sourceText), '2xl')}</>
+      </NotificationFrame>
     )
   } else if (sourceType === 'contract' && sourceUpdateType === 'updated') {
     return null

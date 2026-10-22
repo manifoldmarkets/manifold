@@ -24,7 +24,7 @@ import { getUser, getUserByUsername, isProd, log } from 'shared/utils'
 
 import { ValidatedAPIParams } from 'common/api/schema'
 import { APIError } from 'common/api/utils'
-import { PRE_KYC_STARTING_BALANCE } from 'common/economy'
+import { SIGNUP_BONUS_DESCRIPTION, STARTING_BALANCE } from 'common/economy'
 import { convertPrivateUser, convertUser } from 'common/supabase/users'
 import { onCreateUser } from 'shared/helpers/on-create-user'
 import { insert } from 'shared/supabase/utils'
@@ -116,7 +116,8 @@ export const createUserMain = async (
       streakForgiveness: 0,
       shouldShowWelcome: true,
       creatorTraders: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
-      signupBonusPaid: 0,
+      // Paid in full below, so identity verification never pays a top-up.
+      signupBonusPaid: STARTING_BALANCE,
     }
 
     const privateUser: PrivateUser = {
@@ -138,18 +139,17 @@ export const createUserMain = async (
       data: userData,
     })
 
+    // The full signup bonus is paid up front; identity verification is
+    // optional and pays nothing extra.
     await runTxnFromBank(tx, {
       fromType: 'BANK',
       toId: userId,
       toType: 'USER',
-      amount: PRE_KYC_STARTING_BALANCE,
+      amount: STARTING_BALANCE,
       token: 'M$',
-      category: 'PRE_KYC_BONUS',
-      description: 'Pre-KYC starting balance',
+      category: 'SIGNUP_BONUS',
+      description: SIGNUP_BONUS_DESCRIPTION,
     })
-
-    // Note: Full signup bonus is paid after identity verification (iDenfy)
-    // See backend/api/src/idenfy/callback.ts
 
     const privateUserRow = await insert(tx, 'private_users', {
       id: privateUser.id,

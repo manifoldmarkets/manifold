@@ -16,6 +16,8 @@ export function ContractSummaryStats(props: {
   question: string
   financeContract: Contract
   editable?: boolean
+  // Can only edit because the user is a mod or admin
+  modAction?: boolean
   isCashContract?: boolean
 }) {
   const {
@@ -24,6 +26,7 @@ export function ContractSummaryStats(props: {
     question,
     financeContract: contract,
     editable,
+    modAction,
     isCashContract,
   } = props
   const { outcomeType } = contract
@@ -83,7 +86,11 @@ export function ContractSummaryStats(props: {
           {/* {isCreator && contract.mechanism !== 'none' && (
             <CreatorFeesDisplay contract={contract} />
           )} */}
-          <CloseOrResolveTime contract={contract} editable={editable} />
+          <CloseOrResolveTime
+            contract={contract}
+            editable={editable}
+            modAction={modAction}
+          />
         </Row>
       )}
     </>

@@ -5,7 +5,11 @@ import * as crypto from 'crypto'
 import { createManaPaymentNotification } from 'shared/create-notification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getPost, incrementPostTippedAmount } from 'shared/supabase/posts'
-import { bulkIncrementBalances } from 'shared/supabase/users'
+import {
+  broadcastUserUpdates,
+  bulkIncrementBalancesQuery,
+  UserUpdate,
+} from 'shared/supabase/users'
 import { insertTxns } from 'shared/txn/run-txn'
 import { getUser, getUsers } from 'shared/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
@@ -20,8 +24,14 @@ const IS_PAUSED = false
 export const managram: APIHandler<'managram'> = onlyUsersWhoCanPerformAction(
   'managram',
   async (props, auth) => {
-    const { amount, toIds, message, token, groupId: passedGroupId, postId } =
-      props
+    const {
+      amount,
+      toIds,
+      message,
+      token,
+      groupId: passedGroupId,
+      postId,
+    } = props
     const fromId = auth.uid
 
     if (IS_PAUSED && !isAdminId(fromId)) {
@@ -46,7 +56,10 @@ export const managram: APIHandler<'managram'> = onlyUsersWhoCanPerformAction(
     let tippedPost = null
 
     const fromUser = await betsQueue.enqueueFn(async () => {
-      // Run as transaction to prevent race conditions.
+      // The sender's balance is read below without a row lock, so under
+      // READ COMMITTED the check-then-debit can pass for two concurrent
+      // sends. We re-check the sender's balance from the debit's RETURNING
+      // and abort if it went negative, which rolls the transaction back.
       return await pg.tx(async (tx) => {
         const fromUser = await getUser(fromId, tx)
         if (!fromUser) {
@@ -90,7 +103,10 @@ export const managram: APIHandler<'managram'> = onlyUsersWhoCanPerformAction(
             throw new APIError(400, 'Post tips must use mana.')
           }
           if (toIds.length !== 1) {
-            throw new APIError(400, 'Post tips must have exactly one recipient.')
+            throw new APIError(
+              400,
+              'Post tips must have exactly one recipient.'
+            )
           }
           const post = await getPost(tx, postId)
           if (!post) {
@@ -113,23 +129,38 @@ export const managram: APIHandler<'managram'> = onlyUsersWhoCanPerformAction(
           )
         }
 
-        await bulkIncrementBalances(
-          tx,
-          buildArray(
-            {
-              id: fromId,
-              [balanceField]: -total,
-              [depositsField]: -total,
-            },
-            toIds
-              .filter((id) => id !== BURN_MANA_USER_ID)
-              .map((toId) => ({
-                id: toId,
-                [balanceField]: amount,
-                [depositsField]: amount,
-              }))
+        const balanceUpdates = await tx.many<UserUpdate>(
+          bulkIncrementBalancesQuery(
+            buildArray(
+              {
+                id: fromId,
+                [balanceField]: -total,
+                [depositsField]: -total,
+              },
+              toIds
+                .filter((id) => id !== BURN_MANA_USER_ID)
+                .map((toId) => ({
+                  id: toId,
+                  [balanceField]: amount,
+                  [depositsField]: amount,
+                }))
+            )
           )
         )
+
+        // The relative debit above waits on any concurrent debit's row lock
+        // and sees its result, so re-checking the sender's post-debit balance
+        // here catches an overdraw that the pre-read check could not.
+        const balanceColumn = token === 'M$' ? 'balance' : 'cash_balance'
+        const fromResult = balanceUpdates.find((u) => u.id === fromId)
+        if (fromResult && Number(fromResult[balanceColumn]) < 0) {
+          throw new APIError(
+            403,
+            `Insufficient balance: ${fromUser.name} needed ${total} but only had ${balance}`
+          )
+        }
+
+        broadcastUserUpdates(balanceUpdates)
 
         const groupId = passedGroupId ? passedGroupId : crypto.randomUUID()
 

@@ -1,5 +1,8 @@
+import { uniq, uniqBy } from 'lodash'
+
 import { Contract } from 'common/contract'
-import { getContractFromSlug } from 'common/supabase/contracts'
+import { getContractFromSlug, getContracts } from 'common/supabase/contracts'
+import { MEASURE_CONTRACT_IDS } from 'web/components/usa-map/ballot-measures-model'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import {
   ElectionsPageProps,
@@ -7,10 +10,10 @@ import {
   MIDTERMS_2026,
   PRESIDENT_2028_SLUG,
   PRESIDENT_2028_PARTY_SLUG,
-  PRIMARIES_2026,
-  REDISTRICTING_2026,
+  POLLING_PERPS,
   StateElectionMarket,
 } from 'web/public/data/elections-data'
+import { getPartyProbs } from 'web/components/usa-map/state-election-map'
 import {
   governors2026,
   governorCandidates2026,
@@ -20,9 +23,145 @@ import {
   senateCandidates2026,
 } from 'web/public/data/senate-state-data'
 import { api } from 'web/lib/api/api'
-import { getDashboardProps } from 'web/lib/politics/news-dashboard'
+import {
+  HOUSE_DISTRICT_MARKETS,
+  HOUSE_RACE_MARKETS,
+} from 'web/public/data/house-market-data'
+import {
+  curateTrendingMarkets,
+  MIDTERM_CONTEST_TOPIC_SLUG,
+  rankContestMarkets,
+} from 'web/lib/politics/election-curation'
+import {
+  pickUnprecedentedPolitics,
+  UNPRECEDENTED_POLITICS_SLUGS,
+} from 'web/lib/politics/unprecedented-politics'
+import {
+  BOTH_2026_MATRIX,
+  buildConditionalMatrixRows,
+  conditionalMatrixIds,
+  ConditionalMatrixRow,
+  HOUSE_2026_MATRIX,
+  matrixRowContracts,
+  PRESIDENT_2028_MATRIX,
+  SENATE_2026_MATRIX,
+  slimMatrixRows,
+} from 'web/lib/politics/conditional-matrix'
 
-export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
+// Sections this branch adds to the page. The base ElectionsPageProps type lives
+// in web/public/data/elections-data.ts (owned by the data workstream), so the
+// additions are layered on here. They are optional on the component side so
+// the other pages that render USElectionsPage keep compiling.
+export type MidtermSpotlightProps = {
+  // Jack1's Manifold Midterm Contest: its most-traded open markets.
+  contestContracts: Contract[]
+  // Unprecedented politics: curated community markets on political firsts
+  // (web/lib/politics/unprecedented-politics.ts), in display order.
+  unprecedentedContracts: Contract[]
+  // The conditional matrices: rows asked under each outcome of the 2026 Senate
+  // and House races, under a sweep of both chambers, and under the 2028
+  // presidency. Empty means the matrix is hidden (fewer than two rows, e.g.
+  // before its markets are created).
+  senateMatrixRows: ConditionalMatrixRow[]
+  houseMatrixRows: ConditionalMatrixRow[]
+  bothMatrixRows: ConditionalMatrixRow[]
+  presidencyMatrixRows: ConditionalMatrixRow[]
+}
+export type MidtermsPageProps = ElectionsPageProps & MidtermSpotlightProps
+
+const CONTEST_SIZE = 8
+
+async function getContestContracts(now: number): Promise<Contract[]> {
+  try {
+    const results = await api('search-markets-full', {
+      term: '',
+      sort: 'most-popular',
+      filter: 'open',
+      topicSlug: MIDTERM_CONTEST_TOPIC_SLUG,
+      limit: 50,
+    })
+    return rankContestMarkets(results, { now, limit: CONTEST_SIZE })
+  } catch (e) {
+    // A spotlight, not the page's purpose: render without it rather than fail
+    // the revalidation.
+    console.error('getContestContracts failed', e)
+    return []
+  }
+}
+
+// The conditional matrices' markets, by id. One getContracts call is a single
+// query for up to 300 ids. Ids may be reserved before their markets exist:
+// getContracts returns only the rows it finds, so those are skipped until the
+// markets are created.
+async function getConditionalContracts(
+  adminDb: Awaited<ReturnType<typeof initSupabaseAdmin>>
+): Promise<Contract[]> {
+  try {
+    return await getContracts(adminDb, uniq(conditionalMatrixIds()), 'id', true)
+  } catch (e) {
+    console.error('getConditionalContracts failed', e)
+    return []
+  }
+}
+
+// The Unprecedented politics spotlight's curated markets, by slug. A slug whose
+// market does not exist comes back null and is dropped here; which of the rest
+// are shown (open and public, in order, capped) is pickUnprecedentedPolitics.
+async function getUnprecedentedContracts(
+  getBySlug: (slug: string) => Promise<Contract | null>
+): Promise<Contract[]> {
+  try {
+    const found = await Promise.all(UNPRECEDENTED_POLITICS_SLUGS.map(getBySlug))
+    return found.filter((c): c is Contract => !!c)
+  } catch (e) {
+    console.error('getUnprecedentedContracts failed', e)
+    return []
+  }
+}
+
+// The Trending carousel picks itself: the hottest open midterm markets right
+// now, by dailyScore (the platform's rolling one-day activity metric, kept
+// current by the score-contracts job), backfilled with the most-traded so the
+// row stays full on slow news days. It re-fetches on every ISR revalidation,
+// so it can't drift the way the old hand-curated politicsheadline dashboard
+// did. curateTrendingMarkets then keeps it launch-worthy: federal and
+// governor races only, at least 10 traders, at most two per creator, and
+// nothing already shown elsewhere on the page.
+const TRENDING_TOPIC_SLUG = '2026-midterms'
+const TRENDING_POOL_SIZE = 40
+
+async function getTrendingCandidates(): Promise<Contract[]> {
+  try {
+    const [hotToday, mostTraded] = await Promise.all([
+      api('search-markets-full', {
+        term: '',
+        sort: 'daily-score',
+        filter: 'open',
+        topicSlug: TRENDING_TOPIC_SLUG,
+        limit: TRENDING_POOL_SIZE,
+      }),
+      api('search-markets-full', {
+        term: '',
+        sort: 'most-popular',
+        filter: 'open',
+        topicSlug: TRENDING_TOPIC_SLUG,
+        limit: TRENDING_POOL_SIZE,
+      }),
+    ])
+    const hot = hotToday.filter(
+      (c) => Number.isFinite(c.dailyScore) && c.dailyScore > 0
+    )
+    return [...hot, ...mostTraded]
+  } catch (e) {
+    // Trending is a nice-to-have: render the page without it rather than
+    // failing the whole revalidation when search is unavailable.
+    console.error('getTrendingCandidates failed', e)
+    return []
+  }
+}
+
+export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
+  const now = Date.now()
   const adminDb = await initSupabaseAdmin()
   const getContractFromSlugFunction = (slug: string) =>
     getContractFromSlug(adminDb, slug)
@@ -32,47 +171,101 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
     governorStateContracts,
     senateCandidateContracts,
     governorCandidateContracts,
-    headlines,
+    trendingCandidates,
+    contestContracts,
+    conditionalContracts,
+    unprecedentedCandidates,
     balanceOfPowerContract,
     houseControlContract,
     senateControlContract,
     houseDistrictsContract,
     presidency2028Contract,
     presidency2028PartyContract,
-    primaryContractsRaw,
-    redistrictingContractsRaw,
+    pollingPerpsRaw,
+    additionalHouseEntries,
+    ballotContracts,
   ] = await Promise.all([
     getStateContracts(getContractFromSlugFunction, senate2026),
     getStateContracts(getContractFromSlugFunction, governors2026),
     getStateContracts(getContractFromSlugFunction, senateCandidates2026),
     getStateContracts(getContractFromSlugFunction, governorCandidates2026),
-    api('headlines', { slug: 'politics' }),
+    getTrendingCandidates(),
+    getContestContracts(now),
+    getConditionalContracts(adminDb),
+    getUnprecedentedContracts(getContractFromSlugFunction),
     getContractFromSlugFunction(MIDTERMS_2026.balanceOfPower),
     getContractFromSlugFunction(MIDTERMS_2026.houseControl),
     getContractFromSlugFunction(MIDTERMS_2026.senateControl),
     getContractFromSlugFunction(MIDTERMS_2026.houseDistricts),
     getContractFromSlugFunction(PRESIDENT_2028_SLUG),
     getContractFromSlugFunction(PRESIDENT_2028_PARTY_SLUG),
-    Promise.all(PRIMARIES_2026.map(getContractFromSlugFunction)),
-    Promise.all(REDISTRICTING_2026.map(getContractFromSlugFunction)),
+    Promise.all(POLLING_PERPS.map(getContractFromSlugFunction)),
+    Promise.all(
+      [...HOUSE_DISTRICT_MARKETS, ...HOUSE_RACE_MARKETS.map((m) => m.slug)].map(
+        async (slug) => [slug, await getContractFromSlugFunction(slug)] as const
+      )
+    ),
+    getContracts(adminDb, MEASURE_CONTRACT_IDS, 'id', true).catch((e) => {
+      console.error('Ballot measure markets unavailable', e)
+      return [] as Contract[]
+    }),
   ])
 
-  // Keep only primaries that still exist and are open (so the watch-list shrinks
-  // gracefully as races resolve, rather than showing stale/settled markets).
-  const primaryContracts = primaryContractsRaw.filter(
+  // Polling perps, open only — so a retired feed drops off the row by itself.
+  const pollingPerpContracts = pollingPerpsRaw.filter(
     (c): c is Contract => !!c && !c.isResolved && !c.resolution
   )
 
-  // Same for redistricting markets — open only, so settled questions drop off.
-  const redistrictingContracts = redistrictingContractsRaw.filter(
-    (c): c is Contract => !!c && !c.isResolved && !c.resolution
+  // The closest open races across both maps, derived rather than curated.
+  const tossUpContracts = getTossUpRaces([
+    senateStateContracts,
+    governorStateContracts,
+  ])
+
+  const senateMatrixRows = slimMatrixRows(
+    buildConditionalMatrixRows(SENATE_2026_MATRIX, conditionalContracts, now)
+  )
+  const houseMatrixRows = slimMatrixRows(
+    buildConditionalMatrixRows(HOUSE_2026_MATRIX, conditionalContracts, now)
+  )
+  const bothMatrixRows = slimMatrixRows(
+    buildConditionalMatrixRows(BOTH_2026_MATRIX, conditionalContracts, now)
+  )
+  const presidencyMatrixRows = slimMatrixRows(
+    buildConditionalMatrixRows(PRESIDENT_2028_MATRIX, conditionalContracts, now)
   )
 
-  const newsDashboards = await Promise.all(
-    headlines.map(async (headline) => getDashboardProps(headline.slug))
+  // Nothing twice: a market already in the contest or a matrix stays there.
+  const unprecedentedContracts = pickUnprecedentedPolitics(
+    unprecedentedCandidates,
+    {
+      now,
+      excludeIds: [
+        ...contestContracts,
+        ...matrixRowContracts(senateMatrixRows),
+        ...matrixRowContracts(houseMatrixRows),
+        ...matrixRowContracts(bothMatrixRows),
+        ...matrixRowContracts(presidencyMatrixRows),
+      ].map((c) => c.id),
+    }
   )
 
-  const trendingDashboard = await getDashboardProps('politicsheadline')
+  // Nothing twice: the hero markets (balance of power, chamber control,
+  // districts) and the contest, unprecedented, matrix and polling sections
+  // are all on the page already.
+  const trendingContracts = curateTrendingMarkets(trendingCandidates, {
+    now,
+    excludeSlugs: Object.values(MIDTERMS_2026) as string[],
+    excludeIds: [
+      ...contestContracts,
+      ...unprecedentedContracts,
+      ...matrixRowContracts(senateMatrixRows),
+      ...matrixRowContracts(houseMatrixRows),
+      ...matrixRowContracts(bothMatrixRows),
+      ...matrixRowContracts(presidencyMatrixRows),
+      ...pollingPerpContracts,
+    ].map((c) => c.id),
+  })
 
   return {
     presidency2028Contract,
@@ -85,12 +278,66 @@ export async function getElectionsPageProps(): Promise<ElectionsPageProps> {
     houseControlContract,
     senateControlContract,
     houseDistrictsContract,
-    primaryContracts,
-    redistrictingContracts,
-    newsDashboards,
-    headlines,
-    trendingDashboard,
+    additionalHouseContracts: Object.fromEntries(additionalHouseEntries),
+    ballotMeasureContracts: Object.fromEntries(
+      ballotContracts.map((c) => [c.id, c])
+    ),
+    tossUpContracts,
+    pollingPerpContracts,
+    // The Redistricting section was retired for launch (its questions had all
+    // settled at 1-3% or 97-98%); the contest and conditional sections replace
+    // it. The field stays because ElectionsPageProps still requires it.
+    redistrictingContracts: [],
+    trendingContracts,
+    contestContracts,
+    unprecedentedContracts,
+    senateMatrixRows,
+    houseMatrixRows,
+    bothMatrixRows,
+    presidencyMatrixRows,
   }
+}
+
+// The general-election counterpart to the retired primaries watch-list: the
+// closest open races across the Senate and Governor maps.
+//
+// "Close" is measured on the two-party split from getPartyProbs (the same
+// helper the map colours states with), so it tolerates the inconsistent party
+// labelling in community markets. Anything outside 30-70% is a safe seat and
+// not worth a slot; the rest are sorted by distance from an even split.
+//
+// Derived from contracts already fetched for the maps, so this costs no extra
+// queries, and it re-derives on every ISR revalidation — it cannot go stale the
+// way a curated slug list does.
+const TOSS_UP_BAND = 0.3
+const MAX_TOSS_UPS = 6
+
+export function getTossUpRaces(
+  dictionaries: MapContractsDictionary[]
+): Contract[] {
+  const scored = dictionaries
+    .flatMap((d) => Object.values(d))
+    .filter((c): c is Contract => !!c && !c.isResolved && !c.resolution)
+    .map((contract) => {
+      const probs = getPartyProbs(contract)
+      if (!probs) return undefined
+      // Renormalise across the two major parties: a market with a large
+      // "other" answer (dem .35 / rep .35 / other .30) is an even race, and
+      // should read as one rather than as two long-shots. Known limitation:
+      // where the independent is the actual front-runner (NE, Dan Osborn)
+      // this reads as a safe seat and drops out.
+      const twoParty = probs.dem + probs.rep
+      if (twoParty <= 0) return undefined
+      const dem = probs.dem / twoParty
+      return { contract, margin: Math.abs(dem - 0.5) }
+    })
+    .filter((x): x is { contract: Contract; margin: number } => !!x)
+    .filter((x) => x.margin <= 0.5 - TOSS_UP_BAND)
+
+  return uniqBy(
+    scored.sort((a, b) => a.margin - b.margin).map((x) => x.contract),
+    (c) => c.id
+  ).slice(0, MAX_TOSS_UPS)
 }
 
 export async function getStateContracts(

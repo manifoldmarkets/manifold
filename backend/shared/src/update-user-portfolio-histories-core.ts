@@ -13,6 +13,7 @@ import {
   Contract,
   ContractToken,
   CPMMMultiContract,
+  isMultiCpmm,
   MarketContract,
 } from 'common/contract'
 import {
@@ -37,6 +38,7 @@ import {
   leftJoin,
   where,
 } from './supabase/sql-builder'
+import { MULTI_CPMM_MECHANISMS_SQL } from 'common/contract'
 
 const userToPortfolioMetrics: {
   [userId: string]: {
@@ -241,7 +243,7 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
     where('c.resolution_time is null'),
     where('(a is null or a.resolution_time is null)'),
     where(
-      `case when c.mechanism = 'cpmm-multi-1' then ucm.answer_id is not null else true end`
+      `case when c.mechanism in ${MULTI_CPMM_MECHANISMS_SQL} then ucm.answer_id is not null else true end`
     ),
   ]
   const metricsSql = renderSql(
@@ -295,9 +297,13 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
       updatedMetricsByContract: {},
     }
   }
+  // Index once instead of scanning every metric again for each contract.
+  const metricsByContractId = groupBy(metrics, (m) => m.contractId)
   const contractsWithMetrics = contracts.map((c) => ({
     contract: c,
-    metrics: metrics.filter((m) => m.contractId === c.id),
+    metrics: Object.prototype.hasOwnProperty.call(metricsByContractId, c.id)
+      ? metricsByContractId[c.id]
+      : [],
   }))
   const { metricsByContract } =
     calculateUpdatedMetricsForContracts(contractsWithMetrics)
@@ -349,8 +355,22 @@ export const getUnresolvedStatsForToken = (
       }
     }
 
+    // Perps: the engine already writes an authoritative synthetic metric
+    // row with payout (current position value at oracle price) and invested
+    // (gross originalCostBasis). Just plumb those through; perps are never
+    // eligible for loans so loan=0. `MarketContract` doesn't include
+    // PerpContract, so we widen through `Contract` for the check.
+    if ((contract as Contract).mechanism === 'perp') {
+      return {
+        value: cm.payout ?? 0,
+        invested: cm.invested ?? 0,
+        dailyProfit: cm.from?.day?.profit ?? 0,
+        loan: 0,
+      }
+    }
+
     // ignore summary metrics
-    if (contract.mechanism === 'cpmm-multi-1') {
+    if (isMultiCpmm(contract)) {
       if (!cm.answerId)
         return { value: 0, invested: 0, dailyProfit: 0, loan: 0 }
       const answer = contract.answers.find((a) => a.id === cm.answerId)

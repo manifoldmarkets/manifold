@@ -1,11 +1,12 @@
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
 import { createClient } from 'common/supabase/utils'
-import { HOUR_MS } from 'common/util/time'
+import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 import * as pgPromise from 'pg-promise'
 import { IDatabase, ITask } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { getMonitoringContext } from 'shared/monitoring/context'
+import { FAST_TICK_TX_TAG } from 'shared/perps/oracle-tick-bounds'
 import { METRICS_INTERVAL_MS } from 'shared/monitoring/metric-writer'
 import { LOCAL_ONLY, isProd, log, metrics } from '../utils'
 export { type SupabaseClient } from 'common/supabase/utils'
@@ -13,6 +14,30 @@ export { type SupabaseClient } from 'common/supabase/utils'
 export const pgp = pgPromise({
   error(err: any, e: pgPromise.IEventContext) {
     // Read more: https://node-postgres.com/apis/pool#error
+    // Serialization failures (40001) are expected contention under the perp
+    // engine's advisory-lock + SERIALIZABLE pattern and are retried by
+    // transactWithRetries. Log one line instead of the full client/event
+    // dump (the entire pg client state), and keep them below the ERROR
+    // severity that GCP log-based alerts page on.
+    if (err?.code === '40001') {
+      log.warn(`pg serialization failure (retried): ${err.message}`)
+      return
+    }
+    // The fast oracle tick sets its own lock/statement timeouts and treats
+    // hitting them as a skipped slot, not a fault. This handler runs before
+    // any caller-level downgrade, so without scoping it here that deliberate
+    // behaviour still lands in ERROR telemetry on every contended tick.
+    // Narrow on the tag: the same codes from any other caller stay ERROR,
+    // because nobody else asked for them.
+    if (
+      e?.ctx?.tag === FAST_TICK_TX_TAG &&
+      (err?.code === '55P03' || err?.code === '57014')
+    ) {
+      log.warn(
+        `perp oracle tick gave up its slot (${err.code}): ${err.message}`
+      )
+      return
+    }
     log.error('pgPromise background error', {
       error: err,
       event: e,
@@ -146,15 +171,28 @@ export function createSupabaseDirectClient(opts?: {
     )
   }
 
-  // Server-side cap on total statement runtime, including lock waits. Opt-in
-  // via env so only request-serving processes get it (set in
-  // backend/api/ecosystem.config.js); the scheduler and ad-hoc scripts
-  // legitimately run long statements and leave it unset. Without this cap,
-  // queries that are slow only because the db's disk throughput is saturated
-  // pile up for hundreds of seconds and amplify the saturation
+  // How long the client waits for any one query before giving up with
+  // 'Query read timeout'.
+  const queryTimeout = HOUR_MS
+
+  // Server-side cap on total statement runtime, including lock waits.
+  // Request-serving processes set a tight one via env (in
+  // backend/api/ecosystem.config.js): without it, queries that are slow only
+  // because the db's disk throughput is saturated pile up for hundreds of
+  // seconds and amplify the saturation.
+  //
+  // Everything else — the scheduler, ad-hoc scripts — legitimately runs long
+  // statements, so it gets a cap just under queryTimeout rather than none.
+  // query_timeout only stops the client WAITING: the statement it gave up on
+  // keeps running on the server, holding I/O and its connection, long after
+  // anything can use the result — the path update-stats' 68-day scan took
+  // every night from 2026-09-20. A minute's margin makes the server cancel
+  // first, so the caller gets a clean 'canceling statement due to statement
+  // timeout' and the connection stays usable. `set local statement_timeout`
+  // inside a transaction still overrides this, in either direction.
   const statementTimeout = process.env.PG_STATEMENT_TIMEOUT_MS
     ? parseInt(process.env.PG_STATEMENT_TIMEOUT_MS)
-    : undefined
+    : queryTimeout - MINUTE_MS
 
   log('Connecting to postgres at ' + dbHost + ':' + port)
   const client = pgp({
@@ -164,19 +202,36 @@ export function createSupabaseDirectClient(opts?: {
     password: password,
 
     // ian: query_timeout doesn't cancel long-running queries, it just stops waiting for them
-    query_timeout: HOUR_MS, // mqp: debugging scheduled job behavior
+    // (statement_timeout below is what cancels them)
+    query_timeout: queryTimeout, // mqp: debugging scheduled job behavior
 
     // ian: during a pool-depletion-related outage, we can cancel any stuck queries
     // without a huge backlog of waiting connections instead of redeploying the api.
     // See queries to run during outage here: https://www.notion.so/manifoldmarkets/Backend-resources-8fba2b67cad04dd188564442c5876bfa?pvs=4#a8629a618e9e44ee9b6bbe408b10f9ff
     connectionTimeoutMillis: 10_000,
 
+    // TCP keepalive, so a connection whose peer has silently gone away is torn
+    // down by the kernel instead of sitting there until query_timeout. On
+    // 2026-10-17 from ~09:25 UTC three statements on the main scheduler (a
+    // clean-old-notifications delete chunk, the mv_ach_volume refresh and the
+    // sports-odds-resolve poll) each hung for exactly the 60-minute client
+    // timeout and failed with 'Query read timeout'. The 59-minute server-side
+    // statement_timeout never fired, so nothing was running on the server: the
+    // sockets were dead. With keepalive the kernel starts probing after
+    // keepAliveInitialDelayMillis of silence and gives up after the OS probe
+    // schedule (Linux default: 9 probes, 75 s apart), so a dead peer surfaces
+    // in about 12 minutes as a connection error the pool discards, rather
+    // than an hour-long hang that croner's `protect` turns into an hour of
+    // skipped runs.
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 30_000,
+
     // ian: during the past few outages we've seen a lot of "idle in transaction" connections
     // that last for approx. an hour. See: https://docs.google.com/spreadsheets/d/1GrXMQtPXRL3j3dSza7rwI4fRmFjabk0x1sJYoTRKpoE/edit?gid=801504140#gid=801504140
     // Although we don't yet know the cause, setting this timeout will limit the damage
     // from these connections. We should figure out the cause ASAP.
     idle_in_transaction_session_timeout: opts?.idleInTxnTimeout ?? 60_000, // 1 minute
-    ...(statementTimeout ? { statement_timeout: statementTimeout } : {}),
+    statement_timeout: statementTimeout,
     max: 40,
   })
   const pool = client.$pool
@@ -198,5 +253,11 @@ export function createSupabaseDirectClient(opts?: {
 export const SERIAL_MODE = new pgp.txMode.TransactionMode({
   tiLevel: pgp.txMode.isolationLevel.serializable,
   readOnly: false,
+  deferrable: false,
+})
+
+export const READ_ONLY_REPEATABLE_MODE = new pgp.txMode.TransactionMode({
+  tiLevel: pgp.txMode.isolationLevel.repeatableRead,
+  readOnly: true,
   deferrable: false,
 })

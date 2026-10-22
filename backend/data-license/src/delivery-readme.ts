@@ -12,34 +12,45 @@ const mb = (b: number) => `${(b / 1e6).toFixed(1)} MB`
 // Assumed column notes per table. Replace with the final data dictionary.
 const TABLE_DOCS: Record<string, { blurb: string; columns: string }> = {
   contracts: {
-    blurb: 'One row per market (question). The canonical record is the `data` JSON column.',
+    blurb:
+      'One row per market (question). The canonical record is the `data` JSON column.',
     columns:
       '`id`, `creator_id` (pseudonymized), `question`, `created_time`, `close_time`, ' +
       '`resolution`, `resolution_time`, `resolution_probability`, `outcome_type`, ' +
       '`mechanism`, `visibility`, `token`, `data` (full JSON record).',
   },
   answers: {
-    blurb: 'Answers for multiple-choice / multi markets. Binary markets have none.',
+    blurb:
+      'Answers for multiple-choice / multi markets. Binary markets have none.',
     columns:
       '`id`, `contract_id`, `user_id` (pseudonymized), `resolver_id` (pseudonymized), ' +
       '`text`, `prob`, `created_time`.',
   },
   contract_comments: {
-    blurb: 'Comments on markets. Author identity is pseudonymized; free text is scrubbed.',
+    blurb:
+      'Comments on markets. Author identity is pseudonymized; free text is scrubbed.',
     columns:
       '`comment_id`, `contract_id`, `user_id` (pseudonymized), `created_time`, ' +
       '`data` (full JSON, incl. scrubbed rich-text `content`).',
   },
   contract_bets: {
-    blurb: 'The order/trade log — the probability series. One row per bet/fill event.',
+    blurb:
+      'The order/trade log — the probability series. One row per bet/fill event.',
     columns:
       '`bet_id`, `contract_id`, `answer_id`, `user_id` (pseudonymized), `created_time`, ' +
       '`amount` (mana), `outcome`, `shares`, `prob_before`, `prob_after`, ' +
-      '`is_redemption`, `data` (full JSON record).',
+      '`is_redemption`, `is_api`, `is_filled`, `is_cancelled`, `expires_at`, ' +
+      '`updated_time` (for a cancelled limit order, its cancellation time when ' +
+      '`cancel_time_reliable` is true), `cancel_time_reliable` (null unless the row is a ' +
+      "cancelled order; false where `updated_time` can't be the cancellation time: from " +
+      '2024-05-23 to 2025-01-29 a cancellation did not update it, so orders placed before ' +
+      '2025-01-29 whose `updated_time` still equals their placement time are false, as are ' +
+      'orders with a fill after `updated_time`), `data` (full JSON record).',
   },
   contract_liquidity: {
     blurb: 'Liquidity provision events per market.',
-    columns: '`contract_id`, `liquidity_id`, `user_id` (pseudonymized), `amount`, `data`.',
+    columns:
+      '`contract_id`, `liquidity_id`, `user_id` (pseudonymized), `amount`, `data`.',
   },
   txns: {
     blurb:
@@ -68,7 +79,9 @@ export function buildDeliveryReadme(m: Manifest): string {
   L.push(`- **Delivery date:** ${m.deliveryDate}`)
   L.push(`- **Snapshot time (UTC):** ${m.snapshotTime}`)
   L.push(`- **Schema version:** ${m.schemaVersion}`)
-  L.push(`- **Delivery fingerprint:** \`${m.saltFingerprint}\` (identifies the pseudonymization salt for this delivery)`)
+  L.push(
+    `- **Delivery fingerprint:** \`${m.saltFingerprint}\` (identifies the pseudonymization salt for this delivery)`
+  )
   L.push('')
   L.push(`## Scope`)
   L.push('')
@@ -82,10 +95,12 @@ export function buildDeliveryReadme(m: Manifest): string {
   L.push('')
   L.push(`## Contents`)
   L.push('')
-  L.push(`Files are zstd-compressed Parquet, split into ~fixed-size numbered parts ` +
-    `(e.g. \`contract_bets.0000.parquet\`). Timestamps are typed columns in UTC; ` +
-    `monetary/probability fields are numeric; the \`data\` column is a JSON string. ` +
-    `Product segments:`)
+  L.push(
+    `Files are zstd-compressed Parquet, split into ~fixed-size numbered parts ` +
+      `(e.g. \`contract_bets.0000.parquet\`). Timestamps are typed columns in UTC; ` +
+      `monetary/probability fields are numeric; the \`data\` column is a JSON string. ` +
+      `Product segments:`
+  )
   L.push('')
   for (const [seg, info] of Object.entries(m.segments)) {
     L.push(`- **Segment ${seg} — ${info.label}:** ${info.tables.join(', ')}`)
@@ -94,7 +109,11 @@ export function buildDeliveryReadme(m: Manifest): string {
   L.push(`| Table | Segment | Rows | Size | Parts |`)
   L.push(`|---|---|---:|---:|---:|`)
   for (const [name, t] of Object.entries(m.tables)) {
-    L.push(`| ${name} | ${t.segment} | ${t.rowCount.toLocaleString()} | ${mb(t.bytes)} | ${t.parts} |`)
+    L.push(
+      `| ${name} | ${t.segment} | ${t.rowCount.toLocaleString()} | ${mb(
+        t.bytes
+      )} | ${t.parts} |`
+    )
   }
   L.push('')
   L.push(`### Tables`)
@@ -115,8 +134,53 @@ export function buildDeliveryReadme(m: Manifest): string {
       `\`User_<hex>\` (HMAC-SHA256 under a per-recipient salt). Pseudonyms are ` +
       `consistent across all tables and across deliveries, so a user's activity ` +
       `joins across files and over time, but cannot be reversed to a real identity. ` +
-      `Denormalized display identity (names, usernames, avatars) is removed; comment ` +
-      `text has emails, phone numbers, and @-mentions scrubbed.`
+      `Denormalized display identity (names, usernames, avatars) is removed.`
+  )
+  L.push('')
+  const r = m.redaction
+  L.push(`Inside text and links:`)
+  L.push('')
+  L.push(
+    `- A username in a Manifold link, profile link or image path is replaced by its ` +
+      `owner's pseudonym, or by \`User_unknown\` where the owner can't be determined. ` +
+      `Market slugs are unchanged, so image links no longer resolve but market links ` +
+      `still identify the market.`
+  )
+  L.push(
+    `- Link-preview parameters that name or picture a market's creator ` +
+      `(\`creatorName\`, \`creatorUsername\`, \`creatorAvatarUrl\`) and referral ` +
+      `parameters (\`r\`, \`referrer\`) are removed from URLs; other parameters are kept.`
+  )
+  if (!r || r.bareUsernameRewrite) {
+    L.push(
+      `- A distinctive handle-like word (5+ characters with a digit, underscore or ` +
+        `internal capital) that matches a username and appears in at most ` +
+        `${
+          r?.bareUsernameMaxRows ?? 20
+        } text rows is replaced by that user's pseudonym ` +
+        `in questions, descriptions, answers and comments. Common words are never changed.`
+    )
+  }
+  L.push(
+    `- A display name written next to the same user's @handle (\`Name (@handle)\`) is ` +
+      `replaced by that user's pseudonym, together with the handle.`
+  )
+  L.push(
+    `- Comment text has email addresses, phone numbers and @-mentions replaced ` +
+      `(\`[email removed]\`, \`[phone removed]\`, \`@user\`).`
+  )
+  if (r?.scrubDescriptions) {
+    L.push(
+      `- Market descriptions have email addresses and phone numbers replaced the same ` +
+        `way. An @-mention of a Manifold user is replaced by that user's pseudonym; other ` +
+        `@-handles (people and organisations elsewhere) are kept.`
+    )
+  }
+  L.push(`- Dates, numbers and probabilities are never touched by these rules.`)
+  L.push(
+    r?.blankModeratedComments
+      ? `- Comments deleted or hidden by moderators keep their row and flags, but their text is removed.`
+      : `- Comments deleted or hidden by moderators are delivered with their text and their \`deleted\` / \`hidden\` flags.`
   )
   L.push('')
   L.push(`## Definitions`)

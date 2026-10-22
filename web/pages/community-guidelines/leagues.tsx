@@ -197,9 +197,9 @@ export default function CommunityGuidelinesLeaguesPage() {
               page.
             </li>
             <li>
-              Receiving a prize requires identity verification (KYC). Bots in
-              the Silicon division are exempt but must have earned at least 100
-              mana to qualify.
+              Accounts flagged for verification or blocked from bonuses don't
+              receive prizes. Bots in the Silicon division must have earned at
+              least 100 mana to qualify.
             </li>
             <li>Each user receives at most one prize per season.</li>
           </ul>

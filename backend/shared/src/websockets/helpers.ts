@@ -4,8 +4,10 @@ import { ContractComment, PostComment } from 'common/comment'
 import { Contract, Visibility } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { PendingClarification } from 'common/pending-clarification'
+import { PerpQuote } from 'common/perps/quote'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { User } from 'common/user'
+import { SportsLiveScore } from 'common/sports-schedule'
 import { groupBy } from 'lodash'
 import { broadcast, broadcastMulti } from './server'
 
@@ -114,7 +116,7 @@ export function broadcastUpdatedContract(
   visibility: Visibility,
   contract: Partial<Contract> & { id: string }
 ) {
-  const payload = { contract }
+  const payload = { contract, broadcastTime: Date.now() }
   const topics = [`contract/${contract.id}`]
   if (visibility === 'public') {
     topics.push('global', 'global/updated-contract')
@@ -127,15 +129,20 @@ export function broadcastUpdatedContract(
 // sports dashboard subscribes and the generic contract/global topics stay quiet.
 export function broadcastSportsLiveScore(
   contractId: string,
-  score: {
-    sportsHomeScore: number | null
-    sportsAwayScore: number | null
-    sportsLiveStatus: string
-    sportsLiveMinute: string | null
-    sportsLiveUpdatedTime: number
-  }
+  score: SportsLiveScore
 ) {
-  broadcast(`contract/${contractId}/sports-live`, score)
+  broadcast(`contract/${contractId}/sports-live`, { ...score })
+}
+
+// Live oracle price/pool state for a perp market, pushed on every tick. Its
+// own topic so only open perp pages pay for it — a 5s tick on the generic
+// contract/global topics would spam every feed and watchlist subscriber.
+//
+// Only the process that owns the websocket server can deliver this (see the
+// note in perps/publish-perp-quote.ts): the scheduler applies the tick, then
+// hands the quote to the API over `internal-perp-broadcast`, which calls this.
+export function broadcastPerpQuote(quote: PerpQuote) {
+  broadcast(`contract/${quote.contractId}/perp-quote`, { quote })
 }
 
 export function broadcastNewAnswer(answer: Answer) {
@@ -151,7 +158,10 @@ export function broadcastUpdatedAnswers(
 ) {
   if (answers.length === 0) return
 
-  broadcast(`contract/${contractId}/updated-answers`, { answers })
+  broadcast(`contract/${contractId}/updated-answers`, {
+    answers,
+    broadcastTime: Date.now(),
+  })
   for (const a of answers) {
     broadcast(`answer/${a.id}/update`, { answer: a })
   }

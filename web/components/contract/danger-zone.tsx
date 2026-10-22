@@ -1,4 +1,8 @@
-import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
+import {
+  Contract,
+  isMultiCpmm,
+  MINUTES_ALLOWED_TO_UNRESOLVE,
+} from 'common/contract'
 import { WEEK_MS } from 'common/util/time'
 import dayjs from 'dayjs'
 import { useEffect } from 'react'
@@ -11,6 +15,7 @@ import { useUser } from 'web/hooks/use-user'
 import { Button } from '../buttons/button'
 import { DeleteMarketButton } from '../buttons/delete-market-button'
 import { UnresolveButton } from '../buttons/unresolve-button'
+import { ModActionBadge } from '../moderation/mod-action'
 import { Row } from '../layout/row'
 
 export function DangerZone(props: {
@@ -82,6 +87,10 @@ export function DangerZone(props: {
   const canResolve =
     !isResolved &&
     outcomeType !== 'STONK' &&
+    // Perps are perpetual: no user-facing resolution flow. Winding one down
+    // (settle everyone at oracle price) is a rare admin operation done via
+    // the API — a Resolve button here is just a footgun.
+    outcomeType !== 'PERP' &&
     mechanism !== 'none' &&
     (token === 'CASH' ? isSweepstakesTrusted : isCreator || isAdmin || isMod)
 
@@ -95,7 +104,7 @@ export function DangerZone(props: {
     (outcomeType === 'MULTIPLE_CHOICE' ||
       outcomeType === 'MULTI_NUMERIC' ||
       outcomeType === 'DATE') &&
-    mechanism === 'cpmm-multi-1' &&
+    isMultiCpmm(contract) &&
     'shouldAnswersSumToOne' in contract &&
     !contract.shouldAnswersSumToOne
   const hasResolvedIndependentAnswers =
@@ -175,13 +184,22 @@ export function DangerZone(props: {
       {canDelete && <DeleteMarketButton contractId={contract.id} />}
       {canResolve && !showResolver && (
         <Button
-          color={highlightResolver ? 'indigo' : 'gray'}
+          color={
+            !isCreator
+              ? highlightResolver
+                ? 'purple'
+                : 'purple-outline'
+              : highlightResolver
+              ? 'indigo'
+              : 'gray'
+          }
           size="xs"
           onClick={() => {
             setShowUnresolver(false)
             setShowResolver(!showResolver)
           }}
         >
+          {!isCreator && <ModActionBadge className="mr-1" />}
           {isCreator
             ? 'Resolve'
             : isAdmin
@@ -191,17 +209,26 @@ export function DangerZone(props: {
             : ''}
         </Button>
       )}
-      {canUnresolve && <UnresolveButton contractId={contract.id} />}
+      {canUnresolve && (
+        <UnresolveButton
+          contractId={contract.id}
+          modAction={!(isCreator && creatorCanUnresolve)}
+          adminOnly={token === 'CASH'}
+        />
+      )}
       {canUnresolveIndependentAnswers && (
         <>
           <Button
             size="2xs"
-            color="gray"
+            color={isCreator ? 'gray' : 'purple-outline'}
             onClick={() => {
               setShowResolver(false)
               setShowUnresolver(!showUnresolver)
             }}
           >
+            {!isCreator && (
+              <ModActionBadge admin={token === 'CASH'} className="mr-1" />
+            )}
             Unresolve
           </Button>
         </>

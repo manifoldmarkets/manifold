@@ -1,4 +1,5 @@
 import { APIError } from 'common/api/utils'
+import { removeUndefinedProps } from 'common/util/object'
 // import { buildArray } from 'common/util/array'
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
@@ -6,48 +7,46 @@ import OpenAI from 'openai'
 import { log } from 'shared/utils'
 import { parseAIResponseAsJson } from './gemini'
 dayjs.extend(utc)
+// Prices per 1M tokens as of Oct 2026 (https://developers.openai.com/api/docs/pricing):
+//   gpt     gpt-6-sol   $2.00 in / $10.00 out  (replaces gpt-5.4 at $2.50 / $15)
+//   gptMini gpt-6-luna  $0.10 in / $0.50 out   (replaces gpt-5.4-mini at $0.75 / $4.50)
 export const models = {
-  gpt5: 'gpt-5.4',
-  gpt5mini: 'gpt-5.4-mini',
+  gpt: 'gpt-6-sol',
+  gptMini: 'gpt-6-luna',
 } as const
+export const EMBEDDING_MODEL = 'text-embedding-3-small'
 
-export const generateEmbeddings = async (question: string) => {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+export const generateEmbeddings = async (
+  question: string,
+  opts?: { timeoutMs?: number; maxRetries?: number }
+) => {
   let response
   try {
-    response = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: question,
-    })
-  } catch (e: any) {
+    // Inside the try: the constructor itself throws when no key is configured.
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+    response = await openai.embeddings.create(
+      {
+        model: EMBEDDING_MODEL,
+        input: question,
+      },
+      // Absent keys fall through to the SDK defaults (~10 min, 2 retries);
+      // the SDK rejects explicitly-undefined values, hence the strip.
+      removeUndefinedProps({
+        timeout: opts?.timeoutMs,
+        maxRetries: opts?.maxRetries,
+      })
+    )
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e)
     log.error(
       'Error generating embeddings ' +
         (!process.env.OPENAI_API_KEY ? ' (no OpenAI API key found) ' : ' ') +
-        e.message
+        message
     )
     return undefined
   }
-  log('Made embeddings for question', question)
-  return response.data[0].embedding
-}
-
-const imagePrompt = (q: string) =>
-  `Header image for a discussion thread about predicting "${q}". Do not include text.`
-
-export const generateImage = async (q: string) => {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  const prompt = imagePrompt(q)
-
-  return await openai.images
-    .generate({
-      model: 'dall-e-3',
-      prompt,
-      n: 1,
-      size: '1792x1024',
-      quality: 'standard',
-    })
-    .then((res) => res.data[0].url)
-    .catch((err) => (console.log(err), undefined))
+  log('Made embeddings')
+  return response.data[0]?.embedding
 }
 
 const defaultOptions: {
@@ -56,7 +55,7 @@ const defaultOptions: {
   reasoning?: { effort: 'low' | 'medium' | 'high' }
   webSearch?: boolean
 } = {
-  model: models.gpt5,
+  model: models.gpt,
 }
 
 export const promptOpenAI = async (

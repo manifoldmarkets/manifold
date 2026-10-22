@@ -22,6 +22,7 @@ import {
   dayProbChange,
   getMainBinaryMCAnswer,
   isBinaryMulti,
+  isMultiCpmm,
   tradingAllowed,
 } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
@@ -82,6 +83,7 @@ import { TimeRangePicker } from '../charts/time-range-picker'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { CancelLabel } from '../outcome-label'
+import { PerpOverview } from '../perps/perp-overview'
 import { PollPanel } from '../poll/poll-panel'
 import { AlertBox } from '../widgets/alert-box'
 import { GradientContainer } from '../widgets/gradient-container'
@@ -222,6 +224,8 @@ export const ContractOverview = memo(
         return <BountyPanel contract={contract} />
       case 'POLL':
         return <PollPanel contract={contract} />
+      case 'PERP':
+        return <PerpOverview contract={contract} />
       default:
         return <AlertBox title="Invalid contract" />
     }
@@ -256,6 +260,7 @@ export const BinaryOverview = (props: {
     setHoveredAnnotation,
     chartAnnotations,
     enableAdd,
+    addIsModAction,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
 
   const currentUser = useUser()
@@ -310,6 +315,7 @@ export const BinaryOverview = (props: {
             <EditChartAnnotationsButton
               pointerMode={pointerMode}
               setPointerMode={setPointerMode}
+              modAction={addIsModAction}
             />
           )}
           <TimeRangePicker
@@ -417,6 +423,7 @@ const ChoiceOverview = (props: {
     setHoveredAnnotation,
     chartAnnotations,
     enableAdd,
+    addIsModAction,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
   const {
     chartPositions,
@@ -471,6 +478,7 @@ const ChoiceOverview = (props: {
                 <EditChartAnnotationsButton
                   pointerMode={pointerMode}
                   setPointerMode={setPointerMode}
+                  modAction={addIsModAction}
                 />
               )}
               <TimeRangePicker
@@ -483,7 +491,7 @@ const ChoiceOverview = (props: {
           </>
         )}
       </Row>
-      {contract.mechanism == 'cpmm-multi-1' && !hideGraph && (
+      {isMultiCpmm(contract) && !hideGraph && (
         <SizedContainer
           className={clsx(
             'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
@@ -540,15 +548,13 @@ const ChoiceOverview = (props: {
           answers={contract.answers}
         />
       ) : null}
-      {!shouldAnswersSumToOne &&
-      contract.mechanism === 'cpmm-multi-1' &&
-      showUnresolver ? (
+      {!shouldAnswersSumToOne && isMultiCpmm(contract) && showUnresolver ? (
         <IndependentAnswersUnresolvePanel
           contract={contract}
           onClose={() => setShowUnresolver(false)}
           show={showUnresolver}
         />
-      ) : !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
+      ) : !shouldAnswersSumToOne && isMultiCpmm(contract) ? (
         <IndependentAnswersResolvePanel
           contract={contract}
           onClose={() => setShowResolver(false)}
@@ -619,6 +625,7 @@ const NumberOverview = (props: {
     setHoveredAnnotation,
     chartAnnotations,
     enableAdd,
+    addIsModAction,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
 
   return (
@@ -631,6 +638,7 @@ const NumberOverview = (props: {
             <EditChartAnnotationsButton
               pointerMode={pointerMode}
               setPointerMode={setPointerMode}
+              modAction={addIsModAction}
             />
           )}
           <button
@@ -666,7 +674,7 @@ const NumberOverview = (props: {
           />
         </Row>
       </Row>
-      {!!Object.keys(points).length && contract.mechanism == 'cpmm-multi-1' && (
+      {!!Object.keys(points).length && isMultiCpmm(contract) && (
         <SizedContainer
           className={clsx(
             'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
@@ -944,6 +952,7 @@ const BinaryChoiceOverview = (props: {
     setHoveredAnnotation,
     chartAnnotations,
     enableAdd,
+    addIsModAction,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
 
   const mainAnswer = getMainBinaryMCAnswer(contract)!
@@ -979,6 +988,7 @@ const BinaryChoiceOverview = (props: {
             <EditChartAnnotationsButton
               pointerMode={pointerMode}
               setPointerMode={setPointerMode}
+              modAction={addIsModAction}
             />
           )}
           <TimeRangePicker
@@ -989,7 +999,7 @@ const BinaryChoiceOverview = (props: {
           />
         </Row>
       </Row>
-      {!!Object.keys(points).length && contract.mechanism == 'cpmm-multi-1' && (
+      {!!Object.keys(points).length && isMultiCpmm(contract) && (
         <SizedContainer
           className={clsx(
             'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',

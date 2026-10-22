@@ -1,7 +1,12 @@
 import { getUnfilledBetsAndUserBalances } from 'api/helpers/bets'
 import { onCreateBets } from 'api/on-create-bet'
 import { executeNewBetResult } from 'api/place-bet'
+import {
+  cpmmMultiTradeMissesSumToOne,
+  poolsAfterResults,
+} from 'common/calculate-cpmm-arbitrage'
 import { isSummary } from 'common/contract-metric'
+import { isMultiCpmm } from 'common/contract'
 import { MS_PER_DAY } from 'common/loans'
 import { getCpmmMultiSellSharesInfo } from 'common/sell-bet'
 import { convertBet } from 'common/supabase/bets'
@@ -36,7 +41,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
   const results = await runTransactionWithRetries(async (pgTrans) => {
     const contract = await getContract(pgTrans, contractId)
     if (!contract) throw new APIError(404, 'Contract not found')
-    const { closeTime, isResolved, mechanism } = contract
+    const { closeTime, isResolved } = contract
     if (closeTime && Date.now() > closeTime)
       throw new APIError(403, 'Trading is closed.')
     if (isResolved) throw new APIError(403, 'Market is resolved.')
@@ -46,8 +51,18 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
         'You have blocked yourself from betting on this market. Contact a moderator if you need this reversed.'
       )
     }
-    if (mechanism != 'cpmm-multi-1' || !('shouldAnswersSumToOne' in contract))
+    if (!isMultiCpmm(contract) || !('shouldAnswersSumToOne' in contract))
       throw new APIError(400, 'Contract type/mechanism not supported')
+    // Selling every answer at once redeems full sets at M$1 each, which is
+    // only sound when the answers are constrained to sum to one. On an
+    // independent market the answer probabilities can add up to less than 1,
+    // so this would pay out more than the shares are worth. Sell answers on
+    // independent markets one at a time via /market/:contractId/sell instead.
+    if (!contract.shouldAnswersSumToOne)
+      throw new APIError(
+        400,
+        'Multi-sell is only supported on markets whose answers sum to one. Sell each answer individually instead.'
+      )
 
     const answersToSell = contract.answers.filter((a) =>
       answerIds.includes(a.id)
@@ -129,6 +144,21 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
       balancesByUserId,
       loanAmountByAnswerId
     )
+    // A cpmm-multi-2 sale this solve can't price leaves the probabilities
+    // missing summing to one, as one beside an answer bought up on an
+    // all-but-empty pool can. Refuse it before writing anything:
+    // executeNewBetResult checks single-answer trades only.
+    if (
+      contract.mechanism === 'cpmm-multi-2' &&
+      cpmmMultiTradeMissesSumToOne(
+        contract.answers,
+        poolsAfterResults(betResults)
+      )
+    )
+      throw new APIError(
+        403,
+        "This sale can't be priced accurately at these odds. Try selling each answer on its own."
+      )
     const results = []
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
     const betGroupId = crypto.randomBytes(12).toString('hex')

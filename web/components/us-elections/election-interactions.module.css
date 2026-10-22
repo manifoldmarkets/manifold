@@ -1,0 +1,44 @@
+/* Keep pointer/touch focus quiet, with an explicit keyboard indicator. Apply
+   this scope to the page and its portalled map details/help as well. */
+.scope {
+  -webkit-tap-highlight-color: transparent;
+}
+.scope
+  :where(
+    button,
+    a[href],
+    input,
+    select,
+    textarea,
+    summary,
+    [role='button'],
+    [role='tab'],
+    [role='combobox'],
+    [tabindex]
+  ):focus:not(:focus-visible) {
+  outline: none;
+}
+.scope
+  :where(
+    button,
+    a[href],
+    input,
+    select,
+    textarea,
+    summary,
+    [role='button'],
+    [role='tab'],
+    [role='combobox'],
+    [tabindex]
+  ):focus-visible {
+  outline: 2px solid rgb(var(--color-primary-700));
+  outline-offset: 2px;
+}
+/* Tailwind's forms plugin supplies its own blue ring on focused fields. */
+.scope :where(input, select, textarea):focus {
+  --tw-ring-color: rgb(var(--color-primary-700));
+}
+/* Map shapes already indicate keyboard focus along their actual boundary. */
+.scope svg [tabindex]:focus {
+  outline: none;
+}

@@ -3,6 +3,7 @@ import { APIError, getCloudRunServiceUrl } from 'common/api/utils'
 import {
   Contract,
   contractPath,
+  isMultiCpmm,
   MarketContract,
   nativeContractColumnsArray,
 } from 'common/contract'
@@ -203,8 +204,8 @@ export const getContractAndMetricsAndLiquidities = async (
   unresolvedContract: MarketContract,
   answerId: string | undefined
 ) => {
-  const { id: contractId, mechanism } = unresolvedContract
-  const isMulti = mechanism === 'cpmm-multi-1'
+  const { id: contractId } = unresolvedContract
+  const isMulti = isMultiCpmm(unresolvedContract)
   const sumsToOne = isMulti && unresolvedContract.shouldAnswersSumToOne
   const metricsQuery = sumsToOne
     ? `

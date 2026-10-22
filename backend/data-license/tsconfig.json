@@ -21,6 +21,7 @@
   "references": [{ "path": "../../common" }, { "path": "../shared" }],
   "compileOnSave": true,
   "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts"],
   "ts-node": {
     "require": ["tsconfig-paths/register"]
   }
