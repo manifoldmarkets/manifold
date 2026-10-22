@@ -594,12 +594,14 @@ async function querySportsMarkets(
     importance_score: number
     sports_event_id: string | null
     sports_market_type: string | null
+    sports_league: string | null
     creator_id: string
     group_ids: string[]
   }>(
     `select c.id, c.question, c.close_time, c.importance_score, c.creator_id,
             c.data->>'sportsEventId' as sports_event_id,
             c.data->>'sportsMarketType' as sports_market_type,
+            c.data->>'sportsLeague' as sports_league,
             (select coalesce(array_agg(g.group_id), '{}')
                from group_contracts g
               where g.contract_id = c.id) as group_ids
@@ -619,20 +621,27 @@ async function querySportsMarkets(
      limit ${opts.limit}`,
     [opts.groupIds, opts.closeFrom, opts.closeTo, MARKET_OUTCOME_TYPES]
   )
-  return rows.map((r) => ({
-    id: r.id,
-    question: r.question,
-    questionLower: r.question.toLowerCase(),
-    closeTime: r.close_time ? tsToMillis(r.close_time) : null,
+  return rows.map((r) => {
     // API callers can set sports metadata. Only pipeline-owned markets may
     // consume the reserved official slots; others can still match by topic.
-    sportsEventId: MANIFOLD_SPORTS_USER_IDS.includes(r.creator_id)
-      ? r.sports_event_id
-      : null,
-    marketType: MANIFOLD_SPORTS_USER_IDS.includes(r.creator_id)
-      ? r.sports_market_type
-      : null,
-    sport: sportForMarket({ groupIds: r.group_ids }, index),
-    importanceScore: Number(r.importance_score ?? 0),
-  }))
+    const official = MANIFOLD_SPORTS_USER_IDS.includes(r.creator_id)
+    return {
+      id: r.id,
+      question: r.question,
+      questionLower: r.question.toLowerCase(),
+      closeTime: r.close_time ? tsToMillis(r.close_time) : null,
+      sportsEventId: official ? r.sports_event_id : null,
+      marketType: official ? r.sports_market_type : null,
+      // A pipeline's league first: its WNBA games sit in Basketball, which
+      // is the NBA's. Other markets go by their topics.
+      sport: sportForMarket(
+        {
+          sportsLeague: official ? r.sports_league : null,
+          groupIds: r.group_ids,
+        },
+        index
+      ),
+      importanceScore: Number(r.importance_score ?? 0),
+    }
+  })
 }
