@@ -176,7 +176,7 @@ const otherBalances: NotificationSectionData = {
 }
 const perps: NotificationSectionData = {
   label: 'Perps',
-  subscriptionTypes: ['perp_liquidation', 'perp_adl'],
+  subscriptionTypes: ['perp_liquidation', 'perp_adl', 'perp_order_failed'],
 }
 const userInteractions: NotificationSectionData = {
   label: 'Users',

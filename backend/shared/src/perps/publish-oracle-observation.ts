@@ -226,8 +226,23 @@ export const publishOracleObservation = async (
         throw new InvalidOracleObservation(
           'Provider source timestamp conflicts with published history'
         )
+      // Waiting orders need flat observations persisted. A provider-stamped
+      // mark only advances one with a new stamp, or when re-received after
+      // arriving stamped ahead of its first receipt (ineligible until now).
+      const canAdvanceOrders =
+        point.sourceTs == null ||
+        previous?.sourceTs == null ||
+        point.sourceTs !== previous.sourceTs ||
+        previous.sourceTs > previous.ts
+      const pending =
+        canAdvanceOrders &&
+        (await tx.oneOrNone(
+          "select o.id from perp_orders o join contracts c on c.id=o.contract_id where c.data->>'oracleFeedId'=$1 and o.status='pending' limit 1",
+          [feed.id]
+        ))
       // Price changes and flat-price heartbeats follow the normal fast-tick rule.
       if (
+        !pending &&
         previous &&
         point.price === previous.price &&
         point.ts - previous.ts < feed.staleAfterMs / 2

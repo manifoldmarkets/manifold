@@ -57,6 +57,8 @@ import { api } from 'web/lib/api/api'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
+import { usePerpOrder } from './use-perp-order'
+import { PerpExecutionNotice } from './perp-execution-notice'
 import { PerpPositionRow } from './use-perp-positions'
 
 // Tick labels rendered under the leverage slider. Density scales with the
@@ -103,6 +105,7 @@ export const PerpBetPanel = (props: {
     oracleTradingPaused = false,
   } = props
   const user = useUser()
+  const { order, pending, acceptOrder } = usePerpOrder(contract.id, onTrade)
 
   const [direction, setDirection] = useState<'long' | 'short'>(
     props.initialDirection ?? 'long'
@@ -485,6 +488,7 @@ export const PerpBetPanel = (props: {
       )
       return
     }
+    if (pending) return
     setSubmitting(true)
     try {
       const fingerprint = [
@@ -506,41 +510,9 @@ export const PerpBetPanel = (props: {
         idempotencyKey: request.idempotencyKey,
         maxFee,
       })
-      const verb = isAdd ? 'Added to' : isFlip ? 'Flipped to' : 'Opened'
-      toast.success(
-        `${verb} ${direction} at ${formatOraclePrice(
-          contract.oracleFeedId,
-          res.position.entryPrice,
-          priceDecimals
-        )}`
-      )
-      track('bet', {
-        location: 'bet panel',
-        outcomeType: contract.outcomeType,
-        token: contract.token,
-        slug: contract.slug,
-        contractId: contract.id,
-        amount: margin,
-        outcome: direction,
-        isLimitOrder: false,
-        boosted: contract.boosted,
-        leverage: effectiveLeverage,
-        notional,
-        perpAction: isAdd ? 'add' : isFlip ? 'flip' : 'open',
-        // Fee distribution telemetry: what rate people actually pay and how
-        // big they trade relative to the pool, for tuning takerFeeImpact.
-        // ALWAYS the engine's charged values from the trade response, never
-        // the client preview — the preview can lag pools/positions, and this
-        // dataset calibrates the impact coefficient.
-        fee: res.fee,
-        feeBps:
-          res.feeBps ??
-          (notional > 0 && res.fee > 0 ? (res.fee / notional) * 10_000 : 0),
-        poolShareAfter: res.poolShareAfter ?? feeDetails.poolShareAfter,
-      })
-      // Reflect the trade everywhere on the page (position panel, pools,
-      // funding, this panel's open direction) immediately — onTrade bumps
-      // the parent's refreshKey, which refetches positions cache-bypassed.
+      acceptOrder(res.order)
+      if (res.order?.status === 'pending')
+        toast('Order submitted — waiting for the next price')
       pendingTrade.current = null
       onTrade?.()
     } catch (err: unknown) {
@@ -580,6 +552,12 @@ export const PerpBetPanel = (props: {
   if (!expanded) {
     return (
       <Col className="mt-2 w-full gap-1">
+        {order && order.status !== 'filled' && (
+          <PerpExecutionNotice
+            order={order}
+            closing={order.request.kind === 'close' || isFlip}
+          />
+        )}
         <Row className="w-full items-center gap-3">
           <Button
             color="green"
@@ -705,11 +683,16 @@ export const PerpBetPanel = (props: {
         </div>
       )}
 
+      <PerpExecutionNotice
+        order={order}
+        closing={order?.request.kind === 'close' || isFlip}
+      />
       <Button
         color={submitColor}
         onClick={onSubmit}
         loading={submitting}
         disabled={
+          pending ||
           submitting ||
           !user ||
           // Positions must be loaded before the previewed fee (and add/flip

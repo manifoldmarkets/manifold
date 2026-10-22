@@ -1,5 +1,6 @@
 import { uniq } from 'lodash'
 import { ENV } from 'common/envs/constants'
+import { MarketLinkRelation } from 'common/market-links'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
 
 // ─── Sport categories ─────────────────────────────────────────────────────────
@@ -14,6 +15,7 @@ import { DAY_MS, HOUR_MS } from 'common/util/time'
 export type SportKey =
   | 'nfl'
   | 'nba'
+  | 'wnba'
   | 'mlb'
   | 'nhl'
   | 'soccer'
@@ -53,8 +55,10 @@ export interface SportCategory {
 }
 
 // Prod topic ids. Dev has a single catch-all sports topic (see SPORTS_DEFAULT_GROUP_ID).
-/** The NBA topic. WNBA games share the NBA chip but not this topic. */
 export const NBA_TOPIC_ID = 'i0v3cXwuxmO9fpcInVYb'
+export const WNBA_TOPIC_ID = 'e5117cba-382d-4eb0-87a9-16e16bad081b'
+/** "🏀 Basketball": the parent of the NBA topic, and holds WNBA markets too. */
+const BASKETBALL_TOPIC_ID = 'NjkFkdkvRvBHoeMDQ5NB'
 
 export const SPORTS_DEFAULT_GROUP_ID =
   ENV === 'PROD' ? '2hGlgVhIyvVaFyQAREPi' : 'IOffGO7C9c0dfDura9Yn'
@@ -89,13 +93,23 @@ export const SPORT_CATEGORIES: SportCategory[] = [
     label: 'NBA',
     longLabel: 'NBA',
     emoji: '🏀',
-    groupIds: [
-      NBA_TOPIC_ID,
-      'NjkFkdkvRvBHoeMDQ5NB', // basketball
-    ],
+    groupIds: [NBA_TOPIC_ID, BASKETBALL_TOPIC_ID],
     archivedGroupIds: ['0ac78428-c1bc-4549-aa30-416fa1df36e2'], // nba-20242025-season
     slug: 'nba',
-    leagues: ['NBA', 'WNBA'],
+    leagues: ['NBA'],
+  },
+  {
+    // Its own sport: WNBA and NBA cities share team names (Atlanta, Golden
+    // State…), so the two can't share a chip.
+    key: 'wnba',
+    label: 'WNBA',
+    longLabel: 'WNBA',
+    emoji: '🏀',
+    groupIds: [WNBA_TOPIC_ID],
+    // Basketball would file a market as NBA, so it's tagged but doesn't claim.
+    extraTagGroupIds: [BASKETBALL_TOPIC_ID],
+    slug: 'wnba',
+    leagues: ['WNBA'],
   },
   {
     key: 'mlb',
@@ -225,14 +239,14 @@ const LEAGUE_TO_SPORT: Record<string, SportKey> = Object.fromEntries(
   )
 )
 
-// The college topics sit next to the generic "basketball" / "football" topics
-// that also belong to the pro leagues, so a market tagged with both has to
-// resolve to the college sport whatever order its topic ids come back in.
+// The college and WNBA topics sit next to the generic "basketball" /
+// "football" topics that the NBA and NFL claim, so a market tagged with both
+// has to resolve to the narrower sport whatever order its topic ids come back in.
+const NARROW_SPORTS: SportKey[] = ['ncaaf', 'ncaab', 'wnba']
 const SPORT_LOOKUP_ORDER: SportKey[] = [
-  'ncaaf',
-  'ncaab',
+  ...NARROW_SPORTS,
   ...SPORT_CATEGORIES.map((s) => s.key).filter(
-    (k) => k !== 'ncaaf' && k !== 'ncaab'
+    (k) => !NARROW_SPORTS.includes(k)
   ),
 ]
 
@@ -254,6 +268,7 @@ const ODDS_API_KEY_PREFIXES: [string, SportKey][] = [
   ['americanfootball_nfl', 'nfl'],
   ['americanfootball_ncaaf', 'ncaaf'],
   ['basketball_ncaab', 'ncaab'],
+  ['basketball_wnba', 'wnba'],
   ['basketball_', 'nba'],
   ['baseball_', 'mlb'],
   ['icehockey_', 'nhl'],
@@ -320,15 +335,14 @@ export function sportGroupIds(sport: SportKey | 'all'): string[] {
 }
 
 /** Topic ids to put on a market a pipeline creates for a sport: the current topics only, plus Sports. */
-export function sportTagIds(sport: SportKey, league?: string): string[] {
+export function sportTagIds(sport: SportKey): string[] {
   if (ENV !== 'PROD') return [SPORTS_DEFAULT_GROUP_ID]
   const cat = SPORT_BY_KEY[sport]
-  // WNBA games sit under the NBA chip but stay out of the NBA topic.
-  const ids = [
+  return [
+    SPORTS_DEFAULT_GROUP_ID,
     ...(cat?.groupIds ?? []),
     ...(cat?.extraTagGroupIds ?? []),
-  ].filter((id) => !(league === 'WNBA' && id === NBA_TOPIC_ID))
-  return [SPORTS_DEFAULT_GROUP_ID, ...ids]
+  ]
 }
 
 // ─── Sports from the topic tree ───────────────────────────────────────────────
@@ -829,7 +843,8 @@ export interface RelatedCandidate {
   importanceScore: number
 }
 
-export type RelatedMatchKind = 'official' | 'both-teams' | 'one-team'
+// 'linked': the market's creator linked it to the game (common/market-links).
+export type RelatedMatchKind = 'linked' | 'official' | 'both-teams' | 'one-team'
 
 /**
  * How a related market is shown under its game:
@@ -871,6 +886,16 @@ export function relatedGroupFor(props: {
   // An official market we can't classify is still a prop from the pipeline.
   return kind === 'official' ? 'props' : 'community'
 }
+
+const GROUP_BY_LINK_RELATION: Record<MarketLinkRelation, RelatedGroup> = {
+  line: 'game-lines',
+  prop: 'props',
+  related: 'community',
+}
+
+/** Where a market linked to a game goes: its creator said what it is. */
+export const relatedGroupForLink = (relation: MarketLinkRelation) =>
+  GROUP_BY_LINK_RELATION[relation]
 
 /** Compact reference shipped with the schedule; the contract is fetched on expand. */
 export interface RelatedRef {

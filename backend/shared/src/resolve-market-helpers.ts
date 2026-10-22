@@ -98,6 +98,15 @@ export const resolveMarketHelper = async (
     if (unresolvedContract.isResolved) {
       throw new APIError(403, 'Contract is already resolved')
     }
+    // Re-check the answer against this transaction's read of the contract:
+    // the caller validated it against a snapshot taken outside the transaction.
+    if (answerId && isIndieMC) {
+      const answer = c.answers.find((a) => a.id === answerId)
+      if (!answer)
+        throw new APIError(403, `${answerId} is not a valid answer ID`)
+      if (answer.resolution || answer.resolutionTime)
+        throw new APIError(403, `${answerId} answer is already resolved`)
+    }
 
     const resolutionTime = Date.now()
     const newCloseTime = closeTime

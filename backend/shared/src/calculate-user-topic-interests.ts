@@ -2,7 +2,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { groupBy, mapValues, sum, uniq } from 'lodash'
+import { chunk, groupBy, mapValues, sum, uniq } from 'lodash'
 import { DAY_MS } from 'common/util/time'
 import { log } from 'shared/utils'
 import { bulkInsert } from 'shared/supabase/utils'
@@ -28,6 +28,18 @@ const BETS_ONLY_FOR_SCORE = [
   UNRANKED_GROUP_ID,
   ...IGNORE_GROUP_IDS,
 ]
+// How many users' history is held in memory at once.
+//
+// getPreviousStats loads EVERY historical user_topic_interests row for a user
+// (hits and misses are summed over all of them), and the table only grows:
+// on 2026-10-18 the ~930 users active in a day had 132,643 rows and 4.4 GB of
+// JSON between them (table total 14 GB, 677k rows since April 2024, roughly
+// 14 MB more every day). Loading all of that for one run is what took the
+// main scheduler's heap from under 1 GB to 13.6-14.7 GB at 11:00 UTC every
+// day and killed the process on the bad days (FATAL heap crashes 10/14 and
+// 10/16; 14.4 GB survived on 10/15). Twenty users is about 90 MB of JSON per
+// chunk; the per-user maths below is unchanged.
+const USERS_PER_CHUNK = 20
 export async function calculateUserTopicInterests(
   startTime?: number,
   readOnly?: boolean,
@@ -109,76 +121,82 @@ export async function calculateUserTopicInterests(
     ...Object.keys(userIdsToGroupIdMisses),
     ...Object.keys(userIdsToGroupIdsHits),
   ])
-  await getPreviousStats(pg, allUserIds, createdTimesOnly)
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const betaIncompleteInverse = require('@stdlib/math-base-special-betaincinv')
   log(`Writing user topic interests for ${allUserIds.length} users`)
-  const scoresToWrite = filterDefined(
-    allUserIds.map((userId) => {
-      const myPriorConversionScores = userIdToGroupStats[userId] ?? {}
-      const myPriorGroupIds = Object.keys(myPriorConversionScores)
-      const myGroupIdHits = userIdsToGroupIdsHits?.[userId] ?? []
-      const myGroupIdMisses = userIdsToGroupIdMisses?.[userId] ?? []
-      const allGroupIds = uniq([
-        ...myGroupIdHits,
-        ...myGroupIdMisses,
-        ...myPriorGroupIds,
-      ])
-      const groupIdsToConversionScore = Object.fromEntries(
-        allGroupIds.map((groupId) => {
-          const priorStats =
-            myPriorConversionScores[groupId] ??
-            ({
-              conversionScore: GROUP_SCORE_PRIOR,
-              hits: 0,
-              misses: 0,
-            } as GroupIdsToStats[number])
-          let score = priorStats.conversionScore
-          const hits = myGroupIdHits.filter((g) => g === groupId).length
-          const misses = myGroupIdMisses.filter((g) => g === groupId).length
-          if (hits !== 0 || misses !== 0) {
-            const totalHits = priorStats.hits + hits + FEED_CARD_HITS
-            const totalMisses = priorStats.misses + misses + FEED_CARD_MISSES
-            // Using score from https://www.evanmiller.org/bayesian-average-ratings.html
-            score = betaIncompleteInverse(
-              1 / (1 + FEED_BETA_LOSS),
-              totalHits,
-              totalMisses
-            )
-          }
-          return [
-            groupId,
-            {
-              conversionScore: score,
-              hits,
-              misses,
-            },
-          ]
-        })
-      ) as GroupIdsToStats
+  let written = 0
+  for (const userIds of chunk(allUserIds, USERS_PER_CHUNK)) {
+    // Loads (and resets) userIdToGroupStats for just these users.
+    await getPreviousStats(pg, userIds, createdTimesOnly)
+    const scoresToWrite = filterDefined(
+      userIds.map((userId) => {
+        const myPriorConversionScores = userIdToGroupStats[userId] ?? {}
+        const myPriorGroupIds = Object.keys(myPriorConversionScores)
+        const myGroupIdHits = userIdsToGroupIdsHits?.[userId] ?? []
+        const myGroupIdMisses = userIdsToGroupIdMisses?.[userId] ?? []
+        const allGroupIds = uniq([
+          ...myGroupIdHits,
+          ...myGroupIdMisses,
+          ...myPriorGroupIds,
+        ])
+        const groupIdsToConversionScore = Object.fromEntries(
+          allGroupIds.map((groupId) => {
+            const priorStats =
+              myPriorConversionScores[groupId] ??
+              ({
+                conversionScore: GROUP_SCORE_PRIOR,
+                hits: 0,
+                misses: 0,
+              } as GroupIdsToStats[number])
+            let score = priorStats.conversionScore
+            const hits = myGroupIdHits.filter((g) => g === groupId).length
+            const misses = myGroupIdMisses.filter((g) => g === groupId).length
+            if (hits !== 0 || misses !== 0) {
+              const totalHits = priorStats.hits + hits + FEED_CARD_HITS
+              const totalMisses = priorStats.misses + misses + FEED_CARD_MISSES
+              // Using score from https://www.evanmiller.org/bayesian-average-ratings.html
+              score = betaIncompleteInverse(
+                1 / (1 + FEED_BETA_LOSS),
+                totalHits,
+                totalMisses
+              )
+            }
+            return [
+              groupId,
+              {
+                conversionScore: score,
+                hits,
+                misses,
+              },
+            ]
+          })
+        ) as GroupIdsToStats
 
-      if (
-        Object.keys(groupIdsToConversionScore).length === 0 ||
-        Object.values(groupIdsToConversionScore).some(
-          (v) =>
-            v.conversionScore === null ||
-            v.conversionScore === undefined ||
-            isNaN(v.conversionScore) ||
-            v.conversionScore < 0
-        )
-      ) {
-        log.error('Skipping conversion score writes for user: ' + userId)
-        return undefined
-      }
+        if (
+          Object.keys(groupIdsToConversionScore).length === 0 ||
+          Object.values(groupIdsToConversionScore).some(
+            (v) =>
+              v.conversionScore === null ||
+              v.conversionScore === undefined ||
+              isNaN(v.conversionScore) ||
+              v.conversionScore < 0
+          )
+        ) {
+          log.error('Skipping conversion score writes for user: ' + userId)
+          return undefined
+        }
 
-      return {
-        user_id: userId,
-        group_ids_to_activity: groupIdsToConversionScore,
-        created_time: start,
-      }
-    })
-  )
-  if (!readOnly) await bulkInsert(pg, 'user_topic_interests', scoresToWrite)
+        return {
+          user_id: userId,
+          group_ids_to_activity: groupIdsToConversionScore,
+          created_time: start,
+        }
+      })
+    )
+    if (!readOnly) await bulkInsert(pg, 'user_topic_interests', scoresToWrite)
+    written += scoresToWrite.length
+  }
+  log(`Wrote user topic interests for ${written} of ${allUserIds.length} users`)
 }
 
 type GroupIdsToStats = {
