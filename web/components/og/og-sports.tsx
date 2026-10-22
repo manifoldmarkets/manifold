@@ -3,6 +3,7 @@ import {
   formatSportsOgAsOf,
   SportsOgMarket,
   sportsOgTitle,
+  sportsOgOutcomeName,
 } from 'common/sports-og'
 import { readableTextColor } from 'common/sports-team-colors'
 import Logo from 'web/public/logo.svg'
@@ -181,7 +182,7 @@ function SportsMarketPreview({ market }: { market: SportsOgMarket }) {
                 className="mt-3 flex items-center justify-center overflow-hidden text-center text-gray-900"
                 style={{ fontSize: 23, lineHeight: 1.15, height: 54 }}
               >
-                {shorten(team.name, 30)}
+                {sportsOgOutcomeName(team.name)}
               </span>
               <span
                 className="mt-3 flex items-center justify-center rounded-xl"

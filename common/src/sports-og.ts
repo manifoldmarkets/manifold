@@ -84,6 +84,16 @@ export function selectSportsOgMarket(
   })
 }
 
+/** Shorten the team name without turning a spread into an apparent win bet. */
+export function sportsOgOutcomeName(name: string) {
+  if (name.length <= 30) return name
+  const handicap = name.match(
+    /\s+(\([+−-]\d+(?:\.\d+)?\)|[+−-]\d+(?:\.\d+)?)$/
+  )?.[1]
+  const suffix = handicap ? ' ' + handicap : ''
+  return name.slice(0, Math.max(0, 29 - suffix.length)).trimEnd() + '…' + suffix
+}
+
 /** Older game titles end in " [official]"; the league label replaced it. */
 export const sportsOgTitle = (question: string) =>
   question.replace(/\s*\[official\]\s*$/i, '')
