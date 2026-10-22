@@ -769,7 +769,9 @@ export function Search(props: SearchProps) {
                       }
                     }}
                   >
-                    {removeEmojis(topic)}
+                    {removeEmojis(topic) === 'Sports'
+                      ? 'Sports topics'
+                      : removeEmojis(topic)}
                   </button>
                 ))}
                 {showHotTopics &&

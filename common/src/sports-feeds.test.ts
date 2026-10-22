@@ -39,11 +39,26 @@ it('routes every additional feed through creation, classification and league lab
         ...market,
         creatorId: MANIFOLD_SPORTS_USER_IDS[0],
       })
-    ).toBe(entry.competition)
+    ).toBe(
+      ADDITIONAL_SPORTS_FEEDS.find((f) => f.key === entry.oddsKey)!.shortLabel
+    )
     expect(autoCreates(entry, { [calendarPhaseKey(entry)]: true })).toBe(
       !entry.locked
     )
   }
+})
+
+it('keeps title prefixes compact while retaining full competition names', () => {
+  for (const feed of ADDITIONAL_SPORTS_FEEDS) {
+    expect(feed.shortLabel.length).toBeLessThanOrEqual(12)
+    expect(feed.shortLabel).toBe(feed.shortLabel.toUpperCase())
+  }
+  expect(
+    ADDITIONAL_SPORTS_FEEDS.find((f) => f.key === 'soccer_uefa_europa_league')
+  ).toMatchObject({
+    label: 'Europa League',
+    shortLabel: 'UEL',
+  })
 })
 
 it('never makes odds-only feeds or unvalidated settlement rules automatically available', () => {
@@ -75,4 +90,16 @@ it('excludes February knockouts from the new UEFA league-phase feeds', () => {
     expect(window.to).toBeLessThan(Date.parse('2027-02-01T00:00:00Z'))
     expect(window.to).toBeGreaterThan(Date.parse(`${entry.endDate}T20:00:00Z`))
   }
+})
+
+it.each([
+  'soccer_portugal_primeira_liga',
+  'soccer_sweden_allsvenskan',
+  'soccer_league_of_ireland',
+  'soccer_germany_liga3',
+  'soccer_chile_campeonato',
+])('keeps %s locked until playoff coverage is validated', (key) => {
+  const entry = additionalFeedCalendar().find((e) => e.oddsKey === key)!
+  expect(entry.locked).toBeTruthy()
+  expect(autoCreates(entry, { [calendarPhaseKey(entry)]: true })).toBe(false)
 })

@@ -212,7 +212,7 @@ export function teamScores(
   }
   const find = (name: string) => {
     const raw = score.scores?.find((s) => sameTeam(s.name, name))?.score
-    const n = raw == null || raw.trim() === '' ? NaN : Number(raw)
+    const n = raw != null && /^\d+$/.test(raw.trim()) ? Number(raw) : NaN
     return Number.isSafeInteger(n) && n >= 0 ? n : null
   }
   return { home: find(homeName), away: find(awayName) }

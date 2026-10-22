@@ -475,7 +475,7 @@ export function GameRow(props: {
 }
 
 /**
- * When a game is: the kickoff time (and how soon), "LIVE" with the clock, or
+ * When a game is: the kickoff time (and how soon), "In progress" with the score age, or
  * the final, displayed inline in a card header.
  */
 function GameWhen(props: {
@@ -495,14 +495,14 @@ function GameWhen(props: {
   let secondary: ReactNode
   if (hasFeed) {
     primary = (
-      <Row className="items-center gap-1 text-[11px] font-semibold text-red-600">
+      <Row className="items-center gap-1 whitespace-nowrap text-[11px] font-semibold text-red-600">
         In progress
       </Row>
     )
     secondary = <ScoreFreshness updatedTime={game.scoreUpdatedTime} />
   } else if (live) {
     primary = (
-      <span className="text-[11px] font-semibold text-red-600">
+      <span className="whitespace-nowrap text-[11px] font-semibold text-red-600">
         In progress
       </span>
     )

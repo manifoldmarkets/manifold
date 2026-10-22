@@ -17,6 +17,7 @@ import {
   SportsTopic,
   SportsTopicLink,
   sportTagIds,
+  sportGroupIds,
   splitTopicName,
   teamAliases,
   teamDisplayName,
@@ -480,6 +481,46 @@ describe('pipeline handoff fields', () => {
 })
 
 describe('sports from the topic tree', () => {
+  it('keeps existing sports first and does not search all sports for a feed-only category', () => {
+    expect(CURATED_SPORTS.slice(0, 4).map((s) => s.key)).toEqual([
+      'nfl',
+      'nba',
+      'wnba',
+      'mlb',
+    ])
+    expect(sportGroupIds('basketball')).toEqual([])
+    expect(
+      buildSportsIndex([], []).sports.find((s) => s.key === 'basketball')
+        ?.groupIds
+    ).toEqual([])
+  })
+
+  it.each([
+    ['afl', 'afl', '0afc8d1a-871b-40da-a4e2-8acb2dbd25bd'],
+    [
+      'wncaab',
+      'womens-ncaa-basketball',
+      '23ac7b3c-a185-4340-8ba9-d9399e4929f0',
+    ],
+    ['nrl', 'nrl', 'ab71806e-a3c9-456d-884a-929ae13f109e'],
+    ['handball', 'handball', '8R4AyMGqOTrSAN4n4rNL'],
+    ['hockey', 'ice-hockey', '68ee6874-3058-4c8f-ae72-5b8a764c8741'],
+    ['football', 'american-football', 'ce506ff3-38db-4709-83ce-b40797d884e4'],
+  ] as const)(
+    'claims the existing %s topic without a duplicate chip',
+    (key, slug, id) => {
+      const index = buildSportsIndex(
+        [{ id, slug, name: key, totalMembers: 1 }],
+        [{ parentId: SPORTS_DEFAULT_GROUP_ID, childId: id }]
+      )
+      expect(index.sports.filter((s) => s.key === key)).toHaveLength(1)
+      expect(index.sports.some((s) => s.key === `topic-${id}`)).toBe(false)
+      expect(index.sports.find((s) => s.key === key)?.groupIds).toContain(id)
+      expect(sportForMarket({ groupIds: [id] }, index)).toBe(key)
+      expect(sportTagIds(key)).toContain(id)
+    }
+  )
+
   // A slice of the prod tree under 🏟️ Sports.
   const root = SPORTS_DEFAULT_GROUP_ID
   const football = 'Vcf6CYTTSXAiStbKSqQq'

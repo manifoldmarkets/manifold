@@ -69,6 +69,12 @@ export function AdminScorePolling() {
           4+. Applies to default settings only; explicit sport and game settings
           win. Budget 30–120 credits per active league-hour, plus finals checks.
         </span>
+        {ENV !== 'PROD' && (
+          <span className="text-ink-500 text-xs">
+            Dev defaults to live scores off. Adaptive mode keeps that default;
+            choose a positive sport or game interval to test polling.
+          </span>
+        )}
       </Col>
       <LiveBySport data={data} pending={pending} save={save} />
       <Row className="flex-wrap items-center gap-2 text-sm">
@@ -218,7 +224,7 @@ function LiveBySport(props: {
               onChange={(v) => save(target, v)}
             />
             <span className="text-ink-500 text-xs">
-              {data.adaptive && s.isDefault
+              {data.adaptive && s.isDefault && s.intervalSeconds > 0
                 ? 'Adaptive · 30–120 credits per active league-hour'
                 : creditsPerHour(s.intervalSeconds)}
               {s.isDefault && ' · default'}

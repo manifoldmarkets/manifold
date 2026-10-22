@@ -33,8 +33,12 @@ export function SportRail(props: {
   const { sports, selected, counts, className } = props
   const hrefFor = useSportHref()
 
-  const withGames = sports.filter((s) => (counts[s.key] ?? 0) > 0)
-  const withoutGames = sports.filter(
+  const visibleSports = sports.filter(
+    (s) =>
+      s.groupIds.length > 0 || (counts[s.key] ?? 0) > 0 || s.key === selected
+  )
+  const withGames = visibleSports.filter((s) => (counts[s.key] ?? 0) > 0)
+  const withoutGames = visibleSports.filter(
     (s) => !(counts[s.key] ?? 0) && s.key !== 'other'
   )
   const totalGames = Object.values(counts).reduce<number>(
@@ -101,7 +105,7 @@ export function SportRail(props: {
         selectedItemName={selected}
         items={[
           { key: 'all', label: 'All sports', emoji: '🏟️' },
-          ...sports.filter((s) => s.key !== 'other'),
+          ...visibleSports.filter((s) => s.key !== 'other'),
         ].map((s) => ({
           name: s.key,
           isLink: true,

@@ -38,15 +38,18 @@ export function SportsMarketSections(props: {
     { term: '', filter: 'open', sort: 'score', gids, limit: 30 },
     undefined,
     `sports-trending-${key}`,
-    enabled
+    enabled && gids.length > 0
   )
   const futures = useAPIGetter(
     'search-markets-full',
     { term: '', filter: 'open', sort: 'liquidity', gids, limit: 40 },
     undefined,
     `sports-futures-${key}`,
-    enabled
+    enabled && gids.length > 0
   )
+
+  // An empty topic set must never become an unfiltered search.
+  if (!gids) return null
 
   const now = Date.now()
   const trendingMarkets = (trending.data ?? [])
