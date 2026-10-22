@@ -15,8 +15,7 @@ export function getCreateMarketCloseParams(
     | 'hasManuallyEditedCloseDate'
   >
 ): { closeTime?: number; neverCloses?: true } {
-  if (state.outcomeType === 'POLL' && state.neverCloses)
-    return { neverCloses: true }
+  if (isNeverClosingPoll(state)) return { neverCloses: true }
   // The displayed parent date is a preview. Let the server copy the current
   // parent deadline under lock unless the creator explicitly chose a date.
   if (state.linkedToContractId && !hasManualCloseTime(state)) return {}
@@ -51,6 +50,23 @@ export function hasManualCloseTime(
   // Old local drafts have no flag. Preserve their existing date conservatively.
   return (
     state.hasManuallyEditedCloseDate ?? (!!state.closeDate || state.neverCloses)
+  )
+}
+
+/**
+ * Never, or a date the creator cleared. The close-date picker shows Never for
+ * any poll without a date, so a cleared date must not fall back to the linked
+ * market's deadline.
+ */
+export function isNeverClosingPoll(
+  state: Pick<
+    FormState,
+    'outcomeType' | 'neverCloses' | 'closeDate' | 'hasManuallyEditedCloseDate'
+  >
+) {
+  return (
+    state.outcomeType === 'POLL' &&
+    (state.neverCloses || (hasManualCloseTime(state) && !state.closeDate))
   )
 }
 
@@ -110,7 +126,7 @@ export function shouldApplyLinkedMarketCloseTime(
 }
 
 export function getLinkedCloseTimeDescription(state: FormState) {
-  if (state.outcomeType === 'POLL' && state.neverCloses) return 'Never'
+  if (isNeverClosingPoll(state)) return 'Never'
   if (!state.linkedToContractId || hasManualCloseTime(state)) return undefined
   if (!canInheritLinkedCloseTime(state.outcomeType)) return 'Never'
   if (isLinkedCloseTimePending(state))
