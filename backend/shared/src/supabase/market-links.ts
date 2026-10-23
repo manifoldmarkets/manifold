@@ -1,4 +1,9 @@
-import { LinkParentCandidate, MarketLinkRelation } from 'common/market-links'
+import {
+  LinkParentCandidate,
+  MarketLinkRef,
+  MarketLinkRelation,
+  MarketLinks,
+} from 'common/market-links'
 import { OutcomeType } from 'common/contract'
 import { tsToMillis } from 'common/supabase/utils'
 import { SupabaseDirectClient, SupabaseTransaction } from './init'
@@ -132,6 +137,81 @@ export async function getMarketLinkParent(
      where child_contract_id = $1`,
     [childId]
   )
+}
+
+type MarketLinkRefRow = {
+  id: string
+  question: string
+  slug: string
+  creator_id: string
+  creator_username: string
+  relation: MarketLinkRelation
+  close_time: string | null
+  is_resolved: boolean
+}
+
+const toMarketLinkRef = (r: MarketLinkRefRow): MarketLinkRef => ({
+  id: r.id,
+  question: r.question,
+  slug: r.slug,
+  creatorId: r.creator_id,
+  creatorUsername: r.creator_username,
+  relation: r.relation,
+  closeTime: r.close_time ? tsToMillis(r.close_time) : null,
+  isResolved: r.is_resolved,
+})
+
+/**
+ * What a market's info shows: its parent and the markets linked to it, newest
+ * first. A market that isn't public (unlisted or deleted) is never named on
+ * another market's page: its links are only flagged or counted, so the info
+ * can still offer to remove a link, and won't offer one the API would refuse.
+ * A missing visibility counts as public, as in getLinkParentCandidate.
+ */
+export async function getMarketLinks(
+  pg: SupabaseDirectClient,
+  contractId: string,
+  limit: number
+): Promise<MarketLinks> {
+  const [parents, children, counts] = await pg.multi(
+    `select c.id, c.question, c.slug, c.creator_id,
+            c.data->>'creatorUsername' as creator_username, l.relation,
+            c.close_time, c.resolution is not null as is_resolved,
+            coalesce(c.visibility, 'public') = 'public'
+              and not coalesce(c.deleted, false) as shown
+     from market_links l
+     join contracts c on c.id = l.parent_contract_id
+     where l.child_contract_id = $1;
+     select c.id, c.question, c.slug, c.creator_id,
+            c.data->>'creatorUsername' as creator_username, l.relation,
+            c.close_time, c.resolution is not null as is_resolved
+     from market_links l
+     join contracts c on c.id = l.child_contract_id
+     where l.parent_contract_id = $1
+       and coalesce(c.visibility, 'public') = 'public'
+       and not coalesce(c.deleted, false)
+     order by l.created_time desc, c.id
+     limit $2;
+     select
+       count(*) filter (where coalesce(c.visibility, 'public') = 'public'
+         and not coalesce(c.deleted, false))::int as shown,
+       count(*) filter (where coalesce(c.visibility, 'public') <> 'public'
+         or coalesce(c.deleted, false))::int as hidden
+     from market_links l
+     join contracts c on c.id = l.child_contract_id
+     where l.parent_contract_id = $1;`,
+    [contractId, limit]
+  )
+  const parent = parents[0] as
+    | (MarketLinkRefRow & { shown: boolean })
+    | undefined
+  return {
+    parent: parent?.shown ? toMarketLinkRef(parent) : null,
+    parentHidden: !!parent && !parent.shown,
+    children: (children as MarketLinkRefRow[]).map(toMarketLinkRef),
+    childCount: counts[0]?.shown ?? 0,
+    hiddenChildCount: counts[0]?.hidden ?? 0,
+  }
 }
 
 export type LinkedChild = {
