@@ -11,7 +11,7 @@ import {
   teamDisplayName,
 } from 'common/sports-schedule'
 import { readableTextColor } from 'common/sports-team-colors'
-import { shortFormatNumber } from 'common/util/format'
+import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { GameLinkedMarkets } from 'web/components/sports/game-related-markets'
@@ -19,6 +19,13 @@ import { ScoreFreshness } from './score-freshness'
 import { SportsMarketBadge } from './sports-market-badge'
 import { SportHeroBackground } from './sport-hero-background'
 import { getGameDisplayTeams } from './game-feed-utils'
+import {
+  backsOutcome,
+  GameStake,
+  hasOutcomeStake,
+  OutcomeStake,
+  profitLabel,
+} from './game-positions'
 import {
   Flag,
   MatchOutcome,
@@ -101,6 +108,10 @@ export function GameRow(props: {
   liked?: boolean
   likeDisabled?: boolean
   onToggleLike?: () => void
+  /** The signed-in account's stake on this game, marked to its live prices. */
+  stake?: GameStake
+  /** Called when a bet dialog closes, so the caller can re-read positions. */
+  onPositionsChange?: () => void
 }) {
   const {
     game,
@@ -110,9 +121,17 @@ export function GameRow(props: {
     liked,
     likeDisabled,
     onToggleLike,
+    stake,
+    onPositionsChange,
   } = props
   const [betOutcome, setBetOutcome] = useState<MatchOutcome | null>(null)
   const user = useUser()
+  const stakeOn = (answerId: string | undefined) =>
+    answerId ? stake?.byAnswer[answerId] : undefined
+  const closeDialog = () => {
+    setBetOutcome(null)
+    onPositionsChange?.()
+  }
   const LikeIcon = liked ? HeartIcon : OutlineHeartIcon
 
   const live = game.status === 'live'
@@ -214,6 +233,7 @@ export function GameRow(props: {
         finished={finished}
         canBet={canBet}
         onBet={() => onBet(outcome)}
+        stake={stakeOn(team.answerId)}
       />
     )
   )
@@ -228,6 +248,7 @@ export function GameRow(props: {
         finished={finished}
         canBet={canBet}
         onBet={onBet}
+        stake={stake}
       />
     ) : (
       <div
@@ -241,24 +262,27 @@ export function GameRow(props: {
         {firstTeam}
         {game.draw && (
           <Row className="items-center gap-2 pl-10">
-            <span
-              className={clsx(
-                'text-xs',
-                drawWon ? 'text-ink-900 font-semibold' : 'text-ink-500'
-              )}
-            >
-              Draw{drawWon && ' ✓'}
-            </span>
+            <Col className="min-w-0 flex-1 gap-0.5">
+              <span
+                className={clsx(
+                  'text-xs',
+                  drawWon ? 'text-ink-900 font-semibold' : 'text-ink-500'
+                )}
+              >
+                Draw{drawWon && ' ✓'}
+              </span>
+              <StakeLine stake={stakeOn(game.draw.answerId)} />
+            </Col>
             <PriceChip
               prob={game.draw.prob}
               muted
               disabled={!canBet}
+              held={backsOutcome(stakeOn(game.draw.answerId))}
               onClick={(e) => {
                 e.stopPropagation()
                 onBet('draw')
               }}
               label="Bet on a draw"
-              className="ml-auto"
             />
           </Row>
         )}
@@ -274,7 +298,7 @@ export function GameRow(props: {
       <SportsThreeWayBetDialog
         match={toSportsMatch(game)}
         initialOutcome={betOutcome}
-        onClose={() => setBetOutcome(null)}
+        onClose={closeDialog}
       />
     ) : (
       <SportsVersusBetDialog
@@ -282,7 +306,7 @@ export function GameRow(props: {
         initialAnswerId={
           betOutcome === 'teamB' ? game.away.answerId : game.home.answerId
         }
-        onClose={() => setBetOutcome(null)}
+        onClose={closeDialog}
       />
     ))
 
@@ -319,6 +343,13 @@ export function GameRow(props: {
               <ChevronRightIcon className="h-4 w-4" aria-hidden />
             </Link>
           </div>
+          {stake && (
+            <PositionSummary
+              stake={stake}
+              href={gamePath(game)}
+              className="border-ink-100 col-span-2 mt-2 border-t pt-2 sm:col-span-3"
+            />
+          )}
         </div>
         <GameLinkedMarkets game={game} />
         {dialog}
@@ -408,20 +439,28 @@ export function GameRow(props: {
                       </h3>
                     </div>
                   ))}
-                  {displayTeams.map(({ team, outcome }, index) => (
-                    <PriceChip
-                      key={team.answerId}
-                      prob={team.prob}
-                      disabled={!canBet}
-                      label={`Bet on ${team.name}`}
-                      onClick={() => onBet(outcome)}
-                      className={clsx(
-                        '!bg-canvas-0 hover:!bg-primary-600 hover:!text-ink-0 row-start-3 max-w-full justify-self-center shadow-sm',
-                        game.draw ? '@[22rem]/scoreboard:!w-24 !w-20' : '!w-24',
-                        index === 0 ? 'col-start-1' : 'col-start-2'
-                      )}
-                    />
-                  ))}
+                  {displayTeams.map(({ team, outcome }, index) => {
+                    const held = backsOutcome(stakeOn(team.answerId))
+                    return (
+                      <PriceChip
+                        key={team.answerId}
+                        prob={team.prob}
+                        disabled={!canBet}
+                        held={held}
+                        label={`Bet on ${team.name}`}
+                        onClick={() => onBet(outcome)}
+                        className={clsx(
+                          'row-start-3 max-w-full justify-self-center shadow-sm',
+                          !held &&
+                            '!bg-canvas-0 hover:!bg-primary-600 hover:!text-ink-0',
+                          game.draw
+                            ? '@[22rem]/scoreboard:!w-24 !w-20'
+                            : '!w-24',
+                          index === 0 ? 'col-start-1' : 'col-start-2'
+                        )}
+                      />
+                    )
+                  })}
                   {game.draw && (
                     <button
                       type="button"
@@ -429,15 +468,46 @@ export function GameRow(props: {
                       onClick={() => onBet('draw')}
                       aria-label={`Bet on a draw (${Math.round(
                         game.draw.prob * 100
-                      )}%)`}
-                      className="text-primary-700 hover:bg-primary-100 focus-visible:ring-primary-500 col-span-2 col-start-1 row-start-3 min-h-[40px] justify-self-center rounded-lg px-2 text-xs font-semibold focus-visible:ring-2 disabled:opacity-60"
+                      )}%)${
+                        backsOutcome(stakeOn(game.draw.answerId))
+                          ? ', your pick'
+                          : ''
+                      }`}
+                      className={clsx(
+                        'text-primary-700 hover:bg-primary-100 focus-visible:ring-primary-500 col-span-2 col-start-1 row-start-3 min-h-[40px] justify-self-center rounded-lg px-2 text-xs font-semibold focus-visible:ring-2 disabled:opacity-60',
+                        backsOutcome(stakeOn(game.draw.answerId)) &&
+                          '!bg-primary-600 !text-ink-0 hover:!bg-primary-700'
+                      )}
                     >
                       Draw
                       <br />
                       {Math.round(game.draw.prob * 100)}%
                     </button>
                   )}
+                  {displayTeams.map(({ team }, index) => (
+                    <StakeLine
+                      key={team.answerId}
+                      stake={stakeOn(team.answerId)}
+                      className={clsx(
+                        'row-start-4 justify-center',
+                        index === 0 ? 'col-start-1' : 'col-start-2'
+                      )}
+                    />
+                  ))}
+                  {game.draw && (
+                    <StakeLine
+                      stake={stakeOn(game.draw.answerId)}
+                      className="col-span-2 col-start-1 row-start-5 justify-center"
+                    />
+                  )}
                 </div>
+                {stake && (
+                  <PositionSummary
+                    stake={stake}
+                    href={gamePath(game)}
+                    className="border-primary-200 mt-4 border-t pt-2"
+                  />
+                )}
               </div>
             </div>
           }
@@ -468,6 +538,13 @@ export function GameRow(props: {
         {gameControls}
       </Row>
       <div className="px-4 pb-3">{teams}</div>
+      {stake && (
+        <PositionSummary
+          stake={stake}
+          href={gamePath(game)}
+          className="border-ink-100 border-t px-4 py-2"
+        />
+      )}
       <GameLinkedMarkets game={game} />
       {dialog}
     </div>
@@ -553,21 +630,25 @@ function TeamLine(props: {
   finished: boolean
   canBet: boolean
   onBet: () => void
+  stake?: OutcomeStake
 }) {
-  const { team, score, won, lost, live, finished, canBet, onBet } = props
+  const { team, score, won, lost, live, finished, canBet, onBet, stake } = props
   return (
     <Row className="min-w-0 items-center gap-2">
       <TeamBadge team={team} />
-      <span
-        className={clsx(
-          'min-w-0 flex-1 truncate text-sm',
-          won ? 'text-ink-1000 font-semibold' : 'text-ink-900 font-medium',
-          lost && 'text-ink-500 line-through decoration-transparent'
-        )}
-      >
-        <span className="sm:hidden">{mobileTeamName(team)}</span>
-        <span className="hidden sm:inline">{team.name}</span>
-      </span>
+      <Col className="min-w-0 flex-1 gap-0.5">
+        <span
+          className={clsx(
+            'truncate text-sm',
+            won ? 'text-ink-1000 font-semibold' : 'text-ink-900 font-medium',
+            lost && 'text-ink-500 line-through decoration-transparent'
+          )}
+        >
+          <span className="sm:hidden">{mobileTeamName(team)}</span>
+          <span className="hidden sm:inline">{team.name}</span>
+        </span>
+        <StakeLine stake={stake} />
+      </Col>
       {won && (
         <span className="text-ink-600 shrink-0 text-xs" aria-label="winner">
           ✓
@@ -591,6 +672,7 @@ function TeamLine(props: {
         <PriceChip
           prob={team.prob}
           disabled={!canBet}
+          held={backsOutcome(stake)}
           onClick={(e) => {
             e.stopPropagation()
             onBet()
@@ -614,8 +696,9 @@ function ThreeWayStrip(props: {
   finished: boolean
   canBet: boolean
   onBet: (outcome: MatchOutcome) => void
+  stake?: GameStake
 }) {
-  const { game, teams, score, live, finished, canBet, onBet } = props
+  const { game, teams, score, live, finished, canBet, onBet, stake } = props
   const [first, second] = teams.map(({ team, side, outcome }) => {
     const won = game.winnerAnswerId === team.answerId
     const teamScore = score?.[side]
@@ -629,6 +712,8 @@ function ThreeWayStrip(props: {
         finished={finished}
         canBet={canBet}
         onBet={() => onBet(outcome)}
+        stake={stake?.byAnswer[team.answerId]}
+        reserveStake={!!stake}
       >
         <span className="@[7rem]:inline-flex hidden shrink-0">
           <TeamBadge team={team} small />
@@ -665,6 +750,8 @@ function ThreeWayStrip(props: {
           finished={finished}
           canBet={canBet}
           onBet={() => onBet('draw')}
+          stake={stake?.byAnswer[draw.answerId]}
+          reserveStake={!!stake}
         >
           Draw
         </StripCell>
@@ -684,8 +771,22 @@ function StripCell(props: {
   canBet: boolean
   onBet: () => void
   children: ReactNode
+  stake?: OutcomeStake
+  /** Keep the cells level when another cell in the strip shows a stake. */
+  reserveStake?: boolean
 }) {
-  const { prob, betLabel, muted, won, lost, finished, canBet, onBet } = props
+  const {
+    prob,
+    betLabel,
+    muted,
+    won,
+    lost,
+    finished,
+    canBet,
+    onBet,
+    stake,
+    reserveStake,
+  } = props
   return (
     <div className="@container flex min-w-0 flex-col gap-1">
       <Row
@@ -714,6 +815,7 @@ function StripCell(props: {
           prob={prob}
           muted={muted}
           disabled={!canBet}
+          held={backsOutcome(stake)}
           onClick={(e) => {
             e.stopPropagation()
             onBet()
@@ -722,6 +824,12 @@ function StripCell(props: {
           className="!w-full"
         />
       )}
+      <StakeLine
+        stake={stake}
+        placeholder={reserveStake}
+        compact
+        className="justify-center"
+      />
     </div>
   )
 }
@@ -781,22 +889,26 @@ function TeamBadge({
   )
 }
 
-/** The price is the bet button, as on every sportsbook. */
+/**
+ * The price is the bet button, as on every sportsbook. Filled in when the
+ * account is paid if this outcome wins, so a card shows which side you're on.
+ */
 function PriceChip(props: {
   prob: number
   onClick: (e: React.MouseEvent) => void
   label: string
   disabled?: boolean
   muted?: boolean
+  held?: boolean
   className?: string
 }) {
-  const { prob, onClick, label, disabled, muted, className } = props
+  const { prob, onClick, label, disabled, muted, held, className } = props
   const pct = Math.round(prob * 100)
   const flash = useProbFlash(pct)
   return (
     <button
       type="button"
-      aria-label={`${label} (${pct}%)`}
+      aria-label={`${label} (${pct}%)${held ? ', your pick' : ''}`}
       disabled={disabled}
       onClick={onClick}
       className={clsx(
@@ -807,12 +919,139 @@ function PriceChip(props: {
         muted
           ? 'bg-canvas-50 text-ink-600 hover:bg-primary-100 hover:text-primary-800 border-ink-200 border text-xs'
           : 'bg-primary-50 text-primary-800 hover:bg-primary-600 hover:text-ink-0',
+        // The price flash wins while it lasts.
+        held &&
+          !flash &&
+          '!bg-primary-600 !text-ink-0 hover:!bg-primary-700 border-transparent',
         disabled &&
           'hover:bg-primary-50 hover:text-primary-800 cursor-default opacity-60'
       )}
     >
       {pct}%
     </button>
+  )
+}
+
+/**
+ * Under a team (or the draw): what the account is paid if it wins, and any
+ * open limit orders on it. Nothing when the account has neither, unless a
+ * placeholder is asked for to keep neighbouring cells level.
+ */
+function StakeLine(props: {
+  stake?: OutcomeStake
+  placeholder?: boolean
+  /** A narrow strip cell: shorter order labels, and text may wrap. */
+  compact?: boolean
+  className?: string
+}) {
+  const { stake, placeholder, compact, className } = props
+  if (!stake || !hasOutcomeStake(stake)) {
+    return placeholder ? (
+      <div className={clsx('min-h-[1rem]', className)} aria-hidden />
+    ) : null
+  }
+  const itemClassName = clsx(
+    'inline-flex items-center gap-1 tabular-nums',
+    compact ? 'min-w-0 text-center' : 'whitespace-nowrap'
+  )
+  return (
+    <div
+      className={clsx(
+        'flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] leading-4',
+        className
+      )}
+    >
+      {backsOutcome(stake) && (
+        <span className={clsx(itemClassName, 'text-primary-700 font-semibold')}>
+          <span
+            className="bg-primary-600 h-1.5 w-1.5 shrink-0 rounded-full"
+            aria-hidden
+          />
+          Pays {formatMoney(stake.payoutIfWins)}
+        </span>
+      )}
+      {stake.orders.map((order, i) => (
+        <span key={i} className={clsx(itemClassName, 'text-ink-500')}>
+          <span
+            className="border-ink-400 h-1.5 w-1.5 shrink-0 rounded-full border"
+            aria-hidden
+          />
+          <span className={compact ? 'sr-only' : undefined}>
+            {order.against ? 'No' : 'Order'}{' '}
+          </span>
+          {order.against && compact ? 'No ' : ''}
+          {formatMoney(order.amount)} at {Math.round(order.prob * 100)}%
+        </span>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * The account's stake on a game: what's in, what it's worth at the current
+ * prices and the profit, plus open orders, with a link to the market to sell
+ * or add.
+ */
+function PositionSummary(props: {
+  stake: GameStake
+  href: string
+  className?: string
+}) {
+  const { stake, href, className } = props
+  const profit = profitLabel(stake.profit)
+  return (
+    <Row
+      className={clsx(
+        'text-ink-600 min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] tabular-nums',
+        className
+      )}
+    >
+      <span
+        className="bg-primary-600 h-1.5 w-1.5 shrink-0 rounded-full"
+        aria-hidden
+      />
+      <span className="sr-only">Your position:</span>
+      {stake.hasShares && (
+        <>
+          <span className="whitespace-nowrap">
+            {formatMoney(stake.invested)} in
+          </span>
+          <span className="text-ink-400" aria-hidden>
+            ·
+          </span>
+          <span className="whitespace-nowrap">
+            Worth {formatMoney(stake.value)}
+          </span>
+          <span
+            className={clsx(
+              'whitespace-nowrap font-semibold',
+              profit.className
+            )}
+          >
+            {profit.text}
+          </span>
+        </>
+      )}
+      {stake.openOrders > 0 && (
+        <>
+          {stake.hasShares && (
+            <span className="text-ink-400" aria-hidden>
+              ·
+            </span>
+          )}
+          <span className="whitespace-nowrap">
+            {stake.openOrders} open{' '}
+            {stake.openOrders === 1 ? 'order' : 'orders'}
+          </span>
+        </>
+      )}
+      <Link
+        href={href}
+        className="text-primary-700 hover:text-primary-800 ml-auto whitespace-nowrap font-semibold"
+      >
+        Manage
+      </Link>
+    </Row>
   )
 }
 
