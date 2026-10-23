@@ -1,5 +1,8 @@
+import { uniq } from 'lodash'
+import { authorOfPermaslug } from 'common/perps/lab-share'
 import {
   OPEN_WEIGHT_MODELS,
+  basePermaslug,
   isCompositeSlug,
 } from 'common/perps/open-weight-models'
 import {
@@ -7,14 +10,30 @@ import {
   verifyHuggingFaceWeights,
 } from 'shared/huggingface'
 import {
+  AGENT_RESEARCH_COOLDOWN_MS,
   getPendingClassifications,
+  getProvisionalClassifications,
   getResearchEligibility,
+  openProvisionalClassification,
+  provisionalCheckedAt,
   recordAgentRecommendation,
   recordPendingModels,
   upsertClassification,
 } from 'shared/perps/model-classifications'
+import {
+  PROVISIONAL_RECHECK_INTERVAL_MS,
+  isDueForRecheck,
+} from 'shared/perps/classification-recheck'
 import { classifyModelWithAgent } from 'shared/perps/classify-model-agent'
 import {
+  LabAgentSubject,
+  classifyLabSubjectWithAgent,
+} from 'shared/perps/classify-lab-agent'
+import {
+  LabClassificationRow,
+  getLabResearchCandidates,
+  labCheckedAt,
+  recordLabAgentRecommendation,
   recordPendingLabSubjectsFromCatalog,
   resolveLabClassifications,
 } from 'shared/perps/lab-classifications'
@@ -56,7 +75,9 @@ import { isProd, log } from 'shared/utils'
 // grace window are what make that affordable: an unclassified model no longer
 // halts the index while it waits for a click.
 /**
- * Hard ceiling on research calls in one sweep.
+ * Hard ceiling on research calls in one sweep, per population — pending
+ * models, provisional models under watch, and lab subjects each get their
+ * own ten.
  *
  * Sized against reality rather than ambition: in the worst week on record
  * three previously-unseen models entered the top 50, and the job runs four
@@ -114,11 +135,31 @@ const updateModelClassificationsInternal = async () => {
       !settled.has(m.permaslug) &&
       !isCompositeSlug(m.permaslug)
   )
-  if (unknown.length === 0) {
-    log('[model-classifier] catalog fully classified')
-    return
+  if (unknown.length === 0) log('[model-classifier] catalog fully classified')
+  else {
+    try {
+      await classifyUnknownModels(pg, unknown)
+    } catch (err) {
+      log.error(`[model-classifier] pending classification failed - ${err}`)
+    }
   }
 
+  // Both run whether or not the catalog had anything new: a watched row is
+  // settled as far as the catalog sweep is concerned, and the lab queue is
+  // independent of it.
+  try {
+    await recheckProvisionalModels(pg, catalog)
+  } catch (err) {
+    log.error(`[model-classifier] provisional re-check failed - ${err}`)
+  }
+  await researchLabSubjects(pg, catalog)
+}
+
+/** The catalog sweep: pending rows, declared-repo auto-open, agent research. */
+const classifyUnknownModels = async (
+  pg: SupabaseDirectClient,
+  unknown: OpenRouterCatalogEntry[]
+) => {
   // Start the grace clock from when WE first saw the model, not from
   // OpenRouter's listing date: backdating would expire the entire first-run
   // backlog on the spot and halt the feed for a problem nobody has had a
@@ -352,4 +393,349 @@ const researchRemainingModels = async (
   }
 
   return { recommended, unresolved }
+}
+
+/**
+ * Re-examine the "I don't know" rows.
+ *
+ * A provisional verdict is closed applied as the default: the operator looked
+ * and found no public weights, for a model that is anonymous or whose weights
+ * are announced and unshipped. The index publishes it as closed. What this
+ * loop asks, weekly, is whether that has stopped being true — because before
+ * it existed nothing did. The nightly audit re-checks closed verdicts only
+ * against OpenRouter's own metadata, which is populated for 40% of models and
+ * says nothing about a reveal, and the research agent only ever looked at
+ * rows with no verdict. A closed-for-now verdict was closed forever.
+ *
+ * Two checks, with different consequences, mirroring the pending path:
+ *
+ *   DECLARED REPO. The catalog now carries a `hugging_face_id` for the model
+ *   and it verifies with public weight files. This is APPLIED: the row flips
+ *   to open, source `auto`, prior verdict archived in history. Same trust the
+ *   pending path extends to the same evidence — the publisher is the
+ *   authority on which repo is theirs, nothing is inferred — and the row is
+ *   one the operator explicitly asked to have re-decided when evidence
+ *   appeared. (A FIRM closed verdict on this evidence is only flagged, by the
+ *   audit, because there a human looked and said no.)
+ *
+ *   AGENT. The HuggingFace research agent, same as for a pending model. An
+ *   `open` finding is a recommendation on the row and an ERROR-level alert:
+ *   the index is publishing a number the research now contradicts, and a
+ *   human decides, not a name heuristic. `closed` re-confirms the default and
+ *   `unresolved` leaves it; both just restart the weekly clock.
+ *
+ * Not ranked-gated: the set is bounded by human clicks rather than by the
+ * catalog, and a model delisted from the catalog — how stealth models usually
+ * end — still gets the agent, which is what can find the reveal.
+ */
+export const recheckProvisionalModels = async (
+  pg: SupabaseDirectClient,
+  catalog: OpenRouterCatalogEntry[]
+) => {
+  const now = Date.now()
+  const watched = await getProvisionalClassifications(pg)
+  if (watched.length === 0) return
+  const due = watched.filter((row) =>
+    isDueForRecheck(
+      provisionalCheckedAt(row),
+      PROVISIONAL_RECHECK_INTERVAL_MS,
+      now
+    )
+  )
+  const models = due.slice(0, MAX_RESEARCH_PER_SWEEP)
+  if (due.length > models.length)
+    log.error(
+      `[model-classifier] ${due.length} provisional verdicts due for re-check, ` +
+        `capped at ${MAX_RESEARCH_PER_SWEEP} this sweep — deferring: ` +
+        due
+          .slice(MAX_RESEARCH_PER_SWEEP)
+          .map((row) => row.permaslug)
+          .join(', ')
+    )
+  log(
+    `[model-classifier] ${watched.length} provisional closed verdict(s) under ` +
+      `watch, ${due.length} due, ${models.length} re-checked this sweep`
+  )
+  if (models.length === 0) return
+
+  const byPermaslug = Object.fromEntries(
+    catalog.map((entry) => [basePermaslug(entry.permaslug), entry])
+  )
+  let flipped = 0
+  let contradicted = 0
+  let reconfirmed = 0
+  let unresolved = 0
+  for (const row of models) {
+    const slug = basePermaslug(row.permaslug)
+    const entry = byPermaslug[slug]
+    const recordedName = row.evidence?.['openRouterName']
+    const name =
+      entry?.name ??
+      (typeof recordedName === 'string' ? recordedName : undefined)
+
+    if (entry?.huggingFaceId) {
+      const verification = await verifyHuggingFaceWeights(
+        entry.huggingFaceId
+      ).catch((err) => {
+        log.error(
+          `[model-classifier] ${slug}: repo verification failed - ${err}`
+        )
+        return null
+      })
+      if (!verification) {
+        unresolved++
+        continue
+      }
+      logHuggingFaceVerification(slug, verification)
+      if (verification.confirmed) {
+        const applied = await openProvisionalClassification(
+          pg,
+          row,
+          verification.repo,
+          {
+            ...verification.evidence,
+            openRouterName: name ?? null,
+            supersededProvisional: true,
+          }
+        )
+        // A newer verdict/research snapshot wins. Do not report a flip or
+        // spend an agent call on the obsolete snapshot after losing this race.
+        if (!applied) continue
+        log.warn(
+          `[model-classifier] ${slug}: provisional closed -> OPEN — publisher ` +
+            `now declares ${verification.repo} ` +
+            `(${verification.evidence.weightFileCount} weight files, verified)`
+        )
+        flipped++
+        continue
+      }
+    }
+
+    if (!isProd()) {
+      unresolved++
+      continue
+    }
+    const result = await classifyModelWithAgent({
+      permaslug: slug,
+      name,
+      declaredHuggingFaceId: entry?.huggingFaceId ?? null,
+    })
+    if (result.transient) {
+      // An outage is not new evidence against a standing contradiction.
+      // Preserve both the recommendation and its clock so the next sweep retries.
+      log.warn(
+        `[model-classifier] ${slug}: transient re-check failure; preserving ` +
+          `prior research - ${result.verdict.reasoning.slice(0, 200)}`
+      )
+      unresolved++
+      continue
+    }
+    const evidence = {
+      openRouterName: name ?? null,
+      agentReasoning: result.verdict.reasoning,
+      agentSearches: result.searches.map((s) => ({
+        tool: s.tool,
+        input: s.input,
+        result: s.result.slice(0, 1000),
+      })),
+      rejectedReason: result.rejectedReason ?? null,
+    }
+    if (result.verdict.verdict === 'open') {
+      await recordAgentRecommendation(pg, slug, 'open', {
+        ...evidence,
+        agentProposedWeights: result.verdict.weights,
+        ...(result.confirmation?.confirmed ? result.confirmation.evidence : {}),
+      })
+      log.error(
+        `[model-classifier] ${slug}: provisional closed verdict CONTRADICTED — ` +
+          `research found public weights at ${result.verdict.weights} ` +
+          `(verified); review at /admin/model-classifications`
+      )
+      contradicted++
+      continue
+    }
+    if (result.verdict.verdict === 'closed') {
+      await recordAgentRecommendation(pg, slug, 'closed', evidence)
+      reconfirmed++
+      continue
+    }
+    await recordAgentRecommendation(pg, slug, null, evidence)
+    unresolved++
+  }
+  log(
+    `[model-classifier] provisional re-check: ${flipped} flipped open from a ` +
+      `declared repo, ${contradicted} contradicted by research (alerted), ` +
+      `${reconfirmed} re-confirmed closed, ${unresolved} unresolved` +
+      (isProd() ? '' : ' (agent skipped outside prod)')
+  )
+}
+
+/**
+ * Research the Chinese-lab queue: the lab-side twin of researchRemainingModels
+ * and of the provisional re-check above, in one loop because the agent and
+ * the bookkeeping are the same and only the cooldown and the meaning of a
+ * finding differ by row.
+ *
+ * Until now this queue had no research at all. Every verdict was typed by a
+ * human, with an evidence line and a source URL, which for an anonymous
+ * stealth model meant inventing both. Now the agent does the searching and the
+ * human confirms a prefilled form — or, having defaulted a subject to
+ * non-Chinese provisionally, is told when a reveal or a headquarters turns up.
+ *
+ * Nothing is applied. There is no deterministic evidence for a headquarters
+ * the way a publisher-declared repo is for weights, so every finding is a
+ * recommendation. A `chinese` finding on a provisional row is additionally an
+ * ERROR-level alert: the index is publishing that row as non-Chinese.
+ */
+const researchLabSubjects = async (
+  pg: SupabaseDirectClient,
+  catalog: OpenRouterCatalogEntry[]
+) => {
+  const now = Date.now()
+  const candidates = await getLabResearchCandidates(pg)
+  if (candidates.length === 0) return
+  const due = candidates.filter((row) =>
+    isDueForRecheck(
+      labCheckedAt(row),
+      row.provisional
+        ? PROVISIONAL_RECHECK_INTERVAL_MS
+        : AGENT_RESEARCH_COOLDOWN_MS,
+      now
+    )
+  )
+  const subjects = due.slice(0, MAX_RESEARCH_PER_SWEEP)
+  if (due.length > subjects.length)
+    log.error(
+      `[lab-classifier] ${due.length} subjects due for research, capped at ` +
+        `${MAX_RESEARCH_PER_SWEEP} this sweep — deferring: ` +
+        due
+          .slice(MAX_RESEARCH_PER_SWEEP)
+          .map((row) => `${row.subject_type}:${row.subject_slug}`)
+          .join(', ')
+    )
+  const provisionalCount = candidates.filter((row) => row.provisional).length
+  log(
+    `[lab-classifier] ${candidates.length} subject(s) eligible for research ` +
+      `(${candidates.length - provisionalCount} ranked and pending, ` +
+      `${provisionalCount} provisional under watch), ${due.length} due, ` +
+      `${subjects.length} researched this sweep`
+  )
+  if (subjects.length === 0) return
+  if (!isProd()) {
+    log('[lab-classifier] skipping paid agent research outside prod')
+    return
+  }
+
+  let placed = 0
+  let contradicted = 0
+  let unattributed = 0
+  let unresolved = 0
+  for (const row of subjects) {
+    const result = await classifyLabSubjectWithAgent(
+      labAgentSubject(row, catalog)
+    )
+    if (row.provisional && result.transient) {
+      log.warn(
+        `[lab-classifier] ${row.subject_type} ${row.subject_slug}: transient ` +
+          `re-check failure; preserving prior research - ` +
+          result.verdict.reasoning.slice(0, 200)
+      )
+      unresolved++
+      continue
+    }
+    const { verdict } = result
+    const placement =
+      verdict.verdict === 'chinese' || verdict.verdict === 'non-chinese'
+        ? verdict
+        : null
+    const evidence = {
+      agentRecommendation:
+        verdict.verdict === 'unresolved' ? null : verdict.verdict,
+      agentPublisher: placement?.publisher ?? null,
+      agentHeadquarters: placement?.headquarters ?? null,
+      agentSourceUrl: placement?.sourceUrl ?? null,
+      agentReasoning: verdict.reasoning,
+      agentSearches: result.searches.map((search) => ({
+        query: search.query,
+        error: search.error ?? null,
+        results: search.results.slice(0, 10),
+      })),
+      rejectedReason: result.rejectedReason ?? null,
+    }
+    await recordLabAgentRecommendation(
+      pg,
+      row.subject_type,
+      row.subject_slug,
+      evidence,
+      !result.transient
+    )
+
+    const label = `${row.subject_type} ${row.subject_slug}`
+    if (placement) {
+      placed++
+      const summary = `${placement.publisher}, ${placement.headquarters} (${placement.sourceUrl})`
+      if (row.provisional && placement.verdict === 'chinese') {
+        contradicted++
+        log.error(
+          `[lab-classifier] ${label}: provisional non-Chinese verdict ` +
+            `CONTRADICTED — research attributes it to ${summary}; review at ` +
+            `/admin/model-classifications`
+        )
+      } else
+        log.warn(
+          `[lab-classifier] ${label}: research recommends ${placement.verdict} — ` +
+            `${summary}; awaiting confirmation`
+        )
+      continue
+    }
+    if (verdict.verdict === 'unattributed') unattributed++
+    else unresolved++
+    log(
+      `[lab-classifier] ${label}: ${
+        verdict.verdict
+      } — ${verdict.reasoning.slice(0, 200)}`
+    )
+  }
+  log(
+    `[lab-classifier] research: ${placed} placement(s) recommended ` +
+      `(${contradicted} contradicting a provisional verdict, alerted), ` +
+      `${unattributed} still unattributed, ${unresolved} unresolved`
+  )
+}
+
+/** What the catalog knows about a subject, for the agent's prompt. */
+const labAgentSubject = (
+  row: LabClassificationRow,
+  catalog: OpenRouterCatalogEntry[]
+): LabAgentSubject => {
+  const recordedNames = row.evidence?.['openRouterNames']
+  const recorded = [
+    row.evidence?.['openRouterName'],
+    ...(Array.isArray(recordedNames) ? recordedNames : []),
+  ].filter((value): value is string => typeof value === 'string' && !!value)
+  const entries =
+    row.subject_type === 'model'
+      ? catalog.filter(
+          (entry) => basePermaslug(entry.permaslug) === row.subject_slug
+        )
+      : catalog.filter(
+          (entry) => authorOfPermaslug(entry.permaslug) === row.subject_slug
+        )
+  return {
+    subjectType: row.subject_type,
+    subjectSlug: row.subject_slug,
+    openRouterNames: uniq([...entries.map((entry) => entry.name), ...recorded])
+      .filter((name) => !!name)
+      .slice(0, 6),
+    descriptions: uniq(
+      entries
+        .map((entry) => entry.description)
+        .filter((description): description is string => !!description)
+    ).slice(0, 3),
+    relatedPermaslugs: uniq(
+      entries.map((entry) => basePermaslug(entry.permaslug))
+    ).slice(0, 8),
+    inCatalog: entries.length > 0,
+    provisional: row.provisional,
+  }
 }
