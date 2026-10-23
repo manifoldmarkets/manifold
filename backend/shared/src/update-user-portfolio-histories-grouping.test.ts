@@ -196,8 +196,11 @@ it('preserves ordered calculator inputs and exact financial results for interlea
     contracts.map((c) => convertContract(c))
   )
   expect(loaded.answers).toStrictEqual(answers.map(convertAnswer))
+  // The orphan (id 9) is dropped: its contract was not loaded, and the
+  // consumers index contractsById and would throw on it. Everything else
+  // keeps its row order.
   expect(loaded.metrics.map((m) => m.id)).toEqual(
-    results[0].map((r) => r.data.id)
+    results[0].map((r) => r.data.id).filter((id) => id !== 9)
   )
   expect(loaded.metrics[0]).toMatchObject({
     loan: 0,
@@ -205,7 +208,12 @@ it('preserves ordered calculator inputs and exact financial results for interlea
     isRanked: false,
   })
   expect(loaded.metrics[1]).toMatchObject({ loan: 3, marginLoan: 4 })
-  expect(loaded.metrics[13]).toMatchObject({ loan: 0, marginLoan: 0 })
+  expect(loaded.metrics[12]).toMatchObject({ loan: 0, marginLoan: 0 })
+  const { log } = jest.requireMock('./utils')
+  expect(log.warn).toHaveBeenCalledTimes(1)
+  expect(log.warn.mock.calls[0][0]).toContain(
+    'Dropping 1 metric(s) and 0 answer(s)'
+  )
   expect(loaded.updatedMetricsByContract['mana'][0]).toMatchObject({
     id: 1,
     payout: 7.5,
@@ -250,16 +258,24 @@ it('returns the existing empty result and skips calculation when no metrics were
   expect(calculate).not.toHaveBeenCalled()
 })
 
-it('keeps orphan metrics when no contract rows were loaded', async () => {
+it('drops a metric whose contract was not loaded, and logs it', async () => {
+  // Before the repeatable-read snapshot, a market resolving between the
+  // metrics and contracts statements produced exactly this shape and crashed
+  // getUnresolvedStatsForToken reading `.token` of undefined.
   const calculate = jest.spyOn(
     calculations,
     'calculateUpdatedMetricsForContracts'
   )
   const loaded = await load([[row(metric(1, 'orphan', 'alice'))], [], []])
-  expect(loaded.metrics).toHaveLength(1)
+  expect(loaded.metrics).toHaveLength(0)
   expect(loaded.contracts).toEqual([])
   expect(loaded.updatedMetricsByContract).toEqual({})
-  expect(calculate).toHaveBeenCalledWith([])
+  expect(calculate).not.toHaveBeenCalled()
+  const { log } = jest.requireMock('./utils')
+  expect(log.warn).toHaveBeenCalledWith(
+    expect.stringContaining('Dropping 1 metric(s) and 0 answer(s)'),
+    { contractIds: ['orphan'] }
+  )
 })
 
 it('treats absent inherited-name buckets as empty arrays', async () => {
