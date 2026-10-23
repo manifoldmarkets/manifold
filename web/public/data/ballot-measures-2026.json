@@ -857,7 +857,7 @@
       "topic": "taxes",
       "officialSourceUrl": "https://voterguide.sos.ca.gov/propositions/43/",
       "approvalRule": "Simple majority of votes cast on the measure (Cal. Const. art. II §10(a); art. XVIII §4 for amendments). If conflicting measures both pass, the one with more yes votes prevails (art. II §10(b)).",
-      "coverage": "held",
+      "coverage": "reuse-conditional",
       "aliases": [
         "Prop 43",
         "Proposition 43",
@@ -873,7 +873,16 @@
       "yesMeans": "Certain local government taxes would require two-thirds approval by voters.",
       "noMeans": "Certain local government taxes could continue to be approved by voters with a majority vote.",
       "verification": "official",
-      "marketNote": "The existing market describes a withdrawn initiative. A market for this proposition is awaiting clarification."
+      "source": {
+        "kind": "portfolio-answer",
+        "contractId": "SOIC6UEE60",
+        "slug": "which-nov-2026-california-ballot-pr",
+        "answerId": "gutZhURRgL",
+        "yesOrientation": "approve",
+        "confidence": "conditional",
+        "offBallot": "unspecified",
+        "criteriaNote": "This portfolio has no resolution description. Approval is inferred from the question and answer; cancellation and certification rules are unspecified."
+      }
     },
     {
       "key": "CA-prop-44",

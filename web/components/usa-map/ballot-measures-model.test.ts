@@ -194,12 +194,12 @@ test('search matches state, designation forms and topic without cross-state numb
 test('the integrated inventory excludes disputed propositions from approval trading', () => {
   assert.equal(BALLOT_MEASURES.length, 145)
   assert.equal(new Set(BALLOT_MEASURES.map((m) => m.key)).size, 145)
-  for (const key of ['CA-prop-43', 'MA-q-9', 'ID-state-gun']) {
+  for (const key of ['MA-q-9', 'ID-state-gun']) {
     const m = BALLOT_MEASURES.find((m) => m.key === key)!
     assert.equal(tradeFor(m, 'pass'), undefined, key)
     assert.ok(m.marketNote, key)
   }
-  assert.equal(BALLOT_MEASURES.filter((m) => m.source).length, 123)
+  assert.equal(BALLOT_MEASURES.filter((m) => m.source).length, 124)
   for (const m of BALLOT_MEASURES.filter(
     (m) => m.source?.confidence === 'conditional'
   ))
