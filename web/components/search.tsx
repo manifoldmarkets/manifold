@@ -731,6 +731,20 @@ export function Search(props: SearchProps) {
                 >
                   Perps
                 </Link>
+                <Link
+                  href="/sports"
+                  onClick={() =>
+                    track('select search topic', { topic: 'sports' })
+                  }
+                  className={clsx(
+                    'shrink-0 self-center whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium',
+                    'bg-gradient-to-r from-indigo-100 to-emerald-100 dark:from-indigo-900/50 dark:to-emerald-900/50',
+                    'text-ink-700 ring-ink-200 ring-1',
+                    'transition-all hover:brightness-105'
+                  )}
+                >
+                  Sports
+                </Link>
                 {ALL_PARENT_TOPICS.map((topic) => (
                   <button
                     key={topic}
@@ -755,7 +769,9 @@ export function Search(props: SearchProps) {
                       }
                     }}
                   >
-                    {removeEmojis(topic)}
+                    {removeEmojis(topic) === 'Sports'
+                      ? 'Sports topics'
+                      : removeEmojis(topic)}
                   </button>
                 ))}
                 {showHotTopics &&

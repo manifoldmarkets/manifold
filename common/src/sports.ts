@@ -147,6 +147,7 @@ export interface SportsMarket {
   sportsLiveStatus: string | null
   sportsLiveMinute: string | null
   sportsLiveUpdatedTime: number | null
+  sportsScoreUpdatedTime?: number | null
   volume: number
   // Full URL incl. hostname, consistent with the raw markets API. The frontend
   // builds its own in-app navigation path from creatorUsername + slug (so SPA

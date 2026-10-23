@@ -71,6 +71,16 @@ it('keeps newer ticks when a refetch returns a cached snapshot', () => {
   expect(state.game.liveScore?.value?.home).toBe(7)
 })
 
+it('preserves the provider time independently of the receipt time through push updates', () => {
+  const updated = applySportsLive(game, {
+    liveScore: { ...live.liveScore!, scoreUpdatedTime: 120 },
+  })
+  expect(updated.liveUpdatedTime).toBe(200)
+  expect(updated.scoreUpdatedTime).toBe(120)
+  const unknown = applySportsLive({ ...game, scoreUpdatedTime: 90 }, live)
+  expect(unknown.scoreUpdatedTime).toBeNull()
+})
+
 it('a resolved snapshot wins even over a tick delivered while fetching it', () => {
   const resolved = {
     ...game,

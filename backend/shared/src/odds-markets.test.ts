@@ -1121,6 +1121,79 @@ describe('score polling settings', () => {
     },
   ]
 
+  it.each([
+    {
+      name: 'duplicate markets count as one event',
+      eventIds: ['event', 'event', 'event', 'event'],
+      reserved: [],
+      interval: 120,
+      releaseDuringRead: false,
+    },
+    {
+      name: 'reserved events do not accelerate the remaining game',
+      eventIds: ['event', 'held1', 'held2', 'held3'],
+      reserved: ['game1', 'game2', 'game3'],
+      interval: 120,
+      releaseDuringRead: false,
+    },
+    {
+      name: 'duplicates and reservations preserve the two-to-three-event tier',
+      eventIds: ['event', 'event', 'second', 'third', 'held'],
+      reserved: ['game4'],
+      interval: 60,
+      releaseDuringRead: false,
+    },
+    {
+      name: 'reservations released during the read stay excluded for this tick',
+      eventIds: ['event', 'held1', 'held2', 'held3'],
+      reserved: ['game1', 'game2', 'game3'],
+      interval: 120,
+      releaseDuringRead: true,
+    },
+  ])(
+    'adaptive resolver integration: $name',
+    async ({ eventIds, reserved, interval, releaseDuringRead }) => {
+      const db = database()
+      const state = newScorePollState()
+      reserved.forEach((id) => state.inFlight.add(id))
+      db.pg.map.mockImplementation(polling([['adaptive', 1]]))
+      const rows = eventIds.map((eventId, index) => ({
+        data: {
+          ...nflGame(60 * MINUTE)[0].data,
+          id: `game${index}`,
+          sportsEventId: `odds:americanfootball_nfl:${eventId}`,
+        },
+      }))
+      db.pg.manyOrNone.mockImplementation(async () => {
+        if (releaseDuringRead) state.inFlight.clear()
+        return rows
+      })
+      jest.mocked(getScores).mockResolvedValue(
+        [...new Set(eventIds)].map((id) => ({
+          ...event,
+          id,
+          completed: false,
+          scores: null,
+          last_update: null,
+        }))
+      )
+      // One second before the planner's five-second scheduling tolerance.
+      state.lastPolled.americanfootball_nfl = NOW - interval * 1000 + 6000
+      expect((await pollOddsScoresAndResolve(db.client, state)).polled).toBe(0)
+      expect(getScores).not.toHaveBeenCalled()
+
+      // Re-establish the reservation before the next tick's fresh read.
+      reserved.forEach((id) => state.inFlight.add(id))
+      jest.spyOn(Date, 'now').mockReturnValue(NOW + 1000)
+      expect((await pollOddsScoresAndResolve(db.client, state)).polled).toBe(1)
+      expect(jest.mocked(getScores).mock.calls).toEqual([
+        ['americanfootball_nfl', {}],
+      ])
+      expect(publishSportsLiveScore).not.toHaveBeenCalled()
+      expect(resolveMarketHelper).not.toHaveBeenCalled()
+    }
+  )
+
   it('with live scores off, asks only once a game is due to end', async () => {
     const db = database()
     db.pg.map.mockImplementation(polling([['sport:nfl', 0]]))
@@ -1264,6 +1337,30 @@ describe('score polling settings', () => {
       ['americanfootball_nfl', { finishedDays: 3 }],
       ['americanfootball_nfl', { finishedDays: 3 }],
     ])
+  })
+
+  it('publishes the source score age separately from the successful poll time', async () => {
+    const db = database()
+    db.pg.manyOrNone.mockResolvedValueOnce(nflGame(60 * MINUTE))
+    jest.mocked(getScores).mockResolvedValueOnce([
+      {
+        ...event,
+        completed: false,
+        scores: [
+          { name: 'Home', score: '7' },
+          { name: 'Away', score: '3' },
+        ],
+        last_update: new Date(NOW - 5 * MINUTE).toISOString(),
+      },
+    ])
+    await pollOddsScoresAndResolve(db.client, newScorePollState())
+    expect(publishSportsLiveScore).toHaveBeenCalledWith(
+      'game',
+      expect.objectContaining({
+        sportsLiveUpdatedTime: NOW,
+        sportsScoreUpdatedTime: NOW - 5 * MINUTE,
+      })
+    )
   })
 
   it("keeps asking for finished games, in one call, for a completed game it can't resolve", async () => {

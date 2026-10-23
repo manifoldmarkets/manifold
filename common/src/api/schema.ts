@@ -1477,6 +1477,7 @@ export const API = (_apiTypeCheck = {
           ]),
           sportsLiveMinute: z.string().nullable(),
           sportsLiveUpdatedTime: z.number().finite(),
+          sportsScoreUpdatedTime: z.number().finite().nullable().optional(),
         }),
       })
       .strict(),

@@ -421,7 +421,7 @@ function createMarketHref(game: ScheduleGame) {
     description: '',
     closeTime: game.closeTime,
     visibility: 'public',
-    groupSlugs: slug ? [slug] : undefined,
+    groupSlugs: [slug ?? 'sports-default'],
     rand: game.id.slice(0, 6),
     linkedToContractId: game.id,
     linkRelation: 'prop',

@@ -15,6 +15,7 @@ import { shortFormatNumber } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { GameLinkedMarkets } from 'web/components/sports/game-related-markets'
+import { ScoreFreshness } from './score-freshness'
 import { SportsMarketBadge } from './sports-market-badge'
 import { SportHeroBackground } from './sport-hero-background'
 import { getGameDisplayTeams } from './game-feed-utils'
@@ -78,6 +79,7 @@ export function toSportsMatch(g: ScheduleGame): SportsMatch {
           home: g.liveScore.home,
           away: g.liveScore.away,
           minute: g.liveScore.minute,
+          updatedTime: g.scoreUpdatedTime,
         }
       : undefined,
   }
@@ -473,7 +475,7 @@ export function GameRow(props: {
 }
 
 /**
- * When a game is: the kickoff time (and how soon), "LIVE" with the clock, or
+ * When a game is: the kickoff time (and how soon), "In progress" with the score age, or
  * the final, displayed inline in a card header.
  */
 function GameWhen(props: {
@@ -493,17 +495,14 @@ function GameWhen(props: {
   let secondary: ReactNode
   if (hasFeed) {
     primary = (
-      <Row className="items-center gap-1 text-[11px] font-semibold text-red-600">
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
-        LIVE
+      <Row className="items-center gap-1 whitespace-nowrap text-[11px] font-semibold text-red-600">
+        In progress
       </Row>
     )
-    secondary = game.liveScore?.minute
-      ? formatMinute(game.liveScore.minute)
-      : null
+    secondary = <ScoreFreshness updatedTime={game.scoreUpdatedTime} />
   } else if (live) {
     primary = (
-      <span className="text-[11px] font-semibold text-red-600">
+      <span className="whitespace-nowrap text-[11px] font-semibold text-red-600">
         In progress
       </span>
     )
@@ -539,7 +538,7 @@ function GameWhen(props: {
     >
       {primary}
       {secondary && (
-        <span className="text-ink-500 text-xs tabular-nums">{secondary}</span>
+        <div className="text-ink-500 text-xs tabular-nums">{secondary}</div>
       )}
     </Row>
   )
@@ -826,11 +825,6 @@ function mobileTeamName(team: ScheduleTeam) {
   const short = team.shortName?.trim()
   if (short && short !== team.name && short.length > 3) return short
   return teamDisplayName(team.name)
-}
-
-/** "67" → "67'", "HT" → "HT", "Q3 4:21" → as is. */
-function formatMinute(minute: string) {
-  return /^\d+(\+\d+)?$/.test(minute.trim()) ? `${minute.trim()}'` : minute
 }
 
 /** Tint a chip briefly when its price moves (green up, red down), like an odds board. */

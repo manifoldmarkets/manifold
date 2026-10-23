@@ -27,6 +27,13 @@ export type SportKey =
   | 'golf'
   | 'cricket'
   | 'other'
+  | 'football'
+  | 'basketball'
+  | 'wncaab'
+  | 'hockey'
+  | 'afl'
+  | 'nrl'
+  | 'handball'
 
 /**
  * A sport on the /sports page: a curated `SportKey`, or the slug of a Sports
@@ -227,6 +234,71 @@ export const SPORT_CATEGORIES: SportCategory[] = [
     slug: 'cricket',
     leagues: ['Cricket', 'IPL'],
   },
+  {
+    key: 'football',
+    label: 'Football',
+    longLabel: 'Football',
+    emoji: '🏈',
+    groupIds: ['ce506ff3-38db-4709-83ce-b40797d884e4'],
+    slug: 'american-football',
+    leagues: ['Football'],
+  },
+  {
+    // Basketball's community topic remains owned by NBA. This category
+    // covers other provider leagues and appears when it has games.
+    key: 'basketball',
+    label: 'Basketball',
+    longLabel: 'Basketball',
+    emoji: '🏀',
+    groupIds: [],
+    extraTagGroupIds: [BASKETBALL_TOPIC_ID],
+    leagues: ['Basketball'],
+  },
+  {
+    key: 'wncaab',
+    label: 'WNCAAB',
+    longLabel: 'WNCAAB',
+    emoji: '🏀',
+    groupIds: ['23ac7b3c-a185-4340-8ba9-d9399e4929f0'],
+    slug: 'womens-ncaa-basketball',
+    leagues: ['WNCAAB'],
+  },
+  {
+    key: 'hockey',
+    label: 'Ice Hockey',
+    longLabel: 'Ice Hockey',
+    emoji: '🏒',
+    groupIds: ['68ee6874-3058-4c8f-ae72-5b8a764c8741'],
+    slug: 'ice-hockey',
+    leagues: ['Ice Hockey'],
+  },
+  {
+    key: 'afl',
+    label: 'AFL',
+    longLabel: 'AFL',
+    emoji: '🏉',
+    groupIds: ['0afc8d1a-871b-40da-a4e2-8acb2dbd25bd'],
+    slug: 'afl',
+    leagues: ['AFL'],
+  },
+  {
+    key: 'nrl',
+    label: 'NRL',
+    longLabel: 'NRL',
+    emoji: '🏉',
+    groupIds: ['ab71806e-a3c9-456d-884a-929ae13f109e'],
+    slug: 'nrl',
+    leagues: ['NRL'],
+  },
+  {
+    key: 'handball',
+    label: 'Handball',
+    longLabel: 'Handball',
+    emoji: '🤾',
+    groupIds: ['8R4AyMGqOTrSAN4n4rNL'],
+    slug: 'handball',
+    leagues: ['Handball'],
+  },
 ]
 
 export const SPORT_BY_KEY: Record<string, SportCategory> = Object.fromEntries(
@@ -268,10 +340,17 @@ const ODDS_API_KEY_PREFIXES: [string, SportKey][] = [
   ['americanfootball_nfl', 'nfl'],
   ['americanfootball_ncaaf', 'ncaaf'],
   ['basketball_ncaab', 'ncaab'],
+  ['basketball_wncaab', 'wncaab'],
+  ['basketball_nba', 'nba'],
   ['basketball_wnba', 'wnba'],
-  ['basketball_', 'nba'],
+  ['basketball_', 'basketball'],
+  ['americanfootball_', 'football'],
+  ['aussierules_', 'afl'],
+  ['rugbyleague_', 'nrl'],
+  ['handball_', 'handball'],
   ['baseball_', 'mlb'],
-  ['icehockey_', 'nhl'],
+  ['icehockey_nhl', 'nhl'],
+  ['icehockey_', 'hockey'],
   ['soccer_', 'soccer'],
   ['tennis_', 'tennis'],
   ['mma_', 'mma'],
@@ -327,6 +406,7 @@ export function sportForMarket(
 
 /** Topic ids to search for a sport (or all sports). Falls back to the dev catch-all topic. */
 export function sportGroupIds(sport: SportKey | 'all'): string[] {
+  if (sport !== 'all' && SPORT_BY_KEY[sport]?.groupIds.length === 0) return []
   if (ENV !== 'PROD') return [SPORTS_DEFAULT_GROUP_ID]
   if (sport === 'all') return ALL_SPORTS_GROUP_IDS
   const cat = SPORT_BY_KEY[sport]
@@ -548,7 +628,12 @@ export function buildSportsIndex(
       const ids = (rootIds.get(cat.key) ?? []).filter(
         (id) => ENV === 'PROD' || topicById.has(id)
       )
-      return curatedInfo(cat, ids.length > 0 ? ids : [SPORTS_DEFAULT_GROUP_ID])
+      return curatedInfo(
+        cat,
+        ids.length > 0 || cat.groupIds.length === 0
+          ? ids
+          : [SPORTS_DEFAULT_GROUP_ID]
+      )
     }),
     ...topicSports.map(({ key, topic }) => {
       const { emoji, label } = splitTopicName(topic.name, topic.slug)
@@ -1005,6 +1090,8 @@ export interface SportsLiveScore {
   sportsLiveStatus: string
   sportsLiveMinute: string | null
   sportsLiveUpdatedTime: number
+  /** Provider observation time; null when unavailable. */
+  sportsScoreUpdatedTime?: number | null
 }
 
 export interface ScheduleTeam {
@@ -1047,7 +1134,9 @@ export interface ScheduleGame {
     status: string
   } | null
   finalScore: { home: number; away: number } | null
-  /** Persisted provider update time, including terminal scores. */
+  /** Provider observation time, separate from our receipt/order timestamp. */
+  scoreUpdatedTime?: number | null
+  /** Persisted receipt time, including terminal scores. */
   liveUpdatedTime?: number | null
   /** Related markets, best matches first. */
   related: RelatedRef[]
