@@ -413,7 +413,18 @@ export type Poll = {
   maxSelections?: number // For multi-select: max options user can pick (defaults to all)
 }
 
-export type SportsMarketType = 'moneyline' | 'spread' | 'total' | 'prop'
+/**
+ * moneyline, spread, total, prop: markets about a game between two teams.
+ * winner, podium: markets about one session of a field event (a Grand Prix),
+ * whose answers are the entrants (see common/f1-markets.ts).
+ */
+export type SportsMarketType =
+  | 'moneyline'
+  | 'spread'
+  | 'total'
+  | 'prop'
+  | 'winner'
+  | 'podium'
 
 export type Sports = {
   sportsStartTimestamp: string
@@ -427,6 +438,12 @@ export type Sports = {
   sportsAwayTeam?: string
   /** What the market is about the game; the sports page files it by this. */
   sportsMarketType?: SportsMarketType
+  /**
+   * A field event's entrants by answer index: the provider's id of the
+   * driver each answer stands for, null for the stand-in answer. The
+   * resolver matches results by id, never by name.
+   */
+  sportsEntrantIds?: (number | null)[]
 }
 
 export type MultiContract =

@@ -951,6 +951,9 @@ const GROUP_BY_MARKET_TYPE: Record<string, RelatedGroup> = {
   spread: 'game-lines',
   total: 'game-lines',
   prop: 'props',
+  // A field event's main markets: the session winner and the podium.
+  winner: 'game-lines',
+  podium: 'game-lines',
 }
 
 export function relatedGroupFor(props: {
