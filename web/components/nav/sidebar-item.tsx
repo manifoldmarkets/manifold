@@ -1,7 +1,6 @@
 import { ExternalLinkIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
-import { useRef } from 'react'
 
 import { track } from 'web/lib/service/analytics'
 import {
@@ -27,7 +26,7 @@ export type NavItem = {
   itemClassName?: string
   /** Only shown because the user is a mod or admin. */
   modAction?: boolean
-  /** Fill the label with a waving flag that follows the cursor while hovered. */
+  /** Show a waving flag spotlight behind the item that follows the cursor while hovered. */
   flagHover?: boolean
 }
 
@@ -44,14 +43,12 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
   const isCurrentPage =
     currentBasePath === segmentCleanedHref && !item.href?.startsWith('https://')
 
-  const labelRef = useRef<HTMLSpanElement>(null)
   const onMouseMove = item.flagHover
-    ? (e: React.MouseEvent) => {
-        const el = labelRef.current
-        if (!el) return
+    ? (e: React.MouseEvent<HTMLElement>) => {
+        const el = e.currentTarget
         const rect = el.getBoundingClientRect()
-        const pct = ((e.clientX - rect.left) / Math.max(rect.width, 1)) * 100
-        el.style.setProperty('--flag-x', `${pct}%`)
+        el.style.setProperty('--flag-x', `${e.clientX - rect.left}px`)
+        el.style.setProperty('--flag-y', `${e.clientY - rect.top}px`)
       }
     : undefined
 
@@ -70,7 +67,8 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
       ? 'bg-ink-200 text-ink-900'
       : 'text-ink-600 hover:bg-primary-100 hover:text-ink-700',
     'group flex w-full items-center rounded-md px-3 py-2 text-sm font-medium',
-    'focus-visible:bg-primary-100 outline-none'
+    'focus-visible:bg-primary-100 outline-none',
+    item.flagHover && 'flag-hover-item'
   )
 
   const sidebarItem = (
@@ -89,15 +87,7 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
           aria-hidden="true"
         />
       )}
-      <span className="truncate">
-        {item.flagHover ? (
-          <span ref={labelRef} className="flag-hover-text">
-            {item.children ?? item.name}
-          </span>
-        ) : (
-          item.children ?? item.name
-        )}
-      </span>
+      <span className="truncate">{item.children ?? item.name}</span>
       {item.external && (
         <ExternalLinkIcon className="ml-2 h-4 w-4" aria-hidden="true" />
       )}
@@ -122,7 +112,12 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
     )
   } else {
     return (
-      <button type="button" onClick={onClick} className={sidebarClass}>
+      <button
+        type="button"
+        onClick={onClick}
+        onMouseMove={onMouseMove}
+        className={sidebarClass}
+      >
         {sidebarItem}
       </button>
     )
