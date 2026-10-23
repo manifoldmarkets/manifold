@@ -167,6 +167,7 @@ function SwitchFilters(props: {
         }
         color="indigo-dark"
         className="self-start"
+        ariaLabel="Readiness"
       />
       <Row className="flex-wrap items-center gap-3">
         <select
