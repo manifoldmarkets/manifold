@@ -10,6 +10,7 @@ import {
 
 export type NavItem = {
   name: string
+  /** Analytics name for clicks, when it should differ from the label. */
   trackingEventName?: string
   href?: string
   onClick?: () => void
@@ -53,7 +54,7 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
     : undefined
 
   const onClick = () => {
-    track('sidebar: ' + item.name)
+    track('sidebar: ' + (item.trackingEventName ?? item.name))
     item.onClick?.()
   }
 
