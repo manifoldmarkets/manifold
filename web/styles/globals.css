@@ -600,12 +600,10 @@ text {
 @media (hover: hover) and (pointer: fine) {
   @keyframes flag-wave-shade {
     from {
-      background-position: 0 0,
-        calc(var(--flag-x, 50%) - 75px) calc(var(--flag-y, 50%) - 39.5px);
+      background-position: 0 0, 0 0, 0 0;
     }
     to {
-      background-position: 48px 0,
-        calc(var(--flag-x, 50%) - 75px) calc(var(--flag-y, 50%) - 39.5px);
+      background-position: 48px 0, 0 0, 0 0;
     }
   }
   .flag-hover-item {
@@ -621,7 +619,6 @@ text {
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.15s;
-    /* flag is the official 1.9:1 proportion: 13 stripes, 50 stars in the canton */
     background-image: repeating-linear-gradient(
         100deg,
         rgba(255, 255, 255, 0.4) 0px,
@@ -630,9 +627,16 @@ text {
         rgba(0, 0, 0, 0.3) 36px,
         rgba(255, 255, 255, 0.4) 48px
       ),
-      url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 190 100%27%3E%3Cdefs%3E%3Cpolygon id=%27s%27 fill=%27%23fff%27 points=%270.00%2C-3.08 0.69%2C-0.95 2.93%2C-0.95 1.12%2C0.36 1.81%2C2.49 0.00%2C1.18 -1.81%2C2.49 -1.12%2C0.36 -2.93%2C-0.95 -0.69%2C-0.95%27/%3E%3C/defs%3E%3Crect y=%270.000%27 width=%27190%27 height=%277.712%27 fill=%27%23b22234%27/%3E%3Crect y=%277.692%27 width=%27190%27 height=%277.712%27 fill=%27%23fff%27/%3E%3Crect y=%2715.385%27 width=%27190%27 height=%277.712%27 fill=%27%23b22234%27/%3E%3Crect y=%2723.077%27 width=%27190%27 height=%277.712%27 fill=%27%23fff%27/%3E%3Crect y=%2730.769%27 width=%27190%27 height=%277.712%27 fill=%27%23b22234%27/%3E%3Crect y=%2738.462%27 width=%27190%27 height=%277.712%27 fill=%27%23fff%27/%3E%3Crect y=%2746.154%27 width=%27190%27 height=%277.712%27 fill=%27%23b22234%27/%3E%3Crect y=%2753.846%27 width=%27190%27 height=%277.712%27 fill=%27%23fff%27/%3E%3Crect y=%2761.538%27 width=%27190%27 height=%277.712%27 fill=%27%23b22234%27/%3E%3Crect y=%2769.231%27 width=%27190%27 height=%277.712%27 fill=%27%23fff%27/%3E%3Crect y=%2776.923%27 width=%27190%27 height=%277.712%27 fill=%27%23b22234%27/%3E%3Crect y=%2784.615%27 width=%27190%27 height=%277.712%27 fill=%27%23fff%27/%3E%3Crect y=%2792.308%27 width=%27190%27 height=%277.712%27 fill=%27%23b22234%27/%3E%3Crect width=%2776.0%27 height=%2753.846%27 fill=%27%233c3b6e%27/%3E%3Cuse href=%27%23s%27 x=%276.33%27 y=%275.38%27/%3E%3Cuse href=%27%23s%27 x=%2719.00%27 y=%275.38%27/%3E%3Cuse href=%27%23s%27 x=%2731.67%27 y=%275.38%27/%3E%3Cuse href=%27%23s%27 x=%2744.33%27 y=%275.38%27/%3E%3Cuse href=%27%23s%27 x=%2757.00%27 y=%275.38%27/%3E%3Cuse href=%27%23s%27 x=%2769.67%27 y=%275.38%27/%3E%3Cuse href=%27%23s%27 x=%2712.67%27 y=%2710.77%27/%3E%3Cuse href=%27%23s%27 x=%2725.33%27 y=%2710.77%27/%3E%3Cuse href=%27%23s%27 x=%2738.00%27 y=%2710.77%27/%3E%3Cuse href=%27%23s%27 x=%2750.67%27 y=%2710.77%27/%3E%3Cuse href=%27%23s%27 x=%2763.33%27 y=%2710.77%27/%3E%3Cuse href=%27%23s%27 x=%276.33%27 y=%2716.15%27/%3E%3Cuse href=%27%23s%27 x=%2719.00%27 y=%2716.15%27/%3E%3Cuse href=%27%23s%27 x=%2731.67%27 y=%2716.15%27/%3E%3Cuse href=%27%23s%27 x=%2744.33%27 y=%2716.15%27/%3E%3Cuse href=%27%23s%27 x=%2757.00%27 y=%2716.15%27/%3E%3Cuse href=%27%23s%27 x=%2769.67%27 y=%2716.15%27/%3E%3Cuse href=%27%23s%27 x=%2712.67%27 y=%2721.54%27/%3E%3Cuse href=%27%23s%27 x=%2725.33%27 y=%2721.54%27/%3E%3Cuse href=%27%23s%27 x=%2738.00%27 y=%2721.54%27/%3E%3Cuse href=%27%23s%27 x=%2750.67%27 y=%2721.54%27/%3E%3Cuse href=%27%23s%27 x=%2763.33%27 y=%2721.54%27/%3E%3Cuse href=%27%23s%27 x=%276.33%27 y=%2726.92%27/%3E%3Cuse href=%27%23s%27 x=%2719.00%27 y=%2726.92%27/%3E%3Cuse href=%27%23s%27 x=%2731.67%27 y=%2726.92%27/%3E%3Cuse href=%27%23s%27 x=%2744.33%27 y=%2726.92%27/%3E%3Cuse href=%27%23s%27 x=%2757.00%27 y=%2726.92%27/%3E%3Cuse href=%27%23s%27 x=%2769.67%27 y=%2726.92%27/%3E%3Cuse href=%27%23s%27 x=%2712.67%27 y=%2732.31%27/%3E%3Cuse href=%27%23s%27 x=%2725.33%27 y=%2732.31%27/%3E%3Cuse href=%27%23s%27 x=%2738.00%27 y=%2732.31%27/%3E%3Cuse href=%27%23s%27 x=%2750.67%27 y=%2732.31%27/%3E%3Cuse href=%27%23s%27 x=%2763.33%27 y=%2732.31%27/%3E%3Cuse href=%27%23s%27 x=%276.33%27 y=%2737.69%27/%3E%3Cuse href=%27%23s%27 x=%2719.00%27 y=%2737.69%27/%3E%3Cuse href=%27%23s%27 x=%2731.67%27 y=%2737.69%27/%3E%3Cuse href=%27%23s%27 x=%2744.33%27 y=%2737.69%27/%3E%3Cuse href=%27%23s%27 x=%2757.00%27 y=%2737.69%27/%3E%3Cuse href=%27%23s%27 x=%2769.67%27 y=%2737.69%27/%3E%3Cuse href=%27%23s%27 x=%2712.67%27 y=%2743.08%27/%3E%3Cuse href=%27%23s%27 x=%2725.33%27 y=%2743.08%27/%3E%3Cuse href=%27%23s%27 x=%2738.00%27 y=%2743.08%27/%3E%3Cuse href=%27%23s%27 x=%2750.67%27 y=%2743.08%27/%3E%3Cuse href=%27%23s%27 x=%2763.33%27 y=%2743.08%27/%3E%3Cuse href=%27%23s%27 x=%276.33%27 y=%2748.46%27/%3E%3Cuse href=%27%23s%27 x=%2719.00%27 y=%2748.46%27/%3E%3Cuse href=%27%23s%27 x=%2731.67%27 y=%2748.46%27/%3E%3Cuse href=%27%23s%27 x=%2744.33%27 y=%2748.46%27/%3E%3Cuse href=%27%23s%27 x=%2757.00%27 y=%2748.46%27/%3E%3Cuse href=%27%23s%27 x=%2769.67%27 y=%2748.46%27/%3E%3C/svg%3E");
-    background-size: 48px 100%, 150px 79px;
-    background-repeat: repeat-x, no-repeat;
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 39' preserveAspectRatio='none'%3E%3Crect width='52' height='39' fill='%233c3b6e'/%3E%3Ccircle cx='6' cy='6' r='1.2' fill='white'/%3E%3Ccircle cx='16' cy='6' r='1.2' fill='white'/%3E%3Ccircle cx='26' cy='6' r='1.2' fill='white'/%3E%3Ccircle cx='36' cy='6' r='1.2' fill='white'/%3E%3Ccircle cx='46' cy='6' r='1.2' fill='white'/%3E%3Ccircle cx='6' cy='15' r='1.2' fill='white'/%3E%3Ccircle cx='16' cy='15' r='1.2' fill='white'/%3E%3Ccircle cx='26' cy='15' r='1.2' fill='white'/%3E%3Ccircle cx='36' cy='15' r='1.2' fill='white'/%3E%3Ccircle cx='46' cy='15' r='1.2' fill='white'/%3E%3Ccircle cx='6' cy='24' r='1.2' fill='white'/%3E%3Ccircle cx='16' cy='24' r='1.2' fill='white'/%3E%3Ccircle cx='26' cy='24' r='1.2' fill='white'/%3E%3Ccircle cx='36' cy='24' r='1.2' fill='white'/%3E%3Ccircle cx='46' cy='24' r='1.2' fill='white'/%3E%3Ccircle cx='6' cy='33' r='1.2' fill='white'/%3E%3Ccircle cx='16' cy='33' r='1.2' fill='white'/%3E%3Ccircle cx='26' cy='33' r='1.2' fill='white'/%3E%3Ccircle cx='36' cy='33' r='1.2' fill='white'/%3E%3Ccircle cx='46' cy='33' r='1.2' fill='white'/%3E%3C/svg%3E"),
+      repeating-linear-gradient(
+        180deg,
+        #b22234 0%,
+        #b22234 14.28%,
+        #fff 14.28%,
+        #fff 28.57%
+      );
+    background-size: 48px 100%, 40% 57%, 100% 100%;
+    background-repeat: repeat-x, no-repeat, no-repeat;
     -webkit-mask-image: radial-gradient(
       circle 56px at var(--flag-x, 50%) var(--flag-y, 50%),
       #000 0%,
