@@ -704,6 +704,23 @@ export function Search(props: SearchProps) {
                   </button>
                 )}
                 <Link
+                  href="/sports"
+                  onClick={() =>
+                    track('select search topic', { topic: 'sports' })
+                  }
+                  className={clsx(
+                    'shrink-0 self-center whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium',
+                    // Turf to leather: the brown is the league label's
+                    // saddle brown (SPORTS_LEAGUE_LABEL_CLASS), tinted to
+                    // sit with the other pills' pastels.
+                    'bg-gradient-to-r from-green-100 to-[#8b4513]/25 dark:from-green-900/50 dark:to-[#8b4513]/50',
+                    'text-ink-700 ring-ink-200 ring-1',
+                    'transition-all hover:brightness-105'
+                  )}
+                >
+                  Sports
+                </Link>
+                <Link
                   href="/election"
                   onClick={() =>
                     track('select search topic', { topic: 'midterms-2026' })
@@ -715,7 +732,7 @@ export function Search(props: SearchProps) {
                     'transition-all hover:brightness-105'
                   )}
                 >
-                  2026 Midterms
+                  Midterms
                 </Link>
                 <Link
                   href="/perps"
@@ -730,20 +747,6 @@ export function Search(props: SearchProps) {
                   )}
                 >
                   Perps
-                </Link>
-                <Link
-                  href="/sports"
-                  onClick={() =>
-                    track('select search topic', { topic: 'sports' })
-                  }
-                  className={clsx(
-                    'shrink-0 self-center whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium',
-                    'bg-gradient-to-r from-indigo-100 to-emerald-100 dark:from-indigo-900/50 dark:to-emerald-900/50',
-                    'text-ink-700 ring-ink-200 ring-1',
-                    'transition-all hover:brightness-105'
-                  )}
-                >
-                  Sports
                 </Link>
                 {ALL_PARENT_TOPICS.map((topic) => (
                   <button
