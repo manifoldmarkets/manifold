@@ -1,16 +1,24 @@
-import { groupBy } from 'lodash'
+import { groupBy, sortBy } from 'lodash'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { ENV } from 'common/envs/constants'
 import {
   calendarPhaseKey,
   CompetitionSwitchState,
+  countByReadiness,
+  DEFAULT_SWITCH_FILTER,
+  filterSwitches,
   SPORT_LEAGUE_LABEL,
+  SportId,
   SportsCalendarStatus,
+  SwitchFilter,
 } from 'common/sports-calendar'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
+import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
@@ -24,15 +32,21 @@ export function AdminCompetitionSwitches() {
     'admin-sports-competition-switches',
     {}
   )
-  const [showFinished, setShowFinished] = useState(false)
+  const [filter, setFilter] = usePersistentInMemoryState<SwitchFilter>(
+    DEFAULT_SWITCH_FILTER,
+    'admin-sports-switch-filter'
+  )
   // Switches waiting on the API, by phase key, with the value asked for.
   const [pending, setPending] = useState<Record<string, boolean>>({})
 
   if (!data) return <LoadingIndicator />
+  const shown = filterSwitches(data.switches, filter)
+  const counts = countByReadiness(data.switches, filter)
   const finished = data.switches.filter((s) => s.status === 'completed')
-  const shown = showFinished
-    ? data.switches
-    : data.switches.filter((s) => s.status !== 'completed')
+  const sports = sortBy(
+    Object.keys(groupBy(data.switches, (s) => s.sport)) as SportId[],
+    (sport) => SPORT_LEAGUE_LABEL[sport]
+  )
 
   const setOn = async (s: CompetitionSwitchState, on: boolean) => {
     const key = calendarPhaseKey(s)
@@ -62,6 +76,46 @@ export function AdminCompetitionSwitches() {
         {ENV !== 'PROD' &&
           ' On dev every phase defaults to off: switch on only what you want to test.'}
       </p>
+      <SwitchFilters
+        filter={filter}
+        setFilter={setFilter}
+        counts={counts}
+        sports={sports}
+        finishedCount={finished.length}
+      />
+      <span className="text-ink-500 text-xs">
+        Showing {shown.length} of {data.switches.length} phases.
+        {filter.readiness === 'ready' && counts['needs-validation'] > 0 && (
+          <>
+            {' '}
+            {counts['needs-validation']} need their settlement rule validated
+            before they can run;{' '}
+            <button
+              type="button"
+              className="text-primary-700"
+              onClick={() =>
+                setFilter({ ...filter, readiness: 'needs-validation' })
+              }
+            >
+              show them
+            </button>
+            .
+          </>
+        )}
+      </span>
+      {shown.length === 0 && (
+        <span className="text-ink-500 text-sm">
+          No phases match.{' '}
+          <button
+            type="button"
+            className="text-primary-700"
+            onClick={() => setFilter(DEFAULT_SWITCH_FILTER)}
+          >
+            Reset the filters
+          </button>
+          .
+        </span>
+      )}
       {Object.entries(groupBy(shown, (s) => s.sport)).map(([sport, phases]) => (
         <Col key={sport} className="gap-1">
           <span className="text-ink-500 text-xs font-semibold uppercase tracking-wide">
@@ -81,16 +135,74 @@ export function AdminCompetitionSwitches() {
           })}
         </Col>
       ))}
-      {finished.length > 0 && (
-        <button
-          type="button"
-          className="text-primary-700 self-start text-sm"
-          onClick={() => setShowFinished((v) => !v)}
+    </Col>
+  )
+}
+
+// Readiness first: with every provider feed in the calendar, most phases are
+// locked pending a settlement check, and an admin switching things on wants
+// the ones that can run.
+function SwitchFilters(props: {
+  filter: SwitchFilter
+  setFilter: (filter: SwitchFilter) => void
+  counts: Record<SwitchFilter['readiness'], number>
+  sports: SportId[]
+  finishedCount: number
+}) {
+  const { filter, setFilter, counts, sports, finishedCount } = props
+  const label = (text: string, readiness: SwitchFilter['readiness']) =>
+    `${text} (${counts[readiness]})`
+  return (
+    <Col className="gap-2">
+      <ChoicesToggleGroup
+        currentChoice={filter.readiness}
+        choicesMap={{
+          [label('Ready', 'ready')]: 'ready',
+          [label('On', 'on')]: 'on',
+          [label('Needs validation', 'needs-validation')]: 'needs-validation',
+          [label('All', 'all')]: 'all',
+        }}
+        setChoice={(v) =>
+          setFilter({ ...filter, readiness: v as SwitchFilter['readiness'] })
+        }
+        color="indigo-dark"
+        className="self-start"
+      />
+      <Row className="flex-wrap items-center gap-3">
+        <select
+          aria-label="Sport"
+          value={filter.sport}
+          onChange={(e) =>
+            setFilter({ ...filter, sport: e.target.value as SportId | 'all' })
+          }
+          className="border-ink-300 bg-canvas-0 text-ink-900 rounded border px-2 py-1 text-sm"
         >
-          {showFinished ? 'Hide' : 'Show'} {finished.length} finished{' '}
-          {finished.length === 1 ? 'phase' : 'phases'}
-        </button>
-      )}
+          <option value="all">All sports</option>
+          {sports.map((sport) => (
+            <option key={sport} value={sport}>
+              {SPORT_LEAGUE_LABEL[sport]}
+            </option>
+          ))}
+        </select>
+        <Input
+          type="search"
+          aria-label="Search phases"
+          placeholder="Search competitions"
+          value={filter.query}
+          onChange={(e) => setFilter({ ...filter, query: e.target.value })}
+          className="h-8 w-56 text-sm"
+        />
+        {finishedCount > 0 && (
+          <label className="text-ink-600 flex items-center gap-2 text-sm">
+            <ShortToggle
+              on={filter.showFinished}
+              setOn={(showFinished) => setFilter({ ...filter, showFinished })}
+              ariaLabel="Show finished phases"
+            />
+            Show {finishedCount} finished
+          </label>
+        )}
+      </Row>
     </Col>
   )
 }
