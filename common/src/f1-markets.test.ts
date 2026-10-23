@@ -484,6 +484,36 @@ describe('f1SessionResolution', () => {
         'winner'
       )
     ).toBeNull()
+    // A listed driver whose answer is missing (deleted) must not pay the
+    // stand-in: the market no longer matches its field.
+    expect(
+      f1SessionResolution(
+        final,
+        [result(verstappen, 1)],
+        answers.filter((a) => a.id !== 'a-ver'),
+        entrantIds,
+        'winner'
+      )
+    ).toBeNull()
+    // Indices must be whole, in range and unique.
+    expect(
+      f1SessionResolution(
+        final,
+        [result(verstappen, 1)],
+        [...answers.slice(0, 5), { id: 'a-other', index: 4.5 }],
+        entrantIds,
+        'winner'
+      )
+    ).toBeNull()
+    expect(
+      f1SessionResolution(
+        final,
+        [result(verstappen, 1)],
+        [...answers.slice(0, 5), { id: 'a-other', index: 1 }],
+        entrantIds,
+        'winner'
+      )
+    ).toBeNull()
     // A podium market has no stand-in.
     expect(
       f1SessionResolution(final, classification, answers, entrantIds, 'podium')

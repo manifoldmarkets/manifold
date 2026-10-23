@@ -477,11 +477,23 @@ export function f1SessionResolution(
   const checked = checkedClassification(results)
   if (!checked) return null
 
-  // Each answer stands for one driver, or is the one stand-in.
+  // The answers must be exactly the stored field, one per entrant id by
+  // index: a deleted or renumbered answer would otherwise send a listed
+  // driver's win to the stand-in. Each answer stands for one driver, or is
+  // the one stand-in.
+  if (answers.length !== entrantIds.length) return null
   const byDriverId = new Map<number, Pick<Answer, 'id'>>()
+  const seenIndex = new Set<number>()
   let standIn: Pick<Answer, 'id'> | undefined
   for (const answer of answers) {
-    if (answer.index < 0 || answer.index >= entrantIds.length) return null
+    if (
+      !Number.isSafeInteger(answer.index) ||
+      answer.index < 0 ||
+      answer.index >= entrantIds.length ||
+      seenIndex.has(answer.index)
+    )
+      return null
+    seenIndex.add(answer.index)
     const driverId = entrantIds[answer.index]
     if (driverId === null) {
       if (standIn || marketType !== 'winner') return null
@@ -495,7 +507,11 @@ export function f1SessionResolution(
   if (marketType === 'winner') {
     const winner = checked.first
     if (!winner) return null
-    const answer = byDriverId.get(winner.driver.id) ?? standIn
+    // The stand-in is only for a driver outside the field; a listed driver
+    // always has an answer after the checks above.
+    const answer =
+      byDriverId.get(winner.driver.id) ??
+      (entrantIds.includes(winner.driver.id) ? undefined : standIn)
     if (!answer) return null
     return {
       kind: 'sum-to-one',
