@@ -596,7 +596,8 @@ text {
 }
 
 /* Waving American flag spotlight behind a nav item; follows the cursor, only visible while hovered.
-   Disabled on touch devices, where there is no hover. */
+   Disabled on touch devices, where there is no hover. The wave only animates while hovered,
+   and not at all under prefers-reduced-motion. */
 @media (hover: hover) and (pointer: fine) {
   @keyframes flag-wave-shade {
     from {
@@ -648,8 +649,16 @@ text {
       transparent 100%
     );
     animation: flag-wave-shade 3s linear infinite;
+    animation-play-state: paused;
   }
   .flag-hover-item:hover::before {
     opacity: 0.55;
+    animation-play-state: running;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flag-hover-item::before {
+    animation: none;
   }
 }
