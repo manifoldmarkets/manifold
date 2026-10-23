@@ -84,6 +84,14 @@ const CALENDAR_SPORTS: { id: SportId; label: string }[] = [
   { id: 'wnba', label: 'WNBA' },
   { id: 'nhl', label: 'NHL' },
   { id: 'cbb', label: 'College Basketball' },
+  { id: 'football', label: 'Football' },
+  { id: 'basketball', label: 'Basketball' },
+  { id: 'wcbb', label: 'WNCAAB' },
+  { id: 'hockey', label: 'Ice Hockey' },
+  { id: 'afl', label: 'AFL' },
+  { id: 'nrl', label: 'NRL' },
+  { id: 'handball', label: 'Handball' },
+  { id: 'tennis', label: 'Tennis' },
 ]
 
 function calendarCompetitions(sport: SportId): CompetitionOption[] {

@@ -1,3 +1,4 @@
+import { ADDITIONAL_SPORTS_FEEDS } from './sports-feeds'
 import { parseOddsEventId } from './odds-markets'
 import { MANIFOLD_SPORTS_USER_IDS, WORLD_CUP_2026 } from './sports'
 
@@ -7,6 +8,9 @@ import { MANIFOLD_SPORTS_USER_IDS, WORLD_CUP_2026 } from './sports'
 
 /** By The Odds API sport key, for markets the Odds API pipeline made. */
 const LABEL_BY_ODDS_KEY: Record<string, string> = {
+  ...Object.fromEntries(
+    ADDITIONAL_SPORTS_FEEDS.map((f) => [f.key, f.shortLabel])
+  ),
   americanfootball_nfl: 'NFL',
   americanfootball_nfl_preseason: 'NFL',
   // What the /sports chip calls it.

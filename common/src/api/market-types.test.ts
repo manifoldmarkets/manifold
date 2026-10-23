@@ -9,6 +9,7 @@ import {
   PERP_TAKER_FEE_BPS_DEFAULT,
 } from 'common/perps/fees'
 import {
+  createMarketProps,
   createPerpSchema,
   LiteMarket,
   placePerpTradeSchema,
@@ -16,6 +17,85 @@ import {
   toLiteMarket,
   toUltraLiteMarket,
 } from './market-types'
+
+describe('createMarketProps poll Never override', () => {
+  const poll = {
+    question: 'Who was the player of the match?',
+    outcomeType: 'POLL',
+    answers: ['Player A', 'Player B'],
+    liquidityTier: 100,
+  }
+
+  it.each([undefined, 'game'])(
+    'accepts explicit Never with parent %s',
+    (parent) => {
+      const parsed = createMarketProps.parse({
+        ...poll,
+        linkedToContractId: parent,
+        neverCloses: true,
+      })
+      expect(parsed.neverCloses).toBe(true)
+      expect(parsed.closeTime).toBeUndefined()
+    }
+  )
+
+  it.each(['BINARY', 'STONK', 'BOUNTIED_QUESTION'])(
+    'rejects a Never override for %s instead of bypassing its normal timing rules',
+    (outcomeType) => {
+      const result = createMarketProps.safeParse({
+        ...poll,
+        outcomeType,
+        totalBounty: 100,
+        linkedToContractId: 'game',
+        neverCloses: true,
+      })
+      expect(result.success).toBe(false)
+      if (!result.success)
+        expect(result.error.issues).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ path: ['neverCloses'] }),
+          ])
+        )
+    }
+  )
+
+  it.each(['number', 'date'])(
+    'rejects a conflicting explicit %s deadline with Never',
+    (format) => {
+      const timestamp = Date.now() + 86_400_000
+      const result = createMarketProps.safeParse({
+        ...poll,
+        neverCloses: true,
+        closeTime: format === 'date' ? new Date(timestamp) : timestamp,
+      })
+      expect(result.success).toBe(false)
+      if (!result.success)
+        expect(result.error.issues).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ path: ['closeTime'] }),
+          ])
+        )
+    }
+  )
+
+  it('keeps omitted and false flags compatible with inherited and explicit deadlines', () => {
+    for (const outcomeType of ['POLL', 'BINARY']) {
+      for (const neverCloses of [undefined, false]) {
+        const base = {
+          ...poll,
+          outcomeType,
+          neverCloses,
+          linkedToContractId: 'game',
+        }
+        expect(createMarketProps.parse(base).closeTime).toBeUndefined()
+        const closeTime = Date.now() + 86_400_000
+        expect(createMarketProps.parse({ ...base, closeTime }).closeTime).toBe(
+          closeTime
+        )
+      }
+    }
+  })
+})
 
 describe('createPerpSchema', () => {
   const validPerp = {

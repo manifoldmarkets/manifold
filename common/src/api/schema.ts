@@ -44,6 +44,7 @@ import {
   SearchGroupShape,
   Topic,
 } from 'common/group'
+import { MARKET_LINK_RELATIONS } from 'common/market-links'
 import {
   JOB_INTERESTS,
   JOB_REGIONS,
@@ -1476,6 +1477,7 @@ export const API = (_apiTypeCheck = {
           ]),
           sportsLiveMinute: z.string().nullable(),
           sportsLiveUpdatedTime: z.number().finite(),
+          sportsScoreUpdatedTime: z.number().finite().nullable().optional(),
         }),
       })
       .strict(),
@@ -3656,6 +3658,11 @@ export const API = (_apiTypeCheck = {
           answers: z.array(z.string()).optional(),
           closeDate: z.string().optional(),
           closeHoursMinutes: z.string().optional(),
+          neverCloses: z.boolean().optional(),
+          hasManuallyEditedCloseDate: z.boolean().optional(),
+          inheritedCloseTimeFrom: z.string().optional(),
+          linkedToContractId: z.string().optional(),
+          linkRelation: z.enum(MARKET_LINK_RELATIONS).optional(),
           visibility: z.string(),
           selectedGroups: z.array(z.any()),
           savedAt: z.number(),
@@ -5167,6 +5174,34 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as SportsScheduleResponse,
+  },
+
+  // Link a market to the market it's about (common/market-links), replacing
+  // any parent it had. The market's creator or a mod.
+  'link-market': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        contractId: z.string().min(1).max(MAX_ID_LENGTH),
+        parentContractId: z.string().min(1).max(MAX_ID_LENGTH),
+        relation: z.enum(MARKET_LINK_RELATIONS).optional(),
+      })
+      .strict(),
+    returns: {} as { success: true },
+  },
+  // Remove a market's link: its creator, the parent's creator, or a mod.
+  'unlink-market': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        contractId: z.string().min(1).max(MAX_ID_LENGTH),
+      })
+      .strict(),
+    returns: {} as { success: true },
   },
 
   // The scheduler switches on /admin/sports: one per Odds API calendar phase.

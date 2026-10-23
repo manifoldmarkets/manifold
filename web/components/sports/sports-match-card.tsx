@@ -1,3 +1,4 @@
+import { ScoreFreshness } from './score-freshness'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import clsx from 'clsx'
@@ -91,6 +92,7 @@ export type SportsMatch = {
     home: number | null
     away: number | null
     minute: string | null
+    updatedTime?: number | null
   }
   contractId?: string
   teamAAnswerId?: string
@@ -306,6 +308,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
     match.liveScore?.home,
     match.liveScore?.away,
     match.liveScore?.minute,
+    match.liveScore?.updatedTime,
     match.id,
   ])
 
@@ -321,6 +324,10 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
           home: (data.sportsHomeScore as number | null) ?? null,
           away: (data.sportsAwayScore as number | null) ?? null,
           minute: (data.sportsLiveMinute as string | null) ?? null,
+          updatedTime:
+            typeof data.sportsScoreUpdatedTime === 'number'
+              ? data.sportsScoreUpdatedTime
+              : null,
         })
       } else {
         setLiveScore(undefined)
@@ -478,13 +485,14 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
           </Link>
         )}
 
+        {isLive && <ScoreFreshness updatedTime={live?.updatedTime} />}
         <Row className="justify-between">
           {isLive ? (
             <span
               className="text-[11px] font-medium"
               style={{ color: LIVE_COLOR }}
             >
-              {`● Live${
+              {`In progress${
                 live?.minute
                   ? `  ${live.minute === 'HT' ? 'HT' : `${live.minute}'`}`
                   : ''

@@ -1,6 +1,8 @@
 import { keyBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo } from 'react'
+import { OG_CARD_HEIGHT, OG_CARD_WIDTH } from 'common/edge/og'
+import { SportsOgMarket, sportsOgImageAlt } from 'common/sports-og'
 import {
   AnySportKey,
   CURATED_SPORTS,
@@ -18,6 +20,14 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
 import { useSportsSchedule } from 'web/hooks/use-sports-schedule'
 import { useUser } from 'web/hooks/use-user'
+import { loadSportsOgMarket } from 'web/lib/sports-og'
+
+export async function getStaticProps() {
+  return {
+    props: { ogMarket: await loadSportsOgMarket() },
+    revalidate: 60,
+  }
+}
 
 // Sports were filters on this page (?sport=nfl, and ?tab=NFL before that).
 // Each has its own page now; keep the old links working.
@@ -32,7 +42,11 @@ const LEGACY_TAB_TO_SPORT: Record<string, AnySportKey> = {
 const first = (v: string | string[] | undefined) =>
   (Array.isArray(v) ? v[0] : v)?.toLowerCase()
 
-export default function SportsPage() {
+export default function SportsPage({
+  ogMarket,
+}: {
+  ogMarket: SportsOgMarket | null
+}) {
   const user = useUser()
   useSaveReferral(user)
   useSaveScroll('sports', true)
@@ -84,6 +98,14 @@ export default function SportsPage() {
         description:
           'Bet on every game: live odds and upcoming games across the NFL, NBA, MLB, soccer and more.',
         url: '/sports',
+        // Encode the server snapshot so the image and its alt text agree, even
+        // if a crawler requests the image after the featured game changes.
+        ogProps: {
+          endpoint: 'sports',
+          props: ogMarket ? { market: JSON.stringify(ogMarket) } : {},
+        },
+        imageSize: { width: OG_CARD_WIDTH * 2, height: OG_CARD_HEIGHT * 2 },
+        imageAlt: sportsOgImageAlt(ogMarket),
       }}
       trackPageView="/sports"
     >

@@ -132,8 +132,9 @@ export function SportsThreeWayBetDialog({
         live.minute === 'HT'
           ? 'Half time'
           : live.minute != null
-          ? `Live · ${live.minute}'`
-          : 'Live',
+          ? `In progress · ${live.minute}'`
+          : 'In progress',
+        'Scores delayed',
         live.home != null && live.away != null
           ? `${live.home} – ${live.away}`
           : null,

@@ -111,6 +111,7 @@ export function MarketPreview(props: {
   closeHoursMinutes?: string
   setCloseHoursMinutes?: (time: string) => void
   neverCloses?: boolean
+  closeTimeDescription?: string
   setNeverCloses?: (never: boolean) => void
   selectedGroups?: Group[]
   onUpdateGroups?: (groups: Group[]) => void
@@ -603,13 +604,14 @@ export function MarketPreview(props: {
                   className="text-ink-600 hover:text-ink-700 flex items-center gap-1 text-xs transition-colors"
                 >
                   <span>
-                    {data.closeTime
-                      ? `${dayjs(data.closeTime).format('MMM D, YYYY h:mm A')}${
-                          timezone ? ` ${timezone}` : ''
-                        }`
-                      : closeDate
-                      ? dayjs(closeDate).format('MMM D, YYYY')
-                      : 'close date'}
+                    {props.closeTimeDescription ??
+                      (data.closeTime
+                        ? `${dayjs(data.closeTime).format(
+                            'MMM D, YYYY h:mm A'
+                          )}${timezone ? ` ${timezone}` : ''}`
+                        : closeDate
+                        ? dayjs(closeDate).format('MMM D, YYYY')
+                        : 'close date')}
                   </span>
                   <span>📅</span>
                 </button>
