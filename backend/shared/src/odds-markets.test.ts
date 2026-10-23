@@ -124,13 +124,16 @@ function database(opts: { onLock?: () => void } = {}) {
       return { id: 'official', slug: 'official', privacy_status: 'curated' }
     return null
   })
+  const none = jest.fn(async (sql: string) => {
+    writes.push(sql)
+  })
   const pg = {
     oneOrNone,
     manyOrNone: jest.fn().mockResolvedValue([]),
     map: jest.fn().mockResolvedValue([]),
-    none: jest.fn(async (sql: string) => {
-      writes.push(sql)
-    }),
+    none,
+    task: async (work: (task: { oneOrNone: typeof none }) => Promise<void>) =>
+      work({ oneOrNone: none }),
     tx: async (run: (tx: SupabaseDirectClient) => Promise<Contract>) => {
       let unlock: (() => void) | undefined
       const inserted: Contract[] = []
@@ -515,6 +518,52 @@ it('does not request scores when there are no in-play markets', async () => {
   expect(getUser).not.toHaveBeenCalled()
 })
 
+it('an abandoned run stops at its next checkpoint without reading scores or writing', async () => {
+  const db = database()
+  db.pg.manyOrNone.mockResolvedValueOnce([
+    {
+      data: {
+        id: 'game',
+        mechanism: 'cpmm-multi-1',
+        outcomeType: 'MULTIPLE_CHOICE',
+        sportsHomeTeam: 'Home',
+        sportsAwayTeam: 'Away',
+        sportsEventId: 'odds:americanfootball_nfl:event',
+        sportsStartTimestamp: new Date(Date.now() - 1000).toISOString(),
+      },
+    },
+  ])
+  jest.mocked(getScores).mockResolvedValue([
+    {
+      ...event,
+      completed: true,
+      scores: [
+        { name: 'Away', score: '3' },
+        { name: 'Home', score: '10' },
+      ],
+      last_update: null,
+    },
+  ])
+  // Still current when the game list has loaded, abandoned by the time the
+  // polling settings have been read: the scheduler's deadline fired meanwhile.
+  const isCurrent = jest.fn().mockReturnValueOnce(true).mockReturnValue(false)
+  const stats = await pollOddsScoresAndResolve(
+    db.client,
+    newScorePollState(),
+    isCurrent
+  )
+  expect(stats).toEqual({
+    polled: 0,
+    live: 0,
+    resolved: 0,
+    pending: 0,
+    errors: 0,
+  })
+  expect(getScores).not.toHaveBeenCalled()
+  expect(resolveMarketHelper).not.toHaveBeenCalled()
+  expect(db.writes).toEqual([])
+})
+
 it('only looks for multiple choice game markets to resolve', async () => {
   // Binary game markets from an early build (dev only) are left for a person.
   const db = database()
@@ -576,7 +625,8 @@ it.each([
       expect.objectContaining({ id: 'game' }),
       creator,
       creator,
-      resolution
+      resolution,
+      expect.any(Function)
     )
   }
 )
@@ -627,7 +677,8 @@ it.each([
       expect.objectContaining({ id: 'game' }),
       creator,
       creator,
-      { outcome: answerId, resolutions: { [answerId]: 100 } }
+      { outcome: answerId, resolutions: { [answerId]: 100 } },
+      expect.any(Function)
     )
   }
 )
@@ -810,7 +861,8 @@ describe('score feeds that disagree with the market', () => {
       expect.objectContaining({ id: 'game' }),
       creator,
       creator,
-      { outcome: 'home-answer', resolutions: { 'home-answer': 100 } }
+      { outcome: 'home-answer', resolutions: { 'home-answer': 100 } },
+      expect.any(Function)
     )
     expect(publishSportsLiveScore).toHaveBeenCalledWith(
       'game',
@@ -1069,6 +1121,79 @@ describe('score polling settings', () => {
     },
   ]
 
+  it.each([
+    {
+      name: 'duplicate markets count as one event',
+      eventIds: ['event', 'event', 'event', 'event'],
+      reserved: [],
+      interval: 120,
+      releaseDuringRead: false,
+    },
+    {
+      name: 'reserved events do not accelerate the remaining game',
+      eventIds: ['event', 'held1', 'held2', 'held3'],
+      reserved: ['game1', 'game2', 'game3'],
+      interval: 120,
+      releaseDuringRead: false,
+    },
+    {
+      name: 'duplicates and reservations preserve the two-to-three-event tier',
+      eventIds: ['event', 'event', 'second', 'third', 'held'],
+      reserved: ['game4'],
+      interval: 60,
+      releaseDuringRead: false,
+    },
+    {
+      name: 'reservations released during the read stay excluded for this tick',
+      eventIds: ['event', 'held1', 'held2', 'held3'],
+      reserved: ['game1', 'game2', 'game3'],
+      interval: 120,
+      releaseDuringRead: true,
+    },
+  ])(
+    'adaptive resolver integration: $name',
+    async ({ eventIds, reserved, interval, releaseDuringRead }) => {
+      const db = database()
+      const state = newScorePollState()
+      reserved.forEach((id) => state.inFlight.add(id))
+      db.pg.map.mockImplementation(polling([['adaptive', 1]]))
+      const rows = eventIds.map((eventId, index) => ({
+        data: {
+          ...nflGame(60 * MINUTE)[0].data,
+          id: `game${index}`,
+          sportsEventId: `odds:americanfootball_nfl:${eventId}`,
+        },
+      }))
+      db.pg.manyOrNone.mockImplementation(async () => {
+        if (releaseDuringRead) state.inFlight.clear()
+        return rows
+      })
+      jest.mocked(getScores).mockResolvedValue(
+        [...new Set(eventIds)].map((id) => ({
+          ...event,
+          id,
+          completed: false,
+          scores: null,
+          last_update: null,
+        }))
+      )
+      // One second before the planner's five-second scheduling tolerance.
+      state.lastPolled.americanfootball_nfl = NOW - interval * 1000 + 6000
+      expect((await pollOddsScoresAndResolve(db.client, state)).polled).toBe(0)
+      expect(getScores).not.toHaveBeenCalled()
+
+      // Re-establish the reservation before the next tick's fresh read.
+      reserved.forEach((id) => state.inFlight.add(id))
+      jest.spyOn(Date, 'now').mockReturnValue(NOW + 1000)
+      expect((await pollOddsScoresAndResolve(db.client, state)).polled).toBe(1)
+      expect(jest.mocked(getScores).mock.calls).toEqual([
+        ['americanfootball_nfl', {}],
+      ])
+      expect(publishSportsLiveScore).not.toHaveBeenCalled()
+      expect(resolveMarketHelper).not.toHaveBeenCalled()
+    }
+  )
+
   it('with live scores off, asks only once a game is due to end', async () => {
     const db = database()
     db.pg.map.mockImplementation(polling([['sport:nfl', 0]]))
@@ -1326,7 +1451,8 @@ describe('score polling settings', () => {
       expect.objectContaining({ id: 'game' }),
       creator,
       creator,
-      { outcome: 'home-answer', resolutions: { 'home-answer': 100 } }
+      { outcome: 'home-answer', resolutions: { 'home-answer': 100 } },
+      expect.any(Function)
     )
   })
 
