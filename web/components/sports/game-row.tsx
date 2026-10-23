@@ -452,7 +452,7 @@ export function GameRow(props: {
                         className={clsx(
                           'row-start-3 max-w-full justify-self-center shadow-sm',
                           !held &&
-                            '!bg-canvas-0 hover:!bg-primary-600 hover:!text-ink-0',
+                            '!bg-canvas-0 hover:!bg-teal-500 hover:!text-white',
                           game.draw
                             ? '@[22rem]/scoreboard:!w-24 !w-20'
                             : '!w-24',
@@ -474,9 +474,9 @@ export function GameRow(props: {
                           : ''
                       }`}
                       className={clsx(
-                        'text-primary-700 hover:bg-primary-100 focus-visible:ring-primary-500 col-span-2 col-start-1 row-start-3 min-h-[40px] justify-self-center rounded-lg px-2 text-xs font-semibold focus-visible:ring-2 disabled:opacity-60',
+                        'focus-visible:ring-primary-500 col-span-2 col-start-1 row-start-3 min-h-[40px] justify-self-center rounded-lg px-2 text-xs font-semibold text-teal-700 hover:bg-teal-500/20 focus-visible:ring-2 disabled:opacity-60',
                         backsOutcome(stakeOn(game.draw.answerId)) &&
-                          '!bg-primary-600 !text-ink-0 hover:!bg-primary-700'
+                          '!bg-teal-500 !text-white hover:!bg-teal-600'
                       )}
                     >
                       Draw
@@ -914,17 +914,18 @@ function PriceChip(props: {
       className={clsx(
         'focus-visible:ring-primary-500 min-h-[40px] w-16 shrink-0 rounded-lg py-2 text-center text-base font-bold tabular-nums transition-colors focus-visible:ring-2 sm:w-20',
         className,
-        flash === 'up' && '!bg-teal-500/30 !text-teal-700',
+        flash === 'up' && '!bg-teal-500/40 !text-teal-700',
         flash === 'down' && '!bg-scarlet-500/30 !text-scarlet-700',
+        // Green, like every Yes button: the chip buys YES on this outcome.
         muted
-          ? 'bg-canvas-50 text-ink-600 hover:bg-primary-100 hover:text-primary-800 border-ink-200 border text-xs'
-          : 'bg-primary-50 text-primary-800 hover:bg-primary-600 hover:text-ink-0',
+          ? 'bg-canvas-50 text-ink-600 border-ink-200 border text-xs hover:bg-teal-500/20 hover:text-teal-700'
+          : 'bg-teal-500/15 text-teal-700 hover:bg-teal-500 hover:text-white',
         // The price flash wins while it lasts.
         held &&
           !flash &&
-          '!bg-primary-600 !text-ink-0 hover:!bg-primary-700 border-transparent',
+          'border-transparent !bg-teal-500 !text-white hover:!bg-teal-600',
         disabled &&
-          'hover:bg-primary-50 hover:text-primary-800 cursor-default opacity-60'
+          'hover:bg-teal-500/15 cursor-default opacity-60 hover:text-teal-700'
       )}
     >
       {pct}%
@@ -962,9 +963,9 @@ function StakeLine(props: {
       )}
     >
       {backsOutcome(stake) && (
-        <span className={clsx(itemClassName, 'text-primary-700 font-semibold')}>
+        <span className={clsx(itemClassName, 'font-semibold text-teal-700')}>
           <span
-            className="bg-primary-600 h-1.5 w-1.5 shrink-0 rounded-full"
+            className="h-1.5 w-1.5 shrink-0 rounded-full bg-teal-500"
             aria-hidden
           />
           Pays {formatMoney(stake.payoutIfWins)}
@@ -1007,7 +1008,7 @@ function PositionSummary(props: {
       )}
     >
       <span
-        className="bg-primary-600 h-1.5 w-1.5 shrink-0 rounded-full"
+        className="h-1.5 w-1.5 shrink-0 rounded-full bg-teal-500"
         aria-hidden
       />
       <span className="sr-only">Your position:</span>
