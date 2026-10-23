@@ -1096,8 +1096,13 @@ export interface SportsContractParams {
   initialProb?: number
   closeTime: number
   liquidityTier: LiquidityTierValue
-  /** Multiple choice only; answers sum to one and nobody can add more. */
+  /** Multiple choice only; nobody can add more. */
   answers?: string[]
+  /**
+   * Multiple choice: whether the answers are exclusive (a game's winner) or
+   * independent (each driver's podium chance). True if omitted.
+   */
+  shouldAnswersSumToOne?: boolean
   /** Multiple choice: opening probability of each answer as a percent. Level if omitted. */
   answerProbs?: number[]
   answerShortTexts?: string[]
@@ -1164,12 +1169,13 @@ export async function createSportsContract(
   } = {}
 ): Promise<Contract> {
   const answers = params.answers ?? []
+  const shouldAnswersSumToOne = params.shouldAnswersSumToOne ?? true
   if (params.answerProbs) {
     // createMarketHelper runs this check for the API; a job has to run it too.
     const error = getAnswerProbsError({
       answerProbs: params.answerProbs,
       numAnswers: answers.length,
-      shouldAnswersSumToOne: true,
+      shouldAnswersSumToOne,
       hasOtherAnswer: false,
     })
     if (error) throw new Error(`${params.question}: ${error}`)
@@ -1203,7 +1209,7 @@ export async function createSportsContract(
     isLogScale: false,
     answers,
     addAnswersMode: 'DISABLED',
-    shouldAnswersSumToOne: true,
+    shouldAnswersSumToOne,
     answerShortTexts: params.answerShortTexts,
     answerImageUrls: params.answerImageUrls,
     answerProbs: params.answerProbs,

@@ -413,7 +413,18 @@ export type Poll = {
   maxSelections?: number // For multi-select: max options user can pick (defaults to all)
 }
 
-export type SportsMarketType = 'moneyline' | 'spread' | 'total' | 'prop'
+/**
+ * moneyline, spread, total, prop: markets about a game between two teams.
+ * winner, podium: markets about one session of a field event (a Grand Prix),
+ * whose answers are the entrants (see common/f1-markets.ts).
+ */
+export type SportsMarketType =
+  | 'moneyline'
+  | 'spread'
+  | 'total'
+  | 'prop'
+  | 'winner'
+  | 'podium'
 
 export type Sports = {
   sportsStartTimestamp: string

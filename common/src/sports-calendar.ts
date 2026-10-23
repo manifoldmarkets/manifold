@@ -227,11 +227,12 @@ const ENTRIES: CalendarInput[] = [
     phase: '2026 Remaining',
     startDate: '2026-08-28',
     endDate: '2026-12-07',
-    // No Odds API key: F1 markets are made by hand.
+    // No Odds API key, and the BALLDONTLIE pipeline (common/f1-markets.ts)
+    // has no job yet: F1 markets are made by hand.
     autoCreate: false,
     autoResolve: true,
     notes:
-      'Remaining races: Zandvoort, Monza, Singapore, Austin, Mexico City, São Paulo, Las Vegas, Abu Dhabi. DECISION NEEDED: one market per race weekend or separate markets per session (qualifying, sprint, race)?',
+      'Remaining races: Zandvoort, Monza, Singapore, Austin, Mexico City, São Paulo, Las Vegas, Abu Dhabi. Pipeline pending: race winner, podium, pole and sprint winner per weekend from BALLDONTLIE (common/f1-markets.ts).',
   },
   {
     sport: 'f1',
