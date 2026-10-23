@@ -34,13 +34,13 @@ import {
   getPerpOpenInterest,
   getPerpOpenInterestCapacity,
   getPositionValue,
+  isPerpSideSolvent,
   liquidationPrice as computeLiquidationPrice,
   MIN_PERP_LEVERAGE,
   openPosition as openPositionMath,
   PERP_MIN_CLOSE_FRACTION,
   PERP_OPEN_INTEREST_COVER_MULTIPLE,
   perpSizeMatchesExpectation,
-  PERP_SOLVENCY_FACTOR_TOLERANCE,
   PerpState,
   processLiquidations,
   resolvePerpCloseFraction,
@@ -972,18 +972,20 @@ const executePerpTrade = async (
       )
     }
 
-    // Post-trade solvency must be >= 1, within the same relative tolerance
-    // the engine's own assert uses. ADL deliberately scales winners so the
-    // factor lands at EXACTLY 1, so after any ADL event the book sits on the
-    // boundary within float dust — a strict `< 1` then rejects every open on
-    // the winning side with "solvency 1.000 < 1" (a new position has zero
-    // unrealized PnL and cannot move the factor at all).
-    const solv = solvencyFactor(direction, open.state, price)
-    if (solv < 1 - PERP_SOLVENCY_FACTOR_TOLERANCE)
+    // Post-trade solvency must be >= 1, by the same test the engine's own
+    // assert uses: a relative tolerance plus absolute float dust. ADL
+    // deliberately scales winners so the factor lands at EXACTLY 1, so after
+    // any ADL event the book sits on the boundary within float dust — a strict
+    // `< 1` then rejects every open on the winning side with "solvency 1.000
+    // < 1" (a new position has zero unrealized PnL and cannot move the factor
+    // at all).
+    if (!isPerpSideSolvent(direction, open.state, price)) {
+      const solv = solvencyFactor(direction, open.state, price)
       throw new APIError(
         400,
         `Post-trade solvency ${solv.toFixed(6)} < 1; try lower leverage or size`
       )
+    }
 
     const { upserts, deletes } = diffForWrite(
       state.positions,
