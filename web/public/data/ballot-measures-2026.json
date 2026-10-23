@@ -11,7 +11,7 @@
       "topic": "elections",
       "officialSourceUrl": "https://www.elections.alaska.gov/",
       "approvalRule": "Majority of votes cast on the proposition (Alaska Const. art. XI §6); effective 90 days after certification.",
-      "coverage": "needs-creation-held",
+      "coverage": "created",
       "aliases": [
         "Ballot Measure 2",
         "Measure 2",
@@ -28,7 +28,13 @@
       "yesMeans": "Yes: repeals top-four primaries and ranked-choice voting, restores party primaries and plurality general elections, and repeals 2020 campaign-finance rules.",
       "noMeans": "Keeps top-four open primaries, ranked-choice general elections and the 2020 campaign-finance rules.",
       "verification": "secondary",
-      "marketNote": "No linked market yet · ballot details or market criteria under review."
+      "source": {
+        "kind": "binary",
+        "contractId": "ng0d0ShghR",
+        "slug": "will-alaska-measure-2-to-repeal-ran",
+        "yesOrientation": "approve",
+        "confidence": "confirmed"
+      }
     },
     {
       "key": "AK-measure-3",
