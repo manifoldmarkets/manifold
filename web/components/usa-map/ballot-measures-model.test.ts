@@ -199,7 +199,7 @@ test('the integrated inventory excludes disputed propositions from approval trad
     assert.equal(tradeFor(m, 'pass'), undefined, key)
     assert.ok(m.marketNote, key)
   }
-  assert.equal(BALLOT_MEASURES.filter((m) => m.source).length, 122)
+  assert.equal(BALLOT_MEASURES.filter((m) => m.source).length, 123)
   for (const m of BALLOT_MEASURES.filter(
     (m) => m.source?.confidence === 'conditional'
   ))
