@@ -1115,6 +1115,8 @@ export interface SportsContractParams {
   sportsHomeTeam?: string
   sportsAwayTeam?: string
   sportsMarketType?: string
+  /** A field event's provider driver id per answer, null for the stand-in. */
+  sportsEntrantIds?: (number | null)[]
   groupIds: string[]
 }
 
@@ -1220,6 +1222,7 @@ export async function createSportsContract(
     sportsHomeTeam: params.sportsHomeTeam,
     sportsAwayTeam: params.sportsAwayTeam,
     sportsMarketType: params.sportsMarketType,
+    sportsEntrantIds: params.sportsEntrantIds,
     unit: undefined,
     midpoints: undefined,
     timezone: undefined,

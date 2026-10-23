@@ -1,4 +1,4 @@
-import { sortBy, sum } from 'lodash'
+import { sortBy, sum, uniqBy } from 'lodash'
 import { Answer } from './answer'
 import { MAX_CPMM_PROB, MIN_CPMM_PROB } from './contract'
 import { fitProbs } from './odds-markets'
@@ -94,6 +94,9 @@ export interface F1SessionResult {
   retired: boolean
 }
 
+/** The part of a standings row the prior reads. */
+export type F1Points = { driver: Pick<F1Driver, 'id'>; points: number }
+
 export interface F1DriverStanding {
   id: number
   season: number
@@ -153,6 +156,14 @@ export const F1_CLOSE_BUFFER_HOURS: Record<F1SessionKind, number> = {
 /** Catches a stand-in who wasn't in the field when the market opened. */
 export const OTHER_DRIVER_ANSWER = 'Another driver'
 
+/**
+ * The most entrants a market takes. A grid is 20 to 22 cars, and every
+ * answer has to open at 1% or more, so a longer roster isn't a current
+ * entry list (the provider's /drivers endpoint lists everyone on file since
+ * 2018) and nothing is created from it.
+ */
+export const MAX_F1_FIELD = 30
+
 // ─── Event ids ────────────────────────────────────────────────────────────────
 //
 // `sportsEventId` is `bdl-f1:<event id>:<session id>`: the prefix tells the
@@ -191,14 +202,15 @@ const OTHER_DRIVER_SHARE = 0.01
 /**
  * Opening probabilities for a winner market from the season's standings:
  * each driver's smoothed, sharpened share of points, then the stand-in, all
- * kept inside the range an answer can trade at. A crude prior, but at a
- * Ṁ1,000 ante being wrong is cheap, and the futures odds that could replace
- * it sit on the provider's higher tier. Percents in `field` order, then the
- * stand-in answer.
+ * kept inside the range an answer can trade at. A crude prior: the ante is
+ * Ṁ100 an answer at the Ṁ1,000 tier (about Ṁ2,300 for a grid), and a wrong
+ * opening price gives the first traders a slice of that, while the futures
+ * odds that could replace it sit on the provider's higher tier. Percents in
+ * `field` order, then the stand-in answer.
  */
 export function f1WinnerPrior(
   field: Pick<F1Driver, 'id'>[],
-  standings: Pick<F1DriverStanding, 'driver' | 'points'>[]
+  standings: F1Points[]
 ): number[] {
   const pointsById = new Map(standings.map((s) => [s.driver.id, s.points]))
   const raw = field.map((d) => {
@@ -213,18 +225,42 @@ export function f1WinnerPrior(
 }
 
 /**
- * A driver's chance of a podium from their chance of winning, as the chance
- * of taking at least one of three draws: 1 - (1 - p)^3. Over a field these
- * add up to a little under three, the number of podium places. Percents in
- * the same order, clamped to the tradeable range; independent, so they
- * don't sum to one.
+ * Each entrant's chance of a podium from the field's chances of winning,
+ * under a Plackett–Luce ranking: first place is drawn by those chances,
+ * then second from the rest in proportion to theirs, then third. Over the
+ * field the chances add up to exactly three places, and nobody takes two.
+ * Pass every entrant, the stand-in included, so its share is counted even
+ * though the podium market has no answer for it. Percents in the same
+ * order, clamped to the tradeable range; the answers are independent, so
+ * they don't sum to one.
  */
 export function f1PodiumPrior(winnerPercents: number[]): number[] {
-  return winnerPercents.map((percent) => {
-    const p = Math.min(1, Math.max(0, percent / 100))
-    const podium = 1 - (1 - p) ** 3
-    return Math.min(MAX_CPMM_PROB, Math.max(MIN_CPMM_PROB, podium)) * 100
+  const n = winnerPercents.length
+  const total = sum(winnerPercents.filter((x) => Number.isFinite(x) && x > 0))
+  const p = winnerPercents.map((x) =>
+    Number.isFinite(x) && x > 0 && total > 0 ? x / total : 0
+  )
+  const podium = p.map((pi, i) => {
+    if (pi <= 0) return 0
+    let second = 0
+    let third = 0
+    for (let j = 0; j < n; j++) {
+      if (j === i || p[j] <= 0) continue
+      const afterJ = 1 - p[j]
+      if (afterJ <= 0) continue
+      second += (p[j] * pi) / afterJ
+      for (let k = 0; k < n; k++) {
+        if (k === i || k === j || p[k] <= 0) continue
+        const afterJK = afterJ - p[k]
+        if (afterJK <= 0) continue
+        third += (p[j] * (p[k] / afterJ) * pi) / afterJK
+      }
+    }
+    return pi + second + third
   })
+  return podium.map(
+    (x) => Math.min(MAX_CPMM_PROB, Math.max(MIN_CPMM_PROB, x)) * 100
+  )
 }
 
 // ─── The market a session becomes ─────────────────────────────────────────────
@@ -247,6 +283,13 @@ export interface F1MarketParams {
   sportsStartTimestamp: string
   sportsLeague: string
   sportsMarketType: F1MarketType
+  /**
+   * The provider's driver id behind each answer, in answer order, null for
+   * the stand-in. Stored on the contract: the resolver matches results by
+   * id, so a renamed answer or a provider's spelling still pays the right
+   * driver.
+   */
+  sportsEntrantIds: (number | null)[]
 }
 
 const hexColor = (color: string | null | undefined): string | undefined => {
@@ -262,30 +305,33 @@ const SESSION_WORD: Record<F1SessionKind, string> = {
 
 /**
  * The market for one session and market type, or null when that session
- * kind doesn't get one. Drivers open at the standings prior, favourites
- * first. `field` is the season's entry list: every driver in the standings,
- * in any order.
+ * kind doesn't get one, or `field` isn't a usable entry list (empty, or
+ * longer than MAX_F1_FIELD). Drivers open at the standings prior,
+ * favourites first. `field` is the season's entry list: the drivers in the
+ * standings, in any order; a driver listed twice counts once.
  */
 export function buildF1MarketParams(
   event: Pick<F1Event, 'id' | 'name' | 'season'>,
   session: Pick<F1Session, 'id' | 'type' | 'name' | 'date'>,
   field: F1Driver[],
-  standings: Pick<F1DriverStanding, 'driver' | 'points'>[],
+  standings: F1Points[],
   marketType: F1MarketType
 ): F1MarketParams | null {
   const kind = f1SessionKind(session)
   if (!kind || !F1_MARKETS_BY_SESSION[kind].includes(marketType)) return null
-  if (field.length === 0) return null
+  const roster = uniqBy(field, (d) => d.id)
+  if (roster.length === 0 || roster.length > MAX_F1_FIELD) return null
 
-  const winnerPercents = f1WinnerPrior(field, standings)
+  const winnerPercents = f1WinnerPrior(roster, standings)
   const drivers = sortBy(
-    field.map((driver, i) => ({ driver, percent: winnerPercents[i] })),
+    roster.map((driver, i) => ({ driver, percent: winnerPercents[i] })),
     (d) => -d.percent
   )
-  const otherPercent = winnerPercents[field.length]
+  const otherPercent = winnerPercents[roster.length]
 
   const answers = drivers.map((d) => d.driver.display_name)
   const answerShortTexts = drivers.map((d) => d.driver.short_name)
+  const entrantIds = drivers.map((d) => d.driver.id)
   const colors = drivers.map((d) => hexColor(d.driver.team?.color))
   const answerColors = colors.every((c): c is string => !!c)
     ? colors
@@ -336,9 +382,15 @@ export function buildF1MarketParams(
       answerShortTexts: [...answerShortTexts, 'OTHER'],
       answerColors: answerColors && [...answerColors, '#9CA3AF'],
       shouldAnswersSumToOne: true,
+      sportsEntrantIds: [...entrantIds, null],
     }
   }
 
+  // The stand-in's share is in the ranking but gets no answer.
+  const podiumPercents = f1PodiumPrior([
+    ...drivers.map((d) => d.percent),
+    otherPercent,
+  ]).slice(0, drivers.length)
   return {
     ...base,
     question: `${title}: podium`,
@@ -349,9 +401,10 @@ export function buildF1MarketParams(
       ...footer,
     ].join('\n'),
     answers,
-    answerProbs: f1PodiumPrior(drivers.map((d) => d.percent)),
+    answerProbs: podiumPercents,
     answerColors,
     shouldAnswersSumToOne: false,
+    sportsEntrantIds: entrantIds,
   }
 }
 
@@ -369,59 +422,80 @@ export type F1Resolution =
       resolutions: Record<string, 'YES' | 'NO'>
     }
 
-/** Case, accents and spacing don't tell drivers apart. */
-const normaliseName = (name: string) =>
-  name
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim()
-
-const answerForDriver = (
-  answers: Pick<Answer, 'id' | 'text'>[],
-  driver: Pick<F1Driver, 'display_name' | 'first_name' | 'last_name'>
-) => {
-  const names = [
-    driver.display_name,
-    `${driver.first_name} ${driver.last_name}`,
-  ].map(normaliseName)
-  return answers.find((a) => names.includes(normaliseName(a.text)))
+type ClassifiedResult = Pick<F1SessionResult, 'driver' | 'is_winner'> & {
+  position: number
 }
 
 /**
- * How a session's market resolves from the provider's classification, or
- * null when it can't yet: the session isn't final, the classification is
- * incomplete, or the winner matches no answer and there's no stand-in. A
- * null is for a human to look at, never a guess.
+ * The classification checked for what would make a payout wrong: a driver
+ * listed twice, two drivers on one position, more than one winner flag, or
+ * a winner flag on anyone but the driver classified first (a stale flag
+ * after a disqualification or exclusion). Null means don't resolve.
  */
-export function f1SessionResolution(
-  session: Pick<F1Session, 'status_state'>,
-  results: Pick<F1SessionResult, 'driver' | 'position' | 'is_winner'>[],
-  answers: Pick<Answer, 'id' | 'text'>[],
-  marketType: F1MarketType
-): F1Resolution | null {
-  if (session.status_state !== 'final') return null
+function checkedClassification(
+  results: Pick<F1SessionResult, 'driver' | 'position' | 'is_winner'>[]
+): { classified: ClassifiedResult[]; first: ClassifiedResult | null } | null {
+  const ids = results.map((r) => r.driver.id)
+  if (new Set(ids).size !== ids.length) return null
   const classified = sortBy(
     results.filter(
-      (r): r is typeof r & { position: number } =>
+      (r): r is ClassifiedResult =>
         typeof r.position === 'number' &&
         Number.isSafeInteger(r.position) &&
         r.position >= 1
     ),
     (r) => r.position
   )
+  const positions = classified.map((r) => r.position)
+  if (new Set(positions).size !== positions.length) return null
+  const first = classified.find((r) => r.position === 1) ?? null
+  const flagged = results.filter((r) => r.is_winner)
+  if (flagged.length > 1) return null
+  if (flagged.length === 1 && flagged[0].driver.id !== first?.driver.id)
+    return null
+  return { classified, first }
+}
+
+/**
+ * How a session's market resolves from the provider's classification, or
+ * null when it can't: the session isn't final, the classification fails
+ * checkedClassification or is incomplete, the market's entrant ids don't
+ * line up with its answers, or the winner is outside the field and there's
+ * no stand-in. A null is for a human to look at, never a guess.
+ *
+ * `entrantIds` is the contract's sportsEntrantIds: the provider's driver id
+ * for each answer by answer index, null for the stand-in.
+ */
+export function f1SessionResolution(
+  session: Pick<F1Session, 'status_state'>,
+  results: Pick<F1SessionResult, 'driver' | 'position' | 'is_winner'>[],
+  answers: Pick<Answer, 'id' | 'index'>[],
+  entrantIds: (number | null)[],
+  marketType: F1MarketType
+): F1Resolution | null {
+  if (session.status_state !== 'final') return null
+  const checked = checkedClassification(results)
+  if (!checked) return null
+
+  // Each answer stands for one driver, or is the one stand-in.
+  const byDriverId = new Map<number, Pick<Answer, 'id'>>()
+  let standIn: Pick<Answer, 'id'> | undefined
+  for (const answer of answers) {
+    if (answer.index < 0 || answer.index >= entrantIds.length) return null
+    const driverId = entrantIds[answer.index]
+    if (driverId === null) {
+      if (standIn || marketType !== 'winner') return null
+      standIn = answer
+    } else {
+      if (byDriverId.has(driverId)) return null
+      byDriverId.set(driverId, answer)
+    }
+  }
 
   if (marketType === 'winner') {
-    const winner =
-      results.find((r) => r.is_winner) ??
-      classified.find((r) => r.position === 1)
+    const winner = checked.first
     if (!winner) return null
-    const answer =
-      answerForDriver(answers, winner.driver) ??
-      answers.find(
-        (a) => normaliseName(a.text) === normaliseName(OTHER_DRIVER_ANSWER)
-      )
+    const answer = byDriverId.get(winner.driver.id) ?? standIn
     if (!answer) return null
     return {
       kind: 'sum-to-one',
@@ -430,10 +504,12 @@ export function f1SessionResolution(
     }
   }
 
-  const podium = classified.filter((r) => r.position <= 3)
+  // Positions are unique and sorted, so three of them at or below three
+  // means exactly first, second and third.
+  const podium = checked.classified.filter((r) => r.position <= 3)
   if (podium.length !== 3) return null
   const onPodium = new Set(
-    podium.map((r) => answerForDriver(answers, r.driver)?.id).filter(Boolean)
+    podium.map((r) => byDriverId.get(r.driver.id)?.id).filter(Boolean)
   )
   return {
     kind: 'independent',

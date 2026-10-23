@@ -1,4 +1,4 @@
-import { sum } from 'lodash'
+import { range, sum } from 'lodash'
 import { MAX_ANSWER_PROB, MIN_ANSWER_PROB } from './new-contract'
 import {
   buildF1MarketParams,
@@ -10,6 +10,7 @@ import {
   f1SessionResolution,
   F1SessionResult,
   f1WinnerPrior,
+  MAX_F1_FIELD,
   OTHER_DRIVER_ANSWER,
   parseF1EventId,
 } from './f1-markets'
@@ -145,19 +146,44 @@ describe('f1WinnerPrior', () => {
 })
 
 describe('f1PodiumPrior', () => {
-  it('turns win chances into podium chances that add up to about three places', () => {
-    const winner = f1WinnerPrior(field, standings).slice(0, field.length)
+  it('hands out exactly three podium places across the field', () => {
+    const winner = f1WinnerPrior(field, standings)
     const podium = f1PodiumPrior(winner)
+    expect(podium).toHaveLength(winner.length)
     for (let i = 0; i < podium.length; i++) {
       expect(podium[i]).toBeGreaterThan(winner[i])
       expect(podium[i]).toBeLessThanOrEqual(MAX_ANSWER_PROB)
+      expect(podium[i]).toBeGreaterThanOrEqual(MIN_ANSWER_PROB)
     }
-    expect(f1PodiumPrior([50])[0]).toBeCloseTo(87.5, 6)
-    expect(f1PodiumPrior([0, 100, 250])).toEqual([
-      MIN_ANSWER_PROB,
+    // Three places; the clamp can only trim the top.
+    expect(sum(podium)).toBeLessThanOrEqual(300 + 1e-6)
+    expect(sum(podium)).toBeGreaterThan(290)
+    // The reviewer's grid: four scorers and eighteen on nothing.
+    const grid = range(22).map((i) => ({ id: i + 1 }))
+    const points = [300, 250, 200, 100].map((p, i) => ({
+      driver: grid[i],
+      points: p,
+    }))
+    const gridPodium = f1PodiumPrior(f1WinnerPrior(grid, points))
+    expect(sum(gridPodium)).toBeCloseTo(300, 3)
+    expect(gridPodium[0]).toBeGreaterThan(gridPodium[1])
+    expect(gridPodium[3]).toBeGreaterThan(gridPodium[4])
+  })
+
+  it('puts everyone on the podium when the field is three or fewer', () => {
+    expect(f1PodiumPrior([50, 50])).toEqual([MAX_ANSWER_PROB, MAX_ANSWER_PROB])
+    expect(f1PodiumPrior([10, 30, 60])).toEqual([
+      MAX_ANSWER_PROB,
       MAX_ANSWER_PROB,
       MAX_ANSWER_PROB,
     ])
+  })
+
+  it('ignores broken inputs and keeps the rest tradeable', () => {
+    const podium = f1PodiumPrior([NaN, -5, 40, 30, 30])
+    expect(podium[0]).toBe(MIN_ANSWER_PROB)
+    expect(podium[1]).toBe(MIN_ANSWER_PROB)
+    expect(sum(podium.slice(2))).toBeCloseTo(297, 6)
   })
 })
 
@@ -181,6 +207,7 @@ describe('buildF1MarketParams', () => {
       'PER',
       'OTHER',
     ])
+    expect(params.sportsEntrantIds).toEqual([4, 1, 81, 16, 11, null])
     expect(params.shouldAnswersSumToOne).toBe(true)
     expect(sum(params.answerProbs)).toBeCloseTo(100, 6)
     expect(params.answerProbs[0]).toBeGreaterThan(params.answerProbs[1])
@@ -244,7 +271,10 @@ describe('buildF1MarketParams', () => {
     expect(podium.answers).not.toContain(OTHER_DRIVER_ANSWER)
     expect(podium.answers).toHaveLength(field.length)
     expect(podium.answerProbs).toHaveLength(field.length)
-    expect(sum(podium.answerProbs)).toBeGreaterThan(100)
+    expect(podium.sportsEntrantIds).toEqual([4, 1, 81, 16, 11])
+    // Three places less the stand-in's share, which has no answer.
+    expect(sum(podium.answerProbs)).toBeGreaterThan(280)
+    expect(sum(podium.answerProbs)).toBeLessThan(300)
     expect(podium.sportsMarketType).toBe('podium')
     expect(
       buildF1MarketParams(event, qualifying, field, standings, 'podium')
@@ -254,25 +284,47 @@ describe('buildF1MarketParams', () => {
     ).toBeNull()
   })
 
-  it('makes nothing for practice or an empty field', () => {
+  it('makes nothing for practice or a field that is not an entry list', () => {
     const practice = { ...race, type: 'Practice', name: 'FP2' }
     expect(
       buildF1MarketParams(event, practice, field, standings, 'winner')
     ).toBeNull()
     expect(buildF1MarketParams(event, race, [], standings, 'winner')).toBeNull()
+    const everyone = range(MAX_F1_FIELD + 1).map((i) =>
+      driver(100 + i, 'Driver', String(i), `D${i}`, redBull)
+    )
+    expect(
+      buildF1MarketParams(event, race, everyone, standings, 'winner')
+    ).toBeNull()
+  })
+
+  it('counts a driver listed twice once', () => {
+    const params = buildF1MarketParams(
+      event,
+      race,
+      [...field, norris, { ...verstappen, display_name: 'M. Verstappen' }],
+      standings,
+      'winner'
+    )!
+    expect(params.answers).toHaveLength(field.length + 1)
+    expect(params.sportsEntrantIds).toEqual([4, 1, 81, 16, 11, null])
   })
 })
 
 describe('f1SessionResolution', () => {
+  // Answers as the contract stores them, in the builder's order, with the
+  // entrant ids the builder stamped. Texts are irrelevant to resolution.
   const answers = [
-    { id: 'a-nor', text: 'Lando Norris' },
-    { id: 'a-ver', text: 'Max Verstappen' },
-    { id: 'a-pia', text: 'Oscar Piastri' },
-    { id: 'a-lec', text: 'Charles Leclerc' },
-    { id: 'a-per', text: 'Sergio Perez' },
-    { id: 'a-other', text: OTHER_DRIVER_ANSWER },
+    { id: 'a-nor', index: 0 },
+    { id: 'a-ver', index: 1 },
+    { id: 'a-pia', index: 2 },
+    { id: 'a-lec', index: 3 },
+    { id: 'a-per', index: 4 },
+    { id: 'a-other', index: 5 },
   ]
-  const podiumAnswers = answers.filter((a) => a.id !== 'a-other')
+  const entrantIds = [4, 1, 81, 16, 11, null]
+  const podiumAnswers = answers.slice(0, 5)
+  const podiumIds = entrantIds.slice(0, 5)
   const result = (
     d: F1Driver,
     position: number | null,
@@ -291,41 +343,50 @@ describe('f1SessionResolution', () => {
     result(norris, null),
     result(leclerc, 4),
   ]
+  const winner = (results: typeof classification) =>
+    f1SessionResolution(final, results, answers, entrantIds, 'winner')
+  const podium = (results: typeof classification) =>
+    f1SessionResolution(final, results, podiumAnswers, podiumIds, 'podium')
 
   it('resolves the winner market to the driver classified first', () => {
-    expect(
-      f1SessionResolution(final, classification, answers, 'winner')
-    ).toEqual({
+    expect(winner(classification)).toEqual({
       kind: 'sum-to-one',
       outcome: 'a-ver',
       resolutions: { 'a-ver': 100 },
     })
   })
 
-  it('matches names across accents and the first-last form', () => {
+  it('matches by driver id, whatever the names say', () => {
+    const renamed = { ...verstappen, display_name: 'M. Verstappen' }
+    expect(winner([result(renamed, 1)])).toMatchObject({ outcome: 'a-ver' })
+    // A different driver with the same name is not the same driver.
+    const impostor = { ...verstappen, id: 999 }
+    expect(winner([result(impostor, 1)])).toMatchObject({
+      outcome: 'a-other',
+    })
     expect(
-      f1SessionResolution(final, [result(perez, 1)], answers, 'winner')
-    ).toMatchObject({ outcome: 'a-per' })
-    const byParts = { ...perez, display_name: 'S. Pérez' }
-    expect(
-      f1SessionResolution(final, [result(byParts, 1)], answers, 'winner')
-    ).toMatchObject({ outcome: 'a-per' })
+      podium([result(renamed, 1), result(perez, 2), result(impostor, 3)])
+    ).toMatchObject({
+      resolutions: { 'a-ver': 'YES', 'a-per': 'YES', 'a-pia': 'NO' },
+    })
   })
 
   it('sends a stand-in winner to the other answer, and asks a human without one', () => {
     const standIn = driver(99, 'Liam', 'Lawson', 'LAW', redBull)
+    expect(winner([result(standIn, 1)])).toMatchObject({ outcome: 'a-other' })
     expect(
-      f1SessionResolution(final, [result(standIn, 1)], answers, 'winner')
-    ).toMatchObject({ outcome: 'a-other' })
-    expect(
-      f1SessionResolution(final, [result(standIn, 1)], podiumAnswers, 'winner')
+      f1SessionResolution(
+        final,
+        [result(standIn, 1)],
+        podiumAnswers,
+        podiumIds,
+        'winner'
+      )
     ).toBeNull()
   })
 
   it('resolves every podium answer YES or NO from the top three', () => {
-    expect(
-      f1SessionResolution(final, classification, podiumAnswers, 'podium')
-    ).toEqual({
+    expect(podium(classification)).toEqual({
       kind: 'independent',
       resolutions: {
         'a-ver': 'YES',
@@ -349,28 +410,83 @@ describe('f1SessionResolution', () => {
           { status_state: state },
           classification,
           answers,
+          entrantIds,
           'winner'
         )
       ).toBeNull()
     }
-    expect(f1SessionResolution(final, [], answers, 'winner')).toBeNull()
+    expect(winner([])).toBeNull()
+    expect(winner([result(verstappen, 2), result(perez, 3)])).toBeNull()
+    expect(podium([result(verstappen, 1), result(perez, 2)])).toBeNull()
     expect(
-      f1SessionResolution(
-        final,
-        [result(verstappen, 1), result(perez, 2)],
-        podiumAnswers,
-        'podium'
-      )
+      podium([result(verstappen, 1), result(perez, 2), result(piastri, 4)])
     ).toBeNull()
-    // A winner flag without a position still resolves; a position without
-    // the flag does too.
+  })
+
+  it('refuses a classification that contradicts itself', () => {
+    // A winner flag on a driver who isn't classified first: a stale flag
+    // after a disqualification, or a provider bug.
+    expect(
+      winner([
+        { driver: norris, position: null, is_winner: true },
+        result(verstappen, 1, { is_winner: true }),
+      ])
+    ).toBeNull()
+    expect(
+      winner([
+        result(verstappen, 1, { is_winner: false }),
+        result(norris, 4, { is_winner: true }),
+      ])
+    ).toBeNull()
+    // The flag alone, without a classified first place, isn't a result.
+    expect(
+      winner([{ driver: norris, position: null, is_winner: true }])
+    ).toBeNull()
+    // Two first places, or one driver twice.
+    expect(
+      winner([result(verstappen, 1), result(norris, 1, { is_winner: false })])
+    ).toBeNull()
+    expect(
+      podium([result(verstappen, 1), result(perez, 2), result(piastri, 2)])
+    ).toBeNull()
+    expect(
+      podium([
+        result(verstappen, 1),
+        result(verstappen, 2, { is_winner: false }),
+        result(piastri, 3),
+      ])
+    ).toBeNull()
+    // Without any flag the classification alone decides.
+    expect(
+      winner(classification.map((r) => ({ ...r, is_winner: false })))
+    ).toMatchObject({ outcome: 'a-ver' })
+  })
+
+  it('refuses a market whose entrant ids do not line up with its answers', () => {
+    expect(
+      f1SessionResolution(final, classification, answers, [4, 1, 81], 'winner')
+    ).toBeNull()
     expect(
       f1SessionResolution(
         final,
-        [{ driver: norris, position: null, is_winner: true }],
+        classification,
         answers,
+        [4, 4, 81, 16, 11, null],
         'winner'
       )
-    ).toMatchObject({ outcome: 'a-nor' })
+    ).toBeNull()
+    expect(
+      f1SessionResolution(
+        final,
+        classification,
+        answers,
+        [4, 1, 81, 16, null, null],
+        'winner'
+      )
+    ).toBeNull()
+    // A podium market has no stand-in.
+    expect(
+      f1SessionResolution(final, classification, answers, entrantIds, 'podium')
+    ).toBeNull()
   })
 })

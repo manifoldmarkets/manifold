@@ -14,7 +14,6 @@
  */
 
 import {
-  F1Driver,
   F1DriverStanding,
   F1Event,
   F1Session,
@@ -108,9 +107,10 @@ export const getF1SessionResults = (sessionId: number) =>
     session_ids: [String(sessionId)],
   })
 
-/** The season's drivers with their points: the entry list and the prior (ALL-STAR). */
+/**
+ * The season's drivers with their points (ALL-STAR): the entry list and the
+ * prior. The only roster source: /drivers lists everyone on file since 2018
+ * with no season filter, so it can't say who is racing this year.
+ */
 export const getF1DriverStandings = (season: number) =>
   getAll<F1DriverStanding>('driver_standings', { season: String(season) })
-
-/** The drivers on file, for a season's field when standings are empty (free tier). */
-export const getF1Drivers = () => getAll<F1Driver>('drivers', {})
