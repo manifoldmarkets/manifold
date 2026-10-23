@@ -12,6 +12,7 @@ import {
   generateContractEmbeddings,
   isContractNonPredictive,
 } from 'shared/supabase/contracts'
+import { hideNearDuplicatesOfNewContract } from 'shared/supabase/user-disinterests'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
@@ -47,6 +48,22 @@ export const onCreateMarket = async (
   )
   // Try again if first embedding failed
   if (!embedding) await generateContractEmbeddings(contract, pg)
+  // Users who marked an earlier instance of a recurring question uninterested
+  // asked not to see the series; hide this one for them too.
+  try {
+    const hiddenFor = await hideNearDuplicatesOfNewContract(pg, contract)
+    if (hiddenFor > 0) {
+      log('Hid near-duplicate market for uninterested users', {
+        contractId: contract.id,
+        users: hiddenFor,
+      })
+    }
+  } catch (e) {
+    log.error('Failed to hide near-duplicate market for uninterested users', {
+      contractId: contract.id,
+      error: e instanceof Error ? e.message : String(e),
+    })
+  }
   const isNonPredictive = await isContractNonPredictive(contract)
   if (isNonPredictive) {
     await addGroupToContract(

@@ -72,15 +72,6 @@ export function getSupabaseToken() {
   return call(getApiUrl('getsupabasetoken'), 'GET')
 }
 
-export function updateUserDisinterestEmbedding(params: {
-  contractId: string
-  creatorId: string
-  feedId?: number
-  removeContract?: boolean
-}) {
-  return call(getApiUrl('update-user-disinterest-embedding'), 'POST', params)
-}
-
 export const searchContracts = curriedAPI('search-markets-full')
 
 export function deleteMarket(params: { contractId: string }) {

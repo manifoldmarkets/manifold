@@ -26,6 +26,7 @@ import {
 } from 'shared/topic-interests'
 import { privateUserBlocksSql } from 'shared/supabase/search-contracts'
 import { getFollowedReposts, getTopicReposts } from 'shared/supabase/reposts'
+import { applyUserDisinterestsToTopicScores } from 'shared/supabase/user-disinterests'
 import {
   FeedContract,
   GROUP_SCORE_PRIOR,
@@ -152,12 +153,15 @@ async function fetchPersonalizedFeed(
     }
   }
 
-  const userInterestTopicIds = Object.keys(
+  // Topics of markets the user marked uninterested weigh less; see
+  // common/disinterests.ts.
+  const topicScores = await applyUserDisinterestsToTopicScores(
+    pg,
+    userId,
     userIdsToAverageTopicConversionScores[userId]
   )
-  const userInterestTopicWeights = Object.values(
-    userIdsToAverageTopicConversionScores[userId]
-  )
+  const userInterestTopicIds = Object.keys(topicScores)
+  const userInterestTopicWeights = Object.values(topicScores)
   const newUser = userInterestTopicIds.length < 100
 
   if (!newUser) {
@@ -260,7 +264,7 @@ async function fetchPersonalizedFeed(
       userId,
       limit,
       offset,
-      userIdsToAverageTopicConversionScores[userId],
+      topicScores,
       privateUser
         ? renderSql(privateUserBlocksSql(privateUser)).replace('where', 'and')
         : '',
