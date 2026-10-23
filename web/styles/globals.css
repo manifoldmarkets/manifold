@@ -594,3 +594,48 @@ text {
   border-radius: 6px;
   background: inherit;
 }
+
+/* Waving American flag fill for nav text; only visible while hovered. */
+@keyframes flag-wave-shade {
+  from {
+    background-position: calc(var(--flag-x, 50%) - 48px) 0, 0 0, 0 0, 0 0;
+  }
+  to {
+    background-position: var(--flag-x, 50%) 0, 0 0, 0 0, 0 0;
+  }
+}
+.flag-hover-text {
+  display: inline-block;
+  max-width: 100%;
+}
+.group:hover .flag-hover-text,
+.flag-hover-text:hover {
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  background-image:
+    /* waving light and shadow bands */
+    repeating-linear-gradient(
+      100deg,
+      rgba(255, 255, 255, 0.45) 0px,
+      rgba(0, 0, 0, 0.35) 12px,
+      rgba(255, 255, 255, 0.45) 24px,
+      rgba(0, 0, 0, 0.35) 36px,
+      rgba(255, 255, 255, 0.45) 48px
+    ),
+    /* blue canton */
+    linear-gradient(#3c3b6e, #3c3b6e),
+    /* stars */
+    radial-gradient(circle, #fff 0.9px, transparent 1.4px),
+    /* stripes */
+    repeating-linear-gradient(
+      180deg,
+      #b22234 0%,
+      #b22234 14.28%,
+      #fff 14.28%,
+      #fff 28.57%
+    );
+  background-size: 48px 100%, 45% 57%, 4px 4px, 100% 100%;
+  background-repeat: repeat-x, no-repeat, repeat, no-repeat;
+  animation: flag-wave-shade 0.9s linear infinite;
+}

@@ -1,6 +1,7 @@
 import { ExternalLinkIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
+import { useRef } from 'react'
 
 import { track } from 'web/lib/service/analytics'
 import {
@@ -26,6 +27,8 @@ export type NavItem = {
   itemClassName?: string
   /** Only shown because the user is a mod or admin. */
   modAction?: boolean
+  /** Fill the label with a waving flag that follows the cursor while hovered. */
+  flagHover?: boolean
 }
 
 export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
@@ -40,6 +43,17 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
       : queryCleanedHref
   const isCurrentPage =
     currentBasePath === segmentCleanedHref && !item.href?.startsWith('https://')
+
+  const labelRef = useRef<HTMLSpanElement>(null)
+  const onMouseMove = item.flagHover
+    ? (e: React.MouseEvent) => {
+        const el = labelRef.current
+        if (!el) return
+        const rect = el.getBoundingClientRect()
+        const pct = ((e.clientX - rect.left) / Math.max(rect.width, 1)) * 100
+        el.style.setProperty('--flag-x', `${pct}%`)
+      }
+    : undefined
 
   const onClick = () => {
     track('sidebar: ' + item.name)
@@ -75,7 +89,15 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
           aria-hidden="true"
         />
       )}
-      <span className="truncate">{item.children ?? item.name}</span>
+      <span className="truncate">
+        {item.flagHover ? (
+          <span ref={labelRef} className="flag-hover-text">
+            {item.children ?? item.name}
+          </span>
+        ) : (
+          item.children ?? item.name
+        )}
+      </span>
       {item.external && (
         <ExternalLinkIcon className="ml-2 h-4 w-4" aria-hidden="true" />
       )}
@@ -89,6 +111,7 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
         href={item.href}
         aria-current={isCurrentPage ? 'page' : undefined}
         onClick={onClick}
+        onMouseMove={onMouseMove}
         className={sidebarClass}
         target={
           item.external || !item.href.startsWith('/') ? '_blank' : undefined
