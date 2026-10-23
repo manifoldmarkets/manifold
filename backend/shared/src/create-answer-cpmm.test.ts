@@ -171,11 +171,32 @@ let unfilledBets: LimitBet[]
 let commitsToFail: number
 // How many websocket messages had gone out when each attempt reached commit.
 let broadcastsAtCommit: number[]
+// The options each attempt's transaction was opened with.
+let txOptions: unknown[]
+// Results for the multi-statement writes, in order. The row-lock batch each
+// attempt opens with is answered without taking one.
+let multiWriteResults: unknown[][][]
+// The contract row each attempt reads under its lock.
+type LockedContract = {
+  mechanism: string
+  resolved?: boolean
+  closeTime?: number | null
+}
 const trans = {
-  one: jest.fn(async () => ({ mechanism: 'cpmm-multi-2' })),
+  one: jest.fn(
+    async (): Promise<LockedContract> => ({ mechanism: 'cpmm-multi-2' })
+  ),
   map: jest.fn(async () => []),
   none: jest.fn(),
-  multi: jest.fn(async (): Promise<unknown[][]> => [[], [], [], []]),
+  multi: jest.fn(
+    async (sql: string): Promise<unknown[][]> =>
+      (/for update/.test(sql) ? undefined : multiWriteResults.shift()) ?? [
+        [],
+        [],
+        [],
+        [],
+      ]
+  ),
 }
 
 // Every websocket message the handler can send, so broadcastsAtCommit counts
@@ -195,6 +216,8 @@ beforeEach(() => {
   unfilledBets = []
   commitsToFail = 0
   broadcastsAtCommit = []
+  txOptions = []
+  multiWriteResults = []
 
   const contract = {
     id: 'c1',
@@ -212,7 +235,8 @@ beforeEach(() => {
   mocked(getUser).mockResolvedValue(user)
 
   mocked(createSupabaseDirectClient).mockReturnValue({
-    tx: async (_opts: unknown, fn: (t: typeof trans) => Promise<unknown>) => {
+    tx: async (opts: unknown, fn: (t: typeof trans) => Promise<unknown>) => {
+      txOptions.push(opts)
       const before = answers.map((a) => ({ ...a }))
       const result = await fn(trans)
       broadcastsAtCommit.push(broadcastCount())
@@ -395,7 +419,7 @@ describe('createAnswerCPMM', () => {
       ],
       balanceUpdates: [{ id: holder, balance: 10 }],
     } as Awaited<ReturnType<typeof redeemShares>>)
-    trans.multi.mockResolvedValueOnce([
+    multiWriteResults.push([
       [],
       [],
       [{ id: holder, balance: 110, cash_balance: 0, spice_balance: 0 }],
@@ -543,5 +567,98 @@ describe('createAnswerCPMM', () => {
     }
     const byIndex = (a: Answer, b: Answer) => a.index - b.index
     expect(client.sort(byIndex)).toEqual(answers.sort(byIndex))
+  })
+
+  it('runs at READ COMMITTED, locking the contract and then every row it overwrites before reading them', async () => {
+    // Under SERIALIZABLE, a big market's reads were widened to whole-table
+    // locks and any bet on the site aborted the attempt.
+    await createAnswer()
+
+    expect(txOptions).toHaveLength(1)
+    expect(txOptions[0]).not.toHaveProperty('mode')
+
+    const [lockContractSql, lockContractArgs] = trans.one.mock
+      .calls[0] as unknown as [string, unknown[]]
+    expect(lockContractSql).toMatch(/from contracts where id = \$1 for update/)
+    expect(lockContractArgs).toEqual(['c1'])
+
+    // One batch, returning a row per statement (so not pg-promise's none(),
+    // which rejects any returned row).
+    const [lockRowsSql, lockRowsArgs] = trans.multi.mock
+      .calls[0] as unknown as [string, unknown[]]
+    const normalized = lockRowsSql.replace(/\s+/g, ' ')
+    for (const lock of [
+      /from answers where contract_id = \$1 for update/,
+      /from contract_bets where contract_id = \$1 and is_filled = false and is_cancelled = false for update/,
+      /from user_contract_metrics where contract_id = \$1 for update/,
+      /from users where id = \$2 for update/,
+    ])
+      expect(normalized).toMatch(lock)
+    expect(lockRowsArgs).toEqual(['c1', 'u1'])
+    expect(trans.none).not.toHaveBeenCalled()
+
+    const lockContract = trans.one.mock.invocationCallOrder[0]
+    const lockRows = trans.multi.mock.invocationCallOrder[0]
+    expect(lockContract).toBeLessThan(lockRows)
+    expect(lockRows).toBeLessThan(callOrder(getUser)[0])
+    expect(lockRows).toBeLessThan(callOrder(getAnswersForContract)[0])
+    expect(lockRows).toBeLessThan(callOrder(getUnfilledBets)[0])
+    expect(lockRows).toBeLessThan(trans.map.mock.invocationCallOrder[0])
+    expect(callOrder(getUser)[0]).toBeLessThan(callOrder(incrementBalance)[0])
+  })
+
+  const expectNothingWritten = () => {
+    expect(txOptions).toHaveLength(1)
+    expect(getUser).not.toHaveBeenCalled()
+    expect(incrementBalance).not.toHaveBeenCalled()
+    expect(insertAnswer).not.toHaveBeenCalled()
+    expect(updateAnswers).not.toHaveBeenCalled()
+    expect(updateContract).not.toHaveBeenCalled()
+    expect(broadcastCount()).toBe(0)
+  }
+
+  it('refuses, writing nothing, when the market resolved while it waited for the lock', async () => {
+    trans.one.mockResolvedValueOnce({
+      mechanism: 'cpmm-multi-2',
+      resolved: true,
+      closeTime: null,
+    })
+
+    await expect(createAnswer()).rejects.toMatchObject({
+      code: 403,
+      message: 'This market has already resolved',
+    })
+    expectNothingWritten()
+  })
+
+  it('refuses, writing nothing, when the market closes while it waits for the row locks', async () => {
+    // Open when the contract row is read, closed by the time the rest of the
+    // locks are held.
+    const closeTime = 1_000_000
+    let now = closeTime - 1
+    const clock = jest.spyOn(Date, 'now').mockImplementation(() => now)
+    trans.multi.mockImplementationOnce(async () => {
+      now = closeTime + 1
+      return [[], [], [], []]
+    })
+    trans.one.mockResolvedValueOnce({
+      mechanism: 'cpmm-multi-2',
+      resolved: false,
+      closeTime,
+    })
+    mocked(getContractSupabase).mockResolvedValue({
+      ...(await getContractSupabase('c1')),
+      closeTime,
+    } as CPMMMultiContract)
+
+    try {
+      await expect(createAnswer()).rejects.toMatchObject({
+        code: 403,
+        message: 'Trading is closed',
+      })
+    } finally {
+      clock.mockRestore()
+    }
+    expectNothingWritten()
   })
 })

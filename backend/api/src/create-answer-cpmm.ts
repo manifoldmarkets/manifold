@@ -203,19 +203,68 @@ const createAnswerCpmmMain = async (
   // second one under another id.
   const id = randomString()
 
+  // At Postgres's default READ COMMITTED level, not the helper's SERIALIZABLE,
+  // as in add-liquidity. On a big market this transaction reads thousands of
+  // bets and metrics (every position in Other), so Postgres widens its read
+  // locks to whole tables, and any serializable bet committing anywhere on the
+  // site meanwhile aborts it: at ~10 bets a second, every attempt failed. The
+  // row locks below order it against the writers it actually overlaps with
+  // instead.
   const { newAnswer, user, pending } = await runTransactionWithRetries(
     async (pgTrans) => {
       const pending = newPendingBroadcasts()
-      // The mechanism picks the split below. A liquidity add can convert a
-      // cpmm-multi-1 market to cpmm-multi-2 after `contract` was read, and the
-      // drizzle then floats its answers' p, so read the mechanism again in each
-      // attempt. A conversion committed after this read changes the contract
-      // row, which this transaction updates below, so the attempt fails to
-      // serialize and is retried.
-      const { mechanism } = await pgTrans.one<
-        Pick<CPMMMultiContract, 'mechanism'>
-      >(`select mechanism from contracts where id = $1`, [contract.id])
+      // Taken first, as bets take it (lockContractAndGetBetData): bets and
+      // sells on this market wait for this transaction before reading, and
+      // liquidity adds, multi-sells and resolutions wait when they write the
+      // row, then retry or fail to serialize. The mechanism picks the split
+      // below, and a liquidity add can convert a cpmm-multi-1 market to
+      // cpmm-multi-2 after `contract` was read, so it's read here, under the
+      // lock.
+      const { mechanism, resolved, closeTime } = await pgTrans.one<
+        Pick<CPMMMultiContract, 'mechanism'> & {
+          resolved: boolean
+          closeTime: number | null
+        }
+      >(
+        `select mechanism,
+          (resolution is not null or resolution_time is not null) as resolved,
+          (extract(epoch from close_time) * 1000)::float8 as "closeTime"
+        from contracts where id = $1 for update`,
+        [contract.id]
+      )
+      // verifyContract read the market before this transaction waited for
+      // the lock; a resolution since then has paid out the pools this answer
+      // is about to change.
+      if (resolved) throw new APIError(403, 'This market has already resolved')
       const currentContract = { ...contract, mechanism }
+
+      // Every row this transaction overwrites with values computed from what
+      // it read (the answers' pools, the open orders' fills, the positions)
+      // is locked before it's read, along with the creator, whose balance is
+      // checked below. A writer that doesn't take the contract lock (the
+      // per-answer drizzle, loans, cancelling an order) then either commits
+      // first and is read here, or waits for this transaction, where under
+      // SERIALIZABLE the overlap aborted one of them. Balances change by
+      // atomic increments and need no lock. count(*), so the rows stay here.
+      await pgTrans.multi(
+        `select count(*) from (
+          select 1 from answers where contract_id = $1 for update
+        ) a;
+        select count(*) from (
+          select 1 from contract_bets
+          where contract_id = $1 and is_filled = false and is_cancelled = false
+          for update
+        ) b;
+        select count(*) from (
+          select 1 from user_contract_metrics where contract_id = $1 for update
+        ) m;
+        select 1 from users where id = $2 for update`,
+        [contract.id, creatorId]
+      )
+      // Checked once every lock is held: waiting for them can run past the
+      // close.
+      if (closeTime != null && Date.now() > closeTime)
+        throw new APIError(403, 'Trading is closed')
 
       const user = await getUser(creatorId, pgTrans)
       if (!user) throw new APIError(401, 'Your account was not found')
@@ -330,7 +379,9 @@ const createAnswerCpmmMain = async (
       await insertLiquidity(pgTrans, lp)
 
       return { newAnswer, updatedAnswers, user, pending }
-    }
+    },
+    3,
+    { mode: 'default' }
   )
   sendPendingBroadcasts(contract.id, pending)
 
