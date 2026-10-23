@@ -134,7 +134,10 @@ function LinkedMarketList(props: {
         Loading linked markets…
       </p>
     )
-  const rows = refs.filter((ref) => byId.has(ref.id))
+  const rows = refs.filter((ref) => {
+    const contract = byId.get(ref.id)
+    return !!contract && isListable(contract)
+  })
   if (rows.length === 0)
     return <p className={styles.note}>No available linked markets.</p>
   return (
@@ -154,6 +157,13 @@ const isOpen = (contract: Contract) =>
   !contract.isResolved &&
   (contract.closeTime == null || contract.closeTime > Date.now())
 
+// The link list is cached for the session; a child can resolve or be hidden
+// before the section is opened. Judge it by the contract just fetched.
+const isListable = (contract: Contract) =>
+  !contract.isResolved &&
+  !contract.deleted &&
+  (contract.visibility ?? 'public') === 'public'
+
 // One linked market: its question (a link to its page), who made it and how
 // many trade it, its price or status, and a Bet button for binary and
 // multiple choice markets. Polls and other types link to their page.
@@ -171,9 +181,11 @@ function LinkedMarketRow(props: {
   const multi = isMultiCpmm(contract)
     ? (contract as CPMMMultiContract)
     : undefined
+  // An independent market can hold resolved answers while it stays open; a
+  // resolved YES would otherwise read as a 100% live quote.
   const leader = multi
     ? maxBy(
-        multi.answers.filter((a) => a.resolution !== 'CANCEL'),
+        multi.answers.filter((a) => !a.resolution),
         (a) => getAnswerProbability(multi, a.id)
       )
     : undefined

@@ -701,13 +701,16 @@ type Check =
   | { status: 'linked elsewhere'; parentId: string }
   | { status: 'error'; message: string }
 
+// Reads the child afresh each time, so the recheck under the locks sees a
+// market hidden or deleted since the list was printed, as the API would.
 async function checkLink(
   pg: SupabaseDirectClient,
   link: RaceLink,
-  rows: Record<string, ContractRow>,
   replace: boolean
 ): Promise<Check> {
-  const child = rows[link.child]
+  const child = await pg.oneOrNone<
+    Pick<ContractRow, 'id' | 'visibility' | 'deleted'>
+  >(`select id, visibility, deleted from contracts where id = $1`, [link.child])
   if (!child) return { status: 'error', message: 'child market not found' }
   const childError = getLinkChildError({
     visibility: child.visibility ?? 'public',
@@ -758,7 +761,7 @@ runScript(async ({ pg }) => {
 
   const checks = new Map<RaceLink, Check>()
   for (const link of ELECTION_RACE_LINKS)
-    checks.set(link, await checkLink(pg, link, rows, replace))
+    checks.set(link, await checkLink(pg, link, replace))
 
   const byRace = groupBy(ELECTION_RACE_LINKS, (l) => l.race)
   for (const [race, links] of Object.entries(byRace)) {
@@ -810,7 +813,7 @@ runScript(async ({ pg }) => {
     await pg.tx(async (tx) => {
       // Re-check under the locks the API takes, in case anything moved.
       await lockMarketLinkContracts(tx, [link.child, link.parent])
-      const check = await checkLink(tx, link, rows, replace)
+      const check = await checkLink(tx, link, replace)
       if (check.status !== 'ok') {
         console.log(`  skip ${link.child}: ${JSON.stringify(check)}`)
         return
