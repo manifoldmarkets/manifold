@@ -594,3 +594,48 @@ text {
   border-radius: 6px;
   background: inherit;
 }
+
+/* Mana coins pop out of the "Get mana" button on hover. Skipped on touch and for reduced motion. */
+.mana-burst-coin {
+  display: none;
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  @keyframes mana-burst-fly {
+    0% {
+      opacity: 0;
+      transform: translate(0, 0) scale(0.4) rotate(0deg);
+    }
+    20% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(var(--dx), var(--dy)) scale(1) rotate(var(--rot));
+    }
+  }
+  @keyframes mana-burst-spin {
+    to {
+      transform: rotateY(360deg);
+    }
+  }
+  .mana-burst-coin {
+    display: block;
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    margin-top: -7px;
+    pointer-events: none;
+    opacity: 0;
+  }
+  .mana-burst:hover .mana-burst-coin {
+    animation: mana-burst-fly 0.8s ease-out var(--delay) forwards;
+  }
+  .mana-burst-icon {
+    transform-style: preserve-3d;
+  }
+  .mana-burst:hover .mana-burst-icon {
+    animation: mana-burst-spin 0.6s ease-in-out;
+  }
+}
