@@ -16,6 +16,7 @@ import { MapContractsDictionary } from 'web/public/data/elections-data'
 import { ElectionBalance } from './election-balance'
 import { sourceAudit } from './audited-sources'
 import { RaceDetailsPanel } from './race-details-panel'
+import { RaceLinkedMarkets } from './race-linked-markets'
 import { useMapCamera } from './use-map-camera'
 import { Bounds, Point } from './map-camera'
 import { BallotMeasureCard } from './ballot-measure-card'
@@ -1410,6 +1411,7 @@ export function ElectionExplorer(props: Props) {
                         ? candidate
                         : undefined
                     }
+                    linkedCandidate={candidate}
                   />
                 )}
               </>
@@ -1534,8 +1536,11 @@ function SelectedRace(props: {
   race: Race
   mode: ElectionMode
   candidate?: Contract | null
+  // The candidate market whether or not it's shown as its own section: a
+  // market linked to it still belongs under this race.
+  linkedCandidate?: Contract | null
 }) {
-  const { race, mode, candidate } = props
+  const { race, mode, candidate, linkedCandidate } = props
   const tier = raceTier(race)
   const portfolio =
     race.answerId &&
@@ -1610,6 +1615,14 @@ function SelectedRace(props: {
           <SourceNotes contract={candidate} />
         </div>
       )}
+      {/* Props and lines on this race, where the candidate market used to be
+          the only extra. Remounts per race so one race's list never shows
+          under another. */}
+      <RaceLinkedMarkets
+        key={race.id}
+        race={race}
+        candidate={linkedCandidate}
+      />
     </>
   )
 }
