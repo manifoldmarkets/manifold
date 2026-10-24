@@ -10,6 +10,7 @@ import {
 
 export type NavItem = {
   name: string
+  /** Analytics name for clicks, when it should differ from the label. */
   trackingEventName?: string
   href?: string
   onClick?: () => void
@@ -26,6 +27,8 @@ export type NavItem = {
   itemClassName?: string
   /** Only shown because the user is a mod or admin. */
   modAction?: boolean
+  /** Show a waving flag spotlight behind the item that follows the cursor while hovered. */
+  flagHover?: boolean
 }
 
 export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
@@ -41,8 +44,17 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
   const isCurrentPage =
     currentBasePath === segmentCleanedHref && !item.href?.startsWith('https://')
 
+  const onMouseMove = item.flagHover
+    ? (e: React.MouseEvent<HTMLElement>) => {
+        const el = e.currentTarget
+        const rect = el.getBoundingClientRect()
+        el.style.setProperty('--flag-x', `${e.clientX - rect.left}px`)
+        el.style.setProperty('--flag-y', `${e.clientY - rect.top}px`)
+      }
+    : undefined
+
   const onClick = () => {
-    track('sidebar: ' + item.name)
+    track('sidebar: ' + (item.trackingEventName ?? item.name))
     item.onClick?.()
   }
 
@@ -56,7 +68,8 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
       ? 'bg-ink-200 text-ink-900'
       : 'text-ink-600 hover:bg-primary-100 hover:text-ink-700',
     'group flex w-full items-center rounded-md px-3 py-2 text-sm font-medium',
-    'focus-visible:bg-primary-100 outline-none'
+    'focus-visible:bg-primary-100 outline-none',
+    item.flagHover && 'flag-hover-item'
   )
 
   const sidebarItem = (
@@ -89,6 +102,7 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
         href={item.href}
         aria-current={isCurrentPage ? 'page' : undefined}
         onClick={onClick}
+        onMouseMove={onMouseMove}
         className={sidebarClass}
         target={
           item.external || !item.href.startsWith('/') ? '_blank' : undefined
@@ -99,7 +113,12 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
     )
   } else {
     return (
-      <button type="button" onClick={onClick} className={sidebarClass}>
+      <button
+        type="button"
+        onClick={onClick}
+        onMouseMove={onMouseMove}
+        className={sidebarClass}
+      >
         {sidebarItem}
       </button>
     )
