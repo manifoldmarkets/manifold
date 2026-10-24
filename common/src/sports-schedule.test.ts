@@ -2,25 +2,26 @@ import {
   buildSportsIndex,
   CURATED_SPORTS,
   findRelatedMarkets,
-  gameStatus,
   GameForMatching,
+  gameStatus,
+  liveScoreFromMarketFields,
   matchRelatedMarket,
   mentionsTeam,
   NBA_TOPIC_ID,
-  WNBA_TOPIC_ID,
   parseSportsStart,
   RelatedCandidate,
   relatedGroupFor,
   splitFlag,
+  splitTopicName,
   sportForMarket,
+  sportGroupIds,
   SPORTS_DEFAULT_GROUP_ID,
   SportsTopic,
   SportsTopicLink,
   sportTagIds,
-  sportGroupIds,
-  splitTopicName,
   teamAliases,
   teamDisplayName,
+  WNBA_TOPIC_ID,
 } from './sports-schedule'
 import { DAY_MS, HOUR_MS } from './util/time'
 
@@ -681,5 +682,77 @@ describe('sports from the topic tree', () => {
       'polo',
     ])
     expect(sportForMarket({ groupIds: ['c'] }, odd)).toBe('polo')
+  })
+})
+
+describe('liveScoreFromMarketFields', () => {
+  const live = {
+    sportsLiveStatus: 'IN_PLAY',
+    sportsHomeScore: 2,
+    sportsAwayScore: 1,
+    sportsLiveMinute: '67',
+    sportsScoreUpdatedTime: 1_700_000_000_000,
+  }
+
+  it('keeps the provider timestamp, so the score age survives a reconnect', () => {
+    // Regression: the reconnect recovery snapshot used to build this state
+    // without updatedTime, while the broadcast path included it. ScoreFreshness
+    // reads updatedTime, so after every rollout a live card fell back to
+    // "Score update time unavailable" until the next broadcast arrived.
+    expect(liveScoreFromMarketFields(live)).toEqual({
+      home: 2,
+      away: 1,
+      minute: '67',
+      updatedTime: 1_700_000_000_000,
+    })
+  })
+
+  it('builds identical state from a broadcast and a recovery snapshot', () => {
+    // The two call sites are the only reason this helper exists; if they can
+    // produce different state for the same fields, the drift is back.
+    const fromBroadcast = liveScoreFromMarketFields({ ...live })
+    const fromSnapshot = liveScoreFromMarketFields({ ...live })
+    expect(fromSnapshot).toEqual(fromBroadcast)
+  })
+
+  it('is live while paused, and not live otherwise', () => {
+    expect(
+      liveScoreFromMarketFields({ ...live, sportsLiveStatus: 'PAUSED' })
+    ).not.toBeUndefined()
+    for (const status of ['FINISHED', 'SCHEDULED', '', undefined, null, 7]) {
+      expect(
+        liveScoreFromMarketFields({ ...live, sportsLiveStatus: status })
+      ).toBeUndefined()
+    }
+  })
+
+  it('reports a missing or unusable timestamp as null rather than dropping it', () => {
+    for (const value of [undefined, null, 'yesterday', NaN, Infinity]) {
+      expect(
+        liveScoreFromMarketFields({ ...live, sportsScoreUpdatedTime: value })
+      ).toMatchObject({ updatedTime: null })
+    }
+  })
+
+  it('defends every numeric field against non-finite values', () => {
+    expect(
+      liveScoreFromMarketFields({
+        sportsLiveStatus: 'IN_PLAY',
+        sportsHomeScore: NaN,
+        sportsAwayScore: '3',
+        sportsLiveMinute: 90,
+        sportsScoreUpdatedTime: 0,
+      })
+    ).toEqual({ home: null, away: null, minute: null, updatedTime: 0 })
+  })
+
+  it('keeps a zero score, which is not the same as no score', () => {
+    expect(
+      liveScoreFromMarketFields({
+        ...live,
+        sportsHomeScore: 0,
+        sportsAwayScore: 0,
+      })
+    ).toMatchObject({ home: 0, away: 0 })
   })
 })

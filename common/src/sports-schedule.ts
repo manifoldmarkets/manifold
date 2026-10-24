@@ -1094,6 +1094,43 @@ export interface SportsLiveScore {
   sportsScoreUpdatedTime?: number | null
 }
 
+/** The live score a game card displays, or undefined when it is not live. */
+export type LiveScoreView = {
+  home: number | null
+  away: number | null
+  minute: string | null
+  updatedTime?: number | null
+}
+
+/**
+ * Build a card's live score from market fields, whether they arrived in a
+ * websocket broadcast or in a recovery snapshot. Both callers must agree: the
+ * reconnect snapshot once omitted updatedTime, which silently degraded the
+ * score-age indicator to "Score update time unavailable" after every rollout
+ * until the next broadcast. One builder so the two paths cannot drift again.
+ */
+export function liveScoreFromMarketFields(fields: {
+  sportsLiveStatus?: unknown
+  sportsHomeScore?: unknown
+  sportsAwayScore?: unknown
+  sportsLiveMinute?: unknown
+  sportsScoreUpdatedTime?: unknown
+}): LiveScoreView | undefined {
+  const { sportsLiveStatus: status } = fields
+  if (status !== 'IN_PLAY' && status !== 'PAUSED') return undefined
+  const finiteOrNull = (value: unknown) =>
+    typeof value === 'number' && Number.isFinite(value) ? value : null
+  return {
+    home: finiteOrNull(fields.sportsHomeScore),
+    away: finiteOrNull(fields.sportsAwayScore),
+    minute:
+      typeof fields.sportsLiveMinute === 'string'
+        ? fields.sportsLiveMinute
+        : null,
+    updatedTime: finiteOrNull(fields.sportsScoreUpdatedTime),
+  }
+}
+
 export interface ScheduleTeam {
   answerId: string
   name: string

@@ -8,7 +8,10 @@ import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { useUnfilledBets } from 'client-common/hooks/use-bets'
 import { flagImageCode } from 'common/sports'
 import { ContractMetric } from 'common/contract-metric'
-import { SportsLiveScore } from 'common/sports-schedule'
+import {
+  liveScoreFromMarketFields,
+  SportsLiveScore,
+} from 'common/sports-schedule'
 import {
   SportsThreeWayBetDialog,
   SportsVersusBetDialog,
@@ -347,35 +350,10 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
       if (!contract)
         throw new Error('Sports market unavailable during recovery.')
       const score = contract as unknown as Partial<SportsLiveScore>
-      return () =>
-        setLiveScore(
-          score.sportsLiveStatus === 'IN_PLAY' ||
-            score.sportsLiveStatus === 'PAUSED'
-            ? {
-                home: score.sportsHomeScore ?? null,
-                away: score.sportsAwayScore ?? null,
-                minute: score.sportsLiveMinute ?? null,
-              }
-            : undefined
-        )
+      return () => setLiveScore(liveScoreFromMarketFields(score))
     },
     enabled: !resolved && !!match.contractId,
-    onBroadcast: ({ data }) => {
-      const status = data.sportsLiveStatus as string | undefined
-      if (status === 'IN_PLAY' || status === 'PAUSED') {
-        setLiveScore({
-          home: (data.sportsHomeScore as number | null) ?? null,
-          away: (data.sportsAwayScore as number | null) ?? null,
-          minute: (data.sportsLiveMinute as string | null) ?? null,
-          updatedTime:
-            typeof data.sportsScoreUpdatedTime === 'number'
-              ? data.sportsScoreUpdatedTime
-              : null,
-        })
-      } else {
-        setLiveScore(undefined)
-      }
-    },
+    onBroadcast: ({ data }) => setLiveScore(liveScoreFromMarketFields(data)),
   })
 
   const live = !resolved ? liveScore : undefined
