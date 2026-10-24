@@ -1,20 +1,85 @@
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useUser } from 'web/hooks/use-user'
 import { usePersonalizedManaOffers } from 'web/hooks/use-personalized-mana-offers'
 import { Button, SizeType } from '../buttons/button'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { AddFundsOfferBadge } from './add-funds-offer-badge'
 
-// Direction (px), rotation (deg) and delay (ms) for each coin in the hover burst.
-const BURST_COINS = [
-  { dx: -34, dy: -38, rot: -200, delay: 0 },
-  { dx: -12, dy: -48, rot: 160, delay: 60 },
-  { dx: 14, dy: -46, rot: -140, delay: 20 },
-  { dx: 36, dy: -34, rot: 220, delay: 90 },
-  { dx: -44, dy: -12, rot: 120, delay: 120 },
-  { dx: 46, dy: -10, rot: -180, delay: 40 },
-]
+const RAIN_COINS = 36
+const RAIN_MAX_MS = 3200
+
+type RainCoin = {
+  left: number
+  size: number
+  delay: number
+  dur: number
+  drift: number
+  spin: number
+  tilt: number
+}
+
+const makeRain = (): RainCoin[] =>
+  Array.from({ length: RAIN_COINS }, () => ({
+    left: Math.random() * 100,
+    size: 20 + Math.random() * 18,
+    delay: Math.random() * 900,
+    dur: 1300 + Math.random() * 1000,
+    drift: (Math.random() - 0.5) * 80,
+    spin: (Math.random() < 0.5 ? -1 : 1) * (360 + Math.random() * 720),
+    tilt: (Math.random() - 0.5) * 40,
+  }))
+
+// Hover-capable devices only, and never when the user asked for reduced motion.
+const canRain = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia(
+    '(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)'
+  ).matches
+
+function useManaRain() {
+  const [coins, setCoins] = useState<RainCoin[]>()
+  const timer = useRef<ReturnType<typeof setTimeout>>()
+
+  useEffect(() => () => clearTimeout(timer.current), [])
+
+  const start = () => {
+    if (coins || !canRain()) return
+    setCoins(makeRain())
+    timer.current = setTimeout(() => setCoins(undefined), RAIN_MAX_MS)
+  }
+  return { coins, start }
+}
+
+function ManaRain(props: { coins: RainCoin[] }) {
+  return createPortal(
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-50">
+      {props.coins.map((c, i) => (
+        <img
+          key={i}
+          src="/mana.svg"
+          alt=""
+          className="mana-rain-coin"
+          style={
+            {
+              left: `${c.left}%`,
+              width: c.size,
+              height: c.size,
+              '--delay': `${c.delay}ms`,
+              '--dur': `${c.dur}ms`,
+              '--drift': `${c.drift}px`,
+              '--spin': `${c.spin}deg`,
+              '--tilt': `${c.tilt}deg`,
+            } as React.CSSProperties
+          }
+        />
+      ))}
+    </div>,
+    document.body
+  )
+}
 
 export function AddFundsButton(props: {
   userId?: string
@@ -26,6 +91,7 @@ export function AddFundsButton(props: {
   const router = useRouter()
   const { pendingCount, activeCount, nextExpiresAt } =
     usePersonalizedManaOffers()
+  const rain = useManaRain()
 
   if (!userId || user?.id !== userId) return null
 
@@ -34,7 +100,10 @@ export function AddFundsButton(props: {
   // the wrapper). `relative` on the wrapper is the positioning context for
   // the absolutely-positioned badge.
   return (
-    <span className={clsx('mana-burst relative inline-block', className)}>
+    <span
+      className={clsx('relative inline-block', className)}
+      onMouseEnter={rain.start}
+    >
       <Button
         onClick={() =>
           router.asPath.includes('/checkout')
@@ -45,25 +114,9 @@ export function AddFundsButton(props: {
         color="gradient-pink"
         className={className}
       >
-        Get mana <ManaCoin className="mana-burst-icon ml-1" />
+        Get mana <ManaCoin className="ml-1" />
       </Button>
-      {BURST_COINS.map((c, i) => (
-        <img
-          key={i}
-          src="/mana.svg"
-          alt=""
-          aria-hidden
-          className="mana-burst-coin"
-          style={
-            {
-              '--dx': `${c.dx}px`,
-              '--dy': `${c.dy}px`,
-              '--rot': `${c.rot}deg`,
-              '--delay': `${c.delay}ms`,
-            } as React.CSSProperties
-          }
-        />
-      ))}
+      {rain.coins && <ManaRain coins={rain.coins} />}
       <AddFundsOfferBadge
         pendingCount={pendingCount}
         activeCount={activeCount}

@@ -595,49 +595,24 @@ text {
   background: inherit;
 }
 
-/* Mana coins pop out of the "Get mana" button on hover. Skipped on touch and for reduced motion. */
-.mana-burst-coin {
-  display: none;
+/* Mana coins rain down the screen when the "Get mana" button is hovered. The rain component
+   only renders these on hover-capable devices without reduced motion. */
+@keyframes mana-rain-fall {
+  from {
+    transform: translate3d(0, -12vh, 0) rotateY(0deg) rotate(var(--tilt));
+  }
+  to {
+    transform: translate3d(var(--drift), 112vh, 0) rotateY(var(--spin))
+      rotate(var(--tilt));
+  }
 }
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  @keyframes mana-burst-fly {
-    0% {
-      opacity: 0;
-      transform: translate(0, 0) scale(0.4) rotate(0deg);
-    }
-    20% {
-      opacity: 1;
-    }
-    100% {
-      opacity: 0;
-      transform: translate(var(--dx), var(--dy)) scale(1) rotate(var(--rot));
-    }
-  }
-  @keyframes mana-burst-spin {
-    to {
-      transform: rotateY(360deg);
-    }
-  }
-  .mana-burst-coin {
-    display: block;
-    position: absolute;
-    right: 14px;
-    top: 50%;
-    width: 14px;
-    height: 14px;
-    margin-top: -7px;
-    pointer-events: none;
-    opacity: 0;
-  }
-  .mana-burst:hover .mana-burst-coin {
-    animation: mana-burst-fly 0.8s ease-out var(--delay) forwards;
-  }
-  .mana-burst-icon {
-    transform-style: preserve-3d;
-  }
-  .mana-burst:hover .mana-burst-icon {
-    animation: mana-burst-spin 0.6s ease-in-out;
-  }
+.mana-rain-coin {
+  position: fixed;
+  top: 0;
+  pointer-events: none;
+  animation: mana-rain-fall var(--dur) cubic-bezier(0.4, 0, 0.9, 0.6)
+    var(--delay) both;
+  will-change: transform;
 }
 
 /* Waving American flag spotlight behind a nav item; follows the cursor, only visible while hovered.
