@@ -62,11 +62,7 @@ export default function Elections(
     // No Google One Tap here: on phones its sign-in sheet covered the map
     // legend on first load, which is most of the launch audience's first
     // impression. Betting still prompts sign-in.
-    <Page
-      trackPageView="us midterms page 2026"
-      className="lg:col-span-10"
-      hideGoogleOneTap
-    >
+    <Page trackPageView="us midterms page 2026" hideGoogleOneTap>
       {/* The share card quotes the same live control markets the page shows,
           plus when it read them, and refreshes with `revalidate`, so it
           can't drift from what's on the page. 1200x630 for X's
