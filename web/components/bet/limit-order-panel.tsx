@@ -409,7 +409,7 @@ export default function LimitOrderPanel(props: {
           {isPseudoNumeric ? 'Value' : `Probability (%)`}
         </div>
         <Row>
-          <label className="font-sm md:font-lg relative w-full">
+          <div className="font-sm md:font-lg relative w-full">
             <Input
               aria-label={
                 isPseudoNumeric ? 'Limit value' : 'Limit probability (%)'
@@ -473,7 +473,7 @@ export default function LimitOrderPanel(props: {
                 +5
               </button>
             </Row>
-          </label>
+          </div>
         </Row>
 
         <ProbabilitySlider
@@ -594,6 +594,8 @@ export default function LimitOrderPanel(props: {
                         setIsEditingPayout(false)
                       }
                     }}
+                    // Focus follows the click on the payout.
+                    // eslint-disable-next-line jsx-a11y/no-autofocus
                     autoFocus
                     min={1}
                     step={1}
@@ -601,7 +603,9 @@ export default function LimitOrderPanel(props: {
                     onChangeAmount={setEditablePayout}
                   />
                 ) : (
-                  <span
+                  <button
+                    type="button"
+                    aria-label="Edit payout"
                     className="cursor-pointer hover:underline"
                     onClick={() => {
                       setEditablePayout(Math.floor(currentPayout))
@@ -612,7 +616,7 @@ export default function LimitOrderPanel(props: {
                       amount={currentPayout}
                       isCashContract={isCashContract}
                     />
-                  </span>
+                  </button>
                 )}
               </span>
               {!isEditingPayout && <>({returnPercent})</>}
@@ -628,8 +632,11 @@ export default function LimitOrderPanel(props: {
                   size="xl"
                   disabled={betDisabled}
                   color={
+                    // The compact ticket keeps Yes=green, No=red.
                     compact
-                      ? 'indigo'
+                      ? outcome === 'YES'
+                        ? 'green'
+                        : 'red'
                       : (pseudonymColor as any) ??
                         (hideYesNo
                           ? 'none'
