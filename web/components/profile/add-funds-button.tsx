@@ -39,6 +39,24 @@ const canRain = () =>
     '(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)'
   ).matches
 
+// The rain plays once per visit (browser session), not on every hover.
+const RAIN_SEEN_KEY = 'mana-rain-seen'
+let rainSeen = false
+const hasSeenRain = () => {
+  if (rainSeen) return true
+  try {
+    return sessionStorage.getItem(RAIN_SEEN_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+const markRainSeen = () => {
+  rainSeen = true
+  try {
+    sessionStorage.setItem(RAIN_SEEN_KEY, '1')
+  } catch {}
+}
+
 function useManaRain() {
   const [coins, setCoins] = useState<RainCoin[]>()
   const timer = useRef<ReturnType<typeof setTimeout>>()
@@ -46,7 +64,8 @@ function useManaRain() {
   useEffect(() => () => clearTimeout(timer.current), [])
 
   const start = () => {
-    if (coins || !canRain()) return
+    if (coins || hasSeenRain() || !canRain()) return
+    markRainSeen()
     setCoins(makeRain())
     timer.current = setTimeout(() => setCoins(undefined), RAIN_MAX_MS)
   }
