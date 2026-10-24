@@ -174,6 +174,49 @@ const verifyUserCanUnresolve = async (
       throw new APIError(400, `Answer ${answerId} is not resolved`)
 
     resolutionTime = answerResolutionTime
+
+    // A cancellation credits a whole-market provision that doesn't record its
+    // answers to the answers open when it was made
+    // (getIndependentMultiFixedPayouts). One made while this answer was
+    // resolved, now or in a resolution since undone, didn't reach it, so the
+    // answer can't reopen. An undone resolution lasted from its payouts until
+    // the unresolve that reverted them.
+    const addedWhileResolved = await pg.oneOrNone(
+      `with resolutions as (
+         select (p.data->'data'->>'payoutStartTime')::bigint as started,
+           min(u.created_time) as undone
+         from txns p
+         left join txns u
+           on u.category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
+           and u.to_id = $1
+           and u.data->'data'->>'revertsTxnId' = p.id
+         where p.from_id = $1
+           and p.category = 'CONTRACT_RESOLUTION_PAYOUT'
+           and p.data->'data'->>'answerId' = $3
+         group by 1
+       )
+       select exists (
+         select 1 from contract_liquidity l
+         where l.contract_id = $1
+           and l.data->>'answerId' is null
+           and l.data->'answerIds' is null
+           and (
+             l.created_time > millis_to_ts($2)
+             or exists (
+               select 1 from resolutions r
+               where l.created_time > millis_to_ts(r.started)
+                 and (r.undone is null or l.created_time < r.undone)
+             )
+           )
+       ) as added`,
+      [contract.id, resolutionTime, answerId],
+      (r) => r?.added === true
+    )
+    if (addedWhileResolved)
+      throw new APIError(
+        403,
+        `Liquidity was added to the whole market after this answer resolved, so it can't be unresolved.`
+      )
   }
 
   if (resolutionTime < TXNS_PR_MERGED_ON)
