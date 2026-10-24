@@ -37,7 +37,7 @@ export function SportsShell(props: {
   const { selected, rail, heading, subheading, seo, trackPageView, children } =
     props
   return (
-    <Page trackPageView={trackPageView} className="min-w-0 lg:col-span-10">
+    <Page trackPageView={trackPageView} className="min-w-0">
       <SEO {...seo} />
       <Col className="w-full min-w-0 gap-3 px-3 pt-5 sm:px-6 sm:pt-7">
         <Row className="items-center justify-between gap-2 px-1">
