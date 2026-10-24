@@ -101,23 +101,24 @@ export function SportMarkets(props: {
 }) {
   const { sport, upcoming, sportsByKey, enabled } = props
   return (
-    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <Col className="min-w-0 gap-6">
-        <UpcomingMarkets
-          key={sport === 'all' ? 'all' : sport.key}
-          refs={upcoming}
-          sport={sport === 'all' ? 'all' : sport.key}
-          showSport={sport === 'all'}
-          sportsByKey={sportsByKey}
-        />
-        <MakeAMarket sport={sport} />
-      </Col>
+    // One column: in the site's standard 7-of-12 page column, a split would
+    // leave each side about a phone's width, which the binary "Bet Yes / Bet
+    // No" rows don't fit.
+    <Col className="min-w-0 gap-6">
+      <UpcomingMarkets
+        key={sport === 'all' ? 'all' : sport.key}
+        refs={upcoming}
+        sport={sport === 'all' ? 'all' : sport.key}
+        showSport={sport === 'all'}
+        sportsByKey={sportsByKey}
+      />
       <SportsMarketSections
         sport={sport}
         enabled={enabled}
         className="min-w-0"
       />
-    </div>
+      <MakeAMarket sport={sport} />
+    </Col>
   )
 }
 
