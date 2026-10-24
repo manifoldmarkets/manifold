@@ -171,9 +171,11 @@ export function USElectionsPage(
     >
       {/* Hero with back navigation, left-aligned (back sits left of the title).
           A visitor arriving from a shared link has no Manifold history to go
-          back to, so the arrow goes Home instead of off-site. */}
+          back to, so the arrow goes Home instead of off-site. On desktop
+          the sidebar already links everywhere the arrow could go, so it is
+          hidden there. */}
       <Row className="items-center gap-2 pt-3 sm:pt-1">
-        <BackButton homeFallback />
+        <BackButton homeFallback className="lg:hidden" />
         <Col className={clsx(hideTitle && 'hidden')}>
           <h1 className="text-primary-700 text-3xl font-normal sm:text-4xl">
             Elections
