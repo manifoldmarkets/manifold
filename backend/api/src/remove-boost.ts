@@ -8,7 +8,7 @@ import {
   getContractTraders,
   getContractVoters,
   getPerpDailyPriceChanges,
-  getTodayComments,
+  getTodayDiscussion,
 } from 'shared/importance-score'
 import { getContract } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
@@ -46,7 +46,7 @@ export const removeBoost: APIHandler<'remove-boost'> = async (props, auth) => {
   const contractIds = [contractId]
 
   const [
-    todayComments,
+    todayDiscussion,
     todayLikesByContract,
     thisWeekLikesByContract,
     todayContractTraders,
@@ -57,7 +57,7 @@ export const removeBoost: APIHandler<'remove-boost'> = async (props, auth) => {
     thisWeekContractVoters,
     perpDailyPriceChanges,
   ] = await Promise.all([
-    getTodayComments(pg),
+    getTodayDiscussion(pg),
     getRecentContractLikes(pg, dayAgo),
     getRecentContractLikes(pg, weekAgo),
     getContractTraders(pg, dayAgo, contractIds),
@@ -85,7 +85,7 @@ export const removeBoost: APIHandler<'remove-boost'> = async (props, auth) => {
   const { importanceScore, freshnessScore, dailyScore } = computeContractScores(
     now,
     contract,
-    todayComments[contractId] ?? 0,
+    todayDiscussion[contractId] ?? 0,
     todayLikesByContract[contractId] ?? 0,
     thisWeekLikesByContract[contractId] ?? 0,
     todayTradersByContract[contractId] ?? 0,

@@ -6,4 +6,6 @@ create table social_post_markets (
   unique(post_id, position)
 );
 
+create index social_post_markets_contract on social_post_markets(contract_id);
+
 alter table social_post_markets enable row level security;

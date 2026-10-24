@@ -20,6 +20,12 @@ Apply these additive migrations in order before deploying the API and web change
    optional rich-text content and clears stale formatting when older API workers
    edit plain text or delete a post. Deploy this migration, then all API workers,
    then the web UI; older API workers reject the new `richContent` request field.
+5. `backend/supabase/migrations/2026101901_social_post_market_comment.sql` adds
+   `social_posts.market_comment_id`, `posts.social_post_id` and the indexes
+   importance scoring uses. Apply it before deploying the API and scheduler: Yap
+   creation, editing, deletion and the importance job all use the columns. Then
+   deploy the web UI, since older API workers reject the new `alsoComment`
+   request field.
 
 The initial migration does not backfill historical reposts. All social-table reads and writes go
 through the API; RLS grants no direct client access. Existing `user_reactions`
@@ -86,9 +92,38 @@ is run by the application or by the development tests.
   a parent author who receives a reply notification does not also get a mention.
   Likes use the existing like preference and group by post ID. Notifications are
   in-app only, suppress self/blocked notifications, and do not notify on edits.
-- All web market/bet/comment repost actions open the Yap composer.
-  New social posts do not create market comments or legacy repost rows. The legacy
+- All web market/bet/comment repost actions open the Yap composer. The legacy
   repost API remains available for compatibility with older clients.
+- A Yap shared from a market, comment or trade can also post its text and
+  images as a market comment (`alsoComment`, on by default in the composer), as
+  reposts with text did before Yap. The comment replies in the quoted comment's
+  thread, to the quoted trade, or at the top level; it carries `isRepost` and
+  `socialPostId` and links back to the Yap. The comment rules (new-account gate,
+  mana markets only, the market creator's blocks, comment size) are checked
+  before the Yap is written, and again inside the transaction through its own
+  connection. The Yap, its comment and its repost rows are written in one
+  transaction, so a failed comment fails the whole post. The comment is
+  announced as soon as that commits, as an ordinary comment is after its
+  insert; its bet and position fields are merged in afterwards.
+  `alsoComment` is rejected for replies, quoted Yap posts and posts with nothing
+  to say. Mentions notify through the comment, not the Yap. Yap edits update the
+  comment in the same transaction. Authors cannot delete market comments, so
+  deleting their own Yap leaves the comment; a moderator removal deletes it too,
+  except comments by admins and moderators, which hide-comment also refuses to
+  delete.
+- A Yap with a market source writes a `page repost` contract interaction (topic
+  interests, conversion score). When it creates a comment, or quotes one the
+  repost card may show (no embedded markets or multiple iframes, as before), it
+  also writes a legacy `posts` row so the repost reaches followers' Explore
+  feeds. The row records its Yap, and deleting the Yap deletes the row. Repost
+  feeds skip deleted comments as well as hidden ones.
+- Sharing a draft from the market comment box keeps its mentions; links and
+  embedded videos, link previews and tweets carry over as visible URLs.
+- Importance scoring counts the last day's Yaps per attached market like
+  comments, once per non-bot author. A Yap also posted as a comment counts once
+  on that comment's market, through the comment, and still counts on its other
+  attached markets. The comment's market decides, not the Yap's quote context,
+  which an edit can clear.
 
 ## API
 
