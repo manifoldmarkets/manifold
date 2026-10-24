@@ -1,5 +1,8 @@
 import { APIRealtimeClient } from './websocket-client'
-import { SubscriptionRecovery } from './subscription-recovery'
+import {
+  INITIAL_SPREAD_MS,
+  SubscriptionRecovery,
+} from './subscription-recovery'
 
 class MockSocket {
   static CONNECTING = 0
@@ -200,6 +203,11 @@ describe('websocket recovery lifecycle', () => {
     expect(orders).toEqual(['cancelled-order'])
     expect(readOrders).not.toHaveBeenCalled()
     replacement.ack()
+    await flush()
+    // Readiness only schedules the read; it is spread across the window so a
+    // rollout's reconnects do not all read in the same instant.
+    expect(readOrders).not.toHaveBeenCalled()
+    jest.advanceTimersByTime(INITIAL_SPREAD_MS)
     await flush()
     expect(orders).toEqual([])
     expect(readOrders).toHaveBeenCalledTimes(1)

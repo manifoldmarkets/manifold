@@ -5,6 +5,8 @@ export type RecoverySnapshot = (
 ) => Promise<() => void | boolean>
 
 const INITIAL_RETRY_MS = 1000
+// The window the first read after a reconnect is spread across.
+export const INITIAL_SPREAD_MS = 1000
 const MAX_RETRY_MS = 30_000
 const TIMEOUT_MS = 10_000
 
@@ -33,7 +35,7 @@ export class SubscriptionRecovery {
     this.stop()
     this.connected = connected
     this.retryDelay = INITIAL_RETRY_MS
-    if (connected) void this.fetch()
+    if (connected) this.scheduleFirst()
   }
 
   stop() {
@@ -44,11 +46,24 @@ export class SubscriptionRecovery {
     clearTimeout(this.timeout)
   }
 
+  private scheduleFirst() {
+    // A rollout closes every surviving socket at once, so reading here would
+    // put every open page's snapshot in the same instant. Spread the first
+    // read across the window instead; scheduleRetry jitters everything after
+    // it. This reuses the retry timer slot, so stop() cancels either one and
+    // only one read can ever be pending per instance.
+    this.retry = setTimeout(
+      () => void this.fetch(),
+      Math.floor(Math.random() * INITIAL_SPREAD_MS)
+    )
+  }
+
   private scheduleRetry() {
     if (!this.connected) return
-    // Spread clients after an outage, and bound sustained retries to one every
-    // 24-30 seconds. Continue at that rate so an open view eventually repairs
-    // even if no further reconnect or visibility change occurs.
+    // Jitter each retry so clients that failed together do not retry together,
+    // and bound sustained retries to one every 24-30 seconds. Continue at that
+    // rate so an open view eventually repairs even if no further reconnect or
+    // visibility change occurs. scheduleFirst spreads the read before these.
     const delay = Math.round(this.retryDelay * (0.8 + 0.2 * Math.random()))
     this.retryDelay = Math.min(this.retryDelay * 2, MAX_RETRY_MS)
     this.retry = setTimeout(() => void this.fetch(), delay)

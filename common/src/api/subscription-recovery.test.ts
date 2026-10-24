@@ -1,4 +1,7 @@
-import { SubscriptionRecovery } from './subscription-recovery'
+import {
+  INITIAL_SPREAD_MS,
+  SubscriptionRecovery,
+} from './subscription-recovery'
 
 const deferred = <T>() => {
   let resolve!: (value: T) => void
@@ -13,6 +16,10 @@ const flush = async () => {
   await Promise.resolve()
   await Promise.resolve()
 }
+
+// The outer beforeEach pins Math.random() to 0.5, so the first read after a
+// reconnect waits exactly this long before it dispatches.
+const FIRST_READ_MS = Math.floor(0.5 * INITIAL_SPREAD_MS)
 
 describe('subscription snapshot recovery', () => {
   beforeEach(() => {
@@ -31,6 +38,7 @@ describe('subscription snapshot recovery', () => {
     const recovery = new SubscriptionRecovery(snapshot, jest.fn())
     expect(snapshot).not.toHaveBeenCalled()
     recovery.connectionChanged(true)
+    jest.advanceTimersByTime(FIRST_READ_MS)
     expect(orders).toEqual(['cancelled-during-outage'])
     request.resolve(() => {
       orders = []
@@ -51,6 +59,7 @@ describe('subscription snapshot recovery', () => {
       })
     const recovery = new SubscriptionRecovery(snapshot, jest.fn())
     recovery.connectionChanged(true)
+    jest.advanceTimersByTime(FIRST_READ_MS)
     recovery.broadcast()
     balance = 120
     first.resolve(() => {
@@ -74,8 +83,10 @@ describe('subscription snapshot recovery', () => {
       .mockResolvedValueOnce(newCommit)
     const recovery = new SubscriptionRecovery(snapshot, jest.fn())
     recovery.connectionChanged(true)
+    jest.advanceTimersByTime(FIRST_READ_MS)
     recovery.connectionChanged(false)
     recovery.connectionChanged(true)
+    jest.advanceTimersByTime(FIRST_READ_MS)
     await flush()
     old.resolve(oldCommit)
     await flush()
@@ -91,6 +102,7 @@ describe('subscription snapshot recovery', () => {
     const recovery = new SubscriptionRecovery(snapshot, jest.fn())
     recovery.connectionChanged(true)
     recovery.connectionChanged(true)
+    jest.advanceTimersByTime(FIRST_READ_MS)
     expect(snapshot).toHaveBeenCalledTimes(1)
     expect(snapshot.mock.calls[0][0].aborted).toBe(false)
     request.resolve(commit)
@@ -109,6 +121,7 @@ describe('subscription snapshot recovery', () => {
     const onError = jest.fn()
     const recovery = new SubscriptionRecovery(snapshot, onError)
     recovery.connectionChanged(true)
+    jest.advanceTimersByTime(FIRST_READ_MS)
     await flush()
     expect(commit).not.toHaveBeenCalled()
     expect(onError).toHaveBeenCalledWith(error)
@@ -127,6 +140,7 @@ describe('subscription snapshot recovery', () => {
       .mockResolvedValueOnce(freshCommit)
     const recovery = new SubscriptionRecovery(snapshot, jest.fn())
     recovery.connectionChanged(true)
+    jest.advanceTimersByTime(FIRST_READ_MS)
     await flush()
     expect(staleCommit).toHaveBeenCalledTimes(1)
     expect(freshCommit).not.toHaveBeenCalled()
@@ -146,6 +160,7 @@ describe('subscription snapshot recovery', () => {
       })
       const recovery = new SubscriptionRecovery(snapshot, jest.fn())
       recovery.connectionChanged(true)
+      jest.advanceTimersByTime(FIRST_READ_MS)
       await flush()
       let calls = 1
       for (const delay of [900, 1800, 3600, 7200, 14400, 27000, 27000]) {
@@ -160,6 +175,7 @@ describe('subscription snapshot recovery', () => {
       }
       recovery.connectionChanged(false)
       recovery.connectionChanged(true)
+      jest.advanceTimersByTime(FIRST_READ_MS)
       await flush()
       expect(snapshot).toHaveBeenCalledTimes(++calls)
       jest.advanceTimersByTime(899)
@@ -175,13 +191,20 @@ describe('subscription snapshot recovery', () => {
   )
 
   it('jitters retries within their delay window', async () => {
-    jest.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(1)
+    jest
+      .spyOn(Math, 'random')
+      // Both clients' initial spread, then each one's first retry jitter.
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(1)
     const early = jest.fn().mockRejectedValue(new Error('503'))
     const late = jest.fn().mockRejectedValue(new Error('503'))
     const first = new SubscriptionRecovery(early, jest.fn())
     const second = new SubscriptionRecovery(late, jest.fn())
     first.connectionChanged(true)
     second.connectionChanged(true)
+    jest.advanceTimersByTime(0)
     await flush()
     jest.advanceTimersByTime(800)
     await flush()
@@ -201,6 +224,7 @@ describe('subscription snapshot recovery', () => {
     const onError = jest.fn()
     const recovery = new SubscriptionRecovery(snapshot, onError)
     recovery.connectionChanged(true)
+    jest.advanceTimersByTime(FIRST_READ_MS)
     jest.advanceTimersByTime(10_000)
     expect(snapshot.mock.calls[0][0].aborted).toBe(true)
     expect(onError).toHaveBeenCalledTimes(1)
@@ -229,6 +253,7 @@ describe('subscription snapshot recovery', () => {
       .mockResolvedValueOnce(newCommit)
     const recovery = new SubscriptionRecovery(snapshot, jest.fn())
     recovery.connectionChanged(true)
+    jest.advanceTimersByTime(FIRST_READ_MS)
     const signal = snapshot.mock.calls[0][0] as AbortSignal
     jest.advanceTimersByTime(11000)
     await flush()
@@ -246,11 +271,128 @@ describe('subscription snapshot recovery', () => {
     const snapshot = jest.fn(() => request.promise)
     const recovery = new SubscriptionRecovery(snapshot, jest.fn())
     recovery.connectionChanged(true)
+    jest.advanceTimersByTime(FIRST_READ_MS)
     recovery.stop()
     request.resolve(commit)
     await flush()
     jest.advanceTimersByTime(30000)
     expect(snapshot).toHaveBeenCalledTimes(1)
     expect(commit).not.toHaveBeenCalled()
+  })
+})
+
+// The rollout closes every surviving socket at once with 1012, so these cases
+// are about what many clients do in the same instant, not just one.
+describe('first recovery attempt after a mass reconnect', () => {
+  const settled = () => jest.fn().mockResolvedValue(() => {})
+
+  beforeEach(() => {
+    jest.useFakeTimers()
+  })
+  afterEach(() => {
+    jest.useRealTimers()
+    jest.restoreAllMocks()
+  })
+
+  it('never dispatches the first read in the same tick as the reconnect', () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0)
+    const snapshot = settled()
+    const recovery = new SubscriptionRecovery(snapshot, jest.fn())
+    recovery.connectionChanged(true)
+    // Every open page reconnects together; a synchronous read here is the burst.
+    expect(snapshot).not.toHaveBeenCalled()
+    recovery.stop()
+  })
+
+  it('dispatches the first read within the spread window', () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0.999)
+    const snapshot = settled()
+    const recovery = new SubscriptionRecovery(snapshot, jest.fn())
+    recovery.connectionChanged(true)
+    jest.advanceTimersByTime(INITIAL_SPREAD_MS)
+    expect(snapshot).toHaveBeenCalledTimes(1)
+    recovery.stop()
+  })
+
+  it('spreads two clients across the window instead of firing together', () => {
+    jest.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0.999)
+    const early = settled()
+    const late = settled()
+    const first = new SubscriptionRecovery(early, jest.fn())
+    const second = new SubscriptionRecovery(late, jest.fn())
+    first.connectionChanged(true)
+    second.connectionChanged(true)
+    jest.advanceTimersByTime(0)
+    expect(early).toHaveBeenCalledTimes(1)
+    expect(late).not.toHaveBeenCalled()
+    jest.advanceTimersByTime(INITIAL_SPREAD_MS)
+    expect(late).toHaveBeenCalledTimes(1)
+    first.stop()
+    second.stop()
+  })
+
+  it('cancels a pending first read when the view unsubscribes before it fires', () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0.5)
+    const snapshot = settled()
+    const recovery = new SubscriptionRecovery(snapshot, jest.fn())
+    recovery.connectionChanged(true)
+    recovery.stop()
+    jest.advanceTimersByTime(60_000)
+    expect(snapshot).not.toHaveBeenCalled()
+  })
+
+  it('ignores a duplicate readiness signal while the first read is pending', () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0.5)
+    const snapshot = settled()
+    const recovery = new SubscriptionRecovery(snapshot, jest.fn())
+    recovery.connectionChanged(true)
+    // The connection callback and the local subscribe ack both report ready.
+    recovery.connectionChanged(true)
+    recovery.connectionChanged(true)
+    jest.advanceTimersByTime(INITIAL_SPREAD_MS)
+    expect(snapshot).toHaveBeenCalledTimes(1)
+    recovery.stop()
+  })
+
+  it('reschedules rather than stacking reads when a reconnect interrupts the wait', () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0.5)
+    const snapshot = settled()
+    const recovery = new SubscriptionRecovery(snapshot, jest.fn())
+    recovery.connectionChanged(true)
+    recovery.connectionChanged(false)
+    recovery.connectionChanged(true)
+    jest.advanceTimersByTime(INITIAL_SPREAD_MS * 4)
+    expect(snapshot).toHaveBeenCalledTimes(1)
+    recovery.stop()
+  })
+
+  it('drops a first read still waiting when the connection is already gone', () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0.5)
+    const snapshot = settled()
+    const recovery = new SubscriptionRecovery(snapshot, jest.fn())
+    recovery.connectionChanged(true)
+    recovery.connectionChanged(false)
+    jest.advanceTimersByTime(60_000)
+    expect(snapshot).not.toHaveBeenCalled()
+  })
+
+  it('still backs off and jitters retries after the spread first read fails', async () => {
+    jest.spyOn(Math, 'random').mockReturnValue(0.5)
+    const snapshot = jest.fn().mockRejectedValue(new Error('503'))
+    const onError = jest.fn()
+    const recovery = new SubscriptionRecovery(snapshot, onError)
+    recovery.connectionChanged(true)
+    jest.advanceTimersByTime(INITIAL_SPREAD_MS)
+    await flush()
+    expect(snapshot).toHaveBeenCalledTimes(1)
+    expect(onError).toHaveBeenCalledTimes(1)
+    // Retry jitter is unchanged: 0.8 + 0.2*0.5 of the 1000ms first delay.
+    jest.advanceTimersByTime(899)
+    await flush()
+    expect(snapshot).toHaveBeenCalledTimes(1)
+    jest.advanceTimersByTime(1)
+    await flush()
+    expect(snapshot).toHaveBeenCalledTimes(2)
+    recovery.stop()
   })
 })
