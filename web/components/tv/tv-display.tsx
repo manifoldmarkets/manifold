@@ -28,7 +28,8 @@ import { ScheduleTVModal } from './schedule-tv-modal'
 import { DOMAIN, TRADE_TERM } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
 import { UserBetsSummary } from '../bet/user-bet-summary'
-import { PerpMarketBadge } from '../perps/perp-market-badge'
+import { MarketTitleLabel } from '../contract/market-title-label'
+import { ModActionBadge } from '../moderation/mod-action'
 
 export function TVDisplay(props: {
   contract: Contract
@@ -39,7 +40,8 @@ export function TVDisplay(props: {
   const user = useUser()
 
   const isMod = useAdminOrMod()
-  const showModify = user?.id === stream?.creator_id || isMod
+  const isStreamCreator = user?.id === stream?.creator_id
+  const showModify = isStreamCreator || isMod
 
   const isMobile = useIsMobile(1280) //xl
   const [showSettings, setShowSettings] = useState(false)
@@ -105,7 +107,7 @@ export function TVDisplay(props: {
           <Col className="mb-2 p-4 md:pb-8 lg:px-8">
             <Row className="justify-between gap-4">
               <Row className="items-center gap-2 text-xl font-medium sm:text-2xl">
-                {perpContract && <PerpMarketBadge contract={perpContract} />}
+                <MarketTitleLabel contract={contract} />
                 <Link
                   href={`/${contract.creatorUsername}/${contract.slug}`}
                   target="_blank"
@@ -154,9 +156,10 @@ export function TVDisplay(props: {
           <Row className="m-4 gap-4">
             {showModify && (
               <Button
-                color="indigo-outline"
+                color={isStreamCreator ? 'indigo-outline' : 'purple-outline'}
                 onClick={() => setShowSettings(true)}
               >
+                {!isStreamCreator && <ModActionBadge className="mr-1" />}
                 Modify event
               </Button>
             )}

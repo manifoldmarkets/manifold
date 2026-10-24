@@ -34,12 +34,15 @@ function loadJob(source: 'fetchLatest' | 'fetchObservation' = 'fetchLatest') {
       return clock
     }
   }
-  const fetchLatest = jest.fn<Promise<Point | null>, []>()
+  const fetchLatest = jest.fn<Promise<Point | null>, [unknown]>()
   const logError = jest.fn()
   const logWarn = jest.fn()
   const insertOraclePrices = jest.fn()
   const applyOraclePointToLivePerps = jest.fn()
   const publishOracleObservation = jest.fn()
+  const pg = { oneOrNone: async () => null }
+  const oracleClock = async () => clock
+  const databaseOracleClock = jest.fn(() => oracleClock)
   const feed = {
     id: 'test-feed',
     cadence: 'fast',
@@ -48,16 +51,17 @@ function loadJob(source: 'fetchLatest' | 'fetchObservation' = 'fetchLatest') {
     [source]: fetchLatest,
   }
   const imports: Record<string, unknown> = {
+    'shared/perps/engine': { settlePerpOrderBacklog: async () => {} },
+    'shared/perps/order-effects': { deliverPerpOrderEffects: async () => {} },
     'common/util/time': { MINUTE_MS },
     'common/perps/oracle': { normalizeOraclePointBatch: jest.fn() },
     'shared/oracle': { insertOraclePrices },
+    'shared/oracle-clock': { databaseOracleClock },
     'shared/oracle-feeds': {
       ORACLE_FEEDS: [feed],
       validateOraclePoint: () => null,
     },
-    'shared/supabase/init': {
-      createSupabaseDirectClient: () => ({ oneOrNone: async () => null }),
-    },
+    'shared/supabase/init': { createSupabaseDirectClient: () => pg },
     'shared/utils': {
       log: Object.assign(jest.fn(), { error: logError, warn: logWarn }),
     },
@@ -98,6 +102,9 @@ function loadJob(source: 'fetchLatest' | 'fetchObservation' = 'fetchLatest') {
     insertOraclePrices,
     applyOraclePointToLivePerps,
     publishOracleObservation,
+    pg,
+    oracleClock,
+    databaseOracleClock,
     now: () => clock,
     advance: (ms: number) => {
       clock += ms
@@ -195,6 +202,17 @@ describe('update-oracle-feeds stuck poll', () => {
       expect.stringContaining('discarding its result')
     )
   })
+
+  it.each(['fetchLatest', 'fetchObservation'] as const)(
+    '%s stamps observations with the database clock that stamps orders',
+    async (source) => {
+      const job = loadJob(source)
+      job.fetchLatest.mockResolvedValue(null)
+      await job.tick()
+      expect(job.databaseOracleClock).toHaveBeenCalledWith(job.pg)
+      expect(job.fetchLatest).toHaveBeenCalledWith(job.oracleClock)
+    }
+  )
 
   it("doesn't write or apply an abandoned run's point", async () => {
     const job = loadJob('fetchLatest')

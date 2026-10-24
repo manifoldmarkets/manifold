@@ -236,6 +236,7 @@ export function useGroupedNotifications(
     regularNotifications,
     (n) =>
       n.reason === 'tagged_user' ||
+      n.reason === 'tagged_all_traders' ||
       (n.sourceType === 'comment' &&
         n.sourceText &&
         n.sourceText.includes('@' + user.username + ' ')) ||

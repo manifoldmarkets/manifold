@@ -18,7 +18,7 @@ import clsx from 'clsx'
 import { NOTIFICATION_DESCRIPTIONS } from 'common/notification'
 import { PrivateUser } from 'common/user'
 import {
-  getDefaultNotificationPreferences,
+  getSavedNotificationDestinations,
   notification_destination_types,
   notification_preference,
 } from 'common/user-notification-preferences'
@@ -63,6 +63,7 @@ const emailsEnabled: Array<notification_preference> = [
   'thank_you_for_purchases',
 
   'tagged_user', // missing tagged on contract description email
+  'tagged_all_traders',
   'contract_from_followed_user',
   'unique_bettors_on_your_contract',
   'profit_loss_updates',
@@ -94,6 +95,7 @@ const mobilePushEnabled: Array<notification_preference> = [
   'all_comments_on_my_markets',
   'all_answers_on_my_markets',
   'tagged_user',
+  'tagged_all_traders',
   'betting_streaks',
   'market_movements',
   'limit_order_fills',
@@ -174,12 +176,13 @@ const otherBalances: NotificationSectionData = {
 }
 const perps: NotificationSectionData = {
   label: 'Perps',
-  subscriptionTypes: ['perp_liquidation', 'perp_adl'],
+  subscriptionTypes: ['perp_liquidation', 'perp_adl', 'perp_order_failed'],
 }
 const userInteractions: NotificationSectionData = {
   label: 'Users',
   subscriptionTypes: [
     'tagged_user',
+    'tagged_all_traders',
     'on_new_follow',
     'contract_from_followed_user',
     'user_liked_your_content',
@@ -357,6 +360,17 @@ function NotificationSettingLine(props: {
   const [emailEnabled, setEmailEnabled] = useState(previousEmailValue)
   const [mobileEnabled, setMobileEnabled] = useState(previousMobileValue)
   const [error, setError] = useState<string>('')
+
+  useEffect(() => {
+    setInAppEnabled(previousInAppValue)
+  }, [previousInAppValue])
+  useEffect(() => {
+    setEmailEnabled(previousEmailValue)
+  }, [previousEmailValue])
+  useEffect(() => {
+    setMobileEnabled(previousMobileValue)
+  }, [previousMobileValue])
+
   const navigateToSection = useContext(SectionRoutingContext)
   const highlight = navigateToSection === subscriptionTypeKey
   const isOptOutSection = subscriptionTypeKey === 'opt_out_all'
@@ -675,9 +689,8 @@ export const getUsersSavedPreference = (
   key: notification_preference,
   privateUser: PrivateUser
 ) => {
-  return (
-    privateUser.notificationPreferences[key] ??
-    getDefaultNotificationPreferences()[key] ??
-    []
+  return getSavedNotificationDestinations(
+    privateUser.notificationPreferences,
+    key
   )
 }

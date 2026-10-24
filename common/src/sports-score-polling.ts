@@ -37,12 +37,22 @@ export const FINALS_FROM_MINUTES: Record<SportId, number> = {
   soccer: 105,
   nhl: 140,
   cbb: 115,
+  football: 180,
+  basketball: 115,
+  wcbb: 115,
+  hockey: 140,
+  afl: 130,
+  nrl: 100,
+  handball: 75,
+  tennis: 120,
   f1: 90,
   tdf: 240,
 }
 
 /** The admin settings, from the sports_score_polling table. */
 export interface ScorePollingSettings {
+  /** Opt-in adaptive cadence for sports and games without explicit settings. */
+  adaptive?: boolean
   /** Live interval per sport, in seconds; missing means the default. */
   sports: Partial<Record<SportId, number>>
   /** Live interval per game market, overriding its sport. */
@@ -55,6 +65,7 @@ export const pollingTarget = {
   sport: (sport: SportId) => `sport:${sport}`,
   game: (contractId: string) => `game:${contractId}`,
   finals: 'finals',
+  adaptive: 'adaptive',
 }
 
 const SPORT_IDS = Object.keys(SPORT_LEAGUE_LABEL) as SportId[]
@@ -64,6 +75,12 @@ export function pollingSettingError(
   target: string,
   intervalSeconds: number | null
 ): string | undefined {
+  if (target === pollingTarget.adaptive)
+    return intervalSeconds === null ||
+      intervalSeconds === 0 ||
+      intervalSeconds === 1
+      ? undefined
+      : 'Adaptive polling must be off (0) or on (1)'
   const [kind, id] = target.split(':')
   if (target === pollingTarget.finals) {
     if (intervalSeconds === null) return undefined
@@ -95,7 +112,9 @@ export function parsePollingRows(
   for (const { target, intervalSeconds } of rows) {
     if (pollingSettingError(target, intervalSeconds)) continue
     const [kind, id] = target.split(':')
-    if (target === pollingTarget.finals) settings.finals = intervalSeconds
+    if (target === pollingTarget.adaptive)
+      settings.adaptive = intervalSeconds === 1
+    else if (target === pollingTarget.finals) settings.finals = intervalSeconds
     else if (kind === 'sport') settings.sports[id as SportId] = intervalSeconds
     else if (kind === 'game') settings.games[id] = intervalSeconds
   }
@@ -123,6 +142,8 @@ export const sportForLeague = (league: string | undefined) =>
 
 export interface PollingGame {
   contractId: string
+  /** Count a provider event only once if it has multiple markets. */
+  eventId?: string
   /** The Odds API sport key; one /scores call per key. */
   sportKey: string
   sport: SportId | undefined
@@ -147,6 +168,12 @@ export function liveInterval(
     (game.sport ? settings.sports[game.sport] : undefined) ??
     DEFAULT_LIVE_INTERVAL
   )
+}
+
+/** The same request covers every active game on one provider key. */
+export function adaptiveLiveInterval(activeGames: number): number {
+  if (!Number.isFinite(activeGames) || activeGames < 1) return 0
+  return activeGames >= 4 ? 30 : activeGames >= 2 ? 60 : 120
 }
 
 /** Whether a game is due to have ended, so finals checks apply. */
@@ -192,10 +219,27 @@ export function scorePollPlan(
   for (const [sportKey, keyGames] of Object.entries(
     groupBy(games, (g) => g.sportKey)
   )) {
+    const active = keyGames.filter(
+      (game) =>
+        Number.isFinite(game.startTime) &&
+        game.startTime <= now &&
+        (game.closeTime === undefined || now < game.closeTime) &&
+        !game.missing &&
+        liveInterval(game, settings) > 0
+    )
+    const activeCount = new Set(active.map((g) => g.eventId ?? g.contractId))
+      .size
     const liveIntervals: number[] = []
     const finalsIntervals: number[] = []
     for (const game of keyGames) {
-      const live = liveInterval(game, settings)
+      if (!Number.isFinite(game.startTime) || game.startTime > now) continue
+      const explicit =
+        settings.games[game.contractId] !== undefined ||
+        (game.sport !== undefined && settings.sports[game.sport] !== undefined)
+      const live =
+        settings.adaptive && !explicit
+          ? adaptiveLiveInterval(activeCount)
+          : liveInterval(game, settings)
       // A closed market isn't traded and a missing game isn't in the feed:
       // live scores for either would only cost credits.
       const open = game.closeTime === undefined || now < game.closeTime
@@ -292,6 +336,7 @@ export function creditsPerDay(
 }
 
 export interface ScorePollingPanel {
+  adaptive?: boolean
   sports: {
     sport: SportId
     intervalSeconds: number

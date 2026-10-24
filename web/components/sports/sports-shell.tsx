@@ -1,24 +1,20 @@
-import { ArrowLeftIcon, PlusIcon } from '@heroicons/react/solid'
+import { PlusIcon } from '@heroicons/react/solid'
 import { sortBy } from 'lodash'
 import Link from 'next/link'
-import { ReactNode } from 'react'
+import { ComponentProps, ReactNode } from 'react'
 import {
   AnySportKey,
   CURATED_SPORTS,
   SportInfo,
   UpcomingMarketRef,
 } from 'common/sports-schedule'
+import { BackButton } from 'web/components/contract/back-button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
 import { SportsRailData } from 'web/hooks/use-sports-schedule'
-import {
-  SportRail,
-  SportSelection,
-  sportPath,
-  useSportHref,
-} from './sport-rail'
+import { SportRail, SportSelection, sportPath } from './sport-rail'
 import { SportsMarketSections } from './sports-market-sections'
 import { UpcomingMarkets } from './upcoming-markets'
 
@@ -34,39 +30,26 @@ export function SportsShell(props: {
   heading: ReactNode
   /** One line; truncated rather than wrapped. */
   subheading?: ReactNode
-  /** A back arrow to all sports beside the heading, on a sport's page. */
-  backToAll?: boolean
-  seo: { title: string; description: string; url: string }
+  seo: ComponentProps<typeof SEO>
   trackPageView: string
   children: ReactNode
 }) {
-  const {
-    selected,
-    rail,
-    heading,
-    subheading,
-    backToAll,
-    seo,
-    trackPageView,
-    children,
-  } = props
-  const sportHref = useSportHref()
+  const { selected, rail, heading, subheading, seo, trackPageView, children } =
+    props
   return (
-    <Page trackPageView={trackPageView} className="min-w-0 lg:col-span-10">
-      <SEO title={seo.title} description={seo.description} url={seo.url} />
+    <Page trackPageView={trackPageView} className="min-w-0">
+      <SEO {...seo} />
       <Col className="w-full min-w-0 gap-3 px-3 pt-5 sm:px-6 sm:pt-7">
         <Row className="items-center justify-between gap-2 px-1">
-          <Row className="min-w-0 items-center gap-2">
-            {backToAll && (
-              <Link
-                href={sportHref('all')}
-                aria-label="Back to all sports"
-                title="All sports"
-                className="border-ink-200 text-ink-600 hover:bg-canvas-50 hover:text-primary-700 focus-visible:ring-primary-500 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border focus-visible:ring-2"
-              >
-                <ArrowLeftIcon className="h-5 w-5" />
-              </Link>
-            )}
+          <Row className="min-w-0 items-center gap-1">
+            {/* Goes back in history (to the previous sport, or wherever the
+                visitor came from), or Home when they arrived from off-site.
+                The button only appears once it can tell which, so it gets a
+                fixed slot and the heading never moves. Remount when the sport
+                changes so its history check stays current on Back/Forward. */}
+            <div className="-ml-2.5 h-8 w-10 shrink-0">
+              <BackButton key={selected} size="xs" homeFallback />
+            </div>
             <h1 className="text-ink-1000 min-w-0 truncate text-3xl font-bold tracking-tight sm:text-4xl">
               {heading}
             </h1>
@@ -118,23 +101,24 @@ export function SportMarkets(props: {
 }) {
   const { sport, upcoming, sportsByKey, enabled } = props
   return (
-    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <Col className="min-w-0 gap-6">
-        <UpcomingMarkets
-          key={sport === 'all' ? 'all' : sport.key}
-          refs={upcoming}
-          sport={sport === 'all' ? 'all' : sport.key}
-          showSport={sport === 'all'}
-          sportsByKey={sportsByKey}
-        />
-        <MakeAMarket sport={sport} />
-      </Col>
+    // One column: in the site's standard 7-of-12 page column, a split would
+    // leave each side about a phone's width, which the binary "Bet Yes / Bet
+    // No" rows don't fit.
+    <Col className="min-w-0 gap-6">
+      <UpcomingMarkets
+        key={sport === 'all' ? 'all' : sport.key}
+        refs={upcoming}
+        sport={sport === 'all' ? 'all' : sport.key}
+        showSport={sport === 'all'}
+        sportsByKey={sportsByKey}
+      />
       <SportsMarketSections
         sport={sport}
         enabled={enabled}
         className="min-w-0"
       />
-    </div>
+      <MakeAMarket sport={sport} />
+    </Col>
   )
 }
 
@@ -149,7 +133,7 @@ function MakeAMarket(props: { sport: SportInfo | 'all' }) {
     q: '',
     description: '',
     visibility: 'public',
-    groupSlugs: slug ? [slug] : undefined,
+    groupSlugs: [slug ?? 'sports-default'],
     rand: sport === 'all' ? 'sports' : sport.key.slice(0, 12),
   }
   return (

@@ -3,9 +3,14 @@ import clsx from 'clsx'
 import Link from 'next/link'
 
 import { track } from 'web/lib/service/analytics'
+import {
+  MOD_ACTION_TEXT_CLASS,
+  ModActionBadge,
+} from 'web/components/moderation/mod-action'
 
 export type NavItem = {
   name: string
+  /** Analytics name for clicks, when it should differ from the label. */
   trackingEventName?: string
   href?: string
   onClick?: () => void
@@ -20,6 +25,10 @@ export type NavItem = {
   subLabel?: string
   /** Optional class applied to the nav item container (e.g. for tighter padding). */
   itemClassName?: string
+  /** Only shown because the user is a mod or admin. */
+  modAction?: boolean
+  /** Show a waving flag spotlight behind the item that follows the cursor while hovered. */
+  flagHover?: boolean
 }
 
 export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
@@ -35,17 +44,32 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
   const isCurrentPage =
     currentBasePath === segmentCleanedHref && !item.href?.startsWith('https://')
 
+  const onMouseMove = item.flagHover
+    ? (e: React.MouseEvent<HTMLElement>) => {
+        const el = e.currentTarget
+        const rect = el.getBoundingClientRect()
+        el.style.setProperty('--flag-x', `${e.clientX - rect.left}px`)
+        el.style.setProperty('--flag-y', `${e.clientY - rect.top}px`)
+      }
+    : undefined
+
   const onClick = () => {
-    track('sidebar: ' + item.name)
+    track('sidebar: ' + (item.trackingEventName ?? item.name))
     item.onClick?.()
   }
 
   const sidebarClass = clsx(
-    isCurrentPage
+    item.modAction
+      ? [
+          MOD_ACTION_TEXT_CLASS,
+          isCurrentPage ? 'bg-ink-200' : 'hover:bg-primary-100',
+        ]
+      : isCurrentPage
       ? 'bg-ink-200 text-ink-900'
       : 'text-ink-600 hover:bg-primary-100 hover:text-ink-700',
     'group flex w-full items-center rounded-md px-3 py-2 text-sm font-medium',
-    'focus-visible:bg-primary-100 outline-none'
+    'focus-visible:bg-primary-100 outline-none',
+    item.flagHover && 'flag-hover-item'
   )
 
   const sidebarItem = (
@@ -53,7 +77,9 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
       {item.icon && (
         <item.icon
           className={clsx(
-            isCurrentPage
+            item.modAction
+              ? undefined
+              : isCurrentPage
               ? 'text-ink-600'
               : 'text-ink-500 group-hover:text-ink-600',
             '  -ml-1 mr-3 h-6 w-6 flex-shrink-0',
@@ -66,6 +92,7 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
       {item.external && (
         <ExternalLinkIcon className="ml-2 h-4 w-4" aria-hidden="true" />
       )}
+      {item.modAction && <ModActionBadge className="ml-auto pl-2" />}
     </>
   )
 
@@ -75,6 +102,7 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
         href={item.href}
         aria-current={isCurrentPage ? 'page' : undefined}
         onClick={onClick}
+        onMouseMove={onMouseMove}
         className={sidebarClass}
         target={
           item.external || !item.href.startsWith('/') ? '_blank' : undefined
@@ -85,7 +113,12 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
     )
   } else {
     return (
-      <button type="button" onClick={onClick} className={sidebarClass}>
+      <button
+        type="button"
+        onClick={onClick}
+        onMouseMove={onMouseMove}
+        className={sidebarClass}
+      >
         {sidebarItem}
       </button>
     )

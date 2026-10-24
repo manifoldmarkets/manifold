@@ -442,7 +442,7 @@ describe('updateLeague with real PostgreSQL queries', () => {
     expect(returnedBetIds.flat()).toEqual(['ordinary'])
   })
 
-  it('drops empty zero-value orders while retaining fills and nullable values', async () => {
+  it('drops zero-value rows whose fills name no other bet, keeping matched fills and nullable values', async () => {
     await seedMembers(['member'])
     await seedContracts([binary('ordinary')])
     await seedBets([
@@ -476,12 +476,11 @@ describe('updateLeague with real PostgreSQL queries', () => {
     const expected = await legacyProfit(['member'])
     await updateLeague(SEASON, client)
     expect(writtenProfits()).toEqual(expected)
-    expect(returnedBetIds.flat().sort()).toEqual([
-      'marker',
-      'null-fills',
-      'nullable',
-      'ordinary',
-    ])
+    // 'marker' is a zero-amount redemption whose only fill is against the AMM
+    // (matchedBetId null): nothing in getProfitMetrics or excludeSelfTrades can
+    // read it, so it is not fetched. The creator-first-hour test above covers
+    // the zero-amount row with a matched fill that must stay.
+    expect(returnedBetIds.flat().sort()).toEqual(['nullable', 'ordinary'])
   })
 
   it('scores 501 contracts in three bounded chunks without duplicate rows', async () => {

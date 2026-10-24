@@ -2,7 +2,7 @@
  * HTTP client for The Odds API (api.the-odds-api.com/v4). The maths and the
  * market shapes live in common/odds-markets.ts; this file only fetches.
  *
- * Quota: every call costs credits against the monthly plan. `/odds` costs 1
+ * Quota: these endpoints cost credits against the monthly plan. `/odds` costs 1
  * per region per market; `/scores` costs 1, or 2 with `daysFrom` (needed to
  * see completed games). The jobs that call these only do so while a market
  * actually needs the data; keep it that way.
@@ -10,6 +10,7 @@
  * Docs: https://the-odds-api.com/liveapi/guides/v4/
  */
 
+import { ADDITIONAL_FEED_BY_KEY } from 'common/sports-feeds'
 import { log } from 'shared/utils'
 import { recordOddsApiUsage } from 'shared/supabase/odds-api-usage'
 import { OddsApiEvent, OddsApiScore } from 'common/odds-markets'
@@ -52,7 +53,10 @@ export async function getUpcomingOdds(
   const now = Date.now()
   const url = new URL(`${BASE_URL}/sports/${sportKey}/odds`)
   url.searchParams.set('apiKey', apiKey())
-  url.searchParams.set('regions', 'us')
+  url.searchParams.set(
+    'regions',
+    ADDITIONAL_FEED_BY_KEY[sportKey]?.region ?? 'us'
+  )
   url.searchParams.set('markets', 'h2h')
   url.searchParams.set('oddsFormat', 'american')
   // Games that have not started; the endpoint would otherwise include live ones.
@@ -65,13 +69,13 @@ export async function getUpcomingOdds(
   const res = await fetch(url.toString(), {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   })
+  warnOnLowQuota(res)
+  void recordOddsApiUsage(sportKey, res.headers)
   if (!res.ok) {
     throw new Error(
       `Odds API /odds error for ${sportKey}: ${res.status} ${res.statusText}`
     )
   }
-  warnOnLowQuota(res)
-  void recordOddsApiUsage(sportKey, res.headers)
   return res.json()
 }
 
@@ -96,12 +100,12 @@ export async function getScores(
   const res = await fetch(url.toString(), {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   })
+  warnOnLowQuota(res)
+  void recordOddsApiUsage(sportKey, res.headers)
   if (!res.ok) {
     throw new Error(
       `Odds API /scores error for ${sportKey}: ${res.status} ${res.statusText}`
     )
   }
-  warnOnLowQuota(res)
-  void recordOddsApiUsage(sportKey, res.headers)
   return res.json()
 }

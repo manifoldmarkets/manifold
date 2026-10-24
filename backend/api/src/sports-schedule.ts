@@ -2,8 +2,9 @@ import { groupBy, sortBy } from 'lodash'
 import { type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { contractColumnsToSelect, log } from 'shared/utils'
+import { getMarketLinksForFeed } from 'shared/supabase/market-links'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
-import { Contract, isMultiCpmm } from 'common/contract'
+import { Contract, isMultiCpmm, OutcomeType } from 'common/contract'
 import { Answer } from 'common/answer'
 import { tsToMillis } from 'common/supabase/utils'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
@@ -17,6 +18,7 @@ import {
   parseSportsStart,
   RelatedCandidate,
   RelatedRef,
+  relatedGroupForLink,
   ScheduleGame,
   ScheduleTeam,
   sportForMarket,
@@ -45,8 +47,13 @@ const MAX_UPCOMING = 300
 // The page loads these through markets-by-ids, which takes 100 ids at most.
 const MAX_UPCOMING_RETURNED = 100
 
-const MARKET_OUTCOME_TYPES =
-  "'BINARY', 'MULTIPLE_CHOICE', 'NUMBER', 'MULTI_NUMERIC', 'PSEUDO_NUMERIC'"
+const MARKET_OUTCOME_TYPES: OutcomeType[] = [
+  'BINARY',
+  'MULTIPLE_CHOICE',
+  'NUMBER',
+  'MULTI_NUMERIC',
+  'PSEUDO_NUMERIC',
+]
 
 type Pg = ReturnType<typeof createSupabaseDirectClient>
 
@@ -85,7 +92,28 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   // so rail counts and the week feed don't change when the user switches tabs.
   const attached = new Set<string>()
   if (ordered.length > 0) {
-    const candidates = await getRelatedCandidates(pg, index)
+    // Markets linked to a game go under it, where their creator put them.
+    // A market linked to anything is left out of the team-name
+    // matching, so it can't be guessed onto another game.
+    const allCandidates = await getRelatedCandidates(pg, index)
+    // Read both views in one snapshot; fall back completely if unavailable.
+    const { linked, withParents } = await orWithoutLinks(
+      () =>
+        getMarketLinksForFeed(
+          pg,
+          ordered.map((g) => g.id),
+          allCandidates.map((c) => c.id),
+          {
+            closeTimeFrom: now - FINISHED_GRACE_HOURS * HOUR_MS,
+            closeTimeTo: now + 45 * DAY_MS,
+            limitPerParent: MAX_RELATED_PER_GAME,
+            outcomeTypes: MARKET_OUTCOME_TYPES,
+          }
+        ),
+      { linked: [], withParents: new Set<string>() }
+    )
+    const candidates = allCandidates.filter((c) => !withParents.has(c.id))
+    const linkedByGame = groupBy(linked, (l) => l.parentId)
     const candidateClose = new Map(candidates.map((c) => [c.id, c.closeTime]))
     const matchesByGame = ordered.map((g) =>
       findRelatedMarkets(
@@ -118,11 +146,25 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
       }
     })
     ordered.forEach((g, i) => {
-      const matches = matchesByGame[i]
-        .filter(
-          (m) => m.kind === 'official' || bestGameFor.get(m.id)?.gameId === g.id
-        )
-        .slice(0, MAX_RELATED_PER_GAME)
+      const links = (linkedByGame[g.id] ?? []).map((l) => ({
+        id: l.id,
+        kind: 'linked' as const,
+        group: relatedGroupForLink(l.relation),
+      }))
+      const officialMatches = matchesByGame[i].filter(
+        (m) => m.kind === 'official'
+      )
+      const explicitIds = new Set(
+        [...officialMatches, ...links].map((m) => m.id)
+      )
+      const matches = [
+        ...officialMatches,
+        ...links,
+        ...matchesByGame[i].filter(
+          (m) =>
+            !explicitIds.has(m.id) && bestGameFor.get(m.id)?.gameId === g.id
+        ),
+      ].slice(0, MAX_RELATED_PER_GAME)
       if (props.includeRelated !== false) {
         g.related = matches.map(({ id, kind, group }) => ({ id, kind, group }))
       }
@@ -179,6 +221,17 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     sports: index.sports,
   }
   return response
+}
+
+// A failed link read (say the market_links migration hasn't run yet) leaves
+// the page on the team-name matching alone rather than taking it down.
+async function orWithoutLinks<T>(read: () => Promise<T>, fallback: T) {
+  try {
+    return await read()
+  } catch (e) {
+    log.warn('[sports-schedule] market links unavailable', { e })
+    return fallback
+  }
 }
 
 // ─── Paging ───────────────────────────────────────────────────────────────────
@@ -408,6 +461,7 @@ function toOfficialGame(
     uniqueBettorCount: c.uniqueBettorCount ?? 0,
     liveScore,
     liveUpdatedTime,
+    scoreUpdatedTime: d.sportsScoreUpdatedTime ?? null,
     finalScore,
     related: [] as RelatedRef[],
     relatedCount: 0,
@@ -541,11 +595,14 @@ async function querySportsMarkets(
     importance_score: number
     sports_event_id: string | null
     sports_market_type: string | null
+    sports_league: string | null
+    creator_id: string
     group_ids: string[]
   }>(
-    `select c.id, c.question, c.close_time, c.importance_score,
+    `select c.id, c.question, c.close_time, c.importance_score, c.creator_id,
             c.data->>'sportsEventId' as sports_event_id,
             c.data->>'sportsMarketType' as sports_market_type,
+            c.data->>'sportsLeague' as sports_league,
             (select coalesce(array_agg(g.group_id), '{}')
                from group_contracts g
               where g.contract_id = c.id) as group_ids
@@ -558,21 +615,34 @@ async function querySportsMarkets(
        and c.visibility = 'public'
        and coalesce(c.deleted, false) = false
        and c.resolution is null
-       and c.outcome_type in (${MARKET_OUTCOME_TYPES})
+       and c.outcome_type = any($4::text[])
        and c.close_time > now() + $2::interval
        and c.close_time < now() + $3::interval
      order by ${order}
      limit ${opts.limit}`,
-    [opts.groupIds, opts.closeFrom, opts.closeTo]
+    [opts.groupIds, opts.closeFrom, opts.closeTo, MARKET_OUTCOME_TYPES]
   )
-  return rows.map((r) => ({
-    id: r.id,
-    question: r.question,
-    questionLower: r.question.toLowerCase(),
-    closeTime: r.close_time ? tsToMillis(r.close_time) : null,
-    sportsEventId: r.sports_event_id,
-    marketType: r.sports_market_type,
-    sport: sportForMarket({ groupIds: r.group_ids }, index),
-    importanceScore: Number(r.importance_score ?? 0),
-  }))
+  return rows.map((r) => {
+    // API callers can set sports metadata. Only pipeline-owned markets may
+    // consume the reserved official slots; others can still match by topic.
+    const official = MANIFOLD_SPORTS_USER_IDS.includes(r.creator_id)
+    return {
+      id: r.id,
+      question: r.question,
+      questionLower: r.question.toLowerCase(),
+      closeTime: r.close_time ? tsToMillis(r.close_time) : null,
+      sportsEventId: official ? r.sports_event_id : null,
+      marketType: official ? r.sports_market_type : null,
+      // A pipeline's league first: its WNBA games sit in Basketball, which
+      // is the NBA's. Other markets go by their topics.
+      sport: sportForMarket(
+        {
+          sportsLeague: official ? r.sports_league : null,
+          groupIds: r.group_ids,
+        },
+        index
+      ),
+      importanceScore: Number(r.importance_score ?? 0),
+    }
+  })
 }

@@ -54,6 +54,10 @@ import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { referralQuery } from 'common/util/share'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import {
+  MOD_ACTION_TEXT_CLASS,
+  ModActionBadge,
+} from 'web/components/moderation/mod-action'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -125,10 +129,13 @@ const LIVE_STATUSES = new Set(['IN_PLAY', 'PAUSED'])
 // ended while nobody was watching doesn't show as live.
 const LIVE_STALE_MS = 10 * 60 * 1000
 
-function liveScoreFromMarket(
-  m: SportsMarket
-):
-  | { home: number | null; away: number | null; minute: string | null }
+function liveScoreFromMarket(m: SportsMarket):
+  | {
+      home: number | null
+      away: number | null
+      minute: string | null
+      updatedTime?: number | null
+    }
   | undefined {
   if (m.resolution) return undefined
   if (!m.sportsLiveStatus || !LIVE_STATUSES.has(m.sportsLiveStatus))
@@ -142,6 +149,7 @@ function liveScoreFromMarket(
     home: m.sportsHomeScore,
     away: m.sportsAwayScore,
     minute: m.sportsLiveMinute,
+    updatedTime: m.sportsScoreUpdatedTime,
   }
 }
 
@@ -452,15 +460,19 @@ function CommunityTab({
           <Row className="items-center gap-2">
             <button
               onClick={() => setEditMode((v) => !v)}
-              className="border-ink-200 text-ink-500 hover:bg-canvas-50 rounded border px-2 py-0.5 text-xs transition-colors"
+              className={clsx(
+                'hover:bg-canvas-50 flex items-center gap-1 rounded border border-purple-300 px-2 py-0.5 text-xs transition-colors dark:border-purple-700',
+                MOD_ACTION_TEXT_CLASS
+              )}
             >
+              <ModActionBadge />
               {editMode ? 'done' : 'edit'}
             </button>
             <button
               onClick={() => setShowAdd(true)}
-              className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-indigo-700"
+              className="flex items-center gap-1 rounded-md bg-purple-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-purple-700"
             >
-              + Add market
+              <ModActionBadge />+ Add market
             </button>
           </Row>
         )}
@@ -468,7 +480,8 @@ function CommunityTab({
 
       {/* Not initialized hint for admins */}
       {dashboard === null && isAdmin && (
-        <p className="text-ink-400 text-xs">
+        <p className={clsx('text-xs', MOD_ACTION_TEXT_CLASS)}>
+          <ModActionBadge className="mr-1 align-middle" />
           No community dashboard yet — adding the first market will create it
           automatically.
         </p>
@@ -512,7 +525,10 @@ function CommunityTab({
                   {isAdmin && editMode && (
                     <button
                       onClick={() => handleRemove(contract)}
-                      className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0 z-10 transition-colors"
+                      className={clsx(
+                        MOD_ACTION_TEXT_CLASS,
+                        'absolute -top-2 right-0 z-10 transition-opacity hover:opacity-70'
+                      )}
                       title="Remove from community tab"
                     >
                       <XCircleIcon className="h-5 w-5" />
@@ -567,7 +583,10 @@ function CommunityTab({
                               </div>
                               <button
                                 onClick={() => handleRemove(contract)}
-                                className="text-ink-500 hover:text-ink-700 absolute -right-2 -top-2 z-10 transition-colors"
+                                className={clsx(
+                                  MOD_ACTION_TEXT_CLASS,
+                                  'absolute -right-2 -top-2 z-10 transition-opacity hover:opacity-70'
+                                )}
                                 title="Remove from community tab"
                               >
                                 <XCircleIcon className="h-5 w-5" />
@@ -589,7 +608,10 @@ function CommunityTab({
                     {isAdmin && editMode && (
                       <button
                         onClick={() => handleRemove(contract)}
-                        className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0 z-10 transition-colors"
+                        className={clsx(
+                          MOD_ACTION_TEXT_CLASS,
+                          'absolute -top-2 right-0 z-10 transition-opacity hover:opacity-70'
+                        )}
                         title="Remove from community tab"
                       >
                         <XCircleIcon className="h-5 w-5" />
@@ -617,7 +639,10 @@ function CommunityTab({
                     {isAdmin && editMode && (
                       <button
                         onClick={() => handleRemove(contract)}
-                        className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0 z-10 transition-colors"
+                        className={clsx(
+                          MOD_ACTION_TEXT_CLASS,
+                          'absolute -top-2 right-0 z-10 transition-opacity hover:opacity-70'
+                        )}
                         title="Remove from community tab"
                       >
                         <XCircleIcon className="h-5 w-5" />
@@ -648,7 +673,10 @@ function CommunityTab({
                       {isAdmin && editMode && (
                         <button
                           onClick={() => handleRemove(contract)}
-                          className="text-ink-500 hover:text-ink-700 absolute -top-2 right-0 z-10 transition-colors"
+                          className={clsx(
+                            MOD_ACTION_TEXT_CLASS,
+                            'absolute -top-2 right-0 z-10 transition-opacity hover:opacity-70'
+                          )}
                           title="Remove from community tab"
                         >
                           <XCircleIcon className="h-5 w-5" />
@@ -1013,8 +1041,12 @@ export function SportsDashboardPage({
                     {isAdmin && (
                       <button
                         onClick={() => setEditingDesc(true)}
-                        className="text-ink-400 hover:text-ink-600 shrink-0 text-xs transition-colors"
+                        className={clsx(
+                          'flex shrink-0 items-center gap-1 text-xs transition-opacity hover:opacity-70',
+                          MOD_ACTION_TEXT_CLASS
+                        )}
                       >
+                        <ModActionBadge />
                         {officialDescription && !JSONEmpty(officialDescription)
                           ? 'edit'
                           : '+ add description'}

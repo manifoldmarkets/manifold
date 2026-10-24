@@ -12,6 +12,7 @@
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
 import { Contract, isMultiCpmm } from 'common/contract'
 import data from 'web/public/data/ballot-measures-2026.json'
+import { matchesSearchQuery } from './election-search'
 
 export type MeasureSource =
   | {
@@ -161,6 +162,16 @@ const NUMBER_WORDS: Record<string, string> = {
 // Search by state (name or code), designation ("prop 50", "Q6", "amendment 3",
 // "SQ 845") or topic/subject words.
 export function matchesMeasureQuery(
+  measure: BallotMeasure,
+  query: string,
+  stateName: string
+) {
+  return matchesSearchQuery(query, (term) =>
+    matchesMeasureTerm(measure, term, stateName)
+  )
+}
+
+function matchesMeasureTerm(
   measure: BallotMeasure,
   query: string,
   stateName: string

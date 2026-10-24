@@ -251,6 +251,12 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'When another use tags you',
     verb: 'tagged you',
   },
+  tagged_all_traders: {
+    simple: 'A question creator tagged all traders (@traders)',
+    detailed:
+      'When a question creator or mod tags everyone who traded on a question with @traders',
+    verb: 'tagged all traders',
+  },
   league_changed: {
     simple: 'Your league changed',
     detailed: 'When you join, move up, or move down a league',
@@ -413,6 +419,11 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed:
       'When your perpetual futures position is auto-deleveraged (ADL) because the opposing pool is insolvent',
   },
+  perp_order_failed: {
+    simple: 'Perp orders that did not fill',
+    detailed:
+      'When a queued perpetual futures order is rejected or expires instead of filling',
+  },
 }
 
 export type BettingStreakData = {
@@ -420,8 +431,10 @@ export type BettingStreakData = {
   bonusAmount: number
   cashAmount?: number
   // Effective tier at the time the bonus was awarded, so the notification's
-  // "reduced because unverified" label reflects history and doesn't change if
-  // the user later verifies. Optional for notifications created before this.
+  // flagged label and amounts reflect history and don't change if the user's
+  // standing later changes. Optional for notifications created before this.
+  // Older rows may hold the pre-optional-verification tiers 'unverified' /
+  // 'verified' — read through normalizeRecordedTier.
   effectiveTier?: string
 }
 
@@ -473,8 +486,8 @@ export type UniqueBettorData = {
   totalAmountBet?: number
   token?: ContractToken
   bonusAmount?: number
-  // Creator's effective tier at award time, so the "reduced because unverified"
-  // label reflects history rather than the creator's current tier.
+  // Creator's effective tier at award time, so the flagged label reflects
+  // history rather than the creator's current tier.
   effectiveTier?: string
 }
 

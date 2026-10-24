@@ -411,7 +411,9 @@ function PropsSkeleton({ count }: { count: number }) {
 
 // /create reads its prefill from a JSON `params` query value. `rand` makes
 // it replace a draft the form saved earlier, and is what applies the topic
-// slugs (the same as duplicating a market).
+// slugs (the same as duplicating a market). The new market is linked to the
+// game, so it lists here. Its deadline defaults to the game's current deadline;
+// the creator can override it, and later game updates do not change it.
 function createMarketHref(game: ScheduleGame) {
   const slug = SPORT_BY_KEY[game.sport]?.slug
   const params = {
@@ -419,8 +421,10 @@ function createMarketHref(game: ScheduleGame) {
     description: '',
     closeTime: game.closeTime,
     visibility: 'public',
-    groupSlugs: slug ? [slug] : undefined,
+    groupSlugs: [slug ?? 'sports-default'],
     rand: game.id.slice(0, 6),
+    linkedToContractId: game.id,
+    linkRelation: 'prop',
   }
   return `/create?params=${encodeURIComponent(JSON.stringify(params))}`
 }
@@ -438,12 +442,31 @@ export function RelatedMarketRow(props: {
   const official = isOfficialSportsMarket(contract)
   const user = useUser()
   const [betOpen, setBetOpen] = useState(false)
+  // A two-answer market's side to open the bet dialog on.
+  const [betSide, setBetSide] = useState<'YES' | 'NO'>()
   const isBinary =
     contract.outcomeType === 'BINARY' && contract.mechanism === 'cpmm-1'
   const isMulti = isMultiCpmm(contract)
   const closed =
     !!contract.resolution ||
     (!!contract.closeTime && contract.closeTime < Date.now())
+  const openBet = (side?: 'YES' | 'NO') => {
+    if (!user) {
+      firebaseLogin()
+      return
+    }
+    track('bet intent', { location: 'sports related market' })
+    setBetSide(side)
+    setBetOpen(true)
+  }
+  // Props get a direct pair of buttons: Yes / No, or a two-answer market's
+  // own answers (Over / Under, one team / the other).
+  const propButtonsClassName =
+    'grid grid-cols-2 gap-1.5 [&>button]:m-0 [&>button]:min-h-[32px] [&>button]:min-w-[3.5rem]'
+  const twoAnswers =
+    isProp && isMulti && isBinaryMulti(contract)
+      ? (contract as CPMMMultiContract).answers
+      : undefined
 
   const previewAnswers =
     isMulti && !isBinaryMulti(contract)
@@ -508,26 +531,31 @@ export function RelatedMarketRow(props: {
                 }
               : undefined
           }
-          className={
-            isProp
-              ? 'grid grid-cols-2 gap-1.5 [&>button]:m-0 [&>button]:min-h-[32px] [&>button]:min-w-[3.5rem]'
-              : 'flex'
-          }
+          className={isProp ? propButtonsClassName : 'flex'}
         />
       )}
-      {!closed && isMulti && (
-        <Button
-          size="2xs"
-          color="indigo-outline"
-          onClick={() => {
-            if (!user) {
-              firebaseLogin()
-              return
-            }
-            track('bet intent', { location: 'sports related market' })
-            setBetOpen(true)
-          }}
-        >
+      {!closed && twoAnswers && (
+        <div className={propButtonsClassName}>
+          {twoAnswers.map((answer, index) => {
+            const label = answer.shortText || answer.text
+            return (
+              <Button
+                key={answer.id}
+                size="xs"
+                color={index === 0 ? 'green-outline' : 'red-outline'}
+                aria-label={`${label} on ${contract.question}`}
+                aria-haspopup="dialog"
+                onClick={() => openBet(index === 0 ? 'YES' : 'NO')}
+                className="max-w-[8rem]"
+              >
+                <span className="truncate">{label}</span>
+              </Button>
+            )
+          })}
+        </div>
+      )}
+      {!closed && isMulti && !twoAnswers && (
+        <Button size="2xs" color="indigo-outline" onClick={() => openBet()}>
           Bet
         </Button>
       )}
@@ -582,6 +610,7 @@ export function RelatedMarketRow(props: {
           contract={contract as CPMMMultiContract}
           open={betOpen}
           setOpen={setBetOpen}
+          initialOutcome={betSide}
         />
       )}
     </div>

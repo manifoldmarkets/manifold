@@ -6,7 +6,7 @@ jest.mock('shared/supabase/odds-api-usage', () => ({
 }))
 
 import { recordOddsApiUsage } from 'shared/supabase/odds-api-usage'
-import { getScores } from './the-odds-api-client'
+import { getScores, getUpcomingOdds } from './the-odds-api-client'
 
 const headers = new Headers({
   'x-requests-last': '1',
@@ -40,4 +40,30 @@ it('asks for live games only (1 credit) unless finished ones are needed', async 
 it('records what each call cost against its sport', async () => {
   await getScores('soccer_epl')
   expect(recordOddsApiUsage).toHaveBeenCalledWith('soccer_epl', headers)
+})
+
+it('records quota headers on failed responses too', async () => {
+  jest.mocked(global.fetch).mockResolvedValueOnce({
+    ok: false,
+    headers,
+    status: 429,
+    statusText: 'Too Many Requests',
+  } as Response)
+  await expect(getScores('soccer_epl')).rejects.toThrow('429')
+  expect(recordOddsApiUsage).toHaveBeenCalledWith('soccer_epl', headers)
+})
+
+it('uses one appropriate bookmaker region per feed instead of multiplying quota by regions', async () => {
+  for (const [key, region] of [
+    ['basketball_nba', 'us'],
+    ['basketball_nbl', 'au'],
+    ['basketball_euroleague', 'eu'],
+    ['soccer_efl_champ', 'uk'],
+  ]) {
+    jest.mocked(global.fetch).mockClear()
+    await getUpcomingOdds(key)
+    expect(requested().searchParams.get('regions')).toBe(region)
+    expect(requested().searchParams.get('markets')).toBe('h2h')
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+  }
 })

@@ -28,6 +28,10 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { AboutEditor } from 'web/components/topics/about-editor'
 import { ActivityLog } from 'web/components/activity-log'
 import { removeEmojis } from 'common/util/string'
+import {
+  MOD_ACTION_TEXT_CLASS,
+  ModActionBadge,
+} from 'web/components/moderation/mod-action'
 import { formatWithCommas } from 'common/util/format'
 
 export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
@@ -162,6 +166,7 @@ export default function TopicPage(props: {
                       editing={addingAbout}
                       setEditing={setAddingAbout}
                       canEdit={canEdit}
+                      modAction={canEdit}
                     />
                     {isMobile && (
                       <TopicsSidebar
@@ -291,7 +296,8 @@ const TopicsSidebar = (props: {
           )}
         </Col>
         {canEdit && (
-          <div className="border-ink-100 border-t px-3 py-2">
+          <Row className="border-ink-100 items-center gap-2 border-t px-3 py-2">
+            <ModActionBadge className={MOD_ACTION_TEXT_CLASS} />
             <TopicSelector
               setSelectedGroup={(group) => onAddAbove(group)}
               placeholder="Add main topic..."
@@ -300,7 +306,7 @@ const TopicsSidebar = (props: {
               addingToContract={false}
               className="[&_input]:bg-canvas-0 focus:[&_input]:bg-canvas-0 [&_input]:text-sm"
             />
-          </div>
+          </Row>
         )}
       </Col>
 
@@ -327,7 +333,8 @@ const TopicsSidebar = (props: {
           )}
         </Col>
         {canEdit && (
-          <div className="border-ink-100 border-t px-3 py-2">
+          <Row className="border-ink-100 items-center gap-2 border-t px-3 py-2">
+            <ModActionBadge className={MOD_ACTION_TEXT_CLASS} />
             <TopicSelector
               setSelectedGroup={(group) => onAddBelow(group)}
               placeholder="Add subtopic..."
@@ -336,7 +343,7 @@ const TopicsSidebar = (props: {
               addingToContract={false}
               className="[&_input]:bg-canvas-0 focus:[&_input]:bg-canvas-0 [&_input]:text-sm"
             />
-          </div>
+          </Row>
         )}
       </Col>
 
@@ -362,6 +369,7 @@ const TopicRow = (props: {
         <BsPeopleFill className="h-3.5 w-3.5" />
         <span>{formatWithCommas(topic.totalMembers ?? 0)}</span>
       </Row>
+      {/* Only mods can remove parent/subtopics */}
       {onRemove && (
         <IconButton
           onClick={(e) => {
@@ -369,7 +377,10 @@ const TopicRow = (props: {
             e.preventDefault()
             onRemove(topic)
           }}
-          className="text-ink-400 hover:text-ink-600 -mr-1 opacity-0 transition-opacity group-hover:opacity-100"
+          className={clsx(
+            '-mr-1 opacity-0 transition-opacity group-hover:opacity-100',
+            MOD_ACTION_TEXT_CLASS
+          )}
           size="xs"
         >
           <XIcon className="h-4 w-4" />

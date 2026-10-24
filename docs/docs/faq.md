@@ -74,8 +74,8 @@ Mana can be earned by making correct predictions, successful trades, creating po
 - **Referrals** -
   Refer new users to Manifold and earn M1000 when they sign up using your referral link.
 
-- **Phone verification** -
-  Verify your phone number to receive a one-time bonus of M1000.
+- **Signup bonus** -
+  Every new account starts with M1000. No verification is needed — identity verification is optional and only required to enter prize drawings.
 
 You can find all available quests by navigating to your profile page and clicking on the streak/quest button.
 

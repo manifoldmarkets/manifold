@@ -272,6 +272,7 @@ function SocialPostCardContent({
                           {
                             name: own ? 'Delete' : 'Remove',
                             onClick: () => setDeleting(true),
+                            modAction: !own,
                           },
                         ]
                       : []),
