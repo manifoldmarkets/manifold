@@ -8,8 +8,9 @@ import { Button, SizeType } from '../buttons/button'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { AddFundsOfferBadge } from './add-funds-offer-badge'
 
-const RAIN_COINS = 36
-const RAIN_MAX_MS = 3200
+const RAIN_COINS = 70
+const RAIN_LAYERS = 6
+const RAIN_MAX_MS = 8000
 
 type RainCoin = {
   left: number
@@ -24,11 +25,11 @@ type RainCoin = {
 const makeRain = (): RainCoin[] =>
   Array.from({ length: RAIN_COINS }, () => ({
     left: Math.random() * 100,
-    size: 20 + Math.random() * 18,
-    delay: Math.random() * 900,
-    dur: 1300 + Math.random() * 1000,
+    size: 24 + Math.random() * 24,
+    delay: Math.random() * 2200,
+    dur: 3000 + Math.random() * 2000,
     drift: (Math.random() - 0.5) * 80,
-    spin: (Math.random() < 0.5 ? -1 : 1) * (360 + Math.random() * 720),
+    spin: (Math.random() < 0.5 ? -1 : 1) * (720 + Math.random() * 1080),
     tilt: (Math.random() - 0.5) * 40,
   }))
 
@@ -76,10 +77,8 @@ function ManaRain(props: { coins: RainCoin[] }) {
   return createPortal(
     <div aria-hidden className="pointer-events-none fixed inset-0 z-50">
       {props.coins.map((c, i) => (
-        <img
+        <span
           key={i}
-          src="/mana.svg"
-          alt=""
           className="mana-rain-coin"
           style={
             {
@@ -91,9 +90,26 @@ function ManaRain(props: { coins: RainCoin[] }) {
               '--drift': `${c.drift}px`,
               '--spin': `${c.spin}deg`,
               '--tilt': `${c.tilt}deg`,
+              '--step': `${(c.size * 0.16) / (RAIN_LAYERS - 1)}px`,
             } as React.CSSProperties
           }
-        />
+        >
+          <span className="mana-rain-body">
+            {Array.from({ length: RAIN_LAYERS }, (_, j) => (
+              <img
+                key={j}
+                src="/mana.svg"
+                alt=""
+                className="mana-rain-layer"
+                style={{ '--i': j } as React.CSSProperties}
+                {...(j === 0 || j === RAIN_LAYERS - 1
+                  ? { 'data-face': '' }
+                  : { 'data-rim': '' })}
+              />
+            ))}
+            <span className="mana-rain-gloss" />
+          </span>
+        </span>
       ))}
     </div>,
     document.body
