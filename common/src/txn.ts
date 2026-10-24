@@ -22,6 +22,8 @@ type AnyTxnType =
   | ManaPurchase
   | SignupBonus
   | ContractOldResolutionPayout
+  | ContractResolutionSubsidy
+  | ContractUndoResolutionSubsidy
   | ContractProduceSpice
   | ContractUndoProduceSpice
   | ConsumeSpice
@@ -327,6 +329,45 @@ type ContractOldResolutionPayout = {
     deposit?: number
     payoutStartTime?: number
     answerId?: string
+    // On an independent answer's resolution: shared with its
+    // CONTRACT_RESOLUTION_SUBSIDY record.
+    resolutionId?: string
+  }
+}
+
+// Not a payment (amount 0): what resolving an answer of an independent market
+// took from the pending subsidy, written with that resolution's payouts, even
+// when it has none. Unresolving the answer puts back exactly the answer's
+// own, and isn't allowed once it took part of the market's.
+type ContractResolutionSubsidy = {
+  fromType: 'CONTRACT'
+  toType: 'CONTRACT'
+  category: 'CONTRACT_RESOLUTION_SUBSIDY'
+  token: 'M$' | 'CASH'
+  data: {
+    answerId: string
+    // As on the resolution's payouts, and unique to it.
+    resolutionId: string
+    // As on the resolution's payouts.
+    payoutStartTime: number
+    // As on the answer, while this resolution stands.
+    resolutionTime: number
+    // The answer's own pending subsidy.
+    answerSubsidyPool: number
+    // From the market's pending subsidy.
+    contractSubsidyShare: number
+  }
+}
+
+// Not a payment (amount 0): marks a CONTRACT_RESOLUTION_SUBSIDY record undone
+// by an unresolve, so it's never read again.
+type ContractUndoResolutionSubsidy = {
+  fromType: 'CONTRACT'
+  toType: 'CONTRACT'
+  category: 'CONTRACT_UNDO_RESOLUTION_SUBSIDY'
+  token: 'M$' | 'CASH'
+  data: {
+    revertsTxnId: string
   }
 }
 
@@ -847,6 +888,9 @@ export type CharityFeeTxn = Txn & CharityFee
 export type ManaPurchaseTxn = Txn & ManaPurchase
 export type SignupBonusTxn = Txn & SignupBonus
 export type ContractOldResolutionPayoutTxn = Txn & ContractOldResolutionPayout
+export type ContractResolutionSubsidyTxn = Txn & ContractResolutionSubsidy
+export type ContractUndoResolutionSubsidyTxn = Txn &
+  ContractUndoResolutionSubsidy
 export type ContractUndoOldResolutionPayoutTxn = Txn &
   ContractUndoOldResolutionPayout
 export type ContractProduceSpiceTxn = Txn & ContractProduceSpice
