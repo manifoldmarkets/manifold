@@ -32,6 +32,8 @@ export function ChoicesToggleGroup(props: {
   color?: ColorType
   className?: string
   toggleClassName?: string
+  /** Names the group for assistive tech: what the choices are choices of. */
+  ariaLabel?: string
   children?: React.ReactNode
 }) {
   const {
@@ -45,6 +47,7 @@ export function ChoicesToggleGroup(props: {
     className,
     children,
     toggleClassName,
+    ariaLabel,
   } = props
 
   const isModernStyle =
@@ -68,6 +71,7 @@ export function ChoicesToggleGroup(props: {
       value={currentChoice}
       onChange={setChoice}
       disabled={disabled}
+      aria-label={ariaLabel}
     >
       {Object.entries(choicesMap).map(([choiceKey, choice]) => (
         <RadioGroup.Option

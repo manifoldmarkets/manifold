@@ -12,6 +12,7 @@ import {
 } from './supabase/init'
 import {
   getLinkParentCandidate,
+  getMarketLinks,
   getMarketLinksForFeed,
   lockMarketLinkContracts,
   lockMarketLinkFundingUser,
@@ -201,7 +202,10 @@ describeLocalPostgres('market-link concurrency on actual PostgreSQL', () => {
         close_time timestamptz default now() + interval '1 day',
         token text not null default 'MANA',
         outcome_type text not null default 'BINARY',
-        importance_score numeric default 1
+        importance_score numeric default 1,
+        question text not null default '',
+        slug text not null default '',
+        data jsonb not null default '{}'
       );
     `)
     await observer.none(
@@ -316,6 +320,78 @@ describeLocalPostgres('market-link concurrency on actual PostgreSQL', () => {
       linked: [],
       withParents: new Set(),
     })
+  })
+
+  it("lists a market's public parent and public children, newest first", async () => {
+    await observer.none(`
+      update contracts set question = 'Q ' || id, slug = id || '-slug',
+        data = jsonb_build_object('creatorUsername', 'u-' || creator_id);
+      insert into contracts (id, creator_id, visibility, deleted) values
+        ('hidden', 'owner', 'unlisted', false), ('gone', 'owner', 'public', true);
+      insert into market_links
+        (child_contract_id, parent_contract_id, relation, created_by, created_time)
+      values
+        ('b', 'a', 'line', 'owner', now() - interval '3 minutes'),
+        ('c', 'a', 'prop', 'owner', now() - interval '1 minute'),
+        ('hidden', 'a', 'related', 'owner', now()),
+        ('gone', 'a', 'related', 'owner', now());
+    `)
+    const ref = (id: string, relation: string) => ({
+      id,
+      question: `Q ${id}`,
+      slug: `${id}-slug`,
+      creatorId: 'owner',
+      creatorUsername: 'u-owner',
+      relation,
+      closeTime: expect.any(Number),
+      isResolved: false,
+    })
+    const none = {
+      parent: null,
+      parentHidden: false,
+      children: [],
+      childCount: 0,
+      hiddenChildCount: 0,
+    }
+    // Unlisted and deleted children are counted apart and never named.
+    expect(await getMarketLinks(first, 'a', 1)).toEqual({
+      ...none,
+      children: [ref('c', 'prop')],
+      childCount: 2,
+      hiddenChildCount: 2,
+    })
+    expect(await getMarketLinks(first, 'a', 50)).toEqual({
+      ...none,
+      children: [ref('c', 'prop'), ref('b', 'line')],
+      childCount: 2,
+      hiddenChildCount: 2,
+    })
+    expect(await getMarketLinks(first, 'b', 50)).toEqual({
+      ...none,
+      parent: ref('a', 'line'),
+    })
+    // Enough to tell whether the parent still takes changes.
+    await observer.none(
+      `update contracts set resolution = 'YES', close_time = null where id = 'a'`
+    )
+    expect((await getMarketLinks(first, 'b', 50)).parent).toEqual({
+      ...ref('a', 'line'),
+      closeTime: null,
+      isResolved: true,
+    })
+    // A parent that's unlisted or deleted is flagged on its children's pages,
+    // so the link can still be removed, but it isn't named.
+    for (const hide of [
+      `update contracts set visibility = 'unlisted' where id = 'a'`,
+      `update contracts set visibility = 'public', deleted = true where id = 'a'`,
+    ]) {
+      await observer.none(hide)
+      expect(await getMarketLinks(first, 'b', 50)).toEqual({
+        ...none,
+        parentHidden: true,
+      })
+    }
+    expect(await getMarketLinks(first, 'missing', 50)).toEqual(none)
   })
 
   it('keeps explicit children and exclusions in one snapshot across a concurrent reparent', async () => {

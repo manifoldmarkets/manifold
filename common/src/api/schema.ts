@@ -44,7 +44,7 @@ import {
   SearchGroupShape,
   Topic,
 } from 'common/group'
-import { MARKET_LINK_RELATIONS } from 'common/market-links'
+import { MARKET_LINK_RELATIONS, MarketLinks } from 'common/market-links'
 import {
   JOB_INTERESTS,
   JOB_REGIONS,
@@ -5202,6 +5202,19 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as { success: true },
+  },
+  // What a market is linked to and what's linked to it: a market's info
+  // dialog, and the markets under a race on the election map.
+  'get-market-links': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z
+      .object({
+        contractId: z.string().min(1).max(MAX_ID_LENGTH),
+      })
+      .strict(),
+    returns: {} as MarketLinks,
   },
 
   // The scheduler switches on /admin/sports: one per Odds API calendar phase.

@@ -102,6 +102,19 @@ trade depth or guarantees about price impact.
 
 Every race source and chamber-control card offers a separate description and
 comments link in a new tab; the trade actions still open their in-page dialogs.
+
+A pinned race card ends with "Linked markets", the markets linked
+(`common/src/market-links.ts`) to the race's own market or to its candidate
+market: margin lines, turnout and candidate props. It is closed by default and
+appears only when the race has at least one open linked market; the list, its
+live prices and its Bet buttons load when it is opened, and "Add a market"
+opens /create prefilled with the link. Links are read through
+`get-market-links`, one request per parent market when a race is pinned, never
+on hover. A House district priced only by an answer of a shared portfolio has
+no market of its own to link to, so it never shows the section: give such a
+district its own market first. Linking is manual (the market's creator or a
+mod via `link-market`); `backend/scripts/link-election-race-markets.ts` holds
+the reviewed backfill list.
 Candidate-party aggregation remains subject to the limitation above.
 
 Senate totals include the 65 seats not on the ballot (34 Democratic caucus,

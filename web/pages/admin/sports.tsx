@@ -1,4 +1,5 @@
 import { ChevronDownIcon } from '@heroicons/react/solid'
+import { sortBy } from 'lodash'
 import { useEffect, useState } from 'react'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
@@ -31,6 +32,7 @@ import { AdminCompetitionSwitches } from 'web/components/sports/admin-competitio
 import { AdminScorePolling } from 'web/components/sports/admin-score-polling'
 import clsx from 'clsx'
 import {
+  calendarEntriesFor,
   SPORT_LEAGUE_LABEL,
   SPORTS_CALENDAR,
   SportId,
@@ -59,6 +61,8 @@ type OddsApiCompetition = {
   label: string
   competitionId: string
   sportsLeague: string
+  /** Why every phase is locked: the dry run creates nothing until it's unlocked. */
+  locked?: string
 }
 type CompetitionOption =
   | ActiveCompetition
@@ -94,12 +98,17 @@ const CALENDAR_SPORTS: { id: SportId; label: string }[] = [
   { id: 'tennis', label: 'Tennis' },
 ]
 
+// Competitions that can be created from here come first; those locked until
+// their settlement rule is validated follow, then those with no provider.
 function calendarCompetitions(sport: SportId): CompetitionOption[] {
   const seen = new Set<string>()
   const out: CompetitionOption[] = []
   for (const e of SPORTS_CALENDAR) {
     if (e.sport !== sport || seen.has(e.competitionId)) continue
     seen.add(e.competitionId)
+    const locked = calendarEntriesFor(e.competitionId).every((p) => p.locked)
+      ? e.locked
+      : undefined
     out.push(
       e.oddsKey
         ? {
@@ -107,11 +116,12 @@ function calendarCompetitions(sport: SportId): CompetitionOption[] {
             label: e.competition,
             competitionId: e.competitionId,
             sportsLeague: SPORT_LEAGUE_LABEL[e.sport],
+            locked,
           }
         : { type: 'pending', label: e.competition }
     )
   }
-  return out
+  return sortBy(out, (c) => (c.type === 'odds-api' ? (c.locked ? 1 : 0) : 2))
 }
 
 const SPORT_CATEGORIES: SportCategory[] = [
@@ -862,7 +872,11 @@ export default function SportsAdminPage() {
                   {selectedSport.competitions.map((c) => (
                     <option key={c.label} value={c.label}>
                       {c.label}
-                      {c.type === 'pending' ? ' (API pending)' : ''}
+                      {c.type === 'pending'
+                        ? ' (API pending)'
+                        : c.type === 'odds-api' && c.locked
+                        ? ' (needs validation)'
+                        : ''}
                     </option>
                   ))}
                 </select>
@@ -878,6 +892,13 @@ export default function SportsAdminPage() {
                 </span>
                 <span className="font-mono">{tournament.footballDataCode}</span>
               </Col>
+            ) : selectedCompetition.type === 'odds-api' &&
+              selectedCompetition.locked ? (
+              <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                <span className="font-semibold">Needs validation</span> —{' '}
+                {selectedCompetition.locked}. The dry run below creates nothing
+                until the phase is unlocked in the calendar.
+              </div>
             ) : isOddsApi ? (
               <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
                 <span className="font-semibold">The Odds API</span> — market
