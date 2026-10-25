@@ -58,6 +58,12 @@ export function JobCard({ job }: { job: Job }) {
               <dt className="sr-only">Compensation</dt>
               <dd>{job.comp}</dd>
             </div>
+            {job.totalComp && (
+              <div>
+                <dt className="sr-only">Total compensation</dt>
+                <dd>{job.totalComp}</dd>
+              </div>
+            )}
           </dl>
           <div className="border-ink-100 mt-2 flex items-center justify-end border-t pt-4 dark:border-slate-700/60">
             <span className="text-primary-600 group-hover:text-primary-700 flex items-center gap-1.5 text-sm font-semibold dark:text-indigo-300 dark:group-hover:text-indigo-200">
