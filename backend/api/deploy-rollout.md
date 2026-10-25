@@ -169,15 +169,3 @@ deploys already use.
 
 Dev has no Redis, so every dev rollout ends with the surviving writer closing
 its connections once with 1012.
-
-## Client-facing change note
-
-Publish after the first production rollout is confirmed.
-
-|                              | Before                                                                                                         | After                                                                                                                                                                  |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Scheduled disconnects        | Daily at 08:00 UTC the API restarted. All sockets dropped and the API was often unavailable for 2–3.5 minutes. | None.                                                                                                                                                                  |
-| Deploy disconnects           | Sockets on the old VM dropped when it was removed.                                                             | Same. Sockets on the new VM may also get one 1012 close after the old VM is gone, if delivery from it cannot be verified (always on the first rollout of this change). |
-| Events missed during deploys | Both VMs served for a while. A socket received only its own VM's events, with no signal.                       | Production VMs relay events to each other. A socket that may have missed any is closed with 1012.                                                                      |
-| Other disconnects            | Crashes, network, the load balancer's 24-hour connection limit, 60–120 s without a ping.                       | Unchanged.                                                                                                                                                             |
-| What clients must do         | Reconnect and resubscribe; first-party views did not systematically repair missed state.                       | Updated first-party views refetch after acknowledged resubscription, with stale-read guards and retries. Other clients must implement their own state recovery.        |
