@@ -16,6 +16,7 @@ import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { Input } from '../widgets/input'
 import { MoneyDisplay } from '../bet/money-display'
+import { MOD_ACTION_TEXT_CLASS, ModActionBadge } from '../moderation/mod-action'
 
 function MultiSortDropdown(props: {
   sort: MultiSort
@@ -52,6 +53,8 @@ export function SearchCreateAnswerPanel(props: {
   setSort: (sort: MultiSort) => void
   showDefaultSort?: boolean
   setDefaultSort: () => void
+  // Can only set the default sort because the user is a mod or admin
+  defaultSortModAction?: boolean
 }) {
   const {
     contract,
@@ -63,6 +66,7 @@ export function SearchCreateAnswerPanel(props: {
     setSort,
     showDefaultSort,
     setDefaultSort,
+    defaultSortModAction,
   } = props
 
   const canAddAnswer = props.canAddAnswer
@@ -201,7 +205,13 @@ export function SearchCreateAnswerPanel(props: {
         </div>
       </Row>
       {showDefaultSort && (
-        <Row className="text-primary-700 flex-grow items-center justify-end gap-0.5 text-xs font-semibold">
+        <Row
+          className={clsx(
+            'flex-grow items-center justify-end gap-0.5 text-xs font-semibold',
+            defaultSortModAction ? MOD_ACTION_TEXT_CLASS : 'text-primary-700'
+          )}
+        >
+          {defaultSortModAction && <ModActionBadge />}
           <button className="hover:underline" onClick={setDefaultSort}>
             Set default
           </button>

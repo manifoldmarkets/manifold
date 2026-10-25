@@ -10,6 +10,7 @@ import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Table } from 'web/components/widgets/table'
 import { Title } from 'web/components/widgets/title'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
@@ -35,7 +36,10 @@ export default function CashTxnsPage() {
     <Page trackPageView={false}>
       <Col className="gap-4">
         <Row className="items-start justify-between">
-          <Title>Cash Transactions</Title>
+          <Title>
+            Cash Transactions
+            <ModActionTag admin className="ml-2 align-middle" />
+          </Title>
           <div className="flex gap-1">
             <Button onClick={() => setPage(page - 1)} disabled={page === 0}>
               Previous

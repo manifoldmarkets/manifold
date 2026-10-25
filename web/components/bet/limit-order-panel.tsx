@@ -601,7 +601,7 @@ export default function LimitOrderPanel(props: {
                         setIsEditingPayout(false)
                       }
                     }}
-                    // Focus follows the user's explicit click to edit payout.
+                    // Focus follows the click on the payout.
                     // eslint-disable-next-line jsx-a11y/no-autofocus
                     autoFocus
                     min={1}
@@ -639,8 +639,11 @@ export default function LimitOrderPanel(props: {
                   size="xl"
                   disabled={betDisabled}
                   color={
+                    // The compact ticket keeps Yes=green, No=red.
                     compact
-                      ? 'indigo'
+                      ? outcome === 'YES'
+                        ? 'green'
+                        : 'red'
                       : (pseudonymColor as any) ??
                         (hideYesNo
                           ? 'none'

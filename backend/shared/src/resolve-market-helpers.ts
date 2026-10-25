@@ -1,4 +1,4 @@
-import { APIError } from 'common//api/utils'
+import { APIError } from 'common/api/utils'
 import { Answer } from 'common/answer'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -65,7 +65,10 @@ export const resolveMarketHelper = async (
   unresolvedContract: MarketContract,
   resolver: User,
   creator: User,
-  { value, resolutions, probabilityInt, outcome, answerId }: ResolutionParams
+  { value, resolutions, probabilityInt, outcome, answerId }: ResolutionParams,
+  // Synchronous diagnostic observer for acquisition, transaction and post-commit
+  // stages. It does not control reservation release or retries.
+  onTransactionState?: (state: 'started' | 'committed') => void
 ) => {
   const pg = createSupabaseDirectClient()
 
@@ -77,6 +80,7 @@ export const resolveMarketHelper = async (
     updatedContractAttrs,
     userUpdates,
   } = await pg.tx({ mode: SERIAL_MODE }, async (tx) => {
+    onTransactionState?.('started')
     const { closeTime, id: contractId } = unresolvedContract
     const {
       contract: c,
@@ -92,6 +96,15 @@ export const resolveMarketHelper = async (
     unresolvedContract = c as MarketContract
     if (unresolvedContract.isResolved) {
       throw new APIError(403, 'Contract is already resolved')
+    }
+    // Re-check the answer against this transaction's read of the contract:
+    // the caller validated it against a snapshot taken outside the transaction.
+    if (answerId && isIndieMC) {
+      const answer = c.answers.find((a) => a.id === answerId)
+      if (!answer)
+        throw new APIError(403, `${answerId} is not a valid answer ID`)
+      if (answer.resolution || answer.resolutionTime)
+        throw new APIError(403, `${answerId} answer is already resolved`)
     }
 
     const resolutionTime = Date.now()
@@ -308,6 +321,7 @@ export const resolveMarketHelper = async (
     }
   })
 
+  onTransactionState?.('committed')
   broadcastUpdatedContract(resolvedContract.visibility, updatedContractAttrs)
   broadcastUpdatedMetrics(updatedContractMetrics)
   const userPayoutsWithoutLoans = groupPayoutsByUser(payoutsWithoutLoans)

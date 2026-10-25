@@ -847,6 +847,66 @@ export type Database = {
         }
         Relationships: []
       }
+      perp_orders: {
+        Row: {
+          id: string
+          contract_id: string
+          user_id: string
+          idempotency_key: string
+          fingerprint: string
+          request: Json
+          is_api: boolean
+          expected_opened_time: number | null
+          reserved_mana: number
+          created_time: string
+          expires_time: string
+          status: string
+          result: Json | null
+          error: string | null
+          execution_point: Json | null
+          completed_time: string | null
+          participation_applied_at: string | null
+        }
+        Insert: {
+          id: string
+          contract_id: string
+          user_id: string
+          idempotency_key: string
+          fingerprint: string
+          request: Json
+          is_api: boolean
+          expected_opened_time?: number | null
+          reserved_mana: number
+          created_time?: string
+          expires_time: string
+          status?: string
+          result?: Json | null
+          error?: string | null
+          execution_point?: Json | null
+          completed_time?: string | null
+          participation_applied_at?: string | null
+        }
+        Update: {
+          id?: string
+          contract_id?: string
+          user_id?: string
+          idempotency_key?: string
+          fingerprint?: string
+          request?: Json
+          is_api?: boolean
+          expected_opened_time?: number | null
+          reserved_mana?: number
+          created_time?: string
+          expires_time?: string
+          status?: string
+          result?: Json | null
+          error?: string | null
+          execution_point?: Json | null
+          completed_time?: string | null
+          participation_applied_at?: string | null
+        }
+        Relationships: []
+      }
       contract_perp_positions: {
         Row: {
           contract_id: string
@@ -2372,6 +2432,52 @@ export type Database = {
           message?: string | null
         }
         Relationships: []
+      }
+      market_links: {
+        Row: {
+          child_contract_id: string
+          parent_contract_id: string
+          relation: string
+          created_by: string
+          created_time: string
+        }
+        Insert: {
+          child_contract_id: string
+          parent_contract_id: string
+          relation?: string
+          created_by: string
+          created_time?: string
+        }
+        Update: {
+          child_contract_id?: string
+          parent_contract_id?: string
+          relation?: string
+          created_by?: string
+          created_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'market_links_child_contract_id_fkey'
+            columns: ['child_contract_id']
+            isOneToOne: true
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'market_links_parent_contract_id_fkey'
+            columns: ['parent_contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'market_links_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
       }
       market_ads: {
         Row: {

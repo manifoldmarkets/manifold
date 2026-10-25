@@ -19,6 +19,7 @@ import { Title } from 'web/components/widgets/title'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { FollowDashboardButton } from 'web/components/dashboard/follow-dashboard-button'
 import { Button } from 'web/components/buttons/button'
+import { ModActionBadge } from 'web/components/moderation/mod-action'
 import { deleteDashboard, updateDashboard } from 'web/lib/api/api'
 import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
@@ -146,10 +147,11 @@ export function PoliticsDashboardPage(props: {
                 )}
                 {isOnlyMod && (
                   <Button
-                    color="red"
+                    color="purple"
                     className="ml-6"
                     onClick={() => setEditMode(true)}
                   >
+                    <ModActionBadge className="mr-1" />
                     Edit as Mod
                   </Button>
                 )}
@@ -161,7 +163,7 @@ export function PoliticsDashboardPage(props: {
           <Row className="bg-canvas-50 sticky top-0 z-20 mb-2 w-full items-center justify-end gap-2 self-start py-1">
             {isOnlyMod && (
               <Button
-                color="red"
+                color="purple"
                 className="mr-auto"
                 onClick={() => {
                   deleteDashboard({ dashboardId: dashboard.id })
@@ -169,6 +171,7 @@ export function PoliticsDashboardPage(props: {
                   router.replace(pathName.split('?')[0])
                 }}
               >
+                <ModActionBadge className="mr-1" />
                 Delete (mark as spam)
               </Button>
             )}

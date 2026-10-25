@@ -1116,8 +1116,7 @@ export const BuyPanelBody = (
                                   setIsEditingPayout(false)
                                 }
                               }}
-                              // The input replaces the payout the user just
-                              // clicked to edit, so focus belongs here.
+                              // Focus follows the click on the payout.
                               // eslint-disable-next-line jsx-a11y/no-autofocus
                               autoFocus
                               min={1}
@@ -1126,28 +1125,20 @@ export const BuyPanelBody = (
                               onChangeAmount={setEditablePayout}
                             />
                           ) : (
-                            <span
-                              className={clsx('cursor-pointer hover:underline')}
-                              role="button"
-                              tabIndex={0}
+                            <button
+                              type="button"
                               aria-label="Edit payout"
+                              className="cursor-pointer hover:underline"
                               onClick={() => {
                                 setEditablePayout(Math.floor(currentPayout))
                                 setIsEditingPayout(true)
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                  e.preventDefault()
-                                  setEditablePayout(Math.floor(currentPayout))
-                                  setIsEditingPayout(true)
-                                }
                               }}
                             >
                               {formatWithToken({
                                 amount: currentPayout,
                                 token: 'M$',
                               })}
-                            </span>
+                            </button>
                           )}
                         </>
                       )}
@@ -1213,8 +1204,12 @@ export const BuyPanelBody = (
                     disabled={betDisabled}
                     size="xl"
                     color={
+                      // The compact ticket keeps the site's Yes=green, No=red,
+                      // whatever the answers' own colors.
                       compact
-                        ? 'indigo'
+                        ? outcome === 'NO'
+                          ? 'red'
+                          : 'green'
                         : pseudonymColor ??
                           binaryMCColors?.[outcome == 'YES' ? 0 : 1] ??
                           (outcome === 'NO' ? 'red' : 'green')

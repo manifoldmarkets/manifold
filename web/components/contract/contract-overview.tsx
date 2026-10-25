@@ -261,6 +261,7 @@ export const BinaryOverview = (props: {
     setHoveredAnnotation,
     chartAnnotations,
     enableAdd,
+    addIsModAction,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
 
   const currentUser = useUser()
@@ -315,6 +316,7 @@ export const BinaryOverview = (props: {
             <EditChartAnnotationsButton
               pointerMode={pointerMode}
               setPointerMode={setPointerMode}
+              modAction={addIsModAction}
             />
           )}
           <TimeRangePicker
@@ -422,6 +424,7 @@ const ChoiceOverview = (props: {
     setHoveredAnnotation,
     chartAnnotations,
     enableAdd,
+    addIsModAction,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
   const {
     chartPositions,
@@ -476,6 +479,7 @@ const ChoiceOverview = (props: {
                 <EditChartAnnotationsButton
                   pointerMode={pointerMode}
                   setPointerMode={setPointerMode}
+                  modAction={addIsModAction}
                 />
               )}
               <TimeRangePicker
@@ -622,6 +626,7 @@ const NumberOverview = (props: {
     setHoveredAnnotation,
     chartAnnotations,
     enableAdd,
+    addIsModAction,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
 
   return (
@@ -634,6 +639,7 @@ const NumberOverview = (props: {
             <EditChartAnnotationsButton
               pointerMode={pointerMode}
               setPointerMode={setPointerMode}
+              modAction={addIsModAction}
             />
           )}
           <button
@@ -947,6 +953,7 @@ const BinaryChoiceOverview = (props: {
     setHoveredAnnotation,
     chartAnnotations,
     enableAdd,
+    addIsModAction,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
 
   const mainAnswer = getMainBinaryMCAnswer(contract)!
@@ -982,6 +989,7 @@ const BinaryChoiceOverview = (props: {
             <EditChartAnnotationsButton
               pointerMode={pointerMode}
               setPointerMode={setPointerMode}
+              modAction={addIsModAction}
             />
           )}
           <TimeRangePicker

@@ -167,7 +167,7 @@ export const fetchContractBetDataAndValidate = async (
     -- Creator's active supporter entitlements: subscription wins in
     -- resolveEffectiveTier, so the creator's unique-trader bonus must see them.
     -- (convertUser doesn't load entitlements, so without this a subscriber
-    -- creator would be mis-tiered as unverified.)
+    -- creator would be mis-tiered as free.)
     select user_id, entitlement_id, granted_time, expires_time, enabled, auto_renew, metadata
       from user_entitlements
       where user_id = (select creator_id from contracts where id = $2)
@@ -190,7 +190,7 @@ export const fetchContractBetDataAndValidate = async (
   const creator = creatorRow ? convertUser(creatorRow) : undefined
   // Attach the creator's active supporter entitlements (loaded above) so
   // resolveEffectiveTier recognizes a subscriber creator — otherwise their
-  // unique-trader bonus is computed at the unverified tier.
+  // unique-trader bonus is computed at the free tier.
   if (creator) {
     creator.entitlements = (results[9] ?? []).map(convertEntitlement)
   }
@@ -649,16 +649,16 @@ export const getUniqueBettorBonusQuery = (
     'answers' in contract ? contract.answers.length : 0
   )
 
-  // Scale by creator's effective tier. Unverified creators get a reduced
-  // amount (0.5x) instead of zero; verified and all subscribers get the
-  // full base amount. If creator wasn't passed in, assume verified for
-  // backwards compatibility.
+  // Scale by creator's effective tier. Bonus-blocked creators get a reduced
+  // amount (0.5x) instead of zero; everyone else (flagged included — see
+  // TIER_BENEFITS.restricted) gets the full base amount. If creator wasn't
+  // passed in, assume free for backwards compatibility.
   const creatorTier = creator
     ? resolveEffectiveTier({
         entitlements: creator.entitlements,
         bonusEligibility: creator.bonusEligibility,
       })
-    : 'verified'
+    : 'free'
   const uniqueTraderMultiplier = getEffectiveBonusMultiplier(
     creatorTier,
     'uniqueTrader'

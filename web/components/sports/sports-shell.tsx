@@ -1,7 +1,7 @@
 import { PlusIcon } from '@heroicons/react/solid'
 import { sortBy } from 'lodash'
 import Link from 'next/link'
-import { ReactNode } from 'react'
+import { ComponentProps, ReactNode } from 'react'
 import {
   AnySportKey,
   CURATED_SPORTS,
@@ -30,15 +30,15 @@ export function SportsShell(props: {
   heading: ReactNode
   /** One line; truncated rather than wrapped. */
   subheading?: ReactNode
-  seo: { title: string; description: string; url: string }
+  seo: ComponentProps<typeof SEO>
   trackPageView: string
   children: ReactNode
 }) {
   const { selected, rail, heading, subheading, seo, trackPageView, children } =
     props
   return (
-    <Page trackPageView={trackPageView} className="min-w-0 lg:col-span-10">
-      <SEO title={seo.title} description={seo.description} url={seo.url} />
+    <Page trackPageView={trackPageView} className="min-w-0">
+      <SEO {...seo} />
       <Col className="w-full min-w-0 gap-3 px-3 pt-5 sm:px-6 sm:pt-7">
         <Row className="items-center justify-between gap-2 px-1">
           <Row className="min-w-0 items-center gap-1">
@@ -101,23 +101,24 @@ export function SportMarkets(props: {
 }) {
   const { sport, upcoming, sportsByKey, enabled } = props
   return (
-    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <Col className="min-w-0 gap-6">
-        <UpcomingMarkets
-          key={sport === 'all' ? 'all' : sport.key}
-          refs={upcoming}
-          sport={sport === 'all' ? 'all' : sport.key}
-          showSport={sport === 'all'}
-          sportsByKey={sportsByKey}
-        />
-        <MakeAMarket sport={sport} />
-      </Col>
+    // One column: in the site's standard 7-of-12 page column, a split would
+    // leave each side about a phone's width, which the binary "Bet Yes / Bet
+    // No" rows don't fit.
+    <Col className="min-w-0 gap-6">
+      <UpcomingMarkets
+        key={sport === 'all' ? 'all' : sport.key}
+        refs={upcoming}
+        sport={sport === 'all' ? 'all' : sport.key}
+        showSport={sport === 'all'}
+        sportsByKey={sportsByKey}
+      />
       <SportsMarketSections
         sport={sport}
         enabled={enabled}
         className="min-w-0"
       />
-    </div>
+      <MakeAMarket sport={sport} />
+    </Col>
   )
 }
 
@@ -132,7 +133,7 @@ function MakeAMarket(props: { sport: SportInfo | 'all' }) {
     q: '',
     description: '',
     visibility: 'public',
-    groupSlugs: slug ? [slug] : undefined,
+    groupSlugs: [slug ?? 'sports-default'],
     rand: sport === 'all' ? 'sports' : sport.key.slice(0, 12),
   }
   return (

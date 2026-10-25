@@ -20,6 +20,7 @@ const BALL_ICONS: Partial<Record<AnySportKey, IconType>> = {
   nfl: TbBallAmericanFootball,
   ncaaf: TbBallAmericanFootball,
   nba: TbBallBasketball,
+  wnba: TbBallBasketball,
   ncaab: TbBallBasketball,
   mlb: TbBallBaseball,
   soccer: TbBallFootball,

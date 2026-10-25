@@ -23,6 +23,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { MOD_ACTION_TEXT_CLASS, ModActionBadge } from '../moderation/mod-action'
 
 export function AddLiquidityModal(props: {
   contract: MarketContract
@@ -192,6 +193,10 @@ export function AddLiquidityControl(props: {
     !!user &&
     ((user.id === contract.creatorId && contract.token !== 'CASH') ||
       isAdminId(user.id))
+  // Can only withdraw because the user is an admin
+  const withdrawIsAdminAction =
+    canWithdraw &&
+    !(user?.id === contract.creatorId && contract.token !== 'CASH')
   const maxWithdrawable = !canWithdraw
     ? 0
     : contract.subsidyPool + maximumRemovableLiquidity(contract.pool)
@@ -292,11 +297,19 @@ export function AddLiquidityControl(props: {
             }}
             className={clsx(
               'rounded-md px-4 py-1.5 text-sm font-medium transition-all',
+              withdrawIsAdminAction && [
+                'inline-flex items-center',
+                MOD_ACTION_TEXT_CLASS,
+              ],
               mode === 'remove'
-                ? 'bg-canvas-0 text-ink-900 shadow-sm'
-                : 'text-ink-500 hover:text-ink-700'
+                ? [
+                    'bg-canvas-0 shadow-sm',
+                    !withdrawIsAdminAction && 'text-ink-900',
+                  ]
+                : !withdrawIsAdminAction && 'text-ink-500 hover:text-ink-700'
             )}
           >
+            {withdrawIsAdminAction && <ModActionBadge admin className="mr-1" />}
             Withdraw
           </button>
         </div>
