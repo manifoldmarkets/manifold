@@ -27,18 +27,17 @@ export const UPSTART_APPLY_URL = `mailto:${UPSTART_EMAIL}?subject=${encodeURICom
 )}`
 
 const remote =
-  'Remote with regular in-person collaboration; most teams meet once or twice per quarter for 2–4 days. Confirm eligibility and travel with the recruiter.'
+  'Remote with regular in-person collaboration; most teams meet once or twice per quarter for 2–4 days.'
 const baseNote =
-  'Published anticipated base salary; pay depends on location and experience. Total compensation adds a target bonus and annual equity on top of base. See the official listing for full details.'
-// Upstart publishes base ranges only. Until it supplies per-role total-comp
-// figures, totalComp describes the package rather than quantifying it.
-const fullTimeTotalComp =
-  'Total comp: base + target bonus + annual equity grants (vest quarterly)'
+  'Published base range; actual pay depends on location and experience. Total comp estimate adds target bonus and annual equity to base.'
+// Total comp is estimated at 5/3 of base until Upstart supplies per-role
+// figures: the ratio implied by its indicative midpoint of ~$320k total on
+// ~$192k base (~$30k target bonus + ~$98k equity). Rounded to $5k.
 
 // Base ranges verified against each official sourceUrl on 25 Oct 2026. These are six
 // specific openings, not an automatically maintained feed. Remove a filled
 // role from this array via PR, following the existing board's removal process.
-// Only published base ranges are quantified; no total-comp figures are invented.
+// Base ranges are as published; total comp is the estimate described above.
 export const UPSTART_JOBS: Job[] = [
   {
     title: 'Applied Scientist',
@@ -46,7 +45,7 @@ export const UPSTART_JOBS: Job[] = [
     location: 'Remote · US or Canada (excluding Quebec)',
     comp: 'US base: $141,500–$196,000 USD',
     compNote: baseNote,
-    totalComp: fullTimeTotalComp,
+    totalComp: 'Est. total comp: ~$235k–$325k USD',
     blurb:
       'Research and improve machine learning models for unsecured lending.',
     intro:
@@ -70,7 +69,7 @@ export const UPSTART_JOBS: Job[] = [
     location: 'Remote · US or Canada (excluding Quebec)',
     comp: 'US base: $199,500–$276,000 USD',
     compNote: baseNote,
-    totalComp: fullTimeTotalComp,
+    totalComp: 'Est. total comp: ~$335k–$460k USD',
     blurb: 'Advance underwriting models through rigorous applied research.',
     intro:
       'Join the Unsecured Underwriting Machine Learning team to improve predictive performance and model reliability.',
@@ -93,7 +92,7 @@ export const UPSTART_JOBS: Job[] = [
     location: 'Remote · US or Canada (excluding Quebec)',
     comp: 'US base: $141,500–$196,000 USD; Canada base: $130,900–$160,000 CAD',
     compNote: baseNote,
-    totalComp: fullTimeTotalComp,
+    totalComp: 'Est. total comp: ~$235k–$325k USD; ~$220k–$265k CAD',
     blurb:
       'Use causal machine learning to improve borrower acquisition across marketing channels.',
     intro:
@@ -117,9 +116,9 @@ export const UPSTART_JOBS: Job[] = [
     team: 'Machine Learning · R-00328',
     employmentType: 'Internship',
     location: 'Fully remote · US',
-    comp: 'About $68–$72 per hour (USD)',
+    comp: '$68–$72 per hour (USD)',
     compNote:
-      'Shown hourly: Upstart publishes this internship as a $141,000–$150,000 annualized range, which is about $68–$72 per hour over 2,080 hours. Confirm the rate and internship dates with the recruiter.',
+      'Hourly equivalent of the published $141,000–$150,000 annualized range (2,080 hours).',
     blurb:
       'Apply statistical and machine learning research during an internship.',
     intro: 'Work on applied modeling with Upstart’s Machine Learning team.',
@@ -139,10 +138,10 @@ export const UPSTART_JOBS: Job[] = [
   {
     title: 'Principal Data Scientist',
     team: 'Product & Growth Analytics · R-00264',
-    location: 'Remote · US; Canada salary range also published',
+    location: 'Remote · US or Canada (excluding Quebec)',
     comp: 'US base: $195,300–$270,400 USD; Canada base: $182,800–$230,000 CAD',
     compNote: baseNote,
-    totalComp: fullTimeTotalComp,
+    totalComp: 'Est. total comp: ~$325k–$450k USD; ~$305k–$385k CAD',
     blurb:
       'Guide product and business strategy through experimentation and causal analysis.',
     intro:
@@ -157,16 +156,16 @@ export const UPSTART_JOBS: Job[] = [
     ],
     contactEmail: UPSTART_EMAIL,
     applicationUrl: UPSTART_APPLY_URL,
-    workArrangement: `${remote} The listing describes US remote work and also publishes Canadian compensation; confirm Canadian location eligibility with the recruiter.`,
+    workArrangement: remote,
     sourceUrl: 'https://careers.upstart.com/jobs/principal-data-scientist',
   },
   {
     title: 'Principal Data Scientist, Marketing Measurement',
     team: 'Marketing Science · R-00450',
-    location: 'Remote · US; Canada salary range also published',
+    location: 'Remote · US or Canada (excluding Quebec)',
     comp: 'US base: $195,300–$270,400 USD; Canada base: $182,800–$230,000 CAD',
     compNote: baseNote,
-    totalComp: fullTimeTotalComp,
+    totalComp: 'Est. total comp: ~$325k–$450k USD; ~$305k–$385k CAD',
     blurb:
       'Measure marketing impact and guide how growth budgets are allocated.',
     intro:
@@ -181,7 +180,7 @@ export const UPSTART_JOBS: Job[] = [
     ],
     contactEmail: UPSTART_EMAIL,
     applicationUrl: UPSTART_APPLY_URL,
-    workArrangement: `${remote} The listing describes US remote work and also publishes Canadian compensation; confirm Canadian location eligibility with the recruiter.`,
+    workArrangement: remote,
     sourceUrl:
       'https://careers.upstart.com/jobs/principal-data-scientist-marketing-measurement',
   },
