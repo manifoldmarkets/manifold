@@ -31,6 +31,7 @@ import {
   insertLatestManaStats,
 } from 'shared/calculate-mana-stats'
 import { getFeedConversionScores } from 'shared/feed-analytics'
+import { getSurfaceFunnelsForDay } from 'shared/surface-funnel-analytics'
 import { buildArray } from 'common/util/array'
 import { type Tables } from 'common/supabase/utils'
 import { recalculateAllUserPortfolios } from 'shared/mana-supply'
@@ -189,6 +190,7 @@ export const updateStatsBetween = async (
   await updateActivityStats(pg, start, end)
   await updateDailySales(pg, start, end)
   await updateConversionScores(pg, start, end)
+  await updateSurfaceFunnels(pg, start, end)
 }
 
 /**
@@ -1016,6 +1018,23 @@ async function updateConversionScores(
   const scores = await getFeedConversionScores(pg, start, end)
   log('upsert feed conversion')
   await bulkUpsertStats(pg, scores)
+}
+
+// Sports, Midterms and Perps page funnels, one day per query and per upsert
+// so a timeout keeps the days already written.
+async function updateSurfaceFunnels(
+  pg: SupabaseDirectClient,
+  start: string,
+  end: string
+) {
+  log('calculate page funnels')
+  for (const day of listDays(start, end)) {
+    const next = dayjs(day).add(1, 'day').format('YYYY-MM-DD')
+    const funnels = await withChunkTimeout(pg, (tx) =>
+      getSurfaceFunnelsForDay(tx, day, next)
+    )
+    await bulkUpsertStats(pg, [{ start_date: day, surface_funnels: funnels }])
+  }
 }
 
 const retention = (

@@ -39,7 +39,8 @@ create table if not exists
     wau numeric,
     dav numeric,
     mav numeric,
-    wav numeric
+    wav numeric,
+    surface_funnels jsonb
   );
 
 -- Row Level Security

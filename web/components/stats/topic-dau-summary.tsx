@@ -2,8 +2,12 @@ import { Row as rowFor } from 'common/supabase/utils'
 import { useEffect, useMemo, useState } from 'react'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { sortBy, sumBy, uniq } from 'lodash'
+import dayjs from 'dayjs'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { SizedContainer } from 'web/components/sized-container'
 import { Title } from '../widgets/title'
 import { useGroupsFromIds } from 'web/hooks/use-group-supabase'
 import { MultiValueHistoryChart } from '../charts/generic-charts'
@@ -12,11 +16,15 @@ import { HistoryPoint } from 'common/chart'
 import { nthColor } from '../charts/contract/choice'
 import { HOUR_MS } from 'common/util/time'
 
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
+// start_date is an LA calendar day.
+const LA_TZ = 'America/Los_Angeles'
+
 export function TopicDauSummary(props: { stats: rowFor<'daily_stats'>[] }) {
   const { stats } = props
   const [shownTopics, setShownTopics] = useState<string[]>([])
-  const width = 900
-  const height = 500
 
   // Get all unique group IDs from the stats
   const allGroupIds = useMemo(() => {
@@ -33,7 +41,7 @@ export function TopicDauSummary(props: { stats: rowFor<'daily_stats'>[] }) {
   const getGroupName = (id: string) =>
     groups?.find((g) => g.id === id)?.name ?? id
 
-  const { data, xScale, yScale, topics } = useMemo(() => {
+  const { data, xDomain, maxValue, topics } = useMemo(() => {
     // Convert stats data into format needed for MultiValueHistoryChart
     const data: Record<string, { points: HistoryPoint[]; color: string }> = {}
     const allPoints: { x: number; y: number }[] = []
@@ -49,7 +57,7 @@ export function TopicDauSummary(props: { stats: rowFor<'daily_stats'>[] }) {
       const points = stats
         .filter((s) => s.topic_daus && (s.topic_daus as any)[topicId])
         .map((s) => ({
-          x: new Date(s.start_date).getTime(),
+          x: dayjs.tz(s.start_date, LA_TZ).valueOf(),
           y: (s.topic_daus as any)[topicId] as number,
         }))
 
@@ -80,14 +88,10 @@ export function TopicDauSummary(props: { stats: rowFor<'daily_stats'>[] }) {
     const maxTime = Math.max(...times)
     const maxValue = Math.max(...values, 1)
 
-    const xScale = scaleTime(
-      [minTime || Date.now(), maxTime || Date.now()],
-      [0, width]
-    )
-    const yScale = scaleLinear([0, maxValue], [height, 0])
+    const xDomain = [minTime || Date.now(), maxTime || Date.now()]
 
-    return { data, xScale, yScale, topics }
-  }, [stats, allGroupIds, width, height, shownTopics])
+    return { data, xDomain, maxValue, topics }
+  }, [stats, allGroupIds, shownTopics])
 
   useEffect(() => {
     // Show top 10 topics by default once groups are loaded
@@ -118,17 +122,24 @@ export function TopicDauSummary(props: { stats: rowFor<'daily_stats'>[] }) {
         Number of unique users who traded, commented, or created markets in each
         group.
       </p>
-      <MultiValueHistoryChart
-        w={width}
-        h={height}
-        xScale={xScale}
-        yScale={yScale}
-        data={shownData}
-        Tooltip={(props) => (
-          <GroupTooltip ttProps={props as any} getGroupName={getGroupName} />
+      <SizedContainer className="h-[300px] pr-16 sm:h-[500px] sm:pr-0">
+        {(width, height) => (
+          <MultiValueHistoryChart
+            w={width}
+            h={height}
+            xScale={scaleTime(xDomain, [0, width])}
+            yScale={scaleLinear([0, maxValue], [height, 0])}
+            data={shownData}
+            Tooltip={(props) => (
+              <GroupTooltip
+                ttProps={props as any}
+                getGroupName={getGroupName}
+              />
+            )}
+            yKind="amount"
+          />
         )}
-        yKind="amount"
-      />
+      </SizedContainer>
       <Row className="mb-2 mt-8 flex-wrap gap-2">
         {topics.map((topic) => (
           <button
@@ -172,13 +183,7 @@ const GroupTooltip = (props: {
 
   return (
     <Col className="gap-1">
-      <div>
-        {new Date(prev.x).toLocaleDateString('en-us', {
-          month: 'long',
-          day: 'numeric',
-          year: 'numeric',
-        })}
-      </div>
+      <div>{dayjs(prev.x).tz(LA_TZ).format('MMMM D, YYYY')}</div>
       <div>
         {getGroupName(ans)}: {formatLargeNumber(prev.y)}
       </div>

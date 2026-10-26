@@ -511,6 +511,14 @@ export const PerpBetPanel = (props: {
         maxFee,
       })
       acceptOrder(res.order)
+      track('perp trade', {
+        contractId: contract.id,
+        direction,
+        amount: margin,
+        leverage: effectiveLeverage,
+        token: contract.token,
+        status: res.order?.status,
+      })
       if (res.order?.status === 'pending')
         toast('Order submitted — waiting for the next price')
       pendingTrade.current = null

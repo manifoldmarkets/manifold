@@ -1222,6 +1222,7 @@ export type Database = {
           signups: number | null
           signups_real: number | null
           start_date: string
+          surface_funnels: Json | null
           topic_daus: Json | null
           w1: number | null
           wau: number | null
@@ -1263,6 +1264,7 @@ export type Database = {
           signups?: number | null
           signups_real?: number | null
           start_date: string
+          surface_funnels?: Json | null
           topic_daus?: Json | null
           w1?: number | null
           wau?: number | null
@@ -1304,6 +1306,7 @@ export type Database = {
           signups?: number | null
           signups_real?: number | null
           start_date?: string
+          surface_funnels?: Json | null
           topic_daus?: Json | null
           w1?: number | null
           wau?: number | null
