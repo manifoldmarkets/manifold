@@ -14,7 +14,8 @@ export type Job = {
   sourceUrl?: string
   workArrangement?: string
   compNote?: string
-  // Total compensation (base + target bonus + equity), shown beside base pay.
+  // Estimated total compensation (base + target bonus + equity). When set, the
+  // card shows it instead of comp; comp then stays here as the published base.
   totalComp?: string
   applicationUrl?: string
 }
@@ -51,7 +52,7 @@ export const UPSTART_APPLY_URL = `mailto:${UPSTART_EMAIL}?subject=${encodeURICom
 const remote =
   'Remote with regular in-person collaboration; most teams meet once or twice per quarter for 2–4 days.'
 const baseNote =
-  'Published base range; actual pay depends on location and experience. Total comp estimate adds target bonus and annual equity to base.'
+  'Estimated total compensation covers base, target bonus and annual equity; actual pay depends on location and experience.'
 // Total comp is estimated at 5/3 of base until Upstart supplies per-role
 // figures: the ratio implied by its indicative midpoint of ~$320k total on
 // ~$192k base (~$30k target bonus + ~$98k equity). Rounded to $5k.
