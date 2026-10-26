@@ -13,7 +13,8 @@ export type Job = {
   team?: string
   sourceUrl?: string
   workArrangement?: string
-  compNote?: string
+  // Shown one per line in the expanded card (published base, then estimate).
+  compDetails?: string[]
   applicationUrl?: string
 }
 
@@ -48,26 +49,25 @@ export const UPSTART_APPLY_URL = `mailto:${UPSTART_EMAIL}?subject=${encodeURICom
 
 const remote =
   'Remote with regular in-person collaboration; most teams meet once or twice per quarter for 2–4 days.'
-const totalCompNote =
-  'Covers base, target bonus and annual equity; actual pay depends on location and experience.'
 // Total comp is estimated at 5/3 of base until Upstart supplies per-role
 // figures: the ratio implied by its indicative midpoint of ~$320k total on
 // ~$192k base (~$30k target bonus + ~$98k equity). Rounded to $5k.
-// Published base ranges (Oct 2026), not shown on the page: Applied Scientist
-// $141,500–$196,000 USD (Growth role also $130,900–$160,000 CAD); Staff
-// $199,500–$276,000 USD; Principal $195,300–$270,400 USD / $182,800–$230,000 CAD.
 
 // Base ranges verified against each official sourceUrl on 25 Oct 2026. These are six
 // specific openings, not an automatically maintained feed. Remove a filled
 // role from this array via PR, following the existing board's removal process.
-// comp carries the estimate described above; Canadian figures sit in compNote.
+// comp is the collapsed-card figure (US estimate); compDetails lists the
+// published base ranges and the estimates by country.
 export const UPSTART_JOBS: Job[] = [
   {
     title: 'Applied Scientist',
     team: 'Unsecured Underwriting · R-6422',
     location: 'Remote (US/Canada, excl. Quebec)',
-    comp: 'Est. total comp ~$235k–$325k',
-    compNote: totalCompNote,
+    comp: 'US est. total comp ~$235k–$325k',
+    compDetails: [
+      'US base: $141,500–$196,000',
+      'US est. total: ~$235k–$325k',
+    ],
     blurb:
       'Research and improve machine learning models for unsecured lending.',
     intro:
@@ -89,8 +89,11 @@ export const UPSTART_JOBS: Job[] = [
     title: 'Staff Applied Scientist',
     team: 'Unsecured Underwriting · R-00461',
     location: 'Remote (US/Canada, excl. Quebec)',
-    comp: 'Est. total comp ~$335k–$460k',
-    compNote: totalCompNote,
+    comp: 'US est. total comp ~$335k–$460k',
+    compDetails: [
+      'US base: $199,500–$276,000',
+      'US est. total: ~$335k–$460k',
+    ],
     blurb: 'Advance underwriting models through rigorous applied research.',
     intro:
       'Join the Unsecured Underwriting Machine Learning team to improve predictive performance and model reliability.',
@@ -111,8 +114,11 @@ export const UPSTART_JOBS: Job[] = [
     title: 'Applied Scientist',
     team: 'Growth / Direct Mail · R-7046',
     location: 'Remote (US/Canada, excl. Quebec)',
-    comp: 'Est. total comp ~$235k–$325k',
-    compNote: `Canada: ~$220k–$265k CAD. ${totalCompNote}`,
+    comp: 'US est. total comp ~$235k–$325k',
+    compDetails: [
+      'US base: $141,500–$196,000; Canada base: $130,900–$160,000 CAD',
+      'US est. total: ~$235k–$325k; Canada est. total: ~$220k–$265k CAD',
+    ],
     blurb:
       'Use causal machine learning to improve borrower acquisition across marketing channels.',
     intro:
@@ -157,8 +163,11 @@ export const UPSTART_JOBS: Job[] = [
     title: 'Principal Data Scientist',
     team: 'Product & Growth Analytics · R-00264',
     location: 'Remote (US/Canada, excl. Quebec)',
-    comp: 'Est. total comp ~$325k–$450k',
-    compNote: `Canada: ~$305k–$385k CAD. ${totalCompNote}`,
+    comp: 'US est. total comp ~$325k–$450k',
+    compDetails: [
+      'US base: $195,300–$270,400; Canada base: $182,800–$230,000 CAD',
+      'US est. total: ~$325k–$450k; Canada est. total: ~$305k–$385k CAD',
+    ],
     blurb:
       'Guide product and business strategy through experimentation and causal analysis.',
     intro:
@@ -180,8 +189,11 @@ export const UPSTART_JOBS: Job[] = [
     title: 'Principal Data Scientist, Marketing Measurement',
     team: 'Marketing Science · R-00450',
     location: 'Remote (US/Canada, excl. Quebec)',
-    comp: 'Est. total comp ~$325k–$450k',
-    compNote: `Canada: ~$305k–$385k CAD. ${totalCompNote}`,
+    comp: 'US est. total comp ~$325k–$450k',
+    compDetails: [
+      'US base: $195,300–$270,400; Canada base: $182,800–$230,000 CAD',
+      'US est. total: ~$325k–$450k; Canada est. total: ~$305k–$385k CAD',
+    ],
     blurb:
       'Measure marketing impact and guide how growth budgets are allocated.',
     intro:

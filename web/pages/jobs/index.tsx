@@ -17,7 +17,6 @@ import {
   MNX,
   UPSTART,
   UPSTART_JOBS,
-  UPSTART_EMAIL,
   UPSTART_APPLY_URL,
 } from 'web/lib/jobs'
 
@@ -172,20 +171,8 @@ export default function JobsPage() {
                   </p>
                   <p className="text-ink-600 mt-3 text-sm leading-relaxed dark:text-slate-300">
                     Apply broadly for any/all suitable roles by emailing your
-                    resume to Joe Orsini at{' '}
-                    <ApplyLink
-                      href={UPSTART_APPLY_URL}
-                      employer={UPSTART}
-                      onApply={() => setAppliedToUpstart(true)}
-                      className="text-primary-600 focus-visible:ring-primary-500 break-all rounded underline focus:outline-none focus-visible:ring-2 dark:text-indigo-300"
-                    >
-                      {UPSTART_EMAIL}
-                    </ApplyLink>
-                    .
-                  </p>
-                  <p className="text-ink-500 mt-2 text-sm dark:text-slate-400">
-                    The email link opens a draft. Attach your resume before
-                    sending.
+                    resume. Click apply, the email link opens a draft. Attach
+                    your resume before sending.
                   </p>
                   <ApplyLink
                     href={UPSTART_APPLY_URL}

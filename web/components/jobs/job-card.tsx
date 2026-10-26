@@ -94,10 +94,12 @@ export function JobCard(props: { job: Job; employer: JobBoardEmployer }) {
             {job.workArrangement}
           </p>
         )}
-        {job.compNote && (
-          <p className="text-ink-600 mb-6 text-sm leading-relaxed dark:text-slate-400">
-            {job.compNote}
-          </p>
+        {job.compDetails && (
+          <div className="text-ink-600 mb-6 flex flex-col gap-1 text-sm leading-relaxed dark:text-slate-400">
+            {job.compDetails.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+          </div>
         )}
 
         <section className="mb-6">
@@ -132,7 +134,7 @@ export function JobCard(props: { job: Job; employer: JobBoardEmployer }) {
           </ul>
         </section>
 
-        <p className="text-ink-700 mb-6 select-text text-base leading-relaxed dark:text-slate-300">
+        <p className="text-ink-700 mb-6 select-text text-sm leading-relaxed dark:text-slate-300">
           {employer.applyInstructions ?? (
             <>To apply, email {job.contactEmail}.</>
           )}
