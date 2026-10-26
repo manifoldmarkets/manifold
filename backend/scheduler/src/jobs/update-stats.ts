@@ -1020,32 +1020,44 @@ async function updateConversionScores(
   await bulkUpsertStats(pg, scores)
 }
 
-// Sports, Midterms and Perps page funnels, one day per query and per upsert
-// so a timeout keeps the days already written. The window also reaches back
-// to any day in the last MAX_RECOVERY_DAYS whose funnels never landed (a
-// timeout, or days from before the column existed), without widening the
-// rest of the stats run: getRecoveryDaysAgo only probes dau.
+// Sports, Midterms and Perps page funnels (daily_surface_funnels). A finished
+// LA day's events never change, and each day reads a full day of user_events
+// (~6s, ~80MB from disk on prod in 2026-10), so only days with no row yet are
+// computed: normally just yesterday. The window covers [start, end) and the
+// last MAX_RECOVERY_DAYS, so a timeout or a missed run is repaired by the next
+// run without widening the rest of the stats run. To recompute a day, delete
+// its row first. One day per query and per upsert, so a timeout keeps the
+// days already written.
 async function updateSurfaceFunnels(
   pg: SupabaseDirectClient,
   start: string,
   end: string
 ) {
-  const gap = await pg.oneOrNone<{ oldest: string | null }>(
-    `select min(start_date)::text as oldest
-    from daily_stats
-    where start_date >= $1::date - $2::int
-      and start_date < $1::date
-      and surface_funnels is null`,
-    [end, MAX_RECOVERY_DAYS]
+  const days = await pg.map(
+    `select d::date::text as day
+    from generate_series(
+      least($1::date, $2::date - $3::int), $2::date - 1, interval '1 day'
+    ) d
+    where not exists (
+      select 1 from daily_surface_funnels f where f.start_date = d::date
+    )
+    order by 1`,
+    [start, end, MAX_RECOVERY_DAYS],
+    (r) => r.day as string
   )
-  const from = gap?.oldest && gap.oldest < start ? gap.oldest : start
-  log(`calculate page funnels from ${from}`)
-  for (const day of listDays(from, end)) {
+  log(`calculate page funnels for ${days.length} day(s)`)
+  for (const day of days) {
     const next = dayjs(day).add(1, 'day').format('YYYY-MM-DD')
     const funnels = await withChunkTimeout(pg, (tx) =>
       getSurfaceFunnelsForDay(tx, day, next)
     )
-    await bulkUpsertStats(pg, [{ start_date: day, surface_funnels: funnels }])
+    await pg.none(
+      `insert into daily_surface_funnels (start_date, funnels)
+      values ($1, $2)
+      on conflict (start_date) do update
+        set funnels = excluded.funnels, updated_time = now()`,
+      [day, funnels]
+    )
   }
 }
 

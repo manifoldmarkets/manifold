@@ -10,21 +10,22 @@ import { filterDefined } from 'common/util/array'
 import { formatPercent, formatWithCommas } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { StatMetric } from './stat-metric'
-import { DailyStatsRow, Point, rollingAvg, rollingRatio } from './stats-series'
+import { Point, rollingAvg, rollingRatio } from './stats-series'
 
 export type FunnelDay = SurfaceFunnelDay & { date: string }
 
 type CountKey = 'pillUsers' | 'visitors' | 'trades'
 type RateKey = 'tradedHere' | 'pillTraded' | 'tradedAnywhere'
 
+// Rows from the admin-only get-surface-funnels endpoint.
 export const getFunnelDays = (
-  stats: DailyStatsRow[],
+  rows: { date: string; funnels: unknown }[],
   surface: StatSurface
 ): FunnelDay[] =>
   filterDefined(
-    stats.map((row) => {
-      const day = parseSurfaceFunnels(row.surface_funnels)?.[surface]
-      return day && { date: row.start_date, ...day }
+    rows.map((row) => {
+      const day = parseSurfaceFunnels(row.funnels)?.[surface]
+      return day && { date: row.date, ...day }
     })
   )
 

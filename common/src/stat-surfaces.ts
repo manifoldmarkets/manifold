@@ -199,7 +199,7 @@ const countOrNull = (value: unknown) =>
     ? value
     : null
 
-// Reads a daily_stats.surface_funnels value. Each surface is read on its own
+// Reads a daily_surface_funnels.funnels value. Each surface is read on its own
 // and dropped if missing or malformed, so adding a surface later leaves the
 // older rows readable for the rest.
 export const parseSurfaceFunnels = (

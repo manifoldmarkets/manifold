@@ -11,7 +11,9 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { Title } from 'web/components/widgets/title'
+import { ModActionBadge } from 'web/components/moderation/mod-action'
 import { useAdmin } from 'web/hooks/use-admin'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
 import { getStats } from 'web/lib/supabase/stats'
 import {
@@ -46,19 +48,30 @@ export function StatsExplorer(props: {
     'stats-explorer'
   )
 
+  // Page funnels are internal metrics: only admins get the section, and its
+  // data comes from an admin-only endpoint rather than the public stats.
+  const sections = STATS_SECTIONS.filter((s) => s.key !== 'pages' || isAdmin)
   const section: StatsSection =
-    STATS_SECTIONS.find((s) => s.key === query.section)?.key ?? 'users'
+    sections.find((s) => s.key === query.section)?.key ?? 'users'
   const surface: StatSurface = isStatSurface(query.surface)
     ? query.surface
     : 'sports'
+
+  const { data: funnelData, error: funnelError } = useAPIGetter(
+    'get-surface-funnels',
+    { limitDays: 120 },
+    undefined,
+    undefined,
+    isAdmin && section === 'pages'
+  )
 
   const activityMetrics = useMemo(
     () => getActivityMetrics({ stats, idVerifications, isAdmin }),
     [stats, idVerifications, isAdmin]
   )
   const funnelDays = useMemo(
-    () => getFunnelDays(stats, surface),
-    [stats, surface]
+    () => getFunnelDays(funnelData?.days ?? [], surface),
+    [funnelData, surface]
   )
   const metrics: StatMetric[] =
     section === 'pages'
@@ -83,9 +96,7 @@ export function StatsExplorer(props: {
         <ChoicesToggleGroup
           ariaLabel="Stats section"
           currentChoice={section}
-          choicesMap={Object.fromEntries(
-            STATS_SECTIONS.map((s) => [s.label, s.key])
-          )}
+          choicesMap={Object.fromEntries(sections.map((s) => [s.label, s.key]))}
           setChoice={(key) =>
             setQuery({ section: String(key), metric: '', view: '' })
           }
@@ -97,8 +108,10 @@ export function StatsExplorer(props: {
       {section === 'pages' && (
         <Col className="gap-2">
           <p className="text-ink-500 text-sm">
+            <ModActionBadge admin className="mr-1 align-middle" />
             How many signed-in users reach each page, from its pill on the home
-            page or anywhere else, and how many of them trade there.
+            page or anywhere else, and how many of them trade there. Only admins
+            can see this section.
           </p>
           <ChoicesToggleGroup
             ariaLabel="Page"
@@ -115,7 +128,11 @@ export function StatsExplorer(props: {
 
       {section === 'pages' && funnelDays.length === 0 ? (
         <p className="text-ink-500 bg-canvas-50 rounded-lg p-4 text-sm">
-          No page funnel data yet. It fills in on the stats job&apos;s next run.
+          {funnelError
+            ? `Couldn't load page funnels: ${funnelError.message}`
+            : !funnelData
+            ? 'Loading page funnels…'
+            : 'No page funnel data yet. It fills in on the stats job’s next run.'}
         </p>
       ) : (
         metric && (

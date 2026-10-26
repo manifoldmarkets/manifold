@@ -4892,6 +4892,23 @@ export const API = (_apiTypeCheck = {
       }[]
     },
   },
+  // Admins only: the /stats page funnels. Internal product metrics, so they
+  // are not in daily_stats or the page's static props.
+  'get-surface-funnels': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        limitDays: z.coerce.number().int().min(1).max(400).default(120),
+      })
+      .strict(),
+    returns: {} as {
+      // funnels is a SurfaceFunnels value (common/src/stat-surfaces.ts);
+      // read it with parseSurfaceFunnels.
+      days: { date: string; funnels: unknown }[]
+    },
+  },
   // Merch admin endpoints
   'get-merch-orders': {
     method: 'GET',
