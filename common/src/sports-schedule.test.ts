@@ -5,6 +5,7 @@ import {
   GameForMatching,
   gameStatus,
   liveScoreFromMarketFields,
+  liveScoreSubscription,
   matchRelatedMarket,
   mentionsTeam,
   NBA_TOPIC_ID,
@@ -23,6 +24,10 @@ import {
   teamDisplayName,
   WNBA_TOPIC_ID,
 } from './sports-schedule'
+import {
+  INITIAL_SPREAD_MS,
+  SubscriptionRecovery,
+} from './api/subscription-recovery'
 import { DAY_MS, HOUR_MS } from './util/time'
 
 describe('parseSportsStart', () => {
@@ -707,14 +712,6 @@ describe('liveScoreFromMarketFields', () => {
     })
   })
 
-  it('builds identical state from a broadcast and a recovery snapshot', () => {
-    // The two call sites are the only reason this helper exists; if they can
-    // produce different state for the same fields, the drift is back.
-    const fromBroadcast = liveScoreFromMarketFields({ ...live })
-    const fromSnapshot = liveScoreFromMarketFields({ ...live })
-    expect(fromSnapshot).toEqual(fromBroadcast)
-  })
-
   it('is live while paused, and not live otherwise', () => {
     expect(
       liveScoreFromMarketFields({ ...live, sportsLiveStatus: 'PAUSED' })
@@ -754,5 +751,134 @@ describe('liveScoreFromMarketFields', () => {
         sportsAwayScore: 0,
       })
     ).toMatchObject({ home: 0, away: 0 })
+  })
+})
+
+// The card's realtime callbacks, extracted so this suite (which CI runs) covers
+// what the card actually executes. web/** has no test runner in CI.
+describe('liveScoreSubscription', () => {
+  const provider = 1_700_000_000_000
+  const row = {
+    sportsLiveStatus: 'IN_PLAY',
+    sportsHomeScore: 2,
+    sportsAwayScore: 1,
+    sportsLiveMinute: '67',
+    sportsScoreUpdatedTime: provider,
+  }
+  const shown = { home: 2, away: 1, minute: '67', updatedTime: provider }
+  const signal = new AbortController().signal
+  const flush = async () => {
+    for (let i = 0; i < 4; i++) await Promise.resolve()
+  }
+
+  it('commits a reconnect snapshot with its provider timestamp', async () => {
+    // Regression: the card's recovery callback once rebuilt the score as
+    // {home, away, minute}. ScoreFreshness reads updatedTime, so after every
+    // rollout a live card fell back to "Score update time unavailable".
+    const set = jest.fn()
+    const commit = await liveScoreSubscription(
+      async () => row,
+      set
+    ).getSnapshot(signal)
+    expect(set).not.toHaveBeenCalled()
+    commit()
+    expect(set).toHaveBeenCalledWith(shown)
+  })
+
+  it('reads the market with the recovery abort signal', async () => {
+    const fetchMarket = jest.fn(async () => row)
+    await liveScoreSubscription(fetchMarket, jest.fn()).getSnapshot(signal)
+    expect(fetchMarket).toHaveBeenCalledWith(signal)
+  })
+
+  it('rejects a missing market so recovery retries instead of clearing', async () => {
+    const set = jest.fn()
+    await expect(
+      liveScoreSubscription(async () => undefined, set).getSnapshot(signal)
+    ).rejects.toThrow('Sports market unavailable during recovery.')
+    expect(set).not.toHaveBeenCalled()
+  })
+
+  it('applies a broadcast with its provider timestamp', () => {
+    const set = jest.fn()
+    liveScoreSubscription(jest.fn(), set).onBroadcast({ data: row })
+    expect(set).toHaveBeenCalledWith(shown)
+  })
+
+  it('clears the score once either path reports the game over', async () => {
+    const set = jest.fn()
+    const sub = liveScoreSubscription(
+      async () => ({ ...row, sportsLiveStatus: 'FINISHED' }),
+      set
+    )
+    sub.onBroadcast({ data: { ...row, sportsLiveStatus: 'FINISHED' } })
+    ;(await sub.getSnapshot(signal))()
+    expect(set.mock.calls).toEqual([[undefined], [undefined]])
+  })
+
+  // Driven through the real recovery class, which is what the card runs.
+  describe('wired into SubscriptionRecovery', () => {
+    beforeEach(() => {
+      jest.useFakeTimers()
+      jest.spyOn(Math, 'random').mockReturnValue(0)
+    })
+    afterEach(() => {
+      jest.useRealTimers()
+      jest.restoreAllMocks()
+    })
+
+    it('repairs the score missed during an outage, keeping its provider time', async () => {
+      const set = jest.fn()
+      const sub = liveScoreSubscription(async () => row, set)
+      const recovery = new SubscriptionRecovery(sub.getSnapshot, jest.fn())
+      recovery.connectionChanged(true)
+      jest.advanceTimersByTime(INITIAL_SPREAD_MS)
+      await flush()
+      expect(set).toHaveBeenLastCalledWith(shown)
+      recovery.stop()
+    })
+
+    it('never overwrites a newer broadcast with the read it raced', async () => {
+      let land!: (market: typeof row) => void
+      const set = jest.fn()
+      const sub = liveScoreSubscription(
+        () => new Promise<typeof row>((resolve) => (land = resolve)),
+        set
+      )
+      const recovery = new SubscriptionRecovery(sub.getSnapshot, jest.fn())
+      recovery.connectionChanged(true)
+      jest.advanceTimersByTime(INITIAL_SPREAD_MS)
+      // The read is in flight when a newer score is broadcast. The hook bumps
+      // the recovery's revision on every broadcast before handing it over.
+      const newer = {
+        ...row,
+        sportsHomeScore: 3,
+        sportsScoreUpdatedTime: provider + 60_000,
+      }
+      recovery.broadcast()
+      sub.onBroadcast({ data: newer })
+      land(row)
+      await flush()
+      expect(set).toHaveBeenCalledTimes(1)
+      expect(set).toHaveBeenLastCalledWith({
+        ...shown,
+        home: 3,
+        updatedTime: provider + 60_000,
+      })
+      recovery.stop()
+    })
+
+    it('leaving the view before the read dispatches never reads', () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0.999)
+      const fetchMarket = jest.fn(async () => row)
+      const recovery = new SubscriptionRecovery(
+        liveScoreSubscription(fetchMarket, jest.fn()).getSnapshot,
+        jest.fn()
+      )
+      recovery.connectionChanged(true)
+      recovery.stop() // the hook's cleanup when the card unmounts
+      jest.advanceTimersByTime(60_000)
+      expect(fetchMarket).not.toHaveBeenCalled()
+    })
   })
 })

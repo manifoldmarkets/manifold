@@ -86,7 +86,7 @@ export function toSportsMatch(g: ScheduleGame): SportsMatch {
           home: g.liveScore.home,
           away: g.liveScore.away,
           minute: g.liveScore.minute,
-          updatedTime: g.scoreUpdatedTime,
+          updatedTime: g.scoreUpdatedTime ?? null,
         }
       : undefined,
   }

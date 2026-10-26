@@ -14,7 +14,10 @@ import {
   MatchOutcome,
   SportsDashboardTabButton,
 } from 'web/components/sports/sports-match-card'
-import { splitFlag as parseAnswerText } from 'common/sports-schedule'
+import {
+  LiveScoreView,
+  splitFlag as parseAnswerText,
+} from 'common/sports-schedule'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { api, updateDashboard } from 'web/lib/api/api'
 import { useAdminOrMod, useDev } from 'web/hooks/use-admin'
@@ -129,14 +132,7 @@ const LIVE_STATUSES = new Set(['IN_PLAY', 'PAUSED'])
 // ended while nobody was watching doesn't show as live.
 const LIVE_STALE_MS = 10 * 60 * 1000
 
-function liveScoreFromMarket(m: SportsMarket):
-  | {
-      home: number | null
-      away: number | null
-      minute: string | null
-      updatedTime?: number | null
-    }
-  | undefined {
+function liveScoreFromMarket(m: SportsMarket): LiveScoreView | undefined {
   if (m.resolution) return undefined
   if (!m.sportsLiveStatus || !LIVE_STATUSES.has(m.sportsLiveStatus))
     return undefined
@@ -149,7 +145,7 @@ function liveScoreFromMarket(m: SportsMarket):
     home: m.sportsHomeScore,
     away: m.sportsAwayScore,
     minute: m.sportsLiveMinute,
-    updatedTime: m.sportsScoreUpdatedTime,
+    updatedTime: m.sportsScoreUpdatedTime ?? null,
   }
 }
 

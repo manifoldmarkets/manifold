@@ -9,7 +9,8 @@ import { useUnfilledBets } from 'client-common/hooks/use-bets'
 import { flagImageCode } from 'common/sports'
 import { ContractMetric } from 'common/contract-metric'
 import {
-  liveScoreFromMarketFields,
+  LiveScoreView,
+  liveScoreSubscription,
   SportsLiveScore,
 } from 'common/sports-schedule'
 import {
@@ -92,12 +93,7 @@ export type SportsMatch = {
     duration?: string
     pens?: { home: number; away: number }
   }
-  liveScore?: {
-    home: number | null
-    away: number | null
-    minute: string | null
-    updatedTime?: number | null
-  }
+  liveScore?: LiveScoreView
   contractId?: string
   teamAAnswerId?: string
   teamBAnswerId?: string
@@ -341,19 +337,16 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
     topics: match.contractId
       ? [`contract/${match.contractId}/sports-live`]
       : [],
-    getSnapshot: async (signal) => {
+    // Both callbacks are built (and tested) in common, where CI runs them.
+    ...liveScoreSubscription(async (signal) => {
       const [contract] = await api(
         'markets-by-ids',
         { ids: [match.contractId!] },
         { cache: 'no-store', signal }
       )
-      if (!contract)
-        throw new Error('Sports market unavailable during recovery.')
-      const score = contract as unknown as Partial<SportsLiveScore>
-      return () => setLiveScore(liveScoreFromMarketFields(score))
-    },
+      return contract as unknown as Partial<SportsLiveScore> | undefined
+    }, setLiveScore),
     enabled: !resolved && !!match.contractId,
-    onBroadcast: ({ data }) => setLiveScore(liveScoreFromMarketFields(data)),
   })
 
   const live = !resolved ? liveScore : undefined
