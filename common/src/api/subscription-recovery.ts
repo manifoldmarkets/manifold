@@ -58,8 +58,12 @@ export class SubscriptionRecovery {
     )
   }
 
-  private scheduleRetry() {
-    if (!this.connected) return
+  private scheduleRetry(generation: number) {
+    // onError and commit run synchronously inside a fetch's continuation, and
+    // either may disconnect and reconnect on the spot. That bumps generation and
+    // schedules the reconnect's own first read; a retry for the superseded
+    // dispatch would then sit beside it and fetch twice.
+    if (!this.connected || generation !== this.generation) return
     // Jitter each retry so clients that failed together do not retry together,
     // and bound sustained retries to one every 24-30 seconds. Continue at that
     // rate so an open view eventually repairs even if no further reconnect or
@@ -76,10 +80,10 @@ export class SubscriptionRecovery {
     this.controller = controller
     this.timeout = setTimeout(() => {
       if (generation !== this.generation) return
-      this.generation++
+      const timedOut = ++this.generation
       controller.abort()
       this.onError(new Error('Realtime recovery request timed out.'))
-      this.scheduleRetry()
+      this.scheduleRetry(timedOut)
     }, TIMEOUT_MS)
     try {
       const commit = await this.snapshot(controller.signal)
@@ -87,17 +91,17 @@ export class SubscriptionRecovery {
       if (revision === this.revision) {
         // An ordinary HTTP read/local update may also supersede this snapshot.
         // Retry instead of declaring recovery complete when it could not commit.
-        if (commit() === false) this.scheduleRetry()
+        if (commit() === false) this.scheduleRetry(generation)
       } else {
         // There is no shared snapshot/event watermark in this protocol. Never
         // overwrite live changes with a read that raced them, or blindly replay
         // an older buffered event over a newer database snapshot. Retry instead.
-        this.scheduleRetry()
+        this.scheduleRetry(generation)
       }
     } catch (error) {
       if (generation !== this.generation || !this.connected) return
       this.onError(error instanceof Error ? error : new Error(String(error)))
-      this.scheduleRetry()
+      this.scheduleRetry(generation)
     } finally {
       if (generation === this.generation) clearTimeout(this.timeout)
       // Also releases resources attached to a snapshot discarded after a live

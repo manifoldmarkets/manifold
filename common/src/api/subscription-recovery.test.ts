@@ -396,3 +396,116 @@ describe('first recovery attempt after a mass reconnect', () => {
     recovery.stop()
   })
 })
+
+// onError and a snapshot's commit run synchronously inside the recovery's own
+// continuation. If either drops and restores the connection on the spot (a
+// consumer reconnecting from its error handler, say), that continuation must
+// not go on to schedule a retry for the generation the reconnect superseded:
+// the stale retry would sit beside the reconnect's own first read and fetch
+// twice. Each case below reconnects exactly once, then succeeds.
+describe('a callback that synchronously reconnects', () => {
+  beforeEach(() => {
+    jest.useFakeTimers()
+    jest.spyOn(Math, 'random').mockReturnValue(0.5)
+  })
+  afterEach(() => {
+    jest.useRealTimers()
+    jest.restoreAllMocks()
+  })
+
+  const reconnect = (recovery: SubscriptionRecovery) => {
+    recovery.connectionChanged(false)
+    recovery.connectionChanged(true)
+  }
+
+  it('from onError after a failed read: one fresh read, no stale retry', async () => {
+    let reconnected = false
+    const snapshot = jest
+      .fn()
+      .mockRejectedValueOnce(new Error('503'))
+      .mockResolvedValue(() => {})
+    const recovery: SubscriptionRecovery = new SubscriptionRecovery(
+      snapshot,
+      () => {
+        if (reconnected) return
+        reconnected = true
+        reconnect(recovery)
+      }
+    )
+    recovery.connectionChanged(true)
+    jest.advanceTimersByTime(FIRST_READ_MS)
+    await flush()
+    expect(snapshot).toHaveBeenCalledTimes(1)
+    jest.advanceTimersByTime(FIRST_READ_MS)
+    await flush()
+    expect(snapshot).toHaveBeenCalledTimes(2)
+    // Step a minute in one-second slices, settling promises between, as a real
+    // event loop would: no retry left over from the superseded read may fire.
+    for (let i = 0; i < 60; i++) {
+      jest.advanceTimersByTime(1000)
+      await flush()
+    }
+    expect(snapshot).toHaveBeenCalledTimes(2)
+    recovery.stop()
+  })
+
+  it('from a commit that could not apply: one fresh read, no stale retry', async () => {
+    let reconnected = false
+    const commit = jest.fn(() => {
+      if (reconnected) return undefined
+      reconnected = true
+      reconnect(recovery)
+      return false
+    })
+    const snapshot = jest.fn().mockResolvedValue(commit)
+    const recovery = new SubscriptionRecovery(snapshot, jest.fn())
+    recovery.connectionChanged(true)
+    jest.advanceTimersByTime(FIRST_READ_MS)
+    await flush()
+    expect(commit).toHaveBeenCalledTimes(1)
+    jest.advanceTimersByTime(FIRST_READ_MS)
+    await flush()
+    expect(snapshot).toHaveBeenCalledTimes(2)
+    // Step a minute in one-second slices, settling promises between, as a real
+    // event loop would: no retry left over from the superseded read may fire.
+    for (let i = 0; i < 60; i++) {
+      jest.advanceTimersByTime(1000)
+      await flush()
+    }
+    expect(snapshot).toHaveBeenCalledTimes(2)
+    recovery.stop()
+  })
+
+  it('from onError after a timed-out read: one fresh read, no stale retry', async () => {
+    let reconnected = false
+    const snapshot = jest
+      .fn()
+      .mockImplementationOnce(() => new Promise<() => void>(() => {}))
+      .mockResolvedValue(() => {})
+    const recovery: SubscriptionRecovery = new SubscriptionRecovery(
+      snapshot,
+      () => {
+        if (reconnected) return
+        reconnected = true
+        reconnect(recovery)
+      }
+    )
+    recovery.connectionChanged(true)
+    jest.advanceTimersByTime(FIRST_READ_MS)
+    expect(snapshot).toHaveBeenCalledTimes(1)
+    // TIMEOUT_MS: the hung read times out and onError reconnects on the spot.
+    jest.advanceTimersByTime(10_000)
+    expect(snapshot).toHaveBeenCalledTimes(1)
+    jest.advanceTimersByTime(FIRST_READ_MS)
+    await flush()
+    expect(snapshot).toHaveBeenCalledTimes(2)
+    // Step a minute in one-second slices, settling promises between, as a real
+    // event loop would: no retry left over from the superseded read may fire.
+    for (let i = 0; i < 60; i++) {
+      jest.advanceTimersByTime(1000)
+      await flush()
+    }
+    expect(snapshot).toHaveBeenCalledTimes(2)
+    recovery.stop()
+  })
+})
