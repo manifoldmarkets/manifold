@@ -18,14 +18,14 @@ const row = (
   tsMs,
   name,
   topic: null,
-  surface: null,
+  funnel: null,
   ...extra,
 })
 
 const pill = (userId: string, tsMs: number, topic: string) =>
   row(userId, tsMs, 'select search topic', { topic })
-const trade = (userId: string, tsMs: number, surface: string) =>
-  row(userId, tsMs, SURFACE_TRADE_EVENT, { surface })
+const trade = (userId: string, tsMs: number, funnel: string) =>
+  row(userId, tsMs, SURFACE_TRADE_EVENT, { funnel })
 
 describe('getStatSurface', () => {
   it('matches a surface path and its subpaths', () => {
@@ -54,7 +54,7 @@ describe('classifySurfaceEvent', () => {
       classifySurfaceEvent(
         row('u', 1, 'select search topic', {
           topic: 'perps',
-          surface: 'sports',
+          funnel: 'sports',
         })
       )
     ).toMatchObject({ kind: 'pill', surface: 'perps' })
@@ -70,7 +70,7 @@ describe('classifySurfaceEvent', () => {
     ).toBe('midterms')
     expect(
       classifySurfaceEvent(
-        row('u', 1, 'view election section', { surface: 'midterms' })
+        row('u', 1, 'view election section', { funnel: 'midterms' })
       )?.surface
     ).toBe('midterms')
     expect(classifySurfaceEvent(row('u', 1, 'view home'))).toBeUndefined()
@@ -79,7 +79,7 @@ describe('classifySurfaceEvent', () => {
   it('ignores trades without a known surface and non-view events', () => {
     expect(classifySurfaceEvent(trade('u', 1, 'casino'))).toBeUndefined()
     expect(
-      classifySurfaceEvent(row('u', 1, 'bet intent', { surface: 'sports' }))
+      classifySurfaceEvent(row('u', 1, 'bet intent', { funnel: 'sports' }))
     ).toBeUndefined()
   })
 })
@@ -102,7 +102,7 @@ describe('computeSurfaceFunnels', () => {
     row('d', 30, 'view us midterms page 2026'),
     // e: ignored event names
     row('e', 1, 'view home'),
-    row('e', 2, 'bet intent', { surface: 'sports' }),
+    row('e', 2, 'bet intent', { funnel: 'sports' }),
   ]
 
   it('builds each surface funnel', () => {
@@ -134,9 +134,9 @@ describe('computeSurfaceFunnels', () => {
     })
   })
 
-  it('reports trade counts as unknown on days with no trade events', () => {
-    const untracked = rows.filter((r) => r.name !== SURFACE_TRADE_EVENT)
-    const funnels = computeSurfaceFunnels(untracked, new Set(['a']))
+  it('reports trade counts as unknown on days before events were tagged', () => {
+    const untagged = rows.filter((r) => r.funnel == null)
+    const funnels = computeSurfaceFunnels(untagged, new Set(['a']))
     expect(funnels.sports).toEqual({
       pillUsers: 2,
       visitors: 2,
@@ -145,6 +145,25 @@ describe('computeSurfaceFunnels', () => {
       trades: null,
       pillTraded: null,
     })
+  })
+
+  it('counts zero trades on a tagged day where nobody traded', () => {
+    const funnels = computeSurfaceFunnels(
+      [
+        pill('a', 1, 'perps'),
+        row('a', 2, 'view perps page', { funnel: 'perps' }),
+      ],
+      new Set()
+    )
+    expect(funnels.perps).toEqual({
+      pillUsers: 1,
+      visitors: 1,
+      tradedAnywhere: 0,
+      tradedHere: 0,
+      trades: 0,
+      pillTraded: 0,
+    })
+    expect(funnels.sports.tradedHere).toBe(0)
   })
 
   it('looks up trades for every visitor, including trade-only ones', () => {

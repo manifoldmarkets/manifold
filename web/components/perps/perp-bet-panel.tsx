@@ -513,6 +513,7 @@ export const PerpBetPanel = (props: {
       acceptOrder(res.order)
       track('perp trade', {
         contractId: contract.id,
+        action: 'trade',
         direction,
         amount: margin,
         leverage: effectiveLeverage,

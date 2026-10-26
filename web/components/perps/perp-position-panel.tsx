@@ -44,6 +44,7 @@ import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
+import { track } from 'web/lib/service/analytics'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { ChevronDownIcon } from '@heroicons/react/solid'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
@@ -181,6 +182,14 @@ export const PerpPositionPanel = (props: {
         ...(fraction < 1 ? { fraction, expectedSize: position.size } : {}),
       })
       acceptOrder(res.order)
+      track('perp trade', {
+        contractId: contract.id,
+        action: 'close',
+        direction,
+        fraction,
+        token: contract.token,
+        status: res.order?.status,
+      })
       if (res.order?.status === 'pending')
         toast('Close submitted — your position remains exposed until it fills')
       delete pendingCloses.current[direction]

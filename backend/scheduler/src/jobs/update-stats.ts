@@ -1021,14 +1021,26 @@ async function updateConversionScores(
 }
 
 // Sports, Midterms and Perps page funnels, one day per query and per upsert
-// so a timeout keeps the days already written.
+// so a timeout keeps the days already written. The window also reaches back
+// to any day in the last MAX_RECOVERY_DAYS whose funnels never landed (a
+// timeout, or days from before the column existed), without widening the
+// rest of the stats run: getRecoveryDaysAgo only probes dau.
 async function updateSurfaceFunnels(
   pg: SupabaseDirectClient,
   start: string,
   end: string
 ) {
-  log('calculate page funnels')
-  for (const day of listDays(start, end)) {
+  const gap = await pg.oneOrNone<{ oldest: string | null }>(
+    `select min(start_date)::text as oldest
+    from daily_stats
+    where start_date >= $1::date - $2::int
+      and start_date < $1::date
+      and surface_funnels is null`,
+    [end, MAX_RECOVERY_DAYS]
+  )
+  const from = gap?.oldest && gap.oldest < start ? gap.oldest : start
+  log(`calculate page funnels from ${from}`)
+  for (const day of listDays(from, end)) {
     const next = dayjs(day).add(1, 'day').format('YYYY-MM-DD')
     const funnels = await withChunkTimeout(pg, (tx) =>
       getSurfaceFunnelsForDay(tx, day, next)

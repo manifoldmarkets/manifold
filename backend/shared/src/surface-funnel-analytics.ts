@@ -3,6 +3,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import {
   STAT_SURFACES,
   STAT_SURFACE_DEFINITIONS,
+  STAT_SURFACE_EVENT_KEY,
   SURFACE_TRADE_EVENT,
   computeSurfaceFunnels,
   getSurfaceVisitorIds,
@@ -30,7 +31,7 @@ export const getSurfaceFunnelsForDay = async (
       extract(epoch from ts)::float8 * 1000 as ts_ms,
       name,
       data->>'topic' as topic,
-      data->>'surface' as surface
+      data->>$7 as funnel
     from user_events
     where
       ts >= date_to_midnight_pt($1)
@@ -42,7 +43,7 @@ export const getSurfaceFunnelsForDay = async (
         or (
           name like 'view %'
           and (
-            data ? 'surface'
+            data ? $7
             or name in ($5:list)
             or name like any ($6::text[])
           )
@@ -55,18 +56,21 @@ export const getSurfaceFunnelsForDay = async (
       SURFACE_TRADE_EVENT,
       legacyViewEvents,
       legacyViewPatterns,
+      STAT_SURFACE_EVENT_KEY,
     ],
     (r) => ({
       userId: r.user_id as string,
       tsMs: r.ts_ms as number,
       name: r.name as string,
       topic: r.topic as string | null,
-      surface: r.surface as string | null,
+      funnel: r.funnel as string | null,
     })
   )
 
   const visitorIds = getSurfaceVisitorIds(rows)
-  // Any trade counts: market bets (not API or redemption) and perp trades.
+  // Trades as submitted, matching the web client's trade events: market bets,
+  // sells and limit orders (not API or redemption), and perp orders, which
+  // cover opens, adds and closes whether or not they later filled.
   const tradedAnywhere =
     visitorIds.length === 0
       ? []
@@ -79,12 +83,12 @@ export const getSurfaceFunnelsForDay = async (
             and not is_api
             and not is_redemption
           union
-          select user_id from contract_perp_events
+          select user_id from perp_orders
           where
             user_id in ($3:list)
-            and ts >= date_to_midnight_pt($1)
-            and ts < date_to_midnight_pt($2)
-            and event_type in ('open', 'add', 'close')`,
+            and created_time >= date_to_midnight_pt($1)
+            and created_time < date_to_midnight_pt($2)
+            and not is_api`,
           [day, next, visitorIds],
           (r) => r.user_id as string
         )

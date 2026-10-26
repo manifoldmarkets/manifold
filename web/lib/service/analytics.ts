@@ -11,6 +11,7 @@ import { run, SupabaseClient } from 'common/supabase/utils'
 import { Json } from 'common/supabase/schema'
 import {
   getStatSurface,
+  STAT_SURFACE_EVENT_KEY,
   SURFACE_TRADE_EVENT,
   SURFACE_TRADE_SOURCE_EVENTS,
 } from 'common/stat-surfaces'
@@ -28,18 +29,18 @@ export async function track(name: string, properties?: EventIds & EventData) {
   const deviceId = ensureDeviceToken()
   const isNative = getIsNative()
   // The /stats page funnel (Sports, Midterms, Perps) the event happened on.
-  const surface =
+  const funnel =
     typeof window === 'undefined'
       ? undefined
       : getStatSurface(window.location.pathname)
 
   // mqp: did you know typescript can't type `const x = { a: b, ...c }` correctly?
   // see https://github.com/microsoft/TypeScript/issues/27273
-  const allProperties = Object.assign(properties ?? {}, {
-    isNative,
-    deviceId,
-    surface,
-  })
+  const allProperties = Object.assign(
+    properties ?? {},
+    { isNative, deviceId },
+    funnel ? { [STAT_SURFACE_EVENT_KEY]: funnel } : {}
+  )
 
   const { contractId, adId, commentId, ...data } = allProperties
   try {
@@ -53,12 +54,12 @@ export async function track(name: string, properties?: EventIds & EventData) {
 
   // Bets become contract interactions rather than user_events rows, so a
   // trade placed on a funnel page also gets a row of its own for the funnels.
-  if (surface && userId && SURFACE_TRADE_SOURCE_EVENTS.includes(name)) {
+  if (funnel && userId && SURFACE_TRADE_SOURCE_EVENTS.includes(name)) {
     try {
       await insertUserEvent(
         SURFACE_TRADE_EVENT,
         removeUndefinedProps({
-          surface,
+          [STAT_SURFACE_EVENT_KEY]: funnel,
           kind: name,
           location: data.location,
           token: data.token,

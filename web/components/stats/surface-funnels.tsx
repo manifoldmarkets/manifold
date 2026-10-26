@@ -109,7 +109,7 @@ export function getSurfaceFunnelMetrics(
     {
       key: 'trades',
       label: 'Trades on page',
-      description: `Trades placed on ${label} pages, including limit orders.`,
+      description: `Bets, sells, limit orders and perp orders placed on ${label} pages.`,
       views: countViews(days, 'trades'),
       defaultView: '7d',
       note: trackingNote,
@@ -118,7 +118,7 @@ export function getSurfaceFunnelMetrics(
       key: 'traded-anywhere',
       label: 'Traded anywhere',
       description:
-        'Share of visitors who traded anywhere on the site that day, on this page or elsewhere.',
+        'Share of visitors who placed any trade on the site that day, on this page or elsewhere.',
       pct: true,
       views: rateViews(days, 'tradedAnywhere', 'visitors'),
       defaultView: '7d',

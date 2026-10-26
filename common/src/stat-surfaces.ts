@@ -6,16 +6,20 @@ import { groupBy, mapValues, minBy, uniq } from 'lodash'
 export const STAT_SURFACES = ['sports', 'midterms', 'perps'] as const
 export type StatSurface = (typeof STAT_SURFACES)[number]
 
+// The event property web/lib/service/analytics.ts tags every event fired on a
+// surface's pages with. Not `surface`: discovery events already use that name
+// for which search surface they came from.
+export const STAT_SURFACE_EVENT_KEY = 'funnel'
+
 type StatSurfaceDefinition = {
   label: string
-  // Path prefixes of the surface's pages. web/lib/service/analytics.ts tags
-  // every event fired on them with `surface`.
+  // Path prefixes of the surface's pages.
   paths: string[]
   // `topic` of the home pill's 'select search topic' event
   // (web/components/search.tsx).
   pillTopic: string
-  // Page-view events the pages logged before events carried `surface`, so
-  // days from before the tag existed still count visitors.
+  // Page-view events the pages logged before events carried the tag, so days
+  // from before it existed still count visitors.
   legacyViewEvents: string[]
   legacyViewEventPrefixes: string[]
 }
@@ -59,9 +63,11 @@ export const getStatSurface = (pathname: string): StatSurface | undefined =>
 
 // Bets become contract interactions rather than user_events rows, so the web
 // client logs one of these alongside each trade placed on a surface page.
-export const SURFACE_TRADE_EVENT = 'surface trade'
-// The tracked events that count as a trade.
-export const SURFACE_TRADE_SOURCE_EVENTS = ['bet', 'perp trade']
+export const SURFACE_TRADE_EVENT = 'funnel trade'
+// The tracked events that count as a trade: bets and limit orders, sells, and
+// perp orders (opens, adds and closes). All are counted when submitted, as the
+// traded-anywhere lookup counts contract_bets and perp_orders.
+export const SURFACE_TRADE_SOURCE_EVENTS = ['bet', 'sell shares', 'perp trade']
 
 const PILL_EVENT = 'select search topic'
 
@@ -73,7 +79,7 @@ export type SurfaceFunnelDay = {
   // Visitors who traded anywhere on the site that day, here or elsewhere.
   tradedAnywhere: number
   // Visitors who traded on one of the surface's pages. The three trade counts
-  // are null for days before trades were tagged with their page.
+  // are null for days before events were tagged with their page.
   tradedHere: number | null
   trades: number | null
   // Pill clickers who traded on the surface after clicking.
@@ -88,7 +94,8 @@ export type SurfaceEventRow = {
   tsMs: number
   name: string
   topic: string | null
-  surface: string | null
+  // The STAT_SURFACE_EVENT_KEY tag.
+  funnel: string | null
 }
 
 type ClassifiedEvent = {
@@ -118,7 +125,7 @@ export const classifySurfaceEvent = (
     )
     return surface && { kind: 'pill', surface, userId, tsMs }
   }
-  const tagged = isStatSurface(row.surface) ? row.surface : undefined
+  const tagged = isStatSurface(row.funnel) ? row.funnel : undefined
   if (name === SURFACE_TRADE_EVENT)
     return tagged && { kind: 'trade', surface: tagged, userId, tsMs }
   if (!name.startsWith('view ')) return undefined
@@ -137,8 +144,9 @@ export const getSurfaceVisitorIds = (rows: SurfaceEventRow[]) =>
   )
 
 // One day of funnels. `tradedAnywhereIds` holds the visitors who placed any
-// trade that day. A day with no trade events at all predates trade tagging,
-// so its trade counts are null rather than zero.
+// trade that day. Trades on the pages are only known once the web client tags
+// events, and its tagged page views land whenever anyone visits, so a day with
+// no tagged events predates tagging: its trade counts are null, not zero.
 export const computeSurfaceFunnels = (
   rows: SurfaceEventRow[],
   tradedAnywhereIds: Set<string>
@@ -146,7 +154,7 @@ export const computeSurfaceFunnels = (
   const events = rows
     .map(classifySurfaceEvent)
     .filter((e): e is ClassifiedEvent => !!e)
-  const tracked = events.some((e) => e.kind === 'trade')
+  const tracked = rows.some((r) => isStatSurface(r.funnel))
   const bySurface = groupBy(events, (e) => e.surface)
 
   const funnelFor = (surface: StatSurface): SurfaceFunnelDay => {
