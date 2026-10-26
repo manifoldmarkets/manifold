@@ -1,3 +1,5 @@
+import { type JobEmployer } from 'common/job-seeker'
+
 export type Job = {
   title: string
   location: string
@@ -16,6 +18,26 @@ export type Job = {
   totalComp?: string
   applicationUrl?: string
 }
+
+// An employer on the board. Apply links are tracked and, for signed-in users,
+// recorded per employer (set-job-applied), so every employer needs a slug
+// from JOB_EMPLOYERS.
+export type JobBoardEmployer = {
+  id: JobEmployer
+  name: string
+  // Shown above the apply button on each of the employer's roles. Without it
+  // the card says "To apply, email <contactEmail>."
+  applyInstructions?: string
+}
+
+export const UPSTART: JobBoardEmployer = {
+  id: 'upstart',
+  name: 'Upstart',
+  applyInstructions:
+    'Apply broadly for any/all suitable Upstart roles by sending your resume to Joe Orsini. You do not need to choose a role. Mention that you found Upstart on Manifold, and attach your resume before sending.',
+}
+
+export const MNX: JobBoardEmployer = { id: 'mnx', name: 'MNX' }
 
 // Application instructions per the Upstart recruiting contact (Oct 2026).
 // A mailto opens a draft; applicants must attach their resume themselves.
@@ -117,8 +139,6 @@ export const UPSTART_JOBS: Job[] = [
     employmentType: 'Internship',
     location: 'Fully remote · US',
     comp: '$68–$72 per hour (USD)',
-    compNote:
-      'Hourly equivalent of the published $141,000–$150,000 annualized range (2,080 hours).',
     blurb:
       'Apply statistical and machine learning research during an internship.',
     intro: 'Work on applied modeling with Upstart’s Machine Learning team.',

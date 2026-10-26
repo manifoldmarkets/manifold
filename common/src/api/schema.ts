@@ -50,6 +50,8 @@ import {
   JOB_REGIONS,
   JOB_SKILLS,
   JobSeekerInterest,
+  JOB_EMPLOYERS,
+  JobEmployer,
 } from 'common/job-seeker'
 import { League } from 'common/leagues'
 import { type LinkPreview } from 'common/link-preview'
@@ -2112,6 +2114,12 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'set-job-applied': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ employer: z.enum(JOB_EMPLOYERS) }).strict(),
+  },
   'get-mnx-invite-link': {
     method: 'POST',
     visibility: 'undocumented',
@@ -2130,7 +2138,10 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: true,
     props: z.object({}).strict(),
-    returns: {} as { interest: JobSeekerInterest | null },
+    returns: {} as {
+      interest: JobSeekerInterest | null
+      applied: JobEmployer[]
+    },
   },
   headlines: {
     method: 'GET',

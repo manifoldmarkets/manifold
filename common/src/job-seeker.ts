@@ -105,3 +105,11 @@ export type JobSeekerInterest = {
   createdTime: number
   updatedTime: number
 }
+
+// Employers listed on the board. The slug is stored in job_board_applications
+// when a signed-in user clicks one of the employer's apply links, so they can
+// be left out of that employer's update emails (applying to any role counts
+// for all of them). Add a slug here when a new employer joins the board.
+export const JOB_EMPLOYERS = ['upstart', 'mnx'] as const
+
+export type JobEmployer = (typeof JOB_EMPLOYERS)[number]

@@ -1,9 +1,9 @@
-import { JobSeekerInterest } from 'common/job-seeker'
+import { JobEmployer, JobSeekerInterest } from 'common/job-seeker'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { type APIHandler } from './helpers/endpoint'
 
 // Load the signed-in user's job-board interest row (or null) so the form can
-// prefill their existing selections.
+// prefill their existing selections, plus the employers they have applied to.
 export const getJobInterest: APIHandler<'get-job-interest'> = async (
   _,
   auth
@@ -17,7 +17,13 @@ export const getJobInterest: APIHandler<'get-job-interest'> = async (
        where user_id = $1`,
     [auth.uid]
   )
-  if (!row) return { interest: null }
+  const applied = (
+    await pg.manyOrNone(
+      `select employer from job_board_applications where user_id = $1`,
+      [auth.uid]
+    )
+  ).map((r) => r.employer as JobEmployer)
+  if (!row) return { interest: null, applied }
   const interest: JobSeekerInterest = {
     userId: auth.uid,
     skills: row.skills ?? [],
@@ -27,5 +33,5 @@ export const getJobInterest: APIHandler<'get-job-interest'> = async (
     createdTime: Number(row.created_time),
     updatedTime: Number(row.updated_time),
   }
-  return { interest }
+  return { interest, applied }
 }

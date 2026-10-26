@@ -3,12 +3,20 @@ import { ExternalLinkIcon, LocationMarkerIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { useId, useState } from 'react'
 
+import {
+  AppliedNudge,
+  ApplyLink,
+  applyHref,
+} from 'web/components/jobs/apply-link'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { type Job } from 'web/lib/jobs'
+import { type Job, type JobBoardEmployer } from 'web/lib/jobs'
+import { track } from 'web/lib/service/analytics'
 
-export function JobCard({ job }: { job: Job }) {
+export function JobCard(props: { job: Job; employer: JobBoardEmployer }) {
+  const { job, employer } = props
   const [open, setOpen] = useState(false)
+  const [applied, setApplied] = useState(false)
   const detailsId = useId()
 
   return (
@@ -97,17 +105,6 @@ export function JobCard({ job }: { job: Job }) {
             {job.compNote}
           </p>
         )}
-        {job.sourceUrl && (
-          <a
-            href={job.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary-600 focus-visible:ring-primary-500 mb-6 inline-flex items-center gap-1 rounded text-sm font-semibold focus:outline-none focus-visible:ring-2 dark:text-indigo-300"
-          >
-            Full role details on Upstart
-            <ExternalLinkIcon className="h-4 w-4" aria-hidden />
-          </a>
-        )}
 
         <section className="mb-6">
           <h5 className="text-ink-900 mb-3 text-sm font-semibold dark:text-slate-100">
@@ -142,30 +139,50 @@ export function JobCard({ job }: { job: Job }) {
         </section>
 
         <p className="text-ink-700 mb-6 select-text text-base leading-relaxed dark:text-slate-300">
-          {job.applicationUrl ? (
-            'Apply broadly for any/all suitable Upstart roles by sending your resume to Joe Orsini. You do not need to choose a role. Mention that you found Upstart on Manifold, and attach your resume before sending.'
-          ) : (
+          {employer.applyInstructions ?? (
             <>To apply, email {job.contactEmail}.</>
           )}
         </p>
 
-        {job.applicationUrl && (
-          <a
-            href={job.applicationUrl}
-            className="bg-primary-600 hover:bg-primary-700 focus-visible:ring-primary-500 mb-5 inline-flex rounded-lg px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-          >
-            Apply to Upstart by email
-          </a>
-        )}
-
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="text-primary-600 hover:text-primary-700 focus-visible:ring-primary-500 flex items-center gap-1 rounded text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 dark:text-indigo-300 dark:hover:text-indigo-200"
+        <ApplyLink
+          href={applyHref(job)}
+          employer={employer}
+          job={job}
+          onApply={() => setApplied(true)}
+          className="bg-primary-600 hover:bg-primary-700 focus-visible:ring-primary-500 mb-5 inline-flex rounded-lg px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         >
-          Hide details
-          <ChevronUpIcon className="h-4 w-4" aria-hidden />
-        </button>
+          Apply to {employer.name} by email
+        </ApplyLink>
+
+        {applied && <AppliedNudge employer={employer} className="mb-5" />}
+
+        <Row className="flex-wrap items-center gap-x-5 gap-y-2">
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="text-primary-600 hover:text-primary-700 focus-visible:ring-primary-500 flex items-center gap-1 rounded text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 dark:text-indigo-300 dark:hover:text-indigo-200"
+          >
+            Hide details
+            <ChevronUpIcon className="h-4 w-4" aria-hidden />
+          </button>
+          {job.sourceUrl && (
+            <a
+              href={job.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() =>
+                track('job source click', {
+                  employer: employer.id,
+                  role: job.title,
+                })
+              }
+              className="text-ink-500 hover:text-ink-700 focus-visible:ring-primary-500 inline-flex items-center gap-1 rounded text-sm focus:outline-none focus-visible:ring-2 dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              Full role details on {employer.name}
+              <ExternalLinkIcon className="h-4 w-4" aria-hidden />
+            </a>
+          )}
+        </Row>
       </div>
     </article>
   )
