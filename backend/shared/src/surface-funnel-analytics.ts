@@ -70,7 +70,11 @@ export const getSurfaceFunnelsForDay = async (
   const visitorIds = getSurfaceVisitorIds(rows)
   // Trades as submitted, matching the web client's trade events: market bets,
   // sells and limit orders (not API or redemption), and perp orders, which
-  // cover opens, adds and closes whether or not they later filled.
+  // cover opens, adds and closes whether or not they later filled. Perp
+  // trades from before the order queue (#4183, 2026-10-21) executed at once
+  // and left no perp_orders row, so an executed trade with no matching order
+  // counts too. Queued fills match theirs and count on the day they were
+  // submitted; a flip's close half never matches, but its open does.
   const tradedAnywhere =
     visitorIds.length === 0
       ? []
@@ -88,7 +92,23 @@ export const getSurfaceFunnelsForDay = async (
             user_id in ($3:list)
             and created_time >= date_to_midnight_pt($1)
             and created_time < date_to_midnight_pt($2)
-            and not is_api`,
+            and not is_api
+          union
+          select e.user_id from contract_perp_events e
+          where
+            e.user_id in ($3:list)
+            and e.ts >= date_to_midnight_pt($1)
+            and e.ts < date_to_midnight_pt($2)
+            and e.event_type in ('open', 'add', 'close')
+            and e.data->>'isApi' is distinct from 'true'
+            and e.data->>'reason' is distinct from 'flip'
+            and not exists (
+              select 1 from perp_orders o
+              where
+                o.user_id = e.user_id
+                and o.contract_id = e.contract_id
+                and o.idempotency_key = e.data->>'idempotencyKey'
+            )`,
           [day, next, visitorIds],
           (r) => r.user_id as string
         )
