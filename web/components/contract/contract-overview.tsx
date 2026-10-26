@@ -62,6 +62,7 @@ import {
 } from '../answers/answer-resolve-panel'
 import { AnswersPanel } from '../answers/answers-panel'
 import { BuyPanel } from '../bet/bet-panel'
+import { NextMarketPrompt } from '../bet/next-market-prompt'
 import { UserBetsSummary } from '../bet/user-bet-summary'
 import {
   ChartAnnotations,
@@ -1188,6 +1189,12 @@ export function BinaryBetPanel(props: {
   return (
     <Col className="mt-2 w-full">
       <BuyPanel inModal={false} contract={contract} className="bg-canvas-50" />
+      {/* Sits right under "Trade placed", where the user just clicked. */}
+      <NextMarketPrompt
+        contract={contract}
+        placement="panel"
+        className="mt-2"
+      />
     </Col>
   )
 }

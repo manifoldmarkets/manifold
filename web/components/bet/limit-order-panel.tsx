@@ -22,7 +22,7 @@ import { MINUTE_MS } from 'common/util/time'
 import { EXPIRATION_OPTIONS } from 'web/components/bet/order-expiration-options'
 import dayjs from 'dayjs'
 import { capitalize, clamp } from 'lodash'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { LuShare } from 'react-icons/lu'
 import { Input } from 'web/components/widgets/input'
@@ -54,6 +54,8 @@ export default function LimitOrderPanel(props: {
   unfilledBets: LimitBet[]
   balanceByUserId: { [userId: string]: number }
   onBuySuccess?: () => void
+  onBetPlaced?: (bet: Bet) => void
+  location?: string
   className?: string
   betAmount?: number
   outcome: 'YES' | 'NO' | undefined
@@ -80,10 +82,13 @@ export default function LimitOrderPanel(props: {
     user,
     outcome,
     onBuySuccess,
+    onBetPlaced,
+    location = 'bet panel',
     pseudonym,
     expiration,
     compact = false,
   } = props
+  const limitProbInputId = useId()
   const { pseudonymColor } = pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
   const isBinaryMC = isBinaryMulti(contract)
   const binaryMCColors = isBinaryMC
@@ -315,8 +320,9 @@ export default function LimitOrderPanel(props: {
         id: bet.betId,
         userId: user.id,
       }
+      onBetPlaced?.(fullBet)
       track('bet', {
-        location: 'bet panel',
+        location,
         outcomeType: contract.outcomeType,
         slug: contract.slug,
         contractId: contract.id,
@@ -405,12 +411,13 @@ export default function LimitOrderPanel(props: {
         />
       </Col>
       <Col className={clsx('relative w-full gap-1', compact ? 'mt-2' : 'mt-6')}>
-        <div className="text-ink-600">
+        <label htmlFor={limitProbInputId} className="text-ink-600">
           {isPseudoNumeric ? 'Value' : `Probability (%)`}
-        </div>
+        </label>
         <Row>
           <div className="font-sm md:font-lg relative w-full">
             <Input
+              id={limitProbInputId}
               aria-label={
                 isPseudoNumeric ? 'Limit value' : 'Limit probability (%)'
               }
