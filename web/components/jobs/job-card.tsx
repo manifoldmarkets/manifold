@@ -41,7 +41,9 @@ export function JobCard(props: { job: Job; employer: JobBoardEmployer }) {
               {job.title}
             </h4>
             <span className="bg-ink-100 text-ink-600 shrink-0 rounded-md px-2 py-1 text-xs font-medium dark:bg-slate-700/50 dark:text-slate-300">
-              {job.employmentType ?? 'Full time'}
+              {[job.employmentType ?? 'Full time', job.duration]
+                .filter(Boolean)
+                .join(' · ')}
             </span>
           </Row>
           <p className="text-ink-600 text-base leading-relaxed dark:text-slate-300">

@@ -10,6 +10,8 @@ export type Job = {
   whatWereLookingFor: string[]
   contactEmail: string
   employmentType?: 'Full time' | 'Internship'
+  // Program length, shown in the type pill (e.g. "Internship · 12 weeks").
+  duration?: string
   team?: string
   sourceUrl?: string
   workArrangement?: string
@@ -141,6 +143,7 @@ export const UPSTART_JOBS: Job[] = [
     title: 'Applied Scientist Intern',
     team: 'Machine Learning · R-00328',
     employmentType: 'Internship',
+    duration: '12 weeks',
     location: 'Remote (US)',
     comp: '$68–$72/hour',
     blurb:
@@ -156,7 +159,7 @@ export const UPSTART_JOBS: Job[] = [
     contactEmail: UPSTART_EMAIL,
     applicationUrl: UPSTART_APPLY_URL,
     workArrangement:
-      'Fully remote in the US, with one or two in-person collaboration sessions of 2–4 days during the internship.',
+      'A 12-week program, fully remote in the US, with one or two in-person collaboration sessions of 2–4 days.',
     sourceUrl: 'https://careers.upstart.com/jobs/applied-scientist-intern',
   },
   {
