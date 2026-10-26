@@ -122,12 +122,60 @@ export default function JobsPage() {
             {UPSTART_JOBS.length > 0 && (
               <section aria-labelledby="upstart-heading" className="mb-10">
                 <div className="mb-5">
-                  <h3
-                    id="upstart-heading"
-                    className="text-ink-900 text-xl font-semibold dark:text-slate-100"
-                  >
-                    Upstart
-                  </h3>
+                  <Row className="items-center gap-3">
+                    <div
+                      aria-hidden
+                      className="ring-ink-200 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white ring-1 dark:ring-slate-700"
+                    >
+                      <img
+                        src="/upstart-mark.png"
+                        alt=""
+                        width={104}
+                        height={92}
+                        className="h-auto w-7"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <Row className="items-center gap-2.5">
+                        <h3
+                          id="upstart-heading"
+                          className="text-ink-900 font-semibold dark:text-slate-100"
+                        >
+                          Upstart{' '}
+                          <span className="text-ink-500 font-normal dark:text-slate-400">
+                            / AI lending marketplace
+                          </span>
+                        </h3>
+                        <span className="bg-ink-100 text-ink-600 rounded-full px-2.5 py-0.5 text-xs font-semibold dark:bg-slate-700/50 dark:text-slate-300">
+                          {UPSTART_JOBS.length}
+                        </span>
+                      </Row>
+                      <a
+                        href="https://www.upstart.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="Visit the Upstart website"
+                        className="text-ink-500 hover:text-primary-600 mt-0.5 inline-flex items-center gap-1 rounded text-sm dark:text-slate-400 dark:hover:text-indigo-200"
+                      >
+                        upstart.com{' '}
+                        <ExternalLinkIcon className="h-3.5 w-3.5" aria-hidden />
+                      </a>
+                    </div>
+                  </Row>
+                  <p className="text-ink-600 mt-4 text-sm leading-relaxed dark:text-slate-300">
+                    The leading AI lending marketplace: Upstart partners with
+                    banks and credit unions to expand access to affordable
+                    credit, using AI to cut the cost and complexity of
+                    borrowing. Nasdaq-listed (UPST) and digital-first, with
+                    teammates across 80+ cities in the US and Canada and offices
+                    in the Bay Area, Austin, Columbus and New York City.
+                  </p>
+                  <p className="text-ink-700 mt-3 text-sm leading-relaxed dark:text-slate-300">
+                    Roles span machine learning and data science, from an
+                    internship and new-grad Applied Scientist openings (0–2
+                    years' experience) through Staff (2+ years) to Principal (8+
+                    years).
+                  </p>
                   <p className="text-ink-600 mt-3 text-sm leading-relaxed dark:text-slate-300">
                     Apply broadly for any/all suitable roles by emailing your
                     resume to Joe Orsini at{' '}
@@ -182,15 +230,20 @@ export default function JobsPage() {
                     />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h3
-                      id="mnx-heading"
-                      className="text-ink-900 font-semibold dark:text-slate-100"
-                    >
-                      MNX{' '}
-                      <span className="text-ink-500 font-normal dark:text-slate-400">
-                        / The AI Exchange
+                    <Row className="items-center gap-2.5">
+                      <h3
+                        id="mnx-heading"
+                        className="text-ink-900 font-semibold dark:text-slate-100"
+                      >
+                        MNX{' '}
+                        <span className="text-ink-500 font-normal dark:text-slate-400">
+                          / The AI Exchange
+                        </span>
+                      </h3>
+                      <span className="bg-ink-100 text-ink-600 rounded-full px-2.5 py-0.5 text-xs font-semibold dark:bg-slate-700/50 dark:text-slate-300">
+                        {JOBS.length}
                       </span>
-                    </h3>
+                    </Row>
                     <a
                       href="https://mnx.fi"
                       target="_blank"
