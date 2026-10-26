@@ -1026,13 +1026,16 @@ async function updateConversionScores(
 // computed: normally just yesterday. The window covers [start, end) and the
 // last MAX_RECOVERY_DAYS, so a timeout or a missed run is repaired by the next
 // run without widening the rest of the stats run. To recompute a day, delete
-// its row first. One day per query and per upsert, so a timeout keeps the
-// days already written.
+// its row first. Today is never computed, even if `end` (from the manual
+// script) is later, since a stored partial day would never be redone. One day
+// per query and per upsert, so a timeout keeps the days already written.
 async function updateSurfaceFunnels(
   pg: SupabaseDirectClient,
   start: string,
-  end: string
+  requestedEnd: string
 ) {
+  const today = dayjs().tz('America/Los_Angeles').format('YYYY-MM-DD')
+  const end = requestedEnd < today ? requestedEnd : today
   const days = await pg.map(
     `select d::date::text as day
     from generate_series(
