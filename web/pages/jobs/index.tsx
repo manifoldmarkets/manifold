@@ -170,12 +170,6 @@ export default function JobsPage() {
                     teammates across 80+ cities in the US and Canada and offices
                     in the Bay Area, Austin, Columbus and New York City.
                   </p>
-                  <p className="text-ink-700 mt-3 text-sm leading-relaxed dark:text-slate-300">
-                    Roles span machine learning and data science, from an
-                    internship and new-grad Applied Scientist openings (0–2
-                    years' experience) through Staff (2+ years) to Principal (8+
-                    years).
-                  </p>
                   <p className="text-ink-600 mt-3 text-sm leading-relaxed dark:text-slate-300">
                     Apply broadly for any/all suitable roles by emailing your
                     resume to Joe Orsini at{' '}
@@ -187,8 +181,7 @@ export default function JobsPage() {
                     >
                       {UPSTART_EMAIL}
                     </ApplyLink>
-                    . You do not need to choose a role. Mention that you found
-                    Upstart on Manifold.
+                    .
                   </p>
                   <p className="text-ink-500 mt-2 text-sm dark:text-slate-400">
                     The email link opens a draft. Attach your resume before
