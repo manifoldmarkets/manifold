@@ -13,6 +13,7 @@ import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { Title } from 'web/components/widgets/title'
 import { ModActionBadge } from 'web/components/moderation/mod-action'
 import { useAdmin } from 'web/hooks/use-admin'
+import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
 import { getStats } from 'web/lib/supabase/stats'
@@ -42,7 +43,12 @@ export function StatsExplorer(props: {
   idVerifications?: IdVerificationDay[]
 }) {
   const { stats, setStats, idVerifications } = props
+  const user = useUser()
   const isAdmin = useAdmin()
+  // During an account switch the previous profile stays in context until the
+  // new one loads, so admin access also waits for auth to settle.
+  const authSettled = useIsAuthorized() === true
+  const canSeeFunnels = isAdmin && authSettled
   const [query, setQuery] = usePersistentQueriesState(
     { section: 'users', metric: '', view: '', surface: 'sports' },
     'stats-explorer'
@@ -50,19 +56,26 @@ export function StatsExplorer(props: {
 
   // Page funnels are internal metrics: only admins get the section, and its
   // data comes from an admin-only endpoint rather than the public stats.
-  const sections = STATS_SECTIONS.filter((s) => s.key !== 'pages' || isAdmin)
+  const sections = STATS_SECTIONS.filter(
+    (s) => s.key !== 'pages' || canSeeFunnels
+  )
   const section: StatsSection =
     sections.find((s) => s.key === query.section)?.key ?? 'users'
   const surface: StatSurface = isStatSurface(query.surface)
     ? query.surface
     : 'sports'
 
-  const { data: funnelData, error: funnelError } = useAPIGetter(
+  const {
+    data: funnelData,
+    error: funnelError,
+    refresh: refreshFunnels,
+  } = useAPIGetter(
     'get-surface-funnels',
     { limitDays: 120 },
     undefined,
-    undefined,
-    isAdmin && section === 'pages'
+    // Cached per user, so one account's funnels never render under another.
+    `get-surface-funnels-${user?.id ?? 'none'}`,
+    canSeeFunnels && section === 'pages'
   )
 
   const activityMetrics = useMemo(
@@ -86,7 +99,10 @@ export function StatsExplorer(props: {
         <Button
           size="sm"
           color="gray-outline"
-          onClick={() => getStats().then(setStats)}
+          onClick={() => {
+            getStats().then(setStats)
+            if (section === 'pages') refreshFunnels()
+          }}
         >
           Reload
         </Button>
