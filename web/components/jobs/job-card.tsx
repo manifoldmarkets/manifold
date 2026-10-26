@@ -44,11 +44,6 @@ export function JobCard(props: { job: Job; employer: JobBoardEmployer }) {
               {job.employmentType ?? 'Full time'}
             </span>
           </Row>
-          {job.team && (
-            <p className="text-ink-500 text-sm dark:text-slate-400">
-              {job.team}
-            </p>
-          )}
           <p className="text-ink-600 text-base leading-relaxed dark:text-slate-300">
             {job.blurb}
           </p>
@@ -64,7 +59,7 @@ export function JobCard(props: { job: Job; employer: JobBoardEmployer }) {
             </div>
             <div>
               <dt className="sr-only">Compensation</dt>
-              <dd>{job.totalComp ?? job.comp}</dd>
+              <dd>{job.comp}</dd>
             </div>
           </dl>
           <div className="border-ink-100 mt-2 flex items-center justify-end border-t pt-4 dark:border-slate-700/60">
@@ -85,6 +80,11 @@ export function JobCard(props: { job: Job; employer: JobBoardEmployer }) {
         hidden={!open}
         className="border-ink-100 bg-canvas-50/50 border-t px-5 pb-6 pt-5 dark:border-slate-700/60 dark:bg-slate-900/50 sm:px-6"
       >
+        {job.team && (
+          <p className="text-ink-500 mb-4 text-sm dark:text-slate-400">
+            {job.team}
+          </p>
+        )}
         <p className="text-ink-700 mb-6 text-base leading-relaxed dark:text-slate-300">
           {job.intro}
         </p>
