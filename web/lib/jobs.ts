@@ -65,7 +65,7 @@ export const UPSTART_JOBS: Job[] = [
   {
     title: 'Applied Scientist',
     team: 'Unsecured Underwriting · R-6422',
-    location: 'Remote (US/Canada)',
+    location: 'Remote (US/Canada, excl. Quebec)',
     comp: 'Est. total comp ~$235k–$325k',
     compNote: totalCompNote,
     blurb:
@@ -88,7 +88,7 @@ export const UPSTART_JOBS: Job[] = [
   {
     title: 'Staff Applied Scientist',
     team: 'Unsecured Underwriting · R-00461',
-    location: 'Remote (US/Canada)',
+    location: 'Remote (US/Canada, excl. Quebec)',
     comp: 'Est. total comp ~$335k–$460k',
     compNote: totalCompNote,
     blurb: 'Advance underwriting models through rigorous applied research.',
@@ -110,7 +110,7 @@ export const UPSTART_JOBS: Job[] = [
   {
     title: 'Applied Scientist',
     team: 'Growth / Direct Mail · R-7046',
-    location: 'Remote (US/Canada)',
+    location: 'Remote (US/Canada, excl. Quebec)',
     comp: 'Est. total comp ~$235k–$325k',
     compNote: `Canada: ~$220k–$265k CAD. ${totalCompNote}`,
     blurb:
@@ -156,7 +156,7 @@ export const UPSTART_JOBS: Job[] = [
   {
     title: 'Principal Data Scientist',
     team: 'Product & Growth Analytics · R-00264',
-    location: 'Remote (US/Canada)',
+    location: 'Remote (US/Canada, excl. Quebec)',
     comp: 'Est. total comp ~$325k–$450k',
     compNote: `Canada: ~$305k–$385k CAD. ${totalCompNote}`,
     blurb:
@@ -179,7 +179,7 @@ export const UPSTART_JOBS: Job[] = [
   {
     title: 'Principal Data Scientist, Marketing Measurement',
     team: 'Marketing Science · R-00450',
-    location: 'Remote (US/Canada)',
+    location: 'Remote (US/Canada, excl. Quebec)',
     comp: 'Est. total comp ~$325k–$450k',
     compNote: `Canada: ~$305k–$385k CAD. ${totalCompNote}`,
     blurb:
