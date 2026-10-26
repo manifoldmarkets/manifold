@@ -14,6 +14,7 @@ import { Title } from 'web/components/widgets/title'
 import { ModActionBadge } from 'web/components/moderation/mod-action'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
+import { auth } from 'web/lib/firebase/users'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
 import { getStats } from 'web/lib/supabase/stats'
@@ -45,10 +46,14 @@ export function StatsExplorer(props: {
   const { stats, setStats, idVerifications } = props
   const user = useUser()
   const isAdmin = useAdmin()
-  // During an account switch the previous profile stays in context until the
-  // new one loads, so admin access also waits for auth to settle.
+  // During an account switch the auth context can show the previous profile:
+  // until the new one loads, and (from a stale websocket snapshot) even after.
+  // So admin access also needs auth to have settled and the context user to
+  // be the one Firebase is signed in as, which is whose token the API checks.
   const authSettled = useIsAuthorized() === true
-  const canSeeFunnels = isAdmin && authSettled
+  const firebaseUid = auth.currentUser?.uid
+  const canSeeFunnels =
+    isAdmin && authSettled && !!user && user.id === firebaseUid
   const [query, setQuery] = usePersistentQueriesState(
     { section: 'users', metric: '', view: '', surface: 'sports' },
     'stats-explorer'
@@ -73,8 +78,9 @@ export function StatsExplorer(props: {
     'get-surface-funnels',
     { limitDays: 120 },
     undefined,
-    // Cached per user, so one account's funnels never render under another.
-    `get-surface-funnels-${user?.id ?? 'none'}`,
+    // Cached per signed-in account, so one account's funnels never render
+    // under another.
+    `get-surface-funnels-${firebaseUid ?? 'none'}`,
     canSeeFunnels && section === 'pages'
   )
 
