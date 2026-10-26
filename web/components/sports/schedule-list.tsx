@@ -14,6 +14,7 @@ import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { GameRow, GameRowSkeleton } from 'web/components/sports/game-row'
+import { Carousel } from 'web/components/widgets/carousel'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -318,11 +319,14 @@ export function GameFeed(props: {
               ))}
             </div>
             {/* Keep this strip's space in Live so the filter row stays put. */}
-            <div
+            <Carousel
               className={clsx(
-                'flex min-w-0 basis-full gap-2 overflow-x-auto md:flex-1 md:basis-0',
+                'min-w-0 basis-full md:flex-1 md:basis-0',
                 filter === 'live' && 'invisible'
               )}
+              labelsParentClassName="gap-2"
+              fadeEdges
+              showArrowsOnHover
               aria-label="Game dates"
               aria-hidden={filter === 'live'}
             >
@@ -358,7 +362,7 @@ export function GameFeed(props: {
                   <span>{dayjs(day.key).format('MMM D')}</span>
                 </button>
               ))}
-            </div>
+            </Carousel>
           </div>
           {hasFilters && (
             <div
