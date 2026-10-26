@@ -2,6 +2,12 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { CloseTimeSection } from './close-time-section'
+import type { FormState } from './contextual-editor-panel'
+import {
+  getCreateMarketCloseParams,
+  isLinkedCloseTimePending,
+  selectLinkedMarket,
+} from './utils/linked-market-state'
 
 const props = {
   closeDate: undefined,
@@ -54,4 +60,43 @@ test('an ordinary market never offers the poll Never choice while awaiting a par
   )
   assert.doesNotMatch(html, />Never</)
   assert.match(html, /type="date"/)
+})
+
+test('a linked poll edited without a date shows Never and sends Never', () => {
+  const poll: FormState = {
+    question: 'Who is the player of the game?',
+    outcomeType: 'POLL',
+    answers: ['A', 'B'],
+    neverCloses: false,
+    hasManuallyEditedCloseDate: false,
+    selectedGroups: [],
+    visibility: 'public',
+    liquidityTier: 100,
+  }
+  const pending = selectLinkedMarket(poll, {
+    contractId: 'game',
+    relation: 'related',
+  })
+  // A time typed before the parent's deadline loads is a manual edit, so the
+  // deadline no longer loads in and the date stays empty.
+  for (const edited of [
+    {
+      ...pending,
+      closeHoursMinutes: '10:00',
+      hasManuallyEditedCloseDate: true,
+    },
+    { ...pending, closeDate: '', hasManuallyEditedCloseDate: true },
+  ]) {
+    const html = renderToStaticMarkup(
+      <CloseTimeSection
+        {...props}
+        inheritedCloseTimePending={isLinkedCloseTimePending(edited)}
+        closeDate={edited.closeDate}
+        closeHoursMinutes={edited.closeHoursMinutes}
+        neverCloses={edited.neverCloses}
+      />
+    )
+    assert.match(neverOption(html), /aria-checked="true"/)
+    assert.deepEqual(getCreateMarketCloseParams(edited), { neverCloses: true })
+  }
 })
