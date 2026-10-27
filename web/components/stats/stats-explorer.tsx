@@ -154,7 +154,7 @@ export function StatsExplorer(props: {
                   key: s,
                   label: STAT_SURFACE_DEFINITIONS[s].label,
                   values,
-                  pct: metric.pct,
+                  pct: metric.pct ?? false,
                 },
               ]
             : []
@@ -167,7 +167,9 @@ export function StatsExplorer(props: {
                   key: m.key,
                   label: m.label,
                   values,
-                  pct: m.pct,
+                  // Explicit, or a count over a rate would take the chart's
+                  // percent format.
+                  pct: m.pct ?? false,
                   ownAxis: true,
                 },
               ]
