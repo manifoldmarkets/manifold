@@ -12,6 +12,7 @@ import {
 } from 'common/api/schema'
 import { PrivateUser } from 'common/user'
 import { getUnbannedPrivateUserByKey, log, LOCAL_ONLY } from 'shared/utils'
+import { setRequestPhase } from './shutdown'
 export { APIError } from 'common//api/utils'
 
 export type Json = Record<string, unknown> | Json[]
@@ -140,8 +141,10 @@ export const jsonEndpoint = <T extends Json>(fn: JsonHandler<T>) => {
 
 export const authEndpoint = <T extends Json>(fn: AuthedHandler<T>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
+    setRequestPhase(res, 'validation')
     try {
       const authedUser = await lookupUser(await parseCredentials(req))
+      setRequestPhase(res, 'producer')
       res.status(200).json(await fn(req, authedUser, res))
     } catch (e) {
       next(e)
@@ -183,6 +186,7 @@ export const typedEndpoint = <N extends APIPath>(
   const { props: propSchema, authed: authRequired, method } = API[name]
 
   return async (req: Request, res: Response, next: NextFunction) => {
+    setRequestPhase(res, 'validation')
     let authUser: AuthedUser | undefined = undefined
     try {
       authUser = await lookupUser(await parseCredentials(req))
@@ -196,8 +200,10 @@ export const typedEndpoint = <N extends APIPath>(
     }
 
     try {
+      const validatedProps = validate(propSchema, props)
+      setRequestPhase(res, 'producer')
       const resultOptionalContinue = await handler(
-        validate(propSchema, props),
+        validatedProps,
         authUser as AuthedUser,
         req
       )

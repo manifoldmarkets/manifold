@@ -49,12 +49,13 @@ import { idenfyCallback } from './idenfy/callback'
 
 import { allowCorsUnrestricted, apiErrorHandler } from './app'
 import { RequestHandler } from 'express'
+import { trackRequest } from './helpers/shutdown'
 
 const apiRoute = (endpoint: RequestHandler) => {
   return [
     allowCorsUnrestricted,
     express.json(),
-    endpoint,
+    trackRequest(endpoint),
     apiErrorHandler,
   ] as const
 }
@@ -85,31 +86,31 @@ export const addOldRoutes = (app: express.Application) => {
   app.post(
     '/createcheckoutsession',
     allowCorsUnrestricted,
-    createcheckoutsession
+    trackRequest(createcheckoutsession)
   )
   app.post(
     '/stripewebhook',
     allowCorsUnrestricted,
     express.raw({ type: '*/*' }),
-    stripewebhook
+    trackRequest(stripewebhook)
   )
   app.post(
     '/v0/idenfy-callback',
     allowCorsUnrestricted,
     express.raw({ type: 'application/json' }),
-    idenfyCallback
+    trackRequest(idenfyCallback)
   )
   app.post(
     '/daimo-webhook',
     allowCorsUnrestricted,
     express.raw({ type: 'application/json' }),
-    daimowebhook
+    trackRequest(daimowebhook)
   )
   app.post(
     '/printfulwebhook',
     allowCorsUnrestricted,
     express.json(),
-    printfulWebhook
+    trackRequest(printfulWebhook)
   )
   app.post('/follow-topic', ...apiRoute(followtopic))
   app.post('/league-activity', ...apiRoute(leagueActivity))

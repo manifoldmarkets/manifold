@@ -35,6 +35,7 @@ export function formatState(state: ReadyState) {
 }
 
 export type BroadcastHandler = (msg: ServerMessage<'broadcast'>) => void
+export type ConnectionHandler = (connected: boolean) => void
 
 type OutstandingTxn = {
   resolve: () => void
@@ -55,6 +56,13 @@ export class APIRealtimeClient {
   subscriptions: Map<string, BroadcastHandler[]>
   connectTimeout?: NodeJS.Timeout
   heartbeat?: NodeJS.Timeout
+  private manuallyClosed = false
+  private hasOpened = false
+  private needsRecovery = false
+  private subscriptionRevision = 0
+  private connectionHandlers = new Set<ConnectionHandler>()
+  private subscriptionsReady = false
+  recoveryEpoch = 0
 
   constructor(url: string) {
     this.url = url
@@ -69,28 +77,78 @@ export class APIRealtimeClient {
   }
 
   close() {
+    this.manuallyClosed = true
     if (this.heartbeat) {
       clearInterval(this.heartbeat)
       this.heartbeat = undefined
     }
     this.ws.close(1000, 'Closed manually.')
     clearTimeout(this.connectTimeout)
+    this.connectTimeout = undefined
+    this.invalidateConnection()
+  }
+
+  // true means all retained topics have been acknowledged on this socket.
+  // false immediately invalidates any recovery fetch from the previous socket.
+  onConnectionChange(handler: ConnectionHandler) {
+    this.connectionHandlers.add(handler)
+    return () => {
+      this.connectionHandlers.delete(handler)
+    }
+  }
+
+  get isReady() {
+    return this.subscriptionsReady && this.state === WebSocket.OPEN
+  }
+
+  private invalidateConnection() {
+    this.subscriptionsReady = false
+    for (const handler of this.connectionHandlers) handler(false)
+    for (const txn of this.txns.values()) {
+      clearTimeout(txn.timeout)
+      txn.reject(new Error('Websocket was closed.'))
+    }
+    this.txns.clear()
+  }
+
+  private reconnectSocket(ws: WebSocket) {
+    if (ws !== this.ws || this.manuallyClosed) return
+    this.needsRecovery = true
+    this.invalidateConnection()
+    clearInterval(this.heartbeat)
+    ws.close()
+    this.waitAndReconnect()
   }
 
   connect() {
+    this.manuallyClosed = false
+    clearTimeout(this.connectTimeout)
+    this.connectTimeout = undefined
+    if (this.ws) {
+      this.invalidateConnection()
+      this.ws.onopen = null
+      this.ws.onmessage = null
+      this.ws.onerror = null
+      this.ws.onclose = null
+      this.ws.close()
+    }
     // you may wish to refer to https://websockets.spec.whatwg.org/
     // in order to check the semantics of events etc.
-    this.ws = new WebSocket(this.url)
-    this.ws.onmessage = (ev) => {
+    const ws = new WebSocket(this.url)
+    this.ws = ws
+    ws.onmessage = (ev) => {
+      if (ws !== this.ws || this.manuallyClosed) return
       this.receiveMessage(JSON.parse(ev.data))
     }
-    this.ws.onerror = (ev) => {
+    ws.onerror = (ev) => {
+      if (ws !== this.ws || this.manuallyClosed) return
       console.error('API websocket error: ', ev)
       // this can fire without an onclose if this is the first time we ever try
       // to connect, so we need to turn on our reconnect in that case
-      this.waitAndReconnect()
+      this.reconnectSocket(ws)
     }
-    this.ws.onopen = (_ev) => {
+    ws.onopen = async (_ev) => {
+      if (ws !== this.ws || this.manuallyClosed) return
       if (VERBOSE_LOGGING) {
         console.info('API websocket opened.')
       }
@@ -101,37 +159,51 @@ export class APIRealtimeClient {
         async () => this.sendMessage('ping', {}).catch(console.error),
         HEARTBEAT_MS
       )
-      if (this.subscriptions.size > 0) {
-        this.sendMessage('subscribe', {
-          topics: Array.from(this.subscriptions.keys()),
-        }).catch(console.error)
+      try {
+        // Components can add topics while the first acknowledgement is in
+        // flight. Do not declare recovery ready until that set is stable.
+        let revision: number
+        do {
+          revision = this.subscriptionRevision
+          if (this.subscriptions.size > 0)
+            await this.sendMessage('subscribe', {
+              topics: Array.from(this.subscriptions.keys()),
+            })
+          if (ws !== this.ws || ws.readyState !== WebSocket.OPEN) return
+        } while (revision !== this.subscriptionRevision)
+        this.subscriptionsReady = true
+        const recover = this.hasOpened || this.needsRecovery
+        this.hasOpened = true
+        this.needsRecovery = false
+        if (recover) {
+          this.recoveryEpoch++
+          for (const handler of this.connectionHandlers) handler(true)
+        }
+      } catch (error) {
+        console.error('Websocket resubscription failed:', error)
+        this.reconnectSocket(ws)
       }
     }
-    this.ws.onclose = (ev) => {
+    ws.onclose = (ev) => {
+      if (ws !== this.ws) return
       // note that if the connection closes due to an error, onerror fires and then this
       if (VERBOSE_LOGGING) {
         console.info(`API websocket closed with code=${ev.code}: ${ev.reason}`)
       }
       clearInterval(this.heartbeat)
 
-      // mqp: we might need to change how the txn stuff works if we ever want to
-      // implement "wait until i am subscribed, and then do something" in a component.
-      // right now it cannot be reliably used to detect that in the presence of reconnects
-      for (const txn of Array.from(this.txns.values())) {
-        clearTimeout(txn.timeout)
-        txn.reject(new Error('Websocket was closed.'))
-      }
-      this.txns.clear()
+      this.needsRecovery = true
+      this.invalidateConnection()
 
       // 1000 is RFC code for normal on-purpose closure
-      if (ev.code !== 1000) {
+      if (ev.code !== 1000 && !this.manuallyClosed) {
         this.waitAndReconnect()
       }
     }
   }
 
   waitAndReconnect() {
-    if (this.connectTimeout == null) {
+    if (this.connectTimeout == null && !this.manuallyClosed) {
       this.connectTimeout = setTimeout(() => {
         this.connectTimeout = undefined
         this.connect()
@@ -164,8 +236,8 @@ export class APIRealtimeClient {
             console.warn(`Websocket message with old txid=${msg.txid}.`)
           } else {
             clearTimeout(txn.timeout)
-            if (msg.error != null) {
-              txn.reject(new Error(msg.error))
+            if (!msg.success || msg.error != null) {
+              txn.reject(new Error(msg.error ?? 'Websocket request failed.'))
             } else {
               txn.resolve()
             }
@@ -187,6 +259,7 @@ export class APIRealtimeClient {
       console.info(`> Outgoing API websocket ${type} message: `, data)
     }
     if (this.state === WebSocket.OPEN) {
+      const ws = this.ws
       return new Promise<void>((resolve, reject) => {
         const txid = this.txid++
         const timeout = setTimeout(() => {
@@ -194,13 +267,18 @@ export class APIRealtimeClient {
           reject(new Error(`Websocket message with txid ${txid} timed out.`))
         }, TIMEOUT_MS)
         this.txns.set(txid, { resolve, reject, timeout })
-        this.ws.send(JSON.stringify({ type, txid, ...data }))
+        try {
+          ws.send(JSON.stringify({ type, txid, ...data }))
+        } catch (error) {
+          clearTimeout(timeout)
+          this.txns.delete(txid)
+          reject(error)
+        }
       }).catch((error) => {
         // If this is a heartbeat message that failed, trigger reconnection
-        if (type === 'ping') {
+        if (type === 'ping' || type === 'subscribe') {
           console.error('Heartbeat failed, attempting to reconnect:', error)
-          this.ws.close()
-          this.waitAndReconnect()
+          this.reconnectSocket(ws)
         }
         throw error // Re-throw the error for other message types
       })
@@ -230,6 +308,7 @@ export class APIRealtimeClient {
       }
     }
     if (newTopics.length > 0) {
+      this.subscriptionRevision++
       return await this.sendMessage('subscribe', { topics: newTopics })
     }
   }
@@ -251,6 +330,7 @@ export class APIRealtimeClient {
       }
     }
     if (droppedTopics.length > 0) {
+      this.subscriptionRevision++
       return await this.sendMessage('unsubscribe', { topics: droppedTopics })
     }
   }

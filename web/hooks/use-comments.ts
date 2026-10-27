@@ -75,6 +75,11 @@ export const useSubscribeGlobalComments = () => {
 
   useApiSubscription({
     topics: [`global/new-comment`],
+    getSnapshot: async () => {
+      const rows = await getAllCommentRows(1000)
+      return () =>
+        setNewComments(sortBy(rows.map(convertContractComment), 'createdTime'))
+    },
     onBroadcast: (msg) => {
       const newComment = msg.data.comment as ContractComment
       setNewComments((currentComments) =>

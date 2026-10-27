@@ -13,6 +13,7 @@ import { APIHandler } from 'api/helpers/endpoint'
 import { orderBy } from 'lodash'
 import { TOPIC_SIMILARITY_THRESHOLD } from 'shared/helpers/embeddings'
 import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
+import { setBoundedCacheEntry } from 'shared/helpers/bounded-cache'
 import {
   isValidRelatedMarketsVerdict,
   relatedMarketsFilterKey,
@@ -31,6 +32,12 @@ const cachedRelatedMarkets = new Map<string, cacheType>()
 // every materialization still rechecks current contract eligibility.
 const RELATED_MARKETS_CACHE_TTL_MS = 10 * MINUTE_MS
 const RELATED_MARKETS_CACHE_TTL_S = RELATED_MARKETS_CACHE_TTL_MS / 1000
+// Bound the L1: stale entries are never read again, and without a cap it grows
+// with every contract ever viewed for the life of the process.
+const RELATED_MARKETS_L1_LIMITS = {
+  ttlMs: RELATED_MARKETS_CACHE_TTL_MS,
+  maxEntries: 10_000,
+}
 // The model's duplicate verdict is cached separately, keyed on the candidate
 // set (see relatedMarketsFilterKey), so the 10-minute membership cache above
 // can stay short without re-paying for the model on every re-render. ~11k
@@ -70,7 +77,12 @@ export const getRelatedMarkets: APIHandler<'get-related-markets'> = async (
     cachedEntry.lastUpdated > Date.now() - RELATED_MARKETS_CACHE_TTL_MS
   ) {
     metrics.inc('cache/hits', { cache: 'related-markets' })
-    cachedRelatedMarkets.set(cacheKey, cachedEntry)
+    setBoundedCacheEntry(
+      cachedRelatedMarkets,
+      cacheKey,
+      cachedEntry,
+      RELATED_MARKETS_L1_LIMITS
+    )
     return refreshedRelatedMarkets(contractId, cachedEntry, pg)
   }
   metrics.inc('cache/misses', { cache: 'related-markets' })
@@ -164,7 +176,12 @@ Return a JSON array containing ONLY the IDs of markets to KEEP (those that are d
     marketIdsFromEmbeddings: marketIds,
     lastUpdated: Date.now(),
   }
-  cachedRelatedMarkets.set(cacheKey, cacheEntry)
+  setBoundedCacheEntry(
+    cachedRelatedMarkets,
+    cacheKey,
+    cacheEntry,
+    RELATED_MARKETS_L1_LIMITS
+  )
   await cacheSetJson(cacheKey, cacheEntry, RELATED_MARKETS_CACHE_TTL_S)
 
   return {

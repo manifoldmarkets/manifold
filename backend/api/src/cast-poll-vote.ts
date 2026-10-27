@@ -26,12 +26,8 @@ export const castpollvote: APIHandler<'cast-poll-vote'> =
       [contractId]
     )
 
-    // Fire-and-forget the continue function (revalidate static props)
-    result
-      .continue()
-      .catch((e) => console.error('castpollvote continue error', e))
-
-    return result.result
+    // typedEndpoint sends the result, then awaits/tracks the continuation.
+    return result
   })
 
 type VoteInput = {

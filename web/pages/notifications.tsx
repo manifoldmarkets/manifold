@@ -119,7 +119,7 @@ function NotificationsContent(props: {
     markAllAsSeen,
   } = useGroupedNotifications(
     user,
-    (params) => api('get-notifications', params),
+    (params, options) => api('get-notifications', params, options),
     usePersistentLocalState
   )
   const hasFavorableResolution = groupedNotifications?.some(

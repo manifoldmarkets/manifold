@@ -17,12 +17,17 @@ export function getLocalOnlyUserId() {
   return localOnlyUserId
 }
 
-export function unauthedApi<P extends APIPath>(path: P, params: APIParams<P>) {
+export function unauthedApi<P extends APIPath>(
+  path: P,
+  params: APIParams<P>,
+  options?: BaseApiCallOptions
+) {
   return baseApiCall(
     formatApiUrlWithParams(path, params),
     API[path].method,
     params,
-    null
+    null,
+    options
   ) as Promise<APIResponse<P>>
 }
 

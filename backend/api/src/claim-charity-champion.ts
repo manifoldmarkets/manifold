@@ -1,3 +1,4 @@
+import { trackBackgroundProducer } from 'shared/helpers/producer-drain'
 import { APIHandler, APIError } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { createCharityChampionDethronedNotification } from 'shared/create-notification'
@@ -8,10 +9,9 @@ import {
 import { convertEntitlement } from 'common/shop/types'
 import type { User } from 'common/user'
 
-export const claimCharityChampion: APIHandler<'claim-charity-champion'> = async (
-  props,
-  auth
-) => {
+export const claimCharityChampion: APIHandler<
+  'claim-charity-champion'
+> = async (props, auth) => {
   const { enabled = true } = props
   const pg = createSupabaseDirectClient()
 
@@ -93,7 +93,12 @@ export const claimCharityChampion: APIHandler<'claim-charity-champion'> = async 
        VALUES ($1, $2, NOW(), $3, $4::jsonb)
        ON CONFLICT (user_id, entitlement_id)
        DO UPDATE SET enabled = $3, granted_time = NOW(), metadata = $4::jsonb`,
-      [auth.uid, CHARITY_CHAMPION_ENTITLEMENT_ID, enabled, metadata ? JSON.stringify(metadata) : null]
+      [
+        auth.uid,
+        CHARITY_CHAMPION_ENTITLEMENT_ID,
+        enabled,
+        metadata ? JSON.stringify(metadata) : null,
+      ]
     )
 
     // Grant permanent "former charity champion" entitlement (never revoked)
@@ -141,14 +146,14 @@ export const claimCharityChampion: APIHandler<'claim-charity-champion'> = async 
 
   // Send dethrone notification after transaction commits (fire and forget)
   if (result.previousHolderId && result.claimingUser) {
-    createCharityChampionDethronedNotification(
-      result.previousHolderId,
-      {
-        id: result.claimingUser.id,
-        name: result.claimingUser.name,
-        username: result.claimingUser.username,
-        avatarUrl: result.claimingUser.avatar_url ?? '',
-      } as unknown as User
+    const { previousHolderId, claimingUser } = result
+    trackBackgroundProducer(() =>
+      createCharityChampionDethronedNotification(previousHolderId, {
+        id: claimingUser.id,
+        name: claimingUser.name,
+        username: claimingUser.username,
+        avatarUrl: claimingUser.avatar_url ?? '',
+      } as unknown as User)
     ).catch((e) => console.error('Failed to send dethrone notification:', e))
   }
 

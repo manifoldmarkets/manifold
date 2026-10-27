@@ -1,7 +1,7 @@
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { Row } from 'common/supabase/utils'
 import dayjs from 'dayjs'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { db } from 'web/lib/supabase/db'
 
@@ -15,45 +15,43 @@ export const useTVSchedule = (
     defaultSchedule,
     'tv-schedule'
   )
+  const generation = useRef(0)
+  const readSchedule = async (signal?: AbortSignal) => {
+    const request = ++generation.current
+    const cutoff = dayjs().subtract(1, 'hour').toISOString()
+    let query = db
+      .from('tv_schedule')
+      .select('*')
+      .order('start_time', { ascending: true })
+    query = defaultScheduleId
+      ? query.or(`end_time.gt.${cutoff},id.eq.${defaultScheduleId}`)
+      : query.gt('end_time', cutoff)
+    if (signal) query = query.abortSignal(signal)
+    const { data, error } = await query
+    if (error) throw error
+    return () => {
+      if (request !== generation.current) return false
+      setSchedule(data)
+    }
+  }
 
   useEffect(() => {
-    const fetchSchedule = async () => {
-      const cutoff = dayjs().subtract(1, 'hour').toISOString()
-      let query = db
-        .from('tv_schedule')
-        .select('*')
-        .order('start_time', { ascending: true })
-
-      if (defaultScheduleId) {
-        query = query.or(`end_time.gt.${cutoff},id.eq.${defaultScheduleId}`)
-      } else {
-        query = query.gt('end_time', cutoff)
-      }
-
-      const { data } = await query
-      setSchedule((data ?? []) as ScheduleItem[])
+    readSchedule()
+      .then((commit) => commit())
+      .catch(console.error)
+    return () => {
+      generation.current++
     }
-
-    void fetchSchedule()
   }, [defaultScheduleId])
 
   useApiSubscription({
     topics: ['tv_schedule'],
-    onBroadcast: async () => {
-      const cutoff = dayjs().subtract(1, 'hour').toISOString()
-      let query = db
-        .from('tv_schedule')
-        .select('*')
-        .order('start_time', { ascending: true })
-
-      if (defaultScheduleId) {
-        query = query.or(`end_time.gt.${cutoff},id.eq.${defaultScheduleId}`)
-      } else {
-        query = query.gt('end_time', cutoff)
-      }
-
-      const { data } = await query
-      if (data) setSchedule(data as ScheduleItem[])
+    recoveryKey: defaultScheduleId ?? '',
+    getSnapshot: readSchedule,
+    onBroadcast: () => {
+      readSchedule()
+        .then((commit) => commit())
+        .catch(console.error)
     },
   })
 

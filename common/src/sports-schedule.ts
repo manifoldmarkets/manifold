@@ -2,6 +2,7 @@ import { uniq } from 'lodash'
 import { ENV } from 'common/envs/constants'
 import { MarketLinkRelation } from 'common/market-links'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
+import { RecoverySnapshot } from 'common/api/subscription-recovery'
 
 // ─── Sport categories ─────────────────────────────────────────────────────────
 //
@@ -1092,6 +1093,75 @@ export interface SportsLiveScore {
   sportsLiveUpdatedTime: number
   /** Provider observation time; null when unavailable. */
   sportsScoreUpdatedTime?: number | null
+}
+
+/** The live score a game card displays, or undefined when it is not live. */
+export type LiveScoreView = {
+  home: number | null
+  away: number | null
+  minute: string | null
+  /**
+   * Provider observation time, or null when unknown. Required, so every
+   * builder of this shape must decide it rather than silently omit it.
+   */
+  updatedTime: number | null
+}
+
+/**
+ * Build a card's live score from market fields, whether they arrived in a
+ * websocket broadcast or in a recovery snapshot. Both callers must agree: the
+ * reconnect snapshot once omitted updatedTime, which silently degraded the
+ * score-age indicator to "Score update time unavailable" after every rollout
+ * until the next broadcast. This keeps the card's two subscription paths in
+ * step. Other builders of this shape (the dashboard seed, the schedule hook,
+ * the API's schedule) are separate and are not routed through it.
+ */
+export function liveScoreFromMarketFields(fields: {
+  sportsLiveStatus?: unknown
+  sportsHomeScore?: unknown
+  sportsAwayScore?: unknown
+  sportsLiveMinute?: unknown
+  sportsScoreUpdatedTime?: unknown
+}): LiveScoreView | undefined {
+  const { sportsLiveStatus: status } = fields
+  if (status !== 'IN_PLAY' && status !== 'PAUSED') return undefined
+  const finiteOrNull = (value: unknown) =>
+    typeof value === 'number' && Number.isFinite(value) ? value : null
+  return {
+    home: finiteOrNull(fields.sportsHomeScore),
+    away: finiteOrNull(fields.sportsAwayScore),
+    minute:
+      typeof fields.sportsLiveMinute === 'string'
+        ? fields.sportsLiveMinute
+        : null,
+    updatedTime: finiteOrNull(fields.sportsScoreUpdatedTime),
+  }
+}
+
+/**
+ * The live-score subscription callbacks a game card hands to its realtime
+ * subscription: apply each broadcast, and after a reconnect refetch the market
+ * and apply its current score. Both go through liveScoreFromMarketFields, so
+ * neither can drop the provider timestamp. fetchMarket receives the recovery's
+ * abort signal so a superseded read can be cancelled.
+ */
+export function liveScoreSubscription(
+  fetchMarket: (
+    signal: AbortSignal
+  ) => Promise<Partial<SportsLiveScore> | undefined>,
+  setLiveScore: (score: LiveScoreView | undefined) => void
+): {
+  getSnapshot: RecoverySnapshot
+  onBroadcast: (msg: { data: Record<string, unknown> }) => void
+} {
+  return {
+    getSnapshot: async (signal) => {
+      const market = await fetchMarket(signal)
+      if (!market) throw new Error('Sports market unavailable during recovery.')
+      return () => setLiveScore(liveScoreFromMarketFields(market))
+    },
+    onBroadcast: ({ data }) => setLiveScore(liveScoreFromMarketFields(data)),
+  }
 }
 
 export interface ScheduleTeam {

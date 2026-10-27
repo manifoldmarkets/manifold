@@ -6,6 +6,8 @@ import { Dispatch, SetStateAction, useEffect, useRef } from 'react'
 import { useApiSubscription } from './use-api-subscription'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { RecoverySnapshot } from 'common/api/subscription-recovery'
+import { unauthedApi } from 'common/util/api'
 
 export function useBetsOnce(
   api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>,
@@ -40,6 +42,7 @@ export const useContractBets = (
     ...opts,
   }
   const optionsKey = JSON.stringify(apiOptions)
+  const requestGeneration = useRef(0)
 
   const [newBets, setNewBets] = usePersistentInMemoryState<Bet[]>(
     [],
@@ -60,19 +63,46 @@ export const useContractBets = (
 
   useEffect(() => {
     if (isPageVisible && enabled) {
-      api(apiOptions).then(addBets)
+      const request = ++requestGeneration.current
+      api(apiOptions).then((bets) => {
+        if (request === requestGeneration.current) addBets(bets)
+      })
+    }
+    return () => {
+      requestGeneration.current++
     }
   }, [optionsKey, enabled, isPageVisible])
 
   useApiSubscription({
-    topics: [`contract/${contractId}/new-bet`],
+    topics: [`contract/${contractId}/new-bet`, `contract/${contractId}/orders`],
+    recoveryKey: optionsKey,
+    getSnapshot: async (signal) => {
+      const request = ++requestGeneration.current
+      const bets = await unauthedApi(
+        'bets',
+        { ...apiOptions },
+        { cache: 'no-store', signal }
+      )
+      return () => {
+        if (request !== requestGeneration.current) return false
+        setNewBets(sortBy(bets, 'createdTime'))
+      }
+    },
     onBroadcast: (msg) => {
+      requestGeneration.current++
+      if (msg.topic.endsWith('/orders')) {
+        const updates = msg.data.bets as LimitBet[]
+        setNewBets((bets) =>
+          bets.map(
+            (bet) => updates.find((update) => update.id === bet.id) ?? bet
+          )
+        )
+        return
+      }
       addBets(msg.data.bets as Bet[])
     },
     enabled,
   })
-
-  listenToOrderUpdates(contractId, setNewBets, enabled)
 
   return newBets
 }
@@ -80,10 +110,14 @@ export const useContractBets = (
 export const listenToOrderUpdates = (
   contractId: string,
   setNewBets: Dispatch<SetStateAction<Bet[]>>,
-  enabled: boolean
+  enabled: boolean,
+  getSnapshot: RecoverySnapshot,
+  recoveryKey?: string
 ) => {
   useApiSubscription({
     topics: [`contract/${contractId}/orders`],
+    getSnapshot,
+    recoveryKey,
     onBroadcast: (msg) => {
       const betUpdates = msg.data.bets as LimitBet[]
       setNewBets((currentBets) =>
@@ -99,10 +133,14 @@ export const listenToOrderUpdates = (
 export const listenToUserOrders = (
   userId: string,
   setNewBets: Dispatch<SetStateAction<LimitBet[]>>,
-  enabled: boolean
+  enabled: boolean,
+  getSnapshot: RecoverySnapshot,
+  recoveryKey?: string
 ) => {
   useApiSubscription({
     topics: [`user/${userId}/orders`],
+    getSnapshot,
+    recoveryKey,
     onBroadcast: (msg) => {
       const betUpdates = msg.data.bets as LimitBet[]
       console.log('betUpdates', betUpdates)
@@ -165,6 +203,15 @@ export const useSubscribeGlobalBets = (options?: APIParams<'bets'>) => {
 
   useApiSubscription({
     topics: [`global/new-bet`],
+    recoveryKey: JSON.stringify(options),
+    getSnapshot: async (signal) => {
+      const bets = await unauthedApi(
+        'bets',
+        { ...options },
+        { cache: 'no-store', signal }
+      )
+      return () => setNewBets(sortBy(bets, 'createdTime'))
+    },
     onBroadcast: (msg) => {
       addBets(msg.data.bets as Bet[])
     },
@@ -182,6 +229,7 @@ export const useUnfilledBets = (
   }
 ) => {
   const { enabled = true } = options ?? {}
+  const requestGeneration = useRef(0)
 
   const [bets, setBets] = usePersistentInMemoryState<LimitBet[] | undefined>(
     undefined,
@@ -205,17 +253,36 @@ export const useUnfilledBets = (
   const isPageVisible = useIsPageVisible()
 
   useEffect(() => {
+    const request = ++requestGeneration.current
     if (enabled)
       api({ contractId, kinds: 'open-limit', order: 'asc' }).then(
         // Reset bets instead of adding to existing, since we want to exclude those recently filled/cancelled.
-        (bets) => setBets(bets as LimitBet[])
+        (bets) => {
+          if (request === requestGeneration.current) setBets(bets as LimitBet[])
+        }
       )
+    return () => {
+      requestGeneration.current++
+    }
   }, [enabled, contractId, isPageVisible])
 
   useApiSubscription({
     enabled,
     topics: [`contract/${contractId}/orders`],
+    getSnapshot: async (signal) => {
+      const request = ++requestGeneration.current
+      const bets = await unauthedApi(
+        'bets',
+        { contractId, kinds: 'open-limit', order: 'asc' },
+        { cache: 'no-store', signal }
+      )
+      return () => {
+        if (request !== requestGeneration.current) return false
+        setBets(bets as LimitBet[])
+      }
+    },
     onBroadcast: ({ data }) => {
+      requestGeneration.current++
       addBets(data.bets as LimitBet[])
     },
   })
@@ -255,17 +322,35 @@ const useUserBalances = (
   const isPageVisible = useIsPageVisible()
 
   // Load initial data
+  const requestGeneration = useRef(0)
   useEffect(() => {
     if (!userIds.length || !isPageVisible) return
+    const request = ++requestGeneration.current
     api({ ids: userIds }).then((users) => {
-      setUsers(users)
+      if (request === requestGeneration.current) setUsers(users)
     })
+    return () => {
+      requestGeneration.current++
+    }
   }, [userIds.join(','), isPageVisible])
 
   // Subscribe to updates
   useApiSubscription({
     topics: userIds.map((id) => `user/${id}`),
+    getSnapshot: async (signal) => {
+      const request = ++requestGeneration.current
+      const users = await unauthedApi(
+        'users/by-id/balance',
+        { ids: userIds },
+        { cache: 'no-store', signal }
+      )
+      return () => {
+        if (request !== requestGeneration.current) return false
+        setUsers(users)
+      }
+    },
     onBroadcast: ({ data }) => {
+      requestGeneration.current++
       const { user } = data as { user: Partial<User> }
       if (!user) return
       const prevUser = users.find((u) => u.id === user.id)

@@ -4,6 +4,7 @@ import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 export const useRefreshAllClients = () => {
   useApiSubscription({
     topics: ['refresh-all-clients'],
+    recovery: 'event-only',
     onBroadcast: ({ data }) => {
       console.log('reloading due to refresh-all-clients')
       if (data.message) {

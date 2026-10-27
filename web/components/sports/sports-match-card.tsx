@@ -1,5 +1,5 @@
 import { ScoreFreshness } from './score-freshness'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import clsx from 'clsx'
 import { Col } from 'web/components/layout/col'
@@ -8,6 +8,11 @@ import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { useUnfilledBets } from 'client-common/hooks/use-bets'
 import { flagImageCode } from 'common/sports'
 import { ContractMetric } from 'common/contract-metric'
+import {
+  LiveScoreView,
+  liveScoreSubscription,
+  SportsLiveScore,
+} from 'common/sports-schedule'
 import {
   SportsThreeWayBetDialog,
   SportsVersusBetDialog,
@@ -88,12 +93,7 @@ export type SportsMatch = {
     duration?: string
     pens?: { home: number; away: number }
   }
-  liveScore?: {
-    home: number | null
-    away: number | null
-    minute: string | null
-    updatedTime?: number | null
-  }
+  liveScore?: LiveScoreView
   contractId?: string
   teamAAnswerId?: string
   teamBAnswerId?: string
@@ -242,11 +242,13 @@ function OutcomeRow({
 
 function useMyMatchMetrics(contractId: string | undefined) {
   const user = useUser()
+  const generation = useRef(0)
   const [metrics, setMetrics] = useState<ContractMetric[] | undefined>(
     undefined
   )
 
   useEffect(() => {
+    const request = ++generation.current
     if (!user?.id || !contractId) {
       setMetrics(undefined)
       return
@@ -256,8 +258,12 @@ function useMyMatchMetrics(contractId: string | undefined) {
       .eq('contract_id', contractId)
       .eq('user_id', user.id)
       .then(({ data }) => {
-        setMetrics((data ?? []).map((row) => row.data as ContractMetric))
+        if (request === generation.current)
+          setMetrics((data ?? []).map((row) => row.data as ContractMetric))
       })
+    return () => {
+      generation.current++
+    }
   }, [user?.id, contractId])
 
   useApiSubscription({
@@ -266,7 +272,22 @@ function useMyMatchMetrics(contractId: string | undefined) {
         ? [`contract/${contractId}/user-metrics/${user.id}`]
         : [],
     enabled: !!user?.id && !!contractId,
+    getSnapshot: async (signal) => {
+      const request = ++generation.current
+      const { data, error } = await db
+        .from('user_contract_metrics')
+        .select('data')
+        .eq('contract_id', contractId!)
+        .eq('user_id', user!.id)
+        .abortSignal(signal)
+      if (error) throw error
+      return () => {
+        if (request !== generation.current) return false
+        setMetrics(data.map((row) => row.data as ContractMetric))
+      }
+    },
     onBroadcast: ({ data }) => {
+      generation.current++
       const updated = data.metrics as ContractMetric[]
       if (updated?.length) {
         setMetrics((prev) => {
@@ -316,23 +337,16 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
     topics: match.contractId
       ? [`contract/${match.contractId}/sports-live`]
       : [],
+    // Both callbacks are built (and tested) in common, where CI runs them.
+    ...liveScoreSubscription(async (signal) => {
+      const [contract] = await api(
+        'markets-by-ids',
+        { ids: [match.contractId!] },
+        { cache: 'no-store', signal }
+      )
+      return contract as unknown as Partial<SportsLiveScore> | undefined
+    }, setLiveScore),
     enabled: !resolved && !!match.contractId,
-    onBroadcast: ({ data }) => {
-      const status = data.sportsLiveStatus as string | undefined
-      if (status === 'IN_PLAY' || status === 'PAUSED') {
-        setLiveScore({
-          home: (data.sportsHomeScore as number | null) ?? null,
-          away: (data.sportsAwayScore as number | null) ?? null,
-          minute: (data.sportsLiveMinute as string | null) ?? null,
-          updatedTime:
-            typeof data.sportsScoreUpdatedTime === 'number'
-              ? data.sportsScoreUpdatedTime
-              : null,
-        })
-      } else {
-        setLiveScore(undefined)
-      }
-    },
   })
 
   const live = !resolved ? liveScore : undefined
@@ -447,6 +461,28 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
     topics: match.contractId
       ? [`contract/${match.contractId}/updated-answers`]
       : [],
+    getSnapshot: async (signal) => {
+      const answers = await api(
+        'market/:contractId/answers',
+        { contractId: match.contractId! },
+        { cache: 'no-store', signal }
+      )
+      return () =>
+        setProbs((previous) => ({
+          teamA: Math.round(
+            (answers.find((a) => a.id === match.teamAAnswerId)?.prob ??
+              previous.teamA / 100) * 100
+          ),
+          teamB: Math.round(
+            (answers.find((a) => a.id === match.teamBAnswerId)?.prob ??
+              previous.teamB / 100) * 100
+          ),
+          draw: Math.round(
+            (answers.find((a) => a.id === match.drawAnswerId)?.prob ??
+              previous.draw / 100) * 100
+          ),
+        }))
+    },
     enabled: !resolved && !!match.contractId,
     onBroadcast: ({ data }) => {
       const updates = (data.answers ?? []) as Array<{

@@ -1,7 +1,7 @@
 import { BookmarkIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { User } from 'common/user'
-import { useEffect, useState } from 'react'
+import { SetStateAction, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Button, IconButton } from 'web/components/buttons/button'
 import { FollowMarketModal } from 'web/components/contract/follow-market-modal'
@@ -111,29 +111,56 @@ export const FollowMarketIconButton = (props: {
 
 const useIsWatching = (contract: Contract, user: User | undefined | null) => {
   const [following, setFollowing] = useState(false)
+  const generation = useRef(0)
 
   useEffect(() => {
     if (!user) return
+    const request = ++generation.current
     db.from('contract_follows')
       .select('contract_id')
       .eq('follow_id', user.id)
       .eq('contract_id', contract.id)
       .then((res) => {
-        setFollowing((res.data?.length ?? 0) > 0)
+        if (request === generation.current)
+          setFollowing((res.data?.length ?? 0) > 0)
       })
+    return () => {
+      generation.current++
+    }
   }, [user?.id, contract.id, user?.lastBetTime])
 
   useApiSubscription({
     topics: [`contract-follow/${contract.id}`],
+    recoveryKey: user?.id,
+    getSnapshot: async () => {
+      const request = ++generation.current
+      const { data, error } = await db
+        .from('contract_follows')
+        .select('contract_id')
+        .eq('follow_id', user!.id)
+        .eq('contract_id', contract.id)
+      if (error) throw error
+      return () => {
+        if (request !== generation.current) return false
+        setFollowing((data?.length ?? 0) > 0)
+      }
+    },
     onBroadcast: (msg) => {
       if (msg.data.followerId === user?.id) {
+        generation.current++
         setFollowing(msg.data.follow as boolean)
       }
     },
     enabled: !!user,
   })
 
-  return { following, setFollowing }
+  return {
+    following,
+    setFollowing: (value: SetStateAction<boolean>) => {
+      generation.current++
+      setFollowing(value)
+    },
+  }
 }
 
 export async function unfollowMarket(contractId: string, contractSlug: string) {

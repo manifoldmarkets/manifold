@@ -412,8 +412,17 @@ export const useNewPostComments = (postId: string) => {
 
   useApiSubscription({
     topics: [`post/${postId}/new-comment`],
+    getSnapshot: async () => {
+      const result = await getCommentsOnPost(postId)
+      return () => setComments(result)
+    },
     onBroadcast: (data) =>
-      setComments((c) => [...c, data.data.comment as PostComment]),
+      setComments((c) => [
+        ...c.filter(
+          (comment) => comment.id !== (data.data.comment as PostComment).id
+        ),
+        data.data.comment as PostComment,
+      ]),
   })
 
   return { comments }

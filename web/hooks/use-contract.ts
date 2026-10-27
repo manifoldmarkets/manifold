@@ -1,5 +1,5 @@
 import { type Contract } from 'common/contract'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getContract, getContracts } from 'common/supabase/contracts'
 import { getPublicContractIdsInTopics } from 'web/lib/supabase/contracts'
 import { useEffectCheckEquality } from './use-effect-check-equality'
@@ -76,18 +76,39 @@ export const useContract = (contractId: string | undefined) => {
 }
 
 export function useLiveAllNewContracts(limit: number) {
+  const generation = useRef(0)
   const [contracts, setContracts] = useState<Contract[]>([])
 
   useEffect(() => {
-    api('search-markets-full', { sort: 'newest', limit }).then((result) =>
-      setContracts(result)
-    )
-  }, [])
+    const request = ++generation.current
+    api('search-markets-full', { sort: 'newest', limit })
+      .then((result) => {
+        if (request === generation.current) setContracts(result)
+      })
+      .catch(console.error)
+    return () => {
+      generation.current++
+    }
+  }, [limit])
 
   useApiSubscription({
     topics: ['global/new-contract'],
+    recoveryKey: String(limit),
+    getSnapshot: async (signal) => {
+      const request = ++generation.current
+      const result = await api(
+        'search-markets-full',
+        { sort: 'newest', limit },
+        { cache: 'no-store', signal }
+      )
+      return () => {
+        if (request !== generation.current) return false
+        setContracts(result)
+      }
+    },
     onBroadcast: ({ data }) => {
-      setContracts((old) => [data.contract as Contract, ...old])
+      generation.current++
+      setContracts((old) => uniqBy([data.contract as Contract, ...old], 'id'))
     },
   })
 

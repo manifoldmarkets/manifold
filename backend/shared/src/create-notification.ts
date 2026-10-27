@@ -1,3 +1,4 @@
+import { settleMap } from 'shared/helpers/producer-drain'
 import { Answer } from 'common/answer'
 import { Bet, LimitBet } from 'common/bet'
 import { ContractComment } from 'common/comment'
@@ -581,7 +582,11 @@ export const createBettingStreakExpiringNotification = async (
 }
 
 export const createStreakFreezeUsedNotification = async (
-  usersWithFreezeUsed: { id: string; streak: number; freezesRemaining: number }[],
+  usersWithFreezeUsed: {
+    id: string
+    streak: number
+    freezesRemaining: number
+  }[],
   pg: SupabaseDirectClient
 ) => {
   if (usersWithFreezeUsed.length === 0) return
@@ -626,7 +631,9 @@ export const createStreakFreezeUsedNotification = async (
       const freezeText =
         freezesRemaining === 0
           ? "You're out of streak freezes!"
-          : `${freezesRemaining} freeze${freezesRemaining === 1 ? '' : 's'} remaining.`
+          : `${freezesRemaining} freeze${
+              freezesRemaining === 1 ? '' : 's'
+            } remaining.`
       bulkPushNotifications.push([
         privateUser,
         notification,
@@ -1270,7 +1277,7 @@ export const createBountyCanceledNotification = async (
   }
 
   const notifyContractFollowers = async () => {
-    await mapAsync(
+    await settleMap(
       Object.keys(contractFollowersIds),
       async (userId) => {
         if (userId !== contract.creatorId) {

@@ -88,6 +88,7 @@ function RealtimeLog(props: { topic: LiveTopic }) {
   useApiSubscription({
     enabled,
     topics: [topic],
+    recovery: 'event-only',
     onBroadcast: (msg) => {
       const message = { contents: msg, clientRecvTime: Date.now() }
       setMessages((ms) => [message, ...ms])

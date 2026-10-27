@@ -3,16 +3,16 @@ module.exports = {
     {
       name: 'serve',
       script: 'backend/api/lib/serve.js',
-      // Restart daily at 08:00 UTC (midnight/1 AM LA). pm2 crons use the VM's
-      // clock (UTC), unlike the scheduler's jobs which run in LA time. The
-      // restart kicks off initCaches' user-interests build, a heavy db read;
-      // keep it clear of the scheduler's 2:00-5:30 AM LA maintenance pile,
-      // which already pins db disk throughput at its cap around 09:30-11:30
-      // UTC each morning (this stack-up caused the June 2026 outages).
-      cron_restart: '0 8 * * *',
+      // No cron_restart: a PM2 restart kills this process (the only write
+      // server) before its replacement listens, which took the API down for
+      // minutes every morning. The user-interests cache the daily restart
+      // used to rebuild now refreshes in-process at 08:00 UTC; see
+      // scheduleDailyCacheRefresh in backend/shared/src/init-caches.ts.
       instances: 1,
       autorestart: true,
       watch: false,
+      // 6s producer drain + at most 500ms for the final Redis marker.
+      kill_timeout: 8000,
       // 16 GB on the box, give 12 GB to the JS heap
       node_args: '--max-old-space-size=12288',
       env: {
@@ -31,6 +31,7 @@ module.exports = {
       exec_mode: 'cluster',
       autorestart: true,
       watch: false,
+      kill_timeout: 8000,
       node_args: '--max-old-space-size=12288',
       increment_var: 'PORT',
       env: {

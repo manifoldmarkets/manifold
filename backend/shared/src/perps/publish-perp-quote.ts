@@ -4,11 +4,11 @@
 // websocket server, which lives in exactly one process — the API's `serve`
 // worker (the `serve-read` cluster sets READ_ONLY and skips webSocketListen).
 // Cross-process delivery would normally go through the Redis pub/sub channel
-// in websockets/server.ts, but REDIS_URL is empty in prod ("disabled since we
-// scaled back down to one instance"), so a broadcast() called here in the
-// scheduler would only reach the scheduler's own (empty) switchboard and
-// silently die. Instead the scheduler hands the quote to the API over HTTP and
-// the API broadcasts it locally, where the sockets actually are.
+// in websockets/server.ts, but the scheduler is deployed without REDIS_URL, so
+// a broadcast() called here in the scheduler would only reach the scheduler's
+// own (empty) switchboard and silently die. Instead the scheduler hands the
+// quote to the API over HTTP and the API broadcasts it locally, where the
+// sockets actually are.
 //
 // The POST is intentionally not on the read-replica allowlist in
 // url-map-config.yaml, so the load balancer routes it to the writer — the same

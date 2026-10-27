@@ -4,6 +4,7 @@ import { User } from 'common/user'
 import { useState } from 'react'
 import { FullUser } from 'common/api/user-types'
 import { PrivateUser } from 'common/user'
+import { BaseApiCallOptions, unauthedApi } from 'common/util/api'
 
 type UserUpdate = Partial<User> & { id: string }
 
@@ -62,6 +63,27 @@ export const useWebsocketUser = (
 
   useApiSubscription({
     topics: [`user/${userId ?? '_'}`],
+    enabled: !!userId,
+    getSnapshot: async (signal) => {
+      const fetchId = ++latestFetch.current
+      const changes = trackUserChanges(userId!)
+      signal.addEventListener('abort', changes.stop, { once: true })
+      try {
+        const result = await unauthedApi(
+          'user/by-id/:id',
+          { id: userId! },
+          { cache: 'no-store', signal }
+        )
+        return () => {
+          changes.stop()
+          if (fetchId !== latestFetch.current) return false
+          setUser({ ...result, ...changes.since })
+        }
+      } catch (error) {
+        changes.stop()
+        throw error
+      }
+    },
     onBroadcast: ({ data }) => {
       const user = data.user as UserUpdate
       console.log('ws update', user)
@@ -114,20 +136,31 @@ export const useWebsocketUser = (
 export const useWebsocketPrivateUser = (
   userId: string | undefined,
   isPageVisible: boolean,
-  getPrivateUser: () => Promise<PrivateUser | null>
+  getPrivateUser: (options?: BaseApiCallOptions) => Promise<PrivateUser | null>
 ) => {
   const [privateUser, setPrivateUser] = useState<
     PrivateUser | null | undefined
   >()
+  const generation = useRef(0)
+  const readPrivateUser = async (options?: BaseApiCallOptions) => {
+    const request = ++generation.current
+    const result = await getPrivateUser(options)
+    return () => {
+      if (request !== generation.current) return false
+      setPrivateUser(result)
+    }
+  }
 
   useApiSubscription({
     topics: [`private-user/${userId ?? '_'}`],
+    enabled: !!userId,
+    getSnapshot: async (signal) => {
+      return readPrivateUser({ cache: 'no-store', signal })
+    },
     onBroadcast: () => {
-      getPrivateUser().then((result) => {
-        if (result) {
-          setPrivateUser(result)
-        }
-      })
+      readPrivateUser({ cache: 'no-store' })
+        .then((commit) => commit())
+        .catch(console.error)
     },
   })
 
@@ -135,9 +168,14 @@ export const useWebsocketPrivateUser = (
     if (!isPageVisible) return
 
     if (userId) {
-      getPrivateUser().then((result) => setPrivateUser(result))
+      readPrivateUser()
+        .then((commit) => commit())
+        .catch(console.error)
     } else {
       setPrivateUser(null)
+    }
+    return () => {
+      generation.current++
     }
   }, [userId, isPageVisible])
 

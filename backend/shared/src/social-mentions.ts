@@ -1,3 +1,4 @@
+import { settleAll } from 'shared/helpers/producer-drain'
 import { Notification } from 'common/notification'
 import { socialPostPath } from 'common/social-post'
 import { getSocialMentionIds } from 'common/social-rich-content'
@@ -31,7 +32,7 @@ export async function notifySocialMentions(
     .filter((id) => id !== actor.id)
     .slice(0, 10)
 
-  await Promise.all(
+  await settleAll(
     userIds.map(async (userId) => {
       const recipient = await getPrivateUser(userId, pg)
       if (!recipient) return
