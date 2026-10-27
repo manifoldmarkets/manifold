@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { useMemo } from 'react'
 
 import {
@@ -17,7 +18,7 @@ import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { auth } from 'web/lib/firebase/users'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
-import { getStats } from 'web/lib/supabase/stats'
+import { getStatsPageRows } from 'web/lib/supabase/stats'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import {
   IdVerificationDay,
@@ -26,7 +27,7 @@ import {
   getActivityMetrics,
 } from './activity-metrics'
 import { MetricChartPanel, OverlaySeries } from './metric-chart-panel'
-import { MetricTile } from './metric-tile'
+import { METRIC_TILE_CLASS, MetricTile } from './metric-tile'
 import { getView, StatMetric } from './stat-metric'
 import { DailyStatsRow } from './stats-series'
 import {
@@ -35,6 +36,10 @@ import {
   getSurfaceFunnelMetrics,
 } from './surface-funnels'
 import { TopicActivity } from './topic-activity'
+
+// The most tiles any section has (Retention, Pages): the grid always holds
+// this many slots.
+const TILE_SLOTS = 6
 
 // Site activity as a picker instead of a column of charts: choose a section,
 // then a metric tile, and the chart below shows that metric. The selection
@@ -162,7 +167,7 @@ export function StatsExplorer(props: {
           size="sm"
           color="gray-outline"
           onClick={() => {
-            getStats().then(setStats)
+            getStatsPageRows().then(setStats)
             if (section === 'pages') refreshFunnels()
           }}
         >
@@ -170,7 +175,7 @@ export function StatsExplorer(props: {
         </Button>
       </Row>
 
-      <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+      <div className="scrollbar-hide -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         <ChoicesToggleGroup
           ariaLabel="Stats section"
           currentChoice={section}
@@ -205,7 +210,7 @@ export function StatsExplorer(props: {
       )}
 
       {section === 'topics' ? (
-        <TopicActivity stats={stats} />
+        <TopicActivity />
       ) : section === 'pages' && funnelDays.length === 0 ? (
         <p className="text-ink-500 bg-canvas-50 rounded-lg p-4 text-sm">
           {funnelError
@@ -217,15 +222,33 @@ export function StatsExplorer(props: {
       ) : (
         metric && (
           <>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+            {/* Phones: one swipeable row. Wider: a 3×2 grid padded to six
+                slots, so every section's tiles take the same room and the
+                chart below doesn't jump when you switch sections. */}
+            <div
+              // A new section's strip starts scrolled to its first tile.
+              key={section}
+              className="scrollbar-hide -mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 py-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:p-0"
+            >
               {metrics.map((m) => (
                 <MetricTile
                   key={m.key}
                   metric={m}
                   selected={m.key === metric.key}
                   onSelect={() => setQuery({ metric: m.key, view: '' })}
+                  className="w-[9.5rem] shrink-0 snap-start sm:w-auto"
                 />
               ))}
+              {Array.from(
+                { length: Math.max(0, TILE_SLOTS - metrics.length) },
+                (_, i) => (
+                  <div
+                    key={`slot-${i}`}
+                    aria-hidden
+                    className={clsx(METRIC_TILE_CLASS, 'hidden sm:block')}
+                  />
+                )
+              )}
             </div>
             <MetricChartPanel
               metric={metric}

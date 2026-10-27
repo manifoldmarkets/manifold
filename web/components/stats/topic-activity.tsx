@@ -14,7 +14,7 @@ import {
   StatsCompareKey,
   StatsWindow,
 } from 'common/stats-window'
-import { formatLargeNumber, formatPercent } from 'common/util/format'
+import { formatPercent } from 'common/util/format'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -22,7 +22,9 @@ import { Row } from 'web/components/layout/row'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { Input } from 'web/components/widgets/input'
 import { getGroups } from 'web/lib/supabase/groups'
+import { getTopicDayStats, TopicDayRow } from 'web/lib/supabase/stats'
 import { Sparkline } from './sparkline'
+import { ChartLegend } from './chart-legend'
 import { compareText, describeChange, MetricChange } from './stat-metric'
 import {
   STATS_COMPARE_COLOR,
@@ -30,7 +32,7 @@ import {
   StatsChart,
   StatsChartSeries,
 } from './stats-chart'
-import { DailyStatsRow, Point, dataForStats } from './stats-series'
+import { Point, formatCount } from './stats-series'
 import { useStatsTime } from './stats-time'
 
 const MAX_SELECTED = STATS_SERIES_COLORS.length
@@ -53,8 +55,43 @@ type TopicRow = {
 type SortKey = 'active' | 'growing' | 'shrinking'
 
 // Daily active traders per topic, as a ranked table for the selected range
-// with the chosen topics charted above it.
-export function TopicActivity(props: { stats: DailyStatsRow[] }) {
+// with the chosen topics charted above it. The topic counts aren't in the
+// page's static props (they're most of daily_stats' size), so they load the
+// first time the section opens and are kept for the session.
+export function TopicActivity() {
+  const { rows, failed } = useTopicDays()
+  if (!rows)
+    return (
+      <p className="text-ink-500 bg-canvas-50 rounded-lg p-4 text-sm">
+        {failed ? "Couldn't load topic stats." : 'Loading topic stats…'}
+      </p>
+    )
+  return <TopicActivityBody stats={rows} />
+}
+
+let topicDaysRequest: Promise<TopicDayRow[]> | undefined
+const useTopicDays = () => {
+  const [rows, setRows] = useState<TopicDayRow[]>()
+  const [failed, setFailed] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    ;(topicDaysRequest ??= getTopicDayStats())
+      .then((r) => {
+        if (!cancelled) setRows(r)
+      })
+      .catch((e) => {
+        console.error(e)
+        topicDaysRequest = undefined
+        if (!cancelled) setFailed(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+  return { rows, failed }
+}
+
+function TopicActivityBody(props: { stats: TopicDayRow[] }) {
   const { stats } = props
   const { range, compare } = useStatsTime()
   const [sort, setSort] = usePersistentInMemoryState<SortKey>(
@@ -87,7 +124,12 @@ export function TopicActivity(props: { stats: DailyStatsRow[] }) {
         ;(topicSeries[id] ??= []).push({ x: row.start_date, y: v })
       }
     }
-    return { topicSeries, topicDays, siteDau: dataForStats(stats)('dau') }
+    const siteDau: Point[] = stats.flatMap((r) =>
+      r.dau != null && Number.isFinite(r.dau)
+        ? [{ x: r.start_date, y: r.dau }]
+        : []
+    )
+    return { topicSeries, topicDays, siteDau }
   }, [stats])
 
   const groups = useTopicGroups(Object.keys(topicSeries))
@@ -201,21 +243,7 @@ export function TopicActivity(props: { stats: DailyStatsRow[] }) {
           pct={measure === 'share'}
           ariaLabel="Active traders by topic"
         />
-        <Row className="flex-wrap gap-x-4 gap-y-1 text-xs">
-          {chartSeries.map((s) => (
-            <Row key={s.key} className="items-center gap-1.5">
-              <span
-                className="h-0.5 w-4"
-                style={{
-                  background: s.dashed
-                    ? `repeating-linear-gradient(90deg, ${s.color} 0 3px, transparent 3px 5px)`
-                    : s.color,
-                }}
-              />
-              <span className="text-ink-600">{s.label}</span>
-            </Row>
-          ))}
-        </Row>
+        <ChartLegend series={chartSeries} />
       </Col>
 
       <Col className="bg-canvas-0 ring-ink-200 gap-3 rounded-lg p-4 ring-1">
@@ -227,53 +255,59 @@ export function TopicActivity(props: { stats: DailyStatsRow[] }) {
             onChange={(e) => setSearch(e.target.value)}
             className="!h-9 w-full sm:w-56"
           />
-          <ChoicesToggleGroup
-            ariaLabel="Sort topics"
-            currentChoice={effectiveSort}
-            choicesMap={{
-              'Most active': 'active',
-              Growing: 'growing',
-              Shrinking: 'shrinking',
-            }}
-            disabledOptions={canSortByChange ? [] : ['growing', 'shrinking']}
-            setChoice={(v) =>
-              setSort(v === 'growing' || v === 'shrinking' ? v : 'active')
+          <div
+            title={
+              canSortByChange
+                ? undefined
+                : 'Pick a range other than All to sort by change'
             }
-            color="gray"
-            toggleClassName="!px-2.5 !py-1 text-xs"
-          />
-          {!canSortByChange && (
-            <span className="text-ink-400 text-xs">
-              Pick a shorter range to sort by change
-            </span>
-          )}
+          >
+            <ChoicesToggleGroup
+              ariaLabel="Sort topics"
+              currentChoice={effectiveSort}
+              choicesMap={{
+                'Most active': 'active',
+                Growing: 'growing',
+                Shrinking: 'shrinking',
+              }}
+              disabledOptions={canSortByChange ? [] : ['growing', 'shrinking']}
+              setChoice={(v) =>
+                setSort(v === 'growing' || v === 'shrinking' ? v : 'active')
+              }
+              color="gray"
+              toggleClassName="!px-2.5 !py-1 text-xs"
+            />
+          </div>
         </Row>
+        {/* Phones drop Share and Days so the table fits without scrolling. */}
         <div className="-mx-4 overflow-x-auto px-4">
-          <table className="w-full min-w-[34rem] text-sm tabular-nums">
+          <table className="w-full text-sm tabular-nums sm:min-w-[34rem]">
             <thead>
               <tr className="border-ink-200 text-ink-600 border-b text-left">
-                <th className="w-8 py-2" />
-                <th className="py-2 pr-3 font-medium">Topic</th>
-                <th className="px-3 py-2 text-right font-medium">Avg/day</th>
+                <th className="w-7 py-2" />
+                <th className="py-2 pr-2 font-medium sm:pr-3">Topic</th>
+                <th className="px-2 py-2 text-right font-medium sm:px-3">
+                  Avg/day
+                </th>
                 <th
-                  className="px-3 py-2 text-right font-medium"
+                  className="px-2 py-2 text-right font-medium sm:px-3"
                   title={compareText(range, compare)}
                 >
                   Change
                 </th>
                 <th
-                  className="px-3 py-2 text-right font-medium"
+                  className="hidden px-3 py-2 text-right font-medium sm:table-cell"
                   title="Share of all active traders"
                 >
                   Share
                 </th>
                 <th
-                  className="px-3 py-2 text-right font-medium"
+                  className="hidden px-3 py-2 text-right font-medium sm:table-cell"
                   title="Days the topic cleared 50 active traders"
                 >
                   Days
                 </th>
-                <th className="py-2 pl-3 font-medium">Trend</th>
+                <th className="py-2 pl-2 font-medium sm:pl-3">Trend</th>
               </tr>
             </thead>
             <tbody>
@@ -300,7 +334,7 @@ export function TopicActivity(props: { stats: DailyStatsRow[] }) {
                         style={color ? { accentColor: color } : undefined}
                       />
                     </td>
-                    <td className="max-w-[14rem] truncate py-2 pr-3">
+                    <td className="max-w-[9rem] truncate py-2 pr-2 sm:max-w-[14rem] sm:pr-3">
                       {r.group ? (
                         <Link
                           href={`/topic/${r.group.slug}`}
@@ -312,12 +346,12 @@ export function TopicActivity(props: { stats: DailyStatsRow[] }) {
                         <span className="text-ink-400">{nameOf(r.id)}</span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-right font-medium">
-                      {formatLargeNumber(r.avg)}
+                    <td className="px-2 py-2 text-right font-medium sm:px-3">
+                      {formatCount(r.avg)}
                     </td>
                     <td
                       className={clsx(
-                        'px-3 py-2 text-right',
+                        'px-2 py-2 text-right sm:px-3',
                         r.change?.direction === 'up'
                           ? 'text-teal-600'
                           : r.change?.direction === 'down'
@@ -327,16 +361,16 @@ export function TopicActivity(props: { stats: DailyStatsRow[] }) {
                     >
                       {r.change?.text ?? '—'}
                     </td>
-                    <td className="text-ink-600 px-3 py-2 text-right">
+                    <td className="text-ink-600 hidden px-3 py-2 text-right sm:table-cell">
                       {r.share === undefined ? '—' : formatPercent(r.share)}
                     </td>
-                    <td className="text-ink-500 px-3 py-2 text-right text-xs">
+                    <td className="text-ink-500 hidden px-3 py-2 text-right text-xs sm:table-cell">
                       {r.daysCounted}/{r.daysCovered}
                     </td>
-                    <td className="py-2 pl-3">
+                    <td className="py-2 pl-2 sm:pl-3">
                       <Sparkline
                         values={r.spark}
-                        className="text-ink-400 h-5 w-16"
+                        className="text-ink-400 h-5 w-10 sm:w-16"
                       />
                     </td>
                   </tr>

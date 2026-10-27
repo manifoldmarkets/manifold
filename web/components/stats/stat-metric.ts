@@ -14,13 +14,13 @@ import {
   StatsWindow,
   summarizePoints,
 } from 'common/stats-window'
-import { formatLargeNumber, formatPercent } from 'common/util/format'
+import { formatPercent } from 'common/util/format'
 import {
   STATS_COMPARE_COLOR,
   STATS_SERIES_COLORS,
   StatsChartSeries,
 } from './stats-chart'
-import { Point } from './stats-series'
+import { formatCount, Point } from './stats-series'
 
 // One way to chart a metric: its daily values, a rolling average, a
 // weekly total and so on.
@@ -63,7 +63,7 @@ export const getView = (metric: StatMetric, key?: string) =>
   metric.views[0]
 
 export const formatMetricValue = (metric: StatMetric, y: number) =>
-  metric.pct ? formatPercent(y) : formatLargeNumber(y)
+  metric.pct ? formatPercent(y) : formatCount(y)
 
 // Rates change in percentage points, counts in percent.
 export const describeChange = (

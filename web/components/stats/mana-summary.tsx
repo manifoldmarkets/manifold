@@ -8,8 +8,10 @@ import { max } from 'd3-array'
 import { unzip, zip, pick } from 'lodash'
 import { renderToString } from 'react-dom/server'
 import { Col } from 'web/components/layout/col'
-import { formatWithCommas } from 'common/util/format'
+import { formatLargeNumber, formatWithCommas } from 'common/util/format'
 import { Title } from 'web/components/widgets/title'
+import { useMeasureSize } from 'web/hooks/use-measure-size'
+import { stackedChartSize } from './bonus-summary'
 
 type DateAndCategoriesToTotals = { date: string } & {
   [key: string]: number
@@ -70,8 +72,8 @@ const StackedChart = (props: {
   const xAxisRef = useRef<SVGGElement>(null)
   const yAxisRef = useRef<SVGGElement>(null)
   const margin = { top: 20, right: 20, bottom: 10, left: 10 }
-  const width = 900
-  const height = 500
+  const { elemRef, width: boxWidth } = useMeasureSize()
+  const { width, height } = stackedChartSize(boxWidth)
   const innerWidth = width - margin.left - margin.right
   const innerHeight = height - margin.top - margin.bottom
   const { xScale, layers, yScale, keys } = useMemo(() => {
@@ -94,66 +96,77 @@ const StackedChart = (props: {
     xScale.domain(data.map((d) => d.date))
     yScale.domain([0, maxY]).nice()
     return { data, xScale, yScale, keys, colorScale, layers }
-  }, [data.length])
+  }, [data.length, innerWidth, innerHeight])
 
   useEffect(() => {
     if (xScale && xAxisRef.current) {
       select(xAxisRef.current).call(axisBottom(xScale).tickFormat(() => ''))
     }
     if (yScale && yAxisRef.current) {
-      select(yAxisRef.current).call(axisRight(yScale))
+      select(yAxisRef.current).call(
+        axisRight(yScale).tickFormat((d) => formatLargeNumber(+d, 3))
+      )
     }
   }, [xScale, yScale])
 
   return (
     <div>
-      <svg
-        ref={svgRef}
-        width={width}
-        height={height}
-        viewBox={`0 0 ${width} ${height}`}
-        overflow="visible"
-      >
-        <g transform="translate(10,20)">
-          {data.length > 0 &&
-            keys.length > 0 &&
-            layers.map((layer, i) => (
-              <g key={`layer-${i}`} fill={colorScale(keys[i])}>
-                {layer.map((d, j) => (
-                  <rect
-                    key={`rect-${d.data.date}-${keys[j]}`}
-                    x={xScale(d.data.date as any)}
-                    y={yScale(d[1])}
-                    height={yScale(d[0]) - yScale(d[1])}
-                    width={xScale?.bandwidth()}
-                    onMouseOver={() => {
-                      const datum = d.data as DateAndCategoriesToTotals
-                      select(tooltipRef.current)
-                        .style('opacity', 1)
-                        .style('z-index', 1000)
-                        .html(
-                          renderToString(<StackedChartTooltip data={datum} />)
-                        )
-                    }}
-                    onMouseMove={(event) => {
-                      select(tooltipRef.current)
-                        .style('left', `${event.pageX - 150}px`)
-                        .style('top', `${event.pageY + 5}px`)
-                    }}
-                    onMouseOut={() => {
-                      select(tooltipRef.current).style('opacity', 0)
-                    }}
-                  />
+      {/* The chart fills this box, keeping room for the y-axis labels past
+          its right edge. Below its minimum width (phones) it scrolls sideways
+          inside the box rather than widening the page. */}
+      <div ref={elemRef} className="overflow-x-auto">
+        <div className="w-max pr-12">
+          <svg
+            ref={svgRef}
+            width={width}
+            height={height}
+            viewBox={`0 0 ${width} ${height}`}
+            overflow="visible"
+          >
+            <g transform="translate(10,20)">
+              {data.length > 0 &&
+                keys.length > 0 &&
+                layers.map((layer, i) => (
+                  <g key={`layer-${i}`} fill={colorScale(keys[i])}>
+                    {layer.map((d, j) => (
+                      <rect
+                        key={`rect-${d.data.date}-${keys[j]}`}
+                        x={xScale(d.data.date as any)}
+                        y={yScale(d[1])}
+                        height={yScale(d[0]) - yScale(d[1])}
+                        width={xScale?.bandwidth()}
+                        onMouseOver={() => {
+                          const datum = d.data as DateAndCategoriesToTotals
+                          select(tooltipRef.current)
+                            .style('opacity', 1)
+                            .style('z-index', 1000)
+                            .html(
+                              renderToString(
+                                <StackedChartTooltip data={datum} />
+                              )
+                            )
+                        }}
+                        onMouseMove={(event) => {
+                          select(tooltipRef.current)
+                            .style('left', `${event.pageX - 150}px`)
+                            .style('top', `${event.pageY + 5}px`)
+                        }}
+                        onMouseOut={() => {
+                          select(tooltipRef.current).style('opacity', 0)
+                        }}
+                      />
+                    ))}
+                  </g>
                 ))}
-              </g>
-            ))}
-          <g
-            ref={yAxisRef}
-            className="y axis"
-            transform={`translate(${innerWidth},0)`}
-          />
-        </g>
-      </svg>
+              <g
+                ref={yAxisRef}
+                className="y axis"
+                transform={`translate(${innerWidth},0)`}
+              />
+            </g>
+          </svg>
+        </div>
+      </div>
       <div
         ref={tooltipRef}
         style={{

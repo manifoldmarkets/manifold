@@ -1,9 +1,11 @@
 import { sum } from 'lodash'
 
 import { average } from 'common/util/math'
-import { Row as rowfor } from 'common/supabase/utils'
+import { formatLargeNumber, formatWithCommas } from 'common/util/format'
+import { StatsPageRow } from 'web/lib/supabase/stats'
 
-export type DailyStatsRow = rowfor<'daily_stats'>
+// The columns /stats loads (web/lib/supabase/stats.ts).
+export type DailyStatsRow = StatsPageRow
 
 // One day of a chart series; x is YYYY-MM-DD.
 export type Point = { x: string; y: number }
@@ -69,6 +71,15 @@ export const rollingRatio = (
     const y = sum(window.map((d) => d.num!)) / den
     return Number.isFinite(y) ? [{ x, y }] : []
   })
+
+// Counts on tiles, tooltips and tables: "77k", "1,819", "99", "1.9". A decimal
+// only matters below 10 (bets per new user); above, it's just noise.
+export const formatCount = (y: number) =>
+  Math.abs(y) >= 10_000
+    ? formatLargeNumber(y)
+    : Math.abs(y) >= 10
+    ? formatWithCommas(Math.round(y))
+    : String(Math.round(y * 10) / 10)
 
 export const round = (point: Point) => ({
   x: point.x,

@@ -5,7 +5,7 @@ import { Spacer } from 'web/components/layout/spacer'
 import { QueryUncontrolledTabs, Tabs } from 'web/components/layout/tabs'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
-import { getStats } from 'web/lib/supabase/stats'
+import { getStatsPageRows, StatsPageRow } from 'web/lib/supabase/stats'
 import { orderBy, sum, sumBy, uniq } from 'lodash'
 import { formatLargeNumber, formatMoney } from 'common/util/format'
 import { formatWithCommas } from 'common/util/format'
@@ -13,7 +13,7 @@ import { SEO } from 'web/components/SEO'
 import Link from 'next/link'
 import { api } from '../lib/api/api'
 import { Row as rowfor } from 'common/supabase/utils'
-import { BonusSummary } from 'web/components/stats/bonus-summary'
+import { BonusSummary, TxnSummaryRow } from 'web/components/stats/bonus-summary'
 import { ManaSupplySummary } from 'web/components/stats/mana-summary'
 import { StatsExplorer } from 'web/components/stats/stats-explorer'
 import {
@@ -27,7 +27,6 @@ import {
   MANA_PURCHASE_RATE_CHANGE_DATE,
   MANA_PURCHASE_RATE_REVERT_DATE,
 } from 'common/envs/constants'
-import { partition } from 'lodash'
 import { formatTimeShort } from 'client-common/lib/time'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import {
@@ -54,7 +53,7 @@ export const getStaticProps = async () => {
       shopStats,
       idenfyStats,
     ] = await Promise.all([
-      getStats(),
+      getStatsPageRows(),
       api('get-mana-summary-stats', { limitDays: 100 }),
       api('get-txn-summary-stats', {
         ignoreCategories: ['RECLAIM_MANA', 'AIR_DROP', 'EXTRA_PURCHASED_MANA'],
@@ -75,11 +74,11 @@ export const getStaticProps = async () => {
     return {
       props: {
         stats,
-        fromBankSummary,
-        toBankSummary,
+        fromBankSummary: toTxnSummaryRows(fromBankSummary),
+        toBankSummary: toTxnSummaryRows(toBankSummary),
         manaSupplyOverTime,
         activeUserManaStats,
-        topMarketsYesterday,
+        topMarketsYesterday: withoutDescriptions(topMarketsYesterday),
         shopStats,
         idenfyStats,
         totalRedeemable: 0,
@@ -91,6 +90,34 @@ export const getStaticProps = async () => {
     return { props: { stats: null }, revalidate: 60 }
   }
 }
+
+// The props are embedded in the page's HTML, so they carry only what renders.
+// Nothing here charts cash, and BonusSummary reads four fields.
+const toTxnSummaryRows = (
+  rows: rowfor<'txn_summary_stats'>[]
+): TxnSummaryRow[] =>
+  rows
+    .filter((r) => r.token !== 'CASH')
+    .map(({ start_time, category, quest_type, total_amount }) => ({
+      start_time,
+      category,
+      quest_type,
+      total_amount,
+    }))
+
+// A market's description can be tens of KB, and the rows show only its title.
+const withoutDescriptions = (
+  data: TopMarketsYesterdayData
+): TopMarketsYesterdayData => ({
+  topByTraders: data.topByTraders.map((t) => ({
+    ...t,
+    contract: { ...t.contract, description: '' },
+  })),
+  topByViews: data.topByViews.map((t) => ({
+    ...t,
+    contract: { ...t.contract, description: '' },
+  })),
+})
 
 type ActiveUserManaStats = {
   date: string
@@ -151,10 +178,10 @@ type IdenfyStats = {
 }
 
 export default function Analytics(props: {
-  stats: rowfor<'daily_stats'>[]
+  stats: StatsPageRow[]
   manaSupplyOverTime: rowfor<'mana_supply_stats'>[]
-  fromBankSummary: rowfor<'txn_summary_stats'>[]
-  toBankSummary: rowfor<'txn_summary_stats'>[]
+  fromBankSummary: TxnSummaryRow[]
+  toBankSummary: TxnSummaryRow[]
   activeUserManaStats: ActiveUserManaStats[]
   topMarketsYesterday?: TopMarketsYesterdayData
   shopStats?: ShopStats
@@ -198,8 +225,8 @@ export default function Analytics(props: {
 }
 
 function ActivityTab(props: {
-  stats: rowfor<'daily_stats'>[]
-  setStats: (stats: rowfor<'daily_stats'>[]) => void
+  stats: StatsPageRow[]
+  setStats: (stats: StatsPageRow[]) => void
   topMarketsYesterday?: TopMarketsYesterdayData
   idenfyStats?: IdenfyStats
 }) {
@@ -301,8 +328,8 @@ function TopMarketRow(props: {
 
 function ManaSupplyTab(props: {
   manaSupplyOverTime: rowfor<'mana_supply_stats'>[]
-  fromBankSummary: rowfor<'txn_summary_stats'>[]
-  toBankSummary: rowfor<'txn_summary_stats'>[]
+  fromBankSummary: TxnSummaryRow[]
+  toBankSummary: TxnSummaryRow[]
   activeUserManaStats: ActiveUserManaStats[]
 }) {
   const {
@@ -315,15 +342,6 @@ function ManaSupplyTab(props: {
   const yesterdaySupply = manaSupplyOverTime[manaSupplyOverTime.length - 2]
   const differenceInSupplySinceYesterday =
     currentSupply.total_value - yesterdaySupply.total_value
-
-  const [fromBankSummaryCash, fromBankSummaryMana] = partition(
-    fromBankSummary,
-    (f) => f.token === 'CASH'
-  )
-  const [toBankSummaryCash, toBankSummaryMana] = partition(
-    toBankSummary,
-    (f) => f.token === 'CASH'
-  )
 
   // The stacked charts follow the page's time range too.
   const { range } = useStatsTime()
@@ -353,12 +371,12 @@ function ManaSupplyTab(props: {
   const latestRecordingTime = orderBy(fromBankSummary, 'start_time', 'desc')[0]
     .start_time
   const fromBankManaSum = sumBy(
-    fromBankSummaryMana.filter((txn) => txn.start_time === latestRecordingTime),
+    fromBankSummary.filter((txn) => txn.start_time === latestRecordingTime),
     'total_amount'
   )
 
   const toBankManaSum = sumBy(
-    toBankSummaryMana.filter((txn) => txn.start_time === latestRecordingTime),
+    toBankSummary.filter((txn) => txn.start_time === latestRecordingTime),
     'total_amount'
   )
 
@@ -436,21 +454,21 @@ function ManaSupplyTab(props: {
       <Spacer h={8} />
       <Title>Transactions from Manifold</Title>
       <BonusSummary
-        txnSummaryStats={inRange(fromBankSummaryMana)}
+        txnSummaryStats={inRange(fromBankSummary)}
         days={rangedDays}
       />
       <Spacer h={8} />
       <Title>Transactions to Manifold</Title>
       <span className="text-ink-500">(Ignores mana purchases)</span>
       <BonusSummary
-        txnSummaryStats={inRange(toBankSummaryMana)}
+        txnSummaryStats={inRange(toBankSummary)}
         days={rangedDays}
       />
     </Col>
   )
 }
 
-function ManaSalesTab(props: { stats: rowfor<'daily_stats'>[] }) {
+function ManaSalesTab(props: { stats: StatsPageRow[] }) {
   const { stats } = props
   const dataFor = useCallback(dataForStats(stats), [stats])
   const last30dSales = sum(stats.slice(-30).map((row) => row.sales || 0))
@@ -933,10 +951,10 @@ function SalesTable(props: {
 }
 
 export function CustomAnalytics(props: {
-  stats: rowfor<'daily_stats'>[]
+  stats: StatsPageRow[]
   manaSupplyOverTime: rowfor<'mana_supply_stats'>[]
-  fromBankSummary: rowfor<'txn_summary_stats'>[]
-  toBankSummary: rowfor<'txn_summary_stats'>[]
+  fromBankSummary: TxnSummaryRow[]
+  toBankSummary: TxnSummaryRow[]
   activeUserManaStats?: ActiveUserManaStats[]
   topMarketsYesterday?: TopMarketsYesterdayData
   shopStats?: ShopStats

@@ -30,8 +30,8 @@ export type StatsRangeKey = (typeof STATS_RANGES)[number]['key']
 
 export const STATS_COMPARES = [
   { key: 'none', label: 'No comparison' },
-  { key: 'previous', label: 'Previous period' },
-  { key: 'year', label: 'Same period last year' },
+  { key: 'previous', label: 'vs previous period' },
+  { key: 'year', label: 'vs last year' },
 ] as const
 export type StatsCompareKey = (typeof STATS_COMPARES)[number]['key']
 

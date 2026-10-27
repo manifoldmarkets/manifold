@@ -2,11 +2,12 @@ import clsx from 'clsx'
 import { scaleLinear } from 'd3-scale'
 import { line, area } from 'd3-shape'
 import { uniq } from 'lodash'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { fromDayNumber, toDayNumber } from 'common/stats-window'
 import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { SizedContainer } from 'web/components/sized-container'
+import { formatCount } from './stats-series'
 
 export type StatsChartSeries = {
   key: string
@@ -42,11 +43,7 @@ const formatTick = (n: number, spansYears: boolean) => {
 }
 
 const formatValue = (y: number, pct: boolean | undefined) =>
-  pct
-    ? formatPercent(y)
-    : Math.abs(y) >= 1000
-    ? formatLargeNumber(y)
-    : String(Math.round(y * 10) / 10)
+  pct ? formatPercent(y) : formatCount(y)
 
 // A line chart of LA-day series with an optional dashed comparison, a hover
 // tooltip listing every series on the hovered day, and no zoom: the page's
@@ -102,6 +99,18 @@ function ChartBody(props: {
   const plotW = Math.max(w - MARGIN.left - MARGIN.right, 10)
   const plotH = Math.max(h - MARGIN.top - MARGIN.bottom, 10)
   const [hoverDay, setHoverDay] = useState<number>()
+  // A touch tap keeps its tooltip after the finger lifts (a mouse's goes
+  // when it leaves); tapping anywhere outside the chart clears it.
+  const containerRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (hoverDay === undefined) return
+    const onDown = (e: PointerEvent) => {
+      if (!containerRef.current?.contains(e.target as Node))
+        setHoverDay(undefined)
+    }
+    document.addEventListener('pointerdown', onDown)
+    return () => document.removeEventListener('pointerdown', onDown)
+  }, [hoverDay === undefined])
 
   const prepared = useMemo(
     () =>
@@ -177,7 +186,7 @@ function ChartBody(props: {
       : hoverX + MARGIN.left + 12
 
   return (
-    <div className="relative h-full w-full">
+    <div ref={containerRef} className="relative h-full w-full">
       <svg
         width={w}
         height={h}
@@ -190,7 +199,9 @@ function ChartBody(props: {
         onPointerDown={(e) =>
           onPointer(e.clientX, e.currentTarget.getBoundingClientRect())
         }
-        onPointerLeave={() => setHoverDay(undefined)}
+        onPointerLeave={(e) => {
+          if (e.pointerType === 'mouse') setHoverDay(undefined)
+        }}
       >
         <g transform={`translate(${MARGIN.left},${MARGIN.top})`}>
           {yTicks.map((t) => (
