@@ -31,7 +31,7 @@ export interface F1Driver {
   first_name: string
   last_name: string
   display_name: string
-  /** Three letters: VER, NOR. */
+  /** Initial and surname: "K. Antonelli". */
   short_name: string
   country_code: string | null
   racing_number: number | null
@@ -57,8 +57,9 @@ export interface F1Event {
   name: string
   short_name: string
   season: number
-  /** YYYY-MM-DD */
+  /** ISO 8601: the first session's start (FP1). */
   start_date: string
+  /** ISO 8601: the race's start, not the weekend's end. */
   end_date: string
   status_state: F1StatusState
   circuit?: {
@@ -75,7 +76,7 @@ export interface F1Event {
 export interface F1Session {
   id: number
   event: Pick<F1Event, 'id' | 'name' | 'short_name' | 'season'>
-  /** "Race", "Qualifying", "Sprint", "Sprint Qualifying", "Practice 1"… */
+  /** "Race", "Qualifying", "Sprint", "Sprint Qualifying", "FP1"… */
   type: string
   name: string
   /** ISO 8601 start */
@@ -112,9 +113,10 @@ export type F1SessionKind = 'race' | 'sprint' | 'qualifying'
 /**
  * Which session this is, or null for the ones that get no market (practice,
  * and sprint qualifying, which only sets the sprint grid). Matched on words
- * rather than exact strings: the docs show `type` "Race" with `name` "Race"
- * and "Qual", and don't show a sprint, so check the real strings on a trial
- * key before trusting a new season.
+ * rather than exact strings. The 2026 season's real `type`/`name` pairs
+ * (checked 27 Oct 2026) are Race/Race, Qualifying/Qual, Sprint/SR, Sprint
+ * Qualifying/SS and FP1/FP1 to FP3/FP3; practice falls through to null.
+ * Check them again before trusting a new season.
  */
 export function f1SessionKind(
   session: Pick<F1Session, 'type' | 'name'>
