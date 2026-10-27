@@ -42,6 +42,17 @@ const MAX_PAGES = 10
 type Page<T> = { data: T[]; meta?: { next_cursor?: string | number | null } }
 
 /**
+ * A non-2xx response. A 401 is a missing or invalid key, or a plan without
+ * the endpoint; a free endpoint (/events) tells the two apart.
+ */
+export class BalldontlieError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message)
+    this.name = 'BalldontlieError'
+  }
+}
+
+/**
  * Every page of a list endpoint. Array parameters go as `name[]=`, the
  * way the API reads them.
  */
@@ -74,8 +85,9 @@ async function getAll<T>(
           : res.status === 429
           ? ' (rate limited)'
           : ''
-      throw new Error(
-        `BALLDONTLIE /f1/${path} error: ${res.status} ${res.statusText}${why}`
+      throw new BalldontlieError(
+        `BALLDONTLIE /f1/${path} error: ${res.status} ${res.statusText}${why}`,
+        res.status
       )
     }
     const body = (await res.json()) as Page<T>

@@ -1120,10 +1120,14 @@ export interface SportsContractParams {
   groupIds: string[]
 }
 
-/** Only an active official moneyline reserves an event for this pipeline. */
-export const findSportsMoneyline = (
+/**
+ * An active official market of this type on the event: what reserves the
+ * event and type for a pipeline.
+ */
+export const findSportsMarket = (
   pg: SupabaseDirectClient,
-  eventId: string
+  eventId: string,
+  marketType: string
 ) =>
   pg.oneOrNone<{ id: string }>(
     `select id from contracts
@@ -1131,10 +1135,16 @@ export const findSportsMoneyline = (
        and creator_id = any($2)
        and token = 'MANA'
        and resolution is distinct from 'CANCEL'
-       and data->>'sportsMarketType' = 'moneyline'
+       and data->>'sportsMarketType' = $3
      limit 1`,
-    [eventId, MANIFOLD_SPORTS_USER_IDS]
+    [eventId, MANIFOLD_SPORTS_USER_IDS, marketType]
   )
+
+/** Only an active official moneyline reserves an event for this pipeline. */
+export const findSportsMoneyline = (
+  pg: SupabaseDirectClient,
+  eventId: string
+) => findSportsMarket(pg, eventId, 'moneyline')
 
 /** The game kicked off (or is about to) before its market could be made. */
 export class SportsGameStartedError extends Error {
@@ -1163,6 +1173,12 @@ export async function createSportsContract(
   opts: {
     notifyFollowers?: boolean
     deduplicateMoneyline?: boolean
+    /**
+     * The same for any market type: refuse, inside the transaction, a second
+     * active market of this type on the event (an F1 session's winner and
+     * podium markets share its event id).
+     */
+    deduplicateMarketType?: string
     /**
      * Refuse, inside the transaction, a game kicking off sooner than this:
      * the last check before the ante moves.
@@ -1255,14 +1271,21 @@ export async function createSportsContract(
     ? bulkInsertQuery('answers', multi.answers.map(answerToRow), true)
     : null
 
+  const dedupeType = opts.deduplicateMoneyline
+    ? 'moneyline'
+    : opts.deduplicateMarketType
   const result = await pg.tx(async (tx) => {
-    if (opts.deduplicateMoneyline) {
+    if (dedupeType) {
       // Serialize the existence check with the insert and ante. A concurrent
       // admin/scheduler run sees the committed market after acquiring the lock.
       await tx.one('select pg_advisory_xact_lock(hashtext($1))', [
-        `sports-moneyline:${params.sportsEventId}`,
+        `sports-${dedupeType}:${params.sportsEventId}`,
       ])
-      const existing = await findSportsMoneyline(tx, params.sportsEventId)
+      const existing = await findSportsMarket(
+        tx,
+        params.sportsEventId,
+        dedupeType
+      )
       if (existing) throw new SportsMarketAlreadyExistsError(existing.id)
     }
     if (opts.minLeadMs != null) {
