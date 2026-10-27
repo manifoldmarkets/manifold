@@ -47,6 +47,7 @@ import {
 import {
   contractPath,
   CPMMMultiContract,
+  MarketContract,
   SportsContract,
 } from 'common/contract'
 import { getAnte } from 'common/economy'
@@ -421,8 +422,32 @@ export async function createF1MarketsForActiveCalendar(
 
 /** An unresolved market this long after its close needs a person. */
 const ATTENTION_AFTER_MS = 12 * HOUR_MS
-/** Markets one run looks at, the longest-closed first. */
+/**
+ * Markets one run looks at, the most recently closed first, so markets stuck
+ * waiting for a person can't crowd out ones that can resolve.
+ */
 const MAX_RESOLVE_PER_RUN = 100
+/** How far back a run looks: anything stuck longer was reported long ago. */
+const RESOLVE_LOOKBACK_MS = 30 * DAY_MS
+
+/**
+ * A check for resolveMarketHelper to run on its transaction's read of the
+ * market: refuse when an answer has since been resolved other than the
+ * classification (or the cancellation) says, so a person's resolution that
+ * lands after this run's snapshot stops the payout instead of mixing with it.
+ */
+const agreesWith =
+  (intended: (answerId: string) => string) => (fresh: MarketContract) => {
+    const other = (fresh as CPMMMultiContract).answers?.find(
+      (a) => a.resolution && a.resolution !== intended(a.id)
+    )
+    if (other)
+      throw new Error(
+        `${other.text} was resolved ${
+          other.resolution
+        } meanwhile, but the run means ${intended(other.id)}`
+      )
+  }
 
 export type F1ResolveStatus = 'resolved' | 'waiting' | 'attention' | 'error'
 
@@ -448,8 +473,10 @@ const getAnswers = async (pg: SupabaseDirectClient, contractId: string) =>
   ).map(convertAnswer)
 
 /**
- * Resolve the F1 markets that closed at least F1_RESOLVE_DELAY_HOURS ago,
- * from the provider's classification of their session. A cancelled session
+ * Resolve the F1 markets that closed at least F1_RESOLVE_DELAY_HOURS ago and
+ * within RESOLVE_LOOKBACK_MS, from the provider's classification of their
+ * session, once that session and its results are the market's own (the
+ * event and session ids in sportsEventId). A cancelled session
  * resolves N/A; a final one resolves through f1SessionResolution, a winner
  * market to one answer and a podium market answer by answer (a run that
  * stops half way picks up the rest). Anything else waits. What only a person
@@ -478,11 +505,13 @@ export async function resolveF1Markets(
        and token = 'MANA'
        and resolution is null
        and close_time <= $2
-     order by close_time asc
+       and close_time > $3
+     order by close_time desc
      limit ${MAX_RESOLVE_PER_RUN}`,
     [
       MANIFOLD_SPORTS_USER_IDS,
       millisToTs(now - F1_RESOLVE_DELAY_HOURS * HOUR_MS),
+      millisToTs(now - RESOLVE_LOOKBACK_MS),
     ]
   )
   const contracts = rows.map(
@@ -554,6 +583,13 @@ export async function resolveF1Markets(
         wait(`the provider doesn't list session ${id.sessionId}`)
         continue
       }
+      if (session.event?.id !== id.eventId) {
+        attention(
+          contract,
+          `the provider files session ${session.id} under event ${session.event?.id}, not ${id.eventId}`
+        )
+        continue
+      }
       const answers = await getAnswers(pg, contract.id)
       const multi = { ...contract, answers }
 
@@ -578,10 +614,14 @@ export async function resolveF1Markets(
         } else {
           for (const a of sortBy(answers, (x) => x.index)) {
             if (a.resolution) continue
-            await resolveMarketHelper(multi, creator, creator, {
-              outcome: 'CANCEL',
-              answerId: a.id,
-            })
+            await resolveMarketHelper(
+              multi,
+              creator,
+              creator,
+              { outcome: 'CANCEL', answerId: a.id },
+              undefined,
+              agreesWith(() => 'CANCEL')
+            )
           }
         }
         add(contract, 'resolved', 'N/A: the session was cancelled')
@@ -605,6 +645,15 @@ export async function resolveF1Markets(
       // arrived. Wait, then hand it to a person.
       if (results.length === 0) {
         wait('the session is final but has no classification yet')
+        continue
+      }
+      // Only the session's own classification can pay out.
+      const foreign = results.find((r) => r.session?.id !== session.id)
+      if (foreign) {
+        attention(
+          contract,
+          `the results for session ${session.id} include session ${foreign.session?.id}'s`
+        )
         continue
       }
       const marketType = contract.sportsMarketType
@@ -648,12 +697,17 @@ export async function resolveF1Markets(
         )
         continue
       }
+      const intended = (answerId: string) => resolution.resolutions[answerId]
       for (const a of sortBy(answers, (x) => x.index)) {
         if (a.resolution) continue
-        await resolveMarketHelper(multi, creator, creator, {
-          outcome: resolution.resolutions[a.id],
-          answerId: a.id,
-        })
+        await resolveMarketHelper(
+          multi,
+          creator,
+          creator,
+          { outcome: intended(a.id), answerId: a.id },
+          undefined,
+          agreesWith(intended)
+        )
       }
       add(
         contract,

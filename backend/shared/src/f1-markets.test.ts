@@ -36,6 +36,7 @@ jest.mock('shared/balldontlie-f1-client', () => ({
   getF1Sessions: jest.fn(),
 }))
 
+import { MarketContract } from 'common/contract'
 import { F1Session, F1SessionResult } from 'common/f1-markets'
 import { millisToTs } from 'common/supabase/utils'
 import { User } from 'common/user'
@@ -76,11 +77,12 @@ const session = (status: F1Session['status_state']): F1Session => ({
   date: '2026-11-01T20:00:00.000Z',
   status_state: status,
 })
-/** Driver ids by finishing position. */
+/** Driver ids by finishing position, in session 1870 unless said. */
 const classified = (...ids: number[]) =>
   ids.map(
     (id, i) =>
       ({
+        session: { id: 1870 },
         driver: { id },
         position: i + 1,
         is_winner: i === 0,
@@ -141,6 +143,8 @@ const podiumIds = ['p11', 'p22', 'p33', 'p44']
 
 beforeEach(() => {
   jest.clearAllMocks()
+  // Drops a test's own payout behaviour (clearAllMocks keeps it).
+  jest.mocked(resolveMarketHelper).mockReset()
   jest.spyOn(Date, 'now').mockReturnValue(NOW)
   jest.mocked(sportsCreator).mockResolvedValue(creator)
   jest.mocked(getF1Sessions).mockResolvedValue([session('final')])
@@ -150,13 +154,90 @@ beforeEach(() => {
 afterEach(() => jest.restoreAllMocks())
 
 describe('resolveF1Markets', () => {
-  it('only reads markets whose resolve delay has passed', async () => {
+  it('reads the newest due markets of the last 30 days', async () => {
     const db = database([], {})
     const r = await resolveF1Markets(db.pg)
     expect(r.checked).toBe(0)
-    const [, values] = db.manyOrNone.mock.calls[0]
+    const [sql, values] = db.manyOrNone.mock.calls[0]
     expect(values[1]).toBe(millisToTs(NOW - 2 * HOUR_MS))
+    expect(values[2]).toBe(millisToTs(NOW - 30 * 24 * HOUR_MS))
+    // Newest first: markets stuck waiting for a person can't starve the rest.
+    expect(sql).toMatch(/order by close_time desc\s+limit 100/)
     expect(getF1Sessions).not.toHaveBeenCalled()
+  })
+
+  it("pays nothing from another session's results", async () => {
+    jest
+      .mocked(getF1SessionResults)
+      .mockResolvedValue(
+        classified(22, 11, 33, 44).map((r) => ({ ...r, session: { id: 1869 } }))
+      )
+    const db = database([winner], { winner: winnerAnswers })
+    const r = await resolveF1Markets(db.pg)
+    expect(r.attention).toBe(1)
+    expect(resolveMarketHelper).not.toHaveBeenCalled()
+  })
+
+  it('pays nothing when the provider files the session under another event', async () => {
+    jest.mocked(getF1Sessions).mockResolvedValue([
+      {
+        ...session('canceled'),
+        event: { ...session('final').event, id: 999 },
+      },
+    ])
+    const db = database([winner], { winner: winnerAnswers })
+    const r = await resolveF1Markets(db.pg)
+    expect(r.attention).toBe(1)
+    expect(resolveMarketHelper).not.toHaveBeenCalled()
+  })
+
+  /**
+   * A resolveMarketHelper that only runs the caller's check against `fresh`,
+   * its stand-in for the transaction's own read of the market.
+   */
+  const checkingAgainst =
+    (fresh: Record<string, string>, seen: unknown[] = []) =>
+    async (...args: Parameters<typeof resolveMarketHelper>) => {
+      const check = args[5]
+      seen.push(check)
+      check?.({
+        answers: answerRows(podiumIds, fresh),
+      } as unknown as MarketContract)
+      return undefined as unknown as Awaited<
+        ReturnType<typeof resolveMarketHelper>
+      >
+    }
+
+  it('stops a podium payout when an answer was resolved after the snapshot', async () => {
+    // A person resolved the fourth driver YES after this run read the answers.
+    jest
+      .mocked(resolveMarketHelper)
+      .mockImplementation(checkingAgainst({ p44: 'YES' }))
+    const db = database([podium], { podium: answerRows(podiumIds) })
+    const r = await resolveF1Markets(db.pg)
+    expect(r.errors).toBe(1)
+    expect(r.resolved).toBe(0)
+    // The first payout's own check refused, so no answer was paid.
+    expect(resolveMarketHelper).toHaveBeenCalledTimes(1)
+  })
+
+  it('checks every answer-level payout against the fresh read', async () => {
+    const seen: unknown[] = []
+    // A fresh read that agrees: nothing resolved other than intended.
+    jest
+      .mocked(resolveMarketHelper)
+      .mockImplementation(checkingAgainst({ p11: 'YES' }, seen))
+    const db = database([podium], { podium: answerRows(podiumIds) })
+    expect((await resolveF1Markets(db.pg)).resolved).toBe(1)
+    expect(seen).toHaveLength(4)
+    expect(seen.every((c) => typeof c === 'function')).toBe(true)
+
+    // Cancelling refuses a fresh YES on another answer too.
+    jest.mocked(getF1Sessions).mockResolvedValue([session('canceled')])
+    jest
+      .mocked(resolveMarketHelper)
+      .mockImplementation(checkingAgainst({ p22: 'YES' }))
+    expect((await resolveF1Markets(db.pg)).errors).toBe(1)
   })
 
   it("pays a winner market to the classified winner's answer by driver id", async () => {
