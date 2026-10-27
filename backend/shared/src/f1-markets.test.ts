@@ -154,16 +154,45 @@ beforeEach(() => {
 afterEach(() => jest.restoreAllMocks())
 
 describe('resolveF1Markets', () => {
-  it('reads the newest due markets of the last 30 days', async () => {
+  it('reads every due market of the last 30 days', async () => {
     const db = database([], {})
     const r = await resolveF1Markets(db.pg)
     expect(r.checked).toBe(0)
     const [sql, values] = db.manyOrNone.mock.calls[0]
     expect(values[1]).toBe(millisToTs(NOW - 2 * HOUR_MS))
     expect(values[2]).toBe(millisToTs(NOW - 30 * 24 * HOUR_MS))
-    // Newest first: markets stuck waiting for a person can't starve the rest.
-    expect(sql).toMatch(/order by close_time desc\s+limit 100/)
+    expect(sql).toMatch(/order by close_time asc\s+limit 1001/)
     expect(getF1Sessions).not.toHaveBeenCalled()
+  })
+
+  // A market waiting on a session the provider doesn't list.
+  const stuck = (n: number) =>
+    Array.from({ length: n }, (_, i) => {
+      const m = market(`stuck${i}`, 'winner', [11, 22, 33, null])
+      return { ...m, data: { ...m.data, sportsEventId: 'bdl-f1:374:9999' } }
+    })
+
+  it('pays a market waiting behind a hundred stuck ones', async () => {
+    const db = database([...stuck(100), winner], { winner: winnerAnswers })
+    const r = await resolveF1Markets(db.pg)
+    expect(r.waiting).toBe(100)
+    expect(r.resolved).toBe(1)
+    expect(jest.mocked(resolveMarketHelper).mock.calls[0][3]).toEqual({
+      outcome: 'a22',
+      resolutions: { a22: 100 },
+    })
+  })
+
+  it('says once when the backlog is bigger than a run reads', async () => {
+    const db = database(stuck(1001), {})
+    const alerted = new Set<string>()
+    const r = await resolveF1Markets(db.pg, alerted)
+    expect(r.checked).toBe(1000)
+    expect(jest.mocked(log.error).mock.calls).toEqual([
+      [expect.stringContaining('more than 1000 F1 markets are due')],
+    ])
+    await resolveF1Markets(db.pg, alerted)
+    expect(log.error).toHaveBeenCalledTimes(1)
   })
 
   it("pays nothing from another session's results", async () => {

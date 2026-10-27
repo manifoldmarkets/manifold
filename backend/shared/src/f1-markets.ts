@@ -423,12 +423,15 @@ export async function createF1MarketsForActiveCalendar(
 /** An unresolved market this long after its close needs a person. */
 const ATTENTION_AFTER_MS = 12 * HOUR_MS
 /**
- * Markets one run looks at, the most recently closed first, so markets stuck
- * waiting for a person can't crowd out ones that can resolve.
+ * A run checks every due market of the last RESOLVE_LOOKBACK_MS, so markets
+ * stuck waiting for a person can't crowd out ones that can resolve (F1 makes
+ * a few a weekend). More than this is a backlog a person has to see.
  */
-const MAX_RESOLVE_PER_RUN = 100
+const MAX_DUE_MARKETS = 1000
 /** How far back a run looks: anything stuck longer was reported long ago. */
 const RESOLVE_LOOKBACK_MS = 30 * DAY_MS
+/** The `alerted` key for the backlog warning. */
+const BACKLOG_ALERT = 'f1-resolve-backlog'
 
 /**
  * A check for resolveMarketHelper to run on its transaction's read of the
@@ -506,17 +509,23 @@ export async function resolveF1Markets(
        and resolution is null
        and close_time <= $2
        and close_time > $3
-     order by close_time desc
-     limit ${MAX_RESOLVE_PER_RUN}`,
+     order by close_time asc
+     limit ${MAX_DUE_MARKETS + 1}`,
     [
       MANIFOLD_SPORTS_USER_IDS,
       millisToTs(now - F1_RESOLVE_DELAY_HOURS * HOUR_MS),
       millisToTs(now - RESOLVE_LOOKBACK_MS),
     ]
   )
-  const contracts = rows.map(
-    (r) => convertContract(r) as CPMMMultiContract & SportsContract
-  )
+  if (rows.length > MAX_DUE_MARKETS && !alerted.has(BACKLOG_ALERT)) {
+    alerted.add(BACKLOG_ALERT)
+    log.error(
+      `[sports-f1-resolve] more than ${MAX_DUE_MARKETS} F1 markets are due; the newest wait until a person clears the backlog`
+    )
+  }
+  const contracts = rows
+    .slice(0, MAX_DUE_MARKETS)
+    .map((r) => convertContract(r) as CPMMMultiContract & SportsContract)
   result.checked = contracts.length
   if (contracts.length === 0) return result
 
