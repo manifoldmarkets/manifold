@@ -268,6 +268,30 @@ protect the pools when the trader is flat at the funding timestamp.
 | Crypto Fear & Greed            | Mean-reverting sentiment gauge, two-sided       | New daily value is public at ~00:00 UTC; exposure bounded by the 5-minute poll               |
 | OpenRouter open-weight share   | Two-sided index with coherent adoption theses   | Upstream exposes complete UTC days, so hourly writes usually repeat a predictable daily step |
 | OpenRouter Anthropic / CN labs | Two-sided proxies for third-party-routed demand | Same payload and same daily step as the open-weight share                                    |
+| Adjacent MSRY (pending)        | Two-sided macro index, but quiet                | Fills wait for a value computed after the order; 5:30 p.m. ET roll steps are predictable     |
+
+### Adjacent Misery Implied Index (pending)
+
+`adjacent-msry` ingests once `ADJACENT_API_KEY` is provisioned, but market
+creation stays disabled (`PERP_LAUNCH_PENDING_MARKETS`) until both of these
+hold:
+
+1. Adjacent has permitted, in writing, this market marking to MSRY (its
+   methodology and plan terms otherwise bar use in a financial product).
+   Record the date and any required credit wording in
+   `common/src/perps/oracle-attribution.ts`.
+2. The Adjacent organization holds a paid plan and an `ak_` key with read
+   scope for indices is stored as `ADJACENT_API_KEY` in Secret Manager for
+   the environment. Run `backend/scripts/probe-adjacent-msry.ts` there: it
+   confirms realtime access, that the one-minute series has a row for every
+   minute, and what the tick would publish.
+
+Provision the secret before the first `scheduler-perps` deploy that contains
+the feed: without it every poll fails as a provider error, which pages under
+`[oracle-feeds]` once an hour. Then promote the entry: set
+`marketCreationEnabled: true` in the registry, move the definition into
+`PERP_LAUNCH_MARKETS`, run `backfill-adjacent-msry-oracle --dry-run` and then
+for real, and create the market from the admin page.
 
 ### xStocks on-chain sources (ongoing, post-launch)
 

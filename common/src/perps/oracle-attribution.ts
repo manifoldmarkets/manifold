@@ -35,6 +35,10 @@ import { MNX_INSTRUMENTS } from './mnx'
 //     gate before a market is created on the feed.
 //   - MNX: public API/methodology reviewed; market links identify the target.
 //     No redistribution licence is claimed.
+//   - Adjacent (Misery Implied Index, MSRY) — terms READ, and they do not
+//     permit this use yet. See the entry: a credit and a link, no licence
+//     label, and market creation disabled until Adjacent permits it in
+//     writing.
 //   - BTC — we compute the median ourselves from three public tickers, so
 //     nothing is being republished. Credited for transparency, not obligation.
 //   - xStocks (SPYx/QQQx/GLDx/NVDAx) — stronger than BTC's stance: the
@@ -150,6 +154,21 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
   'crypto-fear-greed': {
     source: 'Alternative.me Crypto Fear & Greed Index',
     url: 'https://alternative.me/crypto/fear-and-greed-index/',
+  },
+  // ⛔ NOT YET LICENSED FOR THIS USE (read 2026-10-27). Adjacent's MSRY
+  // methodology (https://adjacent.markets/static/msry-methodology/methodology,
+  // §12) says its indices may not be "used as the basis for a financial
+  // product" or "as a benchmark for a product or strategy ... except as
+  // expressly permitted by Adjacent in writing", and its API pricing page
+  // says neither the Pro nor the Premium plan permits "use in a financial
+  // product". The methodology itself anticipates a venue listing a perpetual
+  // that marks to MSRY, with listing terms outside it. So the feed ingests,
+  // and the registry keeps market creation disabled until Adjacent's written
+  // permission exists. When it does, record its date and any credit or
+  // licence wording it requires here, and set `licence` only if it names one.
+  'adjacent-msry': {
+    source: 'Adjacent Misery Implied Index (MSRY)',
+    url: 'https://adjacent.markets/indices/msry',
   },
   'btc-usd': {
     source: 'Coinbase, Kraken, Bitstamp & Gemini',

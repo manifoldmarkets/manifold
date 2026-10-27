@@ -18,7 +18,7 @@ The `perp_orders` migration is required before deploying the API or scheduler. O
 
 Submission changes no market state, so it takes no contract lock: it runs at READ COMMITTED under the user's row lock, and the unique indexes decide replays and one-per-kind. Submissions to one market therefore run side by side and never queue the oracle tick. (Under SERIALIZABLE behind the contract lock, each snapshot predated its wait, so a burst aborted and requeued itself and starved the tick.) On a size-fee market, an allowance below the fee at the current pools is refused at submission rather than accepted to fail at execution.
 
-BTC, xStocks and daily publisher sampling timestamps use request start. Shared xStocks snapshots retain that original timestamp across feeds. MNX additionally requires its provider mark timestamp to be after submission; re-received cached marks do not qualify. Daily source timestamps describe reporting periods, so those feeds use their accepted observation time. This execution rule does not claim to remove all upstream cache latency or predictable published-index moves.
+BTC, xStocks and daily publisher sampling timestamps use request start. Shared xStocks snapshots retain that original timestamp across feeds. Provider-stamped feeds (`isProviderStampedFeed` in `common/perps/orders.ts`: MNX, and Adjacent's MSRY) additionally require the provider's production stamp to be after submission, less `PROVIDER_SOURCE_CLOCK_ALLOWANCE_MS`: MNX's mark time, and the start of the one-minute bucket MSRY's value was recorded in. Re-received cached values do not qualify. Daily source timestamps describe reporting periods, so those feeds use their accepted observation time. This execution rule does not claim to remove all upstream cache latency or predictable published-index moves.
 
 While an order waits, `USER -> BANK:PERP_ORDER_ESCROW` holds its cash. `PERP_ORDER_RELEASE` returns it inside the same transaction as fill, rejection or expiry. The ordinary margin and fee transfers then execute. Pending cash never enters long or short backing, so the existing contract-ledger-equals-pools invariant remains unchanged. Pending cash is included at face value in authoritative user-contract metrics with zero profit.
 
@@ -580,6 +580,19 @@ Feed adapters live next to it:
   answer-key-parameterised reader and the cross-check canary live in
   `common/src/perps/votehub-average.ts`; the publish-on-change plus 12h
   heartbeat rule every slow feed shares is `common/src/perps/daily-feed-publish.ts`.
+- `adjacent-msry.ts` — Adjacent's Misery Implied Index (`adjacent-msry`):
+  implied U-3 unemployment plus implied CPI-U year-over-year, in percentage
+  points, recalculated by Adjacent every minute. A fast observation feed on
+  the shared tick, polled every 20s because Adjacent's quota is per
+  organization (Pro: 30/minute, 20,000/day). The realtime tier needs
+  `ADJACENT_API_KEY` (an optional secret: without it every poll fails as a
+  provider error); the keyless public tier is 15 minutes delayed and only
+  backs the chart backfill. The parser and observation rule (new minute,
+  re-served minute, re-recorded minute, stale source) live in
+  `common/perps/adjacent-msry.ts`; its bucket stamps make it
+  provider-stamped for next-price eligibility. Market creation is disabled
+  and the market sits in `PERP_LAUNCH_PENDING_MARKETS` until Adjacent
+  permits the use in writing (see the attribution entry).
 - `fear-greed.ts` — Alternative.me's Crypto Fear & Greed index
   (`crypto-fear-greed`, 0-100 sentiment points, documented `/fng/` API only).
   The parser in `common/src/perps/fear-greed.ts` treats every field as
@@ -616,13 +629,14 @@ short thesis. If an ingest-only feed is ever added again, list it in
 enforces that exclusion.
 
 Backfill scripts
-(`backend/scripts/backfill-{btc,xstocks,trump-approval,votehub,fear-greed,openrouter,mnx}-oracle.ts`;
+(`backend/scripts/backfill-{btc,xstocks,trump-approval,votehub,fear-greed,openrouter,mnx,adjacent-msry}-oracle.ts`;
 `backfill-votehub-oracle` and `backfill-openrouter-oracle` take
 `--feed=<feedId>`) seed chart history before market creation. They are for
 feeds with NO live market: published history is append-only and a backfill
 stamps day boundaries, so on a live feed it would add a second point to every
-day rather than fill a hole. The VoteHub, Fear & Greed and OpenRouter scripts
-check this (`backfill-guard.ts`) and refuse a feed that backs an unresolved
+day rather than fill a hole. The VoteHub, Fear & Greed, OpenRouter and
+Adjacent MSRY scripts check this (`backfill-guard.ts`) and refuse a feed that
+backs an unresolved
 market unless `--force` is passed. MNX also uses the guard, with **no force
 escape**, and accepts `--feed=<feedId>`.
 

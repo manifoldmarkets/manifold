@@ -5,10 +5,19 @@ import { MNX_INSTRUMENTS, MNX_POLL_MS } from 'common/perps/mnx'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { validateBasicOraclePoint } from 'common/perps/oracle'
 import { FEAR_GREED_MAX } from 'common/perps/fear-greed'
+import {
+  MSRY_MAX_PRICE,
+  MSRY_MAX_SOURCE_AGE_MS,
+  MSRY_MIN_PRICE,
+  MSRY_POLL_MS,
+  MSRY_UPDATE_PERIOD_MS,
+} from 'common/perps/adjacent-msry'
 
+import { fetchAdjacentMsryObservation } from './adjacent-msry'
 import { fetchBtcUsdSpot } from './btc-price'
 import { OracleClock } from './oracle-clock'
 import {
+  ADJACENT_MSRY_FEED_ID,
   BTC_USD_FEED_ID,
   CRYPTO_FEAR_GREED_FEED_ID,
   GLDX_USD_FEED_ID,
@@ -235,6 +244,38 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     updatePeriodMs: 2_000,
     pollPeriodMs: 2_000,
     fetchLatest: (clock) => fetchXStockUsdPrice(XSTOCK_SPECS.NVDAX, clock),
+  },
+  // Adjacent's Misery Implied Index: implied U-3 unemployment plus implied
+  // CPI-U year-over-year, in percentage points, recalculated by Adjacent once
+  // a minute (common/perps/adjacent-msry.ts). Fast like MNX, not 'daily':
+  // the value moves intraday, the provider stamps when it produced each
+  // value, and that stamp drives next-price eligibility. It rides the shared
+  // tick at a 20s poll because Adjacent's quota is organization-wide (see
+  // MSRY_POLL_MS); the realtime tier needs ADJACENT_API_KEY, and without it
+  // every poll fails as a provider error.
+  //
+  // Creation stays disabled until Adjacent permits the index's use in a
+  // financial product in writing: see PERP_LAUNCH_PENDING_MARKETS.
+  {
+    id: ADJACENT_MSRY_FEED_ID,
+    description:
+      "Adjacent's Misery Implied Index (MSRY): implied U-3 unemployment plus CPI-U YoY, percentage points",
+    marketCreationEnabled: false,
+    cadence: 'fast',
+    pollPeriodMs: MSRY_POLL_MS,
+    fetchObservation: fetchAdjacentMsryObservation,
+    // Unit-confused garbage only (a fraction, a 50-150 political level, a
+    // 1000-based NAV) and the non-positive prints the methodology's 0.00
+    // floor allows; never a fast move. Corruption is caught at the source:
+    // the parser rejects a page with any malformed row, and the observation
+    // rule refuses a value older than MSRY_MAX_SOURCE_AGE_MS.
+    minPrice: MSRY_MIN_PRICE,
+    maxPrice: MSRY_MAX_PRICE,
+    // Same as the provider-age limit: five missed recalculations. Flat
+    // stretches are normal (the index often holds for hours), so unchanged
+    // values are written as heartbeats every staleAfterMs / 2.
+    staleAfterMs: MSRY_MAX_SOURCE_AGE_MS,
+    updatePeriodMs: MSRY_UPDATE_PERIOD_MS,
   },
   // Daily feeds use a 26h threshold (one missed daily run + slack) rather
   // than a lazy 3d: the hourly update-perps job turns feed staleness into
