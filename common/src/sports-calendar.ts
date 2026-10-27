@@ -64,6 +64,11 @@ export interface SportsCalendarEntry {
   locked?: string
   /** The Odds API sport key. Competitions without one are created by hand. */
   oddsKey?: string
+  /**
+   * A feed other than The Odds API that the scheduler creates this phase's
+   * markets from: 'bdl-f1' is BALLDONTLIE's F1 API (shared/f1-markets.ts).
+   */
+  provider?: 'bdl-f1'
 }
 
 type CalendarInput = Omit<SportsCalendarEntry, 'oddsKey'>
@@ -227,12 +232,14 @@ const ENTRIES: CalendarInput[] = [
     phase: '2026 Remaining',
     startDate: '2026-08-28',
     endDate: '2026-12-07',
-    // No Odds API key, and the BALLDONTLIE pipeline (common/f1-markets.ts)
-    // has no job yet: F1 markets are made by hand.
+    // The sports-f1-create job makes race winner, podium, sprint winner and
+    // pole markets from BALLDONTLIE once this is switched on in
+    // /admin/sports; off until then.
+    provider: 'bdl-f1',
     autoCreate: false,
     autoResolve: true,
     notes:
-      'Remaining races: Zandvoort, Monza, Singapore, Austin, Mexico City, São Paulo, Las Vegas, Abu Dhabi. Pipeline pending: race winner, podium, pole and sprint winner per weekend from BALLDONTLIE (common/f1-markets.ts).',
+      'Remaining races: Zandvoort, Monza, Singapore, Austin, Mexico City, São Paulo, Las Vegas, Abu Dhabi. Race winner, podium, pole and sprint winner per weekend from BALLDONTLIE (shared/f1-markets.ts).',
   },
   {
     sport: 'f1',
@@ -241,6 +248,7 @@ const ENTRIES: CalendarInput[] = [
     phase: '2027 Season',
     startDate: '2027-03-07',
     endDate: '2027-11-28',
+    provider: 'bdl-f1',
     autoCreate: false,
     autoResolve: false,
     notes: 'Calendar TBC — hold auto-create until full race calendar confirmed',
@@ -672,7 +680,7 @@ export function autoCreates(
   entry: SportsCalendarEntry,
   switches: CompetitionSwitches
 ): boolean {
-  if (entry.locked || !entry.oddsKey) return false
+  if (entry.locked || !(entry.oddsKey || entry.provider)) return false
   return (
     switches[calendarPhaseKey(entry)] ??
     (CALENDAR_DEFAULTS_ON && entry.autoCreate)
@@ -689,7 +697,8 @@ export function competitionSwitchError(
     (e) => e.competitionId === competitionId && e.phase === phase
   )
   if (!entry) return `No calendar phase ${competitionId} / ${phase}`
-  if (!entry.oddsKey) return `${entry.competition} has no Odds API sport key`
+  if (!entry.oddsKey && !entry.provider)
+    return `${entry.competition} has no Odds API sport key or other feed`
   if (on && entry.locked) return entry.locked
   return undefined
 }

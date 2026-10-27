@@ -233,9 +233,19 @@ describe('scheduler switches', () => {
     expect(competitionSwitchError('nhl-2026-27', 'Preseason', true)).toContain(
       'No calendar phase'
     )
-    expect(competitionSwitchError('f1-2026', '2026 Remaining', true)).toContain(
-      'no Odds API sport key'
+    expect(competitionSwitchError('tdf-2027', 'TdF 2027', true)).toContain(
+      'no Odds API sport key or other feed'
     )
+  })
+  it('switches F1 on BALLDONTLIE, off by default', () => {
+    const [f1] = calendarEntriesFor('f1-2026')
+    expect(f1.provider).toBe('bdl-f1')
+    expect(f1.oddsKey).toBeUndefined()
+    expect(autoCreates(f1, {})).toBe(false)
+    expect(autoCreates(f1, { [calendarPhaseKey(f1)]: true })).toBe(true)
+    expect(
+      competitionSwitchError('f1-2026', '2026 Remaining', true)
+    ).toBeUndefined()
   })
 })
 

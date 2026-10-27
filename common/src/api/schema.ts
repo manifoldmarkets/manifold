@@ -5284,8 +5284,8 @@ export const API = (_apiTypeCheck = {
       }>
     },
   },
-  // F1 markets from BALLDONTLIE for the next 14 days' sessions. Dev only:
-  // nothing resolves them yet, so the API refuses this in prod.
+  // F1 markets from BALLDONTLIE for the next 14 days' sessions, by hand. Dev
+  // only: in prod the daily sports-f1-create job makes them, so this refuses.
   'admin-sports-create-f1-markets': {
     method: 'POST',
     visibility: 'undocumented',

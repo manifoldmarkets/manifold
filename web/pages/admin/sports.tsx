@@ -64,8 +64,8 @@ type OddsApiCompetition = {
   /** Why every phase is locked: the dry run creates nothing until it's unlocked. */
   locked?: string
 }
-// F1 from BALLDONTLIE (common/f1-markets.ts). Dev only until its jobs ship:
-// nothing resolves these markets yet, and the API refuses them in prod.
+// F1 from BALLDONTLIE (common/f1-markets.ts), created by hand: dev only, and
+// the API refuses it in prod, where the daily job creates them instead.
 type F1Competition = {
   type: 'bdl-f1'
   label: string
@@ -127,7 +127,7 @@ function calendarCompetitions(sport: SportId): CompetitionOption[] {
             sportsLeague: SPORT_LEAGUE_LABEL[e.sport],
             locked,
           }
-        : e.sport === 'f1' && ENV === 'DEV'
+        : e.provider === 'bdl-f1' && ENV === 'DEV'
         ? {
             type: 'bdl-f1',
             label: e.competition,
@@ -944,9 +944,10 @@ export default function SportsAdminPage() {
               </div>
             ) : isF1 ? (
               <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                <span className="font-semibold">BALLDONTLIE, dev only</span> —
-                creation below; nothing resolves these markets yet, so resolve
-                them by hand.
+                <span className="font-semibold">BALLDONTLIE</span> — creation by
+                hand below is dev only; the daily job creates markets for a
+                phase switched on above, and the resolver pays them out two
+                hours after each closes.
               </div>
             ) : (
               <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
@@ -1215,7 +1216,8 @@ export default function SportsAdminPage() {
                   standings as the answers and the opening prices. Practice and
                   sprint qualifying are listed but get no market. Sessions that
                   already have a market are skipped, and one run creates at most
-                  12. Nothing resolves these markets yet: resolve them by hand.
+                  12. The sports-f1-resolve job resolves them from the
+                  classification two hours after each market closes.
                 </p>
               ) : (
                 <p className="text-ink-500 text-sm">

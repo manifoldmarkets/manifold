@@ -78,6 +78,8 @@ import { createUpcomingSportsMarkets } from './sports-create-markets'
 import { pollSportsLiveScores } from './sports-live'
 import { createOddsSportsMarkets } from './sports-odds-create'
 import { resolveOddsSportsMarkets } from './sports-odds-resolve'
+import { createF1SportsMarkets } from './sports-f1-create'
+import { resolveF1SportsMarkets } from './sports-f1-resolve'
 
 // Which subset of jobs this process runs. The 2s oracle tick (and the other
 // PERP jobs that apply funding and liquidations) must not share an event loop
@@ -515,6 +517,20 @@ export function createJobs(jobSet: SchedulerJobSet) {
       'sports-odds-resolve',
       '*/10 * * * * *', // every 10 seconds
       resolveOddsSportsMarkets
+    ),
+    // F1 from BALLDONTLIE: the coming two weeks' session markets for the F1
+    // phases switched on in /admin/sports (all off by default)...
+    createJob(
+      'sports-f1-create',
+      '0 30 6 * * *', // daily at 6:30 AM LA
+      createF1SportsMarkets
+    ),
+    // ...and their resolution from the session's classification, two hours
+    // after each market closes.
+    createJob(
+      'sports-f1-resolve',
+      '0 5,20,35,50 * * * *', // every 15 minutes
+      resolveF1SportsMarkets
     ),
     // Poll in-play scores every 10s and broadcast them over websockets. No-op
     // (no football-data call, just a cheap DB count) outside a tournament's

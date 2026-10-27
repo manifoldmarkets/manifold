@@ -1,6 +1,6 @@
 // On-demand F1 market creation from BALLDONTLIE, with a dry run, from
-// /admin/sports. Dev only: there is no job or resolver yet, so a market made
-// here is resolved by hand, and prod refuses.
+// /admin/sports. Dev only: in prod the daily sports-f1-create job makes them
+// once their phase is switched on, and this route refuses.
 
 import { APIError, APIHandler } from './helpers/endpoint'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
