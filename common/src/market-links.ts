@@ -37,6 +37,34 @@ export type MarketLink = {
   createdTime: number
 }
 
+/** The market on the other end of a link, enough to show and link to it. */
+export type MarketLinkRef = {
+  id: string
+  question: string
+  slug: string
+  creatorId: string
+  creatorUsername: string
+  relation: MarketLinkRelation
+  /** For what getLinkParentError checks: a closed parent takes no changes. */
+  closeTime: number | null
+  isResolved: boolean
+}
+
+/**
+ * A market's parent and the markets linked to it. Markets that aren't public
+ * are never named, only flagged or counted.
+ */
+export type MarketLinks = {
+  parent: MarketLinkRef | null
+  /** Linked to a market that's since been unlisted or deleted. */
+  parentHidden: boolean
+  children: MarketLinkRef[]
+  /** All public children, including any past the returned page. */
+  childCount: number
+  /** Children that aren't public. They still keep this market a parent. */
+  hiddenChildCount: number
+}
+
 /** What a would-be parent has to satisfy. */
 export type LinkParentCandidate = {
   id: string

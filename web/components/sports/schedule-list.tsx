@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import {
   SearchIcon,
   HeartIcon,
+  TicketIcon,
   ViewGridIcon,
   ViewListIcon,
   XIcon,
@@ -9,13 +10,22 @@ import {
 import dayjs from 'dayjs'
 import { ReactNode, useEffect, useState } from 'react'
 import { ScheduleGame } from 'common/sports-schedule'
+import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { GameRow, GameRowSkeleton } from 'web/components/sports/game-row'
+import { Carousel } from 'web/components/widgets/carousel'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { useGameLikes } from './use-game-likes'
+import { useGamePositions } from './use-game-positions'
+import {
+  GameStake,
+  getGameStake,
+  profitLabel,
+  sumGameStakes,
+} from './game-positions'
 import {
   compareGameStartTime,
   compareGameVolume,
@@ -65,7 +75,7 @@ export function GameFeed(props: {
 }) {
   const { games, loading, hasMore, loadMore, showLeague, empty } = props
   const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<'all' | 'live' | 'liked'>('all')
+  const [filter, setFilter] = useState<'all' | 'live' | 'liked' | 'mine'>('all')
   const [date, setDate] = useState('all')
   const [sort, setSort] = useState('time')
   const [featuredId, setFeaturedId] = useState<string>()
@@ -77,6 +87,15 @@ export function GameFeed(props: {
     (game) => game.status === 'upcoming' || game.status === 'live'
   )
   const likes = useGameLikes(active.map((game) => game.id))
+  const positions = useGamePositions(active.map((game) => game.id))
+  // One stake per game, marked to the live prices, shared by the cards, the
+  // My bets filter and its totals so they can't disagree.
+  const stakes: Record<string, GameStake> = {}
+  for (const game of active) {
+    const stake = getGameStake(game, positions.byGame[game.id])
+    if (stake) stakes[game.id] = stake
+  }
+  const stakedCount = Object.keys(stakes).length
   const normalized = query.trim().toLowerCase()
   const hasFilters = filter !== 'all' || date !== 'all' || !!normalized
   const selectedFeatured = selectFeaturedGame(active, featuredId)
@@ -90,6 +109,7 @@ export function GameFeed(props: {
       (game) =>
         (filter !== 'live' || game.status === 'live') &&
         (filter !== 'liked' || likes.liked.has(game.id)) &&
+        (filter !== 'mine' || !!stakes[game.id]) &&
         (date === 'all' ||
           dayjs(game.startTime).format('YYYY-MM-DD') === date) &&
         (!normalized ||
@@ -111,6 +131,16 @@ export function GameFeed(props: {
   const allDays = groupByDay(active, (game) => game.startTime).sort((a, b) =>
     a.key.localeCompare(b.key)
   )
+  // What the My bets filter adds up: the stake on each game it shows.
+  const myStakes: GameStake[] =
+    filter === 'mine'
+      ? filtered.flatMap((game) => {
+          const stake = stakes[game.id]
+          return stake ? [stake] : []
+        })
+      : []
+  const needsSignIn =
+    (filter === 'liked' || filter === 'mine') && likes.user === null
   const reset = () => {
     setQuery('')
     setDate('all')
@@ -132,6 +162,8 @@ export function GameFeed(props: {
           liked={likes.liked.has(game.id)}
           likeDisabled={likes.disabled(game.id)}
           onToggleLike={() => void likes.toggle(game.id)}
+          stake={stakes[game.id]}
+          onPositionsChange={() => void positions.refreshGame(game.id)}
         />
       ))}
     </div>
@@ -226,7 +258,7 @@ export function GameFeed(props: {
           </div>
           <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
             <div
-              className="flex shrink-0 items-center gap-2"
+              className="flex flex-wrap items-center gap-2"
               aria-label="Game filters"
             >
               {(
@@ -242,6 +274,11 @@ export function GameFeed(props: {
                     value: 'liked',
                     label: 'Liked',
                     count: likes.loading ? undefined : likes.liked.size,
+                  },
+                  {
+                    value: 'mine',
+                    label: 'My bets',
+                    count: positions.loading ? undefined : stakedCount,
                   },
                 ] as const
               ).map((item) => (
@@ -266,17 +303,30 @@ export function GameFeed(props: {
                   {item.value === 'liked' && (
                     <HeartIcon className="h-3.5 w-3.5" />
                   )}
-                  {item.label}
+                  {item.value === 'mine' && (
+                    <TicketIcon className="h-3.5 w-3.5" />
+                  )}
+                  {item.value === 'all' ? (
+                    // Four chips: keep them on one line on small phones.
+                    <>
+                      All<span className="hidden sm:inline"> games</span>
+                    </>
+                  ) : (
+                    item.label
+                  )}
                   <span className="text-xs opacity-70">{item.count}</span>
                 </button>
               ))}
             </div>
             {/* Keep this strip's space in Live so the filter row stays put. */}
-            <div
+            <Carousel
               className={clsx(
-                'flex min-w-0 basis-full gap-2 overflow-x-auto md:flex-1 md:basis-0',
+                'min-w-0 basis-full md:flex-1 md:basis-0',
                 filter === 'live' && 'invisible'
               )}
+              labelsParentClassName="gap-2"
+              fadeEdges
+              showArrowsOnHover
               aria-label="Game dates"
               aria-hidden={filter === 'live'}
             >
@@ -312,19 +362,23 @@ export function GameFeed(props: {
                   <span>{dayjs(day.key).format('MMM D')}</span>
                 </button>
               ))}
-            </div>
+            </Carousel>
           </div>
           {hasFilters && (
             <div
               className="text-ink-500 flex items-center justify-between gap-2 text-xs"
               role="status"
             >
-              <span>
-                {filtered.length} of {active.length} loaded games
-              </span>
+              {filter === 'mine' && myStakes.length > 0 ? (
+                <MyBetsSummary stakes={myStakes} />
+              ) : (
+                <span>
+                  {filtered.length} of {active.length} loaded games
+                </span>
+              )}
               <button
                 type="button"
-                className="text-primary-700 min-h-[32px] font-semibold"
+                className="text-primary-700 min-h-[32px] shrink-0 whitespace-nowrap font-semibold"
                 onClick={reset}
               >
                 Reset filters
@@ -343,6 +397,18 @@ export function GameFeed(props: {
               </button>
             </p>
           )}
+          {positions.error && (
+            <p className="text-ink-500 text-xs" role="alert">
+              Couldn't load your bets.
+              <button
+                type="button"
+                className="text-primary-700 ml-2 underline"
+                onClick={() => void positions.refresh()}
+              >
+                Retry
+              </button>
+            </p>
+          )}
         </div>
         {featured && (
           <GameRow
@@ -353,6 +419,8 @@ export function GameFeed(props: {
             liked={likes.liked.has(featured.id)}
             likeDisabled={likes.disabled(featured.id)}
             onToggleLike={() => void likes.toggle(featured.id)}
+            stake={stakes[featured.id]}
+            onPositionsChange={() => void positions.refreshGame(featured.id)}
           />
         )}
         {filtered.length === 0 && (
@@ -366,6 +434,14 @@ export function GameFeed(props: {
                   : likes.loading
                   ? 'Loading your liked games…'
                   : 'No liked games here yet'
+                : filter === 'mine'
+                ? needsSignIn
+                  ? 'Sign in to see your bets'
+                  : positions.error
+                  ? 'Your bets are unavailable'
+                  : positions.loading
+                  ? 'Loading your bets…'
+                  : 'No bets on these games yet'
                 : filter === 'live'
                 ? 'No games live right now'
                 : 'No matching games'}
@@ -373,20 +449,16 @@ export function GameFeed(props: {
             <p className="text-ink-500 mt-1 text-sm">
               {filter === 'liked'
                 ? 'Heart a game to add it to your Manifold likes.'
+                : filter === 'mine'
+                ? 'Tap a price to back a team. Your picks and open orders show up here.'
                 : 'Try another date, team, or filter.'}
             </p>
             <button
               type="button"
-              onClick={
-                filter === 'liked' && likes.user === null
-                  ? firebaseLogin
-                  : reset
-              }
+              onClick={needsSignIn ? firebaseLogin : reset}
               className="text-primary-700 mt-3 min-h-[40px] text-sm font-bold"
             >
-              {filter === 'liked' && likes.user === null
-                ? 'Sign in'
-                : 'Show all games'}
+              {needsSignIn ? 'Sign in' : 'Show all games'}
             </button>
           </div>
         )}
@@ -431,6 +503,39 @@ export function GameFeed(props: {
         )}
       </Col>
     </div>
+  )
+}
+
+/** The My bets filter's totals: games, mana in, current value and profit. */
+function MyBetsSummary(props: { stakes: GameStake[] }) {
+  const totals = sumGameStakes(props.stakes)
+  const profit = profitLabel(totals.profit)
+  return (
+    <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 tabular-nums">
+      <span>
+        {totals.games} {totals.games === 1 ? 'game' : 'games'}
+      </span>
+      {totals.invested > 0 && (
+        <>
+          <span aria-hidden>·</span>
+          <span>{formatMoney(totals.invested)} in</span>
+          <span aria-hidden>·</span>
+          <span>Worth {formatMoney(totals.value)}</span>
+          <span className={clsx('font-semibold', profit.className)}>
+            {profit.text}
+          </span>
+        </>
+      )}
+      {totals.openOrders > 0 && (
+        <>
+          <span aria-hidden>·</span>
+          <span>
+            {totals.openOrders} open{' '}
+            {totals.openOrders === 1 ? 'order' : 'orders'}
+          </span>
+        </>
+      )}
+    </span>
   )
 }
 

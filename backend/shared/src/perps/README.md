@@ -402,12 +402,72 @@ checks `L + S` against one contract balance, so the split is an accounting
 convention, not a custody boundary; the transfer conserves total escrow and
 moves no user balance. It is all-or-nothing: a partial transfer cannot make the
 book representable but would change the ADL factors on the way to the same
-throw, so it can only ever turn a failure into a success.
+throw, so it can only ever turn a failure into a success. The donor is then
+held at no less than its own reserve (see below). "At least that much" stays
+exact: the hold mints whatever the donor lacks, so any allowance there would
+let a real shortfall that grows a little each tick mint its way past escrow
+tolerance on ticks that never check escrow. A surplus that is the deficit
+exactly can therefore still round an ulp short of it (`64.1 − 0.1 < 64`) and
+be declined, as before.
 
 This does NOT stop principal being spent against an opposing side's unrealized
 loss in the first place — it lets the pot honour the resulting claim out of its
 own surplus. Reserving at full cost basis would prevent the spend, at the cost
 of much lower profit capacity on every market. That is a separate decision.
+
+## Solvency dust
+
+ADL lands a side's factor a few ulps under 1 about a quarter of the time,
+inside the `1e-12` relative tolerance. A debit far larger than the pool it
+leaves then turns ulps of that debit into a shortfall the remaining book cannot
+size: paying a 50,000 profit out of a 50,001 pool leaves the pool 7e-12 under
+the 1-mana reserve it still holds, which `solvencyFactor` reads as `-Infinity`.
+That used to fail a legitimate close right after ADL, and failed `resolvePerp`
+deterministically, since it closes every position at one fixed price. A
+factor-zero ADL settlement does the same to its own pool, and so does the
+cross-side transfer to its donor: `100,000.01 − 100,000` lands 5e-12 under a
+0.01 reserve.
+
+Tolerating that dust is not enough. The later debit that drains the pool is far
+smaller than the one that left the gap, and funding scales a receiving pool
+and its positions by the same `1 + g`, so a gap below a reserve grows with the
+pool until it is no longer dust. So `debitPool` reconciles it where it is made:
+when a close or settlement would leave a pool short of what it owes (its own
+side's reserve plus the other side's profit) by no more than the dust the check
+could already have passed, the pool is assigned exactly what it owes and the
+debited leg pays what actually left it. The payout falls short of the bare
+profit by at most that dust (one ulp, usually), and escrow moves by at most an
+ulp. A larger gap is a real deficit and still fails closed, as does anything
+non-finite. The transfer's donor is held at its own reserve the same way.
+
+What is left is residue at the book's own scale: an ulp of a 100-mana pool
+against 5e-6 of remaining profit reads as a factor of `1 − 3e-9`. So
+`assertPerpStateSolvent` and the open path share one predicate,
+`isPerpSideSolvent`, that also forgives `getPerpSolvencyDust`: 1e-12 of the
+largest pool, reserve or profit on the book, capped at 1e-6 mana.
+
+**Deploy order:** `scheduler-perps` first, then the main scheduler, then the
+API, back to back from one SHA. Stay clear of the daily `update-stats` run
+(scheduled to start at 04:20 America/Los_Angeles), and don't trigger it by
+hand during the deploy. Queued orders execute inside the oracle tick, so every
+process that applies oracle points can leave the residue above:
+
+- `scheduler-perps`: the fast feeds, and the hourly `update-perps` fallback.
+- The main scheduler: `update-stats` applies the DAU point.
+- The API: the admin `internal-write-oracle-price`, and `resolvePerp`.
+
+Old code has no absolute tolerance. Its only path that refuses such a state on
+its input is funding (`applyFundingWithSolvency`), and only `scheduler-perps`
+runs funding. Until all three are on new code, an old process that meets the
+residue may fail closed, as prod already does on dust: the order is refunded
+as an execution fault, an open is rejected and its reserve returned, a
+resolution fails and can be retried, or the tick halts until the next
+successful new-code tick clears it.
+
+Roll back in reverse, with `scheduler-perps` last. Old funding can then refuse
+a book that new code left with residue, until a later successful ADL pass or a
+small `add-perp-subsidy` top-up clears it. Watch for
+`[update-perps] error updating <slug>`.
 
 ## Solvency halt (tick liveness)
 

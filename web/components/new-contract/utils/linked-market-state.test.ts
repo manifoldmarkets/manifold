@@ -14,6 +14,7 @@ import {
   selectLinkedMarket,
   getLinkedCloseTimeDescription,
   isLinkedCloseTimePending,
+  isNeverClosingPoll,
   shouldApplyLinkedMarketCloseTime,
 } from './linked-market-state'
 
@@ -271,6 +272,34 @@ test('a linked poll shows pending parent timing, not Never, until loaded', () =>
       applyLinkedMarketCloseTime(poll, { id: 'a' })
     ),
     'Never'
+  )
+})
+
+test('a linked poll whose date the creator cleared never closes, as the picker shows', () => {
+  const linked = applyLinkedMarketCloseTime(
+    { ...state, outcomeType: 'POLL', linkedToContractId: 'a' },
+    { id: 'a', closeTime }
+  )
+  // Clearing the date input, or Never -> another type -> back to a poll,
+  // leaves an edited poll without a date. The picker then selects Never.
+  for (const closeDate of ['', undefined]) {
+    const cleared = { ...linked, closeDate, hasManuallyEditedCloseDate: true }
+    assert.equal(isNeverClosingPoll(cleared), true)
+    assert.deepEqual(getCreateMarketCloseParams(cleared), { neverCloses: true })
+    assert.equal(getLinkedCloseTimeDescription(cleared), 'Never')
+  }
+  // Untouched, the poll still takes the linked market's deadline.
+  assert.equal(isNeverClosingPoll(linked), false)
+  assert.deepEqual(getCreateMarketCloseParams(linked), {})
+  // Never is for polls only; other types still have to choose a date.
+  assert.deepEqual(
+    getCreateMarketCloseParams({
+      ...linked,
+      outcomeType: 'BINARY',
+      closeDate: '',
+      hasManuallyEditedCloseDate: true,
+    }),
+    {}
   )
 })
 

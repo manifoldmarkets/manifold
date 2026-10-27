@@ -782,3 +782,92 @@ export const CLOSE_BUFFER_HOURS: Record<SportId, number> = {
   handball: 3,
   tennis: 6,
 }
+
+// ─── Readiness filters ────────────────────────────────────────────────────────
+//
+// The calendar now lists every feed the provider scores, most of them locked
+// until their settlement rule is checked, so /admin/sports needs to show only
+// the phases an admin can act on.
+
+/**
+ * 'on': the scheduler creates this phase's games.
+ * 'ready': it would with a switch.
+ * 'needs-validation': locked until its settlement rule is implemented or
+ *   checked against provider results (knockout extra time, tennis walkovers).
+ */
+export type SwitchReadiness = 'on' | 'ready' | 'needs-validation'
+
+export const switchReadiness = (
+  s: Pick<CompetitionSwitchState, 'on' | 'locked'>
+): SwitchReadiness => (s.locked ? 'needs-validation' : s.on ? 'on' : 'ready')
+
+export interface SwitchFilter {
+  /** 'ready' shows on and ready phases: everything that can run. */
+  readiness: SwitchReadiness | 'all'
+  sport: SportId | 'all'
+  /** Matched against the competition, phase, notes and lock reason. */
+  query: string
+  showFinished: boolean
+}
+
+export const DEFAULT_SWITCH_FILTER: SwitchFilter = {
+  readiness: 'ready',
+  sport: 'all',
+  query: '',
+  showFinished: false,
+}
+
+const matchesReadiness = (
+  s: Pick<CompetitionSwitchState, 'on' | 'locked'>,
+  readiness: SwitchFilter['readiness']
+) => {
+  const r = switchReadiness(s)
+  if (readiness === 'all') return true
+  if (readiness === 'ready') return r !== 'needs-validation'
+  return r === readiness
+}
+
+const matchesQuery = (s: CompetitionSwitchState, query: string) => {
+  const q = query.trim().toLowerCase()
+  if (!q) return true
+  return [
+    s.competition,
+    s.phase,
+    s.notes ?? '',
+    s.locked ?? '',
+    SPORT_LEAGUE_LABEL[s.sport],
+  ].some((text) => text.toLowerCase().includes(q))
+}
+
+/** Switches matching every part of the filter. */
+export function filterSwitches(
+  switches: CompetitionSwitchState[],
+  filter: SwitchFilter
+): CompetitionSwitchState[] {
+  return switches.filter(
+    (s) =>
+      (filter.showFinished || s.status !== 'completed') &&
+      (filter.sport === 'all' || s.sport === filter.sport) &&
+      matchesReadiness(s, filter.readiness) &&
+      matchesQuery(s, filter.query)
+  )
+}
+
+/**
+ * How many phases each readiness choice would show, given the rest of the
+ * filter, so the choice labels say what they hide.
+ */
+export function countByReadiness(
+  switches: CompetitionSwitchState[],
+  filter: Omit<SwitchFilter, 'readiness'>
+): Record<SwitchFilter['readiness'], number> {
+  const rest = filterSwitches(switches, { ...filter, readiness: 'all' })
+  const count = (readiness: SwitchFilter['readiness']) =>
+    rest.filter((s) => matchesReadiness(s, readiness)).length
+  return {
+    all: rest.length,
+    on: count('on'),
+    ready: count('ready'),
+    'needs-validation': count('needs-validation'),
+  }
+}

@@ -1,4 +1,6 @@
 import clsx from 'clsx'
+import { Bet } from 'common/bet'
+import { AnswerBetTrackingLocationContext } from 'web/hooks/use-answer-bet-tracking-location'
 
 import {
   contractPath,
@@ -41,6 +43,8 @@ export function BetDialog(props: {
   setOpen: (open: boolean) => void
   trackingLocation: string
   initialOutcome?: BinaryOutcomes
+  initialAmount?: number
+  onBetPlaced?: (bet: Bet) => void
   binaryPseudonym?: {
     YES: {
       pseudonymName: string
@@ -59,6 +63,8 @@ export function BetDialog(props: {
     setOpen,
     trackingLocation,
     initialOutcome,
+    initialAmount,
+    onBetPlaced,
     questionPseudonym,
   } = props
   const { question } = contract
@@ -82,9 +88,11 @@ export function BetDialog(props: {
         <BuyPanel
           contract={contract}
           onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
+          onBetPlaced={onBetPlaced}
           location={trackingLocation}
           inModal={true}
           initialOutcome={initialOutcome ?? 'YES'}
+          initialAmount={initialAmount}
           alwaysShowOutcomeSwitcher
           pseudonym={pseudonym}
           className="!px-0"
@@ -135,6 +143,7 @@ export function ThreeWayTradeDialog(props: {
   open: boolean
   setOpen: (open: boolean) => void
   trackingLocation: string
+  onBetPlaced?: (bet: Bet) => void
   initialAnswerId?: string
   /** Picker order, e.g. home / draw / away. Defaults to the market's order. */
   answerOrder?: (string | undefined)[]
@@ -145,6 +154,7 @@ export function ThreeWayTradeDialog(props: {
     open,
     setOpen,
     trackingLocation,
+    onBetPlaced,
     initialAnswerId,
     answerOrder,
     description,
@@ -172,6 +182,7 @@ export function ThreeWayTradeDialog(props: {
       open={open}
       setOpen={setOpen}
       trackingLocation={trackingLocation}
+      onBetPlaced={onBetPlaced}
       description={description}
       probabilityLabel={`${answer.text} probability`}
       below={
@@ -242,8 +253,10 @@ function MultiChoiceTradeDialog(props: {
   setOpen: (open: boolean) => void
   /** The market page's answer sort, so the list matches its order. */
   sort: MultiSort
+  trackingLocation?: string
+  onBetPlaced?: (bet: Bet) => void
 }) {
-  const { contract, open, setOpen, sort } = props
+  const { contract, open, setOpen, sort, trackingLocation, onBetPlaced } = props
   const [selected, setSelected] = useState<{
     answerId: string
     outcome: 'YES' | 'NO'
@@ -277,7 +290,8 @@ function MultiChoiceTradeDialog(props: {
             answers: contract.answers,
             answerToBuy: selectedAnswer,
           }}
-          trackingLocation="multi bet dialog"
+          trackingLocation={trackingLocation ?? 'multi bet dialog'}
+          onBetPlaced={onBetPlaced}
           onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
           initialOutcome={selected.outcome}
           title={selectedAnswer.text}
@@ -386,8 +400,17 @@ export function MultiBetDialog(props: {
   setOpen: (open: boolean) => void
   /** For two-answer "versus" markets: open on this side. */
   initialOutcome?: 'YES' | 'NO'
+  trackingLocation?: string
+  onBetPlaced?: (bet: Bet) => void
 }) {
-  const { contract, open, setOpen, initialOutcome } = props
+  const {
+    contract,
+    open,
+    setOpen,
+    initialOutcome,
+    trackingLocation,
+    onBetPlaced,
+  } = props
   const { question } = contract
   const [query, setQuery] = usePersistentInMemoryState(
     '',
@@ -412,7 +435,8 @@ export function MultiBetDialog(props: {
         open={open}
         setOpen={setOpen}
         initialOutcome={initialOutcome}
-        trackingLocation="versus bet dialog"
+        trackingLocation={trackingLocation ?? 'versus bet dialog'}
+        onBetPlaced={onBetPlaced}
         pseudonym={{
           YES: {
             pseudonymName: main.text,
@@ -433,7 +457,8 @@ export function MultiBetDialog(props: {
         contract={multi}
         open={open}
         setOpen={setOpen}
-        trackingLocation="three-way bet dialog"
+        trackingLocation={trackingLocation ?? 'three-way bet dialog'}
+        onBetPlaced={onBetPlaced}
       />
     ) : (
       <MultiChoiceTradeDialog
@@ -441,6 +466,8 @@ export function MultiBetDialog(props: {
         open={open}
         setOpen={setOpen}
         sort={sort}
+        trackingLocation={trackingLocation}
+        onBetPlaced={onBetPlaced}
       />
     )
   }
@@ -455,38 +482,42 @@ export function MultiBetDialog(props: {
         'pointer-events-auto max-h-[32rem] overflow-auto'
       )}
     >
-      <Col>
-        {contract.outcomeType === 'NUMBER' ? (
-          <NumericBetDialog contract={contract as CPMMNumericContract} />
-        ) : (
-          <>
-            <Link
-              href={contractPath(contract)}
-              className={clsx('text-primary-700 text-xl', linkClass)}
-            >
-              {question}
-            </Link>
-            {isBinaryMC ? (
-              <BinaryMultiAnswersPanel
-                contract={contract as CPMMMultiContract}
-              />
-            ) : (
-              <AnswersPanel
-                contract={contract}
-                selectedAnswerIds={[]}
-                sort={sort}
-                setSort={setSort}
-                query={query}
-                setQuery={setQuery}
-                onAnswerHover={() => null}
-                onAnswerClick={() => null}
-                defaultAddAnswer={contract.addAnswersMode === 'ANYONE'}
-                floatingSearchClassName={'-top-8 pt-4'}
-              />
-            )}
-          </>
-        )}
-      </Col>
+      <AnswerBetTrackingLocationContext.Provider
+        value={trackingLocation ?? 'contract table'}
+      >
+        <Col>
+          {contract.outcomeType === 'NUMBER' ? (
+            <NumericBetDialog contract={contract as CPMMNumericContract} />
+          ) : (
+            <>
+              <Link
+                href={contractPath(contract)}
+                className={clsx('text-primary-700 text-xl', linkClass)}
+              >
+                {question}
+              </Link>
+              {isBinaryMC ? (
+                <BinaryMultiAnswersPanel
+                  contract={contract as CPMMMultiContract}
+                />
+              ) : (
+                <AnswersPanel
+                  contract={contract}
+                  selectedAnswerIds={[]}
+                  sort={sort}
+                  setSort={setSort}
+                  query={query}
+                  setQuery={setQuery}
+                  onAnswerHover={() => null}
+                  onAnswerClick={() => null}
+                  defaultAddAnswer={contract.addAnswersMode === 'ANYONE'}
+                  floatingSearchClassName={'-top-8 pt-4'}
+                />
+              )}
+            </>
+          )}
+        </Col>
+      </AnswerBetTrackingLocationContext.Provider>
     </Modal>
   )
 }

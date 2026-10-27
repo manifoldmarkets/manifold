@@ -37,7 +37,7 @@ export function SportsShell(props: {
   const { selected, rail, heading, subheading, seo, trackPageView, children } =
     props
   return (
-    <Page trackPageView={trackPageView} className="min-w-0 lg:col-span-10">
+    <Page trackPageView={trackPageView} className="min-w-0">
       <SEO {...seo} />
       <Col className="w-full min-w-0 gap-3 px-3 pt-5 sm:px-6 sm:pt-7">
         <Row className="items-center justify-between gap-2 px-1">
@@ -46,8 +46,9 @@ export function SportsShell(props: {
                 visitor came from), or Home when they arrived from off-site.
                 The button only appears once it can tell which, so it gets a
                 fixed slot and the heading never moves. Remount when the sport
-                changes so its history check stays current on Back/Forward. */}
-            <div className="-ml-2.5 h-8 w-10 shrink-0">
+                changes so its history check stays current on Back/Forward.
+                On desktop the sidebar covers it, so the slot is hidden too. */}
+            <div className="-ml-2.5 h-8 w-10 shrink-0 lg:hidden">
               <BackButton key={selected} size="xs" homeFallback />
             </div>
             <h1 className="text-ink-1000 min-w-0 truncate text-3xl font-bold tracking-tight sm:text-4xl">
@@ -101,23 +102,24 @@ export function SportMarkets(props: {
 }) {
   const { sport, upcoming, sportsByKey, enabled } = props
   return (
-    <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <Col className="min-w-0 gap-6">
-        <UpcomingMarkets
-          key={sport === 'all' ? 'all' : sport.key}
-          refs={upcoming}
-          sport={sport === 'all' ? 'all' : sport.key}
-          showSport={sport === 'all'}
-          sportsByKey={sportsByKey}
-        />
-        <MakeAMarket sport={sport} />
-      </Col>
+    // One column: in the site's standard 7-of-12 page column, a split would
+    // leave each side about a phone's width, which the binary "Bet Yes / Bet
+    // No" rows don't fit.
+    <Col className="min-w-0 gap-6">
+      <UpcomingMarkets
+        key={sport === 'all' ? 'all' : sport.key}
+        refs={upcoming}
+        sport={sport === 'all' ? 'all' : sport.key}
+        showSport={sport === 'all'}
+        sportsByKey={sportsByKey}
+      />
       <SportsMarketSections
         sport={sport}
         enabled={enabled}
         className="min-w-0"
       />
-    </div>
+      <MakeAMarket sport={sport} />
+    </Col>
   )
 }
 

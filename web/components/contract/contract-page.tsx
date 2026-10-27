@@ -40,6 +40,8 @@ import { ContractDescription } from 'web/components/contract/contract-descriptio
 import { AuthorInfo } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
+import { NextMarketPrompt } from 'web/components/bet/next-market-prompt'
+import { AnswerBetTrackingLocationContext } from 'web/hooks/use-answer-bet-tracking-location'
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
@@ -418,30 +420,37 @@ export function ContractPageContent(props: ContractParams) {
                 />
               </Row>
               <Col className="gap-2">
-                <ContractOverview
-                  contract={liveContract}
-                  key={liveContract.id} // reset state when switching play vs cash
-                  betPoints={betPoints}
-                  showResolver={showResolver}
-                  showUnresolver={showUnresolver}
-                  resolutionRating={
-                    userHasReviewed ? (
-                      <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
-                        You rated this resolution{' '}
-                        {justNowReview ?? userReview?.rating}{' '}
-                        <StarIcon className="h-4 w-4" />
-                      </Row>
-                    ) : null
-                  }
-                  setShowResolver={setShowResolver}
-                  setShowUnresolver={setShowUnresolver}
-                  onAnswerCommentClick={setReplyTo}
-                  chartAnnotations={chartAnnotations}
-                  hideGraph={hideGraph}
-                  setHideGraph={setHideGraph}
-                  graphUser={graphUser}
-                  setGraphUser={setGraphUser}
-                />
+                <AnswerBetTrackingLocationContext.Provider value="contract page answer">
+                  <ContractOverview
+                    contract={liveContract}
+                    key={liveContract.id} // reset state when switching play vs cash
+                    betPoints={betPoints}
+                    showResolver={showResolver}
+                    showUnresolver={showUnresolver}
+                    resolutionRating={
+                      userHasReviewed ? (
+                        <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
+                          You rated this resolution{' '}
+                          {justNowReview ?? userReview?.rating}{' '}
+                          <StarIcon className="h-4 w-4" />
+                        </Row>
+                      ) : null
+                    }
+                    setShowResolver={setShowResolver}
+                    setShowUnresolver={setShowUnresolver}
+                    onAnswerCommentClick={setReplyTo}
+                    chartAnnotations={chartAnnotations}
+                    hideGraph={hideGraph}
+                    setHideGraph={setHideGraph}
+                    graphUser={graphUser}
+                    setGraphUser={setGraphUser}
+                  />
+                  <NextMarketPrompt
+                    contract={liveContract}
+                    placement="page"
+                    className="mb-2"
+                  />
+                </AnswerBetTrackingLocationContext.Provider>
 
                 {liveContract.mechanism !== 'perp' && (
                   <UserBetsSummary

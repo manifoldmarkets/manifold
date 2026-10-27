@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { BuyPanelBody } from 'web/components/bet/bet-panel'
 import { Button, SizeType } from 'web/components/buttons/button'
 import { useUser } from 'web/hooks/use-user'
+import { useAnswerBetTrackingLocation } from 'web/hooks/use-answer-bet-tracking-location'
 import { track } from 'web/lib/service/analytics'
 import { getAnswerColor } from '../charts/contract/choice'
 import { Row } from '../layout/row'
@@ -169,6 +170,7 @@ function BinaryMultiChoiceBetPanel(props: {
   setOutcome: (outcome: 'YES' | 'NO') => void
 }) {
   const { answer, contract, closePanel, outcome, setOutcome } = props
+  const location = useAnswerBetTrackingLocation()
 
   const [editing, setEditing] = useState(false)
   const color = getAnswerColor(answer)
@@ -202,7 +204,7 @@ function BinaryMultiChoiceBetPanel(props: {
       setOutcome={setOutcome}
       onBuySuccess={() => setTimeout(closePanel, 500)}
       onClose={closePanel}
-      location={'contract page answer'}
+      location={location}
       className="bg-canvas-50"
       outcomeControl={
         <Row className="group min-w-0 flex-[1_1_16rem] items-center gap-2">
