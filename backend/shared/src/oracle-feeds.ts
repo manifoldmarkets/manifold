@@ -108,6 +108,14 @@ export type OracleFeedDef = {
     point?: OraclePoint
     health: OracleFeedHealth
   }>
+  /** What the observation publisher does when a provider stamp it has
+   * already published arrives at a different price. Absent: corruption, so
+   * the observation is refused and availability withdrawn (MNX, whose stamps
+   * name one immutable mark). 'keep-published': a legitimate re-recording,
+   * so the published value stands and the provider's next stamp supersedes
+   * it (Adjacent, whose one-minute bucket holds the last value recorded in
+   * it). */
+  sourceRevision?: 'keep-published'
   /** All recently-finalized points, oldest first. Takes precedence over
    * fetchLatest in the tick: sources that publish out of order (NESO batch
    * settling) permanently lose interleaved points under a latest-only
@@ -264,6 +272,10 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     cadence: 'fast',
     pollPeriodMs: MSRY_POLL_MS,
     fetchObservation: fetchAdjacentMsryObservation,
+    // A re-recorded minute must not withdraw availability on a healthy feed,
+    // including when a restarted or overlapping scheduler sees the revision
+    // first; the next minute's value supersedes it.
+    sourceRevision: 'keep-published',
     // Unit-confused garbage only (a fraction, a 50-150 political level, a
     // 1000-based NAV) and the non-positive prints the methodology's 0.00
     // floor allows; never a fast move. Corruption is caught at the source:

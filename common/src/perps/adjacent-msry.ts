@@ -205,7 +205,10 @@ export type MsryObservation = {
  *   price recorded within it", so a minute can be re-recorded. Published
  *   history is immutable and the next minute's value supersedes it within a
  *   minute, so the published value stands. Treating this as corruption (as
- *   MNX does) would withdraw availability and page on a healthy feed.
+ *   MNX does) would withdraw availability and page on a healthy feed. This
+ *   only covers what this process saw; a restarted or overlapping scheduler
+ *   that sees the revision first is covered by the publisher, which keeps
+ *   the published value for this feed (`sourceRevision: 'keep-published'`).
  * - otherwise a point stamped now (`fetchedAt`, the tick's database clock)
  *   with the bucket start as its source stamp. The same stamp at the same
  *   price also gets a fresh `ts`: that is what lets a value first received

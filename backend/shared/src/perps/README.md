@@ -590,7 +590,10 @@ Feed adapters live next to it:
   backs the chart backfill. The parser and observation rule (new minute,
   re-served minute, re-recorded minute, stale source) live in
   `common/perps/adjacent-msry.ts`; its bucket stamps make it
-  provider-stamped for next-price eligibility. Market creation is disabled
+  provider-stamped for next-price eligibility. Because a minute can be
+  re-recorded, the registry entry sets `sourceRevision: 'keep-published'`:
+  the publisher keeps the published value for a re-priced stamp instead of
+  withdrawing availability, as it does for MNX. Market creation is disabled
   and the market sits in `PERP_LAUNCH_PENDING_MARKETS` until Adjacent
   permits the use in writing (see the attribution entry).
 - `fear-greed.ts` — Alternative.me's Crypto Fear & Greed index
