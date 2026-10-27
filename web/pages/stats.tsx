@@ -1,4 +1,4 @@
-import { DailyChart } from 'web/components/charts/stats'
+import { StatsDailyChart } from 'web/components/stats/stats-daily-chart'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
@@ -30,7 +30,10 @@ import {
 import { partition } from 'lodash'
 import { formatTimeShort } from 'client-common/lib/time'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import { TopicDauSummary } from 'web/components/stats/topic-dau-summary'
+import {
+  StatsTimeControls,
+  StatsTimeProvider,
+} from 'web/components/stats/stats-time'
 import { Contract, contractPath } from 'common/contract'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { UserIcon, EyeIcon } from '@heroicons/react/solid'
@@ -208,8 +211,6 @@ function ActivityTab(props: {
         idVerifications={idenfyStats?.dailyStats}
       />
       <Spacer h={12} />
-      <TopicDauSummary stats={stats} />
-      <Spacer h={8} />
       {topMarketsYesterday && (
         <TopMarketsYesterday data={topMarketsYesterday} />
       )}
@@ -404,7 +405,7 @@ function ManaSupplyTab(props: {
         Sum of mana balances held by users who were active in the last 30 days.
       </p>
       {activeUserManaStats.length > 0 && (
-        <DailyChart
+        <StatsDailyChart
           values={activeUserManaStats.map((s) => ({
             x: s.date,
             y: s.activeBalance,
@@ -441,17 +442,21 @@ function ManaSalesTab(props: { stats: rowfor<'daily_stats'>[] }) {
         tabs={[
           {
             title: 'Daily',
-            content: <DailyChart values={dataFor('sales')} />,
+            content: <StatsDailyChart values={dataFor('sales')} />,
           },
           {
             title: 'Daily (7d avg)',
             content: (
-              <DailyChart values={rollingAvg(dataFor('sales'), 7).map(round)} />
+              <StatsDailyChart
+                values={rollingAvg(dataFor('sales'), 7).map(round)}
+              />
             ),
           },
           {
             title: 'Monthly',
-            content: <DailyChart values={rollingSum(dataFor('sales'), 30)} />,
+            content: (
+              <StatsDailyChart values={rollingSum(dataFor('sales'), 30)} />
+            ),
           },
         ]}
       />
@@ -682,7 +687,7 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
       <p className="text-ink-500">Active subscribers at the end of each day.</p>
       <Spacer h={4} />
       {subscriptionChartData.length > 0 ? (
-        <DailyChart values={subscriptionChartData} />
+        <StatsDailyChart values={subscriptionChartData} />
       ) : (
         <p className="text-ink-500">No subscription history available.</p>
       )}
@@ -702,7 +707,7 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
             title: 'Daily Purchases',
             content:
               dailySubSales.length > 0 ? (
-                <DailyChart values={dailySubSales} />
+                <StatsDailyChart values={dailySubSales} />
               ) : (
                 <p className="text-ink-500">
                   No subscription sales data available.
@@ -713,7 +718,7 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
             title: 'Daily Revenue (÷1000)',
             content:
               dailySubRevenue.length > 0 ? (
-                <DailyChart values={dailySubRevenue} />
+                <StatsDailyChart values={dailySubRevenue} />
               ) : (
                 <p className="text-ink-500">No revenue data available.</p>
               ),
@@ -746,7 +751,7 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
             title: 'Daily Items Sold',
             content:
               dailyGoodsSales.length > 0 ? (
-                <DailyChart values={dailyGoodsSales} />
+                <StatsDailyChart values={dailyGoodsSales} />
               ) : (
                 <p className="text-ink-500">
                   No digital goods sales data available.
@@ -757,7 +762,7 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
             title: 'Daily Revenue (÷1000)',
             content:
               dailyGoodsRevenue.length > 0 ? (
-                <DailyChart values={dailyGoodsRevenue} />
+                <StatsDailyChart values={dailyGoodsRevenue} />
               ) : (
                 <p className="text-ink-500">No revenue data available.</p>
               ),
@@ -793,7 +798,7 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
                 title: 'Daily Items Sold',
                 content:
                   dailyMerchSales.length > 0 ? (
-                    <DailyChart values={dailyMerchSales} />
+                    <StatsDailyChart values={dailyMerchSales} />
                   ) : (
                     <p className="text-ink-500">
                       No merch sales data available.
@@ -804,7 +809,7 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
                 title: 'Daily Revenue (÷1000)',
                 content:
                   dailyMerchRevenue.length > 0 ? (
-                    <DailyChart values={dailyMerchRevenue} />
+                    <StatsDailyChart values={dailyMerchRevenue} />
                   ) : (
                     <p className="text-ink-500">No revenue data available.</p>
                   ),
@@ -923,47 +928,51 @@ export function CustomAnalytics(props: {
   const [localStats, setLocalStats] = useState(stats)
 
   return (
-    <Col className="px-4 sm:pl-6 sm:pr-16">
-      <QueryUncontrolledTabs
-        className="mb-4"
-        defaultIndex={0}
-        tabs={[
-          {
-            title: 'Activity',
-            queryString: 'activity',
-            content: (
-              <ActivityTab
-                stats={localStats}
-                setStats={setLocalStats}
-                topMarketsYesterday={topMarketsYesterday}
-                idenfyStats={idenfyStats}
-              />
-            ),
-          },
-          {
-            title: 'Mana Supply',
-            queryString: 'mana-supply',
-            content: (
-              <ManaSupplyTab
-                manaSupplyOverTime={manaSupplyOverTime}
-                fromBankSummary={fromBankSummary}
-                toBankSummary={toBankSummary}
-                activeUserManaStats={activeUserManaStats ?? []}
-              />
-            ),
-          },
-          {
-            title: 'Mana Sales',
-            queryString: 'mana-sales',
-            content: <ManaSalesTab stats={localStats} />,
-          },
-          {
-            title: 'Purchases',
-            queryString: 'purchases',
-            content: <PurchasesTab shopStats={shopStats} />,
-          },
-        ]}
-      />
-    </Col>
+    <StatsTimeProvider>
+      <Col className="px-4 sm:pl-6 sm:pr-16">
+        {/* One time range and comparison for every chart on the page. */}
+        <StatsTimeControls className="bg-canvas-0 sticky top-0 z-20 -mx-4 px-4 py-2 sm:mx-0 sm:px-0" />
+        <QueryUncontrolledTabs
+          className="mb-4"
+          defaultIndex={0}
+          tabs={[
+            {
+              title: 'Activity',
+              queryString: 'activity',
+              content: (
+                <ActivityTab
+                  stats={localStats}
+                  setStats={setLocalStats}
+                  topMarketsYesterday={topMarketsYesterday}
+                  idenfyStats={idenfyStats}
+                />
+              ),
+            },
+            {
+              title: 'Mana Supply',
+              queryString: 'mana-supply',
+              content: (
+                <ManaSupplyTab
+                  manaSupplyOverTime={manaSupplyOverTime}
+                  fromBankSummary={fromBankSummary}
+                  toBankSummary={toBankSummary}
+                  activeUserManaStats={activeUserManaStats ?? []}
+                />
+              ),
+            },
+            {
+              title: 'Mana Sales',
+              queryString: 'mana-sales',
+              content: <ManaSalesTab stats={localStats} />,
+            },
+            {
+              title: 'Purchases',
+              queryString: 'purchases',
+              content: <PurchasesTab shopStats={shopStats} />,
+            },
+          ]}
+        />
+      </Col>
+    </StatsTimeProvider>
   )
 }

@@ -18,22 +18,23 @@ import { auth } from 'web/lib/firebase/users'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
 import { getStats } from 'web/lib/supabase/stats'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import {
-  ActivitySection,
   IdVerificationDay,
   STATS_SECTIONS,
   StatsSection,
   getActivityMetrics,
 } from './activity-metrics'
-import { MetricChartPanel } from './metric-chart-panel'
+import { MetricChartPanel, OverlaySeries } from './metric-chart-panel'
 import { MetricTile } from './metric-tile'
-import { StatMetric } from './stat-metric'
+import { getView, StatMetric } from './stat-metric'
 import { DailyStatsRow } from './stats-series'
 import {
   SurfaceFunnelTable,
   getFunnelDays,
   getSurfaceFunnelMetrics,
 } from './surface-funnels'
+import { TopicActivity } from './topic-activity'
 
 // Site activity as a picker instead of a column of charts: choose a section,
 // then a metric tile, and the chart below shows that metric. The selection
@@ -76,7 +77,7 @@ export function StatsExplorer(props: {
     refresh: refreshFunnels,
   } = useAPIGetter(
     'get-surface-funnels',
-    { limitDays: 120 },
+    { limitDays: 400 },
     undefined,
     // Cached per signed-in account, so one account's funnels never render
     // under another.
@@ -95,8 +96,61 @@ export function StatsExplorer(props: {
   const metrics: StatMetric[] =
     section === 'pages'
       ? getSurfaceFunnelMetrics(funnelDays, surface)
-      : activityMetrics[section as ActivitySection]
+      : section === 'topics'
+      ? []
+      : activityMetrics[section]
   const metric = metrics.find((m) => m.key === query.metric) ?? metrics[0]
+  const viewKey = metric ? getView(metric, query.view).key : undefined
+
+  // An overlay belongs to the metric it was picked on (or, for pages, to the
+  // section), so it goes away when you move to a metric it doesn't fit.
+  const [overlayState, setOverlayState] = usePersistentInMemoryState<{
+    scope: string
+    with: string
+  } | null>(null, 'stats-overlay')
+  const overlayScope =
+    section === 'pages' ? 'pages' : `${section}/${metric?.key}`
+  const overlayChoices = metric
+    ? [
+        ...(section === 'pages'
+          ? [{ key: 'all-pages', label: 'All pages' }]
+          : []),
+        ...metrics
+          .filter((m) => m.key !== metric.key && !!m.pct === !!metric.pct)
+          .map((m) => ({ key: `metric:${m.key}`, label: m.label })),
+      ]
+    : []
+  const overlay =
+    overlayState?.scope === overlayScope &&
+    overlayChoices.some((c) => c.key === overlayState.with)
+      ? overlayState.with
+      : 'none'
+  const overlaySeries: OverlaySeries[] =
+    !metric || overlay === 'none'
+      ? []
+      : overlay === 'all-pages'
+      ? STAT_SURFACES.filter((s) => s !== surface).flatMap((s) => {
+          const other = getSurfaceFunnelMetrics(
+            getFunnelDays(funnelData?.days ?? [], s),
+            s
+          ).find((m) => m.key === metric.key)
+          return other
+            ? [
+                {
+                  key: s,
+                  label: STAT_SURFACE_DEFINITIONS[s].label,
+                  values: getView(other, viewKey).values,
+                },
+              ]
+            : []
+        })
+      : metrics
+          .filter((m) => `metric:${m.key}` === overlay)
+          .map((m) => ({
+            key: m.key,
+            label: m.label,
+            values: getView(m, viewKey).values,
+          }))
 
   return (
     <Col className="gap-4">
@@ -148,7 +202,9 @@ export function StatsExplorer(props: {
         </Col>
       )}
 
-      {section === 'pages' && funnelDays.length === 0 ? (
+      {section === 'topics' ? (
+        <TopicActivity stats={stats} />
+      ) : section === 'pages' && funnelDays.length === 0 ? (
         <p className="text-ink-500 bg-canvas-50 rounded-lg p-4 text-sm">
           {funnelError
             ? `Couldn't load page funnels: ${funnelError.message}`
@@ -173,6 +229,17 @@ export function StatsExplorer(props: {
               metric={metric}
               viewKey={query.view}
               setViewKey={(view) => setQuery({ view })}
+              primaryLabel={
+                overlay === 'all-pages'
+                  ? STAT_SURFACE_DEFINITIONS[surface].label
+                  : undefined
+              }
+              overlayChoices={overlayChoices}
+              overlay={overlay}
+              setOverlay={(key) =>
+                setOverlayState({ scope: overlayScope, with: key })
+              }
+              overlaySeries={overlaySeries}
             />
             {section === 'pages' && <SurfaceFunnelTable days={funnelDays} />}
           </>

@@ -24,11 +24,12 @@ export const STATS_SECTIONS = [
   { key: 'retention', label: 'Retention' },
   { key: 'engagement', label: 'Engagement' },
   { key: 'conversion', label: 'Conversion' },
+  { key: 'topics', label: 'Topics' },
   { key: 'pages', label: 'Pages' },
 ] as const
 export type StatsSection = (typeof STATS_SECTIONS)[number]['key']
-// The sections built from daily_stats columns; 'pages' has its own panel.
-export type ActivitySection = Exclude<StatsSection, 'pages'>
+// The sections of metric tiles; 'topics' and 'pages' have their own panels.
+export type ActivitySection = Exclude<StatsSection, 'topics' | 'pages'>
 
 export type IdVerificationDay = {
   date: string
@@ -85,6 +86,7 @@ export function getActivityMetrics(props: {
         description: 'New accounts, excluding likely spam.',
         views: [daily('signups_real'), avg7('signups_real', 0, true)],
         defaultView: '7d',
+        summary: { kind: 'sum' },
       },
       {
         key: 'stickiness',
@@ -145,6 +147,7 @@ export function getActivityMetrics(props: {
                 },
               ],
               defaultView: 'approvals',
+              summary: { kind: 'sum' as const, view: 'approvals' },
             },
           ]
         : []),
@@ -212,6 +215,7 @@ export function getActivityMetrics(props: {
         description: `${capitalize(TRADE_TERM)}s placed each day.`,
         views: [daily('bet_count'), avg7('bet_count', 0, true)],
         defaultView: 'daily',
+        summary: { kind: 'sum' },
         note: `As of October 8, 2026, ${TRADE_TERM}s exclude API limit orders that never filled. Bots can post thousands of these a day without anyone trading against them, and at their peak they outnumbered real ${TRADE_TERM}s more than 10 to 1. This is applied retroactively to all days since May 2023, when we started recording which orders come from the API.`,
       },
       {
@@ -220,6 +224,7 @@ export function getActivityMetrics(props: {
         description: 'New questions each day.',
         views: [daily('contract_count'), avg7('contract_count', 0, true)],
         defaultView: 'daily',
+        summary: { kind: 'sum' },
       },
       {
         key: 'comments',
@@ -227,6 +232,7 @@ export function getActivityMetrics(props: {
         description: 'Comments posted each day.',
         views: [daily('comment_count'), avg7('comment_count', 0, true)],
         defaultView: 'daily',
+        summary: { kind: 'sum' },
       },
       {
         key: 'mana-traded',
@@ -246,6 +252,7 @@ export function getActivityMetrics(props: {
           },
         ],
         defaultView: 'weekly',
+        summary: { kind: 'sum' },
       },
     ],
     conversion: [

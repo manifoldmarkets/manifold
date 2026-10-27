@@ -1,4 +1,6 @@
 import dayjs from 'dayjs'
+import { sumBy } from 'lodash'
+import { useState } from 'react'
 
 import {
   STAT_SURFACE_DEFINITIONS,
@@ -6,10 +8,13 @@ import {
   SurfaceFunnelDay,
   parseSurfaceFunnels,
 } from 'common/stat-surfaces'
+import { getStatsWindow, sliceWindow, StatsWindow } from 'common/stats-window'
 import { filterDefined } from 'common/util/array'
 import { formatPercent, formatWithCommas } from 'common/util/format'
+import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
-import { StatMetric } from './stat-metric'
+import { StatMetric, WindowSummary } from './stat-metric'
+import { useStatsTime } from './stats-time'
 import { Point, rollingAvg, rollingRatio } from './stats-series'
 
 export type FunnelDay = SurfaceFunnelDay & { date: string }
@@ -62,6 +67,21 @@ const rateViews = (
   ]
 }
 
+// A rate over a range: the summed numerators over the summed denominators of
+// its tracked days, so busy days weigh more than quiet ones.
+const rateSummary =
+  (days: FunnelDay[], num: RateKey, den: 'visitors' | 'pillUsers') =>
+  (window: StatsWindow): WindowSummary | undefined => {
+    const inRange = sliceWindow(
+      days.map((d) => ({ ...d, x: d.date })),
+      window
+    ).filter((d) => d[num] != null)
+    const denominator = sumBy(inRange, (d) => d[den])
+    if (denominator <= 0) return undefined
+    const value = sumBy(inRange, (d) => d[num] ?? 0) / denominator
+    return Number.isFinite(value) ? { value, days: inRange.length } : undefined
+  }
+
 export function getSurfaceFunnelMetrics(
   days: FunnelDay[],
   surface: StatSurface
@@ -96,6 +116,7 @@ export function getSurfaceFunnelMetrics(
       pct: true,
       views: rateViews(days, 'tradedHere', 'visitors'),
       defaultView: '7d',
+      summary: rateSummary(days, 'tradedHere', 'visitors'),
       note: trackingNote,
     },
     {
@@ -105,6 +126,7 @@ export function getSurfaceFunnelMetrics(
       pct: true,
       views: rateViews(days, 'pillTraded', 'pillUsers'),
       defaultView: '7d',
+      summary: rateSummary(days, 'pillTraded', 'pillUsers'),
       note: trackingNote,
     },
     {
@@ -113,6 +135,7 @@ export function getSurfaceFunnelMetrics(
       description: `Bets, sells, limit orders and perp orders placed on ${label} pages.`,
       views: countViews(days, 'trades'),
       defaultView: '7d',
+      summary: { kind: 'sum' },
       note: trackingNote,
     },
     {
@@ -123,6 +146,7 @@ export function getSurfaceFunnelMetrics(
       pct: true,
       views: rateViews(days, 'tradedAnywhere', 'visitors'),
       defaultView: '7d',
+      summary: rateSummary(days, 'tradedAnywhere', 'visitors'),
     },
   ]
 }
@@ -133,8 +157,18 @@ const rate = (num: number | null, den: number) =>
   num == null || den <= 0 ? '—' : formatPercent(num / den)
 const count = (n: number | null) => (n == null ? '—' : formatWithCommas(n))
 
+// The selected range's days, newest first.
 export function SurfaceFunnelTable(props: { days: FunnelDay[] }) {
-  const rows = props.days.slice(-TABLE_DAYS).reverse()
+  const { range } = useStatsTime()
+  const [showAll, setShowAll] = useState(false)
+  const lastDay = props.days[props.days.length - 1]?.date
+  const inRange = lastDay
+    ? sliceWindow(
+        props.days.map((d) => ({ ...d, x: d.date })),
+        getStatsWindow(lastDay, range)
+      ).reverse()
+    : []
+  const rows = showAll ? inRange : inRange.slice(0, TABLE_DAYS)
   const headers = [
     'Day',
     'Pill clicks',
@@ -148,9 +182,7 @@ export function SurfaceFunnelTable(props: { days: FunnelDay[] }) {
 
   return (
     <Col className="bg-canvas-0 ring-ink-200 gap-2 rounded-lg p-4 ring-1">
-      <h2 className="text-ink-900 text-lg font-semibold">
-        Last {TABLE_DAYS} days
-      </h2>
+      <h2 className="text-ink-900 text-lg font-semibold">By day</h2>
       <div className="-mx-4 overflow-x-auto px-4">
         <table className="w-full min-w-[40rem] text-sm tabular-nums">
           <thead>
@@ -196,6 +228,16 @@ export function SurfaceFunnelTable(props: { days: FunnelDay[] }) {
           </tbody>
         </table>
       </div>
+      {inRange.length > TABLE_DAYS && (
+        <Button
+          color="gray-white"
+          size="xs"
+          className="self-start"
+          onClick={() => setShowAll(!showAll)}
+        >
+          {showAll ? 'Show fewer' : `Show all ${inRange.length} days`}
+        </Button>
+      )}
     </Col>
   )
 }

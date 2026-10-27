@@ -2,9 +2,13 @@ import clsx from 'clsx'
 
 import { Row } from 'web/components/layout/row'
 import { Sparkline } from './sparkline'
-import { formatMetricValue, getMetricHeadline, StatMetric } from './stat-metric'
-
-const SPARKLINE_DAYS = 30
+import {
+  compareText,
+  formatMetricValue,
+  getMetricSummary,
+  StatMetric,
+} from './stat-metric'
+import { useStatsTime } from './stats-time'
 
 export function MetricTile(props: {
   metric: StatMetric
@@ -12,8 +16,12 @@ export function MetricTile(props: {
   onSelect: () => void
 }) {
   const { metric, selected, onSelect } = props
-  const { view, latest, change } = getMetricHeadline(metric)
-  const spark = view.values.slice(-SPARKLINE_DAYS).map((p) => p.y)
+  const { range, compare } = useStatsTime()
+  const { label, value, change, spark } = getMetricSummary(
+    metric,
+    range,
+    compare
+  )
 
   return (
     <button
@@ -32,7 +40,7 @@ export function MetricTile(props: {
       </span>
       <Row className="items-end justify-between gap-2">
         <span className="text-ink-900 text-xl font-semibold tabular-nums">
-          {latest ? formatMetricValue(metric, latest.y) : '—'}
+          {value === undefined ? '—' : formatMetricValue(metric, value)}
         </span>
         <Sparkline
           values={spark}
@@ -43,12 +51,12 @@ export function MetricTile(props: {
         />
       </Row>
       <span className="text-ink-400 truncate text-[11px]">
-        {view.label}
+        {label}
         {change && (
           <>
             {' · '}
             <span
-              title={`${change.text} vs 7 days earlier`}
+              title={`${change.text} ${compareText(range, compare)}`}
               className={clsx(
                 'font-medium',
                 change.direction === 'up'
