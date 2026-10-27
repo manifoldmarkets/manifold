@@ -40,7 +40,12 @@ export const BonusSummary = (props: {
   const innerWidth = width - margin.left - margin.right
   const innerHeight = height - margin.top - margin.bottom
 
-  const [shownCategories, setSelectedCategories] = useState<string[]>([])
+  // Categories the viewer hid. Tracked as hidden rather than shown, so one that
+  // only appears once the time range widens starts out visible, and hiding
+  // survives the range narrowing and widening again.
+  const [hiddenCategories, setHiddenCategories] = useState<string[]>(
+    defaultHidden ?? []
+  )
 
   const { data, xScale, stackGen, colorScale, yScale, keys } = useMemo(() => {
     const data = orderAndGroupData(txnSummaryStats, days)
@@ -57,7 +62,7 @@ export const BonusSummary = (props: {
       (k) => -sumBy(data, (d) => d[k])
     )
 
-    const shownKeys = keys.filter((k) => shownCategories.includes(k))
+    const shownKeys = keys.filter((k) => !hiddenCategories.includes(k))
 
     const colorScale = scaleOrdinal<string>()
       .domain(keys)
@@ -72,11 +77,15 @@ export const BonusSummary = (props: {
     xScale.domain(data.map((d) => d.date))
     yScale.domain([0, maxY]).nice()
     return { data: shownData, xScale, yScale, keys, colorScale, stackGen }
-  }, [txnSummaryStats.length, shownCategories])
+  }, [txnSummaryStats.length, days?.length, hiddenCategories])
 
-  useEffect(() => {
-    setSelectedCategories(keys.filter((k) => !defaultHidden?.includes(k)))
-  }, [])
+  const shownCategories = keys.filter((k) => !hiddenCategories.includes(k))
+  // Hides for categories outside the current range are kept.
+  const setSelectedCategories = (shown: string[]) =>
+    setHiddenCategories((prev) => [
+      ...prev.filter((k) => !keys.includes(k)),
+      ...keys.filter((k) => !shown.includes(k)),
+    ])
 
   useEffect(() => {
     if (xScale && xAxisRef.current) {
