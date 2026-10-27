@@ -35,9 +35,6 @@ export type StatMetric = {
   key: string
   label: string
   description: ReactNode
-  // What the values count ('people', 'mana', 'percent', ...). Only metrics
-  // with the same unit can be overlaid on one axis.
-  unit: string
   // Values are fractions (0.25 is 25%).
   pct?: boolean
   views: MetricView[]
@@ -160,7 +157,13 @@ export const buildChartSeries = (props: {
   values: Point[]
   range: StatsRangeKey
   compare: StatsCompareKey
-  overlays?: { key: string; label: string; values: Point[] }[]
+  overlays?: {
+    key: string
+    label: string
+    values: Point[]
+    pct?: boolean
+    ownAxis?: boolean
+  }[]
 }): StatsChartSeries[] => {
   const { label, values, range, compare, overlays = [] } = props
   const lastDay = [values, ...overlays.map((o) => o.values)]
@@ -184,6 +187,8 @@ export const buildChartSeries = (props: {
         label: o.label,
         color: STATS_SERIES_COLORS[(i + 1) % STATS_SERIES_COLORS.length],
         points: sliceWindow(o.values, window),
+        pct: o.pct,
+        secondaryAxis: o.ownAxis,
       })),
     ]
   const offset = getCompareOffset(window, compare)

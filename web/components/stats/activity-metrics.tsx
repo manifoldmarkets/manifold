@@ -62,7 +62,6 @@ export function getActivityMetrics(props: {
     users: [
       {
         key: 'active-users',
-        unit: 'people',
         label: 'Active users',
         description: 'Users who took any action on the site.',
         views: [daily('dav'), avg7('dav', 0, true)],
@@ -70,7 +69,6 @@ export function getActivityMetrics(props: {
       },
       {
         key: 'active-traders',
-        unit: 'people',
         label: 'Active traders',
         description:
           'Users who traded in, commented on, or created a question.',
@@ -84,7 +82,6 @@ export function getActivityMetrics(props: {
       },
       {
         key: 'signups',
-        unit: 'people',
         label: 'Signups',
         description: 'New accounts, excluding likely spam.',
         views: [daily('signups_real'), avg7('signups_real', 0, true)],
@@ -93,7 +90,6 @@ export function getActivityMetrics(props: {
       },
       {
         key: 'stickiness',
-        unit: 'percent',
         label: 'Stickiness',
         description:
           'Active traders on a day (or in a week) as a share of those active over the longer period.',
@@ -121,7 +117,6 @@ export function getActivityMetrics(props: {
         ? [
             {
               key: 'id-verifications',
-              unit: 'verifications',
               label: 'ID verifications',
               description:
                 'Daily identity verification attempts and their outcomes.',
@@ -160,7 +155,6 @@ export function getActivityMetrics(props: {
     retention: [
       {
         key: 'd1',
-        unit: 'percent',
         label: 'D1 retention',
         description:
           'Share of active traders who are active again the next day.',
@@ -170,7 +164,6 @@ export function getActivityMetrics(props: {
       },
       {
         key: 'w1',
-        unit: 'percent',
         label: 'W1 retention',
         description:
           'Share of active traders who are active again the next week.',
@@ -180,7 +173,6 @@ export function getActivityMetrics(props: {
       },
       {
         key: 'm1',
-        unit: 'percent',
         label: 'M1 retention',
         description:
           'Share of active traders who are active again the next month.',
@@ -190,7 +182,6 @@ export function getActivityMetrics(props: {
       },
       {
         key: 'nd1',
-        unit: 'percent',
         label: 'New user D1',
         description: 'Share of new users who are active again the next day.',
         pct: true,
@@ -199,7 +190,6 @@ export function getActivityMetrics(props: {
       },
       {
         key: 'nw1',
-        unit: 'percent',
         label: 'New user W1',
         description: 'Share of new users who are active again the next week.',
         pct: true,
@@ -210,7 +200,6 @@ export function getActivityMetrics(props: {
       },
       {
         key: 'active-days',
-        unit: 'percent',
         label: 'Active days D1–D3',
         description:
           'Average share of the three days after signing up that new users are active.',
@@ -222,7 +211,6 @@ export function getActivityMetrics(props: {
     engagement: [
       {
         key: 'trades',
-        unit: 'trades',
         label: `${capitalize(TRADE_TERM)}s`,
         description: `${capitalize(TRADE_TERM)}s placed each day.`,
         views: [daily('bet_count'), avg7('bet_count', 0, true)],
@@ -232,7 +220,6 @@ export function getActivityMetrics(props: {
       },
       {
         key: 'questions',
-        unit: 'questions',
         label: 'Questions created',
         description: 'New questions each day.',
         views: [daily('contract_count'), avg7('contract_count', 0, true)],
@@ -241,7 +228,6 @@ export function getActivityMetrics(props: {
       },
       {
         key: 'comments',
-        unit: 'comments',
         label: 'Comments',
         description: 'Comments posted each day.',
         views: [daily('comment_count'), avg7('comment_count', 0, true)],
@@ -250,7 +236,6 @@ export function getActivityMetrics(props: {
       },
       {
         key: 'mana-traded',
-        unit: 'mana',
         label: `Mana ${TRADED_TERM}`,
         description: `Sum of ${TRADE_TERM} amounts. (Divided by 100 to be more readable.)`,
         views: [
@@ -273,7 +258,6 @@ export function getActivityMetrics(props: {
     conversion: [
       {
         key: 'activation',
-        unit: 'percent',
         label: 'Activation rate',
         description: `Out of all new users, how many placed at least one ${TRADE_TERM}?`,
         pct: true,
@@ -282,7 +266,6 @@ export function getActivityMetrics(props: {
       },
       {
         key: 'd1-trades',
-        unit: 'bets per user',
         label: `D1 ${TRADE_TERM}s per new user`,
         description: `On average, how many ${TRADE_TERM}s new users placed in their first 24 hours.`,
         views: [
@@ -306,7 +289,6 @@ export function getActivityMetrics(props: {
       },
       {
         key: 'feed-conversion',
-        unit: 'percent',
         label: 'Feed conversion',
         description: `Clicks, ${TRADE_TERM}s and likes on feed cards per card view.`,
         pct: true,

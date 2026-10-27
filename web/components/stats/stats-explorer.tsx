@@ -118,7 +118,8 @@ export function StatsExplorer(props: {
   } | null>(null, 'stats-overlay')
   const scopeFor = (overlayKey: string) =>
     overlayKey === 'all-pages' ? 'pages' : `${section}/${metric?.key}`
-  // Same unit and the same view, so the lines share an axis and a meaning.
+  // Another metric overlays in the same view (daily with daily, 7-day average
+  // with 7-day average), on its own axis, so its unit and scale can differ.
   const viewValues = (m: StatMetric) =>
     m.views.find((v) => v.key === viewKey)?.values
   const overlayChoices = metric
@@ -127,10 +128,7 @@ export function StatsExplorer(props: {
           ? [{ key: 'all-pages', label: 'All pages' }]
           : []),
         ...metrics
-          .filter(
-            (m) =>
-              m.key !== metric.key && m.unit === metric.unit && viewValues(m)
-          )
+          .filter((m) => m.key !== metric.key && viewValues(m))
           .map((m) => ({ key: `metric:${m.key}`, label: m.label })),
       ]
     : []
@@ -151,13 +149,28 @@ export function StatsExplorer(props: {
           ).find((m) => m.key === metric.key)
           const values = other && viewValues(other)
           return values
-            ? [{ key: s, label: STAT_SURFACE_DEFINITIONS[s].label, values }]
+            ? [
+                {
+                  key: s,
+                  label: STAT_SURFACE_DEFINITIONS[s].label,
+                  values,
+                  pct: metric.pct,
+                },
+              ]
             : []
         })
       : metrics.flatMap((m) => {
           const values = viewValues(m)
           return `metric:${m.key}` === overlay && values
-            ? [{ key: m.key, label: m.label, values }]
+            ? [
+                {
+                  key: m.key,
+                  label: m.label,
+                  values,
+                  pct: m.pct,
+                  ownAxis: true,
+                },
+              ]
             : []
         })
 

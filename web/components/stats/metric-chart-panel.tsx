@@ -10,7 +10,16 @@ import { StatsChart } from './stats-chart'
 import { Point } from './stats-series'
 import { useStatsTime } from './stats-time'
 
-export type OverlaySeries = { key: string; label: string; values: Point[] }
+// ownAxis: drawn against a second axis, for a series on a different scale
+// from the metric's (another metric). Pages comparing the same metric share
+// the metric's axis.
+export type OverlaySeries = {
+  key: string
+  label: string
+  values: Point[]
+  pct?: boolean
+  ownAxis?: boolean
+}
 
 // The selected metric's chart, with a switcher between its views and an
 // optional overlay of other series on the same axis. The card keeps one

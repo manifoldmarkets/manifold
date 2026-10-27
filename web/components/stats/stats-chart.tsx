@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { scaleLinear } from 'd3-scale'
+import { scaleLinear, ScaleLinear } from 'd3-scale'
 import { line, area } from 'd3-shape'
 import { uniq } from 'lodash'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -18,6 +18,11 @@ export type StatsChartSeries = {
   // A comparison series moved forward onto the current days: how far back its
   // values really are, so the tooltip can show their own dates.
   shiftedDays?: number
+  // Drawn against its own axis on the left: an overlay on a different scale
+  // from the primary series, which would otherwise flatten one of them.
+  secondaryAxis?: boolean
+  // Values are fractions. Defaults to the chart's pct.
+  pct?: boolean
 }
 
 export const STATS_SERIES_COLORS = [
@@ -44,6 +49,21 @@ const formatTick = (n: number, spansYears: boolean) => {
 
 const formatValue = (y: number, pct: boolean | undefined) =>
   pct ? formatPercent(y) : formatCount(y)
+// formatPercent gives values under 2% a decimal, which a zero tick doesn't need.
+const formatAxisValue = (y: number, pct: boolean | undefined) =>
+  pct ? (y === 0 ? '0%' : formatPercent(y)) : formatLargeNumber(y)
+
+// The smallest round step (1, 2, 2.5 or 5 times a power of ten) at least
+// `raw`. Percent axes skip 2.5, which formatPercent would round to 3%.
+const niceStep = (raw: number, pct: boolean | undefined) => {
+  if (!(raw > 0) || !Number.isFinite(raw)) return pct ? 0.01 : 1
+  const magnitude = 10 ** Math.floor(Math.log10(raw))
+  const multiples = pct ? [1, 2, 5, 10] : [1, 2, 2.5, 5, 10]
+  return (
+    multiples.map((m) => m * magnitude).find((s) => s >= raw * (1 - 1e-9)) ??
+    10 * magnitude
+  )
+}
 
 // A line chart of LA-day series with an optional dashed comparison, a hover
 // tooltip listing every series on the hovered day, and no zoom: the page's
@@ -87,6 +107,8 @@ export function StatsChart(props: {
 }
 
 const MARGIN = { top: 10, right: 52, bottom: 24, left: 4 }
+// Room for the secondary axis's labels, when there is one.
+const SECONDARY_AXIS_WIDTH = 44
 
 function ChartBody(props: {
   w: number
@@ -96,7 +118,9 @@ function ChartBody(props: {
   ariaLabel: string
 }) {
   const { w, h, series, pct, ariaLabel } = props
-  const plotW = Math.max(w - MARGIN.left - MARGIN.right, 10)
+  const hasSecondary = series.some((s) => s.secondaryAxis)
+  const marginLeft = MARGIN.left + (hasSecondary ? SECONDARY_AXIS_WIDTH : 0)
+  const plotW = Math.max(w - marginLeft - MARGIN.right, 10)
   const plotH = Math.max(h - MARGIN.top - MARGIN.bottom, 10)
   const [hoverDay, setHoverDay] = useState<number>()
   // A touch tap keeps its tooltip after the finger lifts (a mouse's goes
@@ -137,31 +161,85 @@ function ChartBody(props: {
     [series]
   )
 
-  const { xScale, yScale, xTicks, yTicks, spansYears } = useMemo(() => {
-    const all = prepared.flatMap((s) => s.nPoints)
-    const days = all.map((p) => p.n)
-    const ys = all.map((p) => p.y)
+  const {
+    xScale,
+    yScale,
+    ySecondary,
+    xTicks,
+    yTicks,
+    secondaryTicks,
+    secondaryPct,
+    spansYears,
+  } = useMemo(() => {
+    const days = prepared.flatMap((s) => s.nPoints.map((p) => p.n))
     const xMin = Math.min(...days)
     const xMax = Math.max(...days, xMin + 1)
-    const yMin = Math.min(0, ...ys)
-    const yMax = Math.max(...ys, yMin + (pct ? 0.01 : 1))
     const xScale = scaleLinear([xMin, xMax], [0, plotW])
-    const yScale = scaleLinear([yMin, yMax], [plotH, 0]).nice(4)
     const xTicks = uniq(
       xScale.ticks(Math.max(2, Math.floor(plotW / 90))).map(Math.round)
     ).filter((n) => n >= xMin && n <= xMax)
+
+    const valuesOn = (secondary: boolean) =>
+      prepared
+        .filter((s) => !!s.secondaryAxis === secondary)
+        .flatMap((s) => s.nPoints.map((p) => p.y))
+    const ys = valuesOn(false)
+    const yMin = Math.min(0, ...ys)
+    const yMax = Math.max(...ys, yMin + (pct ? 0.01 : 1))
+    const yScale = scaleLinear([yMin, yMax], [plotH, 0]).nice(4)
+    const yTicks = yScale.ticks(4)
+
+    const secondaryPct = prepared.find((s) => s.secondaryAxis)?.pct ?? pct
+    const secondaryYs = valuesOn(true)
+    let ySecondary: ScaleLinear<number, number> | undefined
+    let secondaryTicks: number[] = []
+    if (secondaryYs.length > 0) {
+      const sMin = Math.min(0, ...secondaryYs)
+      const sMax = Math.max(...secondaryYs)
+      const [d0, d1] = yScale.domain()
+      const intervals = yTicks.length - 1
+      // When both axes start at zero, the secondary axis gets a round step of
+      // its own over the same number of intervals, so its labels sit on the
+      // primary axis's gridlines.
+      const aligned =
+        sMin === 0 &&
+        d0 === 0 &&
+        intervals > 0 &&
+        yTicks[0] === 0 &&
+        Math.abs(yTicks[intervals] - d1) <= 1e-9 * Math.max(1, Math.abs(d1))
+      if (aligned) {
+        const step = niceStep(sMax / intervals, secondaryPct)
+        ySecondary = scaleLinear([0, step * intervals], [plotH, 0])
+        secondaryTicks = yTicks.map((_, i) => i * step)
+      } else {
+        const top = Math.max(sMax, sMin + (secondaryPct ? 0.01 : 1))
+        ySecondary = scaleLinear([sMin, top], [plotH, 0]).nice(4)
+        secondaryTicks = ySecondary.ticks(4)
+      }
+    }
     return {
       xScale,
       yScale,
+      ySecondary,
       xTicks,
-      yTicks: yScale.ticks(4),
+      yTicks,
+      secondaryTicks,
+      secondaryPct,
       spansYears: xMax - xMin > 300,
     }
   }, [prepared, plotW, plotH, pct])
 
-  const linePath = line<{ n: number; y: number }>()
-    .x((p) => xScale(p.n))
-    .y((p) => yScale(p.y))
+  const scaleFor = (s: StatsChartSeries) =>
+    (s.secondaryAxis && ySecondary) || yScale
+  const linePath = (s: StatsChartSeries) =>
+    line<{ n: number; y: number }>()
+      .x((p) => xScale(p.n))
+      .y((p) => scaleFor(s)(p.y))
+  // With two axes, each axis's labels take its series' color.
+  const primaryColor = hasSecondary
+    ? prepared.find((s) => !s.secondaryAxis)?.color
+    : undefined
+  const secondaryColor = prepared.find((s) => s.secondaryAxis)?.color
   // Shade under the line only when there's a single solid series; under one of
   // several it reads as that series being special.
   const solid = prepared.filter((s) => !s.dashed)
@@ -173,7 +251,7 @@ function ChartBody(props: {
 
   const onPointer = (clientX: number, rect: DOMRect) => {
     const [xMin, xMax] = xScale.domain()
-    const n = Math.round(xScale.invert(clientX - rect.left - MARGIN.left))
+    const n = Math.round(xScale.invert(clientX - rect.left - marginLeft))
     setHoverDay(Math.min(xMax, Math.max(xMin, n)))
   }
 
@@ -181,9 +259,9 @@ function ChartBody(props: {
   const tooltipLeft =
     hoverX === undefined
       ? 0
-      : hoverX + MARGIN.left > w / 2
-      ? hoverX + MARGIN.left - 12
-      : hoverX + MARGIN.left + 12
+      : hoverX + marginLeft > w / 2
+      ? hoverX + marginLeft - 12
+      : hoverX + marginLeft + 12
 
   return (
     <div ref={containerRef} className="relative h-full w-full">
@@ -203,7 +281,7 @@ function ChartBody(props: {
           if (e.pointerType === 'mouse') setHoverDay(undefined)
         }}
       >
-        <g transform={`translate(${MARGIN.left},${MARGIN.top})`}>
+        <g transform={`translate(${marginLeft},${MARGIN.top})`}>
           {yTicks.map((t) => (
             <g key={t} transform={`translate(0,${yScale(t)})`}>
               <line x2={plotW} className="stroke-ink-200" strokeWidth={1} />
@@ -211,11 +289,26 @@ function ChartBody(props: {
                 x={plotW + 6}
                 dy="0.32em"
                 className="fill-ink-500 text-[11px] tabular-nums"
+                style={primaryColor ? { fill: primaryColor } : undefined}
               >
-                {pct ? formatPercent(t) : formatLargeNumber(t)}
+                {formatAxisValue(t, pct)}
               </text>
             </g>
           ))}
+          {ySecondary &&
+            secondaryTicks.map((t) => (
+              <text
+                key={`secondary-${t}`}
+                x={-6}
+                y={ySecondary(t)}
+                dy="0.32em"
+                textAnchor="end"
+                className="text-[11px] tabular-nums"
+                style={{ fill: secondaryColor }}
+              >
+                {formatAxisValue(t, secondaryPct)}
+              </text>
+            ))}
           {xTicks.map((n) => (
             <text
               key={n}
@@ -251,14 +344,14 @@ function ChartBody(props: {
                 <circle
                   key={`${s.key}-${i}`}
                   cx={xScale(run[0].n)}
-                  cy={yScale(run[0].y)}
+                  cy={scaleFor(s)(run[0].y)}
                   r={2.5}
                   fill={s.color}
                 />
               ) : (
                 <path
                   key={`${s.key}-${i}`}
-                  d={linePath(run) ?? undefined}
+                  d={linePath(s)(run) ?? undefined}
                   fill="none"
                   stroke={s.color}
                   strokeWidth={s.dashed ? 1.5 : 2}
@@ -283,7 +376,7 @@ function ChartBody(props: {
                   <circle
                     key={s.key}
                     cx={hoverX}
-                    cy={yScale(y)}
+                    cy={scaleFor(s)(y)}
                     r={3.5}
                     fill={s.color}
                     className="stroke-canvas-0"
@@ -300,7 +393,7 @@ function ChartBody(props: {
           className={clsx(
             'bg-canvas-0 ring-ink-200 pointer-events-none absolute top-2 z-10 min-w-[9rem] rounded-md px-2.5 py-2 text-xs shadow-md ring-1',
             hoverX !== undefined &&
-              hoverX + MARGIN.left > w / 2 &&
+              hoverX + marginLeft > w / 2 &&
               '-translate-x-full'
           )}
           style={{ left: tooltipLeft }}
@@ -329,7 +422,7 @@ function ChartBody(props: {
                     : s.label}
                 </span>
                 <span className="text-ink-900 ml-auto pl-2 font-medium tabular-nums">
-                  {y === undefined ? '—' : formatValue(y, pct)}
+                  {y === undefined ? '—' : formatValue(y, s.pct ?? pct)}
                 </span>
               </div>
             )
