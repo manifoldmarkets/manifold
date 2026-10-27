@@ -76,6 +76,9 @@ export const getStaticProps = async () => {
         stats,
         fromBankSummary: toTxnSummaryRows(fromBankSummary),
         toBankSummary: toTxnSummaryRows(toBankSummary),
+        // From every row, cash included, as before the cash rows were dropped.
+        latestBankRecordingTime:
+          orderBy(fromBankSummary, 'start_time', 'desc')[0]?.start_time ?? null,
         manaSupplyOverTime,
         activeUserManaStats,
         topMarketsYesterday: withoutDescriptions(topMarketsYesterday),
@@ -182,6 +185,7 @@ export default function Analytics(props: {
   manaSupplyOverTime: rowfor<'mana_supply_stats'>[]
   fromBankSummary: TxnSummaryRow[]
   toBankSummary: TxnSummaryRow[]
+  latestBankRecordingTime: string | null
   activeUserManaStats: ActiveUserManaStats[]
   topMarketsYesterday?: TopMarketsYesterdayData
   shopStats?: ShopStats
@@ -193,6 +197,7 @@ export default function Analytics(props: {
     manaSupplyOverTime,
     fromBankSummary,
     toBankSummary,
+    latestBankRecordingTime,
     activeUserManaStats,
     topMarketsYesterday,
     shopStats,
@@ -215,6 +220,7 @@ export default function Analytics(props: {
         manaSupplyOverTime={manaSupplyOverTime}
         fromBankSummary={fromBankSummary}
         toBankSummary={toBankSummary}
+        latestBankRecordingTime={latestBankRecordingTime}
         activeUserManaStats={activeUserManaStats}
         topMarketsYesterday={topMarketsYesterday}
         shopStats={shopStats}
@@ -330,12 +336,14 @@ function ManaSupplyTab(props: {
   manaSupplyOverTime: rowfor<'mana_supply_stats'>[]
   fromBankSummary: TxnSummaryRow[]
   toBankSummary: TxnSummaryRow[]
+  latestBankRecordingTime: string | null
   activeUserManaStats: ActiveUserManaStats[]
 }) {
   const {
     manaSupplyOverTime,
     fromBankSummary,
     toBankSummary,
+    latestBankRecordingTime,
     activeUserManaStats,
   } = props
   const currentSupply = manaSupplyOverTime[manaSupplyOverTime.length - 1]
@@ -368,15 +376,13 @@ function ManaSupplyTab(props: {
     ? days.filter((d) => isInWindow(d, txnWindow.from, txnWindow.to))
     : days
 
-  const latestRecordingTime = orderBy(fromBankSummary, 'start_time', 'desc')[0]
-    .start_time
   const fromBankManaSum = sumBy(
-    fromBankSummary.filter((txn) => txn.start_time === latestRecordingTime),
+    fromBankSummary.filter((txn) => txn.start_time === latestBankRecordingTime),
     'total_amount'
   )
 
   const toBankManaSum = sumBy(
-    toBankSummary.filter((txn) => txn.start_time === latestRecordingTime),
+    toBankSummary.filter((txn) => txn.start_time === latestBankRecordingTime),
     'total_amount'
   )
 
@@ -955,6 +961,7 @@ export function CustomAnalytics(props: {
   manaSupplyOverTime: rowfor<'mana_supply_stats'>[]
   fromBankSummary: TxnSummaryRow[]
   toBankSummary: TxnSummaryRow[]
+  latestBankRecordingTime: string | null
   activeUserManaStats?: ActiveUserManaStats[]
   topMarketsYesterday?: TopMarketsYesterdayData
   shopStats?: ShopStats
@@ -965,6 +972,7 @@ export function CustomAnalytics(props: {
     manaSupplyOverTime,
     fromBankSummary,
     toBankSummary,
+    latestBankRecordingTime,
     activeUserManaStats,
     topMarketsYesterday,
     shopStats,
@@ -1001,6 +1009,7 @@ export function CustomAnalytics(props: {
                   manaSupplyOverTime={manaSupplyOverTime}
                   fromBankSummary={fromBankSummary}
                   toBankSummary={toBankSummary}
+                  latestBankRecordingTime={latestBankRecordingTime}
                   activeUserManaStats={activeUserManaStats ?? []}
                 />
               ),

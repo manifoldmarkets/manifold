@@ -60,6 +60,8 @@ export function StatsExplorer(props: {
   const firebaseUid = auth.currentUser?.uid
   const canSeeFunnels =
     isAdmin && authSettled && !!user && user.id === firebaseUid
+  // Kept for the session, like the topic data it invalidates.
+  const [reloads, setReloads] = usePersistentInMemoryState(0, 'stats-reloads')
   const [query, setQuery] = usePersistentQueriesState(
     { section: 'users', metric: '', view: '', surface: 'sports' },
     'stats-explorer'
@@ -169,6 +171,8 @@ export function StatsExplorer(props: {
           onClick={() => {
             getStatsPageRows().then(setStats)
             if (section === 'pages') refreshFunnels()
+            // Topics refetches when it next shows, or now if it's open.
+            setReloads((n) => n + 1)
           }}
         >
           Reload
@@ -210,7 +214,7 @@ export function StatsExplorer(props: {
       )}
 
       {section === 'topics' ? (
-        <TopicActivity />
+        <TopicActivity reloadKey={reloads} />
       ) : section === 'pages' && funnelDays.length === 0 ? (
         <p className="text-ink-500 bg-canvas-50 rounded-lg p-4 text-sm">
           {funnelError

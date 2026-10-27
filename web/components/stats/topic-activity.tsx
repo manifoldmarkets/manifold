@@ -57,9 +57,10 @@ type SortKey = 'active' | 'growing' | 'shrinking'
 // Daily active traders per topic, as a ranked table for the selected range
 // with the chosen topics charted above it. The topic counts aren't in the
 // page's static props (they're most of daily_stats' size), so they load the
-// first time the section opens and are kept for the session.
-export function TopicActivity() {
-  const { rows, failed } = useTopicDays()
+// first time the section opens and are kept for the session. A new reloadKey
+// (the page's Reload button) fetches them again.
+export function TopicActivity(props: { reloadKey: number }) {
+  const { rows, failed } = useTopicDays(props.reloadKey)
   if (!rows)
     return (
       <p className="text-ink-500 bg-canvas-50 rounded-lg p-4 text-sm">
@@ -69,25 +70,33 @@ export function TopicActivity() {
   return <TopicActivityBody stats={rows} />
 }
 
-let topicDaysRequest: Promise<TopicDayRow[]> | undefined
-const useTopicDays = () => {
+let topicDaysRequest:
+  | { reloadKey: number; rows: Promise<TopicDayRow[]> }
+  | undefined
+// While a reload is in flight, the rows already shown stay up.
+const useTopicDays = (reloadKey: number) => {
   const [rows, setRows] = useState<TopicDayRow[]>()
   const [failed, setFailed] = useState(false)
   useEffect(() => {
+    if (topicDaysRequest?.reloadKey !== reloadKey)
+      topicDaysRequest = { reloadKey, rows: getTopicDayStats() }
+    const request = topicDaysRequest
     let cancelled = false
-    ;(topicDaysRequest ??= getTopicDayStats())
+    setFailed(false)
+    request.rows
       .then((r) => {
         if (!cancelled) setRows(r)
       })
       .catch((e) => {
         console.error(e)
-        topicDaysRequest = undefined
+        // The next mount or Reload tries again.
+        if (topicDaysRequest === request) topicDaysRequest = undefined
         if (!cancelled) setFailed(true)
       })
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [reloadKey])
   return { rows, failed }
 }
 
