@@ -5,6 +5,7 @@ import {
   F1Driver,
   F1DriverStanding,
   f1EventId,
+  f1EventTitle,
   f1PodiumPrior,
   f1SessionKind,
   f1SessionResolution,
@@ -78,6 +79,48 @@ describe('f1SessionKind', () => {
     expect(f1SessionKind({ type: 'Sprint Shootout', name: 'SS' })).toBeNull()
     expect(f1SessionKind({ type: 'Practice', name: 'FP1' })).toBeNull()
     expect(f1SessionKind({ type: 'Unknown', name: '?' })).toBeNull()
+  })
+  it("reads the provider's real 2026 strings", () => {
+    expect(f1SessionKind({ type: 'Race', name: 'Race' })).toBe('race')
+    expect(f1SessionKind({ type: 'Qualifying', name: 'Qual' })).toBe(
+      'qualifying'
+    )
+    expect(f1SessionKind({ type: 'Sprint', name: 'SR' })).toBe('sprint')
+    expect(f1SessionKind({ type: 'Sprint Qualifying', name: 'SS' })).toBeNull()
+    for (const fp of ['FP1', 'FP2', 'FP3'])
+      expect(f1SessionKind({ type: fp, name: fp })).toBeNull()
+  })
+})
+
+describe('f1EventTitle', () => {
+  it("drops the 2026 title sponsors from the provider's names", () => {
+    const names: [string, string][] = [
+      ['MSC Cruises São Paulo Grand Prix', 'São Paulo Grand Prix'],
+      ['Qatar Airways Qatar Grand Prix', 'Qatar Grand Prix'],
+      ['Heineken Las Vegas Grand Prix', 'Las Vegas Grand Prix'],
+      ['Etihad Airways Abu Dhabi Grand Prix', 'Abu Dhabi Grand Prix'],
+      [
+        'Gulf Air Bahrain Grand Prix in Malaysia',
+        'Bahrain Grand Prix in Malaysia',
+      ],
+      ['Moët & Chandon Belgian Grand Prix', 'Belgian Grand Prix'],
+      ['Crypto.com Miami Grand Prix', 'Miami Grand Prix'],
+      ['Singapore Airlines Singapore Grand Prix', 'Singapore Grand Prix'],
+      ['Mexico City Grand Prix', 'Mexico City Grand Prix'],
+      ['Monaco Grand Prix', 'Monaco Grand Prix'],
+    ]
+    for (const [name, title] of names) expect(f1EventTitle(name)).toBe(title)
+  })
+  it('keeps a name that would lose its Grand Prix, and titles markets with it', () => {
+    expect(f1EventTitle('Heineken Silver')).toBe('Heineken Silver')
+    const params = buildF1MarketParams(
+      { ...event, name: 'MSC Cruises São Paulo Grand Prix' },
+      race,
+      field,
+      standings,
+      'winner'
+    )
+    expect(params?.question).toBe('2026 São Paulo Grand Prix: race winner')
   })
 })
 

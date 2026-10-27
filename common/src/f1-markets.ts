@@ -155,6 +155,13 @@ export const F1_CLOSE_BUFFER_HOURS: Record<F1SessionKind, number> = {
   qualifying: 1.5,
 }
 
+/**
+ * Hours after a market closes before the resolver pays it out, so the
+ * stewards' decisions of the evening (penalties, a disqualification) are in
+ * the classification it reads. Later changes don't reopen a market.
+ */
+export const F1_RESOLVE_DELAY_HOURS = 2
+
 /** Catches a stand-in who wasn't in the field when the market opened. */
 export const OTHER_DRIVER_ANSWER = 'Another driver'
 
@@ -306,6 +313,40 @@ const SESSION_WORD: Record<F1SessionKind, string> = {
 }
 
 /**
+ * Title sponsors the provider puts in front of a Grand Prix's name ("MSC
+ * Cruises São Paulo Grand Prix", 2026). A sponsor missing from this list
+ * leaves the name as it is, so check new seasons' names in a dry run.
+ */
+const F1_TITLE_SPONSORS = [
+  'Aramco',
+  'AWS',
+  'Crypto.com',
+  'Etihad Airways',
+  'Gulf Air',
+  'Heineken',
+  'Lenovo',
+  'Moët & Chandon',
+  'MSC Cruises',
+  'Pirelli',
+  'Qatar Airways',
+  'Singapore Airlines',
+  'STC',
+  'Tag Heuer',
+]
+
+/** A Grand Prix's name without its title sponsor: "São Paulo Grand Prix". */
+export function f1EventTitle(name: string): string {
+  const trimmed = name.trim()
+  for (const sponsor of F1_TITLE_SPONSORS) {
+    if (!trimmed.toLowerCase().startsWith(`${sponsor.toLowerCase()} `)) continue
+    const rest = trimmed.slice(sponsor.length).trim()
+    // Only when a Grand Prix is left: "Qatar Airways Qatar Grand Prix".
+    if (/grand prix/i.test(rest)) return rest
+  }
+  return trimmed
+}
+
+/**
  * The market for one session and market type, or null when that session
  * kind doesn't get one, or `field` isn't a usable entry list (empty, or
  * longer than MAX_F1_FIELD). Drivers open at the standings prior,
@@ -339,13 +380,13 @@ export function buildF1MarketParams(
     ? colors
     : undefined
 
-  const title = `${event.season} ${event.name}`
+  const title = `${event.season} ${f1EventTitle(event.name)}`
   const manifoldSportsLink =
     '[@ManifoldSports](https://manifold.markets/ManifoldSports)'
   const footer = [
     `Resolves N/A if the session is cancelled.`,
     ``,
-    `Created and resolved automatically by ${manifoldSportsLink} from the data feed's classification once the session is final. Stewards' decisions after that don't change the resolution.`,
+    `Created and resolved automatically by ${manifoldSportsLink} from the data feed's classification ${F1_RESOLVE_DELAY_HOURS} hours after the market closes, so the stewards' decisions by then count. Later changes don't reopen the market.`,
     ``,
     `[See all markets on Manifold Sports](/sports?sport=f1)`,
   ]
