@@ -102,26 +102,34 @@ export function StatsExplorer(props: {
   const metric = metrics.find((m) => m.key === query.metric) ?? metrics[0]
   const viewKey = metric ? getView(metric, query.view).key : undefined
 
-  // An overlay belongs to the metric it was picked on (or, for pages, to the
-  // section), so it goes away when you move to a metric it doesn't fit.
+  // "All pages" belongs to the Pages section and follows you across its
+  // metrics; a metric overlay belongs to the metric it was picked on. Either
+  // goes away on a metric or view it doesn't fit.
   const [overlayState, setOverlayState] = usePersistentInMemoryState<{
     scope: string
     with: string
   } | null>(null, 'stats-overlay')
-  const overlayScope =
-    section === 'pages' ? 'pages' : `${section}/${metric?.key}`
+  const scopeFor = (overlayKey: string) =>
+    overlayKey === 'all-pages' ? 'pages' : `${section}/${metric?.key}`
+  // Same unit and the same view, so the lines share an axis and a meaning.
+  const viewValues = (m: StatMetric) =>
+    m.views.find((v) => v.key === viewKey)?.values
   const overlayChoices = metric
     ? [
         ...(section === 'pages'
           ? [{ key: 'all-pages', label: 'All pages' }]
           : []),
         ...metrics
-          .filter((m) => m.key !== metric.key && !!m.pct === !!metric.pct)
+          .filter(
+            (m) =>
+              m.key !== metric.key && m.unit === metric.unit && viewValues(m)
+          )
           .map((m) => ({ key: `metric:${m.key}`, label: m.label })),
       ]
     : []
   const overlay =
-    overlayState?.scope === overlayScope &&
+    overlayState &&
+    overlayState.scope === scopeFor(overlayState.with) &&
     overlayChoices.some((c) => c.key === overlayState.with)
       ? overlayState.with
       : 'none'
@@ -134,23 +142,17 @@ export function StatsExplorer(props: {
             getFunnelDays(funnelData?.days ?? [], s),
             s
           ).find((m) => m.key === metric.key)
-          return other
-            ? [
-                {
-                  key: s,
-                  label: STAT_SURFACE_DEFINITIONS[s].label,
-                  values: getView(other, viewKey).values,
-                },
-              ]
+          const values = other && viewValues(other)
+          return values
+            ? [{ key: s, label: STAT_SURFACE_DEFINITIONS[s].label, values }]
             : []
         })
-      : metrics
-          .filter((m) => `metric:${m.key}` === overlay)
-          .map((m) => ({
-            key: m.key,
-            label: m.label,
-            values: getView(m, viewKey).values,
-          }))
+      : metrics.flatMap((m) => {
+          const values = viewValues(m)
+          return `metric:${m.key}` === overlay && values
+            ? [{ key: m.key, label: m.label, values }]
+            : []
+        })
 
   return (
     <Col className="gap-4">
@@ -237,7 +239,7 @@ export function StatsExplorer(props: {
               overlayChoices={overlayChoices}
               overlay={overlay}
               setOverlay={(key) =>
-                setOverlayState({ scope: overlayScope, with: key })
+                setOverlayState({ scope: scopeFor(key), with: key })
               }
               overlaySeries={overlaySeries}
             />

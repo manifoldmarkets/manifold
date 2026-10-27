@@ -35,6 +35,9 @@ export type StatMetric = {
   key: string
   label: string
   description: ReactNode
+  // What the values count ('people', 'mana', 'percent', ...). Only metrics
+  // with the same unit can be overlaid on one axis.
+  unit: string
   // Values are fractions (0.25 is 25%).
   pct?: boolean
   views: MetricView[]
@@ -122,7 +125,9 @@ export const getMetricSummary = (
 
   const summarize = (window: StatsWindow): WindowSummary | undefined => {
     if (typeof summary === 'function') return summary(window)
-    const points = sliceWindow(base.values, window)
+    const points = sliceWindow(base.values, window).filter((p) =>
+      Number.isFinite(p.y)
+    )
     const value = summarizePoints(points, kind)
     return value === undefined ? undefined : { value, days: points.length }
   }

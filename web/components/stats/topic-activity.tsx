@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Group } from 'common/group'
 import {
   getCompareOffset,
+  getComparePoints,
   getStatsWindow,
   hasComparableCoverage,
   shiftWindow,
@@ -23,7 +24,12 @@ import { Input } from 'web/components/widgets/input'
 import { getGroups } from 'web/lib/supabase/groups'
 import { Sparkline } from './sparkline'
 import { compareText, describeChange, MetricChange } from './stat-metric'
-import { STATS_SERIES_COLORS, StatsChart } from './stats-chart'
+import {
+  STATS_COMPARE_COLOR,
+  STATS_SERIES_COLORS,
+  StatsChart,
+  StatsChartSeries,
+} from './stats-chart'
 import { DailyStatsRow, Point, dataForStats } from './stats-series'
 import { useStatsTime } from './stats-time'
 
@@ -100,13 +106,21 @@ export function TopicActivity(props: { stats: DailyStatsRow[] }) {
     [topicSeries, topicDays, groups, window?.from, window?.to, compare]
   )
 
+  // Sorting by change needs something to compare against: not on 'All', or
+  // when the comparison window is too thin.
+  const canSortByChange = rows.some((r) => r.changeRatio !== undefined)
+  const effectiveSort = canSortByChange ? sort : 'active'
   const sorted =
-    sort === 'active'
-      ? orderBy(rows, (r) => r.avg, 'desc')
+    effectiveSort === 'active'
+      ? orderBy(
+          rows.filter((r) => r.avg > 0),
+          (r) => r.avg,
+          'desc'
+        )
       : orderBy(
           rows.filter((r) => r.changeRatio !== undefined),
           (r) => r.changeRatio,
-          sort === 'growing' ? 'desc' : 'asc'
+          effectiveSort === 'growing' ? 'desc' : 'asc'
         )
   const query = search.trim().toLowerCase()
   const filtered = query
@@ -127,23 +141,39 @@ export function TopicActivity(props: { stats: DailyStatsRow[] }) {
     else if (selectedIds.length < MAX_SELECTED)
       setSelected([...selectedIds, id])
   }
-  // A topic that doesn't come back is private or deleted: keep its name out.
+  // A topic whose group no longer exists was deleted.
   const nameOf = (id: string) =>
-    groups ? groups[id]?.name ?? 'Private topic' : 'Loading…'
+    groups ? groups[id]?.name ?? 'Deleted topic' : 'Loading…'
 
-  const dauByDay = new Map(siteDau.map((p) => [p.x, p.y]))
-  const chartSeries = window
+  // A topic's daily values as the table counts them: zero on days it was
+  // under the floor, and no point on days with no topic counts at all.
+  const topicValues = (id: string): Point[] => {
+    const byDay = new Map((topicSeries[id] ?? []).map((p) => [p.x, p.y]))
+    return topicDays.flatMap((d) => {
+      const y = byDay.get(d.x) ?? 0
+      if (measure === 'users') return [{ x: d.x, y }]
+      return d.y > 0 ? [{ x: d.x, y: y / d.y }] : []
+    })
+  }
+  const chartSeries: StatsChartSeries[] = window
     ? selectedIds.map((id, i) => ({
         key: id,
         label: nameOf(id),
         color: STATS_SERIES_COLORS[i % STATS_SERIES_COLORS.length],
-        points: sliceWindow(topicSeries[id] ?? [], window).flatMap((p) => {
-          if (measure === 'users') return [p]
-          const dau = dauByDay.get(p.x)
-          return dau && dau > 0 ? [{ x: p.x, y: p.y / dau }] : []
-        }),
+        points: sliceWindow(topicValues(id), window),
       }))
     : []
+  // One topic charted: draw its comparison too, as the other charts do.
+  const offset = window ? getCompareOffset(window, compare) : undefined
+  if (window && offset && selectedIds.length === 1)
+    chartSeries.push({
+      key: 'compare',
+      label: compare === 'year' ? 'Last year' : 'Previous period',
+      color: STATS_COMPARE_COLOR,
+      points: getComparePoints(topicValues(selectedIds[0]), window, offset),
+      dashed: true,
+      shiftedDays: offset,
+    })
 
   return (
     <Col className="gap-4">
@@ -174,7 +204,14 @@ export function TopicActivity(props: { stats: DailyStatsRow[] }) {
         <Row className="flex-wrap gap-x-4 gap-y-1 text-xs">
           {chartSeries.map((s) => (
             <Row key={s.key} className="items-center gap-1.5">
-              <span className="h-0.5 w-4" style={{ background: s.color }} />
+              <span
+                className="h-0.5 w-4"
+                style={{
+                  background: s.dashed
+                    ? `repeating-linear-gradient(90deg, ${s.color} 0 3px, transparent 3px 5px)`
+                    : s.color,
+                }}
+              />
               <span className="text-ink-600">{s.label}</span>
             </Row>
           ))}
@@ -192,18 +229,24 @@ export function TopicActivity(props: { stats: DailyStatsRow[] }) {
           />
           <ChoicesToggleGroup
             ariaLabel="Sort topics"
-            currentChoice={sort}
+            currentChoice={effectiveSort}
             choicesMap={{
               'Most active': 'active',
               Growing: 'growing',
               Shrinking: 'shrinking',
             }}
+            disabledOptions={canSortByChange ? [] : ['growing', 'shrinking']}
             setChoice={(v) =>
               setSort(v === 'growing' || v === 'shrinking' ? v : 'active')
             }
             color="gray"
             toggleClassName="!px-2.5 !py-1 text-xs"
           />
+          {!canSortByChange && (
+            <span className="text-ink-400 text-xs">
+              Pick a shorter range to sort by change
+            </span>
+          )}
         </Row>
         <div className="-mx-4 overflow-x-auto px-4">
           <table className="w-full min-w-[34rem] text-sm tabular-nums">
@@ -359,15 +402,20 @@ const getTopicRows = (
   const beforeDays = before ? daysIn(before) : 0
   const comparable = !!before && hasComparableCoverage(windowDays, beforeDays)
 
+  const coveredDays = sliceWindow(topicDays, window)
   return Object.entries(topicSeries).flatMap(([id, series]) => {
+    if (windowDays === 0) return []
     const points = sliceWindow(series, window)
-    if (points.length === 0 || windowDays === 0) return []
     const total = sumBy(points, (p) => p.y)
     const avg = total / windowDays
     const beforeAvg =
       comparable && before
         ? sumBy(sliceWindow(series, before), (p) => p.y) / beforeDays
         : undefined
+    // A topic that fell under the floor for the whole range is still a row
+    // (at zero) when it had activity to compare against: the biggest drop.
+    if (points.length === 0 && !(beforeAvg && beforeAvg > 0)) return []
+    const byDay = new Map(points.map((p) => [p.x, p.y]))
     return [
       {
         id,
@@ -388,7 +436,7 @@ const getTopicRows = (
             : beforeAvg > 0
             ? avg / beforeAvg - 1
             : Infinity,
-        spark: points.map((p) => p.y),
+        spark: coveredDays.map((d) => byDay.get(d.x) ?? 0),
       },
     ]
   })

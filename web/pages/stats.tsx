@@ -33,7 +33,9 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import {
   StatsTimeControls,
   StatsTimeProvider,
+  useStatsTime,
 } from 'web/components/stats/stats-time'
+import { getStatsWindow, isInWindow } from 'common/stats-window'
 import { Contract, contractPath } from 'common/contract'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { UserIcon, EyeIcon } from '@heroicons/react/solid'
@@ -323,11 +325,30 @@ function ManaSupplyTab(props: {
     (f) => f.token === 'CASH'
   )
 
+  // The stacked charts follow the page's time range too.
+  const { range } = useStatsTime()
+  const inRange = <T extends { start_time: string }>(rows: T[]) => {
+    const lastDay = rows
+      .map((r) => r.start_time.slice(0, 10))
+      .sort()
+      .pop()
+    if (!lastDay) return rows
+    const window = getStatsWindow(lastDay, range)
+    return rows.filter((r) =>
+      isInWindow(r.start_time.slice(0, 10), window.from, window.to)
+    )
+  }
+
   const days = uniq(
     [...fromBankSummary, ...toBankSummary].map(
       (stat) => stat.start_time.split(' ')[0]
     )
   ).sort()
+  const lastTxnDay = days[days.length - 1]
+  const txnWindow = lastTxnDay ? getStatsWindow(lastTxnDay, range) : undefined
+  const rangedDays = txnWindow
+    ? days.filter((d) => isInWindow(d, txnWindow.from, txnWindow.to))
+    : days
 
   const latestRecordingTime = orderBy(fromBankSummary, 'start_time', 'desc')[0]
     .start_time
@@ -398,7 +419,7 @@ function ManaSupplyTab(props: {
           {formatMoney(unaccountedDifference)}
         </div>
       </div>
-      <ManaSupplySummary manaSupplyStats={manaSupplyOverTime} />
+      <ManaSupplySummary manaSupplyStats={inRange(manaSupplyOverTime)} />
       <Spacer h={8} />
       <Title>Active Balances</Title>
       <p className="text-ink-500">
@@ -414,11 +435,17 @@ function ManaSupplyTab(props: {
       )}
       <Spacer h={8} />
       <Title>Transactions from Manifold</Title>
-      <BonusSummary txnSummaryStats={fromBankSummaryMana} days={days} />
+      <BonusSummary
+        txnSummaryStats={inRange(fromBankSummaryMana)}
+        days={rangedDays}
+      />
       <Spacer h={8} />
       <Title>Transactions to Manifold</Title>
       <span className="text-ink-500">(Ignores mana purchases)</span>
-      <BonusSummary txnSummaryStats={toBankSummaryMana} days={days} />
+      <BonusSummary
+        txnSummaryStats={inRange(toBankSummaryMana)}
+        days={rangedDays}
+      />
     </Col>
   )
 }

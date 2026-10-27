@@ -97,6 +97,7 @@ export function getSurfaceFunnelMetrics(
   return [
     {
       key: 'pill-clicks',
+      unit: 'people',
       label: 'Pill clicks',
       description: `Signed-in users who clicked the ${label} pill on the home page.`,
       views: countViews(days, 'pillUsers'),
@@ -104,6 +105,7 @@ export function getSurfaceFunnelMetrics(
     },
     {
       key: 'visitors',
+      unit: 'people',
       label: 'Visitors',
       description: `Signed-in users who opened a ${label} page.`,
       views: countViews(days, 'visitors'),
@@ -111,6 +113,7 @@ export function getSurfaceFunnelMetrics(
     },
     {
       key: 'traded-here',
+      unit: 'percent',
       label: 'Traded on page',
       description: `Share of visitors who traded on a ${label} page.`,
       pct: true,
@@ -121,6 +124,7 @@ export function getSurfaceFunnelMetrics(
     },
     {
       key: 'pill-traded',
+      unit: 'percent',
       label: 'Pill → trade',
       description: `Share of pill clickers who then traded on a ${label} page.`,
       pct: true,
@@ -131,6 +135,7 @@ export function getSurfaceFunnelMetrics(
     },
     {
       key: 'trades',
+      unit: 'trades',
       label: 'Trades on page',
       description: `Bets, sells, limit orders and perp orders placed on ${label} pages.`,
       views: countViews(days, 'trades'),
@@ -140,6 +145,7 @@ export function getSurfaceFunnelMetrics(
     },
     {
       key: 'traded-anywhere',
+      unit: 'percent',
       label: 'Traded anywhere',
       description:
         'Share of visitors who placed any trade on the site that day, on this page or elsewhere.',

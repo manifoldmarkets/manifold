@@ -58,7 +58,11 @@ export function StatsChart(props: {
   className?: string
 }) {
   const { series, pct, ariaLabel, className } = props
-  const hasData = series.some((s) => s.points.length > 0)
+  const hasData = series.some((s) =>
+    s.points.some(
+      (p) => Number.isFinite(p.y) && Number.isFinite(toDayNumber(p.x))
+    )
+  )
   if (!hasData)
     return (
       <div
@@ -106,9 +110,18 @@ function ChartBody(props: {
           .map((p) => ({ n: toDayNumber(p.x), y: p.y }))
           .filter((p) => Number.isFinite(p.n) && Number.isFinite(p.y))
           .sort((a, b) => a.n - b.n)
+        // Runs of consecutive days. A missing day breaks the line rather than
+        // being bridged, since it is unknown, not a value between neighbors.
+        const runs: (typeof points)[] = []
+        for (const p of points) {
+          const run = runs[runs.length - 1]
+          if (run && p.n - run[run.length - 1].n === 1) run.push(p)
+          else runs.push([p])
+        }
         return {
           ...s,
           nPoints: points,
+          runs,
           byDay: new Map(points.map((p) => [p.n, p.y])),
         }
       }),
@@ -210,32 +223,38 @@ function ChartBody(props: {
               {formatTick(n, spansYears)}
             </text>
           ))}
-          {primary && primary.nPoints.length > 1 && (
-            <path
-              d={areaPath(primary.nPoints) ?? undefined}
-              fill={primary.color}
-              opacity={0.12}
-            />
+          {primary?.runs.map(
+            (run, i) =>
+              run.length > 1 && (
+                <path
+                  key={`area-${i}`}
+                  d={areaPath(run) ?? undefined}
+                  fill={primary.color}
+                  opacity={0.12}
+                />
+              )
           )}
-          {prepared.map((s) =>
-            s.nPoints.length === 1 ? (
-              <circle
-                key={s.key}
-                cx={xScale(s.nPoints[0].n)}
-                cy={yScale(s.nPoints[0].y)}
-                r={3}
-                fill={s.color}
-              />
-            ) : (
-              <path
-                key={s.key}
-                d={linePath(s.nPoints) ?? undefined}
-                fill="none"
-                stroke={s.color}
-                strokeWidth={s.dashed ? 1.5 : 2}
-                strokeDasharray={s.dashed ? '5 4' : undefined}
-                strokeLinejoin="round"
-              />
+          {prepared.flatMap((s) =>
+            s.runs.map((run, i) =>
+              run.length === 1 ? (
+                <circle
+                  key={`${s.key}-${i}`}
+                  cx={xScale(run[0].n)}
+                  cy={yScale(run[0].y)}
+                  r={2.5}
+                  fill={s.color}
+                />
+              ) : (
+                <path
+                  key={`${s.key}-${i}`}
+                  d={linePath(run) ?? undefined}
+                  fill="none"
+                  stroke={s.color}
+                  strokeWidth={s.dashed ? 1.5 : 2}
+                  strokeDasharray={s.dashed ? '5 4' : undefined}
+                  strokeLinejoin="round"
+                />
+              )
             )
           )}
           {hoverX !== undefined && hoverDay !== undefined && (
