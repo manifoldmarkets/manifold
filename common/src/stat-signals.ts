@@ -105,7 +105,16 @@ export const getStatSignal = (
   const moves = recent.flatMap((w, i) =>
     i + 1 < recent.length ? [w.mean - recent[i + 1].mean] : []
   )
-  const typical = median(moves.map(Math.abs))
+  // The typical weekly move: the median, or when most weeks didn't move but
+  // some stepped, the mean, so a step that's happened before isn't unusual.
+  // Flat means no week moved at all.
+  const absMoves = moves.map(Math.abs)
+  const flat = absMoves.every((m) => m <= tolerance)
+  const typical = flat
+    ? 0
+    : median(absMoves) > tolerance
+    ? median(absMoves)
+    : absMoves.reduce((a, b) => a + b, 0) / absMoves.length
 
   const distance = Math.abs(current.mean - median(recent.map((w) => w.mean)))
   if (distance > tolerance && distance >= EXTREME_DISTANCE * typical) {
@@ -134,11 +143,11 @@ export const getStatSignal = (
   const move = current.mean - prior[0].mean
   if (
     Math.abs(move) > tolerance &&
-    (typical <= tolerance || Math.abs(move) >= UNUSUAL_MOVE_FACTOR * typical)
+    (flat || Math.abs(move) >= UNUSUAL_MOVE_FACTOR * typical)
   )
     return {
       kind: move > 0 ? 'jump' : 'drop',
-      factor: typical <= tolerance ? Infinity : Math.abs(move) / typical,
+      factor: flat ? Infinity : Math.abs(move) / typical,
       baselineWeeks: moves.length,
     }
 

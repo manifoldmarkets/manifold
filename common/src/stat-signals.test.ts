@@ -114,6 +114,13 @@ describe('getStatSignal', () => {
     })
   })
 
+  it('does not call a stat flat when most weeks held but some stepped', () => {
+    // The median move is 0, but steps of 10 have happened: +1 is ordinary.
+    expect(
+      signalOf([10, 10, 10, 10, 10, 10, 10, 10, 20, 20, 30, 30, 40, 41])
+    ).toBe(undefined)
+  })
+
   it('says how many weeks set the usual move', () => {
     // Only 6 earlier moves to go on.
     expect(signalOf([10, 11, 10, 11, 10, 11, 10, 20])).toMatchObject({
