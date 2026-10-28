@@ -19,8 +19,8 @@ import {
   refreshNewsFeed,
 } from 'shared/news-feed/state'
 import { cosine } from 'shared/news-feed/markets'
-import { articleSource } from 'shared/news-feed/articles'
-import { imagesEnabled } from 'shared/news-feed/pipeline'
+import { articleSources } from 'shared/news-feed/articles'
+import { imageSource } from 'shared/news-feed/images'
 import { enabledSources } from 'shared/news-feed/sources'
 import { APIHandler } from './helpers/endpoint'
 
@@ -57,8 +57,8 @@ export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
     lastError: status.lastError,
     config: {
       sources: enabledSources(),
-      articles: articleSource(),
-      images: imagesEnabled() ? 'outlets' : 'none',
+      articles: articleSources(),
+      images: imageSource(),
     },
     stories: [],
     total: 0,

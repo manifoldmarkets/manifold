@@ -1,31 +1,75 @@
-import { uniqBy } from 'lodash'
-import { NewsArticle } from 'common/news-feed'
+import { uniq, uniqBy } from 'lodash'
+import {
+  isNewsArticleSource,
+  NewsArticle,
+  NewsArticleSource,
+} from 'common/news-feed'
 import { mapAsync } from 'common/util/promise'
 import { DAY_MS } from 'common/util/time'
 import { log } from 'shared/utils'
-import { fetchText, hostnameOf, isPublicHttps } from './sources'
+import {
+  fetchText,
+  hostnameOf,
+  httpsRequest,
+  isOk,
+  isPublicHttps,
+  outletName,
+  USER_AGENT,
+} from './sources'
 
 /**
  * Full article text, which claims are read from.
  *
- * Production needs a licensed provider with full text (GNews is being
- * evaluated: its search returns the body in `content` on paid plans). When
- * GNEWS_API_KEY is set that search is tried first. Without it the prototype
- * indexes a few outlets' public RSS feeds, matches their articles to stories
- * by embedding, and reads the article page itself. Only these outlets' hosts
- * are ever fetched. Pricing, coverage, completeness and permissions remain
- * open checks; the feed only shows short attributed excerpts with a link.
+ * Licensed routes:
+ * - The Guardian's Open Platform under a commercial key: its search returns
+ *   the body as plain text. The developer key is non-commercial and bars
+ *   machine-learning use, so it is not a way to try this.
+ * - TollBit: a one-time partial-use licence per article at the publisher's
+ *   rate, for pages of publishers in its network, found through the story's
+ *   own links or TollBit's licensed search.
+ * Prototype-only routes, off unless NEWS_ARTICLE_SOURCES names them:
+ * - GNews search, whose `content` is text it does not own.
+ * - A few outlets' public RSS feeds and their article pages, whose terms
+ *   forbid it.
+ * Whatever the route, the feed shows only short attributed excerpts with a
+ * link.
  */
 
 export type IndexedArticle = NewsArticle & {
   description?: string
-  provider: 'rss' | 'gnews'
-  /** The body, when the provider returns it (GNews). */
+  provider: NewsArticleSource
+  /** The body, when the provider returns it with the search. */
   text?: string
-  /** Found among the story's own links rather than in the index, so the
+  /** Found among the story's own links rather than in an index, so the
    * title is the story's, not the outlet's, until the page is read. */
   ownLink?: boolean
+  /** What TollBit quoted for reading it, in micros of a dollar. */
+  priceMicros?: number
 }
+
+/** NEWS_ARTICLE_SOURCES: a comma list of guardian, tollbit, gnews, rss, or
+ * none. Default 'guardian,tollbit'; an API source counts only with its key
+ * set, and 'rss' (outlet pages, prototype only) only when named. */
+export function articleSources(): NewsArticleSource[] {
+  const raw = (process.env.NEWS_ARTICLE_SOURCES ?? 'guardian,tollbit').trim()
+  if (!raw || raw === 'none') return []
+  const keyFor: Record<NewsArticleSource, string | undefined> = {
+    guardian: process.env.GUARDIAN_API_KEY,
+    tollbit: process.env.TOLLBIT_API_KEY,
+    gnews: process.env.GNEWS_API_KEY,
+    rss: 'no key needed',
+  }
+  return uniq(
+    raw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(isNewsArticleSource)
+      .filter((s) => !!keyFor[s])
+  )
+}
+
+export const hasArticleSource = (s: NewsArticleSource) =>
+  articleSources().includes(s)
 
 type Outlet = {
   publisher: string
@@ -34,6 +78,7 @@ type Outlet = {
   feeds: string[]
 }
 
+/** Outlets whose public feeds and pages the prototype reads ('rss'). */
 export const ARTICLE_OUTLETS: Outlet[] = [
   {
     publisher: 'BBC News',
@@ -124,7 +169,7 @@ const outletForHost = (host: string | undefined) =>
       )
     : undefined
 
-/** The outlet behind a URL, when it is one whose pages we read. */
+/** The outlet behind a URL, when it is one whose pages the prototype reads. */
 export const readableOutlet = (url: string) => outletForHost(hostnameOf(url))
 
 const decode = (s: string) =>
@@ -145,6 +190,25 @@ const stripTags = (s: string) =>
   decode(s.replace(/<[^>]+>/g, ' '))
     .replace(/\s+/g, ' ')
     .trim()
+
+const wordCount = (s: string) => s.split(/\s+/).filter(Boolean).length
+
+const STOPWORDS = new Set(
+  `the a an and or but of to in on at for with by from as is are was were be been it its this that these those after before over under into about amid how why what when who where which says say said new will would could should may might has have had not no vs up down out off than more most less least first last us his her their he she they we you i one two three`.split(
+    ' '
+  )
+)
+
+/** The words of a headline worth searching for, in order. */
+export const searchTerms = (headline: string, max: number) =>
+  uniq(
+    headline
+      .toLowerCase()
+      .replace(/[’']s\b/g, '')
+      .replace(/[^a-z0-9\s-]/g, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length >= 3 && !STOPWORDS.has(w))
+  ).slice(0, max)
 
 function parseFeedItems(xml: string, outlet: Outlet, now: number) {
   const out: IndexedArticle[] = []
@@ -180,9 +244,10 @@ function parseFeedItems(xml: string, outlet: Outlet, now: number) {
   return out
 }
 
-/** Recent articles from the outlets we can read, newest first. */
+/** Recent articles from the outlets the prototype reads, newest first.
+ * Empty unless 'rss' is an article source. */
 export async function fetchArticleIndex(now = Date.now()) {
-  if (articleSource() !== 'rss') return [] as IndexedArticle[]
+  if (!hasArticleSource('rss')) return [] as IndexedArticle[]
   const jobs = ARTICLE_OUTLETS.flatMap((outlet) =>
     outlet.feeds.map((url) => ({ outlet, url }))
   )
@@ -248,23 +313,46 @@ export function extractArticleBody(html: string) {
   const title = meta('og:title')
   return {
     text: text.slice(0, MAX_BODY_CHARS),
-    words: text.split(/\s+/).filter(Boolean).length,
+    words: wordCount(text),
     image: image && /^https:\/\//.test(image) ? decode(image) : undefined,
     title: title ? stripTags(title) : undefined,
   }
 }
 
-/** Read an article page from one of the outlets we index. */
+export type ArticleBody = {
+  text: string
+  image?: string
+  title?: string
+  byline?: string
+  /** What the read cost, when a licence was bought for it. */
+  priceMicros?: number
+}
+
+/** The text of an article, by its provider's route. Undefined when the body
+ * is too short to be the article (a teaser or a blocked page). */
 export async function readArticle(
   article: IndexedArticle
-): Promise<{ text: string; image?: string; title?: string } | undefined> {
+): Promise<ArticleBody | undefined> {
   if (article.text) {
-    const words = article.text.split(/\s+/).filter(Boolean).length
-    return words >= MIN_BODY_WORDS
-      ? { text: article.text.slice(0, MAX_BODY_CHARS) }
+    return wordCount(article.text) >= MIN_BODY_WORDS
+      ? { text: article.text.slice(0, MAX_BODY_CHARS), byline: article.byline }
       : undefined
   }
-  if (articleSource() !== 'rss' || !readableOutlet(article.url))
+  if (article.provider === 'tollbit') {
+    const got = await readTollbit(article.url)
+    if (!got || wordCount(got.text) < MIN_BODY_WORDS) return undefined
+    return {
+      text: got.text.slice(0, MAX_BODY_CHARS),
+      title: got.title,
+      byline: got.author,
+      priceMicros: got.priceMicros,
+    }
+  }
+  if (
+    article.provider !== 'rss' ||
+    !hasArticleSource('rss') ||
+    !readableOutlet(article.url)
+  )
     return undefined
   const html = await fetchText(
     article.url,
@@ -276,8 +364,333 @@ export async function readArticle(
 }
 
 // ---------------------------------------------------------------------------
-// GNews (optional): https://docs.gnews.io. Paid plans return the full body
-// in `content`; the free plan truncates it and appends "[N chars]".
+// The Guardian Open Platform: https://open-platform.theguardian.com
+//
+// Full text comes with the search under a commercial key (price on usage;
+// the commercial tier lists AI and text-and-data-mining use among what it
+// covers, so the extraction we do goes in the contract). Display terms: link
+// to the article, headline and byline unaltered, "Powered by The Guardian"
+// on the page, and the text refreshed or dropped within 24 hours, which
+// claims.ts does by reading the article again after a day.
+
+const GUARDIAN_API = 'https://content.guardianapis.com/search'
+const onlyGuardian = (u: URL) =>
+  u.protocol === 'https:' && u.hostname === 'content.guardianapis.com'
+
+type GuardianResult = {
+  id?: string
+  webTitle?: string
+  webUrl?: string
+  webPublicationDate?: string
+  fields?: {
+    headline?: string
+    trailText?: string
+    byline?: string
+    bodyText?: string
+    thumbnail?: string
+    wordcount?: string
+  }
+}
+
+/** Guardian articles on a headline around a time, with their full text.
+ * Shaped from the documented response; untested without a key. */
+export async function searchGuardian(
+  headline: string,
+  aroundTime: number
+): Promise<IndexedArticle[]> {
+  const key = process.env.GUARDIAN_API_KEY
+  if (!key) return []
+  const terms = searchTerms(headline, 4)
+  if (terms.length < 2) return []
+  const day = (t: number) => new Date(t).toISOString().slice(0, 10)
+  const params = new URLSearchParams({
+    q: terms.join(' AND '),
+    'from-date': day(aroundTime - 2 * DAY_MS),
+    'to-date': day(aroundTime + DAY_MS),
+    'order-by': 'relevance',
+    'page-size': '5',
+    'show-fields': 'headline,trailText,byline,bodyText,wordcount',
+    'api-key': key,
+  })
+  const raw = await fetchText(`${GUARDIAN_API}?${params}`, onlyGuardian)
+  const parsed = JSON.parse(raw) as {
+    response?: { status?: string; message?: string; results?: GuardianResult[] }
+  }
+  if (parsed.response?.status !== 'ok')
+    throw new Error(
+      `guardian: ${
+        parsed.response?.message ?? parsed.response?.status ?? 'bad response'
+      }`
+    )
+  return (parsed.response.results ?? []).flatMap((r): IndexedArticle[] => {
+    const published = Date.parse(r.webPublicationDate ?? '')
+    const text = r.fields?.bodyText?.trim()
+    if (!r.webUrl || !r.webTitle || !Number.isFinite(published) || !text)
+      return []
+    return [
+      {
+        url: r.webUrl,
+        title: r.fields?.headline ?? r.webTitle,
+        description: r.fields?.trailText
+          ? stripTags(r.fields.trailText)
+          : undefined,
+        publisher: 'The Guardian',
+        site: 'https://www.theguardian.com',
+        publishedTime: published,
+        byline: r.fields?.byline,
+        provider: 'guardian',
+        text,
+      },
+    ]
+  })
+}
+
+// ---------------------------------------------------------------------------
+// TollBit: https://docs.tollbit.com
+//
+// Publishers in TollBit's network set a rate per page. A one-time
+// ON_DEMAND_LICENSE (partial use: a summary, grounding or citation of the
+// article) is bought per read, in micros of a dollar: rates for the URL, a
+// content token under a price cap, then the page as markdown. Reads are
+// capped per day (TOLLBIT_READS_PER_DAY) and per page (TOLLBIT_MAX_PRICE_USD).
+
+const tollbitBase = () =>
+  process.env.TOLLBIT_API_BASE ?? 'https://gateway.tollbit.com'
+const onlyTollbit = (u: URL) =>
+  u.protocol === 'https:' && u.hostname === new URL(tollbitBase()).hostname
+const tollbitKey = () => process.env.TOLLBIT_API_KEY
+/** The AgentID registered on the TollBit dashboard, which the User-Agent
+ * of every content request must carry. */
+const tollbitAgent = () => process.env.TOLLBIT_AGENT_ID ?? USER_AGENT
+const tollbitMaxPriceMicros = () =>
+  Math.max(
+    0,
+    Math.round(Number(process.env.TOLLBIT_MAX_PRICE_USD ?? '0.02') * 1_000_000)
+  )
+const tollbitReadsPerDay = () =>
+  Math.max(0, Number(process.env.TOLLBIT_READS_PER_DAY ?? '150') || 0)
+
+type TollbitRate = {
+  price?: { priceMicros?: number | string; currency?: string }
+  license?: {
+    id?: string
+    licenseType?: string
+    licensePath?: string
+    permissions?: { name?: string }[]
+  }
+}
+
+/** What is spent today, for the budget and the log. In-process only. */
+const tollbitSpend = { day: '', reads: 0, micros: 0 }
+
+const today = () => new Date().toISOString().slice(0, 10)
+
+const spendToday = () => {
+  if (tollbitSpend.day !== today()) {
+    tollbitSpend.day = today()
+    tollbitSpend.reads = 0
+    tollbitSpend.micros = 0
+  }
+  return tollbitSpend
+}
+
+/** Whether another TollBit read fits today's budget. */
+export const canReadTollbit = () =>
+  !!tollbitKey() && spendToday().reads < tollbitReadsPerDay()
+
+/** The cheapest one-time licence a publisher offers for a page, in micros,
+ * when it is within our cap. */
+const priceOf = (rates: TollbitRate[]) => {
+  let best: number | undefined
+  for (const r of rates) {
+    const type = r.license?.licenseType
+    if (type !== 'ON_DEMAND_LICENSE' && type !== 'ON_DEMAND_FULL_USE_LICENSE')
+      continue
+    if (r.price?.currency && r.price.currency !== 'USD') continue
+    const p = Number(r.price?.priceMicros)
+    if (!Number.isFinite(p) || p < 0) continue
+    if (best === undefined || p < best) best = p
+  }
+  return best !== undefined && best <= tollbitMaxPriceMicros()
+    ? best
+    : undefined
+}
+
+/** The URLs among these that TollBit licenses within our cap, with the
+ * price of each. Rates are free to ask for. */
+export async function tollbitRates(
+  urls: string[]
+): Promise<Map<string, number>> {
+  const key = tollbitKey()
+  const out = new Map<string, number>()
+  if (!key || urls.length === 0) return out
+  const res = await httpsRequest(`${tollbitBase()}/dev/v2/rates/batch`, {
+    method: 'POST',
+    headers: { TollbitKey: key },
+    body: JSON.stringify({ urls }),
+    allow: onlyTollbit,
+  })
+  if (!isOk(res))
+    throw new Error(`tollbit rates: ${res.status} ${res.body.slice(0, 160)}`)
+  const parsed = JSON.parse(res.body) as unknown
+  const rows = Array.isArray(parsed)
+    ? (parsed as { url?: string; rates?: TollbitRate[] }[])
+    : (parsed as { results?: { url?: string; rates?: TollbitRate[] }[] })
+        .results ?? []
+  for (const row of rows) {
+    const price = priceOf(row.rates ?? [])
+    if (row.url && price !== undefined) out.set(row.url, price)
+  }
+  return out
+}
+
+/** Markdown as the plain text the claim reader wants. */
+const markdownToText = (md: string) =>
+  md
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^\s*[-*+>]\s+/gm, '')
+    .replace(/[*_~`]+/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+
+/** Read one page through TollBit, buying its one-time licence. */
+export async function readTollbit(url: string): Promise<
+  | {
+      text: string
+      title?: string
+      author?: string
+      published?: number
+      priceMicros?: number
+    }
+  | undefined
+> {
+  const key = tollbitKey()
+  if (!key || !canReadTollbit()) return undefined
+  const tokenRes = await httpsRequest(
+    `${tollbitBase()}/dev/v2/tokens/content`,
+    {
+      method: 'POST',
+      headers: { TollbitKey: key },
+      body: JSON.stringify({
+        url,
+        userAgent: tollbitAgent(),
+        maxPriceMicros: tollbitMaxPriceMicros(),
+        currency: 'USD',
+        licenseType: 'ON_DEMAND_LICENSE',
+      }),
+      allow: onlyTollbit,
+    }
+  )
+  if (!isOk(tokenRes))
+    throw new Error(
+      `tollbit token: ${tokenRes.status} ${tokenRes.body.slice(0, 160)}`
+    )
+  const token = (JSON.parse(tokenRes.body) as { token?: string }).token
+  if (!token) throw new Error('tollbit token: none in the response')
+  const res = await httpsRequest(
+    `${tollbitBase()}/dev/v2/content/${encodeURIComponent(url)}`,
+    {
+      headers: {
+        // The docs name the header both ways.
+        TollbitToken: token,
+        'Tollbit-Token': token,
+        'User-Agent': tollbitAgent(),
+        'Tollbit-Accept-Content': 'text/markdown',
+        Accept: 'text/markdown',
+      },
+      allow: onlyTollbit,
+      timeoutMs: 20_000,
+    }
+  )
+  if (!isOk(res))
+    throw new Error(`tollbit content: ${res.status} ${res.body.slice(0, 160)}`)
+  const parsed = JSON.parse(res.body) as {
+    content?: { body?: string }
+    metadata?: { title?: string; author?: string; published?: string }
+    rate?: TollbitRate
+  }
+  const body = parsed.content?.body
+  if (!body) return undefined
+  const price = Number(parsed.rate?.price?.priceMicros)
+  const spend = spendToday()
+  spend.reads++
+  if (Number.isFinite(price)) spend.micros += price
+  log('news-feed: tollbit read', {
+    url,
+    priceUsd: Number.isFinite(price) ? price / 1_000_000 : undefined,
+    todayReads: spend.reads,
+    todayUsd: spend.micros / 1_000_000,
+  })
+  const published = Date.parse(parsed.metadata?.published ?? '')
+  return {
+    text: markdownToText(body),
+    title: parsed.metadata?.title,
+    author: parsed.metadata?.author,
+    published: Number.isFinite(published) ? published : undefined,
+    priceMicros: Number.isFinite(price) ? price : undefined,
+  }
+}
+
+/** Licensable articles on a headline, from TollBit's search of its network.
+ * The search says what can be licensed; the rate is asked for before a read. */
+export async function searchTollbit(
+  headline: string,
+  aroundTime: number
+): Promise<IndexedArticle[]> {
+  const key = tollbitKey()
+  if (!key) return []
+  const terms = searchTerms(headline, 6)
+  if (terms.length < 2) return []
+  const params = new URLSearchParams({
+    q: terms.join(' '),
+    size: '10',
+    readyToLicense: 'true',
+  })
+  const res = await httpsRequest(`${tollbitBase()}/dev/v2/search?${params}`, {
+    headers: { TollbitKey: key },
+    allow: onlyTollbit,
+  })
+  if (!isOk(res))
+    throw new Error(`tollbit search: ${res.status} ${res.body.slice(0, 160)}`)
+  const parsed = JSON.parse(res.body) as {
+    items?: {
+      title?: string
+      url?: string
+      publishedDate?: string
+      publisher?: { domain?: string; name?: string }
+      availability?: { readyToLicense?: boolean }
+    }[]
+  }
+  return (parsed.items ?? []).flatMap((it): IndexedArticle[] => {
+    if (!it.url || !it.title || it.availability?.readyToLicense === false)
+      return []
+    if (!/^https:\/\//.test(it.url)) return []
+    const host = hostnameOf(it.url)
+    const published = Date.parse(it.publishedDate ?? '')
+    return [
+      {
+        url: it.url,
+        title: it.title,
+        publisher:
+          it.publisher?.name ?? outletName(host) ?? host ?? 'Publisher',
+        site: `https://${it.publisher?.domain ?? host ?? ''}`,
+        publishedTime: Number.isFinite(published) ? published : aroundTime,
+        provider: 'tollbit',
+      },
+    ]
+  })
+}
+
+// ---------------------------------------------------------------------------
+// GNews (prototype only): https://docs.gnews.io. Paid plans return the body
+// in `content`, but GNews owns none of it and leaves the rights with the
+// buyer, so this is discovery, not a licence.
 
 type GNewsArticle = {
   title?: string
@@ -290,19 +703,6 @@ type GNewsArticle = {
 }
 
 const TRUNCATION_MARK = /\s*\.{0,3}\s*\[\d+ chars\]\s*$/
-
-/** NEWS_ARTICLE_SOURCES: 'rss' reads outlet pages (prototype only; their
- * terms do not allow it in production), 'gnews' uses the API when a key is
- * set, 'none' turns claims off. */
-export function articleSource(): 'rss' | 'gnews' | 'none' {
-  const raw = (process.env.NEWS_ARTICLE_SOURCES ?? 'rss').trim()
-  if (raw === 'none') return 'none'
-  if (raw === 'gnews') return process.env.GNEWS_API_KEY ? 'gnews' : 'none'
-  return 'rss'
-}
-
-export const isGNewsEnabled = () =>
-  !!process.env.GNEWS_API_KEY && articleSource() !== 'none'
 
 /** Articles GNews finds for a story's headline around its time. Untested
  * without a key; shaped from the documented response. */

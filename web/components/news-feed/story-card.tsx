@@ -14,6 +14,7 @@ import { Contract } from 'common/contract'
 import {
   NEWS_CATEGORIES,
   NewsClaim,
+  NewsImageCredit,
   NewsSourceLink,
   NewsStory,
   wikiCurrentEventsUrl,
@@ -161,41 +162,41 @@ export function StoryCard(props: {
               lead={lead}
               others={others}
               onLeave={leave}
-              credit={
-                story.origin === 'wikipedia'
-                  ? wikiCurrentEventsUrl(story.publishedTime)
-                  : undefined
-              }
+              credit={originCredit(story)}
             />
           </Col>
           {story.image && (
-            <a
-              href={lead.url}
-              target="_blank"
-              rel="noreferrer"
-              onClick={leave}
-              tabIndex={-1}
-              aria-hidden
-              className="shrink-0"
+            <figure
+              className={clsx(
+                'm-0 flex shrink-0 flex-col gap-0.5',
+                hero ? 'w-24 sm:w-48' : 'w-16 sm:w-28'
+              )}
             >
-              <img
-                src={story.image}
-                alt=""
-                referrerPolicy="no-referrer"
-                loading="lazy"
-                className={clsx(
-                  'bg-canvas-50 rounded-md object-cover',
-                  hero
-                    ? 'h-20 w-24 sm:h-32 sm:w-48'
-                    : 'h-16 w-16 sm:h-20 sm:w-28'
-                )}
-                onError={(e) => {
-                  ;(
-                    e.currentTarget.parentElement as HTMLElement
-                  ).style.display = 'none'
-                }}
-              />
-            </a>
+              <a
+                href={lead.url}
+                target="_blank"
+                rel="noreferrer"
+                onClick={leave}
+                tabIndex={-1}
+                aria-hidden
+              >
+                <img
+                  src={story.image}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  loading="lazy"
+                  className={clsx(
+                    'bg-canvas-50 w-full rounded-md object-cover',
+                    hero ? 'h-20 sm:h-32' : 'h-16 sm:h-20'
+                  )}
+                  onError={(e) => {
+                    const figure = e.currentTarget.closest('figure')
+                    if (figure) (figure as HTMLElement).style.display = 'none'
+                  }}
+                />
+              </a>
+              {story.imageCredit && <ImageCredit credit={story.imageCredit} />}
+            </figure>
           )}
         </div>
       </div>
@@ -378,8 +379,8 @@ function Outlets(props: {
   lead: Lead
   others: NewsSourceLink[]
   onLeave: () => void
-  /** The Wikipedia portal page the summary is from (CC BY-SA). */
-  credit?: string
+  /** The source's credit, when it asks for one. */
+  credit?: Credit
 }) {
   const { lead, others, onLeave, credit } = props
   const [expanded, setExpanded] = useState(false)
@@ -423,16 +424,53 @@ function Outlets(props: {
         ))}
       {credit && (
         <a
-          href={credit}
+          href={credit.href}
           target="_blank"
           rel="noreferrer"
           className="text-ink-400 hover:text-primary-700 whitespace-nowrap"
-          title="Summary from Wikipedia's Current Events portal, CC BY-SA 4.0"
+          title={credit.title}
         >
-          via Wikipedia · CC BY-SA
+          {credit.label}
         </a>
       )}
     </Row>
+  )
+}
+
+type Credit = { href: string; label: string; title: string }
+
+/** Where the story was found, when the source asks to be credited: the
+ * portal's text is CC BY-SA, and GDELT asks for a citation. */
+function originCredit(story: NewsStory): Credit | undefined {
+  if (story.origin === 'wikipedia')
+    return {
+      href: wikiCurrentEventsUrl(story.publishedTime),
+      label: 'via Wikipedia · CC BY-SA',
+      title: "Summary from Wikipedia's Current Events portal, CC BY-SA 4.0",
+    }
+  if (story.origin === 'gdelt')
+    return {
+      href: 'https://www.gdeltproject.org/',
+      label: 'via GDELT',
+      title: 'Found through the GDELT Project',
+    }
+  return undefined
+}
+
+/** The author and licence of a Commons picture, linking to its file page. */
+function ImageCredit(props: { credit: NewsImageCredit }) {
+  const { credit } = props
+  const text = `${credit.author ?? 'Wikimedia Commons'} · ${credit.license}`
+  return (
+    <a
+      href={credit.url}
+      target="_blank"
+      rel="noreferrer"
+      className="text-ink-400 hover:text-primary-700 block truncate text-[10px] leading-tight"
+      title={`${text}, via Wikimedia Commons`}
+    >
+      {text}
+    </a>
   )
 }
 

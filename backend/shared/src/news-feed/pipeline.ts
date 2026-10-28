@@ -1,5 +1,5 @@
 import { createHash } from 'crypto'
-import { sortBy, sumBy } from 'lodash'
+import { countBy, sortBy, sumBy, uniq } from 'lodash'
 import { Contract } from 'common/contract'
 import { fetchLinkPreview } from 'common/link-preview'
 import { isFaviconAllowed } from 'common/favicon-allowlist'
@@ -15,12 +15,9 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { contractColumnsToSelectWithPrefix, log } from 'shared/utils'
-import { articleSource } from './articles'
+import { articleSources } from './articles'
 import { ClaimsMemo, findArticlesAndClaims } from './claims'
-
-/** NEWS_IMAGES=none skips outlet thumbnails (unlicensed in production). */
-export const imagesEnabled = () =>
-  (process.env.NEWS_IMAGES ?? 'outlets').trim() !== 'none'
+import { findWikimediaImage, imageSource } from './images'
 import {
   Candidate,
   cosine,
@@ -30,6 +27,7 @@ import {
 } from './markets'
 import {
   dedupeSources,
+  enabledSources,
   gatherRawStories,
   hostnameOf,
   isAggregatorLink,
@@ -63,6 +61,14 @@ export type StoryMemo = ClaimsMemo & {
   category: NewsCategory
   verifiedAt: number
   imageTriedAt?: number
+  /** The subjects a Wikimedia picture was last looked for under, so a new
+   * subject from the verifier gets another look. */
+  imageTriedFor?: string
+  /** Wikipedia article titles for what the story is about, best first: the
+   * verifier's pick, then what the source linked. For the picture. */
+  subjects?: string[]
+  /** A publisher's standfirst, read by the matcher and never sent out. */
+  context?: string
   /** Ids of raw items that merged into this story, so they are not embedded
    * again on the next refresh. */
   aliases?: string[]
@@ -90,7 +96,8 @@ const CANDIDATES_PER_STORY = 12
 const FALLBACK_SIMILARITY = 0.6
 const REVERIFY_AFTER_MS = 12 * HOUR_MS
 const IMAGES_PER_REFRESH = 24
-const IMAGE_TIMEOUT_MS = 6_000
+/** Two Wikipedia calls, or one outlet page. */
+const IMAGE_TIMEOUT_MS = 10_000
 const FRESHNESS_HALF_LIFE_H = 36
 
 const EMBED_CONCURRENCY = 6
@@ -105,10 +112,14 @@ const embeddingText = (s: {
   topic?: string
   headline: string
   summary?: string
-}) =>
-  `${s.topic ? s.topic + ': ' : ''}${s.headline}${
-    s.summary && s.summary !== s.headline ? ' ' + s.summary : ''
+  context?: string
+}) => {
+  const more =
+    s.summary && s.summary !== s.headline ? s.summary : s.context ?? ''
+  return `${s.topic ? s.topic + ': ' : ''}${s.headline}${
+    more ? ' ' + more : ''
   }`
+}
 
 const isSameUtcDay = (a: number, b: number) =>
   new Date(a).toISOString().slice(0, 10) ===
@@ -134,8 +145,14 @@ const toStory = (id: string, r: RawStory, now: number): NewsStory => ({
   score: 0,
 })
 
-/** Another outlet's item on a story we have: fold its sources in. */
-const absorb = (story: NewsStory, r: RawStory) => {
+/** Another outlet's item on a story we have: fold its sources in, and
+ * what it knows about the subject into the memo. */
+const absorb = (story: NewsStory, r: RawStory, memo?: StoryMemo) => {
+  if (memo) {
+    if (r.entities?.length)
+      memo.subjects = uniq([...(memo.subjects ?? []), ...r.entities])
+    if (r.context && !memo.context) memo.context = r.context
+  }
   story.sources = dedupeSources([...story.sources, ...r.sources])
   story.updatedTime = Math.max(story.updatedTime, r.publishedTime)
   if (story.category === 'other' && r.category !== 'other')
@@ -155,26 +172,28 @@ type Verdict = {
   contractIds: string[]
   forecastable?: boolean
   category?: NewsCategory
+  /** The Wikipedia article on what the story is mainly about. */
+  subject?: string
 }
 
-/** Ask Gemini which candidates the story actually bears on. */
+/** Ask Gemini which candidates the story actually bears on, and what it is
+ * about (for its picture). */
 async function verifyLinks(
   story: NewsStory,
-  candidates: Candidate[]
+  candidates: Candidate[],
+  context?: string
 ): Promise<Verdict> {
   if (candidates.length === 0) return { contractIds: [] }
   const list = candidates
     .map((c, i) => `${i + 1}. ${describeMarket(c.contract)}`)
     .join('\n')
+  const about =
+    story.summary && story.summary !== story.headline ? story.summary : context
   const prompt = `You match news stories to prediction markets on Manifold Markets.
 
 Story (published ${new Date(story.publishedTime).toISOString().slice(0, 10)}):
 Headline: ${story.headline}
-${
-  story.summary && story.summary !== story.headline
-    ? `Context: ${story.summary}\n`
-    : ''
-}${
+${about ? `Context: ${about}\n` : ''}${
     story.topic ? `Running story: ${story.topic}\n` : ''
   }Reported by: ${story.sources.map((s) => s.name).join(', ')}
 
@@ -182,13 +201,14 @@ Candidate markets:
 ${list}
 
 Return only JSON in this shape:
-{"relevant": ["<id>", ...], "forecastable": true, "category": "politics"}
+{"relevant": ["<id>", ...], "forecastable": true, "category": "politics", "subject": "Benjamin Netanyahu"}
 
 Rules:
 - Put a market in "relevant" only if the story is about the event, actor or question the market's outcome turns on, so that a trader who read the story should update their probability. Sharing a topic, a country or a word is not enough.
 - Order "relevant" strongest first. An empty list is a fine answer.
 - "forecastable": true when the story implies an open question about what happens next that would make a good market.
-- "category": the single best fit from politics, world, economy, tech, science, sport, culture, other.`
+- "category": the single best fit from politics, world, economy, tech, science, sport, culture, other.
+- "subject": the exact title of the English Wikipedia article on the specific person, organisation, team, place or named event the story is mainly about (for example "Benjamin Netanyahu", "Rapid Support Forces", "2026 Israeli legislative election"), used for its picture. Never a general concept such as "Airstrike", "Election" or "Drone strike"; null when the story has no such subject.`
 
   try {
     const res = await withTimeout(
@@ -196,6 +216,7 @@ Rules:
         relevant?: unknown
         forecastable?: unknown
         category?: unknown
+        subject?: unknown
       }>(prompt, {
         model: aiModels.flash,
         parseAsJson: true,
@@ -217,6 +238,12 @@ Rules:
       category:
         typeof res?.category === 'string' && isNewsCategory(res.category)
           ? res.category
+          : undefined,
+      subject:
+        typeof res?.subject === 'string' &&
+        res.subject.trim().length > 0 &&
+        res.subject.trim().length <= 120
+          ? res.subject.trim()
           : undefined,
     }
   } catch (e) {
@@ -272,17 +299,30 @@ export async function buildNewsFeed(
   keepContractIds: string[] = []
 ): Promise<NewsFeedBuild> {
   const pg = createSupabaseDirectClient()
-  const raw = await gatherRawStories(now)
+  const raw = await gatherRawStories(now, { since: prev?.updatedTime })
   log('news-feed: gathered raw items', {
     raw: raw.length,
-    wikipedia: raw.filter((r) => r.origin === 'wikipedia').length,
-    google: raw.filter((r) => r.origin === 'google-news').length,
+    ...countBy(raw, (r) => r.origin),
   })
 
-  // 1. Carry the recent stories forward.
+  // 1. Carry the recent stories forward: those from sources still enabled,
+  //    without pictures this configuration does not license (a cache from
+  //    another configuration must not leak them).
+  const origins = new Set(enabledSources())
+  const pictures = imageSource()
   const stories = new Map<string, NewsStory>()
   for (const s of prev?.stories ?? []) {
-    if (now - s.updatedTime < KEEP_STORIES_MS) stories.set(s.id, { ...s })
+    if (now - s.updatedTime >= KEEP_STORIES_MS || !origins.has(s.origin))
+      continue
+    const story = { ...s }
+    if (
+      story.image &&
+      (pictures === 'none' || (pictures !== 'outlets' && !story.imageCredit))
+    ) {
+      delete story.image
+      delete story.imageCredit
+    }
+    stories.set(s.id, story)
   }
   const memos: Record<string, StoryMemo> = {}
   for (const [id, m] of Object.entries(prev?.memos ?? {})) {
@@ -298,7 +338,7 @@ export async function buildNewsFeed(
   for (const r of raw) {
     const id = storyIdFor(r.origin, r.key)
     const existing = stories.get(id) ?? stories.get(aliasToStory.get(id) ?? '')
-    if (existing) absorb(existing, r)
+    if (existing) absorb(existing, r, memos[existing.id])
     else if (!fresh.has(id)) fresh.set(id, r)
   }
 
@@ -308,7 +348,9 @@ export async function buildNewsFeed(
   await mapAsync(
     reEmbed,
     async (s) => {
-      const embedding = await generateEmbeddings(embeddingText(s))
+      const embedding = await generateEmbeddings(
+        embeddingText({ ...s, context: memos[s.id]?.context })
+      )
       if (!embedding) return
       memos[s.id] = {
         ...(memos[s.id] ?? {
@@ -353,6 +395,8 @@ export async function buildNewsFeed(
         contractIds: [],
         category: f.raw.category,
         verifiedAt: 0,
+        subjects: f.raw.entities,
+        context: f.raw.context,
       }
       continue
     }
@@ -365,8 +409,8 @@ export async function buildNewsFeed(
     const target =
       best && best.sim >= MERGE_SIMILARITY ? stories.get(best.id) : undefined
     if (target) {
-      absorb(target, f.raw)
       const tm = memos[target.id]
+      absorb(target, f.raw, tm)
       if (tm) tm.aliases = [...(tm.aliases ?? []), f.id].slice(-MAX_ALIASES)
       merged++
       continue
@@ -379,6 +423,8 @@ export async function buildNewsFeed(
       contractIds: [],
       category: f.raw.category,
       verifiedAt: 0,
+      subjects: f.raw.entities,
+      context: f.raw.context,
     }
     vectors.push({ id: f.id, embedding: f.embedding })
   }
@@ -431,10 +477,12 @@ export async function buildNewsFeed(
     async (s) => {
       const m = memos[s.id]
       const candidates = candidatesByStory.get(s.id) ?? []
-      const verdict = await verifyLinks(s, candidates)
+      const verdict = await verifyLinks(s, candidates, m.context)
       m.candidateIds = candidates.map((c) => c.contract.id)
       m.contractIds = verdict.contractIds
       m.forecastable = verdict.forecastable
+      if (verdict.subject)
+        m.subjects = uniq([verdict.subject, ...(m.subjects ?? [])])
       if (verdict.category && s.category === 'other')
         m.category = verdict.category
       m.verifiedAt = now
@@ -447,11 +495,19 @@ export async function buildNewsFeed(
   })
 
   // 4. Claims, for stories with markets: the feed shows those by default.
+  //    Without an article source there are none, and text another
+  //    configuration read goes with them.
+  if (articleSources().length === 0)
+    for (const m of Object.values(memos)) {
+      delete m.claims
+      delete m.article
+      delete m.articleProvider
+      delete m.claimsStatus
+    }
   let claimContractIds: string[] = []
   try {
-    // Off when no article source is configured: nothing to read claims from.
     claimContractIds =
-      articleSource() === 'none'
+      articleSources().length === 0
         ? []
         : await findArticlesAndClaims(
             pg,
@@ -517,28 +573,51 @@ export async function buildNewsFeed(
     assembled.push(story)
   }
 
-  // 6. Thumbnails for linked stories whose first link is a known outlet. The
+  // 6. Pictures for linked stories, best first.
+  //    'wikimedia': the lead photograph of the story's subject on Wikipedia,
+  //    with its credit; a story is tried again when the verifier names a
+  //    subject it was not tried under.
+  //    'outlets' (prototype only): the first outlet's preview image. The
   //    favicon allowlist doubles as the set of hosts we are willing to fetch
   //    from: citations are user-editable on the portal, so never follow an
   //    arbitrary host from the server.
+  const subjectsKey = (s: NewsStory) => (memos[s.id]?.subjects ?? []).join('|')
   const wantImage = assembled
-    .filter(
-      (s) =>
-        imagesEnabled() &&
-        s.contractIds.length > 0 &&
-        !s.image &&
-        !memos[s.id]?.imageTriedAt &&
-        s.sources[0] &&
+    .filter((s) => {
+      const m = memos[s.id]
+      if (pictures === 'none' || s.contractIds.length === 0 || s.image || !m)
+        return false
+      if (pictures === 'wikimedia')
+        return (
+          (m.subjects?.length ?? 0) > 0 && m.imageTriedFor !== subjectsKey(s)
+        )
+      return (
+        !m.imageTriedAt &&
+        !!s.sources[0] &&
         !isAggregatorLink(s.sources[0].url) &&
         isFaviconAllowed(hostnameOf(s.sources[0].url) ?? '')
-    )
+      )
+    })
     .sort((a, b) => b.score - a.score)
     .slice(0, IMAGES_PER_REFRESH)
   await mapAsync(
     wantImage,
     async (s) => {
-      memos[s.id].imageTriedAt = now
+      const m = memos[s.id]
+      m.imageTriedAt = now
       try {
+        if (pictures === 'wikimedia') {
+          m.imageTriedFor = subjectsKey(s)
+          const found = await withTimeout(
+            findWikimediaImage(m.subjects ?? []),
+            IMAGE_TIMEOUT_MS
+          )
+          if (found) {
+            s.image = found.image
+            s.imageCredit = found.credit
+          }
+          return
+        }
         const preview = await withTimeout(
           fetchLinkPreview(s.sources[0].url),
           IMAGE_TIMEOUT_MS
@@ -546,7 +625,7 @@ export async function buildNewsFeed(
         if (preview?.image && /^https:\/\//.test(preview.image))
           s.image = preview.image
       } catch {
-        // No preview: the card renders without one.
+        // No picture: the card renders without one.
       }
     },
     IMAGE_CONCURRENCY

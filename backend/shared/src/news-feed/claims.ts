@@ -16,12 +16,17 @@ import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 import {
+  articleSources,
+  canReadTollbit,
   fetchArticleIndex,
+  hasArticleSource,
   IndexedArticle,
-  isGNewsEnabled,
   readableOutlet,
   readArticle,
   searchGNews,
+  searchGuardian,
+  searchTollbit,
+  tollbitRates,
 } from './articles'
 import {
   Candidate,
@@ -36,8 +41,11 @@ import { hostnameOf, isAggregatorLink } from './sources'
  * Claims: short verbatim excerpts from a story's article that a market could
  * test, each with the market that tests it or a draft for one.
  *
- * 1. Find the article: an indexed outlet's own piece on the story, matched by
- *    embedding (or the story's own link when it is to an outlet we read).
+ * 1. Find the article: one of the story's own links that a licensed route
+ *    can read (TollBit prices the publisher's page), else a search of each
+ *    licensed provider (the Guardian's full text, TollBit's network), each
+ *    result checked against the story by embedding. The prototype's outlet
+ *    RSS index and page reads run only when configured.
  * 2. Read its body and ask the model for every forward-looking, checkable
  *    claim, copied exactly, with who made it, and a draft market that asks
  *    exactly what the claim asserts. Excerpts that are not verbatim in the
@@ -92,6 +100,15 @@ const MAX_EXCERPT_WORDS = 60
  * hold more than a handful of claims that qualify. */
 const MAX_CLAIMS = 30
 const MAX_REJECTED = 6
+/** The Guardian's terms: its text is refreshed or dropped within 24 hours,
+ * so a Guardian article is read again after a day. */
+const GUARDIAN_TTL_MS = DAY_MS
+/** Provider searches per refresh, across providers, so a refresh stays a few
+ * minutes long and a paid quota lasts the day. */
+const SEARCHES_PER_REFRESH = Math.max(
+  0,
+  Number(process.env.NEWS_ARTICLE_SEARCHES_PER_REFRESH ?? '40') || 0
+)
 
 /** Article embeddings by url, for the life of the process. */
 const articleEmbeddings = new Map<string, number[]>()
@@ -453,21 +470,23 @@ async function readClaims(
 
 const toArticle = (
   a: IndexedArticle,
-  page: { image?: string; title?: string }
+  page: { image?: string; title?: string; byline?: string }
 ): NewsArticle => ({
   url: a.url,
   // A link from the story itself carries no headline of its own; the
   // page's title is the outlet's.
   title: a.ownLink && page.title ? page.title : a.title,
   publisher: a.publisher,
+  byline: a.byline ?? page.byline,
   site: a.site,
   publishedTime: a.publishedTime,
   image: page.image ?? a.image,
 })
 
-/** An article from the story's own links, when one is to an outlet we read
- * (the Wikipedia portal cites outlets directly). */
+/** An article from the story's own links, when one is to an outlet whose
+ * pages the prototype reads (the Wikipedia portal cites outlets directly). */
 function ownArticle(story: NewsStory): IndexedArticle | undefined {
+  if (!hasArticleSource('rss')) return undefined
   for (const s of story.sources) {
     if (isAggregatorLink(s.url)) continue
     const outlet = readableOutlet(s.url)
@@ -485,6 +504,62 @@ function ownArticle(story: NewsStory): IndexedArticle | undefined {
   return undefined
 }
 
+/** The story's own links that TollBit will license within our cap, cheapest
+ * first. The link is the story's own citation, so no further matching. */
+async function tollbitOwnArticles(
+  story: NewsStory,
+  rejected: Set<string>
+): Promise<IndexedArticle[]> {
+  const urls = story.sources
+    .map((s) => s.url)
+    .filter(
+      (u) => /^https:\/\//.test(u) && !isAggregatorLink(u) && !rejected.has(u)
+    )
+    .slice(0, 6)
+  if (urls.length === 0) return []
+  const rates = await tollbitRates(urls)
+  return story.sources
+    .filter((s) => rates.has(s.url))
+    .sort((a, b) => (rates.get(a.url) ?? 0) - (rates.get(b.url) ?? 0))
+    .map((s) => ({
+      url: s.url,
+      title: story.headline,
+      publisher: s.name,
+      site: s.site ?? `https://${hostnameOf(s.url) ?? ''}`,
+      publishedTime: story.publishedTime,
+      provider: 'tollbit' as const,
+      ownLink: true,
+      priceMicros: rates.get(s.url),
+    }))
+}
+
+/** Whether an article a search found reads like the story: its title and
+ * standfirst against the story's embedding, as the index is matched. */
+async function readsLikeStory(ref: StoryRef, a: IndexedArticle) {
+  if (!ref.memo.embedding) return false
+  let e = articleEmbeddings.get(a.url)
+  if (!e) {
+    const made = await generateEmbeddings(
+      a.description ? `${a.title}. ${a.description}` : a.title
+    )
+    if (!made) return false
+    e = made
+    articleEmbeddings.set(a.url, e)
+  }
+  return cosine(ref.memo.embedding, e) >= ARTICLE_MATCH_SIMILARITY
+}
+
+/** Forget what was read for a story, so it is looked for again. */
+const forgetArticle = (r: StoryRef) => {
+  r.memo.claimsStatus = undefined
+  r.memo.claims = undefined
+  r.memo.article = undefined
+  r.memo.articleProvider = undefined
+  r.memo.articleCheckedAt = 0
+  r.memo.claimsVersion = CLAIMS_VERSION
+  pendingArticles.delete(r.story.id)
+}
+
 /**
  * Give linked stories an article and read its claims. Bounded per refresh;
  * memos carry the results forward. Returns the contract ids the claims
@@ -495,15 +570,21 @@ export async function findArticlesAndClaims(
   refs: StoryRef[],
   now: number
 ) {
-  // Claims read with older prompts are read again.
+  const enabled = articleSources()
   for (const r of refs) {
-    if (r.memo.claimsStatus && r.memo.claimsVersion !== CLAIMS_VERSION) {
-      r.memo.claimsStatus = undefined
-      r.memo.claims = undefined
-      r.memo.article = undefined
-      r.memo.articleCheckedAt = 0
-      r.memo.claimsVersion = CLAIMS_VERSION
-    }
+    if (!r.memo.claimsStatus) continue
+    // Claims read with older prompts are read again.
+    if (r.memo.claimsVersion !== CLAIMS_VERSION) forgetArticle(r)
+    // Text from a provider this server is not configured for goes (a cache
+    // from the prototype, say); the Guardian's is read again after a day.
+    const provider = r.memo.articleProvider
+    if (
+      provider &&
+      (!enabled.includes(provider) ||
+        (provider === 'guardian' &&
+          now - (r.memo.claimsAt ?? 0) > GUARDIAN_TTL_MS))
+    )
+      forgetArticle(r)
   }
 
   // 1. Stories still looking for an article.
@@ -539,13 +620,14 @@ export async function findArticlesAndClaims(
     )
 
     const best: number[] = []
+    let searches = 0
     for (const r of looking) {
       r.memo.articleCheckedAt = now
       const rejected = new Set(r.memo.articleRejected ?? [])
       const own = ownArticle(r.story)
       let pick: IndexedArticle | undefined =
         own && !rejected.has(own.url) ? own : undefined
-      if (!pick && r.memo.embedding) {
+      if (!pick && r.memo.embedding && index.length > 0) {
         let top: { a: IndexedArticle; sim: number } | undefined
         for (const a of index) {
           if (rejected.has(a.url)) continue
@@ -561,12 +643,50 @@ export async function findArticlesAndClaims(
         if (top) best.push(top.sim)
         if (top && top.sim >= ARTICLE_MATCH_SIMILARITY) pick = top.a
       }
-      if (!pick && isGNewsEnabled()) {
+      // The story's own links first, priced by TollBit: no search needed.
+      if (!pick && enabled.includes('tollbit') && canReadTollbit()) {
         try {
-          const found = await searchGNews(r.story.headline, r.story.updatedTime)
-          pick = found.find((a) => !rejected.has(a.url))
+          pick = (await tollbitOwnArticles(r.story, rejected))[0]
         } catch (e) {
-          log.warn('news-feed: gnews search failed', {
+          log.warn('news-feed: tollbit rates failed', {
+            storyId: r.story.id,
+            error: e instanceof Error ? e.message : String(e),
+          })
+        }
+      }
+      // Then each provider's search, within the refresh's budget.
+      for (const provider of enabled) {
+        if (pick || searches >= SEARCHES_PER_REFRESH) break
+        if (provider === 'rss') continue
+        if (provider === 'tollbit' && !canReadTollbit()) continue
+        searches++
+        try {
+          const found =
+            provider === 'guardian'
+              ? await searchGuardian(r.story.headline, r.story.updatedTime)
+              : provider === 'tollbit'
+              ? await searchTollbit(r.story.headline, r.story.updatedTime)
+              : await searchGNews(r.story.headline, r.story.updatedTime)
+          for (const a of found) {
+            if (rejected.has(a.url)) continue
+            if (
+              Math.abs(a.publishedTime - r.story.updatedTime) >
+              ARTICLE_WINDOW_MS
+            )
+              continue
+            if (await readsLikeStory(r, a)) {
+              pick = a
+              break
+            }
+          }
+          // TollBit's search says what is licensable, not for how much.
+          if (pick?.provider === 'tollbit' && pick.priceMicros === undefined) {
+            const price = (await tollbitRates([pick.url])).get(pick.url)
+            pick =
+              price === undefined ? undefined : { ...pick, priceMicros: price }
+          }
+        } catch (e) {
+          log.warn(`news-feed: ${provider} search failed`, {
             storyId: r.story.id,
             error: e instanceof Error ? e.message : String(e),
           })
@@ -583,6 +703,7 @@ export async function findArticlesAndClaims(
     log('news-feed: articles matched', {
       looking: looking.length,
       indexed: index.length,
+      searches,
       pending: looking.filter((r) => r.memo.claimsStatus === 'pending').length,
       // Nearest article similarity per story, to tune the threshold.
       nearest: {
@@ -605,11 +726,14 @@ export async function findArticlesAndClaims(
     .slice(0, CLAIMS_PER_REFRESH)
   let read = 0
   let failed = 0
+  let spentMicros = 0
   await mapAsync(
     toRead,
     async (r) => {
       const article = pendingArticles.get(r.story.id)
       if (!article) return
+      // Over today's TollBit budget: the article waits for tomorrow.
+      if (article.provider === 'tollbit' && !canReadTollbit()) return
       const reject = () => {
         r.memo.articleRejected = [
           ...(r.memo.articleRejected ?? []),
@@ -627,6 +751,7 @@ export async function findArticlesAndClaims(
           reject()
           return
         }
+        spentMicros += body.priceMicros ?? 0
         const result = await readClaims(pg, r.story, article, body.text, now)
         if (!result.sameEvent) {
           reject()
@@ -656,6 +781,7 @@ export async function findArticlesAndClaims(
     log('news-feed: claims read', {
       read,
       failed,
+      spentUsd: spentMicros / 1_000_000,
       withClaims: toRead.filter((r) => r.memo.claimsStatus === 'found').length,
       claims: toRead.reduce((n, r) => n + (r.memo.claims?.length ?? 0), 0),
       hostnames: [

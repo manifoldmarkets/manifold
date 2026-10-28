@@ -256,9 +256,13 @@ function Claims(props: {
       href={article.url}
       target="_blank"
       rel="noreferrer"
-      className="text-ink-500 hover:text-primary-700 shrink-0 text-xs"
+      className="text-ink-500 hover:text-primary-700 inline-block max-w-[14rem] shrink-0 truncate text-xs"
+      title={
+        article.byline ? `${article.publisher} · ${article.byline}` : undefined
+      }
     >
-      {article.publisher} ↗
+      {article.publisher}
+      {article.byline && ` · ${article.byline}`} ↗
     </a>
   )
   if (claims.length === 0) {

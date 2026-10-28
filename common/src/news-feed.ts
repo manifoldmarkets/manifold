@@ -34,19 +34,49 @@ export type NewsSourceLink = {
   site?: string
 }
 
-export type NewsStoryOrigin = 'wikipedia' | 'google-news'
+/** Where a story was found. Wikipedia's Current Events portal (CC BY-SA),
+ * the GDELT Project (free for any use, cited) and Mediastack (a licensed
+ * headline feed) may run in production. Google News RSS is personal-use
+ * only by its own notice and stays a prototype source. */
+export const NEWS_STORY_ORIGINS = [
+  'wikipedia',
+  'gdelt',
+  'mediastack',
+  'google-news',
+] as const
 
-/** Where the feed reads from, as the server is configured. Wikipedia's
- * Current Events portal is CC BY-SA and the cheapest tier; the rest are
- * the prototype's unlicensed sources and are off in a production build. */
+export type NewsStoryOrigin = (typeof NEWS_STORY_ORIGINS)[number]
+
+export const isNewsStoryOrigin = (s: string): s is NewsStoryOrigin =>
+  (NEWS_STORY_ORIGINS as readonly string[]).includes(s)
+
+/** Where article bodies for claims come from. The Guardian's Open Platform
+ * (commercial key) and TollBit (a licence per page, at the publisher's
+ * rate) are licensed. GNews returns text it does not own and 'rss' reads
+ * outlet pages whose terms forbid it: both prototype only. */
+export const NEWS_ARTICLE_SOURCES = [
+  'guardian',
+  'tollbit',
+  'gnews',
+  'rss',
+] as const
+
+export type NewsArticleSource = (typeof NEWS_ARTICLE_SOURCES)[number]
+
+export const isNewsArticleSource = (s: string): s is NewsArticleSource =>
+  (NEWS_ARTICLE_SOURCES as readonly string[]).includes(s)
+
+/** Where pictures come from: Wikimedia Commons (free licences, credited on
+ * the card), outlets' own thumbnails (publisher images we do not license:
+ * prototype only), or nowhere. */
+export type NewsImageSource = 'wikimedia' | 'outlets' | 'none'
+
+/** Where the feed reads from, as the server is configured. */
 export type NewsFeedConfig = {
-  /** Story sources: 'wikipedia' and, in the prototype, 'google-news'. */
   sources: NewsStoryOrigin[]
-  /** Where article bodies for claims come from: outlet pages ('rss'), the
-   * GNews API ('gnews'), or nowhere ('none', no claims). */
-  articles: 'rss' | 'gnews' | 'none'
-  /** Thumbnails fetched from outlets, or none. */
-  images: 'outlets' | 'none'
+  /** Empty when no article source is configured: there are no claims. */
+  articles: NewsArticleSource[]
+  images: NewsImageSource
 }
 
 const MONTHS = [
@@ -82,6 +112,8 @@ export type NewsArticle = {
   url: string
   title: string
   publisher: string
+  /** The writer, as the publisher gives it; shown unaltered when present. */
+  byline?: string
   /** The outlet's home page, for the favicon. */
   site: string
   publishedTime: number
@@ -143,6 +175,16 @@ export type NewsClaim = {
  */
 export type NewsClaimsStatus = 'no-article' | 'pending' | 'none' | 'found'
 
+/** The credit a Wikimedia Commons picture carries: its author and licence,
+ * and the file page that lists both. */
+export type NewsImageCredit = {
+  author?: string
+  license: string
+  licenseUrl?: string
+  /** The Commons file page. */
+  url: string
+}
+
 export type NewsStory = {
   id: string
   headline: string
@@ -159,6 +201,8 @@ export type NewsStory = {
   /** Outlets reporting it, one link each, deduped by host. */
   sources: NewsSourceLink[]
   image?: string
+  /** Who to credit for the picture; present when it is a Commons image. */
+  imageCredit?: NewsImageCredit
   /** Markets the story bears on, strongest first. Verified by the AI pass. */
   contractIds: string[]
   /** Embedding neighbours before verification, kept for tuning the matcher. */

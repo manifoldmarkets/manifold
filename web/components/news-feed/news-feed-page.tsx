@@ -6,10 +6,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Contract } from 'common/contract'
 import {
   NEWS_SORTS,
+  NewsArticleSource,
   NewsCategory,
+  NewsFeedConfig,
   NewsSort,
   NewsSpotlight,
   NewsStory,
+  NewsStoryOrigin,
 } from 'common/news-feed'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -271,7 +274,7 @@ export function NewsFeedPage() {
     onPublished: (m: SimulatedMarket) => setPublished((p) => [...p, m]),
     onAttached: () => refresh(),
     onLeave: saveAnchor,
-    claimsEnabled: data?.config?.articles !== 'none',
+    claimsEnabled: (data?.config?.articles.length ?? 1) > 0,
   })
 
   return (
@@ -457,22 +460,68 @@ export function NewsFeedPage() {
           </Row>
         )}
 
-        <p className="text-ink-400 px-1 pb-2 pt-4 text-[11px]">
-          Prototype.{' '}
-          {data?.config?.sources.includes('google-news')
-            ? "Stories come from Wikipedia's Current Events portal (CC BY-SA) and Google News; "
-            : "Stories come from Wikipedia's Current Events portal (CC BY-SA); "}
-          headlines link out to the outlets. Markets are matched by embedding
-          similarity against every open market and verified by an AI pass before
-          they appear.{' '}
-          {data?.config?.articles !== 'none' &&
-            "Claims are short quotes from the article's full text (a stand-in for a licensed full-text feed), checked word for word against it. "}
-          Publishing a market here is simulated.
-          {linkedCount > 0 &&
-            ` ${linkedCount} stories currently have a market.`}
-        </p>
+        <SourcesNote config={data?.config} linkedCount={linkedCount} />
       </Col>
     </Page>
+  )
+}
+
+const SOURCE_NAMES: Record<NewsStoryOrigin, string> = {
+  wikipedia: "Wikipedia's Current Events portal (CC BY-SA)",
+  gdelt: 'the GDELT Project',
+  mediastack: 'Mediastack',
+  'google-news': 'Google News (prototype only)',
+}
+
+const ARTICLE_NAMES: Record<NewsArticleSource, string> = {
+  guardian: 'The Guardian',
+  tollbit: 'publishers licensed through TollBit',
+  gnews: 'GNews (prototype only)',
+  rss: 'outlet pages (prototype only)',
+}
+
+const LICENSED_ARTICLES: NewsArticleSource[] = ['guardian', 'tollbit']
+
+const listOf = (xs: string[]) =>
+  xs.length <= 1
+    ? xs.join('')
+    : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`
+
+/** Where the stories, text and pictures come from, as this server is
+ * configured, with the credits the sources ask for. */
+function SourcesNote(props: { config?: NewsFeedConfig; linkedCount: number }) {
+  const { config, linkedCount } = props
+  const sources = (config?.sources ?? ['wikipedia']).map((s) => SOURCE_NAMES[s])
+  const articles = config?.articles ?? []
+  const licensedText = articles.every((a) => LICENSED_ARTICLES.includes(a))
+  return (
+    <Col className="text-ink-400 gap-1.5 px-1 pb-2 pt-4 text-[11px]">
+      {articles.includes('guardian') && (
+        <a
+          href="https://www.theguardian.com"
+          target="_blank"
+          rel="noreferrer"
+          className="border-ink-200 hover:text-primary-700 w-fit rounded border px-1.5 py-0.5 font-semibold"
+        >
+          Powered by The Guardian
+        </a>
+      )}
+      <p>
+        Prototype. Stories come from {listOf(sources)}; headlines link out to
+        the outlets. Markets are matched by embedding similarity against every
+        open market and verified by an AI pass before they appear.{' '}
+        {articles.length > 0 &&
+          (licensedText
+            ? `Claims are short quotes from licensed article text (${listOf(
+                articles.map((a) => ARTICLE_NAMES[a])
+              )}), checked word for word against it. `
+            : "Claims are short quotes from the article's full text (a stand-in for a licensed full-text feed), checked word for word against it. ")}
+        {config?.images === 'wikimedia' &&
+          'Pictures are from Wikimedia Commons, credited on the card. '}
+        Publishing a market here is simulated.
+        {linkedCount > 0 && ` ${linkedCount} stories currently have a market.`}
+      </p>
+    </Col>
   )
 }
 
