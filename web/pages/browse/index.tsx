@@ -37,37 +37,51 @@ export default function BrowsePage() {
   )
 }
 
-export function BrowsePageContent(props: { browseView: BrowseViewState }) {
-  const { browseView } = props
+export function BrowsePageContent(props: {
+  browseView: BrowseViewState
+  hideViewSwitch?: boolean
+}) {
+  const { browseView, hideViewSwitch } = props
   const user = useUser()
   if (!browseView.ready) return <LoadingContractResults />
   const isNew = browseView.view === 'new'
   return (
     <>
-      <div className="flex min-w-0 items-center justify-between gap-2 px-3 py-1 lg:px-0 lg:pt-3">
-        {!user && (
-          <div className="shrink-0 lg:hidden">
-            <ManifoldLogo className="!px-0" />
-          </div>
-        )}
-        <button
-          type="button"
-          onClick={() => browseView.setView(isNew ? 'legacy' : 'new')}
-          aria-label={isNew ? 'Switch to classic browse' : 'Try the new browse'}
-          className="text-primary-700 hover:text-primary-800 ml-auto shrink-0 py-1 text-xs font-medium"
-        >
-          {isNew ? (
-            '← Classic'
-          ) : (
-            <>
-              <span className="sm:hidden">Try new browse →</span>
-              <span className="hidden sm:inline">Try the new browse →</span>
-            </>
+      {!hideViewSwitch && (
+        <div className="flex min-w-0 items-center justify-between gap-2 px-3 py-0.5 lg:px-0 lg:pt-2">
+          {!user && (
+            <div className="shrink-0 lg:hidden">
+              <ManifoldLogo className="!px-0" />
+            </div>
           )}
-        </button>
-      </div>
+          <BrowseViewToggle browseView={browseView} />
+        </div>
+      )}
       {isNew ? <BrowseV2 /> : <LegacyBrowseContent />}
     </>
+  )
+}
+
+export function BrowseViewToggle(props: { browseView: BrowseViewState }) {
+  const { browseView } = props
+  if (!browseView.ready) return null
+  const isNew = browseView.view === 'new'
+  return (
+    <button
+      type="button"
+      onClick={() => browseView.setView(isNew ? 'legacy' : 'new')}
+      aria-label={isNew ? 'Switch to classic browse' : 'Try the new browse'}
+      className="text-primary-700 hover:text-primary-800 ml-auto shrink-0 py-0.5 text-xs font-medium"
+    >
+      {isNew ? (
+        '← Classic'
+      ) : (
+        <>
+          <span className="sm:hidden">Try new browse →</span>
+          <span className="hidden sm:inline">Try the new browse →</span>
+        </>
+      )}
+    </button>
   )
 }
 

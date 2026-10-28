@@ -44,6 +44,7 @@ import {
 import { ClosingSoonList, MoversStrip, NewMarketsList } from './market-shelves'
 import { BrowseMarketsQuery, useBrowseMarkets } from './use-browse-markets'
 import { YourTopicsModal } from './your-topics-modal'
+import { useScrollReveal } from './use-scroll-reveal'
 
 // Same page size as the classic page; most browse lists never load a
 // second page.
@@ -82,6 +83,9 @@ function BrowseV2Inner() {
   // Most browse clicks land several markets down the list, so phones default
   // to the denser list view. A choice either way is remembered.
   const isMobile = useIsMobile()
+  const searchRef = useRef<HTMLDivElement>(null)
+  const filtersRef = useRef<HTMLDivElement>(null)
+  const hideControls = useScrollReveal(searchRef, filtersRef, isMobile)
   const [savedLayout, setLayout] = usePersistentLocalState<
     BrowseLayout | undefined
   >(undefined, 'browse-v2-layout')
@@ -269,10 +273,15 @@ function BrowseV2Inner() {
   const section = `browse-v2 ${searching ? 'search' : lens} ${layout}`
 
   return (
-    <div className="flex w-full flex-col gap-3 px-3 pb-10 pt-1 sm:gap-4 lg:px-0 lg:pt-2">
-      {/* Keep search above the sticky filters on phones, including iOS's
-          page scroll container. The hub buttons can scroll out normally. */}
-      <div className="bg-canvas-0 sticky top-0 z-30 -mx-3 flex h-[58px] shrink-0 items-center gap-2 px-3 py-2 sm:static sm:mx-0 sm:h-auto sm:gap-3 sm:px-0 sm:py-0">
+    <div className="flex w-full flex-col gap-3 px-3 pb-10 sm:gap-4 lg:px-0 lg:pt-1">
+      <div
+        ref={searchRef}
+        aria-hidden={hideControls || undefined}
+        className={clsx(
+          'bg-canvas-0 sticky top-0 z-30 -mx-3 flex h-[50px] shrink-0 items-center gap-2 px-3 py-1 transition-[transform,visibility] duration-150 motion-reduce:transition-none sm:static sm:mx-0 sm:h-auto sm:gap-3 sm:px-0 sm:py-0',
+          hideControls && 'pointer-events-none invisible -translate-y-full'
+        )}
+      >
         <h1 className="text-ink-1000 hidden text-2xl font-semibold sm:block">
           Browse
         </h1>
@@ -316,7 +325,15 @@ function BrowseV2Inner() {
 
       {!searching && <HubCards />}
 
-      <div className="bg-canvas-0 sticky top-[58px] z-20 -mx-3 px-3 py-1 sm:top-0 sm:py-2 lg:mx-0 lg:px-0">
+      <div
+        ref={filtersRef}
+        aria-hidden={hideControls || undefined}
+        className={clsx(
+          'bg-canvas-0 sticky top-[50px] z-20 -mx-3 px-3 py-1 transition-[transform,visibility] duration-150 motion-reduce:transition-none sm:top-0 sm:py-2 lg:mx-0 lg:px-0',
+          hideControls &&
+            'pointer-events-none invisible -translate-y-[calc(100%+50px)]'
+        )}
+      >
         <LensBar
           lens={lens}
           onLens={onLens}
