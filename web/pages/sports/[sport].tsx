@@ -133,6 +133,7 @@ export default function SportPage() {
                   games={games}
                   raceWeekends={weekends}
                   featureNext={isF1}
+                  fullRaceHero={isF1}
                   belowFeatured={titleFight}
                   loading={loading || !schedule}
                   hasMore={hasMore}

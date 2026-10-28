@@ -8,6 +8,7 @@ import {
   raceDisplayName,
   RaceMarketRef,
   RaceSessionEvent,
+  topRaceMarket,
 } from 'common/race-weekends'
 import { shortFormatNumber } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
@@ -93,6 +94,8 @@ export function RaceSessionCard(props: {
   const { event, variant = 'card' } = props
   const { session, weekend } = event
   const main = session.markets[0]
+  // What it's traded and ranked by, and where its link goes.
+  const top = topRaceMarket(session)
   const host = relatedHost(event)
   const bet = useDriverBet(`sports f1 ${variant}`)
   const title = sessionTitle(event)
@@ -129,9 +132,9 @@ export function RaceSessionCard(props: {
               />
             ))}
           </Col>
-          {main && (
+          {top && (
             <Link
-              href={marketPath(main)}
+              href={marketPath(top)}
               aria-label={`Open ${title}`}
               className={clsx(CONTROL_CLASS, ACTION_CLASS, 'self-start')}
             >
@@ -159,7 +162,7 @@ export function RaceSessionCard(props: {
         <SessionControls
           volume={event.volume}
           traders={event.uniqueBettorCount}
-          market={main}
+          market={top}
           title={title}
         />
       </Row>

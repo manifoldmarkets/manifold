@@ -1,6 +1,8 @@
+import { ChevronRightIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { sortBy, uniqBy } from 'lodash'
+import Link from 'next/link'
 import { useEffect, useId, useRef, useState } from 'react'
 import { GiCheckeredFlag, GiF1Car, GiLaurelsTrophy } from 'react-icons/gi'
 import { Contract, CPMMMultiContract, isMultiCpmm } from 'common/contract'
@@ -13,6 +15,7 @@ import {
   RaceSessionEvent,
   raceSessionEvent,
   raceWeekendMarkets,
+  topRaceMarket,
 } from 'common/race-weekends'
 import { readableTextColor } from 'common/sports-team-colors'
 import { GameLinkedMarkets } from 'web/components/sports/game-related-markets'
@@ -26,6 +29,7 @@ import {
   sessionTitle,
   useDriverBet,
 } from './race-session-card'
+import { sportPath } from './sport-rail'
 import { SportsMarketBadge } from './sports-market-badge'
 
 type Choice = ReturnType<typeof raceWeekendMarkets>[number]
@@ -121,8 +125,16 @@ function boardMarket(
  * next bet is one tap from the last. The markets people made about the
  * session follow.
  */
-export function RaceWeekendHero(props: { event: RaceSessionEvent }) {
-  const { event } = props
+export function RaceWeekendHero(props: {
+  event: RaceSessionEvent
+  /**
+   * The front page's, to save room: the clock, the pills and the picked
+   * market's grid or podium, from the schedule. The timing tower and the
+   * day's moves are on the F1 page, a link away.
+   */
+  compact?: boolean
+}) {
+  const { event, compact = false } = props
   const { weekend } = event
   const choices = raceWeekendMarkets(weekend)
   const [pickedId, setPickedId] = useState<string>()
@@ -133,29 +145,40 @@ export function RaceWeekendHero(props: { event: RaceSessionEvent }) {
     { ids },
     undefined,
     `f1-weekend-${ids.join(',')}`,
-    ids.length > 0
+    !compact && ids.length > 0
   )
+  // Compact reads only the schedule: what an earlier visit to the F1 page
+  // loaded is kept in memory, and would be older.
+  const loaded = compact ? undefined : markets.data
   // Prices move while the page is open: re-read them now and then, and after
   // a bet.
   const refresh = useRef(markets.refresh)
   refresh.current = markets.refresh
   useEffect(() => {
+    if (compact) return
     const timer = setInterval(() => {
       if (document.visibilityState === 'visible') void refresh.current()
     }, REFRESH_MS)
     return () => clearInterval(timer)
-  }, [])
-  const bet = useDriverBet('sports f1 featured', () => void refresh.current())
+  }, [compact])
+  // Compact updates with the schedule, like the game cards around it.
+  const bet = useDriverBet(
+    compact ? 'sports f1 featured compact' : 'sports f1 featured',
+    compact ? undefined : () => void refresh.current()
+  )
 
+  // Opens on the session's most traded market, the one it was featured for.
+  const top = topRaceMarket(event.session)
   const picked =
     choices.find((c) => c.market.id === pickedId) ??
+    choices.find((c) => c.market.id === top?.id) ??
     choices.find((c) => c.session.sessionId === event.session.sessionId) ??
     choices[0]
   if (!picked) return null
   const shown = raceSessionEvent(weekend, picked.session)
   const host = relatedHost(shown)
   const name = raceDisplayName(weekend.name)
-  const boards = choices.map((c) => boardMarket(c, markets.data))
+  const boards = choices.map((c) => boardMarket(c, loaded))
   const rows = buildDriverBoard(boards, picked.market.id)
   // Open by the loaded markets: one that closed early or settled takes no
   // column or mover from one still open (F4213-17).
@@ -168,7 +191,67 @@ export function RaceWeekendHero(props: { event: RaceSessionEvent }) {
   const winners = rows.filter((r) => r.cells[picked.market.id]?.won)
   const settled =
     picked.market.isResolved ||
-    !!markets.data?.find((c) => c.id === picked.market.id)?.isResolved
+    !!loaded?.find((c) => c.id === picked.market.id)?.isResolved
+
+  const header = (
+    <div className="relative isolate min-w-0 px-4 pb-3 pt-3 sm:px-5">
+      <GiF1Car
+        aria-hidden
+        className="text-primary-600/10 pointer-events-none absolute -right-4 -top-3 -z-10 h-32 w-32 sm:h-40 sm:w-40"
+      />
+      <div className="flex items-center gap-2">
+        <SportsMarketBadge market={picked.market} />
+        <span className="text-primary-700 truncate text-[10px] font-bold uppercase tracking-wider">
+          Featured · Formula 1
+        </span>
+        <div className="ml-auto">
+          <SessionControls
+            volume={picked.market.volume ?? 0}
+            traders={picked.market.uniqueBettorCount ?? 0}
+            market={picked.market}
+            title={`${name} ${picked.label.toLowerCase()}`}
+          />
+        </div>
+      </div>
+      <h3 className="text-ink-1000 mt-1 text-2xl font-black uppercase italic leading-none tracking-tight [text-wrap:balance] sm:text-3xl">
+        {name}
+      </h3>
+      <SessionClock
+        choice={picked}
+        winners={winners}
+        settled={settled}
+        className="mt-2"
+      />
+      {choices.length > 1 && (
+        <div
+          role="group"
+          aria-label={`${name} markets`}
+          className="mt-3 flex flex-wrap gap-1.5"
+        >
+          {choices.map((c) => (
+            <MarketPill
+              key={c.market.id}
+              choice={c}
+              selected={c.market.id === picked.market.id}
+              controls={boardId}
+              onPick={() => setPickedId(c.market.id)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+  const board =
+    view === 'grid' ? (
+      <StartingGrid rows={lead} marketId={picked.market.id} onBet={bet.open} />
+    ) : (
+      <PodiumStand
+        rows={lead}
+        marketId={picked.market.id}
+        mode={view}
+        onBet={bet.open}
+      />
+    )
 
   return (
     <section
@@ -177,93 +260,60 @@ export function RaceWeekendHero(props: { event: RaceSessionEvent }) {
       className="border-primary-200 bg-primary-50 scroll-mt-32 overflow-hidden rounded-2xl border"
     >
       <CheckeredStrip />
-      <div className="relative isolate px-4 pb-3 pt-3 sm:px-5">
-        <GiF1Car
-          aria-hidden
-          className="text-primary-600/10 pointer-events-none absolute -right-4 -top-3 -z-10 h-32 w-32 sm:h-40 sm:w-40"
-        />
-        <div className="flex items-center gap-2">
-          <SportsMarketBadge market={picked.market} />
-          <span className="text-primary-700 truncate text-[10px] font-bold uppercase tracking-wider">
-            Featured · Formula 1
-          </span>
-          <div className="ml-auto">
-            <SessionControls
-              volume={picked.market.volume ?? 0}
-              traders={picked.market.uniqueBettorCount ?? 0}
-              market={picked.market}
-              title={`${name} ${picked.label.toLowerCase()}`}
-            />
+      {compact ? (
+        // Side by side once there's room, as tall as a featured game.
+        <div className="@container/board">
+          <div className="@[40rem]/board:grid-cols-2 @[40rem]/board:items-center grid">
+            {header}
+            <div
+              id={boardId}
+              className="@[40rem]/board:pt-3 min-w-0 px-3 pb-2 sm:px-4"
+            >
+              {board}
+              <Link
+                href={sportPath('f1')}
+                className="text-primary-700 hover:bg-primary-100 focus-visible:ring-primary-500 mt-1 flex min-h-[44px] items-center justify-center gap-1 rounded-lg text-sm font-semibold transition-colors focus-visible:ring-2"
+              >
+                Every driver, every market
+                <ChevronRightIcon className="h-4 w-4" aria-hidden />
+              </Link>
+            </div>
           </div>
         </div>
-        <h3 className="text-ink-1000 mt-1 text-2xl font-black uppercase italic leading-none tracking-tight [text-wrap:balance] sm:text-3xl">
-          {name}
-        </h3>
-        <SessionClock
-          choice={picked}
-          winners={winners}
-          settled={settled}
-          className="mt-2"
-        />
-        {choices.length > 1 && (
-          <div
-            role="group"
-            aria-label={`${name} markets`}
-            className="mt-3 flex flex-wrap gap-1.5"
-          >
-            {choices.map((c) => (
-              <MarketPill
-                key={c.market.id}
-                choice={c}
-                selected={c.market.id === picked.market.id}
-                controls={boardId}
-                onPick={() => setPickedId(c.market.id)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-      <div id={boardId} className="@container/board px-3 pb-4 sm:px-4">
-        <div className="@[40rem]/board:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] @[40rem]/board:items-start grid gap-3">
-          <div className="flex min-w-0 flex-col gap-3">
-            {view === 'grid' ? (
-              <StartingGrid
-                rows={lead}
-                marketId={picked.market.id}
+      ) : (
+        <>
+          {header}
+          <div id={boardId} className="@container/board px-3 pb-4 sm:px-4">
+            <div className="@[40rem]/board:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] @[40rem]/board:items-start grid gap-3">
+              <div className="flex min-w-0 flex-col gap-3">
+                {board}
+                <Movers
+                  rows={rows}
+                  choices={choices.filter(isOpen)}
+                  onBet={bet.open}
+                />
+              </div>
+              {/* Remounted once the full field loads, so the switch from the
+                  schedule's leaders doesn't flash every price as a move. */}
+              <TimingTower
+                key={loaded ? 'loaded' : 'seed'}
+                rows={rows}
+                columns={columns}
+                loading={!loaded && !markets.error}
                 onBet={bet.open}
               />
-            ) : (
-              <PodiumStand
-                rows={lead}
-                marketId={picked.market.id}
-                mode={view}
-                onBet={bet.open}
-              />
-            )}
-            <Movers
-              rows={rows}
-              choices={choices.filter(isOpen)}
-              onBet={bet.open}
-            />
+            </div>
           </div>
-          {/* Remounted once the full field loads, so the switch from the
-              schedule's leaders doesn't flash every price as a move. */}
-          <TimingTower
-            key={markets.data ? 'loaded' : 'seed'}
-            rows={rows}
-            columns={columns}
-            loading={!markets.data && !markets.error}
-            onBet={bet.open}
-          />
-        </div>
-      </div>
+        </>
+      )}
       {host && (
-        // Keyed by session, so switching to one with props opens them.
+        // Keyed by session, so switching to one with props opens them; on
+        // the front page they start closed, as under a featured game.
         <GameLinkedMarkets
           key={host.id}
           game={host}
           label={sessionTitle(shown)}
-          defaultExpanded={host.related.length > 0}
+          defaultExpanded={!compact && host.related.length > 0}
         />
       )}
       {bet.dialog}

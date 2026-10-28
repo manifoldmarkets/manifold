@@ -1,13 +1,4 @@
-import {
-  escapeRegExp,
-  groupBy,
-  maxBy,
-  minBy,
-  partition,
-  sortBy,
-  sumBy,
-  uniq,
-} from 'lodash'
+import { escapeRegExp, groupBy, minBy, partition, sortBy, uniq } from 'lodash'
 import { Answer } from './answer'
 import {
   F1_CLOSE_BUFFER_HOURS,
@@ -301,11 +292,30 @@ export interface RaceSessionEvent {
   status: RaceStatus
   startTime: number
   closeTime: number
-  /** Traded on the session's own markets. */
+  /**
+   * Traded on the session's most traded market, which is what it's ranked by
+   * against games: its markets share traders, so a sum would count the same
+   * people two or three times.
+   */
   volume: number
+  /** The same market's traders. */
   uniqueBettorCount: number
   session: RaceSession
   weekend: RaceWeekend
+}
+
+/**
+ * A session's most traded market (its winner market on a tie): the one it's
+ * featured for, which the featured card opens on and its card links to.
+ */
+export function topRaceMarket(
+  session: Pick<RaceSession, 'markets'>
+): RaceMarketRef | undefined {
+  return session.markets.reduce<RaceMarketRef | undefined>(
+    (best, m) =>
+      !best || finiteOr0(m.volume) > finiteOr0(best.volume) ? m : best,
+    undefined
+  )
 }
 
 export const raceSessionId = (
@@ -318,15 +328,15 @@ export function raceSessionEvent(
   weekend: RaceWeekend,
   session: RaceSession
 ): RaceSessionEvent {
+  const top = topRaceMarket(session)
   return {
     id: raceSessionId(weekend, session),
     sport: 'f1',
     status: session.status,
     startTime: session.startTime,
     closeTime: session.closeTime,
-    volume: sumBy(session.markets, (m) => finiteOr0(m.volume)),
-    uniqueBettorCount:
-      maxBy(session.markets.map((m) => finiteOr0(m.uniqueBettorCount))) ?? 0,
+    volume: finiteOr0(top?.volume),
+    uniqueBettorCount: finiteOr0(top?.uniqueBettorCount),
     session,
     weekend,
   }

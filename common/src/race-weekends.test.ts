@@ -10,6 +10,7 @@ import {
   raceSessionEvents,
   raceSessionSearchText,
   raceWeekendMarkets,
+  topRaceMarket,
   withoutRaceMarkets,
   RaceContract,
 } from './race-weekends'
@@ -220,7 +221,9 @@ describe('sessions in the game feed', () => {
       ['bdl-f1:374:1870', 'upcoming', RACE],
     ])
     const [, raceEvent] = at(NOW)
-    expect([raceEvent.volume, raceEvent.uniqueBettorCount]).toEqual([150, 9])
+    // Its most traded market's, not the sum: the same people trade both.
+    expect([raceEvent.volume, raceEvent.uniqueBettorCount]).toEqual([100, 7])
+    expect(topRaceMarket(raceEvent.session)?.id).toBe('race')
     expect(raceEvent.weekend.sessions).toHaveLength(2)
     // Qualifying is live, then over: only the race is left.
     expect(at(QUALI + HOUR).map((e) => e.status)).toEqual(['live', 'upcoming'])
@@ -239,6 +242,31 @@ describe('sessions in the game feed', () => {
     // Live wins either way; once qualifying is over, the race is next.
     expect(ids(QUALI + HOUR)).toBe('bdl-f1:374:1869')
     expect(ids(QUALI + 4 * HOUR, 'start')).toBe('bdl-f1:374:1870')
+  })
+
+  it('ranks a session against games by its most traded market', () => {
+    const contracts = [
+      pole,
+      { ...race, volume: 100 },
+      { ...podium, volume: Number.NaN },
+    ]
+    const [quali, raceEvent] = raceSessionEvents(
+      buildRaceWeekends(contracts, byContract, NOW)
+    )
+    expect(topRaceMarket(raceEvent.session)?.id).toBe('race')
+    expect(quali.volume).toBe(0)
+    const game = (volume: number) => ({
+      id: 'game',
+      status: 'upcoming' as const,
+      startTime: NOW + HOUR,
+      volume,
+    })
+    // A sum of the race's markets (150) would beat this game.
+    expect(selectFeaturedGame([game(120), quali, raceEvent])?.id).toBe('game')
+    expect(selectFeaturedGame([game(80), quali, raceEvent])?.id).toBe(
+      'bdl-f1:374:1870'
+    )
+    expect(topRaceMarket({ markets: [] })).toBeUndefined()
   })
 
   it('keeps a live pick, but not a later one, when featuring what is next (F4213-10)', () => {

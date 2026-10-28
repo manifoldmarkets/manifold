@@ -94,6 +94,11 @@ export function GameFeed(props: {
    * overlap, so its page leads with the next one.
    */
   featureNext?: boolean
+  /**
+   * The featured F1 weekend in full, with the timing tower and the day's
+   * moves. Elsewhere it's compact, about the size of a featured game.
+   */
+  fullRaceHero?: boolean
   /** Under the featured card while no filter is on: F1's title fight. */
   belowFeatured?: ReactNode
   /** Shown when there is nothing live or upcoming. */
@@ -106,6 +111,7 @@ export function GameFeed(props: {
     loadMore,
     showLeague,
     featureNext,
+    fullRaceHero,
     belowFeatured,
     empty,
   } = props
@@ -486,7 +492,11 @@ export function GameFeed(props: {
         </div>
         {featured &&
           (isSession(featured) ? (
-            <RaceWeekendHero key={featured.id} event={featured} />
+            <RaceWeekendHero
+              key={featured.id}
+              event={featured}
+              compact={!fullRaceHero}
+            />
           ) : (
             <GameRow
               key={featured.id}
