@@ -26,8 +26,14 @@ import {
 import { formatCount, Point } from './stats-series'
 
 // One way to chart a metric: its daily values, a rolling average, a
-// weekly total and so on.
-export type MetricView = { key: string; label: string; values: Point[] }
+// weekly total and so on. smoothed: a rolling average or sum of another view,
+// so the quick figures read the underlying daily values instead.
+export type MetricView = {
+  key: string
+  label: string
+  values: Point[]
+  smoothed?: boolean
+}
 
 // A range's summary of a metric for its tile: the value and how many days
 // went into it (to judge whether a comparison window is complete).
@@ -239,8 +245,12 @@ export const getMetricSummary = (
 // same 7 days a year (52 weeks) earlier, the weekly averages behind the trend
 // line, and the week's signal if it's unusual. weekDays is how many of the 7
 // days have data.
-export const getMetricGlance = (metric: StatMetric) => {
-  const base = getSummaryView(metric)
+//
+// They describe the chart's view (DAU / WAU, Denials) when it has one value a
+// day, and otherwise (a rolling average) the daily values under it.
+export const getMetricGlance = (metric: StatMetric, viewKey?: string) => {
+  const view = viewKey ? getView(metric, viewKey) : undefined
+  const base = view && !view.smoothed ? view : getSummaryView(metric)
   const latest = base.values[base.values.length - 1]
   if (!latest) return undefined
   const week = getStatsWindow(latest.x, '7d')
@@ -268,7 +278,10 @@ export const getMetricGlance = (metric: StatMetric) => {
     yearAgoAvg: lastYear.value,
     yearChange: lastYear.change,
     weeks,
-    signal: getStatSignal(weeks),
+    signal: getStatSignal(
+      weeks,
+      base.values.find((p) => Number.isFinite(p.y))?.x ?? latest.x
+    ),
   }
 }
 
@@ -290,15 +303,17 @@ export const describeSignal = (signal: StatSignal) => {
     case 'high':
     case 'low': {
       const what = signal.kind === 'high' ? 'Highest' : 'Lowest'
+      const since = formatSince(signal.since)
       return {
-        short: `${what} since ${formatSince(signal.since)}`,
-        long: signal.sinceStart
-          ? `${what} 7-day average since the data begins (${formatSince(
-              signal.since
-            )})`
-          : `${what} 7-day average since the week to ${formatSince(
-              signal.since
-            )}, ${signal.weeks} weeks earlier`,
+        short: `${what} since ${since}`,
+        long:
+          signal.basis === 'week'
+            ? `${what} 7-day average since the week to ${since}, ${
+                signal.weeksBeaten + 1
+              } weeks earlier`
+            : signal.basis === 'start'
+            ? `${what} 7-day average since the data begins (${since})`
+            : `${what} 7-day average since ${since}, as far back as complete weeks go`,
       }
     }
     case 'jump':
@@ -306,7 +321,7 @@ export const describeSignal = (signal: StatSignal) => {
       const factor = Math.round(signal.factor * 10) / 10
       return {
         short: signal.kind === 'jump' ? 'Unusual jump' : 'Unusual drop',
-        long: `This week moved ${factor}× as far as a typical week over the last 12`,
+        long: `This week moved ${factor}× as far as its typical weekly move over the ${signal.baselineWeeks} weeks before`,
       }
     }
     case 'rising':

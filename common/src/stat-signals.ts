@@ -54,16 +54,21 @@ export const weeklyMeans = (points: DayPoint[], lastDay: string) => {
 }
 
 export type StatSignal =
-  // This week is the highest (lowest) since the week ending `since`, the last
-  // one at least as high (low), or since the data begins (`sinceStart`).
+  // This week is the highest (lowest) of `weeksBeaten` weeks back to `since`,
+  // where `basis` says what's there:
+  // - 'week': the week ending `since` was at least as high (low);
+  // - 'start': the data begins on `since`;
+  // - 'earliest': `since` starts the earliest whole week with no gap after
+  //   it, and what came before isn't comparable (a gap, or a partial week).
   | {
       kind: 'high' | 'low'
-      weeks: number
+      weeksBeaten: number
       since: string
-      sinceStart: boolean
+      basis: 'week' | 'start' | 'earliest'
     }
-  // This week moved `factor` times as far as the stat typically moves a week.
-  | { kind: 'jump' | 'drop'; factor: number }
+  // This week moved `factor` times as far as the stat's typical weekly move
+  // over the `baselineWeeks` weekly moves before it.
+  | { kind: 'jump' | 'drop'; factor: number; baselineWeeks: number }
   // This week is the latest of `weeks` rises (falls) in a row.
   | { kind: 'rising' | 'falling'; weeks: number }
 
@@ -80,10 +85,18 @@ const median = (xs: number[]) => {
 
 // The one thing most worth saying about the latest week, if anything: an
 // extreme first, then an unusual move, then a streak. A stat with too little
-// history to know what's usual gets none.
-export const getStatSignal = (weeks: WeekMean[]): StatSignal | undefined => {
+// history to know what's usual gets none. dataStart is the stat's first day
+// with data, to tell the start of the data from a gap.
+//
+// Comparisons allow for float noise (a mean of six 0.73s against one of seven
+// is 0.73 vs 0.7299999999999999): values this close count as equal.
+export const getStatSignal = (
+  weeks: WeekMean[],
+  dataStart: string
+): StatSignal | undefined => {
   if (weeks.length < 2) return undefined
   const [current, ...prior] = weeks
+  const tolerance = 1e-9 * Math.max(1, ...weeks.map((w) => Math.abs(w.mean)))
   const recent = prior.slice(0, TYPICAL_MOVE_WEEKS + 1)
   const moves = recent.flatMap((w, i) =>
     i + 1 < recent.length ? [w.mean - recent[i + 1].mean] : []
@@ -92,28 +105,33 @@ export const getStatSignal = (weeks: WeekMean[]): StatSignal | undefined => {
   const typical = median(moves.map(Math.abs))
 
   const distance = Math.abs(current.mean - median(recent.map((w) => w.mean)))
-  if (distance > 0 && distance >= EXTREME_DISTANCE * typical) {
+  if (distance > tolerance && distance >= EXTREME_DISTANCE * typical) {
     for (const kind of ['high', 'low'] as const) {
       const beaten = (w: WeekMean) =>
-        kind === 'high' ? w.mean < current.mean : w.mean > current.mean
+        kind === 'high'
+          ? w.mean < current.mean - tolerance
+          : w.mean > current.mean + tolerance
       const index = prior.findIndex((w) => !beaten(w))
       const run = index === -1 ? prior.length : index
-      if (run >= MIN_EXTREME_WEEKS)
-        return {
-          kind,
-          weeks: run,
-          since:
-            index === -1 ? prior[prior.length - 1].start : prior[index].end,
-          sinceStart: index === -1,
-        }
+      if (run < MIN_EXTREME_WEEKS) continue
+      const oldest = prior[prior.length - 1]
+      return index !== -1
+        ? { kind, weeksBeaten: run, since: prior[index].end, basis: 'week' }
+        : {
+            kind,
+            weeksBeaten: run,
+            since: oldest.start,
+            basis: oldest.start === dataStart ? 'start' : 'earliest',
+          }
     }
   }
 
   const move = current.mean - prior[0].mean
-  if (typical > 0 && Math.abs(move) >= UNUSUAL_MOVE_FACTOR * typical)
+  if (typical > tolerance && Math.abs(move) >= UNUSUAL_MOVE_FACTOR * typical)
     return {
       kind: move > 0 ? 'jump' : 'drop',
       factor: Math.abs(move) / typical,
+      baselineWeeks: moves.length,
     }
 
   for (const kind of ['rising', 'falling'] as const) {
@@ -121,8 +139,8 @@ export const getStatSignal = (weeks: WeekMean[]): StatSignal | undefined => {
     while (
       run + 1 < weeks.length &&
       (kind === 'rising'
-        ? weeks[run].mean > weeks[run + 1].mean
-        : weeks[run].mean < weeks[run + 1].mean)
+        ? weeks[run].mean > weeks[run + 1].mean + tolerance
+        : weeks[run].mean < weeks[run + 1].mean - tolerance)
     )
       run++
     if (run >= MIN_STREAK_WEEKS) return { kind, weeks: run }

@@ -41,7 +41,12 @@ const countViews = (days: FunnelDay[], key: CountKey) => {
   })
   return [
     { key: 'daily', label: 'Daily', values },
-    { key: '7d', label: '7d avg', values: rollingAvg(values, 7) },
+    {
+      key: '7d',
+      label: '7d avg',
+      values: rollingAvg(values, 7),
+      smoothed: true,
+    },
   ]
 }
 
@@ -63,6 +68,7 @@ const rateViews = (
         days.map((d) => ({ x: d.date, num: d[num], den: d[den] })),
         7
       ),
+      smoothed: true,
     },
   ]
 }

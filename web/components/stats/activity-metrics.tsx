@@ -55,6 +55,7 @@ export function getActivityMetrics(props: {
       key: '7d',
       label: '7d avg',
       values: rounded ? values.map(round) : values,
+      smoothed: true,
     }
   }
 
@@ -244,11 +245,13 @@ export function getActivityMetrics(props: {
             key: 'weekly',
             label: 'Weekly',
             values: rollingSum(dataFor('bet_amount'), 7),
+            smoothed: true,
           },
           {
             key: 'monthly',
             label: 'Monthly',
             values: rollingSum(dataFor('bet_amount'), 30),
+            smoothed: true,
           },
         ],
         defaultView: 'weekly',
@@ -274,6 +277,7 @@ export function getActivityMetrics(props: {
             key: '3d',
             label: '3d avg',
             values: dataFor('d1_bet_3_day_average').slice(1),
+            smoothed: true,
           },
         ],
         defaultView: '3d',

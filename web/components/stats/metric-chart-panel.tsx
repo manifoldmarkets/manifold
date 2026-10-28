@@ -65,7 +65,10 @@ export function MetricChartPanel(props: {
     overlays: overlaySeries,
   })
   const canOverlay = overlayChoices.length > 0 && !!setOverlay
-  const glance = useMemo(() => getMetricGlance(metric), [metric])
+  const glance = useMemo(
+    () => getMetricGlance(metric, view.key),
+    [metric, view.key]
+  )
 
   return (
     <Col className="bg-canvas-0 ring-ink-200 gap-3 rounded-lg p-4 ring-1">

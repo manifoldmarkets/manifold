@@ -40,53 +40,86 @@ describe('weeklyMeans', () => {
   })
 })
 
+// weeksOf's data starts 2026-01-01.
+const START = '2026-01-01'
+const signalOf = (means: number[], dataStart = START) =>
+  getStatSignal(weeksOf(means), dataStart)
+
 describe('getStatSignal', () => {
   it('flags the lowest week since the last one as low', () => {
     // 2 low weeks, then 27 at 10, then 0.8: lowest since the second low week.
-    const signal = getStatSignal(weeksOf([1, 0.5, ...Array(27).fill(10), 0.8]))
-    expect(signal).toMatchObject({ kind: 'low', weeks: 27, sinceStart: false })
-    expect(signal && 'since' in signal && signal.since).toBe('2026-01-14')
+    expect(signalOf([1, 0.5, ...Array(27).fill(10), 0.8])).toEqual({
+      kind: 'low',
+      weeksBeaten: 27,
+      since: '2026-01-14',
+      basis: 'week',
+    })
   })
 
   it('says when an extreme reaches back to the start of the data', () => {
-    const signal = getStatSignal(weeksOf([...Array(27).fill(5), 9]))
-    expect(signal).toMatchObject({ kind: 'high', weeks: 27, sinceStart: true })
-    expect(signal && 'since' in signal && signal.since).toBe('2026-01-01')
+    expect(signalOf([...Array(27).fill(5), 9])).toEqual({
+      kind: 'high',
+      weeksBeaten: 27,
+      since: START,
+      basis: 'start',
+    })
+  })
+
+  it('does not call the earliest whole week the start of the data', () => {
+    // The data begins 10 days before the first whole week (a gap or a partial
+    // week), so this is only the highest back to that week.
+    expect(signalOf([...Array(27).fill(5), 9], '2025-12-22')).toMatchObject({
+      kind: 'high',
+      since: START,
+      basis: 'earliest',
+    })
   })
 
   it('does not call a short run an extreme', () => {
     // A clear high, but it beats only 9 weeks: not half a year.
-    expect(
-      getStatSignal(weeksOf([20, ...Array(9).fill(10), 14]))?.kind
-    ).not.toBe('high')
+    expect(signalOf([20, ...Array(9).fill(10), 14])?.kind).not.toBe('high')
     // Beats only 3 weeks, and the move is ordinary: no signal.
-    expect(getStatSignal(weeksOf([10, 12, 8, 11, 9, 10, 9.5, 10.5]))).toBe(
-      undefined
-    )
+    expect(signalOf([10, 12, 8, 11, 9, 10, 9.5, 10.5])).toBe(undefined)
   })
 
   it('does not call a barely-new extreme on a wobbly stat news', () => {
     // Weeks wobble between 10 and 11; 9.9 is a 30-week low by a hair.
     const means = [...Array(30)].map((_, i) => (i % 2 ? 11 : 10))
-    expect(getStatSignal(weeksOf([...means, 9.9]))).toBe(undefined)
+    expect(signalOf([...means, 9.9])).toBe(undefined)
+  })
+
+  it('treats float noise as equal', () => {
+    // Seven 0.73s average to 0.7299999999999999; six to 0.73.
+    const means = Array(27).fill(
+      [0.73, 0.73, 0.73, 0.73, 0.73, 0.73, 0.73].reduce((a, b) => a + b) / 7
+    )
+    expect(signalOf([...means, 0.73])).toBe(undefined)
   })
 
   it('needs enough history to know what is usual', () => {
-    expect(getStatSignal(weeksOf([10, 10, 10, 1]))).toBe(undefined)
+    expect(signalOf([10, 10, 10, 1])).toBe(undefined)
   })
 
   it('flags a move several times the usual weekly move', () => {
     // Weeks wobble by about 1; this week drops by 6, without a new low.
     const means = [10, 11, 10, 11, 10, 11, 10, 11, 10, 11, 10, 11, 4, 11, 5]
-    expect(getStatSignal(weeksOf(means))).toMatchObject({ kind: 'drop' })
+    expect(signalOf(means)).toMatchObject({ kind: 'drop', baselineWeeks: 12 })
+  })
+
+  it('says how many weeks set the usual move', () => {
+    // Only 6 earlier moves to go on.
+    expect(signalOf([10, 11, 10, 11, 10, 11, 10, 20])).toMatchObject({
+      kind: 'jump',
+      baselineWeeks: 6,
+    })
   })
 
   it('flags a run of weekly rises', () => {
     const means = [10, 12, 9, 11, 10, 12, 9, 11, 10, 10.5, 10.6, 10.7, 10.8]
-    expect(getStatSignal(weeksOf(means))).toEqual({ kind: 'rising', weeks: 4 })
+    expect(signalOf(means)).toEqual({ kind: 'rising', weeks: 4 })
   })
 
   it('needs two weeks', () => {
-    expect(getStatSignal(weeksOf([5]))).toBe(undefined)
+    expect(signalOf([5])).toBe(undefined)
   })
 })
