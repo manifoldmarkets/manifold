@@ -6,6 +6,7 @@ import { stack } from 'd3-shape'
 import { axisBottom, axisRight } from 'd3-axis'
 import { max } from 'd3-array'
 import {
+  clamp,
   groupBy,
   mapValues,
   orderBy,
@@ -19,13 +20,29 @@ import { formatLargeNumber } from 'common/util/format'
 import { renderToString } from 'react-dom/server'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { useMeasureSize } from 'web/hooks/use-measure-size'
 
 type DateAndCategoriesToTotals = { date: string } & {
   [key: string]: number
 }
 
+// The stacked bar charts on /stats keep their 9:5 shape at the width of their
+// box, less the y-axis labels' room: from 300px (narrower boxes scroll
+// sideways) up to 900px, and at least 280px tall.
+export const stackedChartSize = (boxWidth: number | undefined) => {
+  const width = clamp((boxWidth ?? 900) - 48, 300, 900)
+  return { width, height: Math.max(280, Math.round((width * 5) / 9)) }
+}
+
+// The fields the chart reads. /stats embeds these rows in its HTML, so it
+// sends only these.
+export type TxnSummaryRow = Pick<
+  rowFor<'txn_summary_stats'>,
+  'start_time' | 'category' | 'quest_type' | 'total_amount'
+>
+
 export const BonusSummary = (props: {
-  txnSummaryStats: rowFor<'txn_summary_stats'>[]
+  txnSummaryStats: TxnSummaryRow[]
   days?: string[]
   defaultHidden?: string[]
 }) => {
@@ -35,12 +52,17 @@ export const BonusSummary = (props: {
   const xAxisRef = useRef<SVGGElement>(null)
   const yAxisRef = useRef<SVGGElement>(null)
   const margin = { top: 20, right: 20, bottom: 10, left: 10 }
-  const width = 900
-  const height = 500
+  const { elemRef, width: boxWidth } = useMeasureSize()
+  const { width, height } = stackedChartSize(boxWidth)
   const innerWidth = width - margin.left - margin.right
   const innerHeight = height - margin.top - margin.bottom
 
-  const [shownCategories, setSelectedCategories] = useState<string[]>([])
+  // Categories the viewer hid. Tracked as hidden rather than shown, so one that
+  // only appears once the time range widens starts out visible, and hiding
+  // survives the range narrowing and widening again.
+  const [hiddenCategories, setHiddenCategories] = useState<string[]>(
+    defaultHidden ?? []
+  )
 
   const { data, xScale, stackGen, colorScale, yScale, keys } = useMemo(() => {
     const data = orderAndGroupData(txnSummaryStats, days)
@@ -57,7 +79,7 @@ export const BonusSummary = (props: {
       (k) => -sumBy(data, (d) => d[k])
     )
 
-    const shownKeys = keys.filter((k) => shownCategories.includes(k))
+    const shownKeys = keys.filter((k) => !hiddenCategories.includes(k))
 
     const colorScale = scaleOrdinal<string>()
       .domain(keys)
@@ -72,11 +94,21 @@ export const BonusSummary = (props: {
     xScale.domain(data.map((d) => d.date))
     yScale.domain([0, maxY]).nice()
     return { data: shownData, xScale, yScale, keys, colorScale, stackGen }
-  }, [txnSummaryStats.length, shownCategories])
+  }, [
+    txnSummaryStats.length,
+    days?.length,
+    hiddenCategories,
+    innerWidth,
+    innerHeight,
+  ])
 
-  useEffect(() => {
-    setSelectedCategories(keys.filter((k) => !defaultHidden?.includes(k)))
-  }, [])
+  const shownCategories = keys.filter((k) => !hiddenCategories.includes(k))
+  // Hides for categories outside the current range are kept.
+  const setSelectedCategories = (shown: string[]) =>
+    setHiddenCategories((prev) => [
+      ...prev.filter((k) => !keys.includes(k)),
+      ...keys.filter((k) => !shown.includes(k)),
+    ])
 
   useEffect(() => {
     if (xScale && xAxisRef.current) {
@@ -86,7 +118,7 @@ export const BonusSummary = (props: {
       select(yAxisRef.current)
         .transition()
         .duration(300)
-        .call(axisRight(yScale))
+        .call(axisRight(yScale).tickFormat((d) => formatLargeNumber(+d, 3)))
     }
   }, [xScale, yScale])
 
@@ -110,59 +142,66 @@ export const BonusSummary = (props: {
 
   return (
     <div>
-      <svg
-        ref={svgRef}
-        width={width}
-        height={height}
-        viewBox={`0 0 ${width} ${height}`}
-        overflow="visible"
-      >
-        <g transform="translate(10,20)">
-          {data.length > 0 &&
-            keys.length > 0 &&
-            stackGen?.(data).map((layer) => (
-              <g key={layer.key} fill={colorScale(layer.key)}>
-                {layer.map((d) => (
-                  <rect
-                    key={d.data.date}
-                    x={xScale(d.data.date as any)}
-                    y={yScale(d[1])}
-                    height={yScale(d[0]) - yScale(d[1])}
-                    width={xScale?.bandwidth()}
-                    style={{
-                      transition: 'y 0.3s ease, height 0.3s ease',
-                    }}
-                    onMouseOver={() => {
-                      select(tooltipRef.current)
-                        .style('opacity', 1)
-                        .style('z-index', 1000)
-                        .html(
-                          renderToString(
-                            <StackedChartTooltip
-                              data={d.data as DateAndCategoriesToTotals}
-                            />
-                          )
-                        )
-                    }}
-                    onMouseMove={(event) => {
-                      select(tooltipRef.current)
-                        .style('left', `${event.pageX - 150}px`)
-                        .style('top', `${event.pageY + 5}px`)
-                    }}
-                    onMouseOut={() => {
-                      select(tooltipRef.current).style('opacity', 0)
-                    }}
-                  />
+      {/* The chart fills this box, keeping room for the y-axis labels past
+          its right edge. Below its minimum width (phones) it scrolls sideways
+          inside the box rather than widening the page. */}
+      <div ref={elemRef} className="overflow-x-auto">
+        <div className="w-max pr-12">
+          <svg
+            ref={svgRef}
+            width={width}
+            height={height}
+            viewBox={`0 0 ${width} ${height}`}
+            overflow="visible"
+          >
+            <g transform="translate(10,20)">
+              {data.length > 0 &&
+                keys.length > 0 &&
+                stackGen?.(data).map((layer) => (
+                  <g key={layer.key} fill={colorScale(layer.key)}>
+                    {layer.map((d) => (
+                      <rect
+                        key={d.data.date}
+                        x={xScale(d.data.date as any)}
+                        y={yScale(d[1])}
+                        height={yScale(d[0]) - yScale(d[1])}
+                        width={xScale?.bandwidth()}
+                        style={{
+                          transition: 'y 0.3s ease, height 0.3s ease',
+                        }}
+                        onMouseOver={() => {
+                          select(tooltipRef.current)
+                            .style('opacity', 1)
+                            .style('z-index', 1000)
+                            .html(
+                              renderToString(
+                                <StackedChartTooltip
+                                  data={d.data as DateAndCategoriesToTotals}
+                                />
+                              )
+                            )
+                        }}
+                        onMouseMove={(event) => {
+                          select(tooltipRef.current)
+                            .style('left', `${event.pageX - 150}px`)
+                            .style('top', `${event.pageY + 5}px`)
+                        }}
+                        onMouseOut={() => {
+                          select(tooltipRef.current).style('opacity', 0)
+                        }}
+                      />
+                    ))}
+                  </g>
                 ))}
-              </g>
-            ))}
-          <g
-            ref={yAxisRef}
-            className="y axis"
-            transform={`translate(${innerWidth},0)`}
-          />
-        </g>
-      </svg>
+              <g
+                ref={yAxisRef}
+                className="y axis"
+                transform={`translate(${innerWidth},0)`}
+              />
+            </g>
+          </svg>
+        </div>
+      </div>
       <div
         ref={tooltipRef}
         style={{
@@ -208,15 +247,12 @@ export const BonusSummary = (props: {
   )
 }
 
-const getCategoryForTxn = (txn: rowFor<'txn_summary_stats'>) =>
+const getCategoryForTxn = (txn: TxnSummaryRow) =>
   (categoryToLabel as any)[txn.category] ||
   (txn.quest_type ? `${txn.quest_type}_` : '') +
     txn.category.replace('_REWARD', '').replace('_BONUS', '')
 
-const orderAndGroupData = (
-  data: rowFor<'txn_summary_stats'>[],
-  days?: string[]
-) => {
+const orderAndGroupData = (data: TxnSummaryRow[], days?: string[]) => {
   const groupedData = groupBy(data, (row) => row.start_time.split(' ')[0])
 
   const summedData = mapValues(groupedData, (transactions, date) => {

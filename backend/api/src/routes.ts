@@ -43,6 +43,7 @@ import { uploadDocument } from 'api/gidx/upload-document'
 import { createIdenfySession } from 'api/idenfy/create-session'
 import { getIdenfyStatus } from 'api/idenfy/get-status'
 import { getIdenfyStats } from './get-idenfy-stats'
+import { getSurfaceFunnels } from './get-surface-funnels'
 import { getMarkets } from 'api/markets'
 import { multiSell } from 'api/multi-sell'
 import { placeMultiBet } from 'api/place-multi-bet'
@@ -541,6 +542,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'create-idenfy-session': createIdenfySession,
   'get-idenfy-status': getIdenfyStatus,
   'get-idenfy-stats': getIdenfyStats,
+  'get-surface-funnels': getSurfaceFunnels,
   'get-best-comments': getBestComments,
   'record-comment-view': recordCommentView,
   'get-cashouts': getCashouts,
