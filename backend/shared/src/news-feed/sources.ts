@@ -457,10 +457,11 @@ export async function fetchWikipediaCurrentEvents(day: Date) {
 // GDELT DOC 2.0: https://blog.gdeltproject.org/gdelt-doc-2-0-api-debuts/
 //
 // Free for any use with a citation to the project. The API wants one request
-// every five seconds from a client and refuses long queries, so the wire is
-// drawn with several short "beat" queries over a dozen outlets, run well
-// apart. A query must search for something; the verifier settles each
-// story's category afterwards.
+// every five seconds from a client, throttles an address that asks faster
+// for a good while, and refuses queries much over 400 characters, so the
+// wire is drawn with short "beat" queries over small groups of outlets, run
+// well apart, and left alone for a while after a refusal. A query must
+// search for something; the verifier settles each story's category.
 
 const GDELT_API = 'https://api.gdeltproject.org/api/v2/doc/doc'
 /** The API asks for five seconds between requests and counts generously. */
@@ -470,112 +471,85 @@ const GDELT_MAX_RECORDS = 250
 /** How far back a cold start looks. */
 const GDELT_COLD_WINDOW_MS = 6 * HOUR_MS
 const GDELT_MIN_WINDOW_MS = 30 * MINUTE_MS
+/** After a throttle, leave the API alone for this long, doubling each time
+ * it happens again, up to the cap. */
+const GDELT_BACKOFF_MS = 15 * MINUTE_MS
+const GDELT_MAX_BACKOFF_MS = 2 * HOUR_MS
 
-/** The outlets the GDELT queries are restricted to: a dozen, because a query
- * has a length limit. All are in OUTLET_NAMES. */
-export const GDELT_DOMAINS = [
-  'bbc.com',
-  'reuters.com',
-  'apnews.com',
-  'cnn.com',
-  'nbcnews.com',
-  'cbsnews.com',
-  'theguardian.com',
-  'politico.com',
-  'cnbc.com',
-  'npr.org',
-  'axios.com',
-  'thehill.com',
+/** The outlets the GDELT queries are restricted to, in groups small enough
+ * for the query length limit. All are in OUTLET_NAMES. */
+export const GDELT_DOMAIN_GROUPS: string[][] = [
+  [
+    'bbc.com',
+    'reuters.com',
+    'apnews.com',
+    'cnn.com',
+    'nbcnews.com',
+    'cbsnews.com',
+  ],
+  [
+    'theguardian.com',
+    'politico.com',
+    'cnbc.com',
+    'npr.org',
+    'axios.com',
+    'thehill.com',
+  ],
 ]
 
-/** Each beat is one query; together they cover the news a market could turn
- * on. The terms are broad on purpose: the matcher decides relevance. */
+/** Each beat is one query per outlet group; together they cover the news a
+ * market could turn on. Broad on purpose: the matcher decides relevance. */
 export const GDELT_BEATS: string[][] = [
   [
     'election',
     'senate',
     'congress',
     'president',
-    'governor',
-    'parliament',
-    'prime minister',
-    'supreme court',
-  ],
-  [
     'ukraine',
-    'russia',
     'israel',
     'gaza',
     'iran',
-    'china',
-    'taiwan',
-    'nato',
-    'ceasefire',
-    'sanctions',
   ],
   [
     'federal reserve',
     'inflation',
     'tariffs',
     'stocks',
-    'earnings',
-    'gdp',
-    'unemployment',
-    'oil prices',
-    'bitcoin',
-  ],
-  [
     'openai',
     'nvidia',
     'apple',
-    'google',
-    'microsoft',
     'tesla',
-    'spacex',
-    'artificial intelligence',
+  ],
+  [
     'nasa',
     'vaccine',
     'climate',
     'hurricane',
+    'earthquake',
+    'china',
+    'russia',
+    'nato',
   ],
   [
     'nfl',
     'nba',
     'mlb',
-    'nhl',
     'world series',
-    'super bowl',
     'premier league',
-    'champions league',
-    'formula 1',
-    'ufc',
-    'olympics',
-    'world cup',
-  ],
-  [
+    'netflix',
     'box office',
     'oscars',
-    'grammys',
-    'netflix',
-    'album',
-    'emmys',
-    'billboard',
-    'festival',
-    'poll',
-    'strike',
-    'verdict',
-    'merger',
   ],
 ]
 
 /** GDELT_SCOPE=any drops the outlet filter from the query (the allowlist
  * still applies to what comes back). */
-const gdeltQuery = (terms: string[]) => {
+const gdeltQuery = (terms: string[], domains: string[]) => {
   const quoted = terms.map((t) => (t.includes(' ') ? `"${t}"` : t))
   const outlets =
     process.env.GDELT_SCOPE === 'any'
       ? ''
-      : ` (${GDELT_DOMAINS.map((d) => `domain:${d}`).join(' OR ')})`
+      : ` (${domains.map((d) => `domain:${d}`).join(' OR ')})`
   return `(${quoted.join(' OR ')})${outlets} sourcelang:english`
 }
 
@@ -647,9 +621,19 @@ export function parseGdelt(json: string, fetchedAt: number): RawStory[] {
 
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
+/** When the API last throttled us, and how long we are staying away. */
+const gdeltThrottle = { until: 0, backoffMs: GDELT_BACKOFF_MS }
+
 /** The wire since the last refresh (or the last few hours on a cold start),
- * one beat at a time. A throttled or failed query is logged and skipped. */
+ * one query at a time. A throttle ends the round and starts a backoff; a
+ * failed query is logged and skipped. */
 export async function fetchGdelt(now = Date.now(), since?: number) {
+  if (now < gdeltThrottle.until) {
+    log('news-feed: gdelt skipped, backing off', {
+      until: new Date(gdeltThrottle.until).toISOString(),
+    })
+    return [] as RawStory[]
+  }
   const windowMs = since
     ? Math.min(
         GDELT_COLD_WINDOW_MS,
@@ -660,52 +644,72 @@ export async function fetchGdelt(now = Date.now(), since?: number) {
   const stories: RawStory[] = []
   let dropped = 0
   let refused = 0
-  for (const [i, beat] of GDELT_BEATS.entries()) {
-    if (i > 0) await pause(GDELT_GAP_MS)
-    const query = gdeltQuery(beat)
-    const params = new URLSearchParams({
-      query,
-      mode: 'artlist',
-      maxrecords: String(GDELT_MAX_RECORDS),
-      format: 'json',
-      timespan,
-      sort: 'datedesc',
-    })
-    try {
-      const res = await httpsRequest(`${GDELT_API}?${params}`, {
-        allow: (u) =>
-          u.protocol === 'https:' && u.hostname === 'api.gdeltproject.org',
-        timeoutMs: 30_000,
+  let queries = 0
+  let throttled = false
+  rounds: for (const beat of GDELT_BEATS) {
+    for (const domains of GDELT_DOMAIN_GROUPS) {
+      if (queries > 0) await pause(GDELT_GAP_MS)
+      queries++
+      const query = gdeltQuery(beat, domains)
+      const params = new URLSearchParams({
+        query,
+        mode: 'artlist',
+        maxrecords: String(GDELT_MAX_RECORDS),
+        format: 'json',
+        timespan,
+        sort: 'datedesc',
       })
-      const body = res.body.trim()
-      if (!isOk(res) || !body.startsWith('{')) {
-        refused++
-        log.warn('news-feed: gdelt query refused', {
-          beat: i,
-          status: res.status,
-          queryLength: query.length,
-          body: body.slice(0, 120),
+      try {
+        const res = await httpsRequest(`${GDELT_API}?${params}`, {
+          allow: (u) =>
+            u.protocol === 'https:' && u.hostname === 'api.gdeltproject.org',
+          timeoutMs: 30_000,
         })
-        continue
+        const body = res.body.trim()
+        if (res.status === 429) {
+          throttled = true
+          gdeltThrottle.until = now + gdeltThrottle.backoffMs
+          gdeltThrottle.backoffMs = Math.min(
+            GDELT_MAX_BACKOFF_MS,
+            gdeltThrottle.backoffMs * 2
+          )
+          log.warn('news-feed: gdelt throttled us; backing off', {
+            query: queries,
+            until: new Date(gdeltThrottle.until).toISOString(),
+          })
+          break rounds
+        }
+        if (!isOk(res) || !body.startsWith('{')) {
+          refused++
+          log.warn('news-feed: gdelt query refused', {
+            query: queries,
+            status: res.status,
+            queryLength: query.length,
+            body: body.slice(0, 120),
+          })
+          continue
+        }
+        const total = (JSON.parse(body) as { articles?: unknown[] }).articles
+          ?.length
+        const kept = parseGdelt(body, now)
+        dropped += (total ?? 0) - kept.length
+        stories.push(...kept)
+      } catch (e) {
+        refused++
+        log.warn('news-feed: gdelt query failed', {
+          query: queries,
+          error: e instanceof Error ? e.message : String(e),
+        })
       }
-      const total = (JSON.parse(body) as { articles?: unknown[] }).articles
-        ?.length
-      const kept = parseGdelt(body, now)
-      dropped += (total ?? 0) - kept.length
-      stories.push(...kept)
-    } catch (e) {
-      refused++
-      log.warn('news-feed: gdelt query failed', {
-        beat: i,
-        error: e instanceof Error ? e.message : String(e),
-      })
     }
   }
+  if (!throttled && refused === 0) gdeltThrottle.backoffMs = GDELT_BACKOFF_MS
   const out = uniqBy(stories, (s) => s.key)
   log('news-feed: gdelt', {
     timespan,
-    beats: GDELT_BEATS.length,
+    queries,
     refused,
+    throttled,
     stories: out.length,
     dropped,
     outlets: Object.keys(

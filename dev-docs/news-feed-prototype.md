@@ -224,7 +224,8 @@ give each configuration its own `NEWS_FEED_CACHE_PATH`.
 - `claims.ts`: `ARTICLE_MATCH_SIMILARITY` (0.75), `CLAIMS_PER_REFRESH` (60),
   the two prompts in `extractClaims` and `matchClaims`, `CLAIMS_VERSION`.
 - `sources.ts`: `OUTLET_NAMES` (the outlets the wire is drawn from),
-  `GDELT_BEATS` (the three queries), `MEDIASTACK_CATEGORY`.
+  `GDELT_BEATS` and `GDELT_DOMAIN_GROUPS` (the eight queries),
+  `MEDIASTACK_CATEGORY`.
 - `get-news-feed.ts`: featured market selection in `featuredFor`.
 - `common/src/news-feed.ts`: `NEWS_FEW_TRADERS` (10).
 

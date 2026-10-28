@@ -15,15 +15,15 @@ when their keys are set; Wikimedia Commons for pictures. The prototype's
 sources (Google News RSS, outlet pages for claims, outlet thumbnails) run
 only when a configuration names them.
 
-| Piece                                        | State                         | Needs                                               |
-| -------------------------------------------- | ----------------------------- | --------------------------------------------------- |
-| Wikipedia Current Events                     | built, running                | `NEWS_FEED_CONTACT` set in production               |
-| GDELT wire                                   | built                         | nothing; the API allows one request per 5 seconds   |
-| Mediastack wire                              | built, untested without a key | `MEDIASTACK_API_KEY` (Standard plan, $24.99/mo)     |
-| Guardian full text                           | built, untested without a key | a commercial key (`GUARDIAN_API_KEY`)               |
-| TollBit full text                            | built, untested without a key | developer account, prepaid spend, `TOLLBIT_API_KEY` |
-| Wikimedia Commons pictures                   | built                         | nothing                                             |
-| Google News RSS, outlet pages, outlet images | prototype only                | never in production                                 |
+| Piece                                        | State                         | Needs                                                |
+| -------------------------------------------- | ----------------------------- | ---------------------------------------------------- |
+| Wikipedia Current Events                     | built, running                | `NEWS_FEED_CONTACT` set in production                |
+| GDELT wire                                   | built; live test pending      | nothing; one request per 5 seconds, from one process |
+| Mediastack wire                              | built, untested without a key | `MEDIASTACK_API_KEY` (Standard plan, $24.99/mo)      |
+| Guardian full text                           | built, untested without a key | a commercial key (`GUARDIAN_API_KEY`)                |
+| TollBit full text                            | built, untested without a key | developer account, prepaid spend, `TOLLBIT_API_KEY`  |
+| Wikimedia Commons pictures                   | built                         | nothing                                              |
+| Google News RSS, outlet pages, outlet images | prototype only                | never in production                                  |
 
 ## Why the prototype cannot ship as it is
 
@@ -93,15 +93,20 @@ shown or sent to the page.
 Built:
 
 - **GDELT** (`sources.ts`, `fetchGdelt`). The API must be asked for
-  something, so the wire is drawn with three broad "beat" queries (politics
-  and world; money, tech and science; sport and culture) restricted to the
-  outlets we show (`OUTLET_NAMES`, all on the favicon allowlist), newest
-  first, 250 records each, over the time since the last refresh (six hours on
-  a cold start). Queries run 5.5 seconds apart; a throttled query is logged
-  and skipped. Titles lose the outlet suffix ("… - BBC News"); every story
-  is `category: other` until the verifier names one. Cards carry "via GDELT"
-  linking the project, which is the citation its terms ask for. Image URLs
-  are not used.
+  something and refuses queries much over 400 characters, so the wire is
+  drawn with four broad "beat" queries (politics and world; money and tech;
+  science and the big powers; sport and culture), each over two groups of
+  six outlets (`GDELT_DOMAIN_GROUPS`, all in `OUTLET_NAMES` and on the
+  favicon allowlist): eight queries of about 230 characters, newest first,
+  250 records each, over the time since the last refresh (six hours on a
+  cold start), ten seconds apart. The API throttles an address that asks
+  faster than one request per five seconds, and keeps throttling it for a
+  while, so a 429 ends the round and the adapter stays away for 15 minutes,
+  doubling up to two hours while it continues; one process should talk to
+  GDELT, not every API instance. Titles lose the outlet suffix ("… - BBC
+  News"); every story is `category: other` until the verifier names one.
+  Cards carry "via GDELT" linking the project, which is the citation its
+  terms ask for. Image URLs are not used.
 - **Mediastack** (`fetchMediastack`). One call per refresh for the 100 newest
   English items from US and UK sources, sorted by publication (about 4,300
   calls a month at a 10-minute refresh, inside the Standard plan's 10,000),
