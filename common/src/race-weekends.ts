@@ -1,6 +1,7 @@
 import { groupBy, sortBy } from 'lodash'
 import { Answer } from './answer'
-import { parseF1EventId } from './f1-markets'
+import { F1_CLOSE_BUFFER_HOURS, parseF1EventId } from './f1-markets'
+import { HOUR_MS } from './util/time'
 
 // ─── F1 race weekends on the sports page ────────────────────────────────────
 //
@@ -75,22 +76,68 @@ export interface RaceContract {
   sportsStartTimestamp?: string
 }
 
-const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+type SessionLabel = 'Qualifying' | 'Sprint' | 'Race' | 'Session'
 
-/** What follows the weekend in a title: "race winner", "pole position". */
-const titleTail = (question: string) => {
+/** The title endings the pipeline writes (common/f1-markets.ts), by session. */
+const TITLE_TAILS: Record<string, SessionLabel> = {
+  'pole position': 'Qualifying',
+  'sprint winner': 'Sprint',
+  'race winner': 'Race',
+  podium: 'Race',
+}
+
+const WINNER_LABEL: Record<SessionLabel, string> = {
+  Qualifying: 'Pole position',
+  Sprint: 'Sprint winner',
+  Race: 'Race winner',
+  Session: 'Winner',
+}
+
+/** The weekend and what's asked, if the title is the pipeline's own. */
+function parseTitle(question: string) {
   const i = question.lastIndexOf(': ')
-  return i >= 0 ? question.slice(i + 2).trim() : ''
+  if (i <= 0) return undefined
+  const label =
+    TITLE_TAILS[
+      question
+        .slice(i + 2)
+        .trim()
+        .toLowerCase()
+    ]
+  return label ? { weekend: question.slice(0, i), label } : undefined
 }
 
-function sessionLabel(markets: RaceContract[]): string {
-  const tails = markets.map((m) => titleTail(m.question).toLowerCase())
-  if (tails.some((t) => t.includes('pole'))) return 'Qualifying'
-  if (tails.some((t) => t.includes('sprint'))) return 'Sprint'
-  return 'Race'
+/**
+ * Which session the markets are about. A podium only comes with a race; then
+ * the title the pipeline wrote; then, for a title someone edited, how long
+ * after the start the markets close (F1_CLOSE_BUFFER_HOURS, one per session
+ * kind); and a neutral "Session" when nothing says.
+ */
+function sessionLabel(
+  markets: RaceContract[],
+  startTime: number,
+  closeTime: number
+): SessionLabel {
+  if (markets.some((m) => m.sportsMarketType === 'podium')) return 'Race'
+  const titled = markets.map((m) => parseTitle(m.question)?.label).find(Boolean)
+  if (titled) return titled
+  const hours = (closeTime - startTime) / HOUR_MS
+  const BY_KIND: Record<string, SessionLabel> = {
+    race: 'Race',
+    sprint: 'Sprint',
+    qualifying: 'Qualifying',
+  }
+  const kind = Object.entries(F1_CLOSE_BUFFER_HOURS).find(
+    ([, h]) => Math.abs(h - hours) < 0.01
+  )?.[0]
+  return (kind && BY_KIND[kind]) || 'Session'
 }
 
-function marketRef(c: RaceContract, answers: Answer[]): RaceMarketRef {
+function marketRef(
+  c: RaceContract,
+  answers: Answer[],
+  session: SessionLabel
+): RaceMarketRef {
   const marketType = c.sportsMarketType === 'podium' ? 'podium' : 'winner'
   const won = (a: Answer) =>
     a.resolution === 'YES' || (marketType === 'winner' && c.resolution === a.id)
@@ -105,7 +152,7 @@ function marketRef(c: RaceContract, answers: Answer[]): RaceMarketRef {
     creatorUsername: c.creatorUsername,
     question: c.question,
     marketType,
-    label: titleCase(titleTail(c.question)) || titleCase(marketType),
+    label: marketType === 'podium' ? 'Podium' : WINNER_LABEL[session],
     isResolved: !!c.isResolved,
     leaders: ranked.slice(0, RACE_CARD_LEADERS).map((a) => ({
       answerId: a.id,
@@ -153,26 +200,34 @@ export function buildRaceWeekends(
             (c) => (c.sportsMarketType === 'podium' ? 1 : 0)
           )
           const closeTime = Math.max(...cs.map((c) => c.closeTime ?? 0))
-          const start = Date.parse(cs[0].sportsStartTimestamp ?? '')
-          const startTime = Number.isFinite(start) ? start : closeTime
+          // Any market's start will do: they share the session's.
+          const starts = cs
+            .map((c) => Date.parse(c.sportsStartTimestamp ?? ''))
+            .filter((t) => Number.isFinite(t))
+          const startTime = starts.length > 0 ? Math.min(...starts) : closeTime
+          const label = sessionLabel(cs, startTime, closeTime)
           return {
             sessionId: group[0].sessionId,
-            label: sessionLabel(cs),
+            label,
             startTime,
             closeTime,
             status: sessionStatus(startTime, closeTime, cs, now),
-            markets: cs.map((c) => marketRef(c, answersByContract[c.id] ?? [])),
+            markets: cs.map((c) =>
+              marketRef(c, answersByContract[c.id] ?? [], label)
+            ),
           }
         }
       )
       const ordered = sortBy(sessions, (s) => s.startTime)
       const statuses = ordered.map((s) => s.status)
-      const first = markets[0].c.question
-      const i = first.lastIndexOf(': ')
+      // From a title the pipeline wrote, not one someone edited.
+      const name =
+        markets.map((p) => parseTitle(p.c.question)?.weekend).find(Boolean) ??
+        'Formula 1 weekend'
       return {
         id: `bdl-f1:${markets[0].eventId}`,
         sport: 'f1',
-        name: i > 0 ? first.slice(0, i) : 'Formula 1',
+        name,
         startTime: ordered[0].startTime,
         status: statuses.includes('live')
           ? 'live'
@@ -207,4 +262,19 @@ export function featuredRaceWeekends(
     const next = w.sessions.find((s) => s.status === 'upcoming')
     return !!next && next.startTime - now <= FEATURED_RACE_WITHIN_MS
   })
+}
+
+/**
+ * The week's other markets without the ones on the cards being shown. The API
+ * keeps F1 markets in that list, so a weekend that isn't on a card (too far
+ * off to feature, or an older page that can't draw one) still lists them.
+ */
+export function withoutRaceMarkets<T extends { id: string }>(
+  upcoming: T[],
+  shown: RaceWeekend[]
+): T[] {
+  const onCards = new Set(
+    shown.flatMap((w) => w.sessions.flatMap((s) => s.markets.map((m) => m.id)))
+  )
+  return upcoming.filter((m) => !onCards.has(m.id))
 }

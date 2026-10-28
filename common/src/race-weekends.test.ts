@@ -2,6 +2,7 @@ import { Answer } from './answer'
 import {
   buildRaceWeekends,
   featuredRaceWeekends,
+  withoutRaceMarkets,
   RaceContract,
 } from './race-weekends'
 
@@ -181,5 +182,40 @@ describe('featuredRaceWeekends', () => {
     expect(featuredRaceWeekends(weekends, QUALI - 5 * 24 * HOUR)).toEqual([])
     const live = buildRaceWeekends([race], byContract, RACE + HOUR)
     expect(featuredRaceWeekends(live, RACE + HOUR)).toHaveLength(1)
+  })
+})
+
+describe('review fixes', () => {
+  it('starts a session at any market that has a start (F4213-02)', () => {
+    const noStart = { ...race, sportsStartTimestamp: undefined }
+    const [w] = buildRaceWeekends([noStart, podium], byContract, RACE + HOUR)
+    expect(w.sessions[0].startTime).toBe(RACE)
+    expect(w.sessions[0].status).toBe('live')
+  })
+
+  it('names a session whose title was edited from how long its market stays open (F4213-03)', () => {
+    const renamed = {
+      ...pole,
+      question: 'Who takes pole at the 2026 Mexico City Grand Prix?',
+      closeTime: QUALI + 1.5 * HOUR,
+    }
+    const [w] = buildRaceWeekends([renamed, race], byContract, NOW)
+    expect(w.sessions.map((s) => s.label)).toEqual(['Qualifying', 'Race'])
+    expect(w.sessions[0].markets[0].label).toBe('Pole position')
+    // The weekend's name comes from a title the pipeline wrote.
+    expect(w.name).toBe('2026 Mexico City Grand Prix')
+
+    const odd = { ...renamed, closeTime: QUALI + 2 * HOUR }
+    const [alone] = buildRaceWeekends([odd], byContract, NOW)
+    expect(alone.name).toBe('Formula 1 weekend')
+    expect(alone.sessions[0].label).toBe('Session')
+    expect(alone.sessions[0].markets[0].label).toBe('Winner')
+  })
+
+  it('drops only the markets on cards being shown from the week list (F4213-01)', () => {
+    const weekends = buildRaceWeekends([pole, race, podium], byContract, NOW)
+    const upcoming = [{ id: 'race' }, { id: 'pole' }, { id: 'other' }]
+    expect(withoutRaceMarkets(upcoming, weekends)).toEqual([{ id: 'other' }])
+    expect(withoutRaceMarkets(upcoming, [])).toEqual(upcoming)
   })
 })

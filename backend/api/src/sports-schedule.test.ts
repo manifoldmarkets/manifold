@@ -619,8 +619,10 @@ describe('F1 race weekends', () => {
       // Two sessions to come; the games are unchanged.
       expect(result.counts).toEqual({ nfl: 1, soccer: 1, f1: 2 })
       expect(result.games.map((g) => g.id)).not.toContain('race')
-      // Its markets are on the card, not among the week's markets.
-      expect(result.upcoming.map((m) => m.id)).not.toContain('race')
+      // Still among the week's markets, for a page that doesn't show the
+      // card; the page drops the ones it does show (withoutRaceMarkets).
+      if (sport !== 'nfl')
+        expect(result.upcoming.map((m) => m.id)).toContain('race')
       const weekends = result.raceWeekends ?? []
       if (sport === 'nfl') {
         expect(weekends).toEqual([])

@@ -2,6 +2,7 @@ import { keyBy, uniq } from 'lodash'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo } from 'react'
+import { withoutRaceMarkets } from 'common/race-weekends'
 import { CURATED_SPORTS, SPORT_KEY_RE } from 'common/sports-schedule'
 import { Col } from 'web/components/layout/col'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
@@ -80,7 +81,7 @@ export default function SportPage() {
   const markets = (
     <SportMarkets
       sport={sport ?? 'all'}
-      upcoming={schedule?.upcoming ?? []}
+      upcoming={withoutRaceMarkets(schedule?.upcoming ?? [], weekends)}
       sportsByKey={sportsByKey}
       enabled={ready && !!sport}
     />

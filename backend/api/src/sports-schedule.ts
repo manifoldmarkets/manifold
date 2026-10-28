@@ -185,15 +185,11 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   // is not a game row and not already hanging under one. For a sports market
   // the close time is the game time, so this is the schedule of what people
   // made, with no matching involved.
+  // F1 markets stay in: the page drops the ones on the cards it shows
+  // (withoutRaceMarkets), so a weekend it doesn't feature is still listed.
   const gameIds = new Set(official.map((g) => g.id))
-  // F1 markets are on their weekend's card.
-  const raceMarketIds = new Set(
-    allWeekends.flatMap((w) =>
-      w.sessions.flatMap((s) => s.markets.map((m) => m.id))
-    )
-  )
   const upcoming = weekAll.filter(
-    (m) => !gameIds.has(m.id) && !attached.has(m.id) && !raceMarketIds.has(m.id)
+    (m) => !gameIds.has(m.id) && !attached.has(m.id)
   )
 
   // Rail badges: live and upcoming games per sport, the rows its feed shows.

@@ -2,7 +2,7 @@ import { keyBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo } from 'react'
 import { OG_CARD_HEIGHT, OG_CARD_WIDTH } from 'common/edge/og'
-import { featuredRaceWeekends } from 'common/race-weekends'
+import { featuredRaceWeekends, withoutRaceMarkets } from 'common/race-weekends'
 import { SportsOgMarket, sportsOgImageAlt } from 'common/sports-og'
 import {
   AnySportKey,
@@ -88,7 +88,7 @@ export default function SportsPage({
   const markets = (
     <SportMarkets
       sport="all"
-      upcoming={schedule?.upcoming ?? []}
+      upcoming={withoutRaceMarkets(schedule?.upcoming ?? [], weekends)}
       sportsByKey={sportsByKey}
       enabled={ready}
     />
