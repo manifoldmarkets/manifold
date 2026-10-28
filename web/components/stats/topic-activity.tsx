@@ -60,6 +60,9 @@ type TopicRow = {
   // every day (exact), avg and share are lower bounds.
   avg: number
   exact: boolean
+  // The whole-number counts behind avg and share, to floor lower bounds by.
+  total: number
+  siteTotal: number
   // Days the topic cleared the floor, out of the range's days with topic data.
   daysCounted: number
   daysCovered: number
@@ -461,7 +464,7 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
                         ? `≤ ${TOPIC_FLOOR}`
                         : r.exact
                         ? formatCount(r.avg)
-                        : `≥ ${formatLowerCount(r.avg)}`}
+                        : `≥ ${formatLowerCount(r.total, r.daysCovered)}`}
                     </td>
                     <td
                       className={clsx(
@@ -484,7 +487,7 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
                         ? '—'
                         : r.exact
                         ? formatPercent(r.share)
-                        : `≥ ${formatLowerPercent(r.share)}`}
+                        : `≥ ${formatLowerPercent(r.total, r.siteTotal)}`}
                     </td>
                     <td className="text-ink-500 hidden px-3 py-2 text-right text-xs sm:table-cell">
                       {r.daysCounted}/{r.daysCovered}
@@ -598,6 +601,8 @@ const getTopicRows = (
         group: groups?.[id],
         avg,
         exact,
+        total,
+        siteTotal,
         daysCounted: points.length,
         daysCovered: windowDays,
         share: siteTotal > 0 ? total / siteTotal : undefined,
@@ -619,20 +624,24 @@ const getTopicRows = (
 }
 
 // A lower bound is floored at the precision it's shown with, so rounding
-// never claims more than is known (25.5 shows as "≥ 25", not "≥ 26"). The
-// epsilon keeps float noise (2.3 * 10 = 22.999…) from dropping a digit.
-const floorAt = (y: number, decimals: number) =>
-  Math.floor(y * 10 ** decimals + 1e-9) / 10 ** decimals
+// never claims more than is known (25.5 shows as "≥ 25", not "≥ 26"). It's
+// floored from the whole-number counts, num / den, so no float noise needs
+// correcting and nothing can round up.
+const floorRatio = (num: number, den: number, decimals: number) =>
+  Math.floor((num * 10 ** decimals) / den) / 10 ** decimals
 // One decimal under 10, as formatCount does. From 10 up it's a whole number
 // with commas, never formatCount's compact form, which rounds (10,500 is
 // "11k").
-const formatLowerCount = (y: number) =>
-  y >= 10 ? formatWithCommas(floorAt(y, 0)) : formatCount(floorAt(y, 1))
-// formatPercent shows one decimal under 2% (and over 98%).
-const formatLowerPercent = (share: number) =>
-  formatPercent(
-    floorAt(share * 100, share < 0.02 || share > 0.98 ? 1 : 0) / 100
-  )
+const formatLowerCount = (total: number, days: number) =>
+  total / days >= 10
+    ? formatWithCommas(floorRatio(total, days, 0))
+    : formatCount(floorRatio(total, days, 1))
+// One decimal under 2% (and over 98%), as formatPercent does.
+const formatLowerPercent = (total: number, siteTotal: number) => {
+  const share = total / siteTotal
+  const decimals = share < 0.02 || share > 0.98 ? 1 : 0
+  return `${floorRatio(total * 100, siteTotal, decimals).toFixed(decimals)}%`
+}
 
 const lowerBoundNote = (r: TopicRow) =>
   r.exact
