@@ -538,3 +538,113 @@ describe('linked markets', () => {
     }
   )
 })
+
+describe('F1 race weekends', () => {
+  const qualifying = Date.now() + 2 * 60 * 60 * 1000
+  const race = qualifying + 23 * 60 * 60 * 1000
+  const f1 = (
+    id: string,
+    session: number,
+    tail: string,
+    marketType: 'winner' | 'podium',
+    start: number
+  ) => ({
+    data: {
+      id,
+      slug: id,
+      creatorUsername: 'ManifoldSports',
+      question: `2026 Mexico City Grand Prix: ${tail}`,
+      sportsEventId: `bdl-f1:374:${session}`,
+      sportsMarketType: marketType,
+      sportsLeague: 'Formula 1',
+      mechanism: 'cpmm-multi-2',
+      outcomeType: 'MULTIPLE_CHOICE',
+      shouldAnswersSumToOne: marketType === 'winner',
+      closeTime: start + 3 * 60 * 60 * 1000,
+      sportsStartTimestamp: new Date(start).toISOString(),
+    },
+  })
+  const f1Rows = [
+    f1('pole', 1869, 'pole position', 'winner', qualifying),
+    f1('race', 1870, 'race winner', 'winner', race),
+    f1('podium', 1870, 'podium', 'podium', race),
+  ]
+  const driverAnswers = (contractId: string) =>
+    [
+      'Kimi Antonelli',
+      'George Russell',
+      'Lewis Hamilton',
+      'Max Verstappen',
+    ].map((text, index) => ({
+      id: `${contractId}-${index}`,
+      index,
+      contract_id: contractId,
+      text,
+      prob: 0.4 - index * 0.1,
+      pool_yes: 1000,
+      pool_no: 1000,
+      p: 0.5,
+    }))
+  const getSchedule = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+
+  beforeEach(() => {
+    officialRows = [...official, ...f1Rows]
+    answerRows = [
+      ...official.flatMap(({ data }) => gameAnswers(data)),
+      ...f1Rows.flatMap(({ data }) => driverAnswers(data.id)),
+    ]
+    // The race winner also shows up among the week's markets in its topic.
+    marketRows = [
+      ...props,
+      {
+        id: 'race',
+        creator_id: MANIFOLD_SPORTS_USER_IDS[0],
+        question: '2026 Mexico City Grand Prix: race winner',
+        sports_event_id: 'bdl-f1:374:1870',
+        sports_market_type: 'winner',
+        sports_league: 'Formula 1',
+        close_time: new Date(race + 3 * 60 * 60 * 1000).toISOString(),
+        importance_score: 1,
+        group_ids: [groupId('f1')],
+      },
+    ]
+  })
+
+  it('puts a weekend on a card for all sports and F1, counted by session', async () => {
+    for (const sport of ['all', 'f1', 'nfl'] as const) {
+      const response = await getSchedule({ sport })
+      const result = 'result' in response ? response.result : response
+      // Two sessions to come; the games are unchanged.
+      expect(result.counts).toEqual({ nfl: 1, soccer: 1, f1: 2 })
+      expect(result.games.map((g) => g.id)).not.toContain('race')
+      // Its markets are on the card, not among the week's markets.
+      expect(result.upcoming.map((m) => m.id)).not.toContain('race')
+      const weekends = result.raceWeekends ?? []
+      if (sport === 'nfl') {
+        expect(weekends).toEqual([])
+        continue
+      }
+      expect(weekends).toHaveLength(1)
+      const [w] = weekends
+      expect(w.name).toBe('2026 Mexico City Grand Prix')
+      expect(w.sessions.map((s) => [s.label, s.status])).toEqual([
+        ['Qualifying', 'upcoming'],
+        ['Race', 'upcoming'],
+      ])
+      expect(w.sessions[1].markets.map((m) => m.id)).toEqual(['race', 'podium'])
+      expect(w.sessions[1].markets[0].leaders[0].name).toBe('Kimi Antonelli')
+    }
+  })
+
+  it('sends no weekends with a later page', async () => {
+    const first = await getSchedule({ sport: 'f1', limit: 1 })
+    const page = 'result' in first ? first.result : first
+    expect(page.raceWeekends).toHaveLength(1)
+    if (!page.nextCursor) return
+    const next = await getSchedule({ sport: 'f1', cursor: page.nextCursor })
+    const later = 'result' in next ? next.result : next
+    expect(later.raceWeekends).toEqual([])
+  })
+})

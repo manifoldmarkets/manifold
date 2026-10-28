@@ -8,6 +8,7 @@ import { Contract, isMultiCpmm, OutcomeType } from 'common/contract'
 import { Answer } from 'common/answer'
 import { tsToMillis } from 'common/supabase/utils'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
+import { buildRaceWeekends, RaceContract } from 'common/race-weekends'
 import { teamCodeForLeague } from 'common/sports-team-codes'
 import {
   AnySportKey,
@@ -67,11 +68,18 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   const horizon = now + daysAhead * DAY_MS
 
   const index = await getSportsIndex(pg, now)
-  const [official, weekAll] = await Promise.all([
+  const [official, weekAll, allWeekends] = await Promise.all([
     getOfficialGames(pg, index, daysAhead, now),
     getUpcomingMarkets(pg, index),
+    getRaceWeekends(pg, daysAhead, now),
   ])
   const games = official.filter((g) => g.startTime < horizon)
+  // F1 weekends with something still to come inside the horizon.
+  const weekends = allWeekends.filter(
+    (w) =>
+      w.status !== 'finished' &&
+      w.sessions.some((s) => s.status !== 'finished' && s.startTime < horizon)
+  )
 
   // Sort: live first (biggest games on top), then upcoming by kickoff, then
   // just-finished (most recent first). The id breaks ties so pages of
@@ -178,8 +186,14 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   // the close time is the game time, so this is the schedule of what people
   // made, with no matching involved.
   const gameIds = new Set(official.map((g) => g.id))
+  // F1 markets are on their weekend's card.
+  const raceMarketIds = new Set(
+    allWeekends.flatMap((w) =>
+      w.sessions.flatMap((s) => s.markets.map((m) => m.id))
+    )
+  )
   const upcoming = weekAll.filter(
-    (m) => !gameIds.has(m.id) && !attached.has(m.id)
+    (m) => !gameIds.has(m.id) && !attached.has(m.id) && !raceMarketIds.has(m.id)
   )
 
   // Rail badges: live and upcoming games per sport, the rows its feed shows.
@@ -189,6 +203,11 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     if (g.status === 'finished') continue
     counts[g.sport] = (counts[g.sport] ?? 0) + 1
     if (g.status === 'live') liveCount++
+  }
+  // An F1 session counts like a game: the rail shows how many are on.
+  for (const w of weekends) {
+    const on = w.sessions.filter((s) => s.status !== 'finished').length
+    if (on > 0) counts[w.sport] = (counts[w.sport] ?? 0) + on
   }
 
   // The feed: every live game on the first page, then upcoming games by
@@ -216,6 +235,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
           ? upcoming
           : upcoming.filter((m) => m.sport === sport)
         ).slice(0, MAX_UPCOMING_RETURNED),
+    raceWeekends: cursor || (sport !== 'all' && sport !== 'f1') ? [] : weekends,
     counts,
     liveCount,
     sports: index.sports,
@@ -370,6 +390,36 @@ async function getOfficialGames(
       )
     )
     .filter((g): g is ScheduleGame => g !== null)
+}
+
+// F1 weekends: @ManifoldSports markets on a `bdl-f1:` session, which a game
+// row can't show (common/race-weekends.ts). A weekend's earlier sessions stay
+// on its card while later ones are still on, so this looks back four days.
+const RACE_LOOKBACK_HOURS = 96
+const MAX_RACE_MARKETS = 100
+
+async function getRaceWeekends(pg: Pg, daysAhead: number, now: number) {
+  const rows = await pg.manyOrNone(
+    `select ${contractColumnsToSelect}
+     from contracts
+     where data->>'sportsEventId' like 'bdl-f1:%'
+       and creator_id = any($2)
+       and token = 'MANA'
+       and visibility = 'public'
+       and coalesce(deleted, false) = false
+       and resolution is distinct from 'CANCEL'
+       and close_time > now() - interval '${RACE_LOOKBACK_HOURS} hours'
+       and close_time < now() + ($1 || ' days')::interval + interval '1 day'
+     order by close_time asc
+     limit ${MAX_RACE_MARKETS}`,
+    [String(daysAhead), MANIFOLD_SPORTS_USER_IDS]
+  )
+  const contracts = rows.map((r) => convertContract(r) as RaceContract)
+  const answers = await getAnswers(
+    pg,
+    contracts.map((c) => c.id)
+  )
+  return buildRaceWeekends(contracts, answers, now)
 }
 
 // A game market is multiple choice: home, away, and Draw for soccer. Binary

@@ -1,6 +1,7 @@
 import { uniq } from 'lodash'
 import { ENV } from 'common/envs/constants'
 import { MarketLinkRelation } from 'common/market-links'
+import type { RaceWeekend } from 'common/race-weekends'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
 
 // ─── Sport categories ─────────────────────────────────────────────────────────
@@ -1171,6 +1172,11 @@ export interface SportsScheduleResponse {
    * First page only.
    */
   upcoming: UpcomingMarketRef[]
+  /**
+   * F1 race weekends with a session live or coming up, for 'all' and 'f1'.
+   * First page only. Absent from an API that predates them.
+   */
+  raceWeekends?: RaceWeekend[]
   /** Live and upcoming games per sport, for the rail badges. */
   counts: Partial<Record<AnySportKey, number>>
   liveCount: number

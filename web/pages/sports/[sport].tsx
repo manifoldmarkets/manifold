@@ -5,6 +5,7 @@ import { useEffect, useMemo } from 'react'
 import { CURATED_SPORTS, SPORT_KEY_RE } from 'common/sports-schedule'
 import { Col } from 'web/components/layout/col'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
+import { RaceWeekends } from 'web/components/sports/race-weekend-card'
 import { GameFeed } from 'web/components/sports/schedule-list'
 import { sportPath } from 'web/components/sports/sport-rail'
 import {
@@ -50,6 +51,9 @@ export default function SportPage() {
   const games = schedule?.games ?? []
   // Tag cards with their league only when the sport has several (soccer).
   const showLeague = uniq(games.map((g) => g.league)).length > 1
+  // F1's weekends (the API sends them only for F1): all of them, above any
+  // games.
+  const weekends = schedule?.raceWeekends ?? []
 
   if (unknown) {
     return (
@@ -118,6 +122,7 @@ export default function SportPage() {
             queryString: 'games',
             content: (
               <div className="pt-3">
+                <RaceWeekends weekends={weekends} className="mb-4" />
                 <GameFeed
                   key={key}
                   games={games}
@@ -127,11 +132,13 @@ export default function SportPage() {
                   showLeague={showLeague}
                   empty={
                     <div className="flex flex-col gap-6">
-                      <NoGames
-                        sport={sport}
-                        sports={sports}
-                        counts={rail?.counts ?? {}}
-                      />
+                      {weekends.length === 0 && (
+                        <NoGames
+                          sport={sport}
+                          sports={sports}
+                          counts={rail?.counts ?? {}}
+                        />
+                      )}
                       {markets}
                     </div>
                   }
