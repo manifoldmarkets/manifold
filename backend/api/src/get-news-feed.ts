@@ -1,4 +1,4 @@
-import { maxBy, sortBy, sumBy, uniqBy } from 'lodash'
+import { maxBy, sortBy, sumBy } from 'lodash'
 import { Contract } from 'common/contract'
 import {
   isNewsCategory,
@@ -186,48 +186,53 @@ export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
 
   // The day's top stories: the most liked first, then the ones whose
   // markets traded the most today. Yesterday's fill in when today has few.
-  const dayVolume = (s: NewsStory) =>
-    sumBy(s.contractIds, (id) => {
-      const v = contractFor(id)?.volume24Hours ?? 0
-      return Number.isFinite(v) ? v : 0
-    })
-  const rankTop = (windowMs: number) =>
-    sortBy(
-      linked.filter(
-        (s) =>
-          now - s.updatedTime < windowMs &&
-          (likeCount(s.id) > 0 || dayVolume(s) > 0)
-      ),
-      (s) => -likeCount(s.id),
-      (s) => -dayVolume(s)
-    )
-  // One story per event: a story that reads like a higher pick (close
-  // embeddings, as the merge step judges) or whose markets are mostly already
-  // on one is the same news again under another headline.
+  const volumeOf = (id: string) => {
+    const v = contractFor(id)?.volume24Hours ?? 0
+    return Number.isFinite(v) ? v : 0
+  }
+  const dayVolume = (s: NewsStory) => sumBy(s.contractIds, volumeOf)
+  // Picked one at a time, each by the trading it adds to the page: the same
+  // event under another headline, whose weight is a market a higher pick
+  // already shows, falls to where its own markets put it.
   const topPicks: NewsStory[] = []
   const covered = new Set<string>()
+  const addedVolume = (s: NewsStory) =>
+    sumBy(
+      s.contractIds.filter((id) => !covered.has(id)),
+      volumeOf
+    )
   const embeddingOf = (id: string) => build.memos[id]?.embedding
-  for (const s of uniqBy(
-    [...rankTop(DAY_MS), ...rankTop(2 * DAY_MS)],
-    (s) => s.id
-  )) {
-    if (topPicks.length >= TOP_STORIES_LIMIT) break
+  // One story per event even when the trading doesn't settle it: a story
+  // that reads like a higher pick (close embeddings, as the merge step
+  // judges), or shares two of its specific markets with one, or most of
+  // them, is the same news again.
+  const sameEvent = (s: NewsStory) => {
+    const shared = s.contractIds.filter((id) => covered.has(id)).length
+    if (shared >= 2) return true
+    if (s.contractIds.length > 0 && shared * 2 >= s.contractIds.length)
+      return true
     const mine = embeddingOf(s.id)
-    const sameEvent = topPicks.some((t) => {
+    return topPicks.some((t) => {
       const theirs = embeddingOf(t.id)
       return !!mine && !!theirs && cosine(mine, theirs) >= SAME_EVENT_SIMILARITY
     })
-    // Markets are specific, so two in common with a higher pick is the same
-    // event; so is most of a story's markets being covered already.
-    const shared = s.contractIds.filter((id) => covered.has(id)).length
-    if (
-      sameEvent ||
-      shared >= 2 ||
-      (s.contractIds.length > 0 && shared * 2 >= s.contractIds.length)
-    )
-      continue
-    topPicks.push(s)
-    for (const id of s.contractIds) covered.add(id)
+  }
+  const pickFrom = (windowMs: number) =>
+    sortBy(
+      linked.filter(
+        (s) =>
+          !topPicks.includes(s) &&
+          now - s.updatedTime < windowMs &&
+          (likeCount(s.id) > 0 || addedVolume(s) > 0)
+      ),
+      (s) => -likeCount(s.id),
+      (s) => -addedVolume(s)
+    ).find((s) => !sameEvent(s))
+  while (topPicks.length < TOP_STORIES_LIMIT) {
+    const next = pickFrom(DAY_MS) ?? pickFrom(2 * DAY_MS)
+    if (!next) break
+    topPicks.push(next)
+    for (const id of next.contractIds) covered.add(id)
   }
   const topStories: NewsSpotlight[] = topPicks.map((s) =>
     likeCount(s.id) > 0
