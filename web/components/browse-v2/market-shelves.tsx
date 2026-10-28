@@ -40,11 +40,15 @@ export function MoversStrip(props: { scope: Scope; fold: boolean }) {
       token: 'MANA',
       ...scope,
     },
-    16,
+    40,
     fold
   )
   const movers = (contracts ?? [])
-    .filter((c) => c.outcomeType === 'BINARY')
+    .filter((c) => {
+      if (c.outcomeType !== 'BINARY') return false
+      const probability = getDisplayProbability(c)
+      return probability > 0.03 && probability < 0.97
+    })
     .filter((c) => dayProbChange(c as BinaryContract) >= 5)
     .slice(0, 8) as BinaryContract[]
 
@@ -120,7 +124,7 @@ export function ClosingSoonList(props: { scope: Scope; fold: boolean }) {
   const { scope, fold } = props
   const contracts = useShelf(
     { sort: 'close-date', filter: 'open', token: 'MANA', ...scope },
-    30,
+    100,
     fold
   )
     ?.filter((c) => (c.uniqueBettorCount ?? 0) >= MIN_CLOSING_TRADERS)
@@ -131,6 +135,7 @@ export function ClosingSoonList(props: { scope: Scope; fold: boolean }) {
       title="Closing soon"
       contracts={contracts}
       section="browse-v2 closing rail"
+      emptyMessage="No upcoming closures in these topics."
       detail={(c) =>
         c.closeTime ? `${shortenedFromNow(c.closeTime)} left` : undefined
       }
@@ -163,9 +168,10 @@ function RailList(props: {
   contracts: Contract[] | undefined
   section: string
   detail: (c: Contract) => string | undefined
+  emptyMessage?: string
 }) {
-  const { id, title, contracts, section, detail } = props
-  if (contracts && contracts.length === 0) return null
+  const { id, title, contracts, section, detail, emptyMessage } = props
+  if (contracts && contracts.length === 0 && !emptyMessage) return null
   return (
     <section aria-labelledby={id} className="flex flex-col gap-1">
       <h2
@@ -174,6 +180,9 @@ function RailList(props: {
       >
         {title}
       </h2>
+      {contracts?.length === 0 && emptyMessage && (
+        <p className="text-ink-500 px-2 py-2 text-sm">{emptyMessage}</p>
+      )}
       <ul className="m-0 flex list-none flex-col p-0">
         {contracts
           ? contracts.map((c) => (

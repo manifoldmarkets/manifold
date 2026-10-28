@@ -1,5 +1,4 @@
 import {
-  ReplyIcon,
   SearchIcon,
   ViewGridIcon,
   ViewListIcon,
@@ -50,7 +49,7 @@ import { YourTopicsModal } from './your-topics-modal'
 // second page.
 const PAGE_SIZE = 40
 
-export function BrowseV2(props: { onClassicView: () => void }) {
+export function BrowseV2() {
   const user = useUser()
   // Remount when the account changes (sign in, out, or switch) so no
   // optimistic topic state or cached results carry over. The first resolved
@@ -65,13 +64,12 @@ export function BrowseV2(props: { onClassicView: () => void }) {
       : account
   return (
     <BrowseTopicsProvider key={mountKey}>
-      <BrowseV2Inner {...props} />
+      <BrowseV2Inner />
     </BrowseTopicsProvider>
   )
 }
 
-function BrowseV2Inner(props: { onClassicView: () => void }) {
-  const { onClassicView } = props
+function BrowseV2Inner() {
   const user = useUser()
   const signedIn = !!user
   const topics = useBrowseTopics()
@@ -271,8 +269,10 @@ function BrowseV2Inner(props: { onClassicView: () => void }) {
   const section = `browse-v2 ${searching ? 'search' : lens} ${layout}`
 
   return (
-    <div className="flex w-full flex-col gap-4 px-3 pb-10 pt-3 lg:px-0 lg:pt-5">
-      <div className="flex items-center gap-2 sm:gap-3">
+    <div className="flex w-full flex-col gap-3 px-3 pb-10 pt-1 sm:gap-4 lg:px-0 lg:pt-2">
+      {/* Keep search above the sticky filters on phones, including iOS's
+          page scroll container. The hub buttons can scroll out normally. */}
+      <div className="bg-canvas-0 sticky top-0 z-30 -mx-3 flex h-[58px] shrink-0 items-center gap-2 px-3 py-2 sm:static sm:mx-0 sm:h-auto sm:gap-3 sm:px-0 sm:py-0">
         <h1 className="text-ink-1000 hidden text-2xl font-semibold sm:block">
           Browse
         </h1>
@@ -297,17 +297,6 @@ function BrowseV2Inner(props: { onClassicView: () => void }) {
             </button>
           )}
         </label>
-        <button
-          type="button"
-          onClick={onClassicView}
-          className="border-ink-300 text-ink-600 hover:text-ink-900 hover:border-ink-400 flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-medium transition-colors"
-          title="Switch back to the classic browse page"
-        >
-          <ReplyIcon className="h-4 w-4" />
-          <span>
-            Classic<span className="hidden sm:inline"> view</span>
-          </span>
-        </button>
         {/* Phones: one button that flips between cards and list, so the
             layout switch isn't hidden at the end of the scrolling row. */}
         <button
@@ -327,7 +316,7 @@ function BrowseV2Inner(props: { onClassicView: () => void }) {
 
       {!searching && <HubCards />}
 
-      <div className="bg-canvas-0 sticky top-0 z-20 -mx-3 px-3 py-2 lg:mx-0 lg:px-0">
+      <div className="bg-canvas-0 sticky top-[58px] z-20 -mx-3 px-3 py-1 sm:top-0 sm:py-2 lg:mx-0 lg:px-0">
         <LensBar
           lens={lens}
           onLens={onLens}
@@ -344,7 +333,7 @@ function BrowseV2Inner(props: { onClassicView: () => void }) {
         />
       </div>
 
-      <div className="flex gap-8">
+      <div className="flex gap-4 xl:gap-8">
         <div className="flex w-full min-w-0 shrink-0 flex-col gap-6">
           {urlReady && showMovers && !isMobile && (
             <MoversStrip scope={scope} fold={fold} />
@@ -420,7 +409,7 @@ function BrowseV2Inner(props: { onClassicView: () => void }) {
 
         {/* Keep the feed at the standard Page width. The rail uses the
             three unused columns to its right, within Page's 1440px cap. */}
-        <aside className="hidden w-72 shrink-0 flex-col gap-6 xl:flex">
+        <aside className="hidden w-[calc(25vw-2rem)] shrink-0 flex-col gap-6 lg:flex xl:w-72">
           {urlReady && (
             <>
               <ClosingSoonList scope={scope} fold={fold} />

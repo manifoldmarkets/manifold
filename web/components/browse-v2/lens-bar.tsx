@@ -167,7 +167,7 @@ export function LensBar(props: {
           role="tablist"
           aria-label="Sort markets"
           className={clsx(
-            'flex shrink-0 items-center gap-1',
+            'flex shrink-0 items-center gap-0.5 sm:gap-1',
             searching && 'opacity-50'
           )}
         >
@@ -181,7 +181,7 @@ export function LensBar(props: {
                 aria-selected={selected}
                 onClick={() => onLens(l.key)}
                 className={clsx(
-                  'shrink-0 whitespace-nowrap rounded-full px-2.5 py-1.5 text-sm font-medium transition-colors sm:px-3',
+                  'shrink-0 whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-sm',
                   selected
                     ? 'bg-ink-900 text-canvas-0'
                     : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900'
@@ -195,14 +195,14 @@ export function LensBar(props: {
             label={
               <span
                 className={clsx(
-                  'flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1.5 text-sm font-medium transition-colors sm:px-3',
+                  'flex items-center gap-0.5 whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium transition-colors sm:gap-1 sm:px-3 sm:py-1.5 sm:text-sm',
                   moreActive && !searching
                     ? 'bg-ink-900 text-canvas-0'
                     : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900'
                 )}
               >
                 {moreActive ? moreActive.label : 'More'}
-                <ChevronDownIcon className="h-4 w-4" />
+                <ChevronDownIcon className="h-3 w-3 sm:h-4 sm:w-4" />
               </span>
             }
             panelClass="w-56 p-1"
@@ -225,7 +225,7 @@ export function LensBar(props: {
         </div>
 
         <span className="bg-ink-200 mx-0.5 h-5 w-px shrink-0 lg:hidden" />
-        <div className="flex shrink-0 items-center gap-2 lg:ml-auto">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2 lg:ml-auto">
           <MenuPopover
             label={<Pill active={topic.key !== 'all'}>{topic.label}</Pill>}
             panelClass="w-64 max-h-[60vh] overflow-y-auto p-1"
@@ -516,14 +516,14 @@ function Pill(props: { active: boolean; children: ReactNode }) {
   return (
     <span
       className={clsx(
-        'flex items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium',
+        'flex items-center gap-0.5 whitespace-nowrap rounded-full border px-2 py-1 text-xs font-medium sm:gap-1 sm:px-3 sm:py-1.5 sm:text-sm',
         active
           ? 'border-primary-400 bg-primary-50 text-primary-700'
           : 'border-ink-300 text-ink-700 hover:border-ink-400'
       )}
     >
       <span className="max-w-[9rem] truncate">{children}</span>
-      <ChevronDownIcon className="h-4 w-4 shrink-0" />
+      <ChevronDownIcon className="h-3 w-3 shrink-0 sm:h-4 sm:w-4" />
     </span>
   )
 }

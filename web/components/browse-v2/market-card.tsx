@@ -156,7 +156,10 @@ export function MarketListRow(props: { contract: Contract; section: string }) {
             : 'w-[60px] shrink-0 sm:w-[80px]',
           content: ({ contract }) => <ListProbability contract={contract} />,
         },
-        { ...actionColumn, width: 'w-10 shrink-0 sm:w-12' },
+        {
+          ...actionColumn,
+          width: 'order-last w-10 shrink-0 sm:order-none sm:w-12',
+        },
         {
           header: 'Topics',
           width: 'group w-6 shrink-0 sm:relative sm:w-0',
@@ -707,4 +710,3 @@ export function MarketRowSkeleton() {
     </div>
   )
 }
-

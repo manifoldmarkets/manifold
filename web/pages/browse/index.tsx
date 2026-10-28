@@ -30,9 +30,6 @@ export default function BrowsePage() {
 
   return (
     <Page trackPageView={'questions page'} className="min-w-0 lg:px-4">
-      {/* only show logo on mobile, since there's no sidebar */}
-      {!user && <ManifoldLogo className="m-2 flex lg:hidden" />}
-      <div className="lg:mb-4"></div>
       <Welcome />
       <VerificationResultModal />
       <BrowsePageContent browseView={browseView} />
@@ -42,14 +39,39 @@ export default function BrowsePage() {
 
 export function BrowsePageContent(props: { browseView: BrowseViewState }) {
   const { browseView } = props
+  const user = useUser()
   if (!browseView.ready) return <LoadingContractResults />
-  if (browseView.view === 'new')
-    return <BrowseV2 onClassicView={() => browseView.setView('legacy')} />
-  return <LegacyBrowseContent onNewView={() => browseView.setView('new')} />
+  const isNew = browseView.view === 'new'
+  return (
+    <>
+      <div className="flex min-w-0 items-center justify-between gap-2 px-3 py-1 lg:px-0 lg:pt-3">
+        {!user && (
+          <div className="shrink-0 lg:hidden">
+            <ManifoldLogo className="!px-0" />
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => browseView.setView(isNew ? 'legacy' : 'new')}
+          aria-label={isNew ? 'Switch to classic browse' : 'Try the new browse'}
+          className="text-primary-700 hover:text-primary-800 ml-auto shrink-0 py-1 text-xs font-medium"
+        >
+          {isNew ? (
+            '← Classic'
+          ) : (
+            <>
+              <span className="sm:hidden">Try new browse →</span>
+              <span className="hidden sm:inline">Try the new browse →</span>
+            </>
+          )}
+        </button>
+      </div>
+      {isNew ? <BrowseV2 /> : <LegacyBrowseContent />}
+    </>
+  )
 }
 
-function LegacyBrowseContent(props: { onNewView: () => void }) {
-  const { onNewView } = props
+function LegacyBrowseContent() {
   const user = useUser()
   const browseDefault = useBrowseDefault(user)
   const isMobile = useIsMobile()
@@ -78,15 +100,6 @@ function LegacyBrowseContent(props: { onNewView: () => void }) {
 
   return (
     <Col className={clsx('relative col-span-8 mx-auto w-full')}>
-      <div className="flex justify-end px-2 pb-2">
-        <button
-          type="button"
-          onClick={onNewView}
-          className="text-primary-700 hover:text-primary-800 text-sm font-medium"
-        >
-          Try the new browse →
-        </button>
-      </div>
       <Search
         key={browseDefault.persistPrefix}
         showTopicsFilterPills
