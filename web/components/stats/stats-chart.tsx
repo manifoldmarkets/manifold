@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { scaleLinear, ScaleLinear } from 'd3-scale'
 import { line, area } from 'd3-shape'
 import { uniq } from 'lodash'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { fromDayNumber, toDayNumber } from 'common/stats-window'
 import { formatLargeNumber, formatPercent } from 'common/util/format'
@@ -23,6 +23,18 @@ export type StatsChartSeries = {
   secondaryAxis?: boolean
   // Values are fractions. Defaults to the chart's pct.
   pct?: boolean
+  // Days the series sits somewhere inside the chart's band, with no exact
+  // value: the tooltip shows the band's text for them.
+  bandDays?: ReadonlySet<string>
+}
+
+// A hatched zone from zero up to each day's value, where a series is known
+// only to be at or below it, such as a count under a reporting floor. Those
+// days get no point, so the series' line breaks over the band.
+export type StatsChartBand = {
+  points: { x: string; y: number }[]
+  // What the tooltip says for a series on one of its bandDays.
+  valueText: string
 }
 
 export const STATS_SERIES_COLORS = [
@@ -90,17 +102,66 @@ const niceStep = (raw: number, pct: boolean | undefined) => {
   )
 }
 
+type DayValue = { n: number; y: number }
+
+const toDayValues = (points: { x: string; y: number }[]): DayValue[] =>
+  points
+    .map((p) => ({ n: toDayNumber(p.x), y: p.y }))
+    .filter((p) => Number.isFinite(p.n) && Number.isFinite(p.y))
+    .sort((a, b) => a.n - b.n)
+
+// Runs of consecutive days. A missing day breaks the line rather than being
+// bridged, since it is unknown, not a value between neighbors.
+const toRuns = (points: DayValue[]) => {
+  const runs: DayValue[][] = []
+  for (const p of points) {
+    const run = runs[runs.length - 1]
+    if (run && p.n - run[run.length - 1].n === 1) run.push(p)
+    else runs.push([p])
+  }
+  return runs
+}
+
+// The band's hatching. Pattern ids are page-wide, so each use passes its own.
+const BandHatch = (props: { id: string }) => (
+  <pattern
+    id={props.id}
+    width={5}
+    height={5}
+    patternUnits="userSpaceOnUse"
+    patternTransform="rotate(45)"
+  >
+    <line y2={5} className="stroke-ink-300" strokeWidth={1.5} />
+  </pattern>
+)
+
+const useHatchId = () => `stats-band-${useId().replace(/[^\w-]/g, '')}`
+
+// A legend swatch for the band.
+export function BandSwatch() {
+  const id = useHatchId()
+  return (
+    <svg width={16} height={10} className="shrink-0" aria-hidden>
+      <defs>
+        <BandHatch id={id} />
+      </defs>
+      <rect width={16} height={10} fill={`url(#${id})`} />
+    </svg>
+  )
+}
+
 // A line chart of LA-day series with an optional dashed comparison, a hover
 // tooltip listing every series on the hovered day, and no zoom: the page's
 // time range controls choose the days.
 export function StatsChart(props: {
   series: StatsChartSeries[]
+  band?: StatsChartBand
   pct?: boolean
   ariaLabel: string
   className?: string
 }) {
-  const { series, pct, ariaLabel, className } = props
-  const hasData = series.some((s) =>
+  const { series, band, pct, ariaLabel, className } = props
+  const hasData = [...series, ...(band ? [band] : [])].some((s) =>
     s.points.some(
       (p) => Number.isFinite(p.y) && Number.isFinite(toDayNumber(p.x))
     )
@@ -123,6 +184,7 @@ export function StatsChart(props: {
           w={w}
           h={h}
           series={series}
+          band={band}
           pct={pct}
           ariaLabel={ariaLabel}
         />
@@ -139,10 +201,12 @@ function ChartBody(props: {
   w: number
   h: number
   series: StatsChartSeries[]
+  band?: StatsChartBand
   pct?: boolean
   ariaLabel: string
 }) {
-  const { w, h, series, pct, ariaLabel } = props
+  const { w, h, series, band, pct, ariaLabel } = props
+  const hatchId = useHatchId()
   const hasSecondary = series.some((s) => s.secondaryAxis)
   const marginLeft = MARGIN.left + (hasSecondary ? SECONDARY_AXIS_WIDTH : 0)
   const plotW = Math.max(w - marginLeft - MARGIN.right, 10)
@@ -164,26 +228,19 @@ function ChartBody(props: {
   const prepared = useMemo(
     () =>
       series.map((s) => {
-        const points = s.points
-          .map((p) => ({ n: toDayNumber(p.x), y: p.y }))
-          .filter((p) => Number.isFinite(p.n) && Number.isFinite(p.y))
-          .sort((a, b) => a.n - b.n)
-        // Runs of consecutive days. A missing day breaks the line rather than
-        // being bridged, since it is unknown, not a value between neighbors.
-        const runs: (typeof points)[] = []
-        for (const p of points) {
-          const run = runs[runs.length - 1]
-          if (run && p.n - run[run.length - 1].n === 1) run.push(p)
-          else runs.push([p])
-        }
+        const points = toDayValues(s.points)
         return {
           ...s,
           nPoints: points,
-          runs,
+          runs: toRuns(points),
           byDay: new Map(points.map((p) => [p.n, p.y])),
         }
       }),
     [series]
+  )
+  const bandPoints = useMemo(
+    () => (band ? toDayValues(band.points) : []),
+    [band]
   )
 
   const {
@@ -196,7 +253,9 @@ function ChartBody(props: {
     secondaryPct,
     spansYears,
   } = useMemo(() => {
-    const days = prepared.flatMap((s) => s.nPoints.map((p) => p.n))
+    const days = [...prepared.flatMap((s) => s.nPoints), ...bandPoints].map(
+      (p) => p.n
+    )
     const xMin = Math.min(...days)
     const xMax = Math.max(...days, xMin + 1)
     const xScale = scaleLinear([xMin, xMax], [0, plotW])
@@ -212,7 +271,9 @@ function ChartBody(props: {
       prepared
         .filter((s) => !!s.secondaryAxis === secondary)
         .flatMap((s) => s.nPoints.map((p) => p.y))
-    const ys = valuesOn(false)
+    // The band is read against the main axis, with room above it so its top
+    // edge shows even when nothing is charted over it.
+    const ys = [...valuesOn(false), ...bandPoints.map((p) => p.y * 1.2)]
     const yMin = Math.min(0, ...ys)
     const yMax = Math.max(...ys, yMin + (pct ? 0.01 : 1))
     const yScale = scaleLinear([yMin, yMax], [plotH, 0]).nice(4)
@@ -256,7 +317,7 @@ function ChartBody(props: {
       secondaryPct,
       spansYears: xMax - xMin > LONG_RANGE_DAYS,
     }
-  }, [prepared, plotW, plotH, pct])
+  }, [prepared, bandPoints, plotW, plotH, pct])
 
   const scaleFor = (s: StatsChartSeries) =>
     (s.secondaryAxis && ySecondary) || yScale
@@ -273,10 +334,22 @@ function ChartBody(props: {
   // several it reads as that series being special.
   const solid = prepared.filter((s) => !s.dashed)
   const primary = solid.length === 1 ? solid[0] : undefined
+  const baseline = yScale(Math.max(0, yScale.domain()[0]))
   const areaPath = area<{ n: number; y: number }>()
     .x((p) => xScale(p.n))
-    .y0(yScale(Math.max(0, yScale.domain()[0])))
+    .y0(baseline)
     .y1((p) => yScale(p.y))
+  // The band steps a half day either side of each day, so a lone day in it
+  // still shows, and its top edge is a line of its own.
+  const bandX = (n: number) => Math.min(plotW, Math.max(0, xScale(n)))
+  const bandTop = (run: DayValue[]) =>
+    run
+      .flatMap((p) => [
+        `${bandX(p.n - 0.5)},${yScale(p.y)}`,
+        `${bandX(p.n + 0.5)},${yScale(p.y)}`,
+      ])
+      .join('L')
+  const bandRuns = toRuns(bandPoints)
 
   const onPointer = (clientX: number, rect: DOMRect) => {
     const [xMin, xMax] = xScale.domain()
@@ -285,6 +358,7 @@ function ChartBody(props: {
   }
 
   const hoverX = hoverDay === undefined ? undefined : xScale(hoverDay)
+  const hoverDate = hoverDay === undefined ? undefined : fromDayNumber(hoverDay)
   const tooltipLeft =
     hoverX === undefined
       ? 0
@@ -310,6 +384,11 @@ function ChartBody(props: {
           if (e.pointerType === 'mouse') setHoverDay(undefined)
         }}
       >
+        {bandRuns.length > 0 && (
+          <defs>
+            <BandHatch id={hatchId} />
+          </defs>
+        )}
         <g transform={`translate(${marginLeft},${MARGIN.top})`}>
           {yTicks.map((t) => (
             <g key={t} transform={`translate(0,${yScale(t)})`}>
@@ -355,6 +434,22 @@ function ChartBody(props: {
             >
               {formatTick(n, spansYears)}
             </text>
+          ))}
+          {bandRuns.map((run, i) => (
+            <g key={`band-${i}`}>
+              <path
+                d={`M${bandX(run[0].n - 0.5)},${baseline}L${bandTop(
+                  run
+                )}L${bandX(run[run.length - 1].n + 0.5)},${baseline}Z`}
+                fill={`url(#${hatchId})`}
+              />
+              <path
+                d={`M${bandTop(run)}`}
+                fill="none"
+                className="stroke-ink-300"
+                strokeWidth={1}
+              />
+            </g>
           ))}
           {primary?.runs.map(
             (run, i) =>
@@ -451,7 +546,11 @@ function ChartBody(props: {
                     : s.label}
                 </span>
                 <span className="text-ink-900 ml-auto pl-2 font-medium tabular-nums">
-                  {y === undefined ? '—' : formatValue(y, s.pct ?? pct)}
+                  {y !== undefined
+                    ? formatValue(y, s.pct ?? pct)
+                    : band && hoverDate && s.bandDays?.has(hoverDate)
+                    ? band.valueText
+                    : '—'}
                 </span>
               </div>
             )

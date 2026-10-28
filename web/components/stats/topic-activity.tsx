@@ -5,11 +5,13 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { Group } from 'common/group'
 import {
+  addDays,
   countDays,
   getCompareOffset,
   getComparePoints,
   getStatsWindow,
   hasComparableCoverage,
+  isInWindow,
   shiftWindow,
   sliceWindow,
   StatsCompareKey,
@@ -33,9 +35,11 @@ import {
   MetricChange,
 } from './stat-metric'
 import {
+  BandSwatch,
   STATS_COMPARE_COLOR,
   STATS_SERIES_COLORS,
   StatsChart,
+  StatsChartBand,
   StatsChartSeries,
 } from './stats-chart'
 import { Point, formatCount } from './stats-series'
@@ -44,17 +48,27 @@ import { useStatsTime } from './stats-time'
 const MAX_SELECTED = STATS_SERIES_COLORS.length
 const DEFAULT_SELECTED = 3
 const TABLE_ROWS = 15
+// The stats job records a topic's count only on days it had more than this
+// many active traders (calculateTopicDaus in update-stats.ts; 50 since topic
+// counts began). On other days it had somewhere from 0 to this many.
+const TOPIC_FLOOR = 50
 
 type TopicRow = {
   id: string
   group: Group | undefined
+  // Counts days under the floor as zero, so unless the topic cleared it on
+  // every day (exact), avg and share are lower bounds.
   avg: number
+  exact: boolean
   // Days the topic cleared the floor, out of the range's days with topic data.
   daysCounted: number
   daysCovered: number
   share: number | undefined
   change: MetricChange | undefined
   changeRatio: number | undefined
+  // Why there's no change, when there would be one but for the floor.
+  changeNote: string | undefined
+  // NaN on days under the floor, which break the line.
   spark: number[]
 }
 
@@ -141,6 +155,10 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
     }
     return { topicSeries, topicDays }
   }, [stats])
+  const dauByDay = useMemo(
+    () => new Map(topicDays.map((d) => [d.x, d.y])),
+    [topicDays]
+  )
 
   const groups = useTopicGroups(Object.keys(topicSeries))
   const lastDay = stats[stats.length - 1]?.start_date
@@ -174,26 +192,6 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
   // when the comparison window is too thin.
   const canSortByChange = rows.some((r) => r.changeRatio !== undefined)
   const effectiveSort = canSortByChange ? sort : 'active'
-  const sorted =
-    effectiveSort === 'active'
-      ? orderBy(
-          rows.filter((r) => r.avg > 0),
-          (r) => r.avg,
-          'desc'
-        )
-      : orderBy(
-          rows.filter((r) => r.changeRatio !== undefined),
-          (r) => r.changeRatio,
-          effectiveSort === 'growing' ? 'desc' : 'asc'
-        )
-  const query = search.trim().toLowerCase()
-  const filtered = query
-    ? sorted.filter((r) =>
-        (r.group?.name ?? r.id).toLowerCase().includes(query)
-      )
-    : sorted
-  const visible = showAll || query ? filtered : filtered.slice(0, TABLE_ROWS)
-
   const selectedIds =
     selected ??
     orderBy(rows, (r) => r.avg, 'desc')
@@ -205,19 +203,47 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
     else if (selectedIds.length < MAX_SELECTED)
       setSelected([...selectedIds, id])
   }
+  const query = search.trim().toLowerCase()
+  const matches = (id: string) =>
+    (groups?.[id]?.name ?? id).toLowerCase().includes(query)
+  // A topic under the floor all range long has nothing to rank by, so it's
+  // only listed when searched for or charted, where it can be unchecked.
+  const listed = rows.filter(
+    (r) => r.daysCounted > 0 || !!query || selectedIds.includes(r.id)
+  )
+  const sorted =
+    effectiveSort === 'active'
+      ? orderBy(listed, (r) => r.avg, 'desc')
+      : orderBy(
+          listed.filter((r) => r.changeRatio !== undefined),
+          (r) => r.changeRatio,
+          effectiveSort === 'growing' ? 'desc' : 'asc'
+        )
+  const filtered = query ? sorted.filter((r) => matches(r.id)) : sorted
+  const visible = showAll || query ? filtered : filtered.slice(0, TABLE_ROWS)
+  // Sorting by change drops topics with no known change, which the floor
+  // causes; a search that finds nothing else says so.
+  const emptySearchText = rows.some((r) => matches(r.id))
+    ? `Matching topics had ${TOPIC_FLOOR} or fewer active traders on some days, so their change isn't known.`
+    : 'No topics match.'
   // A topic whose group no longer exists was deleted.
   const nameOf = (id: string) =>
     groups ? groups[id]?.name ?? 'Deleted topic' : 'Loading…'
 
-  // A topic's daily values as the table counts them: zero on days it was
-  // under the floor, and no point on days with no topic counts at all.
-  const topicValues = (id: string): Point[] => {
-    const byDay = new Map((topicSeries[id] ?? []).map((p) => [p.x, p.y]))
-    return topicDays.flatMap((d) => {
-      const y = byDay.get(d.x) ?? 0
-      if (measure === 'users') return [{ x: d.x, y }]
-      return d.y > 0 ? [{ x: d.x, y: y / d.y }] : []
+  // A topic's daily values on the days it cleared the floor. Other days have
+  // no point: under the floor they sit in the chart's band, and a day with no
+  // topic counts at all is unknown.
+  const topicValues = (id: string): Point[] =>
+    (topicSeries[id] ?? []).flatMap((p) => {
+      if (measure === 'users') return [p]
+      const dau = dauByDay.get(p.x)
+      return dau ? [{ x: p.x, y: p.y / dau }] : []
     })
+  // Days with topic counts on which this topic had none: it was under the
+  // floor.
+  const underFloorDays = (id: string) => {
+    const counted = new Set((topicSeries[id] ?? []).map((p) => p.x))
+    return topicDays.map((d) => d.x).filter((x) => !counted.has(x))
   }
   const chartSeries: StatsChartSeries[] = window
     ? selectedIds.map((id, i) => ({
@@ -225,11 +251,17 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
         label: nameOf(id),
         color: STATS_SERIES_COLORS[i % STATS_SERIES_COLORS.length],
         points: sliceWindow(topicValues(id), window),
+        bandDays: new Set(
+          underFloorDays(id).filter((x) =>
+            isInWindow(x, window.from, window.to)
+          )
+        ),
       }))
     : []
   // One topic charted: draw its comparison too, as the other charts do.
   const offset = window ? getCompareOffset(window, compare) : undefined
-  if (window && offset && selectedIds.length === 1)
+  if (window && offset && selectedIds.length === 1) {
+    const before = shiftWindow(window, offset)
     chartSeries.push({
       key: 'compare',
       label: compare === 'year' ? 'Last year' : 'Previous period',
@@ -237,7 +269,29 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
       points: getComparePoints(topicValues(selectedIds[0]), window, offset),
       dashed: true,
       shiftedDays: offset,
+      bandDays: new Set(
+        underFloorDays(selectedIds[0])
+          .filter((x) => isInWindow(x, before.from, before.to))
+          .map((x) => addDays(x, offset))
+      ),
     })
+  }
+  // The band shows where an unrecorded count sits: up to the floor, or in
+  // shares, up to the floor's share of that day's active traders. Drawn only
+  // when a charted topic was under the floor in the range.
+  const band: StatsChartBand | undefined =
+    window && chartSeries.some((s) => (s.bandDays?.size ?? 0) > 0)
+      ? {
+          points: sliceWindow(topicDays, window).flatMap((d) =>
+            measure === 'users'
+              ? [{ x: d.x, y: TOPIC_FLOOR }]
+              : d.y > 0
+              ? [{ x: d.x, y: TOPIC_FLOOR / d.y }]
+              : []
+          ),
+          valueText: `≤ ${TOPIC_FLOOR} traders`,
+        }
+      : undefined
 
   return (
     <Col className="gap-4">
@@ -262,10 +316,20 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
         </Row>
         <StatsChart
           series={chartSeries}
+          band={band}
           pct={measure === 'share'}
           ariaLabel="Active traders by topic"
         />
-        <ChartLegend series={chartSeries} />
+        <ChartLegend series={chartSeries}>
+          {band && (
+            <Row className="items-center gap-1.5">
+              <BandSwatch />
+              <span className="text-ink-600">
+                {TOPIC_FLOOR} or fewer, not recorded
+              </span>
+            </Row>
+          )}
+        </ChartLegend>
       </Col>
 
       <Col className="bg-canvas-0 ring-ink-200 gap-3 rounded-lg p-4 ring-1">
@@ -325,7 +389,7 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
                 </th>
                 <th
                   className="hidden px-3 py-2 text-right font-medium sm:table-cell"
-                  title="Days the topic cleared 50 active traders"
+                  title={`Days the topic had more than ${TOPIC_FLOOR} active traders, of the days with topic counts`}
                 >
                   Days
                 </th>
@@ -368,8 +432,13 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
                         <span className="text-ink-400">{nameOf(r.id)}</span>
                       )}
                     </td>
-                    <td className="px-2 py-2 text-right font-medium sm:px-3">
-                      {formatCount(r.avg)}
+                    <td
+                      className="whitespace-nowrap px-2 py-2 text-right font-medium sm:px-3"
+                      title={lowerBoundNote(r)}
+                    >
+                      {r.daysCounted === 0
+                        ? `≤ ${TOPIC_FLOOR}`
+                        : `${r.exact ? '' : '≥ '}${formatCount(r.avg)}`}
                     </td>
                     <td
                       className={clsx(
@@ -380,11 +449,17 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
                           ? 'text-scarlet-600'
                           : 'text-ink-500'
                       )}
+                      title={r.changeNote}
                     >
                       {r.change?.text ?? '—'}
                     </td>
-                    <td className="text-ink-600 hidden px-3 py-2 text-right sm:table-cell">
-                      {r.share === undefined ? '—' : formatPercent(r.share)}
+                    <td
+                      className="text-ink-600 hidden whitespace-nowrap px-3 py-2 text-right sm:table-cell"
+                      title={lowerBoundNote(r)}
+                    >
+                      {r.share === undefined || r.daysCounted === 0
+                        ? '—'
+                        : `${r.exact ? '' : '≥ '}${formatPercent(r.share)}`}
                     </td>
                     <td className="text-ink-500 hidden px-3 py-2 text-right text-xs sm:table-cell">
                       {r.daysCounted}/{r.daysCovered}
@@ -392,6 +467,7 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
                     <td className="py-2 pl-2 sm:pl-3">
                       <Sparkline
                         values={r.spark}
+                        gaps
                         className="text-ink-400 h-5 w-10 sm:w-16"
                       />
                     </td>
@@ -401,9 +477,7 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
               {visible.length === 0 && (
                 <tr>
                   <td colSpan={7} className="text-ink-500 py-4 text-center">
-                    {query
-                      ? 'No topics match.'
-                      : 'No topic data in this range.'}
+                    {query ? emptySearchText : 'No topic data in this range.'}
                   </td>
                 </tr>
               )}
@@ -422,10 +496,13 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
         )}
         <p className="text-ink-400 text-xs">
           A topic&apos;s active traders are people who traded, commented or
-          created a question in it. A topic is only counted on days it had more
-          than 50, and counts as zero on other days, so smaller topics read low.
-          Someone active in several topics counts in each, so shares add up to
-          more than 100%.
+          created a question in it. Its count is only recorded on days it had
+          more than {TOPIC_FLOOR}. On other days it had {TOPIC_FLOOR} or fewer,
+          shown on the chart as a hatched band with no line. Averages and shares
+          marked ≥ count those days as zero, so the real figure is at least
+          that, and a change is only shown for topics over {TOPIC_FLOOR} every
+          day in both periods. Someone active in several topics counts in each,
+          so shares add up to more than 100%.
           {range !== 'all' &&
             ` Change is ${compareText(
               range,
@@ -454,8 +531,9 @@ const getTopicRows = (
   compare: StatsCompareKey
 ): TopicRow[] => {
   // Days in a window whose topic counts landed: the denominator for a daily
-  // average, since a topic below the 50-trader floor that day has no entry
-  // (a zero), while a day with no topic counts at all is unknown.
+  // average. A topic under the floor that day has no entry (counted as zero,
+  // a lower bound), while a day with no topic counts at all is unknown and
+  // left out.
   const daysIn = (w: StatsWindow) => sliceWindow(topicDays, w).length
   const windowDays = daysIn(window)
   const siteTotal = sumBy(sliceWindow(topicDays, window), (p) => p.y)
@@ -471,42 +549,54 @@ const getTopicRows = (
   const coveredDays = sliceWindow(topicDays, window)
   return Object.entries(topicSeries).flatMap(([id, series]) => {
     if (windowDays === 0) return []
+    // With no points, the topic was under the floor all range long: all
+    // that's known is "50 or fewer" a day.
     const points = sliceWindow(series, window)
     const total = sumBy(points, (p) => p.y)
     const avg = total / windowDays
+    const exact = points.length === windowDays
+    // A change needs exact averages on both sides. Lower bounds can't be
+    // compared: a topic dipping under the floor would read as a drop.
+    const beforePoints =
+      comparable && before ? sliceWindow(series, before) : undefined
+    const beforeExact = !!beforePoints && beforePoints.length === beforeDays
     const beforeAvg =
-      comparable && before
-        ? sumBy(sliceWindow(series, before), (p) => p.y) / beforeDays
+      exact && beforeExact
+        ? sumBy(beforePoints, (p) => p.y) / beforeDays
         : undefined
-    // A topic that fell under the floor for the whole range is still a row
-    // (at zero) when it had activity to compare against: the biggest drop.
-    if (points.length === 0 && !(beforeAvg && beforeAvg > 0)) return []
     const byDay = new Map(points.map((p) => [p.x, p.y]))
     return [
       {
         id,
         group: groups?.[id],
         avg,
+        exact,
         daysCounted: points.length,
         daysCovered: windowDays,
         share: siteTotal > 0 ? total / siteTotal : undefined,
         change:
           beforeAvg === undefined
             ? undefined
-            : beforeAvg > 0
-            ? describeChange(false, avg, beforeAvg)
-            : { text: 'New', direction: 'up' as const },
-        changeRatio:
-          beforeAvg === undefined
-            ? undefined
-            : beforeAvg > 0
-            ? avg / beforeAvg - 1
-            : Infinity,
-        spark: coveredDays.map((d) => byDay.get(d.x) ?? 0),
+            : describeChange(false, avg, beforeAvg),
+        changeRatio: beforeAvg === undefined ? undefined : avg / beforeAvg - 1,
+        changeNote:
+          beforePoints && beforeAvg === undefined
+            ? `${TOPIC_FLOOR} or fewer active traders on some days ${
+                exact ? 'in the earlier period' : 'in this range'
+              }, so the change isn't known`
+            : undefined,
+        spark: coveredDays.map((d) => byDay.get(d.x) ?? NaN),
       },
     ]
   })
 }
+
+const lowerBoundNote = (r: TopicRow) =>
+  r.exact
+    ? undefined
+    : r.daysCounted === 0
+    ? `${TOPIC_FLOOR} or fewer active traders every day in this range.`
+    : `Over ${TOPIC_FLOOR} on ${r.daysCounted} of ${r.daysCovered} days. The other days had ${TOPIC_FLOOR} or fewer and count as zero here, so the real figure is at least this.`
 
 // Topic names and slugs in a few batched reads, rather than one per topic.
 const useTopicGroups = (ids: string[]) => {
