@@ -14,6 +14,7 @@ import {
   isOk,
   isPublicHttps,
   outletName,
+  redactUrl,
   USER_AGENT,
 } from './sources'
 
@@ -45,7 +46,14 @@ export type IndexedArticle = NewsArticle & {
   ownLink?: boolean
   /** What TollBit quoted for reading it, in micros of a dollar. */
   priceMicros?: number
+  /** When the provider handed over the text, for the Guardian's 24-hour
+   * rule. */
+  fetchedAt?: number
 }
+
+/** The Guardian's terms: its text is refreshed or dropped within 24 hours
+ * of being fetched. */
+export const GUARDIAN_TEXT_TTL_MS = DAY_MS
 
 /** NEWS_ARTICLE_SOURCES: a comma list of guardian, tollbit, gnews, rss, or
  * none. Default 'guardian,tollbit'; an API source counts only with its key
@@ -418,10 +426,13 @@ export async function searchGuardian(
   }
   if (parsed.response?.status !== 'ok')
     throw new Error(
-      `guardian: ${
-        parsed.response?.message ?? parsed.response?.status ?? 'bad response'
-      }`
+      redactUrl(
+        `guardian: ${
+          parsed.response?.message ?? parsed.response?.status ?? 'bad response'
+        }`
+      )
     )
+  const fetchedAt = Date.now()
   return (parsed.response.results ?? []).flatMap((r): IndexedArticle[] => {
     const published = Date.parse(r.webPublicationDate ?? '')
     const text = r.fields?.bodyText?.trim()
@@ -440,6 +451,7 @@ export async function searchGuardian(
         byline: r.fields?.byline,
         provider: 'guardian',
         text,
+        fetchedAt,
       },
     ]
   })
@@ -480,8 +492,11 @@ type TollbitRate = {
   }
 }
 
-/** What is spent today, for the budget and the log. In-process only. */
-const tollbitSpend = { day: '', reads: 0, micros: 0 }
+export type TollbitSpend = { day: string; reads: number; micros: number }
+
+/** What is spent today, for the budget and the log. The feed's disk cache
+ * carries it across restarts. */
+const tollbitSpend: TollbitSpend = { day: '', reads: 0, micros: 0 }
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -494,18 +509,41 @@ const spendToday = () => {
   return tollbitSpend
 }
 
+export const getTollbitSpend = (): TollbitSpend => ({ ...spendToday() })
+
+/** Restore today's spend from the cache; another day's is stale. */
+export const setTollbitSpend = (s: TollbitSpend) => {
+  if (s.day !== today()) return
+  tollbitSpend.day = s.day
+  tollbitSpend.reads = Math.max(0, Number(s.reads) || 0)
+  tollbitSpend.micros = Math.max(0, Number(s.micros) || 0)
+}
+
 /** Whether another TollBit read fits today's budget. */
 export const canReadTollbit = () =>
   !!tollbitKey() && spendToday().reads < tollbitReadsPerDay()
 
-/** The cheapest one-time licence a publisher offers for a page, in micros,
- * when it is within our cap. */
+/** Take one of today's reads before asking for paid access, so concurrent
+ * readers cannot all slip through the last one. Synchronous on purpose. */
+const reserveTollbitRead = () => {
+  const spend = spendToday()
+  if (spend.reads >= tollbitReadsPerDay()) return false
+  spend.reads++
+  return true
+}
+
+/** Give a read back when the provider refused it before any charge. */
+const releaseTollbitRead = () => {
+  const spend = spendToday()
+  if (spend.reads > 0) spend.reads--
+}
+
+/** The cheapest one-time partial-use licence (the one the read asks for) a
+ * publisher offers for a page, in micros, when it is within our cap. */
 const priceOf = (rates: TollbitRate[]) => {
   let best: number | undefined
   for (const r of rates) {
-    const type = r.license?.licenseType
-    if (type !== 'ON_DEMAND_LICENSE' && type !== 'ON_DEMAND_FULL_USE_LICENSE')
-      continue
+    if (r.license?.licenseType !== 'ON_DEMAND_LICENSE') continue
     if (r.price?.currency && r.price.currency !== 'USD') continue
     const p = Number(r.price?.priceMicros)
     if (!Number.isFinite(p) || p < 0) continue
@@ -571,7 +609,9 @@ export async function readTollbit(url: string): Promise<
   | undefined
 > {
   const key = tollbitKey()
-  if (!key || !canReadTollbit()) return undefined
+  if (!key || !reserveTollbitRead()) return undefined
+  // Neither request is sent twice: a token is a purchase, and a token is
+  // good for one fetch.
   const tokenRes = await httpsRequest(
     `${tollbitBase()}/dev/v2/tokens/content`,
     {
@@ -585,14 +625,22 @@ export async function readTollbit(url: string): Promise<
         licenseType: 'ON_DEMAND_LICENSE',
       }),
       allow: onlyTollbit,
+      retry: false,
     }
   )
-  if (!isOk(tokenRes))
+  if (!isOk(tokenRes)) {
+    releaseTollbitRead()
     throw new Error(
-      `tollbit token: ${tokenRes.status} ${tokenRes.body.slice(0, 160)}`
+      redactUrl(
+        `tollbit token: ${tokenRes.status} ${tokenRes.body.slice(0, 160)}`
+      )
     )
+  }
   const token = (JSON.parse(tokenRes.body) as { token?: string }).token
-  if (!token) throw new Error('tollbit token: none in the response')
+  if (!token) {
+    releaseTollbitRead()
+    throw new Error('tollbit token: none in the response')
+  }
   const res = await httpsRequest(
     `${tollbitBase()}/dev/v2/content/${encodeURIComponent(url)}`,
     {
@@ -606,10 +654,15 @@ export async function readTollbit(url: string): Promise<
       },
       allow: onlyTollbit,
       timeoutMs: 20_000,
+      retry: false,
     }
   )
-  if (!isOk(res))
-    throw new Error(`tollbit content: ${res.status} ${res.body.slice(0, 160)}`)
+  if (!isOk(res)) {
+    releaseTollbitRead()
+    throw new Error(
+      redactUrl(`tollbit content: ${res.status} ${res.body.slice(0, 160)}`)
+    )
+  }
   const parsed = JSON.parse(res.body) as {
     content?: { body?: string }
     metadata?: { title?: string; author?: string; published?: string }
@@ -618,8 +671,8 @@ export async function readTollbit(url: string): Promise<
   const body = parsed.content?.body
   if (!body) return undefined
   const price = Number(parsed.rate?.price?.priceMicros)
+  // The read itself was counted when it was reserved.
   const spend = spendToday()
-  spend.reads++
   if (Number.isFinite(price)) spend.micros += price
   log('news-feed: tollbit read', {
     url,

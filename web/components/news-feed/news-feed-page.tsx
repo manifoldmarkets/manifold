@@ -485,7 +485,13 @@ const LICENSED_ARTICLES: NewsArticleSource[] = ['guardian', 'tollbit']
 /** The server's article sources. An older server sent one string; the
  * page then says nothing about where claims come from. */
 const articleSourcesOf = (config?: NewsFeedConfig) =>
-  config && Array.isArray(config.articles) ? config.articles : undefined
+  !config
+    ? undefined
+    : Array.isArray(config.articles)
+    ? config.articles
+    : (config.articles as unknown) === 'none'
+    ? []
+    : undefined
 
 const listOf = (xs: string[]) =>
   xs.length <= 1

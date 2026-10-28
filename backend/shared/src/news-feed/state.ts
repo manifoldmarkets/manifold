@@ -6,7 +6,8 @@ import { Contract } from 'common/contract'
 import { NewsFeedbackKind, NewsMarketRelation } from 'common/news-feed'
 import { MINUTE_MS } from 'common/util/time'
 import { log } from 'shared/utils'
-import { buildNewsFeed, NewsFeedBuild } from './pipeline'
+import { getTollbitSpend, setTollbitSpend, TollbitSpend } from './articles'
+import { buildNewsFeed, NewsFeedBuild, sanitizeForConfig } from './pipeline'
 
 /**
  * One build of the feed per process, refreshed on a timer, plus what readers
@@ -60,6 +61,8 @@ type CacheFile = NewsFeedBuild & {
   attachments?: NewsAttachment[]
   attachedContracts?: Record<string, Contract>
   feedback?: NewsFeedbackEntry[]
+  /** Today's paid reads, so a restart does not reset the budget. */
+  tollbitSpend?: TollbitSpend
 }
 
 type State = {
@@ -116,12 +119,18 @@ function loadFromDisk() {
       parsed.contractsById &&
       Date.now() - parsed.updatedTime < CACHE_MAX_AGE_MS
     ) {
-      state.build = omit(
-        parsed,
-        'likes',
-        'attachments',
-        'attachedContracts',
-        'feedback'
+      if (parsed.tollbitSpend) setTollbitSpend(parsed.tollbitSpend)
+      // Served as this configuration allows: the cache may be another's.
+      state.build = sanitizeForConfig(
+        omit(
+          parsed,
+          'likes',
+          'attachments',
+          'attachedContracts',
+          'feedback',
+          'tollbitSpend'
+        ),
+        Date.now()
       )
       log('news-feed: loaded cached build', {
         stories: parsed.stories.length,
@@ -146,6 +155,7 @@ function saveToDisk() {
       attachments: state.attachments,
       attachedContracts: state.attachedContracts,
       feedback: state.feedback,
+      tollbitSpend: getTollbitSpend(),
     }
     fs.writeFileSync(cachePath(), JSON.stringify(slim))
   } catch (e) {

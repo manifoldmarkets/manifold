@@ -98,6 +98,9 @@ export type RequestOptions = {
   /** Which URLs the request may touch, redirects included. */
   allow?: UrlCheck
   timeoutMs?: number
+  /** Try another IP family after a network failure (the default). Off for
+   * a request that must not be sent twice, such as a purchase. */
+  retry?: boolean
 }
 
 /** One request over one IP family (0 lets the OS choose). Any status comes
@@ -189,7 +192,8 @@ export async function httpsRequest(
   opts: RequestOptions = {}
 ): Promise<HttpResponse> {
   const errors: string[] = []
-  for (const family of [0, 6, 4] as const) {
+  const families = opts.retry === false ? ([0] as const) : ([0, 6, 4] as const)
+  for (const family of families) {
     try {
       return await httpsOnce(url, family, opts)
     } catch (e) {
@@ -759,9 +763,11 @@ export function parseMediastack(json: string, fetchedAt: number) {
   const parsed = JSON.parse(json) as MediastackResponse
   if (parsed.error)
     throw new Error(
-      `mediastack: ${parsed.error.code ?? ''} ${
-        parsed.error.message ?? ''
-      }`.trim()
+      redactUrl(
+        `mediastack: ${parsed.error.code ?? ''} ${
+          parsed.error.message ?? ''
+        }`.trim()
+      )
     )
   const anyOutlet = process.env.MEDIASTACK_ANY_OUTLET === 'true'
   const stories: RawStory[] = []

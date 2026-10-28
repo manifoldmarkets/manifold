@@ -19,7 +19,7 @@ import {
   refreshNewsFeed,
 } from 'shared/news-feed/state'
 import { cosine } from 'shared/news-feed/markets'
-import { articleSources } from 'shared/news-feed/articles'
+import { articleSources, GUARDIAN_TEXT_TTL_MS } from 'shared/news-feed/articles'
 import { imageSource } from 'shared/news-feed/images'
 import { enabledSources } from 'shared/news-feed/sources'
 import { APIHandler } from './helpers/endpoint'
@@ -161,7 +161,10 @@ export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
    * page still stops showing it. */
   const withoutExpiredText = (s: NewsStory): NewsStory => {
     const m = build.memos[s.id]
-    if (m?.articleProvider !== 'guardian' || now - (m.claimsAt ?? 0) <= DAY_MS)
+    if (
+      m?.articleProvider !== 'guardian' ||
+      now - (m.claimsAt ?? 0) <= GUARDIAN_TEXT_TTL_MS
+    )
       return s
     return {
       ...s,

@@ -3,7 +3,12 @@ import { countBy, sortBy, sumBy, uniq } from 'lodash'
 import { Contract } from 'common/contract'
 import { fetchLinkPreview } from 'common/link-preview'
 import { isFaviconAllowed } from 'common/favicon-allowlist'
-import { isNewsCategory, NewsCategory, NewsStory } from 'common/news-feed'
+import {
+  isNewsCategory,
+  NewsArticle,
+  NewsCategory,
+  NewsStory,
+} from 'common/news-feed'
 import { isEligibleRelatedMarket } from 'common/related-markets'
 import { convertContract } from 'common/supabase/contracts'
 import { mapAsync } from 'common/util/promise'
@@ -15,7 +20,7 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { contractColumnsToSelectWithPrefix, log } from 'shared/utils'
-import { articleSources } from './articles'
+import { articleSources, GUARDIAN_TEXT_TTL_MS } from './articles'
 import { ClaimsMemo, findArticlesAndClaims } from './claims'
 import { findWikimediaImage, imageSource } from './images'
 import {
@@ -291,6 +296,70 @@ const scoreStory = (story: NewsStory, contracts: Contract[], now: number) => {
   return Number.isFinite(score) ? score : 0
 }
 
+/**
+ * A build as this configuration may serve it: only stories from enabled
+ * sources, pictures the configuration licenses, and article text from the
+ * providers it is configured for, with the Guardian's no older than a day.
+ * Applied to a cached build before it is served and before it is carried
+ * into a refresh, so a cache from another configuration (the prototype's,
+ * say) cannot leak its sources, and so the rule holds for every story, not
+ * only the ones the claims step looks at.
+ */
+export function sanitizeForConfig(
+  build: NewsFeedBuild,
+  now = Date.now()
+): NewsFeedBuild {
+  const origins = new Set(enabledSources())
+  const providers = new Set(articleSources())
+  const pictures = imageSource()
+  const memos: Record<string, StoryMemo> = {}
+  for (const [id, m0] of Object.entries(build.memos)) {
+    const m = { ...m0 }
+    const hasText =
+      !!m.article ||
+      !!m.claims ||
+      m.claimsStatus === 'found' ||
+      m.claimsStatus === 'none'
+    const provider = m.articleProvider
+    const expired =
+      provider === 'guardian' && now - (m.claimsAt ?? 0) > GUARDIAN_TEXT_TTL_MS
+    if (hasText && (!provider || !providers.has(provider) || expired)) {
+      delete m.article
+      delete m.claims
+      delete m.articleProvider
+      delete m.claimsStatus
+      delete m.claimsAt
+      m.articleCheckedAt = 0
+    }
+    if (m.article?.image && pictures !== 'outlets')
+      m.article = { ...m.article, image: undefined }
+    memos[id] = m
+  }
+  const stories = build.stories.flatMap((s0): NewsStory[] => {
+    if (!origins.has(s0.origin)) return []
+    const s = { ...s0 }
+    const m = memos[s.id]
+    if ((s.article || s.claims) && !m?.article && !m?.claims) {
+      s.article = undefined
+      s.claims = undefined
+      s.claimsStatus = 'no-article'
+    }
+    if (s.article?.image && pictures !== 'outlets')
+      s.article = { ...s.article, image: undefined }
+    if (
+      s.image &&
+      (pictures === 'none' || (pictures !== 'outlets' && !s.imageCredit))
+    ) {
+      delete s.image
+      delete s.imageCredit
+    }
+    return [s]
+  })
+  const kept = new Set(stories.map((s) => s.id))
+  for (const id of Object.keys(memos)) if (!kept.has(id)) delete memos[id]
+  return { ...build, stories, memos }
+}
+
 export async function buildNewsFeed(
   prev: NewsFeedBuild | undefined,
   now = Date.now(),
@@ -305,27 +374,16 @@ export async function buildNewsFeed(
     ...countBy(raw, (r) => r.origin),
   })
 
-  // 1. Carry the recent stories forward: those from sources still enabled,
-  //    without pictures this configuration does not license (a cache from
-  //    another configuration must not leak them).
-  const origins = new Set(enabledSources())
+  // 1. Carry the recent stories forward, as this configuration allows them
+  //    (a cache from another configuration must not leak its sources).
   const pictures = imageSource()
+  const allowed = prev ? sanitizeForConfig(prev, now) : undefined
   const stories = new Map<string, NewsStory>()
-  for (const s of prev?.stories ?? []) {
-    if (now - s.updatedTime >= KEEP_STORIES_MS || !origins.has(s.origin))
-      continue
-    const story = { ...s }
-    if (
-      story.image &&
-      (pictures === 'none' || (pictures !== 'outlets' && !story.imageCredit))
-    ) {
-      delete story.image
-      delete story.imageCredit
-    }
-    stories.set(s.id, story)
+  for (const s of allowed?.stories ?? []) {
+    if (now - s.updatedTime < KEEP_STORIES_MS) stories.set(s.id, { ...s })
   }
   const memos: Record<string, StoryMemo> = {}
-  for (const [id, m] of Object.entries(prev?.memos ?? {})) {
+  for (const [id, m] of Object.entries(allowed?.memos ?? {})) {
     if (stories.has(id)) memos[id] = { ...m }
   }
 
@@ -536,6 +594,10 @@ export async function buildNewsFeed(
     if (isEligibleRelatedMarket(c, now)) contractsById[c.id] = stripContract(c)
   }
 
+  /** An article's own picture is the publisher's: outlets mode only. */
+  const withoutPublisherImage = (a: NewsArticle | undefined) =>
+    a && a.image && pictures !== 'outlets' ? { ...a, image: undefined } : a
+
   const assembled: NewsStory[] = []
   for (const s of stories.values()) {
     const m = memos[s.id]
@@ -556,7 +618,7 @@ export async function buildNewsFeed(
       candidateIds: m?.candidateIds ?? [],
       forecastable: m?.forecastable,
       score: 0,
-      article: read ? m?.article : undefined,
+      article: read ? withoutPublisherImage(m?.article) : undefined,
       // An article's own picture is the publisher's: outlets mode only.
       image:
         (read && pictures === 'outlets' ? m?.article?.image : undefined) ??
@@ -610,14 +672,17 @@ export async function buildNewsFeed(
       m.imageTriedAt = now
       try {
         if (pictures === 'wikimedia') {
-          m.imageTriedFor = subjectsKey(s)
-          const found = await withTimeout(
-            findWikimediaImage(m.subjects ?? []),
+          const result = await withTimeout(
+            findWikimediaImage(m.subjects ?? []).then((found) => ({ found })),
             IMAGE_TIMEOUT_MS
           )
-          if (found) {
-            s.image = found.image
-            s.imageCredit = found.credit
+          // A timeout or failure is transient; only an answer, picture or
+          // none, settles these subjects.
+          if (!result) return
+          m.imageTriedFor = subjectsKey(s)
+          if (result.found) {
+            s.image = result.found.image
+            s.imageCredit = result.found.credit
           }
           return
         }

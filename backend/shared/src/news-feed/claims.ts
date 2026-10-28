@@ -19,6 +19,7 @@ import {
   articleSources,
   canReadTollbit,
   fetchArticleIndex,
+  GUARDIAN_TEXT_TTL_MS,
   hasArticleSource,
   IndexedArticle,
   readableOutlet,
@@ -100,9 +101,6 @@ const MAX_EXCERPT_WORDS = 60
  * hold more than a handful of claims that qualify. */
 const MAX_CLAIMS = 30
 const MAX_REJECTED = 6
-/** The Guardian's terms: its text is refreshed or dropped within 24 hours,
- * so a Guardian article is read again after a day. */
-const GUARDIAN_TTL_MS = DAY_MS
 /** Provider searches per refresh, across providers, so a refresh stays a few
  * minutes long and a paid quota lasts the day. */
 const SEARCHES_PER_REFRESH = Math.max(
@@ -582,7 +580,7 @@ export async function findArticlesAndClaims(
       provider &&
       (!enabled.includes(provider) ||
         (provider === 'guardian' &&
-          now - (r.memo.claimsAt ?? 0) > GUARDIAN_TTL_MS))
+          now - (r.memo.claimsAt ?? 0) > GUARDIAN_TEXT_TTL_MS))
     )
       forgetArticle(r)
   }
@@ -761,7 +759,8 @@ export async function findArticlesAndClaims(
         r.memo.articleProvider = article.provider
         r.memo.claims = result.claims
         r.memo.claimsStatus = result.claims.length > 0 ? 'found' : 'none'
-        r.memo.claimsAt = now
+        // The Guardian's day runs from when its text was fetched.
+        r.memo.claimsAt = article.fetchedAt ?? now
         r.memo.claimsVersion = CLAIMS_VERSION
         pendingArticles.delete(r.story.id)
         read++
