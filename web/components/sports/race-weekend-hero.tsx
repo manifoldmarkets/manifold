@@ -307,8 +307,9 @@ export function RaceWeekendHero(props: {
         </>
       )}
       {host && (
-        // Keyed by session, so switching to one with props opens them; on
-        // the front page they start closed, as under a featured game.
+        // Keyed by session, so switching to one with props opens them. On
+        // the front page they start closed and, as on every game card, warm
+        // their first rows near the viewport.
         <GameLinkedMarkets
           key={host.id}
           game={host}

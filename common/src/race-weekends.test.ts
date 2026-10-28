@@ -244,16 +244,15 @@ describe('sessions in the game feed', () => {
     expect(ids(QUALI + 4 * HOUR, 'start')).toBe('bdl-f1:374:1870')
   })
 
-  it('ranks a session against games by its most traded market', () => {
+  it('ranks a session against games by its most traded market, not the sum', () => {
     const contracts = [
       pole,
       { ...race, volume: 100 },
-      { ...podium, volume: Number.NaN },
+      { ...podium, volume: 50 },
     ]
     const [quali, raceEvent] = raceSessionEvents(
       buildRaceWeekends(contracts, byContract, NOW)
     )
-    expect(topRaceMarket(raceEvent.session)?.id).toBe('race')
     expect(quali.volume).toBe(0)
     const game = (volume: number) => ({
       id: 'game',
@@ -261,11 +260,37 @@ describe('sessions in the game feed', () => {
       startTime: NOW + HOUR,
       volume,
     })
-    // A sum of the race's markets (150) would beat this game.
+    // The sum, 150, would beat this game; the race winner's 100 doesn't.
     expect(selectFeaturedGame([game(120), quali, raceEvent])?.id).toBe('game')
     expect(selectFeaturedGame([game(80), quali, raceEvent])?.id).toBe(
       'bdl-f1:374:1870'
     )
+  })
+
+  it("takes the session's most traded market: the winner on a tie, a bad volume as none", () => {
+    const top = (raceVolume: number, podiumVolume: number) => {
+      const [, raceEvent] = raceSessionEvents(
+        buildRaceWeekends(
+          [
+            pole,
+            { ...podium, volume: podiumVolume, uniqueBettorCount: 9 },
+            { ...race, volume: raceVolume, uniqueBettorCount: 7 },
+          ],
+          byContract,
+          NOW
+        )
+      )
+      return [
+        topRaceMarket(raceEvent.session)?.id,
+        raceEvent.volume,
+        raceEvent.uniqueBettorCount,
+      ]
+    }
+    expect(top(100, 300)).toEqual(['podium', 300, 9])
+    expect(top(100, 100)).toEqual(['race', 100, 7])
+    expect(top(Number.NaN, 50)).toEqual(['podium', 50, 9])
+    expect(top(Infinity, 50)).toEqual(['podium', 50, 9])
+    expect(top(-500, 0)).toEqual(['race', 0, 7])
     expect(topRaceMarket({ markets: [] })).toBeUndefined()
   })
 
