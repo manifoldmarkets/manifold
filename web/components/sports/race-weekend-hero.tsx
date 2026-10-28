@@ -55,14 +55,19 @@ const columnLabel = (c: Choice) =>
     ? 'Sprint'
     : 'Win'
 
-const isOpen = (c: Choice) =>
+/** Open by the schedule; the loaded market has the last word (boardMarket). */
+const scheduledOpen = (c: Choice) =>
   !c.market.isResolved && c.session.status !== 'finished'
 
 /**
  * The tower's price columns: the picked market, then the weekend's other open
  * markets a fan would bet next, the race winner first.
  */
-function towerColumns(choices: Choice[], picked: Choice): Choice[] {
+function towerColumns(
+  choices: Choice[],
+  picked: Choice,
+  isOpen: (c: Choice) => boolean
+): Choice[] {
   const raceWin = choices.find(
     (c) => c.session.label === 'Race' && c.market.marketType === 'winner'
   )
@@ -79,7 +84,7 @@ function boardMarket(
   c: Choice,
   contracts: Contract[] | undefined
 ): DriverBoardMarket {
-  const closed = !isOpen(c)
+  const closed = !scheduledOpen(c)
   const contract = contracts?.find((x) => x.id === c.market.id)
   if (contract && isMultiCpmm(contract)) {
     const multi = contract as CPMMMultiContract
@@ -150,13 +155,20 @@ export function RaceWeekendHero(props: { event: RaceSessionEvent }) {
   const shown = raceSessionEvent(weekend, picked.session)
   const host = relatedHost(shown)
   const name = raceDisplayName(weekend.name)
-  const rows = buildDriverBoard(
-    choices.map((c) => boardMarket(c, markets.data)),
-    picked.market.id
-  )
-  const columns = towerColumns(choices, picked)
+  const boards = choices.map((c) => boardMarket(c, markets.data))
+  const rows = buildDriverBoard(boards, picked.market.id)
+  // Open by the loaded markets: one that closed early or settled takes no
+  // column or mover from one still open (F4213-17).
+  const openIds = new Set(boards.filter((m) => !m.closed).map((m) => m.id))
+  const isOpen = (c: Choice) => openIds.has(c.market.id)
+  const columns = towerColumns(choices, picked, isOpen)
   const view = viewFor(picked)
   const lead = rows.filter((r) => !r.other && r.cells[picked.market.id])
+  // The result from every row: "Another driver" can win too (F4213-18).
+  const winners = rows.filter((r) => r.cells[picked.market.id]?.won)
+  const settled =
+    picked.market.isResolved ||
+    !!markets.data?.find((c) => c.id === picked.market.id)?.isResolved
 
   return (
     <section
@@ -187,7 +199,12 @@ export function RaceWeekendHero(props: { event: RaceSessionEvent }) {
         <h3 className="text-ink-1000 mt-1 text-2xl font-black uppercase italic leading-none tracking-tight [text-wrap:balance] sm:text-3xl">
           {name}
         </h3>
-        <SessionClock choice={picked} lead={lead[0]} className="mt-2" />
+        <SessionClock
+          choice={picked}
+          winners={winners}
+          settled={settled}
+          className="mt-2"
+        />
         {choices.length > 1 && (
           <div
             role="group"
@@ -223,7 +240,11 @@ export function RaceWeekendHero(props: { event: RaceSessionEvent }) {
                 onBet={bet.open}
               />
             )}
-            <Movers rows={rows} choices={choices} onBet={bet.open} />
+            <Movers
+              rows={rows}
+              choices={choices.filter(isOpen)}
+              onBet={bet.open}
+            />
           </div>
           {/* Remounted once the full field loads, so the switch from the
               schedule's leaders doesn't flash every price as a move. */}
@@ -264,30 +285,53 @@ function CheckeredStrip() {
   )
 }
 
-/** "Lights out in 1d 04h 12m", "Live", or how it finished. */
+/**
+ * "Lights out in 1d 04h 12m", "Live", or how it finished. The status follows
+ * the ticking clock, not just the schedule's last read, so the start and the
+ * close show on time (F4213-19); a settled market is over whatever the time.
+ */
 function SessionClock(props: {
   choice: Choice
-  lead: DriverBoardRow | undefined
+  /** The picked market's winners, "Another driver" included. */
+  winners: DriverBoardRow[]
+  settled: boolean
   className?: string
 }) {
-  const { choice, lead, className } = props
+  const { choice, winners, settled, className } = props
   const { session } = choice
   const now = useNow(1000)
   const when = dayjs(session.startTime).format('ddd D MMM · h:mm A')
+  const phase =
+    settled || session.status === 'finished' || now >= session.closeTime
+      ? 'finished'
+      : session.status === 'live' || now >= session.startTime
+      ? 'live'
+      : 'upcoming'
   let status: React.ReactNode
-  if (session.status === 'live') {
+  if (phase === 'live') {
     status = (
       <span className="bg-scarlet-500 inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[11px] font-black uppercase italic tracking-wide text-white">
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
         Live
       </span>
     )
-  } else if (session.status === 'finished') {
-    const winner = lead?.cells[choice.market.id]?.won ? lead : undefined
+  } else if (phase === 'finished') {
+    // One winner by name; a podium's three by code; a settled market with
+    // none (cancelled) is just final.
+    const result =
+      winners.length === 1
+        ? winners[0].other
+          ? winners[0].name
+          : `${winners[0].code} ${winners[0].shortName}`
+        : winners.length > 1
+        ? winners.map((w) => w.code || w.name).join(' · ')
+        : settled
+        ? 'Final'
+        : 'Awaiting result'
     status = (
       <span className="bg-ink-900 text-canvas-0 inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[11px] font-black uppercase italic tracking-wide">
         <GiCheckeredFlag className="h-3.5 w-3.5" aria-hidden />
-        {winner ? `${winner.code} ${winner.shortName}` : 'Awaiting result'}
+        {result}
       </span>
     )
   } else {
@@ -295,9 +339,7 @@ function SessionClock(props: {
     status = (
       <span className="bg-ink-900 text-canvas-0 inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide">
         {session.label === 'Race' ? 'Lights out' : 'Starts'}
-        <span className="font-mono tabular-nums">
-          {left > 0 ? `in ${countdown(left)}` : 'now'}
-        </span>
+        <span className="font-mono tabular-nums">in {countdown(left)}</span>
       </span>
     )
   }
@@ -427,34 +469,40 @@ function StartingGrid(props: {
                   cell.won ? 'took pole' : `${pct(cell.prob)} chance of pole`
                 }`}
                 className={clsx(
-                  'group mb-2 flex min-h-[50px] min-w-0 items-center gap-2 rounded-sm border-l-2 border-t-2 border-white/70 px-2 py-1.5 text-left transition-colors hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-300 disabled:cursor-default',
+                  // Two lines, so a box as narrow as a 320px phone's still
+                  // fits the code beside its price (F4213-16).
+                  'group mb-2 flex min-h-[50px] min-w-0 flex-col gap-0.5 rounded-sm border-l-2 border-t-2 border-white/70 px-2 py-1.5 text-left transition-colors hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-300 disabled:cursor-default',
                   i % 2 === 1 && 'translate-y-8',
                   cell.won && 'ring-2 ring-teal-400'
                 )}
               >
-                <span className="w-7 shrink-0 text-[10px] font-black italic leading-tight text-white/50">
-                  P{i + 1}
-                  {i === 0 && (
-                    <span className="block text-[9px] not-italic text-amber-300">
-                      POLE
-                    </span>
-                  )}
+                <span className="flex items-baseline justify-between gap-1">
+                  <span className="text-[10px] font-black italic text-white/50">
+                    P{i + 1}
+                    {i === 0 && (
+                      <span className="ml-1 not-italic text-amber-300">
+                        POLE
+                      </span>
+                    )}
+                  </span>
+                  <span className="shrink-0 text-sm font-black tabular-nums text-teal-300 group-hover:text-white">
+                    {cell.won ? '✓' : pct(cell.prob)}
+                  </span>
                 </span>
-                <span
-                  aria-hidden
-                  className="h-7 w-1 shrink-0 rounded-full bg-white/40"
-                  style={row.color ? { backgroundColor: row.color } : undefined}
-                />
-                <span className="min-w-0 flex-1 leading-tight">
-                  <span className="block text-sm font-black italic text-white">
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span
+                    aria-hidden
+                    className="h-4 w-1 shrink-0 rounded-full bg-white/40"
+                    style={
+                      row.color ? { backgroundColor: row.color } : undefined
+                    }
+                  />
+                  <span className="shrink-0 text-sm font-black italic text-white">
                     {row.code}
                   </span>
-                  <span className="block truncate text-[10px] text-white/60">
+                  <span className="min-w-0 truncate text-[10px] text-white/60">
                     {row.shortName}
                   </span>
-                </span>
-                <span className="shrink-0 text-sm font-black tabular-nums text-teal-300 group-hover:text-white">
-                  {cell.won ? '✓' : pct(cell.prob)}
                 </span>
               </button>
             )
@@ -482,7 +530,7 @@ function Movers(props: {
   const moves = rows.flatMap((row) =>
     row.other
       ? []
-      : choices.filter(isOpen).flatMap((choice) => {
+      : choices.flatMap((choice) => {
           const cell = row.cells[choice.market.id]
           return cell && Math.abs(cell.dayChange) >= 3
             ? [{ row, choice, cell }]
