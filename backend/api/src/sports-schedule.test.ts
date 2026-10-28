@@ -732,6 +732,55 @@ describe('F1 race weekends', () => {
     }
   })
 
+  it("leaves a finished session's markets on the week list (F4213-05)", async () => {
+    // Qualifying closed two hours ago; the race is still to come.
+    const done = Date.now() - 5 * HOUR
+    officialRows = [
+      ...official,
+      f1('pole', 1869, 'pole position', 'winner', done),
+      ...f1Rows.slice(1),
+    ]
+    marketRows = [
+      ...marketRows,
+      // Open past qualifying, and about it.
+      community('mx-pole', 'F1 Mexican GP: who gets pole?', race + HOUR),
+      community('pole-linked', 'Pole lap under 1:15?', race),
+    ]
+    linkRows = [{ id: 'pole-linked', parent_id: 'pole', relation: 'prop' }]
+    linkedElsewhere = [{ id: 'pole-linked' }]
+    const response = await getSchedule({ sport: 'f1' })
+    const result = 'result' in response ? response.result : response
+    const [quali] = result.raceWeekends?.[0]?.sessions ?? []
+    expect(quali.status).toBe('finished')
+    expect(quali.related).toEqual([])
+    expect(result.upcoming.map((m) => m.id)).toEqual(
+      expect.arrayContaining(['mx-pole', 'pole-linked'])
+    )
+  })
+
+  it('looks five weeks ahead on the F1 page, and two on all sports', async () => {
+    const vegas = f1(
+      'vegas',
+      1900,
+      'race winner',
+      'winner',
+      Date.now() + 21 * 24 * HOUR
+    )
+    vegas.data.sportsEventId = 'bdl-f1:380:1900'
+    vegas.data.question = '2026 Las Vegas Grand Prix: race winner'
+    officialRows = [...official, ...f1Rows, vegas]
+    answerRows = [...answerRows, ...driverAnswers('vegas')]
+    const ids = async (sport: 'all' | 'f1') => {
+      const response = await getSchedule({ sport })
+      const result = 'result' in response ? response.result : response
+      // The rail counts the F1 page's sessions, whichever page asks.
+      expect(result.counts.f1).toBe(3)
+      return (result.raceWeekends ?? []).map((w) => w.id)
+    }
+    expect(await ids('f1')).toEqual(['bdl-f1:374', 'bdl-f1:380'])
+    expect(await ids('all')).toEqual(['bdl-f1:374'])
+  })
+
   it('sends no weekends with a later page', async () => {
     const first = await getSchedule({ sport: 'f1', limit: 1 })
     const page = 'result' in first ? first.result : first

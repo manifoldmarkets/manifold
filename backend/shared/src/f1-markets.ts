@@ -34,6 +34,7 @@ import {
 } from 'shared/balldontlie-f1-client'
 import {
   buildF1MarketParams,
+  F1_DAYS_AHEAD,
   F1_MARKETS_BY_SESSION,
   F1_RESOLVE_DELAY_HOURS,
   F1DriverStanding,
@@ -66,13 +67,18 @@ import { millisToTs } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 
-const ROLLING_WINDOW_DAYS = 14
+/** Tod, 28 Oct 2026: look three to four weeks out or more, or the F1 page is bare. */
+const ROLLING_WINDOW_DAYS = F1_DAYS_AHEAD
 /**
  * The odds pipeline's tier: Ṁ100 an answer, so about Ṁ2,300 for a winner
  * market over a full grid. Tod, 27 Oct 2026: fine for now (F4199-05).
  */
 const LIQUIDITY_TIER = 1000
-/** Two race weekends make at most ten markets. */
+/**
+ * A weekend makes three or four markets, and one weekend at a time enters
+ * the window, so a daily run rarely makes more than four. The first run over
+ * the window opens the nearest twelve and the next day's the rest.
+ */
 const MAX_NEW_MARKETS_PER_RUN = 12
 /** A session starting sooner than this isn't opened. */
 const MIN_CREATE_LEAD_MS = 5 * MINUTE_MS

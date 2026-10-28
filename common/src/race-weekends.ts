@@ -309,24 +309,52 @@ export const raceSessionId = (
   session: Pick<RaceSession, 'sessionId'>
 ) => `${weekend.id}:${session.sessionId}`
 
+/** One session of a weekend as an event, finished or not. */
+export function raceSessionEvent(
+  weekend: RaceWeekend,
+  session: RaceSession
+): RaceSessionEvent {
+  return {
+    id: raceSessionId(weekend, session),
+    sport: 'f1',
+    status: session.status,
+    startTime: session.startTime,
+    closeTime: session.closeTime,
+    volume: sumBy(session.markets, (m) => finiteOr0(m.volume)),
+    uniqueBettorCount:
+      maxBy(session.markets.map((m) => finiteOr0(m.uniqueBettorCount))) ?? 0,
+    session,
+    weekend,
+  }
+}
+
 /** The live and upcoming sessions of `weekends`, as feed events. */
 export function raceSessionEvents(weekends: RaceWeekend[]): RaceSessionEvent[] {
   return weekends.flatMap((weekend) =>
     weekend.sessions
       .filter((s) => s.status !== 'finished')
-      .map((session) => ({
-        id: raceSessionId(weekend, session),
-        sport: 'f1' as const,
-        status: session.status,
-        startTime: session.startTime,
-        closeTime: session.closeTime,
-        volume: sumBy(session.markets, (m) => finiteOr0(m.volume)),
-        uniqueBettorCount:
-          maxBy(session.markets.map((m) => finiteOr0(m.uniqueBettorCount))) ??
-          0,
-        session,
-        weekend,
-      }))
+      .map((session) => raceSessionEvent(weekend, session))
+  )
+}
+
+/**
+ * A weekend's markets in session order, named as the featured card's pills
+ * name them: "Sprint", "Qualifying", "Race winner", "Podium".
+ */
+export function raceWeekendMarkets(weekend: RaceWeekend) {
+  return weekend.sessions.flatMap((session) =>
+    session.markets.map((market) => ({
+      session,
+      market,
+      label:
+        market.marketType === 'podium'
+          ? 'Podium'
+          : session.label === 'Race'
+          ? 'Race winner'
+          : session.label === 'Session'
+          ? market.label
+          : session.label,
+    }))
   )
 }
 
@@ -458,6 +486,11 @@ function grandPrixMatcher(weekendName: string) {
 
 // A market outside the F1 topic still counts when it says it's about F1.
 const F1_CONTEXT_RE = /\b(F1|Formula (1|One)|GP|Grand Prix)\b/i
+// Other series race at the same Grand Prix (F2 and F3 at Monaco): a market
+// naming one and not F1 isn't about the F1 sessions.
+const OTHER_SERIES_RE =
+  /\b(F2|F3|Formula (2|3|E|Two|Three)|F1 Academy|MotoGP|Moto[23]|IndyCar|NASCAR|WEC|Le Mans|DTM|Supercars|WRC|WSBK|Supercup)\b/i
+const SAYS_F1_RE = /\b(F1|Formula (1|One))\b(?! Academy)/i
 const SPRINT_RE = /\b(sprint|SQ[1-3])\b/i
 const QUALIFYING_RE = /\b(pole|qualifying|quali|Q[1-3])\b/i
 // "Will the winner start from pole?" is about the race.
@@ -479,25 +512,28 @@ export function f1RelatedGroup(question: string): RelatedGroup {
 function sessionFor(weekend: RaceWeekend, question: string, closeTime: number) {
   const labelled = (label: string) =>
     weekend.sessions.find((s) => s.label === label)
+  const nearest = (sessions: RaceSession[]) =>
+    minBy(sessions, (s) => Math.abs(closeTime - s.startTime))
   if (SPRINT_RE.test(question)) {
     const sprint = labelled('Sprint')
     if (sprint) return sprint
   }
-  if (QUALIFYING_RE.test(question) && !STARTS_FROM_RE.test(question)) {
-    const qualifying = labelled('Qualifying')
-    if (qualifying) return qualifying
-  }
-  if (RACE_RE.test(question)) {
-    const race = labelled('Race')
-    if (race) return race
-  }
-  return minBy(weekend.sessions, (s) => Math.abs(closeTime - s.startTime))
+  const qualifying =
+    QUALIFYING_RE.test(question) && !STARTS_FROM_RE.test(question)
+      ? labelled('Qualifying')
+      : undefined
+  const race = RACE_RE.test(question) ? labelled('Race') : undefined
+  // "Will the pole sitter win the race?" and "Who will win pole?" use both
+  // sessions' words: the one it closes nearest to decides (F4213-07).
+  if (qualifying && race) return nearest([qualifying, race])
+  return qualifying ?? race ?? nearest(weekend.sessions)
 }
 
 /**
  * Markets people made about each session's Grand Prix, keyed by the session's
  * id (raceSessionId), most important first. Official markets (with an event
- * id) never match: a session's own are on its card. A market naming two
+ * id) never match: a session's own are on its card. Nor does one about
+ * another series, or naming another year's race. A market naming two
  * weekends' Grand Prix in their windows goes to the one it closes nearest.
  */
 export function findRaceRelatedMarkets(
@@ -513,6 +549,10 @@ export function findRaceRelatedMarkets(
       {
         weekend: w,
         names,
+        // The season in its name ("2026 Mexico City Grand Prix").
+        year:
+          w.name.match(/^(\d{4})\b/)?.[1] ??
+          String(new Date(w.startTime).getUTCFullYear()),
         from: w.startTime - RELATED_FROM_MS,
         until: lastClose + RELATED_UNTIL_MS,
         middle: (w.startTime + lastClose) / 2,
@@ -528,9 +568,16 @@ export function findRaceRelatedMarkets(
       !(c.sport === 'other' && F1_CONTEXT_RE.test(c.question))
     )
       continue
+    if (OTHER_SERIES_RE.test(c.question) && !SAYS_F1_RE.test(c.question))
+      continue
+    const years = c.question.match(/\b20\d\d\b/g)
     const question = foldAccents(c.question)
     const hits = windows.filter(
-      (w) => closeTime >= w.from && closeTime <= w.until && w.names(question)
+      (w) =>
+        closeTime >= w.from &&
+        closeTime <= w.until &&
+        (!years || years.includes(w.year)) &&
+        w.names(question)
     )
     const hit = minBy(hits, (w) => Math.abs(closeTime - w.middle))
     if (!hit) continue
@@ -574,12 +621,15 @@ export interface ChampionshipCandidate {
 
 const ABOUT_F1_RE = /\b(F1|Formula (1|One))\b/i
 const TITLE_RE = /\b(champion|championship|WDC|WCC)\b/i
+// Who wins it: a winner or the champion, not who's in the top three
+// (F4213-06).
+const WINS_TITLE_RE = /\b(win|wins|winner|won|champion|WDC|WCC)\b/i
 const CONSTRUCTORS_RE = /\b(constructors?|constructor['’]s|WCC)\b/i
 const DRIVERS_RE = /\b(drivers?|driver['’]s|WDC|world champion)\b/i
 // The title itself, not when someone wins it, a finishing position or a
 // yes/no on one driver.
 const NOT_THE_TITLE_RE =
-  /^\s*(when|how|will|in which)\b|\b(lowest|last|bottom|position|place|finish|runner[- ]up|second|third|points)\b/i
+  /^\s*(when|how|will|in which)\b|\b(lowest|last|bottom|position|place|finish|runner[- ]up|second|third|points|top \d+|top (three|five|ten)|podium|rank|ranking|standings)\b/i
 
 /** Constructors when it says so, drivers when it says so, else by "team". */
 function championshipKind(question: string): RaceChampionship['kind'] {
@@ -607,7 +657,12 @@ export function pickRaceChampionships(
   const season = String(f1Season(now))
   const titles = candidates.flatMap((c) => {
     const q = c.question
-    if (!ABOUT_F1_RE.test(q) || !TITLE_RE.test(q) || NOT_THE_TITLE_RE.test(q))
+    if (
+      !ABOUT_F1_RE.test(q) ||
+      !TITLE_RE.test(q) ||
+      !WINS_TITLE_RE.test(q) ||
+      NOT_THE_TITLE_RE.test(q)
+    )
       return []
     const years: string[] = q.match(/\b20\d\d\b/g) ?? []
     if (years.length > 0 && !years.includes(season)) return []

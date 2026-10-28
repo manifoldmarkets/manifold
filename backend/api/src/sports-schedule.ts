@@ -8,12 +8,14 @@ import { Contract, isMultiCpmm, OutcomeType } from 'common/contract'
 import { Answer } from 'common/answer'
 import { tsToMillis } from 'common/supabase/utils'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
+import { F1_DAYS_AHEAD } from 'common/f1-markets'
 import {
   buildRaceWeekends,
   findRaceRelatedMarkets,
   pickRaceChampionships,
   RaceContract,
   raceSessionId,
+  RaceWeekend,
 } from 'common/race-weekends'
 import { teamCodeForLeague } from 'common/sports-team-codes'
 import {
@@ -73,23 +75,29 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   const pg = createSupabaseDirectClient()
   const now = Date.now()
   const horizon = now + daysAhead * DAY_MS
+  // F1 looks further ahead than the games: two weeks of sessions would leave
+  // its page bare.
+  const raceDays = Math.max(daysAhead, F1_DAYS_AHEAD)
+  const raceHorizon = now + raceDays * DAY_MS
 
   const index = await getSportsIndex(pg, now)
   const [official, weekAll, allWeekends, championships] = await Promise.all([
     getOfficialGames(pg, index, daysAhead, now),
     getUpcomingMarkets(pg, index),
-    getRaceWeekends(pg, daysAhead, now),
+    getRaceWeekends(pg, raceDays, now),
     sport === 'f1' && !cursor
       ? getRaceChampionships(pg, index, now)
       : Promise.resolve([]),
   ])
   const games = official.filter((g) => g.startTime < horizon)
-  // F1 weekends with something still to come inside the horizon.
-  const weekends = allWeekends.filter(
-    (w) =>
-      w.status !== 'finished' &&
-      w.sessions.some((s) => s.status !== 'finished' && s.startTime < horizon)
-  )
+  // F1 weekends with something still to come before `until`.
+  const onBefore = (until: number) => (w: RaceWeekend) =>
+    w.status !== 'finished' &&
+    w.sessions.some((s) => s.status !== 'finished' && s.startTime < until)
+  // The F1 page's weekends: what the rail counts and props are matched for,
+  // whichever sport is open. /sports keeps to the games' horizon, so a
+  // session weeks out doesn't trail after games still to load.
+  const weekends = allWeekends.filter(onBefore(raceHorizon))
 
   // Sort: live first (biggest games on top), then upcoming by kickoff, then
   // just-finished (most recent first). The id breaks ties so pages of
@@ -204,6 +212,9 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     )
     for (const w of weekends) {
       for (const s of w.sessions) {
+        // A finished session isn't in the feed, so its markets (an open
+        // prop closing later, say) stay in the week list (F4213-05).
+        if (s.status === 'finished') continue
         const links = uniqBy(
           s.markets.flatMap((m) => linkedByGame[m.id] ?? []),
           (l) => l.id
@@ -282,7 +293,12 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
           ? upcoming
           : upcoming.filter((m) => m.sport === sport)
         ).slice(0, MAX_UPCOMING_RETURNED),
-    raceWeekends: cursor || (sport !== 'all' && sport !== 'f1') ? [] : weekends,
+    raceWeekends:
+      cursor || (sport !== 'all' && sport !== 'f1')
+        ? []
+        : sport === 'f1'
+        ? weekends
+        : weekends.filter(onBefore(horizon)),
     raceChampionships: championships,
     counts,
     liveCount,

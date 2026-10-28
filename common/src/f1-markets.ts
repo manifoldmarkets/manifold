@@ -162,6 +162,13 @@ export const F1_CLOSE_BUFFER_HOURS: Record<F1SessionKind, number> = {
  */
 export const F1_RESOLVE_DELAY_HOURS = 2
 
+/**
+ * How far ahead sessions get markets, and how far the F1 page looks: five
+ * weeks, so the next few races (and the first one after a summer break)
+ * are already open.
+ */
+export const F1_DAYS_AHEAD = 35
+
 /** Catches a stand-in who wasn't in the field when the market opened. */
 export const OTHER_DRIVER_ANSWER = 'Another driver'
 

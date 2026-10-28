@@ -7,6 +7,7 @@ import {
   raceDisplayName,
   raceSessionEvents,
   raceSessionSearchText,
+  raceWeekendMarkets,
   withoutRaceMarkets,
   RaceContract,
 } from './race-weekends'
@@ -238,6 +239,43 @@ describe('sessions in the game feed', () => {
     expect(ids(QUALI + 4 * HOUR, 'start')).toBe('bdl-f1:374:1870')
   })
 
+  it('keeps a live pick, but not a later one, when featuring what is next (F4213-10)', () => {
+    const at = (now: number) =>
+      raceSessionEvents(buildRaceWeekends([pole, race], byContract, now))
+    // The race was picked before qualifying's market turned up.
+    expect(selectFeaturedGame(at(NOW), 'bdl-f1:374:1870', 'start')?.id).toBe(
+      'bdl-f1:374:1869'
+    )
+    // The most-traded rule still keeps its pick while browsing.
+    expect(selectFeaturedGame(at(NOW), 'bdl-f1:374:1870')?.id).toBe(
+      'bdl-f1:374:1870'
+    )
+    expect(
+      selectFeaturedGame(at(QUALI + HOUR), 'bdl-f1:374:1869', 'start')?.id
+    ).toBe('bdl-f1:374:1869')
+  })
+
+  it("names the featured card's pills in session order", () => {
+    const sprint = market(
+      'sprint',
+      1868,
+      'sprint winner',
+      'winner',
+      QUALI - 5 * HOUR
+    )
+    const [w] = buildRaceWeekends(
+      [podium, race, pole, sprint],
+      { ...byContract, sprint: byContract.race },
+      NOW
+    )
+    expect(raceWeekendMarkets(w).map((m) => [m.label, m.market.id])).toEqual([
+      ['Sprint', 'sprint'],
+      ['Qualifying', 'pole'],
+      ['Race winner', 'race'],
+      ['Podium', 'podium'],
+    ])
+  })
+
   it('is found by its weekend, session and drivers', () => {
     const [qualifying] = raceSessionEvents(
       buildRaceWeekends([pole, race], byContract, NOW)
@@ -422,6 +460,51 @@ describe('markets people make about a Grand Prix', () => {
     })
   })
 
+  it('settles qualifying or race by the close, and skips other series and years (F4213-07..09)', () => {
+    expect(
+      sessionOf([
+        candidate(
+          'pole-sitter',
+          'Will the pole sitter win the 2026 Mexico City Grand Prix?',
+          RACE - 0.1 * HOUR
+        ),
+        candidate(
+          'win-pole',
+          'Who will win pole at the Mexican GP?',
+          QUALI - 0.1 * HOUR
+        ),
+        candidate(
+          'f2',
+          'F2 Mexico City Grand Prix: who wins the feature race?',
+          RACE,
+          { sport: 'other' }
+        ),
+        candidate('f2-topic', 'F2 Mexico City GP sprint winner?', SPRINT),
+        candidate('academy', 'F1 Academy Mexico City race winner?', RACE),
+        candidate(
+          'both',
+          'F1 vs F2 at the Mexico City GP: which has more overtakes?',
+          RACE
+        ),
+        candidate(
+          'last-year',
+          'Who will win the 2025 Mexico City Grand Prix?',
+          RACE
+        ),
+        candidate(
+          'this-year',
+          'Who will win the 2026 Mexico City Grand Prix?',
+          RACE + HOUR
+        ),
+      ])
+    ).toEqual({
+      'pole-sitter': 'bdl-f1:374:1870',
+      'win-pole': 'bdl-f1:374:1869',
+      both: 'bdl-f1:374:1870',
+      'this-year': 'bdl-f1:374:1870',
+    })
+  })
+
   it('lists the most important first, winner markets in the first group', () => {
     const [raceMatches] = [
       ...findRaceRelatedMarkets(
@@ -473,6 +556,12 @@ describe('the championship', () => {
       30
     ),
     title('when', 'When will Kimi Antonelli win the F1 WDC', 140),
+    // Who's in the top three isn't who wins it (F4213-06).
+    title(
+      'top3',
+      'Who will be in the top 3 of the 2026 F1 Drivers’ Championship?',
+      900
+    ),
     title(
       'lowest',
       'Which team will score the lowest points total in the Formula 1 World Constructors Championship 2026',

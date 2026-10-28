@@ -2,15 +2,15 @@ import { ChevronRightIcon, UsersIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import Link from 'next/link'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useId, useState } from 'react'
 import { formatJustTime } from 'client-common/lib/time'
 import {
   RACE_CARD_LEADERS,
   raceDisplayName,
   RaceMarketRef,
-  RaceSession,
   RaceSessionEvent,
-  raceSessionId,
+  raceSessionEvent,
+  raceWeekendMarkets,
 } from 'common/race-weekends'
 import { shortFormatNumber } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
@@ -150,7 +150,12 @@ export function RaceSessionCard(props: {
           <SessionWhen event={event} />
           {main && <SportsMarketBadge market={main} />}
         </div>
-        <SessionControls event={event} title={title} />
+        <SessionControls
+          volume={event.volume}
+          traders={event.uniqueBettorCount}
+          market={main}
+          title={title}
+        />
       </Row>
       <Col className="gap-2 px-4 pb-3">
         {heading}
@@ -170,55 +175,101 @@ export function RaceSessionCard(props: {
 }
 
 /**
- * The featured session: the weekend's name over the session, its leading
- * drivers as tiles to bet on, the podium, and the weekend's other sessions;
- * the markets people made about it beside (or under) it.
+ * The featured weekend. A pill per market (qualifying, sprint, race winner,
+ * podium) swaps the board in place, starting on the featured session's
+ * winner market. The board is the market's six leading drivers as tiles to
+ * bet on; the markets people made about its session sit beside (or under) it.
  */
 export function RaceSessionHero(props: { event: RaceSessionEvent }) {
   const { event } = props
-  const { session, weekend } = event
-  const [main, ...rest] = session.markets
-  const host = relatedHost(event)
+  const { weekend } = event
+  const choices = raceWeekendMarkets(weekend)
+  const [pickedId, setPickedId] = useState<string>()
+  const boardId = useId()
   const bet = useDriverBet('sports f1 featured')
-  const title = sessionTitle(event)
+  const picked =
+    choices.find((c) => c.market.id === pickedId) ??
+    choices.find((c) => c.session.sessionId === event.session.sessionId) ??
+    choices[0]
+  if (!picked) return null
+  const { market } = picked
+  const shown = raceSessionEvent(weekend, picked.session)
+  const host = relatedHost(shown)
+  const title = sessionTitle(shown)
+  const name = raceDisplayName(weekend.name)
   const matchup = (
     <div className="relative isolate flex min-w-0 flex-col overflow-hidden">
       <SportHeroBackground sport="f1" scoreboard />
       <div className="flex items-center gap-2 px-4 py-2 sm:px-5">
         <div className="@container flex min-w-[1rem] flex-1 items-center gap-2">
-          {main && <SportsMarketBadge market={main} />}
+          <SportsMarketBadge market={market} />
           <span className="text-primary-700 @[5rem]:not-sr-only sr-only whitespace-nowrap text-[10px] font-bold uppercase tracking-wide">
             Featured
           </span>
         </div>
-        <SessionControls event={event} title={title} />
+        <SessionControls
+          volume={market.volume ?? 0}
+          traders={market.uniqueBettorCount ?? 0}
+          market={market}
+          title={`${name} ${picked.label.toLowerCase()}`}
+        />
       </div>
       <div className="mx-auto w-full max-w-xl px-4 pb-5 pt-1 sm:px-5">
         <div className="text-ink-500 mb-1 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs">
           <span>
-            Formula 1 · {dayjs(session.startTime).format('ddd, MMM D')}
+            {picked.session.label} ·{' '}
+            {dayjs(shown.startTime).format('ddd, MMM D')}
           </span>
-          <SessionWhen event={event} />
+          <SessionWhen event={shown} />
         </div>
         <h3 className="text-ink-1000 text-center text-lg font-bold leading-tight [text-wrap:balance] sm:text-xl">
-          {raceDisplayName(weekend.name)}
+          {name}
         </h3>
-        <p className="text-primary-700 mt-0.5 text-center text-xs font-bold uppercase tracking-wide">
-          {session.label}
-        </p>
-        {main && (
-          <DriverBoard market={main} onBet={bet.open} className="mt-4" />
+        {choices.length > 1 && (
+          <div
+            role="group"
+            aria-label={`${name} markets`}
+            className="mt-3 flex flex-wrap justify-center gap-1.5"
+          >
+            {choices.map((c) => {
+              const selected = c.market.id === market.id
+              return (
+                <button
+                  key={c.market.id}
+                  type="button"
+                  aria-pressed={selected}
+                  aria-controls={boardId}
+                  onClick={() => setPickedId(c.market.id)}
+                  className={clsx(
+                    'focus-visible:ring-primary-500 flex min-h-[36px] items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors focus-visible:ring-2',
+                    selected
+                      ? 'border-primary-600 bg-primary-600 text-white'
+                      : 'border-ink-200 bg-canvas-0 text-ink-700 hover:border-primary-300 hover:text-primary-700'
+                  )}
+                >
+                  {c.session.status === 'live' && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                  )}
+                  {c.label}
+                  {c.session.status === 'live' && (
+                    <span className="sr-only">, in progress</span>
+                  )}
+                  {c.session.status === 'finished' && (
+                    <span aria-label=", finished">✓</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
         )}
-        {rest.map((m) => (
-          <MarketLine
-            key={m.id}
-            market={m}
-            leaders={m.leaders.slice(0, RACE_CARD_LEADERS)}
+        <div id={boardId} aria-live="polite">
+          <DriverBoard
+            market={market}
+            closed={market.isResolved || picked.session.status === 'finished'}
             onBet={bet.open}
             className="mt-3"
           />
-        ))}
-        <WeekendSessions event={event} className="mt-4" />
+        </div>
       </div>
     </div>
   )
@@ -242,10 +293,14 @@ const CONTROL_CLASS =
 const ACTION_CLASS =
   'border-transparent hover:bg-primary-100 hover:text-primary-700 focus-visible:ring-primary-500 transition-colors focus-visible:ring-2'
 
-/** Traded, traders, and the way to the winner market, as on a game card. */
-function SessionControls(props: { event: RaceSessionEvent; title: string }) {
-  const { event, title } = props
-  const main = event.session.markets[0]
+/** Traded, traders, and the way to the market, as on a game card. */
+function SessionControls(props: {
+  volume: number
+  traders: number
+  market: RaceMarketRef | undefined
+  title: string
+}) {
+  const { volume, traders, market, title } = props
   return (
     <div
       role="group"
@@ -254,22 +309,22 @@ function SessionControls(props: { event: RaceSessionEvent; title: string }) {
     >
       <span
         className={clsx(CONTROL_CLASS, 'border-transparent')}
-        title={`Ṁ${shortFormatNumber(event.volume)} traded`}
+        title={`Ṁ${shortFormatNumber(volume)} traded`}
       >
-        Ṁ{shortFormatNumber(event.volume)}
+        Ṁ{shortFormatNumber(volume)}
         <span className="sr-only">traded</span>
       </span>
       <span
         className={clsx(CONTROL_CLASS, 'border-transparent')}
-        title={`${event.uniqueBettorCount} traders`}
+        title={`${traders} traders`}
       >
         <UsersIcon className="h-4 w-4" aria-hidden />
-        {shortFormatNumber(event.uniqueBettorCount)}
+        {shortFormatNumber(traders)}
         <span className="sr-only">traders</span>
       </span>
-      {main && (
+      {market && (
         <Link
-          href={marketPath(main)}
+          href={marketPath(market)}
           aria-label={`Open ${title}`}
           title="Market page"
           className={clsx(CONTROL_CLASS, ACTION_CLASS, 'w-8 !px-0')}
@@ -281,7 +336,7 @@ function SessionControls(props: { event: RaceSessionEvent; title: string }) {
   )
 }
 
-/** When a session is: its start (and how soon), or in progress. */
+/** When a session is: its start (and how soon), in progress, or over. */
 function SessionWhen(props: {
   event: RaceSessionEvent
   stackOnWide?: boolean
@@ -293,6 +348,12 @@ function SessionWhen(props: {
       <span className="whitespace-nowrap text-[11px] font-semibold text-red-600">
         In progress
       </span>
+    ) : event.status === 'finished' ? (
+      <span className="text-ink-600 text-xs font-semibold">
+        {event.session.markets.every((m) => m.isResolved)
+          ? 'Final'
+          : 'Awaiting result'}
+      </span>
     ) : (
       <span className="text-ink-900 text-sm font-medium tabular-nums">
         {time}
@@ -300,7 +361,11 @@ function SessionWhen(props: {
     )
   // The day is in the feed's day heading.
   const secondary =
-    event.status === 'live' ? `Started ${time}` : startsSoon(event.startTime)
+    event.status === 'live'
+      ? `Started ${time}`
+      : event.status === 'finished'
+      ? null
+      : startsSoon(event.startTime)
   return (
     <Row
       className={clsx(
@@ -384,13 +449,15 @@ function MarketLine(props: {
   )
 }
 
-/** The featured session's leaders as tiles, in team colours. */
+/** The featured market's leaders as tiles, in team colours. */
 function DriverBoard(props: {
   market: RaceMarketRef
+  /** Settled or past its close: the tiles show prices and winners only. */
+  closed: boolean
   onBet: OnBet
   className?: string
 }) {
-  const { market, onBet, className } = props
+  const { market, closed, onBet, className } = props
   const more = market.answerCount - market.leaders.length
   return (
     <div className={className}>
@@ -415,7 +482,7 @@ function DriverBoard(props: {
           <button
             key={l.answerId}
             type="button"
-            disabled={market.isResolved}
+            disabled={closed}
             onClick={() => onBet(market.id, l.answerId)}
             aria-label={
               l.won
@@ -453,72 +520,6 @@ function DriverBoard(props: {
       </div>
     </div>
   )
-}
-
-/**
- * The weekend's sessions in order, the featured one marked: a finished one
- * with its winner (to its market), one still to come to its card below.
- */
-function WeekendSessions(props: {
-  event: RaceSessionEvent
-  className?: string
-}) {
-  const { event, className } = props
-  const { weekend } = event
-  if (weekend.sessions.length < 2) return null
-  return (
-    <nav
-      aria-label={`${raceDisplayName(weekend.name)} sessions`}
-      className={clsx('flex flex-wrap justify-center gap-1.5', className)}
-    >
-      {weekend.sessions.map((s) => {
-        const id = raceSessionId(weekend, s)
-        const current = id === event.id
-        const pillClass = clsx(
-          'flex min-h-[32px] items-center gap-1.5 rounded-full border px-2.5 text-xs',
-          current
-            ? 'border-primary-300 bg-canvas-0 text-primary-700'
-            : 'border-ink-200 text-ink-700 hover:bg-canvas-0'
-        )
-        const content = (
-          <>
-            <span className="font-semibold">{s.label}</span>
-            <span className={current ? 'text-primary-600' : 'text-ink-500'}>
-              {sessionState(s)}
-            </span>
-          </>
-        )
-        if (current)
-          return (
-            <span key={id} aria-current="true" className={pillClass}>
-              {content}
-            </span>
-          )
-        const href =
-          s.status === 'finished'
-            ? s.markets[0] && marketPath(s.markets[0])
-            : `#${raceSessionAnchor(id)}`
-        return href ? (
-          <Link key={id} href={href} className={pillClass}>
-            {content}
-          </Link>
-        ) : (
-          <span key={id} className={pillClass}>
-            {content}
-          </span>
-        )
-      })}
-    </nav>
-  )
-}
-
-/** "Sun 2:00 PM", "In progress", "✓ K. Antonelli" or "Awaiting result". */
-function sessionState(s: RaceSession) {
-  if (s.status === 'live') return 'In progress'
-  if (s.status === 'upcoming') return dayjs(s.startTime).format('ddd h:mm A')
-  const winner = s.markets[0]?.leaders.find((l) => l.won)
-  if (winner) return `✓ ${winner.shortName ?? winner.name}`
-  return s.markets.every((m) => m.isResolved) ? 'Final' : 'Awaiting result'
 }
 
 function TeamDot(props: { color: string | null }) {

@@ -173,13 +173,18 @@ export function GameFeed(props: {
   const filtered: FeedItem[] = [...filteredGames, ...filteredSessions].sort(
     sort === 'volume' ? compareGameVolume : compareGameStartTime
   )
+  // A featured session brings its whole weekend: the featured card's pills
+  // cover the other sessions, so they aren't listed again below.
+  const featuredWeekendId =
+    featured && isSession(featured) ? featured.weekend.id : undefined
+  const listed = (item: FeedItem) =>
+    item.id !== featured?.id &&
+    !(isSession(item) && item.weekend.id === featuredWeekendId)
   // Live games always run in kickoff order, including in the Live filter.
   const live = filtered
-    .filter((g) => g.status === 'live' && g.id !== featured?.id)
+    .filter((g) => g.status === 'live' && listed(g))
     .sort(compareGameStartTime)
-  const upcoming = filtered.filter(
-    (g) => g.status === 'upcoming' && g.id !== featured?.id
-  )
+  const upcoming = filtered.filter((g) => g.status === 'upcoming' && listed(g))
   const days = groupByDay(upcoming, (g) => g.startTime).sort((a, b) =>
     a.key.localeCompare(b.key)
   )

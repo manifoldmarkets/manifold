@@ -37,7 +37,8 @@ export const compareGameVolume = (a: GameOrder, b: GameOrder) =>
 /**
  * Retain the current game while browsing; promote a live game when one starts.
  * Otherwise the most traded, or with `by: 'start'` the soonest: what's on next
- * (F1, whose sessions never overlap).
+ * (F1, whose sessions never overlap). Start times don't move like volume, so
+ * that keeps only a live pick: an earlier session that turns up takes over.
  */
 export function selectFeaturedGame<T extends GameOrder>(
   games: readonly T[],
@@ -47,7 +48,8 @@ export function selectFeaturedGame<T extends GameOrder>(
   const current = games.find((game) => game.id === currentId)
   if (
     current?.status === 'live' ||
-    (current?.status === 'upcoming' &&
+    (by === 'volume' &&
+      current?.status === 'upcoming' &&
       !games.some((game) => game.status === 'live'))
   )
     return current
