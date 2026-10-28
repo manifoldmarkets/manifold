@@ -17,7 +17,7 @@ import {
   StatsCompareKey,
   StatsWindow,
 } from 'common/stats-window'
-import { formatPercent } from 'common/util/format'
+import { formatPercent, formatWithCommas } from 'common/util/format'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -623,8 +623,11 @@ const getTopicRows = (
 // epsilon keeps float noise (2.3 * 10 = 22.999…) from dropping a digit.
 const floorAt = (y: number, decimals: number) =>
   Math.floor(y * 10 ** decimals + 1e-9) / 10 ** decimals
-// formatCount shows one decimal under 10.
-const formatLowerCount = (y: number) => formatCount(floorAt(y, y >= 10 ? 0 : 1))
+// One decimal under 10, as formatCount does. From 10 up it's a whole number
+// with commas, never formatCount's compact form, which rounds (10,500 is
+// "11k").
+const formatLowerCount = (y: number) =>
+  y >= 10 ? formatWithCommas(floorAt(y, 0)) : formatCount(floorAt(y, 1))
 // formatPercent shows one decimal under 2% (and over 98%).
 const formatLowerPercent = (share: number) =>
   formatPercent(
