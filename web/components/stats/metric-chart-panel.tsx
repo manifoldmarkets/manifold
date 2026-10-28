@@ -1,11 +1,17 @@
-import { ReactNode } from 'react'
+import { ReactNode, useMemo } from 'react'
 
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { Select } from 'web/components/widgets/select'
 import { ChartLegend } from './chart-legend'
-import { buildChartSeries, getView, StatMetric } from './stat-metric'
+import { QuickFigures, SignalBadge } from './quick-figures'
+import {
+  buildChartSeries,
+  getMetricGlance,
+  getView,
+  StatMetric,
+} from './stat-metric'
 import { StatsChart } from './stats-chart'
 import { Point } from './stats-series'
 import { useStatsTime } from './stats-time'
@@ -21,11 +27,11 @@ export type OverlaySeries = {
   ownAxis?: boolean
 }
 
-// The selected metric's chart, with a switcher between its views and an
-// optional overlay of other series on the same axis. The card keeps one
-// shape for every metric (a two-line description slot, a controls row that's
-// always there, a legend row), so switching metrics doesn't move the chart
-// or the controls.
+// The selected metric's chart, with its quick figures (latest day, week,
+// year), a switcher between its views and an optional overlay of other
+// series. The card keeps one shape for every metric (a two-line description
+// slot, a fixed-height figures row, a controls row that's always there, a
+// legend row), so switching metrics doesn't move the chart or the controls.
 export function MetricChartPanel(props: {
   metric: StatMetric
   viewKey?: string
@@ -59,13 +65,19 @@ export function MetricChartPanel(props: {
     overlays: overlaySeries,
   })
   const canOverlay = overlayChoices.length > 0 && !!setOverlay
+  const glance = useMemo(() => getMetricGlance(metric), [metric])
 
   return (
     <Col className="bg-canvas-0 ring-ink-200 gap-3 rounded-lg p-4 ring-1">
       <Col className="gap-0.5">
-        <h2 className="text-ink-900 truncate text-lg font-semibold">
-          {metric.label}
-        </h2>
+        <Row className="min-w-0 items-center gap-2">
+          <h2 className="text-ink-900 truncate text-lg font-semibold">
+            {metric.label}
+          </h2>
+          {glance?.signal && (
+            <SignalBadge signal={glance.signal} className="shrink" />
+          )}
+        </Row>
         <p
           className="text-ink-500 line-clamp-2 min-h-[2.5rem] text-sm"
           title={
@@ -77,6 +89,7 @@ export function MetricChartPanel(props: {
           {metric.description}
         </p>
       </Col>
+      <QuickFigures metric={metric} glance={glance} />
       <Row className="items-center justify-between gap-2">
         <div className="scrollbar-hide -my-1 min-w-0 overflow-x-auto py-1">
           <ChoicesToggleGroup
@@ -98,7 +111,9 @@ export function MetricChartPanel(props: {
           value={canOverlay ? overlay : 'none'}
           disabled={!canOverlay}
           onChange={(e) => setOverlay?.(e.target.value)}
-          className="!h-8 w-36 shrink-0 !pl-3 !pr-8 !text-xs disabled:opacity-50 sm:w-48"
+          // @tailwindcss/forms pads selects vertically; at this height that
+          // pushes the text out of the bottom.
+          className="!h-8 w-36 shrink-0 !py-0 !pl-3 !pr-8 !text-xs disabled:opacity-50 sm:w-48"
         >
           <option value="none">No overlay</option>
           {overlayChoices.map((c) => (

@@ -1,5 +1,6 @@
 import { ReactNode } from 'react'
 
+import { getStatSignal, StatSignal, weeklyMeans } from 'common/stat-signals'
 import {
   countDays,
   getCompareOffset,
@@ -100,6 +101,12 @@ export const compareText = (range: StatsRangeKey, compare: StatsCompareKey) =>
 export const formatSince = (day: string) => {
   const [y, m, d] = day.split('-')
   return `${MONTHS[+m - 1]}${+d === 1 ? '' : ` ${+d}`} ’${y.slice(2)}`
+}
+
+// "Oct 26".
+export const formatShortDay = (day: string) => {
+  const [, m, d] = day.split('-')
+  return `${MONTHS[+m - 1]} ${+d}`
 }
 
 // The view a metric's summaries read: its own pick, else the daily values.
@@ -227,28 +234,91 @@ export const getMetricSummary = (
   }
 }
 
-// The overview's quick figures, whatever the page's range: the latest day's
-// value and the average of the 7 days to it, with its change from the 7
-// before. weekDays is how many of those 7 days have data.
+// The quick figures, whatever the page's range: the latest day's value, the
+// average of the 7 days to it with its change from the 7 before and from the
+// same 7 days a year (52 weeks) earlier, the weekly averages behind the trend
+// line, and the week's signal if it's unusual. weekDays is how many of the 7
+// days have data.
 export const getMetricGlance = (metric: StatMetric) => {
   const base = getSummaryView(metric)
   const latest = base.values[base.values.length - 1]
   if (!latest) return undefined
   const week = getStatsWindow(latest.x, '7d')
   const current = meanOver(base.values, week)
-  const offset = getCompareOffset(week, 'previous')
-  const before = offset
-    ? meanOver(base.values, shiftWindow(week, offset))
-    : undefined
-  const change =
-    current && before && hasComparableCoverage(current.days, before.days, 7)
-      ? describeChange(metric.pct, current.value, before.value)
+  const compareTo = (key: 'previous' | 'year') => {
+    const offset = getCompareOffset(week, key)
+    const before = offset
+      ? meanOver(base.values, shiftWindow(week, offset))
       : undefined
+    return {
+      value: before?.value,
+      change:
+        current && before && hasComparableCoverage(current.days, before.days, 7)
+          ? describeChange(metric.pct, current.value, before.value)
+          : undefined,
+    }
+  }
+  const weeks = weeklyMeans(base.values, latest.x)
+  const lastYear = compareTo('year')
   return {
     latest,
     weekAvg: current?.value,
     weekDays: current?.days ?? 0,
-    change,
+    change: compareTo('previous').change,
+    yearAgoAvg: lastYear.value,
+    yearChange: lastYear.change,
+    weeks,
+    signal: getStatSignal(weeks),
+  }
+}
+
+export type MetricGlance = NonNullable<ReturnType<typeof getMetricGlance>>
+
+// Every metric on this page is better higher, so a rise reads as good.
+export const changeTone = (direction: 'up' | 'down' | 'flat') =>
+  direction === 'up' ? 'good' : direction === 'down' ? 'bad' : 'neutral'
+
+export const TONE_TEXT = {
+  good: 'text-teal-600',
+  bad: 'text-scarlet-600',
+  neutral: 'text-ink-500',
+} as const
+
+// A signal's badge text, and a sentence for its tooltip.
+export const describeSignal = (signal: StatSignal) => {
+  switch (signal.kind) {
+    case 'high':
+    case 'low': {
+      const what = signal.kind === 'high' ? 'Highest' : 'Lowest'
+      return {
+        short: `${what} since ${formatSince(signal.since)}`,
+        long: signal.sinceStart
+          ? `${what} 7-day average since the data begins (${formatSince(
+              signal.since
+            )})`
+          : `${what} 7-day average since the week to ${formatSince(
+              signal.since
+            )}, ${signal.weeks} weeks earlier`,
+      }
+    }
+    case 'jump':
+    case 'drop': {
+      const factor = Math.round(signal.factor * 10) / 10
+      return {
+        short: signal.kind === 'jump' ? 'Unusual jump' : 'Unusual drop',
+        long: `This week moved ${factor}× as far as a typical week over the last 12`,
+      }
+    }
+    case 'rising':
+    case 'falling':
+      return {
+        short: `${signal.kind === 'rising' ? 'Up' : 'Down'} ${
+          signal.weeks
+        } weeks running`,
+        long: `The 7-day average ${
+          signal.kind === 'rising' ? 'rose' : 'fell'
+        } each of the last ${signal.weeks} weeks`,
+      }
   }
 }
 

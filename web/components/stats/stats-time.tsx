@@ -85,7 +85,9 @@ export function StatsTimeControls(props: { className?: string }) {
         onChange={(e) => {
           if (isStatsCompareKey(e.target.value)) setCompare(e.target.value)
         }}
-        className="!h-8 min-w-0 flex-1 !pl-3 !pr-8 !text-xs disabled:opacity-50 sm:flex-none sm:!text-sm"
+        // @tailwindcss/forms pads selects vertically; at this height that
+        // pushes the text out of the bottom.
+        className="!h-8 min-w-0 flex-1 !py-0 !pl-3 !pr-8 !text-xs disabled:opacity-50 sm:flex-none sm:!text-sm"
       >
         {STATS_COMPARES.map((c) => (
           <option key={c.key} value={c.key}>
