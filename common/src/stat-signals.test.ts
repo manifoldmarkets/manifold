@@ -25,11 +25,11 @@ describe('weeklyMeans', () => {
     ])
   })
 
-  it('stops at a week with fewer than 6 days of data', () => {
+  it('stops at a week missing a day', () => {
     const points = days('2026-10-01', Array(21).fill(2)).filter(
-      (p) => p.x !== '2026-10-03' && p.x !== '2026-10-05'
+      (p) => p.x !== '2026-10-03'
     )
-    // The oldest week (Oct 1-7) is missing 2 days, so only 2 weeks count.
+    // The oldest week (Oct 1-7) is missing a day, so only 2 weeks count.
     expect(weeklyMeans(points, '2026-10-21')).toHaveLength(2)
   })
 

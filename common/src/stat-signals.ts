@@ -7,8 +7,9 @@ import { addDays, toDayNumber } from './stats-window'
 export type DayPoint = { x: string; y: number }
 export type WeekMean = { start: string; end: string; mean: number }
 
-// A week needs this many of its 7 days to count, or its mean isn't comparable.
-const MIN_WEEK_DAYS = 6
+// A week needs all 7 days to count: a mean of six days against one of seven
+// is biased when the missing day is unknown.
+const MIN_WEEK_DAYS = 7
 // An extreme is flagged when it beats at least half a year of weeks before
 // it...
 export const MIN_EXTREME_WEEKS = 26

@@ -262,8 +262,10 @@ export const getMetricGlance = (metric: StatMetric, viewKey?: string) => {
       : undefined
     return {
       value: before?.value,
+      // Both weeks whole: a 6-day mean against a 7-day one is biased when
+      // the missing day is unknown.
       change:
-        current && before && hasComparableCoverage(current.days, before.days, 7)
+        current?.days === 7 && before?.days === 7
           ? describeChange(metric.pct, current.value, before.value)
           : undefined,
     }
@@ -304,16 +306,19 @@ export const describeSignal = (signal: StatSignal) => {
     case 'low': {
       const what = signal.kind === 'high' ? 'Highest' : 'Lowest'
       const since = formatSince(signal.since)
+      // Weeks here are 7-day blocks ending on the latest day's weekday, not
+      // every rolling 7 days, and the text says so.
+      const blocks = 'compared with 7-day blocks ending on the same weekday'
       return {
-        short: `${what} since ${since}`,
+        short: `${what} week since ${since}`,
         long:
           signal.basis === 'week'
-            ? `${what} 7-day average since the week to ${since}, ${
+            ? `${what} week since the week to ${since}, ${
                 signal.weeksBeaten + 1
-              } weeks earlier`
+              } weeks earlier (${blocks})`
             : signal.basis === 'start'
-            ? `${what} 7-day average since the data begins (${since})`
-            : `${what} 7-day average since ${since}, as far back as complete weeks go`,
+            ? `${what} week since the data begins, ${since} (${blocks})`
+            : `${what} week since ${since}, as far back as complete weeks go (${blocks})`,
       }
     }
     case 'jump':
