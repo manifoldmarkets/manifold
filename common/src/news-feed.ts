@@ -151,20 +151,13 @@ export const NEWS_SORTS = [
 
 export type NewsSort = (typeof NEWS_SORTS)[number]['key']
 
-/** The day's top story and why it was picked. */
+/** One of the day's top stories and why it was picked. */
 export type NewsSpotlight = {
   story: NewsStory
   /** Most liked today, or else the most traded on its markets today. */
   reason: 'likes' | 'volume'
   /** The like count, or the day's volume in mana. */
   value: number
-}
-
-/** A market on the rail under the top story, with the story it is in. */
-export type NewsFeaturedMarket = {
-  contractId: string
-  storyId: string
-  headline: string
 }
 
 export type NewsFeedResponse = {
@@ -179,13 +172,12 @@ export type NewsFeedResponse = {
   total: number
   /** Linked stories per category, for the rail. */
   counts: NewsFeedCounts
-  /** Every contract referenced by `stories`, `featured` or `spotlight`,
-   * with the heavy fields stripped. */
+  /** Every contract referenced by `stories` or `topStories`, with the
+   * heavy fields stripped. */
   contracts: Contract[]
-  /** After the top story's markets, the markets in the news with the most
-   * trading today, busiest first. */
-  featured: NewsFeaturedMarket[]
-  spotlight?: NewsSpotlight
+  /** The day's top stories, best first: the first leads the page, the rest
+   * are the mini-features under it. Empty while the feed builds. */
+  topStories: NewsSpotlight[]
   /** Likes per story, for the stories in this response. */
   likes: Record<string, number>
   /** Stories the signed-in caller has liked. */

@@ -1,9 +1,8 @@
-import { maxBy, sortBy, sumBy } from 'lodash'
+import { maxBy, sortBy, sumBy, uniqBy } from 'lodash'
 import { Contract } from 'common/contract'
 import {
   isNewsCategory,
   NEWS_FEW_TRADERS,
-  NewsFeaturedMarket,
   NewsFeedCounts,
   NewsFeedResponse,
   NewsSpotlight,
@@ -19,19 +18,23 @@ import {
   NewsAttachment,
   refreshNewsFeed,
 } from 'shared/news-feed/state'
+import { cosine } from 'shared/news-feed/markets'
 import { APIHandler } from './helpers/endpoint'
 
 const DEFAULT_LIMIT = 40
-/** Markets on the rail under the top story. */
-const FEATURED_LIMIT = 4
+/** The day's top stories: the first leads the page, the rest are the
+ * mini-features under it. */
+const TOP_STORIES_LIMIT = 5
+/** Two stories this close in embedding are one event told twice (the merge
+ * step joins them at 0.82; this is looser on purpose). */
+const SAME_EVENT_SIMILARITY = 0.75
 /** The featured market comes from a story's strongest few, by the
  * verifier's order. */
 const FEATURED_FROM_TOP = 3
 
 /**
  * The news feed page's data: stories newest first with their linked markets
- * and claims, the day's top story with the busiest markets after it, and
- * likes.
+ * and claims, the day's top stories, and likes.
  * Served from the in-process build that the refresher keeps current, with
  * what readers attached laid over it; the first request kicks off a build.
  */
@@ -53,7 +56,7 @@ export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
     total: 0,
     counts: {},
     contracts: [],
-    featured: [],
+    topStories: [],
     likes: {},
     likedStoryIds: [],
     storyCounts: {},
@@ -173,32 +176,55 @@ export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
       : sortBy(filtered, (s) => -s.updatedTime)
   const page = ordered.slice(offset, offset + limit).map(present)
 
-  // The day's top story: the most liked, or failing any likes the one whose
-  // markets traded the most today. Widen to two days on a quiet day.
+  // The day's top stories: the most liked first, then the ones whose
+  // markets traded the most today. Yesterday's fill in when today has few.
   const dayVolume = (s: NewsStory) =>
-    sumBy(s.contractIds, (id) => contractFor(id)?.volume24Hours ?? 0)
-  const pickSpotlight = (windowMs: number): NewsSpotlight | undefined => {
-    const recent = linked.filter((s) => now - s.updatedTime < windowMs)
-    if (recent.length === 0) return undefined
-    const mostLiked = maxBy(recent, (s) => likeCount(s.id))
-    if (mostLiked && likeCount(mostLiked.id) > 0)
-      return {
-        story: present(mostLiked),
-        reason: 'likes',
-        value: likeCount(mostLiked.id),
-      }
-    const mostTraded = maxBy(recent, dayVolume)
-    return mostTraded && dayVolume(mostTraded) > 0
-      ? {
-          story: present(mostTraded),
-          reason: 'volume',
-          value: dayVolume(mostTraded),
-        }
-      : undefined
+    sumBy(s.contractIds, (id) => {
+      const v = contractFor(id)?.volume24Hours ?? 0
+      return Number.isFinite(v) ? v : 0
+    })
+  const rankTop = (windowMs: number) =>
+    sortBy(
+      linked.filter(
+        (s) =>
+          now - s.updatedTime < windowMs &&
+          (likeCount(s.id) > 0 || dayVolume(s) > 0)
+      ),
+      (s) => -likeCount(s.id),
+      (s) => -dayVolume(s)
+    )
+  // One story per event: a story that reads like a higher pick (close
+  // embeddings, as the merge step judges) or whose markets are mostly already
+  // on one is the same news again under another headline.
+  const topPicks: NewsStory[] = []
+  const covered = new Set<string>()
+  const embeddingOf = (id: string) => build.memos[id]?.embedding
+  for (const s of uniqBy(
+    [...rankTop(DAY_MS), ...rankTop(2 * DAY_MS)],
+    (s) => s.id
+  )) {
+    if (topPicks.length >= TOP_STORIES_LIMIT) break
+    const mine = embeddingOf(s.id)
+    const sameEvent = topPicks.some((t) => {
+      const theirs = embeddingOf(t.id)
+      return !!mine && !!theirs && cosine(mine, theirs) >= SAME_EVENT_SIMILARITY
+    })
+    const shared = s.contractIds.filter((id) => covered.has(id)).length
+    if (
+      sameEvent ||
+      (s.contractIds.length > 0 && shared * 2 >= s.contractIds.length)
+    )
+      continue
+    topPicks.push(s)
+    for (const id of s.contractIds) covered.add(id)
   }
-  const spotlight = pickSpotlight(DAY_MS) ?? pickSpotlight(2 * DAY_MS)
+  const topStories: NewsSpotlight[] = topPicks.map((s) =>
+    likeCount(s.id) > 0
+      ? { story: present(s), reason: 'likes', value: likeCount(s.id) }
+      : { story: present(s), reason: 'volume', value: dayVolume(s) }
+  )
 
-  const storiesOut = spotlight ? [...page, spotlight.story] : page
+  const storiesOut = [...page, ...topStories.map((t) => t.story)]
   const marketIdsOf = (s: NewsStory) => [
     ...s.contractIds,
     ...(s.readerContractIds ?? []),
@@ -207,41 +233,7 @@ export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
       ...c.similarIds,
     ]),
   ]
-
-  // Under the top story: the markets in the news with the most trading
-  // today. Established and open, each once, and none already on the top
-  // story's card. Busiest first; on a quiet day, the most traded.
-  const heroIds = new Set(spotlight ? marketIdsOf(spotlight.story) : [])
-  const finite = (n: number | undefined) =>
-    n != null && Number.isFinite(n) ? n : 0
-  const candidates = linked.flatMap((s) =>
-    [
-      ...s.contractIds,
-      ...(s.claims ?? []).flatMap((c) => (c.matchId ? [c.matchId] : [])),
-    ].flatMap((id) => {
-      const c = contractFor(id)
-      return c ? [{ s, c }] : []
-    })
-  )
-  const featured: NewsFeaturedMarket[] = []
-  for (const { s, c } of sortBy(
-    candidates,
-    ({ c }) => -finite(c.volume24Hours),
-    ({ c }) => -finite(c.uniqueBettorCount),
-    ({ s }) => -s.updatedTime
-  )) {
-    if (featured.length >= FEATURED_LIMIT) break
-    if (heroIds.has(c.id) || featured.some((f) => f.contractId === c.id))
-      continue
-    if (finite(c.uniqueBettorCount) < NEWS_FEW_TRADERS) continue
-    if (c.isResolved || (c.closeTime != null && c.closeTime <= now)) continue
-    featured.push({ contractId: c.id, storyId: s.id, headline: s.headline })
-  }
-
-  const ids = new Set<string>([
-    ...storiesOut.flatMap(marketIdsOf),
-    ...featured.map((f) => f.contractId),
-  ])
+  const ids = new Set<string>(storiesOut.flatMap(marketIdsOf))
   const contracts = [...ids]
     .map((id) => contractFor(id))
     .filter((c): c is Contract => !!c)
@@ -272,8 +264,7 @@ export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
     total: filtered.length,
     counts,
     contracts,
-    featured,
-    spotlight,
+    topStories,
     likes: likesOut,
     likedStoryIds,
     storyCounts,

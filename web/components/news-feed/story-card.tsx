@@ -43,6 +43,9 @@ export function StoryCard(props: {
   storyCounts: Record<string, number>
   /** The top story: bigger headline and picture. */
   hero?: boolean
+  /** A mini-feature under the top story: smaller headline, no picture. */
+  mini?: boolean
+  className?: string
   /** Arrived while the reader was here. */
   isNew?: boolean
   likeCount?: number
@@ -63,6 +66,8 @@ export function StoryCard(props: {
     contractsById,
     storyCounts,
     hero,
+    mini,
+    className,
     isNew,
     likeCount = 0,
     liked = false,
@@ -106,10 +111,18 @@ export function StoryCard(props: {
       className={clsx(
         'bg-canvas-0 border-ink-200 rounded-lg border transition-shadow',
         isNew && 'ring-primary-300 ring-2',
-        hero && 'shadow-sm'
+        hero && 'shadow-sm',
+        mini && 'flex flex-col',
+        className
       )}
     >
-      <div className={clsx('px-4 pb-3 pt-3', hero && 'sm:px-5 sm:pt-4')}>
+      <div
+        className={clsx(
+          'px-4 pb-3 pt-3',
+          hero && 'sm:px-5 sm:pt-4',
+          mini && 'flex-1'
+        )}
+      >
         <Row className="text-ink-500 items-center gap-2 text-xs">
           <CategoryChip category={story.category} />
           {story.topic && (
@@ -141,8 +154,13 @@ export function StoryCard(props: {
               onClick={leave}
               className={clsx(
                 'text-ink-1000 hover:text-primary-700 group font-bold leading-snug',
-                hero ? 'text-xl sm:text-2xl' : 'text-base sm:text-lg'
+                hero
+                  ? 'text-xl sm:text-2xl'
+                  : mini
+                  ? 'line-clamp-3 text-sm sm:text-base'
+                  : 'text-base sm:text-lg'
               )}
+              title={mini ? lead.title : undefined}
             >
               {lead.title}
               <ExternalLinkIcon
@@ -152,7 +170,7 @@ export function StoryCard(props: {
             </a>
             <Outlets lead={lead} others={others} onLeave={leave} />
           </Col>
-          {story.image && (
+          {story.image && !mini && (
             <a
               href={lead.url}
               target="_blank"

@@ -17,6 +17,7 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { SEO } from 'web/components/SEO'
+import { Carousel } from 'web/components/widgets/carousel'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useUser } from 'web/hooks/use-user'
@@ -24,7 +25,6 @@ import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { CategoryRail } from './category-rail'
 import type { SimulatedMarket } from './create-from-claim'
-import { FeaturedMarkets } from './featured-markets'
 import {
   useScrollAnchor,
   useSessionState,
@@ -151,16 +151,20 @@ export function NewsFeedPage() {
     return Object.fromEntries(seenContracts.current) as Record<string, Contract>
   }, [data?.contracts])
   const storyCounts = data?.storyCounts ?? {}
-  // The top story holds still too: a new pick waits with the new stories.
-  const showSpotlight = categories.length === 0 && !includeUnlinked
-  const spotlightRef = useRef<NewsSpotlight>()
+  // The top stories hold still too: a new set waits with the new stories.
+  const showTop = categories.length === 0 && !includeUnlinked
+  const topRef = useRef<NewsSpotlight[]>()
+  const idsOf = (top: NewsSpotlight[]) => top.map((t) => t.story.id).join()
   if (
-    data?.spotlight &&
-    (!spotlightRef.current ||
-      spotlightRef.current.story.id === data.spotlight.story.id)
+    data?.topStories &&
+    (!topRef.current?.length ||
+      idsOf(topRef.current) === idsOf(data.topStories))
   )
-    spotlightRef.current = data.spotlight
-  const spotlight = showSpotlight ? spotlightRef.current : undefined
+    topRef.current = data.topStories
+  const top = showTop ? topRef.current ?? [] : []
+  const topKey = idsOf(top)
+  const hero = top[0]
+  const minis = top.slice(1)
 
   const viewKey = JSON.stringify([
     [...categories].sort(),
@@ -176,16 +180,15 @@ export function NewsFeedPage() {
     : undefined
   const loadingView = !!data && dataViewKey !== viewKey
 
-  // The top story leads the page; it is not repeated in the list below.
-  const listed = useMemo(
-    () =>
-      loadingView
-        ? undefined
-        : data?.stories.filter((s) => s.id !== spotlight?.story.id),
-    [data?.stories, spotlight?.story.id, loadingView]
-  )
+  // The top stories lead the page; they are not repeated in the list below.
+  const listed = useMemo(() => {
+    if (loadingView) return undefined
+    const topIds = new Set(topKey.split(',').filter(Boolean))
+    return data?.stories.filter((s) => !topIds.has(s.id))
+  }, [data?.stories, topKey, loadingView])
   const order = useStableOrder(listed, viewKey)
-  const stories = order.visible.filter((s) => s.id !== spotlight?.story.id)
+  const topIds = new Set(topKey.split(',').filter(Boolean))
+  const stories = order.visible.filter((s) => !topIds.has(s.id))
   const pending = order.pending
 
   const [fresh, setFresh] = useState<Set<string>>(() => new Set())
@@ -201,11 +204,13 @@ export function NewsFeedPage() {
   const showNewStories = () => {
     trackNews('news new stories show', { pendingCount })
     setFresh(new Set(pending.map((s) => s.id)))
-    // The new top story leads; take it out of the list order explicitly.
-    spotlightRef.current = data?.spotlight
-    const hero = showSpotlight ? data?.spotlight?.story.id : undefined
+    // The new top stories lead; take them out of the list order explicitly.
+    topRef.current = data?.topStories
+    const nextTop = new Set(
+      showTop ? (data?.topStories ?? []).map((t) => t.story.id) : []
+    )
     order.showPending(
-      (data?.stories ?? []).filter((s) => s.id !== hero).map((s) => s.id)
+      (data?.stories ?? []).filter((s) => !nextTop.has(s.id)).map((s) => s.id)
     )
     const box = document.querySelector<HTMLElement>('.page-scroll-container')
     ;(box ?? window).scrollTo({ top: 0, behavior: 'smooth' })
@@ -218,10 +223,6 @@ export function NewsFeedPage() {
   const linkedCount = data
     ? sum(Object.values(data.counts).map((n) => n ?? 0))
     : 0
-  const featured = (data?.featured ?? []).flatMap((f) => {
-    const contract = contractsById[f.contractId]
-    return contract ? [{ ...f, contract }] : []
-  })
 
   const [refreshBusy, setRefreshBusy] = useState(false)
   const manualRefresh = async () => {
@@ -366,23 +367,44 @@ export function NewsFeedPage() {
           <Notice tone="error">Last refresh failed: {data.lastError}</Notice>
         )}
 
-        {spotlight && (
+        {hero && (
           <Col className="gap-1.5">
-            <SpotlightLabel spotlight={spotlight} />
-            <StoryCard {...cardProps(spotlight.story, 0)} hero />
+            <TopStoriesLabel hero={hero} />
+            <StoryCard {...cardProps(hero.story, 0)} hero />
+            {minis.length > 0 && (
+              <Carousel
+                className="-mx-2 px-2 sm:-mx-4 sm:px-4"
+                labelsParentClassName="gap-2 py-1"
+                fadeEdges
+                showArrowsOnHover
+              >
+                {minis.map((t, i) => (
+                  <StoryCard
+                    key={t.story.id}
+                    {...cardProps(t.story, i + 1)}
+                    mini
+                    className="w-72 shrink-0 snap-start"
+                  />
+                ))}
+              </Carousel>
+            )}
           </Col>
-        )}
-        {categories.length === 0 && featured.length > 0 && (
-          <FeaturedMarkets markets={featured} />
         )}
 
         <Col className="gap-3">
-          <SortControl
-            sort={sort}
-            onChange={(s) =>
-              setView((v) => ({ ...v, sort: s, limit: PAGE_SIZE }))
-            }
-          />
+          <Row className="items-center justify-between gap-2 px-1">
+            <h2 className="text-ink-900 text-sm font-semibold">
+              {sort === 'newest'
+                ? 'Just in'
+                : NEWS_SORTS.find((o) => o.key === sort)?.label}
+            </h2>
+            <SortControl
+              sort={sort}
+              onChange={(s) =>
+                setView((v) => ({ ...v, sort: s, limit: PAGE_SIZE }))
+              }
+            />
+          </Row>
           {(building || loadingView) && stories.length === 0 ? (
             <>
               <Notice>
@@ -410,7 +432,7 @@ export function NewsFeedPage() {
             </Notice>
           ) : (
             stories.map((s, i) => (
-              <StoryCard key={s.id} {...cardProps(s, i + 1)} />
+              <StoryCard key={s.id} {...cardProps(s, i + top.length)} />
             ))
           )}
         </Col>
@@ -468,11 +490,7 @@ function SortControl(props: {
 }) {
   const { sort, onChange } = props
   return (
-    <Row
-      className="items-center gap-1 px-1 pt-1"
-      role="group"
-      aria-label="Sort"
-    >
+    <Row className="items-center gap-1" role="group" aria-label="Sort">
       {NEWS_SORTS.map((o) => (
         <button
           key={o.key}
@@ -496,13 +514,13 @@ function SortControl(props: {
   )
 }
 
-/** Why this story leads the page today. */
-function SpotlightLabel(props: { spotlight: NewsSpotlight }) {
-  const { reason, value } = props.spotlight
+/** The day's top stories, and why the first one leads. */
+function TopStoriesLabel(props: { hero: NewsSpotlight }) {
+  const { reason, value } = props.hero
   return (
     <Row className="items-baseline justify-between gap-2 px-1">
       <h2 className="text-primary-700 text-[11px] font-semibold uppercase tracking-wide">
-        Top story today
+        Top stories today
       </h2>
       <span className="text-ink-400 text-xs">
         {reason === 'likes'
