@@ -25,9 +25,9 @@ import { enabledSources } from 'shared/news-feed/sources'
 import { APIHandler } from './helpers/endpoint'
 
 const DEFAULT_LIMIT = 40
-/** The day's top stories: the first leads the page, the rest are the
- * mini-features under it. */
-const TOP_STORIES_LIMIT = 5
+/** The day's top stories: one in the hero slot, the rest as tiles under
+ * it that can take its place. */
+const TOP_STORIES_LIMIT = 4
 /** Two stories this close in embedding are one event told twice (the merge
  * step joins them at 0.82; this is looser on purpose). */
 const SAME_EVENT_SIMILARITY = 0.75

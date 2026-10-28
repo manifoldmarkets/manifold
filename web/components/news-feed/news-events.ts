@@ -34,6 +34,8 @@ export type NewsEvent =
   | 'news new stories show'
   | 'news claims more'
   | 'news outlook more'
+  /** A tile under the hero was picked into the hero slot. */
+  | 'news top story select'
 
 export const trackNews = (
   event: NewsEvent,

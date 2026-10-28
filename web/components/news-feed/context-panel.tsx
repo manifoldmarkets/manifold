@@ -40,6 +40,8 @@ export function ContextPanel(props: {
   published: SimulatedMarket[]
   onCreate: (claim: NewsClaim) => void
   createHref: string
+  /** False when the server reads no articles: there is no claims section. */
+  claimsEnabled?: boolean
 }) {
   const {
     id,
@@ -49,6 +51,7 @@ export function ContextPanel(props: {
     published,
     onCreate,
     createHref,
+    claimsEnabled = true,
   } = props
   const claims = story.claims ?? []
   const directIds = new Set(
@@ -92,13 +95,15 @@ export function ContextPanel(props: {
         )}
       </Section>
 
-      <Claims
-        story={story}
-        contractsById={contractsById}
-        storyCounts={storyCounts}
-        published={published}
-        onCreate={onCreate}
-      />
+      {claimsEnabled && (
+        <Claims
+          story={story}
+          contractsById={contractsById}
+          storyCounts={storyCounts}
+          published={published}
+          onCreate={onCreate}
+        />
+      )}
 
       <Row className="text-ink-500 flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs">
         <MatchReport

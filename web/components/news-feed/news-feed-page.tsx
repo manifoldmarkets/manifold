@@ -11,13 +11,11 @@ import {
   NewsSpotlight,
   NewsStory,
 } from 'common/news-feed'
-import { shortFormatNumber } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { SEO } from 'web/components/SEO'
-import { Carousel } from 'web/components/widgets/carousel'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useUser } from 'web/hooks/use-user'
@@ -32,6 +30,7 @@ import {
 } from './feed-view-state'
 import { trackNews } from './news-events'
 import { StoryCard, StoryCardSkeleton } from './story-card'
+import { TopStories } from './top-stories'
 
 const PAGE_SIZE = 40
 /** The schema's ceiling for one request. */
@@ -163,8 +162,6 @@ export function NewsFeedPage() {
     topRef.current = data.topStories
   const top = showTop ? topRef.current ?? [] : []
   const topKey = idsOf(top)
-  const hero = top[0]
-  const minis = top.slice(1)
 
   const viewKey = JSON.stringify([
     [...categories].sort(),
@@ -274,6 +271,7 @@ export function NewsFeedPage() {
     onPublished: (m: SimulatedMarket) => setPublished((p) => [...p, m]),
     onAttached: () => refresh(),
     onLeave: saveAnchor,
+    claimsEnabled: data?.config?.articles !== 'none',
   })
 
   return (
@@ -367,28 +365,13 @@ export function NewsFeedPage() {
           <Notice tone="error">Last refresh failed: {data.lastError}</Notice>
         )}
 
-        {hero && (
-          <Col className="gap-1.5">
-            <TopStoriesLabel hero={hero} />
-            <StoryCard {...cardProps(hero.story, 0)} hero />
-            {minis.length > 0 && (
-              <Carousel
-                className="-mx-2 px-2 sm:-mx-4 sm:px-4"
-                labelsParentClassName="gap-2 py-1"
-                fadeEdges
-                showArrowsOnHover
-              >
-                {minis.map((t, i) => (
-                  <StoryCard
-                    key={t.story.id}
-                    {...cardProps(t.story, i + 1)}
-                    mini
-                    className="w-72 shrink-0 snap-start"
-                  />
-                ))}
-              </Carousel>
-            )}
-          </Col>
+        {top.length > 0 && (
+          <TopStories
+            top={top}
+            cardProps={cardProps}
+            contractsById={contractsById}
+            onSelect={(s) => setExpanded((e) => ({ ...e, [s.id]: true }))}
+          />
         )}
 
         <Col className="gap-3">
@@ -513,23 +496,6 @@ function SortControl(props: {
           {o.label}
         </button>
       ))}
-    </Row>
-  )
-}
-
-/** The day's top stories, and why the first one leads. */
-function TopStoriesLabel(props: { hero: NewsSpotlight }) {
-  const { reason, value } = props.hero
-  return (
-    <Row className="items-baseline justify-between gap-2 px-1">
-      <h2 className="text-primary-700 text-[11px] font-semibold uppercase tracking-wide">
-        Top stories today
-      </h2>
-      <span className="text-ink-400 text-xs">
-        {reason === 'likes'
-          ? `${value} ${value === 1 ? 'like' : 'likes'}`
-          : `Ṁ${shortFormatNumber(value)} traded on its markets today`}
-      </span>
     </Row>
   )
 }
