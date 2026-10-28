@@ -111,16 +111,10 @@ export function MarketCard(props: { contract: Contract; section: string }) {
 
 // Dense row for the list view.
 //
-// Wide screens: question | chart | price | trade, every column after the
-// question a fixed width so values line up row to row. The topics menu (⋯)
-// sits at the end of the stats line under the question rather than in a
-// column of its own, which gives the question that width back; with a mouse
-// it appears on hover. Trade buttons are right-aligned so every row ends on
-// the same edge.
-//
-// Phones: two lines, like the classic list. The question gets the full width;
-// below it, stats and ⋯ on the left, price and trade buttons on the right.
-// Trading from the list stays one tap away on phones.
+// Desktop: question + stats | chart or leading answer | price | trade.
+// Multiple-choice answers use the chart column instead of adding a line.
+// Phones: question + price, then answer (or stats) + trade. Prioritize the
+// named answer over secondary stats, and keep long questions to two lines.
 export function MarketListRow(props: { contract: Contract; section: string }) {
   const contract = useLiveContract(props.contract)
   const { section } = props
@@ -132,43 +126,54 @@ export function MarketListRow(props: { contract: Contract; section: string }) {
     <Link
       href={contractPath(contract)}
       onClick={() => trackClick(contract, section)}
-      className="hover:bg-primary-50 focus-visible:bg-primary-50 group flex flex-col gap-1.5 px-3 py-2.5 outline-none transition-colors sm:flex-row sm:items-center sm:gap-4 sm:px-4 sm:py-3"
+      className="hover:bg-primary-50 focus-visible:bg-primary-50 group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-0.5 px-3 py-2 outline-none transition-colors sm:flex sm:gap-3 sm:px-4"
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="text-ink-1000 group-hover:text-primary-700 line-clamp-2 font-medium leading-snug">
+      <div className="contents sm:flex sm:min-w-0 sm:flex-1 sm:flex-col sm:gap-0.5">
+        <span
+          className="text-ink-1000 group-hover:text-primary-700 line-clamp-2 col-start-1 row-start-1 text-sm font-medium leading-5"
+          title={contract.question}
+        >
           {contract.question}
         </span>
-        {leader && (
-          <span className="text-ink-500 truncate text-xs">
-            {leaderLabel(contract as MultiContract, leader)}:{' '}
-            <span className="text-ink-800">{leader.text}</span>
-          </span>
-        )}
         <div className="hidden items-center gap-1 sm:flex">
           <MarketMeta contract={contract} />
           <TopicsMenu contract={contract} small />
         </div>
       </div>
-      {/* On phones this is the second line; from sm up its children join the
-          row as columns. */}
-      <div className="flex items-center gap-2 sm:contents">
-        <div className="mr-auto flex min-w-0 items-center gap-1 sm:hidden">
-          <MarketMeta contract={contract} compact />
+      <div className="contents">
+        <div className="col-start-1 row-start-2 flex min-w-0 items-center gap-1 sm:hidden">
+          {leader ? (
+            <>
+              {contract.boosted && <BoostedTag iconOnly />}
+              <LeadingAnswer
+                contract={contract as MultiContract}
+                answer={leader}
+              />
+            </>
+          ) : (
+            <MarketMeta contract={contract} compact />
+          )}
           <TopicsMenu contract={contract} small />
         </div>
-        <div className="hidden h-8 w-24 shrink-0 md:block">
-          {isBinary && !contract.resolution && (
+        <div className="hidden w-28 shrink-0 sm:block lg:w-36">
+          {leader ? (
+            <LeadingAnswer
+              contract={contract as MultiContract}
+              answer={leader}
+              label
+            />
+          ) : isBinary && !contract.resolution ? (
             <ProbSparkline
               contract={contract as BinaryContract}
-              className="!h-8"
+              className="!h-6"
             />
-          )}
+          ) : null}
         </div>
-        <div className="flex shrink-0 justify-end sm:w-16">
+        <div className="col-start-2 row-start-1 flex shrink-0 justify-end sm:w-14">
           {isBinary ? (
             <BinaryOdds contract={contract as BinaryContract} compact />
           ) : leader ? (
-            <span className="text-ink-1000 text-base font-semibold tabular-nums leading-none sm:text-lg">
+            <span className="text-ink-1000 text-base font-semibold tabular-nums leading-none">
               {formatPercentShort(answerProb(leader))}
             </span>
           ) : (
@@ -178,7 +183,7 @@ export function MarketListRow(props: { contract: Contract; section: string }) {
             />
           )}
         </div>
-        <div className="flex w-[5.75rem] shrink-0 justify-end">
+        <div className="col-start-2 row-start-2 flex shrink-0 justify-end sm:w-[5.5rem]">
           {isBinary ? (
             <YesNoButtons contract={contract as BinaryContract} compact />
           ) : (
@@ -187,6 +192,24 @@ export function MarketListRow(props: { contract: Contract; section: string }) {
         </div>
       </div>
     </Link>
+  )
+}
+
+function LeadingAnswer(props: {
+  contract: MultiContract
+  answer: Answer
+  label?: boolean
+}) {
+  const { contract, answer, label } = props
+  const description = leaderLabel(contract, answer)
+  return (
+    <span
+      className="flex min-w-0 flex-col text-xs leading-4"
+      title={`${description}: ${answer.text}`}
+    >
+      <span className={label ? 'text-ink-500' : 'sr-only'}>{description}:</span>
+      <span className="text-ink-800 truncate">{answer.text}</span>
+    </span>
   )
 }
 
@@ -210,17 +233,16 @@ function BinaryOdds(props: { contract: BinaryContract; compact?: boolean }) {
     <div
       className={clsx(
         'flex shrink-0',
-        // Compact (list rows): side by side on phones to keep rows short,
-        // stacked from sm up where rows have height to spare.
+        // Keep the compact price and daily change side by side on phones.
         compact
-          ? 'flex-row-reverse items-center gap-1.5 sm:flex-col sm:items-end sm:gap-1'
+          ? 'flex-row-reverse items-center gap-1.5 sm:flex-col sm:items-end sm:gap-0.5'
           : 'flex-col items-end gap-1'
       )}
     >
       <span
         className={clsx(
           'text-ink-1000 font-semibold tabular-nums leading-none',
-          compact ? 'text-base sm:text-lg' : 'text-2xl'
+          compact ? 'text-base' : 'text-2xl'
         )}
       >
         {formatPercentShort(prob)}
@@ -685,7 +707,7 @@ export function MarketCardSkeleton() {
 
 export function MarketRowSkeleton() {
   return (
-    <div className="flex animate-pulse items-center gap-3 px-3 py-3">
+    <div className="flex animate-pulse items-center gap-3 px-3 py-2 sm:px-4">
       <div className="flex flex-1 flex-col gap-2">
         <div className="bg-ink-200 h-4 w-3/4 rounded" />
         <div className="bg-ink-100 h-3 w-32 rounded" />
