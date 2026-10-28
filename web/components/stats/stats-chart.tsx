@@ -545,7 +545,7 @@ function ChartBody(props: {
                       )})`
                     : s.label}
                 </span>
-                <span className="text-ink-900 ml-auto pl-2 font-medium tabular-nums">
+                <span className="text-ink-900 ml-auto whitespace-nowrap pl-2 font-medium tabular-nums">
                   {y !== undefined
                     ? formatValue(y, s.pct ?? pct)
                     : band && hoverDate && s.bandDays?.has(hoverDate)

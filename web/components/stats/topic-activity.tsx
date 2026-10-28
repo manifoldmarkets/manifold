@@ -211,21 +211,30 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
   const listed = rows.filter(
     (r) => r.daysCounted > 0 || !!query || selectedIds.includes(r.id)
   )
+  // Sorting by change leaves out topics with no known change, except ones
+  // searched for or charted: they follow the ranked ones, so they can still
+  // be found and unchecked.
   const sorted =
     effectiveSort === 'active'
       ? orderBy(listed, (r) => r.avg, 'desc')
-      : orderBy(
-          listed.filter((r) => r.changeRatio !== undefined),
-          (r) => r.changeRatio,
-          effectiveSort === 'growing' ? 'desc' : 'asc'
-        )
+      : [
+          ...orderBy(
+            listed.filter((r) => r.changeRatio !== undefined),
+            (r) => r.changeRatio,
+            effectiveSort === 'growing' ? 'desc' : 'asc'
+          ),
+          ...orderBy(
+            listed.filter(
+              (r) =>
+                r.changeRatio === undefined &&
+                (!!query || selectedIds.includes(r.id))
+            ),
+            (r) => r.avg,
+            'desc'
+          ),
+        ]
   const filtered = query ? sorted.filter((r) => matches(r.id)) : sorted
   const visible = showAll || query ? filtered : filtered.slice(0, TABLE_ROWS)
-  // Sorting by change drops topics with no known change, which the floor
-  // causes; a search that finds nothing else says so.
-  const emptySearchText = rows.some((r) => matches(r.id))
-    ? `Matching topics had ${TOPIC_FLOOR} or fewer active traders on some days, so their change isn't known.`
-    : 'No topics match.'
   // A topic whose group no longer exists was deleted.
   const nameOf = (id: string) =>
     groups ? groups[id]?.name ?? 'Deleted topic' : 'Loading…'
@@ -245,6 +254,23 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
     const counted = new Set((topicSeries[id] ?? []).map((p) => p.x))
     return topicDays.map((d) => d.x).filter((x) => !counted.has(x))
   }
+  // The band shows where an unrecorded count sits: up to the floor, or in
+  // shares, up to the floor's share of that day's active traders. A day the
+  // comparison is drawn on takes the higher of its own and its source day's
+  // bound, so the band bounds both lines.
+  const bandBounds = new Map<string, number>()
+  const addBandBound = (x: string, day: Point) => {
+    const bound =
+      measure === 'users'
+        ? TOPIC_FLOOR
+        : day.y > 0
+        ? TOPIC_FLOOR / day.y
+        : undefined
+    if (bound !== undefined)
+      bandBounds.set(x, Math.max(bandBounds.get(x) ?? 0, bound))
+  }
+  if (window)
+    for (const d of sliceWindow(topicDays, window)) addBandBound(d.x, d)
   const chartSeries: StatsChartSeries[] = window
     ? selectedIds.map((id, i) => ({
         key: id,
@@ -275,23 +301,18 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
           .map((x) => addDays(x, offset))
       ),
     })
+    for (const d of sliceWindow(topicDays, before))
+      addBandBound(addDays(d.x, offset), d)
   }
-  // The band shows where an unrecorded count sits: up to the floor, or in
-  // shares, up to the floor's share of that day's active traders. Drawn only
-  // when a charted topic was under the floor in the range.
-  const band: StatsChartBand | undefined =
-    window && chartSeries.some((s) => (s.bandDays?.size ?? 0) > 0)
-      ? {
-          points: sliceWindow(topicDays, window).flatMap((d) =>
-            measure === 'users'
-              ? [{ x: d.x, y: TOPIC_FLOOR }]
-              : d.y > 0
-              ? [{ x: d.x, y: TOPIC_FLOOR / d.y }]
-              : []
-          ),
-          valueText: `≤ ${TOPIC_FLOOR} traders`,
-        }
-      : undefined
+  // Drawn only when a charted topic was under the floor in the range.
+  const band: StatsChartBand | undefined = chartSeries.some(
+    (s) => (s.bandDays?.size ?? 0) > 0
+  )
+    ? {
+        points: [...bandBounds].map(([x, y]) => ({ x, y })),
+        valueText: `≤ ${TOPIC_FLOOR} traders`,
+      }
+    : undefined
 
   return (
     <Col className="gap-4">
@@ -438,7 +459,9 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
                     >
                       {r.daysCounted === 0
                         ? `≤ ${TOPIC_FLOOR}`
-                        : `${r.exact ? '' : '≥ '}${formatCount(r.avg)}`}
+                        : r.exact
+                        ? formatCount(r.avg)
+                        : `≥ ${formatLowerCount(r.avg)}`}
                     </td>
                     <td
                       className={clsx(
@@ -459,7 +482,9 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
                     >
                       {r.share === undefined || r.daysCounted === 0
                         ? '—'
-                        : `${r.exact ? '' : '≥ '}${formatPercent(r.share)}`}
+                        : r.exact
+                        ? formatPercent(r.share)
+                        : `≥ ${formatLowerPercent(r.share)}`}
                     </td>
                     <td className="text-ink-500 hidden px-3 py-2 text-right text-xs sm:table-cell">
                       {r.daysCounted}/{r.daysCovered}
@@ -477,7 +502,9 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
               {visible.length === 0 && (
                 <tr>
                   <td colSpan={7} className="text-ink-500 py-4 text-center">
-                    {query ? emptySearchText : 'No topic data in this range.'}
+                    {query
+                      ? 'No topics match.'
+                      : 'No topic data in this range.'}
                   </td>
                 </tr>
               )}
@@ -590,6 +617,19 @@ const getTopicRows = (
     ]
   })
 }
+
+// A lower bound is floored at the precision it's shown with, so rounding
+// never claims more than is known (25.5 shows as "≥ 25", not "≥ 26"). The
+// epsilon keeps float noise (2.3 * 10 = 22.999…) from dropping a digit.
+const floorAt = (y: number, decimals: number) =>
+  Math.floor(y * 10 ** decimals + 1e-9) / 10 ** decimals
+// formatCount shows one decimal under 10.
+const formatLowerCount = (y: number) => formatCount(floorAt(y, y >= 10 ? 0 : 1))
+// formatPercent shows one decimal under 2% (and over 98%).
+const formatLowerPercent = (share: number) =>
+  formatPercent(
+    floorAt(share * 100, share < 0.02 || share > 0.98 ? 1 : 0) / 100
+  )
 
 const lowerBoundNote = (r: TopicRow) =>
   r.exact
