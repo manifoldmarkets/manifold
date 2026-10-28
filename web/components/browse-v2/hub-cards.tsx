@@ -5,15 +5,18 @@ import {
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { TbBallBasketball } from 'react-icons/tb'
 
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 
 type Hub = {
   key: 'election' | 'perps' | 'sports' | 'news'
   href: string
   title: string
-  shortTitle?: string
   subtitle: string
   beta?: boolean
   icon: React.ComponentType<{ className?: string }>
@@ -28,9 +31,8 @@ const HUBS: Hub[] = [
   {
     key: 'election',
     href: '/election',
-    title: '2026 Midterms',
-    shortTitle: 'Midterms',
-    subtitle: 'Live odds on every race',
+    title: 'Midterms',
+    subtitle: 'Election odds',
     icon: LibraryIcon,
     className:
       'from-blue-100 to-rose-100 dark:from-blue-900/50 dark:to-rose-900/50',
@@ -40,7 +42,7 @@ const HUBS: Hub[] = [
     key: 'perps',
     href: '/perps',
     title: 'Perps',
-    subtitle: 'Trade live prices with leverage',
+    subtitle: 'Long stocks & crypto',
     icon: TrendingUpIcon,
     className:
       'from-teal-100 to-indigo-100 dark:from-teal-900/50 dark:to-indigo-900/50',
@@ -50,7 +52,7 @@ const HUBS: Hub[] = [
     key: 'sports',
     href: '/sports',
     title: 'Sports',
-    subtitle: 'Live games, props and odds',
+    subtitle: 'Upcoming',
     beta: true,
     icon: TbBallBasketball,
     className:
@@ -61,7 +63,7 @@ const HUBS: Hub[] = [
     key: 'news',
     href: '/news',
     title: 'News',
-    subtitle: 'Stories with live markets',
+    subtitle: 'Just in',
     beta: true,
     icon: NewspaperIcon,
     className:
@@ -87,36 +89,27 @@ export function HubCards(props: { className?: string }) {
               track('click browse hub card', { destination: hub.key })
             }
             className={clsx(
-              'ring-ink-200 relative flex min-w-0 flex-col items-center gap-0.5 rounded-xl bg-gradient-to-br px-1.5 py-1.5 text-center ring-1 transition-all hover:brightness-105',
+              'ring-ink-200 relative flex min-w-0 flex-col items-center gap-1 rounded-xl bg-gradient-to-br px-1.5 py-2 text-center ring-1 transition-all hover:brightness-105 sm:px-2',
               'focus-visible:ring-primary-500 outline-none focus-visible:ring-2',
-              'md:flex-row md:gap-3 md:px-3 md:py-2.5 md:text-left',
               hub.className
             )}
           >
             {hub.beta && (
-              <span className="absolute right-1.5 top-1.5 rounded bg-violet-600 px-1 py-px text-[9px] font-bold uppercase leading-tight tracking-wide text-white md:static md:order-last md:ml-auto md:self-start">
+              <span className="absolute -top-1.5 right-1.5 rounded bg-violet-600 px-1 py-px text-[9px] font-bold uppercase leading-tight tracking-wide text-white">
                 Beta
               </span>
             )}
-            <span className="bg-canvas-0/70 flex h-6 w-6 shrink-0 items-center justify-center rounded-full md:h-9 md:w-9">
-              <Icon
-                className={clsx('h-4 w-4 md:h-5 md:w-5', hub.iconClassName)}
-              />
+            <span className="flex min-w-0 flex-col items-center gap-1 sm:flex-row sm:gap-1.5">
+              <span className="bg-canvas-0/70 flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
+                <Icon className={clsx('h-4 w-4', hub.iconClassName)} />
+              </span>
+              <span className="text-ink-900 text-[13px] font-semibold leading-tight sm:text-sm">
+                {hub.title}
+              </span>
             </span>
-            <span className="flex min-w-0 flex-col">
-              <span className="text-ink-900 text-[13px] font-semibold leading-tight md:truncate md:text-sm">
-                {hub.shortTitle ? (
-                  <>
-                    <span className="lg:hidden">{hub.shortTitle}</span>
-                    <span className="hidden lg:inline">{hub.title}</span>
-                  </>
-                ) : (
-                  hub.title
-                )}
-              </span>
-              <span className="text-ink-600 hidden truncate text-xs md:block">
-                {hub.subtitle}
-              </span>
+            {/* Use the full card width; omit subtitles on narrow phones. */}
+            <span className="text-ink-600 hidden w-full text-xs leading-4 sm:block">
+              {hub.key === 'sports' ? <SportsStatus /> : hub.subtitle}
             </span>
           </Link>
         )
@@ -124,3 +117,47 @@ export function HubCards(props: { className?: string }) {
     </nav>
   )
 }
+
+function SportsStatus() {
+  const [hasLiveGames, setHasLiveGames] = useState<boolean>()
+  const isMobile = useIsMobile()
+  const isPageVisible = useIsPageVisible()
+
+  useEffect(() => {
+    if (!isPageVisible || isMobile) return
+    let active = true
+    const refresh = async () => {
+      try {
+        // The live count covers all sports regardless of the page size.
+        const schedule = await api('sports-schedule', {
+          sport: 'all',
+          limit: 1,
+        })
+        if (active) setHasLiveGames(schedule.liveCount > 0)
+      } catch {
+        // Don't leave a stale "Live" claim up if the status can't refresh.
+        if (active) setHasLiveGames(undefined)
+      }
+    }
+    refresh()
+    const interval = setInterval(refresh, 60_000)
+    return () => {
+      active = false
+      clearInterval(interval)
+    }
+  }, [isPageVisible, isMobile])
+
+  return (
+    <span className="flex min-h-[1rem] items-center justify-center gap-1">
+      {hasLiveGames === undefined ? null : hasLiveGames ? (
+        <>
+          <span className="h-1.5 w-1.5 rounded-full bg-red-500" aria-hidden />
+          Live
+        </>
+      ) : (
+        'Upcoming'
+      )}
+    </span>
+  )
+}
+
