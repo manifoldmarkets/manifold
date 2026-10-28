@@ -2,8 +2,8 @@ import { maxBy, sortBy, sumBy } from 'lodash'
 import { Contract } from 'common/contract'
 import {
   isNewsCategory,
-  NEWS_FEED_RESOLVING_SOON_MS,
   NEWS_FEW_TRADERS,
+  NewsFeaturedMarket,
   NewsFeedCounts,
   NewsFeedResponse,
   NewsSpotlight,
@@ -22,14 +22,16 @@ import {
 import { APIHandler } from './helpers/endpoint'
 
 const DEFAULT_LIMIT = 40
-const RESOLVING_SOON_LIMIT = 12
+/** Markets on the rail under the top story. */
+const FEATURED_LIMIT = 4
 /** The featured market comes from a story's strongest few, by the
  * verifier's order. */
 const FEATURED_FROM_TOP = 3
 
 /**
  * The news feed page's data: stories newest first with their linked markets
- * and claims, the markets closing soon, the day's top story, and likes.
+ * and claims, the day's top story with the busiest markets after it, and
+ * likes.
  * Served from the in-process build that the refresher keeps current, with
  * what readers attached laid over it; the first request kicks off a build.
  */
@@ -51,7 +53,7 @@ export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
     total: 0,
     counts: {},
     contracts: [],
-    resolvingSoon: [],
+    featured: [],
     likes: {},
     likedStoryIds: [],
     storyCounts: {},
@@ -171,22 +173,6 @@ export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
       : sortBy(filtered, (s) => -s.updatedTime)
   const page = ordered.slice(offset, offset + limit).map(present)
 
-  // The build also holds markets only offered for reuse while drafting;
-  // the rail is for markets a story links.
-  const linkedContractIds = new Set(linked.flatMap((s) => s.contractIds))
-  const resolvingSoon = sortBy(
-    Object.values(build.contractsById).filter(
-      (c) =>
-        c.closeTime != null &&
-        c.closeTime > now &&
-        c.closeTime - now < NEWS_FEED_RESOLVING_SOON_MS &&
-        linkedContractIds.has(c.id)
-    ),
-    (c) => c.closeTime
-  )
-    .slice(0, RESOLVING_SOON_LIMIT)
-    .map((c) => c.id)
-
   // The day's top story: the most liked, or failing any likes the one whose
   // markets traded the most today. Widen to two days on a quiet day.
   const dayVolume = (s: NewsStory) =>
@@ -221,9 +207,40 @@ export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
       ...c.similarIds,
     ]),
   ]
+
+  // Under the top story: the markets in the news with the most trading
+  // today. Established and open, each once, and none already on the top
+  // story's card. Busiest first; on a quiet day, the most traded.
+  const heroIds = new Set(spotlight ? marketIdsOf(spotlight.story) : [])
+  const finite = (n: number | undefined) =>
+    n != null && Number.isFinite(n) ? n : 0
+  const candidates = linked.flatMap((s) =>
+    [
+      ...s.contractIds,
+      ...(s.claims ?? []).flatMap((c) => (c.matchId ? [c.matchId] : [])),
+    ].flatMap((id) => {
+      const c = contractFor(id)
+      return c ? [{ s, c }] : []
+    })
+  )
+  const featured: NewsFeaturedMarket[] = []
+  for (const { s, c } of sortBy(
+    candidates,
+    ({ c }) => -finite(c.volume24Hours),
+    ({ c }) => -finite(c.uniqueBettorCount),
+    ({ s }) => -s.updatedTime
+  )) {
+    if (featured.length >= FEATURED_LIMIT) break
+    if (heroIds.has(c.id) || featured.some((f) => f.contractId === c.id))
+      continue
+    if (finite(c.uniqueBettorCount) < NEWS_FEW_TRADERS) continue
+    if (c.isResolved || (c.closeTime != null && c.closeTime <= now)) continue
+    featured.push({ contractId: c.id, storyId: s.id, headline: s.headline })
+  }
+
   const ids = new Set<string>([
     ...storiesOut.flatMap(marketIdsOf),
-    ...resolvingSoon,
+    ...featured.map((f) => f.contractId),
   ])
   const contracts = [...ids]
     .map((id) => contractFor(id))
@@ -255,7 +272,7 @@ export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
     total: filtered.length,
     counts,
     contracts,
-    resolvingSoon,
+    featured,
     spotlight,
     likes: likesOut,
     likedStoryIds,

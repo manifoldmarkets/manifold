@@ -160,6 +160,13 @@ export type NewsSpotlight = {
   value: number
 }
 
+/** A market on the rail under the top story, with the story it is in. */
+export type NewsFeaturedMarket = {
+  contractId: string
+  storyId: string
+  headline: string
+}
+
 export type NewsFeedResponse = {
   /** False when the server is not running the feed (NEWS_FEED_ENABLED). */
   enabled: boolean
@@ -172,11 +179,12 @@ export type NewsFeedResponse = {
   total: number
   /** Linked stories per category, for the rail. */
   counts: NewsFeedCounts
-  /** Every contract referenced by `stories`, `resolvingSoon` or `spotlight`,
+  /** Every contract referenced by `stories`, `featured` or `spotlight`,
    * with the heavy fields stripped. */
   contracts: Contract[]
-  /** Linked markets closing within a week, soonest first. */
-  resolvingSoon: string[]
+  /** After the top story's markets, the markets in the news with the most
+   * trading today, busiest first. */
+  featured: NewsFeaturedMarket[]
   spotlight?: NewsSpotlight
   /** Likes per story, for the stories in this response. */
   likes: Record<string, number>
@@ -193,8 +201,6 @@ export type NewsFeedResponse = {
     includeUnlinked: boolean
   }
 }
-
-export const NEWS_FEED_RESOLVING_SOON_MS = 7 * 24 * 60 * 60 * 1000
 
 /** Below this many traders a price is an early guess, not a crowd forecast,
  * and the feed says so. */

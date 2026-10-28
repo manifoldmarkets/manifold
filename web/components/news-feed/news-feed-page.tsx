@@ -24,13 +24,13 @@ import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { CategoryRail } from './category-rail'
 import type { SimulatedMarket } from './create-from-claim'
+import { FeaturedMarkets } from './featured-markets'
 import {
   useScrollAnchor,
   useSessionState,
   useStableOrder,
 } from './feed-view-state'
 import { trackNews } from './news-events'
-import { ResolvingSoon } from './resolving-soon'
 import { StoryCard, StoryCardSkeleton } from './story-card'
 
 const PAGE_SIZE = 40
@@ -151,13 +151,6 @@ export function NewsFeedPage() {
     return Object.fromEntries(seenContracts.current) as Record<string, Contract>
   }, [data?.contracts])
   const storyCounts = data?.storyCounts ?? {}
-  const storiesByContractId = useMemo(() => {
-    const byId: Record<string, NewsStory> = {}
-    for (const s of data?.stories ?? [])
-      for (const id of s.contractIds) if (!byId[id]) byId[id] = s
-    return byId
-  }, [data?.stories])
-
   // The top story holds still too: a new pick waits with the new stories.
   const showSpotlight = categories.length === 0 && !includeUnlinked
   const spotlightRef = useRef<NewsSpotlight>()
@@ -225,9 +218,10 @@ export function NewsFeedPage() {
   const linkedCount = data
     ? sum(Object.values(data.counts).map((n) => n ?? 0))
     : 0
-  const resolvingSoon = (data?.resolvingSoon ?? [])
-    .map((id) => contractsById[id])
-    .filter((c): c is Contract => !!c)
+  const featured = (data?.featured ?? []).flatMap((f) => {
+    const contract = contractsById[f.contractId]
+    return contract ? [{ ...f, contract }] : []
+  })
 
   const [refreshBusy, setRefreshBusy] = useState(false)
   const manualRefresh = async () => {
@@ -378,11 +372,8 @@ export function NewsFeedPage() {
             <StoryCard {...cardProps(spotlight.story, 0)} hero />
           </Col>
         )}
-        {categories.length === 0 && resolvingSoon.length > 0 && (
-          <ResolvingSoon
-            contracts={resolvingSoon}
-            storiesByContractId={storiesByContractId}
-          />
+        {categories.length === 0 && featured.length > 0 && (
+          <FeaturedMarkets markets={featured} />
         )}
 
         <Col className="gap-3">
