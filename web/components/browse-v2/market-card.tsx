@@ -144,23 +144,27 @@ export function MarketListRow(props: { contract: Contract; section: string }) {
             : 'w-14 shrink-0 sm:w-[70px]',
         },
         {
+          ...liquidityColumn,
+          width: hasMobileAnswer
+            ? 'hidden sm:flex sm:w-[40px]'
+            : 'w-14 shrink-0 sm:w-[40px]',
+        },
+        {
           ...probColumn,
           width: hasMobileAnswer
             ? 'min-w-0 flex-1 pr-2 sm:flex-none sm:w-[80px] sm:pr-0'
             : 'w-[60px] shrink-0 sm:w-[80px]',
           content: ({ contract }) => <ListProbability contract={contract} />,
         },
-        {
-          ...liquidityColumn,
-          width: hasMobileAnswer
-            ? 'hidden sm:flex sm:w-[40px]'
-            : 'w-14 shrink-0 sm:w-[40px]',
-        },
         actionColumn,
         {
           header: 'Topics',
-          width: 'group w-6 shrink-0',
-          content: ({ contract }) => <TopicsMenu contract={contract} small />,
+          width: 'group w-6 shrink-0 sm:relative sm:w-0',
+          content: ({ contract }) => (
+            <span className="sm:absolute sm:left-0 sm:top-0">
+              <TopicsMenu contract={contract} small />
+            </span>
+          ),
         },
       ]}
     />
@@ -703,3 +707,4 @@ export function MarketRowSkeleton() {
     </div>
   )
 }
+
