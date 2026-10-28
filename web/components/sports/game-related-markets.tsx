@@ -43,6 +43,19 @@ const HERO_PREVIEW_ROWS = 2
 const GROUP_ORDER: RelatedGroup[] = ['game-lines', 'props', 'community']
 
 /**
+ * What related markets hang under: a game, or an F1 session through its winner
+ * market (the id new markets link to).
+ */
+export type RelatedHost = Pick<
+  ScheduleGame,
+  'id' | 'sport' | 'question' | 'closeTime' | 'related'
+> & {
+  /** A game's teams, which name it for screen readers without a `label`. */
+  home?: { name: string }
+  away?: { name: string }
+}
+
+/**
  * The markets on a game, under its card on the sport page. Today the list is
  * the schedule's matching: official lines and props by event id, and
  * community markets that name both teams near kickoff. Markets linked to a
@@ -51,11 +64,18 @@ const GROUP_ORDER: RelatedGroup[] = ['game-lines', 'props', 'community']
  * hero preview or an open section.
  */
 export function GameLinkedMarkets(props: {
-  game: ScheduleGame
+  game: RelatedHost
+  /** What the markets are about, for screen readers; a game's teams by default. */
+  label?: string
   /** The hero's scoreboard, beside a small always-visible market preview. */
   matchup?: ReactNode
 }) {
   const { game, matchup } = props
+  const label =
+    props.label ??
+    (game.home && game.away
+      ? `${game.home.name} vs ${game.away.name}`
+      : game.question)
   const [expanded, setExpanded] = useState(false)
   const panelId = useId()
   // The hero's props, folded under the scoreboard on narrow screens.
@@ -214,7 +234,7 @@ export function GameLinkedMarkets(props: {
                   type="button"
                   aria-expanded={expanded}
                   aria-controls={panelId}
-                  aria-label={`More props & markets for ${game.home.name} vs ${game.away.name}`}
+                  aria-label={`More props & markets for ${label}`}
                   onClick={() => setExpanded((value) => !value)}
                   className="text-primary-700 hover:bg-primary-100 focus-visible:ring-primary-500 mt-auto flex min-h-[32px] items-center gap-1.5 self-end rounded-lg px-2 text-xs font-semibold focus-visible:ring-2"
                 >
@@ -303,7 +323,7 @@ export function GameLinkedMarkets(props: {
           type="button"
           aria-expanded={expanded}
           aria-controls={panelId}
-          aria-label={`Props & more for ${game.home.name} vs ${game.away.name}`}
+          aria-label={`Props & more for ${label}`}
           onClick={() => setExpanded((value) => !value)}
           className="text-ink-600 hover:bg-canvas-50 focus-visible:ring-primary-500 flex min-h-[44px] min-w-0 flex-1 items-center gap-2 rounded-b-xl px-4 text-left text-xs font-semibold focus-visible:ring-2"
         >
@@ -414,7 +434,7 @@ function PropsSkeleton({ count }: { count: number }) {
 // slugs (the same as duplicating a market). The new market is linked to the
 // game, so it lists here. Its deadline defaults to the game's current deadline;
 // the creator can override it, and later game updates do not change it.
-function createMarketHref(game: ScheduleGame) {
+function createMarketHref(game: RelatedHost) {
   const slug = SPORT_BY_KEY[game.sport]?.slug
   const params = {
     q: `${game.question.replace(/\s*\[official\]\s*$/i, '')}: `,

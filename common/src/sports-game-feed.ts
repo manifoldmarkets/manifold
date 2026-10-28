@@ -34,10 +34,15 @@ const safeVolume = (game: GameOrder) =>
 export const compareGameVolume = (a: GameOrder, b: GameOrder) =>
   safeVolume(b) - safeVolume(a) || compareGameStartTime(a, b)
 
-/** Retain the current game while browsing; promote a live game when one starts. */
+/**
+ * Retain the current game while browsing; promote a live game when one starts.
+ * Otherwise the most traded, or with `by: 'start'` the soonest: what's on next
+ * (F1, whose sessions never overlap).
+ */
 export function selectFeaturedGame<T extends GameOrder>(
   games: readonly T[],
-  currentId?: string
+  currentId?: string,
+  by: 'volume' | 'start' = 'volume'
 ) {
   const current = games.find((game) => game.id === currentId)
   if (
@@ -51,6 +56,6 @@ export function selectFeaturedGame<T extends GameOrder>(
     .sort(
       (a, b) =>
         Number(b.status === 'live') - Number(a.status === 'live') ||
-        compareGameVolume(a, b)
+        (by === 'start' ? compareGameStartTime(a, b) : compareGameVolume(a, b))
     )[0]
 }

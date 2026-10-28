@@ -1,7 +1,7 @@
 import { uniq } from 'lodash'
 import { ENV } from 'common/envs/constants'
 import { MarketLinkRelation } from 'common/market-links'
-import type { RaceWeekend } from 'common/race-weekends'
+import type { RaceChampionship, RaceWeekend } from 'common/race-weekends'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
 
 // ─── Sport categories ─────────────────────────────────────────────────────────
@@ -930,7 +930,13 @@ export interface RelatedCandidate {
 }
 
 // 'linked': the market's creator linked it to the game (common/market-links).
-export type RelatedMatchKind = 'linked' | 'official' | 'both-teams' | 'one-team'
+// 'event': it names an F1 session's Grand Prix (common/race-weekends).
+export type RelatedMatchKind =
+  | 'linked'
+  | 'official'
+  | 'both-teams'
+  | 'one-team'
+  | 'event'
 
 /**
  * How a related market is shown under its game:
@@ -1174,9 +1180,15 @@ export interface SportsScheduleResponse {
   upcoming: UpcomingMarketRef[]
   /**
    * F1 race weekends with a session live or coming up, for 'all' and 'f1'.
-   * First page only. Absent from an API that predates them.
+   * The page lists each session like a game. First page only. Absent from an
+   * API that predates them.
    */
   raceWeekends?: RaceWeekend[]
+  /**
+   * The season's drivers' and constructors' title markets, for 'f1'. First
+   * page only. The page loads the contracts by id.
+   */
+  raceChampionships?: RaceChampionship[]
   /** Live and upcoming games per sport, for the rail badges. */
   counts: Partial<Record<AnySportKey, number>>
   liveCount: number

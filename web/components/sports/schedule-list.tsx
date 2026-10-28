@@ -8,19 +8,22 @@ import {
   XIcon,
 } from '@heroicons/react/solid'
 import dayjs from 'dayjs'
-import { uniq, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useState } from 'react'
 import {
+  RaceSessionEvent,
+  raceSessionEvents,
+  raceSessionSearchText,
   RaceWeekend,
-  raceWeekendSearchText,
-  raceWeekendTime,
 } from 'common/race-weekends'
 import { ScheduleGame } from 'common/sports-schedule'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { GameRow, GameRowSkeleton } from 'web/components/sports/game-row'
-import { RaceWeekendCard } from 'web/components/sports/race-weekend-card'
+import {
+  RaceSessionCard,
+  RaceSessionHero,
+} from 'web/components/sports/race-session-card'
 import { Carousel } from 'web/components/widgets/carousel'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -40,6 +43,11 @@ import {
 } from './game-feed-utils'
 
 type DaySection<T> = { key: string; label: string; items: T[] }
+
+/** A row of the feed: a game, or an F1 session listed like one. */
+type FeedItem = ScheduleGame | RaceSessionEvent
+const isSession = (item: FeedItem): item is RaceSessionEvent =>
+  'session' in item
 
 function dayLabel(ms: number, now = Date.now()): string {
   const d = dayjs(ms)
@@ -78,14 +86,31 @@ export function GameFeed(props: {
   loadMore: () => Promise<boolean>
   showLeague: boolean
   /**
-   * F1 weekends, among the games: a live one under "Live now", the rest under
-   * the day of their next session.
+   * F1 weekends: each live or upcoming session goes among the games like one
+   * (a live one under "Live now", the rest under their day), and can be the
+   * featured card.
    */
   raceWeekends?: RaceWeekend[]
+  /**
+   * Feature what's on next rather than the most traded: F1's sessions never
+   * overlap, so its page leads with the next one.
+   */
+  featureNext?: boolean
+  /** Under the featured card while no filter is on: F1's title fight. */
+  belowFeatured?: ReactNode
   /** Shown when there is nothing live or upcoming. */
   empty: ReactNode
 }) {
-  const { games, loading, hasMore, loadMore, showLeague, empty } = props
+  const {
+    games,
+    loading,
+    hasMore,
+    loadMore,
+    showLeague,
+    featureNext,
+    belowFeatured,
+    empty,
+  } = props
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'all' | 'live' | 'liked' | 'mine'>('all')
   const [date, setDate] = useState('all')
@@ -98,9 +123,7 @@ export function GameFeed(props: {
   const active = games.filter(
     (game) => game.status === 'upcoming' || game.status === 'live'
   )
-  const weekends = (props.raceWeekends ?? []).filter(
-    (w) => w.status !== 'finished'
-  )
+  const sessions = raceSessionEvents(props.raceWeekends ?? [])
   const likes = useGameLikes(active.map((game) => game.id))
   const positions = useGamePositions(active.map((game) => game.id))
   // One stake per game, marked to the live prices, shared by the cards, the
@@ -113,26 +136,43 @@ export function GameFeed(props: {
   const stakedCount = Object.keys(stakes).length
   const normalized = query.trim().toLowerCase()
   const hasFilters = filter !== 'all' || date !== 'all' || !!normalized
-  const selectedFeatured = selectFeaturedGame(active, featuredId)
+  const everything: FeedItem[] = [...active, ...sessions]
+  const selectedFeatured = selectFeaturedGame(
+    everything,
+    featuredId,
+    featureNext ? 'start' : 'volume'
+  )
   useEffect(() => {
     if (selectedFeatured) setFeaturedId(selectedFeatured.id)
   }, [selectedFeatured?.id])
   const featured =
     view === 'cards' && !hasFilters ? selectedFeatured : undefined
-  const filtered = active
-    .filter(
-      (game) =>
-        (filter !== 'live' || game.status === 'live') &&
-        (filter !== 'liked' || likes.liked.has(game.id)) &&
-        (filter !== 'mine' || !!stakes[game.id]) &&
-        (date === 'all' ||
-          dayjs(game.startTime).format('YYYY-MM-DD') === date) &&
-        (!normalized ||
-          `${game.home.name} ${game.home.shortName} ${game.away.name} ${game.away.shortName} ${game.league}`
-            .toLowerCase()
-            .includes(normalized))
-    )
-    .sort(sort === 'volume' ? compareGameVolume : compareGameStartTime)
+  const filteredGames = active.filter(
+    (game) =>
+      (filter !== 'live' || game.status === 'live') &&
+      (filter !== 'liked' || likes.liked.has(game.id)) &&
+      (filter !== 'mine' || !!stakes[game.id]) &&
+      (date === 'all' || dayjs(game.startTime).format('YYYY-MM-DD') === date) &&
+      (!normalized ||
+        `${game.home.name} ${game.home.shortName} ${game.away.name} ${game.away.shortName} ${game.league}`
+          .toLowerCase()
+          .includes(normalized))
+  )
+  // Sessions take the same filters as games, except Liked and My bets: likes
+  // and positions don't cover them yet.
+  const filteredSessions =
+    filter === 'liked' || filter === 'mine'
+      ? []
+      : sessions.filter(
+          (s) =>
+            (filter !== 'live' || s.status === 'live') &&
+            (date === 'all' ||
+              dayjs(s.startTime).format('YYYY-MM-DD') === date) &&
+            (!normalized || raceSessionSearchText(s).includes(normalized))
+        )
+  const filtered: FeedItem[] = [...filteredGames, ...filteredSessions].sort(
+    sort === 'volume' ? compareGameVolume : compareGameStartTime
+  )
   // Live games always run in kickoff order, including in the Live filter.
   const live = filtered
     .filter((g) => g.status === 'live' && g.id !== featured?.id)
@@ -140,47 +180,19 @@ export function GameFeed(props: {
   const upcoming = filtered.filter(
     (g) => g.status === 'upcoming' && g.id !== featured?.id
   )
-  // Weekends take the same filters as games, except Liked and My bets: likes
-  // and positions don't cover them yet.
-  const shownWeekends =
-    filter === 'liked' || filter === 'mine'
-      ? []
-      : weekends.filter(
-          (w) =>
-            (filter !== 'live' || w.status === 'live') &&
-            (date === 'all' ||
-              dayjs(raceWeekendTime(w)).format('YYYY-MM-DD') === date) &&
-            (!normalized || raceWeekendSearchText(w).includes(normalized))
-        )
-  const liveWeekends = shownWeekends.filter((w) => w.status === 'live')
-  const gameDays = groupByDay(upcoming, (g) => g.startTime)
-  const weekendDays = groupByDay(
-    shownWeekends.filter((w) => w.status === 'upcoming'),
-    raceWeekendTime
+  const days = groupByDay(upcoming, (g) => g.startTime).sort((a, b) =>
+    a.key.localeCompare(b.key)
   )
-  const days = uniq([...gameDays, ...weekendDays].map((d) => d.key))
-    .sort()
-    .map((key) => {
-      const gameDay = gameDays.find((d) => d.key === key)
-      const weekendDay = weekendDays.find((d) => d.key === key)
-      return {
-        key,
-        label: gameDay?.label ?? weekendDay?.label ?? key,
-        items: gameDay?.items ?? [],
-        weekends: weekendDay?.items ?? [],
-      }
-    })
-  const allDays = uniqBy(
-    [
-      ...groupByDay(active, (game) => game.startTime),
-      ...groupByDay(weekends, raceWeekendTime),
-    ],
-    (d) => d.key
-  ).sort((a, b) => a.key.localeCompare(b.key))
+  const allDays = groupByDay(everything, (item) => item.startTime).sort(
+    (a, b) => a.key.localeCompare(b.key)
+  )
+  // A section with a session in it counts events, not games.
+  const unitFor = (items: FeedItem[]) =>
+    items.some(isSession) ? 'event' : 'game'
   // What the My bets filter adds up: the stake on each game it shows.
   const myStakes: GameStake[] =
     filter === 'mine'
-      ? filtered.flatMap((game) => {
+      ? filteredGames.flatMap((game) => {
           const stake = stakes[game.id]
           return stake ? [stake] : []
         })
@@ -192,30 +204,38 @@ export function GameFeed(props: {
     setDate('all')
     setFilter('all')
   }
-  const renderGames = (items: ScheduleGame[]) => (
+  const renderItems = (items: FeedItem[]) => (
     <div
       className={clsx(
         'grid items-start gap-3',
         view === 'cards' && items.length > 1 && 'sm:grid-cols-2'
       )}
     >
-      {items.map((game) => (
-        <GameRow
-          key={game.id}
-          game={game}
-          variant={view === 'compact' ? 'compact' : 'card'}
-          showLeague={showLeague}
-          liked={likes.liked.has(game.id)}
-          likeDisabled={likes.disabled(game.id)}
-          onToggleLike={() => void likes.toggle(game.id)}
-          stake={stakes[game.id]}
-          onPositionsChange={() => void positions.refreshGame(game.id)}
-        />
-      ))}
+      {items.map((item) =>
+        isSession(item) ? (
+          <RaceSessionCard
+            key={item.id}
+            event={item}
+            variant={view === 'compact' ? 'compact' : 'card'}
+          />
+        ) : (
+          <GameRow
+            key={item.id}
+            game={item}
+            variant={view === 'compact' ? 'compact' : 'card'}
+            showLeague={showLeague}
+            liked={likes.liked.has(item.id)}
+            likeDisabled={likes.disabled(item.id)}
+            onToggleLike={() => void likes.toggle(item.id)}
+            stake={stakes[item.id]}
+            onPositionsChange={() => void positions.refreshGame(item.id)}
+          />
+        )
+      )}
     </div>
   )
 
-  if (loading && games.length === 0 && weekends.length === 0) {
+  if (loading && games.length === 0 && sessions.length === 0) {
     return (
       <Col className="gap-2">
         <SectionHeader label="Up next" />
@@ -223,7 +243,7 @@ export function GameFeed(props: {
       </Col>
     )
   }
-  if (active.length === 0 && weekends.length === 0) return <>{empty}</>
+  if (everything.length === 0) return <>{empty}</>
 
   return (
     <div className="min-w-0">
@@ -312,14 +332,13 @@ export function GameFeed(props: {
                   {
                     value: 'all',
                     label: 'All games',
-                    count: active.length + weekends.length,
+                    count: everything.length,
                   },
                   {
                     value: 'live',
                     label: 'Live',
-                    count:
-                      active.filter((game) => game.status === 'live').length +
-                      weekends.filter((w) => w.status === 'live').length,
+                    count: everything.filter((item) => item.status === 'live')
+                      .length,
                   },
                   {
                     value: 'liked',
@@ -424,9 +443,8 @@ export function GameFeed(props: {
                 <MyBetsSummary stakes={myStakes} />
               ) : (
                 <span>
-                  {filtered.length + shownWeekends.length} of{' '}
-                  {active.length + weekends.length} loaded{' '}
-                  {weekends.length > 0 ? 'events' : 'games'}
+                  {filtered.length} of {everything.length} loaded{' '}
+                  {sessions.length > 0 ? 'events' : 'games'}
                 </span>
               )}
               <button
@@ -463,20 +481,24 @@ export function GameFeed(props: {
             </p>
           )}
         </div>
-        {featured && (
-          <GameRow
-            key={featured.id}
-            variant="featured"
-            game={featured}
-            showLeague={showLeague}
-            liked={likes.liked.has(featured.id)}
-            likeDisabled={likes.disabled(featured.id)}
-            onToggleLike={() => void likes.toggle(featured.id)}
-            stake={stakes[featured.id]}
-            onPositionsChange={() => void positions.refreshGame(featured.id)}
-          />
-        )}
-        {filtered.length === 0 && shownWeekends.length === 0 && (
+        {featured &&
+          (isSession(featured) ? (
+            <RaceSessionHero key={featured.id} event={featured} />
+          ) : (
+            <GameRow
+              key={featured.id}
+              variant="featured"
+              game={featured}
+              showLeague={showLeague}
+              liked={likes.liked.has(featured.id)}
+              likeDisabled={likes.disabled(featured.id)}
+              onToggleLike={() => void likes.toggle(featured.id)}
+              stake={stakes[featured.id]}
+              onPositionsChange={() => void positions.refreshGame(featured.id)}
+            />
+          ))}
+        {!hasFilters && belowFeatured}
+        {filtered.length === 0 && (
           <div className="border-ink-200 rounded-xl border border-dashed px-5 py-8 text-center">
             <h3 className="text-ink-900 font-semibold">
               {filter === 'liked'
@@ -496,7 +518,11 @@ export function GameFeed(props: {
                   ? 'Loading your bets…'
                   : 'No bets on these games yet'
                 : filter === 'live'
-                ? 'No games live right now'
+                ? sessions.length > 0
+                  ? 'Nothing live right now'
+                  : 'No games live right now'
+                : sessions.length > 0
+                ? 'Nothing matches'
                 : 'No matching games'}
             </h3>
             <p className="text-ink-500 mt-1 text-sm">
@@ -515,18 +541,15 @@ export function GameFeed(props: {
             </button>
           </div>
         )}
-        {(live.length > 0 || liveWeekends.length > 0) && (
+        {live.length > 0 && (
           <Col className="gap-2">
             <SectionHeader
               label="Live now"
-              count={live.length + liveWeekends.length}
-              unit={liveWeekends.length > 0 ? 'event' : 'game'}
+              count={live.length}
+              unit={unitFor(live)}
               accent
             />
-            {liveWeekends.map((w) => (
-              <RaceWeekendCard key={w.id} weekend={w} />
-            ))}
-            {live.length > 0 && renderGames(live)}
+            {renderItems(live)}
           </Col>
         )}
         {days.map((day) => (
@@ -534,13 +557,10 @@ export function GameFeed(props: {
             <SectionHeader
               label={day.label}
               sublabel={dayjs(day.key).format('MMM D')}
-              count={day.items.length + day.weekends.length}
-              unit={day.weekends.length > 0 ? 'event' : 'game'}
+              count={day.items.length}
+              unit={unitFor(day.items)}
             />
-            {day.weekends.map((w) => (
-              <RaceWeekendCard key={w.id} weekend={w} />
-            ))}
-            {day.items.length > 0 && renderGames(day.items)}
+            {renderItems(day.items)}
           </Col>
         ))}
         {hasMore && filter !== 'live' ? (

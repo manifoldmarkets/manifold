@@ -1,4 +1,4 @@
-import { groupBy, sortBy } from 'lodash'
+import { groupBy, sortBy, uniqBy } from 'lodash'
 import { type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { contractColumnsToSelect, log } from 'shared/utils'
@@ -8,7 +8,13 @@ import { Contract, isMultiCpmm, OutcomeType } from 'common/contract'
 import { Answer } from 'common/answer'
 import { tsToMillis } from 'common/supabase/utils'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
-import { buildRaceWeekends, RaceContract } from 'common/race-weekends'
+import {
+  buildRaceWeekends,
+  findRaceRelatedMarkets,
+  pickRaceChampionships,
+  RaceContract,
+  raceSessionId,
+} from 'common/race-weekends'
 import { teamCodeForLeague } from 'common/sports-team-codes'
 import {
   AnySportKey,
@@ -47,6 +53,7 @@ const UPCOMING_DAYS = 7
 const MAX_UPCOMING = 300
 // The page loads these through markets-by-ids, which takes 100 ids at most.
 const MAX_UPCOMING_RETURNED = 100
+const MAX_CHAMPIONSHIP_CANDIDATES = 40
 
 const MARKET_OUTCOME_TYPES: OutcomeType[] = [
   'BINARY',
@@ -68,10 +75,13 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   const horizon = now + daysAhead * DAY_MS
 
   const index = await getSportsIndex(pg, now)
-  const [official, weekAll, allWeekends] = await Promise.all([
+  const [official, weekAll, allWeekends, championships] = await Promise.all([
     getOfficialGames(pg, index, daysAhead, now),
     getUpcomingMarkets(pg, index),
     getRaceWeekends(pg, daysAhead, now),
+    sport === 'f1' && !cursor
+      ? getRaceChampionships(pg, index, now)
+      : Promise.resolve([]),
   ])
   const games = official.filter((g) => g.startTime < horizon)
   // F1 weekends with something still to come inside the horizon.
@@ -99,17 +109,22 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   // Match across all games before applying the selected sport or row limit,
   // so rail counts and the week feed don't change when the user switches tabs.
   const attached = new Set<string>()
-  if (ordered.length > 0) {
+  if (ordered.length > 0 || weekends.length > 0) {
     // Markets linked to a game go under it, where their creator put them.
     // A market linked to anything is left out of the team-name
     // matching, so it can't be guessed onto another game.
     const allCandidates = await getRelatedCandidates(pg, index)
+    // An F1 session's markets are parents too: a market linked to one goes
+    // under its session.
+    const sessionMarketIds = weekends.flatMap((w) =>
+      w.sessions.flatMap((s) => s.markets.map((m) => m.id))
+    )
     // Read both views in one snapshot; fall back completely if unavailable.
     const { linked, withParents } = await orWithoutLinks(
       () =>
         getMarketLinksForFeed(
           pg,
-          ordered.map((g) => g.id),
+          [...ordered.map((g) => g.id), ...sessionMarketIds],
           allCandidates.map((c) => c.id),
           {
             closeTimeFrom: now - FINISHED_GRACE_HOURS * HOUR_MS,
@@ -179,14 +194,50 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
       g.relatedCount = matches.length
       for (const m of matches) attached.add(m.id)
     })
+
+    // An F1 session: markets linked to one of its markets, then the ones
+    // naming its Grand Prix that no game took (common/race-weekends.ts).
+    const raceMatches = findRaceRelatedMarkets(
+      weekends,
+      candidates.filter((c) => !attached.has(c.id)),
+      MAX_RELATED_PER_GAME
+    )
+    for (const w of weekends) {
+      for (const s of w.sessions) {
+        const links = uniqBy(
+          s.markets.flatMap((m) => linkedByGame[m.id] ?? []),
+          (l) => l.id
+        ).map((l) => ({
+          id: l.id,
+          kind: 'linked' as const,
+          group: relatedGroupForLink(l.relation),
+        }))
+        const linkedIds = new Set(links.map((l) => l.id))
+        const matches = [
+          ...links,
+          ...(raceMatches.get(raceSessionId(w, s)) ?? []).filter(
+            (m) => !linkedIds.has(m.id) && !attached.has(m.id)
+          ),
+        ].slice(0, MAX_RELATED_PER_GAME)
+        if (props.includeRelated !== false) {
+          s.related = matches.map(({ id, kind, group }) => ({
+            id,
+            kind,
+            group,
+          }))
+        }
+        s.relatedCount = matches.length
+        for (const m of matches) attached.add(m.id)
+      }
+    }
   }
 
   // "This week": everything in the sports topics closing within a week that
   // is not a game row and not already hanging under one. For a sports market
   // the close time is the game time, so this is the schedule of what people
-  // made, with no matching involved.
-  // F1 markets stay in: the page drops the ones on the cards it shows
-  // (withoutRaceMarkets), so a weekend it doesn't feature is still listed.
+  // made, with no matching involved. Markets under an F1 session leave it like
+  // a game's; the official F1 markets stay in, and the page drops the ones on
+  // the sessions it shows (withoutRaceMarkets).
   const gameIds = new Set(official.map((g) => g.id))
   const upcoming = weekAll.filter(
     (m) => !gameIds.has(m.id) && !attached.has(m.id)
@@ -232,6 +283,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
           : upcoming.filter((m) => m.sport === sport)
         ).slice(0, MAX_UPCOMING_RETURNED),
     raceWeekends: cursor || (sport !== 'all' && sport !== 'f1') ? [] : weekends,
+    raceChampionships: championships,
     counts,
     liveCount,
     sports: index.sports,
@@ -416,6 +468,51 @@ async function getRaceWeekends(pg: Pg, daysAhead: number, now: number) {
     contracts.map((c) => c.id)
   )
   return buildRaceWeekends(contracts, answers, now)
+}
+
+// The F1 page's title markets: open multiple choice markets in the sports
+// topics about F1 and a championship. Which ones count, and the pick of each
+// kind by traders, is pickRaceChampionships.
+async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
+  const rows = await pg.manyOrNone<{
+    id: string
+    question: string
+    bettors: number | null
+    volume: number | null
+  }>(
+    `select c.question, c.id,
+            (c.data->>'uniqueBettorCount')::float8 as bettors,
+            (c.data->>'volume')::float8 as volume
+     from contracts c
+     where exists (
+         select 1 from group_contracts gc
+         where gc.contract_id = c.id and gc.group_id = any($1)
+       )
+       and c.token = 'MANA'
+       and c.visibility = 'public'
+       and coalesce(c.deleted, false) = false
+       and c.resolution is null
+       and c.close_time > now()
+       and c.outcome_type = 'MULTIPLE_CHOICE'
+       and c.question ~* $2
+       and c.question ~* $3
+     order by bettors desc nulls last
+     limit ${MAX_CHAMPIONSHIP_CANDIDATES}`,
+    [
+      index.allGroupIds,
+      '(champion|\\mwdc\\M|\\mwcc\\M)',
+      '(formula (1|one)|\\mf1\\M)',
+    ]
+  )
+  return pickRaceChampionships(
+    rows.map((r) => ({
+      id: r.id,
+      question: r.question,
+      uniqueBettorCount: Number(r.bettors ?? 0),
+      volume: Number(r.volume ?? 0),
+    })),
+    now
+  )
 }
 
 // A game market is multiple choice: home, away, and Draw for soccer. Binary

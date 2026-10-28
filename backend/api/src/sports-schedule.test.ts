@@ -14,6 +14,7 @@ import {
 } from 'common/sports-schedule'
 import { sportsSchedule } from './sports-schedule'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
+import { f1Season } from 'common/race-weekends'
 
 const kickoff = Date.now() + 60 * 60 * 1000
 const groupId = (sport: string) =>
@@ -74,6 +75,7 @@ let linkRows: { id: string; parent_id: string; relation: string }[] = []
 let linkedElsewhere: { id: string }[] = []
 let linksMissing = false
 let failedLinkRead: 'children' | 'parents' | undefined
+let championshipRows: Record<string, unknown>[] = []
 
 // Each game's two answers, home first, unless a test sets answerRows.
 const gameAnswers = (data: Record<string, unknown>) =>
@@ -97,14 +99,16 @@ beforeEach(() => {
   linkedElsewhere = []
   linksMissing = false
   failedLinkRead = undefined
+  championshipRows = []
   jest.mocked(createSupabaseDirectClient).mockReturnValue({
-    one: async (sql: string) => {
+    one: async (sql: string, params: [string[], ...unknown[]]) => {
       expect(sql).toContain('with eligible_links')
       expect(sql).toContain('as with_parents')
       if (linksMissing || failedLinkRead)
         throw new Error('Link snapshot unavailable')
       return {
-        linked: linkRows,
+        // Only children of the parents asked about, as the query reads them.
+        linked: linkRows.filter((l) => params[0].includes(l.parent_id)),
         with_parents: linkedElsewhere.map((l) => l.id),
       }
     },
@@ -120,6 +124,7 @@ beforeEach(() => {
         return linkedElsewhere
       }
       if (sql.includes("where data->>'sportsEventId'")) return officialRows
+      if (sql.includes('as bettors')) return championshipRows
       if (sql.includes('from answers'))
         return answerRows.length > 0
           ? answerRows
@@ -637,6 +642,93 @@ describe('F1 race weekends', () => {
       ])
       expect(w.sessions[1].markets.map((m) => m.id)).toEqual(['race', 'podium'])
       expect(w.sessions[1].markets[0].leaders[0].name).toBe('Kimi Antonelli')
+    }
+  })
+
+  const community = (
+    id: string,
+    question: string,
+    close: number,
+    importance = 0.1
+  ): MarketRow => ({
+    id,
+    creator_id: 'a-fan',
+    question,
+    sports_event_id: '',
+    sports_market_type: '',
+    close_time: new Date(close).toISOString(),
+    importance_score: importance,
+    group_ids: [groupId('f1')],
+  })
+  const HOUR = 60 * 60 * 1000
+
+  it('hangs the markets about the Grand Prix under its sessions, and takes them off the week list', async () => {
+    marketRows = [
+      ...marketRows,
+      community(
+        'mx-winner',
+        'F1: Who will win the 2026 Mexico City Grand Prix?',
+        race + HOUR,
+        0.5
+      ),
+      community(
+        'mx-pole',
+        'F1 Mexican GP: Who will take pole?',
+        qualifying - 0.1 * HOUR
+      ),
+      community(
+        'japan',
+        'Who will win the 2026 Japanese Grand Prix?',
+        race + HOUR
+      ),
+    ]
+    // Someone linked a prop to the podium market.
+    linkRows = [{ id: 'linked-prop', parent_id: 'podium', relation: 'prop' }]
+    const response = await getSchedule({ sport: 'f1' })
+    const result = 'result' in response ? response.result : response
+    const [w] = result.raceWeekends ?? []
+    const [quali, raceSession] = w.sessions
+    expect(quali.related).toEqual([
+      { id: 'mx-pole', kind: 'event', group: 'game-lines' },
+    ])
+    expect(raceSession.related).toEqual([
+      { id: 'linked-prop', kind: 'linked', group: 'props' },
+      { id: 'mx-winner', kind: 'event', group: 'game-lines' },
+    ])
+    expect(raceSession.relatedCount).toBe(2)
+    const week = result.upcoming.map((m) => m.id)
+    expect(week).not.toContain('mx-winner')
+    expect(week).not.toContain('mx-pole')
+    // Another weekend's market stays, as do the official ones.
+    expect(week).toEqual(expect.arrayContaining(['japan', 'race']))
+  })
+
+  it("sends the season's title markets to the F1 page only", async () => {
+    const season = f1Season(Date.now())
+    championshipRows = [
+      {
+        id: 'wcc',
+        question: `Who will win the ${season} Formula 1 Constructors Championship?`,
+        bettors: 31,
+        volume: 12000,
+      },
+      {
+        id: 'wdc',
+        question: `Who will win the ${season} Formula 1 Drivers Championship?`,
+        bettors: 112,
+        volume: 49000,
+      },
+    ]
+    const f1 = await getSchedule({ sport: 'f1' })
+    expect(('result' in f1 ? f1.result : f1).raceChampionships).toEqual([
+      { kind: 'drivers', id: 'wdc' },
+      { kind: 'constructors', id: 'wcc' },
+    ])
+    for (const sport of ['all', 'nfl'] as const) {
+      const other = await getSchedule({ sport })
+      expect(
+        ('result' in other ? other.result : other).raceChampionships
+      ).toEqual([])
     }
   })
 

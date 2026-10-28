@@ -79,7 +79,7 @@ export default function SportsPage({
   )
   const sports = rail?.sports ?? CURATED_SPORTS
   const sportsByKey = useMemo(() => keyBy(sports, 'key'), [sports])
-  // F1 weekends go in the feed among the games, by their next session.
+  // F1 sessions go in the feed among the games, each on its own day.
   const weekends = schedule?.raceWeekends ?? []
   const markets = (
     <SportMarkets

@@ -1,11 +1,17 @@
 import { Answer } from './answer'
 import {
   buildRaceWeekends,
-  raceWeekendSearchText,
-  raceWeekendTime,
+  ChampionshipCandidate,
+  findRaceRelatedMarkets,
+  pickRaceChampionships,
+  raceDisplayName,
+  raceSessionEvents,
+  raceSessionSearchText,
   withoutRaceMarkets,
   RaceContract,
 } from './race-weekends'
+import { selectFeaturedGame } from './sports-game-feed'
+import { RelatedCandidate } from './sports-schedule'
 
 const HOUR = 60 * 60 * 1000
 const NOW = Date.parse('2026-10-31T12:00:00Z')
@@ -94,16 +100,33 @@ describe('buildRaceWeekends', () => {
     expect(w.sessions[0].markets[0].label).toBe('Pole position')
   })
 
-  it('shows the three likeliest answers, most likely first', () => {
+  it('sends the likeliest answers, most likely first, up to six', () => {
     const [w] = buildRaceWeekends([race], byContract, NOW)
     const m = w.sessions[0].markets[0]
     expect(m.leaders.map((l) => [l.name, l.shortName, l.prob])).toEqual([
       ['Kimi Antonelli', 'Antonelli', 0.25],
       ['Lewis Hamilton', 'Hamilton', 0.12],
       ['George Russell', 'Russell', 0.11],
+      ['Another driver', 'driver', 0.01],
     ])
     expect(m.answerCount).toBe(4)
     expect(m.leaders.every((l) => !l.won)).toBe(true)
+    const grid = answers(
+      'race',
+      Array.from({ length: 22 }, (_, i): [string, number] => [
+        `Driver ${i}`,
+        i / 100,
+      ])
+    )
+    const [full] = buildRaceWeekends([race], { race: grid }, NOW)
+    expect(full.sessions[0].markets[0].leaders.map((l) => l.name)).toEqual([
+      'Driver 21',
+      'Driver 20',
+      'Driver 19',
+      'Driver 18',
+      'Driver 17',
+      'Driver 16',
+    ])
   })
 
   it('moves a session from upcoming to live to finished', () => {
@@ -176,22 +199,304 @@ describe('buildRaceWeekends', () => {
   })
 })
 
-describe('a weekend in the game feed', () => {
-  it("files under its live session's day, else its next session's", () => {
+describe('sessions in the game feed', () => {
+  it('lists each live or upcoming session on its own, with what was traded on it', () => {
+    const traded = {
+      race: { volume: 100, uniqueBettorCount: 7 },
+      podium: { volume: 50, uniqueBettorCount: 9 },
+    }
+    const contracts = [
+      pole,
+      { ...race, ...traded.race },
+      { ...podium, ...traded.podium },
+    ]
     const at = (now: number) =>
-      raceWeekendTime(buildRaceWeekends([pole, race], byContract, now)[0])
-    expect(at(NOW)).toBe(QUALI)
-    expect(at(QUALI + HOUR)).toBe(QUALI)
-    // Qualifying is over: Sunday's race is what's next.
-    expect(at(QUALI + 4 * HOUR)).toBe(RACE)
+      raceSessionEvents(buildRaceWeekends(contracts, byContract, now))
+    expect(at(NOW).map((e) => [e.id, e.status, e.startTime])).toEqual([
+      ['bdl-f1:374:1869', 'upcoming', QUALI],
+      ['bdl-f1:374:1870', 'upcoming', RACE],
+    ])
+    const [, raceEvent] = at(NOW)
+    expect([raceEvent.volume, raceEvent.uniqueBettorCount]).toEqual([150, 9])
+    expect(raceEvent.weekend.sessions).toHaveLength(2)
+    // Qualifying is live, then over: only the race is left.
+    expect(at(QUALI + HOUR).map((e) => e.status)).toEqual(['live', 'upcoming'])
+    expect(at(QUALI + 4 * HOUR).map((e) => e.session.label)).toEqual(['Race'])
+    expect(at(RACE + 4 * HOUR)).toEqual([])
   })
 
-  it('is found by its name, sessions and drivers', () => {
-    const [w] = buildRaceWeekends([pole, race], byContract, NOW)
-    const text = raceWeekendSearchText(w)
-    for (const q of ['mexico', 'grand prix', 'f1', 'qualifying', 'antonelli'])
+  it('features the next session on the F1 page, the most traded elsewhere', () => {
+    const busyRace = { ...race, volume: 5000 }
+    const at = (now: number) =>
+      raceSessionEvents(buildRaceWeekends([pole, busyRace], byContract, now))
+    const ids = (now: number, by?: 'start') =>
+      selectFeaturedGame(at(now), undefined, by)?.id
+    expect(ids(NOW)).toBe('bdl-f1:374:1870')
+    expect(ids(NOW, 'start')).toBe('bdl-f1:374:1869')
+    // Live wins either way; once qualifying is over, the race is next.
+    expect(ids(QUALI + HOUR)).toBe('bdl-f1:374:1869')
+    expect(ids(QUALI + 4 * HOUR, 'start')).toBe('bdl-f1:374:1870')
+  })
+
+  it('is found by its weekend, session and drivers', () => {
+    const [qualifying] = raceSessionEvents(
+      buildRaceWeekends([pole, race], byContract, NOW)
+    )
+    const text = raceSessionSearchText(qualifying)
+    for (const q of ['mexico', 'grand prix', 'f1', 'qualifying', 'russell'])
       expect(text).toContain(q)
-    expect(text).not.toContain('nfl')
+    expect(text).not.toContain('race winner')
+    expect(raceDisplayName('2026 Mexico City Grand Prix')).toBe(
+      'Mexico City Grand Prix'
+    )
+  })
+})
+
+describe('markets people make about a Grand Prix', () => {
+  const SPRINT = QUALI - 5 * HOUR
+  const sprint = market('sprint', 1868, 'sprint winner', 'winner', SPRINT)
+  const [mexico] = buildRaceWeekends(
+    [pole, race, podium, sprint],
+    { ...byContract, sprint: byContract.race },
+    NOW
+  )
+  const candidate = (
+    id: string,
+    question: string,
+    closeTime: number,
+    extra: Partial<RelatedCandidate> = {}
+  ): RelatedCandidate => ({
+    id,
+    question,
+    closeTime,
+    sport: 'f1',
+    importanceScore: 0.1,
+    ...extra,
+  })
+  const sessionOf = (
+    candidates: RelatedCandidate[],
+    weekends = [mexico]
+  ): Record<string, string> => {
+    const out: Record<string, string> = {}
+    for (const [sessionId, matches] of findRaceRelatedMarkets(
+      weekends,
+      candidates
+    ))
+      for (const m of matches) out[m.id] = sessionId
+    return out
+  }
+
+  it('puts a market naming the Grand Prix under the session it is about', () => {
+    expect(
+      sessionOf([
+        candidate(
+          'winner',
+          'F1: Who will win the 2026 Mexico City Grand Prix?',
+          RACE + HOUR
+        ),
+        candidate(
+          'pole',
+          'F1 Mexican GP: Who will take pole?',
+          QUALI - 0.1 * HOUR
+        ),
+        // Sprint first, though "finish" is about a race.
+        candidate(
+          'sprint-top3',
+          'Will Max Verstappen finish the Mexico GP Sprint in the top 3?',
+          SPRINT
+        ),
+        // Who starts from pole is decided in qualifying, but asked about the race.
+        candidate(
+          'start',
+          'Will the Mexican GP winner start from pole?',
+          RACE - 0.1 * HOUR
+        ),
+        // No session named: the one it closes nearest to.
+        candidate(
+          'sc',
+          'Will a full Safety Car be deployed during the Mexico GP?',
+          RACE - 0.1 * HOUR
+        ),
+        candidate(
+          'fp1',
+          'F1 Mexico GP: Who will be fastest in FP1?',
+          QUALI - 26 * HOUR
+        ),
+      ])
+    ).toEqual({
+      winner: 'bdl-f1:374:1870',
+      pole: 'bdl-f1:374:1869',
+      'sprint-top3': 'bdl-f1:374:1868',
+      start: 'bdl-f1:374:1870',
+      sc: 'bdl-f1:374:1870',
+      fp1: 'bdl-f1:374:1868',
+    })
+  })
+
+  it("only takes F1 markets about this weekend's Grand Prix, while it's on", () => {
+    expect(
+      sessionOf([
+        // A session's own market is on its card already.
+        candidate(
+          'race',
+          '2026 Mexico City Grand Prix: race winner',
+          RACE + 3 * HOUR,
+          {
+            sportsEventId: 'bdl-f1:374:1870',
+          }
+        ),
+        // Another sport in the same city.
+        candidate('nfl', 'Will the Chiefs win in Mexico City?', RACE, {
+          sport: 'nfl',
+        }),
+        // Outside the F1 topic, it has to say it's about F1.
+        candidate('mayor', 'Mexico City mayor approval above 50%?', RACE, {
+          sport: 'other',
+        }),
+        candidate('gp', 'Will Checo get points at the Mexican GP?', RACE, {
+          sport: 'other',
+        }),
+        // Last year's race, and next week's.
+        candidate(
+          '2025',
+          'F1: Who will win the 2025 Mexico City Grand Prix?',
+          RACE - 365 * 24 * HOUR
+        ),
+        candidate(
+          'brazil',
+          'F1: Who will win the São Paulo GP?',
+          RACE + 7 * 24 * HOUR
+        ),
+        // A market on no particular race.
+        candidate(
+          'title',
+          'Who will win the 2026 F1 Drivers Championship?',
+          RACE + 24 * HOUR
+        ),
+      ])
+    ).toEqual({ gp: 'bdl-f1:374:1870' })
+  })
+
+  it('matches names however they are written, short ones only in capitals', () => {
+    const at = (name: string, start: number) =>
+      buildRaceWeekends(
+        [
+          market('w', 1, 'race winner', 'winner', start, {
+            sportsEventId: `bdl-f1:${start}:1`,
+            question: `${name}: race winner`,
+          }),
+        ],
+        {},
+        NOW
+      )[0]
+    const brazil = at('2026 São Paulo Grand Prix', RACE + 7 * 24 * HOUR)
+    const austin = at('2026 United States Grand Prix', RACE + 14 * 24 * HOUR)
+    expect(
+      sessionOf(
+        [
+          candidate(
+            'sao',
+            'F1: Who will win the Sao Paulo GP?',
+            brazil.startTime
+          ),
+          candidate(
+            'interlagos',
+            'Rain at Interlagos on race day?',
+            brazil.startTime
+          ),
+          candidate('us', 'F1 US GP: Who will win?', austin.startTime),
+          candidate('cota', 'Will a Ferrari win at COTA?', austin.startTime),
+          candidate(
+            'lower',
+            'Will the stewards let us know before the GP ends?',
+            austin.startTime
+          ),
+        ],
+        [brazil, austin]
+      )
+    ).toEqual({
+      sao: `${brazil.id}:1`,
+      interlagos: `${brazil.id}:1`,
+      us: `${austin.id}:1`,
+      cota: `${austin.id}:1`,
+    })
+  })
+
+  it('lists the most important first, winner markets in the first group', () => {
+    const [raceMatches] = [
+      ...findRaceRelatedMarkets(
+        [mexico],
+        [
+          candidate(
+            'small',
+            'Mexico City GP: Will there be a red flag?',
+            RACE,
+            {
+              importanceScore: 0.1,
+            }
+          ),
+          candidate(
+            'big',
+            'F1: Who will win the 2026 Mexico City Grand Prix?',
+            RACE,
+            {
+              importanceScore: 0.5,
+            }
+          ),
+        ]
+      ).values(),
+    ]
+    expect(raceMatches.map((m) => [m.id, m.group, m.kind])).toEqual([
+      ['big', 'game-lines', 'event'],
+      ['small', 'props', 'event'],
+    ])
+  })
+})
+
+describe('the championship', () => {
+  const title = (
+    id: string,
+    question: string,
+    uniqueBettorCount: number
+  ): ChampionshipCandidate => ({ id, question, uniqueBettorCount, volume: 0 })
+  const candidates = [
+    title('wdc', 'Who will win the 2026 Formula 1 Drivers Championship?', 112),
+    title('wdc-2', 'F1 2026 winner world champion', 94),
+    title(
+      'wcc',
+      'Who will win the 2026 formula 1 constructors world championship?',
+      31
+    ),
+    title(
+      'wcc-2',
+      'Which team will win the F1 2026 Constructors’ Championship (WCC) ?',
+      30
+    ),
+    title('when', 'When will Kimi Antonelli win the F1 WDC', 140),
+    title(
+      'lowest',
+      'Which team will score the lowest points total in the Formula 1 World Constructors Championship 2026',
+      300
+    ),
+    title(
+      'next',
+      'Who will win the 2027 Formula 1 Drivers World Championship?',
+      200
+    ),
+    title('nba', 'Who will win the 2026 NBA Championship?', 500),
+  ]
+
+  it("picks this season's drivers' and constructors' title markets with the most traders", () => {
+    expect(pickRaceChampionships(candidates, NOW)).toEqual([
+      { kind: 'drivers', id: 'wdc' },
+      { kind: 'constructors', id: 'wcc' },
+    ])
+  })
+
+  it('moves on to next season from mid-December', () => {
+    expect(
+      pickRaceChampionships(candidates, Date.parse('2026-12-20T00:00:00Z'))
+    ).toEqual([{ kind: 'drivers', id: 'next' }])
   })
 })
 
