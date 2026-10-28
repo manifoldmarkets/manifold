@@ -43,6 +43,11 @@ import { SHOP_ITEMS, getTicketItems } from 'common/src/shop/items'
 
 export const getStaticProps = async () => {
   try {
+    // Before fetching, so a fetch that runs past midnight can't make an
+    // unfinished day look whole.
+    const todayLA = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Los_Angeles',
+    }).format(new Date())
     const [
       stats,
       manaSupplyOverTime,
@@ -68,7 +73,10 @@ export const getStaticProps = async () => {
       api('get-active-user-mana-stats', { limitDays: 100 }),
       api('get-top-markets-yesterday', {}),
       api('get-shop-stats', { limitDays: 100 }),
-      api('get-idenfy-stats', { limitDays: ID_VERIFICATION_DAYS }),
+      // Three days more than are kept: the endpoint's window starts at its
+      // own "now minus limitDays", which can be past midnight after
+      // todayLA was taken, and a DST change shifts it by an hour.
+      api('get-idenfy-stats', { limitDays: ID_VERIFICATION_DAYS + 3 }),
     ])
 
     return {
@@ -83,7 +91,7 @@ export const getStaticProps = async () => {
         activeUserManaStats,
         topMarketsYesterday: withoutDescriptions(topMarketsYesterday),
         shopStats,
-        idenfyStats: wholeIdenfyDays(idenfyStats, ID_VERIFICATION_DAYS),
+        idenfyStats: wholeIdenfyDays(idenfyStats, todayLA),
         totalRedeemable: 0,
       },
       revalidate: 60 * 60, // One hour
@@ -94,20 +102,18 @@ export const getStaticProps = async () => {
   }
 }
 
-const ID_VERIFICATION_DAYS = 100
+// Whole LA days of ID verifications the page shows, ending yesterday.
+const ID_VERIFICATION_DAYS = 99
 
 // get-idenfy-stats counts verifications from "now minus limitDays" to now,
 // grouped by LA day, and leaves out days with none. So its first day is
 // partial, its last can be today, unfinished, and a quiet day is missing
-// rather than zero. Keep only whole days, with the quiet ones as zeros, so
-// totals and averages cover what they say.
-const wholeIdenfyDays = (stats: IdenfyStats, limitDays: number) => {
-  const today = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/Los_Angeles',
-  }).format(new Date())
+// rather than zero. Keep only whole days before today, with the quiet ones
+// as zeros, so totals and averages cover what they say.
+const wholeIdenfyDays = (stats: IdenfyStats, todayLA: string) => {
   const byDate = keyBy(stats.dailyStats, 'date')
-  const days = Array.from({ length: limitDays - 1 }, (_, i) =>
-    addDays(today, i - (limitDays - 1))
+  const days = Array.from({ length: ID_VERIFICATION_DAYS }, (_, i) =>
+    addDays(todayLA, i - ID_VERIFICATION_DAYS)
   )
   return {
     ...stats,

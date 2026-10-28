@@ -79,7 +79,9 @@ const rateSummary =
     const denominator = sumBy(inRange, (d) => d[den])
     if (denominator <= 0) return undefined
     const value = sumBy(inRange, (d) => d[num] ?? 0) / denominator
-    return Number.isFinite(value) ? { value, days: inRange.length } : undefined
+    return Number.isFinite(value)
+      ? { value, days: inRange.length, firstDay: inRange[0]?.x }
+      : undefined
   }
 
 export function getSurfaceFunnelMetrics(

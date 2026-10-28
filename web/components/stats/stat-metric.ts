@@ -30,7 +30,9 @@ export type MetricView = { key: string; label: string; values: Point[] }
 
 // A range's summary of a metric for its tile: the value and how many days
 // went into it (to judge whether a comparison window is complete).
-export type WindowSummary = { value: number; days: number }
+// firstDay: the first day it counted, where its label says it starts and its
+// missing days are counted from.
+export type WindowSummary = { value: number; days: number; firstDay?: string }
 
 // A metric the stats explorer can show as a tile and chart.
 export type StatMetric = {
@@ -160,11 +162,18 @@ export const getMetricSummary = (
       Number.isFinite(p.y)
     )
     const value = summarizePoints(points, kind)
-    return value === undefined ? undefined : { value, days: points.length }
+    return value === undefined
+      ? undefined
+      : { value, days: points.length, firstDay: points[0]?.x }
   }
 
   const window = getStatsWindow(lastDay, range)
-  const firstDay = sliceWindow(base.values, window)[0]?.x
+  const current = summarize(window)
+  // The figure's own first day: a function summary can count days its chart
+  // view has no point for (a page's zero-visitor day has no rate).
+  const firstDay =
+    current?.firstDay ??
+    sliceWindow(base.values, window).find((p) => Number.isFinite(p.y))?.x
   const since =
     firstDay && (!window.from || firstDay > window.from)
       ? formatSince(firstDay)
@@ -177,7 +186,6 @@ export const getMetricSummary = (
     : kindText
     ? `${rangeLabel} ${kindText}`
     : rangeLabel
-  const current = summarize(window)
   const missingDays =
     firstDay && current
       ? Math.max(
