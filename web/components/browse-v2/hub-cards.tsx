@@ -18,6 +18,7 @@ type Hub = {
   href: string
   title: string
   subtitle: string
+  subtitleClassName?: string
   beta?: boolean
   icon: React.ComponentType<{ className?: string }>
   className: string
@@ -33,6 +34,7 @@ const HUBS: Hub[] = [
     href: '/election',
     title: 'Midterms',
     subtitle: 'Election odds',
+    subtitleClassName: '[@container(min-width:72px)]:block',
     icon: LibraryIcon,
     className:
       'from-blue-100 to-rose-100 dark:from-blue-900/50 dark:to-rose-900/50',
@@ -53,6 +55,7 @@ const HUBS: Hub[] = [
     href: '/sports',
     title: 'Sports',
     subtitle: 'Upcoming',
+    subtitleClassName: '[@container(min-width:56px)]:block',
     beta: true,
     icon: TbBallBasketball,
     className:
@@ -64,6 +67,7 @@ const HUBS: Hub[] = [
     href: '/news',
     title: 'News',
     subtitle: 'Just in',
+    subtitleClassName: '[@container(min-width:40px)]:block',
     beta: true,
     icon: NewspaperIcon,
     className:
@@ -89,7 +93,7 @@ export function HubCards(props: { className?: string }) {
               track('click browse hub card', { destination: hub.key })
             }
             className={clsx(
-              'ring-ink-200 relative flex min-w-0 flex-col items-center gap-1 rounded-xl bg-gradient-to-br px-1.5 py-2 text-center ring-1 transition-all hover:brightness-105 sm:px-2',
+              'ring-ink-200 relative flex min-w-0 flex-col items-center gap-1 rounded-xl bg-gradient-to-br px-1.5 py-1.5 text-center ring-1 transition-all hover:brightness-105 sm:flex-row sm:gap-2 sm:px-2 sm:py-2 sm:text-left',
               'focus-visible:ring-primary-500 outline-none focus-visible:ring-2',
               hub.className
             )}
@@ -99,17 +103,37 @@ export function HubCards(props: { className?: string }) {
                 Beta
               </span>
             )}
-            <span className="flex min-w-0 flex-col items-center gap-1 sm:flex-row sm:gap-1.5">
-              <span className="bg-canvas-0/70 flex h-6 w-6 shrink-0 items-center justify-center rounded-full">
-                <Icon className={clsx('h-4 w-4', hub.iconClassName)} />
-              </span>
-              <span className="text-ink-900 text-[13px] font-semibold leading-tight sm:text-sm">
+            <span className="bg-canvas-0/70 flex h-6 w-6 shrink-0 items-center justify-center rounded-full sm:h-9 sm:w-9">
+              <Icon
+                className={clsx('h-4 w-4 sm:h-5 sm:w-5', hub.iconClassName)}
+              />
+            </span>
+            <span className="w-full min-w-0 [container-type:inline-size] sm:w-auto sm:flex-1">
+              <span className="text-ink-900 block text-[13px] font-semibold leading-tight sm:text-sm">
                 {hub.title}
               </span>
-            </span>
-            {/* Use the full card width; omit subtitles on narrow phones. */}
-            <span className="text-ink-600 hidden w-full text-xs leading-4 sm:block">
-              {hub.key === 'sports' ? <SportsStatus /> : hub.subtitle}
+              {/* Fit the subtitle to the space beside the icon, without ellipses. */}
+              <span className="text-ink-600 hidden text-xs leading-4 sm:block">
+                {hub.key === 'perps' ? (
+                  <>
+                    <span className="hidden whitespace-nowrap [@container(min-width:90px)_and_(max-width:115.99px)]:block">
+                      Stocks &amp; crypto
+                    </span>
+                    <span className="hidden whitespace-nowrap [@container(min-width:116px)]:block">
+                      {hub.subtitle}
+                    </span>
+                  </>
+                ) : (
+                  <span
+                    className={clsx(
+                      'hidden whitespace-nowrap',
+                      hub.subtitleClassName
+                    )}
+                  >
+                    {hub.key === 'sports' ? <SportsStatus /> : hub.subtitle}
+                  </span>
+                )}
+              </span>
             </span>
           </Link>
         )
@@ -148,7 +172,7 @@ function SportsStatus() {
   }, [isPageVisible, isMobile])
 
   return (
-    <span className="flex min-h-[1rem] items-center justify-center gap-1">
+    <span className="flex min-h-[1rem] items-center gap-1">
       {hasLiveGames === undefined ? null : hasLiveGames ? (
         <>
           <span className="h-1.5 w-1.5 rounded-full bg-red-500" aria-hidden />
@@ -160,4 +184,3 @@ function SportsStatus() {
     </span>
   )
 }
-
