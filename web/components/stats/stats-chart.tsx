@@ -47,6 +47,29 @@ const formatTick = (n: number, spansYears: boolean) => {
   return `${MONTHS[+m - 1]} ’${y.slice(2)}`
 }
 
+// Past this many days the x axis is labelled by month.
+const LONG_RANGE_DAYS = 300
+
+// Month starts in [from, to], every 1, 2, 3, 6, 12 or 24 months counted from
+// January (the fewest that fit), so a long range reads Jan ’25, Jul ’25, ...
+// rather than whichever days d3's round day numbers land on.
+const monthTicks = (from: number, to: number, maxTicks: number) => {
+  const [y0, m0] = fromDayNumber(from).split('-').map(Number)
+  const starts: { n: number; index: number }[] = []
+  for (let index = y0 * 12 + m0 - 1; ; index++) {
+    const y = Math.floor(index / 12)
+    const m = (index % 12) + 1
+    const n = toDayNumber(`${y}-${String(m).padStart(2, '0')}-01`)
+    if (!Number.isFinite(n) || n > to) break
+    if (n >= from) starts.push({ n, index })
+  }
+  for (const step of [1, 2, 3, 6, 12, 24]) {
+    const ticks = starts.filter((s) => s.index % step === 0).map((s) => s.n)
+    if (ticks.length <= maxTicks) return ticks
+  }
+  return []
+}
+
 const formatValue = (y: number, pct: boolean | undefined) =>
   pct ? formatPercent(y) : formatCount(y)
 // formatPercent gives values under 2% a decimal, which a zero tick doesn't need.
@@ -175,9 +198,13 @@ function ChartBody(props: {
     const xMin = Math.min(...days)
     const xMax = Math.max(...days, xMin + 1)
     const xScale = scaleLinear([xMin, xMax], [0, plotW])
-    const xTicks = uniq(
-      xScale.ticks(Math.max(2, Math.floor(plotW / 90))).map(Math.round)
-    ).filter((n) => n >= xMin && n <= xMax)
+    // Month labels ("Jul ’25") are narrower than day labels ("Sep 24").
+    const xTicks =
+      xMax - xMin > LONG_RANGE_DAYS
+        ? monthTicks(xMin, xMax, Math.max(2, Math.floor(plotW / 70)))
+        : uniq(
+            xScale.ticks(Math.max(2, Math.floor(plotW / 90))).map(Math.round)
+          ).filter((n) => n >= xMin && n <= xMax)
 
     const valuesOn = (secondary: boolean) =>
       prepared
@@ -225,7 +252,7 @@ function ChartBody(props: {
       yTicks,
       secondaryTicks,
       secondaryPct,
-      spansYears: xMax - xMin > 300,
+      spansYears: xMax - xMin > LONG_RANGE_DAYS,
     }
   }, [prepared, plotW, plotH, pct])
 

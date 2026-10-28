@@ -111,11 +111,15 @@ export function StatsExplorer(props: {
 
   // "All pages" belongs to the Pages section and follows you across its
   // metrics; a metric overlay belongs to the metric it was picked on. Either
-  // goes away on a metric or view it doesn't fit.
+  // goes away on a metric or view it doesn't fit. The page opens on active
+  // users with active traders overlaid.
   const [overlayState, setOverlayState] = usePersistentInMemoryState<{
     scope: string
     with: string
-  } | null>(null, 'stats-overlay')
+  } | null>(
+    { scope: 'users/active-users', with: 'metric:active-traders' },
+    'stats-overlay'
+  )
   const scopeFor = (overlayKey: string) =>
     overlayKey === 'all-pages' ? 'pages' : `${section}/${metric?.key}`
   // Another metric overlays in the same view (daily with daily, 7-day average

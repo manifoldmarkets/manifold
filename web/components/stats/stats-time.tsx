@@ -21,8 +21,9 @@ type StatsTime = {
   setCompare: (compare: StatsCompareKey) => void
 }
 
+// The page opens on all of its history.
 const DEFAULT_TIME: StatsTime = {
-  range: '90d',
+  range: 'all',
   compare: 'none',
   setRange: () => {},
   setCompare: () => {},
