@@ -44,13 +44,25 @@ export function getActivityMetrics(props: {
 }): Record<ActivitySection, StatMetric[]> {
   const { stats, idVerifications = [], isAdmin } = props
   const dataFor = dataForStats(stats)
-  const daily = (key: NumericStatsColumn) => ({
+  // Activation and D1 bets give each day's signups 24 hours to bet, but the
+  // stats job runs a few hours after midnight, so the newest day's cohort is
+  // still open (and reads low) until the next night's run. Leave it out.
+  const newestDay = stats[stats.length - 1]?.start_date
+  const cohortFor = dataForStats(
+    stats.filter((row) => row.start_date !== newestDay)
+  )
+  const daily = (key: NumericStatsColumn, data = dataFor) => ({
     key: 'daily',
     label: 'Daily',
-    values: dataFor(key),
+    values: data(key),
   })
-  const avg7 = (key: NumericStatsColumn, skip = 0, rounded = false) => {
-    const values = rollingAvg(dataFor(key), 7).slice(skip)
+  const avg7 = (
+    key: NumericStatsColumn,
+    skip = 0,
+    rounded = false,
+    data = dataFor
+  ) => {
+    const values = rollingAvg(data(key), 7).slice(skip)
     return {
       key: '7d',
       label: '7d avg',
@@ -264,7 +276,10 @@ export function getActivityMetrics(props: {
         label: 'Activation rate',
         description: `Out of all new users, how many placed at least one ${TRADE_TERM}?`,
         pct: true,
-        views: [daily('activation'), avg7('activation', 7)],
+        views: [
+          daily('activation', cohortFor),
+          avg7('activation', 7, false, cohortFor),
+        ],
         defaultView: '7d',
       },
       {
@@ -272,11 +287,11 @@ export function getActivityMetrics(props: {
         label: `D1 ${TRADE_TERM}s per new user`,
         description: `On average, how many ${TRADE_TERM}s new users placed in their first 24 hours.`,
         views: [
-          daily('d1_bet_average'),
+          daily('d1_bet_average', cohortFor),
           {
             key: '3d',
             label: '3d avg',
-            values: dataFor('d1_bet_3_day_average').slice(1),
+            values: cohortFor('d1_bet_3_day_average').slice(1),
             smoothed: true,
           },
         ],
