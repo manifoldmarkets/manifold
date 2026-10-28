@@ -201,10 +201,20 @@ export const getMetricSummary = (
     compare === 'none' ? 'previous' : compare
   )
   const before = offset ? summarize(shiftWindow(window, offset)) : undefined
+  // An average over most of a window's days compares fairly; a total missing
+  // a day doesn't (six days' signups against seven read as a drop), so totals
+  // compare only when both windows are complete.
+  const expectedDays = window.days ?? 0
+  const comparable =
+    !!current &&
+    !!before &&
+    (typeof summary !== 'function' && kind === 'sum'
+      ? expectedDays > 0 &&
+        current.days === expectedDays &&
+        before.days === expectedDays
+      : hasComparableCoverage(current.days, before.days, expectedDays))
   const change =
-    current &&
-    before &&
-    hasComparableCoverage(current.days, before.days, window.days ?? 0)
+    comparable && current && before
       ? describeChange(metric.pct, current.value, before.value)
       : undefined
 

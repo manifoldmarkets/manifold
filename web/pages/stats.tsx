@@ -43,11 +43,13 @@ import { SHOP_ITEMS, getTicketItems } from 'common/src/shop/items'
 
 export const getStaticProps = async () => {
   try {
-    // Before fetching, so a fetch that runs past midnight can't make an
-    // unfinished day look whole.
+    // Before fetching, and as of five minutes ago, so neither a fetch that
+    // runs past midnight nor a response cached just before it can make an
+    // unfinished day look whole. Just after midnight, the day that ended
+    // waits for the next hourly rebuild.
     const todayLA = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/Los_Angeles',
-    }).format(new Date())
+    }).format(new Date(Date.now() - 5 * 60 * 1000))
     const [
       stats,
       manaSupplyOverTime,
