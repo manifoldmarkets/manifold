@@ -141,13 +141,13 @@ export function MarketListRow(props: { contract: Contract; section: string }) {
           ...traderColumn,
           width: hasMobileAnswer
             ? 'hidden sm:flex sm:w-[70px]'
-            : 'w-14 shrink-0 sm:w-[70px]',
+            : 'w-12 shrink-0 sm:w-[70px]',
         },
         {
           ...liquidityColumn,
           width: hasMobileAnswer
             ? 'hidden sm:flex sm:w-[40px]'
-            : 'w-14 shrink-0 sm:w-[40px]',
+            : 'w-[72px] shrink-0 sm:w-[40px]',
         },
         {
           ...probColumn,
@@ -156,7 +156,7 @@ export function MarketListRow(props: { contract: Contract; section: string }) {
             : 'w-[60px] shrink-0 sm:w-[80px]',
           content: ({ contract }) => <ListProbability contract={contract} />,
         },
-        actionColumn,
+        { ...actionColumn, width: 'w-10 shrink-0 sm:w-12' },
         {
           header: 'Topics',
           width: 'group w-6 shrink-0 sm:relative sm:w-0',
