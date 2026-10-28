@@ -458,7 +458,11 @@ function MarketLine(props: {
   )
 }
 
-/** The featured market's leaders as tiles, in team colours. */
+/**
+ * The featured market's leaders as tiles, in team colours. Columns and names
+ * follow the board's own width, not the screen's: beside the props on a
+ * desktop it can be as narrow as a phone (F4213-15).
+ */
 function DriverBoard(props: {
   market: RaceMarketRef
   /** Settled or past its close: the tiles show prices and winners only. */
@@ -469,7 +473,7 @@ function DriverBoard(props: {
   const { market, closed, onBet, className } = props
   const more = market.answerCount - market.leaders.length
   return (
-    <div className={className}>
+    <div className={clsx('@container', className)}>
       <Row className="mb-1.5 items-baseline justify-between gap-2">
         <Link
           href={marketPath(market)}
@@ -486,7 +490,7 @@ function DriverBoard(props: {
           </Link>
         )}
       </Row>
-      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+      <div className="@[20rem]:grid-cols-2 @[34rem]:grid-cols-3 grid grid-cols-1 gap-1.5">
         {market.leaders.map((l) => (
           <button
             key={l.answerId}
@@ -513,8 +517,8 @@ function DriverBoard(props: {
               style={l.color ? { backgroundColor: l.color } : undefined}
             />
             <span className="text-ink-900 min-w-0 flex-1 truncate text-sm font-semibold">
-              <span className="sm:hidden">{l.shortName ?? l.name}</span>
-              <span className="hidden sm:inline">{l.name}</span>
+              <span className="@[34rem]:hidden">{l.shortName ?? l.name}</span>
+              <span className="@[34rem]:inline hidden">{l.name}</span>
             </span>
             <span
               className={clsx(
