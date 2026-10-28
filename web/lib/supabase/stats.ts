@@ -35,13 +35,14 @@ export type StatsPageRow = Pick<
   (typeof STATS_PAGE_COLUMNS)[number]
 >
 
-export const getStatsPageRows = async (startDate = '2024-01-01') => {
+// Every day since launch (Dec 2021), so "All" and its totals really are
+// all-time: the market count it sums matches the contracts table.
+export const getStatsPageRows = async () => {
   const { data } = await run(
     db
       .from('daily_stats')
       .select(STATS_PAGE_COLUMNS.join(','))
       .order('start_date')
-      .gte('start_date', startDate)
   )
   return (data as unknown as StatsPageRow[]).map(roundStatsRow)
 }

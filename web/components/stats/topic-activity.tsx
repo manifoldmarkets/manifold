@@ -25,7 +25,12 @@ import { getGroups } from 'web/lib/supabase/groups'
 import { getTopicDayStats, TopicDayRow } from 'web/lib/supabase/stats'
 import { Sparkline } from './sparkline'
 import { ChartLegend } from './chart-legend'
-import { compareText, describeChange, MetricChange } from './stat-metric'
+import {
+  compareText,
+  describeChange,
+  formatSince,
+  MetricChange,
+} from './stat-metric'
 import {
   STATS_COMPARE_COLOR,
   STATS_SERIES_COLORS,
@@ -144,9 +149,16 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
   const groups = useTopicGroups(Object.keys(topicSeries))
   const lastDay = stats[stats.length - 1]?.start_date
   const window = lastDay ? getStatsWindow(lastDay, range) : undefined
+  // Topic counts began on this day. Days before it aren't missing, they were
+  // never counted, and a range reaching back past it says where they start.
+  const firstTopicDay = topicDays[0]?.x
+  const startsInRange =
+    !!firstTopicDay && !!window && (!window.from || firstTopicDay > window.from)
   const missingDays = window
-    ? sliceWindow(siteDau, window).length -
-      sliceWindow(topicDays, window).length
+    ? sliceWindow(
+        siteDau.filter((p) => !firstTopicDay || p.x >= firstTopicDay),
+        window
+      ).length - sliceWindow(topicDays, window).length
     : 0
 
   const rows = useMemo(
@@ -412,8 +424,17 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
           created a question in it. A topic is only counted on days it had more
           than 50, and counts as zero on other days, so smaller topics read low.
           Someone active in several topics counts in each, so shares add up to
-          more than 100%. Change is{' '}
-          {compareText(range, compare === 'none' ? 'previous' : compare)}.
+          more than 100%.
+          {range !== 'all' &&
+            ` Change is ${compareText(
+              range,
+              compare === 'none' ? 'previous' : compare
+            )}.`}
+          {startsInRange &&
+            firstTopicDay &&
+            ` Topic counts begin ${formatSince(
+              firstTopicDay
+            )}, so this range's averages cover the days since.`}
           {missingDays > 0 &&
             ` Topic counts are missing for ${missingDays} day${
               missingDays === 1 ? '' : 's'

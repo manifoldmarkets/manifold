@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 
 import {
   STAT_SURFACE_DEFINITIONS,
@@ -35,6 +35,7 @@ import {
   getFunnelDays,
   getSurfaceFunnelMetrics,
 } from './surface-funnels'
+import { StatsOverview } from './stats-overview'
 import { TopicActivity } from './topic-activity'
 
 // The most tiles any section has (Retention, Pages): the grid always holds
@@ -180,6 +181,8 @@ export function StatsExplorer(props: {
             : []
         })
 
+  const sectionBarRef = useRef<HTMLDivElement>(null)
+
   return (
     <Col className="gap-4">
       <Row className="items-start justify-between gap-2">
@@ -198,7 +201,11 @@ export function StatsExplorer(props: {
         </Button>
       </Row>
 
-      <div className="scrollbar-hide -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+      <div
+        ref={sectionBarRef}
+        // Clear of the sticky time controls when the overview scrolls here.
+        className="scrollbar-hide -mx-4 scroll-mt-16 overflow-x-auto px-4 sm:mx-0 sm:px-0"
+      >
         <ChoicesToggleGroup
           ariaLabel="Stats section"
           currentChoice={section}
@@ -293,6 +300,18 @@ export function StatsExplorer(props: {
           </>
         )
       )}
+
+      <StatsOverview
+        metrics={activityMetrics}
+        selected={{ section, metric: metric?.key }}
+        onSelect={(s, m) => {
+          setQuery({ section: s, metric: m, view: '' })
+          sectionBarRef.current?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          })
+        }}
+      />
     </Col>
   )
 }

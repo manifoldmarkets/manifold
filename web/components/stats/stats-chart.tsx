@@ -35,7 +35,9 @@ export const STATS_SERIES_COLORS = [
 ]
 export const STATS_COMPARE_COLOR = '#94a3b8'
 
-const MONTHS = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ')
+export const MONTHS = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(
+  ' '
+)
 const formatDay = (n: number, withYear = false) => {
   const [y, m, d] = fromDayNumber(n).split('-')
   return `${MONTHS[+m - 1]} ${+d}${withYear ? `, ${y}` : ''}`

@@ -16,6 +16,7 @@ import {
 } from 'common/stats-window'
 import { formatPercent } from 'common/util/format'
 import {
+  MONTHS,
   STATS_COMPARE_COLOR,
   STATS_SERIES_COLORS,
   StatsChartSeries,
@@ -86,39 +87,59 @@ export const describeChange = (
   }
 }
 
-const rangeText = (range: StatsRangeKey) =>
-  range === 'all' ? 'All-time' : range.toUpperCase()
-
 export const compareText = (range: StatsRangeKey, compare: StatsCompareKey) =>
   compare === 'year'
     ? 'vs same period last year'
     : `vs previous ${STATS_RANGES.find((r) => r.key === range)?.label ?? ''}`
 
+// "Mar ’22" for the first of a month, "Dec 17 ’21" otherwise. Non-breaking
+// spaces, so a wrapped label never splits the date.
+export const formatSince = (day: string) => {
+  const [y, m, d] = day.split('-')
+  return `${MONTHS[+m - 1]}${+d === 1 ? '' : ` ${+d}`} ’${y.slice(2)}`
+}
+
+// The view a metric's summaries read: its own pick, else the daily values.
+export const getSummaryView = (metric: StatMetric) =>
+  typeof metric.summary === 'object' && metric.summary.view
+    ? getView(metric, metric.summary.view)
+    : getView(
+        metric,
+        metric.views.some((v) => v.key === 'daily') ? 'daily' : undefined
+      )
+
+const meanOver = (values: Point[], window: StatsWindow) => {
+  const points = sliceWindow(values, window).filter((p) => Number.isFinite(p.y))
+  const value = summarizePoints(points, 'mean')
+  return value === undefined ? undefined : { value, days: points.length }
+}
+
 // What a tile shows for the selected range: the range's total or average,
 // its change against the comparison window (the previous period when no
 // comparison is picked), and the range's values for the sparkline.
+//
+// The label never claims more history than the figure has: when the
+// metric's data starts inside the window, and always for All, it says
+// where it starts ("Total since Dec 17 ’21"), not "All-time" or "1Y".
 export const getMetricSummary = (
   metric: StatMetric,
   range: StatsRangeKey,
   compare: StatsCompareKey
 ) => {
   const { summary } = metric
-  const base =
-    typeof summary === 'object' && summary.view
-      ? getView(metric, summary.view)
-      : getView(
-          metric,
-          metric.views.some((v) => v.key === 'daily') ? 'daily' : undefined
-        )
+  const base = getSummaryView(metric)
   const kind = typeof summary === 'object' ? summary.kind : 'mean'
-  const lastDay = base.values[base.values.length - 1]?.x
-  const label =
+  const kindText =
     typeof summary === 'function'
-      ? rangeText(range)
-      : `${rangeText(range)} ${
-          kind === 'sum' ? 'total' : metric.pct ? 'avg' : 'avg/day'
-        }`
-  if (!lastDay) return { label, value: undefined, change: undefined, spark: [] }
+      ? undefined
+      : kind === 'sum'
+      ? 'total'
+      : metric.pct
+      ? 'avg'
+      : 'avg/day'
+  const lastDay = base.values[base.values.length - 1]?.x
+  if (!lastDay)
+    return { label: '', value: undefined, change: undefined, spark: [] }
 
   const summarize = (window: StatsWindow): WindowSummary | undefined => {
     if (typeof summary === 'function') return summary(window)
@@ -130,6 +151,19 @@ export const getMetricSummary = (
   }
 
   const window = getStatsWindow(lastDay, range)
+  const firstDay = sliceWindow(base.values, window)[0]?.x
+  const since =
+    firstDay && (!window.from || firstDay > window.from)
+      ? formatSince(firstDay)
+      : undefined
+  const rangeLabel = STATS_RANGES.find((r) => r.key === range)?.label ?? ''
+  const label = since
+    ? kindText
+      ? `${kindText[0].toUpperCase()}${kindText.slice(1)} since ${since}`
+      : `Since ${since}`
+    : kindText
+    ? `${rangeLabel} ${kindText}`
+    : rangeLabel
   const current = summarize(window)
   const offset = getCompareOffset(
     window,
@@ -147,6 +181,26 @@ export const getMetricSummary = (
     change,
     spark: sliceWindow(base.values, window).map((p) => p.y),
   }
+}
+
+// The overview's quick figures, whatever the page's range: the latest day's
+// value and the average of the 7 days to it, with its change from the 7
+// before.
+export const getMetricGlance = (metric: StatMetric) => {
+  const base = getSummaryView(metric)
+  const latest = base.values[base.values.length - 1]
+  if (!latest) return undefined
+  const week = getStatsWindow(latest.x, '7d')
+  const current = meanOver(base.values, week)
+  const offset = getCompareOffset(week, 'previous')
+  const before = offset
+    ? meanOver(base.values, shiftWindow(week, offset))
+    : undefined
+  const change =
+    current && before && hasComparableCoverage(current.days, before.days)
+      ? describeChange(metric.pct, current.value, before.value)
+      : undefined
+  return { latest, weekAvg: current?.value, change }
 }
 
 // The chart's series for the selected range: the primary values, then
