@@ -106,6 +106,14 @@ describe('getStatSignal', () => {
     expect(signalOf(means)).toMatchObject({ kind: 'drop', baselineWeeks: 12 })
   })
 
+  it('flags any move off a stat that had not moved at all', () => {
+    expect(signalOf([...Array(13).fill(10), 1000])).toEqual({
+      kind: 'jump',
+      factor: Infinity,
+      baselineWeeks: 12,
+    })
+  })
+
   it('says how many weeks set the usual move', () => {
     // Only 6 earlier moves to go on.
     expect(signalOf([10, 11, 10, 11, 10, 11, 10, 20])).toMatchObject({

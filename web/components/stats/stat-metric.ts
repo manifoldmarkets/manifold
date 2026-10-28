@@ -326,7 +326,9 @@ export const describeSignal = (signal: StatSignal) => {
       const factor = Math.round(signal.factor * 10) / 10
       return {
         short: signal.kind === 'jump' ? 'Unusual jump' : 'Unusual drop',
-        long: `This week moved ${factor}× as far as its typical weekly move over the ${signal.baselineWeeks} weeks before`,
+        long: Number.isFinite(factor)
+          ? `This week moved ${factor}× as far as its typical weekly move over the ${signal.baselineWeeks} weeks before`
+          : `This week moved after ${signal.baselineWeeks} weekly moves of no change at all`,
       }
     }
     case 'rising':

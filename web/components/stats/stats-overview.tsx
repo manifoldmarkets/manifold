@@ -1,7 +1,11 @@
 import clsx from 'clsx'
 import { countBy, maxBy, sortBy } from 'lodash'
 
-import { signalDirection, StatSignal } from 'common/stat-signals'
+import {
+  MIN_SIGNAL_WEEKS,
+  signalDirection,
+  StatSignal,
+} from 'common/stat-signals'
 import { STATS_RANGES } from 'common/stats-window'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -71,6 +75,12 @@ export function StatsOverview(props: {
     (r) => (signalTone(r.signal) === 'bad' ? 0 : 1),
     (r) => SIGNAL_ORDER.indexOf(r.signal.kind)
   )
+  // Metrics with enough complete weeks to judge at all: a gap can leave a
+  // metric unjudged, and "nothing unusual" mustn't cover it.
+  const judged = rows.filter(
+    (r) => (r.glance?.weeks.length ?? 0) >= MIN_SIGNAL_WEEKS
+  ).length
+  const unjudged = rows.length - judged
 
   return (
     <Col className="gap-3">
@@ -80,7 +90,11 @@ export function StatsOverview(props: {
         <div className="text-ink-600 text-sm font-medium">Worth a look</div>
         {flagged.length === 0 ? (
           <p className="text-ink-500 text-sm">
-            Nothing unusual in the latest week.
+            {judged === 0
+              ? 'Not enough complete weeks yet to judge the latest one.'
+              : unjudged === 0
+              ? 'Nothing unusual in the latest week.'
+              : `Nothing unusual among the ${judged} of ${rows.length} metrics with enough complete weeks to judge.`}
           </p>
         ) : (
           // Phones: one swipeable row. Wider: wrapped.
@@ -112,6 +126,12 @@ export function StatsOverview(props: {
               </button>
             ))}
           </Row>
+        )}
+        {flagged.length > 0 && unjudged > 0 && (
+          <p className="text-ink-400 text-xs">
+            {unjudged === 1 ? '1 metric lacks' : `${unjudged} metrics lack`}{' '}
+            enough complete weeks to judge.
+          </p>
         )}
       </Col>
 
@@ -255,8 +275,18 @@ export function StatsOverview(props: {
                             ` · ${summary.missingDays}d missing`}
                         </span>
                       </td>
-                      <td className="py-1.5 pl-2">
+                      <td
+                        className="py-1.5 pl-2"
+                        title={
+                          glance && glance.weeks.length < TREND_WEEKS
+                            ? `${glance.weeks.length} complete week${
+                                glance.weeks.length === 1 ? '' : 's'
+                              }`
+                            : undefined
+                        }
+                      >
                         <Sparkline
+                          slots={TREND_WEEKS}
                           values={(glance?.weeks ?? [])
                             .slice(0, TREND_WEEKS)
                             .map((w) => w.mean)

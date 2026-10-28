@@ -20,6 +20,9 @@ const EXTREME_DISTANCE = 2
 const UNUSUAL_MOVE_FACTOR = 3
 // How many earlier weekly moves set "typical" (and weeks, "recent").
 const TYPICAL_MOVE_WEEKS = 12
+// Complete weeks a stat needs before anything about its latest week can be
+// called unusual: the latest, plus enough before it for 6 weekly moves.
+export const MIN_SIGNAL_WEEKS = TYPICAL_MOVE_WEEKS / 2 + 2
 // A run of weekly rises or falls is flagged at this length.
 export const MIN_STREAK_WEEKS = 4
 
@@ -95,14 +98,13 @@ export const getStatSignal = (
   weeks: WeekMean[],
   dataStart: string
 ): StatSignal | undefined => {
-  if (weeks.length < 2) return undefined
+  if (weeks.length < MIN_SIGNAL_WEEKS) return undefined
   const [current, ...prior] = weeks
   const tolerance = 1e-9 * Math.max(1, ...weeks.map((w) => Math.abs(w.mean)))
   const recent = prior.slice(0, TYPICAL_MOVE_WEEKS + 1)
   const moves = recent.flatMap((w, i) =>
     i + 1 < recent.length ? [w.mean - recent[i + 1].mean] : []
   )
-  if (moves.length < TYPICAL_MOVE_WEEKS / 2) return undefined
   const typical = median(moves.map(Math.abs))
 
   const distance = Math.abs(current.mean - median(recent.map((w) => w.mean)))
@@ -127,11 +129,16 @@ export const getStatSignal = (
     }
   }
 
+  // Off a stat that hadn't moved at all, any move is unusual (factor
+  // Infinity).
   const move = current.mean - prior[0].mean
-  if (typical > tolerance && Math.abs(move) >= UNUSUAL_MOVE_FACTOR * typical)
+  if (
+    Math.abs(move) > tolerance &&
+    (typical <= tolerance || Math.abs(move) >= UNUSUAL_MOVE_FACTOR * typical)
+  )
     return {
       kind: move > 0 ? 'jump' : 'drop',
-      factor: Math.abs(move) / typical,
+      factor: typical <= tolerance ? Infinity : Math.abs(move) / typical,
       baselineWeeks: moves.length,
     }
 
