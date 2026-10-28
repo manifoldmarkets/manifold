@@ -3,7 +3,6 @@ import {
   BriefcaseIcon,
   ExternalLinkIcon,
 } from '@heroicons/react/outline'
-import { useState } from 'react'
 
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -11,14 +10,7 @@ import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { JobInterestCard } from 'web/components/jobs/job-interest-card'
 import { JobCard } from 'web/components/jobs/job-card'
-import { AppliedNudge, ApplyLink } from 'web/components/jobs/apply-link'
-import {
-  type Job,
-  MNX,
-  UPSTART,
-  UPSTART_JOBS,
-  UPSTART_APPLY_URL,
-} from 'web/lib/jobs'
+import { type Job, MNX, UPSTART, UPSTART_JOBS } from 'web/lib/jobs'
 
 // MNX job data lives here; Upstart listings live in web/lib/jobs.ts.
 // To add, edit, or remove a listing, change its array
@@ -82,7 +74,6 @@ const JOBS: Job[] = [
 ]
 
 export default function JobsPage() {
-  const [appliedToUpstart, setAppliedToUpstart] = useState(false)
   return (
     <Page trackPageView="/jobs" className="!col-span-7">
       <SEO
@@ -169,22 +160,6 @@ export default function JobsPage() {
                     teammates across 80+ cities in the US and Canada and offices
                     in the Bay Area, Austin, Columbus and New York City.
                   </p>
-                  <p className="text-ink-600 mt-3 text-sm leading-relaxed dark:text-slate-300">
-                    Apply broadly for any/all suitable roles by emailing your
-                    resume. Click apply, the email link opens a draft. Attach
-                    your resume before sending.
-                  </p>
-                  <ApplyLink
-                    href={UPSTART_APPLY_URL}
-                    employer={UPSTART}
-                    onApply={() => setAppliedToUpstart(true)}
-                    className="bg-primary-600 hover:bg-primary-700 focus-visible:ring-primary-500 mt-4 inline-flex rounded-lg px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                  >
-                    Apply to Upstart by email
-                  </ApplyLink>
-                  {appliedToUpstart && (
-                    <AppliedNudge employer={UPSTART} className="mt-4" />
-                  )}
                 </div>
                 <div className="flex flex-col gap-4">
                   {UPSTART_JOBS.map((job) => (

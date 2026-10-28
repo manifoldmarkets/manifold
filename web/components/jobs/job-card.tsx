@@ -7,6 +7,7 @@ import {
   AppliedNudge,
   ApplyLink,
   applyHref,
+  isExternalUrl,
 } from 'web/components/jobs/apply-link'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -18,6 +19,8 @@ export function JobCard(props: { job: Job; employer: JobBoardEmployer }) {
   const [open, setOpen] = useState(false)
   const [applied, setApplied] = useState(false)
   const detailsId = useId()
+  const applyUrl = applyHref(job)
+  const external = isExternalUrl(applyUrl)
 
   return (
     <article
@@ -136,20 +139,29 @@ export function JobCard(props: { job: Job; employer: JobBoardEmployer }) {
           </ul>
         </section>
 
-        <p className="text-ink-700 mb-6 select-text text-sm leading-relaxed dark:text-slate-300">
-          {employer.applyInstructions ?? (
-            <>To apply, email {job.contactEmail}.</>
-          )}
-        </p>
+        {(employer.applyInstructions || !external) && (
+          <p className="text-ink-700 mb-6 select-text text-sm leading-relaxed dark:text-slate-300">
+            {employer.applyInstructions ?? (
+              <>To apply, email {job.contactEmail}.</>
+            )}
+          </p>
+        )}
 
         <ApplyLink
-          href={applyHref(job)}
+          href={applyUrl}
           employer={employer}
           job={job}
           onApply={() => setApplied(true)}
-          className="bg-primary-600 hover:bg-primary-700 focus-visible:ring-primary-500 mb-5 inline-flex rounded-lg px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+          className="bg-primary-600 hover:bg-primary-700 focus-visible:ring-primary-500 mb-5 inline-flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         >
-          Apply to {employer.name} by email
+          {external ? (
+            <>
+              Apply to {employer.name}
+              <ExternalLinkIcon className="h-4 w-4" aria-hidden />
+            </>
+          ) : (
+            <>Apply to {employer.name} by email</>
+          )}
         </ApplyLink>
 
         {applied && <AppliedNudge employer={employer} className="mb-5" />}
@@ -165,7 +177,9 @@ export function JobCard(props: { job: Job; employer: JobBoardEmployer }) {
           </button>
           {job.sourceUrl && (
             <a
-              href={job.sourceUrl}
+              // Through the tracking link when there is one, so a reader who
+              // applies from the details page is still credited to Manifold.
+              href={external ? applyUrl : job.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() =>

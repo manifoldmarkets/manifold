@@ -6,18 +6,22 @@ import { api } from 'web/lib/api/api'
 import { type Job, type JobBoardEmployer } from 'web/lib/jobs'
 import { track } from 'web/lib/service/analytics'
 
-// Employer-wide apply link when the employer has one; otherwise a mailto to
-// the role's contact with the role in the subject.
+// The role's application link (an employer tracking URL or a mailto) when it
+// has one; otherwise a mailto to the role's contact with the role in the subject.
 export const applyHref = (job: Job) =>
   job.applicationUrl ??
   `mailto:${job.contactEmail}?subject=${encodeURIComponent(
     `${job.title} via Manifold`
   )}`
 
+export const isExternalUrl = (href: string) => /^https?:\/\//.test(href)
+
 // Every apply link on the board goes through here. The click is tracked and,
 // for signed-in users, recorded against the employer (set-job-applied) so they
 // drop out of that employer's update emails. Applying to any of an employer's
-// roles counts for all of them. The mailto navigation itself is untouched.
+// roles counts for all of them. Web links open in a new tab, so the board
+// stays open, the click is recorded and the follow-up nudge shows; the native
+// app opens external URLs in its in-app browser.
 export function ApplyLink(props: {
   href: string
   employer: JobBoardEmployer
@@ -42,7 +46,13 @@ export function ApplyLink(props: {
   }
 
   return (
-    <a href={href} onClick={onClick} className={className}>
+    <a
+      href={href}
+      target={isExternalUrl(href) ? '_blank' : undefined}
+      rel={isExternalUrl(href) ? 'noopener noreferrer' : undefined}
+      onClick={onClick}
+      className={className}
+    >
       {children}
     </a>
   )

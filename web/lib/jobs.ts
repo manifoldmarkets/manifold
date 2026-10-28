@@ -17,6 +17,8 @@ export type Job = {
   workArrangement?: string
   // Shown one per line in the expanded card (published base, then estimate).
   compDetails?: string[]
+  // Tracking URL (opens in a new tab) or mailto. Without it the card emails
+  // contactEmail with the role in the subject.
   applicationUrl?: string
 }
 
@@ -31,23 +33,15 @@ export type JobBoardEmployer = {
   applyInstructions?: string
 }
 
-export const UPSTART: JobBoardEmployer = {
-  id: 'upstart',
-  name: 'Upstart',
-  applyInstructions:
-    'Apply broadly for any/all suitable Upstart roles by sending your resume to Joe Orsini. You do not need to choose a role. Mention that you found Upstart on Manifold, and attach your resume before sending.',
-}
+export const UPSTART: JobBoardEmployer = { id: 'upstart', name: 'Upstart' }
 
 export const MNX: JobBoardEmployer = { id: 'mnx', name: 'MNX' }
 
-// Application instructions per the Upstart recruiting contact (Oct 2026).
-// A mailto opens a draft; applicants must attach their resume themselves.
+// Upstart recruiting issued one Greenhouse tracking link per role (28 Oct
+// 2026). Applying through it tags Manifold as the candidate source in their
+// dashboard, so a role's Apply and details links must both use it. Ask
+// Upstart for a link before listing a new role.
 export const UPSTART_EMAIL = 'joe.orsini@upstart.com'
-export const UPSTART_APPLY_URL = `mailto:${UPSTART_EMAIL}?subject=${encodeURIComponent(
-  'Upstart opportunities via Manifold'
-)}&body=${encodeURIComponent(
-  'Hi Joe,\r\n\r\nI found Upstart on Manifold and would like to apply broadly for any/all suitable roles.\r\n\r\nI have attached my resume.\r\n\r\nThank you!'
-)}`
 
 const remote =
   'Remote with regular in-person collaboration; most teams meet once or twice per quarter for 2–4 days.'
@@ -55,7 +49,7 @@ const remote =
 // figures: the ratio implied by its indicative midpoint of ~$320k total on
 // ~$192k base (~$30k target bonus + ~$98k equity). Rounded to $5k.
 
-// Base ranges verified against each official sourceUrl on 25 Oct 2026. These are six
+// Base ranges verified against each official sourceUrl on 25 Oct 2026. These are
 // specific openings, not an automatically maintained feed. Remove a filled
 // role from this array via PR, following the existing board's removal process.
 // comp is the collapsed-card figure (US estimate); compDetails lists the
@@ -83,7 +77,7 @@ export const UPSTART_JOBS: Job[] = [
       'Python modeling, probability, statistics, machine learning, and experimental validation.',
     ],
     contactEmail: UPSTART_EMAIL,
-    applicationUrl: UPSTART_APPLY_URL,
+    applicationUrl: 'https://grnh.se/4wztyny01us',
     workArrangement: remote,
     sourceUrl: 'https://careers.upstart.com/jobs/applied-scientist',
   },
@@ -108,36 +102,9 @@ export const UPSTART_JOBS: Job[] = [
       'Python modeling, probability, statistics, machine learning, and experimental validation.',
     ],
     contactEmail: UPSTART_EMAIL,
-    applicationUrl: UPSTART_APPLY_URL,
+    applicationUrl: 'https://grnh.se/1tgjz6f01us',
     workArrangement: `${remote} The team works across East/West Coast time zones.`,
     sourceUrl: 'https://careers.upstart.com/jobs/staff-applied-scientist',
-  },
-  {
-    title: 'Applied Scientist',
-    team: 'Growth / Direct Mail · R-7046',
-    location: 'Remote (US/Canada, excl. Quebec)',
-    comp: 'US est. total comp ~$235k–$325k',
-    compDetails: [
-      'US base: $141,500–$196,000; Canada base: $130,900–$160,000 CAD',
-      'US est. total: ~$235k–$325k; Canada est. total: ~$220k–$265k CAD',
-    ],
-    blurb:
-      'Use causal machine learning to improve borrower acquisition across marketing channels.',
-    intro:
-      'Join the Machine Learning Growth team, expanding direct mail modeling into other marketing channels.',
-    whatYoullDo: [
-      'Develop acquisition models, analyze campaigns, and measure incremental impact through experiments.',
-      'Build reusable data pipelines and collaborate with Growth and Marketing Platform Engineering.',
-    ],
-    whatWereLookingFor: [
-      'Master’s degree in mathematics, statistics, economics, operations research, or a related field.',
-      'Statistical and machine learning modeling, Python, causal inference, and experimental design.',
-    ],
-    contactEmail: UPSTART_EMAIL,
-    applicationUrl: UPSTART_APPLY_URL,
-    workArrangement: remote,
-    sourceUrl:
-      'https://careers.upstart.com/jobs/applied-scientist-42b12dad-ec21-460b-8789-41be8ded8f26',
   },
   {
     title: 'Applied Scientist Intern',
@@ -157,7 +124,7 @@ export const UPSTART_JOBS: Job[] = [
       'Python machine learning or statistical modeling, basic SQL, communication, and teamwork.',
     ],
     contactEmail: UPSTART_EMAIL,
-    applicationUrl: UPSTART_APPLY_URL,
+    applicationUrl: 'https://grnh.se/9b5rkxlx1us',
     workArrangement:
       'A 12-week program, fully remote in the US, with one or two in-person collaboration sessions of 2–4 days.',
     sourceUrl: 'https://careers.upstart.com/jobs/applied-scientist-intern',
@@ -184,7 +151,7 @@ export const UPSTART_JOBS: Job[] = [
       'Experimental design, causal inference, Python or equivalent, and strong stakeholder communication.',
     ],
     contactEmail: UPSTART_EMAIL,
-    applicationUrl: UPSTART_APPLY_URL,
+    applicationUrl: 'https://grnh.se/2y3wbm1i1us',
     workArrangement: remote,
     sourceUrl: 'https://careers.upstart.com/jobs/principal-data-scientist',
   },
@@ -210,7 +177,7 @@ export const UPSTART_JOBS: Job[] = [
       'Incrementality testing, causal inference, marketing mix modeling, multi-touch attribution, Python, and SQL.',
     ],
     contactEmail: UPSTART_EMAIL,
-    applicationUrl: UPSTART_APPLY_URL,
+    applicationUrl: 'https://grnh.se/4zgogvd61us',
     workArrangement: remote,
     sourceUrl:
       'https://careers.upstart.com/jobs/principal-data-scientist-marketing-measurement',
