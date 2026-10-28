@@ -9,6 +9,7 @@ import {
   formatMetricValue,
   getMetricGlance,
   getMetricSummary,
+  missingDaysText,
   StatMetric,
 } from './stat-metric'
 import { MONTHS } from './stats-chart'
@@ -146,6 +147,13 @@ export function StatsOverview(props: {
                             {glance.change.text}
                           </div>
                         )}
+                        {glance &&
+                          glance.weekDays > 0 &&
+                          glance.weekDays < 7 && (
+                            <div className="text-ink-400 text-[11px]">
+                              {glance.weekDays} of 7 days
+                            </div>
+                          )}
                       </td>
                       <td className="px-2 py-2 text-right">
                         {summary.value === undefined
@@ -153,6 +161,8 @@ export function StatsOverview(props: {
                           : formatMetricValue(metric, summary.value)}
                         <div className="text-ink-400 text-[11px] leading-tight">
                           {summary.label}
+                          {summary.missingDays > 0 &&
+                            ` · ${missingDaysText(summary.missingDays)}`}
                         </div>
                       </td>
                       <td className="hidden py-2 pl-3 sm:table-cell">

@@ -1,6 +1,7 @@
 import { ReactNode } from 'react'
 
 import {
+  countDays,
   getCompareOffset,
   getComparePoints,
   getStatsWindow,
@@ -114,13 +115,19 @@ const meanOver = (values: Point[], window: StatsWindow) => {
   return value === undefined ? undefined : { value, days: points.length }
 }
 
+// "3 days missing", for a figure whose window has days without data.
+export const missingDaysText = (missing: number) =>
+  `${missing} day${missing === 1 ? '' : 's'} missing`
+
 // What a tile shows for the selected range: the range's total or average,
 // its change against the comparison window (the previous period when no
 // comparison is picked), and the range's values for the sparkline.
 //
-// The label never claims more history than the figure has: when the
-// metric's data starts inside the window, and always for All, it says
-// where it starts ("Total since Dec 17 ’21"), not "All-time" or "1Y".
+// The figure never claims more than its data covers. When the metric's data
+// starts inside the window, and always for All, the label says where it
+// starts ("Total since Dec 17 ’21"), not "All-time" or "1Y". Calendar days
+// from there with no data are counted in missingDays, for the caller to
+// show. A change needs 80% of the days in both windows.
 export const getMetricSummary = (
   metric: StatMetric,
   range: StatsRangeKey,
@@ -139,7 +146,13 @@ export const getMetricSummary = (
       : 'avg/day'
   const lastDay = base.values[base.values.length - 1]?.x
   if (!lastDay)
-    return { label: '', value: undefined, change: undefined, spark: [] }
+    return {
+      label: '',
+      value: undefined,
+      change: undefined,
+      missingDays: 0,
+      spark: [],
+    }
 
   const summarize = (window: StatsWindow): WindowSummary | undefined => {
     if (typeof summary === 'function') return summary(window)
@@ -165,13 +178,25 @@ export const getMetricSummary = (
     ? `${rangeLabel} ${kindText}`
     : rangeLabel
   const current = summarize(window)
+  const missingDays =
+    firstDay && current
+      ? Math.max(
+          0,
+          countDays(
+            window.from && window.from > firstDay ? window.from : firstDay,
+            window.to
+          ) - current.days
+        )
+      : 0
   const offset = getCompareOffset(
     window,
     compare === 'none' ? 'previous' : compare
   )
   const before = offset ? summarize(shiftWindow(window, offset)) : undefined
   const change =
-    current && before && hasComparableCoverage(current.days, before.days)
+    current &&
+    before &&
+    hasComparableCoverage(current.days, before.days, window.days ?? 0)
       ? describeChange(metric.pct, current.value, before.value)
       : undefined
 
@@ -179,13 +204,14 @@ export const getMetricSummary = (
     label,
     value: current?.value,
     change,
+    missingDays,
     spark: sliceWindow(base.values, window).map((p) => p.y),
   }
 }
 
 // The overview's quick figures, whatever the page's range: the latest day's
 // value and the average of the 7 days to it, with its change from the 7
-// before.
+// before. weekDays is how many of those 7 days have data.
 export const getMetricGlance = (metric: StatMetric) => {
   const base = getSummaryView(metric)
   const latest = base.values[base.values.length - 1]
@@ -197,10 +223,15 @@ export const getMetricGlance = (metric: StatMetric) => {
     ? meanOver(base.values, shiftWindow(week, offset))
     : undefined
   const change =
-    current && before && hasComparableCoverage(current.days, before.days)
+    current && before && hasComparableCoverage(current.days, before.days, 7)
       ? describeChange(metric.pct, current.value, before.value)
       : undefined
-  return { latest, weekAvg: current?.value, change }
+  return {
+    latest,
+    weekAvg: current?.value,
+    weekDays: current?.days ?? 0,
+    change,
+  }
 }
 
 // The chart's series for the selected range: the primary values, then

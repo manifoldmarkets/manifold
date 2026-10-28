@@ -6,12 +6,15 @@ import {
   compareText,
   formatMetricValue,
   getMetricSummary,
+  missingDaysText,
   StatMetric,
 } from './stat-metric'
 import { useStatsTime } from './stats-time'
 
 // Every tile is the same height, so an empty grid slot can hold its place.
-export const METRIC_TILE_CLASS = 'h-[5.75rem]'
+// It fits a two-line label: "Total since Dec 17 ’21 · 3d missing" wraps on a
+// phone, and the part that says what's missing mustn't be cut off.
+export const METRIC_TILE_CLASS = 'h-[6.5rem]'
 
 export function MetricTile(props: {
   metric: StatMetric
@@ -21,7 +24,7 @@ export function MetricTile(props: {
 }) {
   const { metric, selected, onSelect, className } = props
   const { range, compare } = useStatsTime()
-  const { label, value, change, spark } = getMetricSummary(
+  const { label, value, change, missingDays, spark } = getMetricSummary(
     metric,
     range,
     compare
@@ -64,8 +67,16 @@ export function MetricTile(props: {
           )}
         />
       </Row>
-      <span className="text-ink-400 truncate text-[11px]">
+      <span
+        className="text-ink-400 line-clamp-2 text-[11px] leading-tight"
+        title={
+          missingDays > 0
+            ? `${label}, ${missingDaysText(missingDays)}`
+            : undefined
+        }
+      >
         {label}
+        {missingDays > 0 && ` · ${missingDays}d missing`}
         {change && (
           <>
             {' · '}

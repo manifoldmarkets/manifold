@@ -114,8 +114,18 @@ export const summarizePoints = (
   return kind === 'sum' ? total : total / ys.length
 }
 
-// Whether a comparison window holds enough days to compare against: at least
-// 80% of the current window's. A short one (data starting partway through, or
-// a gap) would make a total look like a drop.
-export const hasComparableCoverage = (current: number, comparison: number) =>
-  current > 0 && comparison >= current * 0.8
+// Calendar days from `from` to `to`, both included.
+export const countDays = (from: string, to: string) =>
+  Math.max(0, toDayNumber(to) - toDayNumber(from) + 1)
+
+// Whether two windows of `expectedDays` calendar days can be compared: each
+// has data for at least 80% of them. A short one (data starting partway
+// through, a gap, an unfinished day) would make a total look like a drop.
+export const hasComparableCoverage = (
+  current: number,
+  comparison: number,
+  expectedDays: number
+) =>
+  expectedDays > 0 &&
+  current >= expectedDays * 0.8 &&
+  comparison >= expectedDays * 0.8

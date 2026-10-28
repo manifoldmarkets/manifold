@@ -6,7 +6,7 @@ import { QueryUncontrolledTabs, Tabs } from 'web/components/layout/tabs'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { getStatsPageRows, StatsPageRow } from 'web/lib/supabase/stats'
-import { orderBy, sum, sumBy, uniq } from 'lodash'
+import { keyBy, orderBy, sum, sumBy, uniq } from 'lodash'
 import { formatLargeNumber, formatMoney } from 'common/util/format'
 import { formatWithCommas } from 'common/util/format'
 import { SEO } from 'web/components/SEO'
@@ -34,7 +34,7 @@ import {
   StatsTimeProvider,
   useStatsTime,
 } from 'web/components/stats/stats-time'
-import { getStatsWindow, isInWindow } from 'common/stats-window'
+import { addDays, getStatsWindow, isInWindow } from 'common/stats-window'
 import { Contract, contractPath } from 'common/contract'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { UserIcon, EyeIcon } from '@heroicons/react/solid'
@@ -68,7 +68,7 @@ export const getStaticProps = async () => {
       api('get-active-user-mana-stats', { limitDays: 100 }),
       api('get-top-markets-yesterday', {}),
       api('get-shop-stats', { limitDays: 100 }),
-      api('get-idenfy-stats', { limitDays: 100 }),
+      api('get-idenfy-stats', { limitDays: ID_VERIFICATION_DAYS }),
     ])
 
     return {
@@ -83,7 +83,7 @@ export const getStaticProps = async () => {
         activeUserManaStats,
         topMarketsYesterday: withoutDescriptions(topMarketsYesterday),
         shopStats,
-        idenfyStats,
+        idenfyStats: wholeIdenfyDays(idenfyStats, ID_VERIFICATION_DAYS),
         totalRedeemable: 0,
       },
       revalidate: 60 * 60, // One hour
@@ -91,6 +91,36 @@ export const getStaticProps = async () => {
   } catch (err) {
     console.error(err)
     return { props: { stats: null }, revalidate: 60 }
+  }
+}
+
+const ID_VERIFICATION_DAYS = 100
+
+// get-idenfy-stats counts verifications from "now minus limitDays" to now,
+// grouped by LA day, and leaves out days with none. So its first day is
+// partial, its last can be today, unfinished, and a quiet day is missing
+// rather than zero. Keep only whole days, with the quiet ones as zeros, so
+// totals and averages cover what they say.
+const wholeIdenfyDays = (stats: IdenfyStats, limitDays: number) => {
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Los_Angeles',
+  }).format(new Date())
+  const byDate = keyBy(stats.dailyStats, 'date')
+  const days = Array.from({ length: limitDays - 1 }, (_, i) =>
+    addDays(today, i - (limitDays - 1))
+  )
+  return {
+    ...stats,
+    dailyStats: days.map(
+      (date) =>
+        byDate[date] ?? {
+          date,
+          approvals: 0,
+          denials: 0,
+          pending: 0,
+          suspected: 0,
+        }
+    ),
   }
 }
 

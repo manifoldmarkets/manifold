@@ -3,6 +3,7 @@ import {
   getCompareOffset,
   getComparePoints,
   getStatsWindow,
+  countDays,
   hasComparableCoverage,
   shiftWindow,
   sliceWindow,
@@ -77,9 +78,18 @@ describe('summaries', () => {
     expect(summarizePoints([], 'mean')).toBeUndefined()
   })
 
-  it('needs 80% of the days to compare', () => {
-    expect(hasComparableCoverage(30, 24)).toBe(true)
-    expect(hasComparableCoverage(30, 23)).toBe(false)
-    expect(hasComparableCoverage(0, 0)).toBe(false)
+  it('needs 80% of the calendar days in both windows to compare', () => {
+    expect(hasComparableCoverage(30, 24, 30)).toBe(true)
+    expect(hasComparableCoverage(30, 23, 30)).toBe(false)
+    // A nearly empty current window doesn't compare against a full one.
+    expect(hasComparableCoverage(1, 7, 7)).toBe(false)
+    expect(hasComparableCoverage(6, 6, 7)).toBe(true)
+    expect(hasComparableCoverage(0, 0, 0)).toBe(false)
+  })
+
+  it('counts calendar days inclusively', () => {
+    expect(countDays('2026-10-01', '2026-10-07')).toBe(7)
+    expect(countDays('2026-10-07', '2026-10-07')).toBe(1)
+    expect(countDays('2026-10-08', '2026-10-07')).toBe(0)
   })
 })

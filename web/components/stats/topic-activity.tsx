@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { Group } from 'common/group'
 import {
+  countDays,
   getCompareOffset,
   getComparePoints,
   getStatsWindow,
@@ -125,7 +126,7 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
 
   // topicDays: site active traders on the days whose topic counts landed. Some
   // days have none (a failed stats run), and they must not count as zero.
-  const { topicSeries, topicDays, siteDau } = useMemo(() => {
+  const { topicSeries, topicDays } = useMemo(() => {
     const topicSeries: Record<string, Point[]> = {}
     const topicDays: Point[] = []
     for (const row of stats) {
@@ -138,12 +139,7 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
         ;(topicSeries[id] ??= []).push({ x: row.start_date, y: v })
       }
     }
-    const siteDau: Point[] = stats.flatMap((r) =>
-      r.dau != null && Number.isFinite(r.dau)
-        ? [{ x: r.start_date, y: r.dau }]
-        : []
-    )
-    return { topicSeries, topicDays, siteDau }
+    return { topicSeries, topicDays }
   }, [stats])
 
   const groups = useTopicGroups(Object.keys(topicSeries))
@@ -154,12 +150,17 @@ function TopicActivityBody(props: { stats: TopicDayRow[] }) {
   const firstTopicDay = topicDays[0]?.x
   const startsInRange =
     !!firstTopicDay && !!window && (!window.from || firstTopicDay > window.from)
-  const missingDays = window
-    ? sliceWindow(
-        siteDau.filter((p) => !firstTopicDay || p.x >= firstTopicDay),
-        window
-      ).length - sliceWindow(topicDays, window).length
-    : 0
+  // Calendar days since then (or since the window opens) with no topic
+  // counts, such as a day the stats job failed.
+  const missingDays =
+    window && firstTopicDay
+      ? countDays(
+          window.from && window.from > firstTopicDay
+            ? window.from
+            : firstTopicDay,
+          window.to
+        ) - sliceWindow(topicDays, window).length
+      : 0
 
   const rows = useMemo(
     () =>
@@ -464,7 +465,8 @@ const getTopicRows = (
   )
   const before = offset ? shiftWindow(window, offset) : undefined
   const beforeDays = before ? daysIn(before) : 0
-  const comparable = !!before && hasComparableCoverage(windowDays, beforeDays)
+  const comparable =
+    !!before && hasComparableCoverage(windowDays, beforeDays, window.days ?? 0)
 
   const coveredDays = sliceWindow(topicDays, window)
   return Object.entries(topicSeries).flatMap(([id, series]) => {
