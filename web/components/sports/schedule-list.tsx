@@ -20,10 +20,8 @@ import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { GameRow, GameRowSkeleton } from 'web/components/sports/game-row'
-import {
-  RaceSessionCard,
-  RaceSessionHero,
-} from 'web/components/sports/race-session-card'
+import { RaceSessionCard } from 'web/components/sports/race-session-card'
+import { RaceWeekendHero } from 'web/components/sports/race-weekend-hero'
 import { Carousel } from 'web/components/widgets/carousel'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -488,7 +486,7 @@ export function GameFeed(props: {
         </div>
         {featured &&
           (isSession(featured) ? (
-            <RaceSessionHero key={featured.id} event={featured} />
+            <RaceWeekendHero key={featured.id} event={featured} />
           ) : (
             <GameRow
               key={featured.id}

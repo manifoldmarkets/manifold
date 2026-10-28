@@ -9,7 +9,11 @@ import {
   uniq,
 } from 'lodash'
 import { Answer } from './answer'
-import { F1_CLOSE_BUFFER_HOURS, parseF1EventId } from './f1-markets'
+import {
+  F1_CLOSE_BUFFER_HOURS,
+  OTHER_DRIVER_ANSWER,
+  parseF1EventId,
+} from './f1-markets'
 import type {
   RelatedCandidate,
   RelatedGroup,
@@ -677,4 +681,118 @@ export function pickRaceChampionships(
     const best = ranked.find((c) => c.kind === kind)
     return best ? [{ kind, id: best.id }] : []
   })
+}
+
+// ─── The featured weekend's driver board ────────────────────────────────────
+//
+// The featured card shows a weekend the way the timing screens do: every
+// driver as a row with a three-letter code and team colour, and a price per
+// market (pole, race winner, podium...) to bet on from the same row.
+
+/** Name suffixes that aren't a surname. */
+const NAME_SUFFIXES = new Set(['jr', 'jr.', 'sr', 'sr.', 'ii', 'iii', 'iv'])
+
+/**
+ * A driver's three-letter code, as on the timing screens: the first three
+ * letters of the surname ("Kimi Antonelli" → "ANT", "Nico Hülkenberg" →
+ * "HUL").
+ */
+export function driverCode(name: string): string {
+  const words = foldAccents(name)
+    .trim()
+    .split(/\s+/)
+    .filter((w) => !NAME_SUFFIXES.has(w.toLowerCase()))
+  const surname = (words[words.length - 1] ?? '').replace(/[^A-Za-z]/g, '')
+  return surname.slice(0, 3).toUpperCase()
+}
+
+/** One of the weekend's markets, as the board reads it. */
+export interface DriverBoardMarket {
+  id: string
+  /** Settled, or past its close: shown, but not bet on. */
+  closed: boolean
+  /** A winner market's resolution: the answer that won. */
+  resolution?: string
+  answers: {
+    id: string
+    text: string
+    shortText?: string | null
+    prob: number
+    color?: string | null
+    resolution?: string
+    probChanges?: { day: number }
+  }[]
+}
+
+export interface DriverBoardCell {
+  answerId: string
+  /** 0 to 1. */
+  prob: number
+  /** The move over the last day, in points of probability. */
+  dayChange: number
+  won: boolean
+  closed: boolean
+}
+
+export interface DriverBoardRow {
+  /** The driver's name, which joins their answers across markets. */
+  name: string
+  shortName: string
+  code: string
+  color: string | null
+  /** The catch-all "Another driver". */
+  other: boolean
+  cells: Record<string, DriverBoardCell | undefined>
+}
+
+const clamp01 = (n: number) =>
+  Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0
+const finiteOr0Signed = (n: number | undefined) =>
+  n !== undefined && Number.isFinite(n) ? n : 0
+
+/**
+ * Every driver of the weekend's markets as one row, with their answer in
+ * each: the primary market's winners first once it settles, then its
+ * favourites, then anyone it doesn't list; "Another driver" last.
+ */
+export function buildDriverBoard(
+  markets: DriverBoardMarket[],
+  primaryId: string
+): DriverBoardRow[] {
+  const rows = new Map<string, DriverBoardRow>()
+  for (const market of markets) {
+    for (const a of market.answers) {
+      const key = foldAccents(a.text).trim().toLowerCase()
+      const other = a.text.trim() === OTHER_DRIVER_ANSWER
+      const row = rows.get(key) ?? {
+        name: a.text.trim(),
+        shortName: a.text.trim(),
+        code: other ? '' : driverCode(a.text),
+        color: null,
+        other,
+        cells: {},
+      }
+      if (!row.color && a.color) row.color = a.color
+      if (row.shortName === row.name && a.shortText) row.shortName = a.shortText
+      row.cells[market.id] = {
+        answerId: a.id,
+        prob: clamp01(a.prob),
+        dayChange: Math.round(finiteOr0Signed(a.probChanges?.day) * 100),
+        won: a.resolution === 'YES' || market.resolution === a.id,
+        closed: market.closed,
+      }
+      rows.set(key, row)
+    }
+  }
+  const primary = (r: DriverBoardRow) => r.cells[primaryId]
+  return sortBy(
+    [...rows.values()],
+    [
+      (r) => (r.other ? 1 : 0),
+      (r) => (primary(r)?.won ? 0 : 1),
+      (r) => -(primary(r)?.prob ?? -1),
+      (r) => -Math.max(0, ...Object.values(r.cells).map((c) => c?.prob ?? 0)),
+      (r) => r.name,
+    ]
+  )
 }

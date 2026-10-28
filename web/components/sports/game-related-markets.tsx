@@ -69,6 +69,8 @@ export function GameLinkedMarkets(props: {
   label?: string
   /** The hero's scoreboard, beside a small always-visible market preview. */
   matchup?: ReactNode
+  /** Open the list on first render (the featured F1 weekend's props). */
+  defaultExpanded?: boolean
 }) {
   const { game, matchup } = props
   const label =
@@ -76,7 +78,7 @@ export function GameLinkedMarkets(props: {
     (game.home && game.away
       ? `${game.home.name} vs ${game.away.name}`
       : game.question)
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(props.defaultExpanded ?? false)
   const panelId = useId()
   // The hero's props, folded under the scoreboard on narrow screens.
   const [heroPropsOpen, setHeroPropsOpen] = useState(false)

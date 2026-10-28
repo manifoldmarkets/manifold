@@ -1,7 +1,9 @@
 import { Answer } from './answer'
 import {
+  buildDriverBoard,
   buildRaceWeekends,
   ChampionshipCandidate,
+  driverCode,
   findRaceRelatedMarkets,
   pickRaceChampionships,
   raceDisplayName,
@@ -621,5 +623,84 @@ describe('review fixes', () => {
     const upcoming = [{ id: 'race' }, { id: 'pole' }, { id: 'other' }]
     expect(withoutRaceMarkets(upcoming, weekends)).toEqual([{ id: 'other' }])
     expect(withoutRaceMarkets(upcoming, [])).toEqual(upcoming)
+  })
+})
+
+describe("the featured weekend's driver board", () => {
+  it('codes drivers like the timing screens', () => {
+    expect(
+      [
+        'Kimi Antonelli',
+        'Andrea Kimi Antonelli',
+        'George Russell',
+        'Nico Hülkenberg',
+        'Sergio Pérez',
+        'Carlos Sainz Jr.',
+      ].map(driverCode)
+    ).toEqual(['ANT', 'ANT', 'RUS', 'HUL', 'PER', 'SAI'])
+  })
+
+  const winner = {
+    id: 'win',
+    closed: false,
+    answers: [
+      { id: 'w-rus', text: 'George Russell', prob: 0.2, color: '#00D2BE' },
+      {
+        id: 'w-ant',
+        text: 'Kimi Antonelli',
+        shortText: 'K. Antonelli',
+        prob: 0.4,
+        probChanges: { day: 0.043 },
+      },
+      { id: 'w-other', text: 'Another driver', prob: 0.01 },
+      {
+        id: 'w-ver',
+        text: 'Max Verstappen',
+        prob: 0.3,
+        probChanges: { day: -0.02 },
+      },
+    ],
+  }
+  const podium = {
+    id: 'top3',
+    closed: false,
+    answers: [
+      { id: 'p-ant', text: 'Kimi Antonelli', prob: 0.7, color: '#00D2BE' },
+      { id: 'p-rus', text: 'George Russell', prob: 0.5 },
+      { id: 'p-ver', text: 'Max Verstappen', prob: 0.45 },
+      { id: 'p-ham', text: 'Lewis Hamilton', prob: 0.3 },
+    ],
+  }
+
+  it('joins each driver across markets, the picked market setting the order', () => {
+    const rows = buildDriverBoard([winner, podium], 'win')
+    expect(rows.map((r) => r.code || r.name)).toEqual([
+      'ANT',
+      'VER',
+      'RUS',
+      'HAM',
+      'Another driver',
+    ])
+    const [ant] = rows
+    expect(ant).toMatchObject({ shortName: 'K. Antonelli', color: '#00D2BE' })
+    expect(ant.cells.win).toMatchObject({
+      answerId: 'w-ant',
+      prob: 0.4,
+      dayChange: 4,
+    })
+    expect(ant.cells.top3).toMatchObject({ answerId: 'p-ant', prob: 0.7 })
+    // Hamilton is only in the podium market.
+    expect(rows[3].cells.win).toBeUndefined()
+    expect(
+      buildDriverBoard([winner, podium], 'top3').map((r) => r.code)
+    ).toEqual(['ANT', 'RUS', 'VER', 'HAM', ''])
+  })
+
+  it('puts the winners first once a market settles, and marks it closed', () => {
+    const settled = { ...winner, closed: true, resolution: 'w-rus' }
+    const rows = buildDriverBoard([settled, podium], 'win')
+    expect(rows[0]).toMatchObject({ code: 'RUS' })
+    expect(rows[0].cells.win).toMatchObject({ won: true, closed: true })
+    expect(rows[1].cells.win?.won).toBe(false)
   })
 })
