@@ -424,7 +424,9 @@ export function GameFeed(props: {
                 <MyBetsSummary stakes={myStakes} />
               ) : (
                 <span>
-                  {filtered.length} of {active.length} loaded games
+                  {filtered.length + shownWeekends.length} of{' '}
+                  {active.length + weekends.length} loaded{' '}
+                  {weekends.length > 0 ? 'events' : 'games'}
                 </span>
               )}
               <button
