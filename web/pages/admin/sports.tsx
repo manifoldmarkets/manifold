@@ -18,6 +18,7 @@ import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { api, getSimilarGroupsToContract } from 'web/lib/api/api'
 import { APIResponse } from 'common/api/schema'
 import { ENV, ENV_CONFIG } from 'common/envs/constants'
+import { F1_DAYS_AHEAD } from 'common/f1-markets'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
 import { slugify } from 'common/util/slugify'
 import {
@@ -1210,14 +1211,15 @@ export default function SportsAdminPage() {
               {isF1 ? (
                 <p className="text-ink-500 text-sm">
                   Fetches <strong>{selectedCompetition.label}</strong> sessions
-                  in the next 14 days from BALLDONTLIE and creates a race winner
-                  and a podium market per race, a sprint winner per sprint and a
-                  pole market per qualifying, with the season&apos;s driver
-                  standings as the answers and the opening prices. Practice and
-                  sprint qualifying are listed but get no market. Sessions that
-                  already have a market are skipped, and one run creates at most
-                  12. The sports-f1-resolve job resolves them from the
-                  classification two hours after each market closes.
+                  in the next {F1_DAYS_AHEAD} days from BALLDONTLIE and creates
+                  a race winner and a podium market per race, a sprint winner
+                  per sprint and a pole market per qualifying, with the
+                  season&apos;s driver standings as the answers and the opening
+                  prices. Practice and sprint qualifying are listed but get no
+                  market. Sessions that already have a market are skipped, and
+                  one run creates at most 12. The sports-f1-resolve job resolves
+                  them from the classification two hours after each market
+                  closes.
                 </p>
               ) : (
                 <p className="text-ink-500 text-sm">
@@ -1277,7 +1279,7 @@ export default function SportsAdminPage() {
                 (isF1 ? (
                   <p className="text-ink-500 text-sm">
                     No sessions to create: BALLDONTLIE lists none for this
-                    competition in the next 14 days.
+                    competition in the next {F1_DAYS_AHEAD} days.
                   </p>
                 ) : (
                   <p className="text-ink-500 text-sm">

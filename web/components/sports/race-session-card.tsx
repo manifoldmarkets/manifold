@@ -115,13 +115,16 @@ export function RaceSessionCard(props: {
           </div>
           <Col className="min-w-0 gap-1.5">
             {heading}
-            {main && (
+            {/* Every market: with no featured card in this view, the podium
+                is nowhere else (F4213-12). */}
+            {session.markets.map((m) => (
               <MarketLine
-                market={main}
-                leaders={main.leaders.slice(0, RACE_CARD_LEADERS)}
+                key={m.id}
+                market={m}
+                leaders={m.leaders.slice(0, RACE_CARD_LEADERS)}
                 onBet={bet.open}
               />
-            )}
+            ))}
           </Col>
           {main && (
             <Link
@@ -179,6 +182,8 @@ export function RaceSessionCard(props: {
  * podium) swaps the board in place, starting on the featured session's
  * winner market. The board is the market's six leading drivers as tiles to
  * bet on; the markets people made about its session sit beside (or under) it.
+ * The header and pills sit outside that layout, which changes with whether
+ * the session has props, so a pill keeps its focus (F4213-13).
  */
 export function RaceSessionHero(props: { event: RaceSessionEvent }) {
   const { event } = props
@@ -197,7 +202,7 @@ export function RaceSessionHero(props: { event: RaceSessionEvent }) {
   const host = relatedHost(shown)
   const title = sessionTitle(shown)
   const name = raceDisplayName(weekend.name)
-  const matchup = (
+  const header = (
     <div className="relative isolate flex min-w-0 flex-col overflow-hidden">
       <SportHeroBackground sport="f1" scoreboard />
       <div className="flex items-center gap-2 px-4 py-2 sm:px-5">
@@ -214,7 +219,7 @@ export function RaceSessionHero(props: { event: RaceSessionEvent }) {
           title={`${name} ${picked.label.toLowerCase()}`}
         />
       </div>
-      <div className="mx-auto w-full max-w-xl px-4 pb-5 pt-1 sm:px-5">
+      <div className="mx-auto w-full max-w-xl px-4 pt-1 sm:px-5">
         <div className="text-ink-500 mb-1 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs">
           <span>
             {picked.session.label} ·{' '}
@@ -262,14 +267,17 @@ export function RaceSessionHero(props: { event: RaceSessionEvent }) {
             })}
           </div>
         )}
-        <div id={boardId} aria-live="polite">
-          <DriverBoard
-            market={market}
-            closed={market.isResolved || picked.session.status === 'finished'}
-            onBet={bet.open}
-            className="mt-3"
-          />
-        </div>
+      </div>
+    </div>
+  )
+  const board = (
+    <div className="min-w-0 px-4 pb-5 pt-3 sm:px-5">
+      <div id={boardId} aria-live="polite" className="mx-auto w-full max-w-xl">
+        <DriverBoard
+          market={market}
+          closed={market.isResolved || picked.session.status === 'finished'}
+          onBet={bet.open}
+        />
       </div>
     </div>
   )
@@ -278,10 +286,11 @@ export function RaceSessionHero(props: { event: RaceSessionEvent }) {
       id={raceSessionAnchor(event.id)}
       className="border-primary-200 bg-primary-50 scroll-mt-32 overflow-hidden rounded-2xl border"
     >
+      {header}
       {host ? (
-        <GameLinkedMarkets game={host} label={title} matchup={matchup} />
+        <GameLinkedMarkets game={host} label={title} matchup={board} />
       ) : (
-        matchup
+        board
       )}
       {bet.dialog}
     </section>

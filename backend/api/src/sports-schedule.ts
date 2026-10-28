@@ -117,6 +117,9 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   // Match across all games before applying the selected sport or row limit,
   // so rail counts and the week feed don't change when the user switches tabs.
   const attached = new Set<string>()
+  // The weekends each market hangs under one of the sessions of: it leaves
+  // the week list only where the page shows that weekend.
+  const underWeekends = new Map<string, string[]>()
   if (ordered.length > 0 || weekends.length > 0) {
     // Markets linked to a game go under it, where their creator put them.
     // A market linked to anything is left out of the team-name
@@ -238,20 +241,36 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
           }))
         }
         s.relatedCount = matches.length
-        for (const m of matches) attached.add(m.id)
+        for (const m of matches)
+          underWeekends.set(m.id, [...(underWeekends.get(m.id) ?? []), w.id])
       }
     }
   }
 
+  // The weekends this page shows: all of F1's on /sports/f1; on /sports,
+  // those within the games' horizon.
+  const shownWeekends =
+    cursor || (sport !== 'all' && sport !== 'f1')
+      ? []
+      : sport === 'f1'
+      ? weekends
+      : weekends.filter(onBefore(horizon))
+  const shownWeekendIds = new Set(shownWeekends.map((w) => w.id))
+
   // "This week": everything in the sports topics closing within a week that
   // is not a game row and not already hanging under one. For a sports market
   // the close time is the game time, so this is the schedule of what people
-  // made, with no matching involved. Markets under an F1 session leave it like
-  // a game's; the official F1 markets stay in, and the page drops the ones on
-  // the sessions it shows (withoutRaceMarkets).
+  // made, with no matching involved. A market under an F1 session leaves it
+  // like a game's, where the page shows its weekend: /sports doesn't show one
+  // three weeks out, so its markets stay listed there (F4213-11). The
+  // official F1 markets stay in, and the page drops the ones on the sessions
+  // it shows (withoutRaceMarkets).
   const gameIds = new Set(official.map((g) => g.id))
   const upcoming = weekAll.filter(
-    (m) => !gameIds.has(m.id) && !attached.has(m.id)
+    (m) =>
+      !gameIds.has(m.id) &&
+      !attached.has(m.id) &&
+      !(underWeekends.get(m.id) ?? []).some((id) => shownWeekendIds.has(id))
   )
 
   // Rail badges: live and upcoming games per sport, the rows its feed shows.
@@ -293,12 +312,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
           ? upcoming
           : upcoming.filter((m) => m.sport === sport)
         ).slice(0, MAX_UPCOMING_RETURNED),
-    raceWeekends:
-      cursor || (sport !== 'all' && sport !== 'f1')
-        ? []
-        : sport === 'f1'
-        ? weekends
-        : weekends.filter(onBefore(horizon)),
+    raceWeekends: shownWeekends,
     raceChampionships: championships,
     counts,
     liveCount,

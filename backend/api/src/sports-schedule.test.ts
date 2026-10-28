@@ -781,6 +781,43 @@ describe('F1 race weekends', () => {
     expect(await ids('all')).toEqual(['bdl-f1:374'])
   })
 
+  it("keeps a market under a weekend /sports doesn't show on its week list (F4213-11)", async () => {
+    const vegas = f1(
+      'vegas',
+      1900,
+      'race winner',
+      'winner',
+      Date.now() + 21 * 24 * HOUR
+    )
+    vegas.data.sportsEventId = 'bdl-f1:380:1900'
+    vegas.data.question = '2026 Las Vegas Grand Prix: race winner'
+    officialRows = [...official, ...f1Rows, vegas]
+    answerRows = [...answerRows, ...driverAnswers('vegas')]
+    // Closes this week, linked to the race three weeks out.
+    marketRows = [
+      ...marketRows,
+      community(
+        'vegas-prop',
+        'Will the Strip be dry on race night?',
+        Date.now() + 3 * 24 * HOUR
+      ),
+    ]
+    linkRows = [{ id: 'vegas-prop', parent_id: 'vegas', relation: 'prop' }]
+    linkedElsewhere = [{ id: 'vegas-prop' }]
+    const get = async (sport: 'all' | 'f1') => {
+      const response = await getSchedule({ sport })
+      return 'result' in response ? response.result : response
+    }
+    const all = await get('all')
+    expect(all.upcoming.map((m) => m.id)).toContain('vegas-prop')
+    const f1Page = await get('f1')
+    expect(f1Page.upcoming.map((m) => m.id)).not.toContain('vegas-prop')
+    const lasVegas = f1Page.raceWeekends?.find((w) => w.id === 'bdl-f1:380')
+    expect(lasVegas?.sessions[0].related).toEqual([
+      { id: 'vegas-prop', kind: 'linked', group: 'props' },
+    ])
+  })
+
   it('sends no weekends with a later page', async () => {
     const first = await getSchedule({ sport: 'f1', limit: 1 })
     const page = 'result' in first ? first.result : first
