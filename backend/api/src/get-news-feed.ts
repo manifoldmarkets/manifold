@@ -156,19 +156,35 @@ export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
     return { ...story, featuredId: featuredFor(story) }
   }
 
+  /** The Guardian's terms: its text is refreshed or dropped within 24
+   * hours. The refresher reads it again; should a refresh not run, the
+   * page still stops showing it. */
+  const withoutExpiredText = (s: NewsStory): NewsStory => {
+    const m = build.memos[s.id]
+    if (m?.articleProvider !== 'guardian' || now - (m.claimsAt ?? 0) <= DAY_MS)
+      return s
+    return {
+      ...s,
+      article: undefined,
+      claims: undefined,
+      claimsStatus: 'no-article',
+    }
+  }
+  const stories = build.stories.map(withoutExpiredText)
+
   /** Open markets on the story from any source: the matcher's links, a
    * claim's direct match, or one a reader attached. */
   const hasMarket = (s: NewsStory) =>
     s.contractIds.some((id) => contractFor(id)) ||
     (s.claims ?? []).some((c) => !!c.matchId && !!contractFor(c.matchId)) ||
     (attachmentsByStory.get(s.id)?.length ?? 0) > 0
-  const linked = build.stories.filter(hasMarket)
+  const linked = stories.filter(hasMarket)
   const counts: NewsFeedCounts = {}
   for (const s of linked) counts[s.category] = (counts[s.category] ?? 0) + 1
 
   // Sorted here rather than trusting the build order, which a cached build
   // from an older version may not share.
-  const pool = includeUnlinked ? build.stories : linked
+  const pool = includeUnlinked ? stories : linked
   const wanted = new Set((categories ?? []).filter(isNewsCategory))
   const filtered =
     wanted.size > 0 ? pool.filter((s) => wanted.has(s.category)) : pool

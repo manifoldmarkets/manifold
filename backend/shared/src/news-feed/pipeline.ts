@@ -557,7 +557,10 @@ export async function buildNewsFeed(
       forecastable: m?.forecastable,
       score: 0,
       article: read ? m?.article : undefined,
-      image: (read ? m?.article?.image : undefined) ?? s.image,
+      // An article's own picture is the publisher's: outlets mode only.
+      image:
+        (read && pictures === 'outlets' ? m?.article?.image : undefined) ??
+        s.image,
       claims: read ? claims : undefined,
       claimsStatus: read
         ? claims.length > 0

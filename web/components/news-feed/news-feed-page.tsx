@@ -274,7 +274,7 @@ export function NewsFeedPage() {
     onPublished: (m: SimulatedMarket) => setPublished((p) => [...p, m]),
     onAttached: () => refresh(),
     onLeave: saveAnchor,
-    claimsEnabled: (data?.config?.articles.length ?? 1) > 0,
+    claimsEnabled: (articleSourcesOf(data?.config) ?? ['rss']).length > 0,
   })
 
   return (
@@ -482,6 +482,11 @@ const ARTICLE_NAMES: Record<NewsArticleSource, string> = {
 
 const LICENSED_ARTICLES: NewsArticleSource[] = ['guardian', 'tollbit']
 
+/** The server's article sources. An older server sent one string; the
+ * page then says nothing about where claims come from. */
+const articleSourcesOf = (config?: NewsFeedConfig) =>
+  config && Array.isArray(config.articles) ? config.articles : undefined
+
 const listOf = (xs: string[]) =>
   xs.length <= 1
     ? xs.join('')
@@ -492,7 +497,7 @@ const listOf = (xs: string[]) =>
 function SourcesNote(props: { config?: NewsFeedConfig; linkedCount: number }) {
   const { config, linkedCount } = props
   const sources = (config?.sources ?? ['wikipedia']).map((s) => SOURCE_NAMES[s])
-  const articles = config?.articles ?? []
+  const articles = articleSourcesOf(config) ?? []
   const licensedText = articles.every((a) => LICENSED_ARTICLES.includes(a))
   return (
     <Col className="text-ink-400 gap-1.5 px-1 pb-2 pt-4 text-[11px]">
