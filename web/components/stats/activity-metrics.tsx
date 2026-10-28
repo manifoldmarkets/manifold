@@ -44,13 +44,13 @@ export function getActivityMetrics(props: {
 }): Record<ActivitySection, StatMetric[]> {
   const { stats, idVerifications = [], isAdmin } = props
   const dataFor = dataForStats(stats)
-  // Activation and D1 bets give each day's signups 24 hours to bet, but the
-  // stats job runs a few hours after midnight, so the newest day's cohort is
-  // still open (and reads low) until the next night's run. Leave it out.
-  const newestDay = stats[stats.length - 1]?.start_date
-  const cohortFor = dataForStats(
-    stats.filter((row) => row.start_date !== newestDay)
-  )
+  // Cohort columns give each day's signups 24 hours to bet before they count
+  // (activation, D1 bets) or are told apart from spam (signups). The stats
+  // job computes "yesterday" a few hours after midnight, so the newest day it
+  // has computed is still open until its next run recomputes it. Leave out
+  // each column's own newest day: even after a run that failed partway, the
+  // day still open is the newest one the column has.
+  const cohortFor = (key: NumericStatsColumn) => dataFor(key).slice(0, -1)
   const daily = (key: NumericStatsColumn, data = dataFor) => ({
     key: 'daily',
     label: 'Daily',
@@ -97,7 +97,10 @@ export function getActivityMetrics(props: {
         key: 'signups',
         label: 'Signups',
         description: 'New accounts, excluding likely spam.',
-        views: [daily('signups_real'), avg7('signups_real', 0, true)],
+        views: [
+          daily('signups_real', cohortFor),
+          avg7('signups_real', 0, true, cohortFor),
+        ],
         defaultView: '7d',
         summary: { kind: 'sum' },
       },
