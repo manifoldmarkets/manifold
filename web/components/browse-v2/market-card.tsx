@@ -161,7 +161,7 @@ export function MarketListRow(props: { contract: Contract; section: string }) {
           header: 'Topics',
           width: 'group w-6 shrink-0 sm:relative sm:w-0',
           content: ({ contract }) => (
-            <span className="sm:absolute sm:left-0 sm:top-0">
+            <span className="sm:absolute sm:left-0 sm:top-0 sm:-translate-y-1/2">
               <TopicsMenu contract={contract} small />
             </span>
           ),
