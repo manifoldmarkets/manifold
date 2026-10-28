@@ -15,7 +15,12 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { contractColumnsToSelectWithPrefix, log } from 'shared/utils'
+import { articleSource } from './articles'
 import { ClaimsMemo, findArticlesAndClaims } from './claims'
+
+/** NEWS_IMAGES=none skips outlet thumbnails (unlicensed in production). */
+export const imagesEnabled = () =>
+  (process.env.NEWS_IMAGES ?? 'outlets').trim() !== 'none'
 import {
   Candidate,
   cosine,
@@ -444,13 +449,17 @@ export async function buildNewsFeed(
   // 4. Claims, for stories with markets: the feed shows those by default.
   let claimContractIds: string[] = []
   try {
-    claimContractIds = await findArticlesAndClaims(
-      pg,
-      [...stories.values()]
-        .filter((s) => (memos[s.id]?.contractIds.length ?? 0) > 0)
-        .map((s) => ({ story: s, memo: memos[s.id] })),
-      now
-    )
+    // Off when no article source is configured: nothing to read claims from.
+    claimContractIds =
+      articleSource() === 'none'
+        ? []
+        : await findArticlesAndClaims(
+            pg,
+            [...stories.values()]
+              .filter((s) => (memos[s.id]?.contractIds.length ?? 0) > 0)
+              .map((s) => ({ story: s, memo: memos[s.id] })),
+            now
+          )
   } catch (e) {
     log.error('news-feed: claims step failed', {
       error: e instanceof Error ? e.message : String(e),
@@ -515,6 +524,7 @@ export async function buildNewsFeed(
   const wantImage = assembled
     .filter(
       (s) =>
+        imagesEnabled() &&
         s.contractIds.length > 0 &&
         !s.image &&
         !memos[s.id]?.imageTriedAt &&

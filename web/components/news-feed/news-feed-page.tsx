@@ -468,13 +468,16 @@ export function NewsFeedPage() {
         )}
 
         <p className="text-ink-400 px-1 pb-2 pt-4 text-[11px]">
-          Prototype. Stories come from Wikipedia's Current Events portal (CC
-          BY-SA) and Google News; headlines link out to the outlets. Markets are
-          matched by embedding similarity against every open market and verified
-          by an AI pass before they appear. Claims are short quotes from the
-          article's full text (a stand-in for a licensed full-text feed),
-          checked word for word against it. Publishing a market here is
-          simulated.
+          Prototype.{' '}
+          {data?.config?.sources.includes('google-news')
+            ? "Stories come from Wikipedia's Current Events portal (CC BY-SA) and Google News; "
+            : "Stories come from Wikipedia's Current Events portal (CC BY-SA); "}
+          headlines link out to the outlets. Markets are matched by embedding
+          similarity against every open market and verified by an AI pass before
+          they appear.{' '}
+          {data?.config?.articles !== 'none' &&
+            "Claims are short quotes from the article's full text (a stand-in for a licensed full-text feed), checked word for word against it. "}
+          Publishing a market here is simulated.
           {linkedCount > 0 &&
             ` ${linkedCount} stories currently have a market.`}
         </p>

@@ -36,6 +36,44 @@ export type NewsSourceLink = {
 
 export type NewsStoryOrigin = 'wikipedia' | 'google-news'
 
+/** Where the feed reads from, as the server is configured. Wikipedia's
+ * Current Events portal is CC BY-SA and the cheapest tier; the rest are
+ * the prototype's unlicensed sources and are off in a production build. */
+export type NewsFeedConfig = {
+  /** Story sources: 'wikipedia' and, in the prototype, 'google-news'. */
+  sources: NewsStoryOrigin[]
+  /** Where article bodies for claims come from: outlet pages ('rss'), the
+   * GNews API ('gnews'), or nowhere ('none', no claims). */
+  articles: 'rss' | 'gnews' | 'none'
+  /** Thumbnails fetched from outlets, or none. */
+  images: 'outlets' | 'none'
+}
+
+const MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+]
+
+/** The Current Events portal page for a day (UTC), e.g.
+ * Portal:Current_events/2026_October_28. */
+export const wikiCurrentEventsTitle = (day: Date) =>
+  `Portal:Current_events/${day.getUTCFullYear()}_${
+    MONTHS[day.getUTCMonth()]
+  }_${day.getUTCDate()}`
+
+export const wikiCurrentEventsUrl = (time: number) =>
+  `https://en.wikipedia.org/wiki/${wikiCurrentEventsTitle(new Date(time))}`
+
 /**
  * The article a card leads with, when we found one we can read: its own
  * headline, outlet, time and picture. Claims are quoted from its body.
@@ -166,6 +204,9 @@ export type NewsFeedResponse = {
   refreshing: boolean
   updatedTime: number | null
   lastError?: string
+  /** What this server reads, so the page can say where stories come from.
+   * Optional only so a page outlives an older server during a rollout. */
+  config?: NewsFeedConfig
   /** Newest first. */
   stories: NewsStory[]
   /** Stories matching the filter before paging. */

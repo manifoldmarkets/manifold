@@ -16,6 +16,7 @@ import {
   NewsClaim,
   NewsSourceLink,
   NewsStory,
+  wikiCurrentEventsUrl,
 } from 'common/news-feed'
 import { removeEmojis } from 'common/util/string'
 import { DAY_MS } from 'common/util/time'
@@ -168,7 +169,16 @@ export function StoryCard(props: {
                 className="text-ink-400 ml-1 inline h-3.5 w-3.5 align-baseline sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100"
               />
             </a>
-            <Outlets lead={lead} others={others} onLeave={leave} />
+            <Outlets
+              lead={lead}
+              others={others}
+              onLeave={leave}
+              credit={
+                story.origin === 'wikipedia'
+                  ? wikiCurrentEventsUrl(story.publishedTime)
+                  : undefined
+              }
+            />
           </Col>
           {story.image && !mini && (
             <a
@@ -379,8 +389,10 @@ function Outlets(props: {
   lead: Lead
   others: NewsSourceLink[]
   onLeave: () => void
+  /** The Wikipedia portal page the summary is from (CC BY-SA). */
+  credit?: string
 }) {
-  const { lead, others, onLeave } = props
+  const { lead, others, onLeave, credit } = props
   const [expanded, setExpanded] = useState(false)
   return (
     <Row className="text-ink-500 flex-wrap items-center gap-x-2.5 gap-y-1 text-xs">
@@ -420,6 +432,17 @@ function Outlets(props: {
             +{others.length} {others.length === 1 ? 'outlet' : 'outlets'}
           </button>
         ))}
+      {credit && (
+        <a
+          href={credit}
+          target="_blank"
+          rel="noreferrer"
+          className="text-ink-400 hover:text-primary-700 whitespace-nowrap"
+          title="Summary from Wikipedia's Current Events portal, CC BY-SA 4.0"
+        >
+          via Wikipedia · CC BY-SA
+        </a>
+      )}
     </Row>
   )
 }

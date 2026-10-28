@@ -19,6 +19,9 @@ import {
   refreshNewsFeed,
 } from 'shared/news-feed/state'
 import { cosine } from 'shared/news-feed/markets'
+import { articleSource } from 'shared/news-feed/articles'
+import { imagesEnabled } from 'shared/news-feed/pipeline'
+import { enabledSources } from 'shared/news-feed/sources'
 import { APIHandler } from './helpers/endpoint'
 
 const DEFAULT_LIMIT = 40
@@ -52,6 +55,11 @@ export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
     refreshing: status.refreshing,
     updatedTime: status.updatedTime,
     lastError: status.lastError,
+    config: {
+      sources: enabledSources(),
+      articles: articleSource(),
+      images: imagesEnabled() ? 'outlets' : 'none',
+    },
     stories: [],
     total: 0,
     counts: {},
@@ -209,9 +217,12 @@ export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
       const theirs = embeddingOf(t.id)
       return !!mine && !!theirs && cosine(mine, theirs) >= SAME_EVENT_SIMILARITY
     })
+    // Markets are specific, so two in common with a higher pick is the same
+    // event; so is most of a story's markets being covered already.
     const shared = s.contractIds.filter((id) => covered.has(id)).length
     if (
       sameEvent ||
+      shared >= 2 ||
       (s.contractIds.length > 0 && shared * 2 >= s.contractIds.length)
     )
       continue

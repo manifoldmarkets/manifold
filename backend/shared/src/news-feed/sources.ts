@@ -1,7 +1,12 @@
 import * as https from 'https'
 import { urlToHttpOptions } from 'url'
 import { uniqBy } from 'lodash'
-import { NewsCategory, NewsSourceLink, NewsStoryOrigin } from 'common/news-feed'
+import {
+  NewsCategory,
+  NewsSourceLink,
+  NewsStoryOrigin,
+  wikiCurrentEventsTitle,
+} from 'common/news-feed'
 import { log } from 'shared/utils'
 
 /**
@@ -27,7 +32,24 @@ export type RawStory = {
   sources: NewsSourceLink[]
 }
 
-const USER_AGENT = 'ManifoldNewsFeed/0.1 (prototype; https://manifold.markets)'
+/** Wikimedia asks bots to say who they are and how to reach them;
+ * NEWS_FEED_CONTACT is that address. */
+const USER_AGENT = `ManifoldNewsFeed/0.2 (+https://manifold.markets/news${
+  process.env.NEWS_FEED_CONTACT ? '; ' + process.env.NEWS_FEED_CONTACT : ''
+})`
+
+/** NEWS_SOURCES picks the story sources: 'wikipedia' alone is the
+ * licensed, cheapest tier; the prototype default adds Google News. */
+export function enabledSources(): NewsStoryOrigin[] {
+  const raw = process.env.NEWS_SOURCES ?? 'wikipedia,google-news'
+  const picked = raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(
+      (s): s is NewsStoryOrigin => s === 'wikipedia' || s === 'google-news'
+    )
+  return picked.length > 0 ? picked : ['wikipedia']
+}
 const FETCH_TIMEOUT_MS = 10_000
 const MAX_REDIRECTS = 3
 
@@ -159,26 +181,6 @@ const decodeEntities = (s: string) =>
 
 // ---------------------------------------------------------------------------
 // Wikipedia: Portal:Current events/<year> <Month> <day>
-
-const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-]
-
-export const wikiCurrentEventsTitle = (day: Date) =>
-  `Portal:Current_events/${day.getUTCFullYear()}_${
-    MONTHS[day.getUTCMonth()]
-  }_${day.getUTCDate()}`
 
 const WIKI_SECTION_CATEGORY: Record<string, NewsCategory> = {
   'armed conflicts and attacks': 'world',
@@ -419,12 +421,17 @@ export async function fetchGoogleNews(fetchedAt = Date.now()) {
 export async function gatherRawStories(now = Date.now()) {
   const day = 24 * 60 * 60 * 1000
   const days = [0, 1, 2].map((d) => new Date(now - d * day))
+  const sources = enabledSources()
   const [wiki, google] = await Promise.all([
-    Promise.allSettled(days.map((d) => fetchWikipediaCurrentEvents(d))),
-    fetchGoogleNews(now).catch((e) => {
-      log.error('news-feed: google news failed', { error: String(e) })
-      return [] as RawStory[]
-    }),
+    sources.includes('wikipedia')
+      ? Promise.allSettled(days.map((d) => fetchWikipediaCurrentEvents(d)))
+      : ([] as PromiseSettledResult<RawStory[]>[]),
+    sources.includes('google-news')
+      ? fetchGoogleNews(now).catch((e) => {
+          log.error('news-feed: google news failed', { error: String(e) })
+          return [] as RawStory[]
+        })
+      : ([] as RawStory[]),
   ])
   const stories: RawStory[] = []
   wiki.forEach((r, i) => {

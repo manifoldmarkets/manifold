@@ -182,6 +182,7 @@ function parseFeedItems(xml: string, outlet: Outlet, now: number) {
 
 /** Recent articles from the outlets we can read, newest first. */
 export async function fetchArticleIndex(now = Date.now()) {
+  if (articleSource() !== 'rss') return [] as IndexedArticle[]
   const jobs = ARTICLE_OUTLETS.flatMap((outlet) =>
     outlet.feeds.map((url) => ({ outlet, url }))
   )
@@ -263,7 +264,8 @@ export async function readArticle(
       ? { text: article.text.slice(0, MAX_BODY_CHARS) }
       : undefined
   }
-  if (!readableOutlet(article.url)) return undefined
+  if (articleSource() !== 'rss' || !readableOutlet(article.url))
+    return undefined
   const html = await fetchText(
     article.url,
     (u) => isPublicHttps(u) && !!readableOutlet(u.toString())
@@ -289,7 +291,18 @@ type GNewsArticle = {
 
 const TRUNCATION_MARK = /\s*\.{0,3}\s*\[\d+ chars\]\s*$/
 
-export const isGNewsEnabled = () => !!process.env.GNEWS_API_KEY
+/** NEWS_ARTICLE_SOURCES: 'rss' reads outlet pages (prototype only; their
+ * terms do not allow it in production), 'gnews' uses the API when a key is
+ * set, 'none' turns claims off. */
+export function articleSource(): 'rss' | 'gnews' | 'none' {
+  const raw = (process.env.NEWS_ARTICLE_SOURCES ?? 'rss').trim()
+  if (raw === 'none') return 'none'
+  if (raw === 'gnews') return process.env.GNEWS_API_KEY ? 'gnews' : 'none'
+  return 'rss'
+}
+
+export const isGNewsEnabled = () =>
+  !!process.env.GNEWS_API_KEY && articleSource() !== 'none'
 
 /** Articles GNews finds for a story's headline around its time. Untested
  * without a key; shaped from the documented response. */
