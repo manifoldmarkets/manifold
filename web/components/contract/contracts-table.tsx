@@ -202,6 +202,7 @@ export function ContractRow(props: {
   showPosition?: boolean
   onTrackClick?: () => void
   trackingPostfix?: string
+  compactMobile?: boolean
 }) {
   const contract = useLiveContract(props.contract)
   const isPoll = contract.outcomeType === 'POLL'
@@ -216,6 +217,7 @@ export function ContractRow(props: {
     showPosition,
     onTrackClick,
     trackingPostfix,
+    compactMobile,
   } = props
 
   const savedMetric = useSavedContractMetrics(contract)
@@ -252,7 +254,8 @@ export function ContractRow(props: {
           e.preventDefault()
         }}
         className={clsx(
-          'flex w-full flex-col p-2 text-base outline-none transition-colors sm:rounded-md',
+          'flex w-full flex-col p-2 outline-none transition-colors sm:rounded-md',
+          compactMobile ? 'text-sm sm:text-base' : 'text-base',
           highlighted
             ? 'bg-primary-100'
             : 'hover:bg-primary-100 focus-visible:bg-primary-100 active:bg-primary-100'
@@ -267,6 +270,9 @@ export function ContractRow(props: {
               contract.visibility === 'unlisted' && 'text-ink-600'
             )}
             hideAvatar={hideAvatar}
+            textClassName={
+              compactMobile ? 'line-clamp-2 sm:line-clamp-none' : undefined
+            }
           />
           {/* Hide normal action columns row on mobile when showing position row */}
           <Row
@@ -292,7 +298,7 @@ export function ContractRow(props: {
           <Col className="mb-2 ml-6 mt-1 gap-1 text-sm sm:ml-8">
             {answers.map((answer) => (
               <Row key={answer.id} className="items-center px-2">
-                <span className="text-ink-700 mr-1 line-clamp-1">
+                <span className="text-ink-700 line-clamp-1 mr-1">
                   {answer.text}
                 </span>
                 <span className="text-sm">
@@ -536,8 +542,9 @@ function ContractQuestion(props: {
   contract: Contract
   className?: string
   hideAvatar?: boolean
+  textClassName?: string
 }) {
-  const { contract, className, hideAvatar } = props
+  const { contract, className, hideAvatar, textClassName } = props
 
   return (
     <Row className={clsx('gap-2 sm:gap-4', className)}>
@@ -553,7 +560,10 @@ function ContractQuestion(props: {
           />
         </UserHovercard>
       )}
-      <span>
+      <span
+        className={textClassName}
+        title={textClassName ? contract.question : undefined}
+      >
         {/* <VisibilityIcon contract={contract} /> */}
         {contract.token == 'CASH' && (
           <span>

@@ -28,9 +28,17 @@ import { FaArrowDown, FaArrowUp } from 'react-icons/fa'
 
 import { BetDialog, MultiBetDialog } from 'web/components/bet/bet-dialog'
 import {
+  ContractRow,
   ContractStatusLabel,
   isClosed,
 } from 'web/components/contract/contracts-table'
+import {
+  actionColumn,
+  boostedColumn,
+  liquidityColumn,
+  probColumn,
+  traderColumn,
+} from 'web/components/contract/contract-table-col-formats'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { useUser } from 'web/hooks/use-user'
@@ -91,7 +99,6 @@ export function MarketCard(props: { contract: Contract; section: string }) {
       )}
       <div className="mt-auto flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
-          {/* Same place as in list rows: end of the stats line. */}
           <div className="flex min-w-0 items-center gap-1">
             <MarketMeta contract={contract} />
             <TopicsMenu contract={contract} small />
@@ -109,112 +116,87 @@ export function MarketCard(props: { contract: Contract; section: string }) {
   )
 }
 
-// Dense row for the list view.
-//
-// Desktop: question + stats | chart or leading answer | price | trade.
-// Multiple-choice answers use the chart column instead of adding a line.
-// Phones: question + price, then answer (or stats) + trade. Prioritize the
-// named answer over secondary stats, and keep long questions to two lines.
+// Reuse the classic browse row so avatars, stats, actions and desktop
+// answer-distribution bars stay aligned with the rest of the site.
 export function MarketListRow(props: { contract: Contract; section: string }) {
-  const contract = useLiveContract(props.contract)
-  const { section } = props
-  const isBinary = contract.outcomeType === 'BINARY'
-  const isMulti = isMultiCpmm(contract)
-  const leader = isMulti ? leadingAnswer(contract as MultiContract) : undefined
+  const { contract, section } = props
+  const user = useUser()
+  const hasMobileAnswer =
+    contract.outcomeType === 'MULTIPLE_CHOICE' &&
+    isMultiCpmm(contract) &&
+    !!leadingAnswer(contract)
 
   return (
-    <Link
-      href={contractPath(contract)}
-      onClick={() => trackClick(contract, section)}
-      className="hover:bg-primary-50 focus-visible:bg-primary-50 group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-0.5 px-3 py-2 outline-none transition-colors sm:flex sm:gap-3 sm:px-4"
-    >
-      <div className="contents sm:flex sm:min-w-0 sm:flex-1 sm:flex-col sm:gap-0.5">
-        <span
-          className="text-ink-1000 group-hover:text-primary-700 line-clamp-2 col-start-1 row-start-1 text-sm font-medium leading-5"
-          title={contract.question}
-        >
-          {contract.question}
-        </span>
-        <div className="hidden items-center gap-1 sm:flex">
-          <MarketMeta contract={contract} />
-          <TopicsMenu contract={contract} small />
-        </div>
-      </div>
-      <div className="contents">
-        <div className="col-start-1 row-start-2 flex min-w-0 items-center gap-1 sm:hidden">
-          {leader ? (
-            <>
-              {contract.boosted && <BoostedTag iconOnly />}
-              <LeadingAnswer
-                contract={contract as MultiContract}
-                answer={leader}
-              />
-              {(contract.isResolved || isClosed(contract)) && (
-                <span className="text-ink-500 shrink-0 text-xs">
-                  {contract.isResolved ? 'Resolved' : 'Closed'}
-                </span>
-              )}
-            </>
-          ) : (
-            <MarketMeta contract={contract} compact />
-          )}
-          <TopicsMenu contract={contract} small />
-        </div>
-        <div className="hidden w-28 shrink-0 sm:block lg:w-36">
-          {leader ? (
-            <LeadingAnswer
-              contract={contract as MultiContract}
-              answer={leader}
-              label
-            />
-          ) : isBinary && !contract.resolution ? (
-            <ProbSparkline
-              contract={contract as BinaryContract}
-              className="!h-6"
-            />
-          ) : null}
-        </div>
-        <div className="col-start-2 row-start-1 flex shrink-0 justify-end sm:w-14">
-          {isBinary ? (
-            <BinaryOdds contract={contract as BinaryContract} compact />
-          ) : leader ? (
-            <span className="text-ink-1000 text-base font-semibold tabular-nums leading-none">
-              {formatPercentShort(answerProb(leader))}
-            </span>
-          ) : (
-            <ContractStatusLabel
-              contract={contract}
-              className="text-base font-semibold"
-            />
-          )}
-        </div>
-        <div className="col-start-2 row-start-2 flex shrink-0 justify-end sm:w-[5.5rem]">
-          {isBinary ? (
-            <YesNoButtons contract={contract as BinaryContract} compact />
-          ) : (
-            <TradeButton contract={contract} compact />
-          )}
-        </div>
-      </div>
-    </Link>
+    <ContractRow
+      contract={contract}
+      trackingPostfix={section}
+      compactMobile
+      faded={
+        (isClosed(contract) && contract.creatorId !== user?.id) ||
+        contract.isResolved
+      }
+      columns={[
+        { ...boostedColumn, width: 'w-5 shrink-0 sm:w-6' },
+        {
+          ...traderColumn,
+          width: hasMobileAnswer
+            ? 'hidden sm:flex sm:w-[70px]'
+            : 'w-14 shrink-0 sm:w-[70px]',
+        },
+        {
+          ...probColumn,
+          width: hasMobileAnswer
+            ? 'min-w-0 flex-1 pr-2 sm:flex-none sm:w-[80px] sm:pr-0'
+            : 'w-[60px] shrink-0 sm:w-[80px]',
+          content: ({ contract }) => <ListProbability contract={contract} />,
+        },
+        {
+          ...liquidityColumn,
+          width: hasMobileAnswer
+            ? 'hidden sm:flex sm:w-[40px]'
+            : 'w-14 shrink-0 sm:w-[40px]',
+        },
+        actionColumn,
+        {
+          header: 'Topics',
+          width: 'group w-6 shrink-0',
+          content: ({ contract }) => <TopicsMenu contract={contract} small />,
+        },
+      ]}
+    />
   )
 }
 
-function LeadingAnswer(props: {
-  contract: MultiContract
-  answer: Answer
-  label?: boolean
-}) {
-  const { contract, answer, label } = props
-  const description = leaderLabel(contract, answer)
+function ListProbability(props: { contract: Contract }) {
+  const { contract } = props
+  const leader =
+    contract.outcomeType === 'MULTIPLE_CHOICE' && isMultiCpmm(contract)
+      ? leadingAnswer(contract)
+      : undefined
+  if (!leader) return probColumn.content({ contract })
+
+  const label = contract.isResolved
+    ? 'Resolved'
+    : isClosed(contract)
+    ? 'Closed'
+    : leaderLabel(contract as MultiContract, leader)
+
   return (
-    <span
-      className="flex min-w-0 flex-col text-xs leading-4"
-      title={`${description}: ${answer.text}`}
-    >
-      <span className={label ? 'text-ink-500' : 'sr-only'}>{description}:</span>
-      <span className="text-ink-800 truncate">{answer.text}</span>
-    </span>
+    <>
+      <span className="hidden sm:block">
+        {probColumn.content({ contract })}
+      </span>
+      <span
+        className="flex w-full min-w-0 items-center gap-1 text-xs sm:hidden"
+        title={label + ': ' + leader.text}
+      >
+        <span className="text-ink-500 shrink-0">{label}:</span>
+        <span className="text-ink-800 min-w-0 truncate">{leader.text}</span>
+        <span className="text-ink-900 ml-auto shrink-0 pl-1 font-medium tabular-nums">
+          {formatPercentShort(answerProb(leader))}
+        </span>
+      </span>
+    </>
   )
 }
 

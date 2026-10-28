@@ -12,7 +12,7 @@ import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { BrowsePageContent, browseViewPageClass } from '../browse'
+import { BrowsePageContent } from '../browse'
 import { useBrowseView } from 'web/components/browse-v2/use-browse-view'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 export default function Home() {
@@ -22,7 +22,7 @@ export default function Home() {
   const browseView = useBrowseView()
 
   return (
-    <Page trackPageView={'home'} className={browseViewPageClass(browseView)}>
+    <Page trackPageView={'home'} className="min-w-0 lg:px-4">
       <Welcome />
       <VerificationResultModal />
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />

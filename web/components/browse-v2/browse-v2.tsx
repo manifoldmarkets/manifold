@@ -345,7 +345,7 @@ function BrowseV2Inner(props: { onClassicView: () => void }) {
       </div>
 
       <div className="flex gap-8">
-        <div className="flex min-w-0 flex-1 flex-col gap-6">
+        <div className="flex w-full min-w-0 shrink-0 flex-col gap-6">
           {urlReady && showMovers && !isMobile && (
             <MoversStrip scope={scope} fold={fold} />
           )}
@@ -418,6 +418,8 @@ function BrowseV2Inner(props: { onClassicView: () => void }) {
           </section>
         </div>
 
+        {/* Keep the feed at the standard Page width. The rail uses the
+            three unused columns to its right, within Page's 1440px cap. */}
         <aside className="hidden w-72 shrink-0 flex-col gap-6 xl:flex">
           {urlReady && (
             <>
@@ -455,7 +457,7 @@ function Results(props: {
 
   if (layout === 'list') {
     const list = (items: Contract[] | undefined, more: boolean) => (
-      <div className="border-ink-200 dark:border-ink-300 divide-ink-200 dark:divide-ink-300 bg-canvas-0 divide-y overflow-hidden rounded-xl border">
+      <div className="bg-canvas-0 flex flex-col">
         {items
           ? items.map((c) => (
               <MarketListRow key={c.id} contract={c} section={section} />

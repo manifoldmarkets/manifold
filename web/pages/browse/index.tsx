@@ -29,10 +29,7 @@ export default function BrowsePage() {
   const browseView = useBrowseView()
 
   return (
-    <Page
-      trackPageView={'questions page'}
-      className={browseViewPageClass(browseView)}
-    >
+    <Page trackPageView={'questions page'} className="min-w-0 lg:px-4">
       {/* only show logo on mobile, since there's no sidebar */}
       {!user && <ManifoldLogo className="m-2 flex lg:hidden" />}
       <div className="lg:mb-4"></div>
@@ -42,14 +39,6 @@ export default function BrowsePage() {
     </Page>
   )
 }
-
-// The redesign takes the empty right-hand columns of the page grid.
-export const browseViewPageClass = (browseView: BrowseViewState) =>
-  clsx(
-    browseView.ready && browseView.view === 'new'
-      ? 'lg:col-span-10 lg:px-6'
-      : 'lg:px-4'
-  )
 
 export function BrowsePageContent(props: { browseView: BrowseViewState }) {
   const { browseView } = props
