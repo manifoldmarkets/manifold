@@ -51,6 +51,7 @@ const HUBS: Hub[] = [
     href: '/sports',
     title: 'Sports',
     subtitle: 'Live games, props and odds',
+    beta: true,
     icon: TbBallBasketball,
     className:
       'from-amber-100 to-lime-100 dark:from-amber-900/50 dark:to-lime-900/50',
