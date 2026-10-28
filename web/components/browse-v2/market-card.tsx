@@ -149,6 +149,11 @@ export function MarketListRow(props: { contract: Contract; section: string }) {
                 contract={contract as MultiContract}
                 answer={leader}
               />
+              {(contract.isResolved || isClosed(contract)) && (
+                <span className="text-ink-500 shrink-0 text-xs">
+                  {contract.isResolved ? 'Resolved' : 'Closed'}
+                </span>
+              )}
             </>
           ) : (
             <MarketMeta contract={contract} compact />
