@@ -370,7 +370,14 @@ export function NewsFeedPage() {
             top={top}
             cardProps={cardProps}
             contractsById={contractsById}
-            onSelect={(s) => setExpanded((e) => ({ ...e, [s.id]: true }))}
+            onSelect={(s, open) =>
+              setExpanded((e) => {
+                const next = { ...e }
+                if (open) next[s.id] = true
+                else delete next[s.id]
+                return next
+              })
+            }
           />
         )}
 

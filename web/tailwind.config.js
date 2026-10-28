@@ -45,6 +45,10 @@ module.exports = {
             width: '100%',
           },
         },
+        'news-fade-in': {
+          from: { opacity: '0', transform: 'translateY(6px)' },
+          to: { opacity: '1', transform: 'none' },
+        },
         'bounce-left': {
           '0%,100%': {
             transform: 'translateX(0%)',
@@ -376,6 +380,7 @@ module.exports = {
       },
       animation: {
         progress: 'progress linear forwards',
+        'news-fade-in': 'news-fade-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1)',
         'bounce-left': 'bounce-left 0.8s',
         'bounce-left-loop': 'bounce-left 0.8s infinite',
         'bounce-right': 'bounce-right 0.7s',
