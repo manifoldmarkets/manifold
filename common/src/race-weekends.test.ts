@@ -1,7 +1,8 @@
 import { Answer } from './answer'
 import {
   buildRaceWeekends,
-  featuredRaceWeekends,
+  raceWeekendSearchText,
+  raceWeekendTime,
   withoutRaceMarkets,
   RaceContract,
 } from './race-weekends'
@@ -175,13 +176,22 @@ describe('buildRaceWeekends', () => {
   })
 })
 
-describe('featuredRaceWeekends', () => {
-  it('features a weekend that is on or a few days away', () => {
-    const weekends = buildRaceWeekends([pole, race], byContract, NOW)
-    expect(featuredRaceWeekends(weekends, NOW)).toHaveLength(1)
-    expect(featuredRaceWeekends(weekends, QUALI - 5 * 24 * HOUR)).toEqual([])
-    const live = buildRaceWeekends([race], byContract, RACE + HOUR)
-    expect(featuredRaceWeekends(live, RACE + HOUR)).toHaveLength(1)
+describe('a weekend in the game feed', () => {
+  it("files under its live session's day, else its next session's", () => {
+    const at = (now: number) =>
+      raceWeekendTime(buildRaceWeekends([pole, race], byContract, now)[0])
+    expect(at(NOW)).toBe(QUALI)
+    expect(at(QUALI + HOUR)).toBe(QUALI)
+    // Qualifying is over: Sunday's race is what's next.
+    expect(at(QUALI + 4 * HOUR)).toBe(RACE)
+  })
+
+  it('is found by its name, sessions and drivers', () => {
+    const [w] = buildRaceWeekends([pole, race], byContract, NOW)
+    const text = raceWeekendSearchText(w)
+    for (const q of ['mexico', 'grand prix', 'f1', 'qualifying', 'antonelli'])
+      expect(text).toContain(q)
+    expect(text).not.toContain('nfl')
   })
 })
 

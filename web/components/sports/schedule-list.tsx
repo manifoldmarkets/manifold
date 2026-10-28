@@ -8,12 +8,19 @@ import {
   XIcon,
 } from '@heroicons/react/solid'
 import dayjs from 'dayjs'
+import { uniq, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useState } from 'react'
+import {
+  RaceWeekend,
+  raceWeekendSearchText,
+  raceWeekendTime,
+} from 'common/race-weekends'
 import { ScheduleGame } from 'common/sports-schedule'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { GameRow, GameRowSkeleton } from 'web/components/sports/game-row'
+import { RaceWeekendCard } from 'web/components/sports/race-weekend-card'
 import { Carousel } from 'web/components/widgets/carousel'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -70,6 +77,11 @@ export function GameFeed(props: {
   hasMore: boolean
   loadMore: () => Promise<boolean>
   showLeague: boolean
+  /**
+   * F1 weekends, among the games: a live one under "Live now", the rest under
+   * the day of their next session.
+   */
+  raceWeekends?: RaceWeekend[]
   /** Shown when there is nothing live or upcoming. */
   empty: ReactNode
 }) {
@@ -85,6 +97,9 @@ export function GameFeed(props: {
   )
   const active = games.filter(
     (game) => game.status === 'upcoming' || game.status === 'live'
+  )
+  const weekends = (props.raceWeekends ?? []).filter(
+    (w) => w.status !== 'finished'
   )
   const likes = useGameLikes(active.map((game) => game.id))
   const positions = useGamePositions(active.map((game) => game.id))
@@ -125,12 +140,43 @@ export function GameFeed(props: {
   const upcoming = filtered.filter(
     (g) => g.status === 'upcoming' && g.id !== featured?.id
   )
-  const days = groupByDay(upcoming, (g) => g.startTime).sort((a, b) =>
-    a.key.localeCompare(b.key)
+  // Weekends take the same filters as games, except Liked and My bets: likes
+  // and positions don't cover them yet.
+  const shownWeekends =
+    filter === 'liked' || filter === 'mine'
+      ? []
+      : weekends.filter(
+          (w) =>
+            (filter !== 'live' || w.status === 'live') &&
+            (date === 'all' ||
+              dayjs(raceWeekendTime(w)).format('YYYY-MM-DD') === date) &&
+            (!normalized || raceWeekendSearchText(w).includes(normalized))
+        )
+  const liveWeekends = shownWeekends.filter((w) => w.status === 'live')
+  const gameDays = groupByDay(upcoming, (g) => g.startTime)
+  const weekendDays = groupByDay(
+    shownWeekends.filter((w) => w.status === 'upcoming'),
+    raceWeekendTime
   )
-  const allDays = groupByDay(active, (game) => game.startTime).sort((a, b) =>
-    a.key.localeCompare(b.key)
-  )
+  const days = uniq([...gameDays, ...weekendDays].map((d) => d.key))
+    .sort()
+    .map((key) => {
+      const gameDay = gameDays.find((d) => d.key === key)
+      const weekendDay = weekendDays.find((d) => d.key === key)
+      return {
+        key,
+        label: gameDay?.label ?? weekendDay?.label ?? key,
+        items: gameDay?.items ?? [],
+        weekends: weekendDay?.items ?? [],
+      }
+    })
+  const allDays = uniqBy(
+    [
+      ...groupByDay(active, (game) => game.startTime),
+      ...groupByDay(weekends, raceWeekendTime),
+    ],
+    (d) => d.key
+  ).sort((a, b) => a.key.localeCompare(b.key))
   // What the My bets filter adds up: the stake on each game it shows.
   const myStakes: GameStake[] =
     filter === 'mine'
@@ -169,7 +215,7 @@ export function GameFeed(props: {
     </div>
   )
 
-  if (loading && games.length === 0) {
+  if (loading && games.length === 0 && weekends.length === 0) {
     return (
       <Col className="gap-2">
         <SectionHeader label="Up next" />
@@ -177,7 +223,7 @@ export function GameFeed(props: {
       </Col>
     )
   }
-  if (active.length === 0) return <>{empty}</>
+  if (active.length === 0 && weekends.length === 0) return <>{empty}</>
 
   return (
     <div className="min-w-0">
@@ -263,12 +309,17 @@ export function GameFeed(props: {
             >
               {(
                 [
-                  { value: 'all', label: 'All games', count: active.length },
+                  {
+                    value: 'all',
+                    label: 'All games',
+                    count: active.length + weekends.length,
+                  },
                   {
                     value: 'live',
                     label: 'Live',
-                    count: active.filter((game) => game.status === 'live')
-                      .length,
+                    count:
+                      active.filter((game) => game.status === 'live').length +
+                      weekends.filter((w) => w.status === 'live').length,
                   },
                   {
                     value: 'liked',
@@ -423,7 +474,7 @@ export function GameFeed(props: {
             onPositionsChange={() => void positions.refreshGame(featured.id)}
           />
         )}
-        {filtered.length === 0 && (
+        {filtered.length === 0 && shownWeekends.length === 0 && (
           <div className="border-ink-200 rounded-xl border border-dashed px-5 py-8 text-center">
             <h3 className="text-ink-900 font-semibold">
               {filter === 'liked'
@@ -462,20 +513,32 @@ export function GameFeed(props: {
             </button>
           </div>
         )}
-        {live.length > 0 && (
+        {(live.length > 0 || liveWeekends.length > 0) && (
           <Col className="gap-2">
-            <SectionHeader label="Live now" count={live.length} accent />
-            {renderGames(live)}
+            <SectionHeader
+              label="Live now"
+              count={live.length + liveWeekends.length}
+              unit={liveWeekends.length > 0 ? 'event' : 'game'}
+              accent
+            />
+            {liveWeekends.map((w) => (
+              <RaceWeekendCard key={w.id} weekend={w} />
+            ))}
+            {live.length > 0 && renderGames(live)}
           </Col>
         )}
         {days.map((day) => (
           <Col key={day.key} className="gap-2">
             <SectionHeader
               label={day.label}
-              sublabel={dayjs(day.items[0].startTime).format('MMM D')}
-              count={day.items.length}
+              sublabel={dayjs(day.key).format('MMM D')}
+              count={day.items.length + day.weekends.length}
+              unit={day.weekends.length > 0 ? 'event' : 'game'}
             />
-            {renderGames(day.items)}
+            {day.weekends.map((w) => (
+              <RaceWeekendCard key={w.id} weekend={w} />
+            ))}
+            {day.items.length > 0 && renderGames(day.items)}
           </Col>
         ))}
         {hasMore && filter !== 'live' ? (

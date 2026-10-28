@@ -6,24 +6,9 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 
 /**
- * F1 weekends, a card each: above the game feed on /sports while one is on
- * or coming up, and the F1 page's main content.
+ * An F1 weekend in the game feed (GameFeed): its sessions in order, each with
+ * its markets' leading drivers.
  */
-export function RaceWeekends(props: {
-  weekends: RaceWeekend[]
-  className?: string
-}) {
-  const { weekends, className } = props
-  if (weekends.length === 0) return null
-  return (
-    <Col className={clsx('gap-3', className)}>
-      {weekends.map((w) => (
-        <RaceWeekendCard key={w.id} weekend={w} />
-      ))}
-    </Col>
-  )
-}
-
 export function RaceWeekendCard(props: { weekend: RaceWeekend }) {
   const { weekend } = props
   const last = weekend.sessions[weekend.sessions.length - 1]

@@ -246,28 +246,37 @@ export function buildRaceWeekends(
   ])
 }
 
-/** How soon a weekend's next session has to be for /sports to feature it. */
-export const FEATURED_RACE_WITHIN_MS = 4 * 24 * 60 * 60 * 1000
-
 /**
- * The weekends /sports puts above its game feed: one that's on, or whose
- * next session is within FEATURED_RACE_WITHIN_MS. The F1 page shows them all.
+ * Where a weekend sits in the game feed: at its live session's start, else
+ * its next session's, so it files under the day of what's on next.
  */
-export function featuredRaceWeekends(
-  weekends: RaceWeekend[],
-  now: number
-): RaceWeekend[] {
-  return weekends.filter((w) => {
-    if (w.status === 'live') return true
-    const next = w.sessions.find((s) => s.status === 'upcoming')
-    return !!next && next.startTime - now <= FEATURED_RACE_WITHIN_MS
-  })
+export function raceWeekendTime(w: RaceWeekend): number {
+  const next =
+    w.sessions.find((s) => s.status === 'live') ??
+    w.sessions.find((s) => s.status === 'upcoming')
+  return next?.startTime ?? w.startTime
+}
+
+/** What the feed's search matches a weekend on: name, sessions, drivers. */
+export function raceWeekendSearchText(w: RaceWeekend): string {
+  return [
+    w.name,
+    'Formula 1 F1',
+    ...w.sessions.flatMap((s) => [
+      s.label,
+      ...s.markets.flatMap((m) =>
+        m.leaders.flatMap((l) => [l.name, l.shortName ?? ''])
+      ),
+    ]),
+  ]
+    .join(' ')
+    .toLowerCase()
 }
 
 /**
  * The week's other markets without the ones on the cards being shown. The API
- * keeps F1 markets in that list, so a weekend that isn't on a card (too far
- * off to feature, or an older page that can't draw one) still lists them.
+ * keeps F1 markets in that list, so a page that can't draw a weekend's card (an
+ * older one) still lists them.
  */
 export function withoutRaceMarkets<T extends { id: string }>(
   upcoming: T[],

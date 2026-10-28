@@ -2,7 +2,7 @@ import { keyBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo } from 'react'
 import { OG_CARD_HEIGHT, OG_CARD_WIDTH } from 'common/edge/og'
-import { featuredRaceWeekends, withoutRaceMarkets } from 'common/race-weekends'
+import { withoutRaceMarkets } from 'common/race-weekends'
 import { SportsOgMarket, sportsOgImageAlt } from 'common/sports-og'
 import {
   AnySportKey,
@@ -10,7 +10,6 @@ import {
   SPORT_KEY_RE,
 } from 'common/sports-schedule'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
-import { RaceWeekends } from 'web/components/sports/race-weekend-card'
 import { GameFeed } from 'web/components/sports/schedule-list'
 import { sportPath } from 'web/components/sports/sport-rail'
 import {
@@ -80,11 +79,8 @@ export default function SportsPage({
   )
   const sports = rail?.sports ?? CURATED_SPORTS
   const sportsByKey = useMemo(() => keyBy(sports, 'key'), [sports])
-  // An F1 weekend that's on or a few days away goes above the games.
-  const weekends = featuredRaceWeekends(
-    schedule?.raceWeekends ?? [],
-    Date.now()
-  )
+  // F1 weekends go in the feed among the games, by their next session.
+  const weekends = schedule?.raceWeekends ?? []
   const markets = (
     <SportMarkets
       sport="all"
@@ -124,18 +120,16 @@ export default function SportsPage({
             queryString: 'upcoming',
             content: (
               <div className="pt-3">
-                <RaceWeekends weekends={weekends} className="mb-4" />
                 <GameFeed
                   games={schedule?.games ?? []}
+                  raceWeekends={weekends}
                   loading={loading || !schedule}
                   hasMore={hasMore}
                   loadMore={loadMore}
                   showLeague
                   empty={
                     <div className="flex flex-col gap-6">
-                      {weekends.length === 0 && (
-                        <NoGames sports={sports} counts={rail?.counts ?? {}} />
-                      )}
+                      <NoGames sports={sports} counts={rail?.counts ?? {}} />
                       {markets}
                     </div>
                   }

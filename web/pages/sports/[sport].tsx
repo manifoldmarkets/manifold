@@ -6,7 +6,6 @@ import { withoutRaceMarkets } from 'common/race-weekends'
 import { CURATED_SPORTS, SPORT_KEY_RE } from 'common/sports-schedule'
 import { Col } from 'web/components/layout/col'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
-import { RaceWeekends } from 'web/components/sports/race-weekend-card'
 import { GameFeed } from 'web/components/sports/schedule-list'
 import { sportPath } from 'web/components/sports/sport-rail'
 import {
@@ -52,8 +51,8 @@ export default function SportPage() {
   const games = schedule?.games ?? []
   // Tag cards with their league only when the sport has several (soccer).
   const showLeague = uniq(games.map((g) => g.league)).length > 1
-  // F1's weekends (the API sends them only for F1): all of them, above any
-  // games.
+  // F1's weekends (the API sends them only for F1), in the feed by their next
+  // session.
   const weekends = schedule?.raceWeekends ?? []
 
   if (unknown) {
@@ -123,23 +122,21 @@ export default function SportPage() {
             queryString: 'games',
             content: (
               <div className="pt-3">
-                <RaceWeekends weekends={weekends} className="mb-4" />
                 <GameFeed
                   key={key}
                   games={games}
+                  raceWeekends={weekends}
                   loading={loading || !schedule}
                   hasMore={hasMore}
                   loadMore={loadMore}
                   showLeague={showLeague}
                   empty={
                     <div className="flex flex-col gap-6">
-                      {weekends.length === 0 && (
-                        <NoGames
-                          sport={sport}
-                          sports={sports}
-                          counts={rail?.counts ?? {}}
-                        />
-                      )}
+                      <NoGames
+                        sport={sport}
+                        sports={sports}
+                        counts={rail?.counts ?? {}}
+                      />
                       {markets}
                     </div>
                   }
