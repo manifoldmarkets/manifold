@@ -1,14 +1,20 @@
-// Every 15 minutes: resolve the F1 markets that closed at least
-// F1_RESOLVE_DELAY_HOURS ago from BALLDONTLIE's classification of their
-// session, and keep the season title markets' close on the final race and
-// pay them from the final standings (shared/f1-markets.ts). A cheap query,
-// and no provider call while no session market is due and no title market
-// is open. No-op without BALLDONTLIE_API_KEY.
+// Every 15 minutes: keep open F1 session markets on their sessions' times (a
+// session moved, postponed or cancelled), resolve closed ones from
+// BALLDONTLIE's classification of their session once it's due
+// (F1_RESOLVE_DELAY_HOURS after the session's own close), and keep the
+// season title markets' close on the final race and pay them from the final
+// standings (shared/f1-markets.ts). A provider call or two while a session
+// market is unresolved, and none while none is and no title market is open.
+// No-op without BALLDONTLIE_API_KEY.
 
 import { log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { hasBalldontlieKey } from 'shared/balldontlie-f1-client'
-import { resolveF1Markets, resolveF1TitleMarkets } from 'shared/f1-markets'
+import {
+  resolveF1Markets,
+  resolveF1TitleMarkets,
+  syncF1SessionMarkets,
+} from 'shared/f1-markets'
 
 // Markets already reported as needing a person, for this process's
 // lifetime: one alert each, not one every 15 minutes.
@@ -24,10 +30,36 @@ export async function resolveF1SportsMarkets() {
     return
   }
   const pg = createSupabaseDirectClient()
-  const r = await resolveF1Markets(pg, alerted)
-  if (r.checked > 0) {
-    log(
-      `[sports-f1-resolve] checked=${r.checked} resolved=${r.resolved} waiting=${r.waiting} attention=${r.attention} errors=${r.errors}`
+  // First, so a session cancelled since the last run closes before anything
+  // reads it. A provider outage here mustn't stop the payouts below.
+  try {
+    const s = await syncF1SessionMarkets(pg)
+    if (s.moved + s.closed + s.marked > 0) {
+      log(
+        `[sports-f1-resolve] sessions: checked=${s.checked} moved=${s.moved} closed=${s.closed} cancellations=${s.marked}`
+      )
+    }
+  } catch (e) {
+    log.error(
+      `[sports-f1-resolve] couldn't check session times: ${
+        e instanceof Error ? e.message : String(e)
+      }`
+    )
+  }
+  // Each phase on its own, so a provider outage in one doesn't stop the
+  // next.
+  try {
+    const r = await resolveF1Markets(pg, alerted)
+    if (r.checked > 0) {
+      log(
+        `[sports-f1-resolve] checked=${r.checked} resolved=${r.resolved} waiting=${r.waiting} attention=${r.attention} errors=${r.errors}`
+      )
+    }
+  } catch (e) {
+    log.error(
+      `[sports-f1-resolve] session markets didn't resolve: ${
+        e instanceof Error ? e.message : String(e)
+      }`
     )
   }
   // A title waits all season, so only a run that did something says so.

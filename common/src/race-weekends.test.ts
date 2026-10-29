@@ -7,6 +7,7 @@ import {
   findRaceRelatedMarkets,
   pickRaceChampionships,
   raceDisplayName,
+  raceHeart,
   raceSessionEvents,
   raceSessionSearchText,
   raceWeekendMarkets,
@@ -808,11 +809,65 @@ describe("the featured weekend's driver board", () => {
     ).toEqual(['ANT', 'RUS', 'VER', 'HAM', ''])
   })
 
+  it('treats the built-in "Other" as the catch-all, last and without a code', () => {
+    // A market made since, with an added stand-in it outranks.
+    const current = {
+      ...winner,
+      answers: [
+        ...winner.answers.filter((a) => a.id !== 'w-other'),
+        { id: 'w-law', text: 'Liam Lawson', prob: 0.004 },
+        { id: 'w-other', text: 'Other', prob: 0.02, isOther: true },
+      ],
+    }
+    const rows = buildDriverBoard([current, podium], 'win')
+    expect(rows.map((r) => r.code || r.name)).toEqual([
+      'ANT',
+      'VER',
+      'RUS',
+      'LAW',
+      'HAM',
+      'Other',
+    ])
+    expect(rows[5]).toMatchObject({ other: true, code: '' })
+  })
+
   it('puts the winners first once a market settles, and marks it closed', () => {
     const settled = { ...winner, closed: true, resolution: 'w-rus' }
     const rows = buildDriverBoard([settled, podium], 'win')
     expect(rows[0]).toMatchObject({ code: 'RUS' })
     expect(rows[0].cells.win).toMatchObject({ won: true, closed: true })
     expect(rows[1].cells.win?.won).toBe(false)
+  })
+})
+
+describe('raceHeart', () => {
+  const liked =
+    (...ids: string[]) =>
+    (id: string) =>
+      ids.includes(id)
+
+  it('likes the market the card opens when none is liked', () => {
+    expect(raceHeart(['win', 'podium'], 'podium', liked())).toEqual({
+      liked: false,
+      change: ['podium'],
+    })
+  })
+
+  it('is on when any market is liked, and unlikes every liked one', () => {
+    // Liked on the market page or the featured card, not the one it opens.
+    expect(raceHeart(['win', 'podium'], 'podium', liked('win'))).toEqual({
+      liked: true,
+      change: ['win'],
+    })
+    expect(
+      raceHeart(['win', 'podium'], 'win', liked('win', 'podium', 'other'))
+    ).toEqual({ liked: true, change: ['win', 'podium'] })
+  })
+
+  it("ignores likes on other sessions' markets", () => {
+    expect(raceHeart(['win'], 'win', liked('other'))).toEqual({
+      liked: false,
+      change: ['win'],
+    })
   })
 })

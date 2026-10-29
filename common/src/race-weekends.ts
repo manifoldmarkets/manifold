@@ -47,6 +47,8 @@ export interface RaceMarketRef {
     prob: number
     color: string | null
     won: boolean
+    /** "Other", or an older market's "Another driver": nobody in particular. */
+    other?: boolean
   }[]
   answerCount: number
   /** Absent from an API that predates them. */
@@ -162,6 +164,10 @@ function sessionLabel(
 const finiteOr0 = (n: number | undefined) =>
   n !== undefined && Number.isFinite(n) ? Math.max(0, n) : 0
 
+/** "Other", or the stand-in answer an older market was made with. */
+const isOtherAnswer = (a: { text: string; isOther?: boolean }) =>
+  !!a.isOther || a.text.trim() === OTHER_DRIVER_ANSWER
+
 function marketRef(
   c: RaceContract,
   answers: Answer[],
@@ -190,6 +196,7 @@ function marketRef(
       prob: Number.isFinite(a.prob) ? Math.min(1, Math.max(0, a.prob)) : 0,
       color: a.color ?? null,
       won: won(a),
+      other: isOtherAnswer(a),
     })),
     answerCount: answers.length,
     volume: finiteOr0(c.volume),
@@ -317,6 +324,22 @@ export function topRaceMarket(
       !best || finiteOr0(m.volume) > finiteOr0(best.volume) ? m : best,
     undefined
   )
+}
+
+/**
+ * A heart over several markets, as a session's card has: on while any of
+ * `ids` is liked. Pressed, it likes `target` (the market the card opens), or
+ * unlikes every liked one, so a like made elsewhere can be taken back too.
+ */
+export function raceHeart(
+  ids: string[],
+  target: string,
+  isLiked: (id: string) => boolean
+): { liked: boolean; change: string[] } {
+  const on = ids.filter(isLiked)
+  return on.length > 0
+    ? { liked: true, change: on }
+    : { liked: false, change: [target] }
 }
 
 export const raceSessionId = (
@@ -749,6 +772,7 @@ export interface DriverBoardMarket {
     color?: string | null
     resolution?: string
     probChanges?: { day: number }
+    isOther?: boolean
   }[]
 }
 
@@ -768,7 +792,7 @@ export interface DriverBoardRow {
   shortName: string
   code: string
   color: string | null
-  /** The catch-all "Another driver". */
+  /** The catch-all: "Other", or an older market's "Another driver". */
   other: boolean
   cells: Record<string, DriverBoardCell | undefined>
 }
@@ -781,7 +805,7 @@ const finiteOr0Signed = (n: number | undefined) =>
 /**
  * Every driver of the weekend's markets as one row, with their answer in
  * each: the primary market's winners first once it settles, then its
- * favourites, then anyone it doesn't list; "Another driver" last.
+ * favourites, then anyone it doesn't list; "Other" last.
  */
 export function buildDriverBoard(
   markets: DriverBoardMarket[],
@@ -791,7 +815,7 @@ export function buildDriverBoard(
   for (const market of markets) {
     for (const a of market.answers) {
       const key = foldAccents(a.text).trim().toLowerCase()
-      const other = a.text.trim() === OTHER_DRIVER_ANSWER
+      const other = isOtherAnswer(a)
       const row = rows.get(key) ?? {
         name: a.text.trim(),
         shortName: a.text.trim(),

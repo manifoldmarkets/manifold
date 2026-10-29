@@ -10,8 +10,13 @@ import {
   flagImageCode,
   FDMatch,
   TournamentConfig,
+  canStaffAddSportsAnswers,
+  MANIFOLD_SPORTS_USER_IDS,
+  sportsMarketAnte,
 } from './sports'
 import { MAX_GROUPS_PER_MARKET } from './group'
+import { getAnte } from './economy'
+import { ENV_CONFIG, MOD_IDS } from './envs/constants'
 
 describe('pickSportsWinningAnswer', () => {
   // Knockout match — answers carry bare team names, no Draw answer.
@@ -204,16 +209,26 @@ function makeMatch(overrides: Partial<FDMatch> = {}): FDMatch {
     stage: 'GROUP_STAGE',
     group: 'GROUP_A',
     homeTeam: {
-      id: 1, name: 'Brazil', shortName: 'Brazil', tla: 'BRA',
-      crest: 'https://x/bra.png', area: { code: 'BRA' },
+      id: 1,
+      name: 'Brazil',
+      shortName: 'Brazil',
+      tla: 'BRA',
+      crest: 'https://x/bra.png',
+      area: { code: 'BRA' },
     },
     awayTeam: {
-      id: 2, name: 'Argentina', shortName: 'Argentina', tla: 'ARG',
-      crest: 'https://x/arg.png', area: { code: 'ARG' },
+      id: 2,
+      name: 'Argentina',
+      shortName: 'Argentina',
+      tla: 'ARG',
+      crest: 'https://x/arg.png',
+      area: { code: 'ARG' },
     },
     score: {
-      winner: null, duration: 'REGULAR',
-      fullTime: { home: null, away: null }, halfTime: { home: null, away: null },
+      winner: null,
+      duration: 'REGULAR',
+      fullTime: { home: null, away: null },
+      halfTime: { home: null, away: null },
     },
     ...overrides,
   }
@@ -221,7 +236,9 @@ function makeMatch(overrides: Partial<FDMatch> = {}): FDMatch {
 
 // additionalGroupIds empty for both envs → groupIds are deterministic regardless
 // of the ENV the test runs under.
-function makeConfig(overrides: Partial<TournamentConfig> = {}): TournamentConfig {
+function makeConfig(
+  overrides: Partial<TournamentConfig> = {}
+): TournamentConfig {
   return {
     name: 'Test Tournament 2026',
     shortLabel: "Test '26",
@@ -238,7 +255,11 @@ function makeConfig(overrides: Partial<TournamentConfig> = {}): TournamentConfig
     additionalGroupIds: { dev: [], prod: [] },
     manifoldSportsUserId: { dev: 'd', prod: 'p' },
     closeTimeOffsetMs: 2.5 * 60 * 60 * 1000,
-    stageLiquidityTiers: { GROUP_STAGE: 1_000, ROUND_OF_16: 10_000, FINAL: 10_000 },
+    stageLiquidityTiers: {
+      GROUP_STAGE: 1_000,
+      ROUND_OF_16: 10_000,
+      FINAL: 10_000,
+    },
     ...overrides,
   }
 }
@@ -305,7 +326,9 @@ describe('flagImageCode', () => {
 
 describe('stageLabel', () => {
   it('formats group stage from the group code', () => {
-    expect(stageLabel(makeMatch({ stage: 'GROUP_STAGE', group: 'GROUP_C' }))).toBe('Group C')
+    expect(
+      stageLabel(makeMatch({ stage: 'GROUP_STAGE', group: 'GROUP_C' }))
+    ).toBe('Group C')
   })
   it('abbreviates knockout stages', () => {
     expect(stageLabel(makeMatch({ stage: 'ROUND_OF_16' }))).toBe('R16')
@@ -314,8 +337,12 @@ describe('stageLabel', () => {
     expect(stageLabel(makeMatch({ stage: 'FINAL' }))).toBe('Final')
   })
   it('uses matchday for regular season / league phase', () => {
-    expect(stageLabel(makeMatch({ stage: 'REGULAR_SEASON', matchday: 5 }))).toBe('MD 5')
-    expect(stageLabel(makeMatch({ stage: 'LEAGUE_PHASE', matchday: 8 }))).toBe('MD 8')
+    expect(
+      stageLabel(makeMatch({ stage: 'REGULAR_SEASON', matchday: 5 }))
+    ).toBe('MD 5')
+    expect(stageLabel(makeMatch({ stage: 'LEAGUE_PHASE', matchday: 8 }))).toBe(
+      'MD 8'
+    )
   })
 })
 
@@ -353,15 +380,32 @@ describe('buildMarketParams', () => {
     )
     expect(params.answers).toEqual([`${BR} Brazil`, `${AR} Argentina`])
     expect(params.answerShortTexts).toEqual([`${BR}BRA`, `${AR}ARG`])
-    expect(params.answerImageUrls).toEqual(['https://x/bra.png', 'https://x/arg.png'])
+    expect(params.answerImageUrls).toEqual([
+      'https://x/bra.png',
+      'https://x/arg.png',
+    ])
     expect(params.liquidityTier).toBe(10_000)
   })
 
   it('builds a club market with bare names (useTeamNames) — shortName in question/shortTexts', () => {
     const config = makeConfig({ useTeamNames: true })
     const match = makeMatch({
-      homeTeam: { id: 1, name: 'Arsenal FC', shortName: 'Arsenal', tla: 'ARS', crest: '', area: { code: 'ENG' } },
-      awayTeam: { id: 2, name: 'Chelsea FC', shortName: 'Chelsea', tla: 'CHE', crest: '', area: { code: 'ENG' } },
+      homeTeam: {
+        id: 1,
+        name: 'Arsenal FC',
+        shortName: 'Arsenal',
+        tla: 'ARS',
+        crest: '',
+        area: { code: 'ENG' },
+      },
+      awayTeam: {
+        id: 2,
+        name: 'Chelsea FC',
+        shortName: 'Chelsea',
+        tla: 'CHE',
+        crest: '',
+        area: { code: 'ENG' },
+      },
     })
     const params = buildMarketParams(match, config, 'g')
     expect(params.question).toBe("Arsenal vs Chelsea [Test '26]")
@@ -371,10 +415,17 @@ describe('buildMarketParams', () => {
 
   it('treats football-data LAST_32 / LAST_16 as knockout, not group stage', () => {
     for (const stage of ['LAST_32', 'LAST_16'] as const) {
-      const params = buildMarketParams(makeMatch({ stage, group: null }), makeConfig(), 'g')
+      const params = buildMarketParams(
+        makeMatch({ stage, group: null }),
+        makeConfig(),
+        'g'
+      )
       expect(params.answers).toEqual([`${BR} Brazil`, `${AR} Argentina`])
       expect(params.answers).not.toContain('Draw')
-      expect(params.answerImageUrls).toEqual(['https://x/bra.png', 'https://x/arg.png'])
+      expect(params.answerImageUrls).toEqual([
+        'https://x/bra.png',
+        'https://x/arg.png',
+      ])
       expect(params.liquidityTier).toBe(10_000)
       expect(params.closeTime).toBe(
         new Date('2026-06-15T19:00:00Z').getTime() + 3.5 * 60 * 60 * 1000
@@ -386,21 +437,39 @@ describe('buildMarketParams', () => {
     const match = makeMatch({
       stage: 'FINAL',
       group: null,
-      homeTeam: { id: 1, name: 'Brazil', shortName: 'Brazil', tla: 'BRA', crest: '', area: { code: 'BRA' } },
+      homeTeam: {
+        id: 1,
+        name: 'Brazil',
+        shortName: 'Brazil',
+        tla: 'BRA',
+        crest: '',
+        area: { code: 'BRA' },
+      },
     })
-    expect(buildMarketParams(match, makeConfig(), 'g').answerImageUrls).toEqual([])
+    expect(buildMarketParams(match, makeConfig(), 'g').answerImageUrls).toEqual(
+      []
+    )
   })
 
   it('appends extraGroupIds to groupIds', () => {
-    const config = makeConfig({ additionalGroupIds: { dev: ['add-1'], prod: ['add-1'] } })
+    const config = makeConfig({
+      additionalGroupIds: { dev: ['add-1'], prod: ['add-1'] },
+    })
     const params = buildMarketParams(makeMatch(), config, 'grp-official', {
       extraGroupIds: ['extra-1', 'extra-2'],
     })
-    expect(params.groupIds).toEqual(['grp-official', 'add-1', 'extra-1', 'extra-2'])
+    expect(params.groupIds).toEqual([
+      'grp-official',
+      'add-1',
+      'extra-1',
+      'extra-2',
+    ])
   })
 
   it('dedups extra group ids that repeat a configured group', () => {
-    const config = makeConfig({ additionalGroupIds: { dev: ['soccer-id'], prod: ['soccer-id'] } })
+    const config = makeConfig({
+      additionalGroupIds: { dev: ['soccer-id'], prod: ['soccer-id'] },
+    })
     const params = buildMarketParams(makeMatch(), config, 'grp-official', {
       extraGroupIds: ['soccer-id', 'extra-1'],
     })
@@ -421,17 +490,26 @@ describe('buildMarketParams', () => {
 
 describe('buildDescription', () => {
   it('uses the draw-eligible resolve line for group stage and extracts the dashboard path', () => {
-    const desc = buildDescription(makeMatch({ stage: 'GROUP_STAGE' }), makeConfig(), {
-      dashboardUrl: 'https://manifold.markets/sports/test?ref=x',
-    })
+    const desc = buildDescription(
+      makeMatch({ stage: 'GROUP_STAGE' }),
+      makeConfig(),
+      {
+        dashboardUrl: 'https://manifold.markets/sports/test?ref=x',
+      }
+    )
     expect(desc).toContain('Brazil vs Argentina')
     expect(desc).toContain('Resolves to the winning team or draw')
     // absolute URL reduced to a path so the link works on any origin
-    expect(desc).toContain('[Visit the Test Tournament 2026 Dashboard](/sports/test?ref=x)')
+    expect(desc).toContain(
+      '[Visit the Test Tournament 2026 Dashboard](/sports/test?ref=x)'
+    )
   })
 
   it('uses the advancing-team resolve line for knockout stages', () => {
-    const desc = buildDescription(makeMatch({ stage: 'FINAL', group: null }), makeConfig())
+    const desc = buildDescription(
+      makeMatch({ stage: 'FINAL', group: null }),
+      makeConfig()
+    )
     expect(desc).toContain('Resolves to the advancing team')
   })
 
@@ -513,5 +591,56 @@ describe('finalScoreCommentLines', () => {
 
   it('returns null when the final score is unknown', () => {
     expect(finalScoreCommentLines(makeMatch())).toBeNull()
+  })
+})
+
+describe('sportsMarketAnte', () => {
+  // A grid: past the tier's floor, where each answer adds to the ante.
+  const answers = Array.from({ length: 22 }, (_, i) => `Driver ${i}`)
+  it('counts the built-in "Other" as an answer, as market creation does', () => {
+    expect(
+      sportsMarketAnte({
+        outcomeType: 'MULTIPLE_CHOICE',
+        answers,
+        addAnswersMode: 'ONLY_CREATOR',
+        liquidityTier: 1000,
+      })
+    ).toBe(getAnte('MULTIPLE_CHOICE', 23, 1000))
+    // No "Other" when nobody can add answers, or they're independent.
+    expect(
+      sportsMarketAnte({
+        outcomeType: 'MULTIPLE_CHOICE',
+        answers,
+        liquidityTier: 1000,
+      })
+    ).toBe(getAnte('MULTIPLE_CHOICE', 22, 1000))
+    expect(
+      sportsMarketAnte({
+        outcomeType: 'MULTIPLE_CHOICE',
+        answers,
+        addAnswersMode: 'ONLY_CREATOR',
+        shouldAnswersSumToOne: false,
+        liquidityTier: 1000,
+      })
+    ).toBe(getAnte('MULTIPLE_CHOICE', 22, 1000))
+  })
+  it('is a different ante with "Other" than without, on a grid', () => {
+    expect(getAnte('MULTIPLE_CHOICE', 23, 1000)).toBeGreaterThan(
+      getAnte('MULTIPLE_CHOICE', 22, 1000)
+    )
+  })
+})
+
+describe('canStaffAddSportsAnswers', () => {
+  const house = { creatorId: MANIFOLD_SPORTS_USER_IDS[0] }
+  const someone = { creatorId: 'someone' }
+  it('lets admins and mods add answers to the house markets only', () => {
+    const admin = ENV_CONFIG.adminIds[0]
+    const mod = MOD_IDS[0]
+    expect(canStaffAddSportsAnswers(house, admin)).toBe(true)
+    expect(canStaffAddSportsAnswers(house, mod)).toBe(true)
+    expect(canStaffAddSportsAnswers(house, 'a-trader')).toBe(false)
+    expect(canStaffAddSportsAnswers(someone, mod)).toBe(false)
+    expect(canStaffAddSportsAnswers(someone, admin)).toBe(false)
   })
 })
