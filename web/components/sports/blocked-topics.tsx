@@ -86,13 +86,16 @@ export function useLoadPastBlocked(props: {
   // a row count as a failure.
   const [finished, setFinished] = useState(0)
   const inFlight = useRef(false)
-  const tries = useRef({ feed: '', loaded: -1, count: 0 })
+  const latest = useRef({ feed, loaded })
+  latest.current = { feed, loaded }
+  const idle = useRef(0)
+  // Progress, by any load, or a new feed starts the count again.
+  useEffect(() => {
+    idle.current = 0
+  }, [feed, loaded])
   useEffect(() => {
     if (!looking || inFlight.current) return
-    const t = tries.current
-    if (t.feed === feed && t.loaded === loaded) t.count++
-    else tries.current = { feed, loaded, count: 1 }
-    if (tries.current.count > 3) {
+    if (idle.current >= 3) {
       setStuck({ feed, at: loaded })
       return
     }
@@ -104,6 +107,10 @@ export function useLoadPastBlocked(props: {
       .catch(() => setStuck({ feed, at: loaded }))
       .finally(() => {
         inFlight.current = false
+        // If the page took what it loaded, the render that follows resets
+        // this (the effect above).
+        const now = latest.current
+        if (now.feed === feed && now.loaded === loaded) idle.current++
         setFinished((n) => n + 1)
       })
   }, [looking, loaded, feed, finished])

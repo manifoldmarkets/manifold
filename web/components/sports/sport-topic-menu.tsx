@@ -34,30 +34,31 @@ export function SportTopicMenu(props: { topic: Group }) {
   const user = useUser()
   const privateUser = usePrivateUser()
   const { isFollowing, setIsFollowing } = useIsFollowingTopic(topic.slug)
-  const accountBlocked = !!privateUser?.blockedGroupSlugs?.includes(topic.slug)
-  // What the last block or unblock here did, shown until the account's state
-  // changes after it (whatever it says: an unblock from another tab shows).
-  const [pending, setPending] = useState<{
-    userId: string
-    blocked: boolean
-    /** The account's state when it was made. */
-    from: typeof privateUser
-  }>()
+  // Always the account's own state, which the block endpoint's write
+  // broadcasts back. After a block or unblock here the button waits, dimmed,
+  // until the account shows it, for a few seconds at most.
+  const blocked = !!privateUser?.blockedGroupSlugs?.includes(topic.slug)
+  const [awaiting, setAwaiting] = useState<boolean>()
   useEffect(() => {
-    if (pending && privateUser !== pending.from) setPending(undefined)
-  }, [pending, privateUser])
-  const [busy, setBusy] = useState(false)
-  const blocked =
-    pending && pending.userId === user?.id ? pending.blocked : accountBlocked
+    if (awaiting === undefined) return
+    if (blocked === awaiting) {
+      setAwaiting(undefined)
+      return
+    }
+    const timer = setTimeout(() => setAwaiting(undefined), 4000)
+    return () => clearTimeout(timer)
+  }, [awaiting, blocked])
+  const [running, setRunning] = useState(false)
+  const busy = running || awaiting !== undefined
   const name = removeEmojis(topic.name).trim() || topic.name
   const canFollow = !TOPIC_IDS_YOU_CANT_FOLLOW.includes(topic.id)
 
   const run = async (action: () => Promise<void>) => {
-    setBusy(true)
+    setRunning(true)
     try {
       await action()
     } finally {
-      setBusy(false)
+      setRunning(false)
     }
   }
   // The follow helpers toast their own failures and resolve whether it went
@@ -82,7 +83,7 @@ export function SportTopicMenu(props: { topic: Group }) {
         toast.error(`Couldn't ${block ? 'block' : 'unblock'} ${name}`)
         return
       }
-      setPending({ userId: user.id, blocked: block, from: privateUser })
+      setAwaiting(block)
       if (block) {
         setIsFollowing(false)
         toast(`Blocked ${name}. Its markets won't show in your feeds.`)
