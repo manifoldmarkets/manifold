@@ -10,6 +10,7 @@ import {
 import dayjs from 'dayjs'
 import { ReactNode, useEffect, useState } from 'react'
 import {
+  raceHeart,
   RaceSessionEvent,
   raceSessionEvents,
   raceSessionSearchText,
@@ -20,7 +21,10 @@ import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { GameRow, GameRowSkeleton } from 'web/components/sports/game-row'
-import { RaceSessionCard } from 'web/components/sports/race-session-card'
+import {
+  LikeFor,
+  RaceSessionCard,
+} from 'web/components/sports/race-session-card'
 import { RaceWeekendHero } from 'web/components/sports/race-weekend-hero'
 import { Carousel } from 'web/components/widgets/carousel'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
@@ -128,7 +132,27 @@ export function GameFeed(props: {
     (game) => game.status === 'upcoming' || game.status === 'live'
   )
   const sessions = raceSessionEvents(props.raceWeekends ?? [])
-  const likes = useGameLikes(active.map((game) => game.id))
+  // Every market of the weekends, finished sessions too: the featured card's
+  // pills reach them.
+  const raceMarketIds = (props.raceWeekends ?? []).flatMap((w) =>
+    w.sessions.flatMap((s) => s.markets.map((m) => m.id))
+  )
+  const likes = useGameLikes([
+    ...active.map((game) => game.id),
+    ...raceMarketIds,
+  ])
+  const likeFor: LikeFor = (ids, target) => {
+    const { liked, change } = raceHeart(ids, target, (id) =>
+      likes.liked.has(id)
+    )
+    return {
+      liked,
+      disabled: change.some((id) => likes.disabled(id)),
+      toggle: () => change.forEach((id) => void likes.toggle(id)),
+    }
+  }
+  const sessionLiked = (s: RaceSessionEvent) =>
+    s.session.markets.some((m) => likes.liked.has(m.id))
   const positions = useGamePositions(active.map((game) => game.id))
   // One stake per game, marked to the live prices, shared by the cards, the
   // My bets filter and its totals so they can't disagree.
@@ -162,14 +186,15 @@ export function GameFeed(props: {
           .toLowerCase()
           .includes(normalized))
   )
-  // Sessions take the same filters as games, except Liked and My bets: likes
-  // and positions don't cover them yet.
+  // Sessions take the same filters as games, except My bets: positions don't
+  // cover them yet. A session is liked when any of its markets is.
   const filteredSessions =
-    filter === 'liked' || filter === 'mine'
+    filter === 'mine'
       ? []
       : sessions.filter(
           (s) =>
             (filter !== 'live' || s.status === 'live') &&
+            (filter !== 'liked' || sessionLiked(s)) &&
             (date === 'all' ||
               dayjs(s.startTime).format('YYYY-MM-DD') === date) &&
             (!normalized || raceSessionSearchText(s).includes(normalized))
@@ -226,6 +251,8 @@ export function GameFeed(props: {
             key={item.id}
             event={item}
             variant={view === 'compact' ? 'compact' : 'card'}
+            showLeague={showLeague}
+            likeFor={likeFor}
           />
         ) : (
           <GameRow
@@ -352,7 +379,10 @@ export function GameFeed(props: {
                   {
                     value: 'liked',
                     label: 'Liked',
-                    count: likes.loading ? undefined : likes.liked.size,
+                    count: likes.loading
+                      ? undefined
+                      : active.filter((game) => likes.liked.has(game.id))
+                          .length + sessions.filter(sessionLiked).length,
                   },
                   {
                     value: 'mine',
@@ -496,6 +526,7 @@ export function GameFeed(props: {
               key={featured.id}
               event={featured}
               compact={!fullRaceHero}
+              likeFor={likeFor}
             />
           ) : (
             <GameRow

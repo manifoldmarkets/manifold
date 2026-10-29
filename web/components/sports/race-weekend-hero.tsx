@@ -23,6 +23,7 @@ import { GameLinkedMarkets } from 'web/components/sports/game-related-markets'
 import { useProbFlash } from 'web/components/sports/game-row'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import {
+  LikeFor,
   OnBet,
   raceSessionAnchor,
   relatedHost,
@@ -133,8 +134,9 @@ export function RaceWeekendHero(props: {
    * day's moves are on the F1 page, a link away.
    */
   compact?: boolean
+  likeFor?: LikeFor
 }) {
-  const { event, compact = false } = props
+  const { event, compact = false, likeFor } = props
   const { weekend } = event
   const choices = raceWeekendMarkets(weekend)
   const [pickedId, setPickedId] = useState<string>()
@@ -210,6 +212,8 @@ export function RaceWeekendHero(props: {
             traders={picked.market.uniqueBettorCount ?? 0}
             market={picked.market}
             title={`${name} ${picked.label.toLowerCase()}`}
+            // The picked market's, like the rest of the controls.
+            like={likeFor?.([picked.market.id], picked.market.id)}
           />
         </div>
       </div>

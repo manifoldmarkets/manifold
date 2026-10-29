@@ -7,6 +7,7 @@ import {
   findRaceRelatedMarkets,
   pickRaceChampionships,
   raceDisplayName,
+  raceHeart,
   raceSessionEvents,
   raceSessionSearchText,
   raceWeekendMarkets,
@@ -814,5 +815,37 @@ describe("the featured weekend's driver board", () => {
     expect(rows[0]).toMatchObject({ code: 'RUS' })
     expect(rows[0].cells.win).toMatchObject({ won: true, closed: true })
     expect(rows[1].cells.win?.won).toBe(false)
+  })
+})
+
+describe('raceHeart', () => {
+  const liked =
+    (...ids: string[]) =>
+    (id: string) =>
+      ids.includes(id)
+
+  it('likes the market the card opens when none is liked', () => {
+    expect(raceHeart(['win', 'podium'], 'podium', liked())).toEqual({
+      liked: false,
+      change: ['podium'],
+    })
+  })
+
+  it('is on when any market is liked, and unlikes every liked one', () => {
+    // Liked on the market page or the featured card, not the one it opens.
+    expect(raceHeart(['win', 'podium'], 'podium', liked('win'))).toEqual({
+      liked: true,
+      change: ['win'],
+    })
+    expect(
+      raceHeart(['win', 'podium'], 'win', liked('win', 'podium', 'other'))
+    ).toEqual({ liked: true, change: ['win', 'podium'] })
+  })
+
+  it("ignores likes on other sessions' markets", () => {
+    expect(raceHeart(['win'], 'win', liked('other'))).toEqual({
+      liked: false,
+      change: ['win'],
+    })
   })
 })

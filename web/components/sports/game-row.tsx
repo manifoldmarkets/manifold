@@ -893,7 +893,7 @@ function TeamBadge({
  * The price is the bet button, as on every sportsbook. Filled in when the
  * account is paid if this outcome wins, so a card shows which side you're on.
  */
-function PriceChip(props: {
+export function PriceChip(props: {
   prob: number
   onClick: (e: React.MouseEvent) => void
   label: string

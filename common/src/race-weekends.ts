@@ -319,6 +319,22 @@ export function topRaceMarket(
   )
 }
 
+/**
+ * A heart over several markets, as a session's card has: on while any of
+ * `ids` is liked. Pressed, it likes `target` (the market the card opens), or
+ * unlikes every liked one, so a like made elsewhere can be taken back too.
+ */
+export function raceHeart(
+  ids: string[],
+  target: string,
+  isLiked: (id: string) => boolean
+): { liked: boolean; change: string[] } {
+  const on = ids.filter(isLiked)
+  return on.length > 0
+    ? { liked: true, change: on }
+    : { liked: false, change: [target] }
+}
+
 export const raceSessionId = (
   weekend: Pick<RaceWeekend, 'id'>,
   session: Pick<RaceSession, 'sessionId'>
