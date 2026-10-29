@@ -68,7 +68,11 @@ export const resolveMarketHelper = async (
   { value, resolutions, probabilityInt, outcome, answerId }: ResolutionParams,
   // Synchronous diagnostic observer for acquisition, transaction and post-commit
   // stages. It does not control reservation release or retries.
-  onTransactionState?: (state: 'started' | 'committed') => void
+  onTransactionState?: (state: 'started' | 'committed') => void,
+  // The caller's last check, on this transaction's read of the contract and
+  // before anything is written: throw to resolve nothing. The F1 resolver uses
+  // it so another answer resolved after its snapshot stops a podium payout.
+  assertResolvable?: (contract: MarketContract) => void
 ) => {
   const pg = createSupabaseDirectClient()
 
@@ -106,6 +110,7 @@ export const resolveMarketHelper = async (
       if (answer.resolution || answer.resolutionTime)
         throw new APIError(403, `${answerId} answer is already resolved`)
     }
+    assertResolvable?.(unresolvedContract)
 
     const resolutionTime = Date.now()
     const newCloseTime = closeTime

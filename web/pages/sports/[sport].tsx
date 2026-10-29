@@ -2,9 +2,11 @@ import { keyBy, uniq } from 'lodash'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo } from 'react'
+import { withoutRaceMarkets } from 'common/race-weekends'
 import { CURATED_SPORTS, SPORT_KEY_RE } from 'common/sports-schedule'
 import { Col } from 'web/components/layout/col'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
+import { RaceChampionships } from 'web/components/sports/race-championships'
 import { GameFeed } from 'web/components/sports/schedule-list'
 import { sportPath } from 'web/components/sports/sport-rail'
 import {
@@ -50,6 +52,14 @@ export default function SportPage() {
   const games = schedule?.games ?? []
   // Tag cards with their league only when the sport has several (soccer).
   const showLeague = uniq(games.map((g) => g.league)).length > 1
+  // F1's weekends (the API sends them only for F1): each session in the feed,
+  // the next one featured, and the title fight under it.
+  const weekends = schedule?.raceWeekends ?? []
+  const isF1 = key === 'f1'
+  const championships = schedule?.raceChampionships ?? []
+  const titleFight = championships.length > 0 && (
+    <RaceChampionships championships={championships} />
+  )
 
   if (unknown) {
     return (
@@ -76,7 +86,7 @@ export default function SportPage() {
   const markets = (
     <SportMarkets
       sport={sport ?? 'all'}
-      upcoming={schedule?.upcoming ?? []}
+      upcoming={withoutRaceMarkets(schedule?.upcoming ?? [], weekends)}
       sportsByKey={sportsByKey}
       enabled={ready && !!sport}
     />
@@ -121,12 +131,17 @@ export default function SportPage() {
                 <GameFeed
                   key={key}
                   games={games}
+                  raceWeekends={weekends}
+                  featureNext={isF1}
+                  fullRaceHero={isF1}
+                  belowFeatured={titleFight}
                   loading={loading || !schedule}
                   hasMore={hasMore}
                   loadMore={loadMore}
                   showLeague={showLeague}
                   empty={
                     <div className="flex flex-col gap-6">
+                      {titleFight}
                       <NoGames
                         sport={sport}
                         sports={sports}

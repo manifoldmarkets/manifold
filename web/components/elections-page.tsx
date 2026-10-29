@@ -171,7 +171,9 @@ export function USElectionsPage(
     >
       {/* Left-aligned hero with back and share controls on mobile.
           A visitor arriving from a shared link has no Manifold history to go
-          back to, so the arrow goes Home instead of off-site. */}
+          back to, so the arrow goes Home instead of off-site. On desktop
+          the sidebar already links everywhere the arrow could go, so it is
+          hidden there. */}
       <Row className="items-center gap-2 pt-3 sm:pt-1">
         <BackButton homeFallback className="lg:hidden" />
         <Col className={clsx(hideTitle && 'hidden')}>

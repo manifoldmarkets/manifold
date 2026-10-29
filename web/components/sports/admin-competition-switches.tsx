@@ -24,9 +24,9 @@ import ShortToggle from 'web/components/widgets/short-toggle'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { api } from 'web/lib/api/api'
 
-// Which calendar phases the daily sports-odds-create job, and the Odds API
-// dry run below, make game markets for. A switch overrides the phase's
-// default in common/sports-calendar.ts.
+// Which calendar phases the daily sports-odds-create and sports-f1-create
+// jobs, and the dry runs below, make markets for. A switch overrides the
+// phase's default in common/sports-calendar.ts.
 export function AdminCompetitionSwitches() {
   const { data, refresh } = useAPIGetter(
     'admin-sports-competition-switches',

@@ -163,6 +163,14 @@ export function SellPanel(props: {
       sellForUserId,
     })
       .then(() => {
+        // Only on success: page funnels count this event as a trade.
+        track('sell shares', {
+          outcomeType: contract.outcomeType,
+          slug: contract.slug,
+          contractId: contract.id,
+          shares: sellQuantity,
+          outcome: sharesOutcome,
+        })
         setIsSubmitting(false)
         setWasSubmitted(true)
         setAmount(undefined)
@@ -182,14 +190,6 @@ export function SellPanel(props: {
         }
         setIsSubmitting(false)
       })
-
-    track('sell shares', {
-      outcomeType: contract.outcomeType,
-      slug: contract.slug,
-      contractId: contract.id,
-      shares: sellQuantity,
-      outcome: sharesOutcome,
-    })
   }
 
   let initialProb: number, saleValue: number

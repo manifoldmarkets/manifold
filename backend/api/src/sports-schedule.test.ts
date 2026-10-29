@@ -14,6 +14,7 @@ import {
 } from 'common/sports-schedule'
 import { sportsSchedule } from './sports-schedule'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
+import { f1Season } from 'common/race-weekends'
 
 const kickoff = Date.now() + 60 * 60 * 1000
 const groupId = (sport: string) =>
@@ -74,6 +75,7 @@ let linkRows: { id: string; parent_id: string; relation: string }[] = []
 let linkedElsewhere: { id: string }[] = []
 let linksMissing = false
 let failedLinkRead: 'children' | 'parents' | undefined
+let championshipRows: Record<string, unknown>[] = []
 
 // Each game's two answers, home first, unless a test sets answerRows.
 const gameAnswers = (data: Record<string, unknown>) =>
@@ -97,14 +99,16 @@ beforeEach(() => {
   linkedElsewhere = []
   linksMissing = false
   failedLinkRead = undefined
+  championshipRows = []
   jest.mocked(createSupabaseDirectClient).mockReturnValue({
-    one: async (sql: string) => {
+    one: async (sql: string, params: [string[], ...unknown[]]) => {
       expect(sql).toContain('with eligible_links')
       expect(sql).toContain('as with_parents')
       if (linksMissing || failedLinkRead)
         throw new Error('Link snapshot unavailable')
       return {
-        linked: linkRows,
+        // Only children of the parents asked about, as the query reads them.
+        linked: linkRows.filter((l) => params[0].includes(l.parent_id)),
         with_parents: linkedElsewhere.map((l) => l.id),
       }
     },
@@ -120,6 +124,7 @@ beforeEach(() => {
         return linkedElsewhere
       }
       if (sql.includes("where data->>'sportsEventId'")) return officialRows
+      if (sql.includes('as bettors')) return championshipRows
       if (sql.includes('from answers'))
         return answerRows.length > 0
           ? answerRows
@@ -537,4 +542,289 @@ describe('linked markets', () => {
       expect(appearances).toEqual([{ gameId: 'nfl', kind: 'official' }])
     }
   )
+})
+
+describe('F1 race weekends', () => {
+  const qualifying = Date.now() + 2 * 60 * 60 * 1000
+  const race = qualifying + 23 * 60 * 60 * 1000
+  const f1 = (
+    id: string,
+    session: number,
+    tail: string,
+    marketType: 'winner' | 'podium',
+    start: number
+  ) => ({
+    data: {
+      id,
+      slug: id,
+      creatorUsername: 'ManifoldSports',
+      question: `2026 Mexico City Grand Prix: ${tail}`,
+      sportsEventId: `bdl-f1:374:${session}`,
+      sportsMarketType: marketType,
+      sportsLeague: 'Formula 1',
+      mechanism: 'cpmm-multi-2',
+      outcomeType: 'MULTIPLE_CHOICE',
+      shouldAnswersSumToOne: marketType === 'winner',
+      closeTime: start + 3 * 60 * 60 * 1000,
+      sportsStartTimestamp: new Date(start).toISOString(),
+    },
+  })
+  const f1Rows = [
+    f1('pole', 1869, 'pole position', 'winner', qualifying),
+    f1('race', 1870, 'race winner', 'winner', race),
+    f1('podium', 1870, 'podium', 'podium', race),
+  ]
+  const driverAnswers = (contractId: string) =>
+    [
+      'Kimi Antonelli',
+      'George Russell',
+      'Lewis Hamilton',
+      'Max Verstappen',
+    ].map((text, index) => ({
+      id: `${contractId}-${index}`,
+      index,
+      contract_id: contractId,
+      text,
+      prob: 0.4 - index * 0.1,
+      pool_yes: 1000,
+      pool_no: 1000,
+      p: 0.5,
+    }))
+  const getSchedule = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+
+  beforeEach(() => {
+    officialRows = [...official, ...f1Rows]
+    answerRows = [
+      ...official.flatMap(({ data }) => gameAnswers(data)),
+      ...f1Rows.flatMap(({ data }) => driverAnswers(data.id)),
+    ]
+    // The race winner also shows up among the week's markets in its topic.
+    marketRows = [
+      ...props,
+      {
+        id: 'race',
+        creator_id: MANIFOLD_SPORTS_USER_IDS[0],
+        question: '2026 Mexico City Grand Prix: race winner',
+        sports_event_id: 'bdl-f1:374:1870',
+        sports_market_type: 'winner',
+        sports_league: 'Formula 1',
+        close_time: new Date(race + 3 * 60 * 60 * 1000).toISOString(),
+        importance_score: 1,
+        group_ids: [groupId('f1')],
+      },
+    ]
+  })
+
+  it('puts a weekend on a card for all sports and F1, counted by session', async () => {
+    for (const sport of ['all', 'f1', 'nfl'] as const) {
+      const response = await getSchedule({ sport })
+      const result = 'result' in response ? response.result : response
+      // Two sessions to come; the games are unchanged.
+      expect(result.counts).toEqual({ nfl: 1, soccer: 1, f1: 2 })
+      expect(result.games.map((g) => g.id)).not.toContain('race')
+      // Still among the week's markets, for a page that doesn't show the
+      // card; the page drops the ones it does show (withoutRaceMarkets).
+      if (sport !== 'nfl')
+        expect(result.upcoming.map((m) => m.id)).toContain('race')
+      const weekends = result.raceWeekends ?? []
+      if (sport === 'nfl') {
+        expect(weekends).toEqual([])
+        continue
+      }
+      expect(weekends).toHaveLength(1)
+      const [w] = weekends
+      expect(w.name).toBe('2026 Mexico City Grand Prix')
+      expect(w.sessions.map((s) => [s.label, s.status])).toEqual([
+        ['Qualifying', 'upcoming'],
+        ['Race', 'upcoming'],
+      ])
+      expect(w.sessions[1].markets.map((m) => m.id)).toEqual(['race', 'podium'])
+      expect(w.sessions[1].markets[0].leaders[0].name).toBe('Kimi Antonelli')
+    }
+  })
+
+  const community = (
+    id: string,
+    question: string,
+    close: number,
+    importance = 0.1
+  ): MarketRow => ({
+    id,
+    creator_id: 'a-fan',
+    question,
+    sports_event_id: '',
+    sports_market_type: '',
+    close_time: new Date(close).toISOString(),
+    importance_score: importance,
+    group_ids: [groupId('f1')],
+  })
+  const HOUR = 60 * 60 * 1000
+
+  it('hangs the markets about the Grand Prix under its sessions, and takes them off the week list', async () => {
+    marketRows = [
+      ...marketRows,
+      community(
+        'mx-winner',
+        'F1: Who will win the 2026 Mexico City Grand Prix?',
+        race + HOUR,
+        0.5
+      ),
+      community(
+        'mx-pole',
+        'F1 Mexican GP: Who will take pole?',
+        qualifying - 0.1 * HOUR
+      ),
+      community(
+        'japan',
+        'Who will win the 2026 Japanese Grand Prix?',
+        race + HOUR
+      ),
+    ]
+    // Someone linked a prop to the podium market.
+    linkRows = [{ id: 'linked-prop', parent_id: 'podium', relation: 'prop' }]
+    const response = await getSchedule({ sport: 'f1' })
+    const result = 'result' in response ? response.result : response
+    const [w] = result.raceWeekends ?? []
+    const [quali, raceSession] = w.sessions
+    expect(quali.related).toEqual([
+      { id: 'mx-pole', kind: 'event', group: 'game-lines' },
+    ])
+    expect(raceSession.related).toEqual([
+      { id: 'linked-prop', kind: 'linked', group: 'props' },
+      { id: 'mx-winner', kind: 'event', group: 'game-lines' },
+    ])
+    expect(raceSession.relatedCount).toBe(2)
+    const week = result.upcoming.map((m) => m.id)
+    expect(week).not.toContain('mx-winner')
+    expect(week).not.toContain('mx-pole')
+    // Another weekend's market stays, as do the official ones.
+    expect(week).toEqual(expect.arrayContaining(['japan', 'race']))
+  })
+
+  it("sends the season's title markets to the F1 page only", async () => {
+    const season = f1Season(Date.now())
+    championshipRows = [
+      {
+        id: 'wcc',
+        question: `Who will win the ${season} Formula 1 Constructors Championship?`,
+        bettors: 31,
+        volume: 12000,
+      },
+      {
+        id: 'wdc',
+        question: `Who will win the ${season} Formula 1 Drivers Championship?`,
+        bettors: 112,
+        volume: 49000,
+      },
+    ]
+    const f1 = await getSchedule({ sport: 'f1' })
+    expect(('result' in f1 ? f1.result : f1).raceChampionships).toEqual([
+      { kind: 'drivers', id: 'wdc' },
+      { kind: 'constructors', id: 'wcc' },
+    ])
+    for (const sport of ['all', 'nfl'] as const) {
+      const other = await getSchedule({ sport })
+      expect(
+        ('result' in other ? other.result : other).raceChampionships
+      ).toEqual([])
+    }
+  })
+
+  it("leaves a finished session's markets on the week list (F4213-05)", async () => {
+    // Qualifying closed two hours ago; the race is still to come.
+    const done = Date.now() - 5 * HOUR
+    officialRows = [
+      ...official,
+      f1('pole', 1869, 'pole position', 'winner', done),
+      ...f1Rows.slice(1),
+    ]
+    marketRows = [
+      ...marketRows,
+      // Open past qualifying, and about it.
+      community('mx-pole', 'F1 Mexican GP: who gets pole?', race + HOUR),
+      community('pole-linked', 'Pole lap under 1:15?', race),
+    ]
+    linkRows = [{ id: 'pole-linked', parent_id: 'pole', relation: 'prop' }]
+    linkedElsewhere = [{ id: 'pole-linked' }]
+    const response = await getSchedule({ sport: 'f1' })
+    const result = 'result' in response ? response.result : response
+    const [quali] = result.raceWeekends?.[0]?.sessions ?? []
+    expect(quali.status).toBe('finished')
+    expect(quali.related).toEqual([])
+    expect(result.upcoming.map((m) => m.id)).toEqual(
+      expect.arrayContaining(['mx-pole', 'pole-linked'])
+    )
+  })
+
+  it('looks five weeks ahead on the F1 page, and two on all sports', async () => {
+    const vegas = f1(
+      'vegas',
+      1900,
+      'race winner',
+      'winner',
+      Date.now() + 21 * 24 * HOUR
+    )
+    vegas.data.sportsEventId = 'bdl-f1:380:1900'
+    vegas.data.question = '2026 Las Vegas Grand Prix: race winner'
+    officialRows = [...official, ...f1Rows, vegas]
+    answerRows = [...answerRows, ...driverAnswers('vegas')]
+    const ids = async (sport: 'all' | 'f1') => {
+      const response = await getSchedule({ sport })
+      const result = 'result' in response ? response.result : response
+      // The rail counts the F1 page's sessions, whichever page asks.
+      expect(result.counts.f1).toBe(3)
+      return (result.raceWeekends ?? []).map((w) => w.id)
+    }
+    expect(await ids('f1')).toEqual(['bdl-f1:374', 'bdl-f1:380'])
+    expect(await ids('all')).toEqual(['bdl-f1:374'])
+  })
+
+  it("keeps a market under a weekend /sports doesn't show on its week list (F4213-11)", async () => {
+    const vegas = f1(
+      'vegas',
+      1900,
+      'race winner',
+      'winner',
+      Date.now() + 21 * 24 * HOUR
+    )
+    vegas.data.sportsEventId = 'bdl-f1:380:1900'
+    vegas.data.question = '2026 Las Vegas Grand Prix: race winner'
+    officialRows = [...official, ...f1Rows, vegas]
+    answerRows = [...answerRows, ...driverAnswers('vegas')]
+    // Closes this week, linked to the race three weeks out.
+    marketRows = [
+      ...marketRows,
+      community(
+        'vegas-prop',
+        'Will the Strip be dry on race night?',
+        Date.now() + 3 * 24 * HOUR
+      ),
+    ]
+    linkRows = [{ id: 'vegas-prop', parent_id: 'vegas', relation: 'prop' }]
+    linkedElsewhere = [{ id: 'vegas-prop' }]
+    const get = async (sport: 'all' | 'f1') => {
+      const response = await getSchedule({ sport })
+      return 'result' in response ? response.result : response
+    }
+    const all = await get('all')
+    expect(all.upcoming.map((m) => m.id)).toContain('vegas-prop')
+    const f1Page = await get('f1')
+    expect(f1Page.upcoming.map((m) => m.id)).not.toContain('vegas-prop')
+    const lasVegas = f1Page.raceWeekends?.find((w) => w.id === 'bdl-f1:380')
+    expect(lasVegas?.sessions[0].related).toEqual([
+      { id: 'vegas-prop', kind: 'linked', group: 'props' },
+    ])
+  })
+
+  it('sends no weekends with a later page', async () => {
+    const first = await getSchedule({ sport: 'f1', limit: 1 })
+    const page = 'result' in first ? first.result : first
+    expect(page.raceWeekends).toHaveLength(1)
+    if (!page.nextCursor) return
+    const next = await getSchedule({ sport: 'f1', cursor: page.nextCursor })
+    const later = 'result' in next ? next.result : next
+    expect(later.raceWeekends).toEqual([])
+  })
 })

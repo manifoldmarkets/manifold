@@ -4892,6 +4892,23 @@ export const API = (_apiTypeCheck = {
       }[]
     },
   },
+  // Admins only: the /stats page funnels. Internal product metrics, so they
+  // are not in daily_stats or the page's static props.
+  'get-surface-funnels': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        limitDays: z.coerce.number().int().min(1).max(400).default(120),
+      })
+      .strict(),
+    returns: {} as {
+      // funnels is a SurfaceFunnels value (common/src/stat-surfaces.ts);
+      // read it with parseSurfaceFunnels.
+      days: { date: string; funnels: unknown }[]
+    },
+  },
   // Merch admin endpoints
   'get-merch-orders': {
     method: 'GET',
@@ -5278,6 +5295,32 @@ export const API = (_apiTypeCheck = {
       errors: number
       results: Array<{
         eventId: string
+        question: string
+        status: 'created' | 'skipped' | 'dry-run' | 'error'
+        reason: string | null
+      }>
+    },
+  },
+  // F1 markets from BALLDONTLIE for the next F1_DAYS_AHEAD days' sessions, by
+  // hand, on dev or prod. The daily sports-f1-create job makes them too.
+  'admin-sports-create-f1-markets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionId: z.string(),
+        dryRun: z.boolean().optional(),
+        // `<session id>:<market type>` keys from a dry run. Only these are created.
+        keys: z.array(z.string().max(40)).max(100).optional(),
+      })
+      .strict(),
+    returns: {} as {
+      created: number
+      skipped: number
+      errors: number
+      results: Array<{
+        key: string
         question: string
         status: 'created' | 'skipped' | 'dry-run' | 'error'
         reason: string | null
