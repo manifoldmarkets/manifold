@@ -259,6 +259,8 @@ import {
 } from './admin-sports-score-polling'
 import { sportsMarkets } from './sports-markets'
 import { sportsSchedule } from './sports-schedule'
+import { sportsIndex } from './sports-index'
+import { sportsLeaderboards } from './sports-leaderboards'
 import { adminSportsResolve } from './admin-sports-resolve'
 import { adminSportsCommunityMarket } from './admin-sports-community-market'
 import { adminSportsInitCommunity } from './admin-sports-init-community'
@@ -663,6 +665,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'admin-sports-set-score-polling': adminSportsSetScorePolling,
   'sports-markets': sportsMarkets,
   'sports-schedule': sportsSchedule,
+  'sports-index': sportsIndex,
+  'sports-leaderboards': sportsLeaderboards,
   'admin-sports-resolve': adminSportsResolve,
   'admin-sports-community-market': adminSportsCommunityMarket,
   'admin-sports-init-community': adminSportsInitCommunity,

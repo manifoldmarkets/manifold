@@ -17,6 +17,7 @@ import {
   raceWeekendMarkets,
   topRaceMarket,
 } from 'common/race-weekends'
+import { sportPath } from 'common/sports-schedule'
 import { readableTextColor } from 'common/sports-team-colors'
 import { GameLinkedMarkets } from 'web/components/sports/game-related-markets'
 import { useProbFlash } from 'web/components/sports/game-row'
@@ -29,7 +30,6 @@ import {
   sessionTitle,
   useDriverBet,
 } from './race-session-card'
-import { sportPath } from './sport-rail'
 import { SportsMarketBadge } from './sports-market-badge'
 
 type Choice = ReturnType<typeof raceWeekendMarkets>[number]

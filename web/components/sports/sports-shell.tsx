@@ -6,6 +6,8 @@ import {
   AnySportKey,
   CURATED_SPORTS,
   SportInfo,
+  sportPath,
+  SportSelection,
   UpcomingMarketRef,
 } from 'common/sports-schedule'
 import { BackButton } from 'web/components/contract/back-button'
@@ -14,7 +16,7 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
 import { SportsRailData } from 'web/hooks/use-sports-schedule'
-import { SportRail, SportSelection, sportPath } from './sport-rail'
+import { SportRail } from './sport-rail'
 import { SportsMarketSections } from './sports-market-sections'
 import { UpcomingMarkets } from './upcoming-markets'
 
@@ -30,12 +32,22 @@ export function SportsShell(props: {
   heading: ReactNode
   /** One line; truncated rather than wrapped. */
   subheading?: ReactNode
+  /** Beside Create, like the Follow button. */
+  actions?: ReactNode
   seo: ComponentProps<typeof SEO>
   trackPageView: string
   children: ReactNode
 }) {
-  const { selected, rail, heading, subheading, seo, trackPageView, children } =
-    props
+  const {
+    selected,
+    rail,
+    heading,
+    subheading,
+    actions,
+    seo,
+    trackPageView,
+    children,
+  } = props
   return (
     <Page trackPageView={trackPageView} className="min-w-0">
       <SEO {...seo} />
@@ -55,15 +67,18 @@ export function SportsShell(props: {
               {heading}
             </h1>
           </Row>
-          <Link
-            href="/create"
-            className="bg-primary-600 hover:bg-primary-700 text-ink-0 flex min-h-[40px] shrink-0 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium"
-          >
-            <PlusIcon className="h-4 w-4" />
-            <span>
-              Create<span className="sr-only sm:not-sr-only"> market</span>
-            </span>
-          </Link>
+          <Row className="shrink-0 items-center gap-2">
+            {actions}
+            <Link
+              href="/create"
+              className="bg-primary-600 hover:bg-primary-700 text-ink-0 flex min-h-[40px] shrink-0 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium"
+            >
+              <PlusIcon className="h-4 w-4" />
+              <span>
+                Create<span className="sr-only sm:not-sr-only"> market</span>
+              </span>
+            </Link>
+          </Row>
         </Row>
         {/* Always one line, even while a sport is loading. */}
         <p className="text-ink-500 truncate px-1 text-sm">

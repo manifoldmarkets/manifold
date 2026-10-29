@@ -3,17 +3,17 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo } from 'react'
 import { withoutRaceMarkets } from 'common/race-weekends'
-import { CURATED_SPORTS, SPORT_KEY_RE } from 'common/sports-schedule'
+import { CURATED_SPORTS, SPORT_KEY_RE, sportPath } from 'common/sports-schedule'
 import { Col } from 'web/components/layout/col'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { RaceChampionships } from 'web/components/sports/race-championships'
 import { GameFeed } from 'web/components/sports/schedule-list'
-import { sportPath } from 'web/components/sports/sport-rail'
 import {
   NoGames,
   SportMarkets,
   SportsShell,
 } from 'web/components/sports/sports-shell'
+import { useSportTopicExtras } from 'web/components/sports/use-sport-topic'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
 import { useSportsSchedule } from 'web/hooks/use-sports-schedule'
@@ -46,6 +46,7 @@ export default function SportPage() {
   const sports = rail?.sports ?? CURATED_SPORTS
   const sportsByKey = useMemo(() => keyBy(sports, 'key'), [sports])
   const sport = key ? sportsByKey[key] : undefined
+  const topic = useSportTopicExtras(sport)
   // Only judge once this sport's own response is in.
   const unknown = router.isReady && (!key || (!!schedule && !sport))
 
@@ -111,6 +112,7 @@ export default function SportPage() {
       subheading={
         sport ? `Every ${sport.label} game, plus props and futures.` : undefined
       }
+      actions={topic.follow}
       seo={{
         title: sport ? `${sport.longLabel} games and markets` : 'Sports',
         description: sport
@@ -159,6 +161,7 @@ export default function SportPage() {
             queryString: 'markets',
             content: <div className="pt-3">{markets}</div>,
           },
+          ...topic.tabs,
         ]}
       />
     </SportsShell>

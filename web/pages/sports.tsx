@@ -8,15 +8,16 @@ import {
   AnySportKey,
   CURATED_SPORTS,
   SPORT_KEY_RE,
+  sportPath,
 } from 'common/sports-schedule'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { GameFeed } from 'web/components/sports/schedule-list'
-import { sportPath } from 'web/components/sports/sport-rail'
 import {
   NoGames,
   SportMarkets,
   SportsShell,
 } from 'web/components/sports/sports-shell'
+import { useSportTopicExtras } from 'web/components/sports/use-sport-topic'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
 import { useSportsSchedule } from 'web/hooks/use-sports-schedule'
@@ -79,6 +80,7 @@ export default function SportsPage({
   )
   const sports = rail?.sports ?? CURATED_SPORTS
   const sportsByKey = useMemo(() => keyBy(sports, 'key'), [sports])
+  const topic = useSportTopicExtras('all')
   // F1 sessions go in the feed among the games, each on its own day.
   const weekends = schedule?.raceWeekends ?? []
   const markets = (
@@ -96,6 +98,7 @@ export default function SportsPage({
       rail={rail}
       heading="Sports"
       subheading="Pick a game. Make a call. Trade with the crowd."
+      actions={topic.follow}
       seo={{
         title: 'Sports',
         description:
@@ -142,6 +145,7 @@ export default function SportsPage({
             queryString: 'markets',
             content: <div className="pt-3">{markets}</div>,
           },
+          ...topic.tabs,
         ]}
       />
     </SportsShell>

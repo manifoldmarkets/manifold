@@ -67,7 +67,12 @@ import {
 import { Repost } from 'common/repost'
 import { ManaSupply } from 'common/stats'
 import { SportsMarket } from 'common/sports'
-import { SPORT_KEY_RE, SportsScheduleResponse } from 'common/sports-schedule'
+import {
+  SPORT_KEY_RE,
+  SportInfo,
+  SportsScheduleResponse,
+} from 'common/sports-schedule'
+import { SportsLeaderboards } from 'common/sports-leaderboards'
 import { CompetitionSwitchState } from 'common/sports-calendar'
 import { ScorePollingPanel } from 'common/sports-score-polling'
 import { Row } from 'common/supabase/utils'
@@ -5191,6 +5196,26 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as SportsScheduleResponse,
+  },
+  // Every sport on the sports pages, with the topics behind it. Topic pages
+  // use it to send a sport's main topic to that sport's page.
+  'sports-index': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=300, stale-while-revalidate=600',
+    props: z.object({}).strict(),
+    returns: {} as { sports: SportInfo[] },
+  },
+  // A sport's leaderboards ('all' for every sport), which the scheduler
+  // rebuilds hourly. Empty boards for a sport it doesn't know.
+  'sports-leaderboards': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=300, stale-while-revalidate=600',
+    props: z.object({ sport: z.string().regex(SPORT_KEY_RE) }).strict(),
+    returns: {} as SportsLeaderboards,
   },
 
   // Link a market to the market it's about (common/market-links), replacing
