@@ -1217,10 +1217,15 @@ export default function SportsAdminPage() {
                   season&apos;s driver standings as the answers and the opening
                   prices. Practice and sprint qualifying are listed but get no
                   market. Sessions that already have a market are skipped, and
-                  one run creates at most 12. Every phase is included, switched
-                  on or not: the switch only decides what the daily job creates.
-                  The sports-f1-resolve job resolves them from the
-                  classification two hours after each market closes.
+                  one run creates at most 12. Before the season&apos;s first
+                  weekend it also creates the drivers&apos; and
+                  constructors&apos; title markets, with last season&apos;s
+                  standings for the opening prices. Every phase is included,
+                  switched on or not: the switch only decides what the daily job
+                  creates. The sports-f1-resolve job resolves session markets
+                  from the classification two hours after each closes, and the
+                  titles from the final standings four days after the final
+                  race.
                 </p>
               ) : (
                 <p className="text-ink-500 text-sm">

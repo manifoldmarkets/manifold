@@ -1,8 +1,10 @@
 import {
+  calendarEntriesFor,
   CompetitionSwitchState,
   countByReadiness,
   DEFAULT_SWITCH_FILTER,
   filterSwitches,
+  phaseWindow,
   SPORTS_CALENDAR,
   switchReadiness,
 } from './sports-calendar'
@@ -111,4 +113,22 @@ it('has locked phases to filter in the real calendar', () => {
   expect(
     SPORTS_CALENDAR.filter((e) => e.oddsKey && e.locked).length
   ).toBeGreaterThan(0)
+})
+
+describe('F1 2027', () => {
+  // The announced calendar: Bahrain 12–14 Mar to Abu Dhabi 10–12 Dec.
+  const [entry] = calendarEntriesFor('f1-2027')
+  const { from, to } = phaseWindow(entry)
+
+  it("opens session markets from Bahrain's first practice to Abu Dhabi's race", () => {
+    expect(from).toBeLessThanOrEqual(Date.parse('2027-03-12T11:30:00Z'))
+    expect(from).toBeGreaterThan(Date.parse('2027-03-08T00:00:00Z'))
+    // The race market closes three hours after its start.
+    expect(to).toBeGreaterThanOrEqual(Date.parse('2027-12-12T16:00:00Z'))
+  })
+
+  it("ends on the finale's race day, with its 24 rounds, as the titles need", () => {
+    expect(entry.endDate).toBe('2027-12-12')
+    expect(entry.rounds).toBe(24)
+  })
 })

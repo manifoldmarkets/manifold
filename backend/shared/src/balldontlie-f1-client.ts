@@ -18,6 +18,7 @@ import {
   F1Event,
   F1Session,
   F1SessionResult,
+  F1TeamStanding,
 } from 'common/f1-markets'
 import { log } from 'shared/utils'
 
@@ -126,3 +127,7 @@ export const getF1SessionResults = (sessionId: number) =>
  */
 export const getF1DriverStandings = (season: number) =>
   getAll<F1DriverStanding>('driver_standings', { season: String(season) })
+
+/** The season's teams with their points (ALL-STAR). */
+export const getF1TeamStandings = (season: number) =>
+  getAll<F1TeamStanding>('team_standings', { season: String(season) })

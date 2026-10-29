@@ -417,6 +417,7 @@ export type Poll = {
  * moneyline, spread, total, prop: markets about a game between two teams.
  * winner, podium: markets about one session of a field event (a Grand Prix),
  * whose answers are the entrants (see common/f1-markets.ts).
+ * title: a season's championship, whose answers are the drivers or teams.
  */
 export type SportsMarketType =
   | 'moneyline'
@@ -425,6 +426,7 @@ export type SportsMarketType =
   | 'prop'
   | 'winner'
   | 'podium'
+  | 'title'
 
 export type Sports = {
   sportsStartTimestamp: string

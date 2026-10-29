@@ -4,6 +4,7 @@ import {
   F1_CLOSE_BUFFER_HOURS,
   OTHER_DRIVER_ANSWER,
   parseF1EventId,
+  parseF1TitleEventId,
 } from './f1-markets'
 import type {
   RelatedCandidate,
@@ -631,6 +632,11 @@ export interface ChampionshipCandidate {
   question: string
   uniqueBettorCount: number
   volume: number
+  /**
+   * The pipeline's own title market's id (`bdl-f1-title:...`), set only
+   * for a market from @ManifoldSports: anyone can stamp a sportsEventId.
+   */
+  officialEventId?: string | null
 }
 
 const ABOUT_F1_RE = /\b(F1|Formula (1|One))\b/i
@@ -661,7 +667,8 @@ export function f1Season(now: number) {
 
 /**
  * The season's drivers' and constructors' title markets from open multiple
- * choice markets: an F1 question about the title, for this season (or no
+ * choice markets: our own for the season (createF1TitleMarkets) where there
+ * is one, else an F1 question about the title, for this season (or no
  * season named), the one with the most traders of each kind.
  */
 export function pickRaceChampionships(
@@ -669,7 +676,14 @@ export function pickRaceChampionships(
   now: number
 ): RaceChampionship[] {
   const season = String(f1Season(now))
+  const official = candidates.flatMap((c) => {
+    const title = parseF1TitleEventId(c.officialEventId)
+    return title && String(title.season) === season
+      ? [{ kind: title.kind, id: c.id }]
+      : []
+  })
   const titles = candidates.flatMap((c) => {
+    if (c.officialEventId) return []
     const q = c.question
     if (
       !ABOUT_F1_RE.test(q) ||
@@ -688,7 +702,11 @@ export function pickRaceChampionships(
     (c) => c.id,
   ])
   return (['drivers', 'constructors'] as const).flatMap((kind) => {
-    const best = ranked.find((c) => c.kind === kind)
+    const best =
+      sortBy(
+        official.filter((c) => c.kind === kind),
+        (c) => c.id
+      )[0] ?? ranked.find((c) => c.kind === kind)
     return best ? [{ kind, id: best.id }] : []
   })
 }

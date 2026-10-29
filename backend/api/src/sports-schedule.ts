@@ -440,19 +440,25 @@ async function getRaceWeekends(pg: Pg, daysAhead: number, now: number) {
   return buildRaceWeekends(contracts, answers, now)
 }
 
-// The F1 page's title markets: open multiple choice markets in the sports
-// topics about F1 and a championship. Which ones count, and the pick of each
-// kind by traders, is pickRaceChampionships.
+// The F1 page's title markets: our own (a `bdl-f1-title:` market from
+// @ManifoldSports) first, then open multiple choice markets in the sports
+// topics about F1 and a championship. Which ones count, and the pick of
+// each kind, is pickRaceChampionships. The order by repeats the test for
+// ours: Postgres can't read an output column's name inside an expression.
 async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
   const rows = await pg.manyOrNone<{
     id: string
     question: string
     bettors: number | null
     volume: number | null
+    official_event_id: string | null
   }>(
     `select c.question, c.id,
             (c.data->>'uniqueBettorCount')::float8 as bettors,
-            (c.data->>'volume')::float8 as volume
+            (c.data->>'volume')::float8 as volume,
+            case when c.creator_id = any($4)
+                  and c.data->>'sportsEventId' like 'bdl-f1-title:%'
+                 then c.data->>'sportsEventId' end as official_event_id
      from contracts c
      where exists (
          select 1 from group_contracts gc
@@ -466,12 +472,15 @@ async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
        and c.outcome_type = 'MULTIPLE_CHOICE'
        and c.question ~* $2
        and c.question ~* $3
-     order by bettors desc nulls last
+     order by (c.creator_id = any($4)
+               and c.data->>'sportsEventId' like 'bdl-f1-title:%') is true desc,
+              bettors desc nulls last
      limit ${MAX_CHAMPIONSHIP_CANDIDATES}`,
     [
       index.allGroupIds,
       '(champion|\\mwdc\\M|\\mwcc\\M)',
       '(formula (1|one)|\\mf1\\M)',
+      MANIFOLD_SPORTS_USER_IDS,
     ]
   )
   return pickRaceChampionships(
@@ -480,6 +489,7 @@ async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
       question: r.question,
       uniqueBettorCount: Number(r.bettors ?? 0),
       volume: Number(r.volume ?? 0),
+      officialEventId: r.official_event_id,
     })),
     now
   )
