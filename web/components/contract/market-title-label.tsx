@@ -4,10 +4,9 @@ import { Contract, isSportsContract, SportsContract } from 'common/contract'
 import { parseOddsEventId } from 'common/odds-markets'
 import { WORLD_CUP_2026 } from 'common/sports'
 import { getSportsLeagueLabel } from 'common/sports-league-label'
-import { sportForMarket } from 'common/sports-schedule'
+import { sportForMarket, sportPath } from 'common/sports-schedule'
 
 import { PerpMarketBadge } from '../perps/perp-market-badge'
-import { sportPath } from '../sports/sport-rail'
 import { OFFICIAL_SPORTS_MARKET_DESCRIPTION } from '../sports/sports-market-badge'
 import { Tooltip } from '../widgets/tooltip'
 
