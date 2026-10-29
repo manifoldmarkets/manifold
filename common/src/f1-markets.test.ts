@@ -21,6 +21,7 @@ import {
   f1SessionKind,
   f1SessionResolution,
   F1SessionResult,
+  f1SessionSync,
   f1TeamEntrant,
   f1TitleCloseTime,
   f1TitleEventId,
@@ -580,6 +581,107 @@ describe('f1SessionResolution', () => {
     expect(
       f1SessionResolution(final, classification, answers, entrantIds, 'podium')
     ).toBeNull()
+  })
+})
+
+// ─── Sessions that move ───────────────────────────────────────────────────────
+
+describe('f1SessionSync', () => {
+  const H = 60 * 60 * 1000
+  const NOW = Date.parse('2026-10-29T12:00:00Z')
+  const at = (iso: string) => Date.parse(iso)
+  const s = (
+    date: string,
+    status_state: F1Session['status_state'] = 'scheduled',
+    type = 'Race'
+  ) => ({ type, name: type, date, status_state })
+  // Mexico City: the race starts 1 Nov 20:00Z and its market closes 23:00Z.
+  const START = '2026-11-01T20:00:00.000Z'
+  const onTime = { sportsStartTimestamp: START, closeTime: at(START) + 3 * H }
+  const sync = (session: ReturnType<typeof s>, market = onTime, now = NOW) =>
+    f1SessionSync(session, market, now)
+
+  it('keeps a market whose session is where it was', () => {
+    expect(sync(s(START))).toEqual({ kind: 'keep' })
+  })
+
+  it('follows a session moved later or earlier', () => {
+    expect(sync(s('2026-11-02T20:00:00Z'))).toEqual({
+      kind: 'move',
+      start: '2026-11-02T20:00:00.000Z',
+      closeTime: at('2026-11-02T23:00:00Z'),
+    })
+    expect(sync(s('2026-11-01T15:00:00Z'))).toEqual({
+      kind: 'move',
+      start: '2026-11-01T15:00:00.000Z',
+      closeTime: at('2026-11-01T18:00:00Z'),
+    })
+    // Qualifying and sprint markets keep their own buffers.
+    expect(sync(s('2026-11-01T15:00:00Z', 'scheduled', 'Qualifying'))).toEqual({
+      kind: 'move',
+      start: '2026-11-01T15:00:00.000Z',
+      closeTime: at('2026-11-01T16:30:00Z'),
+    })
+    // A stored start that doesn't parse is put right.
+    expect(
+      sync(s(START), { ...onTime, sportsStartTimestamp: 'TBC' }).kind
+    ).toBe('move')
+  })
+
+  it('reopens a market closed before its session has run', () => {
+    // Closed by a postponement yesterday; the provider now has a new date.
+    const closed = { ...onTime, closeTime: NOW - 24 * H }
+    expect(sync(s('2026-11-08T20:00:00Z'), closed)).toEqual({
+      kind: 'move',
+      start: '2026-11-08T20:00:00.000Z',
+      closeTime: at('2026-11-08T23:00:00Z'),
+    })
+  })
+
+  it('stops trading now on a cancelled or postponed session, never reopening one', () => {
+    expect(sync(s(START, 'canceled'))).toEqual({
+      kind: 'close',
+      closeTime: NOW,
+    })
+    expect(sync(s(START, 'postponed'))).toEqual({
+      kind: 'close',
+      closeTime: NOW,
+    })
+    const closed = { ...onTime, closeTime: NOW - H }
+    expect(sync(s(START, 'canceled'), closed)).toEqual({ kind: 'keep' })
+  })
+
+  it('never gives a session that should have started more time', () => {
+    // Moved two hours earlier and already under way: closes sooner.
+    const later = { ...onTime, closeTime: NOW + 10 * H }
+    expect(sync(s(new Date(NOW - H).toISOString()), later)).toEqual({
+      kind: 'close',
+      closeTime: NOW + 2 * H,
+    })
+    // Its new close has passed: closes now.
+    expect(sync(s(new Date(NOW - 4 * H).toISOString()), later)).toEqual({
+      kind: 'close',
+      closeTime: NOW,
+    })
+    // A later start that has passed doesn't extend a close.
+    const soon = { ...onTime, closeTime: NOW + H }
+    expect(sync(s(new Date(NOW - H).toISOString()), soon)).toEqual({
+      kind: 'keep',
+    })
+  })
+
+  it('leaves sessions under way, practice and broken dates alone', () => {
+    for (const state of [
+      'in_progress',
+      'delayed',
+      'suspended',
+      'final',
+      'abandoned',
+      'unknown',
+    ] as const)
+      expect(sync(s('2026-11-02T20:00:00Z', state))).toEqual({ kind: 'keep' })
+    expect(sync(s(START, 'canceled', 'FP1'))).toEqual({ kind: 'keep' })
+    expect(sync(s('TBC'))).toEqual({ kind: 'keep' })
   })
 })
 

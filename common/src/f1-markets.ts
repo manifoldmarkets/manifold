@@ -612,6 +612,59 @@ export function f1SessionResolution(
   }
 }
 
+// ─── Sessions that move ───────────────────────────────────────────────────────
+//
+// The provider keeps a session's id when its time changes and marks a
+// cancelled session (every session of a cancelled weekend, too) 'canceled'.
+// A weekend moved elsewhere is a new event with new sessions: the old ones
+// are cancelled and the new ones get markets of their own.
+
+/** What a session market's start and close should become, if anything. */
+export type F1SessionSync =
+  | { kind: 'keep' }
+  /** Stop trading now. */
+  | { kind: 'close'; closeTime: number }
+  /** Follow the session to its new start, earlier or later. */
+  | { kind: 'move'; start: string; closeTime: number }
+
+/**
+ * How a session market follows its session on the provider's calendar. A
+ * cancelled or postponed session stops trading now; a cancelled one then
+ * resolves N/A, and a postponed one waits for its new date. A scheduled
+ * session whose start has changed takes the market's start and close with
+ * it, and reopens a market that closed early or on the old time, since the
+ * session hasn't run. A session that should have started already never
+ * gets more time: its market can only close sooner, at its new close or now.
+ */
+export function f1SessionSync(
+  session: Pick<F1Session, 'type' | 'name' | 'date' | 'status_state'>,
+  market: { closeTime: number; sportsStartTimestamp: string },
+  now: number
+): F1SessionSync {
+  const kind = f1SessionKind(session)
+  if (!kind) return { kind: 'keep' }
+  const open = market.closeTime > now
+  if (
+    session.status_state === 'canceled' ||
+    session.status_state === 'postponed'
+  )
+    return open ? { kind: 'close', closeTime: now } : { kind: 'keep' }
+  if (session.status_state !== 'scheduled') return { kind: 'keep' }
+  const start = Date.parse(session.date)
+  if (!Number.isFinite(start)) return { kind: 'keep' }
+  const closeTime = start + F1_CLOSE_BUFFER_HOURS[kind] * HOUR_MS
+  if (start <= now)
+    return open && closeTime < market.closeTime
+      ? { kind: 'close', closeTime: Math.max(closeTime, now) }
+      : { kind: 'keep' }
+  if (
+    start === Date.parse(market.sportsStartTimestamp) &&
+    closeTime === market.closeTime
+  )
+    return { kind: 'keep' }
+  return { kind: 'move', start: new Date(start).toISOString(), closeTime }
+}
+
 // ─── Season titles ────────────────────────────────────────────────────────────
 //
 // A season gets two title markets, the drivers' and the constructors'
