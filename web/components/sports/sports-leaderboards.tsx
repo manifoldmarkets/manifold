@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { fromNow } from 'client-common/lib/time'
 import { SportsLeaderboardEntry } from 'common/sports-leaderboards'
 import { SportInfo } from 'common/sports-schedule'
-import { HOUR_MS, MINUTE_MS } from 'common/util/time'
+import { MINUTE_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { LeaderboardColumn } from 'web/components/leaderboard'
 import {
@@ -13,6 +13,7 @@ import {
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { useUser } from 'web/hooks/use-user'
+import { boardStatus, shouldRefresh } from './sports-leaderboards-state'
 
 const SHOWN = 10
 
@@ -34,8 +35,8 @@ export function SportsLeaderboards(props: { sport: SportInfo | 'all' }) {
     `sports-leaderboards-${key}`
   )
   // Rebuilds come hourly, but a response stays cached for the session and a
-  // hidden tab stays mounted. So whenever the board is over an hour old (or
-  // not built yet), fetch again, then keep checking every ten minutes.
+  // hidden tab stays mounted. So check whenever the board changes and every
+  // ten minutes: see shouldRefresh.
   const [tick, setTick] = useState(0)
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 10 * MINUTE_MS)
@@ -43,17 +44,19 @@ export function SportsLeaderboards(props: { sport: SportInfo | 'all' }) {
   }, [])
   const updatedTime = data?.updatedTime
   useEffect(() => {
-    if (updatedTime === undefined || loading) return
-    if (updatedTime === null || Date.now() - updatedTime > HOUR_MS) refresh()
+    if (shouldRefresh({ updatedTime, error, loading, tick, now: Date.now() }))
+      refresh()
   }, [updatedTime, tick])
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
   // Keyed by sport where it's used, and each sport has its own cache slot,
   // so data is always this sport's.
-  const built = !!data && data.updatedTime !== null
-  const notYet = !!data && data.updatedTime === null
+  const status = boardStatus(data, error, mounted)
+  const built = status === 'built'
   const emptyText = (none: string) =>
-    error
+    status === 'failed'
       ? "Couldn't load the leaderboard."
-      : notYet
+      : status === 'notYet'
       ? 'The first leaderboard is on its way. Check back within the hour.'
       : none
 
@@ -62,7 +65,7 @@ export function SportsLeaderboards(props: { sport: SportInfo | 'all' }) {
       <BoardPanel
         title="Top traders"
         entries={built ? data?.profit : undefined}
-        loading={loading}
+        loading={status === 'loading'}
         columns={PROFIT_COLUMNS}
         highlightUserId={user?.id}
         emptyText={emptyText(`No ${label} traders yet.`)}
@@ -70,7 +73,7 @@ export function SportsLeaderboards(props: { sport: SportInfo | 'all' }) {
       <BoardPanel
         title="Top creators"
         entries={built ? data?.creator : undefined}
-        loading={loading}
+        loading={status === 'loading'}
         columns={CREATOR_COLUMNS}
         highlightUserId={user?.id}
         emptyText={emptyText(`No ${label} creators yet.`)}
