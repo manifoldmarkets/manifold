@@ -27,10 +27,11 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Modal } from 'web/components/layout/modal'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
+import { applyLocalUserUpdate } from 'client-common/hooks/use-websocket-user'
 import { useUser } from 'web/hooks/use-user'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
-import { api } from 'web/lib/api/api'
+import { APIError, api } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
 import {
   TierBadge,
@@ -97,21 +98,34 @@ export default function SupporterPage() {
     const item = TIER_ITEMS[tier]
     setPurchasing(item.id)
     try {
-      await api('shop-purchase', { itemId: item.id })
+      const { entitlements } = await api('shop-purchase', { itemId: item.id })
+      // Applied to the signed-in user, so every page sees the membership now
+      // (even if this one was left while the purchase was in flight).
+      applyLocalUserUpdate({ id: user.id, entitlements })
       setPurchasedTier(tier)
       setShowCelebration(true)
       toast.success('Thank you for your support!')
     } catch (e: any) {
       toast.error(e.message || 'Failed to purchase')
+      // 409: the membership changed since this page loaded, so show it
+      if (e instanceof APIError && e.code === 409) {
+        api('user/by-id/:id', { id: user.id })
+          .then(({ entitlements }) =>
+            applyLocalUserUpdate({ id: user.id, entitlements })
+          )
+          .catch(() => {})
+      }
     } finally {
       setPurchasing(null)
     }
   }
 
   const handleCancelSubscription = async () => {
+    if (!user) return
     setCancelling(true)
     try {
-      await api('shop-cancel-subscription', {})
+      const { entitlements } = await api('shop-cancel-subscription', {})
+      applyLocalUserUpdate({ id: user.id, entitlements })
       toast.success(
         'Subscription cancelled. Your membership will remain active until the end of the current period.'
       )
