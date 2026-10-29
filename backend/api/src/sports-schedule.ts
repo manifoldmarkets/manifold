@@ -503,7 +503,8 @@ async function getRaceWeekends(pg: Pg, daysAhead: number, now: number) {
 // The F1 page's title markets: our own (a `bdl-f1-title:` market from
 // @ManifoldSports) first, then open multiple choice markets in the sports
 // topics about F1 and a championship. Which ones count, and the pick of
-// each kind, is pickRaceChampionships.
+// each kind, is pickRaceChampionships. The order by repeats the test for
+// ours: Postgres can't read an output column's name inside an expression.
 async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
   const rows = await pg.manyOrNone<{
     id: string
@@ -531,7 +532,9 @@ async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
        and c.outcome_type = 'MULTIPLE_CHOICE'
        and c.question ~* $2
        and c.question ~* $3
-     order by official_event_id is null, bettors desc nulls last
+     order by (c.creator_id = any($4)
+               and c.data->>'sportsEventId' like 'bdl-f1-title:%') is true desc,
+              bettors desc nulls last
      limit ${MAX_CHAMPIONSHIP_CANDIDATES}`,
     [
       index.allGroupIds,

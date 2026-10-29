@@ -16,7 +16,7 @@
  * standings by resolveF1TitleMarkets, in the same job.
  */
 
-import { sortBy, uniq } from 'lodash'
+import { sortBy, sum, uniq } from 'lodash'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { contractColumnsToSelect, log } from 'shared/utils'
 import { anythingToRichText } from 'shared/tiptap'
@@ -44,8 +44,10 @@ import {
   F1_DAYS_AHEAD,
   F1_MARKETS_BY_SESSION,
   F1_RESOLVE_DELAY_HOURS,
+  F1_SEASON_END_TOLERANCE_DAYS,
   F1_TITLE_KINDS,
   F1_TITLE_RESOLVE_DELAY_HOURS,
+  f1CalendarReachesEnd,
   f1DriverEntrant,
   F1DriverStanding,
   f1DriverStandingRow,
@@ -54,6 +56,7 @@ import {
   F1MarketParams,
   f1SeasonComplete,
   f1SeasonDates,
+  f1SeasonPointsAwarded,
   f1SessionKind,
   f1SessionResolution,
   F1SessionResult,
@@ -80,7 +83,6 @@ import {
   CompetitionSwitches,
   phaseWindow,
   SPORT_ID_TO_SPORT_KEY,
-  SportsCalendarEntry,
 } from 'common/sports-calendar'
 import { sportTagIds } from 'common/sports-schedule'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
@@ -210,6 +212,30 @@ function officialFor(
   }
 }
 
+/**
+ * Our calendar dates a season from its first race day, and the weekend
+ * starts up to two days before it (FP1 on the Friday): assume three.
+ */
+const OUR_WEEKEND_LEAD_DAYS = 3
+
+/**
+ * A season's dates by our calendar (common/sports-calendar.ts): when its
+ * first weekend may start, and the end of its last date. Null for a
+ * competition we don't list.
+ */
+function ourSeasonDates(
+  competitionId: string
+): { firstStart: number; end: number } | null {
+  const windows = calendarEntriesFor(competitionId).map(phaseWindow)
+  if (windows.length === 0) return null
+  return {
+    firstStart:
+      Math.min(...windows.map((w) => w.from)) - OUR_WEEKEND_LEAD_DAYS * DAY_MS,
+    // phaseWindow runs a day past the last date.
+    end: Math.max(...windows.map((w) => w.to)) - DAY_MS,
+  }
+}
+
 /** The season an F1 competition is about: `f1-2027` is 2027. */
 function competitionSeason(competitionId: string): number | null {
   const match = /^f1-(\d{4})$/.exec(competitionId)
@@ -239,18 +265,18 @@ async function titleStandings(kind: F1TitleKind, season: number) {
 /**
  * The season's title markets, drivers' and constructors' (keys
  * `title:drivers` and `title:constructors`), while the season hasn't
- * started. Its dates come from the provider's calendar, or from ours
- * (common/sports-calendar.ts) while the provider has no weekend of the
- * season yet; resolveF1TitleMarkets then moves the close to the provider's
- * final race once it has. The field is the season's standings once the
- * provider has them, else last season's; the opening prices are last
- * season's points either way. A title that already has a market is
- * skipped, and the check is repeated inside the creating transaction.
+ * started by the provider's calendar or ours (common/sports-calendar.ts),
+ * whichever starts it sooner. It closes after the provider's final race once
+ * the provider's calendar reaches the season's end (f1CalendarReachesEnd),
+ * else at the end of our last date, which resolveF1TitleMarkets corrects
+ * when it does. The field is the season's standings once the provider has
+ * them, else last season's; the opening prices are last season's points
+ * either way. A title that already has a market is skipped, and the check
+ * is repeated inside the creating transaction.
  */
 async function createF1TitleMarkets(
   pg: SupabaseDirectClient,
   competitionId: string,
-  phases: SportsCalendarEntry[],
   result: F1CreateResult,
   opts: {
     dryRun?: boolean
@@ -274,33 +300,31 @@ async function createF1TitleMarkets(
       result.log.push({ key, question: label, status: 'skipped', reason })
     }
   }
-  if (!season) return skipAll(`can't tell which season ${competitionId} is`)
+  const ours = ourSeasonDates(competitionId)
+  if (!season || !ours)
+    return skipAll(`can't tell which season ${competitionId} is`)
 
   const events = await providerCall('/events', KEY_REFUSED, () =>
     getF1Events(season)
   )
-  let dates: { firstStart: number; closeTime: number }
-  if (events.length === 0) {
-    const windows = phases.map(phaseWindow)
-    dates = {
-      firstStart: Math.min(...windows.map((w) => w.from)),
-      // phaseWindow runs a day past the last date: close at its end.
-      closeTime: Math.max(...windows.map((w) => w.to)) - DAY_MS,
-    }
-  } else {
-    const provider = f1SeasonDates(events)
-    if (!provider)
-      return skipAll(
-        `the provider's ${season} calendar has no weekend left with dates that parse`
-      )
-    dates = {
-      firstStart: provider.firstStart,
-      closeTime: f1TitleCloseTime(provider.lastRaceStart),
-    }
+  const provider = f1SeasonDates(events)
+  if (events.length > 0 && !provider)
+    return skipAll(
+      `the provider's ${season} calendar has no weekend left with dates that parse`
+    )
+  // The provider's final race once its calendar reaches the season's end;
+  // until then our last date, which resolveF1TitleMarkets corrects later.
+  const fullCalendar =
+    !!provider && f1CalendarReachesEnd(provider.lastRaceStart, ours.end)
+  const dates = {
+    firstStart: Math.min(ours.firstStart, provider?.firstStart ?? Infinity),
+    closeTime: fullCalendar
+      ? f1TitleCloseTime(provider.lastRaceStart)
+      : ours.end,
   }
   if (dates.firstStart <= Date.now() + MIN_CREATE_LEAD_MS)
     return skipAll(
-      `the ${season} season has started; a title market opens before its first weekend`
+      `the ${season} season's first weekend has started, or may have by our calendar; a title market opens before it`
     )
 
   for (const { kind, key, label } of titles) {
@@ -351,9 +375,11 @@ async function createF1TitleMarkets(
             params,
             ante
           )}; field from the ${source} standings${
-            events.length === 0
-              ? `; no ${season} calendar from the provider yet, so the dates are ours until it has one`
-              : ''
+            fullCalendar
+              ? ''
+              : `; the provider's ${season} calendar ${
+                  events.length === 0 ? "isn't out yet" : "doesn't reach ours"
+                }, so it closes on our last date until it does`
           }`,
         })
         continue
@@ -447,7 +473,7 @@ export async function createF1Markets(
   const official = officialFor(pg, competitionId, opts.creator)
 
   // The season's titles don't wait for the window: they open before it starts.
-  await createF1TitleMarkets(pg, competitionId, phases, result, {
+  await createF1TitleMarkets(pg, competitionId, result, {
     dryRun: opts.dryRun,
     picked,
     official,
@@ -1023,16 +1049,20 @@ const iso = (t: number) => new Date(t).toISOString().slice(0, 16) + 'Z'
 
 /**
  * Every open title market (createF1TitleMarkets), every run. While one is
- * open and the provider lists its season, its close follows the final race
- * (f1TitleCloseTime): a season the provider didn't list yet when the market
- * opened, or a final race that moves, closes it at the right time. A market
- * already closed isn't reopened. Once every weekend is final or cancelled
- * and F1_TITLE_RESOLVE_DELAY_HOURS have passed since the final race's
- * market closed, it resolves to the leader of the season's final standings
- * (f1TitleResolution). What only a person can settle, standings that don't
- * check out, an answer already resolved against them, or a season still
- * not over ATTENTION_AFTER_MS after the market was due, is logged as an
- * error once per market for the life of `alerted`, and never guessed.
+ * open and the provider's calendar reaches the season's end by ours
+ * (f1CalendarReachesEnd), its close follows the final race
+ * (f1TitleCloseTime), or comes now if that has passed: a season the
+ * provider didn't list yet when the market opened, or a final race that
+ * moves, closes it at the right time. A market already closed isn't
+ * reopened. Once every weekend is final or cancelled, the calendar reaches
+ * the end, and F1_TITLE_RESOLVE_DELAY_HOURS have passed since the final
+ * race's market closed, it resolves to the leader of the season's final
+ * standings (f1TitleResolution), provided they add up to the points every
+ * final race and sprint awards (f1SeasonPointsAwarded). What only a person
+ * can settle, standings that don't add up or check out, a champion the
+ * field doesn't list, an answer already resolved against them, or a season
+ * still not over ATTENTION_AFTER_MS after the market was due, is logged as
+ * an error once per market for the life of `alerted`, and never guessed.
  */
 export async function resolveF1TitleMarkets(
   pg: SupabaseDirectClient,
@@ -1086,23 +1116,32 @@ export async function resolveF1TitleMarkets(
         )
         eventsBySeason.set(id.season, events)
       }
+      const ours = ourSeasonDates(`f1-${id.season}`)
+      if (!ours) {
+        attention(contract, `our calendar has no F1 ${id.season} season`)
+        continue
+      }
+      const seasonEvents = events
       const dates = f1SeasonDates(events)
+      const fullCalendar =
+        !!dates && f1CalendarReachesEnd(dates.lastRaceStart, ours.end)
 
+      // Close with the final race market, or now if that has passed.
       const close = contract.closeTime
-      if (dates && close !== undefined && close > now) {
-        const finalClose = f1TitleCloseTime(dates.lastRaceStart)
-        if (finalClose !== close && finalClose > now + MIN_CREATE_LEAD_MS) {
+      if (dates && fullCalendar && close !== undefined && close > now) {
+        const target = Math.max(f1TitleCloseTime(dates.lastRaceStart), now)
+        if (target !== close) {
           await pg.none(
             `update contracts set data = data || $1::jsonb
              where id = $2 and resolution is null and close_time > now()`,
-            [JSON.stringify({ closeTime: finalClose }), contract.id]
+            [JSON.stringify({ closeTime: target }), contract.id]
           )
           log(
             `[sports-f1-resolve] ${contract.id}: close moved from ${iso(
               close
-            )} to ${iso(finalClose)}, the final race's`
+            )} to ${iso(target)}, by the final race's`
           )
-          add(contract, 'moved', `close ${iso(close)} → ${iso(finalClose)}`)
+          add(contract, 'moved', `close ${iso(close)} → ${iso(target)}`)
           continue
         }
       }
@@ -1118,12 +1157,35 @@ export async function resolveF1TitleMarkets(
         )
         continue
       }
+      if (!fullCalendar) {
+        wait(
+          `the provider's ${id.season} calendar ends ${iso(
+            dates.lastRaceStart
+          )}, more than ${F1_SEASON_END_TOLERANCE_DAYS} days before ours (${iso(
+            ours.end
+          )}), so it may be missing races`
+        )
+        continue
+      }
       const dueAt = f1TitleCloseTime(dates.lastRaceStart) + delayMs
       if (now < dueAt) {
         add(contract, 'waiting', `pays out from ${iso(dueAt)}`)
         continue
       }
 
+      // The standings have to add up to every final race and sprint, so a
+      // feed still on its pre-finale snapshot can't pay out.
+      const sessions = await providerCall(
+        '/sessions',
+        KEY_OR_PLAN_REFUSED,
+        () =>
+          getF1Sessions(
+            seasonEvents
+              .filter((e) => e.status_state !== 'canceled')
+              .map((e) => e.id)
+          )
+      )
+      const awarded = f1SeasonPointsAwarded(sessions)
       const standings =
         id.kind === 'drivers'
           ? (
@@ -1136,6 +1198,14 @@ export async function resolveF1TitleMarkets(
                 getF1TeamStandings(id.season)
               )
             ).map(f1TeamStandingRow)
+      const total = sum(standings.map((s) => s.points))
+      if (!(Math.abs(total - awarded.points) < 1e-6)) {
+        attention(
+          contract,
+          `the final ${id.season} ${id.kind} standings add up to ${total} points, but its ${awarded.races} races and ${awarded.sprints} sprints award ${awarded.points}: the standings may be stale, a race paid half points, or a penalty took points`
+        )
+        continue
+      }
       const answers = await getAnswers(pg, contract.id)
       const resolution = f1TitleResolution(
         id.season,
@@ -1146,7 +1216,7 @@ export async function resolveF1TitleMarkets(
       if (!resolution) {
         attention(
           contract,
-          `the final ${id.season} ${id.kind} standings don't check out against the market's field`
+          `the final ${id.season} ${id.kind} standings don't check out against the market's field, or the champion isn't one of its answers`
         )
         continue
       }

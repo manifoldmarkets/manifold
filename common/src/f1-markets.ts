@@ -3,7 +3,7 @@ import { Answer } from './answer'
 import { MAX_CPMM_PROB, MIN_CPMM_PROB } from './contract'
 import { fitProbs } from './odds-markets'
 import { SPORT_LEAGUE_LABEL } from './sports-calendar'
-import { HOUR_MS } from './util/time'
+import { DAY_MS, HOUR_MS } from './util/time'
 
 // ─── Formula 1 via BALLDONTLIE: pure helpers ─────────────────────────────────
 //
@@ -707,6 +707,55 @@ export const f1TitleCloseTime = (lastRaceStart: number) =>
   lastRaceStart + F1_CLOSE_BUFFER_HOURS.race * HOUR_MS
 
 /**
+ * How long before the last date our calendar gives a season the provider's
+ * final race may fall and still be taken for the finale.
+ */
+export const F1_SEASON_END_TOLERANCE_DAYS = 14
+
+/**
+ * Whether the provider's calendar reaches the season's end by our calendar
+ * (common/sports-calendar.ts), a second source for how long the season is.
+ * "Every listed weekend is final" doesn't show the provider listed every
+ * weekend: one that lists only the first few races would otherwise have a
+ * title close and pay out on the last of them. A finale more than
+ * F1_SEASON_END_TOLERANCE_DAYS earlier than ours fails, and waits for a
+ * fuller calendar or a person; a later one passes.
+ */
+export const f1CalendarReachesEnd = (
+  lastRaceStart: number,
+  ourSeasonEnd: number
+) => lastRaceStart >= ourSeasonEnd - F1_SEASON_END_TOLERANCE_DAYS * DAY_MS
+
+/**
+ * Points between them in a fully classified race (25-18-15-12-10-8-6-4-2-1)
+ * and sprint (8-7-6-5-4-3-2-1), with no fastest-lap point since 2025.
+ */
+export const F1_RACE_POINTS = 101
+export const F1_SPRINT_POINTS = 36
+
+/**
+ * The points a season's final races and sprints award between them. The
+ * final standings must add up to exactly this, which proves they include
+ * every one of those sessions: standings that missed the finale are short by
+ * its points. Checked against the 2025 season (24 races and 6 sprints, 2,640
+ * points) and 2026 so far, drivers and teams alike. A race paying half
+ * points, a points penalty, or fewer than ten classified also miss it, and
+ * those go to a person.
+ */
+export function f1SeasonPointsAwarded(
+  sessions: Pick<F1Session, 'type' | 'name' | 'status_state'>[]
+): { races: number; sprints: number; points: number } {
+  const final = sessions.filter((s) => s.status_state === 'final')
+  const races = final.filter((s) => f1SessionKind(s) === 'race').length
+  const sprints = final.filter((s) => f1SessionKind(s) === 'sprint').length
+  return {
+    races,
+    sprints,
+    points: races * F1_RACE_POINTS + sprints * F1_SPRINT_POINTS,
+  }
+}
+
+/**
  * Whether the provider's calendar has the season over: every weekend final
  * or cancelled, and at least one final.
  */
@@ -851,9 +900,11 @@ export const f1TeamStandingRow = (s: F1TeamStanding): F1StandingRow => ({
  * entrant listed twice, two on one position, no leader, a points total
  * that isn't a number, or a leader not strictly ahead on points (a tie
  * settled on countback is a person's call). Also null when the market's
- * entrant ids don't line up with its answers, or the champion isn't listed
- * and there's no stand-in. Whether the season is over is the caller's
- * check (f1SeasonComplete). A null is for a human, never a guess.
+ * entrant ids don't line up with its answers, or the champion isn't one of
+ * them: a person decides between the stand-in and a re-identified entrant.
+ * Whether the season is over, and the standings complete, are the caller's
+ * checks (f1SeasonComplete, f1CalendarReachesEnd, f1SeasonPointsAwarded).
+ * A null is for a human, never a guess.
  */
 export function f1TitleResolution(
   season: number,
@@ -887,9 +938,10 @@ export function f1TitleResolution(
 
   const field = answersByEntrant(answers, entrantIds, true)
   if (!field) return null
-  // Every listed entrant has an answer after the check above, so a champion
-  // without one wasn't listed.
-  const answer = field.byId.get(leader.id) ?? field.standIn
+  // A champion the field doesn't list never pays the stand-in by itself:
+  // the provider gives a team a new id when it's rebranded (Sauber #814
+  // became Audi #825 in 2026), so an unknown id may be a listed entrant.
+  const answer = field.byId.get(leader.id)
   if (!answer) return null
   return { outcome: answer.id, resolutions: { [answer.id]: 100 } }
 }

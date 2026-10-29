@@ -3,6 +3,7 @@ import { MAX_ANSWER_PROB, MIN_ANSWER_PROB } from './new-contract'
 import {
   buildF1MarketParams,
   buildF1TitleMarketParams,
+  f1CalendarReachesEnd,
   F1Driver,
   f1DriverEntrant,
   F1DriverStanding,
@@ -13,6 +14,8 @@ import {
   f1PodiumPrior,
   f1SeasonComplete,
   f1SeasonDates,
+  f1SeasonPointsAwarded,
+  F1Session,
   f1SessionKind,
   f1SessionResolution,
   F1SessionResult,
@@ -645,6 +648,48 @@ describe('season dates', () => {
     expect(f1SeasonComplete(states('canceled', 'canceled'))).toBe(false)
     expect(f1SeasonComplete([])).toBe(false)
   })
+
+  it("takes a finale for the season's end only near ours", () => {
+    const ours = Date.parse('2027-11-28T23:59:59Z')
+    const day = 24 * 60 * 60 * 1000
+    expect(f1CalendarReachesEnd(ours + 7 * day, ours)).toBe(true)
+    expect(f1CalendarReachesEnd(ours - 14 * day, ours)).toBe(true)
+    expect(f1CalendarReachesEnd(ours - 14 * day - 1, ours)).toBe(false)
+    // A calendar that lists only round one.
+    expect(f1CalendarReachesEnd(Date.parse('2027-03-07T05:00:00Z'), ours)).toBe(
+      false
+    )
+  })
+})
+
+describe('f1SeasonPointsAwarded', () => {
+  it('counts final races and sprints, the way the standings score them', () => {
+    const s = (
+      type: string,
+      name: string,
+      status_state: F1Session['status_state'] = 'final'
+    ) => ({ type, name, status_state })
+    expect(
+      f1SeasonPointsAwarded([
+        // The provider's real strings: Race/Race and Sprint/SR score.
+        s('Race', 'Race'),
+        s('Race', 'Race'),
+        s('Sprint', 'SR'),
+        s('Qualifying', 'Qual'),
+        s('Sprint Qualifying', 'SS'),
+        s('FP1', 'FP1'),
+        s('Race', 'Race', 'scheduled'),
+        s('Sprint', 'SR', 'canceled'),
+      ])
+    ).toEqual({ races: 2, sprints: 1, points: 238 })
+    // 2025 as the provider has it: 24 races and 6 sprints, 2,640 points.
+    expect(
+      f1SeasonPointsAwarded([
+        ...range(24).map(() => s('Race', 'Race')),
+        ...range(6).map(() => s('Sprint', 'SR')),
+      ]).points
+    ).toBe(2640)
+  })
 })
 
 describe('buildF1TitleMarketParams', () => {
@@ -805,12 +850,13 @@ describe('f1TitleResolution', () => {
     ).toBe('a-ver')
   })
 
-  it("sends a champion who isn't listed to the stand-in, and asks a human without one", () => {
+  it("asks a person about a champion the field doesn't list, stand-in or not", () => {
+    // Maybe a newcomer, maybe a listed team the provider gave a new id.
     const outsider = [row(44, 1, 430), row(1, 2, 420), row(4, 3, 401)]
-    expect(resolve(outsider)?.outcome).toBe('a-other')
-    expect(resolve(outsider, answers.slice(0, 3), entrantIds.slice(0, 3))).toBe(
-      null
-    )
+    expect(resolve(outsider)).toBeNull()
+    expect(
+      resolve(outsider, answers.slice(0, 3), entrantIds.slice(0, 3))
+    ).toBeNull()
   })
 
   it("refuses standings that can't say for certain", () => {
