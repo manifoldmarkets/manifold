@@ -133,6 +133,8 @@ const market = (
 ) => ({
   data: {
     id,
+    slug: id,
+    creatorUsername: 'ManifoldSports',
     question: `2026 Mexico City Grand Prix: ${marketType}`,
     closeTime: CLOSE,
     outcomeType: 'MULTIPLE_CHOICE',
@@ -335,9 +337,18 @@ describe('resolveF1Markets', () => {
       .mocked(getF1SessionResults)
       .mockResolvedValue([...classified(22, 11, 33), ...classified(44)])
     const db = database([winner], { winner: winnerAnswers })
+    jest.mocked(isProd).mockReturnValue(true)
     const r = await resolveF1Markets(db.pg)
     expect(r.attention).toBe(1)
     expect(resolveMarketHelper).not.toHaveBeenCalled()
+    // Session markets email on prod too, with their own link.
+    expect(jest.mocked(sendTextEmail).mock.calls).toEqual([
+      [
+        'info@manifold.markets',
+        'F1 market needs a person: 2026 Mexico City Grand Prix: winner',
+        expect.stringContaining('/ManifoldSports/winner'),
+      ],
+    ])
   })
 
   it('resolves a cancelled session N/A: winner whole, podium per answer', async () => {
@@ -1126,5 +1137,29 @@ describe('resolveF1TitleMarkets', () => {
     // Off prod, the error log only.
     expect(log.error).toHaveBeenCalledTimes(1)
     expect(sendTextEmail).not.toHaveBeenCalled()
+  })
+
+  it("doesn't wait on mail, and survives it failing", async () => {
+    jest.mocked(Date.now).mockReturnValue(DUE)
+    jest.mocked(isProd).mockReturnValue(true)
+    const bad = (id: string) =>
+      title(id, FINAL_CLOSE, 'drivers', [1, null], 'bdl-f1-title:27:drivers')
+    // Mail that never answers doesn't hold the run up.
+    jest.mocked(sendTextEmail).mockReturnValueOnce(new Promise(() => {}))
+    const slow = await resolveF1TitleMarkets(titleDb([bad('a')], {}).pg)
+    expect(slow.attention).toBe(1)
+    // Mailgun throws without a key before sendTextEmail's own handling: the
+    // rejection is caught and logged, not left to end the process.
+    jest
+      .mocked(sendTextEmail)
+      .mockRejectedValueOnce(new Error('apiKey value must be defined!'))
+    const failed = await resolveF1TitleMarkets(titleDb([bad('b')], {}).pg)
+    expect(failed.attention).toBe(1)
+    await new Promise((resolve) => setImmediate(resolve))
+    expect(log.error).toHaveBeenLastCalledWith(
+      expect.stringContaining(
+        "couldn't email info@manifold.markets about b: apiKey value must be defined!"
+      )
+    )
   })
 })

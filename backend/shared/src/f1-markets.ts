@@ -828,9 +828,10 @@ function resolveLog(result: F1ResolveResult, alerted: Set<string>) {
       `[sports-f1-resolve] ${contract.id} (${contract.question}) needs a person: ${reason}`
     )
     if (!isProd()) return
-    // Not awaited: a run shouldn't wait on mail, and sendTextEmail logs its
-    // own failure.
-    void sendTextEmail(
+    // Not awaited: a run shouldn't wait on mail. Caught here too, since
+    // sendTextEmail sets up Mailgun (which throws without a key) before its
+    // own error handling, and an unhandled rejection ends the process.
+    sendTextEmail(
       ATTENTION_EMAIL,
       `F1 market needs a person: ${contract.question}`,
       [
@@ -840,6 +841,12 @@ function resolveLog(result: F1ResolveResult, alerted: Set<string>) {
         ``,
         `It won't pay out by itself: resolve it by hand, or fix what's missing and the resolver picks it up. From sports-f1-resolve, once per scheduler process.`,
       ].join('\n')
+    ).catch((e) =>
+      log.error(
+        `[sports-f1-resolve] couldn't email ${ATTENTION_EMAIL} about ${
+          contract.id
+        }: ${e instanceof Error ? e.message : String(e)}`
+      )
     )
   }
   return { add, attention }
