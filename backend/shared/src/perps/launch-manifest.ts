@@ -453,6 +453,37 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
     },
     minimumHistory: { spanMs: 30 * DAY_MS, points: 30 * 24 },
   },
+  {
+    feedId: ADJACENT_MSRY_FEED_ID,
+    question: 'Misery Index — market-implied unemployment + inflation (%)',
+    requiredTopics: [
+      {
+        name: 'Economics',
+        slugByEnvironment: {
+          DEV: 'economics-default',
+          PROD: 'economics-default',
+        },
+      },
+    ],
+    oracleBehavior: 'continuous-public',
+    requiresSourceAsOf: false,
+    gameDesign:
+      "Adjacent's Misery Implied Index: implied U-3 unemployment plus implied CPI-U year-over-year, read off event-contract ladders on the next BLS prints and recalculated every minute. Two-sided, with macro theses both ways, and not monotone. It is also quiet: about 8.0 to 8.25 over its first weeks, daily moves of a few hundredths, while a single strike crossing 50 cents moves it by up to a tenth. Two moves are predictable. Each sleeve rolls to its next reference month in five weekday steps at 5:30 p.m. Eastern, ending the day before the BLS release, so a step's direction and rough size are visible beforehand from the two months' implied levels. A sleeve with no valid bracket holds its last level until one exists, then moves at once. The roll schedule is published, so a trader can pre-position each step, and funding does not price it.",
+    latencyArbitrageRisk:
+      "Orders fill only at a value Adjacent recalculated after the order (provider-stamped eligibility, as for MNX), so a value already visible at Adjacent, or a cached response we receive late, cannot fill one. What remains is predictability: roll steps and held-sleeve releases are knowable in advance, and the event-contract ladders underneath trade continuously, so anyone replicating Adjacent's rate methodology sees the next print coming. Low leverage keeps a 0.02-0.1 point step from being a large payoff against the 10 bps taker fee.",
+    recommended: {
+      maxLeverage: 3,
+      annualMaxFundingRate: 1,
+      fundingSensitivity: 1,
+      maxOraclePriceAgeMs: 5 * MINUTE_MS,
+      subsidyLong: 5_000,
+      subsidyShort: 5_000,
+    },
+    // Adjacent's history starts 2026-10-09, and the public tier serves 30
+    // days of it hourly, so two weeks of hourly points is what a backfill
+    // can actually produce on any launch date.
+    minimumHistory: { spanMs: 14 * DAY_MS, points: 14 * 24 },
+  },
 ]
 
 // MNX is a separately selectable rollout cohort in BOTH environments. Existing
@@ -484,41 +515,7 @@ export type PerpPendingLaunchMarketDefinition = PerpLaunchMarketDefinition & {
 // manifest check enforces that a pending feed is creation-disabled, so the
 // two lists cannot silently disagree.
 export const PERP_LAUNCH_PENDING_MARKETS: readonly PerpPendingLaunchMarketDefinition[] =
-  [
-    {
-      feedId: ADJACENT_MSRY_FEED_ID,
-      question: 'Misery Index — market-implied unemployment + inflation (%)',
-      requiredTopics: [
-        {
-          name: 'Economics',
-          slugByEnvironment: {
-            DEV: 'economics-default',
-            PROD: 'economics-default',
-          },
-        },
-      ],
-      oracleBehavior: 'continuous-public',
-      requiresSourceAsOf: false,
-      pendingReason:
-        "Adjacent permitted this market in writing on 2026-10-28 (credit wording in oracle-attribution.ts). Promote once ADJACENT_API_KEY's organization has realtime access and probe-adjacent-msry.ts, run in the environment, shows realtime rows with one per minute; then enable creation in the registry, move this entry into PERP_LAUNCH_MARKETS and run the backfill.",
-      gameDesign:
-        "Adjacent's Misery Implied Index: implied U-3 unemployment plus implied CPI-U year-over-year, read off event-contract ladders on the next BLS prints and recalculated every minute. Two-sided, with macro theses both ways, and not monotone. It is also quiet: about 8.0 to 8.25 over its first weeks, daily moves of a few hundredths, while a single strike crossing 50 cents moves it by up to a tenth. Two moves are predictable. Each sleeve rolls to its next reference month in five weekday steps at 5:30 p.m. Eastern, ending the day before the BLS release, so a step's direction and rough size are visible beforehand from the two months' implied levels. A sleeve with no valid bracket holds its last level until one exists, then moves at once. The roll schedule is published, so a trader can pre-position each step, and funding does not price it.",
-      latencyArbitrageRisk:
-        "Orders fill only at a value Adjacent recalculated after the order (provider-stamped eligibility, as for MNX), so a value already visible at Adjacent, or a cached response we receive late, cannot fill one. What remains is predictability: roll steps and held-sleeve releases are knowable in advance, and the event-contract ladders underneath trade continuously, so anyone replicating Adjacent's rate methodology sees the next print coming. Low leverage keeps a 0.02-0.1 point step from being a large payoff against the 10 bps taker fee.",
-      recommended: {
-        maxLeverage: 3,
-        annualMaxFundingRate: 1,
-        fundingSensitivity: 1,
-        maxOraclePriceAgeMs: 5 * MINUTE_MS,
-        subsidyLong: 5_000,
-        subsidyShort: 5_000,
-      },
-      // Adjacent's history starts 2026-10-09, and the public tier serves 30
-      // days of it hourly, so two weeks of hourly points is what a backfill
-      // can actually produce on any launch date.
-      minimumHistory: { spanMs: 14 * DAY_MS, points: 14 * 24 },
-    },
-  ]
+  []
 
 // Residual pool value returns to the market creator at settlement. Restrict
 // the launch set to the environment's official Manifold account so a personal

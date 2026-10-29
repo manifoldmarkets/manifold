@@ -30,15 +30,14 @@ jest.mock('./utils', () => ({
 }))
 
 // Presence checks for the `adjacent-msry` feed: registry, attribution, chart
-// decoration, ticker, pending launch entry. A missing entry is a red build
-// rather than a runtime surprise.
+// decoration, ticker, launch entry. A missing entry is a red build rather
+// than a runtime surprise.
 describe('adjacent-msry feed wiring', () => {
   const id = ADJACENT_MSRY_FEED_ID
 
-  it('is a fast observation feed with creation disabled', () => {
+  it('is a fast observation feed', () => {
     const feed = getOracleFeed(id)
     expect(feed?.cadence).toBe('fast')
-    expect(feed?.marketCreationEnabled).toBe(false)
     expect(feed?.fetchObservation).toBeDefined()
     expect(feed?.pollPeriodMs).toBe(MSRY_POLL_MS)
     expect(feed?.minPrice).toBe(MSRY_MIN_PRICE)
@@ -75,11 +74,11 @@ describe('adjacent-msry feed wiring', () => {
     expect(getPerpFeedTicker(id)).toBe('MSRY')
   })
 
-  it('is pending launch, not launchable, and the manifest stays consistent', () => {
-    const pending = PERP_LAUNCH_PENDING_MARKETS.find((m) => m.feedId === id)
-    expect(pending?.pendingReason).toMatch(/probe-adjacent-msry/)
-    expect(pending?.requiredTopics.map((t) => t.name)).toEqual(['Economics'])
-    expect(ALL_PERP_LAUNCH_MARKETS.some((m) => m.feedId === id)).toBe(false)
+  it('is launchable, and the manifest stays consistent', () => {
+    const market = ALL_PERP_LAUNCH_MARKETS.find((m) => m.feedId === id)
+    expect(market?.requiredTopics.map((t) => t.name)).toEqual(['Economics'])
+    expect(getOracleFeed(id)?.marketCreationEnabled).toBe(true)
+    expect(PERP_LAUNCH_PENDING_MARKETS.some((m) => m.feedId === id)).toBe(false)
     expect(getPerpLaunchManifestErrors()).toEqual([])
   })
 })

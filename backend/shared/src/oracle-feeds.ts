@@ -262,13 +262,13 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
   // MSRY_POLL_MS); the realtime tier needs ADJACENT_API_KEY, and without it
   // every poll fails as a provider error.
   //
-  // Creation stays disabled until Adjacent permits the index's use in a
-  // financial product in writing: see PERP_LAUNCH_PENDING_MARKETS.
+  // Adjacent permitted this market in writing on 2026-10-28; its terms and
+  // credit line are in common/perps/oracle-attribution.ts.
   {
     id: ADJACENT_MSRY_FEED_ID,
     description:
       "Adjacent's Misery Implied Index (MSRY): implied U-3 unemployment plus CPI-U YoY, percentage points",
-    marketCreationEnabled: false,
+    marketCreationEnabled: true,
     cadence: 'fast',
     pollPeriodMs: MSRY_POLL_MS,
     fetchObservation: fetchAdjacentMsryObservation,

@@ -61,8 +61,7 @@ import { OracleFeedHealth, ORACLE_HEALTH_MAX_AGE_MS } from './oracle-health'
 // product" except as Adjacent permits in writing, and its Pro and Premium
 // plans grant no such use. Adjacent gave Manifold that permission in writing
 // on 2026-10-28; see oracle-attribution.ts for it and the credit it asks
-// for. Market creation stays disabled, with a pending launch entry, until
-// the realtime feed is proven in the environment.
+// for.
 
 export const ADJACENT_MSRY_FEED_ID = 'adjacent-msry'
 

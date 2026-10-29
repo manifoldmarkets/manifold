@@ -268,33 +268,34 @@ protect the pools when the trader is flat at the funding timestamp.
 | Crypto Fear & Greed            | Mean-reverting sentiment gauge, two-sided       | New daily value is public at ~00:00 UTC; exposure bounded by the 5-minute poll               |
 | OpenRouter open-weight share   | Two-sided index with coherent adoption theses   | Upstream exposes complete UTC days, so hourly writes usually repeat a predictable daily step |
 | OpenRouter Anthropic / CN labs | Two-sided proxies for third-party-routed demand | Same payload and same daily step as the open-weight share                                    |
-| Adjacent MSRY (pending)        | Two-sided macro index, but quiet                | Fills wait for a value computed after the order; 5:30 p.m. ET roll steps are predictable     |
+| Adjacent MSRY                  | Two-sided macro index, but quiet                | Fills wait for a value computed after the order; 5:30 p.m. ET roll steps are predictable     |
 
-### Adjacent Misery Implied Index (pending)
+### Adjacent Misery Implied Index
 
-`adjacent-msry` ingests once `ADJACENT_API_KEY` is provisioned, but market
-creation stays disabled (`PERP_LAUNCH_PENDING_MARKETS`) until both of these
-hold:
+`adjacent-msry` reads Adjacent's realtime one-minute series. Both of its
+gates are met:
 
-1. Done: Adjacent permitted this market in writing on 2026-10-28 (marking,
+1. Adjacent permitted this market in writing on 2026-10-28 (marking,
    displaying and settling a perpetual on MSRY, plus MSRY charts in the
    product and in marketing about it). The credit it asks for is in
    `common/src/perps/oracle-attribution.ts`, and it goes on every chart,
    market page and methodology or FAQ that shows MSRY. The app renders it on
    all of them, small charts included. Add it to any screenshot or chart
    used in marketing.
-2. The Adjacent organization has realtime API access, and an `ak_` key with
-   read scope for indices is stored as `ADJACENT_API_KEY` in Secret Manager
-   for the environment. Run `backend/scripts/probe-adjacent-msry.ts` there:
-   it confirms realtime access, that the one-minute series has a row for
-   every minute, and what the tick would publish.
+2. The Adjacent organization has realtime API access, and `ADJACENT_API_KEY`
+   (an `ak_` key with read scope for indices) is in Secret Manager for dev
+   and prod. `backend/scripts/probe-adjacent-msry.ts` passed in both on
+   2026-10-29: realtime rows, one for every minute even while the value was
+   flat, with the newest minute served about 2.5 minutes after it began.
+   Rerun it after rotating the key.
 
-Provision the secret before the first `scheduler-perps` deploy that contains
-the feed: without it every poll fails as a provider error, which pages under
-`[oracle-feeds]` once an hour. Then promote the entry: set
-`marketCreationEnabled: true` in the registry, move the definition into
-`PERP_LAUNCH_MARKETS`, run `backfill-adjacent-msry-oracle --dry-run` and then
-for real, and create the market from the admin page.
+Without the secret every poll fails as a provider error, which pages under
+`[oracle-feeds]` once an hour. To launch, deploy `scheduler-perps`, run
+`backfill-adjacent-msry-oracle --dry-run` and then for real, deploy the API,
+and create the market from the admin page. Orders fill about 3 minutes (2.5
+to 4) after they are placed: an order waits for the first minute that starts
+after it, and that minute arrives about 2.5 minutes after it begins. That is
+well inside the 10-minute order lifetime.
 
 Either side may end the permission on written notice. Manifold must then stop
 using new MSRY levels and take Adjacent's name, ticker and credit off the live
