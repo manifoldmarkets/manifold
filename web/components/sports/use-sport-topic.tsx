@@ -1,6 +1,10 @@
 import clsx from 'clsx'
 import { Group } from 'common/group'
-import { SPORTS_DEFAULT_GROUP_ID, SportInfo } from 'common/sports-schedule'
+import {
+  SPORTS_DEFAULT_GROUP_ID,
+  SportInfo,
+  SportsSubtopic,
+} from 'common/sports-schedule'
 import { buildArray } from 'common/util/array'
 import { Tab } from 'web/components/layout/tabs'
 import {
@@ -9,32 +13,54 @@ import {
 } from 'web/components/moderation/mod-action'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { SportFollowButton } from './sport-follow-button'
+import {
+  BlockedTopicNotice,
+  SportTopicMenu,
+  useIsTopicBlocked,
+} from './sport-topic-menu'
 import { SportTopicPanel } from './sport-topic-panel'
 import { SportsLeaderboards } from './sports-leaderboards'
 
+/** What a sports page shows: every sport, one sport, or a topic under one. */
+export type SportsPageScope = {
+  sport: SportInfo | 'all'
+  topic?: SportsSubtopic
+}
+
 /**
- * What a sports page has from its topic: the Follow button, and the tabs
- * after its own (Leaderboards for everyone, Topic for mods).
+ * What a sports page has from its topic: the Follow / Block menu, a notice
+ * for the heading when the visitor blocked it, and the tabs after its own
+ * (Leaderboards for everyone, Topic for mods). Nothing until the page knows
+ * what it shows.
  */
-export function useSportTopicExtras(sport: SportInfo | 'all' | undefined): {
+export function useSportTopicExtras(scope: SportsPageScope | undefined): {
   follow: React.ReactNode
+  notice: React.ReactNode
   tabs: Tab[]
 } {
-  const topic = useSportTopic(sport)
+  const topic = useSportTopic(scope)
+  const blocked = useIsTopicBlocked(topic)
   const isMod = useAdminOrMod()
+  const board = scope?.topic
+    ? `topic-${scope.topic.id}`
+    : scope?.sport === 'all'
+    ? 'all'
+    : scope?.sport.key
   return {
-    follow: topic && <SportFollowButton topic={topic} />,
+    // Keyed by topic: its state is that topic's.
+    follow: topic && <SportTopicMenu key={topic.id} topic={topic} />,
+    notice: blocked && <BlockedTopicNotice />,
     tabs: buildArray<Tab>(
-      sport && {
+      scope && {
         title: 'Leaderboards',
         queryString: 'leaderboards',
         content: (
           <div className="pt-3">
-            {/* Remount per sport: its cached board is read on mount. */}
+            {/* Remount per board: its cached board is read on mount. */}
             <SportsLeaderboards
-              key={sport === 'all' ? 'all' : sport.key}
-              sport={sport}
+              key={board}
+              sport={scope.sport}
+              topic={scope.topic}
             />
           </div>
         ),
@@ -59,16 +85,19 @@ export function useSportTopicExtras(sport: SportInfo | 'all' | undefined): {
 
 /**
  * The topic behind a sports page: Sports on /sports, the sport's main topic
- * on a sport's page. People follow it from the page, and mods edit it there,
- * since its topic page sends them to the sports page. Undefined while it
- * loads, and for a sport with no topic of its own.
+ * on a sport's page, the topic itself on a topic's page. People follow it
+ * from the page, and mods edit it there, since its topic page sends them to
+ * the sports page. Undefined while it loads, and for a sport with no topic of
+ * its own.
  */
 export function useSportTopic(
-  sport: SportInfo | 'all' | undefined
+  scope: SportsPageScope | undefined
 ): Group | undefined {
-  const all = sport === 'all'
-  const slug = sport && sport !== 'all' ? sport.slug : undefined
-  // Their own cache slots, so one sport's topic never shows on another's page.
+  const all = scope?.sport === 'all' && !scope.topic
+  const slug =
+    scope?.topic?.slug ??
+    (scope && scope.sport !== 'all' ? scope.sport.slug : undefined)
+  // Their own cache slots, so one page's topic never shows on another's.
   const root = useAPIGetter(
     'group/by-id/:id',
     all ? { id: SPORTS_DEFAULT_GROUP_ID } : undefined,

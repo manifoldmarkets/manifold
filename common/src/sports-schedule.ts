@@ -48,6 +48,10 @@ export type SportSelection = AnySportKey | 'all'
 export const sportPath = (sport: SportSelection) =>
   sport === 'all' ? '/sports' : `/sports/${sport}`
 
+/** A topic's page in the sports pages: under its sport, or under All. */
+export const sportTopicPath = (sport: SportSelection, slug: string) =>
+  `/sports/${sport}/${slug}`
+
 export interface SportCategory {
   key: SportKey
   label: string
@@ -462,9 +466,34 @@ export interface SportInfo {
   slug?: string
 }
 
+/**
+ * A topic under Sports that isn't a sport's main topic: a league, a season,
+ * a side topic (Super Bowl, NFL Draft), or a topic that groups sports
+ * (Basketball, Sports Betting). It has a page in the sports pages too.
+ */
+export interface SportsSubtopic {
+  id: string
+  slug: string
+  /** The name without its leading emoji. */
+  label: string
+  /** The name's leading emoji, when it has one. */
+  emoji?: string
+  /**
+   * The sport it opens under: the one its markets file under, or 'all' for a
+   * topic that groups sports (one that holds a sport's main topic, or one of
+   * the Football / Sports Betting kind).
+   */
+  sport: SportSelection
+  /** It and every topic under it: what its page and leaderboard cover. */
+  groupIds: string[]
+  totalMembers: number
+}
+
 export interface SportsIndex {
   /** Every sport: the curated ones, then one per other Sports subtopic, biggest first. */
   sports: SportInfo[]
+  /** Every other topic under Sports, biggest first. */
+  topics: SportsSubtopic[]
   /** Topic id → the sport whose markets it holds. */
   sportByTopicId: Record<string, AnySportKey>
   /** When a market sits in several sports' topics, the lowest rank wins. */
@@ -658,8 +687,54 @@ export function buildSportsIndex(
     }),
   ]
 
+  // Every other topic opens under the sport it files markets under, or under
+  // All when it groups sports: it holds a sport's main topic (Basketball holds
+  // the NBA's), or it's one the sports are looked for through (Football).
+  const mainSlugs = new Set(sports.flatMap((s) => (s.slug ? [s.slug] : [])))
+  const mainIds = new Set(
+    topics.filter((t) => mainSlugs.has(t.slug)).map((t) => t.id)
+  )
+  const subtree = (id: string) => {
+    const ids = [id]
+    const inTree = new Set(ids)
+    for (let i = 0; i < ids.length; i++) {
+      for (const child of children.get(ids[i]) ?? []) {
+        if (inTree.has(child) || child === rootId) continue
+        inTree.add(child)
+        ids.push(child)
+      }
+    }
+    return ids
+  }
+  const subtopics = topics
+    .filter(
+      (t) =>
+        !mainIds.has(t.id) &&
+        t.id !== rootId &&
+        t.id !== GENERIC_SPORTS_TOPIC_ID
+    )
+    .sort(
+      (a, b) => b.totalMembers - a.totalMembers || a.slug.localeCompare(b.slug)
+    )
+    .map((t): SportsSubtopic => {
+      const groupIds = subtree(t.id)
+      const groupsSports =
+        notASport.has(t.id) || groupIds.some((id) => mainIds.has(id))
+      const emoji = t.name.match(LEADING_EMOJI_RE)?.[0].replace(/\s+/g, '')
+      return {
+        id: t.id,
+        slug: t.slug,
+        label: splitTopicName(t.name, t.slug).label,
+        ...(emoji ? { emoji } : {}),
+        sport: groupsSports ? 'all' : sportByTopicId[t.id] ?? 'all',
+        groupIds,
+        totalMembers: t.totalMembers,
+      }
+    })
+
   return {
     sports,
+    topics: subtopics,
     sportByTopicId,
     rank,
     allGroupIds: uniq([
@@ -671,22 +746,30 @@ export function buildSportsIndex(
 }
 
 /**
- * Where a topic lives on the sports pages: 'all' for Sports itself (and its
- * generic duplicate), a sport's key for the main topic of that sport, and
- * undefined for every other topic. The leagues, teams and side topics a sport
- * folds in (Basketball under the NBA, Premier League under Soccer) keep their
- * topic pages, since no sports page shows them on their own.
+ * Where a topic opens on the sports pages: /sports for Sports itself (and its
+ * generic duplicate), a sport's page for that sport's main topic, and its own
+ * page under its sport for every other topic under Sports. Undefined for a
+ * topic that isn't under Sports, which keeps its topic page.
  */
-export function sportForTopic(
+export function sportsPathForTopic(
   topic: { id: string; slug: string },
-  sports: readonly Pick<SportInfo, 'key' | 'slug'>[]
-): SportSelection | undefined {
+  index: {
+    sports: readonly Pick<SportInfo, 'key' | 'slug'>[]
+    /** Absent from an API that predates it: only sports' topics move then. */
+    topics?: readonly Pick<SportsSubtopic, 'id' | 'sport'>[]
+  }
+): string | undefined {
   if (
     topic.id === SPORTS_DEFAULT_GROUP_ID ||
     topic.id === GENERIC_SPORTS_TOPIC_ID
   )
-    return 'all'
-  return sports.find((s) => s.key !== 'other' && s.slug === topic.slug)?.key
+    return sportPath('all')
+  const sport = index.sports.find(
+    (s) => s.key !== 'other' && s.slug === topic.slug
+  )
+  if (sport) return sportPath(sport.key)
+  const sub = index.topics?.find((t) => t.id === topic.id)
+  return sub ? sportTopicPath(sub.sport, topic.slug) : undefined
 }
 
 // ─── Kickoff time ─────────────────────────────────────────────────────────────
@@ -1179,6 +1262,11 @@ export interface ScheduleGame {
   /** Related markets, best matches first. */
   related: RelatedRef[]
   relatedCount: number
+  /**
+   * The market's topic slugs, so a page can leave out topics the visitor
+   * blocked. Absent from an API that predates it.
+   */
+  groupSlugs?: string[]
 }
 
 /**
@@ -1219,6 +1307,11 @@ export interface SportsScheduleResponse {
   raceChampionships?: RaceChampionship[]
   /** Live and upcoming games per sport, for the rail badges. */
   counts: Partial<Record<AnySportKey, number>>
+  /**
+   * Live and upcoming games per other topic under Sports (SportsSubtopic.id),
+   * for its button. Absent from an API that predates it.
+   */
+  topicCounts?: Record<string, number>
   liveCount: number
   /** Every sport on the page, curated first; see buildSportsIndex. */
   sports: SportInfo[]

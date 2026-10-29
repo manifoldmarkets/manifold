@@ -60,6 +60,8 @@ export function LeaderboardPanel(props: {
   highlightUserId?: string
   /** Shown when there are no entries to show (the fetch failed). */
   emptyText?: string
+  /** Above the entries, like the viewer's own place. */
+  header?: React.ReactNode
   footer?: React.ReactNode
 }) {
   const {
@@ -69,6 +71,7 @@ export function LeaderboardPanel(props: {
     columns,
     highlightUserId,
     emptyText = 'No data available',
+    header,
     footer,
   } = props
   return (
@@ -79,6 +82,7 @@ export function LeaderboardPanel(props: {
         </h2>
       </div>
       <div className="p-2">
+        {header}
         {loading && !entries ? (
           <LoadingLeaderboard columns={columns} maxToShow={10} />
         ) : entries ? (

@@ -32,6 +32,7 @@ import { useLiveContract } from 'web/hooks/use-contract'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
+import { useHidesBlocked } from './blocked-topics'
 import {
   isOfficialSportsMarket,
   SportsMarketBadge,
@@ -85,6 +86,8 @@ export function GameLinkedMarkets(props: {
   const heroPropsId = useId()
   const [showAll, setShowAll] = useState(false)
   const [nearby, setNearby] = useState(false)
+  // The page leaves out the topics the visitor blocked.
+  const hides = useHidesBlocked()
   const disclosureRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (nearby || !disclosureRef.current) return
@@ -135,8 +138,8 @@ export function GameLinkedMarkets(props: {
     )
     return (featured || showAll ? ids : firstIds)
       .map((id) => byId.get(id))
-      .filter((c): c is Contract => !!c)
-  }, [preview.data, rest.data, ids.join(','), showAll, featured])
+      .filter((c): c is Contract => !!c && !hides(c.groupSlugs))
+  }, [preview.data, rest.data, ids.join(','), showAll, featured, hides])
   const loadingPreview = firstIds.length > 0 && !preview.data && !preview.error
   const loadingRest =
     (featured || showAll) &&

@@ -6,6 +6,7 @@ import { f1Season, RaceChampionship } from 'common/race-weekends'
 import { shortFormatNumber } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { useHidesBlocked } from 'web/components/sports/blocked-topics'
 import { MarketLoadError } from 'web/components/sports/game-related-markets'
 import { SportsAnswerBetDialog } from 'web/components/sports/sports-bet-panel'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
@@ -29,6 +30,8 @@ export function RaceChampionships(props: {
   championships: RaceChampionship[]
 }) {
   const { championships } = props
+  // The page leaves out the topics the visitor blocked.
+  const hides = useHidesBlocked()
   const ids = championships.map((c) => c.id)
   const { data, error, refresh } = useAPIGetter(
     'markets-by-ids',
@@ -41,7 +44,7 @@ export function RaceChampionships(props: {
   const byId = new Map((data ?? []).map((c) => [c.id, c]))
   const titles = championships.flatMap((c) => {
     const contract = byId.get(c.id)
-    return contract && isMultiCpmm(contract)
+    return contract && isMultiCpmm(contract) && !hides(contract.groupSlugs)
       ? [{ kind: c.kind, contract: contract as CPMMMultiContract }]
       : []
   })

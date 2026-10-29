@@ -23,7 +23,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { AboutEditor } from 'web/components/topics/about-editor'
 import { ActivityLog } from 'web/components/activity-log'
 import { removeEmojis } from 'common/util/string'
-import { sportForTopic, sportPath } from 'common/sports-schedule'
+import { sportsPathForTopic } from 'common/sports-schedule'
 import { formatWithCommas } from 'common/util/format'
 
 export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
@@ -34,11 +34,11 @@ export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
     return { notFound: true }
   }
 
-  // Sports, and each sport's main topic, live on the sports pages.
-  const { sport, known } = await sportsPageForTopic(topic)
-  if (sport) {
+  // Sports, and every topic under it, live on the sports pages.
+  const { path, known } = await sportsPageForTopic(topic)
+  if (path) {
     return {
-      redirect: { destination: sportPath(sport), permanent: false },
+      redirect: { destination: path, permanent: false },
       // Mods can move a topic in or out of Sports.
       revalidate: 3600,
     }
@@ -60,21 +60,21 @@ export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
       dashboards,
       topQuestions: topQuestions.map((m) => m.question),
     },
-    // 12 hours, or soon if the sports list was unavailable, so a sport's
-    // topic doesn't stay a topic page for long.
+    // 12 hours, or soon if the sports list was unavailable, so a topic under
+    // Sports doesn't stay a topic page for long.
     revalidate: known ? 3600 * 12 : 600,
   }
 }
 
 async function sportsPageForTopic(topic: Group) {
   try {
-    const { sports } = await api('sports-index', {})
-    return { sport: sportForTopic(topic, sports), known: true }
+    const index = await api('sports-index', {})
+    return { path: sportsPathForTopic(topic, index), known: true }
   } catch (e) {
     // Without the sports list (an older API, or it's down), only Sports
     // itself is known; the rest keep their topic pages until the next try.
     console.error('Could not load the sports index', e)
-    return { sport: sportForTopic(topic, []), known: false }
+    return { path: sportsPathForTopic(topic, { sports: [] }), known: false }
   }
 }
 

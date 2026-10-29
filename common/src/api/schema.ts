@@ -71,6 +71,7 @@ import {
   SPORT_KEY_RE,
   SportInfo,
   SportsScheduleResponse,
+  SportsSubtopic,
 } from 'common/sports-schedule'
 import { SportsLeaderboards } from 'common/sports-leaderboards'
 import { CompetitionSwitchState } from 'common/sports-calendar'
@@ -5193,28 +5194,40 @@ export const API = (_apiTypeCheck = {
           .max(64)
           .optional(),
         includeRelated: coerceBoolean.optional(),
+        // A topic under Sports (SportsSubtopic.id): only its games and markets.
+        topic: z.string().min(1).max(MAX_ID_LENGTH).optional(),
       })
       .strict(),
     returns: {} as SportsScheduleResponse,
   },
-  // Every sport on the sports pages, with the topics behind it. Topic pages
-  // use it to send a sport's main topic to that sport's page.
+  // Every sport on the sports pages and every other topic under Sports, with
+  // the topics behind each. Topic pages use it to send a topic to its page
+  // there.
   'sports-index': {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
     cache: 'public, max-age=300, stale-while-revalidate=600',
     props: z.object({}).strict(),
-    returns: {} as { sports: SportInfo[] },
+    // `topics` is absent from an API that predates it.
+    returns: {} as { sports: SportInfo[]; topics?: SportsSubtopic[] },
   },
-  // A sport's leaderboards ('all' for every sport), which the scheduler
-  // rebuilds hourly. Empty boards for a sport it doesn't know.
+  // A sport's leaderboards ('all' for every sport), or with `topic` a topic's
+  // under Sports, and with `userId` where that user stands on them. The
+  // scheduler rebuilds them hourly. Empty boards for a sport or topic it
+  // doesn't know.
   'sports-leaderboards': {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
     cache: 'public, max-age=300, stale-while-revalidate=600',
-    props: z.object({ sport: z.string().regex(SPORT_KEY_RE) }).strict(),
+    props: z
+      .object({
+        sport: z.string().regex(SPORT_KEY_RE).optional(),
+        topic: z.string().min(1).max(MAX_ID_LENGTH).optional(),
+        userId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
+      })
+      .strict(),
     returns: {} as SportsLeaderboards,
   },
 

@@ -31,7 +31,7 @@ const IDLE_REFRESH_MS = 5 * 60_000
 /** What the sport rail shows: the same in every response, whatever the sport. */
 export type SportsRailData = Pick<
   SportsScheduleResponse,
-  'sports' | 'counts' | 'liveCount'
+  'sports' | 'counts' | 'topicCounts' | 'liveCount'
 >
 
 /**
@@ -44,15 +44,21 @@ export type SportsRailData = Pick<
  * Rows stay pure: this hook owns the single set of subscriptions for the
  * whole list, so a 100-game page costs ~100 topics, not 300+.
  */
-export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
-  // Everything loaded for this sport (see ScheduleFeed), kept in memory per
-  // sport so switching back is instant. Tagged with its sport: the sport page
-  // stays mounted when the URL moves to another sport, and the stored value
-  // for the new one only arrives after a render.
+export function useSportsSchedule(
+  sport: AnySportKey | 'all',
+  enabled = true,
+  /** A topic under Sports (SportsSubtopic.id): only its games and markets. */
+  topic?: string
+) {
+  // Everything loaded for this sport or topic (see ScheduleFeed), kept in
+  // memory per page so switching back is instant. Tagged with what it's for:
+  // the sport page stays mounted when the URL moves to another sport, and the
+  // stored value for the new one only arrives after a render.
+  const view = topic ? `${sport}/${topic}` : sport
   const [stored, setStored] = usePersistentInMemoryState<
     (ScheduleFeed & { sport: string }) | undefined
-  >(undefined, `sports-feed-${sport}`)
-  const feed = stored?.sport === sport ? stored : undefined
+  >(undefined, `sports-feed-${view}`)
+  const feed = stored?.sport === view ? stored : undefined
   const feedRef = useRef(feed)
   feedRef.current = feed
   const [loading, setLoading] = useState(false)
@@ -74,6 +80,7 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
     try {
       const response = await api('sports-schedule', {
         sport,
+        topic,
         limit: refreshLimit(
           feedRef.current,
           SCHEDULE_PAGE_SIZE,
@@ -84,7 +91,7 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
       // HTTP/client caches preserve the server's snapshot time. Request-start
       // time in the browser says nothing about how fresh that response is.
       setLive((prev) => pruneLiveForPage(prev, response))
-      setStored({ ...feedFromResponse(response), sport })
+      setStored({ ...feedFromResponse(response), sport: view })
     } catch (e) {
       console.error('Failed to load the sports schedule', e)
     } finally {
@@ -94,7 +101,7 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
 
   useEffect(() => {
     if (enabled) refresh()
-  }, [sport, enabled])
+  }, [view, enabled])
 
   const loadingMore = useRef(false)
   const loadMore = useEvent(async () => {
@@ -106,6 +113,7 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
     try {
       const page = await api('sports-schedule', {
         sport,
+        topic,
         limit: SCHEDULE_PAGE_SIZE,
         cursor,
       })
@@ -120,7 +128,7 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
       // Only the games the feed took from the page: see pruneLiveForPage.
       const adopted = adoptedGames(latest, page)
       setLive((prev) => pruneLiveForPage(prev, adopted))
-      setStored({ ...next, sport })
+      setStored({ ...next, sport: view })
       return !!next.cursor
     } catch (e) {
       console.error('Failed to load more sports games', e)
@@ -143,6 +151,7 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
     setLastRail({
       sports: response.sports,
       counts: response.counts,
+      topicCounts: response.topicCounts,
       liveCount: response.liveCount,
     })
   }, [response])
@@ -150,6 +159,7 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
     ? {
         sports: response.sports,
         counts: response.counts,
+        topicCounts: response.topicCounts,
         liveCount: response.liveCount,
       }
     : lastRail
@@ -242,7 +252,7 @@ export function useSportsSchedule(sport: AnySportKey | 'all', enabled = true) {
     const ms = hasActive ? ACTIVE_REFRESH_MS : IDLE_REFRESH_MS
     const id = setInterval(() => refresh(), ms)
     return () => clearInterval(id)
-  }, [hasActive, isPageVisible, sport])
+  }, [hasActive, isPageVisible, view])
 
   const merged: SportsScheduleResponse | undefined = useMemo(() => {
     if (!feed) return undefined

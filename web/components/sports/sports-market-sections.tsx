@@ -7,6 +7,7 @@ import { DAY_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useHidesBlocked } from './blocked-topics'
 import { RelatedMarketRow } from './game-related-markets'
 
 /**
@@ -20,6 +21,7 @@ export function SportsMarketSections(props: {
   enabled?: boolean
 }) {
   const { sport, className, enabled = true } = props
+  const hides = useHidesBlocked()
   const key = sport === 'all' ? 'all' : sport.key
   const gids = (sport === 'all' ? sportGroupIds('all') : sport.groupIds).join(
     ','
@@ -53,13 +55,14 @@ export function SportsMarketSections(props: {
 
   const now = Date.now()
   const trendingMarkets = (trending.data ?? [])
-    .filter((c) => !isSportsContract(c))
+    .filter((c) => !isSportsContract(c) && !hides(c.groupSlugs))
     .slice(0, 8)
   const trendingIds = new Set(trendingMarkets.map((c) => c.id))
   const futuresMarkets = (futures.data ?? [])
     .filter(
       (c) =>
         !isSportsContract(c) &&
+        !hides(c.groupSlugs) &&
         !trendingIds.has(c.id) &&
         (c.closeTime ?? 0) - now > 21 * DAY_MS
     )
