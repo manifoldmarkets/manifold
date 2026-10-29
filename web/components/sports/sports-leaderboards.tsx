@@ -222,7 +222,8 @@ function BoardScopes(props: {
             )}
             anchor={{ to: 'bottom start', gap: 4, padding: 8 }}
             menuWidth="w-60"
-            menuItemsClass="!max-h-[60vh] overflow-y-auto"
+            // Headless UI caps it at this or the room below, whichever is less.
+            menuItemsClass="[--anchor-max-height:60vh] overflow-y-auto"
             items={children.map((c) => ({
               name: c.key,
               isLink: true,
