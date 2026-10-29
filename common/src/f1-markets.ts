@@ -729,6 +729,23 @@ export const f1CalendarReachesEnd = (
 ) => lastRaceStart >= ourSeasonEnd - F1_SEASON_END_TOLERANCE_DAYS * DAY_MS
 
 /**
+ * Whether the provider's calendar lists at least the season's announced
+ * number of rounds (from our calendar), cancelled weekends included. Its
+ * sessions can only vouch for the standings (f1SeasonPointsAwarded) if no
+ * weekend is missing: a dropped weekend takes its race out of the total,
+ * and standings missing a race could then match it. A replacement round
+ * makes the list longer, never shorter.
+ */
+export function f1CalendarListsEveryRound(
+  events: Pick<F1Event, 'id'>[],
+  rounds: number | undefined
+): boolean {
+  if (rounds === undefined || !Number.isSafeInteger(rounds) || rounds < 1)
+    return false
+  return new Set(events.map((e) => e.id)).size >= rounds
+}
+
+/**
  * Points between them in a fully classified race (25-18-15-12-10-8-6-4-2-1)
  * and sprint (8-7-6-5-4-3-2-1), with no fastest-lap point since 2025.
  */

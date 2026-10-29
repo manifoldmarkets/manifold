@@ -47,6 +47,7 @@ import {
   F1_SEASON_END_TOLERANCE_DAYS,
   F1_TITLE_KINDS,
   F1_TITLE_RESOLVE_DELAY_HOURS,
+  f1CalendarListsEveryRound,
   f1CalendarReachesEnd,
   f1DriverEntrant,
   F1DriverStanding,
@@ -220,20 +221,23 @@ function officialFor(
 const OUR_WEEKEND_LEAD_DAYS = 3
 
 /**
- * A season's dates by our calendar (common/sports-calendar.ts): when its
- * first weekend may start, and the end of its last date. Null for a
- * competition we don't list.
+ * A season by our calendar (common/sports-calendar.ts): when its first
+ * weekend may start, the end of its last date, and how many rounds it was
+ * announced with, if we know. Null for a competition we don't list.
  */
-function ourSeasonDates(
+function ourSeason(
   competitionId: string
-): { firstStart: number; end: number } | null {
-  const windows = calendarEntriesFor(competitionId).map(phaseWindow)
+): { firstStart: number; end: number; rounds: number | undefined } | null {
+  const phases = calendarEntriesFor(competitionId)
+  const windows = phases.map(phaseWindow)
   if (windows.length === 0) return null
+  const rounds = phases.flatMap((p) => (p.rounds ? [p.rounds] : []))
   return {
     firstStart:
       Math.min(...windows.map((w) => w.from)) - OUR_WEEKEND_LEAD_DAYS * DAY_MS,
     // phaseWindow runs a day past the last date.
     end: Math.max(...windows.map((w) => w.to)) - DAY_MS,
+    rounds: rounds.length > 0 ? Math.max(...rounds) : undefined,
   }
 }
 
@@ -301,9 +305,14 @@ async function createF1TitleMarkets(
       result.log.push({ key, question: label, status: 'skipped', reason })
     }
   }
-  const ours = ourSeasonDates(competitionId)
+  const ours = ourSeason(competitionId)
   if (!season || !ours)
     return skipAll(`can't tell which season ${competitionId} is`)
+  // Without it a title could never pay out by itself.
+  if (!ours.rounds)
+    return skipAll(
+      `our calendar doesn't say how many rounds the ${season} season has, which a title's payout checks need`
+    )
 
   const events = await providerCall('/events', KEY_REFUSED, () =>
     getF1Events(season)
@@ -1059,8 +1068,10 @@ const iso = (t: number) => new Date(t).toISOString().slice(0, 16) + 'Z'
  * the end, and F1_TITLE_RESOLVE_DELAY_HOURS have passed since the final
  * race's market closed, it resolves to the leader of the season's final
  * standings (f1TitleResolution), provided they add up to the points every
- * final race and sprint awards (f1SeasonPointsAwarded). What only a person
- * can settle, standings that don't add up or check out, a champion the
+ * final race and sprint awards (f1SeasonPointsAwarded) and the calendar
+ * lists every announced round (f1CalendarListsEveryRound). What only a
+ * person can settle, standings that don't add up or check out, a missing
+ * weekend, a champion the
  * field doesn't list, an answer already resolved against them, or a season
  * still not over ATTENTION_AFTER_MS after the market was due, is logged as
  * an error once per market for the life of `alerted`, and never guessed.
@@ -1117,7 +1128,7 @@ export async function resolveF1TitleMarkets(
         )
         eventsBySeason.set(id.season, events)
       }
-      const ours = ourSeasonDates(`f1-${id.season}`)
+      const ours = ourSeason(`f1-${id.season}`)
       if (!ours) {
         attention(contract, `our calendar has no F1 ${id.season} season`)
         continue
@@ -1171,6 +1182,15 @@ export async function resolveF1TitleMarkets(
       const dueAt = f1TitleCloseTime(dates.lastRaceStart) + delayMs
       if (now < dueAt) {
         add(contract, 'waiting', `pays out from ${iso(dueAt)}`)
+        continue
+      }
+      if (!f1CalendarListsEveryRound(seasonEvents, ours.rounds)) {
+        attention(
+          contract,
+          ours.rounds
+            ? `the provider lists ${seasonEvents.length} weekends for ${id.season}, but the season has ${ours.rounds} rounds: one may be missing, so its sessions can't vouch for the standings`
+            : `our calendar doesn't say how many rounds the ${id.season} season has`
+        )
         continue
       }
 

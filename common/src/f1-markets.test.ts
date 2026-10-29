@@ -3,6 +3,7 @@ import { MAX_ANSWER_PROB, MIN_ANSWER_PROB } from './new-contract'
 import {
   buildF1MarketParams,
   buildF1TitleMarketParams,
+  f1CalendarListsEveryRound,
   f1CalendarReachesEnd,
   F1Driver,
   f1DriverEntrant,
@@ -667,6 +668,23 @@ describe('season dates', () => {
     expect(f1CalendarReachesEnd(Date.parse('2027-03-14T15:00:00Z'), ours)).toBe(
       false
     )
+  })
+
+  it('needs at least the announced rounds listed, cancelled ones included', () => {
+    const listed = (n: number) => range(n).map((id) => ({ id }))
+    expect(f1CalendarListsEveryRound(listed(24), 24)).toBe(true)
+    // A round left out of the feed.
+    expect(f1CalendarListsEveryRound(listed(23), 24)).toBe(false)
+    // A replacement round, as in 2026.
+    expect(f1CalendarListsEveryRound(listed(25), 24)).toBe(true)
+    // A weekend listed twice counts once.
+    expect(f1CalendarListsEveryRound([...listed(23), { id: 0 }], 24)).toBe(
+      false
+    )
+    // Without our count, nothing pays by itself.
+    expect(f1CalendarListsEveryRound(listed(24), undefined)).toBe(false)
+    expect(f1CalendarListsEveryRound(listed(24), 0)).toBe(false)
+    expect(f1CalendarListsEveryRound(listed(24), NaN)).toBe(false)
   })
 })
 

@@ -69,6 +69,12 @@ export interface SportsCalendarEntry {
    * markets from: 'bdl-f1' is BALLDONTLIE's F1 API (shared/f1-markets.ts).
    */
   provider?: 'bdl-f1'
+  /**
+   * F1: how many rounds the season was announced with. The season title
+   * markets need it to pay out: the provider must list at least this many
+   * weekends (f1CalendarListsEveryRound).
+   */
+  rounds?: number
 }
 
 type CalendarInput = Omit<SportsCalendarEntry, 'oddsKey'>
@@ -252,6 +258,7 @@ const ENTRIES: CalendarInput[] = [
     // calendar against it (f1CalendarReachesEnd).
     startDate: '2027-03-12',
     endDate: '2027-12-12',
+    rounds: 24,
     provider: 'bdl-f1',
     autoCreate: false,
     autoResolve: false,

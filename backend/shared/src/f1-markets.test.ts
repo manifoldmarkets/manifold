@@ -37,6 +37,7 @@ jest.mock('shared/balldontlie-f1-client', () => ({
   getF1TeamStandings: jest.fn(),
 }))
 
+import { range } from 'lodash'
 import { MarketContract } from 'common/contract'
 import {
   F1DriverStanding,
@@ -643,6 +644,23 @@ describe('createF1Markets: titles', () => {
     expect(getF1DriverStandings).not.toHaveBeenCalled()
   })
 
+  it("opens no title for a season whose rounds our calendar doesn't count", async () => {
+    // F1 2026 has no `rounds`, so a title on it could never pay by itself.
+    const r = await createF1Markets(pg, 'f1-2026', {
+      dryRun: true,
+      keys: ['title:drivers'],
+    })
+    expect(titleLog(r)).toEqual([
+      expect.objectContaining({
+        status: 'skipped',
+        reason: expect.stringContaining(
+          "our calendar doesn't say how many rounds the 2026 season has"
+        ),
+      }),
+    ])
+    expect(getF1DriverStandings).not.toHaveBeenCalled()
+  })
+
   it('skips a title that has a market, and runs only the ticked ones', async () => {
     jest.mocked(findSportsMarket).mockResolvedValue({ id: 'old' } as never)
     const r = await createF1Markets(pg, 'f1-2027', {
@@ -693,15 +711,26 @@ describe('resolveF1TitleMarkets', () => {
   })
   const driversAnswers = (resolved: Record<string, string> = {}) =>
     answerRows(['t1', 't4', 't81', 'tother'], resolved)
-  const season = (last: F1Event['status_state']) => [
-    weekend(1, '2027-03-12T11:30:00Z', '2027-03-14T15:00:00Z', 'final'),
-    weekend(2, '2027-12-10T09:30:00Z', '2027-12-12T13:00:00Z', last),
-  ]
-  // Two final races award 202 points, and the standings add up to them.
+  // 2027's 24 rounds, a week apart from Bahrain to Abu Dhabi, one race
+  // each: 24 x 101 = 2,424 points, which the final standings add up to.
+  const WEEK = 7 * 24 * HOUR_MS
+  const at = (start: string, i: number) =>
+    new Date(Date.parse(start) + i * WEEK).toISOString()
+  const season = (last: F1Event['status_state']) =>
+    range(24).map((i) =>
+      i === 23
+        ? weekend(24, '2027-12-10T09:30:00Z', '2027-12-12T13:00:00Z', last)
+        : weekend(
+            i + 1,
+            at('2027-03-12T11:30:00Z', i),
+            at('2027-03-14T15:00:00Z', i),
+            'final'
+          )
+    )
   const finalDrivers = [
-    driverRow(81, 42, 3, 2027),
-    driverRow(1, 100, 1, 2027),
-    driverRow(4, 60, 2, 2027),
+    driverRow(81, 624, 3, 2027),
+    driverRow(1, 1000, 1, 2027),
+    driverRow(4, 800, 2, 2027),
   ]
   const race = (id: number, eventId: number): F1Session => ({
     id,
@@ -711,6 +740,8 @@ describe('resolveF1TitleMarkets', () => {
     date: '',
     status_state: 'final',
   })
+  const races = (eventIds: number[]) =>
+    eventIds.map((eventId) => race(100 + eventId, eventId))
 
   function titleDb(
     rows: ReturnType<typeof title>[],
@@ -732,7 +763,7 @@ describe('resolveF1TitleMarkets', () => {
 
   beforeEach(() => {
     jest.mocked(getF1Events).mockResolvedValue(season('final'))
-    jest.mocked(getF1Sessions).mockResolvedValue([race(11, 1), race(21, 2)])
+    jest.mocked(getF1Sessions).mockResolvedValue(races(range(1, 25)))
     jest.mocked(getF1DriverStandings).mockResolvedValue(finalDrivers)
     jest.mocked(getF1TeamStandings).mockResolvedValue([])
   })
@@ -777,7 +808,7 @@ describe('resolveF1TitleMarkets', () => {
     jest.mocked(Date.now).mockReturnValue(DUE)
     const r = await resolveF1TitleMarkets(db.pg)
     expect(r.resolved).toBe(1)
-    expect(getF1Sessions).toHaveBeenCalledWith([1, 2])
+    expect(getF1Sessions).toHaveBeenCalledWith(range(1, 25))
     expect(getF1DriverStandings).toHaveBeenCalledWith(2027)
     expect(getF1TeamStandings).not.toHaveBeenCalled()
     const call = jest.mocked(resolveMarketHelper).mock.calls[0]
@@ -790,8 +821,8 @@ describe('resolveF1TitleMarkets', () => {
     jest
       .mocked(getF1TeamStandings)
       .mockResolvedValue([
-        teamRow(806, 72, 2, 2027),
-        teamRow(808, 130, 1, 2027),
+        teamRow(806, 1024, 2, 2027),
+        teamRow(808, 1400, 1, 2027),
       ])
     const db = titleDb(
       [title('wcc', FINAL_CLOSE, 'constructors', [806, 808, null])],
@@ -809,8 +840,8 @@ describe('resolveF1TitleMarkets', () => {
     jest.mocked(Date.now).mockReturnValue(DUE)
     jest.mocked(getF1DriverStandings).mockResolvedValue([
       // A tie at the top, settled on countback.
-      driverRow(1, 101, 1, 2027),
-      driverRow(4, 101, 2, 2027),
+      driverRow(1, 1212, 1, 2027),
+      driverRow(4, 1212, 2, 2027),
     ])
     const db = titleDb([title('wdc', FINAL_CLOSE)], { wdc: driversAnswers() })
     const alerted = new Set<string>()
@@ -846,12 +877,15 @@ describe('resolveF1TitleMarkets', () => {
     // The pre-finale snapshot: 4 leads, though 1 won the title.
     jest
       .mocked(getF1DriverStandings)
-      .mockResolvedValue([driverRow(4, 60, 1, 2027), driverRow(1, 41, 2, 2027)])
+      .mockResolvedValue([
+        driverRow(4, 1200, 1, 2027),
+        driverRow(1, 1123, 2, 2027),
+      ])
     const db = titleDb([title('wdc', FINAL_CLOSE)], { wdc: driversAnswers() })
     const r = await resolveF1TitleMarkets(db.pg)
     expect(r.attention).toBe(1)
     expect(r.log[0].reason).toMatch(
-      /add up to 101 points, but its 2 races and 0 sprints award 202/
+      /add up to 2323 points, but its 24 races and 0 sprints award 2424/
     )
     expect(resolveMarketHelper).not.toHaveBeenCalled()
   })
@@ -862,8 +896,8 @@ describe('resolveF1TitleMarkets', () => {
     jest
       .mocked(getF1TeamStandings)
       .mockResolvedValue([
-        teamRow(806, 72, 2, 2027),
-        teamRow(825, 130, 1, 2027),
+        teamRow(806, 1024, 2, 2027),
+        teamRow(825, 1400, 1, 2027),
       ])
     const db = titleDb(
       [title('wcc', FINAL_CLOSE, 'constructors', [806, 814, null])],
@@ -899,8 +933,8 @@ describe('resolveF1TitleMarkets', () => {
     jest
       .mocked(getF1Events)
       .mockResolvedValue([
-        weekend(1, '2027-03-12T11:30:00Z', '2027-03-14T15:00:00Z', 'final'),
-        weekend(2, '2027-12-03T09:30:00Z', '2027-12-05T13:00:00Z', 'final'),
+        ...season('final').slice(0, 22),
+        weekend(23, '2027-12-03T09:30:00Z', '2027-12-05T13:00:00Z', 'final'),
       ])
     const db = titleDb([title('wdc', OUR_CLOSE)], { wdc: driversAnswers() })
     jest
@@ -919,10 +953,16 @@ describe('resolveF1TitleMarkets', () => {
     // Pre-finale standings: they match the first race alone.
     jest
       .mocked(getF1DriverStandings)
-      .mockResolvedValue([driverRow(4, 60, 1, 2027), driverRow(1, 41, 2, 2027)])
+      .mockResolvedValue([
+        driverRow(4, 1200, 1, 2027),
+        driverRow(1, 1123, 2, 2027),
+      ])
     for (const sessions of [
-      [race(11, 1)],
-      [race(11, 1), { ...race(21, 2), status_state: 'scheduled' as const }],
+      races(range(1, 24)),
+      [
+        ...races(range(1, 24)),
+        { ...race(124, 24), status_state: 'scheduled' as const },
+      ],
     ]) {
       jest.mocked(getF1Sessions).mockResolvedValue(sessions)
       const db = titleDb([title('wdc', FINAL_CLOSE)], { wdc: driversAnswers() })
@@ -930,6 +970,29 @@ describe('resolveF1TitleMarkets', () => {
       expect(r.attention).toBe(1)
       expect(r.log[0].reason).toMatch(/can't vouch for the standings/)
     }
+    expect(getF1DriverStandings).not.toHaveBeenCalled()
+    expect(resolveMarketHelper).not.toHaveBeenCalled()
+  })
+
+  it('asks a person when the calendar leaves out an earlier weekend', async () => {
+    jest.mocked(Date.now).mockReturnValue(DUE)
+    // Round 5 is missing; the other 23, finale included, are final, and
+    // their sessions and stale standings agree on 23 races.
+    const listed = season('final').filter((e) => e.id !== 5)
+    jest.mocked(getF1Events).mockResolvedValue(listed)
+    jest.mocked(getF1Sessions).mockResolvedValue(races(listed.map((e) => e.id)))
+    jest
+      .mocked(getF1DriverStandings)
+      .mockResolvedValue([
+        driverRow(4, 1200, 1, 2027),
+        driverRow(1, 1123, 2, 2027),
+      ])
+    const db = titleDb([title('wdc', FINAL_CLOSE)], { wdc: driversAnswers() })
+    const r = await resolveF1TitleMarkets(db.pg)
+    expect(r.attention).toBe(1)
+    expect(r.log[0].reason).toMatch(
+      /lists 23 weekends for 2027, but the season has 24 rounds/
+    )
     expect(getF1DriverStandings).not.toHaveBeenCalled()
     expect(resolveMarketHelper).not.toHaveBeenCalled()
   })
