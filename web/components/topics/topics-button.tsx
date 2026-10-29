@@ -88,33 +88,47 @@ export function FollowOrUnfolowTopicButton(props: {
   )
 }
 
+// Both resolve true once the change went through. False means it didn't: the
+// request failed (they show the error) or the visitor was sent to sign in.
 export const internalFollowTopic = async (
   user: User | null | undefined,
   group: Group
-) => {
-  if (!user) return firebaseLogin()
-  await followTopic({ groupId: group.id })
+): Promise<boolean> => {
+  if (!user) {
+    await firebaseLogin()
+    return false
+  }
+  const followed = await followTopic({ groupId: group.id })
     .then(() => {
       toast(`You'll see markets related to ${group.name} on your home feed!`)
+      return true
     })
     .catch((e) => {
       console.error(e)
       toast.error('Failed to follow topic')
+      return false
     })
   track('join group', { slug: group.slug })
+  return followed
 }
 
 export const internalUnfollowTopic = async (
   user: User | null | undefined,
   group: Group
-) => {
-  if (!user) return firebaseLogin()
-  await unfollowTopic(group.id, user.id)
+): Promise<boolean> => {
+  if (!user) {
+    await firebaseLogin()
+    return false
+  }
+  const unfollowed = await unfollowTopic(group.id, user.id)
     .then(() => {
       toast(`You won't see markets related to ${group.name} on your home feed.`)
+      return true
     })
     .catch(() => {
       toast.error('Failed to unfollow topic')
+      return false
     })
   track('leave group', { slug: group.slug })
+  return unfollowed
 }

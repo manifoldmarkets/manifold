@@ -3,6 +3,7 @@ import { type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { contractColumnsToSelect, log } from 'shared/utils'
 import { getMarketLinksForFeed } from 'shared/supabase/market-links'
+import { getSportsIndex } from 'shared/supabase/sports-index'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { Contract, isMultiCpmm, OutcomeType } from 'common/contract'
 import { Answer } from 'common/answer'
@@ -20,7 +21,6 @@ import {
 import { teamCodeForLeague } from 'common/sports-team-codes'
 import {
   AnySportKey,
-  buildSportsIndex,
   findRelatedMarkets,
   gameStatus,
   isDrawAnswer,
@@ -33,9 +33,6 @@ import {
   sportForMarket,
   SportsIndex,
   SportsScheduleResponse,
-  SportsTopic,
-  SportsTopicLink,
-  SPORTS_DEFAULT_GROUP_ID,
   splitFlag,
   UpcomingMarketRef,
 } from 'common/sports-schedule'
@@ -356,63 +353,6 @@ function isAfterCursor(
     g.startTime > cursor.startTime ||
     (g.startTime === cursor.startTime && g.id > cursor.id)
   )
-}
-
-// ─── Sports from the topic tree ───────────────────────────────────────────────
-
-// Mods rearrange topics rarely, and every schedule request needs the tree.
-const SPORTS_INDEX_TTL_MS = 5 * 60 * 1000
-const MAX_TOPIC_DEPTH = 6
-let sportsIndexCache: { at: number; index: SportsIndex } | undefined
-
-async function getSportsIndex(pg: Pg, now: number): Promise<SportsIndex> {
-  if (sportsIndexCache && now - sportsIndexCache.at < SPORTS_INDEX_TTL_MS)
-    return sportsIndexCache.index
-  try {
-    const rows = await pg.manyOrNone<{
-      parent_id: string
-      child_id: string
-      slug: string
-      name: string
-      total_members: number | null
-    }>(
-      `with recursive tree(parent_id, child_id, depth) as (
-         select gg.top_id, gg.bottom_id, 1
-         from group_groups gg
-         join groups g on g.id = gg.bottom_id and g.privacy_status = 'public'
-         where gg.top_id = $1
-         union
-         select gg.top_id, gg.bottom_id, t.depth + 1
-         from tree t
-         join group_groups gg on gg.top_id = t.child_id
-         join groups g on g.id = gg.bottom_id and g.privacy_status = 'public'
-         where t.depth < ${MAX_TOPIC_DEPTH}
-       )
-       select distinct t.parent_id, t.child_id, g.slug, g.name, g.total_members
-       from tree t join groups g on g.id = t.child_id`,
-      [SPORTS_DEFAULT_GROUP_ID]
-    )
-    const topics = new Map<string, SportsTopic>()
-    const links: SportsTopicLink[] = []
-    for (const r of rows) {
-      links.push({ parentId: r.parent_id, childId: r.child_id })
-      topics.set(r.child_id, {
-        id: r.child_id,
-        slug: r.slug,
-        name: r.name,
-        totalMembers: Number(r.total_members ?? 0),
-      })
-    }
-    const index = buildSportsIndex([...topics.values()], links)
-    sportsIndexCache = { at: now, index }
-    return index
-  } catch (e) {
-    // The curated sports alone still make a working page.
-    log.error('[sports-schedule] could not load the sports topics', {
-      error: e instanceof Error ? e.message : String(e),
-    })
-    return sportsIndexCache?.index ?? buildSportsIndex([], [])
-  }
 }
 
 // ─── Official (pipeline-created) games ────────────────────────────────────────

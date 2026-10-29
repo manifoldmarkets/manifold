@@ -42,6 +42,12 @@ export type SportKey =
  */
 export type AnySportKey = SportKey | (string & {})
 
+/** What a sports page shows: every sport ('all'), or one. */
+export type SportSelection = AnySportKey | 'all'
+
+export const sportPath = (sport: SportSelection) =>
+  sport === 'all' ? '/sports' : `/sports/${sport}`
+
 export interface SportCategory {
   key: SportKey
   label: string
@@ -74,6 +80,9 @@ export const SPORTS_DEFAULT_GROUP_ID =
 /** "⚽ 🏈 Football": the parent of both Soccer and the NFL. */
 const FOOTBALL_UMBRELLA_TOPIC_ID = 'Vcf6CYTTSXAiStbKSqQq'
 
+/** "Sports" (slug `sports`): a second, generic Sports topic under the real one. */
+const GENERIC_SPORTS_TOPIC_ID = 'd489c4e4-ec93-4473-845d-12537350cfee'
+
 /**
  * Subtopics of Sports that group sports or markets rather than being a sport.
  * Their markets still show under All, and the sports inside them get chips.
@@ -81,7 +90,7 @@ const FOOTBALL_UMBRELLA_TOPIC_ID = 'Vcf6CYTTSXAiStbKSqQq'
 const NOT_A_SPORT_TOPIC_IDS = [
   FOOTBALL_UMBRELLA_TOPIC_ID,
   'b3ll9Ch9rdbcrTRAbjUf', // sports-betting
-  'd489c4e4-ec93-4473-845d-12537350cfee', // sports (a second, generic Sports topic)
+  GENERIC_SPORTS_TOPIC_ID,
 ]
 
 export const SPORT_CATEGORIES: SportCategory[] = [
@@ -659,6 +668,25 @@ export function buildSportsIndex(
       ...topics.map((t) => t.id),
     ]),
   }
+}
+
+/**
+ * Where a topic lives on the sports pages: 'all' for Sports itself (and its
+ * generic duplicate), a sport's key for the main topic of that sport, and
+ * undefined for every other topic. The leagues, teams and side topics a sport
+ * folds in (Basketball under the NBA, Premier League under Soccer) keep their
+ * topic pages, since no sports page shows them on their own.
+ */
+export function sportForTopic(
+  topic: { id: string; slug: string },
+  sports: readonly Pick<SportInfo, 'key' | 'slug'>[]
+): SportSelection | undefined {
+  if (
+    topic.id === SPORTS_DEFAULT_GROUP_ID ||
+    topic.id === GENERIC_SPORTS_TOPIC_ID
+  )
+    return 'all'
+  return sports.find((s) => s.key !== 'other' && s.slug === topic.slug)?.key
 }
 
 // ─── Kickoff time ─────────────────────────────────────────────────────────────

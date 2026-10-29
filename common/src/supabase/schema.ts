@@ -3405,6 +3405,27 @@ export type Database = {
           }
         ]
       }
+      sports_leaderboards: {
+        Row: {
+          entries: Json
+          kind: string
+          sport: string
+          updated_time: string
+        }
+        Insert: {
+          entries: Json
+          kind: string
+          sport: string
+          updated_time?: string
+        }
+        Update: {
+          entries?: Json
+          kind?: string
+          sport?: string
+          updated_time?: string
+        }
+        Relationships: []
+      }
       sports_odds_api_usage: {
         Row: {
           calls: number

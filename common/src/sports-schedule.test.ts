@@ -13,6 +13,7 @@ import {
   relatedGroupFor,
   splitFlag,
   sportForMarket,
+  sportForTopic,
   SPORTS_DEFAULT_GROUP_ID,
   SportsTopic,
   SportsTopicLink,
@@ -648,6 +649,31 @@ describe('sports from the topic tree', () => {
     expect(sportForMarket({ groupIds: [football, nfl] })).toBe('nfl')
     // New NFL games are still tagged with the Football topic.
     expect(sportTagIds('nfl')).toContain(football)
+  })
+
+  it("sends Sports and each sport's main topic to its sports page", () => {
+    const page = (id: string, slug: string) =>
+      sportForTopic({ id, slug }, index.sports)
+    expect(page(root, 'sports-default')).toBe('all')
+    // The second, generic Sports topic.
+    expect(page('d489c4e4-ec93-4473-845d-12537350cfee', 'sports')).toBe('all')
+    expect(page(nfl, 'nfl')).toBe('nfl')
+    expect(page(formula1, 'formula-1')).toBe('f1')
+    expect(page(collegeBasketball, 'college-basketball')).toBe('ncaab')
+    expect(page('cycling', 'road-bicycle-racing')).toBe('road-bicycle-racing')
+    expect(page('combat', 'combat-sports')).toBe('combat-sports')
+    // What a sport folds in keeps its topic page: nowhere shows it alone.
+    expect(page(basketball, 'basketball')).toBeUndefined()
+    expect(page('superbowl', 'super-bowl')).toBeUndefined()
+    expect(page('womens', 'peloton-discord-65dd39510b70')).toBeUndefined()
+    expect(page(football, 'football')).toBeUndefined()
+    expect(page(sportsBetting, 'sports-betting')).toBeUndefined()
+    expect(page('elsewhere', 'politics-default')).toBeUndefined()
+  })
+
+  it('sends only Sports itself while the sports list is unavailable', () => {
+    expect(sportForTopic({ id: root, slug: 'sports-default' }, [])).toBe('all')
+    expect(sportForTopic({ id: nfl, slug: 'nfl' }, [])).toBeUndefined()
   })
 
   it('claims a topic by slug where ids differ, as on dev', () => {
