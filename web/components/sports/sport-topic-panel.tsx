@@ -83,9 +83,9 @@ export function SportTopicPanel(props: { topic: Group }) {
             isMember={!!isFollowing}
             unfollow={() => {
               setIsFollowing(false)
-              internalUnfollowTopic(user, topic).catch(() =>
-                setIsFollowing(true)
-              )
+              internalUnfollowTopic(user, topic).then((unfollowed) => {
+                if (!unfollowed) setIsFollowing(true)
+              })
             }}
             addAbout={() => setEditingAbout(true)}
             className="flex [&_*]:flex [&_button]:pr-2"

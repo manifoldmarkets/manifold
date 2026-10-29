@@ -36,12 +36,11 @@ export function SportFollowButton(props: { topic: Group }) {
       onClick={async () => {
         setLoading(true)
         try {
+          // Only once it went through: a failure leaves the button as it was.
           if (isFollowing) {
-            await internalUnfollowTopic(user, topic)
-            if (user) setIsFollowing(false)
+            if (await internalUnfollowTopic(user, topic)) setIsFollowing(false)
           } else {
-            await internalFollowTopic(user, topic)
-            if (user) setIsFollowing(true)
+            if (await internalFollowTopic(user, topic)) setIsFollowing(true)
           }
         } finally {
           setLoading(false)
