@@ -4,7 +4,7 @@ import {
   ChevronDownIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { BiSolidVolumeMute } from 'react-icons/bi'
 import { Group } from 'common/group'
@@ -34,11 +34,17 @@ export function SportTopicMenu(props: { topic: Group }) {
   const user = useUser()
   const privateUser = usePrivateUser()
   const { isFollowing, setIsFollowing } = useIsFollowingTopic(topic.slug)
-  // What the last block or unblock did, until the private user catches up.
-  const [blockedNow, setBlockedNow] = useState<boolean>()
+  const accountBlocked = !!privateUser?.blockedGroupSlugs?.includes(topic.slug)
+  // What the last block or unblock here did, shown until the account's own
+  // state says the same; after that the account decides (an unblock from
+  // another tab shows).
+  const [pending, setPending] = useState<{ userId: string; blocked: boolean }>()
+  useEffect(() => {
+    if (pending && pending.blocked === accountBlocked) setPending(undefined)
+  }, [pending, accountBlocked])
   const [busy, setBusy] = useState(false)
   const blocked =
-    blockedNow ?? !!privateUser?.blockedGroupSlugs?.includes(topic.slug)
+    pending && pending.userId === user?.id ? pending.blocked : accountBlocked
   const name = removeEmojis(topic.name).trim() || topic.name
   const canFollow = !TOPIC_IDS_YOU_CANT_FOLLOW.includes(topic.id)
 
@@ -72,7 +78,7 @@ export function SportTopicMenu(props: { topic: Group }) {
         toast.error(`Couldn't ${block ? 'block' : 'unblock'} ${name}`)
         return
       }
-      setBlockedNow(block)
+      setPending({ userId: user.id, blocked: block })
       if (block) {
         setIsFollowing(false)
         toast(`Blocked ${name}. Its markets won't show in your feeds.`)

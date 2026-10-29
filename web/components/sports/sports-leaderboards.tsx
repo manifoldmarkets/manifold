@@ -57,12 +57,13 @@ export function SportsLeaderboards(props: {
   const label = topic?.label ?? (sport === 'all' ? 'sports' : sport.label)
   const user = useUser()
   const isClient = useIsClient()
-  // Signed in, the response also says where the visitor stands.
+  // Signed in, the response also says where the visitor stands, so each
+  // account has its own cache slot.
   const { data, loading, error, refresh } = useAPIGetter(
     'sports-leaderboards',
     { ...(topic ? { topic: topic.id } : { sport: key }), userId: user?.id },
     undefined,
-    `sports-leaderboards-${key}`
+    `sports-leaderboards-${key}-${user?.id ?? ''}`
   )
   // Rebuilds come hourly, but a response stays cached for the session and a
   // hidden tab stays mounted. So check whenever the board changes and every

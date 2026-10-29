@@ -103,7 +103,9 @@ async function addMarkets(markets: Market[]) {
   }
 }
 
-async function addProfits(rows: [string, string, number | 'NaN', string?][]) {
+async function addProfits(
+  rows: [string, string, number | 'NaN' | 'Infinity', string?][]
+) {
   for (const [userId, contractId, profit, answerId] of rows)
     await db.query(
       `insert into user_contract_metrics (user_id, contract_id, profit, answer_id)
@@ -176,6 +178,7 @@ beforeAll(async () => {
     ['erin', false],
     ['mallory', true],
     ['nana', false],
+    ['infy', false],
     [HIDDEN, false],
     [BOT, false],
   ] as const)
@@ -245,8 +248,9 @@ beforeAll(async () => {
     ['carol', 'nfl2', -40],
     ['mallory', 'nfl1', 1000],
     [HIDDEN, 'nfl1', 500],
-    // A broken position: its sums aren't numbers.
+    // Broken positions: their sums aren't finite numbers.
     ['nana', 'nfl1', 'NaN'],
+    ['infy', 'nfl1', 'Infinity'],
   ])
 })
 
@@ -336,8 +340,9 @@ describe('sports leaderboards', () => {
       profit: { rank: 1, score: 30, of: 1 },
       creator: null,
     })
-    // Banned, hidden, the bot as a creator, a NaN score, and nobody at all.
-    for (const userId of ['mallory', HIDDEN, BOT, 'nana', 'nobody'])
+    // Banned, hidden, the bot as a creator, NaN and infinite scores, and
+    // nobody at all.
+    for (const userId of ['mallory', HIDDEN, BOT, 'nana', 'infy', 'nobody'])
       expect(await you('nfl', userId)).toEqual({ profit: null, creator: null })
     // Without a user, no `you`.
     expect((await getSportsLeaderboards(pg, 'nfl')).you).toBeUndefined()

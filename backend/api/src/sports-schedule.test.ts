@@ -634,6 +634,7 @@ describe('F1 race weekends', () => {
       shouldAnswersSumToOne: marketType === 'winner',
       closeTime: start + 3 * 60 * 60 * 1000,
       sportsStartTimestamp: new Date(start).toISOString(),
+      groupSlugs: ['sports-default', 'formula-1'],
     },
   })
   const f1Rows = [
@@ -726,6 +727,8 @@ describe('F1 race weekends', () => {
       expect(weekends).toHaveLength(1)
       const [w] = weekends
       expect(w.name).toBe('2026 Mexico City Grand Prix')
+      // Its markets' topics, for pages to leave out what the visitor blocked.
+      expect(w.groupSlugs).toEqual(['sports-default', 'formula-1'])
       expect(w.sessions.map((s) => [s.label, s.status])).toEqual([
         ['Qualifying', 'upcoming'],
         ['Race', 'upcoming'],

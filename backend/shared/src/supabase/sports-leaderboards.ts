@@ -20,8 +20,8 @@ import {
 // Ranks everyone in `scores` (board, user_id, score) on each board, best
 // first, leaving out banned users and the accounts in $3, and writes them to
 // sports_leaderboard_positions as kind $4. `m` has a row per market and board
-// it counts toward. Returns how many it wrote. A score that isn't a number
-// (a NaN position) leaves its user off that board.
+// it counts toward. Returns how many it wrote. A score that isn't a finite
+// number (a NaN or infinite position) leaves its user off that board.
 const writePositions = (scores: string) => `
   with m as (
     select * from unnest($1::text[], $2::text[]) as m(contract_id, board)
@@ -35,7 +35,7 @@ const writePositions = (scores: string) => `
     from scores s
     join users u on u.id = s.user_id
     where s.score is not null
-      and s.score <> 'NaN'::numeric
+      and s.score::float8 not in ('NaN', 'Infinity', '-Infinity')
       and s.user_id <> all($3::text[])
       and coalesce((u.data->>'isBannedFromPosting')::boolean, false) is not true
   ),
@@ -177,12 +177,14 @@ export async function rebuildSportsLeaderboards(
       ).map((board) => ({
         sport: board[0].board,
         kind: board[0].kind,
-        entries: board.map(
-          (r): SportsLeaderboardEntry => ({
-            userId: r.user_id,
-            score: Number(r.score),
-          })
-        ),
+        entries: board
+          .map(
+            (r): SportsLeaderboardEntry => ({
+              userId: r.user_id,
+              score: Number(r.score),
+            })
+          )
+          .filter((e) => Number.isFinite(e.score)),
       }))
       await tx.none(`delete from sports_leaderboards`)
       await tx.none(
@@ -201,6 +203,32 @@ export async function rebuildSportsLeaderboards(
 
 const UNDEFINED_TABLE = '42P01'
 
+// A board's two kinds with the rebuild time, and the user's place on each
+// ($2, or null for none) with how many are ranked there. One statement, so
+// the boards and the place come from the same rebuild.
+const BOARDS_AND_PLACES = `
+  select b.built, k.kind, l.entries, p.rank, p.score,
+    case when p.user_id is null then null else (
+      select count(*) from sports_leaderboard_positions c
+      where c.board = $1 and c.kind = k.kind
+    ) end::int as of
+  from (select max(updated_time) as built from sports_leaderboards) b
+  cross join (values ('profit'), ('creator')) k(kind)
+  left join sports_leaderboards l on l.sport = $1 and l.kind = k.kind
+  left join sports_leaderboard_positions p
+    on p.board = $1 and p.kind = k.kind and p.user_id = $2`
+
+// The same without places, from before their migration.
+const BOARDS = `
+  select b.built, k.kind, l.entries,
+    null::int as rank, null::numeric as score, null::int as of
+  from (select max(updated_time) as built from sports_leaderboards) b
+  cross join (values ('profit'), ('creator')) k(kind)
+  left join sports_leaderboards l on l.sport = $1 and l.kind = k.kind`
+
+const missingTable = (e: unknown) =>
+  (e as { code?: string }).code === UNDEFINED_TABLE
+
 /**
  * A board's stored entries: a sport's key ('all' for every sport), or a
  * topic's (topicBoardKey).
@@ -216,65 +244,38 @@ export async function getSportsLeaderboards(
     creator: [],
     updatedTime: null,
   }
-  // The left join keeps the rebuild time for a board with no entries.
-  const rows = await pg
-    .manyOrNone<{
+  const read = (sql: string) =>
+    pg.manyOrNone<{
       built: Date | null
-      kind: SportsLeaderboardKind | null
+      kind: string
       entries: SportsLeaderboardEntry[] | null
-    }>(
-      `select b.built, l.kind, l.entries
-       from (select max(updated_time) as built from sports_leaderboards) b
-       left join sports_leaderboards l on l.sport = $1`,
-      [board]
-    )
+      rank: number | null
+      score: string | null
+      of: number | null
+    }>(sql, [board, userId ?? null])
+  const rows = await read(BOARDS_AND_PLACES)
     .catch((e) => {
-      // Before the migration has run: nothing built yet.
-      if ((e as { code?: string }).code === UNDEFINED_TABLE) return []
+      // Before migration 2026102902: the boards, with no places.
+      if (missingTable(e)) return read(BOARDS)
+      throw e
+    })
+    .catch((e) => {
+      // Before migration 2026102901: nothing built yet.
+      if (missingTable(e)) return []
       throw e
     })
   if (rows[0]?.built) result.updatedTime = new Date(rows[0].built).getTime()
-  for (const r of rows) {
-    if (r.kind === 'profit' || r.kind === 'creator')
-      result[r.kind] = r.entries ?? []
-  }
-  if (userId) result.you = await getPositions(pg, board, userId)
-  return result
-}
-
-// A user's place on a board's kinds, with how many are ranked on each.
-async function getPositions(
-  pg: SupabaseDirectClient,
-  board: string,
-  userId: string
-): Promise<Record<SportsLeaderboardKind, SportsLeaderboardPosition | null>> {
   const you: Record<SportsLeaderboardKind, SportsLeaderboardPosition | null> = {
     profit: null,
     creator: null,
   }
-  const rows = await pg
-    .manyOrNone<{
-      kind: SportsLeaderboardKind
-      rank: number
-      score: string
-      of: number
-    }>(
-      `select p.kind, p.rank, p.score,
-         (select count(*) from sports_leaderboard_positions c
-          where c.board = p.board and c.kind = p.kind)::int as of
-       from sports_leaderboard_positions p
-       where p.board = $1 and p.user_id = $2`,
-      [board, userId]
-    )
-    .catch((e) => {
-      // Before the migration has run: nobody has a place yet.
-      if ((e as { code?: string }).code === UNDEFINED_TABLE) return []
-      throw e
-    })
   for (const r of rows) {
+    if (r.kind !== 'profit' && r.kind !== 'creator') continue
+    result[r.kind] = r.entries ?? []
     const score = Number(r.score)
-    if ((r.kind === 'profit' || r.kind === 'creator') && Number.isFinite(score))
+    if (r.rank !== null && r.of !== null && Number.isFinite(score))
       you[r.kind] = { rank: r.rank, score, of: r.of }
   }
-  return you
+  if (userId) result.you = you
+  return result
 }

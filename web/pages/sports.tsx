@@ -20,6 +20,7 @@ import {
 import {
   ownTopicSlugs,
   useBlockedTopicFilter,
+  useLoadPastBlocked,
   useUnblockedSchedule,
 } from 'web/components/sports/blocked-topics'
 import { TopicRail, useSportsIndex } from 'web/components/sports/topic-rail'
@@ -101,6 +102,12 @@ export default function SportsPage({
     hides,
     sportsByKey
   )
+  const lookingPastBlocked = useLoadPastBlocked({
+    shown: games.length + weekends.length,
+    loaded: schedule?.games.length ?? 0,
+    hasMore,
+    loadMore,
+  })
   const markets = (
     <SportMarkets
       sport="all"
@@ -155,7 +162,7 @@ export default function SportsPage({
                 <GameFeed
                   games={games}
                   raceWeekends={weekends}
-                  loading={loading || !schedule}
+                  loading={loading || !schedule || lookingPastBlocked}
                   hasMore={hasMore}
                   loadMore={loadMore}
                   showLeague

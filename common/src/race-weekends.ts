@@ -83,6 +83,11 @@ export interface RaceWeekend {
   status: RaceStatus
   /** In start order. */
   sessions: RaceSession[]
+  /**
+   * Its sessions' markets' topic slugs, so a page can leave out topics the
+   * visitor blocked. Absent from an API that predates it.
+   */
+  groupSlugs?: string[]
 }
 
 /** The market fields the card is built from. */

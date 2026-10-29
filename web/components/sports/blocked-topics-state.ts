@@ -1,5 +1,6 @@
 import { uniq } from 'lodash'
-import { SportInfo, SportsSubtopic } from 'common/sports-schedule'
+import { RaceWeekend } from 'common/race-weekends'
+import { ScheduleGame, SportInfo, SportsSubtopic } from 'common/sports-schedule'
 
 /** Whether a sports page leaves out a market with these topic slugs. */
 export type HidesBlocked = (
@@ -55,4 +56,41 @@ export function blockedTopicFilter(
   const hidden = new Set((blocked ?? []).filter((s) => !own.has(s)))
   return (groupSlugs) =>
     hidden.size > 0 && !!groupSlugs?.some((s) => hidden.has(s))
+}
+
+/**
+ * The games and F1 weekends a page lists, without blocked topics'. A weekend
+ * goes by its markets' topics (from an older API, by its sport's topic).
+ */
+export function unblockedSchedule<
+  G extends Pick<ScheduleGame, 'groupSlugs'>,
+  W extends Pick<RaceWeekend, 'sport' | 'groupSlugs'>
+>(
+  games: readonly G[],
+  weekends: readonly W[],
+  hides: HidesBlocked,
+  sportsByKey: Record<string, Pick<SportInfo, 'slug'>>
+): { games: G[]; weekends: W[] } {
+  return {
+    games: games.filter((g) => !hides(g.groupSlugs)),
+    weekends: weekends.filter((w) => {
+      const slug = sportsByKey[w.sport]?.slug
+      return !hides(w.groupSlugs ?? (slug ? [slug] : []))
+    }),
+  }
+}
+
+/**
+ * Whether a page should load more of its feed because the visitor's blocks
+ * hide everything loaded so far: there's more, and the last try at this
+ * length (`stuckAt`) didn't fail.
+ */
+export function shouldLoadPastBlocked(state: {
+  shown: number
+  loaded: number
+  hasMore: boolean
+  stuckAt: number | undefined
+}) {
+  const { shown, loaded, hasMore, stuckAt } = state
+  return shown === 0 && loaded > 0 && hasMore && stuckAt !== loaded
 }

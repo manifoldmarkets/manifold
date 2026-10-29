@@ -496,13 +496,21 @@ async function getRaceWeekends(pg: Pg, daysAhead: number, now: number) {
      limit ${MAX_RACE_MARKETS}`,
     [String(daysAhead), MANIFOLD_SPORTS_USER_IDS]
   )
-  const contracts = rows.map((r) => convertContract(r) as RaceContract)
+  const full = rows.map((r) => convertContract(r))
+  const contracts = full.map((c) => c as RaceContract)
   const ids = contracts.map((c) => c.id)
   const [answers, groupIds] = await Promise.all([
     getAnswers(pg, ids),
     getGroupIds(pg, ids),
   ])
-  return { weekends: buildRaceWeekends(contracts, answers, now), groupIds }
+  const slugs = new Map(full.map((c) => [c.id, c.groupSlugs ?? []]))
+  const weekends = buildRaceWeekends(contracts, answers, now).map((w) => ({
+    ...w,
+    groupSlugs: uniq(
+      w.sessions.flatMap((s) => s.markets.flatMap((m) => slugs.get(m.id) ?? []))
+    ),
+  }))
+  return { weekends, groupIds }
 }
 
 // The F1 page's title markets: open multiple choice markets in the sports
