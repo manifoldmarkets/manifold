@@ -42,6 +42,7 @@ import {
 import {
   buildF1MarketParams,
   buildF1TitleMarketParams,
+  F1_CANCEL_CONFIRM_HOURS,
   F1_DAYS_AHEAD,
   F1_MARKETS_BY_SESSION,
   F1_RESOLVE_DELAY_HOURS,
@@ -63,6 +64,7 @@ import {
   f1SessionKind,
   f1SessionResolution,
   F1SessionResult,
+  f1SessionSettleAt,
   f1SessionSync,
   f1TeamEntrant,
   f1TeamStandingRow,
@@ -219,6 +221,14 @@ function officialFor(
 }
 
 /**
+ * How long after our calendar's first date for a season its first weekend
+ * may still be opening (a cancelled opener included). Only then can a
+ * session open with last season's drivers: later, an empty standings table
+ * is the provider's fault.
+ */
+const FIRST_WEEKEND_FALLBACK_DAYS = 14
+
+/**
  * Our calendar's first date for a season may be the opening race's Sunday
  * rather than its Friday: assume the first weekend can start three days
  * before it.
@@ -230,16 +240,20 @@ const OUR_WEEKEND_LEAD_DAYS = 3
  * weekend may start, the end of its last date, and how many rounds it was
  * announced with, if we know. Null for a competition we don't list.
  */
-function ourSeason(
-  competitionId: string
-): { firstStart: number; end: number; rounds: number | undefined } | null {
+function ourSeason(competitionId: string): {
+  firstDate: number
+  firstStart: number
+  end: number
+  rounds: number | undefined
+} | null {
   const phases = calendarEntriesFor(competitionId)
   const windows = phases.map(phaseWindow)
   if (windows.length === 0) return null
   const rounds = phases.flatMap((p) => (p.rounds ? [p.rounds] : []))
+  const firstDate = Math.min(...windows.map((w) => w.from))
   return {
-    firstStart:
-      Math.min(...windows.map((w) => w.from)) - OUR_WEEKEND_LEAD_DAYS * DAY_MS,
+    firstDate,
+    firstStart: firstDate - OUR_WEEKEND_LEAD_DAYS * DAY_MS,
     // phaseWindow runs a day past the last date.
     end: Math.max(...windows.map((w) => w.to)) - DAY_MS,
     rounds: rounds.length > 0 ? Math.max(...rounds) : undefined,
@@ -534,12 +548,16 @@ export async function createF1Markets(
     // Until a season's first weekend is over, the provider may have no
     // standings for it: that weekend opens with last season's drivers and
     // points, as the titles do, and "Another driver" covers a newcomer.
-    // Once a weekend is final, an empty table is the provider's fault, and
-    // nothing opens from it.
+    // Once a weekend is final, by the provider or by our calendar (in case
+    // the provider leaves weekends out), an empty table is the provider's
+    // fault, and nothing opens from it.
     const started = seasonEvents.some(
       (e) => e.season === season && e.status_state === 'final'
     )
-    if (standings.length === 0 && !started)
+    const ours = ourSeason(`f1-${season}`)
+    const opening =
+      !!ours && now < ours.firstDate + FIRST_WEEKEND_FALLBACK_DAYS * DAY_MS
+    if (standings.length === 0 && !started && opening)
       standings = await providerCall('/driver_standings', PLAN_REFUSED, () =>
         getF1DriverStandings(season - 1)
       )
@@ -731,12 +749,13 @@ export async function createF1MarketsForActiveCalendar(
 
 // ─── Resolving markets ────────────────────────────────────────────────────────
 
-/** An unresolved market this long after its close needs a person. */
+const iso = (t: number) => new Date(t).toISOString().slice(0, 16) + 'Z'
+
+/** An unresolved market this long after it was due to pay out needs a person. */
 const ATTENTION_AFTER_MS = 12 * HOUR_MS
 /**
- * A postponed session's market waits this long for the provider's new date
- * (syncF1SessionMarkets reopens it then) or a cancellation before it needs
- * a person.
+ * A postponed session waits this long past its old time for a new date or
+ * a cancellation before its market needs a person.
  */
 const POSTPONED_ATTENTION_MS = 14 * DAY_MS
 /**
@@ -745,8 +764,13 @@ const POSTPONED_ATTENTION_MS = 14 * DAY_MS
  * a few a weekend). More than this is a backlog a person has to see.
  */
 const MAX_DUE_MARKETS = 1000
-/** How far back a run looks: anything stuck longer was reported long ago. */
-const RESOLVE_LOOKBACK_MS = 30 * DAY_MS
+/**
+ * How far back the resolver and the sync look, by when a market was made: a
+ * session market opens at most F1_DAYS_AHEAD before its session, so this
+ * keeps a session postponed for months in view. Anything stuck longer was
+ * reported long ago.
+ */
+const RESOLVE_LOOKBACK_MS = 120 * DAY_MS
 /** The `alerted` key for the backlog warning. */
 const BACKLOG_ALERT = 'f1-resolve-backlog'
 
@@ -876,17 +900,20 @@ const getAnswers = async (pg: SupabaseDirectClient, contractId: string) =>
   ).map(convertAnswer)
 
 /**
- * Resolve the F1 markets that closed at least F1_RESOLVE_DELAY_HOURS ago and
- * within RESOLVE_LOOKBACK_MS, from the provider's classification of their
- * session, once that session and its results are the market's own (the
- * event and session ids in sportsEventId). A cancelled session
- * resolves N/A; a final one resolves through f1SessionResolution, a winner
- * market to one answer and a podium market answer by answer (a run that
- * stops half way picks up the rest). Anything else waits. What only a person
- * can settle, a classification that doesn't check out, an answer already
- * resolved the other way, or a session still not final or without results
- * ATTENTION_AFTER_MS after close, is logged as an error once per market for
- * the life of `alerted`, and never guessed.
+ * Resolve the closed F1 session markets made within RESOLVE_LOOKBACK_MS
+ * from the provider's classification of their session, once that session
+ * and its results are the market's own (the event and session ids in
+ * sportsEventId). When a market may pay follows its session, not its close
+ * (f1SessionSettleAt), so closing early never pays early. A session seen
+ * cancelled for F1_CANCEL_CONFIRM_HOURS resolves N/A; a final one, once
+ * due, resolves through f1SessionResolution, a winner market to one answer
+ * and a podium market answer by answer (a run that stops half way picks up
+ * the rest). Anything else waits. What only a person can settle, a
+ * classification that doesn't check out, an answer already resolved the
+ * other way, or a session still not final or without results
+ * ATTENTION_AFTER_MS after it was due (POSTPONED_ATTENTION_MS for a
+ * postponed one), is logged as an error once per market for the life of
+ * `alerted`, and never guessed.
  */
 export async function resolveF1Markets(
   pg: SupabaseDirectClient,
@@ -901,12 +928,12 @@ export async function resolveF1Markets(
        and token = 'MANA'
        and resolution is null
        and close_time <= $2
-       and close_time > $3
+       and created_time > $3
      order by close_time asc
      limit ${MAX_DUE_MARKETS + 1}`,
     [
       MANIFOLD_SPORTS_USER_IDS,
-      millisToTs(now - F1_RESOLVE_DELAY_HOURS * HOUR_MS),
+      millisToTs(now),
       millisToTs(now - RESOLVE_LOOKBACK_MS),
     ]
   )
@@ -941,16 +968,23 @@ export async function resolveF1Markets(
 
   for (const contract of contracts) {
     const id = ids.get(contract.id)
-    // Waiting turns into a person's job once the market is long closed.
-    const wait = (reason: string, after = ATTENTION_AFTER_MS) => {
-      const closedFor = now - (contract.closeTime ?? now)
-      if (closedFor < after) add(contract, 'waiting', reason)
+    // Waiting turns into a person's job once the market is long overdue.
+    const wait = (
+      reason: string,
+      dueAt: number,
+      after = ATTENTION_AFTER_MS
+    ) => {
+      const overdue = now - dueAt
+      if (overdue < after) add(contract, 'waiting', reason)
       else
         attention(
           contract,
-          `${reason}, ${Math.round(closedFor / HOUR_MS)} hours after close`
+          `${reason}, ${Math.round(overdue / HOUR_MS)} hours after it was due`
         )
     }
+    // Without the provider's session, its close is all there is to go by.
+    const closeDue =
+      (contract.closeTime ?? now) + F1_RESOLVE_DELAY_HOURS * HOUR_MS
     try {
       if (!id) {
         attention(contract, `can't read ${contract.sportsEventId}`)
@@ -958,7 +992,7 @@ export async function resolveF1Markets(
       }
       const session = sessionById.get(id.sessionId)
       if (!session) {
-        wait(`the provider doesn't list session ${id.sessionId}`)
+        wait(`the provider doesn't list session ${id.sessionId}`, closeDue)
         continue
       }
       if (session.event?.id !== id.eventId) {
@@ -966,6 +1000,38 @@ export async function resolveF1Markets(
           contract,
           `the provider files session ${session.id} under event ${session.event?.id}, not ${id.eventId}`
         )
+        continue
+      }
+      const settleAt = f1SessionSettleAt(session)
+      if (settleAt === null) {
+        attention(
+          contract,
+          `session ${session.id} is "${session.type}" / "${session.name}" on ${session.date}, which the resolver can't time`
+        )
+        continue
+      }
+      if (session.status_state === 'canceled') {
+        // N/A once the cancellation has held, so a flicker refunds nothing.
+        const since = contract.sportsCanceledSince
+        const confirmMs = F1_CANCEL_CONFIRM_HOURS * HOUR_MS
+        if (since === undefined || now - since < confirmMs) {
+          wait(
+            'the session was cancelled; N/A once that has held',
+            since === undefined ? settleAt : since + confirmMs
+          )
+          continue
+        }
+      } else if (session.status_state !== 'final') {
+        wait(
+          `the session is ${session.status_state}`,
+          settleAt,
+          session.status_state === 'postponed'
+            ? POSTPONED_ATTENTION_MS
+            : ATTENTION_AFTER_MS
+        )
+        continue
+      } else if (now < settleAt) {
+        add(contract, 'waiting', `pays out from ${iso(settleAt)}`)
         continue
       }
       const answers = await getAnswers(pg, contract.id)
@@ -1005,16 +1071,6 @@ export async function resolveF1Markets(
         add(contract, 'resolved', 'N/A: the session was cancelled')
         continue
       }
-      if (session.status_state !== 'final') {
-        wait(
-          `the session is ${session.status_state}`,
-          session.status_state === 'postponed'
-            ? POSTPONED_ATTENTION_MS
-            : ATTENTION_AFTER_MS
-        )
-        continue
-      }
-
       let results = resultsBySession.get(session.id)
       if (!results) {
         results = await providerCall(
@@ -1027,7 +1083,7 @@ export async function resolveF1Markets(
       // Seen in October 2026: final sessions whose classification never
       // arrived. Wait, then hand it to a person.
       if (results.length === 0) {
-        wait('the session is final but has no classification yet')
+        wait('the session is final but has no classification yet', settleAt)
         continue
       }
       // Only the session's own classification can pay out.
@@ -1111,8 +1167,6 @@ export async function resolveF1Markets(
 
 // ─── Following sessions that move ────────────────────────────────────────────
 
-const iso = (t: number) => new Date(t).toISOString().slice(0, 16) + 'Z'
-
 /** The most unresolved session markets one sync reads: a few weekends'. */
 const MAX_SYNC_MARKETS = 300
 
@@ -1120,22 +1174,34 @@ export interface F1SyncResult {
   checked: number
   moved: number
   closed: number
+  /** Cancellations first seen, or seen to end, for resolveF1Markets' N/A. */
+  marked: number
   log: { contractId: string; question: string; change: string }[]
 }
 
 /**
- * Every unresolved session market of the last RESOLVE_LOOKBACK_MS, open or
- * waiting, against its session on the provider's calendar
- * (f1SessionSync), so no one has to: a cancelled or postponed session stops
- * trading now, and a session moved earlier or later takes the market's
- * start and close with it (reopening a market whose session hasn't run).
- * One provider call for all of them. A market whose session the provider
- * doesn't list, or files elsewhere, is left to resolveF1Markets.
+ * Every unresolved session market made within RESOLVE_LOOKBACK_MS against
+ * its session on the provider's calendar, so no one has to. An open market
+ * follows its session (f1SessionSync): a cancelled or final session stops
+ * trading now, a session yet to start takes the start and close with it,
+ * and a started one only closes sooner. A closed market is never reopened.
+ * Every market also records when its session was first seen cancelled
+ * (sportsCanceledSince), cleared if that changes, which resolveF1Markets
+ * waits on before an N/A. Each write only lands on the close it was decided
+ * from, so a close changed by hand meanwhile stands. One provider call for
+ * all of them. A market whose session the provider doesn't list, or files
+ * elsewhere, is left to resolveF1Markets.
  */
 export async function syncF1SessionMarkets(
   pg: SupabaseDirectClient
 ): Promise<F1SyncResult> {
-  const result: F1SyncResult = { checked: 0, moved: 0, closed: 0, log: [] }
+  const result: F1SyncResult = {
+    checked: 0,
+    moved: 0,
+    closed: 0,
+    marked: 0,
+    log: [],
+  }
   const now = Date.now()
   const rows = await pg.manyOrNone(
     `select ${contractColumnsToSelect} from contracts
@@ -1143,7 +1209,7 @@ export async function syncF1SessionMarkets(
        and creator_id = any($1)
        and token = 'MANA'
        and resolution is null
-       and close_time > $2
+       and created_time > $2
      order by close_time asc
      limit ${MAX_SYNC_MARKETS}`,
     [MANIFOLD_SPORTS_USER_IDS, millisToTs(now - RESOLVE_LOOKBACK_MS)]
@@ -1166,15 +1232,6 @@ export async function syncF1SessionMarkets(
     const id = ids.get(contract.id)
     const session = id && sessionById.get(id.sessionId)
     if (!id || !session || session.event?.id !== id.eventId) continue
-    const sync = f1SessionSync(
-      session,
-      {
-        closeTime: contract.closeTime ?? now,
-        sportsStartTimestamp: contract.sportsStartTimestamp,
-      },
-      now
-    )
-    if (sync.kind === 'keep') continue
     const record = (change: string) => {
       result.log.push({
         contractId: contract.id,
@@ -1185,36 +1242,66 @@ export async function syncF1SessionMarkets(
         `[sports-f1-resolve] ${contract.id} (${contract.question}): ${change}`
       )
     }
-    if (sync.kind === 'close') {
-      // Never reopens: only a market still open closes sooner.
+
+    const canceled = session.status_state === 'canceled'
+    if (canceled && contract.sportsCanceledSince === undefined) {
       await pg.none(
         `update contracts set data = data || $1::jsonb
-         where id = $2 and resolution is null and close_time > now()`,
-        [JSON.stringify({ closeTime: sync.closeTime }), contract.id]
+         where id = $2 and resolution is null
+           and not (data ? 'sportsCanceledSince')`,
+        [JSON.stringify({ sportsCanceledSince: now }), contract.id]
       )
+      result.marked++
+      record(
+        `cancelled: N/A from ${iso(
+          now + F1_CANCEL_CONFIRM_HOURS * HOUR_MS
+        )} if it holds`
+      )
+    } else if (!canceled && contract.sportsCanceledSince !== undefined) {
+      await pg.none(
+        `update contracts set data = data - 'sportsCanceledSince'
+         where id = $1 and resolution is null`,
+        [contract.id]
+      )
+      result.marked++
+      record(`no longer cancelled: the session is ${session.status_state}`)
+    }
+
+    if (contract.closeTime === undefined) continue
+    const sync = f1SessionSync(
+      session,
+      {
+        closeTime: contract.closeTime,
+        sportsStartTimestamp: contract.sportsStartTimestamp,
+      },
+      now
+    )
+    if (sync.kind === 'keep') continue
+    const update =
+      sync.kind === 'close'
+        ? { closeTime: sync.closeTime }
+        : { closeTime: sync.closeTime, sportsStartTimestamp: sync.start }
+    // Only onto the open close this was decided from: never reopens, and a
+    // close changed by hand since stands.
+    await pg.none(
+      `update contracts set data = data || $1::jsonb
+       where id = $2 and resolution is null and close_time > now()
+         and (data->>'closeTime')::numeric = $3`,
+      [JSON.stringify(update), contract.id, contract.closeTime]
+    )
+    if (sync.kind === 'close') {
       result.closed++
       record(
         `the session is ${session.status_state}: closes ${iso(sync.closeTime)}`
       )
-      continue
+    } else {
+      result.moved++
+      record(
+        `the session moved to ${iso(Date.parse(sync.start))}: closes ${iso(
+          sync.closeTime
+        )}`
+      )
     }
-    await pg.none(
-      `update contracts set data = data || $1::jsonb
-       where id = $2 and resolution is null`,
-      [
-        JSON.stringify({
-          closeTime: sync.closeTime,
-          sportsStartTimestamp: sync.start,
-        }),
-        contract.id,
-      ]
-    )
-    result.moved++
-    record(
-      `the session moved to ${iso(Date.parse(sync.start))}: closes ${iso(
-        sync.closeTime
-      )}`
-    )
   }
   return result
 }

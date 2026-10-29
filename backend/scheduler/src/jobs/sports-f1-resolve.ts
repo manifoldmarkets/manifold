@@ -1,11 +1,11 @@
-// Every 15 minutes: keep F1 session markets on their sessions' times (a
-// session moved, postponed or cancelled), resolve the ones that closed at
-// least F1_RESOLVE_DELAY_HOURS ago from BALLDONTLIE's classification of
-// their session, and keep the season title markets' close on the final race
-// and pay them from the final standings (shared/f1-markets.ts). One
-// provider call while a session market is open, and none while no session
-// market is due and no title market is open. No-op without
-// BALLDONTLIE_API_KEY.
+// Every 15 minutes: keep open F1 session markets on their sessions' times (a
+// session moved, postponed or cancelled), resolve closed ones from
+// BALLDONTLIE's classification of their session once it's due
+// (F1_RESOLVE_DELAY_HOURS after the session's own close), and keep the
+// season title markets' close on the final race and pay them from the final
+// standings (shared/f1-markets.ts). A provider call or two while a session
+// market is unresolved, and none while none is and no title market is open.
+// No-op without BALLDONTLIE_API_KEY.
 
 import { log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -34,9 +34,9 @@ export async function resolveF1SportsMarkets() {
   // reads it. A provider outage here mustn't stop the payouts below.
   try {
     const s = await syncF1SessionMarkets(pg)
-    if (s.moved + s.closed > 0) {
+    if (s.moved + s.closed + s.marked > 0) {
       log(
-        `[sports-f1-resolve] sessions: checked=${s.checked} moved=${s.moved} closed=${s.closed}`
+        `[sports-f1-resolve] sessions: checked=${s.checked} moved=${s.moved} closed=${s.closed} cancellations=${s.marked}`
       )
     }
   } catch (e) {

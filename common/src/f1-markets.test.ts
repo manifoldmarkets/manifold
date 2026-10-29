@@ -21,6 +21,7 @@ import {
   f1SessionKind,
   f1SessionResolution,
   F1SessionResult,
+  f1SessionSettleAt,
   f1SessionSync,
   f1TeamEntrant,
   f1TitleCloseTime,
@@ -605,7 +606,7 @@ describe('f1SessionSync', () => {
     expect(sync(s(START))).toEqual({ kind: 'keep' })
   })
 
-  it('follows a session moved later or earlier', () => {
+  it('follows a session yet to start, later or earlier', () => {
     expect(sync(s('2026-11-02T20:00:00Z'))).toEqual({
       kind: 'move',
       start: '2026-11-02T20:00:00.000Z',
@@ -616,7 +617,9 @@ describe('f1SessionSync', () => {
       start: '2026-11-01T15:00:00.000Z',
       closeTime: at('2026-11-01T18:00:00Z'),
     })
-    // Qualifying and sprint markets keep their own buffers.
+    // Postponed to a date the provider gives.
+    expect(sync(s('2026-11-02T20:00:00Z', 'postponed')).kind).toBe('move')
+    // Qualifying keeps its own buffer.
     expect(sync(s('2026-11-01T15:00:00Z', 'scheduled', 'Qualifying'))).toEqual({
       kind: 'move',
       start: '2026-11-01T15:00:00.000Z',
@@ -628,60 +631,85 @@ describe('f1SessionSync', () => {
     ).toBe('move')
   })
 
-  it('reopens a market closed before its session has run', () => {
-    // Closed by a postponement yesterday; the provider now has a new date.
-    const closed = { ...onTime, closeTime: NOW - 24 * H }
-    expect(sync(s('2026-11-08T20:00:00Z'), closed)).toEqual({
-      kind: 'move',
-      start: '2026-11-08T20:00:00.000Z',
-      closeTime: at('2026-11-08T23:00:00Z'),
-    })
-  })
-
-  it('stops trading now on a cancelled or postponed session, never reopening one', () => {
+  it('stops trading now on a cancelled session, or a final one', () => {
     expect(sync(s(START, 'canceled'))).toEqual({
       kind: 'close',
       closeTime: NOW,
     })
-    expect(sync(s(START, 'postponed'))).toEqual({
+    // Moved earlier and already run when first seen: its result is known.
+    expect(sync(s('2026-10-29T08:00:00Z', 'final'))).toEqual({
       kind: 'close',
       closeTime: NOW,
     })
-    const closed = { ...onTime, closeTime: NOW - H }
-    expect(sync(s(START, 'canceled'), closed)).toEqual({ kind: 'keep' })
+    // A race on time, finished and final with an hour of its close left:
+    // the result is known, so trading stops now rather than at the close.
+    expect(sync(s(START, 'final'), onTime, at(START) + 2 * H)).toEqual({
+      kind: 'close',
+      closeTime: at(START) + 2 * H,
+    })
   })
 
-  it('never gives a session that should have started more time', () => {
-    // Moved two hours earlier and already under way: closes sooner.
+  it('keeps trading through a postponement, which reveals nothing', () => {
+    // Postponed, still carrying its old date: closes then as before.
+    expect(sync(s(START, 'postponed'))).toEqual({ kind: 'keep' })
+  })
+
+  it('never reopens a closed market, whatever the provider says', () => {
+    // Closed by hand, or by its own time before a postponement.
+    const closed = { ...onTime, closeTime: NOW - H }
+    for (const state of [
+      'scheduled',
+      'postponed',
+      'canceled',
+      'final',
+    ] as const)
+      expect(sync(s('2026-11-08T20:00:00Z', state), closed)).toEqual({
+        kind: 'keep',
+      })
+  })
+
+  it('only ever closes a session that has started, or should have, sooner', () => {
     const later = { ...onTime, closeTime: NOW + 10 * H }
-    expect(sync(s(new Date(NOW - H).toISOString()), later)).toEqual({
-      kind: 'close',
-      closeTime: NOW + 2 * H,
-    })
-    // Its new close has passed: closes now.
-    expect(sync(s(new Date(NOW - 4 * H).toISOString()), later)).toEqual({
-      kind: 'close',
-      closeTime: NOW,
-    })
-    // A later start that has passed doesn't extend a close.
+    // Moved earlier and under way, delayed, or still "scheduled" after its
+    // start: closes at its own close, or now if that has passed.
+    for (const state of ['in_progress', 'delayed', 'scheduled'] as const) {
+      expect(sync(s(new Date(NOW - H).toISOString(), state), later)).toEqual({
+        kind: 'close',
+        closeTime: NOW + 2 * H,
+      })
+      expect(
+        sync(s(new Date(NOW - 4 * H).toISOString(), state), later)
+      ).toEqual({ kind: 'close', closeTime: NOW })
+    }
+    // A later start that has passed never extends a close.
     const soon = { ...onTime, closeTime: NOW + H }
-    expect(sync(s(new Date(NOW - H).toISOString()), soon)).toEqual({
+    expect(
+      sync(s(new Date(NOW - H).toISOString(), 'in_progress'), soon)
+    ).toEqual({ kind: 'keep' })
+    // A live race on time trades until its close, as always.
+    expect(sync(s(START, 'in_progress'), onTime, at(START) + H)).toEqual({
       kind: 'keep',
     })
   })
 
-  it('leaves sessions under way, practice and broken dates alone', () => {
-    for (const state of [
-      'in_progress',
-      'delayed',
-      'suspended',
-      'final',
-      'abandoned',
-      'unknown',
-    ] as const)
-      expect(sync(s('2026-11-02T20:00:00Z', state))).toEqual({ kind: 'keep' })
+  it('leaves practice and broken dates alone', () => {
     expect(sync(s(START, 'canceled', 'FP1'))).toEqual({ kind: 'keep' })
     expect(sync(s('TBC'))).toEqual({ kind: 'keep' })
+  })
+})
+
+describe('f1SessionSettleAt', () => {
+  it("pays out by the session's own time: its close, then the stewards' two hours", () => {
+    const at = (type: string, date: string) =>
+      f1SessionSettleAt({ type, name: type, date })
+    expect(at('Race', '2026-11-01T20:00:00Z')).toBe(
+      Date.parse('2026-11-02T01:00:00Z')
+    )
+    expect(at('Qualifying', '2026-10-31T21:00:00Z')).toBe(
+      Date.parse('2026-11-01T00:30:00Z')
+    )
+    expect(at('FP1', '2026-10-30T18:30:00Z')).toBeNull()
+    expect(at('Race', 'TBC')).toBeNull()
   })
 })
 

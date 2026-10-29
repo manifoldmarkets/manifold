@@ -617,24 +617,27 @@ export function f1SessionResolution(
 // The provider keeps a session's id when its time changes and marks a
 // cancelled session (every session of a cancelled weekend, too) 'canceled'.
 // A weekend moved elsewhere is a new event with new sessions: the old ones
-// are cancelled and the new ones get markets of their own.
+// are cancelled and the new ones get markets of their own. A market follows
+// its session only while it's open, and is never reopened; when it pays out
+// follows the session itself (f1SessionSettleAt), never the market's close.
 
-/** What a session market's start and close should become, if anything. */
+/** What an open session market's start and close should become, if anything. */
 export type F1SessionSync =
   | { kind: 'keep' }
-  /** Stop trading now. */
+  /** Stop trading at this time, now or sooner than before. */
   | { kind: 'close'; closeTime: number }
-  /** Follow the session to its new start, earlier or later. */
+  /** Follow a session that hasn't started to its new start. */
   | { kind: 'move'; start: string; closeTime: number }
 
 /**
- * How a session market follows its session on the provider's calendar. A
- * cancelled or postponed session stops trading now; a cancelled one then
- * resolves N/A, and a postponed one waits for its new date. A scheduled
- * session whose start has changed takes the market's start and close with
- * it, and reopens a market that closed early or on the old time, since the
- * session hasn't run. A session that should have started already never
- * gets more time: its market can only close sooner, at its new close or now.
+ * How an open session market follows its session. A cancelled session, or
+ * a final one (its result is known), stops trading now. A session yet to
+ * start, scheduled or postponed to a date the provider gives, takes the
+ * market's start and close with it, earlier or later. A session that has
+ * started, or should have, only ever closes sooner: at its own close, or
+ * now if that has passed, whatever its status (under way, delayed, or a
+ * postponement still carrying its old date). A closed market is left as it
+ * is: it might have been closed by hand, or its session might have run.
  */
 export function f1SessionSync(
   session: Pick<F1Session, 'type' | 'name' | 'date' | 'status_state'>,
@@ -642,19 +645,16 @@ export function f1SessionSync(
   now: number
 ): F1SessionSync {
   const kind = f1SessionKind(session)
-  if (!kind) return { kind: 'keep' }
-  const open = market.closeTime > now
-  if (
-    session.status_state === 'canceled' ||
-    session.status_state === 'postponed'
-  )
-    return open ? { kind: 'close', closeTime: now } : { kind: 'keep' }
-  if (session.status_state !== 'scheduled') return { kind: 'keep' }
+  if (!kind || market.closeTime <= now) return { kind: 'keep' }
+  if (session.status_state === 'canceled' || session.status_state === 'final')
+    return { kind: 'close', closeTime: now }
   const start = Date.parse(session.date)
   if (!Number.isFinite(start)) return { kind: 'keep' }
   const closeTime = start + F1_CLOSE_BUFFER_HOURS[kind] * HOUR_MS
-  if (start <= now)
-    return open && closeTime < market.closeTime
+  const yetToStart =
+    session.status_state === 'scheduled' || session.status_state === 'postponed'
+  if (!yetToStart || start <= now)
+    return closeTime < market.closeTime
       ? { kind: 'close', closeTime: Math.max(closeTime, now) }
       : { kind: 'keep' }
   if (
@@ -664,6 +664,31 @@ export function f1SessionSync(
     return { kind: 'keep' }
   return { kind: 'move', start: new Date(start).toISOString(), closeTime }
 }
+
+/**
+ * When a session's market may pay out, by the provider's own time for the
+ * session: its start, plus the time its market stays open, plus
+ * F1_RESOLVE_DELAY_HOURS for the stewards. Closing a market early never
+ * brings this forward. Null for a session with no market or a date that
+ * doesn't parse.
+ */
+export function f1SessionSettleAt(
+  session: Pick<F1Session, 'type' | 'name' | 'date'>
+): number | null {
+  const kind = f1SessionKind(session)
+  const start = Date.parse(session.date)
+  if (!kind || !Number.isFinite(start)) return null
+  return (
+    start + (F1_CLOSE_BUFFER_HOURS[kind] + F1_RESOLVE_DELAY_HOURS) * HOUR_MS
+  )
+}
+
+/**
+ * How long a session must have been seen cancelled before its market
+ * resolves N/A, so a status that flickers doesn't refund a session that
+ * then runs. syncF1SessionMarkets records when it first saw it.
+ */
+export const F1_CANCEL_CONFIRM_HOURS = 2
 
 // ─── Season titles ────────────────────────────────────────────────────────────
 //

@@ -446,6 +446,12 @@ export type Sports = {
    * resolver matches results by id, never by name.
    */
   sportsEntrantIds?: (number | null)[]
+  /**
+   * A field event's session: when the pipeline first saw the provider mark
+   * it cancelled, cleared if it stops being so. N/A waits for this to be
+   * old enough (common/f1-markets.ts F1_CANCEL_CONFIRM_HOURS).
+   */
+  sportsCanceledSince?: number
 }
 
 export type MultiContract =
