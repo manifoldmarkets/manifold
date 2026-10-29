@@ -14,10 +14,10 @@ import { AddContractToGroupModal } from 'web/components/topics/add-contract-to-g
 import { TopicOptions } from 'web/components/topics/topic-options'
 import { internalUnfollowTopic } from 'web/components/topics/topics-button'
 import { TopicsSidebar } from 'web/components/topics/topics-sidebar'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useAsyncData } from 'web/hooks/use-async-data'
 import { useIsFollowingTopic } from 'web/hooks/use-group-supabase'
 import { useUser } from 'web/hooks/use-user'
-import { updateGroup } from 'web/lib/api/api'
+import { api, updateGroup } from 'web/lib/api/api'
 
 /**
  * The mods' view of the topic behind a sports page: what its topic page had
@@ -30,11 +30,10 @@ export function SportTopicPanel(props: { topic: Group }) {
   const { isFollowing, setIsFollowing } = useIsFollowingTopic(topic.slug)
   const [editingAbout, setEditingAbout] = useState(false)
   const [addingMarkets, setAddingMarkets] = useState(false)
-  const links = useAPIGetter(
-    'group/:slug/groups',
-    { slug: topic.slug },
-    undefined,
-    `sports-topic-links-${topic.slug}`
+  // Fetched on every visit, not kept for the session: the sidebar's edits
+  // only change its own copy.
+  const links = useAsyncData(topic.slug, (slug) =>
+    api('group/:slug/groups', { slug })
   )
 
   return (
@@ -87,12 +86,12 @@ export function SportTopicPanel(props: { topic: Group }) {
       </Row>
 
       {/* Mounts once the links are in: it keeps its own copy to edit. */}
-      {links.data ? (
+      {links ? (
         <TopicsSidebar
           key={topic.id}
           topicId={topic.id}
-          above={links.data.above}
-          below={links.data.below}
+          above={links.above}
+          below={links.below}
         />
       ) : (
         <Col className="gap-4">

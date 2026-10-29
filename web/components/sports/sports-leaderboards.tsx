@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { fromNow } from 'client-common/lib/time'
 import { SportsLeaderboardEntry } from 'common/sports-leaderboards'
 import { SportInfo } from 'common/sports-schedule'
+import { HOUR_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { LeaderboardColumn } from 'web/components/leaderboard'
 import {
@@ -26,12 +27,21 @@ export function SportsLeaderboards(props: { sport: SportInfo | 'all' }) {
   const label = sport === 'all' ? 'sports' : sport.label
   const user = useUser()
   const isClient = useIsClient()
-  const { data, loading, error } = useAPIGetter(
+  const { data, loading, error, refresh } = useAPIGetter(
     'sports-leaderboards',
     { sport: key },
     undefined,
     `sports-leaderboards-${key}`
   )
+  // A response stays cached for the session; fetch again when reopening the
+  // tab could show a newer rebuild (they come hourly).
+  useEffect(() => {
+    if (
+      data &&
+      (data.updatedTime === null || Date.now() - data.updatedTime > HOUR_MS)
+    )
+      refresh()
+  }, [key])
   // Each sport has its own cache slot, so data is always this sport's.
   const built = !!data && data.updatedTime !== null
   const notYet = !!data && data.updatedTime === null

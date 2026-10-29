@@ -1,6 +1,6 @@
 import { groupBy } from 'lodash'
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { getSportsIndex } from 'shared/supabase/sports-index'
+import { loadSportsIndex } from 'shared/supabase/sports-index'
 import { HIDE_FROM_LEADERBOARD_USER_IDS } from 'common/envs/constants'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import {
@@ -56,12 +56,25 @@ const CREATOR_SCORES = `
   join contracts c on c.id = m.contract_id
   group by grouping sets ((m.sport, c.creator_id), (c.creator_id))`
 
-/** Rebuilds every sport's boards. Returns how many boards it stored. */
+/**
+ * Rebuilds every sport's boards. Returns how many boards it stored. Throws,
+ * leaving the stored boards as they are, if it can't read the topic tree.
+ */
 export async function rebuildSportsLeaderboards(
   pg: SupabaseDirectClient,
   now = Date.now()
 ): Promise<number> {
-  const index = await getSportsIndex(pg, now)
+  // Fail before the expensive reads if the API's migration hasn't run.
+  const table = await pg.one<{ name: string | null }>(
+    `select to_regclass('public.sports_leaderboards')::text as name`
+  )
+  if (!table.name)
+    throw new Error(
+      'sports_leaderboards does not exist; run migration 2026102901 first'
+    )
+  // Not the cached getSportsIndex: its fallback when the tree can't be read
+  // (the curated sports alone) would replace whole boards with partial ones.
+  const index = await loadSportsIndex(pg)
   const markets = await pg.manyOrNone<{
     id: string
     sports_league: string | null
@@ -146,27 +159,36 @@ export async function rebuildSportsLeaderboards(
   return rows.length
 }
 
+const UNDEFINED_TABLE = '42P01'
+
 /** A sport's stored boards ('all' for every sport). */
 export async function getSportsLeaderboards(
   pg: SupabaseDirectClient,
   sport: string
 ): Promise<SportsLeaderboards> {
-  // The left join keeps the rebuild time for a sport that has no boards.
-  const rows = await pg.manyOrNone<{
-    built: Date | null
-    kind: SportsLeaderboardKind | null
-    entries: SportsLeaderboardEntry[] | null
-  }>(
-    `select b.built, l.kind, l.entries
-     from (select max(updated_time) as built from sports_leaderboards) b
-     left join sports_leaderboards l on l.sport = $1`,
-    [sport]
-  )
   const result: SportsLeaderboards = {
     profit: [],
     creator: [],
-    updatedTime: rows[0]?.built ? new Date(rows[0].built).getTime() : null,
+    updatedTime: null,
   }
+  // The left join keeps the rebuild time for a sport that has no boards.
+  const rows = await pg
+    .manyOrNone<{
+      built: Date | null
+      kind: SportsLeaderboardKind | null
+      entries: SportsLeaderboardEntry[] | null
+    }>(
+      `select b.built, l.kind, l.entries
+       from (select max(updated_time) as built from sports_leaderboards) b
+       left join sports_leaderboards l on l.sport = $1`,
+      [sport]
+    )
+    .catch((e) => {
+      // Before the migration has run: nothing built yet.
+      if ((e as { code?: string }).code === UNDEFINED_TABLE) return []
+      throw e
+    })
+  if (rows[0]?.built) result.updatedTime = new Date(rows[0].built).getTime()
   for (const r of rows) {
     if (r.kind === 'profit' || r.kind === 'creator')
       result[r.kind] = r.entries ?? []

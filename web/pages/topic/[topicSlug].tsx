@@ -35,7 +35,7 @@ export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
   }
 
   // Sports, and each sport's main topic, live on the sports pages.
-  const sport = await sportsPageForTopic(topic)
+  const { sport, known } = await sportsPageForTopic(topic)
   if (sport) {
     return {
       redirect: { destination: sportPath(sport), permanent: false },
@@ -60,19 +60,21 @@ export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
       dashboards,
       topQuestions: topQuestions.map((m) => m.question),
     },
-    revalidate: 3600 * 12, // 12 hours
+    // 12 hours, or soon if the sports list was unavailable, so a sport's
+    // topic doesn't stay a topic page for long.
+    revalidate: known ? 3600 * 12 : 600,
   }
 }
 
 async function sportsPageForTopic(topic: Group) {
   try {
     const { sports } = await api('sports-index', {})
-    return sportForTopic(topic, sports)
+    return { sport: sportForTopic(topic, sports), known: true }
   } catch (e) {
     // Without the sports list (an older API, or it's down), only Sports
     // itself is known; the rest keep their topic pages until the next try.
     console.error('Could not load the sports index', e)
-    return sportForTopic(topic, [])
+    return { sport: sportForTopic(topic, []), known: false }
   }
 }
 

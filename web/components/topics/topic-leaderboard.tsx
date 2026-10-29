@@ -10,19 +10,21 @@ import { formatMoney, formatWithCommas } from 'common/util/format'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export function TopicLeaderboard(props: { topicId: string }) {
-  const profitResult = useAPIGetter('leaderboard', {
-    kind: 'profit',
-    groupId: props.topicId,
-    token: 'MANA',
-    limit: 20,
-  })
+  // A cache slot per topic and kind: sharing the endpoint's one slot showed
+  // one kind's entries, or another topic's, while these load.
+  const profitResult = useAPIGetter(
+    'leaderboard',
+    { kind: 'profit', groupId: props.topicId, token: 'MANA', limit: 20 },
+    undefined,
+    `topic-leaderboard-profit-${props.topicId}`
+  )
 
-  const creatorResult = useAPIGetter('leaderboard', {
-    kind: 'creator',
-    groupId: props.topicId,
-    token: 'MANA',
-    limit: 20,
-  })
+  const creatorResult = useAPIGetter(
+    'leaderboard',
+    { kind: 'creator', groupId: props.topicId, token: 'MANA', limit: 20 },
+    undefined,
+    `topic-leaderboard-creator-${props.topicId}`
+  )
 
   return (
     <Row className="flex-col gap-6 lg:flex-row">

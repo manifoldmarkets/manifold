@@ -39,6 +39,12 @@ let db: PGlite
 const client = {
   manyOrNone: async (sql: string, params: unknown[]) =>
     (await db.query(pgp.as.format(sql, params))).rows,
+  one: async (sql: string, params?: unknown[]) => {
+    const { rows } = await db.query(pgp.as.format(sql, params))
+    if (rows.length !== 1)
+      throw new Error(`Expected one row, got ${rows.length}`)
+    return rows[0]
+  },
   none: async (sql: string, params?: unknown[]) => {
     await db.exec(pgp.as.format(sql, params))
   },
@@ -298,5 +304,34 @@ describe('sports leaderboards', () => {
       ['bob', 200],
       ['alice', 100],
     ])
+  })
+
+  it("keeps the boards it has when the topic tree can't be read", async () => {
+    // Markets to rank again, so only the failed read stops a write.
+    await db.query(
+      `insert into group_contracts (group_id, contract_id) values ($1, 'nfl1')`,
+      [NFL]
+    )
+    await db.exec(`alter table group_groups rename to group_groups_away`)
+    try {
+      await expect(rebuildSportsLeaderboards(pg, NOW + 3000)).rejects.toThrow()
+    } finally {
+      await db.exec(`alter table group_groups_away rename to group_groups`)
+    }
+    expect((await getSportsLeaderboards(pg, 'nfl')).updatedTime).toBe(
+      NOW + 1000
+    )
+  })
+
+  it('reads as not built yet, and refuses to rebuild, before the migration', async () => {
+    await db.exec(`drop table sports_leaderboards`)
+    expect(await getSportsLeaderboards(pg, 'nfl')).toEqual({
+      profit: [],
+      creator: [],
+      updatedTime: null,
+    })
+    await expect(rebuildSportsLeaderboards(pg, NOW + 4000)).rejects.toThrow(
+      /migration 2026102901/
+    )
   })
 })
