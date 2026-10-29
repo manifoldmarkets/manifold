@@ -65,8 +65,8 @@ type OddsApiCompetition = {
   /** Why every phase is locked: the dry run creates nothing until it's unlocked. */
   locked?: string
 }
-// F1 from BALLDONTLIE (common/f1-markets.ts), created by hand: dev only, and
-// the API refuses it in prod, where the daily job creates them instead.
+// F1 from BALLDONTLIE (common/f1-markets.ts), created by hand on dev or prod.
+// The daily job creates them too, for a phase switched on.
 type F1Competition = {
   type: 'bdl-f1'
   label: string
@@ -128,7 +128,7 @@ function calendarCompetitions(sport: SportId): CompetitionOption[] {
             sportsLeague: SPORT_LEAGUE_LABEL[e.sport],
             locked,
           }
-        : e.provider === 'bdl-f1' && ENV === 'DEV'
+        : e.provider === 'bdl-f1'
         ? {
             type: 'bdl-f1',
             label: e.competition,
@@ -264,7 +264,7 @@ export default function SportsAdminPage() {
   // Active competitions have a wired TournamentConfig; pending ones don't yet.
   const isApiConnected = selectedCompetition.type === 'active'
   const isOddsApi = selectedCompetition.type === 'odds-api'
-  // F1 (dev only) reuses the Odds API panel: preview, tick, create.
+  // F1 reuses the Odds API panel: preview, tick, create.
   const isF1 = selectedCompetition.type === 'bdl-f1'
   // Keep a non-null tournament reference for existing logic — falls back to WC
   // when a pending competition is selected so the rest of the page doesn't crash.
@@ -944,9 +944,9 @@ export default function SportsAdminPage() {
                 creation available below
               </div>
             ) : isF1 ? (
-              <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                <span className="font-semibold">BALLDONTLIE</span> — creation by
-                hand below is dev only; the daily job creates markets for a
+              <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
+                <span className="font-semibold">BALLDONTLIE</span> — market
+                creation available below. The daily job also creates them for a
                 phase switched on above, and the resolver pays them out two
                 hours after each closes.
               </div>
@@ -1202,7 +1202,7 @@ export default function SportsAdminPage() {
           <Section
             title={
               isF1
-                ? '3. Create F1 Markets via BALLDONTLIE (dev only)'
+                ? '3. Create F1 Markets via BALLDONTLIE'
                 : '3. Create Markets via The Odds API'
             }
             defaultOpen
@@ -1217,9 +1217,10 @@ export default function SportsAdminPage() {
                   season&apos;s driver standings as the answers and the opening
                   prices. Practice and sprint qualifying are listed but get no
                   market. Sessions that already have a market are skipped, and
-                  one run creates at most 12. The sports-f1-resolve job resolves
-                  them from the classification two hours after each market
-                  closes.
+                  one run creates at most 12. Every phase is included, switched
+                  on or not: the switch only decides what the daily job creates.
+                  The sports-f1-resolve job resolves them from the
+                  classification two hours after each market closes.
                 </p>
               ) : (
                 <p className="text-ink-500 text-sm">

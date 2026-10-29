@@ -1,4 +1,4 @@
-// Daily: create the coming two weeks' F1 session markets (race winner,
+// Daily: create the coming five weeks' F1 session markets (race winner,
 // podium, sprint winner, pole) from BALLDONTLIE for every F1 calendar phase
 // switched on in /admin/sports; all are off by default. A few provider calls
 // per competition. No-op without BALLDONTLIE_API_KEY.

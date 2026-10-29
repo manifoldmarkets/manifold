@@ -2,8 +2,8 @@
  * Formula 1 markets from BALLDONTLIE: a market per upcoming session and
  * market type, built by common/f1-markets.ts. The daily sports-f1-create job
  * makes them for the F1 calendar phases switched on in /admin/sports (an
- * admin can also make them by hand on dev), and the sports-f1-resolve job
- * resolves them from the session's classification.
+ * admin can also make them by hand, on dev or prod), and the
+ * sports-f1-resolve job resolves them from the session's classification.
  *
  * State lives on the contracts: `sportsEventId` is
  * `bdl-f1:<event id>:<session id>` and `sportsMarketType` is 'winner' or
@@ -149,7 +149,7 @@ function describeF1Market(params: F1MarketParams, ante: number): string {
 
 /**
  * Create the missing markets for one F1 calendar competition's sessions in
- * the next two weeks: race winner and podium, sprint winner, pole. The entry
+ * the next ROLLING_WINDOW_DAYS: race winner and podium, sprint winner, pole. The entry
  * list and the opening prices come from the season's driver standings. A
  * session already holding a market of a type is skipped, and the check is
  * repeated inside the creating transaction. `keys` narrows the run to the
@@ -385,8 +385,8 @@ export async function createF1Markets(
 
 /**
  * The daily run: every F1 competition with a phase switched on in
- * /admin/sports inside the next two weeks. All are off by default. A run
- * that can't read the switches creates nothing.
+ * /admin/sports inside the next ROLLING_WINDOW_DAYS. All are off by default.
+ * A run that can't read the switches creates nothing.
  */
 export async function createF1MarketsForActiveCalendar(
   pg: SupabaseDirectClient
