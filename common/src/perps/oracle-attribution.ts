@@ -13,10 +13,10 @@ import { MNX_INSTRUMENTS } from './mnx'
 // credit — losing it in a description rewrite is a licence breach, not a
 // cosmetic regression.
 //
-// Every perp's small seven-day charts (feed, dashboard and activity cards,
-// the /perps watchlist) show `source` too, as plain text without the licence
-// or as-of. Adjacent's terms require a credit on every MSRY chart, and the
-// other feeds match it.
+// The seven-day charts on feed, dashboard and activity cards show every
+// perp's `source` too, as plain text without the licence or as-of. Adjacent's
+// terms ask for a credit on every MSRY chart, and the other feeds match it.
+// The /perps watchlist's row sparklines go without.
 //
 // Verification status of each claim below, because asserting a licence we
 // haven't read is its own problem:

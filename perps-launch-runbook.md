@@ -280,8 +280,9 @@ gates are met:
    product and in marketing about it). The credit it asks for is in
    `common/src/perps/oracle-attribution.ts`, and it goes on every chart,
    market page and methodology or FAQ that shows MSRY. The app renders it on
-   all of them, small charts included. Add it to any screenshot or chart
-   used in marketing.
+   the market page, the /perps chart, embeds and the seven-day charts on
+   cards; the /perps list's row sparklines go without. Add it to any
+   screenshot or chart used in marketing.
 2. The Adjacent organization has realtime API access, and `ADJACENT_API_KEY`
    (an `ak_` key with read scope for indices) is in Secret Manager for dev
    and prod. `backend/scripts/probe-adjacent-msry.ts` passed in both on

@@ -2,7 +2,6 @@ import { formatOraclePrice } from 'common/perps/oracle-display'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { RefObject, useEffect, useMemo, useRef, useState } from 'react'
-import { sortBy, uniq } from 'lodash'
 import {
   BriefcaseIcon,
   ClockIcon,
@@ -40,7 +39,6 @@ import { useDraggableTicker } from 'web/hooks/use-draggable-ticker'
 import { getPerpTakerFeeBps } from 'common/perps/fees'
 import { getMnxCreatorId } from 'common/perps/creator-accounts'
 import { getPerpTicker } from 'common/perps/ticker'
-import { getOracleAttribution } from 'common/perps/oracle-attribution'
 import {
   fundingPeriodNoun,
   fundingPeriodUnit,
@@ -2147,17 +2145,6 @@ const Watchlist = (props: {
       list.scrollTop += row.bottom - bounds.bottom
   }, [selectedId])
   const header = { sort, onSort }
-  // The row sparklines are charts too, and every perp's small chart names its
-  // source (Adjacent's terms require it for MSRY), so the list ends with each
-  // source once, in a stable order that doesn't move when the list re-sorts.
-  const chartSources = sortBy(
-    uniq(
-      contracts.flatMap((c) => {
-        const attribution = getOracleAttribution(c.oracleFeedId)
-        return attribution ? [attribution.source] : []
-      })
-    )
-  )
 
   return (
     <Col className={cardChrome(chrome)}>
@@ -2237,12 +2224,6 @@ const Watchlist = (props: {
           ))}
         </Col>
       </div>
-      {chartSources.length > 0 && (
-        // Hidden below sm, like the row sparklines it credits.
-        <div className="text-ink-400 border-ink-200 dark:border-ink-300 hidden border-t px-3 py-2 text-[11px] sm:block">
-          Sources: {chartSources.join(' · ')}
-        </div>
-      )}
     </Col>
   )
 }
