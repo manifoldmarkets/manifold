@@ -30,11 +30,15 @@ import { DateTimeTooltip } from 'web/components/widgets/datetime-tooltip'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { useUser } from 'web/hooks/use-user'
+import DropdownMenu from 'web/components/widgets/dropdown-menu'
+import { track } from 'web/lib/service/analytics'
 import {
+  boardScopeChildren,
   boardStatus,
   isDelayed,
   shouldRefresh,
 } from './sports-leaderboards-state'
+import { useSportsIndex } from './topic-rail'
 
 const SHOWN = 10
 
@@ -148,14 +152,16 @@ export function SportsLeaderboards(props: {
   )
 }
 
-// The boards above this one: All sports › Soccer › Premier League, each
-// opening its page's Leaderboards tab. The topics under it are in the topic
-// row above the tabs.
+// The boards above this one, All sports › Soccer › Premier League, each
+// opening its page's Leaderboards tab; and an arrow after the last that lists
+// the boards under it (boardScopeChildren).
 function BoardScopes(props: {
   sport: SportInfo | 'all'
   topic?: SportsSubtopic
 }) {
   const { sport, topic } = props
+  const { index } = useSportsIndex()
+  const children = index ? boardScopeChildren(sport, topic, index) : []
   const tab = '?tab=leaderboards'
   const scopes = buildArray(
     {
@@ -174,7 +180,9 @@ function BoardScopes(props: {
       active: true,
     }
   )
-  if (scopes.length < 2) return null
+  if (scopes.length < 2 && children.length === 0) return null
+  const last = scopes[scopes.length - 1]
+  const anyEmoji = children.some((c) => c.emoji)
   return (
     <nav aria-label="Leaderboard scope">
       <Row className="flex-wrap items-center gap-1 px-1 text-sm">
@@ -197,6 +205,38 @@ function BoardScopes(props: {
             </Link>
           </Fragment>
         ))}
+        {children.length > 0 && (
+          <DropdownMenu
+            buttonClass="text-ink-500 hover:text-ink-900 hover:bg-canvas-50 min-h-[32px] min-w-[32px] justify-center rounded-md"
+            buttonContent={(open) => (
+              <>
+                <ChevronRightIcon
+                  className={clsx(
+                    'h-4 w-4 transition-transform',
+                    open && 'rotate-90'
+                  )}
+                  aria-hidden
+                />
+                <span className="sr-only">{`Leaderboards under ${last.label}`}</span>
+              </>
+            )}
+            anchor={{ to: 'bottom start', gap: 4, padding: 8 }}
+            menuWidth="w-60"
+            menuItemsClass="!max-h-[60vh] overflow-y-auto"
+            items={children.map((c) => ({
+              name: c.key,
+              isLink: true,
+              linkProps: {
+                href: c.href,
+                onClick: () =>
+                  track('sports leaderboard scope select', { scope: c.key }),
+              },
+              // Keep the names in one column when some have an emoji.
+              icon: anyEmoji ? <span aria-hidden>{c.emoji}</span> : undefined,
+              buttonContent: <span className="truncate">{c.label}</span>,
+            }))}
+          />
+        )}
       </Row>
     </nav>
   )

@@ -1,3 +1,9 @@
+import {
+  SportInfo,
+  sportPath,
+  SportsSubtopic,
+  sportTopicPath,
+} from 'common/sports-schedule'
 import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 
 export type BoardStatus = 'built' | 'notYet' | 'failed' | 'loading'
@@ -50,4 +56,68 @@ export function shouldRefresh(state: {
   if (updatedTime === null) return true
   if (updatedTime !== undefined) return now - updatedTime > HOUR_MS
   return !!error && tick > 0
+}
+
+/** A leaderboard to go down to from a breadcrumb's last arrow. */
+export interface BoardScopeChild {
+  key: string
+  label: string
+  emoji?: string
+  /** Its page's Leaderboards tab. */
+  href: string
+}
+
+/**
+ * What's under a leaderboard's scope, for the arrow after its breadcrumb:
+ * - under All sports, every sport, then the topics that group sports;
+ * - under a sport, its topics;
+ * - under a topic, the sports whose main topic is inside it (Basketball holds
+ *   the NBA), then the topics inside it filed under the same sport.
+ */
+export function boardScopeChildren(
+  sport: Pick<SportInfo, 'key'> | 'all',
+  topic: Pick<SportsSubtopic, 'id' | 'sport' | 'groupIds'> | undefined,
+  index: {
+    sports: readonly SportInfo[]
+    topics: readonly SportsSubtopic[]
+  }
+): BoardScopeChild[] {
+  const tab = '?tab=leaderboards'
+  const ofSport = (s: SportInfo): BoardScopeChild => ({
+    key: `sport-${s.key}`,
+    label: s.label,
+    emoji: s.emoji,
+    href: sportPath(s.key) + tab,
+  })
+  const ofTopic = (t: SportsSubtopic): BoardScopeChild => ({
+    key: `topic-${t.id}`,
+    label: t.label,
+    emoji: t.emoji,
+    href: sportTopicPath(t.sport, t.slug) + tab,
+  })
+  const sports = index.sports.filter(
+    (s) => s.key !== 'other' && s.groupIds.length > 0
+  )
+  if (!topic) {
+    const key = sport === 'all' ? 'all' : sport.key
+    return [
+      ...(sport === 'all' ? sports.map(ofSport) : []),
+      ...index.topics.filter((t) => t.sport === key).map(ofTopic),
+    ]
+  }
+  const inside = new Set(topic.groupIds.filter((id) => id !== topic.id))
+  const subtopicIds = new Set(index.topics.map((t) => t.id))
+  // A sport's main topic is its first topic that isn't another one's.
+  const mainId = (s: SportInfo) => s.groupIds.find((id) => !subtopicIds.has(id))
+  return [
+    ...sports
+      .filter((s) => {
+        const id = mainId(s)
+        return id !== undefined && inside.has(id)
+      })
+      .map(ofSport),
+    ...index.topics
+      .filter((t) => inside.has(t.id) && t.sport === topic.sport)
+      .map(ofTopic),
+  ]
 }
