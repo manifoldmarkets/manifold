@@ -82,9 +82,8 @@ import {
   MarketContract,
   SportsContract,
 } from 'common/contract'
-import { getAnte } from 'common/economy'
 import { DOMAIN } from 'common/envs/constants'
-import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
+import { MANIFOLD_SPORTS_USER_IDS, sportsMarketAnte } from 'common/sports'
 import {
   autoCreates,
   calendarEntriesFor,
@@ -180,8 +179,8 @@ function describeF1Market(
     )
   const more = params.answers.length - top.length
   return [
-    `${params.answers.length} answers, ${
-      params.shouldAnswersSumToOne ? 'sum to one' : 'independent'
+    `${params.answers.length} answers${
+      params.shouldAnswersSumToOne ? ' and Other, sum to one' : ', independent'
     }`,
     `opens ${top.join(', ')}${more > 0 ? `, +${more} more` : ''}`,
     `closes ${new Date(params.closeTime).toISOString().slice(0, 16)}Z`,
@@ -391,11 +390,10 @@ async function createF1TitleMarkets(
         continue
       }
       if (opts.dryRun) {
-        const ante = getAnte(
-          params.outcomeType,
-          params.answers.length,
-          LIQUIDITY_TIER
-        )
+        const ante = sportsMarketAnte({
+          ...params,
+          liquidityTier: LIQUIDITY_TIER,
+        })
         const source = current.length > 0 ? season : season - 1
         result.log.push({
           key,
@@ -427,6 +425,7 @@ async function createF1TitleMarkets(
           closeTime: params.closeTime,
           liquidityTier: LIQUIDITY_TIER,
           answers: params.answers,
+          addAnswersMode: params.addAnswersMode,
           shouldAnswersSumToOne: params.shouldAnswersSumToOne,
           answerProbs: params.answerProbs,
           answerShortTexts: params.answerShortTexts,
@@ -548,7 +547,7 @@ export async function createF1Markets(
     )
     // Until a season's first weekend is over, the provider may have no
     // standings for it: that weekend opens with last season's drivers and
-    // points, as the titles do, and "Another driver" covers a newcomer.
+    // points, as the titles do, and "Other" covers a newcomer.
     // Once a weekend is final, by the provider or by our calendar (in case
     // the provider leaves weekends out), an empty table is the provider's
     // fault, and nothing opens from it.
@@ -639,11 +638,10 @@ export async function createF1Markets(
         }
         planned++
         if (opts.dryRun) {
-          const ante = getAnte(
-            params.outcomeType,
-            params.answers.length,
-            LIQUIDITY_TIER
-          )
+          const ante = sportsMarketAnte({
+            ...params,
+            liquidityTier: LIQUIDITY_TIER,
+          })
           result.log.push({
             key,
             question,
@@ -665,6 +663,7 @@ export async function createF1Markets(
             closeTime: params.closeTime,
             liquidityTier: LIQUIDITY_TIER,
             answers: params.answers,
+            addAnswersMode: params.addAnswersMode,
             shouldAnswersSumToOne: params.shouldAnswersSumToOne,
             answerProbs: params.answerProbs,
             answerShortTexts: params.answerShortTexts,
@@ -1163,12 +1162,13 @@ export async function resolveF1Markets(
         results,
         answers,
         contract.sportsEntrantIds ?? [],
-        marketType
+        marketType,
+        contract.addAnswersMode
       )
       if (!resolution) {
         attention(
           contract,
-          "the classification doesn't check out against the market's field"
+          "the classification doesn't check out against the market's field, or a driver it doesn't list placed and the market has answers staff added, which a person matches up"
         )
         continue
       }
@@ -1534,7 +1534,8 @@ export async function resolveF1TitleMarkets(
         id.kind,
         standings,
         answers,
-        contract.sportsEntrantIds ?? []
+        contract.sportsEntrantIds ?? [],
+        contract.addAnswersMode
       )
       if (!resolution) {
         const margin = f1TitleMargin(standings)

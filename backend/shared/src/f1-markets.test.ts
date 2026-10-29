@@ -321,6 +321,50 @@ describe('resolveF1Markets', () => {
     })
   })
 
+  describe('on a market made with "Other"', () => {
+    // The field's ids only, answers addable, "Other" after the field; staff
+    // added a stand-in, which took "Other"'s index.
+    const current = market('current', 'winner', [11, 22, 33])
+    current.data = {
+      ...current.data,
+      addAnswersMode: 'ONLY_CREATOR',
+    } as typeof current.data
+    const fieldRows = answerRows(['c11', 'c22', 'c33'])
+    const other = { id: 'cother', index: 3, text: 'Other', resolution: null }
+    const withStandIn = [
+      ...fieldRows,
+      { id: 'c55', index: 3, text: 'Liam Lawson', resolution: null },
+      { ...other, index: 4 },
+    ]
+    const run = async (rows: AnswerRow[]) => {
+      const db = database([current], {
+        current: rows.map((a) => ({ ...a, is_other: a.id === 'cother' })),
+      })
+      return resolveF1Markets(db.pg)
+    }
+
+    it('pays "Other" for a winner nobody listed or added', async () => {
+      jest.mocked(getF1SessionResults).mockResolvedValue(classified(55, 11))
+      expect((await run([...fieldRows, other])).resolved).toBe(1)
+      expect(jest.mocked(resolveMarketHelper).mock.calls[0][3]).toEqual({
+        outcome: 'cother',
+        resolutions: { cother: 100 },
+      })
+    })
+
+    it('pays a listed winner past an added stand-in, and asks a person about an unlisted one', async () => {
+      expect((await run(withStandIn)).resolved).toBe(1)
+      expect(jest.mocked(resolveMarketHelper).mock.calls[0][3]).toEqual({
+        outcome: 'c22',
+        resolutions: { c22: 100 },
+      })
+      jest.mocked(resolveMarketHelper).mockClear()
+      jest.mocked(getF1SessionResults).mockResolvedValue(classified(55, 11))
+      expect((await run(withStandIn)).attention).toBe(1)
+      expect(resolveMarketHelper).not.toHaveBeenCalled()
+    })
+  })
+
   it('resolves a podium answer by answer and picks up where a run stopped', async () => {
     const db = database([podium], {
       podium: answerRows(podiumIds, { p11: 'YES' }),
@@ -598,14 +642,17 @@ describe('createF1Markets: titles', () => {
       // Three days before our first date, the 12th.
       sportsStartTimestamp: '2027-03-09T00:00:00.000Z',
       // 2027's drivers, priced on 2026's points: a newcomer opens below.
-      sportsEntrantIds: [1, 99, null],
+      // "Other" comes with the mode, so the field has no stand-in of its own.
+      sportsEntrantIds: [1, 99],
+      addAnswersMode: 'ONLY_CREATOR',
       liquidityTier: 1000,
       groupIds: expect.arrayContaining(['g-f1-2027']),
     })
     expect(constructors).toMatchObject({
       sportsEventId: 'bdl-f1-title:2027:constructors',
-      answers: ['Team 808', 'Team 806', 'Another team'],
-      sportsEntrantIds: [808, 806, null],
+      answers: ['Team 808', 'Team 806'],
+      sportsEntrantIds: [808, 806],
+      addAnswersMode: 'ONLY_CREATOR',
     })
     expect(jest.mocked(createSportsContract).mock.calls[0][3]).toEqual({
       deduplicateMarketType: 'title',
@@ -1499,6 +1546,32 @@ describe("createF1Markets: a season's first weekend", () => {
       ['5000:podium', 'dry-run'],
     ])
     expect(getF1DriverStandings).toHaveBeenCalledWith(2026)
+  })
+
+  it('makes the markets take new answers, the winner with "Other"', async () => {
+    jest.mocked(getF1Events).mockResolvedValue([bahrain])
+    jest.mocked(sportsCreator).mockResolvedValue({ id: 'sports' } as never)
+    jest.mocked(ensureOfficialGroup).mockResolvedValue({ id: 'g' } as never)
+    jest
+      .mocked(createSportsContract)
+      .mockResolvedValue({ slug: 's', creatorUsername: 'u' } as never)
+    const r = await createF1Markets(pg, 'f1-2027', {
+      keys: ['5000:winner', '5000:podium'],
+    })
+    expect(raceLog(r).map((l) => l.status)).toEqual(['created', 'created'])
+    const [win, podium] = jest
+      .mocked(createSportsContract)
+      .mock.calls.map((c) => c[2])
+    expect(win).toMatchObject({
+      answers: ['Driver 1', 'Driver 4'],
+      sportsEntrantIds: [1, 4],
+      addAnswersMode: 'ONLY_CREATOR',
+      shouldAnswersSumToOne: true,
+    })
+    expect(podium).toMatchObject({
+      addAnswersMode: 'ONLY_CREATOR',
+      shouldAnswersSumToOne: false,
+    })
   })
 
   it("doesn't once a weekend of the season is over: an empty table is the provider's fault", async () => {

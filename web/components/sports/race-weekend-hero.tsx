@@ -114,6 +114,7 @@ function boardMarket(
       prob: l.prob,
       color: l.color,
       resolution: l.won ? 'YES' : undefined,
+      isOther: l.other,
     })),
   }
 }

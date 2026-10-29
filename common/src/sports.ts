@@ -1,4 +1,6 @@
-import { ENV } from 'common/envs/constants'
+import { add_answers_mode } from 'common/contract'
+import { getAnte } from 'common/economy'
+import { ENV, isAdminId, isModId } from 'common/envs/constants'
 import { liquidityTiers } from 'common/tier'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
 import { uniq } from 'lodash'
@@ -176,6 +178,49 @@ export const MANIFOLD_SPORTS_USER_IDS = [
   MANIFOLD_SPORTS_USER_ID_PROD,
   MANIFOLD_SPORTS_USER_ID_DEV,
 ]
+
+/**
+ * Whether an admin or mod may add answers to this market where only its
+ * creator can: a market @ManifoldSports made, which no person looks after.
+ * An F1 market lists the season's drivers, and staff add a stand-in by
+ * hand, split from "Other".
+ */
+export const canStaffAddSportsAnswers = (
+  contract: { creatorId: string },
+  userId: string
+) =>
+  MANIFOLD_SPORTS_USER_IDS.includes(contract.creatorId) &&
+  (isAdminId(userId) || isModId(userId))
+
+/**
+ * Whether a market a sports job makes opens with the built-in "Other":
+ * exclusive answers that can be added to, as for any market.
+ */
+export const sportsMarketHasOther = (params: {
+  outcomeType: 'BINARY' | 'MULTIPLE_CHOICE'
+  addAnswersMode?: add_answers_mode
+  shouldAnswersSumToOne?: boolean
+}) =>
+  params.outcomeType === 'MULTIPLE_CHOICE' &&
+  (params.shouldAnswersSumToOne ?? true) &&
+  (params.addAnswersMode ?? 'DISABLED') !== 'DISABLED'
+
+/**
+ * The ante a sports job's market takes, "Other" counted as an answer as
+ * createMarketHelper counts it: what the job pays and a dry run quotes.
+ */
+export const sportsMarketAnte = (params: {
+  outcomeType: 'BINARY' | 'MULTIPLE_CHOICE'
+  answers?: string[]
+  addAnswersMode?: add_answers_mode
+  shouldAnswersSumToOne?: boolean
+  liquidityTier: LiquidityTierValue
+}) =>
+  getAnte(
+    params.outcomeType,
+    (params.answers?.length ?? 0) + (sportsMarketHasOther(params) ? 1 : 0),
+    params.liquidityTier
+  )
 
 // ─── Tournament configs ───────────────────────────────────────────────────────
 

@@ -809,6 +809,28 @@ describe("the featured weekend's driver board", () => {
     ).toEqual(['ANT', 'RUS', 'VER', 'HAM', ''])
   })
 
+  it('treats the built-in "Other" as the catch-all, last and without a code', () => {
+    // A market made since, with an added stand-in it outranks.
+    const current = {
+      ...winner,
+      answers: [
+        ...winner.answers.filter((a) => a.id !== 'w-other'),
+        { id: 'w-law', text: 'Liam Lawson', prob: 0.004 },
+        { id: 'w-other', text: 'Other', prob: 0.02, isOther: true },
+      ],
+    }
+    const rows = buildDriverBoard([current, podium], 'win')
+    expect(rows.map((r) => r.code || r.name)).toEqual([
+      'ANT',
+      'VER',
+      'RUS',
+      'LAW',
+      'HAM',
+      'Other',
+    ])
+    expect(rows[5]).toMatchObject({ other: true, code: '' })
+  })
+
   it('puts the winners first once a market settles, and marks it closed', () => {
     const settled = { ...winner, closed: true, resolution: 'w-rus' }
     const rows = buildDriverBoard([settled, podium], 'win')

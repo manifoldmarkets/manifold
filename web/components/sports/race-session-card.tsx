@@ -136,12 +136,15 @@ export function RaceSessionCard(props: {
   )
   // Two drivers, as a game has two teams, so it's about a game's size. Every
   // other market gets a line: in the compact view, with no featured card, the
-  // podium is nowhere else (F4213-12).
+  // podium is nowhere else (F4213-12). The heading opens the first market,
+  // which the chevron doesn't when another is more traded (F4222-08).
   const body = main && (
     <>
       <h3 className="text-ink-900 truncate text-sm font-semibold leading-snug">
-        {name}
-        <span className="text-ink-500 font-normal"> · {main.label}</span>
+        <Link href={marketPath(main)} className="hover:text-primary-700">
+          {name}
+          <span className="text-ink-500 font-normal"> · {main.label}</span>
+        </Link>
       </h3>
       <div
         className={clsx(
@@ -362,7 +365,8 @@ function DriverLine(props: {
 }) {
   const { market, leader, onBet } = props
   const pct = Math.round(leader.prob * 100)
-  const { color } = leader
+  // "Other" is nobody in particular: no team colour, no code.
+  const color = leader.other ? null : leader.color
   return (
     <Row className="min-w-0 items-center gap-2">
       <span
@@ -377,7 +381,7 @@ function DriverLine(props: {
             : undefined
         }
       >
-        {driverCode(leader.name)}
+        {!leader.other && driverCode(leader.name)}
       </span>
       <span
         className={clsx(
@@ -450,7 +454,9 @@ function MarketLine(props: {
             )}
           >
             <TeamDot color={l.color} />
-            <span className="truncate">{driverCode(l.name)}</span>
+            <span className="truncate">
+              {l.other ? 'Other' : driverCode(l.name)}
+            </span>
             <span
               className={clsx(
                 'font-semibold tabular-nums',

@@ -1,8 +1,13 @@
 import { range, sum } from 'lodash'
-import { MAX_ANSWER_PROB, MIN_ANSWER_PROB } from './new-contract'
+import {
+  getAnswerProbsError,
+  MAX_ANSWER_PROB,
+  MIN_ANSWER_PROB,
+} from './new-contract'
 import {
   buildF1MarketParams,
   buildF1TitleMarketParams,
+  F1_ADD_ANSWERS_MODE,
   F1_TITLE_SAFE_MARGIN,
   f1CalendarListsEveryRound,
   f1CalendarReachesEnd,
@@ -13,6 +18,7 @@ import {
   F1Event,
   f1EventId,
   f1EventTitle,
+  f1ListedPercents,
   f1PodiumPrior,
   f1SeasonComplete,
   f1SeasonDates,
@@ -32,7 +38,6 @@ import {
   MAX_F1_FIELD,
   MAX_F1_TEAMS,
   OTHER_DRIVER_ANSWER,
-  OTHER_TEAM_ANSWER,
   parseF1EventId,
   parseF1TitleEventId,
 } from './f1-markets'
@@ -252,28 +257,35 @@ describe('f1PodiumPrior', () => {
 })
 
 describe('buildF1MarketParams', () => {
-  it('builds a race-winner market, favourites first, with the stand-in last', () => {
+  it('builds a race-winner market, favourites first, "Other" taking the rest', () => {
     const params = buildF1MarketParams(event, race, field, standings, 'winner')!
     expect(params.question).toBe('2026 Singapore Grand Prix: race winner')
+    // The field only: the built-in "Other" comes with the mode.
     expect(params.answers).toEqual([
       'Lando Norris',
       'Max Verstappen',
       'Oscar Piastri',
       'Charles Leclerc',
       'Sergio Pérez',
-      OTHER_DRIVER_ANSWER,
     ])
-    expect(params.answerShortTexts).toEqual([
-      'NOR',
-      'VER',
-      'PIA',
-      'LEC',
-      'PER',
-      'OTHER',
-    ])
-    expect(params.sportsEntrantIds).toEqual([4, 1, 81, 16, 11, null])
+    expect(params.answers).not.toContain(OTHER_DRIVER_ANSWER)
+    expect(params.answerShortTexts).toEqual(['NOR', 'VER', 'PIA', 'LEC', 'PER'])
+    expect(params.sportsEntrantIds).toEqual([4, 1, 81, 16, 11])
+    expect(params.addAnswersMode).toBe('ONLY_CREATOR')
     expect(params.shouldAnswersSumToOne).toBe(true)
-    expect(sum(params.answerProbs)).toBeCloseTo(100, 6)
+    // "Other" opens at the floor, as "Another driver" did.
+    expect(100 - sum(params.answerProbs)).toBeGreaterThanOrEqual(
+      MIN_ANSWER_PROB
+    )
+    expect(100 - sum(params.answerProbs)).toBeCloseTo(MIN_ANSWER_PROB, 6)
+    expect(
+      getAnswerProbsError({
+        answerProbs: params.answerProbs,
+        numAnswers: params.answers.length,
+        shouldAnswersSumToOne: true,
+        hasOtherAnswer: true,
+      })
+    ).toBeUndefined()
     expect(params.answerProbs[0]).toBeGreaterThan(params.answerProbs[1])
     expect(params.sportsEventId).toBe('bdl-f1:42:420')
     expect(params.sportsLeague).toBe('Formula 1')
@@ -281,7 +293,7 @@ describe('buildF1MarketParams', () => {
     expect(params.sportsStartTimestamp).toBe(race.date)
     expect(params.closeTime).toBe(Date.parse(race.date) + 3 * 60 * 60 * 1000)
     expect(params.description).toContain('classified first in the race')
-    expect(params.description).toContain(OTHER_DRIVER_ANSWER)
+    expect(params.description).toContain('"Other" stands for any driver')
   })
 
   it('normalises team colours and drops them if any driver has none', () => {
@@ -292,7 +304,6 @@ describe('buildF1MarketParams', () => {
       '#FF8000',
       '#E80020',
       '#3671C6',
-      '#9CA3AF',
     ])
     const withHaas = [
       ...field,
@@ -332,6 +343,9 @@ describe('buildF1MarketParams', () => {
     const podium = buildF1MarketParams(event, race, field, standings, 'podium')!
     expect(podium.question).toBe('2026 Singapore Grand Prix: podium')
     expect(podium.shouldAnswersSumToOne).toBe(false)
+    // Answers can be added, but an independent market has no "Other".
+    expect(podium.addAnswersMode).toBe('ONLY_CREATOR')
+    expect(podium.description).toContain('as an answer of their own')
     expect(podium.answers).not.toContain(OTHER_DRIVER_ANSWER)
     expect(podium.answers).toHaveLength(field.length)
     expect(podium.answerProbs).toHaveLength(field.length)
@@ -370,8 +384,57 @@ describe('buildF1MarketParams', () => {
       standings,
       'winner'
     )!
-    expect(params.answers).toHaveLength(field.length + 1)
-    expect(params.sportsEntrantIds).toEqual([4, 1, 81, 16, 11, null])
+    expect(params.answers).toHaveLength(field.length)
+    expect(params.sportsEntrantIds).toEqual([4, 1, 81, 16, 11])
+  })
+
+  it('leaves "Other" its floor on any field, as market creation checks', () => {
+    // Fields from two drivers to a full grid, points level or lopsided, so
+    // many drivers sit on the floor and the favourite on the ceiling.
+    for (const n of [2, 3, 5, 10, 20, 22, MAX_F1_FIELD]) {
+      const roster = range(n).map((i) =>
+        driver(200 + i, 'Driver', String(i), `D${i}`, redBull)
+      )
+      for (const points of [
+        () => 0,
+        (i: number) => (n - i) * 25,
+        (i: number) => (i === 0 ? 10_000 : 0),
+      ]) {
+        const table = roster.map((d, i) => ({
+          driver: d,
+          points: points(i),
+        })) as F1DriverStanding[]
+        for (const kind of [race, qualifying]) {
+          const params = buildF1MarketParams(
+            event,
+            kind,
+            roster,
+            table,
+            'winner'
+          )!
+          expect(
+            getAnswerProbsError({
+              answerProbs: params.answerProbs,
+              numAnswers: params.answers.length,
+              shouldAnswersSumToOne: true,
+              hasOtherAnswer: true,
+            })
+          ).toBeUndefined()
+        }
+      }
+    }
+  })
+})
+
+describe('f1ListedPercents', () => {
+  it('takes any float excess over the room for "Other" from the favourite', () => {
+    const fitted = [60.00000000000001, 20, 19]
+    const listed = f1ListedPercents(fitted)
+    expect(100 - sum(listed)).toBeGreaterThan(MIN_ANSWER_PROB)
+    expect(listed[0]).toBeLessThan(fitted[0])
+    expect(listed.slice(1)).toEqual(fitted.slice(1))
+    expect(f1ListedPercents([50, 30, 10])).toEqual([50, 30, 10])
+    expect(f1ListedPercents([])).toEqual([])
   })
 })
 
@@ -586,6 +649,132 @@ describe('f1SessionResolution', () => {
 })
 
 // ─── Sessions that move ───────────────────────────────────────────────────────
+
+describe('f1SessionResolution with "Other" and added answers', () => {
+  // A market made with the built-in "Other": the field's answers by index,
+  // "Other" after them, and the field's ids only.
+  const entrantIds = [4, 1, 81, 16, 11]
+  const field = [
+    { id: 'a-nor', index: 0 },
+    { id: 'a-ver', index: 1 },
+    { id: 'a-pia', index: 2 },
+    { id: 'a-lec', index: 3 },
+    { id: 'a-per', index: 4 },
+  ]
+  const other = { id: 'a-other', index: 5, isOther: true }
+  // A stand-in staff added: it takes "Other"'s index, which moves up one.
+  const withLawson = [
+    ...field,
+    { id: 'a-law', index: 5 },
+    { ...other, index: 6 },
+  ]
+  const lawson = driver(30, 'Liam', 'Lawson', 'LAW', redBull)
+  const final = { status_state: 'final' as const }
+  const at = (d: F1Driver, position: number) => ({
+    driver: d,
+    position,
+    is_winner: position === 1,
+  })
+  const resolve = (
+    results: ReturnType<typeof at>[],
+    answers: { id: string; index: number; isOther?: boolean }[],
+    marketType: 'winner' | 'podium' = 'winner',
+    mode: 'ONLY_CREATOR' | 'DISABLED' = F1_ADD_ANSWERS_MODE
+  ) =>
+    f1SessionResolution(final, results, answers, entrantIds, marketType, mode)
+
+  it('pays a listed winner, and "Other" for anyone else', () => {
+    expect(resolve([at(verstappen, 1)], [...field, other])).toEqual({
+      kind: 'sum-to-one',
+      outcome: 'a-ver',
+      resolutions: { 'a-ver': 100 },
+    })
+    expect(resolve([at(lawson, 1)], [...field, other])).toMatchObject({
+      outcome: 'a-other',
+    })
+  })
+
+  it('pays a listed winner over added answers, and asks a person otherwise', () => {
+    expect(resolve([at(verstappen, 1)], withLawson)).toMatchObject({
+      outcome: 'a-ver',
+    })
+    // The winner isn't listed, and an added answer may be them.
+    expect(resolve([at(lawson, 1)], withLawson)).toBeNull()
+  })
+
+  it('settles added podium answers NO when the field fills the podium', () => {
+    const podiumAnswers = [...field, { id: 'a-law', index: 5 }]
+    expect(
+      resolve(
+        [at(verstappen, 1), at(norris, 2), at(piastri, 3)],
+        podiumAnswers,
+        'podium'
+      )
+    ).toEqual({
+      kind: 'independent',
+      resolutions: {
+        'a-nor': 'YES',
+        'a-ver': 'YES',
+        'a-pia': 'YES',
+        'a-lec': 'NO',
+        'a-per': 'NO',
+        'a-law': 'NO',
+      },
+    })
+    expect(
+      resolve(
+        [at(verstappen, 1), at(lawson, 2), at(piastri, 3)],
+        podiumAnswers,
+        'podium'
+      )
+    ).toBeNull()
+    // Nothing added: an unlisted finisher just has no answer, as before.
+    expect(
+      resolve(
+        [at(verstappen, 1), at(lawson, 2), at(piastri, 3)],
+        field,
+        'podium'
+      )
+    ).toMatchObject({
+      resolutions: { 'a-ver': 'YES', 'a-pia': 'YES', 'a-nor': 'NO' },
+    })
+  })
+
+  it("refuses answers that don't line up with the field", () => {
+    // A field answer deleted, even with "Other" there to take the win.
+    expect(
+      resolve(
+        [at(verstappen, 1)],
+        [...field.filter((a) => a.id !== 'a-ver'), other]
+      )
+    ).toBeNull()
+    // "Other" on one of the field's indexes, or twice.
+    expect(
+      resolve(
+        [at(verstappen, 1)],
+        [...field.slice(0, 4), { ...other, index: 4 }]
+      )
+    ).toBeNull()
+    expect(
+      resolve(
+        [at(verstappen, 1)],
+        [...field, other, { ...other, id: 'a-other-2', index: 6 }]
+      )
+    ).toBeNull()
+    // "Other" on a podium market, which never has one.
+    expect(
+      resolve(
+        [at(verstappen, 1), at(norris, 2), at(piastri, 3)],
+        [...field, other],
+        'podium'
+      )
+    ).toBeNull()
+    // Answers past the field on a market that takes none.
+    expect(
+      resolve([at(verstappen, 1)], withLawson, 'winner', 'DISABLED')
+    ).toBeNull()
+  })
+})
 
 describe('f1SessionSync', () => {
   const H = 60 * 60 * 1000
@@ -900,7 +1089,7 @@ describe('buildF1TitleMarketParams', () => {
     points: s.points,
   }))
 
-  it("builds the drivers' title, favourites first, with the stand-in last", () => {
+  it('builds the drivers\' title, favourites first, "Other" taking the rest', () => {
     const p = buildF1TitleMarketParams(
       2027,
       'drivers',
@@ -915,23 +1104,24 @@ describe('buildF1TitleMarketParams', () => {
       'Oscar Piastri',
       'Charles Leclerc',
       'Sergio Pérez',
-      OTHER_DRIVER_ANSWER,
     ])
-    expect(p.answerShortTexts).toEqual([
-      'NOR',
-      'VER',
-      'PIA',
-      'LEC',
-      'PER',
-      'OTHER',
-    ])
-    expect(p.sportsEntrantIds).toEqual([4, 1, 81, 16, 11, null])
+    expect(p.answerShortTexts).toEqual(['NOR', 'VER', 'PIA', 'LEC', 'PER'])
+    expect(p.sportsEntrantIds).toEqual([4, 1, 81, 16, 11])
+    expect(p.addAnswersMode).toBe('ONLY_CREATOR')
     expect(p.sportsEventId).toBe('bdl-f1-title:2027:drivers')
     expect(p.sportsMarketType).toBe('title')
     expect(p.shouldAnswersSumToOne).toBe(true)
     expect(p.closeTime).toBe(dates.closeTime)
     expect(p.sportsStartTimestamp).toBe('2027-03-05T01:30:00.000Z')
-    expect(sum(p.answerProbs)).toBeCloseTo(100, 6)
+    expect(100 - sum(p.answerProbs)).toBeCloseTo(MIN_ANSWER_PROB, 6)
+    expect(
+      getAnswerProbsError({
+        answerProbs: p.answerProbs,
+        numAnswers: p.answers.length,
+        shouldAnswersSumToOne: true,
+        hasOtherAnswer: true,
+      })
+    ).toBeUndefined()
     for (const prob of p.answerProbs) {
       expect(prob).toBeGreaterThanOrEqual(MIN_ANSWER_PROB)
       expect(prob).toBeLessThanOrEqual(MAX_ANSWER_PROB)
@@ -942,9 +1132,9 @@ describe('buildF1TitleMarketParams', () => {
       '#FF8000',
       '#E80020',
       '#3671C6',
-      '#9CA3AF',
     ])
     expect(p.description).toContain('96 hours')
+    expect(p.description).toContain('"Other" stands for any driver')
   })
 
   it("builds the constructors' title from teams, a newcomer opening low", () => {
@@ -972,13 +1162,9 @@ describe('buildF1TitleMarketParams', () => {
     expect(p.question).toBe(
       "Who will win the 2027 F1 Constructors' Championship?"
     )
-    expect(p.answers).toEqual([
-      'Mercedes',
-      'Ferrari',
-      'Cadillac',
-      OTHER_TEAM_ANSWER,
-    ])
-    expect(p.sportsEntrantIds).toEqual([808, 806, 824, null])
+    expect(p.answers).toEqual(['Mercedes', 'Ferrari', 'Cadillac'])
+    expect(p.sportsEntrantIds).toEqual([808, 806, 824])
+    expect(p.description).toContain('"Other" stands for any team')
     expect(p.answerProbs[2]).toBeLessThan(p.answerProbs[1])
     expect(p.answerProbs[2]).toBeGreaterThanOrEqual(MIN_ANSWER_PROB)
     // Cadillac has no colour, so none of them get one.
@@ -1010,14 +1196,14 @@ describe('buildF1TitleMarketParams', () => {
 })
 
 describe('f1TitleResolution', () => {
-  // As the builder stores them: by answer index, null for the stand-in.
-  const answers = [
+  // As the builder stores them: the field by answer index, then "Other".
+  const answers: { id: string; index: number; isOther?: boolean }[] = [
     { id: 'a-nor', index: 0 },
     { id: 'a-ver', index: 1 },
     { id: 'a-pia', index: 2 },
-    { id: 'a-other', index: 3 },
+    { id: 'a-other', index: 3, isOther: true },
   ]
-  const entrantIds = [4, 1, 81, null]
+  const entrantIds = [4, 1, 81]
   const row = (id: number, position: number, points: number) => ({
     id,
     season: 2027,
@@ -1026,7 +1212,7 @@ describe('f1TitleResolution', () => {
   })
   const final = [row(81, 3, 300), row(1, 1, 500), row(4, 2, 401)]
   const resolve = (s: typeof final, a = answers, ids = entrantIds) =>
-    f1TitleResolution(2027, 'drivers', s, a, ids)
+    f1TitleResolution(2027, 'drivers', s, a, ids, F1_ADD_ANSWERS_MODE)
 
   it('resolves to the leader of the final standings, by id', () => {
     expect(resolve(final)).toEqual({
@@ -1048,13 +1234,19 @@ describe('f1TitleResolution', () => {
     ).toBe('a-ver')
   })
 
-  it("asks a person about a champion the field doesn't list, stand-in or not", () => {
+  it("asks a person about a champion the field doesn't list, added or not", () => {
     // Maybe a newcomer, maybe a listed team the provider gave a new id.
     const outsider = [row(44, 1, 500), row(1, 2, 420), row(4, 3, 401)]
     expect(resolve(outsider)).toBeNull()
-    expect(
-      resolve(outsider, answers.slice(0, 3), entrantIds.slice(0, 3))
-    ).toBeNull()
+    expect(resolve(outsider, answers.slice(0, 3))).toBeNull()
+    // An answer staff added, "Other" moved up one: a listed champion still pays.
+    const added = [
+      ...answers.slice(0, 3),
+      { id: 'a-new', index: 3 },
+      { id: 'a-other', index: 4, isOther: true },
+    ]
+    expect(resolve(outsider, added)).toBeNull()
+    expect(resolve(final, added)?.outcome).toBe('a-ver')
   })
 
   it('pays only a title won by more than one weekend could change', () => {
@@ -1074,9 +1266,10 @@ describe('f1TitleResolution', () => {
         [
           { id: 'mer', index: 0 },
           { id: 'fer', index: 1 },
-          { id: 'other', index: 2 },
+          { id: 'other', index: 2, isOther: true },
         ],
-        [808, 806, null]
+        [808, 806],
+        F1_ADD_ANSWERS_MODE
       )
     expect(teams(117)?.outcome).toBe('mer')
     expect(teams(116)).toBeNull()
@@ -1119,11 +1312,36 @@ describe('f1TitleResolution', () => {
   })
 
   it("refuses a market whose entrant ids don't line up with its answers", () => {
-    expect(resolve(final, answers.slice(0, 3))).toBeNull()
+    // The champion's answer deleted.
+    expect(
+      resolve(
+        final,
+        answers.filter((a) => a.id !== 'a-ver')
+      )
+    ).toBeNull()
     expect(
       resolve(final, [...answers.slice(0, 3), { id: 'a-other', index: 1 }])
     ).toBeNull()
-    expect(resolve(final, answers, [4, 1, 1, null])).toBeNull()
-    expect(resolve(final, answers, [4, 1, null, null])).toBeNull()
+    expect(resolve(final, answers, [4, 1, 1])).toBeNull()
+    // "Other" where the field has an entrant.
+    expect(resolve(final, answers, [4, 1, 81, 5])).toBeNull()
+    // Answers past the field on a market that takes none.
+    expect(
+      f1TitleResolution(
+        2027,
+        'drivers',
+        final,
+        [...answers.slice(0, 3), { id: 'a-new', index: 3 }],
+        entrantIds,
+        'DISABLED'
+      )
+    ).toBeNull()
+  })
+
+  it('still reads a market made with its own stand-in answer', () => {
+    const legacy = [...answers.slice(0, 3), { id: 'a-another', index: 3 }]
+    expect(
+      f1TitleResolution(2027, 'drivers', final, legacy, [4, 1, 81, null])
+    ).toMatchObject({ outcome: 'a-ver' })
   })
 })

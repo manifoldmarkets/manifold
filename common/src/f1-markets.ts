@@ -1,6 +1,6 @@
 import { sortBy, sum, uniqBy } from 'lodash'
 import { Answer } from './answer'
-import { MAX_CPMM_PROB, MIN_CPMM_PROB } from './contract'
+import { add_answers_mode, MAX_CPMM_PROB, MIN_CPMM_PROB } from './contract'
 import { fitProbs } from './odds-markets'
 import { SPORT_LEAGUE_LABEL } from './sports-calendar'
 import { DAY_MS, HOUR_MS } from './util/time'
@@ -133,9 +133,10 @@ export function f1SessionKind(
 
 /**
  * 'winner': the driver classified first in the session; for qualifying that
- *   is pole position. Sums to one, with a stand-in answer.
+ *   is pole position. Sums to one, with the built-in "Other" for anyone
+ *   not listed.
  * 'podium': each driver resolves YES if classified in the top three.
- *   Independent answers, no stand-in.
+ *   Independent answers, so no "Other".
  */
 export type F1MarketType = 'winner' | 'podium'
 
@@ -169,8 +170,20 @@ export const F1_RESOLVE_DELAY_HOURS = 2
  */
 export const F1_DAYS_AHEAD = 35
 
-/** Catches a stand-in who wasn't in the field when the market opened. */
+/**
+ * The stand-in answer markets used to be made with, which their resolution
+ * and display still read. A market now opens with the built-in "Other"
+ * instead, and staff add a driver who joins the field as an answer split
+ * from it.
+ */
 export const OTHER_DRIVER_ANSWER = 'Another driver'
+
+/**
+ * Who may add answers to an F1 market after it opens: @ManifoldSports, and
+ * admins and mods for it (canStaffAddSportsAnswers). A stand-in is rare
+ * enough to add by hand.
+ */
+export const F1_ADD_ANSWERS_MODE = 'ONLY_CREATOR'
 
 /**
  * The most entrants a market takes. A grid is 20 to 22 cars, and every
@@ -212,17 +225,17 @@ export function parseF1EventId(
 const PRIOR_SMOOTHING_POINTS = 10
 /** Points share is flatter than win probability; squaring sharpens it. */
 const PRIOR_EXPONENT = 2
-/** The stand-in answer's share of the field before fitting. */
+/** "Other"'s share of the field before fitting: anyone not listed. */
 const OTHER_DRIVER_SHARE = 0.01
 
 /**
  * Opening probabilities for a winner market from the season's standings:
- * each driver's smoothed, sharpened share of points, then the stand-in, all
+ * each driver's smoothed, sharpened share of points, then "Other", all
  * kept inside the range an answer can trade at. A crude prior: the ante is
  * Ṁ100 an answer at the Ṁ1,000 tier (about Ṁ2,300 for a grid), and a wrong
  * opening price gives the first traders a slice of that, while the futures
  * odds that could replace it sit on the provider's higher tier. Percents in
- * `field` order, then the stand-in answer.
+ * `field` order, then "Other".
  */
 export function f1WinnerPrior(
   field: Pick<F1Driver, 'id'>[],
@@ -236,7 +249,7 @@ export function f1WinnerPrior(
 
 /**
  * f1WinnerPrior for any entrants by id: a driver or a team. Percents in
- * `ids` order, then the stand-in.
+ * `ids` order, then "Other".
  */
 function pointsPrior(ids: number[], pointsById: Map<number, number>) {
   const raw = ids.map((id) => {
@@ -251,11 +264,24 @@ function pointsPrior(ids: number[], pointsById: Map<number, number>) {
 }
 
 /**
+ * The listed answers' opening percents, for a market whose built-in "Other"
+ * opens at 100 less their sum and has to open at the floor or above. The
+ * fit leaves "Other" the floor at least, give or take float error, which
+ * the favourite gives up: it's well clear of the floor.
+ */
+export function f1ListedPercents(listed: number[]): number[] {
+  const excess = sum(listed) - (100 - MIN_CPMM_PROB * 100) + 1e-9
+  if (!(excess > 0) || listed.length === 0) return listed
+  const top = listed.indexOf(Math.max(...listed))
+  return listed.map((p, i) => (i === top ? p - excess : p))
+}
+
+/**
  * Each entrant's chance of a podium from the field's chances of winning,
  * under a Plackett–Luce ranking: first place is drawn by those chances,
  * then second from the rest in proportion to theirs, then third. Over the
  * field the chances add up to exactly three places, and nobody takes two.
- * Pass every entrant, the stand-in included, so its share is counted even
+ * Pass every entrant, "Other" included, so its share is counted even
  * though the podium market has no answer for it. Percents in the same
  * order, clamped to the tradeable range; the answers are independent, so
  * they don't sum to one.
@@ -296,13 +322,17 @@ export interface F1MarketParams {
   question: string
   /** Markdown */
   description: string
-  /** Favourites first; a winner market ends with the stand-in answer. */
+  /**
+   * The field, favourites first. A winner market also gets the built-in
+   * "Other" after them, for anyone not listed.
+   */
   answers: string[]
-  /** Opening probability of each answer as a percent. */
+  /** Opening probability of each of `answers` as a percent; "Other" takes the rest. */
   answerProbs: number[]
   answerShortTexts: string[]
   /** Team colours; undefined when any driver's team has none. */
   answerColors?: string[]
+  addAnswersMode: typeof F1_ADD_ANSWERS_MODE
   shouldAnswersSumToOne: boolean
   closeTime: number
   sportsEventId: string
@@ -310,10 +340,11 @@ export interface F1MarketParams {
   sportsLeague: string
   sportsMarketType: F1MarketType
   /**
-   * The provider's driver id behind each answer, in answer order, null for
-   * the stand-in. Stored on the contract: the resolver matches results by
-   * id, so a renamed answer or a provider's spelling still pays the right
-   * driver.
+   * The provider's driver id behind each of `answers`, in order. Stored on
+   * the contract: the resolver matches results by id, so a renamed answer or
+   * a provider's spelling still pays the right driver. "Other" and answers
+   * added later have none. (Older markets end with a null for their own
+   * stand-in answer.)
    */
   sportsEntrantIds: (number | null)[]
 }
@@ -413,7 +444,11 @@ export function buildF1MarketParams(
     new Date(session.date).getTime() + F1_CLOSE_BUFFER_HOURS[kind] * HOUR_MS
   const base = {
     outcomeType: 'MULTIPLE_CHOICE' as const,
+    answers,
     answerShortTexts,
+    answerColors,
+    addAnswersMode: F1_ADD_ANSWERS_MODE as typeof F1_ADD_ANSWERS_MODE,
+    sportsEntrantIds: entrantIds,
     closeTime,
     sportsEventId: f1EventId(event.id, session.id),
     sportsStartTimestamp: session.date,
@@ -435,19 +470,15 @@ export function buildF1MarketParams(
         `**${title} — ${what}**`,
         ``,
         rule,
-        `"${OTHER_DRIVER_ANSWER}" covers a stand-in who wasn't in the field when the market opened.`,
+        STAND_IN_RULE.winner,
         ...footer,
       ].join('\n'),
-      answers: [...answers, OTHER_DRIVER_ANSWER],
-      answerProbs: [...drivers.map((d) => d.percent), otherPercent],
-      answerShortTexts: [...answerShortTexts, 'OTHER'],
-      answerColors: answerColors && [...answerColors, '#9CA3AF'],
+      answerProbs: f1ListedPercents(drivers.map((d) => d.percent)),
       shouldAnswersSumToOne: true,
-      sportsEntrantIds: [...entrantIds, null],
     }
   }
 
-  // The stand-in's share is in the ranking but gets no answer.
+  // "Other"'s share is in the ranking but gets no answer.
   const podiumPercents = f1PodiumPrior([
     ...drivers.map((d) => d.percent),
     otherPercent,
@@ -459,14 +490,18 @@ export function buildF1MarketParams(
       `**${title} — podium**`,
       ``,
       `Each driver resolves YES if classified in the top three of the race, NO otherwise.`,
+      STAND_IN_RULE.podium,
       ...footer,
     ].join('\n'),
-    answers,
     answerProbs: podiumPercents,
-    answerColors,
     shouldAnswersSumToOne: false,
-    sportsEntrantIds: entrantIds,
   }
+}
+
+/** What a session market's description says about a driver it doesn't list. */
+const STAND_IN_RULE: Record<F1MarketType, string> = {
+  winner: `"Other" stands for any driver not listed, such as a stand-in, until Manifold adds them as an answer of their own.`,
+  podium: `Manifold adds a driver not listed, such as a stand-in, as an answer of their own.`,
 }
 
 // ─── Resolution ───────────────────────────────────────────────────────────────
@@ -518,77 +553,102 @@ function checkedClassification(
 }
 
 /**
- * A market's answers by the provider id they stand for, and its stand-in,
- * or null unless the answers are exactly the stored field: one per entrant
- * id by index. A deleted or renumbered answer would otherwise send a listed
- * entrant's win to the stand-in. Each answer stands for one entrant, or is
- * the one stand-in (only where `standInAllowed`).
+ * A market's answers sorted by what they stand for, or null when they don't
+ * line up with the stored field. The field's answers keep the first
+ * `entrantIds.length` indexes, one each and in order, whatever is added
+ * later: a deleted or renumbered answer would otherwise send a listed
+ * entrant's win elsewhere. Past them are the built-in "Other" (isOther),
+ * which stands for anyone not listed, and the answers staff added since,
+ * each someone the field doesn't list: only on a market that takes new
+ * answers (`addAnswersMode`), as anything past the field is a mismatch on
+ * one that doesn't. A null among the ids is an older market's own stand-in
+ * answer, "Another driver", in place of "Other". A stand-in of either kind
+ * only where `standInAllowed`, and one at most.
  */
 function answersByEntrant(
-  answers: Pick<Answer, 'id' | 'index'>[],
+  answers: Pick<Answer, 'id' | 'index' | 'isOther'>[],
   entrantIds: (number | null)[],
-  standInAllowed: boolean
+  opts: {
+    standInAllowed: boolean
+    addAnswersMode: add_answers_mode | undefined
+  }
 ): {
   byId: Map<number, Pick<Answer, 'id'>>
   standIn: Pick<Answer, 'id'> | undefined
+  added: Pick<Answer, 'id'>[]
 } | null {
-  if (answers.length !== entrantIds.length) return null
+  const addable = (opts.addAnswersMode ?? 'DISABLED') !== 'DISABLED'
   const byId = new Map<number, Pick<Answer, 'id'>>()
   const seenIndex = new Set<number>()
+  const added: Pick<Answer, 'id'>[] = []
   let standIn: Pick<Answer, 'id'> | undefined
   for (const answer of answers) {
     if (
       !Number.isSafeInteger(answer.index) ||
       answer.index < 0 ||
-      answer.index >= entrantIds.length ||
       seenIndex.has(answer.index)
     )
       return null
     seenIndex.add(answer.index)
-    const entrantId = entrantIds[answer.index]
-    if (entrantId === null) {
-      if (standIn || !standInAllowed) return null
+    const listed = answer.index < entrantIds.length
+    const entrantId = listed ? entrantIds[answer.index] : undefined
+    if (answer.isOther || entrantId === null) {
+      // "Other" is never one of the field's indexes.
+      if (standIn || !opts.standInAllowed || (answer.isOther && listed))
+        return null
       standIn = answer
+    } else if (entrantId === undefined) {
+      if (!addable) return null
+      added.push(answer)
     } else {
       if (byId.has(entrantId)) return null
       byId.set(entrantId, answer)
     }
   }
-  return { byId, standIn }
+  for (let i = 0; i < entrantIds.length; i++) if (!seenIndex.has(i)) return null
+  return { byId, standIn, added }
 }
 
 /**
  * How a session's market resolves from the provider's classification, or
  * null when it can't: the session isn't final, the classification fails
  * checkedClassification or is incomplete, the market's entrant ids don't
- * line up with its answers, or the winner is outside the field and there's
- * no stand-in. A null is for a human to look at, never a guess.
+ * line up with its answers, or a driver the field doesn't list won (or made
+ * the podium) while the market has answers staff added, which may be them.
+ * A winner outside the field, with nothing added, wins "Other" (or an older
+ * market's "Another driver"). A null is for a human to look at, never a
+ * guess.
  *
  * `entrantIds` is the contract's sportsEntrantIds: the provider's driver id
- * for each answer by answer index, null for the stand-in.
+ * for each of the field's answers by answer index; `addAnswersMode` is the
+ * contract's, which says whether answers past the field can be added ones.
  */
 export function f1SessionResolution(
   session: Pick<F1Session, 'status_state'>,
   results: Pick<F1SessionResult, 'driver' | 'position' | 'is_winner'>[],
-  answers: Pick<Answer, 'id' | 'index'>[],
+  answers: Pick<Answer, 'id' | 'index' | 'isOther'>[],
   entrantIds: (number | null)[],
-  marketType: F1MarketType
+  marketType: F1MarketType,
+  addAnswersMode?: add_answers_mode
 ): F1Resolution | null {
   if (session.status_state !== 'final') return null
   const checked = checkedClassification(results)
   if (!checked) return null
-  const field = answersByEntrant(answers, entrantIds, marketType === 'winner')
+  const field = answersByEntrant(answers, entrantIds, {
+    standInAllowed: marketType === 'winner',
+    addAnswersMode,
+  })
   if (!field) return null
-  const { byId: byDriverId, standIn } = field
+  const { byId: byDriverId, standIn, added } = field
 
   if (marketType === 'winner') {
     const winner = checked.first
     if (!winner) return null
-    // The stand-in is only for a driver outside the field; a listed driver
-    // always has an answer after the checks above.
+    // Every listed driver has an answer after the checks above, so "Other"
+    // is only ever for a driver outside the field.
     const answer =
       byDriverId.get(winner.driver.id) ??
-      (entrantIds.includes(winner.driver.id) ? undefined : standIn)
+      (added.length > 0 ? undefined : standIn)
     if (!answer) return null
     return {
       kind: 'sum-to-one',
@@ -601,6 +661,9 @@ export function f1SessionResolution(
   // means exactly first, second and third.
   const podium = checked.classified.filter((r) => r.position <= 3)
   if (podium.length !== 3) return null
+  // An added answer is NO when the field fills the podium: it's someone else.
+  if (added.length > 0 && podium.some((r) => !byDriverId.has(r.driver.id)))
+    return null
   const onPodium = new Set(
     podium.map((r) => byDriverId.get(r.driver.id)?.id).filter(Boolean)
   )
@@ -715,9 +778,6 @@ export const F1_TITLE_KINDS: readonly F1TitleKind[] = [
  * reopen the market.
  */
 export const F1_TITLE_RESOLVE_DELAY_HOURS = 96
-
-/** Catches a team that wasn't in the field when the market opened. */
-export const OTHER_TEAM_ANSWER = 'Another team'
 
 /** A grid is 10 to 12 teams; a longer list isn't an entry list. */
 export const MAX_F1_TEAMS = 15
@@ -900,13 +960,14 @@ export interface F1TitleMarketParams {
   question: string
   /** Markdown */
   description: string
-  /** Favourites first, then the stand-in answer. */
+  /** Favourites first; the built-in "Other" follows them. */
   answers: string[]
-  /** Opening probability of each answer as a percent. */
+  /** Opening probability of each of `answers` as a percent; "Other" takes the rest. */
   answerProbs: number[]
   answerShortTexts: string[]
   /** Team colours; undefined when any entrant has none. */
   answerColors?: string[]
+  addAnswersMode: typeof F1_ADD_ANSWERS_MODE
   shouldAnswersSumToOne: true
   closeTime: number
   sportsEventId: string
@@ -914,28 +975,22 @@ export interface F1TitleMarketParams {
   sportsStartTimestamp: string
   sportsLeague: string
   sportsMarketType: 'title'
-  /** The provider's id behind each answer, null for the stand-in. */
+  /** The provider's id behind each of `answers`; "Other" and added answers have none. */
   sportsEntrantIds: (number | null)[]
 }
 
-const TITLE_WORDS: Record<
-  F1TitleKind,
-  { title: string; one: string; other: string }
-> = {
-  drivers: { title: "Drivers'", one: 'driver', other: OTHER_DRIVER_ANSWER },
-  constructors: {
-    title: "Constructors'",
-    one: 'team',
-    other: OTHER_TEAM_ANSWER,
-  },
+const TITLE_WORDS: Record<F1TitleKind, { title: string; one: string }> = {
+  drivers: { title: "Drivers'", one: 'driver' },
+  constructors: { title: "Constructors'", one: 'team' },
 }
 
 /**
  * A season's drivers' or constructors' title market, or null when `field`
  * isn't an entry list (fewer than two, or more than a grid holds) or the
  * dates don't make sense. Entrants open at the points prior from
- * `priorPoints`, favourites first, with the stand-in last; one listed twice
- * counts once. Before a season starts, `priorPoints` is the last season's.
+ * `priorPoints`, favourites first, with the built-in "Other" after them; one
+ * listed twice counts once. Before a season starts, `priorPoints` is the
+ * last season's.
  */
 export function buildF1TitleMarketParams(
   season: number,
@@ -975,25 +1030,24 @@ export function buildF1TitleMarketParams(
       `Resolves to the ${
         words.one
       } first in the final ${season} ${words.title.toLowerCase()} standings.`,
-      `"${words.other}" covers a ${words.one} who wasn't listed when the market opened.`,
+      `"Other" stands for any ${words.one} not listed until Manifold adds them as an answer of their own.`,
       ``,
       `Closes when the market on the season's final race does. Created and resolved automatically by ${MANIFOLD_SPORTS_LINK} from the data feed's final standings ${F1_TITLE_RESOLVE_DELAY_HOURS} hours after that, once the FIA's time to give notice of an appeal has run out. If the ${words.one} won by ${F1_TITLE_SAFE_MARGIN[kind]} points or fewer, as much as one weekend's results, scored or rescored, could change, a person checks the standings before it pays out. Later changes don't reopen the market.`,
       ``,
       `[See all markets on Manifold Sports](/sports?sport=f1)`,
     ].join('\n'),
-    answers: [...ranked.map((e) => e.entrant.name), words.other],
-    answerProbs: [...ranked.map((e) => e.percent), percents[roster.length]],
-    answerShortTexts: [...ranked.map((e) => e.entrant.shortName), 'OTHER'],
-    answerColors: colors.every((c): c is string => !!c)
-      ? [...colors, '#9CA3AF']
-      : undefined,
+    answers: ranked.map((e) => e.entrant.name),
+    answerProbs: f1ListedPercents(ranked.map((e) => e.percent)),
+    answerShortTexts: ranked.map((e) => e.entrant.shortName),
+    answerColors: colors.every((c): c is string => !!c) ? colors : undefined,
+    addAnswersMode: F1_ADD_ANSWERS_MODE,
     shouldAnswersSumToOne: true,
     closeTime,
     sportsEventId: f1TitleEventId(season, kind),
     sportsStartTimestamp: new Date(firstStart).toISOString(),
     sportsLeague: SPORT_LEAGUE_LABEL.f1,
     sportsMarketType: 'title',
-    sportsEntrantIds: [...ranked.map((e) => e.entrant.id), null],
+    sportsEntrantIds: ranked.map((e) => e.entrant.id),
   }
 }
 
@@ -1061,8 +1115,8 @@ export function f1TitleMargin(standings: Pick<F1StandingRow, 'points'>[]) {
  * it couldn't have, so the leader is the champion either way. A title that
  * close, or a tie settled on countback, is a person's call. Also null
  * when the market's entrant ids don't line up with its answers, or the
- * champion isn't one of them: a person decides between the stand-in and a
- * re-identified entrant. Whether the season is over, and the standings
+ * champion isn't one of them: a person decides between "Other", an answer
+ * staff added and a re-identified entrant. Whether the season is over, and the standings
  * complete, are the caller's checks (f1SeasonComplete,
  * f1CalendarReachesEnd, f1CalendarListsEveryRound, f1SeasonPointsAwarded).
  * A null is for a human, never a guess.
@@ -1071,8 +1125,9 @@ export function f1TitleResolution(
   season: number,
   kind: F1TitleKind,
   standings: F1StandingRow[],
-  answers: Pick<Answer, 'id' | 'index'>[],
-  entrantIds: (number | null)[]
+  answers: Pick<Answer, 'id' | 'index' | 'isOther'>[],
+  entrantIds: (number | null)[],
+  addAnswersMode?: add_answers_mode
 ): { outcome: string; resolutions: Record<string, number> } | null {
   if (standings.length === 0) return null
   if (
@@ -1101,9 +1156,12 @@ export function f1TitleResolution(
   )
   if (!(leader.points - next > F1_TITLE_SAFE_MARGIN[kind])) return null
 
-  const field = answersByEntrant(answers, entrantIds, true)
+  const field = answersByEntrant(answers, entrantIds, {
+    standInAllowed: true,
+    addAnswersMode,
+  })
   if (!field) return null
-  // A champion the field doesn't list never pays the stand-in by itself:
+  // A champion the field doesn't list never pays "Other" by itself:
   // the provider gives a team a new id when it's rebranded (Sauber #814
   // became Audi #825 in 2026), so an unknown id may be a listed entrant.
   const answer = field.byId.get(leader.id)
