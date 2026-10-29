@@ -3,6 +3,7 @@ import { MAX_ANSWER_PROB, MIN_ANSWER_PROB } from './new-contract'
 import {
   buildF1MarketParams,
   buildF1TitleMarketParams,
+  F1_TITLE_SAFE_MARGIN,
   f1CalendarListsEveryRound,
   f1CalendarReachesEnd,
   F1Driver,
@@ -893,7 +894,7 @@ describe('f1TitleResolution', () => {
     position,
     points,
   })
-  const final = [row(81, 3, 300), row(1, 1, 450), row(4, 2, 401)]
+  const final = [row(81, 3, 300), row(1, 1, 500), row(4, 2, 401)]
   const resolve = (s: typeof final, a = answers, ids = entrantIds) =>
     f1TitleResolution(2027, 'drivers', s, a, ids)
 
@@ -904,7 +905,7 @@ describe('f1TitleResolution', () => {
     })
     expect(
       resolve(
-        [row(81, 3, 300), row(1, 1, 450), row(4, 2, 401)].map((r) =>
+        [row(81, 3, 300), row(1, 1, 500), row(4, 2, 401)].map((r) =>
           f1DriverStandingRow({
             id: 0,
             season: r.season,
@@ -926,12 +927,15 @@ describe('f1TitleResolution', () => {
     ).toBeNull()
   })
 
-  it('pays only a title won by more than the final weekend could swing', () => {
-    // A driver: a race and sprint win against nothing is 33 points.
-    expect(resolve([row(1, 1, 435), row(4, 2, 401)])?.outcome).toBe('a-ver')
-    expect(resolve([row(1, 1, 434), row(4, 2, 401)])).toBeNull()
-    expect(resolve([row(1, 1, 420), row(4, 2, 401)])).toBeNull()
-    // A team: a race and sprint one-two is 58.
+  it('pays only a title won by more than one weekend could change', () => {
+    // A driver: a race and sprint win against nothing is 33 points, and a
+    // rescored weekend can take them away and give them to the rival.
+    expect(resolve([row(1, 1, 468), row(4, 2, 401)])?.outcome).toBe('a-ver')
+    expect(resolve([row(1, 1, 467), row(4, 2, 401)])).toBeNull()
+    // Stale provisional standings after a sprint finale whose winner was
+    // later disqualified: 34 clear, though the rival was champion.
+    expect(resolve([row(1, 1, 433), row(4, 2, 399)])).toBeNull()
+    // A team: a race and sprint one-two is 58, twice that 116.
     const teams = (lead: number) =>
       f1TitleResolution(
         2027,
@@ -944,8 +948,10 @@ describe('f1TitleResolution', () => {
         ],
         [808, 806, null]
       )
-    expect(teams(59)?.outcome).toBe('mer')
-    expect(teams(58)).toBeNull()
+    expect(teams(117)?.outcome).toBe('mer')
+    expect(teams(116)).toBeNull()
+    expect(teams(60)).toBeNull()
+    expect(F1_TITLE_SAFE_MARGIN).toEqual({ drivers: 66, constructors: 116 })
     expect(
       f1TitleMargin([{ points: 10 }, { points: 30 }, { points: 20 }])
     ).toBe(10)

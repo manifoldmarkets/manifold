@@ -47,7 +47,7 @@ import {
   F1_SEASON_END_TOLERANCE_DAYS,
   F1_TITLE_KINDS,
   F1_TITLE_RESOLVE_DELAY_HOURS,
-  F1_WEEKEND_SWING,
+  F1_TITLE_SAFE_MARGIN,
   f1CalendarListsEveryRound,
   f1CalendarReachesEnd,
   f1DriverEntrant,
@@ -1246,12 +1246,12 @@ export async function resolveF1TitleMarkets(
       )
       if (!resolution) {
         const margin = f1TitleMargin(standings)
-        const swing = F1_WEEKEND_SWING[id.kind]
+        const safe = F1_TITLE_SAFE_MARGIN[id.kind]
         attention(
           contract,
-          margin > swing
+          margin > safe
             ? `the final ${id.season} ${id.kind} standings don't check out against the market's field, or the champion isn't one of its answers`
-            : `the ${id.season} ${id.kind}' title was won by ${margin} points, no more than one weekend can swing (${swing}), so a person checks the standings before it pays`
+            : `the ${id.season} ${id.kind}' title was won by ${margin} points, within what one weekend's results can change (${safe}), so a person checks the standings before it pays`
         )
         continue
       }

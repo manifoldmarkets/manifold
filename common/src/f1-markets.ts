@@ -755,8 +755,10 @@ export const F1_SPRINT_POINTS = 36
 /**
  * The points a season's races and sprints award between them, from the
  * provider's calendar and sessions. The final standings must add up to
- * exactly this, which proves they include every one of those sessions:
- * standings that missed the finale are short by its points. Checked against
+ * exactly this. That checks they're consistent with the sessions, not that
+ * every session is in them or scored to the right driver: standings that
+ * missed the finale are short by its points, but a rescored one adds up
+ * the same (F1_TITLE_SAFE_MARGIN covers that). Checked against
  * the 2025 season (24 races and 6 sprints, 2,640 points) and 2026 so far,
  * drivers and teams alike. A race paying half points, a points penalty, or
  * fewer than ten classified also miss it, and those go to a person.
@@ -894,7 +896,7 @@ export function buildF1TitleMarketParams(
       } first in the final ${season} ${words.title.toLowerCase()} standings.`,
       `"${words.other}" covers a ${words.one} who wasn't listed when the market opened.`,
       ``,
-      `Closes when the market on the season's final race does. Created and resolved automatically by ${MANIFOLD_SPORTS_LINK} from the data feed's final standings ${F1_TITLE_RESOLVE_DELAY_HOURS} hours after that, once the FIA's time to give notice of an appeal has run out. If the ${words.one} won by ${F1_WEEKEND_SWING[kind]} points or fewer, no more than the final weekend could swing, a person checks the standings before it pays out. Later changes don't reopen the market.`,
+      `Closes when the market on the season's final race does. Created and resolved automatically by ${MANIFOLD_SPORTS_LINK} from the data feed's final standings ${F1_TITLE_RESOLVE_DELAY_HOURS} hours after that, once the FIA's time to give notice of an appeal has run out. If the ${words.one} won by ${F1_TITLE_SAFE_MARGIN[kind]} points or fewer, as much as one weekend's results, scored or rescored, could change, a person checks the standings before it pays out. Later changes don't reopen the market.`,
       ``,
       `[See all markets on Manifold Sports](/sports?sport=f1)`,
     ].join('\n'),
@@ -937,13 +939,26 @@ export const f1TeamStandingRow = (s: F1TeamStanding): F1StandingRow => ({
 })
 
 /**
- * The most one race weekend can move a title between two contenders: a
- * race and sprint win against nothing for a driver (25 + 8), a race and
- * sprint one-two for a team (25 + 18 + 8 + 7).
+ * The most one race weekend awards one contender over another: a race and
+ * sprint win against nothing for a driver (25 + 8), a race and sprint
+ * one-two for a team (25 + 18 + 8 + 7). No fastest-lap point since 2025.
  */
-export const F1_WEEKEND_SWING: Record<F1TitleKind, number> = {
+const F1_WEEKEND_GAIN: Record<F1TitleKind, number> = {
   drivers: 33,
   constructors: 58,
+}
+
+/**
+ * How far clear of the next a title's leader must be for it to pay out by
+ * itself: twice F1_WEEKEND_GAIN, the most one weekend's results can change
+ * the gap, whether the standings miss the weekend or still score it as
+ * before a rescoring (a disqualification after the race takes the
+ * leader's points away and promotes the rival). Standings out of date by
+ * one weekend then name the champion either way.
+ */
+export const F1_TITLE_SAFE_MARGIN: Record<F1TitleKind, number> = {
+  drivers: 2 * F1_WEEKEND_GAIN.drivers,
+  constructors: 2 * F1_WEEKEND_GAIN.constructors,
 }
 
 /** How far the standings' points leader is clear of the next best. */
@@ -959,11 +974,11 @@ export function f1TitleMargin(standings: Pick<F1StandingRow, 'points'>[]) {
  * The answer a title market resolves to from the season's final standings,
  * or null when they can't say for certain: a row from another season, an
  * entrant listed twice, two on one position, no leader, a points total
- * that isn't a number, or a leader no more than F1_WEEKEND_SWING clear of
- * the next. Standings stale by a weekend could otherwise name the wrong
- * champion when the finale decided the title; with a bigger lead, no
- * weekend could have, so the leader is the champion either way. A title
- * that close, or a tie settled on countback, is a person's call. Also null
+ * that isn't a number, or a leader no more than F1_TITLE_SAFE_MARGIN clear
+ * of the next. Standings out of date by a weekend could otherwise name the
+ * wrong champion when that weekend decided the title; with a bigger lead,
+ * it couldn't have, so the leader is the champion either way. A title that
+ * close, or a tie settled on countback, is a person's call. Also null
  * when the market's entrant ids don't line up with its answers, or the
  * champion isn't one of them: a person decides between the stand-in and a
  * re-identified entrant. Whether the season is over, and the standings
@@ -1003,7 +1018,7 @@ export function f1TitleResolution(
     0,
     ...standings.filter((s) => s !== leader).map((s) => s.points)
   )
-  if (!(leader.points - next > F1_WEEKEND_SWING[kind])) return null
+  if (!(leader.points - next > F1_TITLE_SAFE_MARGIN[kind])) return null
 
   const field = answersByEntrant(answers, entrantIds, true)
   if (!field) return null

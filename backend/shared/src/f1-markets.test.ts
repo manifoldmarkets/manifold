@@ -1030,7 +1030,7 @@ describe('resolveF1TitleMarkets', () => {
     const close = await resolveF1TitleMarkets(db.pg)
     expect(close.attention).toBe(1)
     expect(close.log[0].reason).toMatch(
-      /won by 33 points, no more than one weekend can swing \(33\)/
+      /won by 33 points, within what one weekend's results can change \(66\)/
     )
     expect(resolveMarketHelper).not.toHaveBeenCalled()
 
@@ -1046,6 +1046,23 @@ describe('resolveF1TitleMarkets', () => {
       outcome: 't4',
       resolutions: { t4: 100 },
     })
+  })
+
+  it('asks a person when a rescored finale could have changed the champion', async () => {
+    jest.mocked(Date.now).mockReturnValue(DUE)
+    // Everything adds up, but 4 is only 34 clear: standings still scoring
+    // a finale 4 was later disqualified from would look just like this.
+    jest
+      .mocked(getF1DriverStandings)
+      .mockResolvedValue([
+        driverRow(4, 1229, 1, 2027),
+        driverRow(1, 1195, 2, 2027),
+      ])
+    const db = titleDb([title('wdc', FINAL_CLOSE)], { wdc: driversAnswers() })
+    const r = await resolveF1TitleMarkets(db.pg)
+    expect(r.attention).toBe(1)
+    expect(r.log[0].reason).toMatch(/won by 34 points/)
+    expect(resolveMarketHelper).not.toHaveBeenCalled()
   })
 
   it('closes an open market now once its final race market has closed', async () => {
