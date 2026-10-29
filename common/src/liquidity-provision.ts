@@ -9,6 +9,8 @@ export type LiquidityProvision = {
   // (after this commit), and house subsidies.
   answerId?: string
   amount: number // Ṁ quantity
+  // On a withdrawal's return of this provider's share: who withdrew it
+  withdrawnBy?: string
 
   /** @deprecated change in constant k after provision*/
   liquidity?: number

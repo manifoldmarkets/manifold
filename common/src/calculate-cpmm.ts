@@ -1669,16 +1669,18 @@ export function maximumRemovableLiquidity(pool: { [outcome: string]: number }) {
   return Math.max(Math.min(y, n) - MINIMUM_LIQUIDITY, 0)
 }
 
+// What each provider has put in, net of what they've taken out. We don't claw
+// back from users that took more liquidity than they gave; instead we count
+// their contribution as 0 and split the rest.
+const getNetLiquidityByUser = (liquidities: LiquidityProvision[]) =>
+  mapValues(groupBy(liquidities, 'userId'), (liquidities) =>
+    Math.max(0, sumBy(liquidities, 'amount'))
+  )
+
 export function getCpmmLiquidityPoolWeights(liquidities: LiquidityProvision[]) {
   if (liquidities.length === 0) return {} // this should never happen
 
-  const liquiditiesByUser = groupBy(liquidities, 'userId')
-
-  // we don't clawback from users that took more liquidity than they gave
-  // instead we count their contribution as 0 and split the rest
-  const userAmounts = mapValues(liquiditiesByUser, (liquidities) =>
-    Math.max(0, sumBy(liquidities, 'amount'))
-  )
+  const userAmounts = getNetLiquidityByUser(liquidities)
   const totalAmount = sum(Object.values(userAmounts))
   // ... unless they are all net liquidity leeches, in which case remaining liquidity goes to the first liquidizer (persumably the creator)
   if (totalAmount === 0) {
@@ -1687,6 +1689,28 @@ export function getCpmmLiquidityPoolWeights(liquidities: LiquidityProvision[]) {
   }
   const weights = mapValues(userAmounts, (amount) => amount / totalAmount)
   return omitBy(weights, (w) => w === 0)
+}
+
+// Withdrawn liquidity goes back to every provider in proportion to their share
+// of the pool. Each provider's net contribution then shrinks by the same
+// fraction, so nobody's share of what's left changes: what each is paid at
+// resolution, plus what they got back now, is what they'd have been paid
+// without the withdrawal, whichever way the market resolves. Withdrawing the
+// providers' whole net contribution would leave every share at 0 (and the
+// fallback above would give the rest to the first provider), so the amount
+// must stay below getLiquidityProvidersNetTotal.
+export function getLiquidityWithdrawalShares(
+  liquidities: LiquidityProvision[],
+  amount: number
+) {
+  const weights = getCpmmLiquidityPoolWeights(liquidities)
+  return mapValues(weights, (weight) => weight * amount)
+}
+
+export function getLiquidityProvidersNetTotal(
+  liquidities: LiquidityProvision[]
+) {
+  return sum(Object.values(getNetLiquidityByUser(liquidities)))
 }
 
 const getK = (pool: { [outcome: string]: number }) => {
