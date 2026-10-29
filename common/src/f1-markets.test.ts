@@ -649,46 +649,94 @@ describe('season dates', () => {
     expect(f1SeasonComplete([])).toBe(false)
   })
 
-  it("takes a finale for the season's end only near ours", () => {
-    const ours = Date.parse('2027-11-28T23:59:59Z')
+  it("takes a finale for the season's end only on our last date or later", () => {
+    // Our 2027 calendar ends on Abu Dhabi's race day, 12 December.
+    const ours = Date.parse('2027-12-12T23:59:59Z')
     const day = 24 * 60 * 60 * 1000
+    expect(f1CalendarReachesEnd(Date.parse('2027-12-12T13:00:00Z'), ours)).toBe(
+      true
+    )
     expect(f1CalendarReachesEnd(ours + 7 * day, ours)).toBe(true)
-    expect(f1CalendarReachesEnd(ours - 14 * day, ours)).toBe(true)
-    expect(f1CalendarReachesEnd(ours - 14 * day - 1, ours)).toBe(false)
+    expect(f1CalendarReachesEnd(ours - 2 * day, ours)).toBe(true)
+    expect(f1CalendarReachesEnd(ours - 2 * day - 1, ours)).toBe(false)
+    // Missing the finale: Qatar, the week before, isn't it.
+    expect(f1CalendarReachesEnd(Date.parse('2027-12-05T16:00:00Z'), ours)).toBe(
+      false
+    )
     // A calendar that lists only round one.
-    expect(f1CalendarReachesEnd(Date.parse('2027-03-07T05:00:00Z'), ours)).toBe(
+    expect(f1CalendarReachesEnd(Date.parse('2027-03-14T15:00:00Z'), ours)).toBe(
       false
     )
   })
 })
 
 describe('f1SeasonPointsAwarded', () => {
-  it('counts final races and sprints, the way the standings score them', () => {
-    const s = (
-      type: string,
-      name: string,
-      status_state: F1Session['status_state'] = 'final'
-    ) => ({ type, name, status_state })
+  const s = (
+    eventId: number,
+    type: string,
+    name: string,
+    status_state: F1Session['status_state'] = 'final'
+  ) => ({ event: { id: eventId }, type, name, status_state })
+  const held = (...ids: number[]) =>
+    ids.map((id) => ({ id, status_state: 'final' as const }))
+  // The provider's real strings: Race/Race and Sprint/SR score.
+  const weekend = (id: number) => [
+    s(id, 'FP1', 'FP1'),
+    s(id, 'Sprint Qualifying', 'SS'),
+    s(id, 'Sprint', 'SR'),
+    s(id, 'Qualifying', 'Qual'),
+    s(id, 'Race', 'Race'),
+  ]
+
+  it('counts the races and sprints, the way the standings score them', () => {
     expect(
-      f1SeasonPointsAwarded([
-        // The provider's real strings: Race/Race and Sprint/SR score.
-        s('Race', 'Race'),
-        s('Race', 'Race'),
-        s('Sprint', 'SR'),
-        s('Qualifying', 'Qual'),
-        s('Sprint Qualifying', 'SS'),
-        s('FP1', 'FP1'),
-        s('Race', 'Race', 'scheduled'),
-        s('Sprint', 'SR', 'canceled'),
-      ])
+      f1SeasonPointsAwarded(
+        [...held(1, 2), { id: 3, status_state: 'canceled' }],
+        [...weekend(1), s(2, 'Race', 'Race'), s(2, 'Sprint', 'SR', 'canceled')]
+      )
     ).toEqual({ races: 2, sprints: 1, points: 238 })
     // 2025 as the provider has it: 24 races and 6 sprints, 2,640 points.
     expect(
-      f1SeasonPointsAwarded([
-        ...range(24).map(() => s('Race', 'Race')),
-        ...range(6).map(() => s('Sprint', 'SR')),
-      ]).points
+      f1SeasonPointsAwarded(
+        held(...range(24)),
+        range(24).flatMap((id) =>
+          id < 6 ? weekend(id) : [s(id, 'Race', 'Race')]
+        )
+      )?.points
     ).toBe(2640)
+  })
+
+  it("can't vouch for the standings without every race, final", () => {
+    // The finale's race missing, or listed but not final.
+    expect(f1SeasonPointsAwarded(held(1, 2), [s(1, 'Race', 'Race')])).toBeNull()
+    expect(
+      f1SeasonPointsAwarded(held(1, 2), [
+        s(1, 'Race', 'Race'),
+        s(2, 'Race', 'Race', 'scheduled'),
+      ])
+    ).toBeNull()
+    expect(
+      f1SeasonPointsAwarded(held(1), [s(1, 'Race', 'Race', 'canceled')])
+    ).toBeNull()
+    // Two races for one weekend, an unfinished sprint, another weekend's.
+    expect(
+      f1SeasonPointsAwarded(held(1), [
+        s(1, 'Race', 'Race'),
+        s(1, 'Race', 'Race'),
+      ])
+    ).toBeNull()
+    expect(
+      f1SeasonPointsAwarded(held(1), [
+        s(1, 'Race', 'Race'),
+        s(1, 'Sprint', 'SR', 'in_progress'),
+      ])
+    ).toBeNull()
+    expect(
+      f1SeasonPointsAwarded(held(1), [
+        s(1, 'Race', 'Race'),
+        s(9, 'Race', 'Race'),
+      ])
+    ).toBeNull()
   })
 })
 

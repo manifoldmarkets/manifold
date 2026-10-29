@@ -246,12 +246,17 @@ const ENTRIES: CalendarInput[] = [
     competition: 'F1 World Championship 2027',
     competitionId: 'f1-2027',
     phase: '2027 Season',
-    startDate: '2027-03-07',
-    endDate: '2027-11-28',
+    // Announced 16 Sep 2026: 24 rounds, from Bahrain (12–14 Mar) to Abu
+    // Dhabi (10–12 Dec), 10 of them sprint weekends. The last date must stay
+    // the finale's race day: the title markets check the provider's
+    // calendar against it (f1CalendarReachesEnd).
+    startDate: '2027-03-12',
+    endDate: '2027-12-12',
     provider: 'bdl-f1',
     autoCreate: false,
     autoResolve: false,
-    notes: 'Calendar TBC — hold auto-create until full race calendar confirmed',
+    notes:
+      'Bahrain 12–14 Mar to Abu Dhabi 10–12 Dec. Switch on in the winter to open the drivers’ and constructors’ title markets before the first weekend; session markets follow within F1_DAYS_AHEAD of each session.',
   },
 
   // ── Tour de France ───────────────────────────────────────────────────────────

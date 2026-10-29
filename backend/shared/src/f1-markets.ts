@@ -213,8 +213,9 @@ function officialFor(
 }
 
 /**
- * Our calendar dates a season from its first race day, and the weekend
- * starts up to two days before it (FP1 on the Friday): assume three.
+ * Our calendar's first date for a season may be the opening race's Sunday
+ * rather than its Friday: assume the first weekend can start three days
+ * before it.
  */
 const OUR_WEEKEND_LEAD_DAYS = 3
 
@@ -1185,7 +1186,14 @@ export async function resolveF1TitleMarkets(
               .map((e) => e.id)
           )
       )
-      const awarded = f1SeasonPointsAwarded(sessions)
+      const awarded = f1SeasonPointsAwarded(seasonEvents, sessions)
+      if (!awarded) {
+        attention(
+          contract,
+          `the provider's ${id.season} sessions don't show one final race for every weekend held (or a sprint is unfinished, or a session is from elsewhere), so they can't vouch for the standings`
+        )
+        continue
+      }
       const standings =
         id.kind === 'drivers'
           ? (

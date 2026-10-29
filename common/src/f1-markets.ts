@@ -707,19 +707,21 @@ export const f1TitleCloseTime = (lastRaceStart: number) =>
   lastRaceStart + F1_CLOSE_BUFFER_HOURS.race * HOUR_MS
 
 /**
- * How long before the last date our calendar gives a season the provider's
- * final race may fall and still be taken for the finale.
+ * How long before the end of the last date our calendar gives a season the
+ * provider's final race may start and still be taken for the finale. That
+ * date is the finale's race day, so this only allows for time zones: a
+ * calendar missing the finale ends a week or more earlier.
  */
-export const F1_SEASON_END_TOLERANCE_DAYS = 14
+export const F1_SEASON_END_TOLERANCE_DAYS = 2
 
 /**
  * Whether the provider's calendar reaches the season's end by our calendar
- * (common/sports-calendar.ts), a second source for how long the season is.
+ * (common/sports-calendar.ts), a second source for the finale's date.
  * "Every listed weekend is final" doesn't show the provider listed every
- * weekend: one that lists only the first few races would otherwise have a
- * title close and pay out on the last of them. A finale more than
- * F1_SEASON_END_TOLERANCE_DAYS earlier than ours fails, and waits for a
- * fuller calendar or a person; a later one passes.
+ * weekend: one missing the last rounds would otherwise have a title close
+ * and pay out on the last race it has. A finale earlier than ours fails,
+ * and waits for a fuller calendar or a person; a later one passes. Both
+ * sources would have to lose the finale for a title to pay early.
  */
 export const f1CalendarReachesEnd = (
   lastRaceStart: number,
@@ -734,24 +736,47 @@ export const F1_RACE_POINTS = 101
 export const F1_SPRINT_POINTS = 36
 
 /**
- * The points a season's final races and sprints award between them. The
- * final standings must add up to exactly this, which proves they include
- * every one of those sessions: standings that missed the finale are short by
- * its points. Checked against the 2025 season (24 races and 6 sprints, 2,640
- * points) and 2026 so far, drivers and teams alike. A race paying half
- * points, a points penalty, or fewer than ten classified also miss it, and
- * those go to a person.
+ * The points a season's races and sprints award between them, from the
+ * provider's calendar and sessions. The final standings must add up to
+ * exactly this, which proves they include every one of those sessions:
+ * standings that missed the finale are short by its points. Checked against
+ * the 2025 season (24 races and 6 sprints, 2,640 points) and 2026 so far,
+ * drivers and teams alike. A race paying half points, a points penalty, or
+ * fewer than ten classified also miss it, and those go to a person.
+ *
+ * Null when the sessions can't vouch for the total: a weekend held (not
+ * cancelled) without exactly one race, or with a race that isn't final; a
+ * sprint not yet final or cancelled; or a session from another weekend. A
+ * finale the feed leaves out or hasn't finished would otherwise drop out of
+ * the total and let pre-finale standings match it.
  */
 export function f1SeasonPointsAwarded(
-  sessions: Pick<F1Session, 'type' | 'name' | 'status_state'>[]
-): { races: number; sprints: number; points: number } {
-  const final = sessions.filter((s) => s.status_state === 'final')
-  const races = final.filter((s) => f1SessionKind(s) === 'race').length
-  const sprints = final.filter((s) => f1SessionKind(s) === 'sprint').length
+  events: Pick<F1Event, 'id' | 'status_state'>[],
+  sessions: (Pick<F1Session, 'type' | 'name' | 'status_state'> & {
+    event: Pick<F1Event, 'id'>
+  })[]
+): { races: number; sprints: number; points: number } | null {
+  const held = new Set(
+    events.filter((e) => e.status_state !== 'canceled').map((e) => e.id)
+  )
+  if (sessions.some((s) => !held.has(s.event?.id))) return null
+  const races = sessions.filter((s) => f1SessionKind(s) === 'race')
+  for (const id of held) {
+    const own = races.filter((s) => s.event.id === id)
+    if (own.length !== 1 || own[0].status_state !== 'final') return null
+  }
+  const sprints = sessions.filter((s) => f1SessionKind(s) === 'sprint')
+  if (
+    sprints.some(
+      (s) => s.status_state !== 'final' && s.status_state !== 'canceled'
+    )
+  )
+    return null
+  const finalSprints = sprints.filter((s) => s.status_state === 'final').length
   return {
-    races,
-    sprints,
-    points: races * F1_RACE_POINTS + sprints * F1_SPRINT_POINTS,
+    races: held.size,
+    sprints: finalSprints,
+    points: held.size * F1_RACE_POINTS + finalSprints * F1_SPRINT_POINTS,
   }
 }
 
