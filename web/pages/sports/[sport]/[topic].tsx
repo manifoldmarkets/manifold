@@ -1,7 +1,8 @@
 import { keyBy, uniq } from 'lodash'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { withoutRaceMarkets } from 'common/race-weekends'
 import {
   SportInfo,
   sportPath,
@@ -12,6 +13,11 @@ import { Col } from 'web/components/layout/col'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { GameFeed } from 'web/components/sports/schedule-list'
 import { SportMarkets, SportsShell } from 'web/components/sports/sports-shell'
+import {
+  ownTopicSlugs,
+  useBlockedTopicFilter,
+  useUnblockedSchedule,
+} from 'web/components/sports/blocked-topics'
 import { TopicRail, useSportsIndex } from 'web/components/sports/topic-rail'
 import { useSportTopicExtras } from 'web/components/sports/use-sport-topic'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -33,13 +39,30 @@ export default function SportTopicPage() {
   const router = useRouter()
   const rawSport = first(router.query.sport)
   const rawTopic = first(router.query.topic)
-  const slug = rawTopic?.toLowerCase()
-  useSaveScroll(`sports-${rawSport ?? ''}-${slug ?? ''}`, true)
+  useSaveScroll(`sports-${rawSport ?? ''}-${rawTopic ?? ''}`, true)
 
-  const { index, failed } = useSportsIndex()
-  const topic = slug ? index?.topics.find((t) => t.slug === slug) : undefined
+  const index = useSportsIndex()
+  // Slugs can hold capitals (a clash gets a random suffix), so the exact
+  // slug first, then any case.
+  const bySlug = <T extends { slug?: string }>(list: T[] | undefined) =>
+    rawTopic === undefined
+      ? undefined
+      : list?.find((t) => t.slug === rawTopic) ??
+        list?.find((t) => t.slug?.toLowerCase() === rawTopic.toLowerCase())
+  const topic = bySlug(index.index?.topics)
   // A sport's main topic has the sport's page.
-  const mainOf = slug ? index?.sports.find((s) => s.slug === slug) : undefined
+  const mainOf = topic ? undefined : bySlug(index.index?.sports)
+  // The index is kept for the session, so a topic filed under Sports since
+  // it loaded isn't in it: ask again once before saying there's no such topic.
+  const missing = !!index.index && !!rawTopic && !topic && !mainOf
+  const [recheckedFor, setRecheckedFor] = useState<string>()
+  const rechecked = recheckedFor === rawTopic
+  useEffect(() => {
+    if (missing && !rechecked) {
+      setRecheckedFor(rawTopic)
+      index.refresh()
+    }
+  }, [missing, rechecked])
   // One URL per topic: under the sport it's filed under, keeping the tab.
   useEffect(() => {
     if (!router.isReady) return
@@ -57,8 +80,8 @@ export default function SportTopicPage() {
     topic?.id
   )
   const sportsByKey = useMemo(
-    () => keyBy(index?.sports ?? [], 'key'),
-    [index?.sports]
+    () => keyBy(index.index?.sports ?? [], 'key'),
+    [index.index?.sports]
   )
   const sport: SportInfo | 'all' | undefined = topic
     ? topic.sport === 'all'
@@ -70,7 +93,20 @@ export default function SportTopicPage() {
     [sport, topic]
   )
   const extras = useSportTopicExtras(scope)
-  const unknown = (!!index && !topic && !mainOf) || (failed && !topic)
+  // Topics the visitor blocked stay out of the feed, unless it's this one or
+  // one above it.
+  const hides = useBlockedTopicFilter(
+    ownTopicSlugs(sport, topic, index.index?.topics)
+  )
+  // F1 weekends with a market in the topic: each session goes among the games.
+  const { games, weekends } = useUnblockedSchedule(
+    schedule?.games,
+    schedule?.raceWeekends,
+    hides,
+    sportsByKey
+  )
+  const unknown =
+    (missing && rechecked && !index.loading) || (index.failed && !topic)
 
   if (unknown || (topic && !sport)) {
     return (
@@ -84,7 +120,7 @@ export default function SportTopicPage() {
       >
         <Col className="border-ink-200 bg-canvas-0 mt-3 gap-1.5 rounded-lg border px-4 py-4">
           <span className="text-ink-900 text-sm font-semibold">
-            {failed
+            {index.failed
               ? "Couldn't load the sports topics."
               : `We don't have a sports topic called "${rawTopic}".`}
           </span>
@@ -96,14 +132,15 @@ export default function SportTopicPage() {
     )
   }
 
-  const games = schedule?.games ?? []
-  const hasGames = schedule ? games.length > 0 : undefined
+  const hasGames = schedule
+    ? games.length > 0 || weekends.length > 0
+    : undefined
   const showLeague = uniq(games.map((g) => g.league)).length > 1
   const info = topic && topicInfo(topic, sport)
   const markets = info && (
     <SportMarkets
       sport={info}
-      upcoming={schedule?.upcoming ?? []}
+      upcoming={withoutRaceMarkets(schedule?.upcoming ?? [], weekends)}
       sportsByKey={sportsByKey}
       enabled={ready}
     />
@@ -112,6 +149,7 @@ export default function SportTopicPage() {
   return (
     <SportsShell
       selected={topic?.sport ?? rawSport ?? 'all'}
+      selectedTopic={topic?.slug}
       rail={rail}
       heading={
         topic ? (
@@ -124,16 +162,20 @@ export default function SportTopicPage() {
         )
       }
       subheading={
-        topic && sport ? <PartOf topic={topic} sport={sport} /> : undefined
+        extras.notice ||
+        (topic && sport ? <PartOf topic={topic} sport={sport} /> : undefined)
       }
       actions={extras.follow}
+      hides={hides}
       topics={
         topic &&
         sport && (
           <TopicRail
             sport={topic.sport}
             sportLabel={sport === 'all' ? 'sports' : sport.label}
-            topics={index?.topics.filter((t) => t.sport === topic.sport) ?? []}
+            topics={
+              index.index?.topics.filter((t) => t.sport === topic.sport) ?? []
+            }
             selected={topic.slug}
             counts={rail?.topicCounts}
           />
@@ -146,7 +188,7 @@ export default function SportTopicPage() {
           ? sportTopicPath(topic.sport, topic.slug)
           : `/sports/${rawSport ?? ''}/${rawTopic ?? ''}`,
       }}
-      trackPageView={`/sports/${rawSport ?? ''}/${slug ?? ''}`}
+      trackPageView={`/sports/${rawSport ?? ''}/${rawTopic ?? ''}`}
     >
       {topic && (
         <QueryUncontrolledTabs
@@ -165,6 +207,7 @@ export default function SportTopicPage() {
                         <GameFeed
                           key={topic.id}
                           games={games}
+                          raceWeekends={weekends}
                           loading={loading || !schedule}
                           hasMore={hasMore}
                           loadMore={loadMore}

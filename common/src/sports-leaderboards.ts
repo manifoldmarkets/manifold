@@ -23,12 +23,26 @@ export interface SportsLeaderboardEntry {
   score: number
 }
 
+/** Where one user stands on a board. */
+export interface SportsLeaderboardPosition {
+  /** 1 is the top. Everyone with a score is ranked, losses included. */
+  rank: number
+  score: number
+  /** How many are ranked on the board. */
+  of: number
+}
+
 export type SportsLeaderboards = Record<
   SportsLeaderboardKind,
   SportsLeaderboardEntry[]
 > & {
   /** When the boards were last rebuilt; null before the first run. */
   updatedTime: number | null
+  /**
+   * With a userId, that user's place on each kind: null where they have no
+   * score (no positions, or no markets of their own).
+   */
+  you?: Record<SportsLeaderboardKind, SportsLeaderboardPosition | null>
 }
 
 /**

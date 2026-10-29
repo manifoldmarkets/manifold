@@ -6,6 +6,7 @@ import { Fragment, useEffect, useState } from 'react'
 import { fromNow } from 'client-common/lib/time'
 import {
   SportsLeaderboardEntry,
+  SportsLeaderboardPosition,
   topicBoardKey,
 } from 'common/sports-leaderboards'
 import {
@@ -15,6 +16,7 @@ import {
   sportTopicPath,
 } from 'common/sports-schedule'
 import { buildArray } from 'common/util/array'
+import { formatWithCommas } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -55,9 +57,10 @@ export function SportsLeaderboards(props: {
   const label = topic?.label ?? (sport === 'all' ? 'sports' : sport.label)
   const user = useUser()
   const isClient = useIsClient()
+  // Signed in, the response also says where the visitor stands.
   const { data, loading, error, refresh } = useAPIGetter(
     'sports-leaderboards',
-    topic ? { topic: topic.id } : { sport: key },
+    { ...(topic ? { topic: topic.id } : { sport: key }), userId: user?.id },
     undefined,
     `sports-leaderboards-${key}`
   )
@@ -100,6 +103,19 @@ export function SportsLeaderboards(props: {
         columns={PROFIT_COLUMNS}
         highlightUserId={user?.id}
         emptyText={emptyText(`No ${label} traders yet.`)}
+        header={
+          user &&
+          built &&
+          data?.you && (
+            <YourPlace
+              place={data.you.profit}
+              columns={PROFIT_COLUMNS}
+              userId={user.id}
+              of="traders"
+              none={`Trade ${label} markets to get on this board.`}
+            />
+          )
+        }
       />
       <BoardPanel
         title="Top creators"
@@ -108,6 +124,19 @@ export function SportsLeaderboards(props: {
         columns={CREATOR_COLUMNS}
         highlightUserId={user?.id}
         emptyText={emptyText(`No ${label} creators yet.`)}
+        header={
+          user &&
+          built &&
+          data?.you && (
+            <YourPlace
+              place={data.you.creator}
+              columns={CREATOR_COLUMNS}
+              userId={user.id}
+              of="creators"
+              none={`Make ${label} markets to get on this board.`}
+            />
+          )
+        }
       />
       <p className="text-ink-400 px-1 text-xs">
         Traders by profit on every {label} market, all time. Creators by the
@@ -172,6 +201,39 @@ function BoardScopes(props: {
   )
 }
 
+// The visitor's own place on a board, pinned above it: their rank among
+// everyone with a score there (losses included) and their score, or how to
+// get on it.
+function YourPlace(props: {
+  place: SportsLeaderboardPosition | null
+  columns: LeaderboardColumn[]
+  userId: string
+  /** Who's ranked: "traders", "creators". */
+  of: string
+  /** What to say when they aren't on it. */
+  none: string
+}) {
+  const { place, columns, userId, of, none } = props
+  return (
+    <Row className="bg-primary-50 mb-2 items-center gap-3 rounded-lg px-3 py-2.5 text-sm">
+      <span className="text-primary-700 w-12 shrink-0 font-semibold tabular-nums">
+        {place ? `#${formatWithCommas(place.rank)}` : '–'}
+      </span>
+      <Col className="min-w-0 flex-1">
+        <span className="text-ink-900 font-semibold">You</span>
+        <span className="text-ink-500 text-xs">
+          {place ? `of ${formatWithCommas(place.of)} ${of}` : none}
+        </span>
+      </Col>
+      {place && (
+        <span className="text-ink-900 shrink-0 font-medium tabular-nums">
+          {columns[0].renderCell({ userId, score: place.score })}
+        </span>
+      )}
+    </Row>
+  )
+}
+
 // When the boards were last rebuilt, flagged once a rebuild is overdue. The
 // page re-renders at least every ten minutes (the refresh check), which keeps
 // this current.
@@ -206,6 +268,7 @@ function BoardPanel(props: {
   columns: LeaderboardColumn[]
   highlightUserId?: string
   emptyText: string
+  header?: React.ReactNode
 }) {
   const { entries, ...rest } = props
   const [expanded, setExpanded] = useState(false)

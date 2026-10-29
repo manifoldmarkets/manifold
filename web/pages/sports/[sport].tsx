@@ -13,6 +13,11 @@ import {
   SportMarkets,
   SportsShell,
 } from 'web/components/sports/sports-shell'
+import {
+  ownTopicSlugs,
+  useBlockedTopicFilter,
+  useUnblockedSchedule,
+} from 'web/components/sports/blocked-topics'
 import { TopicRail, useSportsIndex } from 'web/components/sports/topic-rail'
 import { useSportTopicExtras } from 'web/components/sports/use-sport-topic'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -51,16 +56,24 @@ export default function SportPage() {
   const scope = useMemo(() => sport && { sport }, [sport])
   const topic = useSportTopicExtras(scope)
   const { index } = useSportsIndex()
+  // Topics the visitor blocked stay out of the feed, unless it's this sport's.
+  const hides = useBlockedTopicFilter(
+    ownTopicSlugs(sport, undefined, index?.topics)
+  )
+  const { games, weekends } = useUnblockedSchedule(
+    schedule?.games,
+    schedule?.raceWeekends,
+    hides,
+    sportsByKey
+  )
   // Only judge once this sport's own response is in.
   const unknown =
     router.isReady && key !== 'all' && (!key || (!!schedule && !sport))
 
-  const games = schedule?.games ?? []
   // Tag cards with their league only when the sport has several (soccer).
   const showLeague = uniq(games.map((g) => g.league)).length > 1
   // F1's weekends (the API sends them only for F1): each session in the feed,
   // the next one featured, and the title fight under it.
-  const weekends = schedule?.raceWeekends ?? []
   const isF1 = key === 'f1'
   const championships = schedule?.raceChampionships ?? []
   const titleFight = championships.length > 0 && (
@@ -115,9 +128,13 @@ export default function SportPage() {
         )
       }
       subheading={
-        sport ? `Every ${sport.label} game, plus props and futures.` : undefined
+        topic.notice ||
+        (sport
+          ? `Every ${sport.label} game, plus props and futures.`
+          : undefined)
       }
       actions={topic.follow}
+      hides={hides}
       topics={
         sport && (
           <TopicRail
@@ -163,6 +180,11 @@ export default function SportPage() {
                         sport={sport}
                         sports={sports}
                         counts={rail?.counts ?? {}}
+                        allBlocked={
+                          (schedule?.games.length ?? 0) +
+                            (schedule?.raceWeekends?.length ?? 0) >
+                          0
+                        }
                       />
                       {markets}
                     </div>

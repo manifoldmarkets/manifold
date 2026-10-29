@@ -6,8 +6,10 @@ import { topicBoardKey } from 'common/sports-leaderboards'
 export const sportsLeaderboards: APIHandler<'sports-leaderboards'> = async ({
   sport,
   topic,
+  userId,
 }) =>
   getSportsLeaderboards(
     createSupabaseDirectClient(),
-    topic ? topicBoardKey(topic) : sport ?? 'all'
+    topic ? topicBoardKey(topic) : sport ?? 'all',
+    userId
   )

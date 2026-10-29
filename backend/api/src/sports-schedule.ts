@@ -83,14 +83,14 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   const topicIds = props.topic
     ? new Set(index.topics.find((t) => t.id === props.topic)?.groupIds ?? [])
     : undefined
+  const inTopic = (groupIds: readonly string[] | undefined) =>
+    !!topicIds && (groupIds ?? []).some((id) => topicIds.has(id))
   const shows = (m: { sport: AnySportKey }, groupIds: readonly string[]) =>
-    topicIds
-      ? groupIds.some((id) => topicIds.has(id))
-      : sport === 'all' || m.sport === sport
+    topicIds ? inTopic(groupIds) : sport === 'all' || m.sport === sport
   const [
     { games: official, groupIds: gameGroupIds },
     weekAll,
-    allWeekends,
+    { weekends: allWeekends, groupIds: raceGroupIds },
     championships,
   ] = await Promise.all([
     getOfficialGames(pg, index, daysAhead, now),
@@ -128,6 +128,8 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   // Match across all games before applying the selected sport or row limit,
   // so rail counts and the week feed don't change when the user switches tabs.
   const attached = new Set<string>()
+  // The games each attached market hangs under.
+  const attachedTo = new Map<string, string[]>()
   // The weekends each market hangs under one of the sessions of: it leaves
   // the week list only where the page shows that weekend.
   const underWeekends = new Map<string, string[]>()
@@ -214,7 +216,10 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
         g.related = matches.map(({ id, kind, group }) => ({ id, kind, group }))
       }
       g.relatedCount = matches.length
-      for (const m of matches) attached.add(m.id)
+      for (const m of matches) {
+        attached.add(m.id)
+        attachedTo.set(m.id, [...(attachedTo.get(m.id) ?? []), g.id])
+      }
     })
 
     // An F1 session: markets linked to one of its markets, then the ones
@@ -258,15 +263,33 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     }
   }
 
+  // A weekend's topics: those of its sessions' markets.
+  const weekendGroupIds = (w: RaceWeekend) =>
+    w.sessions.flatMap((s) =>
+      s.markets.flatMap((m) => raceGroupIds[m.id] ?? [])
+    )
   // The weekends this page shows: all of F1's on /sports/f1; on /sports,
-  // those within the games' horizon; none on a topic's page.
-  const shownWeekends =
-    cursor || topicIds || (sport !== 'all' && sport !== 'f1')
-      ? []
-      : sport === 'f1'
-      ? weekends
-      : weekends.filter(onBefore(horizon))
+  // those within the games' horizon; on a topic's page, those with a market
+  // in the topic.
+  const shownWeekends = cursor
+    ? []
+    : topicIds
+    ? weekends.filter((w) => inTopic(weekendGroupIds(w)))
+    : sport !== 'all' && sport !== 'f1'
+    ? []
+    : sport === 'f1'
+    ? weekends
+    : weekends.filter(onBefore(horizon))
   const shownWeekendIds = new Set(shownWeekends.map((w) => w.id))
+  // On a topic's page a market under a game leaves the week list only if the
+  // page has that game; elsewhere, whatever game it's under.
+  const topicGameIds = new Set(
+    ordered.filter((g) => inTopic(gameGroupIds[g.id])).map((g) => g.id)
+  )
+  const underAGame = (id: string) =>
+    topicIds
+      ? (attachedTo.get(id) ?? []).some((g) => topicGameIds.has(g))
+      : attached.has(id)
 
   // "This week": everything in the sports topics closing within a week that
   // is not a game row and not already hanging under one. For a sports market
@@ -280,7 +303,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   const upcoming = weekAll.filter(
     (m) =>
       !gameIds.has(m.id) &&
-      !attached.has(m.id) &&
+      !underAGame(m.id) &&
       !(underWeekends.get(m.id) ?? []).some((id) => shownWeekendIds.has(id))
   )
 
@@ -303,13 +326,20 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     for (const id of t.groupIds)
       topicsByGroupId.set(id, [...(topicsByGroupId.get(id) ?? []), t.id])
   }
+  const topicsOf = (groupIds: readonly string[]) =>
+    uniq(groupIds.flatMap((id) => topicsByGroupId.get(id) ?? []))
   const topicCounts: Record<string, number> = {}
   for (const g of ordered) {
     if (g.status === 'finished') continue
-    const topics = uniq(
-      (gameGroupIds[g.id] ?? []).flatMap((id) => topicsByGroupId.get(id) ?? [])
-    )
-    for (const id of topics) topicCounts[id] = (topicCounts[id] ?? 0) + 1
+    for (const id of topicsOf(gameGroupIds[g.id] ?? []))
+      topicCounts[id] = (topicCounts[id] ?? 0) + 1
+  }
+  // A weekend counts its sessions still on, as on the rail.
+  for (const w of weekends) {
+    const on = w.sessions.filter((s) => s.status !== 'finished').length
+    if (on === 0) continue
+    for (const id of topicsOf(weekendGroupIds(w)))
+      topicCounts[id] = (topicCounts[id] ?? 0) + on
   }
 
   // The feed: every live game on the first page, then upcoming games by
@@ -467,11 +497,12 @@ async function getRaceWeekends(pg: Pg, daysAhead: number, now: number) {
     [String(daysAhead), MANIFOLD_SPORTS_USER_IDS]
   )
   const contracts = rows.map((r) => convertContract(r) as RaceContract)
-  const answers = await getAnswers(
-    pg,
-    contracts.map((c) => c.id)
-  )
-  return buildRaceWeekends(contracts, answers, now)
+  const ids = contracts.map((c) => c.id)
+  const [answers, groupIds] = await Promise.all([
+    getAnswers(pg, ids),
+    getGroupIds(pg, ids),
+  ])
+  return { weekends: buildRaceWeekends(contracts, answers, now), groupIds }
 }
 
 // The F1 page's title markets: open multiple choice markets in the sports
@@ -592,6 +623,7 @@ function toOfficialGame(
     creatorUsername: c.creatorUsername,
     question: c.question,
     sport: sportForMarket({ sportsLeague: d.sportsLeague, groupIds }, index),
+    groupSlugs: c.groupSlugs ?? [],
     league: d.sportsLeague ?? '',
     sportsEventId,
     startTime,

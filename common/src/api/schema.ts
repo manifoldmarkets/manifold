@@ -5213,8 +5213,9 @@ export const API = (_apiTypeCheck = {
     returns: {} as { sports: SportInfo[]; topics?: SportsSubtopic[] },
   },
   // A sport's leaderboards ('all' for every sport), or with `topic` a topic's
-  // under Sports. The scheduler rebuilds them hourly. Empty boards for a sport
-  // or topic it doesn't know.
+  // under Sports, and with `userId` where that user stands on them. The
+  // scheduler rebuilds them hourly. Empty boards for a sport or topic it
+  // doesn't know.
   'sports-leaderboards': {
     method: 'GET',
     visibility: 'undocumented',
@@ -5224,6 +5225,7 @@ export const API = (_apiTypeCheck = {
       .object({
         sport: z.string().regex(SPORT_KEY_RE).optional(),
         topic: z.string().min(1).max(MAX_ID_LENGTH).optional(),
+        userId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
       })
       .strict(),
     returns: {} as SportsLeaderboards,

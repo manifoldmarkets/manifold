@@ -1262,6 +1262,11 @@ export interface ScheduleGame {
   /** Related markets, best matches first. */
   related: RelatedRef[]
   relatedCount: number
+  /**
+   * The market's topic slugs, so a page can leave out topics the visitor
+   * blocked. Absent from an API that predates it.
+   */
+  groupSlugs?: string[]
 }
 
 /**

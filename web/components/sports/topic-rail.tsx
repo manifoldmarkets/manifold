@@ -1,28 +1,34 @@
 import clsx from 'clsx'
 import Link from 'next/link'
+import { BiSolidVolumeMute } from 'react-icons/bi'
 import { SportSelection, SportsSubtopic } from 'common/sports-schedule'
 import { Carousel } from 'web/components/widgets/carousel'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { usePrivateUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { useSportHref } from './sport-rail'
 
 /**
  * Every sport and every other topic under Sports (see SportsSubtopic), which
  * the sports pages show topics and their pages by. Undefined until it loads;
- * `failed` once a request for it has failed and nothing is loaded.
+ * `failed` once a request for it has failed and nothing is loaded. It's kept
+ * for the session: `refresh` asks again.
  */
 export function useSportsIndex() {
-  const { data, error } = useAPIGetter('sports-index', {})
+  const { data, error, loading, refresh } = useAPIGetter('sports-index', {})
   return {
     index: data && { sports: data.sports, topics: data.topics ?? [] },
     failed: !data && !!error,
+    loading,
+    refresh,
   }
 }
 
 /**
  * The leagues, seasons and side topics under a sport (or the topics that
  * group sports, under All), each opening its own page. Biggest first, after
- * the sport itself; topics with games on carry their game count.
+ * the sport itself; topics with games on carry their game count, and topics
+ * the visitor blocked say so.
  */
 export function TopicRail(props: {
   sport: SportSelection
@@ -35,6 +41,7 @@ export function TopicRail(props: {
 }) {
   const { sport, sportLabel, topics, selected, counts } = props
   const hrefFor = useSportHref()
+  const blocked = usePrivateUser()?.blockedGroupSlugs
   if (topics.length === 0) return null
   return (
     <Carousel
@@ -57,6 +64,7 @@ export function TopicRail(props: {
           label={t.label}
           emoji={t.emoji}
           count={counts?.[t.id]}
+          blocked={blocked?.includes(t.slug)}
           onClick={() => track('sports topic select', { sport, topic: t.slug })}
         />
       ))}
@@ -70,9 +78,10 @@ function TopicChip(props: {
   label: string
   emoji?: string
   count?: number
+  blocked?: boolean
   onClick: () => void
 }) {
-  const { href, active, label, emoji, count, onClick } = props
+  const { href, active, label, emoji, count, blocked, onClick } = props
   return (
     <Link
       href={href}
@@ -82,11 +91,18 @@ function TopicChip(props: {
         'flex min-h-[32px] shrink-0 snap-start items-center gap-1 whitespace-nowrap rounded-full border px-2.5 text-xs font-medium transition-colors',
         active
           ? 'border-primary-300 bg-primary-50 text-primary-700'
-          : 'border-ink-200 bg-canvas-0 text-ink-600 hover:border-ink-400 hover:bg-canvas-50'
+          : clsx(
+              'border-ink-200 bg-canvas-0 hover:border-ink-400 hover:bg-canvas-50',
+              blocked ? 'text-ink-400' : 'text-ink-600'
+            )
       )}
     >
+      {blocked && (
+        <BiSolidVolumeMute className="h-3.5 w-3.5 shrink-0" aria-hidden />
+      )}
       {emoji && <span className="text-sm leading-none">{emoji}</span>}
       <span>{label}</span>
+      {blocked && <span className="sr-only">(blocked)</span>}
       {count !== undefined && count > 0 && (
         <span
           className={clsx(

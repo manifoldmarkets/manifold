@@ -13,7 +13,11 @@ import {
 } from 'web/components/moderation/mod-action'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { SportFollowButton } from './sport-follow-button'
+import {
+  BlockedTopicNotice,
+  SportTopicMenu,
+  useIsTopicBlocked,
+} from './sport-topic-menu'
 import { SportTopicPanel } from './sport-topic-panel'
 import { SportsLeaderboards } from './sports-leaderboards'
 
@@ -24,15 +28,18 @@ export type SportsPageScope = {
 }
 
 /**
- * What a sports page has from its topic: the Follow button, and the tabs
- * after its own (Leaderboards for everyone, Topic for mods). Nothing until
- * the page knows what it shows.
+ * What a sports page has from its topic: the Follow / Block menu, a notice
+ * for the heading when the visitor blocked it, and the tabs after its own
+ * (Leaderboards for everyone, Topic for mods). Nothing until the page knows
+ * what it shows.
  */
 export function useSportTopicExtras(scope: SportsPageScope | undefined): {
   follow: React.ReactNode
+  notice: React.ReactNode
   tabs: Tab[]
 } {
   const topic = useSportTopic(scope)
+  const blocked = useIsTopicBlocked(topic)
   const isMod = useAdminOrMod()
   const board = scope?.topic
     ? `topic-${scope.topic.id}`
@@ -40,7 +47,9 @@ export function useSportTopicExtras(scope: SportsPageScope | undefined): {
     ? 'all'
     : scope?.sport.key
   return {
-    follow: topic && <SportFollowButton topic={topic} />,
+    // Keyed by topic: its state is that topic's.
+    follow: topic && <SportTopicMenu key={topic.id} topic={topic} />,
+    notice: blocked && <BlockedTopicNotice />,
     tabs: buildArray<Tab>(
       scope && {
         title: 'Leaderboards',

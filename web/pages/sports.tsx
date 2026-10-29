@@ -17,6 +17,11 @@ import {
   SportMarkets,
   SportsShell,
 } from 'web/components/sports/sports-shell'
+import {
+  ownTopicSlugs,
+  useBlockedTopicFilter,
+  useUnblockedSchedule,
+} from 'web/components/sports/blocked-topics'
 import { TopicRail, useSportsIndex } from 'web/components/sports/topic-rail'
 import { useSportTopicExtras } from 'web/components/sports/use-sport-topic'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -85,8 +90,17 @@ export default function SportsPage({
   const sportsByKey = useMemo(() => keyBy(sports, 'key'), [sports])
   const topic = useSportTopicExtras(ALL)
   const { index } = useSportsIndex()
+  // Topics the visitor blocked stay out of the feed.
+  const hides = useBlockedTopicFilter(
+    ownTopicSlugs('all', undefined, undefined)
+  )
   // F1 sessions go in the feed among the games, each on its own day.
-  const weekends = schedule?.raceWeekends ?? []
+  const { games, weekends } = useUnblockedSchedule(
+    schedule?.games,
+    schedule?.raceWeekends,
+    hides,
+    sportsByKey
+  )
   const markets = (
     <SportMarkets
       sport="all"
@@ -101,8 +115,11 @@ export default function SportsPage({
       selected="all"
       rail={rail}
       heading="Sports"
-      subheading="Pick a game. Make a call. Trade with the crowd."
+      subheading={
+        topic.notice || 'Pick a game. Make a call. Trade with the crowd.'
+      }
       actions={topic.follow}
+      hides={hides}
       topics={
         <TopicRail
           sport="all"
@@ -136,7 +153,7 @@ export default function SportsPage({
             content: (
               <div className="pt-3">
                 <GameFeed
-                  games={schedule?.games ?? []}
+                  games={games}
                   raceWeekends={weekends}
                   loading={loading || !schedule}
                   hasMore={hasMore}
@@ -144,7 +161,15 @@ export default function SportsPage({
                   showLeague
                   empty={
                     <div className="flex flex-col gap-6">
-                      <NoGames sports={sports} counts={rail?.counts ?? {}} />
+                      <NoGames
+                        sports={sports}
+                        counts={rail?.counts ?? {}}
+                        allBlocked={
+                          (schedule?.games.length ?? 0) +
+                            (schedule?.raceWeekends?.length ?? 0) >
+                          0
+                        }
+                      />
                       {markets}
                     </div>
                   }

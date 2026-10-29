@@ -49,14 +49,16 @@ const props = ['nfl', 'soccer'].map((sport) => ({
   group_ids: [groupId(sport)],
 }))
 
-// Cycling sits under Sports with Tour de France inside it, and La Liga under
-// Soccer. The endpoint keeps the tree for a few minutes, so every test sees
-// the same one.
+// Cycling sits under Sports with Tour de France inside it, La Liga under
+// Soccer, and a Mexico GP topic under Formula 1. The endpoint keeps the tree
+// for a few minutes, so every test sees the same one.
 const tree = [
   [SPORTS_DEFAULT_GROUP_ID, 'cycling', 'road-bicycle-racing', '🚲  Cycling'],
   ['cycling', 'tdf', 'tour-de-france', 'Tour de France'],
   [SPORTS_DEFAULT_GROUP_ID, groupId('soccer'), 'soccer', '⚽ Soccer'],
   [groupId('soccer'), 'laliga', 'la-liga', 'La Liga'],
+  [SPORTS_DEFAULT_GROUP_ID, groupId('f1'), 'formula-1', '🏎️ Formula 1'],
+  [groupId('f1'), 'gp-mexico', 'mexico-gp', 'Mexico GP'],
 ].map(([parent_id, child_id, slug, name]) => ({
   parent_id,
   child_id,
@@ -229,12 +231,15 @@ it("shows a topic's games and markets on its page, and counts its games", async 
     ...props,
     market('stage-9', 'Who wins stage 9?', 'tdf'),
     market('pichichi', 'Who scores most this round?', 'laliga'),
+    market('crossover', 'Will a La Liga star be at the NFL game?', 'laliga'),
   ]
-  // The soccer game is a La Liga game too.
+  // The soccer game is a La Liga game too. A La Liga market hangs under the
+  // NFL game, which isn't in La Liga.
   gameGroups = [
     ...defaultGameGroups,
     { contract_id: 'soccer', group_id: 'laliga' },
   ]
+  linkRows = [{ id: 'crossover', parent_id: 'nfl', relation: 'prop' }]
   const getSchedule = sportsSchedule as (
     props: Parameters<typeof sportsSchedule>[0]
   ) => ReturnType<typeof sportsSchedule>
@@ -245,9 +250,11 @@ it("shows a topic's games and markets on its page, and counts its games", async 
 
   const laLiga = await get({ sport: 'soccer', topic: 'laliga' })
   expect(laLiga.games.map((g) => g.id)).toEqual(['soccer'])
-  // Only the market's ref, not the topics it was picked by.
+  // Only the market's ref, not the topics it was picked by. The market under
+  // the NFL game stays listed: this page doesn't have that game.
   expect(laLiga.upcoming).toEqual([
     { id: 'pichichi', closeTime: kickoff + 60 * 60 * 1000, sport: 'soccer' },
+    { id: 'crossover', closeTime: kickoff + 60 * 60 * 1000, sport: 'soccer' },
   ])
   // The rail stays the same on a topic's page.
   expect(laLiga.counts).toEqual({ nfl: 1, soccer: 1 })
@@ -257,10 +264,13 @@ it("shows a topic's games and markets on its page, and counts its games", async 
   expect(tour.games).toEqual([])
   expect(tour.upcoming.map((m) => m.id)).toEqual(['stage-9'])
 
-  // The sport's own page still has everything filed under it.
+  // The sport's own page still has everything filed under it, and as before
+  // leaves out a market that hangs under a game.
   const soccer = await get({ sport: 'soccer' })
   expect(soccer.games.map((g) => g.id)).toEqual(['soccer'])
   expect(soccer.upcoming.map((m) => m.id)).toEqual(['pichichi'])
+  const nfl = await get({ sport: 'nfl' })
+  expect(nfl.games[0].related.map((r) => r.id)).toContain('crossover')
 
   // A topic the index doesn't have shows nothing, rather than every sport.
   const unknown = await get({ sport: 'all', topic: 'not-a-topic' })
@@ -672,6 +682,29 @@ describe('F1 race weekends', () => {
         group_ids: [groupId('f1')],
       },
     ]
+  })
+
+  it('shows a weekend on the page of a topic one of its markets is in, and counts it', async () => {
+    gameGroups = [
+      ...defaultGameGroups,
+      { contract_id: 'race', group_id: 'gp-mexico' },
+    ]
+    const response = await getSchedule({ sport: 'f1', topic: 'gp-mexico' })
+    const result = 'result' in response ? response.result : response
+    expect(result.games).toEqual([])
+    expect((result.raceWeekends ?? []).map((w) => w.name)).toEqual([
+      '2026 Mexico City Grand Prix',
+    ])
+    // Both sessions still to come, as the rail counts them for F1.
+    expect(result.topicCounts).toEqual({ 'gp-mexico': 2 })
+    expect(result.raceChampionships).toEqual([])
+    // No other topic's page has it.
+    const tour = await getSchedule({
+      sport: 'road-bicycle-racing',
+      topic: 'tdf',
+    })
+    const tourResult = 'result' in tour ? tour.result : tour
+    expect(tourResult.raceWeekends).toEqual([])
   })
 
   it('puts a weekend on a card for all sports and F1, counted by session', async () => {

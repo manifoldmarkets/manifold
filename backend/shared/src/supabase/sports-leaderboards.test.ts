@@ -103,7 +103,7 @@ async function addMarkets(markets: Market[]) {
   }
 }
 
-async function addProfits(rows: [string, string, number, string?][]) {
+async function addProfits(rows: [string, string, number | 'NaN', string?][]) {
   for (const [userId, contractId, profit, answerId] of rows)
     await db.query(
       `insert into user_contract_metrics (user_id, contract_id, profit, answer_id)
@@ -141,15 +141,16 @@ beforeAll(async () => {
     );
     create table users (id text primary key, data jsonb not null);
   `)
-  await db.exec(
-    readFileSync(
-      resolve(
-        __dirname,
-        '../../../supabase/migrations/2026102901_sports_leaderboards.sql'
-      ),
-      'utf8'
+  for (const migration of [
+    '2026102901_sports_leaderboards.sql',
+    '2026102902_sports_leaderboard_positions.sql',
+  ])
+    await db.exec(
+      readFileSync(
+        resolve(__dirname, '../../../supabase/migrations', migration),
+        'utf8'
+      )
     )
-  )
 
   // 🏟️ Sports holds the NFL (a curated sport) and Cycling (a topic sport).
   // Super Bowl sits under the NFL, and Football groups the NFL.
@@ -174,6 +175,7 @@ beforeAll(async () => {
     ['dave', false],
     ['erin', false],
     ['mallory', true],
+    ['nana', false],
     [HIDDEN, false],
     [BOT, false],
   ] as const)
@@ -243,6 +245,8 @@ beforeAll(async () => {
     ['carol', 'nfl2', -40],
     ['mallory', 'nfl1', 1000],
     [HIDDEN, 'nfl1', 500],
+    // A broken position: its sums aren't numbers.
+    ['nana', 'nfl1', 'NaN'],
   ])
 })
 
@@ -315,6 +319,30 @@ describe('sports leaderboards', () => {
     expect(await board(topicBoardKey(NFL))).toEqual({ profit: [], creator: [] })
   })
 
+  it('says where a user stands on a board, losses included', async () => {
+    const you = async (board: string, userId: string) =>
+      (await getSportsLeaderboards(pg, board, userId)).you
+    // NFL traders: bob 200, alice 100, dave 30, carol -40. Creators: carol 5,
+    // erin 4 (the bot's game and the poll don't count).
+    expect(await you('nfl', 'alice')).toEqual({
+      profit: { rank: 2, score: 100, of: 4 },
+      creator: null,
+    })
+    expect(await you('nfl', 'carol')).toEqual({
+      profit: { rank: 4, score: -40, of: 4 },
+      creator: { rank: 1, score: 5, of: 2 },
+    })
+    expect(await you(topicBoardKey(SUPER_BOWL), 'dave')).toEqual({
+      profit: { rank: 1, score: 30, of: 1 },
+      creator: null,
+    })
+    // Banned, hidden, the bot as a creator, a NaN score, and nobody at all.
+    for (const userId of ['mallory', HIDDEN, BOT, 'nana', 'nobody'])
+      expect(await you('nfl', userId)).toEqual({ profit: null, creator: null })
+    // Without a user, no `you`.
+    expect((await getSportsLeaderboards(pg, 'nfl')).you).toBeUndefined()
+  })
+
   it('reports when the boards were built, for any sport', async () => {
     expect((await getSportsLeaderboards(pg, 'nfl')).updatedTime).toBe(NOW)
     expect(await getSportsLeaderboards(pg, 'curling')).toEqual({
@@ -344,6 +372,11 @@ describe('sports leaderboards', () => {
       ['alice', 100],
       ['dave', 30],
     ])
+    // And everyone's places, which the same transaction rewrites.
+    expect((await getSportsLeaderboards(pg, 'nfl', 'alice')).you).toEqual({
+      profit: { rank: 2, score: 100, of: 4 },
+      creator: null,
+    })
   })
 
   it("keeps the boards it has when the topic tree can't be read", async () => {
@@ -360,6 +393,16 @@ describe('sports leaderboards', () => {
     }
     expect((await getSportsLeaderboards(pg, 'nfl')).updatedTime).toBe(
       NOW + 1000
+    )
+  })
+
+  it('shows the boards without places, and refuses to rebuild, before the places migration', async () => {
+    await db.exec(`drop table sports_leaderboard_positions`)
+    const b = await getSportsLeaderboards(pg, 'nfl', 'alice')
+    expect(b.profit.length).toBeGreaterThan(0)
+    expect(b.you).toEqual({ profit: null, creator: null })
+    await expect(rebuildSportsLeaderboards(pg, NOW + 3500)).rejects.toThrow(
+      /migration 2026102902/
     )
   })
 
