@@ -18,9 +18,10 @@
 
 import { sortBy, sum, uniq } from 'lodash'
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { contractColumnsToSelect, log } from 'shared/utils'
+import { contractColumnsToSelect, isProd, log } from 'shared/utils'
 import { anythingToRichText } from 'shared/tiptap'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
+import { sendTextEmail } from 'shared/send-email'
 import {
   createSportsContract,
   ensureOfficialGroup,
@@ -78,6 +79,7 @@ import {
   SportsContract,
 } from 'common/contract'
 import { getAnte } from 'common/economy'
+import { DOMAIN } from 'common/envs/constants'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import {
   autoCreates,
@@ -785,8 +787,16 @@ const emptyResolveResult = (): F1ResolveResult => ({
 })
 
 /**
+ * Where a market that needs a person is reported on prod, besides the
+ * error log: the scheduler's alert policy only pages for a crashed job.
+ */
+const ATTENTION_EMAIL = 'info@manifold.markets'
+
+/**
  * A run's log lines and counts. `attention` is what only a person can
- * settle: logged as an error once per market for the life of `alerted`.
+ * settle: logged as an error and, on prod, emailed to ATTENTION_EMAIL, once
+ * per market for the life of `alerted` (so a scheduler restart repeats it
+ * for a market still waiting).
  */
 function resolveLog(result: F1ResolveResult, alerted: Set<string>) {
   const add = (
@@ -803,7 +813,12 @@ function resolveLog(result: F1ResolveResult, alerted: Set<string>) {
     })
   }
   const attention = (
-    contract: { id: string; question: string },
+    contract: {
+      id: string
+      question: string
+      slug: string
+      creatorUsername: string
+    },
     reason: string
   ) => {
     add(contract, 'attention', reason)
@@ -811,6 +826,20 @@ function resolveLog(result: F1ResolveResult, alerted: Set<string>) {
     alerted.add(contract.id)
     log.error(
       `[sports-f1-resolve] ${contract.id} (${contract.question}) needs a person: ${reason}`
+    )
+    if (!isProd()) return
+    // Not awaited: a run shouldn't wait on mail, and sendTextEmail logs its
+    // own failure.
+    void sendTextEmail(
+      ATTENTION_EMAIL,
+      `F1 market needs a person: ${contract.question}`,
+      [
+        `${reason}.`,
+        ``,
+        `https://${DOMAIN}${contractPath(contract)}`,
+        ``,
+        `It won't pay out by itself: resolve it by hand, or fix what's missing and the resolver picks it up. From sports-f1-resolve, once per scheduler process.`,
+      ].join('\n')
     )
   }
   return { add, attention }

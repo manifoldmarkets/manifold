@@ -2,7 +2,7 @@
 // scheduler-facing routing in f1-markets.ts runs for real against them.
 jest.mock('shared/utils', () => ({
   getUser: jest.fn(),
-  isProd: () => false,
+  isProd: jest.fn(() => false),
   log: Object.assign(jest.fn(), { error: jest.fn(), warn: jest.fn() }),
   contractColumnsToSelect: 'data',
 }))
@@ -21,6 +21,9 @@ jest.mock('shared/sports-markets', () => ({
   SportsMarketAlreadyExistsError: class extends Error {},
 }))
 jest.mock('shared/odds-markets', () => ({ sportsCreator: jest.fn() }))
+jest.mock('shared/send-email', () => ({
+  sendTextEmail: jest.fn().mockResolvedValue(undefined),
+}))
 jest.mock('shared/supabase/sports-competition-switches', () => ({
   getCompetitionSwitches: jest.fn(),
 }))
@@ -49,7 +52,8 @@ import {
 import { millisToTs } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { HOUR_MS } from 'common/util/time'
-import { log } from 'shared/utils'
+import { isProd, log } from 'shared/utils'
+import { sendTextEmail } from 'shared/send-email'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { sportsCreator } from 'shared/odds-markets'
@@ -163,6 +167,7 @@ beforeEach(() => {
   // Drops a test's own payout behaviour (clearAllMocks keeps it).
   jest.mocked(resolveMarketHelper).mockReset()
   jest.spyOn(Date, 'now').mockReturnValue(NOW)
+  jest.mocked(isProd).mockReturnValue(false)
   jest.mocked(sportsCreator).mockResolvedValue(creator)
   jest.mocked(getF1Sessions).mockResolvedValue([session('final')])
   jest.mocked(getF1SessionResults).mockResolvedValue(classified(22, 11, 33, 44))
@@ -698,6 +703,8 @@ describe('resolveF1TitleMarkets', () => {
   ) => ({
     data: {
       id,
+      slug: id,
+      creatorUsername: 'ManifoldSports',
       question: `2027 ${kind} title`,
       closeTime,
       outcomeType: 'MULTIPLE_CHOICE',
@@ -845,9 +852,18 @@ describe('resolveF1TitleMarkets', () => {
     ])
     const db = titleDb([title('wdc', FINAL_CLOSE)], { wdc: driversAnswers() })
     const alerted = new Set<string>()
+    jest.mocked(isProd).mockReturnValue(true)
     expect((await resolveF1TitleMarkets(db.pg, alerted)).attention).toBe(1)
     await resolveF1TitleMarkets(db.pg, alerted)
     expect(log.error).toHaveBeenCalledTimes(1)
+    // On prod, an email too, once: the alert policy only covers crashes.
+    expect(jest.mocked(sendTextEmail).mock.calls).toEqual([
+      [
+        'info@manifold.markets',
+        'F1 market needs a person: 2027 drivers title',
+        expect.stringMatching(/won by 0 points[\s\S]*\/ManifoldSports\/wdc/),
+      ],
+    ])
     expect(resolveMarketHelper).not.toHaveBeenCalled()
   })
 
@@ -1107,5 +1123,8 @@ describe('resolveF1TitleMarkets', () => {
     const r = await resolveF1TitleMarkets(db.pg)
     expect(r.attention).toBe(1)
     expect(getF1Events).not.toHaveBeenCalled()
+    // Off prod, the error log only.
+    expect(log.error).toHaveBeenCalledTimes(1)
+    expect(sendTextEmail).not.toHaveBeenCalled()
   })
 })
