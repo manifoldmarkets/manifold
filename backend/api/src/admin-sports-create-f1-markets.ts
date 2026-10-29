@@ -1,11 +1,10 @@
 // On-demand F1 market creation from BALLDONTLIE, with a dry run, from
-// /admin/sports. Dev only: in prod the daily sports-f1-create job makes them
-// once their phase is switched on, and this route refuses.
+// /admin/sports, on dev or prod. The daily sports-f1-create job makes them
+// too, for a phase switched on; by hand, every phase counts.
 
 import { APIError, APIHandler } from './helpers/endpoint'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { isProd } from 'shared/utils'
 import { hasBalldontlieKey } from 'shared/balldontlie-f1-client'
 import { createF1Markets } from 'shared/f1-markets'
 import { calendarEntriesFor } from 'common/sports-calendar'
@@ -14,12 +13,6 @@ export const adminSportsCreateF1Markets: APIHandler<
   'admin-sports-create-f1-markets'
 > = async (props, auth) => {
   throwErrorIfNotAdmin(auth.uid)
-  if (isProd()) {
-    throw new APIError(
-      403,
-      'F1 markets can only be created on dev until the F1 jobs ship'
-    )
-  }
   const { competitionId, dryRun = false, keys } = props
   if (calendarEntriesFor(competitionId)[0]?.sport !== 'f1') {
     throw new APIError(400, `${competitionId} is not an F1 competition`)

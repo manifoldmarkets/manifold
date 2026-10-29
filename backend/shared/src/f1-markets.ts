@@ -149,7 +149,7 @@ function describeF1Market(params: F1MarketParams, ante: number): string {
 
 /**
  * Create the missing markets for one F1 calendar competition's sessions in
- * the next two weeks: race winner and podium, sprint winner, pole. The entry
+ * the next ROLLING_WINDOW_DAYS: race winner and podium, sprint winner, pole. The entry
  * list and the opening prices come from the season's driver standings. A
  * session already holding a market of a type is skipped, and the check is
  * repeated inside the creating transaction. `keys` narrows the run to the
