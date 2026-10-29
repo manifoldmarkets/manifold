@@ -49,11 +49,14 @@ const props = ['nfl', 'soccer'].map((sport) => ({
   group_ids: [groupId(sport)],
 }))
 
-// Cycling sits under Sports with Tour de France inside it. The endpoint keeps
-// the tree for a few minutes, so every test sees the same one.
+// Cycling sits under Sports with Tour de France inside it, and La Liga under
+// Soccer. The endpoint keeps the tree for a few minutes, so every test sees
+// the same one.
 const tree = [
   [SPORTS_DEFAULT_GROUP_ID, 'cycling', 'road-bicycle-racing', '🚲  Cycling'],
   ['cycling', 'tdf', 'tour-de-france', 'Tour de France'],
+  [SPORTS_DEFAULT_GROUP_ID, groupId('soccer'), 'soccer', '⚽ Soccer'],
+  [groupId('soccer'), 'laliga', 'la-liga', 'La Liga'],
 ].map(([parent_id, child_id, slug, name]) => ({
   parent_id,
   child_id,
@@ -209,6 +212,60 @@ it('gives every Sports subtopic a sport and files markets from deeper topics', a
   expect(result.counts).toEqual({ nfl: 1, soccer: 1 })
   expect(result.games).toEqual([])
   expect(result.upcoming.map((m) => m.id)).toEqual(['stage-9'])
+})
+
+it("shows a topic's games and markets on its page, and counts its games", async () => {
+  const market = (id: string, question: string, topic: string) => ({
+    id,
+    creator_id: 'community',
+    question,
+    sports_event_id: null as unknown as string,
+    sports_market_type: null as unknown as string,
+    close_time: new Date(kickoff + 60 * 60 * 1000).toISOString(),
+    importance_score: 1,
+    group_ids: [topic],
+  })
+  marketRows = [
+    ...props,
+    market('stage-9', 'Who wins stage 9?', 'tdf'),
+    market('pichichi', 'Who scores most this round?', 'laliga'),
+  ]
+  // The soccer game is a La Liga game too.
+  gameGroups = [
+    ...defaultGameGroups,
+    { contract_id: 'soccer', group_id: 'laliga' },
+  ]
+  const getSchedule = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const get = async (options: Parameters<typeof sportsSchedule>[0]) => {
+    const response = await getSchedule(options)
+    return 'result' in response ? response.result : response
+  }
+
+  const laLiga = await get({ sport: 'soccer', topic: 'laliga' })
+  expect(laLiga.games.map((g) => g.id)).toEqual(['soccer'])
+  // Only the market's ref, not the topics it was picked by.
+  expect(laLiga.upcoming).toEqual([
+    { id: 'pichichi', closeTime: kickoff + 60 * 60 * 1000, sport: 'soccer' },
+  ])
+  // The rail stays the same on a topic's page.
+  expect(laLiga.counts).toEqual({ nfl: 1, soccer: 1 })
+  expect(laLiga.topicCounts).toEqual({ laliga: 1 })
+
+  const tour = await get({ sport: 'road-bicycle-racing', topic: 'tdf' })
+  expect(tour.games).toEqual([])
+  expect(tour.upcoming.map((m) => m.id)).toEqual(['stage-9'])
+
+  // The sport's own page still has everything filed under it.
+  const soccer = await get({ sport: 'soccer' })
+  expect(soccer.games.map((g) => g.id)).toEqual(['soccer'])
+  expect(soccer.upcoming.map((m) => m.id)).toEqual(['pichichi'])
+
+  // A topic the index doesn't have shows nothing, rather than every sport.
+  const unknown = await get({ sport: 'all', topic: 'not-a-topic' })
+  expect(unknown.games).toEqual([])
+  expect(unknown.upcoming).toEqual([])
 })
 
 it('shows a cpmm-multi-2 game at its answer prices', async () => {

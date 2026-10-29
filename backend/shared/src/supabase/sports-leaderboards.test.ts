@@ -4,6 +4,7 @@ import { resolve } from 'path'
 import * as pgPromise from 'pg-promise'
 import { HIDE_FROM_LEADERBOARD_USER_IDS } from 'common/envs/constants'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
+import { topicBoardKey } from 'common/sports-leaderboards'
 import { SPORTS_DEFAULT_GROUP_ID } from 'common/sports-schedule'
 import { SupabaseDirectClient } from './init'
 import {
@@ -27,6 +28,9 @@ jest.setTimeout(30_000)
 const NOW = Date.parse('2026-10-29T12:00:00Z')
 const NFL = 'TNQwmbE5p6dnKx2e6Qlp'
 const CYCLING = 'cycling-topic'
+const SUPER_BOWL = 'super-bowl-topic'
+// "⚽ 🏈 Football": groups sports, so it holds the NFL.
+const FOOTBALL = 'Vcf6CYTTSXAiStbKSqQq'
 const OFF_TOPIC = 'politics-topic'
 const BOT = MANIFOLD_SPORTS_USER_IDS[0]
 const HIDDEN = HIDE_FROM_LEADERBOARD_USER_IDS[0]
@@ -148,16 +152,20 @@ beforeAll(async () => {
   )
 
   // 🏟️ Sports holds the NFL (a curated sport) and Cycling (a topic sport).
+  // Super Bowl sits under the NFL, and Football groups the NFL.
   await db.query(
     `insert into groups (id, slug, name, total_members) values
        ($1, 'nfl', '🏈 NFL', 10),
        ($2, 'road-bicycle-racing', '🚲 Cycling', 5),
-       ($3, 'politics-default', 'Politics', 50)`,
-    [NFL, CYCLING, OFF_TOPIC]
+       ($3, 'politics-default', 'Politics', 50),
+       ($4, 'super-bowl', '🏈 Super Bowl', 3),
+       ($5, 'football', '⚽ 🏈 Football', 8)`,
+    [NFL, CYCLING, OFF_TOPIC, SUPER_BOWL, FOOTBALL]
   )
   await db.query(
-    `insert into group_groups (top_id, bottom_id) values ($1, $2), ($1, $3)`,
-    [SPORTS_DEFAULT_GROUP_ID, NFL, CYCLING]
+    `insert into group_groups (top_id, bottom_id) values
+       ($1, $2), ($1, $3), ($2, $4), ($1, $5), ($5, $2)`,
+    [SPORTS_DEFAULT_GROUP_ID, NFL, CYCLING, SUPER_BOWL, FOOTBALL]
   )
   for (const [id, banned] of [
     ['alice', false],
@@ -190,6 +198,7 @@ beforeAll(async () => {
       sportsLeague: 'NFL',
     },
     { id: 'cyc1', topics: [CYCLING], creator: 'dave', traders: 3 },
+    { id: 'sb1', topics: [SUPER_BOWL], creator: 'erin', traders: 4 },
     // Under Sports with no sport of its own: All only.
     {
       id: 'gen1',
@@ -230,6 +239,7 @@ beforeAll(async () => {
     ['alice', 'off1', 10000],
     ['bob', 'nfl1', 200],
     ['bob', 'gen1', 20],
+    ['dave', 'sb1', 30],
     ['carol', 'nfl2', -40],
     ['mallory', 'nfl1', 1000],
     [HIDDEN, 'nfl1', 500],
@@ -247,15 +257,21 @@ describe('sports leaderboards', () => {
   })
 
   it("ranks each sport's traders and creators, and All across them", async () => {
-    // nfl, road-bicycle-racing and all, each with both kinds.
-    expect(await rebuildSportsLeaderboards(pg, NOW)).toBe(6)
+    // nfl, road-bicycle-racing, all, Super Bowl and Football, each with both
+    // kinds.
+    expect(await rebuildSportsLeaderboards(pg, NOW)).toBe(10)
 
+    // Super Bowl markets count toward the NFL.
     expect(await board('nfl')).toEqual({
       profit: [
         ['bob', 200],
         ['alice', 100],
+        ['dave', 30],
       ],
-      creator: [['carol', 5]],
+      creator: [
+        ['carol', 5],
+        ['erin', 4],
+      ],
     })
     expect(await board('road-bicycle-racing')).toEqual({
       profit: [['alice', 50]],
@@ -265,15 +281,38 @@ describe('sports leaderboards', () => {
       profit: [
         ['bob', 220],
         ['alice', 150],
+        ['dave', 30],
       ],
       creator: [
-        ['erin', 7],
+        ['erin', 11],
         ['carol', 5],
         ['dave', 3],
       ],
     })
     // A market with no sport of its own makes no board of its own.
     expect(await board('other')).toEqual({ profit: [], creator: [] })
+  })
+
+  it('ranks each other topic under Sports on what its page covers', async () => {
+    expect(await board(topicBoardKey(SUPER_BOWL))).toEqual({
+      profit: [['dave', 30]],
+      creator: [['erin', 4]],
+    })
+    // Football covers the NFL and the Super Bowl under it, by their topics:
+    // the bot's game, filed under the NFL by its league alone, isn't in them.
+    expect(await board(topicBoardKey(FOOTBALL))).toEqual({
+      profit: [
+        ['bob', 200],
+        ['alice', 100],
+        ['dave', 30],
+      ],
+      creator: [
+        ['carol', 5],
+        ['erin', 4],
+      ],
+    })
+    // A sport's main topic has the sport's board, not one of its own.
+    expect(await board(topicBoardKey(NFL))).toEqual({ profit: [], creator: [] })
   })
 
   it('reports when the boards were built, for any sport', async () => {
@@ -287,7 +326,7 @@ describe('sports leaderboards', () => {
 
   it('replaces every board, so a sport that empties out loses its board', async () => {
     await db.exec(`delete from group_contracts where group_id = '${CYCLING}'`)
-    expect(await rebuildSportsLeaderboards(pg, NOW + 1000)).toBe(4)
+    expect(await rebuildSportsLeaderboards(pg, NOW + 1000)).toBe(8)
     expect(await board('road-bicycle-racing')).toEqual({
       profit: [],
       creator: [],
@@ -303,6 +342,7 @@ describe('sports leaderboards', () => {
     expect((await board('nfl')).profit).toEqual([
       ['bob', 200],
       ['alice', 100],
+      ['dave', 30],
     ])
   })
 

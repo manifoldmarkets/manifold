@@ -13,6 +13,7 @@ import {
   SportMarkets,
   SportsShell,
 } from 'web/components/sports/sports-shell'
+import { TopicRail, useSportsIndex } from 'web/components/sports/topic-rail'
 import { useSportTopicExtras } from 'web/components/sports/use-sport-topic'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
@@ -33,12 +34,13 @@ export default function SportPage() {
   const key =
     raw && SPORT_KEY_RE.test(raw.toLowerCase()) ? raw.toLowerCase() : undefined
   useSaveScroll(`sports-${key ?? ''}`, true)
-  // One URL per sport.
+  // One URL per sport, and All is /sports.
   useEffect(() => {
-    if (raw && key && raw !== key) router.replace(sportPath(key))
+    if (key === 'all') router.replace(sportPath('all'))
+    else if (raw && key && raw !== key) router.replace(sportPath(key))
   }, [raw, key])
 
-  const ready = router.isReady && !!key
+  const ready = router.isReady && !!key && key !== 'all'
   const { schedule, rail, loading, loadMore, hasMore } = useSportsSchedule(
     key ?? 'all',
     ready
@@ -46,9 +48,12 @@ export default function SportPage() {
   const sports = rail?.sports ?? CURATED_SPORTS
   const sportsByKey = useMemo(() => keyBy(sports, 'key'), [sports])
   const sport = key ? sportsByKey[key] : undefined
-  const topic = useSportTopicExtras(sport)
+  const scope = useMemo(() => sport && { sport }, [sport])
+  const topic = useSportTopicExtras(scope)
+  const { index } = useSportsIndex()
   // Only judge once this sport's own response is in.
-  const unknown = router.isReady && (!key || (!!schedule && !sport))
+  const unknown =
+    router.isReady && key !== 'all' && (!key || (!!schedule && !sport))
 
   const games = schedule?.games ?? []
   // Tag cards with their league only when the sport has several (soccer).
@@ -113,6 +118,16 @@ export default function SportPage() {
         sport ? `Every ${sport.label} game, plus props and futures.` : undefined
       }
       actions={topic.follow}
+      topics={
+        sport && (
+          <TopicRail
+            sport={sport.key}
+            sportLabel={sport.label}
+            topics={index?.topics.filter((t) => t.sport === sport.key) ?? []}
+            counts={rail?.topicCounts}
+          />
+        )
+      }
       seo={{
         title: sport ? `${sport.longLabel} games and markets` : 'Sports',
         description: sport

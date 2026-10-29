@@ -1,3 +1,4 @@
+import { uniq } from 'lodash'
 import {
   AnySportKey,
   sportForMarket,
@@ -7,7 +8,8 @@ import {
 // Leaderboards for the sports pages. A full pass over every sports market's
 // positions takes too long to run per request, so the scheduler rebuilds them
 // (backend/shared/src/supabase/sports-leaderboards.ts) and the API serves the
-// stored boards.
+// stored boards: one per sport ('all' for every sport), and one per other
+// topic under Sports (topicBoardKey).
 
 export const SPORTS_LEADERBOARD_KINDS = ['profit', 'creator'] as const
 export type SportsLeaderboardKind = (typeof SPORTS_LEADERBOARD_KINDS)[number]
@@ -40,4 +42,39 @@ export function leaderboardSportForMarket(
 ): AnySportKey | undefined {
   const sport = sportForMarket(market, index)
   return sport === 'other' ? undefined : sport
+}
+
+/** Where a topic's boards are stored. Sport keys never hold a colon. */
+export const topicBoardKey = (topicId: string) => `topic:${topicId}`
+
+/** Topic id → the boards of the topics whose pages cover it. */
+export function topicBoardsByGroupId(
+  index: Pick<SportsIndex, 'topics'>
+): Map<string, string[]> {
+  const boards = new Map<string, string[]>()
+  for (const t of index.topics) {
+    for (const id of t.groupIds) {
+      boards.set(id, [...(boards.get(id) ?? []), topicBoardKey(t.id)])
+    }
+  }
+  return boards
+}
+
+/**
+ * Every board a market counts toward: All, its sport's, and the board of
+ * each other topic under Sports whose page covers it (the topic and the ones
+ * under it), so a Premier League market counts toward Premier League, Soccer
+ * and All.
+ */
+export function leaderboardBoardsForMarket(
+  market: { sportsLeague?: string | null; groupIds: readonly string[] },
+  index: SportsIndex,
+  byGroupId = topicBoardsByGroupId(index)
+): string[] {
+  const sport = leaderboardSportForMarket(market, index)
+  return uniq([
+    'all',
+    ...(sport ? [sport] : []),
+    ...market.groupIds.flatMap((id) => byGroupId.get(id) ?? []),
+  ])
 }

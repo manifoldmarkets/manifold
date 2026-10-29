@@ -34,6 +34,8 @@ export function SportsShell(props: {
   subheading?: ReactNode
   /** Beside Create, like the Follow button. */
   actions?: ReactNode
+  /** Under the sport navigation: the sport's topics (TopicRail). */
+  topics?: ReactNode
   seo: ComponentProps<typeof SEO>
   trackPageView: string
   children: ReactNode
@@ -44,6 +46,7 @@ export function SportsShell(props: {
     heading,
     subheading,
     actions,
+    topics,
     seo,
     trackPageView,
     children,
@@ -92,6 +95,7 @@ export function SportsShell(props: {
             counts={rail?.counts ?? {}}
           />
         </div>
+        {topics}
 
         {children}
 

@@ -1,9 +1,20 @@
 import { ClockIcon, ExclamationIcon } from '@heroicons/react/outline'
+import { ChevronRightIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { Fragment, useEffect, useState } from 'react'
 import { fromNow } from 'client-common/lib/time'
-import { SportsLeaderboardEntry } from 'common/sports-leaderboards'
-import { SportInfo } from 'common/sports-schedule'
+import {
+  SportsLeaderboardEntry,
+  topicBoardKey,
+} from 'common/sports-leaderboards'
+import {
+  SportInfo,
+  sportPath,
+  SportsSubtopic,
+  sportTopicPath,
+} from 'common/sports-schedule'
+import { buildArray } from 'common/util/array'
 import { MINUTE_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -26,19 +37,27 @@ import {
 const SHOWN = 10
 
 /**
- * The best traders on a sport's markets (every sport's, on /sports) and the
- * creators whose markets drew the most traders. The scheduler rebuilds both
- * hourly.
+ * The best traders on a sport's markets (every sport's, on /sports; a topic's
+ * on its page) and the creators whose markets drew the most traders. The
+ * scheduler rebuilds both hourly.
  */
-export function SportsLeaderboards(props: { sport: SportInfo | 'all' }) {
-  const { sport } = props
-  const key = sport === 'all' ? 'all' : sport.key
-  const label = sport === 'all' ? 'sports' : sport.label
+export function SportsLeaderboards(props: {
+  sport: SportInfo | 'all'
+  /** A topic under the sport, for its page. */
+  topic?: SportsSubtopic
+}) {
+  const { sport, topic } = props
+  const key = topic
+    ? topicBoardKey(topic.id)
+    : sport === 'all'
+    ? 'all'
+    : sport.key
+  const label = topic?.label ?? (sport === 'all' ? 'sports' : sport.label)
   const user = useUser()
   const isClient = useIsClient()
   const { data, loading, error, refresh } = useAPIGetter(
     'sports-leaderboards',
-    { sport: key },
+    topic ? { topic: topic.id } : { sport: key },
     undefined,
     `sports-leaderboards-${key}`
   )
@@ -57,8 +76,8 @@ export function SportsLeaderboards(props: { sport: SportInfo | 'all' }) {
   }, [updatedTime, tick])
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
-  // Keyed by sport where it's used, and each sport has its own cache slot,
-  // so data is always this sport's.
+  // Keyed by board where it's used, and each board has its own cache slot,
+  // so data is always this board's.
   const status = boardStatus(data, error, mounted)
   const built = status === 'built'
   const emptyText = (none: string) =>
@@ -70,6 +89,7 @@ export function SportsLeaderboards(props: { sport: SportInfo | 'all' }) {
 
   return (
     <Col className="gap-4">
+      <BoardScopes sport={sport} topic={topic} />
       {built && data?.updatedTime && isClient && (
         <BoardsUpdated updatedTime={data.updatedTime} />
       )}
@@ -95,6 +115,60 @@ export function SportsLeaderboards(props: { sport: SportInfo | 'all' }) {
         Updated hourly.
       </p>
     </Col>
+  )
+}
+
+// The boards above this one: All sports › Soccer › Premier League, each
+// opening its page's Leaderboards tab. The topics under it are in the topic
+// row above the tabs.
+function BoardScopes(props: {
+  sport: SportInfo | 'all'
+  topic?: SportsSubtopic
+}) {
+  const { sport, topic } = props
+  const tab = '?tab=leaderboards'
+  const scopes = buildArray(
+    {
+      label: 'All sports',
+      href: sportPath('all') + tab,
+      active: sport === 'all' && !topic,
+    },
+    sport !== 'all' && {
+      label: sport.label,
+      href: sportPath(sport.key) + tab,
+      active: !topic,
+    },
+    topic && {
+      label: topic.label,
+      href: sportTopicPath(topic.sport, topic.slug) + tab,
+      active: true,
+    }
+  )
+  if (scopes.length < 2) return null
+  return (
+    <nav aria-label="Leaderboard scope">
+      <Row className="flex-wrap items-center gap-1 px-1 text-sm">
+        {scopes.map((s, i) => (
+          <Fragment key={s.href}>
+            {i > 0 && (
+              <ChevronRightIcon className="text-ink-400 h-4 w-4 shrink-0" />
+            )}
+            <Link
+              href={s.href}
+              aria-current={s.active ? 'page' : undefined}
+              className={clsx(
+                'rounded-md px-2 py-1',
+                s.active
+                  ? 'bg-ink-100 text-ink-900 font-semibold'
+                  : 'text-primary-700 hover:bg-canvas-50'
+              )}
+            >
+              {s.label}
+            </Link>
+          </Fragment>
+        ))}
+      </Row>
+    </nav>
   )
 }
 

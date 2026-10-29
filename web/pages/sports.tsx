@@ -17,6 +17,7 @@ import {
   SportMarkets,
   SportsShell,
 } from 'web/components/sports/sports-shell'
+import { TopicRail, useSportsIndex } from 'web/components/sports/topic-rail'
 import { useSportTopicExtras } from 'web/components/sports/use-sport-topic'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
@@ -40,6 +41,8 @@ const LEGACY_TAB_TO_SPORT: Record<string, AnySportKey> = {
   nhl: 'nhl',
   mlb: 'mlb',
 }
+
+const ALL = { sport: 'all' } as const
 
 const first = (v: string | string[] | undefined) =>
   (Array.isArray(v) ? v[0] : v)?.toLowerCase()
@@ -80,7 +83,8 @@ export default function SportsPage({
   )
   const sports = rail?.sports ?? CURATED_SPORTS
   const sportsByKey = useMemo(() => keyBy(sports, 'key'), [sports])
-  const topic = useSportTopicExtras('all')
+  const topic = useSportTopicExtras(ALL)
+  const { index } = useSportsIndex()
   // F1 sessions go in the feed among the games, each on its own day.
   const weekends = schedule?.raceWeekends ?? []
   const markets = (
@@ -99,6 +103,14 @@ export default function SportsPage({
       heading="Sports"
       subheading="Pick a game. Make a call. Trade with the crowd."
       actions={topic.follow}
+      topics={
+        <TopicRail
+          sport="all"
+          sportLabel="sports"
+          topics={index?.topics.filter((t) => t.sport === 'all') ?? []}
+          counts={rail?.topicCounts}
+        />
+      }
       seo={{
         title: 'Sports',
         description:

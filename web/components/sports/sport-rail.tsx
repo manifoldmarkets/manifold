@@ -7,6 +7,7 @@ import {
   SportInfo,
   sportPath,
   SportSelection,
+  sportTopicPath,
 } from 'common/sports-schedule'
 import { Carousel } from 'web/components/widgets/carousel'
 import DropdownMenu from 'web/components/widgets/dropdown-menu'
@@ -17,13 +18,17 @@ import { track } from 'web/lib/service/analytics'
 // Games on a sport), so switching sports from it opens the other one.
 const SHARED_TABS = ['markets', 'leaderboards', 'topic']
 
-/** Links between sports keep the open tab when the next page has it too. */
+/**
+ * Links between sports, and to a topic's page under one, keep the open tab
+ * when the next page has it too.
+ */
 export function useSportHref() {
   const router = useRouter()
   const tab = router.query.tab
   const keep = typeof tab === 'string' && SHARED_TABS.includes(tab)
-  return (sport: SportSelection) =>
-    sportPath(sport) + (keep ? `?tab=${tab}` : '')
+  return (sport: SportSelection, topicSlug?: string) =>
+    (topicSlug ? sportTopicPath(sport, topicSlug) : sportPath(sport)) +
+    (keep ? `?tab=${tab}` : '')
 }
 
 /**

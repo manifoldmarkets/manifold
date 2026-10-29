@@ -1,4 +1,4 @@
-import { groupBy, sortBy, uniqBy } from 'lodash'
+import { groupBy, sortBy, uniq, uniqBy } from 'lodash'
 import { type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { contractColumnsToSelect, log } from 'shared/utils'
@@ -78,11 +78,25 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   const raceHorizon = now + raceDays * DAY_MS
 
   const index = await getSportsIndex(pg, now)
-  const [official, weekAll, allWeekends, championships] = await Promise.all([
+  // A topic's page has only the games and markets in it or a topic under it
+  // (none for a topic the index doesn't have).
+  const topicIds = props.topic
+    ? new Set(index.topics.find((t) => t.id === props.topic)?.groupIds ?? [])
+    : undefined
+  const shows = (m: { sport: AnySportKey }, groupIds: readonly string[]) =>
+    topicIds
+      ? groupIds.some((id) => topicIds.has(id))
+      : sport === 'all' || m.sport === sport
+  const [
+    { games: official, groupIds: gameGroupIds },
+    weekAll,
+    allWeekends,
+    championships,
+  ] = await Promise.all([
     getOfficialGames(pg, index, daysAhead, now),
     getUpcomingMarkets(pg, index),
     getRaceWeekends(pg, raceDays, now),
-    sport === 'f1' && !cursor
+    sport === 'f1' && !cursor && !topicIds
       ? getRaceChampionships(pg, index, now)
       : Promise.resolve([]),
   ])
@@ -245,9 +259,9 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   }
 
   // The weekends this page shows: all of F1's on /sports/f1; on /sports,
-  // those within the games' horizon.
+  // those within the games' horizon; none on a topic's page.
   const shownWeekends =
-    cursor || (sport !== 'all' && sport !== 'f1')
+    cursor || topicIds || (sport !== 'all' && sport !== 'f1')
       ? []
       : sport === 'f1'
       ? weekends
@@ -283,12 +297,26 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     const on = w.sessions.filter((s) => s.status !== 'finished').length
     if (on > 0) counts[w.sport] = (counts[w.sport] ?? 0) + on
   }
+  // And per topic, the games each topic's page shows.
+  const topicsByGroupId = new Map<string, string[]>()
+  for (const t of index.topics) {
+    for (const id of t.groupIds)
+      topicsByGroupId.set(id, [...(topicsByGroupId.get(id) ?? []), t.id])
+  }
+  const topicCounts: Record<string, number> = {}
+  for (const g of ordered) {
+    if (g.status === 'finished') continue
+    const topics = uniq(
+      (gameGroupIds[g.id] ?? []).flatMap((id) => topicsByGroupId.get(id) ?? [])
+    )
+    for (const id of topics) topicCounts[id] = (topicCounts[id] ?? 0) + 1
+  }
 
   // The feed: every live game on the first page, then upcoming games by
   // kickoff, `limit` at a time. A cursor continues after the last game the
   // client has.
   const feed = ordered.filter(
-    (g) => g.status !== 'finished' && (sport === 'all' || g.sport === sport)
+    (g) => g.status !== 'finished' && shows(g, gameGroupIds[g.id] ?? [])
   )
   const live = cursor ? [] : feed.filter((g) => g.status === 'live')
   const later = feed.filter(
@@ -305,13 +333,14 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     // Only the first page carries the week's other markets.
     upcoming: cursor
       ? []
-      : (sport === 'all'
-          ? upcoming
-          : upcoming.filter((m) => m.sport === sport)
-        ).slice(0, MAX_UPCOMING_RETURNED),
+      : upcoming
+          .filter((m) => shows(m, m.groupIds))
+          .slice(0, MAX_UPCOMING_RETURNED)
+          .map(({ id, closeTime, sport }) => ({ id, closeTime, sport })),
     raceWeekends: shownWeekends,
     raceChampionships: championships,
     counts,
+    topicCounts,
     liveCount,
     sports: index.sports,
   }
@@ -370,7 +399,11 @@ async function getOfficialGames(
   index: SportsIndex,
   daysAhead: number,
   now: number
-): Promise<ScheduleGame[]> {
+): Promise<{
+  games: ScheduleGame[]
+  /** Each game's topic ids. */
+  groupIds: Record<string, string[]>
+}> {
   const rows = await pg.manyOrNone(
     `select ${contractColumnsToSelect}
      from contracts
@@ -397,7 +430,7 @@ async function getOfficialGames(
     getAnswers(pg, ids),
     getGroupIds(pg, ids),
   ])
-  return contracts
+  const games = contracts
     .map((c) =>
       toOfficialGame(
         c,
@@ -408,6 +441,7 @@ async function getOfficialGames(
       )
     )
     .filter((g): g is ScheduleGame => g !== null)
+  return { games, groupIds: groupIdsByContract }
 }
 
 // F1 weekends: @ManifoldSports markets on a `bdl-f1:` session, which a game
@@ -672,7 +706,7 @@ async function getRelatedCandidates(
 async function getUpcomingMarkets(
   pg: Pg,
   index: SportsIndex
-): Promise<UpcomingMarketRef[]> {
+): Promise<(UpcomingMarketRef & { groupIds: string[] })[]> {
   const rows = await querySportsMarkets(pg, index, {
     groupIds: index.allGroupIds,
     closeFrom: '0 seconds',
@@ -681,10 +715,13 @@ async function getUpcomingMarkets(
     limit: MAX_UPCOMING,
   })
   return rows
-    .filter(
-      (r): r is RelatedCandidate & { closeTime: number } => r.closeTime != null
-    )
-    .map((r) => ({ id: r.id, closeTime: r.closeTime, sport: r.sport }))
+    .filter((r): r is typeof r & { closeTime: number } => r.closeTime != null)
+    .map((r) => ({
+      id: r.id,
+      closeTime: r.closeTime,
+      sport: r.sport,
+      groupIds: r.groupIds,
+    }))
 }
 
 async function querySportsMarkets(
@@ -698,7 +735,7 @@ async function querySportsMarkets(
     orderBy: 'importance' | 'close'
     limit: number
   }
-): Promise<RelatedCandidate[]> {
+): Promise<(RelatedCandidate & { groupIds: string[] })[]> {
   const order =
     opts.orderBy === 'close' ? 'c.close_time asc' : 'c.importance_score desc'
   const rows = await pg.manyOrNone<{
@@ -756,6 +793,7 @@ async function querySportsMarkets(
         index
       ),
       importanceScore: Number(r.importance_score ?? 0),
+      groupIds: r.group_ids,
     }
   })
 }
