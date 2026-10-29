@@ -448,10 +448,17 @@ export type Sports = {
   sportsEntrantIds?: (number | null)[]
   /**
    * A field event's session: when the pipeline first saw the provider mark
-   * it cancelled, cleared if it stops being so. N/A waits for this to be
+   * it cancelled, cleared once it's seen otherwise. N/A waits for this to be
    * old enough (common/f1-markets.ts F1_CANCEL_CONFIRM_HOURS).
    */
   sportsCanceledSince?: number
+  /**
+   * A field event's session: when the pipeline first saw it final, cleared
+   * once it's seen otherwise. A payout waits F1_RESOLVE_DELAY_HOURS from
+   * this as well as from the session's own time, so a stale or rewritten
+   * date can't bring it forward.
+   */
+  sportsFinalSince?: number
 }
 
 export type MultiContract =

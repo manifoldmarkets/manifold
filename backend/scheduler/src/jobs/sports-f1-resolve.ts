@@ -46,10 +46,20 @@ export async function resolveF1SportsMarkets() {
       }`
     )
   }
-  const r = await resolveF1Markets(pg, alerted)
-  if (r.checked > 0) {
-    log(
-      `[sports-f1-resolve] checked=${r.checked} resolved=${r.resolved} waiting=${r.waiting} attention=${r.attention} errors=${r.errors}`
+  // Each phase on its own, so a provider outage in one doesn't stop the
+  // next.
+  try {
+    const r = await resolveF1Markets(pg, alerted)
+    if (r.checked > 0) {
+      log(
+        `[sports-f1-resolve] checked=${r.checked} resolved=${r.resolved} waiting=${r.waiting} attention=${r.attention} errors=${r.errors}`
+      )
+    }
+  } catch (e) {
+    log.error(
+      `[sports-f1-resolve] session markets didn't resolve: ${
+        e instanceof Error ? e.message : String(e)
+      }`
     )
   }
   // A title waits all season, so only a run that did something says so.

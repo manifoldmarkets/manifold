@@ -666,10 +666,12 @@ export function f1SessionSync(
 }
 
 /**
- * When a session's market may pay out, by the provider's own time for the
- * session: its start, plus the time its market stays open, plus
+ * The earliest a session's market may pay out by the provider's own time for
+ * the session: its start, plus the time its market stays open, plus
  * F1_RESOLVE_DELAY_HOURS for the stewards. Closing a market early never
- * brings this forward. Null for a session with no market or a date that
+ * brings this forward. The resolver also waits F1_RESOLVE_DELAY_HOURS from
+ * when it first saw the session final (sportsFinalSince), in case the date
+ * is stale or rewritten. Null for a session with no market or a date that
  * doesn't parse.
  */
 export function f1SessionSettleAt(
@@ -684,9 +686,10 @@ export function f1SessionSettleAt(
 }
 
 /**
- * How long a session must have been seen cancelled before its market
- * resolves N/A, so a status that flickers doesn't refund a session that
- * then runs. syncF1SessionMarkets records when it first saw it.
+ * How long a session must have been seen cancelled, without a break,
+ * before its market resolves N/A, so a status that flickers doesn't refund
+ * a session that then runs. The sync and the resolver record when they
+ * first saw it (sportsCanceledSince) and clear it on any other status.
  */
 export const F1_CANCEL_CONFIRM_HOURS = 2
 
