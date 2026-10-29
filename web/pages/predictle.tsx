@@ -1,5 +1,11 @@
 import { useEffect, useState, useRef } from 'react'
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  useKeyboardSensor,
+  useMouseSensor,
+} from '@hello-pangea/dnd'
 import clsx from 'clsx'
 
 import { Page } from 'web/components/layout/page'
@@ -8,7 +14,6 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { Button } from 'web/components/buttons/button'
 import { contractPath } from 'common/contract'
 import { referralQuery } from 'common/util/share'
 import Link from 'next/link'
@@ -17,6 +22,14 @@ import { useUser } from 'web/hooks/use-user'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
+import { useImmediateTouchSensor } from 'web/hooks/use-immediate-touch-sensor'
+
+// On touch, swiping a card drags it right away instead of scrolling the page
+const DRAG_SENSORS = [
+  useMouseSensor,
+  useKeyboardSensor,
+  useImmediateTouchSensor,
+]
 
 type Market = {
   id: string
@@ -444,7 +457,11 @@ function PredicteGame(props: {
       </Col>
 
       {/* Game area */}
-      <DragDropContext onDragEnd={handleDragEnd}>
+      <DragDropContext
+        onDragEnd={handleDragEnd}
+        enableDefaultSensors={false}
+        sensors={DRAG_SENSORS}
+      >
         <Droppable droppableId="markets">
           {(provided, snapshot) => (
             <div
@@ -609,7 +626,10 @@ function MarketCard(props: {
           : isCorrect
           ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-500/50 dark:bg-emerald-500/10'
           : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md dark:border-slate-600 dark:bg-slate-800 dark:hover:border-slate-500 dark:hover:bg-slate-700/80 dark:hover:shadow-none',
-        !gameOver && !isLocked && 'cursor-grab active:cursor-grabbing',
+        // touch-none: a swipe on a movable card drags it, not the page
+        !gameOver &&
+          !isLocked &&
+          'cursor-grab touch-none active:cursor-grabbing',
         isLocked &&
           'ring-2 ring-emerald-200 dark:ring-1 dark:ring-emerald-500/50'
       )}
