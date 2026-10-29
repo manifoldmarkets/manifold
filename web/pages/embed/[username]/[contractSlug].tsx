@@ -620,6 +620,7 @@ function PerpContractSmolView(props: {
         className="mt-1 min-h-0 w-full flex-1 justify-center"
         showSummary
         showYAxis
+        hideCredit
         loadingState={
           <div className="text-ink-400 flex min-h-[64px] flex-1 items-center justify-center text-center text-xs">
             Loading 7D oracle history…

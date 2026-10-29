@@ -35,10 +35,10 @@ import { MNX_INSTRUMENTS } from './mnx'
 //     gate before a market is created on the feed.
 //   - MNX: public API/methodology reviewed; market links identify the target.
 //     No redistribution licence is claimed.
-//   - Adjacent (Misery Implied Index, MSRY) — terms READ, and they do not
-//     permit this use yet. See the entry: a credit and a link, no licence
-//     label, and market creation disabled until Adjacent permits it in
-//     writing.
+//   - Adjacent (Misery Implied Index, MSRY) — used under Adjacent's written
+//     authorization (2026-10-28), which asks for its credit line on every
+//     chart that shows MSRY, not only on the market page. Hence
+//     `creditOnEveryChart`; see the entry.
 //   - BTC — we compute the median ourselves from three public tickers, so
 //     nothing is being republished. Credited for transparency, not obligation.
 //   - xStocks (SPYx/QQQx/GLDx/NVDAx) — stronger than BTC's stance: the
@@ -70,6 +70,13 @@ export type OracleAttribution = {
    * point's own timestamp is already on the chart.
    */
   showAsOf?: boolean
+  /**
+   * The terms ask for the credit on every chart of the data, so the small
+   * seven-day charts (feed, dashboard and activity cards, the /perps
+   * watchlist) carry it too. Without it those charts rely on the credit on
+   * the market page.
+   */
+  creditOnEveryChart?: boolean
 }
 
 export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
@@ -155,20 +162,23 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
     source: 'Alternative.me Crypto Fear & Greed Index',
     url: 'https://alternative.me/crypto/fear-and-greed-index/',
   },
-  // ⛔ NOT YET LICENSED FOR THIS USE (read 2026-10-27). Adjacent's MSRY
-  // methodology (https://adjacent.markets/static/msry-methodology/methodology,
-  // §12) says its indices may not be "used as the basis for a financial
-  // product" or "as a benchmark for a product or strategy ... except as
-  // expressly permitted by Adjacent in writing", and its API pricing page
-  // says neither the Pro nor the Premium plan permits "use in a financial
-  // product". The methodology itself anticipates a venue listing a perpetual
-  // that marks to MSRY, with listing terms outside it. So the feed ingests,
-  // and the registry keeps market creation disabled until Adjacent's written
-  // permission exists. When it does, record its date and any credit or
-  // licence wording it requires here, and set `licence` only if it names one.
+  // Used under Adjacent Markets, Inc.'s written authorization ("MSRY Index
+  // Use Authorization", 2026-10-28): a non-exclusive, revocable licence to
+  // use the name, the MSRY ticker and published MSRY levels to mark, display
+  // and settle a perpetual on Manifold, and to show MSRY charts in the
+  // product and in marketing about it. Without it, Adjacent's methodology
+  // (https://adjacent.markets/static/msry-methodology/methodology, §12) and
+  // its API plans bar using the index in a financial product. It asks for a
+  // source line "substantially as" `Source: Adjacent Misery Implied Index
+  // (MSRY)` on every chart, market page and methodology or FAQ that shows
+  // MSRY. `source` renders exactly that, and `creditOnEveryChart` puts it on
+  // the small charts too. No `licence` label: this is a letter to Manifold,
+  // not a public licence. Either side may end it on written notice;
+  // perps-launch-runbook.md covers what Manifold does then.
   'adjacent-msry': {
     source: 'Adjacent Misery Implied Index (MSRY)',
     url: 'https://adjacent.markets/indices/msry',
+    creditOnEveryChart: true,
   },
   'btc-usd': {
     source: 'Coinbase, Kraken, Bitstamp & Gemini',

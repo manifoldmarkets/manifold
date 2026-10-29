@@ -276,15 +276,18 @@ protect the pools when the trader is flat at the funding timestamp.
 creation stays disabled (`PERP_LAUNCH_PENDING_MARKETS`) until both of these
 hold:
 
-1. Adjacent has permitted, in writing, this market marking to MSRY (its
-   methodology and plan terms otherwise bar use in a financial product).
-   Record the date and any required credit wording in
-   `common/src/perps/oracle-attribution.ts`.
-2. The Adjacent organization holds a paid plan and an `ak_` key with read
-   scope for indices is stored as `ADJACENT_API_KEY` in Secret Manager for
-   the environment. Run `backend/scripts/probe-adjacent-msry.ts` there: it
-   confirms realtime access, that the one-minute series has a row for every
-   minute, and what the tick would publish.
+1. Done: Adjacent permitted this market in writing on 2026-10-28 (marking,
+   displaying and settling a perpetual on MSRY, plus MSRY charts in the
+   product and in marketing about it). The credit it asks for is in
+   `common/src/perps/oracle-attribution.ts`, and it goes on every chart,
+   market page and methodology or FAQ that shows MSRY. The app renders it on
+   all of them, small charts included. Add it to any screenshot or chart
+   used in marketing.
+2. The Adjacent organization has realtime API access, and an `ak_` key with
+   read scope for indices is stored as `ADJACENT_API_KEY` in Secret Manager
+   for the environment. Run `backend/scripts/probe-adjacent-msry.ts` there:
+   it confirms realtime access, that the one-minute series has a row for
+   every minute, and what the tick would publish.
 
 Provision the secret before the first `scheduler-perps` deploy that contains
 the feed: without it every poll fails as a provider error, which pages under
@@ -292,6 +295,15 @@ the feed: without it every poll fails as a provider error, which pages under
 `marketCreationEnabled: true` in the registry, move the definition into
 `PERP_LAUNCH_MARKETS`, run `backfill-adjacent-msry-oracle --dry-run` and then
 for real, and create the market from the admin page.
+
+Either side may end the permission on written notice. Manifold must then stop
+using new MSRY levels and take Adjacent's name, ticker and credit off the live
+product; winding down open positions is Manifold's call. Disable creation,
+resolve the market at the last level published before the notice, and remove
+the feed. If Adjacent changes the methodology, for example to a five-minute
+TWAP, redo the latency review before keeping the market open: a TWAP keeps
+moving for several prints after its inputs jump, so next-price fills stop
+neutralising the jump.
 
 ### xStocks on-chain sources (ongoing, post-launch)
 

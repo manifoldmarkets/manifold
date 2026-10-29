@@ -593,9 +593,11 @@ Feed adapters live next to it:
   provider-stamped for next-price eligibility. Because a minute can be
   re-recorded, the registry entry sets `sourceRevision: 'keep-published'`:
   the publisher keeps the published value for a re-priced stamp instead of
-  withdrawing availability, as it does for MNX. Market creation is disabled
-  and the market sits in `PERP_LAUNCH_PENDING_MARKETS` until Adjacent
-  permits the use in writing (see the attribution entry).
+  withdrawing availability, as it does for MNX. Adjacent permitted the market
+  in writing on 2026-10-28; its credit goes on every chart of MSRY, small
+  ones included (`creditOnEveryChart` in the attribution entry). Market
+  creation stays disabled, with the market in `PERP_LAUNCH_PENDING_MARKETS`,
+  until the realtime probe passes in the environment.
 - `fear-greed.ts` — Alternative.me's Crypto Fear & Greed index
   (`crypto-fear-greed`, 0-100 sentiment points, documented `/fng/` API only).
   The parser in `common/src/perps/fear-greed.ts` treats every field as

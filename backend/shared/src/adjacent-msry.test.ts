@@ -61,10 +61,11 @@ describe('adjacent-msry feed wiring', () => {
     expect(getMinTradingMarkAgeMs(feed)).toBeLessThan(MSRY_MAX_SOURCE_AGE_MS)
   })
 
-  it('credits Adjacent with a link and claims no licence', () => {
+  it("credits Adjacent on every chart, in the authorization's wording", () => {
     const attribution = getOracleAttribution(id)
     expect(attribution?.source).toBe('Adjacent Misery Implied Index (MSRY)')
     expect(attribution?.url).toBe('https://adjacent.markets/indices/msry')
+    expect(attribution?.creditOnEveryChart).toBe(true)
     expect(attribution?.licence).toBeUndefined()
     expect(attribution?.showAsOf).toBeUndefined()
   })
@@ -76,7 +77,7 @@ describe('adjacent-msry feed wiring', () => {
 
   it('is pending launch, not launchable, and the manifest stays consistent', () => {
     const pending = PERP_LAUNCH_PENDING_MARKETS.find((m) => m.feedId === id)
-    expect(pending?.pendingReason).toMatch(/written permission/)
+    expect(pending?.pendingReason).toMatch(/probe-adjacent-msry/)
     expect(pending?.requiredTopics.map((t) => t.name)).toEqual(['Economics'])
     expect(ALL_PERP_LAUNCH_MARKETS.some((m) => m.feedId === id)).toBe(false)
     expect(getPerpLaunchManifestErrors()).toEqual([])

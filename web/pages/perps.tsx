@@ -2,6 +2,7 @@ import { formatOraclePrice } from 'common/perps/oracle-display'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { RefObject, useEffect, useMemo, useRef, useState } from 'react'
+import { uniq } from 'lodash'
 import {
   BriefcaseIcon,
   ClockIcon,
@@ -39,6 +40,7 @@ import { useDraggableTicker } from 'web/hooks/use-draggable-ticker'
 import { getPerpTakerFeeBps } from 'common/perps/fees'
 import { getMnxCreatorId } from 'common/perps/creator-accounts'
 import { getPerpTicker } from 'common/perps/ticker'
+import { getOracleAttribution } from 'common/perps/oracle-attribution'
 import {
   fundingPeriodNoun,
   fundingPeriodUnit,
@@ -2144,6 +2146,15 @@ const Watchlist = (props: {
       list.scrollTop += row.bottom - bounds.bottom
   }, [selectedId])
   const header = { sort, onSort }
+  // The row sparklines are charts too, so feeds whose terms want a credit on
+  // every chart get one under the list. The selected market's credit sits
+  // under its own chart.
+  const chartCredits = uniq(
+    contracts.flatMap((c) => {
+      const attribution = getOracleAttribution(c.oracleFeedId)
+      return attribution?.creditOnEveryChart ? [attribution.source] : []
+    })
+  )
 
   return (
     <Col className={cardChrome(chrome)}>
@@ -2223,6 +2234,14 @@ const Watchlist = (props: {
           ))}
         </Col>
       </div>
+      {chartCredits.length > 0 && (
+        // Hidden below sm, like the row sparklines it credits.
+        <div className="text-ink-400 border-ink-200 dark:border-ink-300 hidden border-t px-3 py-2 text-[11px] sm:block">
+          {chartCredits.map((source) => (
+            <div key={source}>Source: {source}</div>
+          ))}
+        </div>
+      )}
     </Col>
   )
 }

@@ -75,8 +75,8 @@ const OPTIONAL_SECRETS: ReadonlySet<string> = new Set<SecretId>([
   // The Odds API sports jobs skip themselves without it.
   'THE_ODDS_API_KEY',
   // Without it the MSRY feed's polls fail as provider errors (throttled
-  // warnings, an hourly error) and nothing else is affected; its markets are
-  // creation-disabled until the key and Adjacent's permission both exist.
+  // warnings, an hourly error) and nothing else is affected; its market stays
+  // creation-disabled until the key's organization has realtime access.
   'ADJACENT_API_KEY',
 ])
 
