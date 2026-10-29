@@ -1,4 +1,4 @@
-import { HOUR_MS } from 'common/util/time'
+import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 
 export type BoardStatus = 'built' | 'notYet' | 'failed' | 'loading'
 
@@ -21,6 +21,15 @@ export function boardStatus(
   if (!mounted) return 'loading'
   if (error) return 'failed'
   return data ? 'notYet' : 'loading'
+}
+
+/**
+ * Whether built boards are overdue. The job rebuilds them hourly at :33 and a
+ * run takes minutes, so boards over 90 minutes old mean a run failed or was
+ * skipped.
+ */
+export function isDelayed(updatedTime: number, now: number): boolean {
+  return now - updatedTime > 90 * MINUTE_MS
 }
 
 /**

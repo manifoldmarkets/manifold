@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { HOUR_MS, MINUTE_MS } from 'common/util/time'
-import { boardStatus, shouldRefresh } from './sports-leaderboards-state'
+import {
+  boardStatus,
+  isDelayed,
+  shouldRefresh,
+} from './sports-leaderboards-state'
 
 const now = Date.UTC(2026, 9, 29, 12)
 const built = { updatedTime: now - 12 * MINUTE_MS }
@@ -47,4 +51,11 @@ test('boards refresh when over an hour old or not built yet', () => {
   )
   assert.equal(shouldRefresh({ ...ok, updatedTime: built.updatedTime }), false)
   assert.equal(shouldRefresh({ ...ok, updatedTime: undefined }), false)
+})
+
+test('boards are delayed once a rebuild is overdue', () => {
+  assert.equal(isDelayed(now - 59 * MINUTE_MS, now), false)
+  assert.equal(isDelayed(now - 90 * MINUTE_MS, now), false)
+  assert.equal(isDelayed(now - 91 * MINUTE_MS, now), true)
+  assert.equal(isDelayed(now - 5 * HOUR_MS, now), true)
 })
