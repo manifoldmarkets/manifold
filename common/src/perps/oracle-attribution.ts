@@ -168,8 +168,9 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
   // its API plans bar using the index in a financial product. It asks for a
   // source line "substantially as" `Source: Adjacent Misery Implied Index
   // (MSRY)` on every chart, market page and methodology or FAQ that shows
-  // MSRY. `source` renders exactly that, on the market page and on the small
-  // charts. No `licence` label: this is a letter to Manifold, not a public
+  // MSRY. `source` renders exactly that, on the market page and under the
+  // cards' seven-day charts (not under the /perps watchlist's row
+  // sparklines). No `licence` label: this is a letter to Manifold, not a public
   // licence. Either side may end it on written notice;
   // perps-launch-runbook.md covers what Manifold does then.
   'adjacent-msry': {
