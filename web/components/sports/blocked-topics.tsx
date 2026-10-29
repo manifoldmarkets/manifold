@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import { RaceWeekend } from 'common/race-weekends'
@@ -16,7 +17,7 @@ import {
   unblockedSchedule,
 } from './blocked-topics-state'
 
-export { ownTopicSlugs } from './blocked-topics-state'
+export { ownTopicSlugs, shownCount } from './blocked-topics-state'
 export type { HidesBlocked } from './blocked-topics-state'
 
 const HidesContext = createContext<HidesBlocked>(() => false)
@@ -65,22 +66,46 @@ export function useUnblockedSchedule(
  * Returns whether it's still looking.
  */
 export function useLoadPastBlocked(props: {
-  /** Games and weekends the page shows. */
+  /** Which feed (a sport, or a topic under one): the page stays mounted across them. */
+  feed: string
+  /** Games and weekends the page shows (shownCount). */
   shown: number
   /** Games loaded. */
   loaded: number
   hasMore: boolean
   loadMore: () => Promise<boolean>
 }) {
-  const { shown, loaded, hasMore, loadMore } = props
-  // Where a load failed: don't retry until more has loaded some other way.
-  const [stuckAt, setStuckAt] = useState<number>()
+  const { feed, shown, loaded, hasMore, loadMore } = props
+  // Where loading failed in this feed: don't retry until more has loaded
+  // some other way.
+  const [stuck, setStuck] = useState<{ feed: string; at: number }>()
+  const stuckAt = stuck?.feed === feed ? stuck.at : undefined
   const looking = shouldLoadPastBlocked({ shown, loaded, hasMore, stuckAt })
+  // Bumped whenever a load finishes, so one that loaded nothing (a refresh
+  // replaced the pages meanwhile) is followed by another; three of those in
+  // a row count as a failure.
+  const [finished, setFinished] = useState(0)
+  const inFlight = useRef(false)
+  const tries = useRef({ feed: '', loaded: -1, count: 0 })
   useEffect(() => {
-    if (!looking) return
-    loadMore().then((more) => {
-      if (!more) setStuckAt(loaded)
-    })
-  }, [looking, loaded])
+    if (!looking || inFlight.current) return
+    const t = tries.current
+    if (t.feed === feed && t.loaded === loaded) t.count++
+    else tries.current = { feed, loaded, count: 1 }
+    if (tries.current.count > 3) {
+      setStuck({ feed, at: loaded })
+      return
+    }
+    inFlight.current = true
+    loadMore()
+      .then((more) => {
+        if (!more) setStuck({ feed, at: loaded })
+      })
+      .catch(() => setStuck({ feed, at: loaded }))
+      .finally(() => {
+        inFlight.current = false
+        setFinished((n) => n + 1)
+      })
+  }, [looking, loaded, feed, finished])
   return looking
 }

@@ -4,6 +4,7 @@ import {
   blockedTopicFilter,
   ownTopicSlugs,
   shouldLoadPastBlocked,
+  shownCount,
   unblockedSchedule,
 } from './blocked-topics-state'
 
@@ -194,5 +195,19 @@ describe('shouldLoadPastBlocked', () => {
     const state = { shown: 0, loaded: 20, hasMore: true, stuckAt: 20 }
     assert.equal(shouldLoadPastBlocked(state), false)
     assert.equal(shouldLoadPastBlocked({ ...state, loaded: 40 }), true)
+  })
+})
+
+describe('shownCount', () => {
+  it('counts the games and weekends still on, as the feed shows them', () => {
+    assert.equal(
+      shownCount(
+        [{ status: 'upcoming' }, { status: 'live' }, { status: 'finished' }],
+        [{ status: 'upcoming' }, { status: 'finished' }]
+      ),
+      3
+    )
+    // A live update that finishes the only game leaves nothing shown.
+    assert.equal(shownCount([{ status: 'finished' }], []), 0)
   })
 })

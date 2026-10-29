@@ -20,8 +20,9 @@ import {
 // Ranks everyone in `scores` (board, user_id, score) on each board, best
 // first, leaving out banned users and the accounts in $3, and writes them to
 // sports_leaderboard_positions as kind $4. `m` has a row per market and board
-// it counts toward. Returns how many it wrote. A score that isn't a finite
-// number (a NaN or infinite position) leaves its user off that board.
+// it counts toward. Returns how many it wrote. A score JavaScript can't hold
+// as a finite number (NaN, infinite, or past 1e300) leaves its user off that
+// board; numeric NaN compares above every number, so the bound catches it.
 const writePositions = (scores: string) => `
   with m as (
     select * from unnest($1::text[], $2::text[]) as m(contract_id, board)
@@ -34,8 +35,7 @@ const writePositions = (scores: string) => `
       ) as rank
     from scores s
     join users u on u.id = s.user_id
-    where s.score is not null
-      and s.score::float8 not in ('NaN', 'Infinity', '-Infinity')
+    where abs(s.score) < 1e300
       and s.user_id <> all($3::text[])
       and coalesce((u.data->>'isBannedFromPosting')::boolean, false) is not true
   ),

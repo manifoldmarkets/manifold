@@ -35,13 +35,17 @@ export function SportTopicMenu(props: { topic: Group }) {
   const privateUser = usePrivateUser()
   const { isFollowing, setIsFollowing } = useIsFollowingTopic(topic.slug)
   const accountBlocked = !!privateUser?.blockedGroupSlugs?.includes(topic.slug)
-  // What the last block or unblock here did, shown until the account's own
-  // state says the same; after that the account decides (an unblock from
-  // another tab shows).
-  const [pending, setPending] = useState<{ userId: string; blocked: boolean }>()
+  // What the last block or unblock here did, shown until the account's state
+  // changes after it (whatever it says: an unblock from another tab shows).
+  const [pending, setPending] = useState<{
+    userId: string
+    blocked: boolean
+    /** The account's state when it was made. */
+    from: typeof privateUser
+  }>()
   useEffect(() => {
-    if (pending && pending.blocked === accountBlocked) setPending(undefined)
-  }, [pending, accountBlocked])
+    if (pending && privateUser !== pending.from) setPending(undefined)
+  }, [pending, privateUser])
   const [busy, setBusy] = useState(false)
   const blocked =
     pending && pending.userId === user?.id ? pending.blocked : accountBlocked
@@ -78,7 +82,7 @@ export function SportTopicMenu(props: { topic: Group }) {
         toast.error(`Couldn't ${block ? 'block' : 'unblock'} ${name}`)
         return
       }
-      setPending({ userId: user.id, blocked: block })
+      setPending({ userId: user.id, blocked: block, from: privateUser })
       if (block) {
         setIsFollowing(false)
         toast(`Blocked ${name}. Its markets won't show in your feeds.`)

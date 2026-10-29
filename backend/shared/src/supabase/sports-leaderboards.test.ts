@@ -104,7 +104,7 @@ async function addMarkets(markets: Market[]) {
 }
 
 async function addProfits(
-  rows: [string, string, number | 'NaN' | 'Infinity', string?][]
+  rows: [string, string, number | 'NaN' | 'Infinity' | '1e400', string?][]
 ) {
   for (const [userId, contractId, profit, answerId] of rows)
     await db.query(
@@ -179,6 +179,7 @@ beforeAll(async () => {
     ['mallory', true],
     ['nana', false],
     ['infy', false],
+    ['huge', false],
     [HIDDEN, false],
     [BOT, false],
   ] as const)
@@ -251,6 +252,8 @@ beforeAll(async () => {
     // Broken positions: their sums aren't finite numbers.
     ['nana', 'nfl1', 'NaN'],
     ['infy', 'nfl1', 'Infinity'],
+    // Past what a double holds: the rebuild must still run.
+    ['huge', 'nfl1', '1e400'],
   ])
 })
 
@@ -342,7 +345,15 @@ describe('sports leaderboards', () => {
     })
     // Banned, hidden, the bot as a creator, NaN and infinite scores, and
     // nobody at all.
-    for (const userId of ['mallory', HIDDEN, BOT, 'nana', 'infy', 'nobody'])
+    for (const userId of [
+      'mallory',
+      HIDDEN,
+      BOT,
+      'nana',
+      'infy',
+      'huge',
+      'nobody',
+    ])
       expect(await you('nfl', userId)).toEqual({ profit: null, creator: null })
     // Without a user, no `you`.
     expect((await getSportsLeaderboards(pg, 'nfl')).you).toBeUndefined()

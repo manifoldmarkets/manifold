@@ -94,3 +94,17 @@ export function shouldLoadPastBlocked(state: {
   const { shown, loaded, hasMore, stuckAt } = state
   return shown === 0 && loaded > 0 && hasMore && stuckAt !== loaded
 }
+
+/**
+ * How many games and F1 weekends a feed shows: those not finished (a live
+ * update can finish one the server sent as on).
+ */
+export function shownCount(
+  games: readonly Pick<ScheduleGame, 'status'>[],
+  weekends: readonly Pick<RaceWeekend, 'status'>[]
+) {
+  return (
+    games.filter((g) => g.status !== 'finished').length +
+    weekends.filter((w) => w.status !== 'finished').length
+  )
+}

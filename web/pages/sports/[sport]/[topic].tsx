@@ -15,6 +15,7 @@ import { GameFeed } from 'web/components/sports/schedule-list'
 import { SportMarkets, SportsShell } from 'web/components/sports/sports-shell'
 import {
   ownTopicSlugs,
+  shownCount,
   useBlockedTopicFilter,
   useLoadPastBlocked,
   useUnblockedSchedule,
@@ -107,7 +108,8 @@ export default function SportTopicPage() {
     sportsByKey
   )
   const lookingPastBlocked = useLoadPastBlocked({
-    shown: games.length + weekends.length,
+    feed: `${topic?.sport ?? ''}/${topic?.id ?? ''}`,
+    shown: shownCount(games, weekends),
     loaded: schedule?.games.length ?? 0,
     hasMore,
     loadMore,
@@ -140,7 +142,7 @@ export default function SportTopicPage() {
   }
 
   const hasGames = schedule
-    ? games.length > 0 || weekends.length > 0 || lookingPastBlocked
+    ? shownCount(games, weekends) > 0 || lookingPastBlocked
     : undefined
   const showLeague = uniq(games.map((g) => g.league)).length > 1
   const info = topic && topicInfo(topic, sport)

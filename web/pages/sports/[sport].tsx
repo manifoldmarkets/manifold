@@ -15,6 +15,7 @@ import {
 } from 'web/components/sports/sports-shell'
 import {
   ownTopicSlugs,
+  shownCount,
   useBlockedTopicFilter,
   useLoadPastBlocked,
   useUnblockedSchedule,
@@ -68,7 +69,8 @@ export default function SportPage() {
     sportsByKey
   )
   const lookingPastBlocked = useLoadPastBlocked({
-    shown: games.length + weekends.length,
+    feed: key ?? '',
+    shown: shownCount(games, weekends),
     loaded: schedule?.games.length ?? 0,
     hasMore,
     loadMore,
@@ -188,9 +190,10 @@ export default function SportPage() {
                         sports={sports}
                         counts={rail?.counts ?? {}}
                         allBlocked={
-                          (schedule?.games.length ?? 0) +
-                            (schedule?.raceWeekends?.length ?? 0) >
-                          0
+                          shownCount(
+                            schedule?.games ?? [],
+                            schedule?.raceWeekends ?? []
+                          ) > 0
                         }
                       />
                       {markets}
