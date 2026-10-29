@@ -61,11 +61,11 @@ export function SportsLeaderboards(props: { sport: SportInfo | 'all' }) {
   // so data is always this sport's.
   const status = boardStatus(data, error, mounted)
   const built = status === 'built'
+  // No boards means the hourly rebuild isn't running (its first run builds
+  // them), so it reads as a failure.
   const emptyText = (none: string) =>
-    status === 'failed'
+    status === 'failed' || status === 'notYet'
       ? "Couldn't load the leaderboard."
-      : status === 'notYet'
-      ? 'The first leaderboard is on its way. Check back within the hour.'
       : none
 
   return (
