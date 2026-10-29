@@ -38,7 +38,7 @@ import {
   isDelayed,
   shouldRefresh,
 } from './sports-leaderboards-state'
-import { useSportsIndex } from './topic-rail'
+import { useSportsIndex } from './use-sports-index'
 
 const SHOWN = 10
 

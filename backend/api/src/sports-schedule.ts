@@ -320,27 +320,6 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     const on = w.sessions.filter((s) => s.status !== 'finished').length
     if (on > 0) counts[w.sport] = (counts[w.sport] ?? 0) + on
   }
-  // And per topic, the games each topic's page shows.
-  const topicsByGroupId = new Map<string, string[]>()
-  for (const t of index.topics) {
-    for (const id of t.groupIds)
-      topicsByGroupId.set(id, [...(topicsByGroupId.get(id) ?? []), t.id])
-  }
-  const topicsOf = (groupIds: readonly string[]) =>
-    uniq(groupIds.flatMap((id) => topicsByGroupId.get(id) ?? []))
-  const topicCounts: Record<string, number> = {}
-  for (const g of ordered) {
-    if (g.status === 'finished') continue
-    for (const id of topicsOf(gameGroupIds[g.id] ?? []))
-      topicCounts[id] = (topicCounts[id] ?? 0) + 1
-  }
-  // A weekend counts its sessions still on, as on the rail.
-  for (const w of weekends) {
-    const on = w.sessions.filter((s) => s.status !== 'finished').length
-    if (on === 0) continue
-    for (const id of topicsOf(weekendGroupIds(w)))
-      topicCounts[id] = (topicCounts[id] ?? 0) + on
-  }
 
   // The feed: every live game on the first page, then upcoming games by
   // kickoff, `limit` at a time. A cursor continues after the last game the
@@ -370,7 +349,6 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     raceWeekends: shownWeekends,
     raceChampionships: championships,
     counts,
-    topicCounts,
     liveCount,
     sports: index.sports,
   }

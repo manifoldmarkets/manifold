@@ -1307,11 +1307,6 @@ export interface SportsScheduleResponse {
   raceChampionships?: RaceChampionship[]
   /** Live and upcoming games per sport, for the rail badges. */
   counts: Partial<Record<AnySportKey, number>>
-  /**
-   * Live and upcoming games per other topic under Sports (SportsSubtopic.id),
-   * for its button. Absent from an API that predates it.
-   */
-  topicCounts?: Record<string, number>
   liveCount: number
   /** Every sport on the page, curated first; see buildSportsIndex. */
   sports: SportInfo[]

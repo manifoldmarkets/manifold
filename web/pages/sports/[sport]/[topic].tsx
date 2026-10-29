@@ -20,7 +20,7 @@ import {
   useLoadPastBlocked,
   useUnblockedSchedule,
 } from 'web/components/sports/blocked-topics'
-import { TopicRail, useSportsIndex } from 'web/components/sports/topic-rail'
+import { useSportsIndex } from 'web/components/sports/use-sports-index'
 import { useSportTopicExtras } from 'web/components/sports/use-sport-topic'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
@@ -176,20 +176,6 @@ export default function SportTopicPage() {
       }
       actions={extras.follow}
       hides={hides}
-      topics={
-        topic &&
-        sport && (
-          <TopicRail
-            sport={topic.sport}
-            sportLabel={sport === 'all' ? 'sports' : sport.label}
-            topics={
-              index.index?.topics.filter((t) => t.sport === topic.sport) ?? []
-            }
-            selected={topic.slug}
-            counts={rail?.topicCounts}
-          />
-        )
-      }
       seo={{
         title: topic?.label ?? 'Sports',
         description: topic ? `${topic.label} odds on Manifold` : '',

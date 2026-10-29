@@ -24,7 +24,6 @@ import {
   useLoadPastBlocked,
   useUnblockedSchedule,
 } from 'web/components/sports/blocked-topics'
-import { TopicRail, useSportsIndex } from 'web/components/sports/topic-rail'
 import { useSportTopicExtras } from 'web/components/sports/use-sport-topic'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
@@ -91,7 +90,6 @@ export default function SportsPage({
   const sports = rail?.sports ?? CURATED_SPORTS
   const sportsByKey = useMemo(() => keyBy(sports, 'key'), [sports])
   const topic = useSportTopicExtras(ALL)
-  const { index } = useSportsIndex()
   // Topics the visitor blocked stay out of the feed.
   const hides = useBlockedTopicFilter(
     ownTopicSlugs('all', undefined, undefined)
@@ -129,14 +127,6 @@ export default function SportsPage({
       }
       actions={topic.follow}
       hides={hides}
-      topics={
-        <TopicRail
-          sport="all"
-          sportLabel="sports"
-          topics={index?.topics.filter((t) => t.sport === 'all') ?? []}
-          counts={rail?.topicCounts}
-        />
-      }
       seo={{
         title: 'Sports',
         description:

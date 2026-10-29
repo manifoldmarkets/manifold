@@ -216,7 +216,7 @@ it('gives every Sports subtopic a sport and files markets from deeper topics', a
   expect(result.upcoming.map((m) => m.id)).toEqual(['stage-9'])
 })
 
-it("shows a topic's games and markets on its page, and counts its games", async () => {
+it("shows a topic's games and markets on its page", async () => {
   const market = (id: string, question: string, topic: string) => ({
     id,
     creator_id: 'community',
@@ -258,7 +258,6 @@ it("shows a topic's games and markets on its page, and counts its games", async 
   ])
   // The rail stays the same on a topic's page.
   expect(laLiga.counts).toEqual({ nfl: 1, soccer: 1 })
-  expect(laLiga.topicCounts).toEqual({ laliga: 1 })
 
   const tour = await get({ sport: 'road-bicycle-racing', topic: 'tdf' })
   expect(tour.games).toEqual([])
@@ -685,7 +684,7 @@ describe('F1 race weekends', () => {
     ]
   })
 
-  it('shows a weekend on the page of a topic one of its markets is in, and counts it', async () => {
+  it('shows a weekend on the page of a topic one of its markets is in', async () => {
     gameGroups = [
       ...defaultGameGroups,
       { contract_id: 'race', group_id: 'gp-mexico' },
@@ -696,8 +695,6 @@ describe('F1 race weekends', () => {
     expect((result.raceWeekends ?? []).map((w) => w.name)).toEqual([
       '2026 Mexico City Grand Prix',
     ])
-    // Both sessions still to come, as the rail counts them for F1.
-    expect(result.topicCounts).toEqual({ 'gp-mexico': 2 })
     expect(result.raceChampionships).toEqual([])
     // No other topic's page has it.
     const tour = await getSchedule({
