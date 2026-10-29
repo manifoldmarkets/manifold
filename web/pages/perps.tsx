@@ -2,7 +2,7 @@ import { formatOraclePrice } from 'common/perps/oracle-display'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { RefObject, useEffect, useMemo, useRef, useState } from 'react'
-import { uniq } from 'lodash'
+import { sortBy, uniq } from 'lodash'
 import {
   BriefcaseIcon,
   ClockIcon,
@@ -2147,14 +2147,16 @@ const Watchlist = (props: {
       list.scrollTop += row.bottom - bounds.bottom
   }, [selectedId])
   const header = { sort, onSort }
-  // The row sparklines are charts too, so feeds whose terms want a credit on
-  // every chart get one under the list. The selected market's credit sits
-  // under its own chart.
-  const chartCredits = uniq(
-    contracts.flatMap((c) => {
-      const attribution = getOracleAttribution(c.oracleFeedId)
-      return attribution?.creditOnEveryChart ? [attribution.source] : []
-    })
+  // The row sparklines are charts too, and every perp's small chart names its
+  // source (Adjacent's terms require it for MSRY), so the list ends with each
+  // source once, in a stable order that doesn't move when the list re-sorts.
+  const chartSources = sortBy(
+    uniq(
+      contracts.flatMap((c) => {
+        const attribution = getOracleAttribution(c.oracleFeedId)
+        return attribution ? [attribution.source] : []
+      })
+    )
   )
 
   return (
@@ -2235,12 +2237,10 @@ const Watchlist = (props: {
           ))}
         </Col>
       </div>
-      {chartCredits.length > 0 && (
+      {chartSources.length > 0 && (
         // Hidden below sm, like the row sparklines it credits.
         <div className="text-ink-400 border-ink-200 dark:border-ink-300 hidden border-t px-3 py-2 text-[11px] sm:block">
-          {chartCredits.map((source) => (
-            <div key={source}>Source: {source}</div>
-          ))}
+          Sources: {chartSources.join(' · ')}
         </div>
       )}
     </Col>

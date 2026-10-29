@@ -60,11 +60,10 @@ describe('adjacent-msry feed wiring', () => {
     expect(getMinTradingMarkAgeMs(feed)).toBeLessThan(MSRY_MAX_SOURCE_AGE_MS)
   })
 
-  it("credits Adjacent on every chart, in the authorization's wording", () => {
+  it("credits Adjacent in the authorization's wording", () => {
     const attribution = getOracleAttribution(id)
     expect(attribution?.source).toBe('Adjacent Misery Implied Index (MSRY)')
     expect(attribution?.url).toBe('https://adjacent.markets/indices/msry')
-    expect(attribution?.creditOnEveryChart).toBe(true)
     expect(attribution?.licence).toBeUndefined()
     expect(attribution?.showAsOf).toBeUndefined()
   })

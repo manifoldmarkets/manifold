@@ -13,6 +13,11 @@ import { MNX_INSTRUMENTS } from './mnx'
 // credit — losing it in a description rewrite is a licence breach, not a
 // cosmetic regression.
 //
+// Every perp's small seven-day charts (feed, dashboard and activity cards,
+// the /perps watchlist) show `source` too, as plain text without the licence
+// or as-of. Adjacent's terms require a credit on every MSRY chart, and the
+// other feeds match it.
+//
 // Verification status of each claim below, because asserting a licence we
 // haven't read is its own problem:
 //   - OpenRouter — their dataset terms specify the exact credit line,
@@ -37,8 +42,7 @@ import { MNX_INSTRUMENTS } from './mnx'
 //     No redistribution licence is claimed.
 //   - Adjacent (Misery Implied Index, MSRY) — used under Adjacent's written
 //     authorization (2026-10-28), which asks for its credit line on every
-//     chart that shows MSRY, not only on the market page. Hence
-//     `creditOnEveryChart`; see the entry.
+//     chart that shows MSRY, not only on the market page. See the entry.
 //   - BTC — we compute the median ourselves from three public tickers, so
 //     nothing is being republished. Credited for transparency, not obligation.
 //   - xStocks (SPYx/QQQx/GLDx/NVDAx) — stronger than BTC's stance: the
@@ -70,13 +74,6 @@ export type OracleAttribution = {
    * point's own timestamp is already on the chart.
    */
   showAsOf?: boolean
-  /**
-   * The terms ask for the credit on every chart of the data, so the small
-   * seven-day charts (feed, dashboard and activity cards, the /perps
-   * watchlist) carry it too. Without it those charts rely on the credit on
-   * the market page.
-   */
-  creditOnEveryChart?: boolean
 }
 
 export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
@@ -171,14 +168,13 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
   // its API plans bar using the index in a financial product. It asks for a
   // source line "substantially as" `Source: Adjacent Misery Implied Index
   // (MSRY)` on every chart, market page and methodology or FAQ that shows
-  // MSRY. `source` renders exactly that, and `creditOnEveryChart` puts it on
-  // the small charts too. No `licence` label: this is a letter to Manifold,
-  // not a public licence. Either side may end it on written notice;
+  // MSRY. `source` renders exactly that, on the market page and on the small
+  // charts. No `licence` label: this is a letter to Manifold, not a public
+  // licence. Either side may end it on written notice;
   // perps-launch-runbook.md covers what Manifold does then.
   'adjacent-msry': {
     source: 'Adjacent Misery Implied Index (MSRY)',
     url: 'https://adjacent.markets/indices/msry',
-    creditOnEveryChart: true,
   },
   'btc-usd': {
     source: 'Coinbase, Kraken, Bitstamp & Gemini',

@@ -19,9 +19,9 @@ export const FeedPerpPriceSparkline = (props: {
   showSummary?: boolean
   showYAxis?: boolean
   /**
-   * Leave out the source line that feeds with `creditOnEveryChart` get under
-   * this chart. Only for placements that render the full credit right below
-   * it anyway (the embed).
+   * Leave out the source line under this chart. Only for placements that
+   * already credit the source on the same card (the embed's full credit line,
+   * the elections page's VoteHub rows).
    */
   hideCredit?: boolean
 }) => {
@@ -127,11 +127,13 @@ export const FeedPerpPriceSparkline = (props: {
       <>{emptyState ?? null}</>
     )
 
+  // Every perp's small chart names its source, as its market page does;
+  // Adjacent's terms require it on every MSRY chart, and the rest match.
   // Plain text rather than PerpOracleAttribution's link: these charts sit
   // inside cards that open the market on click.
   const attribution = getOracleAttribution(contract.oracleFeedId)
   const credit =
-    attribution?.creditOnEveryChart && !hideCredit ? (
+    attribution && !hideCredit ? (
       <div className="text-ink-400 text-[11px] leading-tight">
         Source: {attribution.source}
       </div>
