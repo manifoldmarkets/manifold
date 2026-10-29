@@ -14,9 +14,11 @@ import {
 } from 'common/perps/fees'
 import {
   isEligiblePerpTick,
+  isProviderStampedFeed,
   MNX_SOURCE_CLOCK_ALLOWANCE_MS,
   perpEligibilityCutoff,
   PerpOrderResult,
+  PROVIDER_SOURCE_CLOCK_ALLOWANCE_MS,
 } from 'common/perps/orders'
 
 class TestAPIError extends Error {
@@ -194,7 +196,8 @@ beforeEach(async () => {
     'common/perps/oracle': {},
     'common/perps/orders': {
       isEligiblePerpTick,
-      MNX_SOURCE_CLOCK_ALLOWANCE_MS,
+      isProviderStampedFeed,
+      PROVIDER_SOURCE_CLOCK_ALLOWANCE_MS,
       perpEligibilityCutoff,
     },
     'common/perps/fees':
@@ -516,6 +519,54 @@ it('rejects an MNX order whose first mark past the allowance was missed', async 
   await insertMnxRow(c + A + 2, c + A + 1)
   const execute = jest.fn(async () => filled())
   await settleMnx({ ts: c + A + 10, sourceTs: c + A + 5, price: 100 }, execute)
+  expect(execute).not.toHaveBeenCalled()
+  expect(await status()).toBe('rejected')
+})
+// Adjacent's MSRY stamp is the start of the minute a value was recorded in,
+// so the same production-time rule holds it: a minute that began before the
+// order cannot fill it, however late we received that minute.
+const msryMarket = { ...contract, oracleFeedId: 'adjacent-msry' }
+const insertMsryRow = (ts: number, sourceTs: number) =>
+  db.query('insert into oracle_prices values($1,$2,$3,$4)', [
+    'adjacent-msry',
+    new Date(ts),
+    100,
+    new Date(sourceTs),
+  ])
+const settleMsry = (point: object, execute: Executor) =>
+  transaction(() =>
+    orders.settlePendingPerpOrders(adapter, msryMarket, point, execute)
+  )
+
+it('does not fill an MSRY order at a minute that began before it, however late received', async () => {
+  const o = await submit()
+  const c = o.createdTime
+  await insertMsryRow(c + 20_000, c - 30_000)
+  const execute = jest.fn(async () => filled())
+  await settleMsry(
+    { ts: c + 20_000, sourceTs: c - 30_000, price: 100 },
+    execute
+  )
+  expect(execute).not.toHaveBeenCalled()
+  expect(await status()).toBe('pending')
+  // The next minute, begun after the order, fills it; the earlier row is
+  // not a missed window.
+  await settleMsry(
+    { ts: c + 65_000, sourceTs: c + 30_000, price: 100 },
+    execute
+  )
+  expect(execute).toHaveBeenCalledTimes(1)
+  expect(await status()).toBe('filled')
+})
+it('rejects an MSRY order whose first eligible minute was skipped', async () => {
+  const o = await submit()
+  const c = o.createdTime
+  await insertMsryRow(c + 65_000, c + 30_000)
+  const execute = jest.fn(async () => filled())
+  await settleMsry(
+    { ts: c + 125_000, sourceTs: c + 90_000, price: 100 },
+    execute
+  )
   expect(execute).not.toHaveBeenCalled()
   expect(await status()).toBe('rejected')
 })

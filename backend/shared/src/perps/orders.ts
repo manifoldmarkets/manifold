@@ -10,11 +10,12 @@ import { isUserBanned, getUserBanMessage } from 'common/ban-utils'
 import { UserBan } from 'common/user'
 import { PerpContract } from 'common/contract'
 import {
-  MNX_SOURCE_CLOCK_ALLOWANCE_MS,
+  PROVIDER_SOURCE_CLOCK_ALLOWANCE_MS,
   PerpOrder,
   PerpOrderRequest,
   PerpOrderResult,
   isEligiblePerpTick,
+  isProviderStampedFeed,
   perpEligibilityCutoff,
 } from 'common/perps/orders'
 import { OraclePoint } from 'common/perps/oracle'
@@ -556,8 +557,8 @@ export const findSkippedPerpObservation = async (
       new Date(afterTs).toISOString(),
       new Date(beforeTs).toISOString(),
       contract.id,
-      contract.oracleFeedId.startsWith('mnx-'),
-      MNX_SOURCE_CLOCK_ALLOWANCE_MS,
+      isProviderStampedFeed(contract.oracleFeedId),
+      PROVIDER_SOURCE_CLOCK_ALLOWANCE_MS,
     ]
   )
   if (!row) return null
@@ -653,8 +654,8 @@ export const settlePendingPerpOrders = async (
             contract.oracleFeedId,
             o.created_time,
             new Date(point!.ts).toISOString(),
-            contract.oracleFeedId.startsWith('mnx-'),
-            MNX_SOURCE_CLOCK_ALLOWANCE_MS,
+            isProviderStampedFeed(contract.oracleFeedId),
+            PROVIDER_SOURCE_CLOCK_ALLOWANCE_MS,
           ]
         )
         if (missed)

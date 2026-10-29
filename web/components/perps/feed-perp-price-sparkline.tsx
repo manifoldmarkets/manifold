@@ -5,6 +5,7 @@ import { scaleLinear, scaleTime } from 'd3-scale'
 import { line } from 'd3-shape'
 import { PerpContract } from 'common/contract'
 import { inferPriceDecimals } from 'common/perps/format'
+import { getOracleAttribution } from 'common/perps/oracle-attribution'
 import { formatOraclePriceTick } from 'common/perps/oracle-display'
 import { DAY_MS } from 'common/util/time'
 import { api } from 'web/lib/api/api'
@@ -17,6 +18,12 @@ export const FeedPerpPriceSparkline = (props: {
   loadingState?: ReactNode
   showSummary?: boolean
   showYAxis?: boolean
+  /**
+   * Leave out the source line under this chart. Only for placements that
+   * already credit the source on the same card (the embed's full credit line,
+   * the elections page's VoteHub rows).
+   */
+  hideCredit?: boolean
 }) => {
   const {
     contract,
@@ -26,6 +33,7 @@ export const FeedPerpPriceSparkline = (props: {
     loadingState,
     showSummary = false,
     showYAxis = false,
+    hideCredit = false,
   } = props
   const [points, setPoints] = useState<{ ts: number; price: number }[] | null>(
     null
@@ -119,6 +127,18 @@ export const FeedPerpPriceSparkline = (props: {
       <>{emptyState ?? null}</>
     )
 
+  // Every perp's small chart names its source, as its market page does;
+  // Adjacent's terms require it on every MSRY chart, and the rest match.
+  // Plain text rather than PerpOracleAttribution's link: these charts sit
+  // inside cards that open the market on click.
+  const attribution = getOracleAttribution(contract.oracleFeedId)
+  const credit =
+    attribution && !hideCredit ? (
+      <div className="text-ink-400 text-[11px] leading-tight">
+        Source: {attribution.source}
+      </div>
+    ) : null
+
   const svg = (
     <svg
       width="100%"
@@ -194,7 +214,15 @@ export const FeedPerpPriceSparkline = (props: {
     svg
   )
 
-  if (!showSummary) return sparkline
+  if (!showSummary)
+    return credit ? (
+      <>
+        {sparkline}
+        {credit}
+      </>
+    ) : (
+      sparkline
+    )
 
   const priceDecimals = inferPriceDecimals([chart.firstPrice, chart.lastPrice])
   const historySpanMs = chart.lastTs - chart.firstTs
@@ -250,6 +278,7 @@ export const FeedPerpPriceSparkline = (props: {
           </>
         )}
       </div>
+      {credit}
     </div>
   )
 }

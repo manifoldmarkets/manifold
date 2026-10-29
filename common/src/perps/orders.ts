@@ -1,5 +1,6 @@
 import { PerpDirection, PerpPosition } from './position'
 import { OraclePoint } from './oracle'
+import { ADJACENT_MSRY_FEED_ID } from './adjacent-msry'
 
 export type PerpOrderRequest =
   | {
@@ -45,10 +46,29 @@ export type PerpOrder = {
 // stamp proves a mark postdates an order only with this much room to spare.
 export const MNX_SOURCE_CLOCK_ALLOWANCE_MS = 2_000
 
+// The same room for every provider-stamped feed. Adjacent's MSRY stamp is the
+// start of the minute its value was recorded in, at or before the
+// computation, so MNX's measured allowance is ample there too.
+export const PROVIDER_SOURCE_CLOCK_ALLOWANCE_MS = MNX_SOURCE_CLOCK_ALLOWANCE_MS
+
+// Feeds whose provider stamp records when the provider PRODUCED the value
+// (MNX's mark time, the start of Adjacent's one-minute MSRY bucket) rather
+// than the period it describes. Next-price eligibility keys on that stamp, so
+// an order fills only at a value produced after it was placed. A poll that
+// lands on a cached or load-balanced copy of a value the trader could already
+// see then cannot fill it. Mirrored in SQL by shared/perps/orders.ts and the
+// backlog query in shared/perps/engine.ts, which take this predicate's
+// answer (or this list) as a parameter.
+export const PROVIDER_STAMPED_FEED_IDS: readonly string[] = [
+  ADJACENT_MSRY_FEED_ID,
+]
+export const isProviderStampedFeed = (feedId: string) =>
+  feedId.startsWith('mnx-') || PROVIDER_STAMPED_FEED_IDS.includes(feedId)
+
 // Orders created strictly before the returned time may fill at `point`; null
 // when none may. Dataset as-of timestamps (daily feeds) are not production
-// timestamps. MNX's mark timestamp is; do not fill from a stale load-balanced
-// response.
+// timestamps. A provider-stamped feed's are; do not fill from a stale
+// load-balanced or cached response.
 export const perpEligibilityCutoff = (feedId: string, point: OraclePoint) => {
   if (
     !Number.isFinite(point.ts) ||
@@ -56,14 +76,14 @@ export const perpEligibilityCutoff = (feedId: string, point: OraclePoint) => {
     point.price <= 0
   )
     return null
-  if (!feedId.startsWith('mnx-')) return point.ts
+  if (!isProviderStampedFeed(feedId)) return point.ts
   if (
     point.sourceTs == null ||
     !Number.isFinite(point.sourceTs) ||
     point.sourceTs > point.ts
   )
     return null
-  return Math.min(point.ts, point.sourceTs - MNX_SOURCE_CLOCK_ALLOWANCE_MS)
+  return Math.min(point.ts, point.sourceTs - PROVIDER_SOURCE_CLOCK_ALLOWANCE_MS)
 }
 
 export const isEligiblePerpTick = (

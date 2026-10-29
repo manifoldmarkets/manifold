@@ -222,10 +222,16 @@ export const publishOracleObservation = async (
         point.sourceTs != null &&
         point.sourceTs === previous.sourceTs &&
         point.price !== previous.price
-      )
+      ) {
+        // A provider that legitimately re-records a stamp (see
+        // OracleFeedDef.sourceRevision) keeps the published value: decided
+        // here, under the lock, because a restarted or overlapping
+        // publisher's own cache cannot know what is already published.
+        if (feed.sourceRevision === 'keep-published') return previous
         throw new InvalidOracleObservation(
           'Provider source timestamp conflicts with published history'
         )
+      }
       // Waiting orders need flat observations persisted. A provider-stamped
       // mark only advances one with a new stamp, or when re-received after
       // arriving stamped ahead of its first receipt (ineligible until now).

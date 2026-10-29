@@ -341,6 +341,43 @@ it('rejects a same-observation source timestamp conflict independently', async (
   expect(insertOraclePrices).not.toHaveBeenCalled()
   expect(applyOraclePointToLivePerps).not.toHaveBeenCalled()
 })
+// A published stamp arriving at a new price. MNX names one immutable mark per
+// stamp, so that is corruption. Adjacent re-records a minute in place, and a
+// publisher whose own cache never saw the first value (a restart, a deploy
+// overlap) must keep the published one rather than withdraw availability.
+it('refuses a re-priced stamp on a feed whose stamps are immutable', async () => {
+  const { pg } = database({ ...point, ts: now - 5_000 })
+  expect(
+    await publishOracleObservation(pg, feed, {
+      point: { ...point, price: point.price + 1 },
+      health,
+    })
+  ).toBe(false)
+  expect(insertOraclePrices).not.toHaveBeenCalled()
+  expect(applyOraclePointToLivePerps).not.toHaveBeenCalled()
+})
+it('keeps the published value when a re-recording provider re-prices a stamp', async () => {
+  const msry = getOracleFeed('adjacent-msry')!
+  expect(msry.sourceRevision).toBe('keep-published')
+  const published = { ts: now - 5_000, sourceTs: now - 30_000, price: 8.22 }
+  const { pg } = database(published)
+  expect(
+    await publishOracleObservation(pg, msry, {
+      point: { ts: now, sourceTs: published.sourceTs, price: 8.23 },
+      health,
+    })
+  ).toBe(true)
+  expect(insertOraclePrices).not.toHaveBeenCalled()
+  expect(applyOraclePointToLivePerps).toHaveBeenCalledWith(
+    pg,
+    msry.id,
+    published,
+    undefined,
+    health
+  )
+  expect(log.warn).not.toHaveBeenCalled()
+  expect(log.error).not.toHaveBeenCalled()
+})
 it('does not lock, rewrite or push a repeated unavailable check within the heartbeat', async () => {
   const frozen = {
     checkedAt: now - 2000,
