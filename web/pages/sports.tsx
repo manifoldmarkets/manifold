@@ -2,6 +2,7 @@ import { keyBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo } from 'react'
 import { OG_CARD_HEIGHT, OG_CARD_WIDTH } from 'common/edge/og'
+import { withoutRaceMarkets } from 'common/race-weekends'
 import { SportsOgMarket, sportsOgImageAlt } from 'common/sports-og'
 import {
   AnySportKey,
@@ -78,10 +79,12 @@ export default function SportsPage({
   )
   const sports = rail?.sports ?? CURATED_SPORTS
   const sportsByKey = useMemo(() => keyBy(sports, 'key'), [sports])
+  // F1 sessions go in the feed among the games, each on its own day.
+  const weekends = schedule?.raceWeekends ?? []
   const markets = (
     <SportMarkets
       sport="all"
-      upcoming={schedule?.upcoming ?? []}
+      upcoming={withoutRaceMarkets(schedule?.upcoming ?? [], weekends)}
       sportsByKey={sportsByKey}
       enabled={ready}
     />
@@ -119,6 +122,7 @@ export default function SportsPage({
               <div className="pt-3">
                 <GameFeed
                   games={schedule?.games ?? []}
+                  raceWeekends={weekends}
                   loading={loading || !schedule}
                   hasMore={hasMore}
                   loadMore={loadMore}

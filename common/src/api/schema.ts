@@ -5301,6 +5301,32 @@ export const API = (_apiTypeCheck = {
       }>
     },
   },
+  // F1 markets from BALLDONTLIE for the next 14 days' sessions, by hand. Dev
+  // only: in prod the daily sports-f1-create job makes them, so this refuses.
+  'admin-sports-create-f1-markets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionId: z.string(),
+        dryRun: z.boolean().optional(),
+        // `<session id>:<market type>` keys from a dry run. Only these are created.
+        keys: z.array(z.string().max(40)).max(100).optional(),
+      })
+      .strict(),
+    returns: {} as {
+      created: number
+      skipped: number
+      errors: number
+      results: Array<{
+        key: string
+        question: string
+        status: 'created' | 'skipped' | 'dry-run' | 'error'
+        reason: string | null
+      }>
+    },
+  },
 
   'admin-sports-resolve': {
     method: 'POST',

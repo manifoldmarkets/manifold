@@ -1,5 +1,5 @@
 // The sports scheduler's switches on /admin/sports: which calendar phases the
-// daily sports-odds-create job creates game markets for.
+// daily sports-odds-create and sports-f1-create jobs create markets for.
 
 import { uniq } from 'lodash'
 import { APIError, APIHandler } from './helpers/endpoint'
@@ -41,8 +41,10 @@ export const adminSportsCompetitionSwitches: APIHandler<
     : {}
 
   const now = Date.now()
+  // Phases a scheduled job creates from: an Odds API key or another feed.
+  const scheduled = SPORTS_CALENDAR.filter((e) => e.oddsKey || e.provider)
   return {
-    switches: SPORTS_CALENDAR.filter((e) => e.oddsKey).map((e) => {
+    switches: scheduled.map((e) => {
       const row = byKey[calendarPhaseKey(e)]
       return {
         competitionId: e.competitionId,

@@ -1068,7 +1068,7 @@ function mobileTeamName(team: ScheduleTeam) {
 }
 
 /** Tint a chip briefly when its price moves (green up, red down), like an odds board. */
-function useProbFlash(pct: number): 'up' | 'down' | null {
+export function useProbFlash(pct: number): 'up' | 'down' | null {
   const [flash, setFlash] = useState<'up' | 'down' | null>(null)
   const prev = useRef(pct)
   useEffect(() => {
