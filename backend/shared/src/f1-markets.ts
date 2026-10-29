@@ -47,6 +47,7 @@ import {
   F1_SEASON_END_TOLERANCE_DAYS,
   F1_TITLE_KINDS,
   F1_TITLE_RESOLVE_DELAY_HOURS,
+  F1_WEEKEND_SWING,
   f1CalendarListsEveryRound,
   f1CalendarReachesEnd,
   f1DriverEntrant,
@@ -65,6 +66,7 @@ import {
   f1TeamStandingRow,
   f1TitleCloseTime,
   F1TitleKind,
+  f1TitleMargin,
   f1TitleResolution,
   parseF1EventId,
   parseF1TitleEventId,
@@ -1237,14 +1239,19 @@ export async function resolveF1TitleMarkets(
       const answers = await getAnswers(pg, contract.id)
       const resolution = f1TitleResolution(
         id.season,
+        id.kind,
         standings,
         answers,
         contract.sportsEntrantIds ?? []
       )
       if (!resolution) {
+        const margin = f1TitleMargin(standings)
+        const swing = F1_WEEKEND_SWING[id.kind]
         attention(
           contract,
-          `the final ${id.season} ${id.kind} standings don't check out against the market's field, or the champion isn't one of its answers`
+          margin > swing
+            ? `the final ${id.season} ${id.kind} standings don't check out against the market's field, or the champion isn't one of its answers`
+            : `the ${id.season} ${id.kind}' title was won by ${margin} points, no more than one weekend can swing (${swing}), so a person checks the standings before it pays`
         )
         continue
       }

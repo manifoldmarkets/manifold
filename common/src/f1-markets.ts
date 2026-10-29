@@ -894,7 +894,7 @@ export function buildF1TitleMarketParams(
       } first in the final ${season} ${words.title.toLowerCase()} standings.`,
       `"${words.other}" covers a ${words.one} who wasn't listed when the market opened.`,
       ``,
-      `Closes when the market on the season's final race does. Created and resolved automatically by ${MANIFOLD_SPORTS_LINK} from the data feed's final standings ${F1_TITLE_RESOLVE_DELAY_HOURS} hours after that, once the FIA's time to give notice of an appeal has run out. Later changes don't reopen the market.`,
+      `Closes when the market on the season's final race does. Created and resolved automatically by ${MANIFOLD_SPORTS_LINK} from the data feed's final standings ${F1_TITLE_RESOLVE_DELAY_HOURS} hours after that, once the FIA's time to give notice of an appeal has run out. If the ${words.one} won by ${F1_WEEKEND_SWING[kind]} points or fewer, no more than the final weekend could swing, a person checks the standings before it pays out. Later changes don't reopen the market.`,
       ``,
       `[See all markets on Manifold Sports](/sports?sport=f1)`,
     ].join('\n'),
@@ -937,19 +937,43 @@ export const f1TeamStandingRow = (s: F1TeamStanding): F1StandingRow => ({
 })
 
 /**
+ * The most one race weekend can move a title between two contenders: a
+ * race and sprint win against nothing for a driver (25 + 8), a race and
+ * sprint one-two for a team (25 + 18 + 8 + 7).
+ */
+export const F1_WEEKEND_SWING: Record<F1TitleKind, number> = {
+  drivers: 33,
+  constructors: 58,
+}
+
+/** How far the standings' points leader is clear of the next best. */
+export function f1TitleMargin(standings: Pick<F1StandingRow, 'points'>[]) {
+  const [first, second] = sortBy(
+    standings.map((s) => s.points),
+    (p) => -p
+  )
+  return (first ?? 0) - (second ?? 0)
+}
+
+/**
  * The answer a title market resolves to from the season's final standings,
  * or null when they can't say for certain: a row from another season, an
  * entrant listed twice, two on one position, no leader, a points total
- * that isn't a number, or a leader not strictly ahead on points (a tie
- * settled on countback is a person's call). Also null when the market's
- * entrant ids don't line up with its answers, or the champion isn't one of
- * them: a person decides between the stand-in and a re-identified entrant.
- * Whether the season is over, and the standings complete, are the caller's
- * checks (f1SeasonComplete, f1CalendarReachesEnd, f1SeasonPointsAwarded).
+ * that isn't a number, or a leader no more than F1_WEEKEND_SWING clear of
+ * the next. Standings stale by a weekend could otherwise name the wrong
+ * champion when the finale decided the title; with a bigger lead, no
+ * weekend could have, so the leader is the champion either way. A title
+ * that close, or a tie settled on countback, is a person's call. Also null
+ * when the market's entrant ids don't line up with its answers, or the
+ * champion isn't one of them: a person decides between the stand-in and a
+ * re-identified entrant. Whether the season is over, and the standings
+ * complete, are the caller's checks (f1SeasonComplete,
+ * f1CalendarReachesEnd, f1CalendarListsEveryRound, f1SeasonPointsAwarded).
  * A null is for a human, never a guess.
  */
 export function f1TitleResolution(
   season: number,
+  kind: F1TitleKind,
   standings: F1StandingRow[],
   answers: Pick<Answer, 'id' | 'index'>[],
   entrantIds: (number | null)[]
@@ -975,8 +999,11 @@ export function f1TitleResolution(
     return null
   const leader = standings.find((s) => s.position === 1)
   if (!leader) return null
-  if (standings.some((s) => s !== leader && s.points >= leader.points))
-    return null
+  const next = Math.max(
+    0,
+    ...standings.filter((s) => s !== leader).map((s) => s.points)
+  )
+  if (!(leader.points - next > F1_WEEKEND_SWING[kind])) return null
 
   const field = answersByEntrant(answers, entrantIds, true)
   if (!field) return null

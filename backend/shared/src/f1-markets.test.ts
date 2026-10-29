@@ -997,6 +997,57 @@ describe('resolveF1TitleMarkets', () => {
     expect(resolveMarketHelper).not.toHaveBeenCalled()
   })
 
+  it('pays stale standings only when the finale could not have changed the champion', async () => {
+    jest.mocked(Date.now).mockReturnValue(DUE)
+    // Round 3 cancelled and replaced (25 listed, as in 2026), then round 5
+    // left out of the feed: 24 listed passes the count, and 23 races agree
+    // with standings that missed the finale.
+    const listed = [
+      ...season('final')
+        .filter((e) => e.id !== 5)
+        .map((e) =>
+          e.id === 3 ? { ...e, status_state: 'canceled' as const } : e
+        ),
+      weekend(25, '2027-06-25T11:30:00Z', '2027-06-27T13:00:00Z', 'final'),
+    ]
+    jest.mocked(getF1Events).mockResolvedValue(listed)
+    jest
+      .mocked(getF1Sessions)
+      .mockResolvedValue(
+        races(
+          listed.filter((e) => e.status_state !== 'canceled').map((e) => e.id)
+        )
+      )
+    const db = titleDb([title('wdc', FINAL_CLOSE)], { wdc: driversAnswers() })
+
+    // 33 clear: the finale could have overturned it, so a person checks.
+    jest
+      .mocked(getF1DriverStandings)
+      .mockResolvedValue([
+        driverRow(4, 1178, 1, 2027),
+        driverRow(1, 1145, 2, 2027),
+      ])
+    const close = await resolveF1TitleMarkets(db.pg)
+    expect(close.attention).toBe(1)
+    expect(close.log[0].reason).toMatch(
+      /won by 33 points, no more than one weekend can swing \(33\)/
+    )
+    expect(resolveMarketHelper).not.toHaveBeenCalled()
+
+    // 77 clear: whatever the finale did, 4 is the champion.
+    jest
+      .mocked(getF1DriverStandings)
+      .mockResolvedValue([
+        driverRow(4, 1200, 1, 2027),
+        driverRow(1, 1123, 2, 2027),
+      ])
+    expect((await resolveF1TitleMarkets(db.pg)).resolved).toBe(1)
+    expect(jest.mocked(resolveMarketHelper).mock.calls[0][3]).toEqual({
+      outcome: 't4',
+      resolutions: { t4: 100 },
+    })
+  })
+
   it('closes an open market now once its final race market has closed', async () => {
     // The finale came a week before the market's close.
     const now = FINAL_CLOSE + 24 * HOUR_MS

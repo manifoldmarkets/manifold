@@ -23,6 +23,7 @@ import {
   f1TeamEntrant,
   f1TitleCloseTime,
   f1TitleEventId,
+  f1TitleMargin,
   f1TitleResolution,
   f1WinnerPrior,
   MAX_F1_FIELD,
@@ -892,9 +893,9 @@ describe('f1TitleResolution', () => {
     position,
     points,
   })
-  const final = [row(81, 3, 300), row(1, 1, 420), row(4, 2, 401)]
+  const final = [row(81, 3, 300), row(1, 1, 450), row(4, 2, 401)]
   const resolve = (s: typeof final, a = answers, ids = entrantIds) =>
-    f1TitleResolution(2027, s, a, ids)
+    f1TitleResolution(2027, 'drivers', s, a, ids)
 
   it('resolves to the leader of the final standings, by id', () => {
     expect(resolve(final)).toEqual({
@@ -903,7 +904,7 @@ describe('f1TitleResolution', () => {
     })
     expect(
       resolve(
-        [row(81, 3, 300), row(1, 1, 420), row(4, 2, 401)].map((r) =>
+        [row(81, 3, 300), row(1, 1, 450), row(4, 2, 401)].map((r) =>
           f1DriverStandingRow({
             id: 0,
             season: r.season,
@@ -918,11 +919,38 @@ describe('f1TitleResolution', () => {
 
   it("asks a person about a champion the field doesn't list, stand-in or not", () => {
     // Maybe a newcomer, maybe a listed team the provider gave a new id.
-    const outsider = [row(44, 1, 430), row(1, 2, 420), row(4, 3, 401)]
+    const outsider = [row(44, 1, 500), row(1, 2, 420), row(4, 3, 401)]
     expect(resolve(outsider)).toBeNull()
     expect(
       resolve(outsider, answers.slice(0, 3), entrantIds.slice(0, 3))
     ).toBeNull()
+  })
+
+  it('pays only a title won by more than the final weekend could swing', () => {
+    // A driver: a race and sprint win against nothing is 33 points.
+    expect(resolve([row(1, 1, 435), row(4, 2, 401)])?.outcome).toBe('a-ver')
+    expect(resolve([row(1, 1, 434), row(4, 2, 401)])).toBeNull()
+    expect(resolve([row(1, 1, 420), row(4, 2, 401)])).toBeNull()
+    // A team: a race and sprint one-two is 58.
+    const teams = (lead: number) =>
+      f1TitleResolution(
+        2027,
+        'constructors',
+        [row(808, 1, 600 + lead), row(806, 2, 600)],
+        [
+          { id: 'mer', index: 0 },
+          { id: 'fer', index: 1 },
+          { id: 'other', index: 2 },
+        ],
+        [808, 806, null]
+      )
+    expect(teams(59)?.outcome).toBe('mer')
+    expect(teams(58)).toBeNull()
+    expect(
+      f1TitleMargin([{ points: 10 }, { points: 30 }, { points: 20 }])
+    ).toBe(10)
+    expect(f1TitleMargin([{ points: 7 }])).toBe(7)
+    expect(f1TitleMargin([])).toBe(0)
   })
 
   it("refuses standings that can't say for certain", () => {
@@ -934,7 +962,7 @@ describe('f1TitleResolution', () => {
     // Listed twice, two on one place, nobody first.
     expect(resolve([...final, row(1, 4, 0)])).toBeNull()
     expect(
-      resolve([row(81, 2, 300), row(1, 1, 420), row(4, 2, 401)])
+      resolve([row(81, 2, 300), row(1, 1, 450), row(4, 2, 401)])
     ).toBeNull()
     expect(
       resolve([row(81, 3, 300), row(1, 4, 420), row(4, 2, 401)])
