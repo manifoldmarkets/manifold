@@ -20,17 +20,20 @@ import { useIsFollowingTopic } from 'web/hooks/use-group-supabase'
 import { useUser } from 'web/hooks/use-user'
 import { api, updateGroup } from 'web/lib/api/api'
 
+// Descriptions saved this session, by topic id. The page's copy of the topic
+// is cached for the session, and refetching it right after a save can still
+// get the old one (HTTP cache), so the editor starts from what was saved. A
+// plain map, so a save that finishes after the tab has unmounted (the mod
+// switched sports) still lands.
+const savedAbouts = new Map<string, Group['about']>()
+
 /**
  * The mods' view of the topic behind a sports page: what its topic page had
  * (rename, description, add markets, delete) and where it sits among the other
  * topics. Its topic page opens the sports page now, so mods edit it here.
  */
-export function SportTopicPanel(props: {
-  topic: Group
-  /** After a saved edit, so the page's cached copy of the topic catches up. */
-  onSaved: () => void
-}) {
-  const { topic, onSaved } = props
+export function SportTopicPanel(props: { topic: Group }) {
+  const { topic } = props
   const user = useUser()
   const { isFollowing, setIsFollowing } = useIsFollowingTopic(topic.slug)
   const [editingAbout, setEditingAbout] = useState(false)
@@ -113,10 +116,14 @@ export function SportTopicPanel(props: {
         {/* Not a flex column, so its Add button keeps its own width. */}
         <div>
           <AboutEditor
-            initialContent={topic.about}
+            initialContent={
+              savedAbouts.has(topic.id)
+                ? savedAbouts.get(topic.id)
+                : topic.about
+            }
             onSave={(content) =>
               updateGroup({ id: topic.id, about: content })
-                .then(onSaved)
+                .then(() => savedAbouts.set(topic.id, content))
                 .catch(() => toast.error("Couldn't save the description"))
             }
             editing={editingAbout}

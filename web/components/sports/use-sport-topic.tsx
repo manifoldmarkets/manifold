@@ -21,7 +21,7 @@ export function useSportTopicExtras(sport: SportInfo | 'all' | undefined): {
   follow: React.ReactNode
   tabs: Tab[]
 } {
-  const { topic, refresh } = useSportTopic(sport)
+  const topic = useSportTopic(sport)
   const isMod = useAdminOrMod()
   return {
     follow: topic && <SportFollowButton topic={topic} />,
@@ -49,7 +49,7 @@ export function useSportTopicExtras(sport: SportInfo | 'all' | undefined): {
           ),
           content: (
             <div className="pt-3">
-              <SportTopicPanel key={topic.id} topic={topic} onSaved={refresh} />
+              <SportTopicPanel key={topic.id} topic={topic} />
             </div>
           ),
         }
@@ -61,13 +61,11 @@ export function useSportTopicExtras(sport: SportInfo | 'all' | undefined): {
  * The topic behind a sports page: Sports on /sports, the sport's main topic
  * on a sport's page. People follow it from the page, and mods edit it there,
  * since its topic page sends them to the sports page. Undefined while it
- * loads, and for a sport with no topic of its own. Refresh after editing
- * it: the response is cached for the session.
+ * loads, and for a sport with no topic of its own.
  */
-export function useSportTopic(sport: SportInfo | 'all' | undefined): {
-  topic: Group | undefined
-  refresh: () => Promise<void>
-} {
+export function useSportTopic(
+  sport: SportInfo | 'all' | undefined
+): Group | undefined {
   const all = sport === 'all'
   const slug = sport && sport !== 'all' ? sport.slug : undefined
   // Their own cache slots, so one sport's topic never shows on another's page.
@@ -84,12 +82,6 @@ export function useSportTopic(sport: SportInfo | 'all' | undefined): {
     `sports-topic-${slug ?? ''}`
   )
   if (all)
-    return {
-      topic: root.data?.id === SPORTS_DEFAULT_GROUP_ID ? root.data : undefined,
-      refresh: root.refresh,
-    }
-  return {
-    topic: slug && main.data?.slug === slug ? main.data : undefined,
-    refresh: main.refresh,
-  }
+    return root.data?.id === SPORTS_DEFAULT_GROUP_ID ? root.data : undefined
+  return slug && main.data?.slug === slug ? main.data : undefined
 }
