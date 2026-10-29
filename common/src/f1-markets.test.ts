@@ -2,18 +2,31 @@ import { range, sum } from 'lodash'
 import { MAX_ANSWER_PROB, MIN_ANSWER_PROB } from './new-contract'
 import {
   buildF1MarketParams,
+  buildF1TitleMarketParams,
   F1Driver,
+  f1DriverEntrant,
   F1DriverStanding,
+  f1DriverStandingRow,
+  F1Event,
   f1EventId,
   f1EventTitle,
   f1PodiumPrior,
+  f1SeasonComplete,
+  f1SeasonDates,
   f1SessionKind,
   f1SessionResolution,
   F1SessionResult,
+  f1TeamEntrant,
+  f1TitleCloseTime,
+  f1TitleEventId,
+  f1TitleResolution,
   f1WinnerPrior,
   MAX_F1_FIELD,
+  MAX_F1_TEAMS,
   OTHER_DRIVER_ANSWER,
+  OTHER_TEAM_ANSWER,
   parseF1EventId,
+  parseF1TitleEventId,
 } from './f1-markets'
 
 const driver = (
@@ -561,5 +574,280 @@ describe('f1SessionResolution', () => {
     expect(
       f1SessionResolution(final, classification, answers, entrantIds, 'podium')
     ).toBeNull()
+  })
+})
+
+// ─── Season titles ────────────────────────────────────────────────────────────
+
+describe('title event ids', () => {
+  it('round-trips and rejects anything else', () => {
+    expect(f1TitleEventId(2027, 'drivers')).toBe('bdl-f1-title:2027:drivers')
+    expect(parseF1TitleEventId('bdl-f1-title:2027:constructors')).toEqual({
+      season: 2027,
+      kind: 'constructors',
+    })
+    for (const bad of [
+      null,
+      undefined,
+      '',
+      'bdl-f1:42:420',
+      'bdl-f1-title:27:drivers',
+      'bdl-f1-title:2027:teams',
+      'bdl-f1-title:2027:drivers:x',
+      'bdl-f1-title:2027',
+    ])
+      expect(parseF1TitleEventId(bad)).toBeNull()
+  })
+
+  it("keeps titles and sessions apart: neither reads the other's id", () => {
+    expect(parseF1EventId(f1TitleEventId(2027, 'drivers'))).toBeNull()
+    expect(parseF1TitleEventId(f1EventId(42, 420))).toBeNull()
+  })
+})
+
+describe('season dates', () => {
+  const weekend = (
+    start: string,
+    race: string,
+    status: F1Event['status_state'] = 'scheduled'
+  ) => ({ start_date: start, end_date: race, status_state: status })
+  const calendar = [
+    weekend('2027-05-21T11:30:00Z', '2027-05-23T13:00:00Z'),
+    weekend('2027-03-05T01:30:00Z', '2027-03-07T05:00:00Z'),
+    weekend('2027-12-10T09:30:00Z', '2027-12-12T13:00:00Z', 'canceled'),
+    weekend('2027-12-03T09:30:00Z', '2027-12-05T13:00:00Z'),
+  ]
+
+  it('runs from the first weekend to the final race, leaving out cancelled ones', () => {
+    expect(f1SeasonDates(calendar)).toEqual({
+      firstStart: Date.parse('2027-03-05T01:30:00Z'),
+      lastRaceStart: Date.parse('2027-12-05T13:00:00Z'),
+    })
+    expect(f1TitleCloseTime(Date.parse('2027-12-05T13:00:00Z'))).toBe(
+      Date.parse('2027-12-05T16:00:00Z')
+    )
+  })
+
+  it("has no dates without a weekend, or with one that doesn't parse", () => {
+    expect(f1SeasonDates([])).toBeNull()
+    expect(f1SeasonDates([calendar[2]])).toBeNull()
+    expect(
+      f1SeasonDates([...calendar, weekend('2027-06-01T00:00:00Z', 'TBC')])
+    ).toBeNull()
+  })
+
+  it('is over when every weekend is final or cancelled, and one is final', () => {
+    const states = (...s: F1Event['status_state'][]) =>
+      s.map((status_state) => ({ status_state }))
+    expect(f1SeasonComplete(states('final', 'canceled', 'final'))).toBe(true)
+    expect(f1SeasonComplete(states('final', 'scheduled'))).toBe(false)
+    expect(f1SeasonComplete(states('final', 'postponed'))).toBe(false)
+    expect(f1SeasonComplete(states('canceled', 'canceled'))).toBe(false)
+    expect(f1SeasonComplete([])).toBe(false)
+  })
+})
+
+describe('buildF1TitleMarketParams', () => {
+  const dates = {
+    firstStart: Date.parse('2027-03-05T01:30:00Z'),
+    closeTime: Date.parse('2027-12-05T16:00:00Z'),
+  }
+  const lastSeason = standings.map((s) => ({
+    id: s.driver.id,
+    points: s.points,
+  }))
+
+  it("builds the drivers' title, favourites first, with the stand-in last", () => {
+    const p = buildF1TitleMarketParams(
+      2027,
+      'drivers',
+      field.map(f1DriverEntrant),
+      lastSeason,
+      dates
+    )!
+    expect(p.question).toBe("Who will win the 2027 F1 Drivers' Championship?")
+    expect(p.answers).toEqual([
+      'Lando Norris',
+      'Max Verstappen',
+      'Oscar Piastri',
+      'Charles Leclerc',
+      'Sergio Pérez',
+      OTHER_DRIVER_ANSWER,
+    ])
+    expect(p.answerShortTexts).toEqual([
+      'NOR',
+      'VER',
+      'PIA',
+      'LEC',
+      'PER',
+      'OTHER',
+    ])
+    expect(p.sportsEntrantIds).toEqual([4, 1, 81, 16, 11, null])
+    expect(p.sportsEventId).toBe('bdl-f1-title:2027:drivers')
+    expect(p.sportsMarketType).toBe('title')
+    expect(p.shouldAnswersSumToOne).toBe(true)
+    expect(p.closeTime).toBe(dates.closeTime)
+    expect(p.sportsStartTimestamp).toBe('2027-03-05T01:30:00.000Z')
+    expect(sum(p.answerProbs)).toBeCloseTo(100, 6)
+    for (const prob of p.answerProbs) {
+      expect(prob).toBeGreaterThanOrEqual(MIN_ANSWER_PROB)
+      expect(prob).toBeLessThanOrEqual(MAX_ANSWER_PROB)
+    }
+    expect(p.answerColors).toEqual([
+      '#FF8000',
+      '#3671C6',
+      '#FF8000',
+      '#E80020',
+      '#3671C6',
+      '#9CA3AF',
+    ])
+    expect(p.description).toContain('96 hours')
+  })
+
+  it("builds the constructors' title from teams, a newcomer opening low", () => {
+    const team = (id: number, name: string, color: string | null) => ({
+      id,
+      name,
+      display_name: name,
+      color,
+    })
+    const teams = [
+      team(808, 'Mercedes', '27F4D2'),
+      team(806, 'Ferrari', 'E80020'),
+      team(824, 'Cadillac', null),
+    ]
+    const p = buildF1TitleMarketParams(
+      2027,
+      'constructors',
+      teams.map(f1TeamEntrant),
+      [
+        { id: 808, points: 600 },
+        { id: 806, points: 470 },
+      ],
+      dates
+    )!
+    expect(p.question).toBe(
+      "Who will win the 2027 F1 Constructors' Championship?"
+    )
+    expect(p.answers).toEqual([
+      'Mercedes',
+      'Ferrari',
+      'Cadillac',
+      OTHER_TEAM_ANSWER,
+    ])
+    expect(p.sportsEntrantIds).toEqual([808, 806, 824, null])
+    expect(p.answerProbs[2]).toBeLessThan(p.answerProbs[1])
+    expect(p.answerProbs[2]).toBeGreaterThanOrEqual(MIN_ANSWER_PROB)
+    // Cadillac has no colour, so none of them get one.
+    expect(p.answerColors).toBeUndefined()
+  })
+
+  it("makes nothing from a field that isn't one, or dates that don't add up", () => {
+    const entrants = field.map(f1DriverEntrant)
+    const build = (
+      kind: 'drivers' | 'constructors',
+      f: typeof entrants,
+      d = dates
+    ) => buildF1TitleMarketParams(2027, kind, f, lastSeason, d)
+    expect(build('drivers', [])).toBeNull()
+    expect(build('drivers', entrants.slice(0, 1))).toBeNull()
+    // Listed twice counts once, so this is one entrant.
+    expect(build('drivers', [entrants[0], entrants[0]])).toBeNull()
+    const many = range(MAX_F1_TEAMS + 1).map((i) => ({
+      ...entrants[0],
+      id: 1000 + i,
+    }))
+    expect(build('constructors', many)).toBeNull()
+    expect(build('drivers', many)).not.toBeNull()
+    expect(
+      build('drivers', entrants, { ...dates, closeTime: dates.firstStart })
+    ).toBeNull()
+    expect(build('drivers', entrants, { ...dates, closeTime: NaN })).toBeNull()
+  })
+})
+
+describe('f1TitleResolution', () => {
+  // As the builder stores them: by answer index, null for the stand-in.
+  const answers = [
+    { id: 'a-nor', index: 0 },
+    { id: 'a-ver', index: 1 },
+    { id: 'a-pia', index: 2 },
+    { id: 'a-other', index: 3 },
+  ]
+  const entrantIds = [4, 1, 81, null]
+  const row = (id: number, position: number, points: number) => ({
+    id,
+    season: 2027,
+    position,
+    points,
+  })
+  const final = [row(81, 3, 300), row(1, 1, 420), row(4, 2, 401)]
+  const resolve = (s: typeof final, a = answers, ids = entrantIds) =>
+    f1TitleResolution(2027, s, a, ids)
+
+  it('resolves to the leader of the final standings, by id', () => {
+    expect(resolve(final)).toEqual({
+      outcome: 'a-ver',
+      resolutions: { 'a-ver': 100 },
+    })
+    expect(
+      resolve(
+        [row(81, 3, 300), row(1, 1, 420), row(4, 2, 401)].map((r) =>
+          f1DriverStandingRow({
+            id: 0,
+            season: r.season,
+            driver: { ...verstappen, id: r.id },
+            position: r.position,
+            points: r.points,
+          })
+        )
+      )?.outcome
+    ).toBe('a-ver')
+  })
+
+  it("sends a champion who isn't listed to the stand-in, and asks a human without one", () => {
+    const outsider = [row(44, 1, 430), row(1, 2, 420), row(4, 3, 401)]
+    expect(resolve(outsider)?.outcome).toBe('a-other')
+    expect(resolve(outsider, answers.slice(0, 3), entrantIds.slice(0, 3))).toBe(
+      null
+    )
+  })
+
+  it("refuses standings that can't say for certain", () => {
+    expect(resolve([])).toBeNull()
+    // Another season's row.
+    expect(
+      resolve([...final.slice(0, 2), { ...final[2], season: 2026 }])
+    ).toBeNull()
+    // Listed twice, two on one place, nobody first.
+    expect(resolve([...final, row(1, 4, 0)])).toBeNull()
+    expect(
+      resolve([row(81, 2, 300), row(1, 1, 420), row(4, 2, 401)])
+    ).toBeNull()
+    expect(
+      resolve([row(81, 3, 300), row(1, 4, 420), row(4, 2, 401)])
+    ).toBeNull()
+    // A broken total, a tie at the top settled on countback, a leader behind.
+    expect(
+      resolve([row(81, 3, 300), row(1, 1, NaN), row(4, 2, 401)])
+    ).toBeNull()
+    expect(
+      resolve([row(81, 3, 300), row(1, 1, 420), row(4, 2, 420)])
+    ).toBeNull()
+    expect(
+      resolve([row(81, 3, 300), row(1, 1, 400), row(4, 2, 401)])
+    ).toBeNull()
+    expect(
+      resolve([row(81, 3, 300), row(1, 1.5, 420), row(4, 2, 401)])
+    ).toBeNull()
+  })
+
+  it("refuses a market whose entrant ids don't line up with its answers", () => {
+    expect(resolve(final, answers.slice(0, 3))).toBeNull()
+    expect(
+      resolve(final, [...answers.slice(0, 3), { id: 'a-other', index: 1 }])
+    ).toBeNull()
+    expect(resolve(final, answers, [4, 1, 1, null])).toBeNull()
+    expect(resolve(final, answers, [4, 1, null, null])).toBeNull()
   })
 })

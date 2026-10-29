@@ -642,6 +642,65 @@ describe('the championship', () => {
       pickRaceChampionships(candidates, Date.parse('2026-12-20T00:00:00Z'))
     ).toEqual([{ kind: 'drivers', id: 'next' }])
   })
+
+  // Our own title markets (createF1TitleMarkets), however few traders.
+  const ours = (
+    id: string,
+    officialEventId: string
+  ): ChampionshipCandidate => ({
+    ...title(id, `Who will win the ${id}?`, 0),
+    officialEventId,
+  })
+  const winter = Date.parse('2026-12-20T00:00:00Z')
+
+  it("puts our own title markets ahead of everyone's, by their id", () => {
+    expect(
+      pickRaceChampionships(
+        [
+          ...candidates,
+          ours('house-wcc', 'bdl-f1-title:2027:constructors'),
+          ours('house-wdc', 'bdl-f1-title:2027:drivers'),
+        ],
+        winter
+      )
+    ).toEqual([
+      { kind: 'drivers', id: 'house-wdc' },
+      { kind: 'constructors', id: 'house-wcc' },
+    ])
+  })
+
+  it("leaves another season's to the community markets", () => {
+    const withOld = [
+      ...candidates,
+      ours('house-2026', 'bdl-f1-title:2026:drivers'),
+    ]
+    expect(pickRaceChampionships(withOld, winter)).toEqual([
+      { kind: 'drivers', id: 'next' },
+    ])
+    expect(pickRaceChampionships(withOld, NOW)[0]).toEqual({
+      kind: 'drivers',
+      id: 'house-2026',
+    })
+  })
+
+  it("doesn't read our id as a question about the title", () => {
+    // A session market that happens to mention the championship.
+    expect(
+      pickRaceChampionships(
+        [
+          {
+            ...title(
+              'session',
+              'Who will win the 2027 Formula 1 Drivers World Championship?',
+              999
+            ),
+            officialEventId: 'bdl-f1:42:420',
+          },
+        ],
+        winter
+      )
+    ).toEqual([])
+  })
 })
 
 describe('review fixes', () => {

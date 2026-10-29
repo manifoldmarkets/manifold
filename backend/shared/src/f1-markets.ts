@@ -9,6 +9,11 @@
  * `bdl-f1:<event id>:<session id>` and `sportsMarketType` is 'winner' or
  * 'podium', so dedupe is a lookup on those two and the resolver knows which
  * session to ask about from the market alone.
+ *
+ * A season also gets two title markets, the drivers' and the constructors'
+ * championship (`bdl-f1-title:<season>:<kind>`, type 'title'), opened
+ * before its first weekend by the same runs and resolved from its final
+ * standings by resolveF1TitleMarkets, in the same job.
  */
 
 import { sortBy, uniq } from 'lodash'
@@ -31,19 +36,34 @@ import {
   getF1Events,
   getF1SessionResults,
   getF1Sessions,
+  getF1TeamStandings,
 } from 'shared/balldontlie-f1-client'
 import {
   buildF1MarketParams,
+  buildF1TitleMarketParams,
   F1_DAYS_AHEAD,
   F1_MARKETS_BY_SESSION,
   F1_RESOLVE_DELAY_HOURS,
+  F1_TITLE_KINDS,
+  F1_TITLE_RESOLVE_DELAY_HOURS,
+  f1DriverEntrant,
   F1DriverStanding,
+  f1DriverStandingRow,
+  F1Event,
   f1EventTitle,
   F1MarketParams,
+  f1SeasonComplete,
+  f1SeasonDates,
   f1SessionKind,
   f1SessionResolution,
   F1SessionResult,
+  f1TeamEntrant,
+  f1TeamStandingRow,
+  f1TitleCloseTime,
+  F1TitleKind,
+  f1TitleResolution,
   parseF1EventId,
+  parseF1TitleEventId,
 } from 'common/f1-markets'
 import {
   contractPath,
@@ -60,6 +80,7 @@ import {
   CompetitionSwitches,
   phaseWindow,
   SPORT_ID_TO_SPORT_KEY,
+  SportsCalendarEntry,
 } from 'common/sports-calendar'
 import { sportTagIds } from 'common/sports-schedule'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
@@ -127,7 +148,17 @@ export interface F1CreateResult {
 }
 
 /** A dry run's one-line summary of the market it would open. */
-function describeF1Market(params: F1MarketParams, ante: number): string {
+function describeF1Market(
+  params: Pick<
+    F1MarketParams,
+    | 'answers'
+    | 'answerShortTexts'
+    | 'answerProbs'
+    | 'shouldAnswersSumToOne'
+    | 'closeTime'
+  >,
+  ante: number
+): string {
   const top = params.answers
     .slice(0, 4)
     .map(
@@ -148,15 +179,248 @@ function describeF1Market(params: F1MarketParams, ante: number): string {
 }
 
 /**
- * Create the missing markets for one F1 calendar competition's sessions in
- * the next ROLLING_WINDOW_DAYS: race winner and podium, sprint winner, pole. The entry
- * list and the opening prices come from the season's driver standings. A
- * session already holding a market of a type is skipped, and the check is
- * repeated inside the creating transaction. `keys` narrows the run to the
- * markets an admin ticked in a dry run. With `switches` (the scheduler),
- * only sessions inside a phase switched on are created; without them (an
- * admin by hand) every phase counts. Throws only when the provider fails;
- * each market's own failure goes in the log.
+ * The creator and topics a competition's markets get, looked up when a run
+ * first creates one: a preview only reads.
+ */
+function officialFor(
+  pg: SupabaseDirectClient,
+  competitionId: string,
+  creator: User | undefined
+) {
+  let groupIds: string[] | undefined
+  return async () => {
+    creator ??= await sportsCreator()
+    if (!groupIds) {
+      const entry = calendarEntriesFor(competitionId)[0]
+      const group = await ensureOfficialGroup(
+        {
+          officialGroupSlug: `ms-official-${competitionId}`,
+          officialGroupName: `MS Official: ${entry.competition}`,
+          name: entry.competition,
+        },
+        creator.id,
+        pg
+      )
+      groupIds = uniq([
+        group.id,
+        ...sportTagIds(SPORT_ID_TO_SPORT_KEY[entry.sport]),
+      ])
+    }
+    return { creator, groupIds }
+  }
+}
+
+/** The season an F1 competition is about: `f1-2027` is 2027. */
+function competitionSeason(competitionId: string): number | null {
+  const match = /^f1-(\d{4})$/.exec(competitionId)
+  return match ? Number(match[1]) : null
+}
+
+/** A title's field, with the points behind each entrant, from the standings. */
+async function titleStandings(kind: F1TitleKind, season: number) {
+  if (kind === 'drivers') {
+    const rows = await providerCall('/driver_standings', PLAN_REFUSED, () =>
+      getF1DriverStandings(season)
+    )
+    return rows.map((r) => ({
+      entrant: f1DriverEntrant(r.driver),
+      row: f1DriverStandingRow(r),
+    }))
+  }
+  const rows = await providerCall('/team_standings', PLAN_REFUSED, () =>
+    getF1TeamStandings(season)
+  )
+  return rows.map((r) => ({
+    entrant: f1TeamEntrant(r.team),
+    row: f1TeamStandingRow(r),
+  }))
+}
+
+/**
+ * The season's title markets, drivers' and constructors' (keys
+ * `title:drivers` and `title:constructors`), while the season hasn't
+ * started. Its dates come from the provider's calendar, or from ours
+ * (common/sports-calendar.ts) while the provider has no weekend of the
+ * season yet; resolveF1TitleMarkets then moves the close to the provider's
+ * final race once it has. The field is the season's standings once the
+ * provider has them, else last season's; the opening prices are last
+ * season's points either way. A title that already has a market is
+ * skipped, and the check is repeated inside the creating transaction.
+ */
+async function createF1TitleMarkets(
+  pg: SupabaseDirectClient,
+  competitionId: string,
+  phases: SportsCalendarEntry[],
+  result: F1CreateResult,
+  opts: {
+    dryRun?: boolean
+    picked?: Set<string>
+    official: ReturnType<typeof officialFor>
+  }
+) {
+  const season = competitionSeason(competitionId)
+  const titles = F1_TITLE_KINDS.map((kind) => ({
+    kind,
+    key: `title:${kind}`,
+    // What the log says until the market's question is known.
+    label: `${season ?? competitionId} ${
+      kind === 'drivers' ? "drivers'" : "constructors'"
+    } title`,
+  })).filter(({ key }) => !opts.picked || opts.picked.has(key))
+  if (titles.length === 0) return
+  const skipAll = (reason: string) => {
+    for (const { key, label } of titles) {
+      result.skipped++
+      result.log.push({ key, question: label, status: 'skipped', reason })
+    }
+  }
+  if (!season) return skipAll(`can't tell which season ${competitionId} is`)
+
+  const events = await providerCall('/events', KEY_REFUSED, () =>
+    getF1Events(season)
+  )
+  let dates: { firstStart: number; closeTime: number }
+  if (events.length === 0) {
+    const windows = phases.map(phaseWindow)
+    dates = {
+      firstStart: Math.min(...windows.map((w) => w.from)),
+      // phaseWindow runs a day past the last date: close at its end.
+      closeTime: Math.max(...windows.map((w) => w.to)) - DAY_MS,
+    }
+  } else {
+    const provider = f1SeasonDates(events)
+    if (!provider)
+      return skipAll(
+        `the provider's ${season} calendar has no weekend left with dates that parse`
+      )
+    dates = {
+      firstStart: provider.firstStart,
+      closeTime: f1TitleCloseTime(provider.lastRaceStart),
+    }
+  }
+  if (dates.firstStart <= Date.now() + MIN_CREATE_LEAD_MS)
+    return skipAll(
+      `the ${season} season has started; a title market opens before its first weekend`
+    )
+
+  for (const { kind, key, label } of titles) {
+    let question = label
+    const skip = (reason: string) => {
+      result.skipped++
+      result.log.push({ key, question, status: 'skipped', reason })
+    }
+    try {
+      const current = await titleStandings(kind, season)
+      const last = await titleStandings(kind, season - 1)
+      const field = (current.length > 0 ? current : last).map((s) => s.entrant)
+      const params = buildF1TitleMarketParams(
+        season,
+        kind,
+        field,
+        last.map((s) => s.row),
+        dates
+      )
+      if (!params) {
+        skip(
+          field.length === 0
+            ? `no ${season} or ${season - 1} ${kind} standings, so no field`
+            : `${field.length} in the ${
+                current.length > 0 ? season : season - 1
+              } ${kind} standings isn't a field`
+        )
+        continue
+      }
+      question = params.question
+      const existing = await findSportsMarket(pg, params.sportsEventId, 'title')
+      if (existing) {
+        skip(`market ${existing.id} already exists`)
+        continue
+      }
+      if (opts.dryRun) {
+        const ante = getAnte(
+          params.outcomeType,
+          params.answers.length,
+          LIQUIDITY_TIER
+        )
+        const source = current.length > 0 ? season : season - 1
+        result.log.push({
+          key,
+          question,
+          status: 'dry-run',
+          reason: `${describeF1Market(
+            params,
+            ante
+          )}; field from the ${source} standings${
+            events.length === 0
+              ? `; no ${season} calendar from the provider yet, so the dates are ours until it has one`
+              : ''
+          }`,
+        })
+        continue
+      }
+      const { creator, groupIds } = await opts.official()
+      const contract = await createSportsContract(
+        pg,
+        creator,
+        {
+          question: params.question,
+          outcomeType: params.outcomeType,
+          description:
+            anythingToRichText({ markdown: params.description }) ??
+            anythingToRichText({ raw: '' })!,
+          closeTime: params.closeTime,
+          liquidityTier: LIQUIDITY_TIER,
+          answers: params.answers,
+          shouldAnswersSumToOne: params.shouldAnswersSumToOne,
+          answerProbs: params.answerProbs,
+          answerShortTexts: params.answerShortTexts,
+          answerColors: params.answerColors,
+          sportsStartTimestamp: params.sportsStartTimestamp,
+          sportsEventId: params.sportsEventId,
+          sportsLeague: params.sportsLeague,
+          sportsMarketType: params.sportsMarketType,
+          sportsEntrantIds: params.sportsEntrantIds,
+          groupIds,
+        },
+        { deduplicateMarketType: 'title', minLeadMs: MIN_CREATE_LEAD_MS }
+      )
+      result.created++
+      result.log.push({
+        key,
+        question,
+        status: 'created',
+        reason: contractPath(contract),
+      })
+    } catch (e) {
+      // Expected races, as for sessions: another run made it, or the
+      // season's first weekend began meanwhile.
+      const skipped =
+        e instanceof SportsMarketAlreadyExistsError ||
+        e instanceof SportsGameStartedError
+      if (skipped) result.skipped++
+      else result.errors++
+      result.log.push({
+        key,
+        question,
+        status: skipped ? 'skipped' : 'error',
+        reason: e instanceof Error ? e.message : String(e),
+      })
+    }
+  }
+}
+
+/**
+ * Create the missing markets for one F1 calendar competition: its season's
+ * titles before the season starts (createF1TitleMarkets), and the markets
+ * of its sessions in the next ROLLING_WINDOW_DAYS: race winner and podium,
+ * sprint winner, pole. A session's entry list and opening prices come from
+ * the season's driver standings. A session already holding a market of a
+ * type is skipped, and the check is repeated inside the creating
+ * transaction. `keys` narrows the run to the markets an admin ticked in a
+ * dry run. With `switches` (the scheduler), only competitions with a phase
+ * switched on get titles, and only sessions inside such a phase get
+ * markets; without them (an admin by hand) every phase counts. Throws only
+ * when the provider fails; each market's own failure goes in the log.
  */
 export async function createF1Markets(
   pg: SupabaseDirectClient,
@@ -180,6 +444,15 @@ export async function createF1Markets(
   ).map(phaseWindow)
   if (windows.length === 0) return result
   const picked = opts.keys ? new Set(opts.keys) : undefined
+  const official = officialFor(pg, competitionId, opts.creator)
+
+  // The season's titles don't wait for the window: they open before it starts.
+  await createF1TitleMarkets(pg, competitionId, phases, result, {
+    dryRun: opts.dryRun,
+    picked,
+    official,
+  })
+
   const now = Date.now()
   const until = now + ROLLING_WINDOW_DAYS * DAY_MS
   const inRun = (t: number) =>
@@ -224,11 +497,6 @@ export async function createF1Markets(
   }
 
   let planned = 0
-  // A preview only reads; the creator and group are looked up on the first
-  // insert.
-  let creator = opts.creator
-  let groupIds: string[] | undefined
-
   for (const session of sessions) {
     const event = eventById.get(session.event.id)!
     const sessionTitle = `${event.season} ${f1EventTitle(event.name)}: ${
@@ -315,22 +583,7 @@ export async function createF1Markets(
           })
           continue
         }
-        creator ??= await sportsCreator()
-        if (!groupIds) {
-          const group = await ensureOfficialGroup(
-            {
-              officialGroupSlug: `ms-official-${competitionId}`,
-              officialGroupName: `MS Official: ${entry.competition}`,
-              name: entry.competition,
-            },
-            creator.id,
-            pg
-          )
-          groupIds = uniq([
-            group.id,
-            ...sportTagIds(SPORT_ID_TO_SPORT_KEY[entry.sport]),
-          ])
-        }
+        const { creator, groupIds } = await official()
         const contract = await createSportsContract(
           pg,
           creator,
@@ -385,8 +638,10 @@ export async function createF1Markets(
 
 /**
  * The daily run: every F1 competition with a phase switched on in
- * /admin/sports inside the next ROLLING_WINDOW_DAYS. All are off by default.
- * A run that can't read the switches creates nothing.
+ * /admin/sports that hasn't ended, so a season switched on in the winter
+ * gets its titles before its first weekend; its sessions still wait for
+ * the ROLLING_WINDOW_DAYS window. All are off by default. A run that can't
+ * read the switches creates nothing.
  */
 export async function createF1MarketsForActiveCalendar(
   pg: SupabaseDirectClient
@@ -402,7 +657,7 @@ export async function createF1MarketsForActiveCalendar(
   }
   const now = Date.now()
   const competitionIds = uniq(
-    calendarEntriesOverlapping(now, now + ROLLING_WINDOW_DAYS * DAY_MS)
+    calendarEntriesOverlapping(now, Number.MAX_SAFE_INTEGER)
       .filter((e) => e.provider === 'bdl-f1' && autoCreates(e, switches))
       .map((e) => e.competitionId)
   )
@@ -458,13 +713,20 @@ const agreesWith =
       )
   }
 
-export type F1ResolveStatus = 'resolved' | 'waiting' | 'attention' | 'error'
+/** 'moved': a title market's close moved to the season's final race. */
+export type F1ResolveStatus =
+  | 'resolved'
+  | 'waiting'
+  | 'attention'
+  | 'moved'
+  | 'error'
 
 export interface F1ResolveResult {
   checked: number
   resolved: number
   waiting: number
   attention: number
+  moved: number
   errors: number
   log: {
     contractId: string
@@ -472,6 +734,48 @@ export interface F1ResolveResult {
     status: F1ResolveStatus
     reason: string
   }[]
+}
+
+const emptyResolveResult = (): F1ResolveResult => ({
+  checked: 0,
+  resolved: 0,
+  waiting: 0,
+  attention: 0,
+  moved: 0,
+  errors: 0,
+  log: [],
+})
+
+/**
+ * A run's log lines and counts. `attention` is what only a person can
+ * settle: logged as an error once per market for the life of `alerted`.
+ */
+function resolveLog(result: F1ResolveResult, alerted: Set<string>) {
+  const add = (
+    contract: { id: string; question: string },
+    status: F1ResolveStatus,
+    reason: string
+  ) => {
+    result[status === 'error' ? 'errors' : status]++
+    result.log.push({
+      contractId: contract.id,
+      question: contract.question,
+      status,
+      reason,
+    })
+  }
+  const attention = (
+    contract: { id: string; question: string },
+    reason: string
+  ) => {
+    add(contract, 'attention', reason)
+    if (alerted.has(contract.id)) return
+    alerted.add(contract.id)
+    log.error(
+      `[sports-f1-resolve] ${contract.id} (${contract.question}) needs a person: ${reason}`
+    )
+  }
+  return { add, attention }
 }
 
 const getAnswers = async (pg: SupabaseDirectClient, contractId: string) =>
@@ -498,14 +802,7 @@ export async function resolveF1Markets(
   pg: SupabaseDirectClient,
   alerted: Set<string> = new Set()
 ): Promise<F1ResolveResult> {
-  const result: F1ResolveResult = {
-    checked: 0,
-    resolved: 0,
-    waiting: 0,
-    attention: 0,
-    errors: 0,
-    log: [],
-  }
+  const result = emptyResolveResult()
   const now = Date.now()
   const rows = await pg.manyOrNone(
     `select ${contractColumnsToSelect} from contracts
@@ -534,31 +831,7 @@ export async function resolveF1Markets(
     .map((r) => convertContract(r) as CPMMMultiContract & SportsContract)
   result.checked = contracts.length
   if (contracts.length === 0) return result
-
-  const add = (
-    contract: { id: string; question: string },
-    status: F1ResolveStatus,
-    reason: string
-  ) => {
-    result[status === 'error' ? 'errors' : status]++
-    result.log.push({
-      contractId: contract.id,
-      question: contract.question,
-      status,
-      reason,
-    })
-  }
-  const attention = (
-    contract: { id: string; question: string },
-    reason: string
-  ) => {
-    add(contract, 'attention', reason)
-    if (alerted.has(contract.id)) return
-    alerted.add(contract.id)
-    log.error(
-      `[sports-f1-resolve] ${contract.id} (${contract.question}) needs a person: ${reason}`
-    )
-  }
+  const { add, attention } = resolveLog(result, alerted)
 
   const ids = new Map(
     contracts.map((c) => [c.id, parseF1EventId(c.sportsEventId)])
@@ -732,6 +1005,178 @@ export async function resolveF1Markets(
           .map((a) => a.text)
           .join(', ')}`
       )
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : String(e)
+      add(contract, 'error', reason)
+      log.error(`[sports-f1-resolve] ${contract.id} failed: ${reason}`)
+    }
+  }
+  return result
+}
+
+// ─── Resolving titles ─────────────────────────────────────────────────────────
+
+/** The most open title markets a run reads: there are two a season. */
+const MAX_TITLE_MARKETS = 20
+
+const iso = (t: number) => new Date(t).toISOString().slice(0, 16) + 'Z'
+
+/**
+ * Every open title market (createF1TitleMarkets), every run. While one is
+ * open and the provider lists its season, its close follows the final race
+ * (f1TitleCloseTime): a season the provider didn't list yet when the market
+ * opened, or a final race that moves, closes it at the right time. A market
+ * already closed isn't reopened. Once every weekend is final or cancelled
+ * and F1_TITLE_RESOLVE_DELAY_HOURS have passed since the final race's
+ * market closed, it resolves to the leader of the season's final standings
+ * (f1TitleResolution). What only a person can settle, standings that don't
+ * check out, an answer already resolved against them, or a season still
+ * not over ATTENTION_AFTER_MS after the market was due, is logged as an
+ * error once per market for the life of `alerted`, and never guessed.
+ */
+export async function resolveF1TitleMarkets(
+  pg: SupabaseDirectClient,
+  alerted: Set<string> = new Set()
+): Promise<F1ResolveResult> {
+  const result = emptyResolveResult()
+  const rows = await pg.manyOrNone(
+    `select ${contractColumnsToSelect} from contracts
+     where data->>'sportsEventId' like 'bdl-f1-title:%'
+       and creator_id = any($1)
+       and token = 'MANA'
+       and resolution is null
+     order by close_time asc
+     limit ${MAX_TITLE_MARKETS}`,
+    [MANIFOLD_SPORTS_USER_IDS]
+  )
+  const contracts = rows.map(
+    (r) => convertContract(r) as CPMMMultiContract & SportsContract
+  )
+  result.checked = contracts.length
+  if (contracts.length === 0) return result
+  const { add, attention } = resolveLog(result, alerted)
+  const now = Date.now()
+  const delayMs = F1_TITLE_RESOLVE_DELAY_HOURS * HOUR_MS
+  const eventsBySeason = new Map<number, F1Event[]>()
+  let creator: User | undefined
+
+  for (const contract of contracts) {
+    // Waiting turns into a person's job once the market is long overdue.
+    const wait = (reason: string) => {
+      const overdueFor = now - ((contract.closeTime ?? now) + delayMs)
+      if (overdueFor < ATTENTION_AFTER_MS) add(contract, 'waiting', reason)
+      else
+        attention(
+          contract,
+          `${reason}, ${Math.round(
+            overdueFor / HOUR_MS
+          )} hours after it was due to pay out`
+        )
+    }
+    try {
+      const id = parseF1TitleEventId(contract.sportsEventId)
+      if (!id) {
+        attention(contract, `can't read ${contract.sportsEventId}`)
+        continue
+      }
+      let events = eventsBySeason.get(id.season)
+      if (!events) {
+        events = await providerCall('/events', KEY_REFUSED, () =>
+          getF1Events(id.season)
+        )
+        eventsBySeason.set(id.season, events)
+      }
+      const dates = f1SeasonDates(events)
+
+      const close = contract.closeTime
+      if (dates && close !== undefined && close > now) {
+        const finalClose = f1TitleCloseTime(dates.lastRaceStart)
+        if (finalClose !== close && finalClose > now + MIN_CREATE_LEAD_MS) {
+          await pg.none(
+            `update contracts set data = data || $1::jsonb
+             where id = $2 and resolution is null and close_time > now()`,
+            [JSON.stringify({ closeTime: finalClose }), contract.id]
+          )
+          log(
+            `[sports-f1-resolve] ${contract.id}: close moved from ${iso(
+              close
+            )} to ${iso(finalClose)}, the final race's`
+          )
+          add(contract, 'moved', `close ${iso(close)} → ${iso(finalClose)}`)
+          continue
+        }
+      }
+
+      if (!f1SeasonComplete(events)) {
+        wait(`the provider's ${id.season} season isn't over`)
+        continue
+      }
+      if (!dates) {
+        attention(
+          contract,
+          `the provider's ${id.season} calendar has dates that don't parse`
+        )
+        continue
+      }
+      const dueAt = f1TitleCloseTime(dates.lastRaceStart) + delayMs
+      if (now < dueAt) {
+        add(contract, 'waiting', `pays out from ${iso(dueAt)}`)
+        continue
+      }
+
+      const standings =
+        id.kind === 'drivers'
+          ? (
+              await providerCall('/driver_standings', KEY_OR_PLAN_REFUSED, () =>
+                getF1DriverStandings(id.season)
+              )
+            ).map(f1DriverStandingRow)
+          : (
+              await providerCall('/team_standings', KEY_OR_PLAN_REFUSED, () =>
+                getF1TeamStandings(id.season)
+              )
+            ).map(f1TeamStandingRow)
+      const answers = await getAnswers(pg, contract.id)
+      const resolution = f1TitleResolution(
+        id.season,
+        standings,
+        answers,
+        contract.sportsEntrantIds ?? []
+      )
+      if (!resolution) {
+        attention(
+          contract,
+          `the final ${id.season} ${id.kind} standings don't check out against the market's field`
+        )
+        continue
+      }
+      // An answer someone resolved by hand meanwhile (a driver ruled out
+      // NO) has to agree with the standings, here and on the fresh read.
+      const intended = (answerId: string) =>
+        answerId === resolution.outcome ? 'YES' : 'NO'
+      const conflict = answers.find(
+        (a) => a.resolution && a.resolution !== intended(a.id)
+      )
+      if (conflict) {
+        attention(
+          contract,
+          `${conflict.text} is resolved ${
+            conflict.resolution
+          }, but the standings say ${intended(conflict.id)}`
+        )
+        continue
+      }
+      creator ??= await sportsCreator()
+      await resolveMarketHelper(
+        { ...contract, answers },
+        creator,
+        creator,
+        { outcome: resolution.outcome, resolutions: resolution.resolutions },
+        undefined,
+        agreesWith(intended)
+      )
+      const champion = answers.find((a) => a.id === resolution.outcome)
+      add(contract, 'resolved', champion?.text ?? resolution.outcome)
     } catch (e) {
       const reason = e instanceof Error ? e.message : String(e)
       add(contract, 'error', reason)
