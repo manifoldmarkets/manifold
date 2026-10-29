@@ -17,11 +17,13 @@ let sportsIndexCache: { at: number; index: SportsIndex } | undefined
 
 /**
  * The sports index for a page: cached for a few minutes, and if the topic
- * tree can't be read, the last one (or the curated sports alone).
+ * tree can't be read, the last one, or else the curated sports alone. Pass
+ * `curatedFallback: false` to get an error instead of that partial list.
  */
 export async function getSportsIndex(
   pg: SupabaseDirectClient,
-  now = Date.now()
+  now = Date.now(),
+  opts: { curatedFallback?: boolean } = {}
 ): Promise<SportsIndex> {
   if (sportsIndexCache && now - sportsIndexCache.at < SPORTS_INDEX_TTL_MS)
     return sportsIndexCache.index
@@ -34,7 +36,9 @@ export async function getSportsIndex(
     log.error('[sports-index] could not load the sports topics', {
       error: e instanceof Error ? e.message : String(e),
     })
-    return sportsIndexCache?.index ?? buildSportsIndex([], [])
+    if (sportsIndexCache) return sportsIndexCache.index
+    if (opts.curatedFallback === false) throw e
+    return buildSportsIndex([], [])
   }
 }
 

@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import { useState } from 'react'
+import toast from 'react-hot-toast'
 import { Group } from 'common/group'
 import { formatWithCommas } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
@@ -24,8 +25,12 @@ import { api, updateGroup } from 'web/lib/api/api'
  * (rename, description, add markets, delete) and where it sits among the other
  * topics. Its topic page opens the sports page now, so mods edit it here.
  */
-export function SportTopicPanel(props: { topic: Group }) {
-  const { topic } = props
+export function SportTopicPanel(props: {
+  topic: Group
+  /** After a saved edit, so the page's cached copy of the topic catches up. */
+  onSaved: () => void
+}) {
+  const { topic, onSaved } = props
   const user = useUser()
   const { isFollowing, setIsFollowing } = useIsFollowingTopic(topic.slug)
   const [editingAbout, setEditingAbout] = useState(false)
@@ -109,7 +114,11 @@ export function SportTopicPanel(props: { topic: Group }) {
         <div>
           <AboutEditor
             initialContent={topic.about}
-            onSave={(content) => updateGroup({ id: topic.id, about: content })}
+            onSave={(content) =>
+              updateGroup({ id: topic.id, about: content })
+                .then(onSaved)
+                .catch(() => toast.error("Couldn't save the description"))
+            }
             editing={editingAbout}
             setEditing={setEditingAbout}
             canEdit

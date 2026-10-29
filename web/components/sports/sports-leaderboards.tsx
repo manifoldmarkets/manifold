@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { fromNow } from 'client-common/lib/time'
 import { SportsLeaderboardEntry } from 'common/sports-leaderboards'
 import { SportInfo } from 'common/sports-schedule'
-import { HOUR_MS } from 'common/util/time'
+import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { LeaderboardColumn } from 'web/components/leaderboard'
 import {
@@ -33,16 +33,21 @@ export function SportsLeaderboards(props: { sport: SportInfo | 'all' }) {
     undefined,
     `sports-leaderboards-${key}`
   )
-  // A response stays cached for the session; fetch again when reopening the
-  // tab could show a newer rebuild (they come hourly).
+  // Rebuilds come hourly, but a response stays cached for the session and a
+  // hidden tab stays mounted. So whenever the board is over an hour old (or
+  // not built yet), fetch again, then keep checking every ten minutes.
+  const [tick, setTick] = useState(0)
   useEffect(() => {
-    if (
-      data &&
-      (data.updatedTime === null || Date.now() - data.updatedTime > HOUR_MS)
-    )
-      refresh()
-  }, [key])
-  // Each sport has its own cache slot, so data is always this sport's.
+    const id = setInterval(() => setTick((t) => t + 1), 10 * MINUTE_MS)
+    return () => clearInterval(id)
+  }, [])
+  const updatedTime = data?.updatedTime
+  useEffect(() => {
+    if (updatedTime === undefined || loading) return
+    if (updatedTime === null || Date.now() - updatedTime > HOUR_MS) refresh()
+  }, [updatedTime, tick])
+  // Keyed by sport where it's used, and each sport has its own cache slot,
+  // so data is always this sport's.
   const built = !!data && data.updatedTime !== null
   const notYet = !!data && data.updatedTime === null
   const emptyText = (none: string) =>
