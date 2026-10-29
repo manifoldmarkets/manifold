@@ -20,7 +20,7 @@ import {
   useLoadPastBlocked,
   useUnblockedSchedule,
 } from 'web/components/sports/blocked-topics'
-import { TopicRail, useSportsIndex } from 'web/components/sports/topic-rail'
+import { useSportsIndex } from 'web/components/sports/use-sports-index'
 import { useSportTopicExtras } from 'web/components/sports/use-sport-topic'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
@@ -144,16 +144,6 @@ export default function SportPage() {
       }
       actions={topic.follow}
       hides={hides}
-      topics={
-        sport && (
-          <TopicRail
-            sport={sport.key}
-            sportLabel={sport.label}
-            topics={index?.topics.filter((t) => t.sport === sport.key) ?? []}
-            counts={rail?.topicCounts}
-          />
-        )
-      }
       seo={{
         title: sport ? `${sport.longLabel} games and markets` : 'Sports',
         description: sport

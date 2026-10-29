@@ -37,8 +37,6 @@ export function SportsShell(props: {
   subheading?: ReactNode
   /** Beside Create, like the Follow button. */
   actions?: ReactNode
-  /** Under the sport navigation: the sport's topics (TopicRail). */
-  topics?: ReactNode
   /** Leaves blocked topics' markets out of the lists (useBlockedTopicFilter). */
   hides?: HidesBlocked
   seo: ComponentProps<typeof SEO>
@@ -52,7 +50,6 @@ export function SportsShell(props: {
     heading,
     subheading,
     actions,
-    topics,
     hides,
     seo,
     trackPageView,
@@ -107,7 +104,6 @@ export function SportsShell(props: {
             counts={rail?.counts ?? {}}
           />
         </div>
-        {topics}
 
         {hides ? (
           <HideBlockedTopics hides={hides}>{children}</HideBlockedTopics>

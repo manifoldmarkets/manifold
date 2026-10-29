@@ -31,7 +31,7 @@ const IDLE_REFRESH_MS = 5 * 60_000
 /** What the sport rail shows: the same in every response, whatever the sport. */
 export type SportsRailData = Pick<
   SportsScheduleResponse,
-  'sports' | 'counts' | 'topicCounts' | 'liveCount'
+  'sports' | 'counts' | 'liveCount'
 >
 
 /**
@@ -151,7 +151,6 @@ export function useSportsSchedule(
     setLastRail({
       sports: response.sports,
       counts: response.counts,
-      topicCounts: response.topicCounts,
       liveCount: response.liveCount,
     })
   }, [response])
@@ -159,7 +158,6 @@ export function useSportsSchedule(
     ? {
         sports: response.sports,
         counts: response.counts,
-        topicCounts: response.topicCounts,
         liveCount: response.liveCount,
       }
     : lastRail
