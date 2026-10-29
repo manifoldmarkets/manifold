@@ -14,8 +14,7 @@ export function isOfficialSportsMarket(market: MarketCreator) {
 }
 
 /** Also the hover text of the league label in front of an official title. */
-export const OFFICIAL_SPORTS_MARKET_DESCRIPTION =
-  'Official Manifold market. Created by Manifold Sports. Check the market rules for how it resolves.'
+export const OFFICIAL_SPORTS_MARKET_DESCRIPTION = 'Official Manifold Market'
 
 /** Creator provenance, deliberately independent of resolution method. */
 export function SportsMarketBadge({ market }: { market: MarketCreator }) {
