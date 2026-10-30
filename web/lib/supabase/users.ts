@@ -5,6 +5,7 @@ import { DAY_MS, WEEK_MS } from 'common/util/time'
 import { HIDE_FROM_LEADERBOARD_USER_IDS } from 'common/envs/constants'
 import type { DisplayUser } from 'common/api/user-types'
 import { convertEntitlement } from 'common/shop/types'
+import { refreshUserEntitlements } from 'client-common/hooks/use-websocket-user'
 import { db } from './db'
 export type { DisplayUser }
 
@@ -26,7 +27,7 @@ export async function getFullUserById(id: string) {
 
 export async function getUserSafe(userId: string) {
   try {
-    return await getFullUserById(userId)
+    return await refreshUserEntitlements(userId, getFullUserById)
   } catch (e) {
     if (e instanceof APIError && e.code === 404) {
       return null
@@ -38,7 +39,7 @@ export async function getUserSafe(userId: string) {
 export async function getPrivateUserSafe() {
   try {
     return await api('me/private')
-  } catch (e) {
+  } catch {
     return null
   }
 }

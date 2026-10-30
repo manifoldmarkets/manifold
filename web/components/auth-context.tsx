@@ -297,7 +297,7 @@ export function AuthProvider(props: {
 
   const uid = authUser ? authUser.user.id : authUser
 
-  const listenUser = useWebsocketUser(uid ?? undefined)
+  const listenUser = useWebsocketUser(uid ?? undefined, true)
   useEffectCheckEquality(() => {
     if (authLoaded && listenUser) {
       if (user) {
