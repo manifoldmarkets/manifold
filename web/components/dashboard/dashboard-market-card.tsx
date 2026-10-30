@@ -333,6 +333,7 @@ export function DashboardMarketCard({
                       contract={binaryContract}
                       user={user}
                       labels={{ yes: 'Yes', no: 'No' }}
+                      location="dashboard card"
                     />
                   </div>
                 </>

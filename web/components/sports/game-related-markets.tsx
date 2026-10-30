@@ -557,6 +557,7 @@ export function RelatedMarketRow(props: {
               : undefined
           }
           className={isProp ? propButtonsClassName : 'flex'}
+          location="sports related market"
         />
       )}
       {!closed && twoAnswers && (
