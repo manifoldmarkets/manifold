@@ -17,7 +17,13 @@ import {
 } from 'shared/helpers/search-pagination'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { applyUserDisinterestsToTopicScores } from 'shared/supabase/user-disinterests'
+import {
+  applyUserDisinterestsToTopicScores,
+  getDisinterestTopicPenalties,
+  hideUninterestedMarketsSql,
+  rankWithDisinterestPenalty,
+} from 'shared/supabase/user-disinterests'
+import { disinterestRankingWindow } from 'common/disinterests'
 import {
   from,
   groupBy,
@@ -223,17 +229,40 @@ export async function getForYouSQL(
   ) {
     await buildUserInterestsCache([userId])
   }
-  // Still no topic interests, return default search
+  // Still no topic interests: default search order, with the user's marks
+  // still honoured. Hidden markets stay out, and recent marks weigh their
+  // topics down across a bounded window of the top candidates. The
+  // personalized query below is not an option here: it inner-joins the topic
+  // scores it is given, and a map holding only disliked topics would select
+  // only disliked markets.
   if (
     !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
   ) {
-    return basicSearchSQL({
-      ...args,
-      uid: userId,
-      privateUser,
-      // Keep the same diversity behavior when a new/low-activity user has no
-      // topic scores yet. Ordinary basic browse does not opt into this.
-      suppressStaleSeen: discoveryVariant === 'treatment' && hasBets !== '1',
+    const basic = (pageLimit: number, pageOffset: number) =>
+      basicSearchSQL({
+        ...args,
+        limit: pageLimit,
+        offset: pageOffset,
+        uid: userId,
+        privateUser,
+        // Keep the same diversity behavior when a new/low-activity user has
+        // no topic scores yet. Ordinary basic browse does not opt into this.
+        suppressStaleSeen: discoveryVariant === 'treatment' && hasBets !== '1',
+        hideUninterestedFor: userId,
+      })
+    const penalties = await getDisinterestTopicPenalties(
+      createSupabaseDirectClient(),
+      userId
+    )
+    if (!penalties) return basic(limit, offset)
+    // A cursor page starts at its cursor, not at an offset.
+    const pageOffset = args.beforeTime ? 0 : offset
+    return rankWithDisinterestPenalty({
+      candidatesSql: basic(disinterestRankingWindow(limit, pageOffset), 0),
+      scoreColumn: sortByScore,
+      penalties,
+      limit,
+      offset: pageOffset,
     })
   }
   const userBetsJoin = hasBets === '1' && userId && userBetsJoinSql
@@ -310,9 +339,18 @@ export const basicSearchSQL = (
   args: SharedSearchArgs & {
     privateUser?: PrivateUser
     suppressStaleSeen?: boolean
+    /** Drop the markets this user marked uninterested, and their derived hides. */
+    hideUninterestedFor?: string
   }
 ) => {
-  const { sort, privateUser, beforeTime, suppressStaleSeen, ...rest } = args
+  const {
+    sort,
+    privateUser,
+    beforeTime,
+    suppressStaleSeen,
+    hideUninterestedFor,
+    ...rest
+  } = args
   const sortByScore = sort === 'score' ? 'importance_score' : 'freshness_score'
   const userBetsJoin = args.hasBets === '1' && args.uid && userBetsJoinSql
   const sql = renderSql(
@@ -324,6 +362,7 @@ export const basicSearchSQL = (
       ...rest,
       hideStonks: true,
     }),
+    hideUninterestedFor && hideUninterestedMarketsSql(hideUninterestedFor),
     suppressStaleSeen &&
       args.hasBets !== '1' &&
       args.uid &&

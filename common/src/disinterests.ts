@@ -53,6 +53,47 @@ export const MIN_DISINTEREST_TOPIC_MULTIPLIER = 0.05
  */
 export const DISINTEREST_TOPIC_WINDOW_DAYS = 180
 
+/**
+ * A user with no topic scores yet gets the plain trending order, sorted by a
+ * score the database serves straight from an index. Their marks still have to
+ * count there, but a penalized sort cannot use that index, so those feeds
+ * re-rank a bounded window of the top candidates instead: at least this many,
+ * and more only when a page reaches past it. A fixed window keeps the pages of
+ * one visit consistent with each other.
+ */
+export const DISINTEREST_RANKING_WINDOW = 200
+
+export const disinterestRankingWindow = (limit: number, offset: number) => {
+  const page =
+    (Number.isFinite(limit) && limit > 0 ? Math.ceil(limit) : 0) +
+    (Number.isFinite(offset) && offset > 0 ? Math.ceil(offset) : 0)
+  return Math.max(DISINTEREST_RANKING_WINDOW, page)
+}
+
+/** Per-topic multipliers as parallel arrays, the shape SQL's unnest wants. */
+export type TopicPenalties = { topicIds: string[]; multipliers: number[] }
+
+/**
+ * Turns recent-mark counts per topic into the multipliers a query applies,
+ * dropping topics the counts leave untouched. Undefined when nothing is left,
+ * so callers can keep their unpenalized query exactly as it was.
+ */
+export const topicPenaltiesFromCounts = (
+  uninterestedMarketCountsByTopic: TopicScores
+): TopicPenalties | undefined => {
+  const topicIds: string[] = []
+  const multipliers: number[] = []
+  for (const topicId of Object.keys(uninterestedMarketCountsByTopic)) {
+    const multiplier = disinterestTopicMultiplier(
+      uninterestedMarketCountsByTopic[topicId]
+    )
+    if (multiplier === 1) continue
+    topicIds.push(topicId)
+    multipliers.push(multiplier)
+  }
+  return topicIds.length === 0 ? undefined : { topicIds, multipliers }
+}
+
 export const disinterestTopicMultiplier = (uninterestedMarketCount: number) => {
   if (
     !Number.isFinite(uninterestedMarketCount) ||

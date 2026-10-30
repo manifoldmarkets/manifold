@@ -6,10 +6,22 @@ import {
   MAX_NEAR_DUPLICATES_PER_DISINTEREST,
   NEAR_DUPLICATE_CANDIDATE_LIMIT,
   NEAR_DUPLICATE_SIMILARITY_THRESHOLD,
+  TopicPenalties,
+  topicPenaltiesFromCounts,
   TopicScores,
 } from 'common/disinterests'
 import { GROUP_SCORE_PRIOR } from 'common/feed'
 import { SupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
+import {
+  from,
+  leftJoin,
+  limit as lim,
+  orderBy,
+  renderSql,
+  select,
+  where,
+  withClause,
+} from 'shared/supabase/sql-builder'
 
 type Db = SupabaseDirectClient | SupabaseTransaction
 
@@ -43,15 +55,29 @@ export const setContractUninterested = async (
   uninterested: boolean
 ): Promise<UninterestedResult> => {
   if (!uninterested) {
-    // Undo takes the mark and every hide derived from it. Hides derived from
-    // some other mark stay, as does a market the user marked themselves.
-    await pg.none(
-      `delete from user_disinterests
-       where user_id = $1
-         and (contract_id = $2 or source_contract_id = $2)`,
-      [userId, contractId]
-    )
-    return { uninterested: false, hiddenSimilarCount: 0 }
+    return await pg.tx(async (tx) => {
+      // New-market propagation holds a key-share lock on this mark until its
+      // derived hides commit. Take the mark's row lock first and let that
+      // wait play out, so the delete below starts from a snapshot that sees
+      // those hides. A lone delete would block on the same lock, then skip
+      // the rows committed after its snapshot and leave them orphaned.
+      await tx.oneOrNone(
+        `select contract_id from user_disinterests
+         where user_id = $1 and contract_id = $2
+         for update`,
+        [userId, contractId]
+      )
+      // Undo takes the mark and every hide derived from it. Hides derived
+      // from some other mark stay, as does a market the user marked
+      // themselves.
+      await tx.none(
+        `delete from user_disinterests
+         where user_id = $1
+           and (contract_id = $2 or source_contract_id = $2)`,
+        [userId, contractId]
+      )
+      return { uninterested: false, hiddenSimilarCount: 0 }
+    })
   }
 
   return await pg.tx(async (tx) => {
@@ -156,23 +182,36 @@ export const hideNearDuplicatesOfNewContract = async (
   if (contract.visibility !== 'public') return 0
   return await pg.tx(async (tx) => {
     await widenNearestNeighbourSearch(tx)
+    // The source marks are key-share locked, in one fixed order, before any
+    // hide is derived from them, and distinct on runs over the locked rows
+    // because it cannot lock rows itself. Undo takes the mark's row lock, so
+    // whichever side starts second waits: an Undo that waits then sees and
+    // removes these hides, and a propagation that waits re-reads a deleted
+    // mark as gone and derives nothing from it. Without the lock the two could
+    // interleave and leave a hide whose mark no longer exists.
     const hidden = await tx.manyOrNone<{ user_id: string }>(
-      `insert into user_disinterests (user_id, contract_id, creator_id, source_contract_id)
-       select distinct on (ud.user_id) ud.user_id, $1, $2, ud.contract_id
-       from contract_embeddings new_e
-       join lateral (
-         select ce.contract_id, ce.embedding <=> new_e.embedding as distance
-         from contract_embeddings ce
-         where ce.contract_id <> new_e.contract_id
-           and 1 - (ce.embedding <=> new_e.embedding) > $3
-         order by ce.embedding <=> new_e.embedding
-         limit $4
-       ) near on true
-       join user_disinterests ud on ud.contract_id = near.contract_id
-       where new_e.contract_id = $1
-         and ud.source_contract_id is null
-         and ud.user_id <> $2
-       order by ud.user_id, near.distance
+      `with locked_sources as materialized (
+         select ud.user_id, ud.contract_id, near.distance
+         from contract_embeddings new_e
+         join lateral (
+           select ce.contract_id, ce.embedding <=> new_e.embedding as distance
+           from contract_embeddings ce
+           where ce.contract_id <> new_e.contract_id
+             and 1 - (ce.embedding <=> new_e.embedding) > $3
+           order by ce.embedding <=> new_e.embedding
+           limit $4
+         ) near on true
+         join user_disinterests ud on ud.contract_id = near.contract_id
+         where new_e.contract_id = $1
+           and ud.source_contract_id is null
+           and ud.user_id <> $2
+         order by ud.user_id, ud.contract_id
+         for key share of ud
+       )
+       insert into user_disinterests (user_id, contract_id, creator_id, source_contract_id)
+       select distinct on (user_id) user_id, $1, $2, contract_id
+       from locked_sources
+       order by user_id, distance
        on conflict (user_id, contract_id) do nothing
        returning user_id`,
       [
@@ -218,4 +257,68 @@ export const applyUserDisinterestsToTopicScores = async (
   const counts = await getDisinterestCountsByTopic(pg, userId)
   if (Object.keys(counts).length === 0) return scores
   return applyDisinterestTopicPenalty(scores, counts, GROUP_SCORE_PRIOR)
+}
+
+/**
+ * The user's recent marks as per-topic multipliers for a query to apply, or
+ * undefined when none would change anything.
+ */
+export const getDisinterestTopicPenalties = async (
+  pg: Db,
+  userId: string
+): Promise<TopicPenalties | undefined> =>
+  topicPenaltiesFromCounts(await getDisinterestCountsByTopic(pg, userId))
+
+/**
+ * Where clause dropping every market the user has hidden, whether they marked
+ * it themselves or it was derived from a mark. For queries over `contracts`.
+ */
+export const hideUninterestedMarketsSql = (userId: string) =>
+  where(
+    `not exists (select 1 from user_disinterests ud
+       where ud.user_id = $1 and ud.contract_id = contracts.id)`,
+    [userId]
+  )
+
+/**
+ * Re-ranks a bounded window of candidates so markets in topics the user marked
+ * uninterested sink below the rest. The cold-start feeds order by a score the
+ * importance index serves directly; a penalized order cannot use that index,
+ * so the index-ordered top of the list stays the candidate set and only it is
+ * re-ranked. A market takes its most penalized topic's multiplier, the same
+ * "worst matching tag decides" shape as the personalized niche blend, and
+ * ties fall back to the raw score so an unpenalized order is unchanged.
+ */
+export const rankWithDisinterestPenalty = (opts: {
+  /**
+   * A complete statement that selects `id` and the score column and is
+   * already ordered and limited to the window. Formatted, with no parameters.
+   */
+  candidatesSql: string
+  scoreColumn: 'importance_score' | 'freshness_score'
+  penalties: TopicPenalties
+  limit: number
+  offset: number
+}) => {
+  const { candidatesSql, scoreColumn, penalties, limit, offset } = opts
+  return renderSql(
+    withClause(`candidates as ($1:raw)`, [candidatesSql]),
+    withClause(
+      `penalized as (
+        select gc.contract_id, min(p.multiplier) as multiplier
+        from unnest($1::text[], $2::float8[]) as p(group_id, multiplier)
+        join group_contracts gc on gc.group_id = p.group_id
+        where gc.contract_id in (select id from candidates)
+        group by gc.contract_id
+      )`,
+      [penalties.topicIds, penalties.multipliers]
+    ),
+    select('c.*'),
+    from('candidates c'),
+    leftJoin('penalized p on p.contract_id = c.id'),
+    orderBy(
+      `c.${scoreColumn} * coalesce(p.multiplier, 1) desc, c.${scoreColumn} desc, c.id`
+    ),
+    lim(limit, offset)
+  )
 }

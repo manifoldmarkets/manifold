@@ -1,8 +1,11 @@
 import {
   applyDisinterestTopicPenalty,
+  disinterestRankingWindow,
   disinterestTopicMultiplier,
+  DISINTEREST_RANKING_WINDOW,
   DISINTEREST_TOPIC_PENALTY,
   MIN_DISINTEREST_TOPIC_MULTIPLIER,
+  topicPenaltiesFromCounts,
 } from './disinterests'
 
 describe('disinterestTopicMultiplier', () => {
@@ -81,5 +84,37 @@ describe('applyDisinterestTopicPenalty', () => {
     applyDisinterestTopicPenalty(cached, counts, prior)
     expect(cached).toEqual({ nfl: 0.8 })
     expect(counts).toEqual({ nfl: 1 })
+  })
+})
+
+describe('disinterestRankingWindow', () => {
+  it('re-ranks at least the fixed window so the pages of one visit agree', () => {
+    expect(disinterestRankingWindow(3, 0)).toBe(DISINTEREST_RANKING_WINDOW)
+    expect(disinterestRankingWindow(20, 150)).toBe(DISINTEREST_RANKING_WINDOW)
+  })
+
+  it('grows only when a page reaches past the window', () => {
+    expect(disinterestRankingWindow(20, 300)).toBe(320)
+  })
+
+  it('treats a bad page as the start rather than shrinking the window', () => {
+    expect(disinterestRankingWindow(NaN, -5)).toBe(DISINTEREST_RANKING_WINDOW)
+    expect(disinterestRankingWindow(Infinity, 0)).toBe(
+      DISINTEREST_RANKING_WINDOW
+    )
+  })
+})
+
+describe('topicPenaltiesFromCounts', () => {
+  it('keeps only the topics the marks change, as parallel arrays for unnest', () => {
+    expect(topicPenaltiesFromCounts({ nfl: 1, golf: 3, nba: 0 })).toEqual({
+      topicIds: ['nfl', 'golf'],
+      multipliers: [0.5, 0.125],
+    })
+  })
+
+  it('is undefined when nothing would change, so a query can stay as it was', () => {
+    expect(topicPenaltiesFromCounts({})).toBeUndefined()
+    expect(topicPenaltiesFromCounts({ nfl: 0, nba: NaN })).toBeUndefined()
   })
 })

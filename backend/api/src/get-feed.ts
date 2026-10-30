@@ -24,6 +24,7 @@ import {
 import { privateUserBlocksSql } from 'shared/supabase/search-contracts'
 import { getFollowedReposts, getTopicReposts } from 'shared/supabase/reposts'
 import { applyUserDisinterestsToTopicScores } from 'shared/supabase/user-disinterests'
+import { trendingContractsForUserSql } from 'shared/supabase/trending-contracts'
 import {
   FeedContract,
   GROUP_SCORE_PRIOR,
@@ -64,17 +65,11 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
   ) {
     log('no topic interests for user', userId)
+    // Their marks still apply here: hidden markets stay out and recent marks
+    // weigh their topics down; see trendingContractsForUserSql.
     const defaultContracts = await pg.map(
-      `select data, importance_score, conversion_score, freshness_score, view_count, token from contracts
-                where (close_time is null or close_time > now())
-                  and resolution_time is null
-                  and visibility = 'public'
-                  and deleted = false
-                  and outcome_type != 'STONK'
-                  and outcome_type != 'BOUNTIED_QUESTION'
-                order by importance_score desc
-                limit $1 offset $2`,
-      [limit * 4, offset],
+      await trendingContractsForUserSql(pg, userId, limit * 4, offset),
+      [],
       (r) => convertContract(r)
     )
     return {

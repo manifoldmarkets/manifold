@@ -2,12 +2,16 @@ jest.mock('./utils', () => ({
   LOCAL_ONLY: true,
   log: { warn: jest.fn(), error: jest.fn() },
 }))
-jest.mock('./supabase/init', () => ({ createSupabaseDirectClient: jest.fn() }))
+jest.mock('./supabase/init', () => ({
+  createSupabaseDirectClient: jest.fn(),
+  pgp: jest.requireActual('pg-promise')(),
+}))
 
 import { Request } from 'express'
 import { API } from 'common/api/schema'
 import { APIError } from 'common/api/utils'
 import {
+  DISINTEREST_RANKING_WINDOW,
   DISINTEREST_TOPIC_WINDOW_DAYS,
   MAX_NEAR_DUPLICATES_PER_DISINTEREST,
   NEAR_DUPLICATE_CANDIDATE_LIMIT,
@@ -20,10 +24,18 @@ import {
   setMarketUninterested,
 } from 'api/update-user-disinterests'
 import { createSupabaseDirectClient } from './supabase/init'
+import { renderSql } from './supabase/sql-builder'
+import {
+  trendingContractsForUserSql,
+  trendingContractsSql,
+} from './supabase/trending-contracts'
 import {
   applyUserDisinterestsToTopicScores,
+  getDisinterestTopicPenalties,
   hideNearDuplicatesOfNewContract,
+  hideUninterestedMarketsSql,
   isContractUninterested,
+  rankWithDisinterestPenalty,
   setContractUninterested,
 } from './supabase/user-disinterests'
 
@@ -129,19 +141,26 @@ describe('setContractUninterested', () => {
     expect(calls.some((c) => c.sql.startsWith('insert into'))).toBe(false)
   })
 
-  test('undo deletes the mark together with everything derived from it', async () => {
+  test('undo locks the mark, then deletes it and everything derived from it in a fresh statement', async () => {
     const { pg, calls } = makeDb()
 
     const result = await setContractUninterested(asDb(pg), 'u', 'c', false)
 
     expect(result).toEqual({ uninterested: false, hiddenSimilarCount: 0 })
-    expect(pg.tx).not.toHaveBeenCalled()
-    expect(calls).toHaveLength(1)
-    expect(calls[0].sql).toContain('delete from user_disinterests')
-    expect(calls[0].sql).toContain(
+    expect(pg.tx).toHaveBeenCalledTimes(1)
+    expect(calls).toHaveLength(2)
+    // Waiting on the mark's row lock is what lets the delete see hides a
+    // concurrent new-market propagation derived from it.
+    expect(calls[0].sql).toContain('for update')
+    expect(calls[0].args).toEqual(['u', 'c'])
+    // The delete must be its own statement after that wait: a statement's
+    // snapshot is fixed when it starts, so one combined statement would skip
+    // rows committed while it waited.
+    expect(calls[1].sql).toContain('delete from user_disinterests')
+    expect(calls[1].sql).toContain(
       '(contract_id = $2 or source_contract_id = $2)'
     )
-    expect(calls[0].args).toEqual(['u', 'c'])
+    expect(calls[1].args).toEqual(['u', 'c'])
   })
 })
 
@@ -184,6 +203,17 @@ describe('hideNearDuplicatesOfNewContract', () => {
     expect(calls[1].sql).toContain('ud.user_id <> $2')
     expect(calls[1].sql).toContain(
       'on conflict (user_id, contract_id) do nothing'
+    )
+    // The source marks are locked, in one fixed order, before any hide is
+    // derived from them, so a concurrent Undo of a source either waits and
+    // then sees the new hide, or has already removed the mark these rows
+    // would have come from.
+    expect(calls[1].sql).toContain('with locked_sources as materialized')
+    expect(calls[1].sql).toContain(
+      'order by ud.user_id, ud.contract_id for key share of ud'
+    )
+    expect(calls[1].sql).toContain(
+      'select distinct on (user_id) user_id, $1, $2, contract_id from locked_sources'
     )
   })
 
@@ -287,5 +317,114 @@ describe('endpoints', () => {
         {} as Request
       )
     ).rejects.toBeInstanceOf(APIError)
+  })
+})
+
+const squash = (sql: string) => sql.replace(/\s+/g, ' ').trim()
+
+describe('getDisinterestTopicPenalties', () => {
+  test('turns recent marks into multipliers, and no marks into undefined', async () => {
+    const marked = makeDb({
+      manyOrNoneRows: [
+        { group_id: 'nfl', n: 1 },
+        { group_id: 'golf', n: 3 },
+      ],
+    })
+    expect(await getDisinterestTopicPenalties(asDb(marked.pg), 'u')).toEqual({
+      topicIds: ['nfl', 'golf'],
+      multipliers: [0.5, 0.125],
+    })
+    const quiet = makeDb({ manyOrNoneRows: [] })
+    expect(await getDisinterestTopicPenalties(asDb(quiet.pg), 'u')).toBe(
+      undefined
+    )
+  })
+})
+
+describe('hideUninterestedMarketsSql', () => {
+  test('drops marked and derived hides alike from a query over contracts', () => {
+    expect(squash(renderSql(hideUninterestedMarketsSql('u')))).toContain(
+      "not exists (select 1 from user_disinterests ud where ud.user_id = 'u' and ud.contract_id = contracts.id)"
+    )
+  })
+})
+
+describe('rankWithDisinterestPenalty', () => {
+  const penalties = { topicIds: ['nfl', 'golf'], multipliers: [0.5, 0.125] }
+
+  test('re-ranks the candidate window by its most penalized topic, raw score second', () => {
+    const sql = squash(
+      rankWithDisinterestPenalty({
+        candidatesSql:
+          'select id, importance_score from contracts order by importance_score desc limit 200',
+        scoreColumn: 'importance_score',
+        penalties,
+        limit: 3,
+        offset: 6,
+      })
+    )
+    expect(sql).toContain(
+      'with candidates as (select id, importance_score from contracts order by importance_score desc limit 200)'
+    )
+    expect(sql).toContain(
+      "unnest(array['nfl','golf']::text[], array[0.5,0.125]::float8[]) as p(group_id, multiplier)"
+    )
+    expect(sql).toContain(
+      'select gc.contract_id, min(p.multiplier) as multiplier'
+    )
+    expect(sql).toContain('where gc.contract_id in (select id from candidates)')
+    expect(sql).toContain('left join penalized p on p.contract_id = c.id')
+    expect(sql).toContain(
+      'order by c.importance_score * coalesce(p.multiplier, 1) desc, c.importance_score desc, c.id'
+    )
+    expect(sql).toMatch(/limit 3 offset 6$/)
+  })
+
+  test('penalizes whichever score the page is sorted by', () => {
+    const sql = squash(
+      rankWithDisinterestPenalty({
+        candidatesSql: 'select id, freshness_score from contracts limit 200',
+        scoreColumn: 'freshness_score',
+        penalties,
+        limit: 20,
+        offset: 0,
+      })
+    )
+    expect(sql).toContain(
+      'order by c.freshness_score * coalesce(p.multiplier, 1) desc, c.freshness_score desc, c.id'
+    )
+    expect(sql).toMatch(/limit 20$/)
+  })
+})
+
+describe('trendingContractsForUserSql', () => {
+  test('without recent marks is the plain trending query minus hidden markets', async () => {
+    const { pg } = makeDb({ manyOrNoneRows: [] })
+    const sql = squash(await trendingContractsForUserSql(asDb(pg), 'u', 3, 6))
+    expect(sql).toBe(
+      squash(
+        trendingContractsSql({ limit: 3, offset: 6, hideUninterestedFor: 'u' })
+      )
+    )
+    expect(sql).toContain("ud.user_id = 'u'")
+    expect(sql).toContain('order by importance_score desc limit 3 offset 6')
+    expect(sql).not.toContain('with candidates')
+  })
+
+  test('with recent marks re-ranks a fixed window of the top candidates, then pages through it', async () => {
+    const { pg } = makeDb({ manyOrNoneRows: [{ group_id: 'nfl', n: 2 }] })
+    const sql = squash(await trendingContractsForUserSql(asDb(pg), 'u', 3, 6))
+    expect(sql).toContain(
+      `order by importance_score desc limit ${DISINTEREST_RANKING_WINDOW})`
+    )
+    expect(sql).toContain("ud.user_id = 'u'")
+    expect(sql).toContain("array['nfl']::text[], array[0.25]::float8[]")
+    expect(sql).toMatch(/limit 3 offset 6$/)
+  })
+
+  test('the signed-out trending query carries no per-user clause at all', () => {
+    expect(trendingContractsSql({ limit: 3, offset: 0 })).not.toContain(
+      'user_disinterests'
+    )
   })
 })
