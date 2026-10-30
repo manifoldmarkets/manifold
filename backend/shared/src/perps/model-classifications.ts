@@ -6,6 +6,7 @@ import {
   isCompositeSlug,
   isValidPermaslug,
 } from 'common/perps/open-weight-models'
+import { sortByLastChecked } from 'shared/perps/classification-recheck'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 
 // Resolution layer between the audited seed list and the operator/auto
@@ -29,6 +30,19 @@ export type ClassificationRow = {
   first_ranked_at: string | null
   classified_at: string | null
   classified_by: string | null
+  /**
+   * A closed verdict applied as the DEFAULT, not established: the operator
+   * looked, found no public weights, and does not expect to yet (a stealth
+   * model; weights announced and unshipped). Counts as closed to the oracle
+   * exactly like any other `open = false` row, and is re-examined by the
+   * watcher until a human firms it. See getProvisionalClassifications.
+   */
+  provisional: boolean
+}
+
+export type ProvisionalClassificationRow = ClassificationRow & {
+  /** Exact PostgreSQL timestamp: never round this snapshot token through Date. */
+  updated_time: string
 }
 
 export type ResolvedClassifications = {
@@ -57,7 +71,8 @@ export const resolveModelClassifications = async (
 ): Promise<ResolvedClassifications> => {
   const rows = await pg.manyOrNone<ClassificationRow>(
     `select permaslug, open, weights, source, evidence,
-            first_seen, first_ranked_at, classified_at, classified_by
+            first_seen, first_ranked_at, classified_at, classified_by,
+            provisional
      from model_classifications`
   )
 
@@ -225,9 +240,16 @@ export const upsertClassification = async (
     source: 'auto' | 'admin'
     evidence?: Record<string, unknown>
     classifiedBy?: string | null
+    /**
+     * Closed as the default rather than as a finding — see ClassificationRow.
+     * Never valid with `open`: an open verdict cites a repo or does not exist,
+     * and the table's check constraint says the same.
+     */
+    provisional?: boolean
   }
 ) => {
   const { permaslug, open, source, classifiedBy } = params
+  const provisional = params.provisional ?? false
   const slug = basePermaslug(permaslug)
   // Enforced at the single write path, so no caller can insert a key the index
   // could never match — `/x`, `x/`, `x//y` all previously passed an
@@ -240,6 +262,11 @@ export const upsertClassification = async (
   if (open && !weights)
     throw new Error(
       `refusing to classify ${permaslug} open without a weights repo`
+    )
+  if (open && provisional)
+    throw new Error(
+      `refusing to classify ${permaslug} open AND provisional — an open ` +
+        `verdict cites its evidence; provisional is the default for not finding any`
     )
 
   // The prior decision is APPENDED to evidence.history rather than replaced.
@@ -259,12 +286,14 @@ export const upsertClassification = async (
   // exponentially.
   await pg.none(
     `insert into model_classifications
-       (permaslug, open, weights, source, evidence, classified_at, classified_by, updated_time)
-     values ($1, $2, $3, $4, $5::jsonb, now(), $6, now())
+       (permaslug, open, weights, source, evidence, classified_at, classified_by,
+        provisional, updated_time)
+     values ($1, $2, $3, $4, $5::jsonb, now(), $6, $7, now())
      on conflict (permaslug) do update set
        open = excluded.open,
        weights = excluded.weights,
        source = excluded.source,
+       provisional = excluded.provisional,
        evidence = excluded.evidence || jsonb_build_object(
          'history',
          coalesce(model_classifications.evidence->'history', '[]'::jsonb) ||
@@ -272,6 +301,7 @@ export const upsertClassification = async (
              'open', model_classifications.open,
              'weights', model_classifications.weights,
              'source', model_classifications.source,
+             'provisional', model_classifications.provisional,
              'classifiedAt', model_classifications.classified_at,
              'classifiedBy', model_classifications.classified_by,
              'supersededAt', now(),
@@ -288,21 +318,79 @@ export const upsertClassification = async (
       source,
       JSON.stringify(params.evidence ?? {}),
       classifiedBy ?? null,
+      provisional,
     ]
   )
 }
 /**
- * Attach the research agent's findings to a PENDING row without adjudicating
- * it.
+ * Apply a verified publisher repo only to the provisional snapshot we checked.
+ * Verification runs outside the database; a human may decide the row meanwhile.
+ * All writers advance updated_time, and comparing evidence also protects against
+ * two decisions sharing now() in one transaction (each decision appends history).
+ * Research-only changes conservatively skip this flip and are retried next time
+ * the row is due. The predicate and history append are one atomic mutation.
+ */
+export const openProvisionalClassification = async (
+  pg: SupabaseDirectClient,
+  observed: ProvisionalClassificationRow,
+  weights: string,
+  evidence: Record<string, unknown>
+): Promise<boolean> => {
+  if (!weights)
+    throw new Error('refusing to classify open without a weights repo')
+  if (!observed.provisional || observed.open !== false) return false
+  const applied = await pg.oneOrNone<{ permaslug: string }>(
+    `update model_classifications
+     set open = true,
+         weights = $4,
+         source = 'auto',
+         provisional = false,
+         evidence = $5::jsonb || jsonb_build_object(
+           'history',
+           coalesce(evidence->'history', '[]'::jsonb) ||
+             jsonb_build_array(jsonb_build_object(
+               'open', open,
+               'weights', weights,
+               'source', source,
+               'provisional', provisional,
+               'classifiedAt', classified_at,
+               'classifiedBy', classified_by,
+               'supersededAt', now(),
+               'evidence', evidence - 'history'
+             ))
+         ),
+         classified_at = now(),
+         classified_by = null,
+         updated_time = now()
+     where permaslug = $1 and provisional and open is false
+       and updated_time = $2::timestamptz and evidence = $3::jsonb
+     returning permaslug`,
+    [
+      observed.permaslug,
+      observed.updated_time,
+      JSON.stringify(observed.evidence),
+      weights,
+      JSON.stringify(evidence),
+    ]
+  )
+  return applied !== null
+}
+
+/**
+ * Attach the research agent's findings to a PENDING or PROVISIONAL row without
+ * adjudicating it.
  *
- * The row stays `open is null`, so the model remains excluded from both sides
- * of the index exactly as before — nothing about the published number changes.
- * What changes is the review queue: instead of a bare permaslug to go and
- * google, the operator sees a recommendation and the searches behind it, and
- * confirms with one click.
+ * A pending row stays `open is null`, so the model remains excluded from both
+ * sides of the index exactly as before; a provisional row stays closed. Nothing
+ * about the published number changes. What changes is the review queue:
+ * instead of a bare permaslug to go and google, the operator sees a
+ * recommendation and the searches behind it, and confirms with one click — or,
+ * for a watched row, sees that the weekly re-check found public weights where
+ * the human had found none.
  *
- * Only ever touches unadjudicated rows: the `where` clause means a human
- * verdict can never be overwritten by a later agent run.
+ * Only ever touches rows a human has not firmly decided: the `where` clause
+ * means a firm verdict can never be overwritten by a later agent run, and a
+ * provisional row is one the operator explicitly asked to keep under review.
  */
 export const recordAgentRecommendation = async (
   pg: SupabaseDirectClient,
@@ -325,7 +413,7 @@ export const recordAgentRecommendation = async (
   await pg.none(
     `update model_classifications
      set evidence = evidence || $2::jsonb, updated_time = now()
-     where permaslug = $1 and open is null`,
+     where permaslug = $1 and (open is null or provisional)`,
     [
       basePermaslug(permaslug),
       JSON.stringify({
@@ -349,12 +437,47 @@ export const getPendingClassifications = async (
 ): Promise<ClassificationRow[]> => {
   const rows = await pg.manyOrNone<ClassificationRow>(
     `select permaslug, open, weights, source, evidence,
-            first_seen, first_ranked_at, classified_at, classified_by
+            first_seen, first_ranked_at, classified_at, classified_by,
+            provisional
      from model_classifications
      where open is null
      order by first_ranked_at asc nulls last, first_seen asc`
   )
   return rows.filter((row) => !isCompositeSlug(basePermaslug(row.permaslug)))
+}
+
+/** Every timestamp that counts as "someone looked" at a provisional row. */
+export const provisionalCheckedAt = (
+  row: Pick<ClassificationRow, 'evidence' | 'classified_at'>
+): unknown[] => [row.evidence?.['agentRanAt'], row.classified_at]
+
+/**
+ * The watch list: closed by default, re-examined until a human firms it.
+ *
+ * Never-checked first, then longest since the last check, so the watcher's
+ * per-sweep cap always spends its calls where they have waited longest.
+ * Composites are filtered for the same reason as everywhere else — a verdict
+ * on one is ignored, so re-checking it would be spend with no reachable
+ * effect.
+ */
+export const getProvisionalClassifications = async (
+  pg: SupabaseDirectClient
+): Promise<ProvisionalClassificationRow[]> => {
+  const rows = await pg.manyOrNone<ProvisionalClassificationRow>(
+    `select permaslug, open, weights, source, evidence,
+            first_seen, first_ranked_at, classified_at, classified_by,
+            provisional, updated_time::text
+     from model_classifications
+     where provisional
+     order by classified_at asc, permaslug asc`
+  )
+  return sortByLastChecked(
+    rows.filter((row) => {
+      const slug = basePermaslug(row.permaslug)
+      return !OPEN_WEIGHT_MODELS[slug] && !isCompositeSlug(slug)
+    }),
+    provisionalCheckedAt
+  )
 }
 
 /**
