@@ -4,7 +4,7 @@ import { track } from 'web/lib/service/analytics'
  * What the news page measures. The funnel the concept is judged on:
  * panel expansions, market clicks, trades, creation starts and completed
  * publications. The rest explain the funnel (where readers drop out, what
- * they report).
+ * members link).
  */
 export type NewsEvent =
   /** The reader opened a story's markets and claims. */
@@ -27,8 +27,9 @@ export type NewsEvent =
   | 'news create cancel'
   /** The reader published a draft. */
   | 'news create publish'
-  | 'news feedback open'
-  | 'news feedback send'
+  /** "Missing a market? Link one" was opened, or a market was linked. */
+  | 'news link open'
+  | 'news link market'
   /** The "new stories" pill was shown, or pressed. */
   | 'news new stories shown'
   | 'news new stories show'

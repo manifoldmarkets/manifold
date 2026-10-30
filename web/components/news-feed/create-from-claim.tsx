@@ -6,12 +6,14 @@ import {
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
+import Link from 'next/link'
 import { useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { LiteMarket } from 'common/api/market-types'
 import { Contract } from 'common/contract'
 import { getAnte } from 'common/economy'
 import {
+  canLinkNewsMarkets,
   NewsArticle,
   NewsClaim,
   NewsMarketDraft,
@@ -104,6 +106,8 @@ export function CreateFromClaimModal(props: {
     onAttached,
   } = props
   const user = useUser()
+  // Linking is for members. Signed out, the button signs the reader in first.
+  const member = !user || canLinkNewsMarkets(user.entitlements)
   const [question, setQuestion] = useState(draft.question)
   const [criteria, setCriteria] = useState(draft.criteria)
   const [definitions, setDefinitions] = useState(draft.definitions)
@@ -186,6 +190,10 @@ export function CreateFromClaimModal(props: {
   const reuse = async (contractId: string) => {
     if (!user) {
       firebaseLogin()
+      return
+    }
+    if (!canLinkNewsMarkets(user.entitlements)) {
+      toast.error('Linking markets to stories is for members.')
       return
     }
     setBusy(contractId)
@@ -338,8 +346,19 @@ export function CreateFromClaimModal(props: {
                 Already on Manifold
               </span>
               <span className="text-ink-500 -mt-1 text-xs">
-                If one of these asks the same thing, link it instead of creating
-                another.
+                {member ? (
+                  'If one of these asks the same thing, link it instead of creating another.'
+                ) : (
+                  <>
+                    Linking one of these to the story is for members.{' '}
+                    <Link
+                      href="/membership"
+                      className="text-primary-700 font-semibold hover:underline"
+                    >
+                      See membership
+                    </Link>
+                  </>
+                )}
               </span>
               <Col className="border-ink-200 divide-ink-100 divide-y rounded-md border">
                 {known.map((c) => (
@@ -348,6 +367,7 @@ export function CreateFromClaimModal(props: {
                     question={c.question}
                     price={<Price contract={c} />}
                     busy={busy === c.id}
+                    canUse={member}
                     onUse={() => reuse(c.id)}
                   />
                 ))}
@@ -361,6 +381,7 @@ export function CreateFromClaimModal(props: {
                       </span>
                     }
                     busy={busy === m.id}
+                    canUse={member}
                     onUse={() => reuse(m.id)}
                   />
                 ))}
@@ -627,6 +648,8 @@ function SimilarRow(props: {
   question: string
   price: React.ReactNode
   busy: boolean
+  /** Members may link it; everyone else only sees that it exists. */
+  canUse: boolean
   onUse: () => void
 }) {
   return (
@@ -637,15 +660,17 @@ function SimilarRow(props: {
       </span>
       <Row className="items-center justify-between gap-3 sm:justify-end">
         <div className="min-w-0 max-w-[14rem]">{props.price}</div>
-        <Button
-          size="2xs"
-          color="gray-outline"
-          loading={props.busy}
-          onClick={props.onUse}
-          className="shrink-0"
-        >
-          Use this instead
-        </Button>
+        {props.canUse && (
+          <Button
+            size="2xs"
+            color="gray-outline"
+            loading={props.busy}
+            onClick={props.onUse}
+            className="shrink-0"
+          >
+            Use this instead
+          </Button>
+        )}
       </Row>
     </div>
   )

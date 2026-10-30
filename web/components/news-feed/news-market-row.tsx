@@ -50,14 +50,12 @@ export function NewsMarketRow(props: {
   place: MarketPlace
   /** How many stories link this market, when more than one. */
   storyCount?: number
-  /** Attached by a reader rather than the matcher. */
+  /** Linked by a member rather than the matcher. */
   readerAdded?: boolean
   /** Right-hand control in place of the trade buttons. */
   action?: ReactNode
-  /** The report control, shown on the meta line. */
-  report?: ReactNode
 }) {
-  const { storyId, place, storyCount, readerAdded, action, report } = props
+  const { storyId, place, storyCount, readerAdded, action } = props
   const contract = useLiveContract(props.contract)
   const answers = topAnswers(contract, 3)
   const extra =
@@ -103,14 +101,12 @@ export function NewsMarketRow(props: {
           {isEarlyMarket(contract) && <EarlyBadge contract={contract} />}
         </Row>
       )}
-      <Row className="mt-1 items-center justify-between gap-2">
-        <MarketMeta
-          contract={contract}
-          storyCount={storyCount}
-          readerAdded={readerAdded}
-        />
-        {report}
-      </Row>
+      <MarketMeta
+        contract={contract}
+        storyCount={storyCount}
+        readerAdded={readerAdded}
+        className="mt-1"
+      />
     </div>
   )
 }
@@ -250,7 +246,7 @@ export function MarketMeta(props: {
           <span className="text-ink-500">· on {storyCount} stories</span>
         </Tooltip>
       ) : null}
-      {readerAdded && <span>· linked by a reader</span>}
+      {readerAdded && <span>· linked by a member</span>}
     </Row>
   )
 }

@@ -236,6 +236,7 @@ export function StoryCard(props: {
             })
             setCreating(claim)
           }}
+          onAttached={onAttached}
           createHref={createMarketHref(story)}
           claimsEnabled={claimsEnabled}
         />

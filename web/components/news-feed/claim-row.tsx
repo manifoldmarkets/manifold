@@ -7,7 +7,6 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useLiveContract } from 'web/hooks/use-contract'
 import type { SimulatedMarket } from './create-from-claim'
-import { MatchReport } from './match-feedback'
 import {
   EarlyBadge,
   MarketMeta,
@@ -62,7 +61,6 @@ export function ClaimRow(props: {
         <DirectMatch
           contract={match}
           storyId={storyId}
-          claimId={claim.id}
           byReader={claim.matchBy === 'reader'}
           storyCount={storyCounts[match.id]}
         />
@@ -157,28 +155,19 @@ export function contextUrl(url: string, excerpt: string) {
 function DirectMatch(props: {
   contract: Contract
   storyId: string
-  claimId: string
   byReader: boolean
   storyCount?: number
 }) {
-  const { storyId, claimId, byReader, storyCount } = props
+  const { storyId, byReader, storyCount } = props
   const contract = useLiveContract(props.contract)
   return (
     <Col className="border-primary-300 bg-primary-50 gap-1.5 rounded-md border px-3 py-2.5">
-      <Row className="items-center justify-between gap-2">
-        <span
-          className="text-primary-700 text-[10px] font-bold uppercase tracking-wider"
-          title="This market resolves on exactly what the quote claims."
-        >
-          Direct match{byReader ? ' · linked by a reader' : ''}
-        </span>
-        <MatchReport
-          mode="claim"
-          storyId={storyId}
-          contractId={contract.id}
-          claimId={claimId}
-        />
-      </Row>
+      <span
+        className="text-primary-700 text-[10px] font-bold uppercase tracking-wider"
+        title="This market resolves on exactly what the quote claims."
+      >
+        Direct match{byReader ? ' · linked by a member' : ''}
+      </span>
       <QuestionLink
         contract={contract}
         storyId={storyId}

@@ -3,7 +3,7 @@ import * as os from 'os'
 import * as path from 'path'
 import { mapValues, omit } from 'lodash'
 import { Contract } from 'common/contract'
-import { NewsFeedbackKind, NewsMarketRelation } from 'common/news-feed'
+import { NewsMarketRelation } from 'common/news-feed'
 import { MINUTE_MS } from 'common/util/time'
 import { log } from 'shared/utils'
 import { getTollbitSpend, setTollbitSpend, TollbitSpend } from './articles'
@@ -28,12 +28,11 @@ const CACHE_MAX_AGE_MS = 24 * 60 * MINUTE_MS
 /** A refresh still "running" after this long is assumed wedged. */
 const REFRESH_BUDGET_MS = 25 * MINUTE_MS
 const SAVE_DEBOUNCE_MS = 2_000
-const MAX_FEEDBACK = 5_000
 
 /** Story id to the ids of the users who liked it. */
 type Likes = Record<string, string[]>
 
-/** A market a reader linked to a story: as the direct test of one of its
+/** A market a member linked to a story: as the direct test of one of its
  * claims, or as a related forecast. */
 export type NewsAttachment = {
   storyId: string
@@ -44,23 +43,10 @@ export type NewsAttachment = {
   time: number
 }
 
-/** A reader's report that a market shown on a story is wrong for it. */
-export type NewsFeedbackEntry = {
-  storyId: string
-  contractId?: string
-  claimId?: string
-  kind: NewsFeedbackKind
-  suggestedContractId?: string
-  note?: string
-  userId?: string
-  time: number
-}
-
 type CacheFile = NewsFeedBuild & {
   likes?: Likes
   attachments?: NewsAttachment[]
   attachedContracts?: Record<string, Contract>
-  feedback?: NewsFeedbackEntry[]
   /** Today's paid reads, so a restart does not reset the budget. */
   tollbitSpend?: TollbitSpend
 }
@@ -72,7 +58,6 @@ type State = {
   /** Contracts readers attached, so they show before the next build loads
    * them. */
   attachedContracts: Record<string, Contract>
-  feedback: NewsFeedbackEntry[]
   refreshing: boolean
   lastError?: string
   lastRefreshStarted: number
@@ -85,7 +70,6 @@ const state: State = {
   likes: {},
   attachments: [],
   attachedContracts: {},
-  feedback: [],
   refreshing: false,
   lastRefreshStarted: 0,
   loadedFromDisk: false,
@@ -112,7 +96,6 @@ function loadFromDisk() {
       typeof parsed.attachedContracts === 'object'
     )
       state.attachedContracts = parsed.attachedContracts
-    if (Array.isArray(parsed?.feedback)) state.feedback = parsed.feedback
     if (
       parsed &&
       Array.isArray(parsed.stories) &&
@@ -127,7 +110,6 @@ function loadFromDisk() {
           'likes',
           'attachments',
           'attachedContracts',
-          'feedback',
           'tollbitSpend'
         ),
         Date.now()
@@ -136,7 +118,6 @@ function loadFromDisk() {
         stories: parsed.stories.length,
         likedStories: Object.keys(state.likes).length,
         attachments: state.attachments.length,
-        feedback: state.feedback.length,
         updatedTime: new Date(parsed.updatedTime).toISOString(),
       })
     }
@@ -154,7 +135,6 @@ function saveToDisk() {
       likes: state.likes,
       attachments: state.attachments,
       attachedContracts: state.attachedContracts,
-      feedback: state.feedback,
       tollbitSpend: getTollbitSpend(),
     }
     fs.writeFileSync(cachePath(), JSON.stringify(slim))
@@ -238,15 +218,6 @@ export function attachNewsMarket(
   )
   state.attachments.push({ ...a, time: Date.now() })
   state.attachedContracts[contract.id] = contract
-  scheduleSave()
-}
-
-export function addNewsFeedback(entry: Omit<NewsFeedbackEntry, 'time'>) {
-  loadFromDisk()
-  state.feedback.push({ ...entry, time: Date.now() })
-  if (state.feedback.length > MAX_FEEDBACK)
-    state.feedback = state.feedback.slice(-MAX_FEEDBACK)
-  log('news-feed: reader feedback', entry)
   scheduleSave()
 }
 

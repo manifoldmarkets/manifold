@@ -1,3 +1,4 @@
+import { canLinkNewsMarkets } from 'common/news-feed'
 import { isEligibleRelatedMarket } from 'common/related-markets'
 import { fetchContracts, stripContract } from 'shared/news-feed/pipeline'
 import {
@@ -5,15 +6,17 @@ import {
   getNewsFeedBuild,
   isNewsFeedEnabled,
 } from 'shared/news-feed/state'
+import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 
 /**
- * A reader links an existing market to a story: as the direct test of one of
+ * A member links an existing market to a story: as the direct test of one of
  * its claims (shown beside the quote), or as a related forecast (shown under
- * the outlook). Used when drafting a market turns up one that already asks
- * the question. Curation, so it takes the same ban as adding a topic.
+ * the outlook). The link shows to every reader at once, so it is for members
+ * (any supporter tier), and curation besides: it takes the same ban as
+ * adding a topic.
  */
 export const attachNewsMarketHandler: APIHandler<'attach-news-market'> =
   onlyUsersWhoCanPerformAction('addTopic', async (props, auth) => {
@@ -30,6 +33,13 @@ export const attachNewsMarketHandler: APIHandler<'attach-news-market'> =
       throw new APIError(404, 'That claim is not on this story.')
     }
     const pg = createSupabaseDirectClient()
+    const entitlements = await getActiveSupporterEntitlements(pg, auth.uid)
+    if (!canLinkNewsMarkets(entitlements)) {
+      throw new APIError(
+        403,
+        'Linking markets to stories is for members. Join at manifold.markets/membership'
+      )
+    }
     const [contract] = await fetchContracts(pg, [contractId])
     if (!contract || !isEligibleRelatedMarket(contract)) {
       throw new APIError(404, 'That market is not open to link.')

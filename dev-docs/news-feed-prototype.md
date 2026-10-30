@@ -25,8 +25,8 @@ cached on disk so a restart serves the last feed at once.
 | Claims: extract, verbatim check, match, draft       | `backend/shared/src/news-feed/claims.ts`                   |
 | In-process state, disk cache, refresher             | `backend/shared/src/news-feed/state.ts`                    |
 | `GET get-news-feed`, `POST refresh-news-feed`       | `backend/api/src/get-news-feed.ts`, `refresh-news-feed.ts` |
-| `POST like-news-story`, `news-feedback`             | `backend/api/src/like-news-story.ts`, `news-feedback.ts`   |
-| `POST attach-news-market`                           | `backend/api/src/attach-news-market.ts`                    |
+| `POST like-news-story`                              | `backend/api/src/like-news-story.ts`                       |
+| `POST attach-news-market` (members)                 | `backend/api/src/attach-news-market.ts`                    |
 | Page                                                | `web/pages/news/index.tsx`, `web/components/news-feed/`    |
 | What the page measures                              | `web/components/news-feed/news-events.ts`                  |
 
@@ -34,7 +34,7 @@ The feed only runs when the API starts with `NEWS_FEED_ENABLED=true`. In
 production the endpoint answers `enabled: false` and the page says so.
 
 Stories only show when they have at least one open market (the matcher's, a
-claim's direct match, or one a reader attached); "With markets" in the
+claim's direct match, or one a member linked); "With markets" in the
 masthead switches to every story. Curated dashboards stay at `/news/<slug>`.
 
 ## The page
@@ -68,10 +68,14 @@ masthead switches to every story. Curated dashboards stay at `/news/<slug>`.
   match until the reader confirms or moves it to the outlook. Readiness
   checks gate Publish. **Publishing is simulated**: nothing is created; the
   page shows the new market in place and keeps it for the browser session.
-- **Report a match.** A small flag on every market opens a form: not about
-  the story, does not test the claim, missing context, or something else,
-  with an optional better market from search and a note. Reports go to the
-  feed server (`news-feedback`), signed in or not.
+- **Link a market.** "Missing a market? Link one" at the foot of the panel
+  searches open markets and puts the chosen one under the related outlook
+  for every reader; "Use this instead" in the create dialog does the same
+  for a claim. Both call `attach-news-market`, which is for members (any
+  supporter tier, `canLinkNewsMarkets`): the page shows non-members the
+  membership link in place of the controls, and the server answers them
+  with a 403. There is no report or suggestion form and nothing is stored
+  for review.
 - **Keeping the reader's place.** Filters, paging, open panels and
   published markets live in session storage. The list holds its order while
   the reader is here; arrivals wait behind a "N new stories" button. After a
@@ -240,8 +244,8 @@ give each configuration its own `NEWS_FEED_CACHE_PATH`.
 - Publishing a market is simulated. The real call is `api('market', …)`
   with the draft's question, criteria and definitions as the description,
   then a link back to the claim like `attach-news-market` makes.
-- Likes, reader attachments and reports live in the feed server's memory
-  and disk cache, not the database.
+- Likes and the markets members link live in the feed server's memory and
+  disk cache, not the database.
 - Markets embedded before June 2024 still carry ada-002 vectors and will not
   match; re-embedding open markets is phase 0 of the real build.
 - No websocket push yet: the page polls every minute.

@@ -1,4 +1,6 @@
 import { Contract } from './contract'
+import { UserEntitlement } from './shop/types'
+import { isSupporter } from './supporter-config'
 
 /**
  * The news feed: stories gathered from public news indexes, each shown with
@@ -158,7 +160,7 @@ export type NewsClaim = {
   speakerKind: NewsSpeakerKind
   /** A market whose resolution turns on exactly what the claim asserts. */
   matchId?: string
-  /** Who linked the match: the matcher, or a reader. */
+  /** Who linked the match: the matcher, or a member. */
   matchBy?: 'ai' | 'reader'
   /** Offered for creation when no market tests the claim. */
   draft?: NewsMarketDraft
@@ -283,16 +285,12 @@ export type NewsFeedResponse = {
  * and the feed says so. */
 export const NEWS_FEW_TRADERS = 10
 
-/** What a reader can say is wrong with a market shown on a story. */
-export const NEWS_FEEDBACK_KINDS = [
-  'not-relevant',
-  'not-direct',
-  'missing-context',
-  'other',
-] as const
-
-export type NewsFeedbackKind = (typeof NEWS_FEEDBACK_KINDS)[number]
-
-/** How a market a reader adds relates to the story: a direct test of a
+/** How a market a member adds relates to the story: a direct test of a
  * claim, or a broader forecast shown under the related outlook. */
 export type NewsMarketRelation = 'direct' | 'related'
+
+/** Linking a market to a story is for members: any active supporter tier.
+ * The page's controls and the server apply this same rule. */
+export const canLinkNewsMarkets = (
+  entitlements: UserEntitlement[] | undefined
+) => isSupporter(entitlements)

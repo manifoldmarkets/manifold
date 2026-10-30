@@ -12,7 +12,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { ClaimRow, PrototypeNote } from './claim-row'
 import type { SimulatedMarket } from './create-from-claim'
-import { MatchReport } from './match-feedback'
+import { LinkMarket } from './link-market'
 import { trackNews } from './news-events'
 import { EarlyBadge, NewsMarketRow } from './news-market-row'
 
@@ -39,6 +39,8 @@ export function ContextPanel(props: {
   /** Markets the reader published from this story's claims. */
   published: SimulatedMarket[]
   onCreate: (claim: NewsClaim) => void
+  /** A member linked a market; the feed should refetch. */
+  onAttached: () => void
   createHref: string
   /** False when the server reads no articles: there is no claims section. */
   claimsEnabled?: boolean
@@ -50,6 +52,7 @@ export function ContextPanel(props: {
     storyCounts,
     published,
     onCreate,
+    onAttached,
     createHref,
     claimsEnabled = true,
   } = props
@@ -106,12 +109,7 @@ export function ContextPanel(props: {
       )}
 
       <Row className="text-ink-500 flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs">
-        <MatchReport
-          mode="missing"
-          storyId={story.id}
-          trigger="Missing a market? Suggest one"
-          triggerClassName="hover:text-primary-700 underline-offset-2 hover:underline"
-        />
+        <LinkMarket storyId={story.id} onAttached={onAttached} />
         <Link
           href={createHref}
           className="hover:text-primary-700 flex items-center gap-1 font-medium"
@@ -174,9 +172,6 @@ function Outlook(props: {
           place="outlook"
           storyCount={storyCounts[c.id]}
           readerAdded={readerIds.has(c.id)}
-          report={
-            <MatchReport mode="outlook" storyId={storyId} contractId={c.id} />
-          }
         />
       ))}
       {hidden > 0 && (
