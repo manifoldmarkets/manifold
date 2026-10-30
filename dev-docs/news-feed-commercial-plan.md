@@ -22,7 +22,11 @@ when the licensed adapters were built.
   a few short attributed quotes beside their markets with a link to the
   passage, never the body, and the body is not stored.
 - `MEDIASTACK_MIN_INTERVAL_MINUTES` spaces Mediastack calls, so a free
-  (non-commercial, delayed) key on a dev box lasts the month at 480.
+  (non-commercial, delayed) key on a dev box lasts the month at 480, one
+  page per call; the timer is in memory, so a restart forgets it.
+- First Mediastack call ever (2026-10-31, prod's key, from the dev box):
+  100 items, 11 kept from 3 outlets; the outlet allowlist drops the rest
+  (`MEDIASTACK_ANY_OUTLET=true` keeps them all).
 - Still open: which outlets have rates (the properties endpoint lists the
   network; run it with the key in the local keys file), the exact licence
   text in the dashboard, the arbitration opt-out within 30 days of
@@ -210,7 +214,8 @@ of the API process (locally, `news-keys.ps1` beside the run scripts).
    cleaner, categorised wire than GDELT with a standfirst for the matcher
    to read. Self-serve; minutes. A key went into prod's Secret Manager on
    2026-10-30; a free key belongs on a dev box only, with
-   `MEDIASTACK_MIN_INTERVAL_MINUTES=480` so its 100 calls last the month.
+   `MEDIASTACK_MIN_INTERVAL_MINUTES=480` so its 100 calls last the month
+   (one page per call; a restart forgets the timer).
 3. **TollBit developer account** (hack.tollbit.com): opened 2026-10-30,
    agent `manifold-markets-dev`. The AgentID is the agent's _name_ (the
    name field of a User-Agent string), not the dashboard's record id. The

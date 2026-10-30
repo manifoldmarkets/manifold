@@ -208,12 +208,14 @@ only when its key is set. The commercial plan
 
 Keys: `MEDIASTACK_API_KEY`; `TOLLBIT_API_KEY` with `TOLLBIT_AGENT_ID` (the
 agent's registered name, `manifold-markets-dev` in dev; TollBit is off
-without both); `GNEWS_API_KEY`. In GCP they are optional secrets
+without both); `GNEWS_API_KEY` (prototype only, never loaded in GCP). In GCP
+the Mediastack and TollBit names are optional secrets
 (`common/src/secrets.ts`). Knobs:
 `NEWS_FEED_CONTACT` (the bot's contact address, in every User-Agent),
 `MEDIASTACK_PAGES`, `MEDIASTACK_SOURCES`, `MEDIASTACK_COUNTRIES` and
 `MEDIASTACK_MIN_INTERVAL_MINUTES` (space the calls; 480 makes a free key's
-100 calls a month last),
+100 calls a month last, at one page per call; a failed call counts, and a
+restart forgets the timer),
 `GDELT_SCOPE=any` (drop the outlet filter from GDELT's queries),
 `TOLLBIT_MAX_PRICE_USD` (0.02) and `TOLLBIT_READS_PER_DAY` (150),
 `NEWS_ARTICLE_SEARCHES_PER_REFRESH` (40). The response's `config` tells the

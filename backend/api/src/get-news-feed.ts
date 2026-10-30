@@ -1,4 +1,4 @@
-import { maxBy, sortBy, sumBy } from 'lodash'
+import { maxBy, sortBy, sumBy, uniq } from 'lodash'
 import { Contract } from 'common/contract'
 import {
   isNewsCategory,
@@ -116,10 +116,20 @@ export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
           }
         : c
     })
-    const readerContractIds = mine
-      .filter((a) => a.relation === 'related')
-      .map((a) => a.contractId)
-      .filter((id) => !s.contractIds.includes(id))
+    // A direct match whose claim is gone (the article was read again under
+    // a newer prompt and the quote changed or fell outside the cap) still
+    // shows, as a related market.
+    const claimIds = new Set((claims ?? []).map((c) => c.id))
+    const readerContractIds = uniq(
+      mine
+        .filter(
+          (a) =>
+            a.relation === 'related' ||
+            (a.relation === 'direct' && !(a.claimId && claimIds.has(a.claimId)))
+        )
+        .map((a) => a.contractId)
+        .filter((id) => !s.contractIds.includes(id))
+    )
     return { ...s, claims, readerContractIds }
   }
 

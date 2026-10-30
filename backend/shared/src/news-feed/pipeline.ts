@@ -21,7 +21,7 @@ import {
 } from 'shared/supabase/init'
 import { contractColumnsToSelectWithPrefix, log } from 'shared/utils'
 import { articleSources } from './articles'
-import { ClaimsMemo, findArticlesAndClaims } from './claims'
+import { CLAIMS_VERSION, ClaimsMemo, findArticlesAndClaims } from './claims'
 import { findWikimediaImage, imageSource } from './images'
 import {
   Candidate,
@@ -299,7 +299,7 @@ const scoreStory = (story: NewsStory, contracts: Contract[], now: number) => {
 /**
  * A build as this configuration may serve it: only stories from enabled
  * sources, pictures the configuration licenses, and article text from the
- * providers it is configured for.
+ * providers it is configured for, read under the current CLAIMS_VERSION.
  * Applied to a cached build before it is served and before it is carried
  * into a refresh, so a cache from another configuration (the prototype's,
  * say) cannot leak its sources, and so the rule holds for every story, not
@@ -318,7 +318,15 @@ export function sanitizeForConfig(build: NewsFeedBuild): NewsFeedBuild {
       m.claimsStatus === 'found' ||
       m.claimsStatus === 'none'
     const provider = m.articleProvider
-    if (hasText && (!provider || !providers.has(provider))) {
+    // Text from a provider this configuration lacks goes, and so do claims
+    // read under an older prompt: the cache must not serve what the current
+    // rules would not produce.
+    if (
+      hasText &&
+      (!provider ||
+        !providers.has(provider) ||
+        m.claimsVersion !== CLAIMS_VERSION)
+    ) {
       delete m.article
       delete m.claims
       delete m.articleProvider

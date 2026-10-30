@@ -808,8 +808,9 @@ export function parseMediastack(json: string, fetchedAt: number) {
   }
 }
 
-/** The last answer, for MEDIASTACK_MIN_INTERVAL_MINUTES. */
-let lastMediastack: { at: number; stories: RawStory[] } | undefined
+/** For MEDIASTACK_MIN_INTERVAL_MINUTES: when Mediastack was last asked,
+ * answered or not, and the last answer. */
+let lastMediastack: { askedAt: number; stories: RawStory[] } | undefined
 
 /**
  * The newest English stories from US and UK outlets, one page of 100 per
@@ -818,7 +819,10 @@ let lastMediastack: { at: number; stories: RawStory[] } | undefined
  * passes the plan's source filter through; MEDIASTACK_COUNTRIES the
  * countries. MEDIASTACK_MIN_INTERVAL_MINUTES spaces the calls out and
  * serves the last answer in between: the free plan's 100 calls a month
- * (non-commercial and delayed, so for a dev box) last the month at 480.
+ * (non-commercial and delayed, so for a dev box) last the month at 480
+ * with one page per call. A failed call counts as one, so a quota error is
+ * not retried every refresh; the timer is in memory, so a restart forgets
+ * it.
  */
 export async function fetchMediastack(now = Date.now()) {
   const key = process.env.MEDIASTACK_API_KEY
@@ -828,13 +832,17 @@ export async function fetchMediastack(now = Date.now()) {
       0,
       Number(process.env.MEDIASTACK_MIN_INTERVAL_MINUTES ?? '0') || 0
     ) * MINUTE_MS
-  if (lastMediastack && now - lastMediastack.at < minInterval) {
+  const sinceAsked = lastMediastack ? now - lastMediastack.askedAt : Infinity
+  if (minInterval > 0 && sinceAsked >= 0 && sinceAsked < minInterval) {
     log('news-feed: mediastack, last answer served', {
-      ageMinutes: Math.round((now - lastMediastack.at) / MINUTE_MS),
-      stories: lastMediastack.stories.length,
+      ageMinutes: Math.round(sinceAsked / MINUTE_MS),
+      stories: lastMediastack?.stories.length ?? 0,
     })
-    return lastMediastack.stories
+    return lastMediastack?.stories ?? []
   }
+  // Counted before the call, so a failure cannot be retried every refresh;
+  // the last answer stands in until the next one succeeds.
+  lastMediastack = { askedAt: now, stories: lastMediastack?.stories ?? [] }
   const pages = Math.min(
     5,
     Math.max(1, Math.floor(Number(process.env.MEDIASTACK_PAGES ?? '1')) || 1)
@@ -870,7 +878,7 @@ export async function fetchMediastack(now = Date.now()) {
       countBy(out, (s) => hostnameOf(s.sources[0].url) ?? '')
     ).length,
   })
-  lastMediastack = { at: now, stories: out }
+  lastMediastack = { askedAt: now, stories: out }
   return out
 }
 

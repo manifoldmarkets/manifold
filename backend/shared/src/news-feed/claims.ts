@@ -58,7 +58,7 @@ import { hostnameOf, isAggregatorLink } from './sources'
  */
 
 /** Bump to read every article again after changing the prompts. */
-const CLAIMS_VERSION = 5
+export const CLAIMS_VERSION = 5
 
 export type ClaimsMemo = {
   claimsVersion?: number
