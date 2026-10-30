@@ -20,7 +20,7 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { contractColumnsToSelectWithPrefix, log } from 'shared/utils'
-import { articleSources, GUARDIAN_TEXT_TTL_MS } from './articles'
+import { articleSources } from './articles'
 import { ClaimsMemo, findArticlesAndClaims } from './claims'
 import { findWikimediaImage, imageSource } from './images'
 import {
@@ -299,16 +299,13 @@ const scoreStory = (story: NewsStory, contracts: Contract[], now: number) => {
 /**
  * A build as this configuration may serve it: only stories from enabled
  * sources, pictures the configuration licenses, and article text from the
- * providers it is configured for, with the Guardian's no older than a day.
+ * providers it is configured for.
  * Applied to a cached build before it is served and before it is carried
  * into a refresh, so a cache from another configuration (the prototype's,
  * say) cannot leak its sources, and so the rule holds for every story, not
  * only the ones the claims step looks at.
  */
-export function sanitizeForConfig(
-  build: NewsFeedBuild,
-  now = Date.now()
-): NewsFeedBuild {
+export function sanitizeForConfig(build: NewsFeedBuild): NewsFeedBuild {
   const origins = new Set(enabledSources())
   const providers = new Set(articleSources())
   const pictures = imageSource()
@@ -321,9 +318,7 @@ export function sanitizeForConfig(
       m.claimsStatus === 'found' ||
       m.claimsStatus === 'none'
     const provider = m.articleProvider
-    const expired =
-      provider === 'guardian' && now - (m.claimsAt ?? 0) > GUARDIAN_TEXT_TTL_MS
-    if (hasText && (!provider || !providers.has(provider) || expired)) {
+    if (hasText && (!provider || !providers.has(provider))) {
       delete m.article
       delete m.claims
       delete m.articleProvider
@@ -377,7 +372,7 @@ export async function buildNewsFeed(
   // 1. Carry the recent stories forward, as this configuration allows them
   //    (a cache from another configuration must not leak its sources).
   const pictures = imageSource()
-  const allowed = prev ? sanitizeForConfig(prev, now) : undefined
+  const allowed = prev ? sanitizeForConfig(prev) : undefined
   const stories = new Map<string, NewsStory>()
   for (const s of allowed?.stories ?? []) {
     if (now - s.updatedTime < KEEP_STORIES_MS) stories.set(s.id, { ...s })

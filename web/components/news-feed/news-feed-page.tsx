@@ -474,13 +474,12 @@ const SOURCE_NAMES: Record<NewsStoryOrigin, string> = {
 }
 
 const ARTICLE_NAMES: Record<NewsArticleSource, string> = {
-  guardian: 'The Guardian',
   tollbit: 'publishers licensed through TollBit',
   gnews: 'GNews (prototype only)',
   rss: 'outlet pages (prototype only)',
 }
 
-const LICENSED_ARTICLES: NewsArticleSource[] = ['guardian', 'tollbit']
+const LICENSED_ARTICLES: NewsArticleSource[] = ['tollbit']
 
 /** The server's article sources. An older server sent one string; the
  * page then says nothing about where claims come from. */
@@ -507,16 +506,6 @@ function SourcesNote(props: { config?: NewsFeedConfig; linkedCount: number }) {
   const licensedText = articles.every((a) => LICENSED_ARTICLES.includes(a))
   return (
     <Col className="text-ink-400 gap-1.5 px-1 pb-2 pt-4 text-[11px]">
-      {articles.includes('guardian') && (
-        <a
-          href="https://www.theguardian.com"
-          target="_blank"
-          rel="noreferrer"
-          className="border-ink-200 hover:text-primary-700 w-fit rounded border px-1.5 py-0.5 font-semibold"
-        >
-          Powered by The Guardian
-        </a>
-      )}
       <p>
         Prototype. Stories come from {listOf(sources)}; headlines link out to
         the outlets. Markets are matched by embedding similarity against every

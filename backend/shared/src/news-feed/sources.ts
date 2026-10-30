@@ -808,16 +808,33 @@ export function parseMediastack(json: string, fetchedAt: number) {
   }
 }
 
+/** The last answer, for MEDIASTACK_MIN_INTERVAL_MINUTES. */
+let lastMediastack: { at: number; stories: RawStory[] } | undefined
+
 /**
  * The newest English stories from US and UK outlets, one page of 100 per
  * call (MEDIASTACK_PAGES for more; the Standard plan has 10,000 calls a
  * month and a refresh every 10 minutes uses about 4,300). MEDIASTACK_SOURCES
  * passes the plan's source filter through; MEDIASTACK_COUNTRIES the
- * countries.
+ * countries. MEDIASTACK_MIN_INTERVAL_MINUTES spaces the calls out and
+ * serves the last answer in between: the free plan's 100 calls a month
+ * (non-commercial and delayed, so for a dev box) last the month at 480.
  */
 export async function fetchMediastack(now = Date.now()) {
   const key = process.env.MEDIASTACK_API_KEY
   if (!key) return [] as RawStory[]
+  const minInterval =
+    Math.max(
+      0,
+      Number(process.env.MEDIASTACK_MIN_INTERVAL_MINUTES ?? '0') || 0
+    ) * MINUTE_MS
+  if (lastMediastack && now - lastMediastack.at < minInterval) {
+    log('news-feed: mediastack, last answer served', {
+      ageMinutes: Math.round((now - lastMediastack.at) / MINUTE_MS),
+      stories: lastMediastack.stories.length,
+    })
+    return lastMediastack.stories
+  }
   const pages = Math.min(
     5,
     Math.max(1, Math.floor(Number(process.env.MEDIASTACK_PAGES ?? '1')) || 1)
@@ -853,6 +870,7 @@ export async function fetchMediastack(now = Date.now()) {
       countBy(out, (s) => hostnameOf(s.sources[0].url) ?? '')
     ).length,
   })
+  lastMediastack = { at: now, stories: out }
   return out
 }
 

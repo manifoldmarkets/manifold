@@ -14,21 +14,21 @@ bears on, then reads an outlet's article on the story for claims. It serves
 the result from memory. Nothing is written to the database; the build is
 cached on disk so a restart serves the last feed at once.
 
-| Piece                                               | Where                                                      |
-| --------------------------------------------------- | ---------------------------------------------------------- |
-| Types and categories                                | `common/src/news-feed.ts`                                  |
-| Sources: Wikipedia, GDELT, Mediastack, Google News  | `backend/shared/src/news-feed/sources.ts`                  |
-| Embed, merge, candidates, verify, rank              | `backend/shared/src/news-feed/pipeline.ts`                 |
-| Market candidates and prompt helpers                | `backend/shared/src/news-feed/markets.ts`                  |
-| Full text: Guardian, TollBit; RSS and GNews (proto) | `backend/shared/src/news-feed/articles.ts`                 |
-| Pictures: Wikimedia Commons, with credits           | `backend/shared/src/news-feed/images.ts`                   |
-| Claims: extract, verbatim check, match, draft       | `backend/shared/src/news-feed/claims.ts`                   |
-| In-process state, disk cache, refresher             | `backend/shared/src/news-feed/state.ts`                    |
-| `GET get-news-feed`, `POST refresh-news-feed`       | `backend/api/src/get-news-feed.ts`, `refresh-news-feed.ts` |
-| `POST like-news-story`                              | `backend/api/src/like-news-story.ts`                       |
-| `POST attach-news-market` (members)                 | `backend/api/src/attach-news-market.ts`                    |
-| Page                                                | `web/pages/news/index.tsx`, `web/components/news-feed/`    |
-| What the page measures                              | `web/components/news-feed/news-events.ts`                  |
+| Piece                                              | Where                                                      |
+| -------------------------------------------------- | ---------------------------------------------------------- |
+| Types and categories                               | `common/src/news-feed.ts`                                  |
+| Sources: Wikipedia, GDELT, Mediastack, Google News | `backend/shared/src/news-feed/sources.ts`                  |
+| Embed, merge, candidates, verify, rank             | `backend/shared/src/news-feed/pipeline.ts`                 |
+| Market candidates and prompt helpers               | `backend/shared/src/news-feed/markets.ts`                  |
+| Full text: TollBit; RSS and GNews (proto)          | `backend/shared/src/news-feed/articles.ts`                 |
+| Pictures: Wikimedia Commons, with credits          | `backend/shared/src/news-feed/images.ts`                   |
+| Claims: extract, verbatim check, match, draft      | `backend/shared/src/news-feed/claims.ts`                   |
+| In-process state, disk cache, refresher            | `backend/shared/src/news-feed/state.ts`                    |
+| `GET get-news-feed`, `POST refresh-news-feed`      | `backend/api/src/get-news-feed.ts`, `refresh-news-feed.ts` |
+| `POST like-news-story`                             | `backend/api/src/like-news-story.ts`                       |
+| `POST attach-news-market` (members)                | `backend/api/src/attach-news-market.ts`                    |
+| Page                                               | `web/pages/news/index.tsx`, `web/components/news-feed/`    |
+| What the page measures                             | `web/components/news-feed/news-events.ts`                  |
 
 The feed only runs when the API starts with `NEWS_FEED_ENABLED=true`. In
 production the endpoint answers `enabled: false` and the page says so.
@@ -88,15 +88,14 @@ masthead switches to every story. Curated dashboards stay at `/news/<slug>`.
 1. **Article.** For each linked story, in the order the article sources are
    configured: one of the story's own links that TollBit will license (the
    publisher's page, priced first); else a search of each provider on the
-   headline's words within two days (the Guardian's full text, TollBit's
-   licensed search, GNews in the prototype), each result checked against
+   headline's words within two days (TollBit's licensed search, GNews in
+   the prototype), each result checked against
    the story by embedding at cosine 0.75. The prototype's outlet RSS index
    and own-link page reads run only when `rss` is configured.
-2. **Body.** The Guardian's `bodyText` as returned; TollBit's markdown as
-   text; for the prototype's pages, the NewsArticle JSON-LD body, else the
-   paragraphs in `<article>`, every fetch hop staying on the outlet's hosts
-   over https. A Guardian article is read again after 24 hours, as its
-   terms require.
+2. **Body.** TollBit's markdown as text; for the prototype's pages, the
+   NewsArticle JSON-LD body, else the paragraphs in `<article>`, every
+   fetch hop staying on the outlet's hosts over https. The body is read
+   once, for the claims, and not stored.
 3. **Extract.** Gemini Flash (medium thinking) returns every forward-looking
    claim with its exact excerpt, speaker, role, kind, a proposition, whether
    it is resolvable on public evidence, and a draft. The model also says
@@ -204,13 +203,17 @@ only when its key is set. The commercial plan
 | Variable               | Values                                            | Default                      |
 | ---------------------- | ------------------------------------------------- | ---------------------------- |
 | `NEWS_SOURCES`         | `wikipedia`, `gdelt`, `mediastack`, `google-news` | `wikipedia,gdelt,mediastack` |
-| `NEWS_ARTICLE_SOURCES` | `guardian`, `tollbit`, `gnews`, `rss`, `none`     | `guardian,tollbit`           |
+| `NEWS_ARTICLE_SOURCES` | `tollbit`, `gnews`, `rss`, `none`                 | `tollbit`                    |
 | `NEWS_IMAGES`          | `wikimedia`, `outlets`, `none`                    | `wikimedia`                  |
 
-Keys: `MEDIASTACK_API_KEY`; `GUARDIAN_API_KEY` (a commercial key);
-`TOLLBIT_API_KEY` with `TOLLBIT_AGENT_ID`; `GNEWS_API_KEY`. Knobs:
+Keys: `MEDIASTACK_API_KEY`; `TOLLBIT_API_KEY` with `TOLLBIT_AGENT_ID` (the
+agent's registered name, `manifold-markets-dev` in dev; TollBit is off
+without both); `GNEWS_API_KEY`. In GCP they are optional secrets
+(`common/src/secrets.ts`). Knobs:
 `NEWS_FEED_CONTACT` (the bot's contact address, in every User-Agent),
-`MEDIASTACK_PAGES`, `MEDIASTACK_SOURCES` and `MEDIASTACK_COUNTRIES`,
+`MEDIASTACK_PAGES`, `MEDIASTACK_SOURCES`, `MEDIASTACK_COUNTRIES` and
+`MEDIASTACK_MIN_INTERVAL_MINUTES` (space the calls; 480 makes a free key's
+100 calls a month last),
 `GDELT_SCOPE=any` (drop the outlet filter from GDELT's queries),
 `TOLLBIT_MAX_PRICE_USD` (0.02) and `TOLLBIT_READS_PER_DAY` (150),
 `NEWS_ARTICLE_SEARCHES_PER_REFRESH` (40). The response's `config` tells the
@@ -235,8 +238,8 @@ give each configuration its own `NEWS_FEED_CACHE_PATH`.
 
 ## Known limits
 
-- Full text needs a licensed provider's key (the Guardian's commercial key,
-  or a TollBit account); without one there are no claims. The prototype's
+- Full text needs a TollBit account (key and AgentID); without one there
+  are no claims. The Guardian declined a commercial key on 2026-10-30. The prototype's
   stand-in, seven outlets' public feeds and pages, found an article for
   about 15% of linked stories and runs only when `rss` is named.
 - Pictures are of the story's subject (its Wikipedia article's lead

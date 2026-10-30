@@ -52,16 +52,12 @@ export type NewsStoryOrigin = (typeof NEWS_STORY_ORIGINS)[number]
 export const isNewsStoryOrigin = (s: string): s is NewsStoryOrigin =>
   (NEWS_STORY_ORIGINS as readonly string[]).includes(s)
 
-/** Where article bodies for claims come from. The Guardian's Open Platform
- * (commercial key) and TollBit (a licence per page, at the publisher's
- * rate) are licensed. GNews returns text it does not own and 'rss' reads
- * outlet pages whose terms forbid it: both prototype only. */
-export const NEWS_ARTICLE_SOURCES = [
-  'guardian',
-  'tollbit',
-  'gnews',
-  'rss',
-] as const
+/** Where article bodies for claims come from. TollBit (a licence per page,
+ * at the publisher's rate) is licensed. GNews returns text it does not own
+ * and 'rss' reads outlet pages whose terms forbid it: both prototype only.
+ * The Guardian's Open Platform was the other licensed route until it
+ * declined us a commercial key on 2026-10-30, as a prediction market. */
+export const NEWS_ARTICLE_SOURCES = ['tollbit', 'gnews', 'rss'] as const
 
 export type NewsArticleSource = (typeof NEWS_ARTICLE_SOURCES)[number]
 

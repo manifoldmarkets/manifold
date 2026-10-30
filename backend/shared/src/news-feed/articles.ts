@@ -15,19 +15,17 @@ import {
   isPublicHttps,
   outletName,
   redactUrl,
-  USER_AGENT,
 } from './sources'
 
 /**
  * Full article text, which claims are read from.
  *
- * Licensed routes:
- * - The Guardian's Open Platform under a commercial key: its search returns
- *   the body as plain text. The developer key is non-commercial and bars
- *   machine-learning use, so it is not a way to try this.
+ * Licensed route:
  * - TollBit: a one-time partial-use licence per article at the publisher's
  *   rate, for pages of publishers in its network, found through the story's
- *   own links or TollBit's licensed search.
+ *   own links or TollBit's licensed search. (The Guardian's Open Platform
+ *   was the other candidate; it declined us a commercial key on 2026-10-30
+ *   because Manifold is a prediction market.)
  * Prototype-only routes, off unless NEWS_ARTICLE_SOURCES names them:
  * - GNews search, whose `content` is text it does not own.
  * - A few outlets' public RSS feeds and their article pages, whose terms
@@ -46,24 +44,17 @@ export type IndexedArticle = NewsArticle & {
   ownLink?: boolean
   /** What TollBit quoted for reading it, in micros of a dollar. */
   priceMicros?: number
-  /** When the provider handed over the text, for the Guardian's 24-hour
-   * rule. */
-  fetchedAt?: number
 }
 
-/** The Guardian's terms: its text is refreshed or dropped within 24 hours
- * of being fetched. */
-export const GUARDIAN_TEXT_TTL_MS = DAY_MS
-
-/** NEWS_ARTICLE_SOURCES: a comma list of guardian, tollbit, gnews, rss, or
- * none. Default 'guardian,tollbit'; an API source counts only with its key
- * set, and 'rss' (outlet pages, prototype only) only when named. */
+/** NEWS_ARTICLE_SOURCES: a comma list of tollbit, gnews, rss, or none.
+ * Default 'tollbit'; an API source counts only with its key set (TollBit's
+ * with its AgentID too), and 'rss' (outlet pages, prototype only) only
+ * when named. */
 export function articleSources(): NewsArticleSource[] {
-  const raw = (process.env.NEWS_ARTICLE_SOURCES ?? 'guardian,tollbit').trim()
+  const raw = (process.env.NEWS_ARTICLE_SOURCES ?? 'tollbit').trim()
   if (!raw || raw === 'none') return []
   const keyFor: Record<NewsArticleSource, string | undefined> = {
-    guardian: process.env.GUARDIAN_API_KEY,
-    tollbit: process.env.TOLLBIT_API_KEY,
+    tollbit: tollbitKey(),
     gnews: process.env.GNEWS_API_KEY,
     rss: 'no key needed',
   }
@@ -372,92 +363,6 @@ export async function readArticle(
 }
 
 // ---------------------------------------------------------------------------
-// The Guardian Open Platform: https://open-platform.theguardian.com
-//
-// Full text comes with the search under a commercial key (price on usage;
-// the commercial tier lists AI and text-and-data-mining use among what it
-// covers, so the extraction we do goes in the contract). Display terms: link
-// to the article, headline and byline unaltered, "Powered by The Guardian"
-// on the page, and the text refreshed or dropped within 24 hours, which
-// claims.ts does by reading the article again after a day.
-
-const GUARDIAN_API = 'https://content.guardianapis.com/search'
-const onlyGuardian = (u: URL) =>
-  u.protocol === 'https:' && u.hostname === 'content.guardianapis.com'
-
-type GuardianResult = {
-  id?: string
-  webTitle?: string
-  webUrl?: string
-  webPublicationDate?: string
-  fields?: {
-    headline?: string
-    trailText?: string
-    byline?: string
-    bodyText?: string
-    thumbnail?: string
-    wordcount?: string
-  }
-}
-
-/** Guardian articles on a headline around a time, with their full text.
- * Shaped from the documented response; untested without a key. */
-export async function searchGuardian(
-  headline: string,
-  aroundTime: number
-): Promise<IndexedArticle[]> {
-  const key = process.env.GUARDIAN_API_KEY
-  if (!key) return []
-  const terms = searchTerms(headline, 4)
-  if (terms.length < 2) return []
-  const day = (t: number) => new Date(t).toISOString().slice(0, 10)
-  const params = new URLSearchParams({
-    q: terms.join(' AND '),
-    'from-date': day(aroundTime - 2 * DAY_MS),
-    'to-date': day(aroundTime + DAY_MS),
-    'order-by': 'relevance',
-    'page-size': '5',
-    'show-fields': 'headline,trailText,byline,bodyText,wordcount',
-    'api-key': key,
-  })
-  const raw = await fetchText(`${GUARDIAN_API}?${params}`, onlyGuardian)
-  const parsed = JSON.parse(raw) as {
-    response?: { status?: string; message?: string; results?: GuardianResult[] }
-  }
-  if (parsed.response?.status !== 'ok')
-    throw new Error(
-      redactUrl(
-        `guardian: ${
-          parsed.response?.message ?? parsed.response?.status ?? 'bad response'
-        }`
-      )
-    )
-  const fetchedAt = Date.now()
-  return (parsed.response.results ?? []).flatMap((r): IndexedArticle[] => {
-    const published = Date.parse(r.webPublicationDate ?? '')
-    const text = r.fields?.bodyText?.trim()
-    if (!r.webUrl || !r.webTitle || !Number.isFinite(published) || !text)
-      return []
-    return [
-      {
-        url: r.webUrl,
-        title: r.fields?.headline ?? r.webTitle,
-        description: r.fields?.trailText
-          ? stripTags(r.fields.trailText)
-          : undefined,
-        publisher: 'The Guardian',
-        site: 'https://www.theguardian.com',
-        publishedTime: published,
-        byline: r.fields?.byline,
-        provider: 'guardian',
-        text,
-        fetchedAt,
-      },
-    ]
-  })
-}
-
-// ---------------------------------------------------------------------------
 // TollBit: https://docs.tollbit.com
 //
 // Publishers in TollBit's network set a rate per page. A one-time
@@ -470,10 +375,15 @@ const tollbitBase = () =>
   process.env.TOLLBIT_API_BASE ?? 'https://gateway.tollbit.com'
 const onlyTollbit = (u: URL) =>
   u.protocol === 'https:' && u.hostname === new URL(tollbitBase()).hostname
-const tollbitKey = () => process.env.TOLLBIT_API_KEY
-/** The AgentID registered on the TollBit dashboard, which the User-Agent
- * of every content request must carry. */
-const tollbitAgent = () => process.env.TOLLBIT_AGENT_ID ?? USER_AGENT
+/** The key, and only with the AgentID beside it: TollBit refuses a token
+ * for an agent it does not know, so without both there is no source. */
+const tollbitKey = () =>
+  process.env.TOLLBIT_AGENT_ID ? process.env.TOLLBIT_API_KEY : undefined
+/** The AgentID registered on TollBit's developer dashboard: the agent's
+ * name (manifold-markets-dev in dev), which is the name field of a
+ * User-Agent string. The token is issued to it and the User-Agent of the
+ * content request must carry it. */
+const tollbitAgent = () => process.env.TOLLBIT_AGENT_ID ?? ''
 const tollbitMaxPriceMicros = () =>
   Math.max(
     0,

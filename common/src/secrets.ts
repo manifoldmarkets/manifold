@@ -60,6 +60,12 @@ export const secrets = (
     // parallel names (e.g. STRIPE_15_OFF_10K_PRICE_ID).
     'STRIPE_20_OFF_5K_PRICE_ID',
     'STRIPE_20_OFF_5K_COUPON_ID',
+    // The news feed's licensed sources (dev-docs/news-feed-commercial-plan.md).
+    // TOLLBIT_AGENT_ID is the agent's name on TollBit's developer dashboard,
+    // not a secret, but it differs per project like the keys do.
+    'TOLLBIT_API_KEY',
+    'TOLLBIT_AGENT_ID',
+    'MEDIASTACK_API_KEY',
     // Some typescript voodoo to keep the string literal types while being not readonly.
   ] as const
 ).concat()
@@ -72,6 +78,11 @@ type SecretId = (typeof secrets)[number]
 const OPTIONAL_SECRETS: ReadonlySet<string> = new Set<SecretId>([
   // The Odds API sports jobs skip themselves without it.
   'THE_ODDS_API_KEY',
+  // The news feed runs without any of these: a source counts only when its
+  // key is set.
+  'TOLLBIT_API_KEY',
+  'TOLLBIT_AGENT_ID',
+  'MEDIASTACK_API_KEY',
 ])
 
 // gRPC status code for NOT_FOUND.

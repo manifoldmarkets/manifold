@@ -5,25 +5,49 @@ terms and pricing pages of each source (re-checked that day); prices move,
 so treat the numbers as the state on that date. Updated the same evening,
 when the licensed adapters were built.
 
+## What changed on 30 and 31 October 2026
+
+- The Guardian declined a commercial key: Manifold is a prediction market.
+  Its adapter, the "Powered by The Guardian" credit and the 24-hour text
+  rule are removed; `NEWS_ARTICLE_SOURCES` defaults to `tollbit`.
+- A TollBit developer account exists (agent `manifold-markets-dev`). The
+  key is in both projects' Secret Manager, and `common/src/secrets.ts` now
+  loads `TOLLBIT_API_KEY`, `TOLLBIT_AGENT_ID` and `MEDIASTACK_API_KEY` as
+  optional secrets; before this change the API never read them. TollBit
+  counts as a source only with both its key and its AgentID set.
+- The licence posture is in the code: at most 6 claims a story, resolvable
+  ones first, excerpts of 6 to 40 words (the model is asked for 35), two
+  shown and the rest behind "Show more". TollBit's standard licence covers
+  one use of the text for a summary, citation or grounding: the page shows
+  a few short attributed quotes beside their markets with a link to the
+  passage, never the body, and the body is not stored.
+- `MEDIASTACK_MIN_INTERVAL_MINUTES` spaces Mediastack calls, so a free
+  (non-commercial, delayed) key on a dev box lasts the month at 480.
+- Still open: which outlets have rates (the properties endpoint lists the
+  network; run it with the key in the local keys file), the exact licence
+  text in the dashboard, the arbitration opt-out within 30 days of
+  registering (developer terms, section 18), and `NEWS_FEED_ENABLED=true`
+  in the API's container env for any GCP run.
+
 ## Status
 
 Every tier is a configuration of one code path: `NEWS_SOURCES`,
 `NEWS_ARTICLE_SOURCES`, `NEWS_IMAGES` (see the prototype doc). The server's
 defaults are now the licensed set: Wikipedia and GDELT for stories, plus
-Mediastack when its key is set; the Guardian and TollBit for article text
-when their keys are set; Wikimedia Commons for pictures. The prototype's
+Mediastack when its key is set; TollBit for article text when its key and
+AgentID are set; Wikimedia Commons for pictures. The prototype's
 sources (Google News RSS, outlet pages for claims, outlet thumbnails) run
 only when a configuration names them.
 
-| Piece                                        | State                         | Needs                                                |
-| -------------------------------------------- | ----------------------------- | ---------------------------------------------------- |
-| Wikipedia Current Events                     | built, running                | `NEWS_FEED_CONTACT` set in production                |
-| GDELT wire                                   | built; live test pending      | nothing; one request per 5 seconds, from one process |
-| Mediastack wire                              | built, untested without a key | `MEDIASTACK_API_KEY` (Standard plan, $24.99/mo)      |
-| Guardian full text                           | built, untested without a key | a commercial key (`GUARDIAN_API_KEY`)                |
-| TollBit full text                            | built, untested without a key | developer account, prepaid spend, `TOLLBIT_API_KEY`  |
-| Wikimedia Commons pictures                   | built                         | nothing                                              |
-| Google News RSS, outlet pages, outlet images | prototype only                | never in production                                  |
+| Piece                                        | State                                 | Needs                                                                                                  |
+| -------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Wikipedia Current Events                     | built, running                        | `NEWS_FEED_CONTACT` set in production                                                                  |
+| GDELT wire                                   | built; live test pending              | nothing; one request per 5 seconds, from one process                                                   |
+| Mediastack wire                              | built; a key in prod's Secret Manager | `MEDIASTACK_API_KEY` (Standard plan, $24.99/mo; a free key is non-commercial and delayed, so dev only) |
+| Guardian full text                           | dropped 2026-10-30                    | nothing: the Guardian declined a commercial key because Manifold is a prediction market                |
+| TollBit full text                            | built; account open, unfunded         | `TOLLBIT_API_KEY` and `TOLLBIT_AGENT_ID` (Secret Manager, both projects), a prepaid balance            |
+| Wikimedia Commons pictures                   | built                                 | nothing                                                                                                |
+| Google News RSS, outlet pages, outlet images | prototype only                        | never in production                                                                                    |
 
 ## Why the prototype cannot ship as it is
 
@@ -129,21 +153,13 @@ itself shows; many abstract stories get none.
 
 ### V2: licensed body text for claims (price on quote, or per page)
 
-Claims need the article. Both routes a company our size can take are built
-(`articles.ts`, `claims.ts`) and wait for keys:
+Claims need the article. Of the two routes a company our size could take,
+one is left (`articles.ts`, `claims.ts`):
 
-- **Guardian Open Platform, commercial key** (`searchGuardian`). The search
-  returns the body as plain text; the story's headline words are searched
-  within two days of it and each result is checked against the story by
-  embedding before the claim reader sees it. The commercial tier lists AI
-  and text-and-data-mining use among what it covers, so the extraction we
-  do goes in the contract; the free developer key is non-commercial and
-  bars machine learning, so it is not a way to try this. Display terms,
-  implemented: the link to the article, headline and byline unaltered (the
-  byline shows beside the publisher), "Powered by The Guardian" on the page
-  when Guardian text is in use, and the text refreshed or dropped within 24
-  hours (a Guardian article is read again after a day). Price "dependent on
-  usage" (licensing@theguardian.com).
+- **The Guardian Open Platform** was the other: its search returns the body
+  as plain text under a commercial key. Asked on 2026-10-28, the Guardian
+  declined on 2026-10-30 because Manifold is a prediction market. Expect
+  the same from any publisher that vets buyers one by one.
 - **TollBit** (`tollbitRates`, `readTollbit`, `searchTollbit`). Publishers
   in TollBit's network set a rate per page; a one-time `ON_DEMAND_LICENSE`
   (partial use: a summary, grounding or citation of the article) is bought
@@ -153,7 +169,10 @@ Claims need the article. Both routes a company our size can take are built
   `TOLLBIT_READS_PER_DAY` (default 150), so the worst day costs $3; the
   prototype linked about 130 stories a day, and at the cent-a-page rates
   TollBit's own examples use, a month is tens of dollars. Which publishers
-  participate is not public: the account's licensed search answers that.
+  participate: `GET /dev/v2/properties?readyToLicense=true` lists the
+  network with its directory rates, and the rates endpoints price a URL.
+  Publishers set a rate and sell to any registered developer; they can
+  withdraw afterwards, so the feed copes with an outlet disappearing.
 
 What it unlocks: excerpts, drafts and "create from a claim" for the
 publishers covered; other outlets stay headline-only. Measure before paying
@@ -185,25 +204,27 @@ of the API process (locally, `news-keys.ps1` beside the run scripts).
    page with hundreds of linked stories a day and no claims. Set
    `NEWS_FEED_CONTACT` to a monitored address.
 2. **Mediastack, Standard plan, $24.99 a month** (mediastack.com; an
-   apilayer product). Sign up, choose Standard (HTTPS and live news start
-   there; the free plan is non-commercial and delayed), copy the access key
-   into `MEDIASTACK_API_KEY`. Gives a cleaner, categorised wire than GDELT
-   with a standfirst for the matcher to read. Self-serve; minutes.
-3. **TollBit developer account** (hack.tollbit.com). Register an AgentID
-   (Dashboard, Home), copy the secret key (Dashboard, Access) into
-   `TOLLBIT_API_KEY`, put the AgentID in `TOLLBIT_AGENT_ID`, and fund the
-   account under Admin, payment settings. Gives claims on stories whose
-   outlets are in TollBit's network, at the publishers' rates within our
-   caps. Self-serve; the catalogue and rates show once the account exists.
-4. **Guardian Open Platform, commercial key.** Press "Request commercial
-   key" at open-platform.theguardian.com/access (or write to
-   licensing@theguardian.com) and describe the use: a news page on
-   manifold.markets showing Guardian headlines with links, short verbatim
-   excerpts with attribution, machine reading of the full text to find
-   checkable claims, text refreshed or deleted within 24 hours, "Powered by
-   The Guardian" on the page. Price depends on usage; this is a sales
-   conversation, not a form. Key into `GUARDIAN_API_KEY`. Gives claims on
-   every story the Guardian covers, which is most of the day's.
+   apilayer product). Sign up, choose Standard (live news and commercial
+   use start there; the free plan is non-commercial and delayed, 100 calls
+   a month), copy the access key into `MEDIASTACK_API_KEY`. Gives a
+   cleaner, categorised wire than GDELT with a standfirst for the matcher
+   to read. Self-serve; minutes. A key went into prod's Secret Manager on
+   2026-10-30; a free key belongs on a dev box only, with
+   `MEDIASTACK_MIN_INTERVAL_MINUTES=480` so its 100 calls last the month.
+3. **TollBit developer account** (hack.tollbit.com): opened 2026-10-30,
+   agent `manifold-markets-dev`. The AgentID is the agent's _name_ (the
+   name field of a User-Agent string), not the dashboard's record id. The
+   key is in both projects' Secret Manager as `TOLLBIT_API_KEY`;
+   `TOLLBIT_AGENT_ID` goes beside it (`manifold-markets-dev` in dev; a prod
+   agent is still to register). Fund the account under Billing; search,
+   rates and properties are free calls, only a content token charges.
+   Gives claims on stories whose outlets are in TollBit's network, at the
+   publishers' rates within our caps.
+4. **Guardian Open Platform, commercial key: declined.** Requested
+   2026-10-28 with the use described in full; the Guardian said no on
+   2026-10-30 because Manifold is a prediction market. TollBit's publishers
+   sell to any registered developer at a posted rate and can only withdraw
+   afterwards, so the feed must cope with an outlet disappearing.
 5. **The real best version** is a wire licence: AP (ap.org, "AP Content
    Services") or Reuters (Reuters Connect or the Reuters News API). Ask for
    text, pictures and AI/TDM use together. No public price; sales-led; start
@@ -219,6 +240,9 @@ Getty) is sales-led and dear; Commons pictures are the answer until then.
 - Persistence: stories, links, likes, reader attachments and reports in
   tables rather than one process's memory and a temp file; the refresh as a
   scheduler job rather than a timer inside the API.
+- `NEWS_FEED_ENABLED=true` in the API's container env: the deploy script
+  passes a fixed list of variables, so it needs adding there (or the
+  scheduler job above takes over).
 - A takedown contact and a per-outlet off switch.
 - Cached favicons rather than hotlinks to Google's undocumented service.
 - The bot's contact address set in production.
@@ -231,6 +255,6 @@ Launch shape is V1 with pictures: Wikipedia for the day's events, GDELT or
 Mediastack for the wire, Commons pictures, headline plus link plus our
 markets. Run it beside the prototype for a week and compare stories, links,
 click-outs and trades from the page (the page already emits those events).
-Open TollBit at once (self-serve) and the Guardian conversation in parallel
-so V2 runs on a subset of stories without a rebuild; keep AP and Reuters for
-when the numbers argue for them.
+TollBit is open (the Guardian declined), so V2 runs on the subset of
+stories whose outlets are in its network without a rebuild; keep AP and
+Reuters for when the numbers argue for them.

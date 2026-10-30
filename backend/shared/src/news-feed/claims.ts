@@ -1,5 +1,5 @@
 import { createHash } from 'crypto'
-import { uniqBy } from 'lodash'
+import { sortBy, uniqBy } from 'lodash'
 import {
   NEWS_SPEAKER_KINDS,
   NewsArticle,
@@ -19,13 +19,11 @@ import {
   articleSources,
   canReadTollbit,
   fetchArticleIndex,
-  GUARDIAN_TEXT_TTL_MS,
   hasArticleSource,
   IndexedArticle,
   readableOutlet,
   readArticle,
   searchGNews,
-  searchGuardian,
   searchTollbit,
   tollbitRates,
 } from './articles'
@@ -44,7 +42,7 @@ import { hostnameOf, isAggregatorLink } from './sources'
  *
  * 1. Find the article: one of the story's own links that a licensed route
  *    can read (TollBit prices the publisher's page), else a search of each
- *    licensed provider (the Guardian's full text, TollBit's network), each
+ *    licensed provider (TollBit's network), each
  *    result checked against the story by embedding. The prototype's outlet
  *    RSS index and page reads run only when configured.
  * 2. Read its body and ask the model for every forward-looking, checkable
@@ -60,7 +58,7 @@ import { hostnameOf, isAggregatorLink } from './sources'
  */
 
 /** Bump to read every article again after changing the prompts. */
-const CLAIMS_VERSION = 4
+const CLAIMS_VERSION = 5
 
 export type ClaimsMemo = {
   claimsVersion?: number
@@ -94,12 +92,17 @@ const EMBED_CONCURRENCY = 6
 const EXTRACT_TIMEOUT_MS = 150_000
 const MATCH_TIMEOUT_MS = 90_000
 const CANDIDATES_PER_CLAIM = 8
-/** Excerpts are short quotes, not passages. */
+/** Excerpts are short quotes, not passages: the model is asked for up to
+ * PROMPT_EXCERPT_WORDS and a little over is kept, so a claim is not lost to
+ * a long sentence. */
 const MIN_EXCERPT_WORDS = 6
-const MAX_EXCERPT_WORDS = 60
-/** A guard against runaway output, not a product limit: articles rarely
- * hold more than a handful of claims that qualify. */
-const MAX_CLAIMS = 30
+const PROMPT_EXCERPT_WORDS = 35
+const MAX_EXCERPT_WORDS = 40
+/** Claims kept per story, resolvable ones first. A product limit, not a
+ * guard: the page shows a few short attributed quotes beside their markets
+ * under a licence for summary and citation, and must not add up to the
+ * article in pieces. */
+const MAX_CLAIMS = 6
 const MAX_REJECTED = 6
 /** Provider searches per refresh, across providers, so a refresh stays a few
  * minutes long and a paid quota lasts the day. */
@@ -285,7 +288,7 @@ First decide whether the article reports on the same story. If it does not, retu
 Otherwise find every claim that someone could bet on: a prediction, expectation, plan, promise, warning or forecast about something that will or will not happen, or a statement whose truth a future public event will settle. Include claims by people the article quotes and claims the article makes in its own voice.
 
 For each claim return:
-- "excerpt": the claim exactly as it appears in the article text, copied character for character as one continuous passage of ${MIN_EXCERPT_WORDS} to 45 words. Never paraphrase, shorten with an ellipsis, correct, or join separate passages. If the claim is a direct quote, copy the quoted words. Choose the passage so it makes sense to a reader who sees only it: when the claim leans on the sentence before ("The vote is now likely next week"), start from that sentence instead, still one continuous passage.
+- "excerpt": the claim exactly as it appears in the article text, copied character for character as one continuous passage of ${MIN_EXCERPT_WORDS} to ${PROMPT_EXCERPT_WORDS} words. Never paraphrase, shorten with an ellipsis, correct, or join separate passages. If the claim is a direct quote, copy the quoted words. Choose the passage so it makes sense to a reader who sees only it: when the claim leans on the sentence before ("The vote is now likely next week"), start from that sentence instead, still one continuous passage.
 - "speaker": who makes the claim: the person's name, the organisation, or "${
     article.publisher
   }" when it is the article's own statement.
@@ -356,7 +359,12 @@ Return only JSON: {"sameEvent": true, "claims": [...]}. An empty list is a fine 
     })
   return {
     sameEvent: true,
-    claims: uniqBy(claims, (c) => normalise(c.excerpt)).slice(0, MAX_CLAIMS),
+    // Resolvable claims (those with a draft) first, then the article's own
+    // order; the rest goes.
+    claims: sortBy(
+      uniqBy(claims, (c) => normalise(c.excerpt)),
+      (c) => (c.draft ? 0 : 1)
+    ).slice(0, MAX_CLAIMS),
   }
 }
 
@@ -574,15 +582,9 @@ export async function findArticlesAndClaims(
     // Claims read with older prompts are read again.
     if (r.memo.claimsVersion !== CLAIMS_VERSION) forgetArticle(r)
     // Text from a provider this server is not configured for goes (a cache
-    // from the prototype, say); the Guardian's is read again after a day.
+    // from the prototype, say).
     const provider = r.memo.articleProvider
-    if (
-      provider &&
-      (!enabled.includes(provider) ||
-        (provider === 'guardian' &&
-          now - (r.memo.claimsAt ?? 0) > GUARDIAN_TEXT_TTL_MS))
-    )
-      forgetArticle(r)
+    if (provider && !enabled.includes(provider)) forgetArticle(r)
   }
 
   // 1. Stories still looking for an article.
@@ -660,9 +662,7 @@ export async function findArticlesAndClaims(
         searches++
         try {
           const found =
-            provider === 'guardian'
-              ? await searchGuardian(r.story.headline, r.story.updatedTime)
-              : provider === 'tollbit'
+            provider === 'tollbit'
               ? await searchTollbit(r.story.headline, r.story.updatedTime)
               : await searchGNews(r.story.headline, r.story.updatedTime)
           for (const a of found) {
@@ -759,8 +759,7 @@ export async function findArticlesAndClaims(
         r.memo.articleProvider = article.provider
         r.memo.claims = result.claims
         r.memo.claimsStatus = result.claims.length > 0 ? 'found' : 'none'
-        // The Guardian's day runs from when its text was fetched.
-        r.memo.claimsAt = article.fetchedAt ?? now
+        r.memo.claimsAt = now
         r.memo.claimsVersion = CLAIMS_VERSION
         pendingArticles.delete(r.story.id)
         read++

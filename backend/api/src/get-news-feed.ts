@@ -19,7 +19,7 @@ import {
   refreshNewsFeed,
 } from 'shared/news-feed/state'
 import { cosine } from 'shared/news-feed/markets'
-import { articleSources, GUARDIAN_TEXT_TTL_MS } from 'shared/news-feed/articles'
+import { articleSources } from 'shared/news-feed/articles'
 import { imageSource } from 'shared/news-feed/images'
 import { enabledSources } from 'shared/news-feed/sources'
 import { APIHandler } from './helpers/endpoint'
@@ -156,24 +156,7 @@ export const getNewsFeed: APIHandler<'get-news-feed'> = async (props, auth) => {
     return { ...story, featuredId: featuredFor(story) }
   }
 
-  /** The Guardian's terms: its text is refreshed or dropped within 24
-   * hours. The refresher reads it again; should a refresh not run, the
-   * page still stops showing it. */
-  const withoutExpiredText = (s: NewsStory): NewsStory => {
-    const m = build.memos[s.id]
-    if (
-      m?.articleProvider !== 'guardian' ||
-      now - (m.claimsAt ?? 0) <= GUARDIAN_TEXT_TTL_MS
-    )
-      return s
-    return {
-      ...s,
-      article: undefined,
-      claims: undefined,
-      claimsStatus: 'no-article',
-    }
-  }
-  const stories = build.stories.map(withoutExpiredText)
+  const stories = build.stories
 
   /** Open markets on the story from any source: the matcher's links, a
    * claim's direct match, or one a reader attached. */

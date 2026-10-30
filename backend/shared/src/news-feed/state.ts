@@ -111,8 +111,7 @@ function loadFromDisk() {
           'attachments',
           'attachedContracts',
           'tollbitSpend'
-        ),
-        Date.now()
+        )
       )
       log('news-feed: loaded cached build', {
         stories: parsed.stories.length,
