@@ -28,6 +28,7 @@ const postWithTags = (...ids: string[]): SocialRow => ({
   deleted_time: null,
   deleted_by: null,
   removed_by_moderator: false,
+  market_comment_id: null,
   rich_content: {
     type: 'doc',
     content: [
