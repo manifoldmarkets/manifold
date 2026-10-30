@@ -9,37 +9,51 @@ import {
   MinusCircleIcon,
   PlusCircleIcon,
 } from '@heroicons/react/solid'
-import { updateUserDisinterestEmbedding } from 'web/lib/api/api'
 import { Contract } from 'common/contract'
+import { useRef } from 'react'
 import toast from 'react-hot-toast'
 import { TiVolume, TiVolumeMute } from 'react-icons/ti'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import {
+  markUninterestedWithToast,
+  setUninterested,
+  uninterestedLabel,
+  UninterestedMenuLabel,
+} from '../contract/uninterested'
 
 export function FeedDropdown(props: {
   contract: Contract
   itemCreatorId: string | undefined
   interesting: boolean
-  toggleInteresting: () => void
+  setInteresting: (interesting: boolean) => void
   importanceScore: number
 }) {
-  const { contract, itemCreatorId, interesting, toggleInteresting } = props
+  const { contract, itemCreatorId, interesting, setInteresting } = props
   const user = useUser()
   const creatorId = itemCreatorId ?? contract.creatorId
   const creator = useDisplayUserById(creatorId)
   const { isFollowing, toggleFollow } = useIsFollowing(user?.id, creatorId)
+  const pendingUninterested = useRef(false)
 
-  const markUninteresting = async () => {
-    await updateUserDisinterestEmbedding({
-      contractId: contract.id,
-      creatorId,
-      // Currently interesting, toggling to not remove contract from disinterests
-      removeContract: !interesting,
-    })
-    if (interesting)
-      toast(`We won't show you content like that again`, {
-        icon: <TiVolumeMute className={'h-5 w-5 text-teal-500'} />,
-      })
-    toggleInteresting()
+  const toggleUninterested = async () => {
+    if (pendingUninterested.current) return
+    pendingUninterested.current = true
+    try {
+      if (interesting) {
+        await markUninterestedWithToast(contract, 'feed card', () =>
+          setInteresting(true)
+        )
+        setInteresting(false)
+      } else {
+        await setUninterested(contract, false, 'feed card')
+        setInteresting(true)
+        toast('Restored to your feed')
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      pendingUninterested.current = false
+    }
   }
 
   const feedCardOptions = buildArray(
@@ -54,15 +68,17 @@ export function FeedDropdown(props: {
       ),
       onClick: toggleFollow,
     },
-    user && {
-      name: interesting ? 'Show less of this' : 'Undo show less of this',
-      icon: interesting ? (
-        <TiVolumeMute className="h-5 w-5" aria-hidden />
-      ) : (
-        <TiVolume className="h-5 w-5" aria-hidden />
-      ),
-      onClick: () => markUninteresting(),
-    }
+    user &&
+      user.id !== contract.creatorId && {
+        name: uninterestedLabel(!interesting),
+        buttonContent: <UninterestedMenuLabel uninterested={!interesting} />,
+        icon: interesting ? (
+          <TiVolumeMute className="h-5 w-5" aria-hidden />
+        ) : (
+          <TiVolume className="h-5 w-5" aria-hidden />
+        ),
+        onClick: () => toggleUninterested(),
+      }
   ) as DropdownItem[]
 
   if (!user) return <></>

@@ -46,7 +46,7 @@ export const UnifiedFeedCard = memo(function UnifiedFeedCard(props: {
         trackingLocation={'feed'}
         bet={bet}
         user={user}
-        hide={() => setHidden(true)}
+        setHidden={setHidden}
       />
     )
   }
@@ -57,7 +57,7 @@ export const UnifiedFeedCard = memo(function UnifiedFeedCard(props: {
       trackingPostfix={'feed'}
       contract={contract}
       key={contract.id}
-      hide={() => setHidden(true)}
+      setHidden={setHidden}
       feedReason={reason}
     />
   )
