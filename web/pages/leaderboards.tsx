@@ -27,6 +27,8 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { Button } from 'web/components/buttons/button'
 import { buildArray } from 'common/util/array'
 import { getCurrentPortfolio } from 'common/supabase/portfolio-metrics'
+import { getBanTypesForLeaderboard, isUserBanned } from 'common/ban-utils'
+import { useUserBans } from 'web/hooks/use-user-bans'
 import Link from 'next/link'
 
 const LEADERBOARD_TYPES = [
@@ -132,8 +134,17 @@ export default function Leaderboards() {
     limit: 50,
   })
 
+  // The board leaves out users banned from what it ranks; so does your row.
+  const { bans: myBans } = useUserBans(user?.id)
+  const offThisBoard = getBanTypesForLeaderboard(type).some((t) =>
+    isUserBanned(myBans, t)
+  )
   const shouldInsertMe =
-    user && entries && !entries.find((e) => e.userId === user.id) && !topic
+    user &&
+    entries &&
+    !entries.find((e) => e.userId === user.id) &&
+    !topic &&
+    !offThisBoard
   const data = myScores?.[type]?.mana
   const myEntry = shouldInsertMe && data ? { userId: user.id, ...data } : null
 
@@ -205,7 +216,7 @@ export default function Leaderboards() {
         </Col>
 
         {/* User's rank if available */}
-        {user && myScores?.[type] && (
+        {user && myScores?.[type] && !offThisBoard && (
           <div className="bg-canvas-50 border-ink-200 rounded-lg border px-4 py-3">
             <Row className="items-center justify-between">
               <span className="text-ink-600 text-sm">Your rank</span>

@@ -1,8 +1,10 @@
 import { groupBy } from 'lodash'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { loadSportsIndex } from 'shared/supabase/sports-index'
+import { getBanTypesForLeaderboard } from 'common/ban-utils'
 import { HIDE_FROM_LEADERBOARD_USER_IDS } from 'common/envs/constants'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
+import { leaderboardUserFilter } from 'shared/supabase/leaderboard-users'
 import {
   leaderboardBoardsForMarket,
   SPORTS_LEADERBOARD_SIZE,
@@ -18,11 +20,13 @@ import {
 // sport, and each other topic under Sports whose page covers it.
 
 // Ranks everyone in `scores` (board, user_id, score) on each board, best
-// first, leaving out banned users and the accounts in $3, and writes them to
-// sports_leaderboard_positions as kind $4. `m` has a row per market and board
-// it counts toward. Returns how many it wrote. A score JavaScript can't hold
-// as a finite number (NaN, infinite, or past 1e300) leaves its user off that
-// board; numeric NaN compares above every number, so the bound catches it.
+// first, leaving out the accounts in $3, deleted users and users with an
+// active ban of a type in $5, and writes them to
+// sports_leaderboard_positions as kind $4. `m` has a row per
+// market and board it counts toward. Returns how many it wrote. A score
+// JavaScript can't hold as a finite number (NaN, infinite, or past 1e300)
+// leaves its user off that board; numeric NaN compares above every number, so
+// the bound catches it.
 const writePositions = (scores: string) => `
   with m as (
     select * from unnest($1::text[], $2::text[]) as m(contract_id, board)
@@ -37,7 +41,7 @@ const writePositions = (scores: string) => `
     join users u on u.id = s.user_id
     where abs(s.score) < 1e300
       and s.user_id <> all($3::text[])
-      and coalesce((u.data->>'isBannedFromPosting')::boolean, false) is not true
+      and ${leaderboardUserFilter('$5')}
   ),
   written as (
     insert into sports_leaderboard_positions (board, kind, user_id, rank, score)
@@ -153,6 +157,7 @@ export async function rebuildSportsLeaderboards(
         profit.boards,
         HIDE_FROM_LEADERBOARD_USER_IDS,
         'profit',
+        getBanTypesForLeaderboard('profit'),
       ])
       // The sports bot creates the game markets; the creator board is for
       // people.
@@ -161,6 +166,7 @@ export async function rebuildSportsLeaderboards(
         creator.boards,
         [...HIDE_FROM_LEADERBOARD_USER_IDS, ...MANIFOLD_SPORTS_USER_IDS],
         'creator',
+        getBanTypesForLeaderboard('creator'),
       ])
       // The boards list positive scores only, best first.
       const top = await tx.manyOrNone<Row>(
