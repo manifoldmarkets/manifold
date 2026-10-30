@@ -44,13 +44,15 @@ import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
+import { track } from 'web/lib/service/analytics'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { ChevronDownIcon } from '@heroicons/react/solid'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { Slider } from 'web/components/widgets/slider'
 import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
-import { track } from 'web/lib/service/analytics'
+import { usePerpOrder } from './use-perp-order'
+import { PerpExecutionNotice } from './perp-execution-notice'
 import { PerpPositionRow, scheduleFreshBurst } from './use-perp-positions'
 
 type Position = {
@@ -79,21 +81,15 @@ export const PerpPositionPanel = (props: {
 }) => {
   const { contract, onAction, refreshKey, oracleTradingPaused = false } = props
   const user = useUser()
-  // Optimistic close: the API confirmed the close, but the shared positions
-  // refetch can lag behind an edge cache for several seconds — don't keep
-  // rendering a position we know is gone. Keyed by close time vs the row's
-  // openedTime so a position re-opened moments later isn't hidden.
-  const [closedAt, setClosedAt] = useState<{ [dir: string]: number }>({})
+  const { order, pending, acceptOrder } = usePerpOrder(contract.id, onAction)
+  // A waiting open or add never blocks an exit; only one close waits at a time.
+  const closePending = pending && order?.request.kind === 'close'
   const positions = useMemo(
     () =>
       user && props.positions
-        ? props.positions.filter(
-            (p) =>
-              p.userId === user.id &&
-              !(closedAt[p.direction] && p.openedTime < closedAt[p.direction])
-          )
+        ? props.positions.filter((p) => p.userId === user.id)
         : [],
-    [props.positions, user?.id, closedAt]
+    [props.positions, user?.id]
   )
   const [closing, setClosing] = useState<'long' | 'short' | null>(null)
   const pendingCloses = useRef<
@@ -153,6 +149,7 @@ export const PerpPositionPanel = (props: {
       toast.error('Closing is paused until the oracle publishes a fresh price')
       return false
     }
+    if (closePending) return false
     setClosing(direction)
     try {
       const position = positions.find((p) => p.direction === direction)
@@ -184,38 +181,18 @@ export const PerpPositionPanel = (props: {
         // this 75% was 75% OF 400 rather than of whatever is there now.
         ...(fraction < 1 ? { fraction, expectedSize: position.size } : {}),
       })
-      // The engine promotes a close whose remainder would be dust, so what
-      // came back — not what was asked for — decides the wording.
-      const closedAll = res.remainingSize <= 0
-      toast.success(
-        `${
-          closedAll
-            ? `Closed ${direction}`
-            : `Closed ${formatPerpClosePercent(res.fraction)} of ${direction}`
-        } — payout ${formatMoneyPrecise(
-          res.payout
-        )} (profit ${formatMoneyPrecise(res.pnl)})`
-      )
-      track('sell shares', {
-        outcomeType: contract.outcomeType,
-        slug: contract.slug,
+      acceptOrder(res.order)
+      track('perp trade', {
         contractId: contract.id,
-        shares: position.size * res.fraction,
-        outcome: direction,
+        action: 'close',
+        direction,
+        fraction,
         token: contract.token,
-        perpAction: closedAll ? 'close' : 'partial-close',
-        fraction: res.fraction,
-        payout: res.payout,
-        pnl: res.pnl,
+        status: res.order?.status,
       })
-      // Only a full close may hide the row optimistically. A partial one
-      // keeps the same openedTime, so marking it closed here would hide the
-      // position that is still open — permanently.
-      if (closedAll)
-        setClosedAt((prev) => ({ ...prev, [direction]: Date.now() }))
-      setRefresh((r) => r + 1)
+      if (res.order?.status === 'pending')
+        toast('Close submitted — your position remains exposed until it fills')
       delete pendingCloses.current[direction]
-      // Pools changed; let the page re-poll the contract immediately.
       onAction?.()
       return true
     } catch (err: unknown) {
@@ -233,6 +210,11 @@ export const PerpPositionPanel = (props: {
 
   return (
     <Col className="gap-3">
+      {closePending && (
+        <p className="text-ink-600 text-xs" role="status">
+          Close pending. Your position remains exposed until the next price.
+        </p>
+      )}
       {positions.map((p) => (
         <PositionSummary
           key={p.direction}
@@ -240,7 +222,7 @@ export const PerpPositionPanel = (props: {
           contract={contract}
           onClose={(fraction) => close(p.direction, fraction)}
           closing={closing === p.direction}
-          anyClosing={closing !== null}
+          anyClosing={closing !== null || closePending}
           oracleTradingPaused={oracleTradingPaused}
         />
       ))}
@@ -968,6 +950,8 @@ const PositionSummary = (props: {
                 </Row>
               </Col>
             )}
+
+            <PerpExecutionNotice closing />
 
             <Button
               color="indigo"

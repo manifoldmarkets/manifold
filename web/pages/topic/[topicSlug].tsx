@@ -1,17 +1,12 @@
-import { XIcon } from '@heroicons/react/outline'
 import { TopicLeaderboard } from 'web/components/topics/topic-leaderboard'
-import clsx from 'clsx'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { Group, LiteGroup, groupPath } from 'common/group'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
-import Link from 'next/link'
 import router from 'next/router'
 import { useState } from 'react'
-import { BsPeopleFill } from 'react-icons/bs'
 import { HiOutlineUserGroup } from 'react-icons/hi'
 import { SEO } from 'web/components/SEO'
-import { IconButton } from 'web/components/buttons/button'
 import { JSONEmpty } from 'web/components/contract/contract-description'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -20,7 +15,7 @@ import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Search } from 'web/components/search'
 import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title'
-import { TopicSelector } from 'web/components/topics/topic-selector'
+import { TopicsSidebar } from 'web/components/topics/topics-sidebar'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api, updateGroup } from 'web/lib/api/api'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
@@ -28,6 +23,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { AboutEditor } from 'web/components/topics/about-editor'
 import { ActivityLog } from 'web/components/activity-log'
 import { removeEmojis } from 'common/util/string'
+import { sportsPathForTopic } from 'common/sports-schedule'
 import { formatWithCommas } from 'common/util/format'
 
 export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
@@ -36,6 +32,16 @@ export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
 
   if (!topic) {
     return { notFound: true }
+  }
+
+  // Sports, and every topic under it, live on the sports pages.
+  const { path, known } = await sportsPageForTopic(topic)
+  if (path) {
+    return {
+      redirect: { destination: path, permanent: false },
+      // Mods can move a topic in or out of Sports.
+      revalidate: 3600,
+    }
   }
 
   const { above, below } = await api('group/:slug/groups', { slug: topicSlug })
@@ -54,7 +60,21 @@ export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
       dashboards,
       topQuestions: topQuestions.map((m) => m.question),
     },
-    revalidate: 3600 * 12, // 12 hours
+    // 12 hours, or soon if the sports list was unavailable, so a topic under
+    // Sports doesn't stay a topic page for long.
+    revalidate: known ? 3600 * 12 : 600,
+  }
+}
+
+async function sportsPageForTopic(topic: Group) {
+  try {
+    const index = await api('sports-index', {})
+    return { path: sportsPathForTopic(topic, index), known: true }
+  } catch (e) {
+    // Without the sports list (an older API, or it's down), only Sports
+    // itself is known; the rest keep their topic pages until the next try.
+    console.error('Could not load the sports index', e)
+    return { path: sportsPathForTopic(topic, { sports: [] }), known: false }
   }
 }
 
@@ -162,6 +182,7 @@ export default function TopicPage(props: {
                       editing={addingAbout}
                       setEditing={setAddingAbout}
                       canEdit={canEdit}
+                      modAction={canEdit}
                     />
                     {isMobile && (
                       <TopicsSidebar
@@ -215,166 +236,5 @@ const Details = (props: { topic: Group }) => {
         <RelativeTimestamp time={topic.createdTime} className="!text-ink-500" />
       </Row>
     </Row>
-  )
-}
-
-const TopicsSidebar = (props: {
-  topicId: string
-  above: LiteGroup[]
-  below: LiteGroup[]
-  className?: string
-  children?: React.ReactNode
-}) => {
-  // for optimistic updates
-  const [above, setAbove] = useState(props.above)
-  const [below, setBelow] = useState(props.below)
-
-  const onAddAbove = (topic: LiteGroup) => {
-    setAbove([...above, topic])
-    api('group/by-id/:topId/group/:bottomId', {
-      topId: topic.id,
-      bottomId: props.topicId,
-    })
-  }
-
-  const onRemoveAbove = (topic: LiteGroup) => {
-    setAbove(above.filter((g) => g.id !== topic.id))
-    api('group/by-id/:topId/group/:bottomId', {
-      topId: topic.id,
-      bottomId: props.topicId,
-      remove: true,
-    })
-  }
-
-  const onAddBelow = (topic: LiteGroup) => {
-    setBelow([...below, topic])
-    api('group/by-id/:topId/group/:bottomId', {
-      topId: props.topicId,
-      bottomId: topic.id,
-    })
-  }
-
-  const onRemoveBelow = (topic: LiteGroup) => {
-    setBelow(below.filter((g) => g.id !== topic.id))
-    api('group/by-id/:topId/group/:bottomId', {
-      topId: props.topicId,
-      bottomId: topic.id,
-      remove: true,
-    })
-  }
-
-  const user = useUser()
-  const canEdit = !!user && (isAdminId(user.id) || isModId(user.id))
-
-  return (
-    <Col className={clsx(props.className, 'gap-4')}>
-      {/* Main Topics Section */}
-      <Col className="bg-canvas-0 border-ink-200 overflow-hidden rounded-xl border shadow-sm">
-        <div className="border-ink-100 bg-canvas-50 border-b px-4 py-3">
-          <h2 className="text-ink-700 text-sm font-semibold uppercase tracking-wide">
-            {above.length > 0 ? 'Main topic' : 'Top-level topic'}
-          </h2>
-        </div>
-        <Col className="divide-ink-100 divide-y">
-          {above.length > 0 ? (
-            above.map((t) => (
-              <TopicRow
-                key={t.id}
-                topic={t}
-                onRemove={canEdit ? onRemoveAbove : undefined}
-              />
-            ))
-          ) : (
-            <div className="text-ink-400 px-4 py-3 text-sm">
-              This is a top-level topic
-            </div>
-          )}
-        </Col>
-        {canEdit && (
-          <div className="border-ink-100 border-t px-3 py-2">
-            <TopicSelector
-              setSelectedGroup={(group) => onAddAbove(group)}
-              placeholder="Add main topic..."
-              selectedIds={above.map((g) => g.id)}
-              onCreateTopic={(group) => setAbove((a) => [...a, group])}
-              addingToContract={false}
-              className="[&_input]:bg-canvas-0 focus:[&_input]:bg-canvas-0 [&_input]:text-sm"
-            />
-          </div>
-        )}
-      </Col>
-
-      {/* Subtopics Section */}
-      <Col className="bg-canvas-0 border-ink-200 overflow-hidden rounded-xl border shadow-sm">
-        <div className="border-ink-100 bg-canvas-50 border-b px-4 py-3">
-          <h2 className="text-ink-700 text-sm font-semibold uppercase tracking-wide">
-            Subtopics
-          </h2>
-        </div>
-        <Col className="divide-ink-100 divide-y">
-          {below.length > 0 ? (
-            below.map((t) => (
-              <TopicRow
-                key={t.id}
-                topic={t}
-                onRemove={canEdit ? onRemoveBelow : undefined}
-              />
-            ))
-          ) : (
-            <div className="text-ink-400 px-4 py-3 text-sm">
-              No subtopics yet
-            </div>
-          )}
-        </Col>
-        {canEdit && (
-          <div className="border-ink-100 border-t px-3 py-2">
-            <TopicSelector
-              setSelectedGroup={(group) => onAddBelow(group)}
-              placeholder="Add subtopic..."
-              selectedIds={below.map((g) => g.id)}
-              onCreateTopic={(group) => setBelow((b) => [...b, group])}
-              addingToContract={false}
-              className="[&_input]:bg-canvas-0 focus:[&_input]:bg-canvas-0 [&_input]:text-sm"
-            />
-          </div>
-        )}
-      </Col>
-
-      {props.children}
-    </Col>
-  )
-}
-
-const TopicRow = (props: {
-  topic: LiteGroup
-  onRemove?: (topic: LiteGroup) => void
-}) => {
-  const { topic, onRemove } = props
-  return (
-    <Link
-      className="hover:bg-canvas-50 group flex items-center gap-3 px-4 py-3 transition-colors"
-      href={groupPath(topic.slug)}
-    >
-      <div className="text-ink-800 group-hover:text-primary-600 min-w-0 flex-1 truncate text-sm font-medium transition-colors">
-        {topic.name}
-      </div>
-      <Row className="text-ink-400 group-hover:text-ink-500 w-20 flex-shrink-0 items-center justify-start gap-1 text-xs tabular-nums transition-colors">
-        <BsPeopleFill className="h-3.5 w-3.5" />
-        <span>{formatWithCommas(topic.totalMembers ?? 0)}</span>
-      </Row>
-      {onRemove && (
-        <IconButton
-          onClick={(e) => {
-            e.stopPropagation()
-            e.preventDefault()
-            onRemove(topic)
-          }}
-          className="text-ink-400 hover:text-ink-600 -mr-1 opacity-0 transition-opacity group-hover:opacity-100"
-          size="xs"
-        >
-          <XIcon className="h-4 w-4" />
-        </IconButton>
-      )}
-    </Link>
   )
 }

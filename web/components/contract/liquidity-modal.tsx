@@ -1,11 +1,15 @@
 import clsx from 'clsx'
 import { APIError } from 'common/api/utils'
 import {
+  getCpmmLiquidityPoolWeights,
+  getLiquidityProvidersNetTotal,
+  getLiquidityWithdrawalShares,
   maximumRemovableLiquidity,
   removeCpmmLiquidity,
 } from 'common/calculate-cpmm'
 import { isMultiCpmm, type MarketContract } from 'common/contract'
 import { isAdminId } from 'common/envs/constants'
+import { LiquidityProvision } from 'common/liquidity-provision'
 import { formatWithCommas } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
 import { sumBy } from 'lodash'
@@ -23,6 +27,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { MOD_ACTION_TEXT_CLASS, ModActionBadge } from '../moderation/mod-action'
 
 export function AddLiquidityModal(props: {
   contract: MarketContract
@@ -34,9 +39,10 @@ export function AddLiquidityModal(props: {
 }) {
   const { contract, isOpen, setOpen, answerId, answerText } = props
 
+  const liquidities = useLiquidity(contract.id)
   // Opened for an answer, its own contributors: those who subsidized it, and
   // whoever added it.
-  const lps = (useLiquidity(contract.id) ?? []).filter(
+  const lps = (liquidities ?? []).filter(
     (lp) => !answerId || lp.answerId === answerId
   )
 
@@ -68,6 +74,7 @@ export function AddLiquidityModal(props: {
           amount={amount}
           setAmount={setAmount}
           answerId={answerId}
+          liquidities={liquidities}
         />
 
         {/* Contributors Section */}
@@ -169,8 +176,10 @@ export function AddLiquidityControl(props: {
   setAmount: (amount: number | undefined) => void
   // When set, the subsidy targets a single answer (its own binary CPMM).
   answerId?: string
+  // Every provision on the market, to split a withdrawal between providers.
+  liquidities: LiquidityProvision[] | undefined
 }) {
-  const { contract, amount, setAmount, answerId } = props
+  const { contract, amount, setAmount, answerId, liquidities } = props
   const { id: contractId, slug, totalLiquidity } = contract
 
   const [error, setError] = useState<string | undefined>(undefined)
@@ -191,10 +200,32 @@ export function AddLiquidityControl(props: {
     contract.mechanism === 'cpmm-1' &&
     !!user &&
     ((user.id === contract.creatorId && contract.token !== 'CASH') ||
-      isAdminId(user.id))
-  const maxWithdrawable = !canWithdraw
-    ? 0
-    : contract.subsidyPool + maximumRemovableLiquidity(contract.pool)
+      isAdminId(user.id)) &&
+    // Only someone with a share of the pool can withdraw (remove-liquidity.ts)
+    !!liquidities &&
+    !!getCpmmLiquidityPoolWeights(liquidities)[user.id]
+  // Can only withdraw because the user is an admin
+  const withdrawIsAdminAction =
+    canWithdraw &&
+    !(user?.id === contract.creatorId && contract.token !== 'CASH')
+  // A withdrawal goes back to every provider in proportion to their share,
+  // and has to stay below what they've put in (getLiquidityWithdrawalShares).
+  const maxWithdrawable =
+    !canWithdraw || !liquidities
+      ? 0
+      : Math.min(
+          contract.subsidyPool + maximumRemovableLiquidity(contract.pool),
+          Math.ceil(getLiquidityProvidersNetTotal(liquidities)) - 1
+        )
+  const shares =
+    canWithdraw && liquidities && mode === 'remove' && !!amount
+      ? getLiquidityWithdrawalShares(liquidities, amount)
+      : undefined
+  const yourShare = shares && user ? shares[user.id] ?? 0 : 0
+  const othersShare = shares && amount ? amount - yourShare : 0
+  const otherProviders = shares
+    ? Object.keys(shares).filter((id) => id !== user?.id).length
+    : 0
   const aboveMax = mode === 'remove' && amount && amount > maxWithdrawable
   const newTotal = totalLiquidity + (amount ?? 0) * (mode === 'add' ? 1 : -1)
 
@@ -234,15 +265,20 @@ export function AddLiquidityControl(props: {
           </>
         )
       } else {
-        await api('market/:contractId/remove-liquidity', {
+        const yours = await api('market/:contractId/remove-liquidity', {
           amount,
           contractId,
         })
         toast.success(
           <>
             Success! Withdrew{' '}
-            <MoneyDisplay amount={amount} isCashContract={isCashContract} />{' '}
-            subsidy.
+            <MoneyDisplay amount={amount} isCashContract={isCashContract} /> of
+            liquidity, of which{' '}
+            <MoneyDisplay
+              amount={-yours.amount}
+              isCashContract={isCashContract}
+            />{' '}
+            came back to you.
           </>
         )
       }
@@ -292,14 +328,30 @@ export function AddLiquidityControl(props: {
             }}
             className={clsx(
               'rounded-md px-4 py-1.5 text-sm font-medium transition-all',
+              withdrawIsAdminAction && [
+                'inline-flex items-center',
+                MOD_ACTION_TEXT_CLASS,
+              ],
               mode === 'remove'
-                ? 'bg-canvas-0 text-ink-900 shadow-sm'
-                : 'text-ink-500 hover:text-ink-700'
+                ? [
+                    'bg-canvas-0 shadow-sm',
+                    !withdrawIsAdminAction && 'text-ink-900',
+                  ]
+                : !withdrawIsAdminAction && 'text-ink-500 hover:text-ink-700'
             )}
           >
+            {withdrawIsAdminAction && <ModActionBadge admin className="mr-1" />}
             Withdraw
           </button>
         </div>
+      )}
+
+      {mode === 'remove' && (
+        <p className="text-ink-500 text-sm">
+          Withdrawn liquidity goes back to everyone who added liquidity, in
+          proportion to what each put in. They're notified, and can add theirs
+          back.
+        </p>
       )}
 
       {/* Amount Input */}
@@ -357,6 +409,30 @@ export function AddLiquidityControl(props: {
                   }
                 />
               )}
+            {shares && (
+              <PreviewRow
+                label="Back to you"
+                to={
+                  <MoneyDisplay
+                    amount={yourShare}
+                    isCashContract={isCashContract}
+                  />
+                }
+              />
+            )}
+            {shares && otherProviders > 0 && (
+              <PreviewRow
+                label={`Back to ${otherProviders} other provider${
+                  otherProviders === 1 ? '' : 's'
+                }`}
+                to={
+                  <MoneyDisplay
+                    amount={othersShare}
+                    isCashContract={isCashContract}
+                  />
+                }
+              />
+            )}
             {newPool && (
               <PreviewRow
                 label="Pool"
@@ -395,7 +471,7 @@ export function AddLiquidityControl(props: {
 
 function PreviewRow(props: {
   label: string
-  from: React.ReactNode
+  from?: React.ReactNode
   to: React.ReactNode
 }) {
   const { label, from, to } = props
@@ -403,8 +479,12 @@ function PreviewRow(props: {
     <Row className="items-center justify-between">
       <span className="text-ink-500">{label}</span>
       <Row className="items-center gap-2">
-        <span className="text-ink-400">{from}</span>
-        <span className="text-ink-400">&rarr;</span>
+        {from !== undefined && (
+          <>
+            <span className="text-ink-400">{from}</span>
+            <span className="text-ink-400">&rarr;</span>
+          </>
+        )}
         <span className="text-ink-900 font-medium">{to}</span>
       </Row>
     </Row>

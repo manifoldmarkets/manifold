@@ -41,7 +41,7 @@ import { FeedDropdown } from '../feed/card-dropdown'
 import { CardReason } from '../feed/card-reason'
 import { FeedBinaryChart } from '../feed/feed-chart'
 import { FeedPerpPriceSparkline } from '../perps/feed-perp-price-sparkline'
-import { PerpMarketBadge } from '../perps/perp-market-badge'
+import { MarketTitleLabel } from './market-title-label'
 import FeedContractCardDescription from '../feed/feed-contract-card-description'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -258,7 +258,7 @@ export function FeedContractCard(props: {
             style={{ fontWeight: 500 }}
           >
             <VisibilityIcon contract={contract} />{' '}
-            {isPerp && <PerpMarketBadge contract={contract} className="mr-1" />}
+            <MarketTitleLabel contract={contract} className="mr-1" />
             {removeEmojis(contract.question)}
           </Link>
           {contract.outcomeType !== 'MULTIPLE_CHOICE' && (

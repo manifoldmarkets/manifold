@@ -847,6 +847,66 @@ export type Database = {
         }
         Relationships: []
       }
+      perp_orders: {
+        Row: {
+          id: string
+          contract_id: string
+          user_id: string
+          idempotency_key: string
+          fingerprint: string
+          request: Json
+          is_api: boolean
+          expected_opened_time: number | null
+          reserved_mana: number
+          created_time: string
+          expires_time: string
+          status: string
+          result: Json | null
+          error: string | null
+          execution_point: Json | null
+          completed_time: string | null
+          participation_applied_at: string | null
+        }
+        Insert: {
+          id: string
+          contract_id: string
+          user_id: string
+          idempotency_key: string
+          fingerprint: string
+          request: Json
+          is_api: boolean
+          expected_opened_time?: number | null
+          reserved_mana: number
+          created_time?: string
+          expires_time: string
+          status?: string
+          result?: Json | null
+          error?: string | null
+          execution_point?: Json | null
+          completed_time?: string | null
+          participation_applied_at?: string | null
+        }
+        Update: {
+          id?: string
+          contract_id?: string
+          user_id?: string
+          idempotency_key?: string
+          fingerprint?: string
+          request?: Json
+          is_api?: boolean
+          expected_opened_time?: number | null
+          reserved_mana?: number
+          created_time?: string
+          expires_time?: string
+          status?: string
+          result?: Json | null
+          error?: string | null
+          execution_point?: Json | null
+          completed_time?: string | null
+          participation_applied_at?: string | null
+        }
+        Relationships: []
+      }
       contract_perp_positions: {
         Row: {
           contract_id: string
@@ -2373,6 +2433,52 @@ export type Database = {
         }
         Relationships: []
       }
+      market_links: {
+        Row: {
+          child_contract_id: string
+          parent_contract_id: string
+          relation: string
+          created_by: string
+          created_time: string
+        }
+        Insert: {
+          child_contract_id: string
+          parent_contract_id: string
+          relation?: string
+          created_by: string
+          created_time?: string
+        }
+        Update: {
+          child_contract_id?: string
+          parent_contract_id?: string
+          relation?: string
+          created_by?: string
+          created_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'market_links_child_contract_id_fkey'
+            columns: ['child_contract_id']
+            isOneToOne: true
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'market_links_parent_contract_id_fkey'
+            columns: ['parent_contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'market_links_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       market_ads: {
         Row: {
           cost_per_view: number
@@ -3266,6 +3372,118 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      sports_competition_switches: {
+        Row: {
+          competition_id: string
+          enabled: boolean
+          phase: string
+          updated_by: string
+          updated_time: string
+        }
+        Insert: {
+          competition_id: string
+          enabled: boolean
+          phase: string
+          updated_by: string
+          updated_time?: string
+        }
+        Update: {
+          competition_id?: string
+          enabled?: boolean
+          phase?: string
+          updated_by?: string
+          updated_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'sports_competition_switches_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      sports_leaderboards: {
+        Row: {
+          entries: Json
+          kind: string
+          sport: string
+          updated_time: string
+        }
+        Insert: {
+          entries: Json
+          kind: string
+          sport: string
+          updated_time?: string
+        }
+        Update: {
+          entries?: Json
+          kind?: string
+          sport?: string
+          updated_time?: string
+        }
+        Relationships: []
+      }
+      sports_odds_api_usage: {
+        Row: {
+          calls: number
+          credits: number
+          day: string
+          remaining_after: number | null
+          sport_key: string
+          updated_time: string
+          used_after: number | null
+        }
+        Insert: {
+          calls?: number
+          credits?: number
+          day: string
+          remaining_after?: number | null
+          sport_key: string
+          updated_time?: string
+          used_after?: number | null
+        }
+        Update: {
+          calls?: number
+          credits?: number
+          day?: string
+          remaining_after?: number | null
+          sport_key?: string
+          updated_time?: string
+          used_after?: number | null
+        }
+        Relationships: []
+      }
+      sports_score_polling: {
+        Row: {
+          interval_seconds: number
+          target: string
+          updated_by: string
+          updated_time: string
+        }
+        Insert: {
+          interval_seconds: number
+          target: string
+          updated_by: string
+          updated_time?: string
+        }
+        Update: {
+          interval_seconds?: number
+          target?: string
+          updated_by?: string
+          updated_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'sports_score_polling_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
       }
       stats: {
         Row: {

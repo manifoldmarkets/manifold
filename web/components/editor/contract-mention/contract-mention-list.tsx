@@ -7,7 +7,7 @@ import {
 } from 'common/perps/format'
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import { Avatar } from '../../widgets/avatar'
-import { PerpMarketBadge } from '../../perps/perp-market-badge'
+import { MarketTitleLabel } from '../../contract/market-title-label'
 
 // copied from https://tiptap.dev/api/nodes/mention#usage
 const MentionList = forwardRef((props: SuggestionProps<Contract>, ref) => {
@@ -66,7 +66,7 @@ const MentionList = forwardRef((props: SuggestionProps<Contract>, ref) => {
               key={contract.id}
             >
               <Avatar avatarUrl={contract.creatorAvatarUrl} size="xs" />
-              {isPerp && <PerpMarketBadge contract={contract} />}
+              <MarketTitleLabel contract={contract} />
               <span className="min-w-0 flex-1 truncate text-left">
                 {contract.question}
               </span>

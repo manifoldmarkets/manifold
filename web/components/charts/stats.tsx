@@ -20,11 +20,14 @@ type Point = {
   y: number
 }
 
+const LA_TZ = 'America/Los_Angeles'
+const formatDay = (ms: number) => dayjs(ms).tz(LA_TZ).format('MMM DD')
+
 const DailyCountTooltip = (props: TooltipProps<HistoryPoint>) => {
   const { nearest } = props
   return (
     <Row className="items-center gap-2">
-      <span className="font-semibold">{dayjs(nearest.x).format('MMM DD')}</span>
+      <span className="font-semibold">{formatDay(nearest.x)}</span>
       <span className="text-ink-600">{nearest.y}</span>
     </Row>
   )
@@ -34,7 +37,7 @@ const DailyPercentTooltip = (props: TooltipProps<HistoryPoint>) => {
   const { nearest } = props
   return (
     <Row className="items-center gap-2">
-      <span className="font-semibold">{dayjs(nearest.x).format('MMM DD')}</span>
+      <span className="font-semibold">{formatDay(nearest.x)}</span>
       <span className="text-ink-600">{formatPercent(nearest.y)}</span>
     </Row>
   )
@@ -45,7 +48,9 @@ export function DailyChart(props: { values: Point[]; pct?: boolean }) {
 
   const data = useMemo(() => {
     return values.map((v) => ({
-      x: dayjs(v.x).tz('America/Los_Angeles').startOf('day').valueOf(),
+      // x is an LA calendar day. Parsing it as a local date and then moving
+      // to LA put every point a day early for viewers east of LA.
+      x: dayjs.tz(v.x, LA_TZ).valueOf(),
       y: v.y,
     }))
   }, [values])

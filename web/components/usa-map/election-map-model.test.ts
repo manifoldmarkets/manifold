@@ -73,6 +73,64 @@ test('district search matches exact numbers and state codes without unrelated su
   assert.equal(matchesStateQuery('WV', 'Virginia'), false)
 })
 
+test('comma-separated districts match their union without widening district numbers', () => {
+  const races = buildRaces('house', {})
+  for (const query of [
+    'tx-1,tx-2,tx-3',
+    ' TX-1, tx-2 ,TX-3 ',
+    ',tx-1,,tx-2,tx-3,tx-1, ',
+  ]) {
+    assert.deepEqual(
+      races.filter((r) => matchesRaceQuery(r, query)).map((r) => r.id),
+      ['TX-1', 'TX-2', 'TX-3'],
+      query
+    )
+  }
+  assert.deepEqual(
+    races.filter((r) => matchesRaceQuery(r, 'AK-AL,tx–01')).map((r) => r.id),
+    ['AK-0', 'TX-1']
+  )
+})
+
+test('state and district terms combine and remain applicable across offices', () => {
+  const query = 'texas,ct-1'
+  const house = buildRaces('house', {})
+  assert.deepEqual(
+    house
+      .filter((r) => matchesRaceQuery(r, query))
+      .map((r) => r.id)
+      .sort(),
+    ['CT-1', ...Array.from({ length: 38 }, (_, i) => `TX-${i + 1}`)].sort()
+  )
+  for (const mode of ['senate', 'governor'] as const) {
+    assert.deepEqual(
+      buildRaces(mode, {})
+        .filter((r) => matchesRaceQuery(r, query))
+        .map((r) => r.id),
+      ['TX']
+    )
+  }
+  for (const state of ['TX', 'CT', 'VA', 'WV', 'NY']) {
+    assert.equal(
+      matchesStateQuery(state, ' texas, CT, Virginia, New York, '),
+      state !== 'WV'
+    )
+    assert.equal(matchesStateQuery(state, query), state === 'TX')
+  }
+})
+
+test('blank comma entries do not broaden a nonempty search', () => {
+  const races = buildRaces('house', {})
+  for (const query of ['', ' ', ', ,']) {
+    assert.equal(races.filter((r) => matchesRaceQuery(r, query)).length, 435)
+    assert.equal(matchesStateQuery('TX', query), true)
+  }
+  for (const query of ['zz-99,,tx-99,', ',missing state, ']) {
+    assert.equal(races.filter((r) => matchesRaceQuery(r, query)).length, 0)
+    assert.equal(matchesStateQuery('TX', query), false)
+  }
+})
+
 test('all 435 House races match both geographic and cartogram geometry exactly', () => {
   const races = buildRaces('house', {})
   assert.equal(races.length, 435)

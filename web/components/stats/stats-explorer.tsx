@@ -1,0 +1,317 @@
+import clsx from 'clsx'
+import { useMemo, useRef } from 'react'
+
+import {
+  STAT_SURFACE_DEFINITIONS,
+  STAT_SURFACES,
+  StatSurface,
+  isStatSurface,
+} from 'common/stat-surfaces'
+import { Button } from 'web/components/buttons/button'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
+import { Title } from 'web/components/widgets/title'
+import { ModActionBadge } from 'web/components/moderation/mod-action'
+import { useAdmin } from 'web/hooks/use-admin'
+import { useIsAuthorized, useUser } from 'web/hooks/use-user'
+import { auth } from 'web/lib/firebase/users'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
+import { getStatsPageRows } from 'web/lib/supabase/stats'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import {
+  IdVerificationDay,
+  STATS_SECTIONS,
+  StatsSection,
+  getActivityMetrics,
+} from './activity-metrics'
+import { MetricChartPanel, OverlaySeries } from './metric-chart-panel'
+import { METRIC_TILE_CLASS, MetricTile } from './metric-tile'
+import { getView, StatMetric } from './stat-metric'
+import { DailyStatsRow } from './stats-series'
+import {
+  SurfaceFunnelTable,
+  getFunnelDays,
+  getSurfaceFunnelMetrics,
+} from './surface-funnels'
+import { StatsOverview } from './stats-overview'
+import { TopicActivity } from './topic-activity'
+
+// The most tiles any section has (Retention, Pages): the grid always holds
+// this many slots.
+const TILE_SLOTS = 6
+
+// Site activity as a picker instead of a column of charts: choose a section,
+// then a metric tile, and the chart below shows that metric. The selection
+// lives in the URL so a chart can be linked to.
+export function StatsExplorer(props: {
+  stats: DailyStatsRow[]
+  setStats: (stats: DailyStatsRow[]) => void
+  idVerifications?: IdVerificationDay[]
+}) {
+  const { stats, setStats, idVerifications } = props
+  const user = useUser()
+  const isAdmin = useAdmin()
+  // During an account switch the auth context can show the previous profile:
+  // until the new one loads, and (from a stale websocket snapshot) even after.
+  // So admin access also needs auth to have settled and the context user to
+  // be the one Firebase is signed in as, which is whose token the API checks.
+  const authSettled = useIsAuthorized() === true
+  const firebaseUid = auth.currentUser?.uid
+  const canSeeFunnels =
+    isAdmin && authSettled && !!user && user.id === firebaseUid
+  // Kept for the session, like the topic data it invalidates.
+  const [reloads, setReloads] = usePersistentInMemoryState(0, 'stats-reloads')
+  const [query, setQuery] = usePersistentQueriesState(
+    { section: 'users', metric: '', view: '', surface: 'sports' },
+    'stats-explorer'
+  )
+
+  // Page funnels are internal metrics: only admins get the section, and its
+  // data comes from an admin-only endpoint rather than the public stats.
+  const sections = STATS_SECTIONS.filter(
+    (s) => s.key !== 'pages' || canSeeFunnels
+  )
+  const section: StatsSection =
+    sections.find((s) => s.key === query.section)?.key ?? 'users'
+  const surface: StatSurface = isStatSurface(query.surface)
+    ? query.surface
+    : 'sports'
+
+  const {
+    data: funnelData,
+    error: funnelError,
+    refresh: refreshFunnels,
+  } = useAPIGetter(
+    'get-surface-funnels',
+    { limitDays: 400 },
+    undefined,
+    // Cached per signed-in account, so one account's funnels never render
+    // under another.
+    `get-surface-funnels-${firebaseUid ?? 'none'}`,
+    canSeeFunnels && section === 'pages'
+  )
+
+  const activityMetrics = useMemo(
+    () => getActivityMetrics({ stats, idVerifications, isAdmin }),
+    [stats, idVerifications, isAdmin]
+  )
+  const funnelDays = useMemo(
+    () => getFunnelDays(funnelData?.days ?? [], surface),
+    [funnelData, surface]
+  )
+  const metrics: StatMetric[] =
+    section === 'pages'
+      ? getSurfaceFunnelMetrics(funnelDays, surface)
+      : section === 'topics'
+      ? []
+      : activityMetrics[section]
+  const metric = metrics.find((m) => m.key === query.metric) ?? metrics[0]
+  const viewKey = metric ? getView(metric, query.view).key : undefined
+
+  // "All pages" belongs to the Pages section and follows you across its
+  // metrics; a metric overlay belongs to the metric it was picked on. Either
+  // goes away on a metric or view it doesn't fit. The page opens on active
+  // users with active traders overlaid.
+  const [overlayState, setOverlayState] = usePersistentInMemoryState<{
+    scope: string
+    with: string
+  } | null>(
+    { scope: 'users/active-users', with: 'metric:active-traders' },
+    'stats-overlay'
+  )
+  const scopeFor = (overlayKey: string) =>
+    overlayKey === 'all-pages' ? 'pages' : `${section}/${metric?.key}`
+  // Another metric overlays in the same view (daily with daily, 7-day average
+  // with 7-day average), on its own axis, so its unit and scale can differ.
+  const viewValues = (m: StatMetric) =>
+    m.views.find((v) => v.key === viewKey)?.values
+  const overlayChoices = metric
+    ? [
+        ...(section === 'pages'
+          ? [{ key: 'all-pages', label: 'All pages' }]
+          : []),
+        ...metrics
+          .filter((m) => m.key !== metric.key && viewValues(m))
+          .map((m) => ({ key: `metric:${m.key}`, label: m.label })),
+      ]
+    : []
+  const overlay =
+    overlayState &&
+    overlayState.scope === scopeFor(overlayState.with) &&
+    overlayChoices.some((c) => c.key === overlayState.with)
+      ? overlayState.with
+      : 'none'
+  const overlaySeries: OverlaySeries[] =
+    !metric || overlay === 'none'
+      ? []
+      : overlay === 'all-pages'
+      ? STAT_SURFACES.filter((s) => s !== surface).flatMap((s) => {
+          const other = getSurfaceFunnelMetrics(
+            getFunnelDays(funnelData?.days ?? [], s),
+            s
+          ).find((m) => m.key === metric.key)
+          const values = other && viewValues(other)
+          return values
+            ? [
+                {
+                  key: s,
+                  label: STAT_SURFACE_DEFINITIONS[s].label,
+                  values,
+                  pct: metric.pct ?? false,
+                },
+              ]
+            : []
+        })
+      : metrics.flatMap((m) => {
+          const values = viewValues(m)
+          return `metric:${m.key}` === overlay && values
+            ? [
+                {
+                  key: m.key,
+                  label: m.label,
+                  values,
+                  // Explicit, or a count over a rate would take the chart's
+                  // percent format.
+                  pct: m.pct ?? false,
+                  ownAxis: true,
+                },
+              ]
+            : []
+        })
+
+  const sectionBarRef = useRef<HTMLDivElement>(null)
+
+  return (
+    <Col className="gap-4">
+      <Row className="items-start justify-between gap-2">
+        <Title className="!mb-0">Site activity</Title>
+        <Button
+          size="sm"
+          color="gray-outline"
+          onClick={() => {
+            getStatsPageRows().then(setStats)
+            if (section === 'pages') refreshFunnels()
+            // Topics refetches when it next shows, or now if it's open.
+            setReloads((n) => n + 1)
+          }}
+        >
+          Reload
+        </Button>
+      </Row>
+
+      <div
+        ref={sectionBarRef}
+        // Clear of the sticky time controls when the overview scrolls here.
+        className="scrollbar-hide -mx-4 scroll-mt-16 overflow-x-auto px-4 sm:mx-0 sm:px-0"
+      >
+        <ChoicesToggleGroup
+          ariaLabel="Stats section"
+          currentChoice={section}
+          choicesMap={Object.fromEntries(sections.map((s) => [s.label, s.key]))}
+          setChoice={(key) =>
+            setQuery({ section: String(key), metric: '', view: '' })
+          }
+          color="gray"
+          toggleClassName="whitespace-nowrap !px-3"
+        />
+      </div>
+
+      {section === 'pages' && (
+        <Col className="gap-2">
+          <p className="text-ink-500 text-sm">
+            <ModActionBadge admin className="mr-1 align-middle" />
+            How many signed-in users reach each page, from its pill on the home
+            page or anywhere else, and how many of them trade there. Only admins
+            can see this section.
+          </p>
+          <ChoicesToggleGroup
+            ariaLabel="Page"
+            currentChoice={surface}
+            choicesMap={Object.fromEntries(
+              STAT_SURFACES.map((s) => [STAT_SURFACE_DEFINITIONS[s].label, s])
+            )}
+            setChoice={(key) => setQuery({ surface: String(key) })}
+            color="indigo"
+            className="self-start"
+          />
+        </Col>
+      )}
+
+      {section === 'topics' ? (
+        <TopicActivity reloadKey={reloads} />
+      ) : section === 'pages' && funnelDays.length === 0 ? (
+        <p className="text-ink-500 bg-canvas-50 rounded-lg p-4 text-sm">
+          {funnelError
+            ? `Couldn't load page funnels: ${funnelError.message}`
+            : !funnelData
+            ? 'Loading page funnels…'
+            : 'No page funnel data yet. It fills in on the stats job’s next run.'}
+        </p>
+      ) : (
+        metric && (
+          <>
+            {/* Phones: one swipeable row. Wider: a 3×2 grid padded to six
+                slots, so every section's tiles take the same room and the
+                chart below doesn't jump when you switch sections. */}
+            <div
+              // A new section's strip starts scrolled to its first tile.
+              key={section}
+              className="scrollbar-hide -mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 py-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:p-0"
+            >
+              {metrics.map((m) => (
+                <MetricTile
+                  key={m.key}
+                  metric={m}
+                  selected={m.key === metric.key}
+                  onSelect={() => setQuery({ metric: m.key, view: '' })}
+                  className="w-[9.5rem] shrink-0 snap-start sm:w-auto"
+                />
+              ))}
+              {Array.from(
+                { length: Math.max(0, TILE_SLOTS - metrics.length) },
+                (_, i) => (
+                  <div
+                    key={`slot-${i}`}
+                    aria-hidden
+                    className={clsx(METRIC_TILE_CLASS, 'hidden sm:block')}
+                  />
+                )
+              )}
+            </div>
+            <MetricChartPanel
+              metric={metric}
+              viewKey={query.view}
+              setViewKey={(view) => setQuery({ view })}
+              primaryLabel={
+                overlay === 'all-pages'
+                  ? STAT_SURFACE_DEFINITIONS[surface].label
+                  : undefined
+              }
+              overlayChoices={overlayChoices}
+              overlay={overlay}
+              setOverlay={(key) =>
+                setOverlayState({ scope: scopeFor(key), with: key })
+              }
+              overlaySeries={overlaySeries}
+            />
+            {section === 'pages' && <SurfaceFunnelTable days={funnelDays} />}
+          </>
+        )
+      )}
+
+      <StatsOverview
+        metrics={activityMetrics}
+        selected={{ section, metric: metric?.key }}
+        onSelect={(s, m) => {
+          setQuery({ section: s, metric: m, view: '' })
+          sectionBarRef.current?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          })
+        }}
+      />
+    </Col>
+  )
+}

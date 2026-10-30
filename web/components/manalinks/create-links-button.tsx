@@ -17,6 +17,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { CopyLinkRow } from '../buttons/copy-link-button'
 import { useCanSendMana } from 'web/hooks/use-can-send-mana'
 import { api } from 'web/lib/api/api'
+import { ModActionBadge } from 'web/components/moderation/mod-action'
 
 export function CreateLinksButton(props: {
   user: User
@@ -49,10 +50,11 @@ export function CreateLinksButton(props: {
       </Modal>
 
       <Button
-        color={'indigo'}
+        color={'purple'}
         onClick={() => setOpen(true)}
         className={clsx('whitespace-nowrap')}
       >
+        <ModActionBadge admin className="mr-1" />
         Create a Manalink
       </Button>
     </>

@@ -43,7 +43,7 @@ import { OrderTable } from 'web/components/bet/order-book'
 import { BetsSummary } from 'web/components/bet/user-bet-summary'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Input } from 'web/components/widgets/input'
-import { PerpMarketBadge } from 'web/components/perps/perp-market-badge'
+import { MarketTitleLabel } from 'web/components/contract/market-title-label'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -784,12 +784,10 @@ function BetsTable(props: {
                             : 'sm:line-clamp-1 sm:text-base'
                         )}
                       >
-                        {(contract as Contract).outcomeType === 'PERP' && (
-                          <PerpMarketBadge
-                            contract={contract as Contract}
-                            className="mr-1"
-                          />
-                        )}
+                        <MarketTitleLabel
+                          contract={contract as Contract}
+                          className="mr-1"
+                        />
                         {contract.question}
                       </Link>
                       <div className="text-ink-500 mt-1 truncate text-sm">

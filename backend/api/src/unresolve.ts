@@ -154,14 +154,22 @@ const verifyUserCanUnresolve = async (
       )
     }
 
+    // Authorization, payout reversal and metrics are all scoped to this
+    // contract, so the answer must belong to it too. Lock the row so it can't
+    // be resolved or unresolved between this check and the update in
+    // undoResolution.
     const answerResolutionTime = await pg.oneOrNone(
       `select ts_to_millis(resolution_time) as resolution_time
          from answers
-         where id= $1
-         limit 1`,
-      [answerId],
-      (r) => r.resolution_time as number | null
+         where id = $1
+           and contract_id = $2
+         limit 1
+         for update`,
+      [answerId, contract.id],
+      (r) => (r?.resolution_time ?? null) as number | null
     )
+    // Deliberately does not distinguish "no such answer on this contract" from
+    // "not resolved", so this can't be used to probe other contracts' answers.
     if (!answerResolutionTime)
       throw new APIError(400, `Answer ${answerId} is not resolved`)
 
@@ -461,6 +469,7 @@ const undoResolution = async (
         resolver_id = null,
         subsidy_pool = $3
       where id = $1
+        and contract_id = $2
       returning *`,
       [answerId, contractId, preResolutionSubsidyPool ?? 0],
       convertAnswer

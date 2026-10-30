@@ -1,3 +1,4 @@
+import { ScoreFreshness } from './score-freshness'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import clsx from 'clsx'
@@ -7,7 +8,10 @@ import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { useUnfilledBets } from 'client-common/hooks/use-bets'
 import { flagImageCode } from 'common/sports'
 import { ContractMetric } from 'common/contract-metric'
-import { SportsBetPanel, SportsVersusBetDialog } from './sports-bet-panel'
+import {
+  SportsThreeWayBetDialog,
+  SportsVersusBetDialog,
+} from './sports-bet-panel'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import {
   PositionsHovercard,
@@ -88,6 +92,7 @@ export type SportsMatch = {
     home: number | null
     away: number | null
     minute: string | null
+    updatedTime?: number | null
   }
   contractId?: string
   teamAAnswerId?: string
@@ -303,6 +308,7 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
     match.liveScore?.home,
     match.liveScore?.away,
     match.liveScore?.minute,
+    match.liveScore?.updatedTime,
     match.id,
   ])
 
@@ -318,6 +324,10 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
           home: (data.sportsHomeScore as number | null) ?? null,
           away: (data.sportsAwayScore as number | null) ?? null,
           minute: (data.sportsLiveMinute as string | null) ?? null,
+          updatedTime:
+            typeof data.sportsScoreUpdatedTime === 'number'
+              ? data.sportsScoreUpdatedTime
+              : null,
         })
       } else {
         setLiveScore(undefined)
@@ -475,13 +485,14 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
           </Link>
         )}
 
+        {isLive && <ScoreFreshness updatedTime={live?.updatedTime} />}
         <Row className="justify-between">
           {isLive ? (
             <span
               className="text-[11px] font-medium"
               style={{ color: LIVE_COLOR }}
             >
-              {`● Live${
+              {`In progress${
                 live?.minute
                   ? `  ${live.minute === 'HT' ? 'HT' : `${live.minute}'`}`
                   : ''
@@ -539,6 +550,19 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
               (p) => p.name === match.teamA.name
             )}
           />
+          {(match.hasDraw ?? true) && (
+            <OutcomeRow
+              name="Draw"
+              prob={probs.draw}
+              isWinner={resolved && match.winner === 'draw'}
+              isDraw
+              resolved={resolved}
+              teamColor={SPORTS_COLORS.draw}
+              winnerColor={match.winner === 'draw' ? winnerColor : undefined}
+              onClick={!resolved ? () => setBetOutcome('draw') : undefined}
+              hasPosition={userData.positions.some((p) => p.name === 'Draw')}
+            />
+          )}
           <OutcomeRow
             flag={match.teamB.flag}
             name={match.teamB.name}
@@ -553,19 +577,6 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
               (p) => p.name === match.teamB.name
             )}
           />
-          {(match.hasDraw ?? true) && (
-            <OutcomeRow
-              name="Draw"
-              prob={probs.draw}
-              isWinner={resolved && match.winner === 'draw'}
-              isDraw
-              resolved={resolved}
-              teamColor={SPORTS_COLORS.draw}
-              winnerColor={match.winner === 'draw' ? winnerColor : undefined}
-              onClick={!resolved ? () => setBetOutcome('draw') : undefined}
-              hasPosition={userData.positions.some((p) => p.name === 'Draw')}
-            />
-          )}
         </Col>
 
         <Row className="border-ink-200 items-center justify-between border-t pt-2">
@@ -606,13 +617,17 @@ export function SportsMatchCard({ match }: { match: SportsMatch }) {
 
       {betOutcome &&
         (match.hasDraw === false ? (
-          // Knockout (2-way) markets use the standard versus bet modal.
+          // Versus markets (a game with no Draw answer): opens on the team clicked.
           <SportsVersusBetDialog
             contractId={match.contractId}
+            initialAnswerId={
+              betOutcome === 'teamB' ? match.teamBAnswerId : match.teamAAnswerId
+            }
             onClose={() => setBetOutcome(null)}
           />
         ) : (
-          <SportsBetPanel
+          // Standard 3-way soccer markets (home / draw / away).
+          <SportsThreeWayBetDialog
             match={{
               ...match,
               teamA: { ...match.teamA, prob: probs.teamA },

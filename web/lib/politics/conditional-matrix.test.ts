@@ -2,16 +2,20 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { Contract } from 'common/contract'
 import {
+  BOTH_2026_MATRIX,
   buildConditionalMatrixRows,
   conditionalMatrixIds,
   ConditionalMatrixPair,
   congressChambers,
+  congressViewSelection,
+  CongressChamber,
   gapPoints,
   HOUSE_2026_COLUMNS,
   HOUSE_2026_MATRIX,
   isMatrixCollapsible,
   MATRIX_COLLAPSED_ROWS,
   matrixProb,
+  matrixRowContracts,
   PRESIDENT_2028_MATRIX,
   SENATE_2026_MATRIX,
   slimMatrixRows,
@@ -19,10 +23,6 @@ import {
   wholePercent,
   withConditionProbs,
 } from './conditional-matrix'
-import {
-  MIDTERM_CONDITIONALS,
-  midtermConditionalRefs,
-} from './midterm-conditionals'
 
 const NOW = Date.UTC(2026, 9, 7)
 
@@ -50,18 +50,47 @@ const PAIRS: ConditionalMatrixPair[] = [
 ]
 
 const all = (pairs = PAIRS) =>
-  pairs.flatMap((p) => [binary(p.dem), binary(p.rep)])
+  pairs.flatMap((p) =>
+    [p.dem, p.rep].filter((id): id is string => !!id).map((id) => binary(id))
+  )
 
 test('a complete pair becomes a row, in config order, Dem and Rep kept apart', () => {
   // Fetched order is irrelevant: rows follow the config.
   const rows = buildConditionalMatrixRows(PAIRS, all().reverse(), NOW)
   assert.deepEqual(
-    rows.map((r) => [r.label, r.dem.id, r.rep.id]),
+    rows.map((r) => [r.label, r.dem?.id, r.rep?.id]),
     [
       ['First', 'D1', 'R1'],
       ['Second', 'D2', 'R2'],
       ['Third', 'D3', 'R3'],
     ]
+  )
+})
+
+test('a one-sided config needs only its one market, and never gets an undefined key', () => {
+  const pairs: ConditionalMatrixPair[] = [
+    { label: 'Pair', dem: 'D1', rep: 'R1' },
+    { label: 'Rep only', rep: 'R2' },
+    { label: 'Dem only', dem: 'D3' },
+    { label: 'Rep only, missing', rep: 'R4' },
+    { label: 'Neither' },
+  ]
+  const rows = buildConditionalMatrixRows(pairs, all(), NOW)
+  assert.deepEqual(
+    rows.map((r) => [r.label, r.dem?.id, r.rep?.id]),
+    [
+      ['Pair', 'D1', 'R1'],
+      ['Rep only', undefined, 'R2'],
+      ['Dem only', 'D3', undefined],
+    ]
+  )
+  // Absent, not undefined: Next.js cannot serialize undefined page props.
+  assert.deepEqual(Object.keys(rows[1]), ['label', 'rep'])
+  assert.deepEqual(Object.keys(rows[2]), ['label', 'dem'])
+  assert.deepEqual(Object.keys(slimMatrixRows(rows)[1]), ['label', 'rep'])
+  assert.deepEqual(
+    matrixRowContracts(rows).map((c) => c.id),
+    ['D1', 'R1', 'R2', 'D3']
   )
 })
 
@@ -117,7 +146,8 @@ test('the real config resolves to nothing before its markets exist', () => {
 
 test('config ids are unique across all matrices', () => {
   const ids = conditionalMatrixIds()
-  assert.equal(ids.length, 2 * (6 + 10 + 7))
+  // Senate 6 pairs, House 10, 2028 7, Both: one pair and one Rep-only row.
+  assert.equal(ids.length, 2 * (6 + 10 + 7) + 3)
   assert.equal(new Set(ids).size, ids.length)
   for (const id of ids) assert.match(id, /^[A-Za-z0-9]{10}$/)
   // Labels repeat across matrices (a 2027 shutdown is asked under both
@@ -125,20 +155,12 @@ test('config ids are unique across all matrices', () => {
   for (const matrix of [
     SENATE_2026_MATRIX,
     HOUSE_2026_MATRIX,
+    BOTH_2026_MATRIX,
     PRESIDENT_2028_MATRIX,
   ]) {
     const labels = matrix.map((p) => p.label)
     assert.equal(new Set(labels).size, labels.length)
   }
-})
-
-test('no market is in both a matrix and the conditional card row', () => {
-  const matrixIds = new Set(conditionalMatrixIds())
-  const { ids } = midtermConditionalRefs(MIDTERM_CONDITIONALS)
-  assert.deepEqual(
-    ids.filter((id) => matrixIds.has(id)),
-    []
-  )
 })
 
 test('the House pairs that moved into the matrix are where they should be', () => {
@@ -159,23 +181,99 @@ test('the Supreme Court pair moved from the card row to the Senate matrix', () =
   )
 })
 
-test('the Congress section offers the chambers that have rows, Senate first', () => {
+test('the Midterms view keeps the market conditions separate, with the $5,000 market Rep-only', () => {
+  const checks = BOTH_2026_MATRIX.find((p) => p.rep === 'Ud2Q60puts')
+  assert.ok(checks)
+  assert.equal(checks?.dem, undefined)
+  const depression = BOTH_2026_MATRIX.find((p) => p.dem === 'NLtqAPnLzA')
+  assert.equal(depression?.rep, 'tPgqUCc2zq')
+  assert.match(depression?.label ?? '', /may extend beyond 2028/)
+  for (const p of BOTH_2026_MATRIX) assert.ok(p.dem || p.rep, p.label)
+})
+
+test('every combination of available Congress views advertises only selectable views', () => {
   const rows = buildConditionalMatrixRows(PAIRS, all(), NOW)
-  assert.deepEqual(congressChambers({ senate: rows, house: rows }), [
-    'senate',
+  const names: CongressChamber[] = ['senate', 'house', 'both']
+  for (let mask = 0; mask < 8; mask++) {
+    const available = names.filter((_, index) => mask & (1 << index))
+    const chambers = congressChambers({
+      senate: available.includes('senate') ? rows : [],
+      house: available.includes('house') ? rows : [],
+      both: available.includes('both') ? rows : [],
+    })
+    for (const preferred of names) {
+      const view = congressViewSelection(chambers, preferred)
+      assert.deepEqual(Object.values(view.choicesMap), available)
+      assert.equal(
+        view.chamber,
+        available.includes(preferred) ? preferred : available[0]
+      )
+      // Every visible choice opens itself, including the two-view cases that
+      // previously advertised a third view and silently selected another.
+      for (const choice of Object.values(view.choicesMap))
+        assert.equal(congressViewSelection(chambers, choice).chamber, choice)
+    }
+  }
+})
+
+test('repeated Congress switching and refreshed data retain only valid views', () => {
+  const all: CongressChamber[] = ['senate', 'house', 'both']
+  let preferred: CongressChamber = 'both'
+  assert.equal(congressViewSelection(all, preferred).chamber, 'both')
+
+  // A market closes or becomes unavailable; Midterms is no longer offered.
+  const withoutMidterms: CongressChamber[] = ['senate', 'house']
+  const missing = congressViewSelection(withoutMidterms, preferred)
+  assert.equal(missing.chamber, 'senate')
+  assert.deepEqual(missing.choicesMap, { Senate: 'senate', House: 'house' })
+  // Changing the choice while data is missing survives its restoration.
+  preferred = 'house'
+  assert.equal(
+    congressViewSelection(withoutMidterms, preferred).chamber,
+    'house'
+  )
+  assert.equal(congressViewSelection(all, preferred).chamber, 'house')
+  preferred = 'both'
+  assert.equal(congressViewSelection(all, preferred).chamber, 'both')
+  // Repeated disappearance and reappearance preserves the last user choice,
+  // but never exposes it while the corresponding data is absent.
+  for (let refresh = 0; refresh < 3; refresh++) {
+    assert.equal(
+      congressViewSelection(withoutMidterms, preferred).chamber,
+      'senate'
+    )
+    assert.equal(congressViewSelection([], preferred).chamber, undefined)
+    assert.equal(congressViewSelection(all, preferred).chamber, 'both')
+  }
+})
+
+test('the Congress section offers the views that have rows, Senate first, Both last', () => {
+  const rows = buildConditionalMatrixRows(PAIRS, all(), NOW)
+  assert.deepEqual(
+    congressChambers({ senate: rows, house: rows, both: rows }),
+    ['senate', 'house', 'both']
+  )
+  assert.deepEqual(congressChambers({ senate: [], house: rows, both: [] }), [
     'house',
   ])
-  assert.deepEqual(congressChambers({ senate: [], house: rows }), ['house'])
-  assert.deepEqual(congressChambers({ senate: rows, house: [] }), ['senate'])
-  assert.deepEqual(congressChambers({ senate: [], house: [] }), [])
+  assert.deepEqual(congressChambers({ senate: rows, house: [], both: [] }), [
+    'senate',
+  ])
+  assert.deepEqual(congressChambers({ senate: [], house: [], both: rows }), [
+    'both',
+  ])
+  assert.deepEqual(congressChambers({ senate: [], house: [], both: [] }), [])
 })
 
 test('slimMatrixRows drops the description but keeps what the matrix reads', () => {
   const rows = buildConditionalMatrixRows(PAIRS, all(), NOW)
   const slim = slimMatrixRows(rows)
-  assert.equal('description' in slim[0].dem, false)
-  assert.equal(slim[0].dem.question, rows[0].dem.question)
-  assert.equal(matrixProb(slim[0].dem), matrixProb(rows[0].dem))
+  const [full, thin] = [rows[0].dem, slim[0].dem]
+  assert.ok(full && thin)
+  if (!full || !thin) return
+  assert.equal('description' in thin, false)
+  assert.equal(thin.question, full.question)
+  assert.equal(matrixProb(thin), matrixProb(full))
 })
 
 test('long matrices collapse to six rows behind a toggle', () => {

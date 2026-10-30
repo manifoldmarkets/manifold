@@ -29,6 +29,8 @@ pathMatchers:
           - pathTemplateMatch: /v0/markets
           - pathTemplateMatch: /v0/search-markets
           - pathTemplateMatch: /search-markets-full
+          - pathTemplateMatch: /sports-schedule
+          - pathTemplateMatch: /sports-markets
           - pathTemplateMatch: /get-related-markets
           - pathTemplateMatch: /get-related-markets-by-group
           - pathTemplateMatch: /v0/groups

@@ -1,7 +1,12 @@
-import { LockClosedIcon, LockOpenIcon, XIcon } from '@heroicons/react/outline'
+import {
+  ChevronDownIcon,
+  LockClosedIcon,
+  LockOpenIcon,
+  XIcon,
+} from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { capitalize, uniq } from 'lodash'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 
 import {
@@ -54,6 +59,7 @@ import { useFocus } from 'web/hooks/use-focus'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { useShowOrderBook } from 'web/hooks/use-show-order-book'
 import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api, APIError } from 'web/lib/api/api'
@@ -64,7 +70,7 @@ import { showsSideProbability, versusSide, versusSideProb } from 'common/versus'
 import { getBetSharePrice } from 'common/share-bet'
 import { Button } from '../buttons/button'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
-import { getAnswerColor } from '../charts/contract/choice'
+import { getAnswerColor, getPseudonym } from '../charts/contract/choice'
 import { LocationMonitor } from '../gidx/location-monitor'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -82,6 +88,10 @@ import {
 } from './order-book'
 import { ShareBetModal } from './share-bet'
 import { YesNoSelector } from './yes-no-selector'
+import { isNextMarketPromptLocation } from 'common/next-market-prompt'
+import { setLastPageBet } from 'web/hooks/use-next-market-prompt'
+import { useIsMarketPageBet } from 'web/hooks/use-answer-bet-tracking-location'
+import { TradePanelLayout } from './trade-panel-layout'
 
 const WAIT_TO_DISMISS = 3000
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
@@ -89,7 +99,11 @@ type BuyPanelProps = {
   contract: MarketContract
   multiProps?: MultiBetProps
   onBuySuccess?: () => void
+  /** Called once on the first positive fill, independently of dismissal. */
+  onBetPlaced?: (bet: Bet) => void
   initialOutcome?: BinaryOutcomes
+  /** Pre-fills the amount input, e.g. with the amount just bet elsewhere. */
+  initialAmount?: number
   location?: string
   replyToCommentId?: string
   feedReason?: string
@@ -106,6 +120,8 @@ type BuyPanelProps = {
   children?: React.ReactNode | ((outcome: BinaryOutcomes) => React.ReactNode)
   alwaysShowOutcomeSwitcher?: boolean
   className?: string
+  /** Keep the trade ticket compact and put orders in a separate view. */
+  compact?: boolean
 }
 
 export function BuyPanel(
@@ -135,7 +151,7 @@ export function BuyPanel(
   const isStonk = contract.outcomeType === 'STONK'
 
   const [outcome, setOutcome] = useState<BinaryOutcomes>(initialOutcome)
-  const [isPanelBodyVisible, setIsPanelBodyVisible] = useState(false)
+  const [isPanelBodyVisible, setIsPanelBodyVisible] = useState(!!initialOutcome)
   const cancelDismissTimerRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
@@ -243,6 +259,8 @@ export const BuyPanelBody = (
     outcome,
     setOutcome,
     onBuySuccess,
+    onBetPlaced,
+    initialAmount,
     location = 'bet panel',
     onClose,
     replyToCommentId,
@@ -251,7 +269,15 @@ export const BuyPanelBody = (
     children,
     outcomeControl,
     cancelDismissTimerRef,
+    compact = false,
   } = props
+
+  // Dialogs remember whether the book was left open, on the account.
+  const [showOrders, setShowOrders] = useShowOrderBook(compact)
+  // Bumped when the user opens the book, so only that scrolls it into view.
+  const [revealOrders, setRevealOrders] = useState(0)
+  const ordersId = useId()
+  const tradeFormRef = useRef<HTMLDivElement>(null)
 
   const user = useUser()
   const isCreatorBanned =
@@ -325,7 +351,7 @@ export const BuyPanelBody = (
     : 50
 
   const [betAmount, setBetAmount] = useState<number | undefined>(
-    initialBetAmount
+    initialAmount ?? initialBetAmount
   )
 
   const [error, setError] = useState<string | undefined>()
@@ -388,6 +414,31 @@ export const BuyPanelBody = (
     (params) => api('bets', params)
   )
   const updatedBet = limitBets.find((b) => b.id === submittedBet?.id)
+  const isMarketPageBet = useIsMarketPageBet()
+  const recordedBetIds = useRef(new Set<string>())
+  const recordBetPlaced = useEvent((bet: Bet) => {
+    if (
+      !Number.isFinite(bet.amount) ||
+      bet.amount <= 0 ||
+      recordedBetIds.current.has(bet.id)
+    )
+      return
+    recordedBetIds.current.add(bet.id)
+    if (isMarketPageBet && isNextMarketPromptLocation(location)) {
+      setLastPageBet({
+        contractId: contract.id,
+        userId: bet.userId,
+        location,
+        betId: bet.id,
+        amount: bet.amount,
+        outcome: bet.outcome,
+        answerId: bet.answerId,
+        token: contract.token,
+        time: Date.now(),
+      })
+    }
+    onBetPlaced?.(bet)
+  })
   useEffect(() => {
     if (!submittedBet) return
     if (
@@ -414,6 +465,7 @@ export const BuyPanelBody = (
       if (finalBetDetails) {
         setLastBetDetails(finalBetDetails)
         setIsSharing(false)
+        recordBetPlaced(finalBetDetails)
         const timeoutId = setTimeout(() => {
           callOnBuySuccess()
         }, WAIT_TO_DISMISS)
@@ -442,14 +494,38 @@ export const BuyPanelBody = (
   // Handle order book click to prefill limit order
   const handleOrderClick = useEvent((clickedOrder: OrderClickData) => {
     const fillParams = calculateOrderFillParams(clickedOrder)
+    // The versus order book quotes the main answer. Mirror the outcome when
+    // this ticket buys the other answer (e.g. a candidate opened from the map).
+    const outcome =
+      versusSide(contract, {
+        answerId: multiProps?.answerToBuy.id,
+        outcome: fillParams.outcome,
+      })?.sideOutcome ?? fillParams.outcome
     // The limit order panel's probability input is the price of the side
     // being bought when the sides are named, so mirror the NO side's price.
     const limitProb = showsSideProb
       ? versusSideProb(fillParams.outcome, fillParams.limitProb)
       : fillParams.limitProb
-    setPrefillLimitOrder({ ...fillParams, limitProb, timestamp: Date.now() })
-    setOutcome(fillParams.outcome)
+    setPrefillLimitOrder({
+      ...fillParams,
+      outcome,
+      limitProb,
+      timestamp: Date.now(),
+    })
+    setOutcome(outcome)
     setBetTypeSetting('Limit')
+    if (compact) {
+      // The book stays open below; bring the prefilled ticket back into view.
+      requestAnimationFrame(() => {
+        const form = tradeFormRef.current
+        form?.firstElementChild?.scrollIntoView({
+          block: 'nearest',
+          behavior: 'smooth',
+        })
+        if (!isIOS() && !isAndroid())
+          form?.querySelector('input')?.focus({ preventScroll: true })
+      })
+    }
     toast('Expiration set to immediate', { icon: '⏱️' })
   })
 
@@ -533,6 +609,14 @@ export const BuyPanelBody = (
           limitProb: slippageProtection ? limitProb : undefined,
         } as APIParams<'bet'>)
       )
+      const fullBet: Bet = {
+        ...(bet as CandidateBet<LimitBet>),
+        id: bet.betId,
+        userId: user.id,
+      }
+      // Partial fills have already traded too. Record the API confirmation
+      // before waiting for expiry, since the dialog may close during that wait.
+      recordBetPlaced(fullBet)
       if (bet.isFilled) {
         if (slippageProtection) {
           toast.success(
@@ -548,11 +632,6 @@ export const BuyPanelBody = (
         setSubmittedBet(null)
         setIsSubmitting(false)
 
-        const fullBet: Bet = {
-          ...(bet as CandidateBet<LimitBet>),
-          id: bet.betId,
-          userId: user.id,
-        }
         setLastBetDetails(fullBet)
         setIsSharing(false)
         // TODO: we could remove the timeout and just not dismiss the modal
@@ -686,14 +765,19 @@ export const BuyPanelBody = (
     ? `Are you sure you want to move the market to ${displayedAfter}?`
     : undefined
 
-  const choicesMap: { [key: string]: string } = isStonk
-    ? { Buy: 'YES', Short: 'NO' }
+  // Keyed by side, so two sides that share a name still get a button each.
+  const outcomeLabels = isStonk
+    ? { YES: 'Buy', NO: 'Short' }
     : props.pseudonym
     ? {
-        [props.pseudonym.YES.pseudonymName]: 'YES',
-        [props.pseudonym.NO.pseudonymName]: 'NO',
+        YES: props.pseudonym.YES.pseudonymName,
+        NO: props.pseudonym.NO.pseudonymName,
       }
-    : { Yes: 'YES', No: 'NO' }
+    : { YES: 'Yes', NO: 'No' }
+  const choicesMap: Record<string, 'YES' | 'NO'> = {
+    [outcomeLabels.YES]: 'YES',
+    [outcomeLabels.NO]: 'NO',
+  }
 
   const { pseudonymName: propPseudonymName, pseudonymColor } =
     props.pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
@@ -769,63 +853,149 @@ export const BuyPanelBody = (
     }
   }, [cancelDismissTimerRef, cancelDismissTimerFn])
 
+  const betTypeControls = (
+    <Row className="ml-auto shrink-0 items-center justify-end gap-2">
+      {!isStonk && (
+        <ChoicesToggleGroup
+          currentChoice={betType}
+          color="gray"
+          choicesMap={{
+            Quick: 'Market',
+            Limit: 'Limit',
+          }}
+          setChoice={(val) => setBetTypeSetting(val as 'Market' | 'Limit')}
+        />
+      )}
+      {onClose && (
+        <Button
+          color="gray-white"
+          size="sm"
+          onClick={onClose}
+          className="-mr-2"
+          aria-label="Close betting panel"
+        >
+          <XIcon className="h-5 w-5" />
+        </Button>
+      )}
+    </Row>
+  )
+
+  const orderBookBets = isBinaryMC
+    ? unfilledBets
+    : unfilledBets.filter((b) => b.answerId === multiProps?.answerToBuy?.id)
+  const activeOrderCount = orderBookBets.filter(
+    (b) => !b.silent && (!b.expiresAt || b.expiresAt > Date.now())
+  ).length
+  const orders = (
+    <>
+      {(compact || isMultiCpmm(contract)) && (
+        <YourOrders
+          className={compact ? 'mb-3' : 'mt-2 py-4'}
+          contract={contract}
+          bets={isBinaryMC ? allUnfilledBets : unfilledBetsMatchingAnswer}
+        />
+      )}
+      {compact && activeOrderCount === 0 && (
+        <p className="text-ink-500 py-4 text-center text-sm">
+          No open orders yet.
+        </p>
+      )}
+      <OrderBookPanel
+        contract={contract}
+        limitBets={orderBookBets}
+        answer={multiProps?.answerToBuy}
+        // Versus columns always refer to the main answer, even when the
+        // ticket itself is for the other answer. Use the market's side names.
+        pseudonym={isBinaryMC ? getPseudonym(contract) : props.pseudonym}
+        onOrderClick={handleOrderClick}
+      />
+    </>
+  )
+
   return (
     <>
-      <Col className={clsx(className, 'relative rounded-xl px-4 py-2')}>
-        {typeof children === 'function' ? children(outcome) : children}
-        <Row className="mb-2 mt-2 flex-wrap items-center justify-between gap-x-2 gap-y-1">
-          {outcomeControl ?? (
-            <Row
-              className={clsx(
-                'gap-1',
-                (isBinaryMC || propPseudonymName) &&
-                  !props.alwaysShowOutcomeSwitcher &&
-                  'invisible'
-              )}
-            >
-              <ChoicesToggleGroup
-                currentChoice={outcome}
-                color={outcome === 'YES' ? 'light-green' : 'light-red'}
-                choicesMap={choicesMap}
-                toggleClassName={
-                  props.pseudonym
-                    ? 'px-2 text-xs sm:px-4 sm:text-sm'
-                    : undefined
-                }
-                setChoice={(outcome) => {
-                  setOutcome(outcome as 'YES' | 'NO')
-                  // Cancel dismiss timer if user is switching outcomes
-                  cancelDismissTimerFn()
-                }}
-              />
-            </Row>
+      <TradePanelLayout
+        className={className}
+        compact={compact}
+        showOrders={compact && showOrders}
+        revealOrders={revealOrders}
+        ordersId={ordersId}
+        header={typeof children === 'function' ? children(outcome) : children}
+        orders={orders}
+        tradeFormRef={tradeFormRef}
+      >
+        <Row
+          className={clsx(
+            'mb-2 items-center justify-between gap-x-2 gap-y-1',
+            !compact && 'mt-2 flex-wrap'
           )}
-          <Row className="ml-auto shrink-0 items-center justify-end gap-2">
-            {!isStonk && (
-              <ChoicesToggleGroup
-                currentChoice={betType}
-                color="gray"
-                choicesMap={{
-                  Quick: 'Market',
-                  Limit: 'Limit',
-                }}
-                setChoice={(val) => {
-                  setBetTypeSetting(val as 'Market' | 'Limit')
-                }}
-              />
-            )}
-            {onClose && (
-              <Button
-                color="gray-white"
-                size="sm"
-                onClick={onClose}
-                className="-mr-2"
-                aria-label="Close betting panel"
+        >
+          {compact && props.pseudonym ? (
+            // Looks like the light-green/light-red ChoicesToggleGroup below,
+            // but keyed by side, so sides sharing a name still get two buttons.
+            <Row
+              className="min-w-0 rounded-lg p-1 text-sm"
+              role="group"
+              aria-label="Choose an outcome"
+            >
+              {(['YES', 'NO'] as const).map((side) => (
+                <button
+                  key={side}
+                  type="button"
+                  title={outcomeLabels[side]}
+                  aria-pressed={outcome === side}
+                  onClick={() => {
+                    setOutcome(side)
+                    cancelDismissTimerFn()
+                  }}
+                  className={clsx(
+                    'ring-primary-500 text-ink-900 my-0.5 min-w-0 rounded-md py-2 outline-none transition-all focus-visible:ring-2',
+                    outcomeLabels.YES === 'YES'
+                      ? 'px-4'
+                      : 'px-2 text-xs sm:px-4 sm:text-sm',
+                    outcome === side
+                      ? clsx(
+                          'shadow',
+                          side === 'YES'
+                            ? 'bg-teal-500/20'
+                            : 'bg-scarlet-500/20'
+                        )
+                      : 'hover:bg-canvas-50/70'
+                  )}
+                >
+                  <span className="line-clamp-2">{outcomeLabels[side]}</span>
+                </button>
+              ))}
+            </Row>
+          ) : (
+            outcomeControl ?? (
+              <Row
+                className={clsx(
+                  'gap-1',
+                  (isBinaryMC || propPseudonymName) &&
+                    !props.alwaysShowOutcomeSwitcher &&
+                    'invisible'
+                )}
               >
-                <XIcon className="h-5 w-5" />
-              </Button>
-            )}
-          </Row>
+                <ChoicesToggleGroup
+                  currentChoice={outcome}
+                  color={outcome === 'YES' ? 'light-green' : 'light-red'}
+                  choicesMap={choicesMap}
+                  toggleClassName={
+                    props.pseudonym
+                      ? 'px-2 text-xs sm:px-4 sm:text-sm'
+                      : undefined
+                  }
+                  setChoice={(outcome) => {
+                    setOutcome(outcome as 'YES' | 'NO')
+                    // Cancel dismiss timer if user is switching outcomes
+                    cancelDismissTimerFn()
+                  }}
+                />
+              </Row>
+            )
+          )}
+          {betTypeControls}
         </Row>
         {betType === 'Market' ? (
           <>
@@ -839,6 +1009,7 @@ export const BuyPanelBody = (
               className={clsx('mb-2 flex-wrap items-center gap-x-8 gap-y-4')}
             >
               <BuyAmountInput
+                compact={compact}
                 parentClassName="max-w-full"
                 amount={betAmount}
                 onChange={onBetChange}
@@ -945,6 +1116,8 @@ export const BuyPanelBody = (
                                   setIsEditingPayout(false)
                                 }
                               }}
+                              // Focus follows the click on the payout.
+                              // eslint-disable-next-line jsx-a11y/no-autofocus
                               autoFocus
                               min={1}
                               step={1}
@@ -952,8 +1125,10 @@ export const BuyPanelBody = (
                               onChangeAmount={setEditablePayout}
                             />
                           ) : (
-                            <span
-                              className={clsx('cursor-pointer hover:underline')}
+                            <button
+                              type="button"
+                              aria-label="Edit payout"
+                              className="cursor-pointer hover:underline"
                               onClick={() => {
                                 setEditablePayout(Math.floor(currentPayout))
                                 setIsEditingPayout(true)
@@ -963,7 +1138,7 @@ export const BuyPanelBody = (
                                 amount: currentPayout,
                                 token: 'M$',
                               })}
-                            </span>
+                            </button>
                           )}
                         </>
                       )}
@@ -981,6 +1156,9 @@ export const BuyPanelBody = (
         ) : (
           <>
             <LimitOrderPanel
+              onBetPlaced={recordBetPlaced}
+              location={location}
+              compact={compact}
               betAmount={matchingPrefillOrder?.amount ?? betAmount}
               contract={contract}
               multiProps={multiProps}
@@ -1026,9 +1204,15 @@ export const BuyPanelBody = (
                     disabled={betDisabled}
                     size="xl"
                     color={
-                      pseudonymColor ??
-                      binaryMCColors?.[outcome == 'YES' ? 0 : 1] ??
-                      (outcome === 'NO' ? 'red' : 'green')
+                      // The compact ticket keeps the site's Yes=green, No=red,
+                      // whatever the answers' own colors.
+                      compact
+                        ? outcome === 'NO'
+                          ? 'red'
+                          : 'green'
+                        : pseudonymColor ??
+                          binaryMCColors?.[outcome == 'YES' ? 0 : 1] ??
+                          (outcome === 'NO' ? 'red' : 'green')
                     }
                     actionLabel={
                       betDisabled && !outcome ? (
@@ -1061,7 +1245,7 @@ export const BuyPanelBody = (
                         </span>
                       )
                     }
-                    inModal={!!onClose}
+                    inModal={compact || !!onClose}
                   />
                 </>
               )
@@ -1148,44 +1332,56 @@ export const BuyPanelBody = (
           />
         )}
 
-        {user && (
-          <Row className="mt-5 items-start justify-between text-sm">
-            <Row className={''}>
-              <span className={clsx('text-ink-600 mr-1 whitespace-nowrap ')}>
-                Your mana balance
-              </span>
-              <span className="text-ink-600 font-semibold">
-                <MoneyDisplay
-                  amount={balance}
-                  isCashContract={isCashContract}
+        {(user || compact) && (
+          <Row
+            className={clsx(
+              // Compact rows wrap on narrow screens, keeping the toggle right.
+              compact
+                ? 'mt-2 flex-wrap items-center gap-y-1'
+                : 'mt-5 items-start',
+              'justify-between gap-x-2 text-sm'
+            )}
+          >
+            {user ? (
+              <Row className={''}>
+                <span className={clsx('text-ink-600 mr-1 whitespace-nowrap ')}>
+                  Your mana balance
+                </span>
+                <span className="text-ink-600 font-semibold">
+                  <MoneyDisplay
+                    amount={balance}
+                    isCashContract={isCashContract}
+                  />
+                </span>
+              </Row>
+            ) : (
+              <span />
+            )}
+            {/* Where the inline panel's book would be: expands it below. */}
+            {compact && (
+              <button
+                type="button"
+                aria-expanded={showOrders}
+                aria-controls={ordersId}
+                onClick={() => {
+                  if (!showOrders) setRevealOrders((n) => n + 1)
+                  setShowOrders(!showOrders)
+                }}
+                className="text-primary-700 hover:bg-primary-50 -mr-2 ml-auto flex shrink-0 items-center gap-1 rounded-md px-2 py-1 font-medium"
+              >
+                Order book ({activeOrderCount})
+                <ChevronDownIcon
+                  className={clsx(
+                    'h-4 w-4 transition-transform',
+                    showOrders && 'rotate-180'
+                  )}
+                  aria-hidden
                 />
-              </span>
-            </Row>
+              </button>
+            )}
           </Row>
         )}
-      </Col>
-
-      {isMultiCpmm(contract) && (
-        <YourOrders
-          className="mt-2 py-4"
-          contract={contract}
-          // Versus orders may be stored on either answer.
-          bets={isBinaryMC ? allUnfilledBets : unfilledBetsMatchingAnswer}
-        />
-      )}
-      <OrderBookPanel
-        contract={contract}
-        limitBets={
-          isBinaryMC
-            ? unfilledBets
-            : unfilledBets.filter(
-                (b) => b.answerId === multiProps?.answerToBuy?.id
-              )
-        }
-        answer={multiProps?.answerToBuy}
-        pseudonym={props.pseudonym}
-        onOrderClick={handleOrderClick}
-      />
+      </TradePanelLayout>
     </>
   )
 }

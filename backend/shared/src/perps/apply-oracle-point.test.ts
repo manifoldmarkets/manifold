@@ -33,13 +33,19 @@ const contract = {
   poolLong: 25000,
   poolShort: 25000,
 } as PerpContract
-const database = (over: Partial<PerpContract> = {}) =>
+const database = (over: Partial<PerpContract> = {}, ordersWaiting = false) =>
   ({
-    oneOrNone: jest.fn(async () => ({
-      ts: new Date(now).toISOString(),
-      source_ts: new Date(now).toISOString(),
-      price: 2104,
-    })),
+    oneOrNone: jest.fn(async (sql: string) =>
+      sql.includes('from perp_orders')
+        ? ordersWaiting
+          ? { '?column?': 1 }
+          : null
+        : {
+            ts: new Date(now).toISOString(),
+            source_ts: new Date(now).toISOString(),
+            price: 2104,
+          }
+    ),
     manyOrNone: jest.fn(async () => [{ data: { ...contract, ...over } }]),
   } as unknown as SupabaseDirectClient)
 beforeEach(() => {
@@ -106,14 +112,21 @@ describe('a bounded tick that loses its slot', () => {
   const newPoint = { ts: now + 1000, sourceTs: now + 1000, price: 2104 }
   const database = (
     oraclePriceTime: number,
-    overrides: Partial<PerpContract> = {}
+    overrides: Partial<PerpContract> = {},
+    ordersWaiting = false
   ) =>
     ({
-      oneOrNone: jest.fn(async () => ({
-        ts: new Date(newPoint.ts).toISOString(),
-        source_ts: new Date(newPoint.ts).toISOString(),
-        price: 2104,
-      })),
+      oneOrNone: jest.fn(async (sql: string) =>
+        sql.includes('from perp_orders')
+          ? ordersWaiting
+            ? { '?column?': 1 }
+            : null
+          : {
+              ts: new Date(newPoint.ts).toISOString(),
+              source_ts: new Date(newPoint.ts).toISOString(),
+              price: 2104,
+            }
+      ),
       manyOrNone: jest.fn(async () => [
         {
           data: {
@@ -140,6 +153,23 @@ describe('a bounded tick that loses its slot', () => {
       health
     )
     expect(log.warn).toHaveBeenCalledTimes(1)
+    expect(log.error).not.toHaveBeenCalled()
+  })
+
+  it('applies late without bounds, rather than skip, while orders wait', async () => {
+    jest
+      .mocked(runOracleUpdate)
+      .mockRejectedValueOnce(serializationFailure)
+      .mockResolvedValueOnce(null)
+    await applyOraclePointToLivePerps(
+      database(now + 2000 - 150_000, {}, true),
+      contract.oracleFeedId,
+      newPoint,
+      FAST_TICK_ORACLE_BOUNDS,
+      health
+    )
+    expect(runOracleUpdate).toHaveBeenCalledTimes(2)
+    expect(jest.mocked(runOracleUpdate).mock.calls[1][4]).toBeUndefined()
     expect(log.error).not.toHaveBeenCalled()
   })
 

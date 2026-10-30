@@ -3,6 +3,7 @@ import { superBanUser } from 'web/lib/supabase/super-ban-user'
 import { Button } from './buttons/button'
 import { Col } from './layout/col'
 import { Modal } from './layout/modal'
+import { ModActionBadge } from './moderation/mod-action'
 
 const SuperBanControl = (props: {
   userId: string
@@ -55,6 +56,7 @@ const SuperBanControl = (props: {
         disabled={loading || disabled}
         loading={loading}
       >
+        <ModActionBadge className="mr-1" />
         Superban
       </Button>
 

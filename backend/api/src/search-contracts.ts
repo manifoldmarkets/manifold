@@ -73,15 +73,17 @@ export const searchMarketsFull: APIHandler<'search-markets-full'> = async (
   auth,
   req
 ) => {
-  // Signed-in assignment is independently reproduced on the server, so a
-  // client cannot accidentally move an account between arms. Anonymous
-  // assignment is device-based and therefore has to be supplied by the web.
+  // The ranking arm is resolved on the server; since discovery-v1 concluded
+  // this is always control. The semantic tail on low-lexical-hit searches is
+  // kept on for everyone: over the experiment it raised low-hit market CTR
+  // by 7.3 pp (95% CI 2.7 to 11.9) and cut zero-result searches from 40% to
+  // 9%, independently of the ranking changes that were reverted.
   const discoveryVariant = getEffectiveDiscoveryExperimentVariant({
     userId: auth?.uid,
     requestedVariant: props.discoveryVariant,
   })
 
-  if (discoveryVariant === 'control' || !props.enableSemanticSearch) {
+  if (!props.enableSemanticSearch) {
     return await search(props, auth?.uid, {
       markSearchMatches: true,
       allowSemanticFallback: false,

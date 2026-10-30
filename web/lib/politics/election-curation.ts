@@ -166,16 +166,18 @@ export const BOP_COLORS = {
   other: '#d1d5db',
 }
 
-/** Maps a Balance of Power answer label to its display color. */
-export function balanceOfPowerAnswerColor(text: string): string {
+export type BalanceOfPowerOutcome = keyof typeof BOP_COLORS
+
+/** What a Balance of Power answer label means: a sweep, a split, or other. */
+export function balanceOfPowerOutcome(text: string): BalanceOfPowerOutcome {
   const t = text.toLowerCase()
   const isDem = (s: string) => /\b(d|dem|dems|democrats?|democratic)\b/.test(s)
   const isRep = (s: string) =>
     /\b(r|rep|reps|gop|republicans?|republican)\b/.test(s)
 
   if (/sweep|trifecta|both chambers|control (of )?both/.test(t)) {
-    if (isDem(t) && !isRep(t)) return BOP_COLORS.demSweep
-    if (isRep(t) && !isDem(t)) return BOP_COLORS.repSweep
+    if (isDem(t) && !isRep(t)) return 'demSweep'
+    if (isRep(t) && !isDem(t)) return 'repSweep'
   }
   // Splits: "D Senate, R House" / "R Senate, D House" (either order of
   // chambers). Find which party is attached to the Senate.
@@ -184,12 +186,37 @@ export function balanceOfPowerAnswerColor(text: string): string {
   if (senate && house) {
     const senateParty = senate[1] ?? senate[2] ?? ''
     const houseParty = house[1] ?? house[2] ?? ''
-    if (isDem(senateParty) && isRep(houseParty))
-      return BOP_COLORS.demSenateRepHouse
-    if (isRep(senateParty) && isDem(houseParty))
-      return BOP_COLORS.repSenateDemHouse
-    if (isDem(senateParty) && isDem(houseParty)) return BOP_COLORS.demSweep
-    if (isRep(senateParty) && isRep(houseParty)) return BOP_COLORS.repSweep
+    if (isDem(senateParty) && isRep(houseParty)) return 'demSenateRepHouse'
+    if (isRep(senateParty) && isDem(houseParty)) return 'repSenateDemHouse'
+    if (isDem(senateParty) && isDem(houseParty)) return 'demSweep'
+    if (isRep(senateParty) && isRep(houseParty)) return 'repSweep'
   }
-  return BOP_COLORS.other
+  return 'other'
+}
+
+/** Maps a Balance of Power answer label to its display color. */
+export const balanceOfPowerAnswerColor = (text: string): string =>
+  BOP_COLORS[balanceOfPowerOutcome(text)]
+
+/**
+ * Each party's chance of a sweep (both chambers), read from the Balance of
+ * Power market: the condition odds in the Congress matrix's "Both" column
+ * headers. Undefined when the market has no sweep answers to read.
+ */
+export function balanceOfPowerSweepOdds(
+  contract: Contract
+): { dem: number; rep: number } | undefined {
+  if (!isMultiCpmm(contract)) return undefined
+  const odds = { dem: 0, rep: 0 }
+  let found = false
+  for (const answer of contract.answers) {
+    if (answer.resolution === 'CANCEL') continue
+    const outcome = balanceOfPowerOutcome(answer.text)
+    if (outcome !== 'demSweep' && outcome !== 'repSweep') continue
+    const p = getAnswerProbability(contract, answer.id)
+    if (!Number.isFinite(p)) continue
+    found = true
+    odds[outcome === 'demSweep' ? 'dem' : 'rep'] += p
+  }
+  return found ? odds : undefined
 }
