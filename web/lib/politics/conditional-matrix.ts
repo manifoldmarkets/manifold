@@ -10,24 +10,34 @@ import { isOpenPublicMarket } from './election-curation'
 // each outcome of a race, and the two columns put the chances side by side.
 //
 // Rows are configured by contract id. The ids are reserved before the markets
-// are created, so a row whose two markets are not both found, open, public and
-// binary is dropped, and a matrix with fewer than MATRIX_MIN_ROWS complete rows
-// is hidden. The page therefore ships safely before any of these markets exist.
+// are created, so a row is dropped unless every market it names is found, open,
+// public and binary, and a matrix with fewer than MATRIX_MIN_ROWS such rows is
+// hidden. The page therefore ships safely before any of these markets exist.
+//
+// A row may name a market for only one party (a campaign promise nobody has
+// made for the other side, say); it renders with an empty cell for the other.
 
-/** One row of config: a short curated label and the two markets' ids. */
+/**
+ * One row of config: a short curated label and the markets' ids. At least one
+ * side is required; a one-sided row is fine.
+ */
 export type ConditionalMatrixPair = {
   label: string
   // The market asked under the Democratic outcome.
-  dem: string
+  dem?: string
   // The same question under the Republican outcome.
-  rep: string
+  rep?: string
 }
 
-/** A complete row, ready to render. */
+/**
+ * A row ready to render: every side the config names, found and open. A key
+ * is absent (not undefined) when the config has no market for that side, so
+ * the rows serialize as page props.
+ */
 export type ConditionalMatrixRow = {
   label: string
-  dem: BinaryContract
-  rep: BinaryContract
+  dem?: BinaryContract
+  rep?: BinaryContract
 }
 
 export type MatrixParty = 'dem' | 'rep'
@@ -69,6 +79,22 @@ export const SENATE_2026_COLUMNS: MatrixColumns = [
     party: 'rep',
     label: 'If Republicans keep the Senate',
     shortLabel: 'Rep Senate',
+  },
+]
+
+// These community markets use different midterm conditions. In particular,
+// the depression markets do not define "win the midterms" as a sweep, so do
+// not label every row with a shared condition or attach sweep probabilities.
+export const BOTH_2026_COLUMNS: MatrixColumns = [
+  {
+    party: 'dem',
+    label: 'Democratic condition',
+    shortLabel: 'Dem condition',
+  },
+  {
+    party: 'rep',
+    label: 'Republican condition',
+    shortLabel: 'Rep condition',
   },
 ]
 
@@ -189,6 +215,29 @@ export const SENATE_2026_MATRIX: ConditionalMatrixPair[] = [
   },
 ]
 
+// Broader midterm conditions: each community market defines its own rules.
+// Only the $5,000 market explicitly requires control of both chambers. The
+// depression markets leave "win the midterms" and the failed-condition
+// resolution unspecified; the view discloses that uncertainty.
+export const BOTH_2026_MATRIX: ConditionalMatrixPair[] = [
+  // Gen: "Will the US enter a depression if the Democrats / the Republicans win
+  // the midterms?" The rules allow the horizon to extend after 2028 when the
+  // named party retains the control specified in that market's criteria.
+  {
+    label: 'US enters a depression (may extend beyond 2028)',
+    dem: 'NLtqAPnLzA',
+    rep: 'tPgqUCc2zq',
+  },
+  // Gen: "Will Trump give American adults $5000 each if the republicans win
+  // the midterms?" N/A unless Republicans hold 50+ Senate seats and a House
+  // majority; NO if no such dividend before the 2028 election. Nobody has
+  // promised one under a Democratic Congress, so the Dem side is empty.
+  {
+    label: '$5,000 checks to American adults (by 2028)',
+    rep: 'Ud2Q60puts',
+  },
+]
+
 // 2028 presidency: "If the Democratic nominee wins the 2028 presidential
 // election, …" (dem) and "If the Republican nominee wins …" (rep).
 export const PRESIDENT_2028_MATRIX: ConditionalMatrixPair[] = [
@@ -229,16 +278,44 @@ export const PRESIDENT_2028_MATRIX: ConditionalMatrixPair[] = [
   },
 ]
 
-export type CongressChamber = 'senate' | 'house'
+// The Congress section's views. Keep the stored 'both' key for the broader
+// Midterms view, whose markets do not all define a both-chamber condition.
+export type CongressChamber = 'senate' | 'house' | 'both'
+
+const CONGRESS_CHAMBER_LABELS: Record<CongressChamber, string> = {
+  senate: 'Senate',
+  house: 'House',
+  both: 'Midterms',
+}
 
 /**
  * The 2026 Congress matrices that have rows to show, Senate first: it is the
- * chamber most likely to flip. The page offers a switch when both do.
+ * chamber most likely to flip. The page offers a switch when more than one do.
  */
 export function congressChambers(
   rows: Record<CongressChamber, ConditionalMatrixRow[]>
 ): CongressChamber[] {
-  return (['senate', 'house'] as const).filter((c) => rows[c].length > 0)
+  return (['senate', 'house', 'both'] as const).filter(
+    (c) => rows[c].length > 0
+  )
+}
+
+/** Keep the selected view and its advertised choices within available data. */
+export function congressViewSelection(
+  chambers: CongressChamber[],
+  preferred: CongressChamber
+): {
+  chamber: CongressChamber | undefined
+  choicesMap: Record<string, CongressChamber>
+} {
+  return {
+    chamber: chambers.includes(preferred) ? preferred : chambers[0],
+    choicesMap: Object.fromEntries(
+      chambers.map(
+        (chamber) => [CONGRESS_CHAMBER_LABELS[chamber], chamber] as const
+      )
+    ),
+  }
 }
 
 /** Every contract id the matrices reference, for one batched fetch. */
@@ -246,10 +323,13 @@ export function conditionalMatrixIds(
   matrices: ConditionalMatrixPair[][] = [
     SENATE_2026_MATRIX,
     HOUSE_2026_MATRIX,
+    BOTH_2026_MATRIX,
     PRESIDENT_2028_MATRIX,
   ]
 ): string[] {
-  return matrices.flat().flatMap((p) => [p.dem, p.rep])
+  return matrices
+    .flat()
+    .flatMap((p) => [p.dem, p.rep].filter((id): id is string => !!id))
 }
 
 const isBinaryCpmm = (c: Contract): c is BinaryContract =>
@@ -257,9 +337,10 @@ const isBinaryCpmm = (c: Contract): c is BinaryContract =>
 
 /**
  * Resolve a matrix's config against the fetched contracts. Keeps config order,
- * drops a row unless both of its markets were found and are open, public and
- * binary, and returns [] (the matrix is hidden) when fewer than
- * MATRIX_MIN_ROWS rows survive.
+ * drops a row unless every market its config names was found and is open,
+ * public and binary (a one-sided config needs only its one market), and
+ * returns [] (the matrix is hidden) when fewer than MATRIX_MIN_ROWS rows
+ * survive.
  */
 export function buildConditionalMatrixRows(
   pairs: ConditionalMatrixPair[],
@@ -272,9 +353,15 @@ export function buildConditionalMatrixRows(
     return c && isOpenPublicMarket(c, now) && isBinaryCpmm(c) ? c : undefined
   }
   const rows = pairs.flatMap((pair) => {
-    const dem = usable(pair.dem)
-    const rep = usable(pair.rep)
-    return dem && rep ? [{ label: pair.label, dem, rep }] : []
+    if (!pair.dem && !pair.rep) return []
+    const dem = pair.dem ? usable(pair.dem) : undefined
+    const rep = pair.rep ? usable(pair.rep) : undefined
+    if ((pair.dem && !dem) || (pair.rep && !rep)) return []
+    // Build without undefined keys: Next.js refuses to serialize them.
+    const row: ConditionalMatrixRow = { label: pair.label }
+    if (dem) row.dem = dem
+    if (rep) row.rep = rep
+    return [row]
   })
   return rows.length >= MATRIX_MIN_ROWS ? rows : []
 }
@@ -288,11 +375,16 @@ export function slimMatrixRows(
 ): ConditionalMatrixRow[] {
   const slim = (c: BinaryContract) =>
     omit(c, 'description', 'coverImageUrl') as BinaryContract
-  return rows.map((r) => ({ ...r, dem: slim(r.dem), rep: slim(r.rep) }))
+  return rows.map((r) => {
+    const row: ConditionalMatrixRow = { label: r.label }
+    if (r.dem) row.dem = slim(r.dem)
+    if (r.rep) row.rep = slim(r.rep)
+    return row
+  })
 }
 
 export const matrixRowContracts = (rows: ConditionalMatrixRow[]) =>
-  rows.flatMap((r) => [r.dem, r.rep])
+  rows.flatMap((r) => [r.dem, r.rep].filter((c): c is BinaryContract => !!c))
 
 /** The rows to show: all of them, or the first few of a long matrix. */
 export function visibleMatrixRows<T>(rows: T[], showAll: boolean): T[] {

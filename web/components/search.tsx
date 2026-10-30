@@ -6,15 +6,14 @@ import clsx from 'clsx'
 import { FullMarketSearchResult } from 'common/api/market-search-types'
 import { FullUser } from 'common/api/user-types'
 import { APIError } from 'common/api/utils'
-import { getForcedABTestVariant } from 'common/ab-test'
 import { Contract, isMultiCpmm } from 'common/contract'
 import {
   BrowseMode,
   normalizeBrowseChange,
 } from 'common/browse-personalization'
 import {
+  DISCOVERY_EXPERIMENT_ACTIVE_VARIANTS,
   DISCOVERY_EXPERIMENT_NAME,
-  DISCOVERY_EXPERIMENT_VARIANTS,
   DISCOVERY_EXPOSURE_EVENT,
   DISCOVERY_RESULTS_EVENT,
   DISCOVERY_SEARCH_ABORT_EVENT,
@@ -360,25 +359,25 @@ export function Search(props: SearchProps) {
   const { prefersPlay, setPrefersPlay } = useSweepstakes()
   const user = useUser()
   const isAuthorized = useIsAuthorized()
-  const forcedDiscoveryVariant = getForcedABTestVariant(
-    user?.id,
-    DISCOVERY_EXPERIMENT_VARIANTS
-  )
+  // The discovery-v1 experiment has concluded; only control is offered, so
+  // every account and device lands there. The assignment unit is kept so the
+  // discovery_v1 telemetry keeps its shape for the next test.
   const discoveryAssignment = useABTestAssignment(
     DISCOVERY_EXPERIMENT_NAME,
-    DISCOVERY_EXPERIMENT_VARIANTS,
+    DISCOVERY_EXPERIMENT_ACTIVE_VARIANTS,
     {
       isReady: isAuthorized !== undefined,
       userId: user?.id,
-      forcedVariant: forcedDiscoveryVariant,
     }
   )
-  const discoveryVariant = discoveryAssignment?.variant
+  const discoveryVariant: DiscoveryExperimentVariant | undefined =
+    discoveryAssignment?.variant
   const discoveryAssignmentKey = discoveryAssignment
     ? `${discoveryAssignment.assignmentUnit}:${discoveryAssignment.assignmentId}`
     : undefined
-  const discoveryAssignmentSource: DiscoveryExperimentAssignmentSource =
-    forcedDiscoveryVariant ? 'forced' : user ? 'user-hash' : 'device-hash'
+  const discoveryAssignmentSource: DiscoveryExperimentAssignmentSource = user
+    ? 'user-hash'
+    : 'device-hash'
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({
     defaultSort,
     defaultFilter,
@@ -705,6 +704,23 @@ export function Search(props: SearchProps) {
                   </button>
                 )}
                 <Link
+                  href="/sports"
+                  onClick={() =>
+                    track('select search topic', { topic: 'sports' })
+                  }
+                  className={clsx(
+                    'shrink-0 self-center whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium',
+                    // Turf to leather: the brown is the league label's
+                    // saddle brown (SPORTS_LEAGUE_LABEL_CLASS), tinted to
+                    // sit with the other pills' pastels.
+                    'bg-gradient-to-r from-green-100 to-[#8b4513]/25 dark:from-green-900/50 dark:to-[#8b4513]/50',
+                    'text-ink-700 ring-ink-200 ring-1',
+                    'transition-all hover:brightness-105'
+                  )}
+                >
+                  Sports
+                </Link>
+                <Link
                   href="/election"
                   onClick={() =>
                     track('select search topic', { topic: 'midterms-2026' })
@@ -716,7 +732,7 @@ export function Search(props: SearchProps) {
                     'transition-all hover:brightness-105'
                   )}
                 >
-                  2026 Midterms
+                  Midterms
                 </Link>
                 <Link
                   href="/perps"
@@ -756,7 +772,9 @@ export function Search(props: SearchProps) {
                       }
                     }}
                   >
-                    {removeEmojis(topic)}
+                    {removeEmojis(topic) === 'Sports'
+                      ? 'Sports topics'
+                      : removeEmojis(topic)}
                   </button>
                 ))}
                 {showHotTopics &&
@@ -885,14 +903,6 @@ export function Search(props: SearchProps) {
             hideSweepsToggle={hideSweepsToggle}
             extraFilterPills={extraFilterPills}
           />
-        )}
-        {isWholePage && forcedDiscoveryVariant && discoveryVariant && (
-          <div
-            className="text-ink-400 px-2 text-right text-xs"
-            title="This QA account has a fixed discovery experiment assignment."
-          >
-            Discovery v1 · {capitalize(discoveryVariant)}
-          </div>
         )}
       </Col>
       <Spacer h={1} />
@@ -1440,9 +1450,11 @@ export const useSearchResults = (props: {
             discoveryVariant: sendDiscoveryOptions
               ? discoveryVariant
               : undefined,
+            // The semantic tail on low-hit searches outlived the discovery-v1
+            // experiment; the legacy client-side sort already keeps semantic
+            // rows after the lexical results.
             enableSemanticSearch:
               sendDiscoveryOptions &&
-              discoveryVariant === 'treatment' &&
               endpoint === 'search-markets-full' &&
               query.trim().length > 0
                 ? true

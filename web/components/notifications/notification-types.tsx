@@ -372,7 +372,11 @@ export function NotificationItem(props: {
         isChildOfGroup={isChildOfGroup}
       />
     )
-  } else if (reason === 'perp_liquidation' || reason === 'perp_adl') {
+  } else if (
+    reason === 'perp_liquidation' ||
+    reason === 'perp_adl' ||
+    reason === 'perp_order_failed'
+  ) {
     // Must come before the contract/updated suppressor below — perp engine
     // notifications carry sourceType 'contract' + sourceUpdateType 'updated'
     // and were being swallowed into blank rows.
@@ -461,6 +465,15 @@ export function NotificationItem(props: {
   } else if (reason === 'subsidized_your_market') {
     return (
       <LiquidityNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'liquidity_returned') {
+    return (
+      <LiquidityReturnedNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -1781,6 +1794,56 @@ function LiquidityNotification(props: {
             to <PrimaryNotificationLink text={sourceContractTitle} />
           </span>
         )}
+      </div>
+    </NotificationFrame>
+  )
+}
+
+function LiquidityReturnedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const {
+    sourceId,
+    sourceUserName,
+    sourceUserUsername,
+    sourceText,
+    sourceContractTitle,
+    data,
+  } = notification
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'💧'} />
+      }
+      link={getSourceUrl(notification)}
+    >
+      <div className="line-clamp-3">
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
+        />{' '}
+        withdrew liquidity
+        {!isChildOfGroup && (
+          <span>
+            {' '}
+            from <PrimaryNotificationLink text={sourceContractTitle} />
+          </span>
+        )}
+        , returning{' '}
+        {sourceText && (
+          <span>{formatMoney(parseFloat(sourceText), data?.token)} of</span>
+        )}{' '}
+        your liquidity to your balance. You can add it back to the market if you
+        want to keep it there.
       </div>
     </NotificationFrame>
   )

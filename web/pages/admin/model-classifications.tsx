@@ -9,6 +9,7 @@ import { Row } from 'web/components/layout/row'
 import { NoSEO } from 'web/components/NoSEO'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { useAdmin, useAdminOrMod } from 'web/hooks/use-admin'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -88,7 +89,10 @@ export default function AdminModelClassificationsPage() {
     <Page trackPageView={false}>
       <NoSEO />
       <Col className="mx-auto w-full max-w-5xl gap-4 p-4">
-        <Title>OpenRouter classifications</Title>
+        <Title>
+          OpenRouter classifications
+          <ModActionTag className="ml-2 align-middle" />
+        </Title>
 
         <HowThisWorks isAdmin={isAdmin} />
 
@@ -98,6 +102,7 @@ export default function AdminModelClassificationsPage() {
           <Col className="gap-4 border-t pt-6">
             <div className="text-ink-800 text-lg font-semibold">
               Open-weight models
+              <ModActionTag admin className="ml-2 align-middle" />
             </div>
 
             <Col className="bg-canvas-50 gap-1 rounded p-3 text-sm">
@@ -274,6 +279,7 @@ function HowThisWorks(props: { isAdmin: boolean }) {
               <Col className="bg-canvas-0 border-l-primary-400 gap-1 rounded border-l-4 p-3 text-sm">
                 <div className="text-ink-900 font-semibold">
                   Open-weight models
+                  <ModActionTag admin className="ml-2 align-middle" />
                 </div>
                 <div className="text-ink-700">
                   <b>Are the weights publicly downloadable?</b> Downloadable is

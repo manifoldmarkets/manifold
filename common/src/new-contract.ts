@@ -73,6 +73,9 @@ export function getNewContract(
     answerImageUrls?: string[]
     // Starting probability of each answer, as a percent. Defaults to an even split.
     answerProbs?: number[]
+    // Colour of each answer. Defaults to the versus pair for a two-answer
+    // versus market, otherwise the chart palette.
+    answerColors?: string[]
     // Whether a multiple choice market opens as cpmm-multi-2. Defaults to
     // CPMM_MULTI_2_CREATION_ENABLED; tests set it to cover both mechanisms.
     cpmmMulti2Enabled?: boolean
@@ -84,6 +87,10 @@ export function getNewContract(
     sportsStartTimestamp?: string
     sportsEventId?: string
     sportsLeague?: string
+    sportsHomeTeam?: string
+    sportsAwayTeam?: string
+    sportsMarketType?: string
+    sportsEntrantIds?: (number | null)[]
 
     // Multi-numeric
     unit: string | undefined
@@ -120,9 +127,14 @@ export function getNewContract(
     sportsStartTimestamp,
     sportsEventId,
     sportsLeague,
+    sportsHomeTeam,
+    sportsAwayTeam,
+    sportsMarketType,
+    sportsEntrantIds,
     answerShortTexts,
     answerImageUrls,
     answerProbs,
+    answerColors,
     cpmmMulti2Enabled = CPMM_MULTI_2_CREATION_ENABLED,
     takerAPIOrdersDisabled,
     siblingContractId,
@@ -150,6 +162,7 @@ export function getNewContract(
         answerShortTexts,
         answerImageUrls,
         answerProbs,
+        answerColors,
         cpmmMulti2Enabled
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
@@ -235,6 +248,10 @@ export function getNewContract(
     sportsStartTimestamp,
     sportsEventId,
     sportsLeague,
+    sportsHomeTeam,
+    sportsAwayTeam,
+    sportsMarketType,
+    sportsEntrantIds,
 
     takerAPIOrdersDisabled,
     siblingContractId,
@@ -415,6 +432,7 @@ const getMultipleChoiceProps = (
   shortTexts?: string[],
   imageUrls?: string[],
   answerProbs?: number[],
+  answerColors?: string[],
   cpmmMulti2Enabled?: boolean
 ) => {
   const isBinaryMulti =
@@ -434,7 +452,7 @@ const getMultipleChoiceProps = (
     ante,
     answersWithOther,
     removeUndefinedProps({
-      colors: isBinaryMulti ? VERSUS_COLORS : undefined,
+      colors: answerColors ?? (isBinaryMulti ? VERSUS_COLORS : undefined),
       shortTexts,
       imageUrls,
       probs: answerProbs

@@ -16,6 +16,7 @@ import { MapContractsDictionary } from 'web/public/data/elections-data'
 import { ElectionBalance } from './election-balance'
 import { sourceAudit } from './audited-sources'
 import { RaceDetailsPanel } from './race-details-panel'
+import { RaceLinkedMarkets } from './race-linked-markets'
 import { useMapCamera } from './use-map-camera'
 import { Bounds, Point } from './map-camera'
 import { BallotMeasureCard } from './ballot-measure-card'
@@ -59,6 +60,7 @@ import {
   leaderSplit,
 } from './seat-bar-selection'
 import { formatOdds, labelInk, LIGHT_LABEL, plural } from './election-display'
+import { matchesSearchQuery, splitSearchQuery } from './election-search'
 import { ExplorerMode, isKnownRace } from './explorer-url'
 import { useExplorerUrl } from './use-explorer-url'
 import { ChamberTabs, modeName } from './chamber-tabs'
@@ -319,8 +321,12 @@ export function ElectionExplorer(props: Props) {
     [isMeasures, mode]
   )
   const matchesHeld = (seat: HeldSeat) =>
-    matchesStateQuery(seat.state, query) ||
-    seat.member.name.toLowerCase().includes(query.trim().toLowerCase())
+    matchesSearchQuery(
+      query,
+      (term) =>
+        matchesStateQuery(seat.state, term) ||
+        seat.member.name.toLowerCase().includes(term.toLowerCase())
+    )
   const heldListed = filter
     ? held.filter((s) => heldInSelection(barSelection, s) && matchesHeld(s))
     : []
@@ -338,7 +344,7 @@ export function ElectionExplorer(props: Props) {
             .map((s) => s.state),
         ]
   )
-  const searching = !!query.trim()
+  const searching = splitSearchQuery(query).length > 0
   const narrowed = searching || filter
   const noElectionMatches =
     mode === 'house' || filter || !searching
@@ -453,7 +459,7 @@ export function ElectionExplorer(props: Props) {
     setDockVersion((v) => v + 1)
   }, [shapes, mode, selected])
 
-  // Search frames its results: a single race or one state's districts.
+  // Search frames all matching races and states.
   const highlightKey = searching ? highlighted.join(',') : ''
   useEffect(() => {
     if (!shapes.length) return
@@ -507,7 +513,6 @@ export function ElectionExplorer(props: Props) {
     setHovered(undefined)
     setBarSelection([])
     setPreview(undefined)
-    setQuery('')
     setRoving(undefined)
     resetView()
   }
@@ -837,6 +842,7 @@ export function ElectionExplorer(props: Props) {
                 <SearchIcon aria-hidden />
                 <input
                   ref={searchRef}
+                  title="Separate searches with commas"
                   aria-label={
                     isMeasures
                       ? 'Find a state, proposition or topic'
@@ -1405,6 +1411,7 @@ export function ElectionExplorer(props: Props) {
                         ? candidate
                         : undefined
                     }
+                    linkedCandidate={candidate}
                   />
                 )}
               </>
@@ -1529,8 +1536,11 @@ function SelectedRace(props: {
   race: Race
   mode: ElectionMode
   candidate?: Contract | null
+  // The candidate market whether or not it's shown as its own section: a
+  // market linked to it still belongs under this race.
+  linkedCandidate?: Contract | null
 }) {
-  const { race, mode, candidate } = props
+  const { race, mode, candidate, linkedCandidate } = props
   const tier = raceTier(race)
   const portfolio =
     race.answerId &&
@@ -1605,6 +1615,14 @@ function SelectedRace(props: {
           <SourceNotes contract={candidate} />
         </div>
       )}
+      {/* Props and lines on this race, where the candidate market used to be
+          the only extra. Remounts per race so one race's list never shows
+          under another. */}
+      <RaceLinkedMarkets
+        key={race.id}
+        race={race}
+        candidate={linkedCandidate}
+      />
     </>
   )
 }

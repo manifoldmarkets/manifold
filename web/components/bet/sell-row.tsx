@@ -11,6 +11,7 @@ import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
+import { ModActionTag } from '../moderation/mod-action'
 import { OutcomeLabel } from '../outcome-label'
 import { Title } from '../widgets/title'
 import { MoneyDisplay } from './money-display'
@@ -142,7 +143,8 @@ export function SellSharesModal(props: {
         )}
       >
         <h2 className="text-ink-900 mb-4 text-xl font-semibold">
-          {sellForUserId ? 'Admin: Sell user position' : 'Sell position'}
+          {sellForUserId && <ModActionTag admin className="mr-2" />}
+          {sellForUserId ? 'Sell user position' : 'Sell position'}
         </h2>
 
         <p className="text-ink-600 mb-5 text-sm leading-relaxed">

@@ -31,6 +31,7 @@ import {
   insertLatestManaStats,
 } from 'shared/calculate-mana-stats'
 import { getFeedConversionScores } from 'shared/feed-analytics'
+import { getSurfaceFunnelsForDay } from 'shared/surface-funnel-analytics'
 import { buildArray } from 'common/util/array'
 import { type Tables } from 'common/supabase/utils'
 import { recalculateAllUserPortfolios } from 'shared/mana-supply'
@@ -189,6 +190,7 @@ export const updateStatsBetween = async (
   await updateActivityStats(pg, start, end)
   await updateDailySales(pg, start, end)
   await updateConversionScores(pg, start, end)
+  await updateSurfaceFunnels(pg, start, end)
 }
 
 /**
@@ -1016,6 +1018,50 @@ async function updateConversionScores(
   const scores = await getFeedConversionScores(pg, start, end)
   log('upsert feed conversion')
   await bulkUpsertStats(pg, scores)
+}
+
+// Sports, Midterms and Perps page funnels (daily_surface_funnels). A finished
+// LA day's events never change, and each day reads a full day of user_events
+// (~6s, ~80MB from disk on prod in 2026-10), so only days with no row yet are
+// computed: normally just yesterday. The window covers [start, end) and the
+// last MAX_RECOVERY_DAYS, so a timeout or a missed run is repaired by the next
+// run without widening the rest of the stats run. To recompute a day, delete
+// its row first. Today is never computed, even if `end` (from the manual
+// script) is later, since a stored partial day would never be redone. One day
+// per query and per upsert, so a timeout keeps the days already written.
+async function updateSurfaceFunnels(
+  pg: SupabaseDirectClient,
+  start: string,
+  requestedEnd: string
+) {
+  const today = dayjs().tz('America/Los_Angeles').format('YYYY-MM-DD')
+  const end = requestedEnd < today ? requestedEnd : today
+  const days = await pg.map(
+    `select d::date::text as day
+    from generate_series(
+      least($1::date, $2::date - $3::int), $2::date - 1, interval '1 day'
+    ) d
+    where not exists (
+      select 1 from daily_surface_funnels f where f.start_date = d::date
+    )
+    order by 1`,
+    [start, end, MAX_RECOVERY_DAYS],
+    (r) => r.day as string
+  )
+  log(`calculate page funnels for ${days.length} day(s)`)
+  for (const day of days) {
+    const next = dayjs(day).add(1, 'day').format('YYYY-MM-DD')
+    const funnels = await withChunkTimeout(pg, (tx) =>
+      getSurfaceFunnelsForDay(tx, day, next)
+    )
+    await pg.none(
+      `insert into daily_surface_funnels (start_date, funnels)
+      values ($1, $2)
+      on conflict (start_date) do update
+        set funnels = excluded.funnels, updated_time = now()`,
+      [day, funnels]
+    )
+  }
 }
 
 const retention = (

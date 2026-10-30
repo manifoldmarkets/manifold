@@ -22,7 +22,7 @@ import { MINUTE_MS } from 'common/util/time'
 import { EXPIRATION_OPTIONS } from 'web/components/bet/order-expiration-options'
 import dayjs from 'dayjs'
 import { capitalize, clamp } from 'lodash'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { LuShare } from 'react-icons/lu'
 import { Input } from 'web/components/widgets/input'
@@ -54,6 +54,8 @@ export default function LimitOrderPanel(props: {
   unfilledBets: LimitBet[]
   balanceByUserId: { [userId: string]: number }
   onBuySuccess?: () => void
+  onBetPlaced?: (bet: Bet) => void
+  location?: string
   className?: string
   betAmount?: number
   outcome: 'YES' | 'NO' | undefined
@@ -70,6 +72,7 @@ export default function LimitOrderPanel(props: {
   initialProb?: number
   expiration?: number
   prefillTimestamp?: number
+  compact?: boolean
 }) {
   const {
     contract,
@@ -79,9 +82,13 @@ export default function LimitOrderPanel(props: {
     user,
     outcome,
     onBuySuccess,
+    onBetPlaced,
+    location = 'bet panel',
     pseudonym,
     expiration,
+    compact = false,
   } = props
+  const limitProbInputId = useId()
   const { pseudonymColor } = pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
   const isBinaryMC = isBinaryMulti(contract)
   const binaryMCColors = isBinaryMC
@@ -313,8 +320,9 @@ export default function LimitOrderPanel(props: {
         id: bet.betId,
         userId: user.id,
       }
+      onBetPlaced?.(fullBet)
       track('bet', {
-        location: 'bet panel',
+        location,
         outcomeType: contract.outcomeType,
         slug: contract.slug,
         contractId: contract.id,
@@ -390,6 +398,7 @@ export default function LimitOrderPanel(props: {
           {capitalize(TRADE_TERM)} amount
         </Row>
         <BuyAmountInput
+          compact={compact}
           parentClassName="max-w-full mt-1"
           amount={betAmount}
           onChange={onBetChange}
@@ -401,18 +410,22 @@ export default function LimitOrderPanel(props: {
           sliderColor={pseudonymColor}
         />
       </Col>
-      <Col className="relative mt-6 w-full gap-1">
-        <div className="text-ink-600">
+      <Col className={clsx('relative w-full gap-1', compact ? 'mt-2' : 'mt-6')}>
+        <label htmlFor={limitProbInputId} className="text-ink-600">
           {isPseudoNumeric ? 'Value' : `Probability (%)`}
-        </div>
+        </label>
         <Row>
-          <label className="font-sm md:font-lg relative w-full">
+          <div className="font-sm md:font-lg relative w-full">
             <Input
+              id={limitProbInputId}
+              aria-label={
+                isPseudoNumeric ? 'Limit value' : 'Limit probability (%)'
+              }
               type="number"
               min={isPseudoNumeric ? contract.min : 1}
               max={isPseudoNumeric ? contract.max : 99}
               step={1}
-              className="h-[60px] w-full !text-xl"
+              className={clsx('w-full !text-xl', compact ? 'h-12' : 'h-[60px]')}
               value={limitProbInt ?? ''}
               onChange={(e) => {
                 const val =
@@ -420,7 +433,12 @@ export default function LimitOrderPanel(props: {
                 setLimitProbIntClamped(val)
               }}
             />
-            <Row className="absolute right-2 top-3.5 gap-1.5 sm:gap-2">
+            <Row
+              className={clsx(
+                'absolute right-2 gap-1.5 sm:gap-2',
+                compact ? 'top-2' : 'top-3.5'
+              )}
+            >
               <button
                 className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1.5 text-sm sm:px-3"
                 onClick={() => {
@@ -462,7 +480,7 @@ export default function LimitOrderPanel(props: {
                 +5
               </button>
             </Row>
-          </label>
+          </div>
         </Row>
 
         <ProbabilitySlider
@@ -474,7 +492,7 @@ export default function LimitOrderPanel(props: {
         />
       </Col>
 
-      <Col className="mt-6 gap-2">
+      <Col className={clsx('gap-2', compact ? 'mt-2' : 'mt-6')}>
         <DropdownMenu
           buttonContent={
             <Row className="items-center gap-1">
@@ -583,6 +601,8 @@ export default function LimitOrderPanel(props: {
                         setIsEditingPayout(false)
                       }
                     }}
+                    // Focus follows the click on the payout.
+                    // eslint-disable-next-line jsx-a11y/no-autofocus
                     autoFocus
                     min={1}
                     step={1}
@@ -590,7 +610,9 @@ export default function LimitOrderPanel(props: {
                     onChangeAmount={setEditablePayout}
                   />
                 ) : (
-                  <span
+                  <button
+                    type="button"
+                    aria-label="Edit payout"
                     className="cursor-pointer hover:underline"
                     onClick={() => {
                       setEditablePayout(Math.floor(currentPayout))
@@ -601,7 +623,7 @@ export default function LimitOrderPanel(props: {
                       amount={currentPayout}
                       isCashContract={isCashContract}
                     />
-                  </span>
+                  </button>
                 )}
               </span>
               {!isEditingPayout && <>({returnPercent})</>}
@@ -617,13 +639,24 @@ export default function LimitOrderPanel(props: {
                   size="xl"
                   disabled={betDisabled}
                   color={
-                    (pseudonymColor as any) ??
-                    (hideYesNo ? 'none' : outcome === 'YES' ? 'green' : 'red')
+                    // The compact ticket keeps Yes=green, No=red.
+                    compact
+                      ? outcome === 'YES'
+                        ? 'green'
+                        : 'red'
+                      : (pseudonymColor as any) ??
+                        (hideYesNo
+                          ? 'none'
+                          : outcome === 'YES'
+                          ? 'green'
+                          : 'red')
                   }
                   loading={isSubmitting}
                   className={clsx('flex-1 text-white')}
                   style={{
-                    backgroundColor: binaryMCColors?.[outcome == 'YES' ? 0 : 1],
+                    backgroundColor: compact
+                      ? undefined
+                      : binaryMCColors?.[outcome == 'YES' ? 0 : 1],
                   }}
                   onClick={submitBet}
                 >

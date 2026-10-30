@@ -42,6 +42,14 @@
     outline: none;
   }
   :root {
+    /* Team colours for sports match cards / bet panels (home, away, draw). */
+    --sports-team-a: #1a7a9a;
+    --sports-team-a-vibrant: #0a8fad;
+    --sports-team-b: #8b3a52;
+    --sports-team-b-vibrant: #c4436e;
+    --sports-draw: #6b7a8e;
+    --sports-draw-vibrant: #7a8ca0;
+
     --color-ink-0: 255 255 255;
     --color-ink-50: 248 248 252;
     --color-ink-100: 236 237 248;
@@ -97,6 +105,11 @@
     --color-yes-950: 4 47 46;
   }
   .dark {
+    --sports-team-a-vibrant: #25c4e8;
+    --sports-team-b-vibrant: #e85a8a;
+    --sports-draw: #7a8a9e;
+    --sports-draw-vibrant: #a8aabf;
+
     color-scheme: dark;
 
     --color-ink-1000: 255 255 255;
@@ -580,4 +593,72 @@ text {
   inset: 0;
   border-radius: 6px;
   background: inherit;
+}
+
+/* Waving American flag spotlight behind a nav item; follows the cursor, only visible while hovered.
+   Disabled on touch devices, where there is no hover. The wave only animates while hovered,
+   and not at all under prefers-reduced-motion. */
+@media (hover: hover) and (pointer: fine) {
+  @keyframes flag-wave-shade {
+    from {
+      background-position: 0 0, 0 0, 0 0;
+    }
+    to {
+      background-position: 48px 0, 0 0, 0 0;
+    }
+  }
+  .flag-hover-item {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+  .flag-hover-item::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    background-image: repeating-linear-gradient(
+        100deg,
+        rgba(255, 255, 255, 0.4) 0px,
+        rgba(0, 0, 0, 0.3) 12px,
+        rgba(255, 255, 255, 0.4) 24px,
+        rgba(0, 0, 0, 0.3) 36px,
+        rgba(255, 255, 255, 0.4) 48px
+      ),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 39' preserveAspectRatio='none'%3E%3Crect width='52' height='39' fill='%233c3b6e'/%3E%3Ccircle cx='6' cy='6' r='1.2' fill='white'/%3E%3Ccircle cx='16' cy='6' r='1.2' fill='white'/%3E%3Ccircle cx='26' cy='6' r='1.2' fill='white'/%3E%3Ccircle cx='36' cy='6' r='1.2' fill='white'/%3E%3Ccircle cx='46' cy='6' r='1.2' fill='white'/%3E%3Ccircle cx='6' cy='15' r='1.2' fill='white'/%3E%3Ccircle cx='16' cy='15' r='1.2' fill='white'/%3E%3Ccircle cx='26' cy='15' r='1.2' fill='white'/%3E%3Ccircle cx='36' cy='15' r='1.2' fill='white'/%3E%3Ccircle cx='46' cy='15' r='1.2' fill='white'/%3E%3Ccircle cx='6' cy='24' r='1.2' fill='white'/%3E%3Ccircle cx='16' cy='24' r='1.2' fill='white'/%3E%3Ccircle cx='26' cy='24' r='1.2' fill='white'/%3E%3Ccircle cx='36' cy='24' r='1.2' fill='white'/%3E%3Ccircle cx='46' cy='24' r='1.2' fill='white'/%3E%3Ccircle cx='6' cy='33' r='1.2' fill='white'/%3E%3Ccircle cx='16' cy='33' r='1.2' fill='white'/%3E%3Ccircle cx='26' cy='33' r='1.2' fill='white'/%3E%3Ccircle cx='36' cy='33' r='1.2' fill='white'/%3E%3Ccircle cx='46' cy='33' r='1.2' fill='white'/%3E%3C/svg%3E"),
+      repeating-linear-gradient(
+        180deg,
+        #b22234 0%,
+        #b22234 14.28%,
+        #fff 14.28%,
+        #fff 28.57%
+      );
+    background-size: 48px 100%, 40% 57%, 100% 100%;
+    background-repeat: repeat-x, no-repeat, no-repeat;
+    -webkit-mask-image: radial-gradient(
+      circle 56px at var(--flag-x, 50%) var(--flag-y, 50%),
+      #000 0%,
+      transparent 100%
+    );
+    mask-image: radial-gradient(
+      circle 56px at var(--flag-x, 50%) var(--flag-y, 50%),
+      #000 0%,
+      transparent 100%
+    );
+    animation: flag-wave-shade 3s linear infinite;
+    animation-play-state: paused;
+  }
+  .flag-hover-item:hover::before {
+    opacity: 0.55;
+    animation-play-state: running;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flag-hover-item::before {
+    animation: none;
+  }
 }
