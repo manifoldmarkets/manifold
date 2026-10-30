@@ -46,6 +46,11 @@ export const CustomWebview = (props: {
   // start strands us when a navigation is abandoned (the user leaving for the
   // OAuth flow), because onLoad then never fires to restore it.
   onNavigate: (url: string | null, phase: 'start' | 'commit') => void
+  // False while the page has asked for pull-to-refresh to be off (Android).
+  // Android gives a downward swipe at the top of the page to the refresh
+  // control before the page sees it, so a page that drags things downward,
+  // like Predictle's cards, can't claim the swipe itself.
+  pullToRefreshAllowed: boolean
   display: boolean
 }) => {
   const {
@@ -58,6 +63,7 @@ export const CustomWebview = (props: {
     handleMessageFromWebview,
     handleExternalLink,
     onNavigate,
+    pullToRefreshAllowed,
     display,
   } = props
 
@@ -86,7 +92,7 @@ export const CustomWebview = (props: {
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              enabled={refresherEnabled}
+              enabled={refresherEnabled && pullToRefreshAllowed}
               onRefresh={() => {
                 webview.current?.reload()
                 setRefreshing(true)

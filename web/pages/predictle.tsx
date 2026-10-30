@@ -23,6 +23,7 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { useImmediateTouchSensor } from 'web/hooks/use-immediate-touch-sensor'
+import { useDisableNativePullToRefresh } from 'web/hooks/use-disable-native-pull-to-refresh'
 
 // On touch, swiping a card drags it right away instead of scrolling the page
 const DRAG_SENSORS = [
@@ -769,6 +770,8 @@ Play at ${url}`
 export default function PredictlePage() {
   const user = useUser()
   useSaveReferral(user)
+  // In the Android app, a downward swipe on a card would otherwise refresh the page
+  useDisableNativePullToRefresh()
 
   const { data, loading } = useAPIGetter('get-predictle-markets', {})
 
