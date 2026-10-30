@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { getBetPoints } from 'common/bets'
 import { getDisplayProbability } from 'common/calculate'
 import { BinaryContract } from 'common/contract'
+import { YES_GRAPH_COLOR } from 'common/envs/constants'
 import { WEEK_MS } from 'common/util/time'
 import { useEffect, useId, useState } from 'react'
 
@@ -100,15 +101,12 @@ function SparklinePath(props: {
     d += ` H ${sx(series[i].x)} V ${sy(series[i].y)}`
   }
   const area = `${d} V 32 H 0 Z`
-  const up = series[series.length - 1].y >= series[0].y
   return (
     <svg
       viewBox="0 0 100 32"
       preserveAspectRatio="none"
-      className={clsx(
-        'absolute inset-0 h-full w-full overflow-visible',
-        up ? 'text-teal-500' : 'text-scarlet-500'
-      )}
+      className="absolute inset-0 h-full w-full overflow-visible"
+      style={{ color: YES_GRAPH_COLOR }}
       aria-hidden
     >
       <defs>

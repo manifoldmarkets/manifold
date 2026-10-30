@@ -12,7 +12,13 @@ import Link from 'next/link'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { track } from 'web/lib/service/analytics'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
-import { BoostedTag, ChangeBadge } from './market-card'
+import {
+  BoostedTag,
+  ChangeBadge,
+  MarketListRow,
+  TradeButton,
+} from './market-card'
+import { BrowseLayout } from './lens-bar'
 import { useBrowseTopics } from './browse-topics'
 import { isHubMarket } from './hub-fold'
 import { BrowseMarketsQuery, useBrowseMarkets } from './use-browse-markets'
@@ -29,9 +35,13 @@ function useShelf(query: BrowseMarketsQuery, size: number, fold: boolean) {
   )
 }
 
-// Horizontal strip of binary markets that moved most in the last day.
-export function MoversStrip(props: { scope: Scope; fold: boolean }) {
-  const { scope, fold } = props
+// Match the main feed's layout for markets that moved most in the last day.
+export function MoversStrip(props: {
+  scope: Scope
+  fold: boolean
+  layout: BrowseLayout
+}) {
+  const { scope, fold, layout } = props
   const contracts = useShelf(
     {
       sort: 'daily-score',
@@ -62,22 +72,43 @@ export function MoversStrip(props: { scope: Scope; fold: boolean }) {
       >
         Moving today
       </h2>
-      <div className="-mx-2 flex gap-2 overflow-x-auto px-2 pb-1 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0">
-        {contracts
-          ? movers.map((c, i) => (
-              <MoverTile
-                key={c.id}
-                contract={c}
-                className={i >= 4 ? 'md:hidden' : undefined}
-              />
-            ))
-          : Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-ink-100 h-[88px] w-56 shrink-0 animate-pulse rounded-xl md:w-auto"
-              />
-            ))}
-      </div>
+      {layout === 'list' ? (
+        <div className="border-ink-200 border-y py-1">
+          {contracts
+            ? movers
+                .slice(0, 4)
+                .map((contract) => (
+                  <MarketListRow
+                    key={contract.id}
+                    contract={contract}
+                    section="browse-v2 movers list"
+                  />
+                ))
+            : Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-ink-100 my-2 h-12 animate-pulse rounded"
+                />
+              ))}
+        </div>
+      ) : (
+        <div className="-mx-2 flex gap-2 overflow-x-auto px-2 pb-1 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0 xl:grid-cols-4">
+          {contracts
+            ? movers.map((c, i) => (
+                <MoverTile
+                  key={c.id}
+                  contract={c}
+                  className={i >= 4 ? 'md:hidden' : undefined}
+                />
+              ))
+            : Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-ink-100 h-[88px] w-56 shrink-0 animate-pulse rounded-xl md:w-auto"
+                />
+              ))}
+        </div>
+      )}
     </section>
   )
 }
@@ -111,6 +142,9 @@ function MoverTile(props: { contract: BinaryContract; className?: string }) {
         </span>
         <ChangeBadge up={up} points={change} />
         {contract.boosted && <BoostedTag iconOnly />}
+        <span className="ml-auto">
+          <TradeButton contract={contract} compact />
+        </span>
       </span>
     </Link>
   )

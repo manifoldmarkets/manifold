@@ -273,19 +273,19 @@ function BrowseV2Inner() {
   const section = `browse-v2 ${searching ? 'search' : lens} ${layout}`
 
   return (
-    <div className="flex w-full flex-col gap-3 px-3 pb-10 sm:gap-4 lg:px-0 lg:pt-1">
+    <div className="flex w-full flex-col gap-2 px-3 pb-10 lg:px-0">
       <div
         ref={searchRef}
         aria-hidden={hideControls || undefined}
         className={clsx(
-          'bg-canvas-0 sticky top-0 z-30 -mx-3 flex h-[50px] shrink-0 items-center gap-2 px-3 py-1 transition-[transform,visibility] duration-150 motion-reduce:transition-none sm:static sm:mx-0 sm:h-auto sm:gap-3 sm:px-0 sm:py-0',
+          'bg-canvas-0 sticky top-0 z-30 -mx-3 flex h-[44px] shrink-0 items-center gap-2 px-3 py-0.5 transition-[transform,visibility] duration-150 motion-reduce:transition-none sm:static sm:mx-0 sm:h-auto sm:px-0 sm:py-0',
           hideControls && 'pointer-events-none invisible -translate-y-full'
         )}
       >
-        <h1 className="text-ink-1000 hidden text-2xl font-semibold sm:block">
+        <h1 className="text-ink-1000 hidden text-base font-semibold sm:block">
           Browse
         </h1>
-        <label className="border-ink-300 focus-within:border-primary-500 bg-canvas-0 flex min-w-0 flex-1 items-center gap-2 rounded-full border px-3.5 py-2 transition-colors">
+        <label className="border-ink-300 focus-within:border-primary-500 bg-canvas-0 flex min-w-0 flex-1 items-center gap-2 rounded-full border px-3 py-1.5 transition-colors">
           <SearchIcon className="text-ink-400 h-5 w-5 shrink-0" />
           <span className="sr-only">Search markets</span>
           <input
@@ -293,7 +293,7 @@ function BrowseV2Inner() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Search markets"
-            className="text-ink-1000 placeholder:text-ink-400 min-w-0 flex-1 border-0 bg-transparent p-0 text-base focus:outline-none focus:ring-0"
+            className="text-ink-1000 placeholder:text-ink-400 min-w-0 flex-1 border-0 bg-transparent p-0 text-base focus:outline-none focus:ring-0 sm:text-sm"
           />
           {input && (
             <button
@@ -329,9 +329,9 @@ function BrowseV2Inner() {
         ref={filtersRef}
         aria-hidden={hideControls || undefined}
         className={clsx(
-          'bg-canvas-0 sticky top-[50px] z-20 -mx-3 px-3 py-1 transition-[transform,visibility] duration-150 motion-reduce:transition-none sm:top-0 sm:py-2 lg:mx-0 lg:px-0',
+          'bg-canvas-0 sticky top-[44px] z-20 -mx-3 px-3 py-0.5 transition-[transform,visibility] duration-150 motion-reduce:transition-none sm:top-0 lg:mx-0 lg:px-0',
           hideControls &&
-            'pointer-events-none invisible -translate-y-[calc(100%+50px)]'
+            'pointer-events-none invisible -translate-y-[calc(100%+44px)]'
         )}
       >
         <LensBar
@@ -351,26 +351,27 @@ function BrowseV2Inner() {
       </div>
 
       <div className="flex gap-4 xl:gap-8">
-        <div className="flex w-full min-w-0 shrink-0 flex-col gap-6">
-          {urlReady && showMovers && !isMobile && (
-            <MoversStrip scope={scope} fold={fold} />
+        <div className="flex w-full min-w-0 shrink-0 flex-col gap-4">
+          {urlReady && showMovers && !isMobile && lens !== 'best' && (
+            <MoversStrip scope={scope} fold={fold} layout={layout} />
           )}
 
           <section
             aria-labelledby="browse-results"
-            className="flex flex-col gap-3"
+            className="flex flex-col gap-2"
           >
             <h2
               id="browse-results"
-              className="text-ink-900 text-sm font-semibold uppercase tracking-wide"
+              className={clsx(
+                'text-ink-900 text-xs font-semibold',
+                !searching && topic.key === 'all' && 'sr-only'
+              )}
             >
               {heading}
             </h2>
             {fold && folded > 0 && (
-              <p className="text-ink-500 -mt-2 text-xs">
-                {folded} perps and small sports or race{' '}
-                {folded === 1 ? 'market is' : 'markets are'} in their hubs
-                above.{' '}
+              <p className="text-ink-500 text-xs leading-4">
+                {folded} {folded === 1 ? 'market' : 'markets'} in hubs.{' '}
                 <button
                   type="button"
                   onClick={() =>
@@ -389,8 +390,8 @@ function BrowseV2Inner() {
               hasMore={hasMore}
               loadMore={loadMore}
               interlude={
-                urlReady && showMovers && isMobile ? (
-                  <MoversStrip scope={scope} fold={fold} />
+                urlReady && showMovers && (isMobile || lens === 'best') ? (
+                  <MoversStrip scope={scope} fold={fold} layout={layout} />
                 ) : undefined
               }
             />
@@ -443,10 +444,8 @@ function BrowseV2Inner() {
   )
 }
 
-// On phones the Moving today strip sits after the first few markets rather
-// than above them, so the first screen shows something to trade, while the
-// movers stay within the range of the list people actually look at.
-const INTERLUDE_AT = 5
+// Give Best and mobile feeds a full set of markets before the first break.
+const INTERLUDE_AT = 8
 
 function Results(props: {
   layout: BrowseLayout

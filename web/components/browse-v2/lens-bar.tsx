@@ -5,12 +5,16 @@ import {
   ViewGridIcon,
   ViewListIcon,
 } from '@heroicons/react/outline'
-import { ChevronDownIcon } from '@heroicons/react/solid'
+import {
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { APIParams } from 'common/api/schema'
 import { SEARCH_TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { removeEmojis } from 'common/util/string'
-import { ReactNode } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 
 type Params = APIParams<'search-markets-full'>
 export type Sort = NonNullable<Params['sort']>
@@ -158,16 +162,15 @@ export function LensBar(props: {
   const moreActive = MORE_SORTS.find((s) => s.key === lens)
 
   return (
-    // One row at every width. On narrow screens it scrolls sideways (with a
-    // fade at the edge) instead of wrapping into a second sticky row; the
-    // layout toggle stays pinned on the right.
-    <div className="flex items-center gap-2">
-      <div className="-mx-1 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1 [mask-image:linear-gradient(to_right,black_calc(100%-24px),transparent)] [scrollbar-width:none] lg:[mask-image:none]">
+    // Compact controls fit ordinary widths. Only the filters scroll when
+    // necessary; the layout switch always stays within reach.
+    <div className="flex min-w-0 items-center gap-1">
+      <ScrollableFilters>
         <div
           role="tablist"
           aria-label="Sort markets"
           className={clsx(
-            'flex shrink-0 items-center gap-0.5 sm:gap-1',
+            'flex shrink-0 items-center gap-0.5',
             searching && 'opacity-50'
           )}
         >
@@ -181,7 +184,7 @@ export function LensBar(props: {
                 aria-selected={selected}
                 onClick={() => onLens(l.key)}
                 className={clsx(
-                  'shrink-0 whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-sm',
+                  'shrink-0 whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium transition-colors',
                   selected
                     ? 'bg-ink-900 text-canvas-0'
                     : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900'
@@ -195,14 +198,14 @@ export function LensBar(props: {
             label={
               <span
                 className={clsx(
-                  'flex items-center gap-0.5 whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium transition-colors sm:gap-1 sm:px-3 sm:py-1.5 sm:text-sm',
+                  'flex items-center gap-0.5 whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium transition-colors',
                   moreActive && !searching
                     ? 'bg-ink-900 text-canvas-0'
                     : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900'
                 )}
               >
                 {moreActive ? moreActive.label : 'More'}
-                <ChevronDownIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                <ChevronDownIcon className="h-3 w-3" />
               </span>
             }
             panelClass="w-56 p-1"
@@ -225,7 +228,7 @@ export function LensBar(props: {
         </div>
 
         <span className="bg-ink-200 mx-0.5 h-5 w-px shrink-0 lg:hidden" />
-        <div className="flex shrink-0 items-center gap-1 sm:gap-2 lg:ml-auto">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           <MenuPopover
             label={<Pill active={topic.key !== 'all'}>{topic.label}</Pill>}
             panelClass="w-64 max-h-[60vh] overflow-y-auto p-1"
@@ -311,43 +314,112 @@ export function LensBar(props: {
           <button
             type="button"
             onClick={onYourTopics}
-            className="border-ink-300 text-ink-700 hover:border-ink-400 hidden shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium lg:flex"
+            className="border-ink-300 text-ink-700 hover:border-ink-400 hidden shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium xl:flex"
             title="Review the topics you follow and hide"
           >
-            <AdjustmentsIcon className="h-4 w-4" />
+            <AdjustmentsIcon className="h-3 w-3" />
             Your topics
           </button>
-          <div
-            className="border-ink-200 hidden shrink-0 rounded-lg border p-0.5 sm:flex"
-            role="group"
-            aria-label="Market layout"
+        </div>
+      </ScrollableFilters>
+      <div
+        className="border-ink-200 hidden shrink-0 rounded-lg border p-0.5 sm:flex"
+        role="group"
+        aria-label="Market layout"
+      >
+        {(
+          [
+            { value: 'cards', label: 'Card view', Icon: ViewGridIcon },
+            { value: 'list', label: 'List view', Icon: ViewListIcon },
+          ] as const
+        ).map(({ value, label, Icon }) => (
+          <button
+            key={value}
+            type="button"
+            aria-label={label}
+            title={label}
+            aria-pressed={layout === value}
+            onClick={() => onLayout(value)}
+            className={clsx(
+              'flex h-6 w-6 items-center justify-center rounded-md',
+              layout === value
+                ? 'bg-primary-50 text-primary-700'
+                : 'text-ink-400 hover:bg-canvas-100'
+            )}
           >
-            {(
-              [
-                { value: 'cards', label: 'Card view', Icon: ViewGridIcon },
-                { value: 'list', label: 'List view', Icon: ViewListIcon },
-              ] as const
-            ).map(({ value, label, Icon }) => (
-              <button
-                key={value}
-                type="button"
-                aria-label={label}
-                title={label}
-                aria-pressed={layout === value}
-                onClick={() => onLayout(value)}
-                className={clsx(
-                  'flex h-8 w-8 items-center justify-center rounded-md',
-                  layout === value
-                    ? 'bg-primary-50 text-primary-700'
-                    : 'text-ink-400 hover:bg-canvas-100'
-                )}
-              >
-                <Icon className="h-4 w-4" />
-              </button>
-            ))}
-          </div>
+            <Icon className="h-4 w-4" />
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ScrollableFilters(props: { children: ReactNode }) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const [edges, setEdges] = useState({ left: false, right: false })
+
+  useEffect(() => {
+    const scroller = scrollRef.current
+    const content = contentRef.current
+    if (!scroller || !content) return
+    const measure = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = scroller
+      setEdges({
+        left: scrollLeft > 1,
+        right: scrollWidth - clientWidth - scrollLeft > 1,
+      })
+    }
+    const observer = new ResizeObserver(measure)
+    observer.observe(scroller)
+    observer.observe(content)
+    scroller.addEventListener('scroll', measure, { passive: true })
+    measure()
+    return () => {
+      observer.disconnect()
+      scroller.removeEventListener('scroll', measure)
+    }
+  }, [])
+
+  const scroll = (direction: number) => {
+    const scroller = scrollRef.current
+    scroller?.scrollBy({
+      left: direction * Math.max(120, scroller.clientWidth * 0.75),
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        ? 'auto'
+        : 'smooth',
+    })
+  }
+
+  return (
+    <div className="group/filter-scroll relative min-w-0 flex-1">
+      <div ref={scrollRef} className="overflow-x-auto [scrollbar-width:none]">
+        <div
+          ref={contentRef}
+          className="flex w-max min-w-full items-center gap-1 py-0.5"
+        >
+          {props.children}
         </div>
       </div>
+      {(['left', 'right'] as const).map((side) => {
+        if (!edges[side]) return null
+        const Icon = side === 'left' ? ChevronLeftIcon : ChevronRightIcon
+        return (
+          <button
+            key={side}
+            type="button"
+            aria-label={`Scroll filters ${side}`}
+            onClick={() => scroll(side === 'left' ? -1 : 1)}
+            className={clsx(
+              'bg-canvas-0 border-ink-200 text-ink-700 hover:bg-ink-100 absolute top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border shadow transition-opacity focus-visible:opacity-100 group-focus-within/filter-scroll:opacity-100 group-hover/filter-scroll:opacity-100 [@media(hover:hover)]:opacity-0',
+              side === 'left' ? 'left-0' : 'right-0'
+            )}
+          >
+            <Icon className="h-4 w-4" />
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -516,14 +588,14 @@ function Pill(props: { active: boolean; children: ReactNode }) {
   return (
     <span
       className={clsx(
-        'flex items-center gap-0.5 whitespace-nowrap rounded-full border px-2 py-1 text-xs font-medium sm:gap-1 sm:px-3 sm:py-1.5 sm:text-sm',
+        'flex items-center gap-0.5 whitespace-nowrap rounded-full border px-2 py-1 text-xs font-medium',
         active
           ? 'border-primary-400 bg-primary-50 text-primary-700'
           : 'border-ink-300 text-ink-700 hover:border-ink-400'
       )}
     >
       <span className="max-w-[9rem] truncate">{children}</span>
-      <ChevronDownIcon className="h-3 w-3 shrink-0 sm:h-4 sm:w-4" />
+      <ChevronDownIcon className="h-3 w-3 shrink-0" />
     </span>
   )
 }

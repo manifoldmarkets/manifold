@@ -27,6 +27,7 @@ import { BsRocketTakeoff } from 'react-icons/bs'
 import { FaArrowDown, FaArrowUp } from 'react-icons/fa'
 
 import { BetDialog, MultiBetDialog } from 'web/components/bet/bet-dialog'
+import { getAnswerColor } from 'web/components/charts/contract/choice'
 import {
   ContractRow,
   ContractStatusLabel,
@@ -331,8 +332,11 @@ function TopAnswers(props: { contract: MultiContract }) {
             className="bg-ink-100 dark:bg-ink-200 relative overflow-hidden rounded-md"
           >
             <div
-              className="bg-primary-200 dark:bg-primary-300/40 absolute inset-y-0 left-0"
-              style={{ width: `${Math.max(0, Math.min(1, prob)) * 100}%` }}
+              className="absolute inset-y-0 left-0 opacity-60 dark:opacity-40"
+              style={{
+                width: `${Math.max(0, Math.min(1, prob)) * 100}%`,
+                backgroundColor: getAnswerColor(answer),
+              }}
             />
             <div className="relative flex items-center justify-between gap-3 px-2.5 py-1 text-sm">
               <span className="text-ink-900 truncate">{answer.text}</span>
@@ -495,7 +499,7 @@ function YesNoButtons(props: { contract: BinaryContract; compact?: boolean }) {
 
 // Trade button for everything that isn't a plain yes/no market, styled to
 // match the Yes and No buttons.
-function TradeButton(props: { contract: Contract; compact?: boolean }) {
+export function TradeButton(props: { contract: Contract; compact?: boolean }) {
   const { contract, compact } = props
   const user = useUser()
   const [open, setOpen] = useState(false)
