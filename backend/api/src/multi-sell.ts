@@ -69,16 +69,15 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
     )
     if (!answersToSell) throw new APIError(404, 'Answers not found')
 
-    const unfilledBetsAndBalances = await Promise.all(
-      answersToSell.map((answer) =>
-        getUnfilledBetsAndUserBalances(pgTrans, contract, uid, answer.id)
-      )
-    )
-    const unfilledBets = unfilledBetsAndBalances.flatMap((b) => b.unfilledBets)
-    let balancesByUserId: Record<string, number> = {}
-    unfilledBetsAndBalances.forEach((b) => {
-      balancesByUserId = { ...balancesByUserId, ...b.balanceByUserId }
-    })
+    // Load the whole contract's open limit orders, not just the sold answers':
+    // the sale also buys YES in every answer it is not selling and NO in every
+    // answer, so orders resting on the other answers fill too (and the
+    // sum-to-one check below must see them).
+    const {
+      unfilledBets,
+      balanceByUserId: balancesByUserId,
+      contractMetrics: makerMetrics,
+    } = await getUnfilledBetsAndUserBalances(pgTrans, contract, uid)
     const allMyMetrics = await getContractMetrics(
       pgTrans,
       [uid],
@@ -86,10 +85,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
       contract.answers.map((a) => a.id),
       true
     )
-    const contractMetrics = [
-      ...(unfilledBetsAndBalances.flatMap((b) => b.contractMetrics) ?? []),
-      ...allMyMetrics,
-    ]
+    const contractMetrics = [...makerMetrics, ...allMyMetrics]
 
     const userBets = await pgTrans.map(
       `select * from contract_bets
