@@ -42,6 +42,9 @@ export const PERP_FEED_TICKERS: Readonly<Record<string, string>> = {
   'qqqx-usd': 'QQQx',
   'nvdax-usd': 'NVDAx',
   'gldx-usd': 'GLDx',
+  // Adjacent's own ticker for the index; naming the market after it is part
+  // of the permission still owed by Adjacent (see the launch manifest).
+  'adjacent-msry': 'MSRY',
   // Retired feed (see the note in backend/shared/src/oracle-feeds.ts). Its
   // settled market page still renders the badge, so it keeps its name.
   'uk-grid-carbon': 'UKCO2',

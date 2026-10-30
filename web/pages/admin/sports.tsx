@@ -1,4 +1,5 @@
 import { ChevronDownIcon } from '@heroicons/react/solid'
+import { sortBy } from 'lodash'
 import { useEffect, useState } from 'react'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
@@ -17,6 +18,7 @@ import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { api, getSimilarGroupsToContract } from 'web/lib/api/api'
 import { APIResponse } from 'common/api/schema'
 import { ENV, ENV_CONFIG } from 'common/envs/constants'
+import { F1_DAYS_AHEAD } from 'common/f1-markets'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
 import { slugify } from 'common/util/slugify'
 import {
@@ -31,6 +33,7 @@ import { AdminCompetitionSwitches } from 'web/components/sports/admin-competitio
 import { AdminScorePolling } from 'web/components/sports/admin-score-polling'
 import clsx from 'clsx'
 import {
+  calendarEntriesFor,
   SPORT_LEAGUE_LABEL,
   SPORTS_CALENDAR,
   SportId,
@@ -59,11 +62,22 @@ type OddsApiCompetition = {
   label: string
   competitionId: string
   sportsLeague: string
+  /** Why every phase is locked: the dry run creates nothing until it's unlocked. */
+  locked?: string
+}
+// F1 from BALLDONTLIE (common/f1-markets.ts), created by hand on dev or prod.
+// The daily job creates them too, for a phase switched on.
+type F1Competition = {
+  type: 'bdl-f1'
+  label: string
+  competitionId: string
+  sportsLeague: string
 }
 type CompetitionOption =
   | ActiveCompetition
   | PendingCompetition
   | OddsApiCompetition
+  | F1Competition
 
 type SportCategory = {
   id: string
@@ -84,14 +98,27 @@ const CALENDAR_SPORTS: { id: SportId; label: string }[] = [
   { id: 'wnba', label: 'WNBA' },
   { id: 'nhl', label: 'NHL' },
   { id: 'cbb', label: 'College Basketball' },
+  { id: 'football', label: 'Football' },
+  { id: 'basketball', label: 'Basketball' },
+  { id: 'wcbb', label: 'WNCAAB' },
+  { id: 'hockey', label: 'Ice Hockey' },
+  { id: 'afl', label: 'AFL' },
+  { id: 'nrl', label: 'NRL' },
+  { id: 'handball', label: 'Handball' },
+  { id: 'tennis', label: 'Tennis' },
 ]
 
+// Competitions that can be created from here come first; those locked until
+// their settlement rule is validated follow, then those with no provider.
 function calendarCompetitions(sport: SportId): CompetitionOption[] {
   const seen = new Set<string>()
   const out: CompetitionOption[] = []
   for (const e of SPORTS_CALENDAR) {
     if (e.sport !== sport || seen.has(e.competitionId)) continue
     seen.add(e.competitionId)
+    const locked = calendarEntriesFor(e.competitionId).every((p) => p.locked)
+      ? e.locked
+      : undefined
     out.push(
       e.oddsKey
         ? {
@@ -99,11 +126,21 @@ function calendarCompetitions(sport: SportId): CompetitionOption[] {
             label: e.competition,
             competitionId: e.competitionId,
             sportsLeague: SPORT_LEAGUE_LABEL[e.sport],
+            locked,
+          }
+        : e.provider === 'bdl-f1'
+        ? {
+            type: 'bdl-f1',
+            label: e.competition,
+            competitionId: e.competitionId,
+            sportsLeague: SPORT_LEAGUE_LABEL[e.sport],
           }
         : { type: 'pending', label: e.competition }
     )
   }
-  return out
+  return sortBy(out, (c) =>
+    c.type === 'odds-api' ? (c.locked ? 1 : 0) : c.type === 'bdl-f1' ? 0 : 2
+  )
 }
 
 const SPORT_CATEGORIES: SportCategory[] = [
@@ -227,6 +264,8 @@ export default function SportsAdminPage() {
   // Active competitions have a wired TournamentConfig; pending ones don't yet.
   const isApiConnected = selectedCompetition.type === 'active'
   const isOddsApi = selectedCompetition.type === 'odds-api'
+  // F1 reuses the Odds API panel: preview, tick, create.
+  const isF1 = selectedCompetition.type === 'bdl-f1'
   // Keep a non-null tournament reference for existing logic — falls back to WC
   // when a pending competition is selected so the rest of the page doesn't crash.
   const [tournament, setTournament] = useState<TournamentConfig>(TOURNAMENTS[0])
@@ -456,7 +495,8 @@ export default function SportsAdminPage() {
     null
   )
   const oddsCompetitionId =
-    selectedCompetition.type === 'odds-api'
+    selectedCompetition.type === 'odds-api' ||
+    selectedCompetition.type === 'bdl-f1'
       ? selectedCompetition.competitionId
       : undefined
   useEffect(() => {
@@ -507,7 +547,8 @@ export default function SportsAdminPage() {
     setMarketsLoading(true)
     try {
       const leagueLabel =
-        selectedCompetition.type === 'odds-api'
+        selectedCompetition.type === 'odds-api' ||
+        selectedCompetition.type === 'bdl-f1'
           ? selectedCompetition.sportsLeague
           : tournament.sportsLeague
       const data = await api('sports-markets', {
@@ -571,16 +612,32 @@ export default function SportsAdminPage() {
   }
 
   async function runOddsApiCreate() {
-    if (selectedCompetition.type !== 'odds-api') return
+    if (
+      selectedCompetition.type !== 'odds-api' &&
+      selectedCompetition.type !== 'bdl-f1'
+    )
+      return
     setOddsApiCreating(true)
     setOddsApiResults([])
     try {
-      const data = await api('admin-sports-create-odds-markets', {
-        competitionId: selectedCompetition.competitionId,
-        dryRun: oddsApiDryRun,
-        eventIds:
-          oddsApiDryRun || !oddsApiSelected ? undefined : [...oddsApiSelected],
-      })
+      const picked =
+        oddsApiDryRun || !oddsApiSelected ? undefined : [...oddsApiSelected]
+      const data =
+        selectedCompetition.type === 'bdl-f1'
+          ? {
+              results: (
+                await api('admin-sports-create-f1-markets', {
+                  competitionId: selectedCompetition.competitionId,
+                  dryRun: oddsApiDryRun,
+                  keys: picked,
+                })
+              ).results.map(({ key, ...r }) => ({ ...r, eventId: key })),
+            }
+          : await api('admin-sports-create-odds-markets', {
+              competitionId: selectedCompetition.competitionId,
+              dryRun: oddsApiDryRun,
+              eventIds: picked,
+            })
       setOddsApiResults(data.results)
       setOddsApiRan(true)
       setOddsApiLogIsPreview(oddsApiDryRun)
@@ -854,7 +911,11 @@ export default function SportsAdminPage() {
                   {selectedSport.competitions.map((c) => (
                     <option key={c.label} value={c.label}>
                       {c.label}
-                      {c.type === 'pending' ? ' (API pending)' : ''}
+                      {c.type === 'pending'
+                        ? ' (API pending)'
+                        : c.type === 'odds-api' && c.locked
+                        ? ' (needs validation)'
+                        : ''}
                     </option>
                   ))}
                 </select>
@@ -870,10 +931,24 @@ export default function SportsAdminPage() {
                 </span>
                 <span className="font-mono">{tournament.footballDataCode}</span>
               </Col>
+            ) : selectedCompetition.type === 'odds-api' &&
+              selectedCompetition.locked ? (
+              <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                <span className="font-semibold">Needs validation</span> —{' '}
+                {selectedCompetition.locked}. The dry run below creates nothing
+                until the phase is unlocked in the calendar.
+              </div>
             ) : isOddsApi ? (
               <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
                 <span className="font-semibold">The Odds API</span> — market
                 creation available below
+              </div>
+            ) : isF1 ? (
+              <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
+                <span className="font-semibold">BALLDONTLIE</span> — market
+                creation available below. The daily job also creates them for a
+                phase switched on above, and the resolver pays them out two
+                hours after each closes.
               </div>
             ) : (
               <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
@@ -886,7 +961,7 @@ export default function SportsAdminPage() {
         </Section>
 
         {/* ── 2. Tournament Settings ── */}
-        {!isOddsApi && (
+        {!isOddsApi && !isF1 && (
           <Section
             title={`2. Competition Settings${
               !isApiConnected ? ' — unavailable' : ''
@@ -1123,20 +1198,48 @@ export default function SportsAdminPage() {
         )}
 
         {/* ── 3b. Odds API Market Creation (NFL, CFB, MLB, NBA, WNBA) ── */}
-        {isOddsApi && (
-          <Section title="3. Create Markets via The Odds API" defaultOpen>
+        {(isOddsApi || isF1) && (
+          <Section
+            title={
+              isF1
+                ? '3. Create F1 Markets via BALLDONTLIE'
+                : '3. Create Markets via The Odds API'
+            }
+            defaultOpen
+          >
             <Col className="gap-4">
-              <p className="text-ink-500 text-sm">
-                Fetches upcoming <strong>{selectedCompetition.label}</strong>{' '}
-                games from The Odds API (14-day window) and creates versus
-                markets (home vs away; home, away and Draw for soccer), opened
-                at the bookmakers&apos; devigged moneyline. Games that already
-                have a market are skipped and their kickoff is updated if the
-                provider has moved it; games with no line yet wait for the next
-                run, and one run creates at most 25 markets. Only phases
-                switched on above are included: switch one on to preview or
-                create its games.
-              </p>
+              {isF1 ? (
+                <p className="text-ink-500 text-sm">
+                  Fetches <strong>{selectedCompetition.label}</strong> sessions
+                  in the next {F1_DAYS_AHEAD} days from BALLDONTLIE and creates
+                  a race winner and a podium market per race, a sprint winner
+                  per sprint and a pole market per qualifying, with the
+                  season&apos;s driver standings as the answers and the opening
+                  prices. Practice and sprint qualifying are listed but get no
+                  market. Sessions that already have a market are skipped, and
+                  one run creates at most 12. Before the season&apos;s first
+                  weekend it also creates the drivers&apos; and
+                  constructors&apos; title markets, with last season&apos;s
+                  standings for the opening prices. Every phase is included,
+                  switched on or not: the switch only decides what the daily job
+                  creates. The sports-f1-resolve job resolves session markets
+                  from the classification two hours after each closes, and the
+                  titles from the final standings four days after the final
+                  race.
+                </p>
+              ) : (
+                <p className="text-ink-500 text-sm">
+                  Fetches upcoming <strong>{selectedCompetition.label}</strong>{' '}
+                  games from The Odds API (14-day window) and creates versus
+                  markets (home vs away; home, away and Draw for soccer), opened
+                  at the bookmakers&apos; devigged moneyline. Games that already
+                  have a market are skipped and their kickoff is updated if the
+                  provider has moved it; games with no line yet wait for the
+                  next run, and one run creates at most 25 markets. Only phases
+                  switched on above are included: switch one on to preview or
+                  create its games.
+                </p>
+              )}
               <Row className="items-center gap-3">
                 <span className="text-ink-600 text-xs">Dry run</span>
                 <ShortToggle on={oddsApiDryRun} setOn={setOddsApiDryRun} />
@@ -1158,7 +1261,11 @@ export default function SportsAdminPage() {
                       <LoadingIndicator size="sm" /> Creating…
                     </Row>
                   ) : oddsApiDryRun ? (
-                    'Preview upcoming games (dry run)'
+                    isF1 ? (
+                      'Preview upcoming sessions (dry run)'
+                    ) : (
+                      'Preview upcoming games (dry run)'
+                    )
                   ) : oddsApiSelected ? (
                     `Create ${oddsApiSelected.size} ticked ${
                       oddsApiSelected.size === 1 ? 'market' : 'markets'
@@ -1173,13 +1280,20 @@ export default function SportsAdminPage() {
                   </span>
                 )}
               </Row>
-              {oddsApiRan && oddsApiResults.length === 0 && (
-                <p className="text-ink-500 text-sm">
-                  No games to create: nothing in this competition&apos;s
-                  switched-on phases starts in the next 14 days. Switch a phase
-                  on above; dates are set in common/sports-calendar.ts.
-                </p>
-              )}
+              {oddsApiRan &&
+                oddsApiResults.length === 0 &&
+                (isF1 ? (
+                  <p className="text-ink-500 text-sm">
+                    No sessions to create: BALLDONTLIE lists none for this
+                    competition in the next {F1_DAYS_AHEAD} days.
+                  </p>
+                ) : (
+                  <p className="text-ink-500 text-sm">
+                    No games to create: nothing in this competition&apos;s
+                    switched-on phases starts in the next 14 days. Switch a
+                    phase on above; dates are set in common/sports-calendar.ts.
+                  </p>
+                ))}
               {oddsApiResults.length > 0 && (
                 <Col className="gap-1">
                   <p className="text-ink-600 text-sm font-medium">
@@ -1189,7 +1303,7 @@ export default function SportsAdminPage() {
                         (r) => r.status === 'created' || r.status === 'dry-run'
                       ).length
                     }{' '}
-                    games,{' '}
+                    {isF1 ? 'markets' : 'games'},{' '}
                     {
                       oddsApiResults.filter((r) => r.status === 'skipped')
                         .length
@@ -1240,7 +1354,13 @@ export default function SportsAdminPage() {
                           {r.question}
                         </span>
                         {r.reason && (
-                          <span className="text-ink-400 shrink-0">
+                          <span
+                            className={clsx(
+                              'text-ink-400',
+                              // An F1 preview's summary is long: wrap it.
+                              isF1 ? 'min-w-0 flex-1' : 'shrink-0'
+                            )}
+                          >
                             — {r.reason}
                           </span>
                         )}

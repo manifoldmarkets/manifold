@@ -2,22 +2,28 @@ import { ChevronDownIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { AnySportKey, SportInfo } from 'common/sports-schedule'
+import {
+  AnySportKey,
+  SportInfo,
+  sportPath,
+  SportSelection,
+} from 'common/sports-schedule'
 import { Carousel } from 'web/components/widgets/carousel'
 import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import { Row } from 'web/components/layout/row'
 import { track } from 'web/lib/service/analytics'
 
-export type SportSelection = AnySportKey | 'all'
+// Tabs every sports page has. The first tab differs (Upcoming on /sports,
+// Games on a sport), so switching sports from it opens the other one.
+const SHARED_TABS = ['markets', 'leaderboards', 'topic']
 
-export const sportPath = (sport: SportSelection) =>
-  sport === 'all' ? '/sports' : `/sports/${sport}`
-
-/** Links between sports keep the Markets tab open when it is. */
+/** Links between sports keep the open tab when the next page has it too. */
 export function useSportHref() {
   const router = useRouter()
+  const tab = router.query.tab
+  const keep = typeof tab === 'string' && SHARED_TABS.includes(tab)
   return (sport: SportSelection) =>
-    sportPath(sport) + (router.query.tab === 'markets' ? '?tab=markets' : '')
+    sportPath(sport) + (keep ? `?tab=${tab}` : '')
 }
 
 /**
@@ -33,8 +39,12 @@ export function SportRail(props: {
   const { sports, selected, counts, className } = props
   const hrefFor = useSportHref()
 
-  const withGames = sports.filter((s) => (counts[s.key] ?? 0) > 0)
-  const withoutGames = sports.filter(
+  const visibleSports = sports.filter(
+    (s) =>
+      s.groupIds.length > 0 || (counts[s.key] ?? 0) > 0 || s.key === selected
+  )
+  const withGames = visibleSports.filter((s) => (counts[s.key] ?? 0) > 0)
+  const withoutGames = visibleSports.filter(
     (s) => !(counts[s.key] ?? 0) && s.key !== 'other'
   )
   const totalGames = Object.values(counts).reduce<number>(
@@ -101,7 +111,7 @@ export function SportRail(props: {
         selectedItemName={selected}
         items={[
           { key: 'all', label: 'All sports', emoji: '🏟️' },
-          ...sports.filter((s) => s.key !== 'other'),
+          ...visibleSports.filter((s) => s.key !== 'other'),
         ].map((s) => ({
           name: s.key,
           isLink: true,

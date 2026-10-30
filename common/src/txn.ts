@@ -74,6 +74,8 @@ type AnyTxnType =
   | ShopRefund
   | MembershipPayment
   | PreKycBonus
+  | PerpOrderReserve
+  | PerpOrderRelease
   | PerpOpenMargin
   | PerpClosePayout
   | PerpTakerFee
@@ -895,3 +897,18 @@ export type SweepstakesTicketTxn = Txn & SweepstakesTicket
 export type ShopPurchaseTxn = Txn & ShopPurchase
 export type MembershipPaymentTxn = Txn & MembershipPayment
 export type PreKycBonusTxn = Txn & PreKycBonus
+
+type PerpOrderReserve = {
+  category: 'PERP_ORDER_RESERVE'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+  data: { orderId: string; contractId: string }
+}
+type PerpOrderRelease = {
+  category: 'PERP_ORDER_RELEASE'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
+  data: { orderId: string; contractId: string }
+}

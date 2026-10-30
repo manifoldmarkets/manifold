@@ -413,7 +413,20 @@ export type Poll = {
   maxSelections?: number // For multi-select: max options user can pick (defaults to all)
 }
 
-export type SportsMarketType = 'moneyline' | 'spread' | 'total' | 'prop'
+/**
+ * moneyline, spread, total, prop: markets about a game between two teams.
+ * winner, podium: markets about one session of a field event (a Grand Prix),
+ * whose answers are the entrants (see common/f1-markets.ts).
+ * title: a season's championship, whose answers are the drivers or teams.
+ */
+export type SportsMarketType =
+  | 'moneyline'
+  | 'spread'
+  | 'total'
+  | 'prop'
+  | 'winner'
+  | 'podium'
+  | 'title'
 
 export type Sports = {
   sportsStartTimestamp: string
@@ -427,6 +440,25 @@ export type Sports = {
   sportsAwayTeam?: string
   /** What the market is about the game; the sports page files it by this. */
   sportsMarketType?: SportsMarketType
+  /**
+   * A field event's entrants by answer index: the provider's id of the
+   * driver each answer stands for, null for the stand-in answer. The
+   * resolver matches results by id, never by name.
+   */
+  sportsEntrantIds?: (number | null)[]
+  /**
+   * A field event's session: when the pipeline first saw the provider mark
+   * it cancelled, cleared once it's seen otherwise. N/A waits for this to be
+   * old enough (common/f1-markets.ts F1_CANCEL_CONFIRM_HOURS).
+   */
+  sportsCanceledSince?: number
+  /**
+   * A field event's session: when the pipeline first saw it final, cleared
+   * once it's seen otherwise. A payout waits F1_RESOLVE_DELAY_HOURS from
+   * this as well as from the session's own time, so a stale or rewritten
+   * date can't bring it forward.
+   */
+  sportsFinalSince?: number
 }
 
 export type MultiContract =

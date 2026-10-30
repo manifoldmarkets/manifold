@@ -13,6 +13,7 @@ import {
 import { MINIMUM_BOUNTY } from 'common/economy'
 import { DOMAIN } from 'common/envs/constants'
 import { MAX_ID_LENGTH } from 'common/group'
+import { MARKET_LINK_RELATIONS } from 'common/market-links'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
 import { MAX_ANSWER_PROB, MIN_ANSWER_PROB } from 'common/new-contract'
 import { MIN_PERP_LEVERAGE, PERP_MIN_CLOSE_FRACTION } from 'common/perps/amm'
@@ -578,6 +579,9 @@ export const createMarketProps = z
         'Close time must be in the future.'
       )
       .optional(),
+    // Explicit POLL "Never" overrides a linked parent's deadline. Omission
+    // keeps the existing close-time default/inheritance behavior.
+    neverCloses: z.boolean().optional(),
     groupIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)).optional(),
     visibility: z.enum(VISIBILITIES).default('public').optional(),
     isTwitchContract: z.boolean().optional(),
@@ -589,6 +593,11 @@ export const createMarketProps = z
     sportsEventId: z.string().optional(),
     sportsLeague: z.string().optional(),
     takerAPIOrdersDisabled: coerceBoolean.optional(),
+    // The market this one is about (see common/market-links). Without an
+    // explicit close time, ordinary markets and polls inherit its deadline.
+    // Polls can request neverCloses; STONKs/bounties keep native defaults.
+    linkedToContractId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
+    linkRelation: z.enum(MARKET_LINK_RELATIONS).optional(),
   })
   .and(
     z.union([
@@ -602,6 +611,21 @@ export const createMarketProps = z
       createMultiDateSchema,
     ])
   )
+  .superRefine(({ neverCloses, outcomeType, closeTime }, ctx) => {
+    if (!neverCloses) return
+    if (outcomeType !== 'POLL')
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Only polls can explicitly request neverCloses.',
+        path: ['neverCloses'],
+      })
+    if (closeTime !== undefined)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Choose either neverCloses or closeTime, not both.',
+        path: ['closeTime'],
+      })
+  })
 
 export const updateMarketProps = z
   .object({

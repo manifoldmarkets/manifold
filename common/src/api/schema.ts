@@ -9,6 +9,7 @@ import {
   SocialPostDetail,
   SocialLikerPage,
 } from '../social-post'
+import { PerpOrder } from '../perps/orders'
 import { PerpSuggestion } from '../perps/suggestion'
 import { MNX_LINK_LOCATIONS } from 'common/perps/mnx-cta'
 import { MnxDashboard, perpConfigFields } from 'common/perps/management'
@@ -43,6 +44,7 @@ import {
   SearchGroupShape,
   Topic,
 } from 'common/group'
+import { MARKET_LINK_RELATIONS, MarketLinks } from 'common/market-links'
 import {
   JOB_INTERESTS,
   JOB_REGIONS,
@@ -65,7 +67,13 @@ import {
 import { Repost } from 'common/repost'
 import { ManaSupply } from 'common/stats'
 import { SportsMarket } from 'common/sports'
-import { SPORT_KEY_RE, SportsScheduleResponse } from 'common/sports-schedule'
+import {
+  SPORT_KEY_RE,
+  SportInfo,
+  SportsScheduleResponse,
+  SportsSubtopic,
+} from 'common/sports-schedule'
+import { SportsLeaderboards } from 'common/sports-leaderboards'
 import { CompetitionSwitchState } from 'common/sports-calendar'
 import { ScorePollingPanel } from 'common/sports-score-polling'
 import { Row } from 'common/supabase/utils'
@@ -1075,46 +1083,38 @@ export const API = (_apiTypeCheck = {
     returns: {} as LiteMarket,
     props: createPerpSchema,
   },
+  'internal-perp-order-effects': {
+    method: 'POST',
+    visibility: 'private',
+    authed: false,
+    returns: {} as { processed: number },
+    props: z
+      .object({
+        apiSecret: z.string().min(1),
+        orderIds: z.array(z.string().min(1)).max(25),
+      })
+      .strict(),
+  },
+  'get-perp-order': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { order: PerpOrder | null },
+    props: z.object({ contractId: z.string(), orderId: z.string().optional() }),
+    cache: 'no-store',
+  },
   'place-perp-trade': {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    returns: {} as {
-      position: {
-        userId: string
-        direction: 'long' | 'short'
-        size: number
-        costBasis: number
-        originalCostBasis: number
-        entryPrice: number
-        leverage: number
-        liquidationPrice: number
-      }
-      // Open-side taker fee charged on this call, in mana. Closing is free;
-      // a flip pays the fee on its newly opened leg only.
-      fee: number
-      // Effective rate actually charged (fee / added notional × 10_000) and
-      // the position's resulting share of the pool depth it was priced
-      // against — the authoritative numbers for bots and analytics. Absent
-      // only on idempotent replays of trades stored before these existed.
-      feeBps?: number
-      poolShareAfter?: number
-    },
+    returns: {} as { order: PerpOrder },
     props: placePerpTradeSchema,
   },
   'close-perp-position': {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    returns: {} as {
-      payout: number
-      pnl: number
-      /** Fraction actually closed, which can exceed the requested one when
-       * the remainder would have been dust. */
-      fraction: number
-      /** Notional left open; 0 when the whole position was closed. */
-      remainingSize: number
-    },
+    returns: {} as { order: PerpOrder },
     props: closePerpPositionSchema,
   },
   // The open-weight index halts on models it cannot classify. These two
@@ -1483,6 +1483,7 @@ export const API = (_apiTypeCheck = {
           ]),
           sportsLiveMinute: z.string().nullable(),
           sportsLiveUpdatedTime: z.number().finite(),
+          sportsScoreUpdatedTime: z.number().finite().nullable().optional(),
         }),
       })
       .strict(),
@@ -3663,6 +3664,11 @@ export const API = (_apiTypeCheck = {
           answers: z.array(z.string()).optional(),
           closeDate: z.string().optional(),
           closeHoursMinutes: z.string().optional(),
+          neverCloses: z.boolean().optional(),
+          hasManuallyEditedCloseDate: z.boolean().optional(),
+          inheritedCloseTimeFrom: z.string().optional(),
+          linkedToContractId: z.string().optional(),
+          linkRelation: z.enum(MARKET_LINK_RELATIONS).optional(),
           visibility: z.string(),
           selectedGroups: z.array(z.any()),
           savedAt: z.number(),
@@ -4892,6 +4898,23 @@ export const API = (_apiTypeCheck = {
       }[]
     },
   },
+  // Admins only: the /stats page funnels. Internal product metrics, so they
+  // are not in daily_stats or the page's static props.
+  'get-surface-funnels': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        limitDays: z.coerce.number().int().min(1).max(400).default(120),
+      })
+      .strict(),
+    returns: {} as {
+      // funnels is a SurfaceFunnels value (common/src/stat-surfaces.ts);
+      // read it with parseSurfaceFunnels.
+      days: { date: string; funnels: unknown }[]
+    },
+  },
   // Merch admin endpoints
   'get-merch-orders': {
     method: 'GET',
@@ -5175,9 +5198,82 @@ export const API = (_apiTypeCheck = {
           .max(64)
           .optional(),
         includeRelated: coerceBoolean.optional(),
+        // A topic under Sports (SportsSubtopic.id): only its games and markets.
+        topic: z.string().min(1).max(MAX_ID_LENGTH).optional(),
       })
       .strict(),
     returns: {} as SportsScheduleResponse,
+  },
+  // Every sport on the sports pages and every other topic under Sports, with
+  // the topics behind each. Topic pages use it to send a topic to its page
+  // there.
+  'sports-index': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=300, stale-while-revalidate=600',
+    props: z.object({}).strict(),
+    // `topics` is absent from an API that predates it.
+    returns: {} as { sports: SportInfo[]; topics?: SportsSubtopic[] },
+  },
+  // A sport's leaderboards ('all' for every sport), or with `topic` a topic's
+  // under Sports, and with `userId` where that user stands on them. The
+  // scheduler rebuilds them hourly. Empty boards for a sport or topic it
+  // doesn't know.
+  'sports-leaderboards': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=300, stale-while-revalidate=600',
+    props: z
+      .object({
+        sport: z.string().regex(SPORT_KEY_RE).optional(),
+        topic: z.string().min(1).max(MAX_ID_LENGTH).optional(),
+        userId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
+      })
+      .strict(),
+    returns: {} as SportsLeaderboards,
+  },
+
+  // Link a market to the market it's about (common/market-links), replacing
+  // any parent it had. The market's creator or a mod.
+  'link-market': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        contractId: z.string().min(1).max(MAX_ID_LENGTH),
+        parentContractId: z.string().min(1).max(MAX_ID_LENGTH),
+        relation: z.enum(MARKET_LINK_RELATIONS).optional(),
+      })
+      .strict(),
+    returns: {} as { success: true },
+  },
+  // Remove a market's link: its creator, the parent's creator, or a mod.
+  'unlink-market': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        contractId: z.string().min(1).max(MAX_ID_LENGTH),
+      })
+      .strict(),
+    returns: {} as { success: true },
+  },
+  // What a market is linked to and what's linked to it: a market's info
+  // dialog, and the markets under a race on the election map.
+  'get-market-links': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z
+      .object({
+        contractId: z.string().min(1).max(MAX_ID_LENGTH),
+      })
+      .strict(),
+    returns: {} as MarketLinks,
   },
 
   // The scheduler switches on /admin/sports: one per Odds API calendar phase.
@@ -5241,6 +5337,32 @@ export const API = (_apiTypeCheck = {
       errors: number
       results: Array<{
         eventId: string
+        question: string
+        status: 'created' | 'skipped' | 'dry-run' | 'error'
+        reason: string | null
+      }>
+    },
+  },
+  // F1 markets from BALLDONTLIE for the next F1_DAYS_AHEAD days' sessions, by
+  // hand, on dev or prod. The daily sports-f1-create job makes them too.
+  'admin-sports-create-f1-markets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionId: z.string(),
+        dryRun: z.boolean().optional(),
+        // `<session id>:<market type>` keys from a dry run. Only these are created.
+        keys: z.array(z.string().max(40)).max(100).optional(),
+      })
+      .strict(),
+    returns: {} as {
+      created: number
+      skipped: number
+      errors: number
+      results: Array<{
+        key: string
         question: string
         status: 'created' | 'skipped' | 'dry-run' | 'error'
         reason: string | null

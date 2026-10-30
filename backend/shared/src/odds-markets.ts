@@ -15,6 +15,7 @@ import { contractColumnsToSelect, getUser, isProd, log } from 'shared/utils'
 import { anythingToRichText } from 'shared/tiptap'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
+import { scoreUpdatedTime } from 'common/sports-score-freshness'
 import { publishSportsLiveScore } from 'shared/publish-sports-live-score'
 import {
   createSportsContract,
@@ -42,7 +43,6 @@ import {
   CompetitionSwitches,
   phaseWindow,
   SPORT_ID_TO_SPORT_KEY,
-  SPORT_LEAGUE_LABEL,
   SPORTS_CALENDAR,
 } from 'common/sports-calendar'
 import {
@@ -101,7 +101,7 @@ export interface OddsCreateResult {
   }[]
 }
 
-async function sportsCreator(): Promise<User> {
+export async function sportsCreator(): Promise<User> {
   const id = manifoldSportsUserId(isProd())
   const user = await getUser(id)
   if (!user) throw new Error(`@ManifoldSports user ${id} not found`)
@@ -289,10 +289,7 @@ export async function createOddsMarketsForCompetition(
         )
         groupIds = uniq([
           group.id,
-          ...sportTagIds(
-            SPORT_ID_TO_SPORT_KEY[entry.sport],
-            SPORT_LEAGUE_LABEL[entry.sport]
-          ),
+          ...sportTagIds(SPORT_ID_TO_SPORT_KEY[entry.sport]),
         ])
       }
       const contract = await createSportsContract(
@@ -484,12 +481,30 @@ interface PendingGame {
   startTime: number
 }
 
+type ScorePollStage =
+  | 'preparing'
+  | 'score-connection'
+  | 'score-write'
+  | 'score-publication'
+  | 'answer-read'
+  | 'resolution-connection'
+  | 'resolution-transaction'
+  | 'resolution-post-commit'
+
+interface ScorePollReservationDetails {
+  runId: string
+  stage: ScorePollStage
+  stageStartedAt: number
+  status: 'pending'
+}
+
 /**
  * What the resolver remembers between ticks: when it last asked for each
  * sport key's scores, how many of those calls failed in a row, which started
  * games have gone missing from the feed, and when it last reported each
- * overdue game. The scheduler job keeps one for its lifetime; a restart only
- * means one early call and one early alert.
+ * overdue game, plus the markets still owned by an earlier tick. The scheduler
+ * keeps one for its lifetime. A reservation lasts until its helper settles;
+ * rejection does not prove that the server rolled back.
  */
 export interface ScorePollState {
   /** Any /scores call per sport key. */
@@ -509,6 +524,15 @@ export interface ScorePollState {
   lastOverdueAlert: Record<string, number>
   /** When the polling settings last failed to load; logged hourly. */
   lastSettingsError?: number
+  /**
+   * Per-market reservations shared by every tick in this scheduler process.
+   * The deadline does not release pending helpers. After helper settlement,
+   * a fresh tick may retry through guarded score writes and serializable
+   * whole-market resolution. This is not a distributed lock.
+   */
+  inFlight: Set<string>
+  /** Diagnostic metadata only; inFlight remains the reservation authority. */
+  inFlightDetails: Map<string, ScorePollReservationDetails>
 }
 
 export const newScorePollState = (): ScorePollState => ({
@@ -517,6 +541,8 @@ export const newScorePollState = (): ScorePollState => ({
   failures: {},
   missing: {},
   lastOverdueAlert: {},
+  inFlight: new Set(),
+  inFlightDetails: new Map(),
 })
 
 /**
@@ -527,9 +553,19 @@ export const newScorePollState = (): ScorePollState => ({
  * nothing is due. Live scores are written onto the markets that want them,
  * and a game is resolved once the provider marks it completed.
  */
+/**
+ * One resolver tick. `isCurrent` lets the scheduler abandon a run that has
+ * overrun its deadline (a dead database connection held one for the full
+ * 60-minute client timeout on 2026-10-17, four times): once it returns false
+ * the run starts no further work. An already-issued mutation may still finish:
+ * its market stays reserved across the deadline, while other markets proceed.
+ * All scheduler ticks must share the same state (including reservations).
+ */
 export async function pollOddsScoresAndResolve(
   pg: SupabaseDirectClient,
-  state: ScorePollState
+  state: ScorePollState,
+  isCurrent: () => boolean = () => true,
+  runId = String(Date.now())
 ): Promise<{
   polled: number
   live: number
@@ -538,6 +574,10 @@ export async function pollOddsScoresAndResolve(
   errors: number
 }> {
   const now = Date.now()
+  // A read started while another run owns a market may return its old row
+  // after that run has settled. Skip it for this whole tick, even if the
+  // reservation is released before we get to the game; the next tick re-reads.
+  const reservedAtStart = new Set(state.inFlight)
   const rows = await pg.manyOrNone(
     `select ${contractColumnsToSelect}
      from contracts
@@ -562,6 +602,7 @@ export async function pollOddsScoresAndResolve(
     pending.push({ contract, ...parsed, startTime })
   }
   const stats = { polled: 0, live: 0, resolved: 0, pending: 0, errors: 0 }
+  if (!isCurrent()) return stats
   // Forget games the resolver no longer watches.
   const pendingIds = new Set(pending.map((game) => game.contract.id))
   for (const id of Object.keys(state.missing)) {
@@ -577,6 +618,7 @@ export async function pollOddsScoresAndResolve(
   try {
     settings = await getScorePollingSettings(pg)
   } catch (e) {
+    if (!isCurrent()) return stats
     settings = finalsOnlySettings()
     if (now - (state.lastSettingsError ?? -Infinity) >= HOUR_MS) {
       state.lastSettingsError = now
@@ -585,17 +627,21 @@ export async function pollOddsScoresAndResolve(
       )
     }
   }
+  if (!isCurrent()) return stats
   const sportOf = (game: PendingGame) =>
     sportForLeague((game.contract as any).sportsLeague)
   const plan = scorePollPlan(
-    pending.map((game) => ({
-      contractId: game.contract.id,
-      sportKey: game.sportKey,
-      sport: sportOf(game),
-      startTime: game.startTime,
-      closeTime: game.contract.closeTime,
-      missing: game.contract.id in state.missing,
-    })),
+    pending
+      .filter((game) => !reservedAtStart.has(game.contract.id))
+      .map((game) => ({
+        contractId: game.contract.id,
+        eventId: game.eventId,
+        sportKey: game.sportKey,
+        sport: sportOf(game),
+        startTime: game.startTime,
+        closeTime: game.contract.closeTime,
+        missing: game.contract.id in state.missing,
+      })),
     settings,
     state.lastPolled,
     now,
@@ -606,21 +652,27 @@ export async function pollOddsScoresAndResolve(
   const bySport = groupBy(pending, (p) => p.sportKey)
   const resolved = new Set<string>()
   const creator = plan.length > 0 ? await sportsCreator() : undefined
+  if (!isCurrent()) return stats
   for (const { sportKey, withFinished } of plan) {
+    if (!isCurrent()) return stats
     // Counted even if the call fails, so a failing provider is retried at
     // the set interval, doubled per failure in a row, not on every tick.
     state.lastPolled[sportKey] = now
     if (withFinished) state.lastFinished[sportKey] = now
     stats.polled++
-    const games = bySport[sportKey] ?? []
+    const games = (bySport[sportKey] ?? []).filter(
+      (game) => !reservedAtStart.has(game.contract.id)
+    )
     let scores: OddsApiScore[]
     try {
       scores = await getScores(
         sportKey,
         withFinished ? { finishedDays: LOOKBACK_DAYS } : {}
       )
+      if (!isCurrent()) return stats
       delete state.failures[sportKey]
     } catch (e) {
+      if (!isCurrent()) return stats
       state.failures[sportKey] = (state.failures[sportKey] ?? 0) + 1
       log(
         `[sports-odds-resolve] scores for ${sportKey} failed (${state.failures[sportKey]} in a row): ${e}`
@@ -636,6 +688,7 @@ export async function pollOddsScoresAndResolve(
     // left to the finals check, so they don't add a call to every live poll.
     // If the follow-up call fails the live response still counts, and the
     // game is flagged below so the finals check takes it from there.
+    if (!isCurrent()) return stats
     const listed = new Set(scores.map((s) => s.id))
     const dropped = games.some(
       (g) => !listed.has(g.eventId) && !(g.contract.id in state.missing)
@@ -646,12 +699,19 @@ export async function pollOddsScoresAndResolve(
       try {
         scores = await getScores(sportKey, { finishedDays: LOOKBACK_DAYS })
       } catch (e) {
+        if (!isCurrent()) return stats
         log(`[sports-odds-resolve] finished games for ${sportKey} failed: ${e}`)
       }
     }
+    if (!isCurrent()) return stats
     const scoreById = new Map(scores.map((s) => [s.id, s]))
     for (const game of games) {
+      if (!isCurrent()) return stats
       const id = game.contract.id
+      if (reservedAtStart.has(id) || state.inFlight.has(id)) {
+        stats.pending++
+        continue
+      }
       const score = scoreById.get(game.eventId)
       if (!score) {
         if (!(id in state.missing)) state.missing[id] = now
@@ -659,8 +719,20 @@ export async function pollOddsScoresAndResolve(
         continue
       }
       try {
+        if (!isCurrent()) return stats
         if (score.completed) {
-          await finishGame(pg, game, score, creator!)
+          const processed = await withGameReservation(
+            state,
+            id,
+            runId,
+            isCurrent,
+            (run) => finishGame(pg, game, score, creator!, run)
+          )
+          if (!isCurrent()) return stats
+          if (!processed) {
+            stats.pending++
+            continue
+          }
           resolved.add(id)
           stats.resolved++
         } else if (
@@ -668,13 +740,25 @@ export async function pollOddsScoresAndResolve(
           score.scores.length > 0 &&
           liveInterval({ contractId: id, sport: sportOf(game) }, settings) > 0
         ) {
-          await writeLiveScore(pg, game, score, now)
+          const processed = await withGameReservation(
+            state,
+            id,
+            runId,
+            isCurrent,
+            (run) => writeLiveScore(pg, game, score, now, run)
+          )
+          if (!isCurrent()) return stats
+          if (!processed) {
+            stats.pending++
+            continue
+          }
           stats.live++
         } else {
           stats.pending++
         }
         delete state.missing[id]
       } catch (e) {
+        if (!isCurrent()) return stats
         // A completed game that can't be resolved (a level final in a sport
         // that can't end level, a team mismatch) counts as missing: no live
         // polls, and the finals check keeps asking for finished games, so it
@@ -685,10 +769,70 @@ export async function pollOddsScoresAndResolve(
       }
     }
   }
+  if (!isCurrent()) return stats
   for (const game of pending) {
     if (!resolved.has(game.contract.id)) alertIfOverdue(game, state, now)
   }
   return stats
+}
+
+interface ScoreGameRun {
+  isCurrent: () => boolean
+  setStage: (stage: ScorePollStage) => void
+  mutate: <T>(work: () => Promise<T>) => Promise<T>
+}
+
+async function withGameReservation<T>(
+  state: ScorePollState,
+  id: string,
+  runId: string,
+  isCurrent: () => boolean,
+  work: (run: ScoreGameRun) => Promise<T>
+) {
+  state.inFlight.add(id)
+  const details: ScorePollReservationDetails = {
+    runId,
+    stage: 'preparing',
+    stageStartedAt: Date.now(),
+    status: 'pending',
+  }
+  state.inFlightDetails.set(id, details)
+  try {
+    return await work({
+      isCurrent,
+      setStage: (stage) => {
+        details.stage = stage
+        details.stageStartedAt = Date.now()
+      },
+      mutate: async (mutation) => {
+        try {
+          return await mutation()
+        } catch (error) {
+          // Match the pool's warning severity for routine serialization retries.
+          if (
+            typeof error === 'object' &&
+            error !== null &&
+            'code' in error &&
+            error.code === '40001'
+          ) {
+            log.warn(
+              `[sports-odds-resolve] ${id}: serialization failure; run=${runId} stage=${details.stage}. Later ticks may retry. ${error}`
+            )
+          } else {
+            log.error(
+              `[sports-odds-resolve] ${id}: helper rejected; run=${runId} stage=${details.stage}. Later ticks may retry through guarded writes and transactional resolution; rejection does not prove rollback. ${error}`
+            )
+          }
+          throw error
+        }
+      },
+    })
+  } finally {
+    // Pending helpers exclude replacement work. Once the helper settles, SQL
+    // guards and serializable resolution protect retries even after a timeout.
+    state.inFlight.delete(id)
+    state.inFlightDetails.delete(id)
+  }
 }
 
 /**
@@ -723,11 +867,41 @@ function teamMismatch(
   return `[sports-odds-resolve] ${game.contract.id}: the score feed has ${score.home_team} v ${score.away_team} for event ${game.eventId}, but the market is ${teams.home} v ${teams.away}. Not scoring or resolving it; check the game and resolve it by hand.`
 }
 
+async function writeScorePatch(
+  pg: SupabaseDirectClient,
+  id: string,
+  patch: Record<string, unknown>,
+  run: ScoreGameRun
+): Promise<boolean> {
+  const updatedTime = patch.sportsLiveUpdatedTime
+  if (typeof updatedTime !== 'number' || !Number.isFinite(updatedTime))
+    throw new Error('Score update time must be finite')
+  run.setStage('score-connection')
+  return run.mutate(() =>
+    pg.task(async (task) => {
+      if (!run.isCurrent()) return false
+      run.setStage('score-write')
+      // PostgreSQL rechecks these predicates after a concurrent row update.
+      // An old statement that outlives its client cannot undo newer/final state.
+      const written = await task.oneOrNone<{ id: string }>(
+        `update contracts set data = data || $1::jsonb
+         where id = $2 and resolution is null
+           and not coalesce((data->>'isResolved')::boolean, false)
+           and coalesce((data->>'sportsLiveUpdatedTime')::numeric, 0) < $3::numeric
+         returning id`,
+        [JSON.stringify(patch), id, updatedTime]
+      )
+      return written !== null
+    })
+  )
+}
+
 async function writeLiveScore(
   pg: SupabaseDirectClient,
   game: PendingGame,
   score: OddsApiScore,
-  now: number
+  now: number,
+  run: ScoreGameRun
 ) {
   const teams = gameTeams(game)
   const scores = teamScores(score, teams)
@@ -740,22 +914,25 @@ async function writeLiveScore(
     sportsHomeScore: home,
     sportsAwayScore: away,
     sportsLiveStatus: 'IN_PLAY',
-    // The Odds API has no clock; the page shows "LIVE" without a minute.
+    // The Odds API has no clock; show the score observation time instead.
     sportsLiveMinute: null,
     sportsLiveUpdatedTime: now,
+    sportsScoreUpdatedTime: scoreUpdatedTime(score.last_update, now),
   }
-  await pg.none(`update contracts set data = data || $1::jsonb where id = $2`, [
-    JSON.stringify(patch),
-    game.contract.id,
-  ])
-  await publishSportsLiveScore(game.contract.id, patch)
+  if (!run.isCurrent()) return
+  const written = await writeScorePatch(pg, game.contract.id, patch, run)
+  if (!written || !run.isCurrent()) return
+  run.setStage('score-publication')
+  await run.mutate(() => publishSportsLiveScore(game.contract.id, patch))
+  return true
 }
 
 async function finishGame(
   pg: SupabaseDirectClient,
   game: PendingGame,
   score: OddsApiScore,
-  creator: User
+  creator: User,
+  run: ScoreGameRun
 ) {
   const { contract } = game
   const d = contract as any
@@ -786,18 +963,22 @@ async function finishGame(
     sportsLiveStatus: 'FINISHED',
     sportsLiveMinute: null,
     sportsLiveUpdatedTime: Date.now(),
+    sportsScoreUpdatedTime: scoreUpdatedTime(score.last_update, Date.now()),
   }
-  await pg.none(`update contracts set data = data || $1::jsonb where id = $2`, [
-    JSON.stringify(patch),
-    contract.id,
-  ])
-  await publishSportsLiveScore(contract.id, patch)
+  if (!run.isCurrent()) return
+  const written = await writeScorePatch(pg, contract.id, patch, run)
+  if (!written || !run.isCurrent()) return
+  run.setStage('score-publication')
+  await run.mutate(() => publishSportsLiveScore(contract.id, patch))
+  if (!run.isCurrent()) return
 
+  run.setStage('answer-read')
   const answers = (
     await pg.manyOrNone(`select * from answers where contract_id = $1`, [
       contract.id,
     ])
   ).map(convertAnswer)
+  if (!run.isCurrent()) return
   const args = gameResolution(answers, side, d.sportsHomeTeam, d.sportsAwayTeam)
   if (!args) {
     throw new Error(
@@ -807,5 +988,16 @@ async function finishGame(
     )
   }
   const multi = { ...(contract as CPMMMultiContract), answers }
-  await resolveMarketHelper(multi, creator, creator, args)
+  if (!run.isCurrent()) return
+  run.setStage('resolution-connection')
+  await run.mutate(() =>
+    resolveMarketHelper(multi, creator, creator, args, (transactionState) => {
+      run.setStage(
+        transactionState === 'started'
+          ? 'resolution-transaction'
+          : 'resolution-post-commit'
+      )
+    })
+  )
+  return true
 }

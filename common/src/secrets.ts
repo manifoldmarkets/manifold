@@ -39,9 +39,12 @@ export const secrets = (
     'SPORTSDB_KEY',
     'FOOTBALL_DATA_API_KEY',
     'THE_ODDS_API_KEY',
+    'BALLDONTLIE_API_KEY',
     'VERIFIED_PHONE_NUMBER',
     'GEMINI_API_KEY',
     'OPENROUTER_API_KEY',
+    // Adjacent Markets realtime API (`ak_` key): the MSRY perp oracle feed.
+    'ADJACENT_API_KEY',
     'IDENFY_API_KEY',
     'IDENFY_API_SECRET',
     'IDENFY_CALLBACK_SECRET',
@@ -72,6 +75,12 @@ type SecretId = (typeof secrets)[number]
 const OPTIONAL_SECRETS: ReadonlySet<string> = new Set<SecretId>([
   // The Odds API sports jobs skip themselves without it.
   'THE_ODDS_API_KEY',
+  // F1 market creation (admin-sports-create-f1-markets) refuses without it.
+  'BALLDONTLIE_API_KEY',
+  // Without it the MSRY feed's polls fail as provider errors (throttled
+  // warnings, an hourly error) and nothing else is affected; an MSRY market
+  // pauses until the key works.
+  'ADJACENT_API_KEY',
 ])
 
 // gRPC status code for NOT_FOUND.

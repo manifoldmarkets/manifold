@@ -129,10 +129,13 @@ const LIVE_STATUSES = new Set(['IN_PLAY', 'PAUSED'])
 // ended while nobody was watching doesn't show as live.
 const LIVE_STALE_MS = 10 * 60 * 1000
 
-function liveScoreFromMarket(
-  m: SportsMarket
-):
-  | { home: number | null; away: number | null; minute: string | null }
+function liveScoreFromMarket(m: SportsMarket):
+  | {
+      home: number | null
+      away: number | null
+      minute: string | null
+      updatedTime?: number | null
+    }
   | undefined {
   if (m.resolution) return undefined
   if (!m.sportsLiveStatus || !LIVE_STATUSES.has(m.sportsLiveStatus))
@@ -146,6 +149,7 @@ function liveScoreFromMarket(
     home: m.sportsHomeScore,
     away: m.sportsAwayScore,
     minute: m.sportsLiveMinute,
+    updatedTime: m.sportsScoreUpdatedTime,
   }
 }
 
@@ -966,7 +970,8 @@ export function SportsDashboardPage({
         className="mx-auto w-full max-w-5xl gap-8 px-4 py-6 sm:px-6"
       >
         {/* On mobile the title takes its own full-width line above the
-            buttons (back/share/tabs); on sm+ everything sits in one row. */}
+            buttons (back/share/tabs); on sm+ everything sits in one row. On
+            lg+ the sidebar makes the back arrow redundant, so it is hidden. */}
         <div className="border-ink-200 bg-canvas-0 sticky top-0 z-20 -mt-6 flex flex-wrap items-center gap-x-2 gap-y-3 border-b pb-5 pt-6">
           <Row className="order-1 w-full items-center gap-2 sm:order-2 sm:w-auto">
             <span className="text-2xl">{emoji}</span>
@@ -974,7 +979,10 @@ export function SportsDashboardPage({
               {title}
             </h1>
           </Row>
-          <BackButton size="xs" className="order-2 -ml-2 shrink-0 sm:order-1" />
+          <BackButton
+            size="xs"
+            className="order-2 -ml-2 shrink-0 sm:order-1 lg:hidden"
+          />
           {/* CopyLinkOrShareButton's className lands on the inner Button (it's
               wrapped in a Tooltip), so the order class needs its own wrapper. */}
           <div className="order-3">

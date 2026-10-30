@@ -20,13 +20,7 @@ const closePerpPositionInner: APIHandler<'close-perp-position'> = async (
     expectedSize,
   } = body
   const isApi = auth.creds.kind === 'key'
-  const {
-    payout,
-    pnl,
-    replayed,
-    fraction: closedFraction,
-    remainingSize,
-  } = await closePosition(
+  const { order, created } = await closePosition(
     contractId,
     auth.uid,
     direction,
@@ -36,14 +30,11 @@ const closePerpPositionInner: APIHandler<'close-perp-position'> = async (
     fraction ?? 1,
     expectedSize
   )
-
   return {
-    result: { payout, pnl, fraction: closedFraction, remainingSize },
+    result: { order },
     continue: async () => {
-      // Closes count toward the prediction streak, mirroring sells on normal
-      // markets (sell-shares routes through onCreateBets). An idempotent
-      // replay is not a trade and must not advance the streak.
-      if (replayed) return
+      // See place-perp-trade: the submission earns the day's streak.
+      if (!created) return
       try {
         await advancePerpBettingStreak(auth.uid, contractId, isApi)
       } catch (err) {
@@ -53,32 +44,12 @@ const closePerpPositionInner: APIHandler<'close-perp-position'> = async (
   }
 }
 
-/**
- * Partial closes only.
- *
- * The 1% minimum is a fraction of the CURRENT remainder, so repeated 1% closes
- * decay geometrically rather than terminating in 100 calls: from an M$100 cost
- * basis it takes ~917 to reach the dust floor that promotes the close to a
- * full one, and more on a larger position. Each of those is a serializable
- * transaction under the contract's advisory lock plus an event, a txn, a
- * metrics rebuild and streak processing — the lock the 2s oracle tick also
- * wants.
- *
- * 60/hour is far above any plausible human scaling-out and still caps the
- * sustained rate at one per minute. In-memory per instance, like every other
- * user of this helper.
- */
+// Preserve the existing partial-close spam guard. Full exits remain available.
 const rateLimitedPartialClose = rateLimitByUser(closePerpPositionInner, {
   maxCalls: 60,
   windowMs: HOUR_MS,
 })
 
-/**
- * A FULL close is never rate-limited. Refusing someone the ability to exit a
- * leveraged position — possibly while it is running toward liquidation — is a
- * far worse failure than tolerating close spam, so the limiter above is
- * reachable only when the caller asked for a fraction of one.
- */
 export const closePerpPosition: APIHandler<'close-perp-position'> = async (
   body,
   auth,

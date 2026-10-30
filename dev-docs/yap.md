@@ -20,7 +20,7 @@ Apply these additive migrations in order before deploying the API and web change
    optional rich-text content and clears stale formatting when older API workers
    edit plain text or delete a post. Deploy this migration, then all API workers,
    then the web UI; older API workers reject the new `richContent` request field.
-5. `backend/supabase/migrations/2026101901_social_post_market_comment.sql` adds
+5. `backend/supabase/migrations/2026103002_social_post_market_comment.sql` adds
    `social_posts.market_comment_id`, `posts.social_post_id` and the indexes
    importance scoring uses. Apply it before deploying the API and scheduler: Yap
    creation, editing, deletion and the importance job all use the columns. Then

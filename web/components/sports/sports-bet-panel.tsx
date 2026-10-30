@@ -1,7 +1,13 @@
+import clsx from 'clsx'
 import { escapeRegExp } from 'lodash'
 import { useEffect, useState } from 'react'
 import { db } from 'web/lib/supabase/db'
-import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
+import { AnswerCpmmBetPanel } from 'web/components/answers/answer-bet-panel'
+import {
+  Modal,
+  MODAL_CLASS,
+  SCROLLABLE_MODAL_CLASS,
+} from 'web/components/layout/modal'
 import { getContract, getAnswersForContracts } from 'common/supabase/contracts'
 import { CPMMMultiContract, isMultiCpmm } from 'common/contract'
 import {
@@ -95,6 +101,44 @@ export function SportsVersusBetDialog({
   )
 }
 
+/**
+ * One answer of a multiple choice market, like a driver in an F1 session's
+ * winner or podium market: YES that they do it, or NO.
+ */
+export function SportsAnswerBetDialog({
+  contractId,
+  answerId,
+  onClose,
+}: {
+  contractId: string
+  answerId: string
+  onClose: () => void
+}) {
+  const { contract, failed } = useSportsContract(contractId)
+  const answer = contract?.answers.find((a) => a.id === answerId)
+
+  if (failed || (contract && !answer))
+    return <SportsLoadError onClose={onClose} />
+  if (!contract || !answer) return null
+  return (
+    <Modal
+      open
+      setOpen={(open) => {
+        if (!open) onClose()
+      }}
+      className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}
+    >
+      <AnswerCpmmBetPanel
+        answer={answer}
+        contract={contract}
+        outcome="YES"
+        closePanel={onClose}
+        alwaysShowOutcomeSwitcher
+      />
+    </Modal>
+  )
+}
+
 /** Home / draw / away markets: one ticket with a picker between the three. */
 export function SportsThreeWayBetDialog({
   match,
@@ -132,8 +176,9 @@ export function SportsThreeWayBetDialog({
         live.minute === 'HT'
           ? 'Half time'
           : live.minute != null
-          ? `Live · ${live.minute}'`
-          : 'Live',
+          ? `In progress · ${live.minute}'`
+          : 'In progress',
+        'Scores delayed',
         live.home != null && live.away != null
           ? `${live.home} – ${live.away}`
           : null,

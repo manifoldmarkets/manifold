@@ -32,6 +32,7 @@ import { useLiveContract } from 'web/hooks/use-contract'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
+import { useHidesBlocked } from './blocked-topics'
 import {
   isOfficialSportsMarket,
   SportsMarketBadge,
@@ -43,6 +44,19 @@ const HERO_PREVIEW_ROWS = 2
 const GROUP_ORDER: RelatedGroup[] = ['game-lines', 'props', 'community']
 
 /**
+ * What related markets hang under: a game, or an F1 session through its winner
+ * market (the id new markets link to).
+ */
+export type RelatedHost = Pick<
+  ScheduleGame,
+  'id' | 'sport' | 'question' | 'closeTime' | 'related'
+> & {
+  /** A game's teams, which name it for screen readers without a `label`. */
+  home?: { name: string }
+  away?: { name: string }
+}
+
+/**
  * The markets on a game, under its card on the sport page. Today the list is
  * the schedule's matching: official lines and props by event id, and
  * community markets that name both teams near kickoff. Markets linked to a
@@ -51,18 +65,29 @@ const GROUP_ORDER: RelatedGroup[] = ['game-lines', 'props', 'community']
  * hero preview or an open section.
  */
 export function GameLinkedMarkets(props: {
-  game: ScheduleGame
+  game: RelatedHost
+  /** What the markets are about, for screen readers; a game's teams by default. */
+  label?: string
   /** The hero's scoreboard, beside a small always-visible market preview. */
   matchup?: ReactNode
+  /** Open the list on first render (the featured F1 weekend's props). */
+  defaultExpanded?: boolean
 }) {
   const { game, matchup } = props
-  const [expanded, setExpanded] = useState(false)
+  const label =
+    props.label ??
+    (game.home && game.away
+      ? `${game.home.name} vs ${game.away.name}`
+      : game.question)
+  const [expanded, setExpanded] = useState(props.defaultExpanded ?? false)
   const panelId = useId()
   // The hero's props, folded under the scoreboard on narrow screens.
   const [heroPropsOpen, setHeroPropsOpen] = useState(false)
   const heroPropsId = useId()
   const [showAll, setShowAll] = useState(false)
   const [nearby, setNearby] = useState(false)
+  // The page leaves out the topics the visitor blocked.
+  const hides = useHidesBlocked()
   const disclosureRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (nearby || !disclosureRef.current) return
@@ -113,8 +138,8 @@ export function GameLinkedMarkets(props: {
     )
     return (featured || showAll ? ids : firstIds)
       .map((id) => byId.get(id))
-      .filter((c): c is Contract => !!c)
-  }, [preview.data, rest.data, ids.join(','), showAll, featured])
+      .filter((c): c is Contract => !!c && !hides(c.groupSlugs))
+  }, [preview.data, rest.data, ids.join(','), showAll, featured, hides])
   const loadingPreview = firstIds.length > 0 && !preview.data && !preview.error
   const loadingRest =
     (featured || showAll) &&
@@ -214,7 +239,7 @@ export function GameLinkedMarkets(props: {
                   type="button"
                   aria-expanded={expanded}
                   aria-controls={panelId}
-                  aria-label={`More props & markets for ${game.home.name} vs ${game.away.name}`}
+                  aria-label={`More props & markets for ${label}`}
                   onClick={() => setExpanded((value) => !value)}
                   className="text-primary-700 hover:bg-primary-100 focus-visible:ring-primary-500 mt-auto flex min-h-[32px] items-center gap-1.5 self-end rounded-lg px-2 text-xs font-semibold focus-visible:ring-2"
                 >
@@ -303,7 +328,7 @@ export function GameLinkedMarkets(props: {
           type="button"
           aria-expanded={expanded}
           aria-controls={panelId}
-          aria-label={`Props & more for ${game.home.name} vs ${game.away.name}`}
+          aria-label={`Props & more for ${label}`}
           onClick={() => setExpanded((value) => !value)}
           className="text-ink-600 hover:bg-canvas-50 focus-visible:ring-primary-500 flex min-h-[44px] min-w-0 flex-1 items-center gap-2 rounded-b-xl px-4 text-left text-xs font-semibold focus-visible:ring-2"
         >
@@ -411,16 +436,20 @@ function PropsSkeleton({ count }: { count: number }) {
 
 // /create reads its prefill from a JSON `params` query value. `rand` makes
 // it replace a draft the form saved earlier, and is what applies the topic
-// slugs (the same as duplicating a market).
-function createMarketHref(game: ScheduleGame) {
+// slugs (the same as duplicating a market). The new market is linked to the
+// game, so it lists here. Its deadline defaults to the game's current deadline;
+// the creator can override it, and later game updates do not change it.
+function createMarketHref(game: RelatedHost) {
   const slug = SPORT_BY_KEY[game.sport]?.slug
   const params = {
     q: `${game.question.replace(/\s*\[official\]\s*$/i, '')}: `,
     description: '',
     closeTime: game.closeTime,
     visibility: 'public',
-    groupSlugs: slug ? [slug] : undefined,
+    groupSlugs: [slug ?? 'sports-default'],
     rand: game.id.slice(0, 6),
+    linkedToContractId: game.id,
+    linkRelation: 'prop',
   }
   return `/create?params=${encodeURIComponent(JSON.stringify(params))}`
 }
@@ -528,6 +557,7 @@ export function RelatedMarketRow(props: {
               : undefined
           }
           className={isProp ? propButtonsClassName : 'flex'}
+          location="sports related market"
         />
       )}
       {!closed && twoAnswers && (

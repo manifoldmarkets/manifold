@@ -43,6 +43,7 @@ import { uploadDocument } from 'api/gidx/upload-document'
 import { createIdenfySession } from 'api/idenfy/create-session'
 import { getIdenfyStatus } from 'api/idenfy/get-status'
 import { getIdenfyStats } from './get-idenfy-stats'
+import { getSurfaceFunnels } from './get-surface-funnels'
 import { getMarkets } from 'api/markets'
 import { multiSell } from 'api/multi-sell'
 import { placeMultiBet } from 'api/place-multi-bet'
@@ -80,6 +81,8 @@ import { createComment } from './create-comment'
 import { createManalink } from './create-manalink'
 import { createMarket } from './create-market'
 import { createPerp } from './create-perp'
+import { internalPerpOrderEffects } from './internal-perp-order-effects'
+import { getPerpOrder } from './get-perp-order'
 import { placePerpTrade } from './place-perp-trade'
 import { closePerpPosition } from './close-perp-position'
 import { updatePerpConfig } from './update-perp-config'
@@ -243,6 +246,9 @@ import { adminGetNewUsers } from './admin-get-new-users'
 import { adminSportsFixtures } from './admin-sports-fixtures'
 import { adminSportsCreateMarkets } from './admin-sports-create-markets'
 import { adminSportsCreateOddsMarkets } from './admin-sports-create-odds-markets'
+import { adminSportsCreateF1Markets } from './admin-sports-create-f1-markets'
+import { linkMarket, unlinkMarket } from './link-market'
+import { getMarketLinksHandler } from './get-market-links'
 import {
   adminSportsCompetitionSwitches,
   adminSportsSetCompetitionSwitch,
@@ -253,6 +259,8 @@ import {
 } from './admin-sports-score-polling'
 import { sportsMarkets } from './sports-markets'
 import { sportsSchedule } from './sports-schedule'
+import { sportsIndex } from './sports-index'
+import { sportsLeaderboards } from './sports-leaderboards'
 import { adminSportsResolve } from './admin-sports-resolve'
 import { adminSportsCommunityMarket } from './admin-sports-community-market'
 import { adminSportsInitCommunity } from './admin-sports-init-community'
@@ -478,6 +486,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'create-public-chat-message': createPublicChatMessage,
   unresolve: unresolve,
   'create-perp': createPerp,
+  'internal-perp-order-effects': internalPerpOrderEffects,
+  'get-perp-order': getPerpOrder,
   'place-perp-trade': placePerpTrade,
   'close-perp-position': closePerpPosition,
   'update-perp-config': updatePerpConfig,
@@ -535,6 +545,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'create-idenfy-session': createIdenfySession,
   'get-idenfy-status': getIdenfyStatus,
   'get-idenfy-stats': getIdenfyStats,
+  'get-surface-funnels': getSurfaceFunnels,
   'get-best-comments': getBestComments,
   'record-comment-view': recordCommentView,
   'get-cashouts': getCashouts,
@@ -644,12 +655,18 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'admin-sports-fixtures': adminSportsFixtures,
   'admin-sports-create-markets': adminSportsCreateMarkets,
   'admin-sports-create-odds-markets': adminSportsCreateOddsMarkets,
+  'admin-sports-create-f1-markets': adminSportsCreateF1Markets,
+  'link-market': linkMarket,
+  'unlink-market': unlinkMarket,
+  'get-market-links': getMarketLinksHandler,
   'admin-sports-competition-switches': adminSportsCompetitionSwitches,
   'admin-sports-set-competition-switch': adminSportsSetCompetitionSwitch,
   'admin-sports-score-polling': adminSportsScorePolling,
   'admin-sports-set-score-polling': adminSportsSetScorePolling,
   'sports-markets': sportsMarkets,
   'sports-schedule': sportsSchedule,
+  'sports-index': sportsIndex,
+  'sports-leaderboards': sportsLeaderboards,
   'admin-sports-resolve': adminSportsResolve,
   'admin-sports-community-market': adminSportsCommunityMarket,
   'admin-sports-init-community': adminSportsInitCommunity,

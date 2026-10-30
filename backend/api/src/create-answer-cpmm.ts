@@ -23,6 +23,7 @@ import { ContractMetric } from 'common/contract-metric'
 import { isAdminId } from 'common/envs/constants'
 import { noFees } from 'common/fees'
 import { getBetDownToOneMultiBetInfo } from 'common/new-bet'
+import { canStaffAddSportsAnswers } from 'common/sports'
 import { convertBet } from 'common/supabase/bets'
 import { getAnswerCostFromLiquidity } from 'common/tier'
 import { User } from 'common/user'
@@ -120,7 +121,8 @@ const verifyContract = async (contractId: string, creatorId: string) => {
   if (
     contract.addAnswersMode === 'ONLY_CREATOR' &&
     contract.creatorId !== creatorId &&
-    !isAdminId(creatorId)
+    !isAdminId(creatorId) &&
+    !canStaffAddSportsAnswers(contract, creatorId)
   ) {
     throw new APIError(403, 'Only the creator or an admin can create an answer')
   }

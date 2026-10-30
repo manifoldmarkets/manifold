@@ -171,12 +171,13 @@ const otherBalances: NotificationSectionData = {
   subscriptionTypes: [
     'loan_income',
     'limit_order_fills',
+    'liquidity_returned',
     'personalized_mana_offer',
   ],
 }
 const perps: NotificationSectionData = {
   label: 'Perps',
-  subscriptionTypes: ['perp_liquidation', 'perp_adl'],
+  subscriptionTypes: ['perp_liquidation', 'perp_adl', 'perp_order_failed'],
 }
 const userInteractions: NotificationSectionData = {
   label: 'Users',

@@ -233,9 +233,19 @@ describe('scheduler switches', () => {
     expect(competitionSwitchError('nhl-2026-27', 'Preseason', true)).toContain(
       'No calendar phase'
     )
-    expect(competitionSwitchError('f1-2026', '2026 Remaining', true)).toContain(
-      'no Odds API sport key'
+    expect(competitionSwitchError('tdf-2027', 'TdF 2027', true)).toContain(
+      'no Odds API sport key or other feed'
     )
+  })
+  it('switches F1 on BALLDONTLIE, off by default', () => {
+    const [f1] = calendarEntriesFor('f1-2026')
+    expect(f1.provider).toBe('bdl-f1')
+    expect(f1.oddsKey).toBeUndefined()
+    expect(autoCreates(f1, {})).toBe(false)
+    expect(autoCreates(f1, { [calendarPhaseKey(f1)]: true })).toBe(true)
+    expect(
+      competitionSwitchError('f1-2026', '2026 Remaining', true)
+    ).toBeUndefined()
   })
 })
 
@@ -245,11 +255,21 @@ describe('level finals', () => {
     expect(canEndLevel('americanfootball_nfl')).toBe(true)
     expect(canEndLevel('americanfootball_nfl_preseason')).toBe(true)
     for (const key of [
+      'americanfootball_cfl',
+      'baseball_mlb_preseason',
+      'aussierules_afl',
+      'rugbyleague_nrl',
+    ])
+      expect(canEndLevel(key)).toBe(true)
+    for (const key of [
       'icehockey_nhl',
       'basketball_nba',
       'basketball_ncaab',
       'baseball_mlb',
       'americanfootball_ncaaf',
+      'americanfootball_ufl',
+      'icehockey_sweden_hockey_league',
+      'basketball_wncaab',
     ])
       expect(canEndLevel(key)).toBe(false)
   })
@@ -402,6 +422,29 @@ describe('scores', () => {
   }
   it('matches scores to teams whatever order they arrive in', () => {
     expect(teamScores(score)).toEqual({ home: 27, away: 24 })
+  })
+  it('rejects partial, fractional, negative and non-finite scores before settlement', () => {
+    for (const raw of [
+      '',
+      '27 goals',
+      '2.5',
+      '-1',
+      'Infinity',
+      '0x1a',
+      '1e2',
+      '+27',
+      '9007199254740992',
+    ]) {
+      expect(
+        winningSide({
+          ...score,
+          scores: [
+            { name: 'Buffalo Bills', score: '24' },
+            { name: 'Kansas City Chiefs', score: raw },
+          ],
+        })
+      ).toBeNull()
+    }
   })
   it('reads the winning side from the payload, not the names', () => {
     expect(winningSide(score)).toBe('home')

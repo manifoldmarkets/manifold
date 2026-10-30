@@ -1,3 +1,5 @@
+import { ADDITIONAL_SPORTS_FEEDS } from './sports-feeds'
+import { parseF1EventId, parseF1TitleEventId } from './f1-markets'
 import { parseOddsEventId } from './odds-markets'
 import { MANIFOLD_SPORTS_USER_IDS, WORLD_CUP_2026 } from './sports'
 
@@ -7,6 +9,9 @@ import { MANIFOLD_SPORTS_USER_IDS, WORLD_CUP_2026 } from './sports'
 
 /** By The Odds API sport key, for markets the Odds API pipeline made. */
 const LABEL_BY_ODDS_KEY: Record<string, string> = {
+  ...Object.fromEntries(
+    ADDITIONAL_SPORTS_FEEDS.map((f) => [f.key, f.shortLabel])
+  ),
   americanfootball_nfl: 'NFL',
   americanfootball_nfl_preseason: 'NFL',
   // What the /sports chip calls it.
@@ -51,6 +56,9 @@ export function getSportsLeagueLabel(contract: {
   if (!sportsEventId) return undefined
   const odds = parseOddsEventId(sportsEventId)
   if (odds) return LABEL_BY_ODDS_KEY[odds.sportKey]
+  // BALLDONTLIE's F1 pipeline: session markets and the season's titles.
+  if (parseF1EventId(sportsEventId) || parseF1TitleEventId(sportsEventId))
+    return 'F1'
   return sportsLeague ? LABEL_BY_LEAGUE[sportsLeague] : undefined
 }
 

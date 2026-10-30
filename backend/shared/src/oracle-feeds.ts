@@ -5,9 +5,19 @@ import { MNX_INSTRUMENTS, MNX_POLL_MS } from 'common/perps/mnx'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { validateBasicOraclePoint } from 'common/perps/oracle'
 import { FEAR_GREED_MAX } from 'common/perps/fear-greed'
-
-import { fetchBtcUsdSpot } from './btc-price'
 import {
+  MSRY_MAX_PRICE,
+  MSRY_MAX_SOURCE_AGE_MS,
+  MSRY_MIN_PRICE,
+  MSRY_POLL_MS,
+  MSRY_UPDATE_PERIOD_MS,
+} from 'common/perps/adjacent-msry'
+
+import { fetchAdjacentMsryObservation } from './adjacent-msry'
+import { fetchBtcUsdSpot } from './btc-price'
+import { OracleClock } from './oracle-clock'
+import {
+  ADJACENT_MSRY_FEED_ID,
   BTC_USD_FEED_ID,
   CRYPTO_FEAR_GREED_FEED_ID,
   GLDX_USD_FEED_ID,
@@ -89,13 +99,23 @@ export type OracleFeedDef = {
    * holders too). Trade it off against the source's rate limits: poll faster
    * than the source publishes and you spend quota for no new information. */
   pollPeriodMs?: number
-  fetchLatest?: () => Promise<OraclePoint | null>
+  /** `clock` stamps the observation; the tick passes the database clock that
+   * also stamps perp orders (see oracle-clock). */
+  fetchLatest?: (clock: OracleClock) => Promise<OraclePoint | null>
   /** A provider can withdraw availability independently of its last price.
    * The fast tick commits successful health and price in one engine update. */
-  fetchObservation?: () => Promise<{
+  fetchObservation?: (clock: OracleClock) => Promise<{
     point?: OraclePoint
     health: OracleFeedHealth
   }>
+  /** What the observation publisher does when a provider stamp it has
+   * already published arrives at a different price. Absent: corruption, so
+   * the observation is refused and availability withdrawn (MNX, whose stamps
+   * name one immutable mark). 'keep-published': a legitimate re-recording,
+   * so the published value stands and the provider's next stamp supersedes
+   * it (Adjacent, whose one-minute bucket holds the last value recorded in
+   * it). */
+  sourceRevision?: 'keep-published'
   /** All recently-finalized points, oldest first. Takes precedence over
    * fetchLatest in the tick: sources that publish out of order (NESO batch
    * settling) permanently lose interleaved points under a latest-only
@@ -116,7 +136,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
       marketCreationEnabled: true,
       cadence: 'fast',
       pollPeriodMs: MNX_POLL_MS,
-      fetchObservation: () => fetchMnxObservation(i.feedId),
+      fetchObservation: (clock) => fetchMnxObservation(i.feedId, clock),
       minPrice: i.minPrice,
       maxPrice: i.maxPrice,
       staleAfterMs: i.maxAgeMs,
@@ -192,7 +212,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     staleAfterMs: 5 * MINUTE_MS,
     updatePeriodMs: 2_000,
     pollPeriodMs: 2_000,
-    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.SPYX),
+    fetchLatest: (clock) => fetchXStockUsdPrice(XSTOCK_SPECS.SPYX, clock),
   },
   {
     id: QQQX_USD_FEED_ID,
@@ -205,7 +225,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     staleAfterMs: 5 * MINUTE_MS,
     updatePeriodMs: 2_000,
     pollPeriodMs: 2_000,
-    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.QQQX),
+    fetchLatest: (clock) => fetchXStockUsdPrice(XSTOCK_SPECS.QQQX, clock),
   },
   {
     id: GLDX_USD_FEED_ID,
@@ -218,7 +238,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     staleAfterMs: 5 * MINUTE_MS,
     updatePeriodMs: 2_000,
     pollPeriodMs: 2_000,
-    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.GLDX),
+    fetchLatest: (clock) => fetchXStockUsdPrice(XSTOCK_SPECS.GLDX, clock),
   },
   {
     id: NVDAX_USD_FEED_ID,
@@ -231,7 +251,43 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     staleAfterMs: 5 * MINUTE_MS,
     updatePeriodMs: 2_000,
     pollPeriodMs: 2_000,
-    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.NVDAX),
+    fetchLatest: (clock) => fetchXStockUsdPrice(XSTOCK_SPECS.NVDAX, clock),
+  },
+  // Adjacent's Misery Implied Index: implied U-3 unemployment plus implied
+  // CPI-U year-over-year, in percentage points, recalculated by Adjacent once
+  // a minute (common/perps/adjacent-msry.ts). Fast like MNX, not 'daily':
+  // the value moves intraday, the provider stamps when it produced each
+  // value, and that stamp drives next-price eligibility. It rides the shared
+  // tick at a 20s poll because Adjacent's quota is organization-wide (see
+  // MSRY_POLL_MS); the realtime tier needs ADJACENT_API_KEY, and without it
+  // every poll fails as a provider error.
+  //
+  // Adjacent permitted this market in writing on 2026-10-28; its terms and
+  // credit line are in common/perps/oracle-attribution.ts.
+  {
+    id: ADJACENT_MSRY_FEED_ID,
+    description:
+      "Adjacent's Misery Implied Index (MSRY): implied U-3 unemployment plus CPI-U YoY, percentage points",
+    marketCreationEnabled: true,
+    cadence: 'fast',
+    pollPeriodMs: MSRY_POLL_MS,
+    fetchObservation: fetchAdjacentMsryObservation,
+    // A re-recorded minute must not withdraw availability on a healthy feed,
+    // including when a restarted or overlapping scheduler sees the revision
+    // first; the next minute's value supersedes it.
+    sourceRevision: 'keep-published',
+    // Unit-confused garbage only (a fraction, a 50-150 political level, a
+    // 1000-based NAV) and the non-positive prints the methodology's 0.00
+    // floor allows; never a fast move. Corruption is caught at the source:
+    // the parser rejects a page with any malformed row, and the observation
+    // rule refuses a value older than MSRY_MAX_SOURCE_AGE_MS.
+    minPrice: MSRY_MIN_PRICE,
+    maxPrice: MSRY_MAX_PRICE,
+    // Same as the provider-age limit: five missed recalculations. Flat
+    // stretches are normal (the index often holds for hours), so unchanged
+    // values are written as heartbeats every staleAfterMs / 2.
+    staleAfterMs: MSRY_MAX_SOURCE_AGE_MS,
+    updatePeriodMs: MSRY_UPDATE_PERIOD_MS,
   },
   // Daily feeds use a 26h threshold (one missed daily run + slack) rather
   // than a lazy 3d: the hourly update-perps job turns feed staleness into

@@ -192,6 +192,11 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: `Quest completion rewards`,
     detailed: `Bonuses paid out for completing quests`,
   },
+  liquidity_returned: {
+    simple: 'Your liquidity was returned',
+    detailed:
+      'When a question creator withdraws liquidity and your share of it is returned to you',
+  },
   contract_from_followed_user: {
     simple: 'New questions from users you follow',
     detailed: 'New questions from users you follow',
@@ -418,6 +423,11 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Perp auto-deleveraging',
     detailed:
       'When your perpetual futures position is auto-deleveraged (ADL) because the opposing pool is insolvent',
+  },
+  perp_order_failed: {
+    simple: 'Perp orders that did not fill',
+    detailed:
+      'When a queued perpetual futures order is rejected or expires instead of filling',
   },
 }
 
@@ -653,6 +663,7 @@ export const BalanceChangeNotificationTypes: NotificationReason[] = [
   'quest_payout',
   'bet_fill',
   'mana_payment_received',
+  'liquidity_returned',
 ]
 
 export const DELETE_PUSH_TOKEN = 'delete'

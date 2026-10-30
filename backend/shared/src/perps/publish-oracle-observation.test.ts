@@ -1,3 +1,4 @@
+import { PGlite } from '@electric-sql/pglite'
 import { OracleProviderError } from '../oracle-provider'
 import { OraclePoint } from 'common/perps/oracle'
 import { MINUTE_MS } from 'common/util/time'
@@ -35,13 +36,17 @@ const health = {
   status: 'available' as const,
   expiresAt: now + MINUTE_MS,
 }
-const database = (previous?: OraclePoint) => {
+const database = (previous?: OraclePoint, hasPending = false) => {
   const one = jest.fn(async (_sql: string) => ({}))
   const tx = {
     one,
     none: jest.fn(),
-    oneOrNone: jest.fn(async () =>
-      previous
+    oneOrNone: jest.fn(async (sql: string) =>
+      sql.includes('from perp_orders')
+        ? hasPending
+          ? { id: 'order' }
+          : null
+        : previous
         ? {
             ts: new Date(previous.ts).toISOString(),
             price: previous.price,
@@ -61,6 +66,53 @@ beforeEach(() => {
   jest.clearAllMocks()
   jest.spyOn(Date, 'now').mockReturnValue(now)
 })
+
+// The stamp is unchanged in both cases. Only a first copy that arrived stamped
+// ahead of its own receipt (ineligible then) can still advance a waiting order.
+it.each([
+  ['re-persists a mark first received stamped ahead', now - 2000, true],
+  ['skips a re-received mark orders already saw', now - 500, false],
+])(
+  'while a market order is waiting, %s',
+  async (_name, previousTs, persisted) => {
+    const db = new PGlite()
+    try {
+      await db.exec(`
+      create table contracts(id text, data jsonb);
+      create table perp_orders(id text, contract_id text, status text);
+      create table oracle_prices(feed_id text, ts timestamptz, price numeric, source_ts timestamptz);
+      insert into perp_orders values('order','market','pending');
+    `)
+      await db.query('insert into contracts values($1,$2)', [
+        'market',
+        { oracleFeedId: feed.id },
+      ])
+      await db.query('insert into oracle_prices values($1,$2,$3,$4)', [
+        feed.id,
+        new Date(previousTs),
+        point.price,
+        new Date(point.sourceTs),
+      ])
+      const tx = {
+        one: jest.fn(async () => ({})),
+        oneOrNone: async (sql: string, values: unknown[]) =>
+          (await db.query(sql, values)).rows[0] ?? null,
+      }
+      const pg = {
+        tx: async (
+          _options: unknown,
+          run: (t: typeof tx) => Promise<unknown>
+        ) => run(tx),
+      } as unknown as SupabaseDirectClient
+      await publishOracleObservation(pg, feed, { point, health })
+      if (persisted)
+        expect(insertOraclePrices).toHaveBeenCalledWith(tx, feed.id, [point])
+      else expect(insertOraclePrices).not.toHaveBeenCalled()
+    } finally {
+      await db.close()
+    }
+  }
+)
 afterEach(() => jest.restoreAllMocks())
 
 it('publishes before applying, and hands health to the same engine transition', async () => {
@@ -288,6 +340,43 @@ it('rejects a same-observation source timestamp conflict independently', async (
   )
   expect(insertOraclePrices).not.toHaveBeenCalled()
   expect(applyOraclePointToLivePerps).not.toHaveBeenCalled()
+})
+// A published stamp arriving at a new price. MNX names one immutable mark per
+// stamp, so that is corruption. Adjacent re-records a minute in place, and a
+// publisher whose own cache never saw the first value (a restart, a deploy
+// overlap) must keep the published one rather than withdraw availability.
+it('refuses a re-priced stamp on a feed whose stamps are immutable', async () => {
+  const { pg } = database({ ...point, ts: now - 5_000 })
+  expect(
+    await publishOracleObservation(pg, feed, {
+      point: { ...point, price: point.price + 1 },
+      health,
+    })
+  ).toBe(false)
+  expect(insertOraclePrices).not.toHaveBeenCalled()
+  expect(applyOraclePointToLivePerps).not.toHaveBeenCalled()
+})
+it('keeps the published value when a re-recording provider re-prices a stamp', async () => {
+  const msry = getOracleFeed('adjacent-msry')!
+  expect(msry.sourceRevision).toBe('keep-published')
+  const published = { ts: now - 5_000, sourceTs: now - 30_000, price: 8.22 }
+  const { pg } = database(published)
+  expect(
+    await publishOracleObservation(pg, msry, {
+      point: { ts: now, sourceTs: published.sourceTs, price: 8.23 },
+      health,
+    })
+  ).toBe(true)
+  expect(insertOraclePrices).not.toHaveBeenCalled()
+  expect(applyOraclePointToLivePerps).toHaveBeenCalledWith(
+    pg,
+    msry.id,
+    published,
+    undefined,
+    health
+  )
+  expect(log.warn).not.toHaveBeenCalled()
+  expect(log.error).not.toHaveBeenCalled()
 })
 it('does not lock, rewrite or push a repeated unavailable check within the heartbeat', async () => {
   const frozen = {

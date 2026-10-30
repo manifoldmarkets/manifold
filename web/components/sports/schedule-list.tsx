@@ -2,20 +2,42 @@ import clsx from 'clsx'
 import {
   SearchIcon,
   HeartIcon,
+  TicketIcon,
   ViewGridIcon,
   ViewListIcon,
   XIcon,
 } from '@heroicons/react/solid'
 import dayjs from 'dayjs'
 import { ReactNode, useEffect, useState } from 'react'
+import {
+  raceHeart,
+  RaceSessionEvent,
+  raceSessionEvents,
+  raceSessionSearchText,
+  RaceWeekend,
+} from 'common/race-weekends'
 import { ScheduleGame } from 'common/sports-schedule'
+import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { GameRow, GameRowSkeleton } from 'web/components/sports/game-row'
+import {
+  LikeFor,
+  RaceSessionCard,
+} from 'web/components/sports/race-session-card'
+import { RaceWeekendHero } from 'web/components/sports/race-weekend-hero'
+import { Carousel } from 'web/components/widgets/carousel'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { useGameLikes } from './use-game-likes'
+import { useGamePositions } from './use-game-positions'
+import {
+  GameStake,
+  getGameStake,
+  profitLabel,
+  sumGameStakes,
+} from './game-positions'
 import {
   compareGameStartTime,
   compareGameVolume,
@@ -23,6 +45,11 @@ import {
 } from './game-feed-utils'
 
 type DaySection<T> = { key: string; label: string; items: T[] }
+
+/** A row of the feed: a game, or an F1 session listed like one. */
+type FeedItem = ScheduleGame | RaceSessionEvent
+const isSession = (item: FeedItem): item is RaceSessionEvent =>
+  'session' in item
 
 function dayLabel(ms: number, now = Date.now()): string {
   const d = dayjs(ms)
@@ -60,12 +87,40 @@ export function GameFeed(props: {
   hasMore: boolean
   loadMore: () => Promise<boolean>
   showLeague: boolean
+  /**
+   * F1 weekends: each live or upcoming session goes among the games like one
+   * (a live one under "Live now", the rest under their day), and can be the
+   * featured card.
+   */
+  raceWeekends?: RaceWeekend[]
+  /**
+   * Feature what's on next rather than the most traded: F1's sessions never
+   * overlap, so its page leads with the next one.
+   */
+  featureNext?: boolean
+  /**
+   * The featured F1 weekend in full, with the timing tower and the day's
+   * moves. Elsewhere it's compact, about the size of a featured game.
+   */
+  fullRaceHero?: boolean
+  /** Under the featured card while no filter is on: F1's title fight. */
+  belowFeatured?: ReactNode
   /** Shown when there is nothing live or upcoming. */
   empty: ReactNode
 }) {
-  const { games, loading, hasMore, loadMore, showLeague, empty } = props
+  const {
+    games,
+    loading,
+    hasMore,
+    loadMore,
+    showLeague,
+    featureNext,
+    fullRaceHero,
+    belowFeatured,
+    empty,
+  } = props
   const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<'all' | 'live' | 'liked'>('all')
+  const [filter, setFilter] = useState<'all' | 'live' | 'liked' | 'mine'>('all')
   const [date, setDate] = useState('all')
   const [sort, setSort] = useState('time')
   const [featuredId, setFeaturedId] = useState<string>()
@@ -76,68 +131,147 @@ export function GameFeed(props: {
   const active = games.filter(
     (game) => game.status === 'upcoming' || game.status === 'live'
   )
-  const likes = useGameLikes(active.map((game) => game.id))
+  const sessions = raceSessionEvents(props.raceWeekends ?? [])
+  // Every market of the weekends, finished sessions too: the featured card's
+  // pills reach them.
+  const raceMarketIds = (props.raceWeekends ?? []).flatMap((w) =>
+    w.sessions.flatMap((s) => s.markets.map((m) => m.id))
+  )
+  const likes = useGameLikes([
+    ...active.map((game) => game.id),
+    ...raceMarketIds,
+  ])
+  const likeFor: LikeFor = (ids, target) => {
+    const { liked, change } = raceHeart(ids, target, (id) =>
+      likes.liked.has(id)
+    )
+    return {
+      liked,
+      disabled: change.some((id) => likes.disabled(id)),
+      toggle: () => change.forEach((id) => void likes.toggle(id)),
+    }
+  }
+  const sessionLiked = (s: RaceSessionEvent) =>
+    s.session.markets.some((m) => likes.liked.has(m.id))
+  const positions = useGamePositions(active.map((game) => game.id))
+  // One stake per game, marked to the live prices, shared by the cards, the
+  // My bets filter and its totals so they can't disagree.
+  const stakes: Record<string, GameStake> = {}
+  for (const game of active) {
+    const stake = getGameStake(game, positions.byGame[game.id])
+    if (stake) stakes[game.id] = stake
+  }
+  const stakedCount = Object.keys(stakes).length
   const normalized = query.trim().toLowerCase()
   const hasFilters = filter !== 'all' || date !== 'all' || !!normalized
-  const selectedFeatured = selectFeaturedGame(active, featuredId)
+  const everything: FeedItem[] = [...active, ...sessions]
+  const selectedFeatured = selectFeaturedGame(
+    everything,
+    featuredId,
+    featureNext ? 'start' : 'volume'
+  )
   useEffect(() => {
     if (selectedFeatured) setFeaturedId(selectedFeatured.id)
   }, [selectedFeatured?.id])
   const featured =
     view === 'cards' && !hasFilters ? selectedFeatured : undefined
-  const filtered = active
-    .filter(
-      (game) =>
-        (filter !== 'live' || game.status === 'live') &&
-        (filter !== 'liked' || likes.liked.has(game.id)) &&
-        (date === 'all' ||
-          dayjs(game.startTime).format('YYYY-MM-DD') === date) &&
-        (!normalized ||
-          `${game.home.name} ${game.home.shortName} ${game.away.name} ${game.away.shortName} ${game.league}`
-            .toLowerCase()
-            .includes(normalized))
-    )
-    .sort(sort === 'volume' ? compareGameVolume : compareGameStartTime)
+  const filteredGames = active.filter(
+    (game) =>
+      (filter !== 'live' || game.status === 'live') &&
+      (filter !== 'liked' || likes.liked.has(game.id)) &&
+      (filter !== 'mine' || !!stakes[game.id]) &&
+      (date === 'all' || dayjs(game.startTime).format('YYYY-MM-DD') === date) &&
+      (!normalized ||
+        `${game.home.name} ${game.home.shortName} ${game.away.name} ${game.away.shortName} ${game.league}`
+          .toLowerCase()
+          .includes(normalized))
+  )
+  // Sessions take the same filters as games, except My bets: positions don't
+  // cover them yet. A session is liked when any of its markets is.
+  const filteredSessions =
+    filter === 'mine'
+      ? []
+      : sessions.filter(
+          (s) =>
+            (filter !== 'live' || s.status === 'live') &&
+            (filter !== 'liked' || sessionLiked(s)) &&
+            (date === 'all' ||
+              dayjs(s.startTime).format('YYYY-MM-DD') === date) &&
+            (!normalized || raceSessionSearchText(s).includes(normalized))
+        )
+  const filtered: FeedItem[] = [...filteredGames, ...filteredSessions].sort(
+    sort === 'volume' ? compareGameVolume : compareGameStartTime
+  )
+  // A featured session brings its whole weekend: the featured card's pills
+  // cover the other sessions, so they aren't listed again below.
+  const featuredWeekendId =
+    featured && isSession(featured) ? featured.weekend.id : undefined
+  const listed = (item: FeedItem) =>
+    item.id !== featured?.id &&
+    !(isSession(item) && item.weekend.id === featuredWeekendId)
   // Live games always run in kickoff order, including in the Live filter.
   const live = filtered
-    .filter((g) => g.status === 'live' && g.id !== featured?.id)
+    .filter((g) => g.status === 'live' && listed(g))
     .sort(compareGameStartTime)
-  const upcoming = filtered.filter(
-    (g) => g.status === 'upcoming' && g.id !== featured?.id
-  )
+  const upcoming = filtered.filter((g) => g.status === 'upcoming' && listed(g))
   const days = groupByDay(upcoming, (g) => g.startTime).sort((a, b) =>
     a.key.localeCompare(b.key)
   )
-  const allDays = groupByDay(active, (game) => game.startTime).sort((a, b) =>
-    a.key.localeCompare(b.key)
+  const allDays = groupByDay(everything, (item) => item.startTime).sort(
+    (a, b) => a.key.localeCompare(b.key)
   )
+  // A section with a session in it counts events, not games.
+  const unitFor = (items: FeedItem[]) =>
+    items.some(isSession) ? 'event' : 'game'
+  // What the My bets filter adds up: the stake on each game it shows.
+  const myStakes: GameStake[] =
+    filter === 'mine'
+      ? filteredGames.flatMap((game) => {
+          const stake = stakes[game.id]
+          return stake ? [stake] : []
+        })
+      : []
+  const needsSignIn =
+    (filter === 'liked' || filter === 'mine') && likes.user === null
   const reset = () => {
     setQuery('')
     setDate('all')
     setFilter('all')
   }
-  const renderGames = (items: ScheduleGame[]) => (
+  const renderItems = (items: FeedItem[]) => (
     <div
       className={clsx(
         'grid items-start gap-3',
         view === 'cards' && items.length > 1 && 'sm:grid-cols-2'
       )}
     >
-      {items.map((game) => (
-        <GameRow
-          key={game.id}
-          game={game}
-          variant={view === 'compact' ? 'compact' : 'card'}
-          showLeague={showLeague}
-          liked={likes.liked.has(game.id)}
-          likeDisabled={likes.disabled(game.id)}
-          onToggleLike={() => void likes.toggle(game.id)}
-        />
-      ))}
+      {items.map((item) =>
+        isSession(item) ? (
+          <RaceSessionCard
+            key={item.id}
+            event={item}
+            variant={view === 'compact' ? 'compact' : 'card'}
+            showLeague={showLeague}
+            likeFor={likeFor}
+          />
+        ) : (
+          <GameRow
+            key={item.id}
+            game={item}
+            variant={view === 'compact' ? 'compact' : 'card'}
+            showLeague={showLeague}
+            liked={likes.liked.has(item.id)}
+            likeDisabled={likes.disabled(item.id)}
+            onToggleLike={() => void likes.toggle(item.id)}
+            stake={stakes[item.id]}
+            onPositionsChange={() => void positions.refreshGame(item.id)}
+          />
+        )
+      )}
     </div>
   )
 
-  if (loading && games.length === 0) {
+  if (loading && games.length === 0 && sessions.length === 0) {
     return (
       <Col className="gap-2">
         <SectionHeader label="Up next" />
@@ -145,7 +279,7 @@ export function GameFeed(props: {
       </Col>
     )
   }
-  if (active.length === 0) return <>{empty}</>
+  if (everything.length === 0) return <>{empty}</>
 
   return (
     <div className="min-w-0">
@@ -226,22 +360,34 @@ export function GameFeed(props: {
           </div>
           <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
             <div
-              className="flex shrink-0 items-center gap-2"
+              className="flex flex-wrap items-center gap-2"
               aria-label="Game filters"
             >
               {(
                 [
-                  { value: 'all', label: 'All games', count: active.length },
+                  {
+                    value: 'all',
+                    label: 'All games',
+                    count: everything.length,
+                  },
                   {
                     value: 'live',
                     label: 'Live',
-                    count: active.filter((game) => game.status === 'live')
+                    count: everything.filter((item) => item.status === 'live')
                       .length,
                   },
                   {
                     value: 'liked',
                     label: 'Liked',
-                    count: likes.loading ? undefined : likes.liked.size,
+                    count: likes.loading
+                      ? undefined
+                      : active.filter((game) => likes.liked.has(game.id))
+                          .length + sessions.filter(sessionLiked).length,
+                  },
+                  {
+                    value: 'mine',
+                    label: 'My bets',
+                    count: positions.loading ? undefined : stakedCount,
                   },
                 ] as const
               ).map((item) => (
@@ -266,17 +412,30 @@ export function GameFeed(props: {
                   {item.value === 'liked' && (
                     <HeartIcon className="h-3.5 w-3.5" />
                   )}
-                  {item.label}
+                  {item.value === 'mine' && (
+                    <TicketIcon className="h-3.5 w-3.5" />
+                  )}
+                  {item.value === 'all' ? (
+                    // Four chips: keep them on one line on small phones.
+                    <>
+                      All<span className="hidden sm:inline"> games</span>
+                    </>
+                  ) : (
+                    item.label
+                  )}
                   <span className="text-xs opacity-70">{item.count}</span>
                 </button>
               ))}
             </div>
             {/* Keep this strip's space in Live so the filter row stays put. */}
-            <div
+            <Carousel
               className={clsx(
-                'flex min-w-0 basis-full gap-2 overflow-x-auto md:flex-1 md:basis-0',
+                'min-w-0 basis-full md:flex-1 md:basis-0',
                 filter === 'live' && 'invisible'
               )}
+              labelsParentClassName="gap-2"
+              fadeEdges
+              showArrowsOnHover
               aria-label="Game dates"
               aria-hidden={filter === 'live'}
             >
@@ -312,19 +471,24 @@ export function GameFeed(props: {
                   <span>{dayjs(day.key).format('MMM D')}</span>
                 </button>
               ))}
-            </div>
+            </Carousel>
           </div>
           {hasFilters && (
             <div
               className="text-ink-500 flex items-center justify-between gap-2 text-xs"
               role="status"
             >
-              <span>
-                {filtered.length} of {active.length} loaded games
-              </span>
+              {filter === 'mine' && myStakes.length > 0 ? (
+                <MyBetsSummary stakes={myStakes} />
+              ) : (
+                <span>
+                  {filtered.length} of {everything.length} loaded{' '}
+                  {sessions.length > 0 ? 'events' : 'games'}
+                </span>
+              )}
               <button
                 type="button"
-                className="text-primary-700 min-h-[32px] font-semibold"
+                className="text-primary-700 min-h-[32px] shrink-0 whitespace-nowrap font-semibold"
                 onClick={reset}
               >
                 Reset filters
@@ -343,18 +507,41 @@ export function GameFeed(props: {
               </button>
             </p>
           )}
+          {positions.error && (
+            <p className="text-ink-500 text-xs" role="alert">
+              Couldn't load your bets.
+              <button
+                type="button"
+                className="text-primary-700 ml-2 underline"
+                onClick={() => void positions.refresh()}
+              >
+                Retry
+              </button>
+            </p>
+          )}
         </div>
-        {featured && (
-          <GameRow
-            key={featured.id}
-            variant="featured"
-            game={featured}
-            showLeague={showLeague}
-            liked={likes.liked.has(featured.id)}
-            likeDisabled={likes.disabled(featured.id)}
-            onToggleLike={() => void likes.toggle(featured.id)}
-          />
-        )}
+        {featured &&
+          (isSession(featured) ? (
+            <RaceWeekendHero
+              key={featured.id}
+              event={featured}
+              compact={!fullRaceHero}
+              likeFor={likeFor}
+            />
+          ) : (
+            <GameRow
+              key={featured.id}
+              variant="featured"
+              game={featured}
+              showLeague={showLeague}
+              liked={likes.liked.has(featured.id)}
+              likeDisabled={likes.disabled(featured.id)}
+              onToggleLike={() => void likes.toggle(featured.id)}
+              stake={stakes[featured.id]}
+              onPositionsChange={() => void positions.refreshGame(featured.id)}
+            />
+          ))}
+        {!hasFilters && belowFeatured}
         {filtered.length === 0 && (
           <div className="border-ink-200 rounded-xl border border-dashed px-5 py-8 text-center">
             <h3 className="text-ink-900 font-semibold">
@@ -366,44 +553,58 @@ export function GameFeed(props: {
                   : likes.loading
                   ? 'Loading your liked games…'
                   : 'No liked games here yet'
+                : filter === 'mine'
+                ? needsSignIn
+                  ? 'Sign in to see your bets'
+                  : positions.error
+                  ? 'Your bets are unavailable'
+                  : positions.loading
+                  ? 'Loading your bets…'
+                  : 'No bets on these games yet'
                 : filter === 'live'
-                ? 'No games live right now'
+                ? sessions.length > 0
+                  ? 'Nothing live right now'
+                  : 'No games live right now'
+                : sessions.length > 0
+                ? 'Nothing matches'
                 : 'No matching games'}
             </h3>
             <p className="text-ink-500 mt-1 text-sm">
               {filter === 'liked'
                 ? 'Heart a game to add it to your Manifold likes.'
+                : filter === 'mine'
+                ? 'Tap a price to back a team. Your picks and open orders show up here.'
                 : 'Try another date, team, or filter.'}
             </p>
             <button
               type="button"
-              onClick={
-                filter === 'liked' && likes.user === null
-                  ? firebaseLogin
-                  : reset
-              }
+              onClick={needsSignIn ? firebaseLogin : reset}
               className="text-primary-700 mt-3 min-h-[40px] text-sm font-bold"
             >
-              {filter === 'liked' && likes.user === null
-                ? 'Sign in'
-                : 'Show all games'}
+              {needsSignIn ? 'Sign in' : 'Show all games'}
             </button>
           </div>
         )}
         {live.length > 0 && (
           <Col className="gap-2">
-            <SectionHeader label="Live now" count={live.length} accent />
-            {renderGames(live)}
+            <SectionHeader
+              label="Live now"
+              count={live.length}
+              unit={unitFor(live)}
+              accent
+            />
+            {renderItems(live)}
           </Col>
         )}
         {days.map((day) => (
           <Col key={day.key} className="gap-2">
             <SectionHeader
               label={day.label}
-              sublabel={dayjs(day.items[0].startTime).format('MMM D')}
+              sublabel={dayjs(day.key).format('MMM D')}
               count={day.items.length}
+              unit={unitFor(day.items)}
             />
-            {renderGames(day.items)}
+            {renderItems(day.items)}
           </Col>
         ))}
         {hasMore && filter !== 'live' ? (
@@ -431,6 +632,39 @@ export function GameFeed(props: {
         )}
       </Col>
     </div>
+  )
+}
+
+/** The My bets filter's totals: games, mana in, current value and profit. */
+function MyBetsSummary(props: { stakes: GameStake[] }) {
+  const totals = sumGameStakes(props.stakes)
+  const profit = profitLabel(totals.profit)
+  return (
+    <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 tabular-nums">
+      <span>
+        {totals.games} {totals.games === 1 ? 'game' : 'games'}
+      </span>
+      {totals.invested > 0 && (
+        <>
+          <span aria-hidden>·</span>
+          <span>{formatMoney(totals.invested)} in</span>
+          <span aria-hidden>·</span>
+          <span>Worth {formatMoney(totals.value)}</span>
+          <span className={clsx('font-semibold', profit.className)}>
+            {profit.text}
+          </span>
+        </>
+      )}
+      {totals.openOrders > 0 && (
+        <>
+          <span aria-hidden>·</span>
+          <span>
+            {totals.openOrders} open{' '}
+            {totals.openOrders === 1 ? 'order' : 'orders'}
+          </span>
+        </>
+      )}
+    </span>
   )
 }
 

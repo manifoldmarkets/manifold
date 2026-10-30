@@ -21,16 +21,25 @@ export const getFeedConversionScores = async (
     start_date: string
     feed_conversion: number
   }>(
+    // Each user's click, bet or like on a market counts once a day. Views are
+    // already deduped at write time (one per user and market per minute), but
+    // interactions were not: on 2026-10-24 one double-firing card logged 8
+    // clicks in about a second, a third of that day's numerator.
     `with interacts as (
-      select
-        date_trunc('day', created_time at time zone 'america/los_angeles')::date as start_date,
-        count(name) as count
-      from user_contract_interactions
-      where
-        name in ('card click', 'card bet', 'card like')
-        and created_time >= date_to_midnight_pt($1)
-        and created_time < date_to_midnight_pt($2)
-        and user_id not in ($3:list)
+      select start_date, count(*) as count
+      from (
+        select distinct
+          date_trunc('day', created_time at time zone 'america/los_angeles')::date as start_date,
+          user_id,
+          contract_id,
+          name
+        from user_contract_interactions
+        where
+          name in ('card click', 'card bet', 'card like')
+          and created_time >= date_to_midnight_pt($1)
+          and created_time < date_to_midnight_pt($2)
+          and user_id not in ($3:list)
+      ) daily_interactions
       group by start_date
     ),
     views as (

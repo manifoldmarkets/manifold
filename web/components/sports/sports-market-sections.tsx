@@ -7,6 +7,7 @@ import { DAY_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useHidesBlocked } from './blocked-topics'
 import { RelatedMarketRow } from './game-related-markets'
 
 /**
@@ -20,6 +21,7 @@ export function SportsMarketSections(props: {
   enabled?: boolean
 }) {
   const { sport, className, enabled = true } = props
+  const hides = useHidesBlocked()
   const key = sport === 'all' ? 'all' : sport.key
   const gids = (sport === 'all' ? sportGroupIds('all') : sport.groupIds).join(
     ','
@@ -38,25 +40,29 @@ export function SportsMarketSections(props: {
     { term: '', filter: 'open', sort: 'score', gids, limit: 30 },
     undefined,
     `sports-trending-${key}`,
-    enabled
+    enabled && gids.length > 0
   )
   const futures = useAPIGetter(
     'search-markets-full',
     { term: '', filter: 'open', sort: 'liquidity', gids, limit: 40 },
     undefined,
     `sports-futures-${key}`,
-    enabled
+    enabled && gids.length > 0
   )
+
+  // An empty topic set must never become an unfiltered search.
+  if (!gids) return null
 
   const now = Date.now()
   const trendingMarkets = (trending.data ?? [])
-    .filter((c) => !isSportsContract(c))
+    .filter((c) => !isSportsContract(c) && !hides(c.groupSlugs))
     .slice(0, 8)
   const trendingIds = new Set(trendingMarkets.map((c) => c.id))
   const futuresMarkets = (futures.data ?? [])
     .filter(
       (c) =>
         !isSportsContract(c) &&
+        !hides(c.groupSlugs) &&
         !trendingIds.has(c.id) &&
         (c.closeTime ?? 0) - now > 21 * DAY_MS
     )

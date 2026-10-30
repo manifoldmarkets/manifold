@@ -2,16 +2,26 @@ import { keyBy, uniq } from 'lodash'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo } from 'react'
-import { CURATED_SPORTS, SPORT_KEY_RE } from 'common/sports-schedule'
+import { withoutRaceMarkets } from 'common/race-weekends'
+import { CURATED_SPORTS, SPORT_KEY_RE, sportPath } from 'common/sports-schedule'
 import { Col } from 'web/components/layout/col'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
+import { RaceChampionships } from 'web/components/sports/race-championships'
 import { GameFeed } from 'web/components/sports/schedule-list'
-import { sportPath } from 'web/components/sports/sport-rail'
 import {
   NoGames,
   SportMarkets,
   SportsShell,
 } from 'web/components/sports/sports-shell'
+import {
+  ownTopicSlugs,
+  shownCount,
+  useBlockedTopicFilter,
+  useLoadPastBlocked,
+  useUnblockedSchedule,
+} from 'web/components/sports/blocked-topics'
+import { useSportsIndex } from 'web/components/sports/use-sports-index'
+import { useSportTopicExtras } from 'web/components/sports/use-sport-topic'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
 import { useSportsSchedule } from 'web/hooks/use-sports-schedule'
@@ -31,12 +41,13 @@ export default function SportPage() {
   const key =
     raw && SPORT_KEY_RE.test(raw.toLowerCase()) ? raw.toLowerCase() : undefined
   useSaveScroll(`sports-${key ?? ''}`, true)
-  // One URL per sport.
+  // One URL per sport, and All is /sports.
   useEffect(() => {
-    if (raw && key && raw !== key) router.replace(sportPath(key))
+    if (key === 'all') router.replace(sportPath('all'))
+    else if (raw && key && raw !== key) router.replace(sportPath(key))
   }, [raw, key])
 
-  const ready = router.isReady && !!key
+  const ready = router.isReady && !!key && key !== 'all'
   const { schedule, rail, loading, loadMore, hasMore } = useSportsSchedule(
     key ?? 'all',
     ready
@@ -44,12 +55,39 @@ export default function SportPage() {
   const sports = rail?.sports ?? CURATED_SPORTS
   const sportsByKey = useMemo(() => keyBy(sports, 'key'), [sports])
   const sport = key ? sportsByKey[key] : undefined
+  const scope = useMemo(() => sport && { sport }, [sport])
+  const topic = useSportTopicExtras(scope)
+  const { index } = useSportsIndex()
+  // Topics the visitor blocked stay out of the feed, unless it's this sport's.
+  const hides = useBlockedTopicFilter(
+    ownTopicSlugs(sport, undefined, index?.topics)
+  )
+  const { games, weekends } = useUnblockedSchedule(
+    schedule?.games,
+    schedule?.raceWeekends,
+    hides,
+    sportsByKey
+  )
+  const lookingPastBlocked = useLoadPastBlocked({
+    feed: key ?? '',
+    shown: shownCount(games, weekends),
+    loaded: schedule?.games.length ?? 0,
+    hasMore,
+    loadMore,
+  })
   // Only judge once this sport's own response is in.
-  const unknown = router.isReady && (!key || (!!schedule && !sport))
+  const unknown =
+    router.isReady && key !== 'all' && (!key || (!!schedule && !sport))
 
-  const games = schedule?.games ?? []
   // Tag cards with their league only when the sport has several (soccer).
   const showLeague = uniq(games.map((g) => g.league)).length > 1
+  // F1's weekends (the API sends them only for F1): each session in the feed,
+  // the next one featured, and the title fight under it.
+  const isF1 = key === 'f1'
+  const championships = schedule?.raceChampionships ?? []
+  const titleFight = championships.length > 0 && (
+    <RaceChampionships championships={championships} />
+  )
 
   if (unknown) {
     return (
@@ -76,7 +114,7 @@ export default function SportPage() {
   const markets = (
     <SportMarkets
       sport={sport ?? 'all'}
-      upcoming={schedule?.upcoming ?? []}
+      upcoming={withoutRaceMarkets(schedule?.upcoming ?? [], weekends)}
       sportsByKey={sportsByKey}
       enabled={ready && !!sport}
     />
@@ -99,8 +137,13 @@ export default function SportPage() {
         )
       }
       subheading={
-        sport ? `Every ${sport.label} game, plus props and futures.` : undefined
+        topic.notice ||
+        (sport
+          ? `Every ${sport.label} game, plus props and futures.`
+          : undefined)
       }
+      actions={topic.follow}
+      hides={hides}
       seo={{
         title: sport ? `${sport.longLabel} games and markets` : 'Sports',
         description: sport
@@ -121,16 +164,27 @@ export default function SportPage() {
                 <GameFeed
                   key={key}
                   games={games}
-                  loading={loading || !schedule}
+                  raceWeekends={weekends}
+                  featureNext={isF1}
+                  fullRaceHero={isF1}
+                  belowFeatured={titleFight}
+                  loading={loading || !schedule || lookingPastBlocked}
                   hasMore={hasMore}
                   loadMore={loadMore}
                   showLeague={showLeague}
                   empty={
                     <div className="flex flex-col gap-6">
+                      {titleFight}
                       <NoGames
                         sport={sport}
                         sports={sports}
                         counts={rail?.counts ?? {}}
+                        allBlocked={
+                          shownCount(
+                            schedule?.games ?? [],
+                            schedule?.raceWeekends ?? []
+                          ) > 0
+                        }
                       />
                       {markets}
                     </div>
@@ -144,6 +198,7 @@ export default function SportPage() {
             queryString: 'markets',
             content: <div className="pt-3">{markets}</div>,
           },
+          ...topic.tabs,
         ]}
       />
     </SportsShell>

@@ -130,6 +130,8 @@ function PollingPerpCard(props: { perp: PerpContract; className?: string }) {
           contract={perp}
           height={56}
           className="!my-1"
+          // "VoteHub average" above already names the source.
+          hideCredit
           emptyState={
             <div className="text-ink-500 flex h-[56px] items-center text-xs">
               No recent prices

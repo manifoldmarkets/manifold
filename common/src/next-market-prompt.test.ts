@@ -1,0 +1,490 @@
+import { Contract } from './contract'
+import {
+  getNextMarketPromptPlacement,
+  isNextMarketPromptLocation,
+  loadNextMarketCandidates,
+  pickNextMarketCandidates,
+  NextMarketPromptQueue,
+  updateNextMarketPromptQueue,
+} from './next-market-prompt'
+
+const NOW = 1_800_000_000_000
+
+const binary = (id: string, overrides: Record<string, unknown> = {}) =>
+  ({
+    id,
+    outcomeType: 'BINARY',
+    mechanism: 'cpmm-1',
+    prob: 0.5,
+    token: 'MANA',
+    visibility: 'public',
+    isResolved: false,
+    closeTime: NOW + 1_000_000,
+    ...overrides,
+  } as unknown as Contract)
+
+const multi = (id: string, overrides: Record<string, unknown> = {}) =>
+  ({
+    id,
+    outcomeType: 'MULTIPLE_CHOICE',
+    mechanism: 'cpmm-multi-1',
+    token: 'MANA',
+    visibility: 'public',
+    isResolved: false,
+    ...overrides,
+  } as unknown as Contract)
+
+const pick = (
+  candidates: Contract[],
+  opts: Partial<Parameters<typeof pickNextMarketCandidates>[1]> = {}
+) =>
+  pickNextMarketCandidates(candidates, {
+    sourceContractId: 'source',
+    token: 'MANA',
+    excludeContractIds: new Set(),
+    now: NOW,
+    ...opts,
+  }).map((c) => c.id)
+
+describe('pickNextMarketCandidates', () => {
+  it('starts with one suggestion and retains ranked order for a larger pool', () => {
+    const candidates = [binary('a'), multi('b'), binary('c'), binary('d')]
+    expect(pick(candidates)).toEqual(['a'])
+    expect(pick(candidates, { count: 3 })).toEqual(['a', 'b', 'c'])
+    expect(pick(candidates, { count: 0 })).toEqual([])
+  })
+
+  it('skips the market just bet on and duplicates', () => {
+    expect(pick([binary('source'), binary('a'), binary('a')])).toEqual(['a'])
+  })
+
+  it('skips markets the user has already bet on', () => {
+    expect(
+      pick([binary('held'), binary('a')], {
+        excludeContractIds: new Set(['held']),
+      })
+    ).toEqual(['a'])
+  })
+
+  it('skips resolved, closed, deleted and non-public markets', () => {
+    expect(
+      pick([
+        binary('resolved', { isResolved: true }),
+        binary('closed', { closeTime: NOW - 1 }),
+        binary('deleted', { deleted: true }),
+        binary('unlisted', { visibility: 'unlisted' }),
+        binary('open', { closeTime: undefined }),
+      ])
+    ).toEqual(['open'])
+  })
+
+  it('skips binary markets at or beyond 5% and 95%', () => {
+    expect(
+      pick(
+        [
+          binary('low', { prob: 0.04 }),
+          binary('high', { prob: 0.96 }),
+          binary('edge-low', { prob: 0.05 }),
+          binary('edge-high', { prob: 0.95 }),
+        ],
+        { count: 3 }
+      )
+    ).toEqual(['edge-low', 'edge-high'])
+  })
+
+  it('skips markets without a row bet button and other tokens', () => {
+    expect(
+      pick([
+        binary('cash', { token: 'CASH' }),
+        binary('perp', { outcomeType: 'PERP', mechanism: 'perp' }),
+        binary('poll', { outcomeType: 'POLL', mechanism: 'none' }),
+        binary('stonk', { outcomeType: 'STONK' }),
+        multi('ok'),
+      ])
+    ).toEqual(['ok'])
+  })
+
+  it('applies the caller block check', () => {
+    expect(
+      pick([binary('blocked'), binary('a')], {
+        isBlocked: (c) => c.id === 'blocked',
+      })
+    ).toEqual(['a'])
+  })
+
+  it('matches the cash token when the bet was in cash', () => {
+    expect(
+      pick([binary('mana'), binary('cash', { token: 'CASH' })], {
+        token: 'CASH',
+      })
+    ).toEqual(['cash'])
+  })
+
+  it('applies topic blocks after hydration and fills from later candidates', () => {
+    const candidates = ['blocked', 'a', 'b', 'c'].map((id) =>
+      binary(id, { groupSlugs: [] })
+    )
+    expect(
+      pick(candidates, {
+        hydratedContracts: [
+          binary('c'),
+          binary('blocked', { groupSlugs: ['blocked-topic'] }),
+          binary('b'),
+          binary('a'),
+        ],
+        isBlocked: (c) => c.groupSlugs?.includes('blocked-topic') ?? false,
+        count: 3,
+      })
+    ).toEqual(['a', 'b', 'c'])
+  })
+
+  it('uses hydrated eligibility instead of a stale related-market snapshot', () => {
+    expect(
+      pick(
+        [binary('closed'), binary('resolved'), binary('extreme'), binary('a')],
+        {
+          hydratedContracts: [
+            binary('closed', { closeTime: NOW - 1 }),
+            binary('resolved', { isResolved: true }),
+            binary('extreme', { prob: 0.99 }),
+            binary('a'),
+          ],
+        }
+      )
+    ).toEqual(['a'])
+  })
+
+  it('excludes missing hydrated contracts instead of using stripped data', () => {
+    expect(
+      pick([binary('missing'), binary('a')], {
+        hydratedContracts: [binary('a')],
+      })
+    ).toEqual(['a'])
+    expect(pick([binary('a')], { hydratedContracts: [] })).toEqual([])
+  })
+
+  it('requires hydrated answers before offering a multiple-choice dialog', () => {
+    expect(
+      pick([multi('empty'), multi('a')], {
+        hydratedContracts: [
+          multi('empty', { answers: [] }),
+          multi('a', {
+            answers: [{ id: 'answer', text: 'Answer', prob: 0.5 }],
+          }),
+        ],
+      })
+    ).toEqual(['a'])
+  })
+
+  it('offers hydrated multiple-choice markets from both CPMM versions', () => {
+    const answers = [{ id: 'answer', text: 'Answer', prob: 0.5 }]
+    expect(
+      pick([multi('v1'), multi('v2', { mechanism: 'cpmm-multi-2' })], {
+        hydratedContracts: [
+          multi('v1', { answers }),
+          multi('v2', { mechanism: 'cpmm-multi-2', answers }),
+        ],
+        count: 3,
+      })
+    ).toEqual(['v1', 'v2'])
+  })
+})
+
+describe('loadNextMarketCandidates', () => {
+  const options = {
+    sourceContractId: 'source',
+    token: 'MANA' as const,
+    excludeContractIds: new Set(['recent']),
+    now: NOW,
+  }
+
+  it('hydrates missing currency before filtering, preserving order and excluding known IDs', async () => {
+    const answers = [{ id: 'answer', text: 'Answer', prob: 0.5 }]
+    const loadContracts = jest.fn(async () => [
+      binary('second'),
+      multi('first', { answers }),
+    ])
+    const result = await loadNextMarketCandidates(
+      [
+        binary('source'),
+        binary('recent'),
+        multi('first', { token: undefined, answers: [] }),
+        binary('second', { token: undefined }),
+        binary('second'),
+      ],
+      options,
+      loadContracts
+    )
+    expect(loadContracts).toHaveBeenCalledWith(['first', 'second'])
+    expect(result.ready.map((c) => c.id)).toEqual(['first', 'second'])
+    expect(result.requestedCount).toBe(2)
+  })
+
+  it('never assumes missing currency is mana or bypasses authoritative eligibility', async () => {
+    const result = await loadNextMarketCandidates(
+      ['cash', 'missing-token', 'missing', 'closed'].map((id) =>
+        binary(id, { token: undefined })
+      ),
+      options,
+      async () => [
+        binary('cash', { token: 'CASH' }),
+        binary('missing-token', { token: undefined }),
+        binary('closed', { closeTime: NOW - 1 }),
+      ]
+    )
+    expect(result.ready).toEqual([])
+  })
+
+  it('does not fetch an empty or entirely excluded pool', async () => {
+    const loadContracts = jest.fn(async () => [])
+    const result = await loadNextMarketCandidates(
+      [binary('source'), binary('recent')],
+      options,
+      loadContracts
+    )
+    expect(loadContracts).not.toHaveBeenCalled()
+    expect(result.ready).toEqual([])
+  })
+})
+
+describe('updateNextMarketPromptQueue', () => {
+  const empty = (): NextMarketPromptQueue => ({
+    shown: [],
+    remaining: [],
+    completedIds: [],
+    retiredIds: [],
+  })
+  const options = {
+    sourceContractId: 'source',
+    token: 'MANA' as const,
+    excludeContractIds: new Set<string>(),
+    now: NOW,
+  }
+  const update = (
+    queue: NextMarketPromptQueue,
+    ids: string[],
+    completedId?: string
+  ) =>
+    updateNextMarketPromptQueue(
+      queue,
+      ids.map((id) => binary(id)),
+      options,
+      completedId
+    )
+  const shown = (queue: NextMarketPromptQueue) => queue.shown.map((c) => c.id)
+
+  it('keeps reserves hidden until a trade and appends just one each time', () => {
+    let queue = update(empty(), ['a', 'b', 'c'])
+    expect(shown(queue)).toEqual(['a'])
+    queue = update(queue, ['d']) // Bet intent prefetch, not a completed trade.
+    expect(shown(queue)).toEqual(['a'])
+    queue = update(queue, [], 'a')
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(shown(update(queue, [], 'b'))).toEqual(['a', 'b', 'c'])
+  })
+
+  it('replenishes a single-result pool even when prefetch finishes after the trade', () => {
+    let queue = update(empty(), ['a'])
+    queue = update(queue, [], 'a')
+    expect(shown(queue)).toEqual(['a'])
+    queue = update(queue, ['source', 'a', 'b', 'b', 'c'])
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.remaining.map((c) => c.id)).toEqual(['c'])
+  })
+
+  it('does not refill twice for repeated completion callbacks or unseen markets', () => {
+    let queue = update(empty(), ['a', 'b', 'c'])
+    queue = update(queue, [], 'a')
+    queue = update(queue, [], 'a')
+    queue = update(queue, [], 'not-shown')
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.completedIds).toEqual(['a'])
+  })
+
+  it('deduplicates overlapping responses and never reoffers a completed pick', () => {
+    let queue = update(empty(), ['a', 'b'])
+    queue = update(queue, ['b', 'c', 'c'])
+    queue = update(queue, ['a', 'c', 'd'], 'a')
+    queue = update(queue, ['a', 'b'], 'b')
+    expect(shown(queue)).toEqual(['a', 'b', 'c'])
+    expect(queue.remaining.map((c) => c.id)).toEqual(['d'])
+  })
+
+  it('rechecks closed, blocked and recently traded reserves before revealing', () => {
+    const queue = updateNextMarketPromptQueue(
+      empty(),
+      [
+        binary('a'),
+        binary('closed', { closeTime: NOW + 1 }),
+        binary('blocked'),
+        binary('recent'),
+        binary('next'),
+      ],
+      options
+    )
+    const next = updateNextMarketPromptQueue(
+      queue,
+      [],
+      {
+        ...options,
+        now: NOW + 2,
+        excludeContractIds: new Set(['recent']),
+        isBlocked: (c) => c.id === 'blocked',
+      },
+      'a'
+    )
+    expect(shown(next)).toEqual(['a', 'next'])
+  })
+
+  it('stops quietly when no further eligible candidate exists', () => {
+    const queue = update(update(empty(), ['a']), [], 'a')
+    expect(shown(update(queue, ['source', 'a']))).toEqual(['a'])
+    expect(queue.remaining).toEqual([])
+  })
+
+  it('replaces a closed untraded pick once while retaining its seen ID', () => {
+    let queue = updateNextMarketPromptQueue(
+      empty(),
+      [binary('a', { closeTime: NOW + 1 }), binary('b'), binary('c')],
+      options
+    )
+    const later = { ...options, now: NOW + 2 }
+    queue = updateNextMarketPromptQueue(queue, [], later)
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.retiredIds).toEqual(['a'])
+    expect(queue.completedIds).toEqual([])
+    queue = updateNextMarketPromptQueue(queue, [binary('a')], later)
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.remaining.map((c) => c.id)).toEqual(['c'])
+    expect(queue.retiredIds).toEqual(['a'])
+  })
+
+  it('keeps a blocked pick retired after unblocking without creating another slot', () => {
+    const blocked = { ...options, isBlocked: (c: Contract) => c.id === 'a' }
+    let queue = updateNextMarketPromptQueue(
+      update(empty(), ['a', 'b', 'c']),
+      [],
+      blocked
+    )
+    expect(queue.retiredIds).toEqual(['a'])
+    queue = update(queue, ['a'])
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.retiredIds).toEqual(['a'])
+    expect(queue.remaining.map((c) => c.id)).toEqual(['c'])
+  })
+
+  it('fills a retired slot from a late response, excluding ineligible reserves', () => {
+    const blocked = { ...options, isBlocked: (c: Contract) => c.id === 'a' }
+    let queue = updateNextMarketPromptQueue(update(empty(), ['a']), [], blocked)
+    expect(queue.retiredIds).toEqual(['a'])
+    queue = updateNextMarketPromptQueue(
+      queue,
+      [
+        binary('a'),
+        binary('closed', { closeTime: NOW }),
+        binary('b'),
+        binary('c'),
+      ],
+      blocked
+    )
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.completedIds).toEqual([])
+    expect(queue.remaining.map((c) => c.id)).toEqual(['c'])
+  })
+
+  it('does not retire an already traded pick or award its slot twice', () => {
+    let queue = update(update(empty(), ['a', 'b', 'c']), [], 'a')
+    const blocked = { ...options, isBlocked: (c: Contract) => c.id === 'a' }
+    queue = updateNextMarketPromptQueue(queue, [], blocked, 'a')
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.completedIds).toEqual(['a'])
+    expect(queue.retiredIds).toEqual([])
+  })
+
+  it('preserves one earned reveal after trading a replacement', () => {
+    const blocked = { ...options, isBlocked: (c: Contract) => c.id === 'a' }
+    let queue = updateNextMarketPromptQueue(
+      update(empty(), ['a', 'b', 'c', 'd']),
+      [],
+      blocked
+    )
+    queue = updateNextMarketPromptQueue(queue, [], blocked, 'b')
+    queue = updateNextMarketPromptQueue(queue, [], blocked, 'b')
+    expect(shown(queue)).toEqual(['a', 'b', 'c'])
+    expect(queue.completedIds).toEqual(['b'])
+    expect(queue.remaining.map((c) => c.id)).toEqual(['d'])
+  })
+
+  it('ignores a stale completion callback for a retired pick', () => {
+    const blocked = { ...options, isBlocked: (c: Contract) => c.id === 'a' }
+    let queue = updateNextMarketPromptQueue(
+      update(empty(), ['a', 'b', 'c']),
+      [],
+      blocked
+    )
+    queue = updateNextMarketPromptQueue(queue, [], blocked, 'a')
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.completedIds).toEqual([])
+    expect(queue.retiredIds).toEqual(['a'])
+  })
+
+  it('keeps an ineligible pick while its dialog is open, then replaces on cancellation', () => {
+    const blocked = { ...options, isBlocked: (c: Contract) => c.id === 'a' }
+    let queue = updateNextMarketPromptQueue(
+      update(empty(), ['a', 'b', 'c']),
+      [],
+      { ...blocked, activeDialogContractId: 'a' }
+    )
+    expect(shown(queue)).toEqual(['a'])
+    expect(queue.retiredIds).toEqual([])
+    queue = updateNextMarketPromptQueue(queue, [], blocked)
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.completedIds).toEqual([])
+    expect(queue.retiredIds).toEqual(['a'])
+  })
+
+  it('counts a trade before retirement when an ineligible dialog closes', () => {
+    const blocked = { ...options, isBlocked: (c: Contract) => c.id === 'a' }
+    const queue = updateNextMarketPromptQueue(
+      update(empty(), ['a', 'b', 'c']),
+      [],
+      blocked,
+      'a'
+    )
+    expect(shown(queue)).toEqual(['a', 'b'])
+    expect(queue.completedIds).toEqual(['a'])
+    expect(queue.retiredIds).toEqual([])
+  })
+
+  it('replaces successive untraded picks without showing two actionable picks', () => {
+    let queue = update(empty(), ['a', 'b', 'c', 'd'])
+    for (const ids of [['a'], ['a', 'b']]) {
+      queue = updateNextMarketPromptQueue(queue, [], {
+        ...options,
+        isBlocked: (c) => ids.includes(c.id),
+      })
+    }
+    expect(shown(queue)).toEqual(['a', 'b', 'c'])
+    expect(queue.retiredIds).toEqual(['a', 'b'])
+    expect(queue.completedIds).toEqual([])
+    expect(queue.remaining.map((c) => c.id)).toEqual(['d'])
+  })
+})
+
+describe('isNextMarketPromptLocation', () => {
+  it('triggers only for market-page bet panels', () => {
+    expect(isNextMarketPromptLocation('bet panel')).toBe(true)
+    expect(isNextMarketPromptLocation('contract page answer')).toBe(true)
+    expect(isNextMarketPromptLocation('contract table')).toBe(false)
+    expect(isNextMarketPromptLocation('feed card')).toBe(false)
+    expect(isNextMarketPromptLocation('next market prompt')).toBe(false)
+    expect(isNextMarketPromptLocation(undefined)).toBe(false)
+  })
+})
+
+describe('getNextMarketPromptPlacement', () => {
+  it('keeps the binary panel strip inside the panel and answer bets on the page', () => {
+    expect(getNextMarketPromptPlacement('bet panel')).toBe('panel')
+    expect(getNextMarketPromptPlacement('contract page answer')).toBe('page')
+  })
+})

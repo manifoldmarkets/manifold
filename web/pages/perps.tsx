@@ -962,9 +962,10 @@ export default function PerpsPage(props: { perps: Contract[] }) {
           <Col className="gap-1">
             {/* Back sits inline with the heading only (as on the sports
                 dashboards), so the subtitle and the stats strip below keep
-                the page's left edge. */}
+                the page's left edge. Hidden on desktop, where the sidebar
+                covers it. */}
             <Row className="items-center gap-1">
-              <BackButton size="xs" className="-ml-2 shrink-0" />
+              <BackButton size="xs" className="-ml-2 shrink-0 lg:hidden" />
               <h1 className="text-ink-1000 text-3xl font-semibold sm:text-4xl">
                 Perpetuals
               </h1>
@@ -2904,7 +2905,7 @@ const MarketParameters = (props: { contract: PerpContract }) => {
     {
       label: 'Oracle',
       value: `pauses after ${formatCountdown(contract.maxOraclePriceAgeMs)}`,
-      note: 'Trades execute at the latest accepted oracle price. If the feed goes quiet for longer than this, opening and closing pause until it recovers.',
+      note: 'Orders wait for the next eligible oracle update. The displayed price is indicative; slow feeds may take longer.',
     },
   ]
   return (
