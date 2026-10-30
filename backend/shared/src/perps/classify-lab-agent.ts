@@ -30,7 +30,8 @@ import { LabClassificationSubjectType } from 'shared/perps/lab-classifications'
 // cite, nothing applied without a human, so the tier buys shortlist quality,
 // not correctness. Web search is billed per search on top of tokens, which is
 // why MAX_WEB_SEARCHES is the cost lever rather than the turn count.
-const CLASSIFIER_MODEL = process.env.PERPS_CLASSIFIER_MODEL || 'claude-haiku-5-5'
+const CLASSIFIER_MODEL =
+  process.env.PERPS_CLASSIFIER_MODEL || 'claude-haiku-5-5'
 const MAX_TURNS = 8
 const MAX_TOKENS = 8_000
 const MAX_WEB_SEARCHES = 6
