@@ -73,6 +73,10 @@ SplashScreen.preventAutoHideAsync()
 const BASE_URI =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
 
+// A page's address without its query string, hash or trailing slash, so a page
+// updating its own query string doesn't count as leaving it.
+const pageKey = (url: string) => url.split(/[?#]/)[0].replace(/\/+$/, '')
+
 // Set up notification handler before component
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -206,6 +210,13 @@ const App = () => {
   // punycodes one, while the document we compare against always reports a
   // lowercase ASCII location.origin. See common/src/native-app-url.ts.
   const isManifoldUrl = (url: string) => isSameOrigin(url, baseUri)
+
+  // The page (see pageKey) that asked for pull-to-refresh to be off, or null
+  // while refresh follows the scroll position as usual. See 'setPullToRefresh'.
+  // Only the Android WebView has a native refresh control to switch off.
+  const [pullToRefreshOffPage, setPullToRefreshOffPage] = useState<
+    string | null
+  >(null)
 
   // Pending 'nativeFbUser' posts, kept so a sign-out (or a switch to another
   // account) can cancel them. A late post would otherwise hand the OLD user back
@@ -588,6 +599,21 @@ const App = () => {
       const { theme, backgroundColor } = payload
       setBackgroundColor(backgroundColor)
       setTheme(theme)
+    } else if (type === 'setPullToRefresh') {
+      // Android's message bridge reports only the sender's ORIGIN, so the page
+      // sends its own address. Only our pages may switch refresh off; anything
+      // else, including a malformed request, turns it back on.
+      const pageUrl = payload?.url
+      if (
+        payload?.enabled === false &&
+        typeof pageUrl === 'string' &&
+        isManifoldUrl(pageUrl) &&
+        (!messageUrl || isManifoldUrl(messageUrl))
+      ) {
+        setPullToRefreshOffPage(pageKey(pageUrl))
+      } else {
+        setPullToRefreshOffPage(null)
+      }
     } else if (type === 'log') {
       const { args } = payload
       log('[Web Console]', ...args)
@@ -937,7 +963,14 @@ const App = () => {
           setHasLoadedWebView={setHasLoadedWebView}
           handleMessageFromWebview={handleMessageFromWebview}
           handleExternalLink={handleExternalLink}
+          pullToRefreshAllowed={pullToRefreshOffPage === null}
           onNavigate={(url, phase) => {
+            // Moving to another page turns pull-to-refresh back on. Android
+            // reports every history update (pushState, replaceState) as a
+            // start, so compare page addresses instead of resetting on each.
+            setPullToRefreshOffPage((off) =>
+              off !== null && url && pageKey(url) === off ? off : null
+            )
             if (phase === 'start') {
               // Distrust ONLY a navigation heading somewhere foreign. Clearing
               // on every start is what stranded sign-in: the OAuth hand-off
