@@ -427,12 +427,15 @@ function BrowseV2Inner() {
 
         {/* Keep the feed at the standard Page width. The rail uses the
             three unused columns to its right, within Page's 1440px cap. */}
-        <aside className="hidden w-[calc(25vw-2rem)] shrink-0 flex-col gap-6 lg:flex xl:w-72">
+        <aside
+          aria-label="More markets"
+          className="sticky top-12 hidden max-h-[calc(100dvh-4rem)] w-[calc(25vw-2rem)] shrink-0 self-start overflow-y-auto rounded-md lg:flex xl:w-72"
+        >
           {urlReady && (
-            <>
+            <div className="flex w-full min-w-0 flex-col gap-6 p-0.5">
               <ClosingSoonList scope={scope} fold={fold} />
               <NewMarketsList scope={scope} fold={fold} />
-            </>
+            </div>
           )}
         </aside>
       </div>

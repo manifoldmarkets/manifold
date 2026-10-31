@@ -21,8 +21,6 @@ type Hub = {
   subtitleClassName?: string
   beta?: boolean
   icon: React.ComponentType<{ className?: string }>
-  className: string
-  iconClassName: string
 }
 
 // The hub pages. The Midterms and Perps pills were among the most-clicked
@@ -36,9 +34,6 @@ const HUBS: Hub[] = [
     subtitle: 'Election odds',
     subtitleClassName: '[@container(min-width:72px)]:block',
     icon: LibraryIcon,
-    className:
-      'from-blue-100 to-rose-100 dark:from-blue-900/50 dark:to-rose-900/50',
-    iconClassName: 'text-blue-700 dark:text-blue-300',
   },
   {
     key: 'perps',
@@ -46,9 +41,6 @@ const HUBS: Hub[] = [
     title: 'Perps',
     subtitle: 'Long stocks & crypto',
     icon: TrendingUpIcon,
-    className:
-      'from-teal-100 to-indigo-100 dark:from-teal-900/50 dark:to-indigo-900/50',
-    iconClassName: 'text-teal-700 dark:text-teal-300',
   },
   {
     key: 'sports',
@@ -58,9 +50,6 @@ const HUBS: Hub[] = [
     subtitleClassName: '[@container(min-width:56px)]:block',
     beta: true,
     icon: TbBallBasketball,
-    className:
-      'from-amber-100 to-lime-100 dark:from-amber-900/50 dark:to-lime-900/50',
-    iconClassName: 'text-amber-700 dark:text-amber-300',
   },
   {
     key: 'news',
@@ -70,9 +59,6 @@ const HUBS: Hub[] = [
     subtitleClassName: '[@container(min-width:40px)]:block',
     beta: true,
     icon: NewspaperIcon,
-    className:
-      'from-slate-100 to-violet-100 dark:from-slate-800/60 dark:to-violet-900/50',
-    iconClassName: 'text-violet-700 dark:text-violet-300',
   },
 ]
 
@@ -93,20 +79,17 @@ export function HubCards(props: { className?: string }) {
               track('click browse hub card', { destination: hub.key })
             }
             className={clsx(
-              'ring-ink-200 relative flex min-w-0 flex-col items-center gap-1 rounded-xl bg-gradient-to-br px-1.5 py-1.5 text-center ring-1 transition-all hover:brightness-105 sm:flex-row sm:gap-2 sm:px-2 sm:py-2 sm:text-left',
-              'focus-visible:ring-primary-500 outline-none focus-visible:ring-2',
-              hub.className
+              'bg-canvas-0 ring-ink-200 hover:bg-ink-100 relative flex min-w-0 flex-col items-center gap-1 rounded-md px-1.5 py-1.5 text-center ring-1 transition-colors sm:flex-row sm:gap-2 sm:px-2 sm:py-2 sm:text-left',
+              'focus-visible:ring-primary-500 outline-none focus-visible:ring-2'
             )}
           >
             {hub.beta && (
-              <span className="absolute -top-1.5 right-1.5 rounded bg-violet-600 px-1 py-px text-[9px] font-bold uppercase leading-tight tracking-wide text-white">
+              <span className="bg-canvas-0 text-ink-600 absolute -top-1.5 right-1.5 rounded px-1 py-px text-[9px] font-bold uppercase leading-tight tracking-wide">
                 Beta
               </span>
             )}
-            <span className="bg-canvas-0/70 flex h-6 w-6 shrink-0 items-center justify-center rounded-full sm:h-9 sm:w-9">
-              <Icon
-                className={clsx('h-4 w-4 sm:h-5 sm:w-5', hub.iconClassName)}
-              />
+            <span className="text-primary-600 flex h-6 w-6 shrink-0 items-center justify-center sm:h-9 sm:w-9">
+              <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
             </span>
             <span className="w-full min-w-0 [container-type:inline-size] sm:w-auto sm:flex-1">
               <span className="text-ink-900 block text-[13px] font-semibold leading-tight sm:text-sm">
