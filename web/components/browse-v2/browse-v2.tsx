@@ -332,9 +332,9 @@ function BrowseV2Inner() {
 
       <div
         ref={filtersRef}
-        // Extend the background across the row gap, including subpixel seams
-        // between the two independently composited sticky bars on mobile.
-        className="bg-canvas-0 before:bg-canvas-0 sticky top-[44px] z-20 -mx-3 px-3 py-0.5 will-change-transform before:pointer-events-none before:absolute before:inset-x-0 before:-top-2 before:h-2 sm:top-9 sm:will-change-auto lg:mx-0 lg:px-0"
+        // Cover seams between the sticky bars without spanning the full 8px
+        // row gap: the hub cards' outline rings extend into that gap.
+        className="bg-canvas-0 before:bg-canvas-0 sticky top-[44px] z-20 -mx-3 px-3 py-0.5 will-change-transform before:pointer-events-none before:absolute before:inset-x-0 before:-top-1 before:h-1 sm:top-9 sm:will-change-auto lg:mx-0 lg:px-0"
       >
         <LensBar
           lens={lens}
