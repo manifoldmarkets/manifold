@@ -276,7 +276,7 @@ function BrowseV2Inner() {
     <div className="flex w-full flex-col gap-2 px-3 pb-10 lg:px-0">
       <div
         ref={searchRef}
-        className="bg-canvas-0 sticky top-0 z-30 -mx-3 flex h-[44px] shrink-0 items-center gap-2 px-3 py-0.5 will-change-transform sm:static sm:mx-0 sm:h-auto sm:px-0 sm:py-0 sm:will-change-auto"
+        className="bg-canvas-0 sticky top-0 z-30 -mx-3 flex h-[44px] shrink-0 items-center gap-2 px-3 py-0.5 will-change-transform sm:mx-0 sm:h-9 sm:px-0 sm:py-0 sm:will-change-auto"
       >
         <h1 className="text-ink-1000 hidden text-base font-semibold sm:block">
           Browse
@@ -323,7 +323,7 @@ function BrowseV2Inner() {
 
       <div
         ref={filtersRef}
-        className="bg-canvas-0 sticky top-[44px] z-20 -mx-3 px-3 py-0.5 will-change-transform sm:top-0 sm:will-change-auto lg:mx-0 lg:px-0"
+        className="bg-canvas-0 sticky top-[44px] z-20 -mx-3 px-3 py-0.5 will-change-transform sm:top-9 sm:will-change-auto lg:mx-0 lg:px-0"
       >
         <LensBar
           lens={lens}
