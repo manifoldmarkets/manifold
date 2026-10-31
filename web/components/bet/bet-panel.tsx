@@ -116,6 +116,8 @@ type BuyPanelProps = {
       pseudonymName: string
       pseudonymColor: SliderColor
     }
+    /** The names are the answer's own two outcomes (see showsSideProbability). */
+    opposed?: boolean
   }
   children?: React.ReactNode | ((outcome: BinaryOutcomes) => React.ReactNode)
   alwaysShowOutcomeSwitcher?: boolean
