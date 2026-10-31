@@ -143,6 +143,8 @@ export function LensBar(props: {
   onLayout: (layout: BrowseLayout) => void
   onYourTopics: () => void
   searching: boolean
+  searchTabs?: ReactNode
+  showMarketFilters?: boolean
 }) {
   const {
     lens,
@@ -157,6 +159,8 @@ export function LensBar(props: {
     onLayout,
     onYourTopics,
     searching,
+    searchTabs,
+    showMarketFilters = true,
   } = props
   const lenses = MAIN_LENSES.filter((l) => signedIn || !l.signedInOnly)
   const moreActive = MORE_SORTS.find((s) => s.key === lens)
@@ -166,191 +170,199 @@ export function LensBar(props: {
     // necessary; the layout switch always stays within reach.
     <div className="flex min-w-0 items-center gap-1">
       <ScrollableFilters>
-        <div
-          role="tablist"
-          aria-label="Sort markets"
-          className={clsx(
-            'flex shrink-0 items-center gap-0.5',
-            searching && 'opacity-50'
-          )}
-        >
-          {lenses.map((l) => {
-            const selected = l.key === lens && !searching
-            return (
-              <button
-                key={l.key}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                onClick={() => onLens(l.key)}
-                className={clsx(
-                  'shrink-0 whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium transition-colors',
-                  selected
-                    ? 'bg-ink-900 text-canvas-0'
-                    : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900'
-                )}
-              >
-                {l.label}
-              </button>
-            )
-          })}
-          <MenuPopover
-            label={
-              <span
-                className={clsx(
-                  'flex items-center gap-0.5 whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium transition-colors',
-                  moreActive && !searching
-                    ? 'bg-ink-900 text-canvas-0'
-                    : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900'
-                )}
-              >
-                {moreActive ? moreActive.label : 'More'}
-                <ChevronDownIcon className="h-3 w-3" />
-              </span>
-            }
-            panelClass="w-56 p-1"
-          >
-            {(close) =>
-              MORE_SORTS.map((s) => (
-                <MenuOption
-                  key={s.key}
-                  selected={s.key === lens}
-                  onClick={() => {
-                    onLens(s.key)
-                    close()
-                  }}
-                >
-                  {s.label}
-                </MenuOption>
-              ))
-            }
-          </MenuPopover>
-        </div>
-
-        <span className="bg-ink-200 mx-0.5 h-5 w-px shrink-0 lg:hidden" />
-        <div className="ml-auto flex shrink-0 items-center gap-1">
-          <MenuPopover
-            label={<Pill active={topic.key !== 'all'}>{topic.label}</Pill>}
-            panelClass="w-64 max-h-[60vh] overflow-y-auto p-1"
-          >
-            {(close) => (
-              <>
-                {[ALL_TOPICS, ...(signedIn ? [FOLLOWED_TOPICS] : [])].map(
-                  (t) => (
-                    <MenuOption
-                      key={t.key}
-                      selected={t.key === topic.key}
-                      onClick={() => {
-                        onTopic(t)
-                        close()
-                      }}
-                    >
-                      {t.label}
-                    </MenuOption>
-                  )
-                )}
-                {followedTopics.length > 0 && (
-                  <MenuHeading>Topics you follow</MenuHeading>
-                )}
-                {followedTopics.slice(0, MAX_FOLLOWED_IN_MENU).map((t) => (
-                  <MenuOption
-                    key={t.key}
-                    selected={t.key === topic.key}
-                    onClick={() => {
-                      onTopic(t)
-                      close()
-                    }}
-                  >
-                    {t.label}
-                  </MenuOption>
-                ))}
-                {followedTopics.length > MAX_FOLLOWED_IN_MENU && (
-                  <MenuOption
-                    selected={false}
-                    onClick={() => {
-                      close()
-                      onYourTopics()
-                    }}
-                  >
-                    <span className="text-ink-500">
-                      All {followedTopics.length} followed topics…
-                    </span>
-                  </MenuOption>
-                )}
-                <MenuHeading>Categories</MenuHeading>
-                {CATEGORY_TOPICS.map((t) => (
-                  <MenuOption
-                    key={t.key}
-                    selected={t.key === topic.key}
-                    onClick={() => {
-                      onTopic(t)
-                      close()
-                    }}
-                  >
-                    {t.label}
-                  </MenuOption>
-                ))}
-                <div className="border-ink-200 mt-1 border-t pt-1">
-                  <MenuOption
-                    selected={false}
-                    onClick={() => {
-                      close()
-                      onYourTopics()
-                    }}
-                  >
-                    <span className="text-primary-700">
-                      Follow or hide topics…
-                    </span>
-                  </MenuOption>
-                </div>
-              </>
-            )}
-          </MenuPopover>
-
-          <FiltersPopover filters={filters} onFilters={onFilters} />
-
-          {/* On narrow screens this lives in the topic menu instead: as a
-            bare icon it read as another filter. */}
-          <button
-            type="button"
-            onClick={onYourTopics}
-            className="border-ink-300 text-ink-700 hover:border-ink-400 hidden shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium xl:flex"
-            title="Review the topics you follow and hide"
-          >
-            <AdjustmentsIcon className="h-3 w-3" />
-            Your topics
-          </button>
-        </div>
-      </ScrollableFilters>
-      <div
-        className="border-ink-200 hidden shrink-0 rounded-lg border p-0.5 sm:flex"
-        role="group"
-        aria-label="Market layout"
-      >
-        {(
-          [
-            { value: 'cards', label: 'Card view', Icon: ViewGridIcon },
-            { value: 'list', label: 'List view', Icon: ViewListIcon },
-          ] as const
-        ).map(({ value, label, Icon }) => (
-          <button
-            key={value}
-            type="button"
-            aria-label={label}
-            title={label}
-            aria-pressed={layout === value}
-            onClick={() => onLayout(value)}
+        {searchTabs ?? (
+          <div
+            role="tablist"
+            aria-label="Sort markets"
             className={clsx(
-              'flex h-6 w-6 items-center justify-center rounded-md',
-              layout === value
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-ink-400 hover:bg-canvas-100'
+              'flex shrink-0 items-center gap-0.5',
+              searching && 'opacity-50'
             )}
           >
-            <Icon className="h-4 w-4" />
-          </button>
-        ))}
-      </div>
+            {lenses.map((l) => {
+              const selected = l.key === lens && !searching
+              return (
+                <button
+                  key={l.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  onClick={() => onLens(l.key)}
+                  className={clsx(
+                    'shrink-0 whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium transition-colors',
+                    selected
+                      ? 'bg-ink-900 text-canvas-0'
+                      : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900'
+                  )}
+                >
+                  {l.label}
+                </button>
+              )
+            })}
+            <MenuPopover
+              label={
+                <span
+                  className={clsx(
+                    'flex items-center gap-0.5 whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium transition-colors',
+                    moreActive && !searching
+                      ? 'bg-ink-900 text-canvas-0'
+                      : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900'
+                  )}
+                >
+                  {moreActive ? moreActive.label : 'More'}
+                  <ChevronDownIcon className="h-3 w-3" />
+                </span>
+              }
+              panelClass="w-56 p-1"
+            >
+              {(close) =>
+                MORE_SORTS.map((s) => (
+                  <MenuOption
+                    key={s.key}
+                    selected={s.key === lens}
+                    onClick={() => {
+                      onLens(s.key)
+                      close()
+                    }}
+                  >
+                    {s.label}
+                  </MenuOption>
+                ))
+              }
+            </MenuPopover>
+          </div>
+        )}
+
+        {showMarketFilters && (
+          <>
+            <span className="bg-ink-200 mx-0.5 h-5 w-px shrink-0 lg:hidden" />
+            <div className="ml-auto flex shrink-0 items-center gap-1">
+              <MenuPopover
+                label={<Pill active={topic.key !== 'all'}>{topic.label}</Pill>}
+                panelClass="w-64 max-h-[60vh] overflow-y-auto p-1"
+              >
+                {(close) => (
+                  <>
+                    {[ALL_TOPICS, ...(signedIn ? [FOLLOWED_TOPICS] : [])].map(
+                      (t) => (
+                        <MenuOption
+                          key={t.key}
+                          selected={t.key === topic.key}
+                          onClick={() => {
+                            onTopic(t)
+                            close()
+                          }}
+                        >
+                          {t.label}
+                        </MenuOption>
+                      )
+                    )}
+                    {followedTopics.length > 0 && (
+                      <MenuHeading>Topics you follow</MenuHeading>
+                    )}
+                    {followedTopics.slice(0, MAX_FOLLOWED_IN_MENU).map((t) => (
+                      <MenuOption
+                        key={t.key}
+                        selected={t.key === topic.key}
+                        onClick={() => {
+                          onTopic(t)
+                          close()
+                        }}
+                      >
+                        {t.label}
+                      </MenuOption>
+                    ))}
+                    {followedTopics.length > MAX_FOLLOWED_IN_MENU && (
+                      <MenuOption
+                        selected={false}
+                        onClick={() => {
+                          close()
+                          onYourTopics()
+                        }}
+                      >
+                        <span className="text-ink-500">
+                          All {followedTopics.length} followed topics…
+                        </span>
+                      </MenuOption>
+                    )}
+                    <MenuHeading>Categories</MenuHeading>
+                    {CATEGORY_TOPICS.map((t) => (
+                      <MenuOption
+                        key={t.key}
+                        selected={t.key === topic.key}
+                        onClick={() => {
+                          onTopic(t)
+                          close()
+                        }}
+                      >
+                        {t.label}
+                      </MenuOption>
+                    ))}
+                    <div className="border-ink-200 mt-1 border-t pt-1">
+                      <MenuOption
+                        selected={false}
+                        onClick={() => {
+                          close()
+                          onYourTopics()
+                        }}
+                      >
+                        <span className="text-primary-700">
+                          Follow or hide topics…
+                        </span>
+                      </MenuOption>
+                    </div>
+                  </>
+                )}
+              </MenuPopover>
+
+              <FiltersPopover filters={filters} onFilters={onFilters} />
+
+              {/* On narrow screens this lives in the topic menu instead: as a
+            bare icon it read as another filter. */}
+              <button
+                type="button"
+                onClick={onYourTopics}
+                className="border-ink-300 text-ink-700 hover:border-ink-400 hidden shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-xs font-medium xl:flex"
+                title="Review the topics you follow and hide"
+              >
+                <AdjustmentsIcon className="h-3 w-3" />
+                Your topics
+              </button>
+            </div>
+          </>
+        )}
+      </ScrollableFilters>
+      {showMarketFilters && (
+        <div
+          className="border-ink-200 hidden shrink-0 rounded-lg border p-0.5 sm:flex"
+          role="group"
+          aria-label="Market layout"
+        >
+          {(
+            [
+              { value: 'cards', label: 'Card view', Icon: ViewGridIcon },
+              { value: 'list', label: 'List view', Icon: ViewListIcon },
+            ] as const
+          ).map(({ value, label, Icon }) => (
+            <button
+              key={value}
+              type="button"
+              aria-label={label}
+              title={label}
+              aria-pressed={layout === value}
+              onClick={() => onLayout(value)}
+              className={clsx(
+                'flex h-6 w-6 items-center justify-center rounded-md',
+                layout === value
+                  ? 'bg-primary-50 text-primary-700'
+                  : 'text-ink-400 hover:bg-canvas-100'
+              )}
+            >
+              <Icon className="h-4 w-4" />
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

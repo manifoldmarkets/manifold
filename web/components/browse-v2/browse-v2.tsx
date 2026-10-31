@@ -45,6 +45,7 @@ import { ClosingSoonList, MoversStrip, NewMarketsList } from './market-shelves'
 import { BrowseMarketsQuery, useBrowseMarkets } from './use-browse-markets'
 import { YourTopicsModal } from './your-topics-modal'
 import { useScrollReveal } from './use-scroll-reveal'
+import { SearchCategory, SearchResults, SearchTabs } from './search-results'
 
 // Same page size as the classic page; most browse lists never load a
 // second page.
@@ -100,6 +101,10 @@ function BrowseV2Inner() {
   )
   const [input, setInput] = usePersistentInMemoryState('', 'browse-v2-term')
   const [term, setTerm] = useState(input.trim())
+  const [searchCategory, setSearchCategory] = useState<SearchCategory>('all')
+  useEffect(() => {
+    if (!term) setSearchCategory('all')
+  }, [term])
   useEffect(() => {
     const t = setTimeout(() => setTerm(input.trim()), 300)
     return () => clearTimeout(t)
@@ -187,6 +192,8 @@ function BrowseV2Inner() {
     ? 'best'
     : savedLens
   const searching = term.length > 0
+  const showMarkets =
+    !searching || searchCategory === 'all' || searchCategory === 'markets'
 
   const scope = useMemo(
     () => ({
@@ -304,19 +311,21 @@ function BrowseV2Inner() {
         </label>
         {/* Phones: one button that flips between cards and list, so the
             layout switch isn't hidden at the end of the scrolling row. */}
-        <button
-          type="button"
-          onClick={() => onLayout(layout === 'list' ? 'cards' : 'list')}
-          aria-label={layout === 'list' ? 'Show cards' : 'Show list'}
-          title={layout === 'list' ? 'Show cards' : 'Show list'}
-          className="border-ink-300 text-ink-600 hover:text-ink-900 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border sm:hidden"
-        >
-          {layout === 'list' ? (
-            <ViewGridIcon className="h-4 w-4" />
-          ) : (
-            <ViewListIcon className="h-4 w-4" />
-          )}
-        </button>
+        {showMarkets && (
+          <button
+            type="button"
+            onClick={() => onLayout(layout === 'list' ? 'cards' : 'list')}
+            aria-label={layout === 'list' ? 'Show cards' : 'Show list'}
+            title={layout === 'list' ? 'Show cards' : 'Show list'}
+            className="border-ink-300 text-ink-600 hover:text-ink-900 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border sm:hidden"
+          >
+            {layout === 'list' ? (
+              <ViewGridIcon className="h-4 w-4" />
+            ) : (
+              <ViewListIcon className="h-4 w-4" />
+            )}
+          </button>
+        )}
       </div>
 
       {!searching && <HubCards />}
@@ -338,6 +347,15 @@ function BrowseV2Inner() {
           onLayout={onLayout}
           onYourTopics={openYourTopics}
           searching={searching}
+          searchTabs={
+            searching ? (
+              <SearchTabs
+                category={searchCategory}
+                onCategory={setSearchCategory}
+              />
+            ) : undefined
+          }
+          showMarketFilters={showMarkets}
         />
       </div>
 
@@ -360,58 +378,100 @@ function BrowseV2Inner() {
             >
               {heading}
             </h2>
-            {fold && folded > 0 && (
-              <p className="text-ink-500 text-xs leading-4">
-                {folded} {folded === 1 ? 'market' : 'markets'} in hubs.{' '}
-                <button
-                  type="button"
-                  onClick={() =>
-                    onFilters({ ...filters, showHubMarkets: true })
-                  }
-                  className="text-primary-700 font-medium"
-                >
-                  Show them here
-                </button>
-              </p>
-            )}
-            <Results
-              layout={layout}
-              contracts={visible}
-              section={section}
-              hasMore={hasMore}
-              loadMore={loadMore}
-              interlude={
-                urlReady && showMovers && (isMobile || lens === 'best') ? (
-                  <MoversStrip scope={scope} fold={fold} layout={layout} />
-                ) : undefined
-              }
-            />
-            {visible && visible.length === 0 && (
-              <EmptyState
-                message={
-                  error
-                    ? 'Markets failed to load. Try again in a moment.'
-                    : noFollows
-                    ? "You don't follow any topics yet."
-                    : 'No markets match these filters.'
-                }
-                action={
-                  error
-                    ? {
-                        label: 'Try again',
-                        onClick: () => setRetry((r) => r + 1),
-                      }
-                    : noFollows
-                    ? {
-                        label: 'Pick topics to follow',
-                        onClick: openYourTopics,
-                      }
-                    : {
-                        label: 'Clear search and filters',
-                        onClick: resetFilters,
-                      }
-                }
+            {searching && (
+              <SearchResults
+                key={term}
+                term={term}
+                category={searchCategory}
+                onCategory={setSearchCategory}
               />
+            )}
+            {showMarkets && (
+              <>
+                {searching && (
+                  <h3 className="text-ink-700 text-xs font-semibold">
+                    Markets ·{' '}
+                    {STATUSES.find((s) => s.key === filters.status)?.label}
+                    {topic.key !== 'all' ? ` · ${topic.label}` : ''}
+                  </h3>
+                )}
+                {fold && folded > 0 && (
+                  <p className="text-ink-500 text-xs leading-4">
+                    {folded} {folded === 1 ? 'market' : 'markets'} in hubs.{' '}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onFilters({ ...filters, showHubMarkets: true })
+                      }
+                      className="text-primary-700 font-medium"
+                    >
+                      Show them here
+                    </button>
+                  </p>
+                )}
+                <Results
+                  layout={layout}
+                  contracts={visible}
+                  section={section}
+                  hasMore={hasMore}
+                  loadMore={loadMore}
+                  interlude={
+                    urlReady && showMovers && (isMobile || lens === 'best') ? (
+                      <MoversStrip scope={scope} fold={fold} layout={layout} />
+                    ) : undefined
+                  }
+                />
+                {searching && visible && visible.length === 0 ? (
+                  <p className="text-ink-500 py-2 text-sm">
+                    {error
+                      ? 'Markets failed to load.'
+                      : 'No markets match this search and its filters.'}{' '}
+                    <button
+                      type="button"
+                      className="text-primary-700"
+                      onClick={
+                        error
+                          ? () => setRetry((r) => r + 1)
+                          : () => {
+                              setTopicChoice(ALL_TOPICS)
+                              setFilters({ ...DEFAULT_FILTERS, status: 'all' })
+                            }
+                      }
+                    >
+                      {error ? 'Try again' : 'Search all markets'}
+                    </button>
+                  </p>
+                ) : (
+                  visible &&
+                  visible.length === 0 && (
+                    <EmptyState
+                      message={
+                        error
+                          ? 'Markets failed to load. Try again in a moment.'
+                          : noFollows
+                          ? "You don't follow any topics yet."
+                          : 'No markets match these filters.'
+                      }
+                      action={
+                        error
+                          ? {
+                              label: 'Try again',
+                              onClick: () => setRetry((r) => r + 1),
+                            }
+                          : noFollows
+                          ? {
+                              label: 'Pick topics to follow',
+                              onClick: openYourTopics,
+                            }
+                          : {
+                              label: 'Clear search and filters',
+                              onClick: resetFilters,
+                            }
+                      }
+                    />
+                  )
+                )}
+              </>
             )}
           </section>
         </div>
@@ -422,7 +482,7 @@ function BrowseV2Inner() {
           aria-label="More markets"
           className="hidden w-[calc(25vw-2rem)] shrink-0 flex-col gap-6 lg:flex xl:w-72"
         >
-          {urlReady && (
+          {urlReady && !searching && (
             <>
               <ClosingSoonList scope={scope} fold={fold} />
               <NewMarketsList scope={scope} fold={fold} />
