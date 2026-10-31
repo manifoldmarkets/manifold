@@ -2,19 +2,19 @@ import { z } from 'zod'
 import { canSendMana } from 'common/can-send-mana'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { getActiveUserBans } from './helpers/rate-limit'
-import { runTxnInBetQueue } from 'shared/txn/run-txn'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
+import { SupabaseTransaction } from 'shared/supabase/init'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { Row, tsToMillis } from 'common/supabase/utils'
 import { getUser } from 'shared/utils'
+import { broadcastUserUpdates, UserUpdate } from 'shared/supabase/users'
 
 const bodySchema = z.object({ slug: z.string() }).strict()
 
 export const claimmanalink = authEndpoint(async (req, auth) => {
   const { slug } = validate(bodySchema, req.body)
 
-  const pg = createSupabaseDirectClient()
-
-  await pg.tx(async (tx) => {
+  const run = async (tx: SupabaseTransaction) => {
     // Lock the manalink row so concurrent claims of the same link run one at a
     // time: each one then counts the claims committed before it.
     const manalink = await tx.oneOrNone<Row<'manalinks'>>(
@@ -59,7 +59,7 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       )
     }
 
-    const fromUser = await getUser(creator_id)
+    const fromUser = await getUser(creator_id, tx)
     if (!fromUser) {
       throw new APIError(500, `User ${creator_id} not found`)
     }
@@ -72,7 +72,7 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       throw new APIError(403, message)
     }
 
-    const toUser = await getUser(auth.uid)
+    const toUser = await getUser(auth.uid, tx)
     if (!toUser) {
       throw new APIError(401, 'Your account was not found')
     }
@@ -89,12 +89,29 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       description: `Manalink claimed: ${amount} by ${toUser.username}`,
     } as const
 
-    const txn = await runTxnInBetQueue(tx, data)
+    // A converter can hold a user row between two queued transfers. Waiting in
+    // that same queue while holding the manalink lock creates a queue/row cycle.
+    const userUpdates: UserUpdate[] = []
+    const txn = await runTxnOutsideBetQueue(tx, data, false, (updates) => {
+      userUpdates.push(...updates)
+    })
     await tx.none(
       `insert into manalink_claims (txn_id, manalink_id) values ($1, $2)`,
       [txn.id, slug]
     )
+    return userUpdates
+  }
+
+  // Opposite-direction transfers can still deadlock on user rows. Retry the
+  // whole claim, rechecking committed claims after reacquiring the link lock.
+  const userUpdates = await runTransactionWithRetries(run, 3, {
+    mode: 'default',
+    isExpectedError: (error) => error instanceof APIError,
   })
+
+  // Only the successful attempt escapes the retry callback. Aborted attempts
+  // must never expose their uncommitted balances to websocket subscribers.
+  broadcastUserUpdates(userUpdates)
 
   return { message: 'Manalink claimed' }
 })

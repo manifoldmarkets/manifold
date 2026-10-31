@@ -5,7 +5,7 @@ import { APIError } from 'common/api/utils'
 import { pgp, SupabaseTransaction } from 'shared/supabase/init'
 import { convertTxn } from 'common/supabase/txns'
 import { removeUndefinedProps } from 'common/util/object'
-import { broadcastUserUpdates } from 'shared/supabase/users'
+import { broadcastUserUpdates, UserUpdate } from 'shared/supabase/users'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { buildArray } from 'common/util/array'
 import { Row } from 'common/supabase/utils'
@@ -15,9 +15,19 @@ export type TxnData = Omit<Txn, 'id' | 'createdTime'>
 export async function runTxnOutsideBetQueue(
   pgTransaction: SupabaseTransaction,
   data: TxnData,
-  affectsProfit = false
+  affectsProfit = false,
+  // A transaction owner can collect updates and publish only after commit.
+  onUserUpdates: (updates: UserUpdate[]) => void = broadcastUserUpdates
 ) {
-  return await runTxnInternal(pgTransaction, data, affectsProfit, false)
+  return await runTxnInternal(
+    pgTransaction,
+    data,
+    affectsProfit,
+    false,
+    true,
+    false,
+    onUserUpdates
+  )
 }
 
 export async function runTxnInBetQueue(
@@ -58,7 +68,8 @@ async function runTxnInternal(
   affectsProfit = false,
   useQueue = true,
   checkBalance = true,
-  isAdmin = false
+  isAdmin = false,
+  onUserUpdates: (updates: UserUpdate[]) => void = broadcastUserUpdates
 ) {
   const { amount, fromType, fromId, toId, toType, token } = data
   const deps = buildArray(
@@ -196,7 +207,7 @@ async function runTxnInternal(
       .slice(0, -1)
       .map((r) => r[0])
       .filter(Boolean)
-    broadcastUserUpdates(userUpdates)
+    onUserUpdates(userUpdates)
     const txnRow = results[results.length - 1][0]
     return convertTxn(txnRow)
   }
