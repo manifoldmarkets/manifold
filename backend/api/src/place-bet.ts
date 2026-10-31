@@ -40,6 +40,7 @@ import { convertTxn } from 'common/supabase/txns'
 import { UniqueBettorBonusTxn } from 'common/txn'
 import { User } from 'common/user'
 import { filterDefined } from 'common/util/array'
+import { formatMoney } from 'common/util/format'
 import { EPSILON, floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
 import { first, isEqual, maxBy, sumBy } from 'lodash'
@@ -686,6 +687,22 @@ export const executeNewBetResult = async (
         startBalance !== Number.MAX_SAFE_INTEGER &&
         userUpdate.balance < startBalance
       ) {
+        // A sale repays the sold share of the position's loan, which can be
+        // more than the sale brings in. That's the seller's own shortfall,
+        // not a maker's.
+        const loanRepaid = -(newBet.loanAmount ?? 0)
+        if (userUpdate.id === user.id && loanRepaid > 0) {
+          throw new APIError(
+            403,
+            `This sale can't cover this position's loan: it repays ${formatMoney(
+              loanRepaid,
+              contract.token
+            )} of loan from ${formatMoney(
+              Math.max(0, -newBet.amount),
+              contract.token
+            )} of sale proceeds, and your balance can't make up the difference. Sell fewer shares or add to your balance first.`
+          )
+        }
         throw new APIError(403, 'Maker has insufficient balance.')
       }
     }

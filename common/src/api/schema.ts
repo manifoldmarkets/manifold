@@ -3042,6 +3042,10 @@ export const API = (_apiTypeCheck = {
       freeLoanAvailable?: number
       canClaimFreeLoan?: boolean
       hasMarginLoanAccess?: boolean
+      // Room for margin loan under each eligible position's loan-to-value
+      // cap (request-loan rejects more), and that cap as a fraction
+      marginLoanCapacity?: number
+      maxPositionLoanToValue?: number
       // Equity-based calculation fields (equity = portfolioValue - loans)
       equity?: number
       portfolioValue?: number
