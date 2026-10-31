@@ -1,11 +1,8 @@
-import {
-  LibraryIcon,
-  NewspaperIcon,
-  TrendingUpIcon,
-} from '@heroicons/react/outline'
+import { LibraryIcon, TrendingUpIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { IoCompassOutline } from 'react-icons/io5'
 import { TbBallBasketball } from 'react-icons/tb'
 
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -14,7 +11,7 @@ import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 
 type Hub = {
-  key: 'election' | 'perps' | 'sports' | 'news'
+  key: 'election' | 'perps' | 'sports' | 'explore'
   href: string
   title: string
   subtitle: string
@@ -52,13 +49,12 @@ const HUBS: Hub[] = [
     icon: TbBallBasketball,
   },
   {
-    key: 'news',
-    href: '/news',
-    title: 'News',
-    subtitle: 'Just in',
-    subtitleClassName: '[@container(min-width:40px)]:block',
-    beta: true,
-    icon: NewspaperIcon,
+    key: 'explore',
+    href: '/explore',
+    title: 'Explore',
+    subtitle: 'Discover',
+    subtitleClassName: '[@container(min-width:56px)]:block',
+    icon: IoCompassOutline,
   },
 ]
 
