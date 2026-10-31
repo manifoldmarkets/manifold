@@ -256,7 +256,7 @@ const planGeneralLoan = async (
   // room can run out first.
   const maxLoanToValue = getMaxPositionLoanToValue(maxLoanPercent)
   const capacity = getMarginLoanCapacity(positions, maxLoanToValue)
-  // Strict, so the amount paid out is exactly the amount distributed.
+  // Strict, so nothing above capacity is paid out without being distributed.
   if (!(amount <= capacity)) {
     throw new APIError(
       400,

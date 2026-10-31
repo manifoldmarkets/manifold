@@ -535,21 +535,20 @@ describe('keyContractsWithLiveAnswers', () => {
     prob: 0.4,
   } as unknown as Contract
 
-  it('prefers the answers table over the denormalized copy', () => {
+  it('uses only the answers table, never the denormalized copy', () => {
     const byId = keyContractsWithLiveAnswers(
       [multi, binary],
       [answer('a', 'multi', 0.1), answer('c', 'multi', 0.2)]
     )
     const answers = (byId.multi as CPMMMultiContract).answers
-    // a is live, b keeps the denormalized copy, c was missing from it.
+    // a is live, b wasn't returned (dropped), c was missing from the copy.
     expect(answers.map((a) => [a.id, a.prob])).toEqual([
       ['a', 0.1],
-      ['b', 0.3],
       ['c', 0.2],
     ])
     expect(byId.binary).toBe(binary)
     // The input contract is not mutated.
-    expect(multi.answers[0].prob).toBe(0.9)
+    expect(multi.answers.map((a) => a.id)).toEqual(['a', 'b'])
   })
 
   it('caps margin loan at the live value when the copy is stale', () => {
@@ -585,5 +584,14 @@ describe('keyContractsWithLiveAnswers', () => {
     )
     expect(stale).toBeCloseTo(450)
     expect(live).toBeCloseTo(50)
+
+    // The answer resolved between the metrics read and the answers read, so
+    // the live read left it out: it backs nothing, whatever the copy says.
+    const resolvedBetweenReads = getMarginLoanPositions(
+      [metric],
+      keyContractsWithLiveAnswers([eligibleMulti], [])
+    )
+    expect(resolvedBetweenReads).toEqual([])
+    expect(distributeMarginLoan(50, resolvedBetweenReads, 0.5)).toEqual([])
   })
 })

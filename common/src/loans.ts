@@ -392,10 +392,12 @@ export const getMaxPositionLoanToValue = (maxLoanPercent: number): number =>
     : 0
 
 /**
- * Contracts keyed by id, with each multiple choice contract's answers taken
- * from `answers` (read from the answers table) over the copy denormalized onto
- * the contract, which a trade can get ahead of. Answers not passed in keep
- * the denormalized copy.
+ * Contracts keyed by id, with each multiple choice contract's answers
+ * replaced by `answers`: the unresolved answers read from the answers table
+ * for the positions being valued. The copy denormalized onto the contract
+ * can lag a trade or a resolution, so it isn't used even as a fallback: an
+ * answer the live read didn't return (say it resolved between reads) is
+ * worth nothing to equity or as collateral.
  */
 export const keyContractsWithLiveAnswers = <C extends Contract>(
   contracts: C[],
@@ -403,19 +405,11 @@ export const keyContractsWithLiveAnswers = <C extends Contract>(
 ): Record<string, C> => {
   const answersByContractId = groupBy(answers, (a) => a.contractId)
   return keyBy(
-    contracts.map((contract) => {
-      const live = answersByContractId[contract.id]
-      if (!live || !isMultiCpmm(contract)) return contract
-      const liveById = keyBy(live, (a) => a.id)
-      const denormalizedIds = new Set(contract.answers.map((a) => a.id))
-      return {
-        ...contract,
-        answers: [
-          ...contract.answers.map((a) => liveById[a.id] ?? a),
-          ...live.filter((a) => !denormalizedIds.has(a.id)),
-        ],
-      }
-    }),
+    contracts.map((contract) =>
+      isMultiCpmm(contract)
+        ? { ...contract, answers: answersByContractId[contract.id] ?? [] }
+        : contract
+    ),
     (c) => c.id
   )
 }
