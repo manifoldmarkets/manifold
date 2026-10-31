@@ -4,8 +4,8 @@ import { Contract } from 'common/contract'
 import { MarketLinkRef } from 'common/market-links'
 import {
   createLinkedMarketHref,
-  linkedRaceParents,
-  mergeLinkedChildren,
+  linkedRaceParent,
+  openLinkedChildren,
 } from './race-linked-markets-model'
 
 const contract = (id: string, closeTime = 1_800_000_000_000) =>
@@ -26,74 +26,45 @@ const ref = (
   isResolved,
 })
 
-test("a race's own market and its candidate market are its link parents", () => {
-  const party = contract('party')
-  const candidate = contract('candidate')
-  assert.deepEqual(
-    linkedRaceParents({ contract: party }, candidate).map((c) => c.id),
-    ['party', 'candidate']
-  )
-  assert.deepEqual(
-    linkedRaceParents({ contract: party }, null).map((c) => c.id),
-    ['party']
-  )
-  assert.deepEqual(
-    linkedRaceParents({ contract: undefined }, candidate).map((c) => c.id),
-    ['candidate']
-  )
-  // The same market as both source and candidate counts once.
-  assert.deepEqual(
-    linkedRaceParents({ contract: party }, party).map((c) => c.id),
-    ['party']
-  )
+test("a race's own market is its link parent", () => {
+  assert.equal(linkedRaceParent({ contract: contract('party') })?.id, 'party')
+  assert.equal(linkedRaceParent({ contract: undefined }), undefined)
+  assert.equal(linkedRaceParent({}), undefined)
 })
 
 test('a district priced by a shared portfolio answer has no parent of its own', () => {
-  const portfolio = contract('portfolio')
-  assert.deepEqual(
-    linkedRaceParents({ contract: portfolio, answerId: 'ny-17' }, null),
-    []
+  assert.equal(
+    linkedRaceParent({ contract: contract('portfolio'), answerId: 'ny-17' }),
+    undefined
   )
-  // A candidate market still counts: it is the district's own market.
-  assert.deepEqual(
-    linkedRaceParents(
-      { contract: portfolio, answerId: 'ca-12' },
-      contract('joyce')
-    ).map((c) => c.id),
-    ['joyce']
-  )
-  assert.deepEqual(linkedRaceParents({}, undefined), [])
 })
 
-test('children merge once each, lines then props then related, open only', () => {
-  const merged = mergeLinkedChildren(
+test('children list once each, lines then props then related, open only', () => {
+  const open = openLinkedChildren(
     [
-      [
-        ref('newest', 'related'),
-        ref('margin', 'line'),
-        ref('done', 'prop', true),
-      ],
-      [ref('turnout', 'prop'), ref('margin', 'line'), ref('newest', 'related')],
+      ref('newest', 'related'),
+      ref('margin', 'line'),
+      ref('done', 'prop', true),
+      ref('turnout', 'prop'),
+      ref('margin', 'line'),
     ],
-    ['party', 'candidate']
+    'party'
   )
   assert.deepEqual(
-    merged.map((r) => r.id),
+    open.map((r) => r.id),
     ['margin', 'turnout', 'newest']
   )
 })
 
-test('a parent is never listed as a child', () => {
-  // The candidate market linked under the party market keeps its own section.
-  const merged = mergeLinkedChildren(
-    [[ref('candidate', 'related'), ref('prop', 'prop')], undefined],
-    ['party', 'candidate']
-  )
+test('the parent is never listed under itself', () => {
   assert.deepEqual(
-    merged.map((r) => r.id),
+    openLinkedChildren(
+      [ref('party', 'related'), ref('prop', 'prop')],
+      'party'
+    ).map((r) => r.id),
     ['prop']
   )
-  assert.deepEqual(mergeLinkedChildren([undefined, undefined], ['party']), [])
+  assert.deepEqual(openLinkedChildren([], 'party'), [])
 })
 
 test('the create link prefills a market linked to the race with its deadline', () => {

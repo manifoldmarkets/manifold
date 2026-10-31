@@ -1,7 +1,8 @@
-import { uniq, uniqBy } from 'lodash'
+import { chunk, uniq, uniqBy } from 'lodash'
 
 import { Contract } from 'common/contract'
 import { getContractFromSlug, getContracts } from 'common/supabase/contracts'
+import { run } from 'common/supabase/utils'
 import { MEASURE_CONTRACT_IDS } from 'web/components/usa-map/ballot-measures-model'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import {
@@ -14,14 +15,8 @@ import {
   StateElectionMarket,
 } from 'web/public/data/elections-data'
 import { getPartyProbs } from 'web/components/usa-map/state-election-map'
-import {
-  governors2026,
-  governorCandidates2026,
-} from 'web/public/data/governors-data'
-import {
-  senate2026,
-  senateCandidates2026,
-} from 'web/public/data/senate-state-data'
+import { governors2026 } from 'web/public/data/governors-data'
+import { senate2026 } from 'web/public/data/senate-state-data'
 import { api } from 'web/lib/api/api'
 import {
   HOUSE_DISTRICT_MARKETS,
@@ -36,6 +31,11 @@ import {
   pickUnprecedentedPolitics,
   UNPRECEDENTED_POLITICS_SLUGS,
 } from 'web/lib/politics/unprecedented-politics'
+import {
+  countLinkedMarkets,
+  LinkedChildStatus,
+  LinkedMarketRow,
+} from 'web/lib/politics/linked-market-counts'
 import {
   BOTH_2026_MATRIX,
   buildConditionalMatrixRows,
@@ -169,8 +169,6 @@ export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
   const [
     senateStateContracts,
     governorStateContracts,
-    senateCandidateContracts,
-    governorCandidateContracts,
     trendingCandidates,
     contestContracts,
     conditionalContracts,
@@ -187,8 +185,6 @@ export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
   ] = await Promise.all([
     getStateContracts(getContractFromSlugFunction, senate2026),
     getStateContracts(getContractFromSlugFunction, governors2026),
-    getStateContracts(getContractFromSlugFunction, senateCandidates2026),
-    getStateContracts(getContractFromSlugFunction, governorCandidates2026),
     getTrendingCandidates(),
     getContestContracts(now),
     getConditionalContracts(adminDb),
@@ -210,6 +206,19 @@ export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
       return [] as Contract[]
     }),
   ])
+
+  // How many open markets hang off each race market, for the hover card.
+  // One build-time read for the whole map instead of a request per hover.
+  const linkedMarketCounts = await getLinkedMarketCounts(
+    adminDb,
+    [
+      ...Object.values(senateStateContracts),
+      ...Object.values(governorStateContracts),
+      ...additionalHouseEntries.map(([, c]) => c),
+    ]
+      .filter((c): c is Contract => !!c)
+      .map((c) => c.id)
+  )
 
   // Polling perps, open only — so a retired feed drops off the row by itself.
   const pollingPerpContracts = pollingPerpsRaw.filter(
@@ -272,8 +281,7 @@ export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
     presidency2028PartyContract,
     rawSenateStateContracts: senateStateContracts,
     rawGovernorStateContracts: governorStateContracts,
-    rawSenateCandidateContracts: senateCandidateContracts,
-    rawGovernorCandidateContracts: governorCandidateContracts,
+    linkedMarketCounts,
     balanceOfPowerContract,
     houseControlContract,
     senateControlContract,
@@ -295,6 +303,48 @@ export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
     houseMatrixRows,
     bothMatrixRows,
     presidencyMatrixRows,
+  }
+}
+
+// Open markets linked to the race markets, counted per parent. Two light
+// reads through the admin client (links for these parents, then the children's
+// status), chunked like getContracts; the whole table is small. A failure
+// leaves the counts empty rather than failing the page: the pinned card still
+// reads its own list.
+async function getLinkedMarketCounts(
+  adminDb: Awaited<ReturnType<typeof initSupabaseAdmin>>,
+  parentIds: string[]
+): Promise<Record<string, number>> {
+  try {
+    const links = (
+      await Promise.all(
+        chunk(uniq(parentIds), 300).map((ids) =>
+          run(
+            adminDb
+              .from('market_links')
+              .select('parent_contract_id, child_contract_id')
+              .in('parent_contract_id', ids)
+          )
+        )
+      )
+    ).flatMap((r) => r.data as LinkedMarketRow[])
+    const childIds = uniq(links.map((l) => l.child_contract_id))
+    const children = (
+      await Promise.all(
+        chunk(childIds, 300).map((ids) =>
+          run(
+            adminDb
+              .from('contracts')
+              .select('id, visibility, resolution, deleted')
+              .in('id', ids)
+          )
+        )
+      )
+    ).flatMap((r) => r.data as LinkedChildStatus[])
+    return countLinkedMarkets(links, children)
+  } catch (e) {
+    console.error('getLinkedMarketCounts failed', e)
+    return {}
   }
 }
 

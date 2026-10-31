@@ -14,9 +14,9 @@ import { SearchIcon, AnnotationIcon } from '@heroicons/react/outline'
 import { Contract, isMultiCpmm } from 'common/contract'
 import { MapContractsDictionary } from 'web/public/data/elections-data'
 import { ElectionBalance } from './election-balance'
-import { sourceAudit } from './audited-sources'
 import { RaceDetailsPanel } from './race-details-panel'
-import { RaceLinkedMarkets } from './race-linked-markets'
+import { LinkedMarketsBadge, RaceLinkedMarkets } from './race-linked-markets'
+import { linkedRaceParent } from './race-linked-markets-model'
 import { useMapCamera } from './use-map-camera'
 import { Bounds, Point } from './map-camera'
 import { BallotMeasureCard } from './ballot-measure-card'
@@ -92,8 +92,9 @@ import interactions from '../us-elections/election-interactions.module.css'
 type Props = {
   senate: MapContractsDictionary
   governor: MapContractsDictionary
-  senateCandidates: MapContractsDictionary
-  governorCandidates: MapContractsDictionary
+  // Open markets linked to each race market, by that market's id, from the
+  // page build: what a hovered race shows without a request.
+  linkedMarketCounts?: Record<string, number>
   house: Contract | null
   additionalHouse?: MapContractsDictionary
   houseControl: Contract | null
@@ -725,12 +726,10 @@ export function ElectionExplorer(props: Props) {
       y: ty + l.y * s,
     }))
   }, [atlas, hex])
-  const candidate =
-    selectedRace && mode !== 'house'
-      ? (mode === 'senate' ? props.senateCandidates : props.governorCandidates)[
-          selectedRace.state
-        ]
-      : null
+  const linkedCount = (race: Race) => {
+    const parent = linkedRaceParent(race)
+    return parent ? props.linkedMarketCounts?.[parent.id] ?? 0 : 0
+  }
   const hitRadius = HIT_RADIUS_PX / (pixelsPerUnit * camera.k)
   // Zoomed in, small states have room for their own labels.
   const zoomedIn = camera.k >= 2
@@ -1348,6 +1347,7 @@ export function ElectionExplorer(props: Props) {
               ) : hoverRace ? (
                 <>
                   <RaceQuote race={hoverRace} />
+                  <LinkedMarketsBadge count={linkedCount(hoverRace)} />
                   <BallotCandidates race={hoverRace} />
                   <IncumbentDetails
                     mode={raceMode}
@@ -1403,15 +1403,7 @@ export function ElectionExplorer(props: Props) {
                   <SelectedRace
                     race={selectedRace}
                     mode={raceMode}
-                    candidate={
-                      candidate &&
-                      candidate.id !== selectedRace.contract?.id &&
-                      sourceAudit(selectedRace.contract?.slug)?.kind !==
-                        'candidate'
-                        ? candidate
-                        : undefined
-                    }
-                    linkedCandidate={candidate}
+                    linkedCount={linkedCount(selectedRace)}
                   />
                 )}
               </>
@@ -1535,12 +1527,10 @@ function Legend(props: {
 function SelectedRace(props: {
   race: Race
   mode: ElectionMode
-  candidate?: Contract | null
-  // The candidate market whether or not it's shown as its own section: a
-  // market linked to it still belongs under this race.
-  linkedCandidate?: Contract | null
+  // The page's preloaded count of markets linked to the race's market.
+  linkedCount: number
 }) {
-  const { race, mode, candidate, linkedCandidate } = props
+  const { race, mode, linkedCount } = props
   const tier = raceTier(race)
   const portfolio =
     race.answerId &&
@@ -1605,23 +1595,12 @@ function SelectedRace(props: {
         state={race.state}
         district={race.district}
       />
-      {candidate && (
-        <div className={styles.candidates}>
-          <div className={styles.candidateHeading}>
-            <span className={styles.eyebrow}>Candidate market</span>
-            <MarketDetailsLink contract={candidate} />
-          </div>
-          <RaceOutcomes contract={candidate} race={race} mode={mode} />
-          <SourceNotes contract={candidate} />
-        </div>
-      )}
-      {/* Props and lines on this race, where the candidate market used to be
-          the only extra. Remounts per race so one race's list never shows
-          under another. */}
+      {/* Props and lines on this race. Remounts per race so one race's list
+          never shows under another. */}
       <RaceLinkedMarkets
         key={race.id}
         race={race}
-        candidate={linkedCandidate}
+        expectedCount={linkedCount}
       />
     </>
   )
