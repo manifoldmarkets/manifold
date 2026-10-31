@@ -34,6 +34,7 @@ import {
   bulkIncrementBalancesQuery,
   UserUpdate,
 } from 'shared/supabase/users'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { incrementLoanFieldsQuery } from 'shared/helpers/user-contract-loans'
 import {
@@ -84,11 +85,6 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
     )
   }
 
-  // Fetch user's supporter entitlements to determine loan rate
-  const entitlements = await getActiveSupporterEntitlements(pg, userId)
-  const freeLoanRate = getFreeLoanRate(entitlements)
-  const maxLoanPercent = getMaxLoanNetWorthPercent(entitlements)
-
   // Check if loans are globally disabled
   const loanStatus = await pg.oneOrNone<{ status: boolean }>(
     `SELECT status FROM system_trading_status WHERE token = 'LOAN'`
@@ -112,84 +108,96 @@ export const claimFreeLoan: APIHandler<'claim-free-loan'> = async (_, auth) => {
     )
   }
 
-  const midnightPT = getMidnightPacific()
-
   const { userUpdates, amount, distributions } =
     await betsQueue.enqueueFn(async () => {
-      return pg.tx(async (tx) => {
-        // Lock the user row to serialize concurrent loan operations for this
-        // user. Every loan input is read after this lock, so the amount and
-        // distribution can't be computed from state another request is about
-        // to change.
-        await tx.oneOrNone('select 1 from users where id = $1 for update', [
-          userId,
-        ])
+      return runTransactionWithRetries(
+        async (tx) => {
+          // Lock the user row to serialize concurrent loan operations for this
+          // user. Every loan input is read after this lock, so the amount and
+          // distribution can't be computed from state another request is about
+          // to change.
+          await tx.oneOrNone('select 1 from users where id = $1 for update', [
+            userId,
+          ])
 
-        // Re-check claim availability under the lock.
-        const lockedRow = await tx.oneOrNone<{
-          last_free_loan_claim: Date | null
-        }>(`SELECT last_free_loan_claim FROM users WHERE id = $1`, [userId])
-        if (!canClaimDailyFreeLoan(lockedRow?.last_free_loan_claim ?? null)) {
-          throw new APIError(
-            400,
-            'You have already claimed your daily free loan today'
+          // Re-check claim availability under the lock.
+          const lockedRow = await tx.oneOrNone<{
+            last_free_loan_claim: Date | null
+          }>(`SELECT last_free_loan_claim FROM users WHERE id = $1`, [userId])
+          if (!canClaimDailyFreeLoan(lockedRow?.last_free_loan_claim ?? null)) {
+            throw new APIError(
+              400,
+              'You have already claimed your daily free loan today'
+            )
+          }
+
+          // Fetch user's supporter entitlements to determine loan rate
+          const entitlements = await getActiveSupporterEntitlements(tx, userId)
+          const freeLoanRate = getFreeLoanRate(entitlements)
+          const maxLoanPercent = getMaxLoanNetWorthPercent(entitlements)
+
+          const midnightPT = getMidnightPacific()
+
+          const { amount, distributions } = await planFreeLoan(
+            tx,
+            userId,
+            freeLoanRate,
+            maxLoanPercent,
+            midnightPT
           )
-        }
 
-        const { amount, distributions } = await planFreeLoan(
-          tx,
-          userId,
-          freeLoanRate,
-          maxLoanPercent,
-          midnightPT
-        )
+          // Create transaction for the loan
+          const txn: Omit<Txn, 'id' | 'createdTime'> = {
+            category: 'LOAN',
+            fromType: 'BANK',
+            fromId: 'BANK',
+            toType: 'USER',
+            toId: userId,
+            amount,
+            token: 'M$',
+            data: {
+              distributions: distributions.map((d) => ({
+                contractId: d.contractId,
+                answerId: d.answerId,
+                amount: d.loanAmount,
+              })),
+            },
+            description: 'Daily free loan claim',
+          }
 
-        // Create transaction for the loan
-        const txn: Omit<Txn, 'id' | 'createdTime'> = {
-          category: 'LOAN',
-          fromType: 'BANK',
-          fromId: 'BANK',
-          toType: 'USER',
-          toId: userId,
-          amount,
-          token: 'M$',
-          data: {
-            distributions: distributions.map((d) => ({
+          const txnQuery = getInsertQuery('txns', txnToRow(txn))
+          const balanceUpdateQuery = bulkIncrementBalancesQuery([
+            { id: userId, balance: amount },
+          ])
+          // Increment loan field (NOT marginLoan) relative to the stored value
+          const incrementLoansQ = incrementLoanFieldsQuery(
+            userId,
+            distributions.map((d) => ({
               contractId: d.contractId,
               answerId: d.answerId,
-              amount: d.loanAmount,
-            })),
-          },
-          description: 'Daily free loan claim',
-        }
+              loanDelta: d.loanAmount,
+            }))
+          )
+          const updateLastClaimQuery = pgp.as.format(
+            `UPDATE users SET last_free_loan_claim = NOW() WHERE id = $1`,
+            [userId]
+          )
 
-        const txnQuery = getInsertQuery('txns', txnToRow(txn))
-        const balanceUpdateQuery = bulkIncrementBalancesQuery([
-          { id: userId, balance: amount },
-        ])
-        // Increment loan field (NOT marginLoan) relative to the stored value
-        const incrementLoansQ = incrementLoanFieldsQuery(
-          userId,
-          distributions.map((d) => ({
-            contractId: d.contractId,
-            answerId: d.answerId,
-            loanDelta: d.loanAmount,
-          }))
-        )
-        const updateLastClaimQuery = pgp.as.format(
-          `UPDATE users SET last_free_loan_claim = NOW() WHERE id = $1`,
-          [userId]
-        )
-
-        const res = await tx.multi(
-          `${balanceUpdateQuery};
+          const res = await tx.multi(
+            `${balanceUpdateQuery};
            ${txnQuery};
            ${incrementLoansQ};
            ${updateLastClaimQuery}`
-        )
-        const userUpdates = res[0] as UserUpdate[]
-        return { userUpdates, amount, distributions }
-      })
+          )
+          const userUpdates = res[0] as UserUpdate[]
+          return { userUpdates, amount, distributions }
+        },
+        3,
+        {
+          mode: 'default',
+          isExpectedError: (error) => error instanceof APIError,
+        }
+      )
     }, [userId])
 
   broadcastUserUpdates(userUpdates)
