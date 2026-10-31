@@ -85,7 +85,7 @@ function BrowseV2Inner() {
   const isMobile = useIsMobile()
   const searchRef = useRef<HTMLDivElement>(null)
   const filtersRef = useRef<HTMLDivElement>(null)
-  const hideControls = useScrollReveal(searchRef, filtersRef, isMobile)
+  useScrollReveal(searchRef, filtersRef, isMobile)
   const [savedLayout, setLayout] = usePersistentLocalState<
     BrowseLayout | undefined
   >(undefined, 'browse-v2-layout')
@@ -276,11 +276,7 @@ function BrowseV2Inner() {
     <div className="flex w-full flex-col gap-2 px-3 pb-10 lg:px-0">
       <div
         ref={searchRef}
-        aria-hidden={hideControls || undefined}
-        className={clsx(
-          'bg-canvas-0 sticky top-0 z-30 -mx-3 flex h-[44px] shrink-0 items-center gap-2 px-3 py-0.5 transition-[transform,visibility] duration-150 motion-reduce:transition-none sm:static sm:mx-0 sm:h-auto sm:px-0 sm:py-0',
-          hideControls && 'pointer-events-none invisible -translate-y-full'
-        )}
+        className="bg-canvas-0 sticky top-0 z-30 -mx-3 flex h-[44px] shrink-0 items-center gap-2 px-3 py-0.5 will-change-transform sm:static sm:mx-0 sm:h-auto sm:px-0 sm:py-0 sm:will-change-auto"
       >
         <h1 className="text-ink-1000 hidden text-base font-semibold sm:block">
           Browse
@@ -327,12 +323,7 @@ function BrowseV2Inner() {
 
       <div
         ref={filtersRef}
-        aria-hidden={hideControls || undefined}
-        className={clsx(
-          'bg-canvas-0 sticky top-[44px] z-20 -mx-3 px-3 py-0.5 transition-[transform,visibility] duration-150 motion-reduce:transition-none sm:top-0 lg:mx-0 lg:px-0',
-          hideControls &&
-            'pointer-events-none invisible -translate-y-[calc(100%+44px)]'
-        )}
+        className="bg-canvas-0 sticky top-[44px] z-20 -mx-3 px-3 py-0.5 will-change-transform sm:top-0 sm:will-change-auto lg:mx-0 lg:px-0"
       >
         <LensBar
           lens={lens}
