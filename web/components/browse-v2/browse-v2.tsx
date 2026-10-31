@@ -278,18 +278,18 @@ function BrowseV2Inner() {
         ref={searchRef}
         className="bg-canvas-0 sticky top-0 z-30 -mx-3 flex h-[44px] shrink-0 items-center gap-2 px-3 py-0.5 will-change-transform sm:mx-0 sm:h-9 sm:px-0 sm:py-0 sm:will-change-auto"
       >
-        <h1 className="text-ink-1000 hidden text-base font-semibold sm:block">
-          Browse
-        </h1>
-        <label className="border-ink-300 focus-within:border-primary-500 bg-canvas-0 flex min-w-0 flex-1 items-center gap-2 rounded-full border px-3 py-1.5 transition-colors">
+        <h1 className="sr-only">Browse</h1>
+        <label className="border-ink-300 focus-within:border-primary-500 bg-canvas-0 flex min-w-0 flex-1 items-center gap-2 rounded-md border px-3 py-1.5 transition-colors">
           <SearchIcon className="text-ink-400 h-5 w-5 shrink-0" />
-          <span className="sr-only">Search markets</span>
+          <span className="sr-only">
+            Search markets, users, topics, and posts
+          </span>
           <input
             type="search"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Search markets"
-            className="text-ink-1000 placeholder:text-ink-400 min-w-0 flex-1 border-0 bg-transparent p-0 text-base focus:outline-none focus:ring-0 sm:text-sm"
+            placeholder="Search markets, users, topics, and posts"
+            className="text-ink-1000 placeholder:text-ink-400 min-w-0 flex-1 text-ellipsis border-0 bg-transparent p-0 text-base focus:outline-none focus:ring-0 sm:text-sm"
           />
           {input && (
             <button
