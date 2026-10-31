@@ -698,6 +698,7 @@ type ContractRow = {
 type Check =
   | { status: 'ok' }
   | { status: 'already linked' }
+  | { status: 'resolved' }
   | { status: 'linked elsewhere'; parentId: string }
   | { status: 'error'; message: string }
 
@@ -709,9 +710,14 @@ async function checkLink(
   replace: boolean
 ): Promise<Check> {
   const child = await pg.oneOrNone<
-    Pick<ContractRow, 'id' | 'visibility' | 'deleted'>
-  >(`select id, visibility, deleted from contracts where id = $1`, [link.child])
+    Pick<ContractRow, 'id' | 'visibility' | 'deleted' | 'resolution'>
+  >(`select id, visibility, deleted, resolution from contracts where id = $1`, [
+    link.child,
+  ])
   if (!child) return { status: 'error', message: 'child market not found' }
+  // The race card hides resolved children, so a link to one shows nothing.
+  // Election-eve props resolve daily; leave them out rather than link them.
+  if (child.resolution) return { status: 'resolved' }
   const childError = getLinkChildError({
     visibility: child.visibility ?? 'public',
     deleted: !!child.deleted,
@@ -777,6 +783,8 @@ runScript(async ({ pg }) => {
           ? `SKIP linked to ${check.parentId}`
           : check.status === 'already linked'
           ? 'SKIP already linked'
+          : check.status === 'resolved'
+          ? 'SKIP resolved'
           : apply
           ? 'LINK'
           : 'OK'
@@ -795,7 +803,9 @@ runScript(async ({ pg }) => {
   const counts = {
     ok: toLink.length,
     skipped: ELECTION_RACE_LINKS.filter((l) =>
-      ['already linked', 'linked elsewhere'].includes(checks.get(l)!.status)
+      ['already linked', 'linked elsewhere', 'resolved'].includes(
+        checks.get(l)!.status
+      )
     ).length,
     errors: ELECTION_RACE_LINKS.filter((l) => checks.get(l)!.status === 'error')
       .length,
