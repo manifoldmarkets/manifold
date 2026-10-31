@@ -137,6 +137,9 @@ export const BALANCE_CHANGE_TYPE_LABELS: Record<
   CONSUME_SPICE: 'Redeem prize points (begin)',
   CONSUME_SPICE_DONE: 'Redeem prize points (complete)',
   CONTRACT_RESOLUTION_FEE: 'Resolution fee',
+  // Between a market and itself, so never a user's balance change.
+  CONTRACT_RESOLUTION_SUBSIDY: 'Resolution subsidy record',
+  CONTRACT_UNDO_RESOLUTION_SUBSIDY: 'Undo resolution subsidy record',
   UNDO_CONTRACT_RESOLUTION_FEE: 'Undo resolution fee',
   CONTRACT_UNDO_RESOLUTION_PAYOUT: 'Undo resolution payout',
   CONVERT_CASH: 'Convert sweepstakes cash (begin)',
