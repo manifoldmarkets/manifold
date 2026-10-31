@@ -35,7 +35,6 @@ import {
 } from 'web/components/contract/contracts-table'
 import {
   actionColumn,
-  boostedColumn,
   liquidityColumn,
   probColumn,
   traderColumn,
@@ -100,10 +99,7 @@ export function MarketCard(props: { contract: Contract; section: string }) {
       )}
       <div className="mt-auto flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-1">
-            <MarketMeta contract={contract} />
-            <TopicsMenu contract={contract} small />
-          </div>
+          <MarketMeta contract={contract} />
           <div className="flex shrink-0 items-center gap-1">
             {isBinary ? (
               <YesNoButtons contract={contract as BinaryContract} />
@@ -128,50 +124,47 @@ export function MarketListRow(props: { contract: Contract; section: string }) {
     !!leadingAnswer(contract)
 
   return (
-    <ContractRow
-      contract={contract}
-      trackingPostfix={section}
-      compactMobile
-      faded={
-        (isClosed(contract) && contract.creatorId !== user?.id) ||
-        contract.isResolved
-      }
-      columns={[
-        { ...boostedColumn, width: 'w-5 shrink-0 sm:w-6' },
-        {
-          ...traderColumn,
-          width: hasMobileAnswer
-            ? 'hidden sm:flex sm:w-[70px]'
-            : 'w-12 shrink-0 sm:w-[70px]',
-        },
-        {
-          ...liquidityColumn,
-          width: hasMobileAnswer
-            ? 'hidden sm:flex sm:w-[40px]'
-            : 'w-[72px] shrink-0 sm:w-[40px]',
-        },
-        {
-          ...probColumn,
-          width: hasMobileAnswer
-            ? 'min-w-0 flex-1 pr-2 sm:flex-none sm:w-[80px] sm:pr-0'
-            : 'w-[60px] shrink-0 sm:w-[80px]',
-          content: ({ contract }) => <ListProbability contract={contract} />,
-        },
-        {
-          ...actionColumn,
-          width: 'order-last w-10 shrink-0 sm:order-none sm:w-12',
-        },
-        {
-          header: 'Topics',
-          width: 'group w-6 shrink-0 sm:relative sm:w-0',
-          content: ({ contract }) => (
-            <span className="sm:absolute sm:left-0 sm:top-0 sm:-translate-y-1/2">
-              <TopicsMenu contract={contract} small />
-            </span>
-          ),
-        },
-      ]}
-    />
+    <div className="group">
+      <ContractRow
+        contract={contract}
+        trackingPostfix={section}
+        compactMobile
+        faded={
+          (isClosed(contract) && contract.creatorId !== user?.id) ||
+          contract.isResolved
+        }
+        columns={[
+          {
+            header: 'Topics',
+            width: 'w-6 shrink-0',
+            content: ({ contract }) => <TopicsMenu contract={contract} small />,
+          },
+          {
+            ...traderColumn,
+            width: hasMobileAnswer
+              ? 'hidden sm:flex sm:w-[70px]'
+              : 'w-12 shrink-0 sm:w-[70px]',
+          },
+          {
+            ...liquidityColumn,
+            width: hasMobileAnswer
+              ? 'hidden sm:flex sm:w-[40px]'
+              : 'w-[72px] shrink-0 sm:w-[40px]',
+          },
+          {
+            ...probColumn,
+            width: hasMobileAnswer
+              ? 'min-w-0 flex-1 pr-2 sm:flex-none sm:w-[80px] sm:pr-0'
+              : 'w-[60px] shrink-0 sm:w-[80px]',
+            content: ({ contract }) => <ListProbability contract={contract} />,
+          },
+          {
+            ...actionColumn,
+            width: 'w-10 shrink-0 sm:w-12',
+          },
+        ]}
+      />
+    </div>
   )
 }
 
@@ -378,7 +371,7 @@ function MarketMeta(props: {
         className
       )}
     >
-      {contract.boosted && <BoostedTag iconOnly={compact} />}
+      <TopicsMenu contract={contract} small />
       {!compact && (
         <Avatar
           username={contract.creatorUsername}
@@ -557,27 +550,48 @@ export function TradeButton(props: { contract: Contract; compact?: boolean }) {
 
 // Follow or hide this market's topics without leaving the page. With a mouse
 // it appears on hover, so a page of markets isn't a page of dots; touch
-// screens always show it.
+// screens always show it. Boosted markets use a visible rocket in the same
+// slot, retaining both the promotion disclosure and access to topics.
 function TopicsMenu(props: { contract: Contract; small?: boolean }) {
   const { contract, small } = props
   const slugs = (contract.groupSlugs ?? []).slice(0, 6)
   if (slugs.length === 0)
-    return small ? null : <span className="w-7 shrink-0" />
+    return contract.boosted ? (
+      <BoostedTag iconOnly />
+    ) : small ? null : (
+      <span className="w-7 shrink-0" />
+    )
   return (
     <StopClicks
-      className="shrink-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 [@media(hover:hover)]:opacity-0"
+      className={clsx(
+        'shrink-0',
+        !contract.boosted &&
+          'transition-opacity focus-within:opacity-100 group-hover:opacity-100 sm:[@media(hover:hover)]:opacity-0'
+      )}
       preventDefault
     >
       <Popover className="relative">
         <PopoverButton
-          aria-label="Topics for this market"
-          title="Follow or hide this market's topics"
+          aria-label={
+            contract.boosted
+              ? 'Topics for this boosted market'
+              : 'Topics for this market'
+          }
+          title={
+            contract.boosted
+              ? "Boosted: promoted with a paid boost. Follow or hide this market's topics"
+              : "Follow or hide this market's topics"
+          }
           className={clsx(
             'text-ink-400 hover:text-ink-700 hover:bg-ink-100 flex items-center justify-center rounded-md outline-none',
             small ? 'h-5 w-6' : 'h-7 w-7'
           )}
         >
-          <DotsHorizontalIcon className="h-5 w-5" />
+          {contract.boosted ? (
+            <BoostedTag iconOnly />
+          ) : (
+            <DotsHorizontalIcon className="h-5 w-5" />
+          )}
         </PopoverButton>
         <PopoverPanel
           anchor={{ to: 'bottom end', gap: 6 }}
