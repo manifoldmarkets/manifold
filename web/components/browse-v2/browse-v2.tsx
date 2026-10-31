@@ -296,7 +296,7 @@ function BrowseV2Inner() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Search markets, users, topics, and posts"
-            className="text-ink-1000 placeholder:text-ink-400 min-w-0 flex-1 text-ellipsis border-0 bg-transparent p-0 text-base focus:outline-none focus:ring-0 sm:text-sm"
+            className="text-ink-1000 placeholder:text-ink-400 min-w-0 flex-1 text-ellipsis border-0 bg-transparent p-0 text-base focus:outline-none focus:ring-0 sm:text-sm [&::-webkit-search-cancel-button]:hidden"
           />
           {input && (
             <button
@@ -332,7 +332,9 @@ function BrowseV2Inner() {
 
       <div
         ref={filtersRef}
-        className="bg-canvas-0 sticky top-[44px] z-20 -mx-3 px-3 py-0.5 will-change-transform sm:top-9 sm:will-change-auto lg:mx-0 lg:px-0"
+        // Extend the background across the row gap, including subpixel seams
+        // between the two independently composited sticky bars on mobile.
+        className="bg-canvas-0 before:bg-canvas-0 sticky top-[44px] z-20 -mx-3 px-3 py-0.5 will-change-transform before:pointer-events-none before:absolute before:inset-x-0 before:-top-2 before:h-2 sm:top-9 sm:will-change-auto lg:mx-0 lg:px-0"
       >
         <LensBar
           lens={lens}
