@@ -30,6 +30,7 @@ import {
   bulkIncrementBalancesQuery,
   UserUpdate,
 } from 'shared/supabase/users'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import {
   accrueLoanTrackingQuery,
@@ -66,34 +67,6 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     throw new APIError(404, `User ${auth.uid} not found`)
   }
 
-  // Check if user has margin loan access (Pro or Premium tier required)
-  const entitlements = await getActiveSupporterEntitlements(pg, auth.uid)
-
-  if (!canAccessMarginLoans(entitlements)) {
-    throw new APIError(
-      403,
-      'Margin loans require a Manifold membership. Upgrade at manifold.markets/shop'
-    )
-  }
-
-  // Get tier-specific max loan percent
-  const maxLoanPercent = getMaxLoanNetWorthPercent(entitlements)
-
-  const portfolioMetricRow = await pg.oneOrNone<
-    Row<'user_portfolio_history_latest'>
-  >(
-    `select *
-     from user_portfolio_history_latest
-     where user_id = $1`,
-    [auth.uid]
-  )
-  const portfolioMetric = portfolioMetricRow
-    ? convertPortfolioHistory(portfolioMetricRow)
-    : null
-  if (!portfolioMetric) {
-    throw new APIError(404, `No portfolio found for user ${auth.uid}`)
-  }
-
   // Market-specific loan - DISABLED
   if (contractId) {
     throw new APIError(
@@ -102,51 +75,88 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     )
   }
 
-  const midnightPT = getMidnightPacific()
   const { txnQuery, balanceUpdateQuery } = payUserLoan(user.id, amount)
 
   const { userUpdates, distributions } = await betsQueue.enqueueFn(async () => {
-    return pg.tx(async (tx) => {
-      // Lock the user row to serialize loan requests (and bets, which update
-      // the balance before writing metrics) for this user across replicas.
-      // Every loan input is read after this lock: computing from a snapshot
-      // taken before it let concurrent requests each pay out while recording
-      // the debt only once.
-      await tx.oneOrNone('select 1 from users where id = $1 for update', [
-        user.id,
-      ])
-      const now = Date.now()
+    return runTransactionWithRetries(
+      async (tx) => {
+        // Lock the user row to serialize loan requests (and bets, which update
+        // the balance before writing metrics) for this user across replicas.
+        // Every loan input is read after this lock: computing from a snapshot
+        // taken before it let concurrent requests each pay out while recording
+        // the debt only once.
+        await tx.oneOrNone('select 1 from users where id = $1 for update', [
+          user.id,
+        ])
+        const now = Date.now()
 
-      const distributions = await planGeneralLoan(
-        tx,
-        user.id,
-        amount,
-        maxLoanPercent,
-        portfolioMetric,
-        midnightPT
-      )
+        // Check if user has margin loan access (Pro or Premium tier required)
+        const entitlements = await getActiveSupporterEntitlements(tx, auth.uid)
 
-      // Loan tracking must accrue against the old marginLoan, so it runs
-      // before the increment.
-      const loanTrackingQ = accrueLoanTrackingQuery(user.id, distributions, now)
-      const incrementLoansQ = incrementLoanFieldsQuery(
-        user.id,
-        distributions.map((d) => ({
-          contractId: d.contractId,
-          answerId: d.answerId,
-          marginLoanDelta: d.loanAmount,
-        }))
-      )
+        if (!canAccessMarginLoans(entitlements)) {
+          throw new APIError(
+            403,
+            'Margin loans require a Manifold membership. Upgrade at manifold.markets/shop'
+          )
+        }
 
-      const res = await tx.multi(
-        `${balanceUpdateQuery};
+        // Get tier-specific max loan percent
+        const maxLoanPercent = getMaxLoanNetWorthPercent(entitlements)
+
+        const portfolioMetricRow = await tx.oneOrNone<
+          Row<'user_portfolio_history_latest'>
+        >(
+          `select *
+         from user_portfolio_history_latest
+         where user_id = $1`,
+          [auth.uid]
+        )
+        const portfolioMetric = portfolioMetricRow
+          ? convertPortfolioHistory(portfolioMetricRow)
+          : null
+        if (!portfolioMetric) {
+          throw new APIError(404, `No portfolio found for user ${auth.uid}`)
+        }
+
+        const midnightPT = getMidnightPacific()
+
+        const distributions = await planGeneralLoan(
+          tx,
+          user.id,
+          amount,
+          maxLoanPercent,
+          portfolioMetric,
+          midnightPT
+        )
+
+        // Loan tracking must accrue against the old marginLoan, so it runs
+        // before the increment.
+        const loanTrackingQ = accrueLoanTrackingQuery(
+          user.id,
+          distributions,
+          now
+        )
+        const incrementLoansQ = incrementLoanFieldsQuery(
+          user.id,
+          distributions.map((d) => ({
+            contractId: d.contractId,
+            answerId: d.answerId,
+            marginLoanDelta: d.loanAmount,
+          }))
+        )
+
+        const res = await tx.multi(
+          `${balanceUpdateQuery};
            ${txnQuery};
            ${loanTrackingQ};
            ${incrementLoansQ}`
-      )
-      const userUpdates = res[0] as UserUpdate[]
-      return { userUpdates, distributions }
-    })
+        )
+        const userUpdates = res[0] as UserUpdate[]
+        return { userUpdates, distributions }
+      },
+      3,
+      { mode: 'default', isExpectedError: (error) => error instanceof APIError }
+    )
   }, [auth.uid])
 
   broadcastUserUpdates(userUpdates)
