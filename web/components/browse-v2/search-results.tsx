@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { UserIcon } from '@heroicons/react/solid'
+import { HeartIcon } from '@heroicons/react/outline'
 import { groupPath } from 'common/group'
 import { TopLevelPost } from 'common/top-level-post'
 import { isUserLikelySpammer } from 'common/user'
@@ -9,6 +9,7 @@ import { ReactNode } from 'react'
 import { UserResults } from 'web/components/search/user-results'
 import { BrowseTopicPills } from 'web/components/topics/browse-topic-pills'
 import { Avatar } from 'web/components/widgets/avatar'
+import { useReactionsOnContent } from 'web/hooks/use-reactions'
 import { isBlocked, usePrivateUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
@@ -120,7 +121,7 @@ export function SearchResults(props: {
                   href={`/${u.username}`}
                   title={u.username}
                   className={clsx(
-                    'bg-ink-200 hover:bg-ink-300 flex h-7 min-w-0 flex-1 items-center gap-1 rounded-full pl-1 pr-2 text-xs sm:max-w-[12rem] sm:flex-initial',
+                    'bg-ink-200 hover:bg-ink-300 flex h-7 min-w-0 max-w-full flex-initial items-center gap-1 rounded-full pl-1 pr-2 text-xs sm:max-w-[12rem]',
                     i >= 2 && 'hidden sm:flex'
                   )}
                 >
@@ -162,7 +163,7 @@ export function SearchResults(props: {
                   prefetch={false}
                   title={removeEmojis(g.name)}
                   className={clsx(
-                    'bg-canvas-50 hover:bg-primary-50 text-ink-600 hover:text-primary-700 flex h-7 min-w-0 flex-1 items-center rounded-md px-2 text-xs sm:max-w-[12rem] sm:flex-initial',
+                    'bg-canvas-50 hover:bg-primary-50 text-ink-600 hover:text-primary-700 flex h-7 min-w-0 max-w-full flex-initial items-center rounded-md px-2 text-xs sm:max-w-[12rem]',
                     i >= 2 && 'hidden sm:flex'
                   )}
                 >
@@ -201,6 +202,8 @@ export function SearchResults(props: {
 
 function SearchPostRow(props: { post: TopLevelPost; preview: boolean }) {
   const { post, preview } = props
+  const reactions = useReactionsOnContent('post', post.id)
+  const likes = reactions?.filter((r) => r.reaction_type === 'like').length
   return (
     <Link
       href={`/post/${post.slug}`}
@@ -213,14 +216,12 @@ function SearchPostRow(props: { post: TopLevelPost; preview: boolean }) {
         preview ? 'h-7' : 'px-2 py-2'
       )}
     >
-      {!preview && (
-        <Avatar
-          username={post.creatorUsername}
-          avatarUrl={post.creatorAvatarUrl}
-          size="2xs"
-          noLink
-        />
-      )}
+      <Avatar
+        username={post.creatorUsername}
+        avatarUrl={post.creatorAvatarUrl}
+        size="2xs"
+        noLink
+      />
       <span
         className={clsx(
           'min-w-0 flex-1',
@@ -229,15 +230,22 @@ function SearchPostRow(props: { post: TopLevelPost; preview: boolean }) {
       >
         {post.title}
       </span>
-      {!preview && post.uniqueUsers != null && (
-        <span
-          className="text-ink-500 flex shrink-0 items-center gap-1 text-xs"
-          aria-label={`${post.uniqueUsers} users commented or reacted`}
-        >
-          <UserIcon className="h-3 w-3" />
-          {post.uniqueUsers}
-        </span>
-      )}
+      <span
+        className="text-ink-500 flex shrink-0 items-center gap-1 text-xs tabular-nums"
+        aria-label={
+          likes === undefined
+            ? 'Loading likes'
+            : `${likes} ${likes === 1 ? 'like' : 'likes'}`
+        }
+        title={
+          likes === undefined
+            ? 'Loading likes'
+            : `${likes} ${likes === 1 ? 'like' : 'likes'}`
+        }
+      >
+        <HeartIcon className="h-3 w-3" />
+        {likes ?? '…'}
+      </span>
     </Link>
   )
 }
