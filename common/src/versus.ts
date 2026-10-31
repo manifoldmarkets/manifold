@@ -110,6 +110,12 @@ export const versusSideProb = (outcome: string, prob: number) =>
 type SideNames = {
   YES: { pseudonymName: string }
   NO: { pseudonymName: string }
+  /**
+   * The two names are the answer's own two outcomes, as in an esports series
+   * answer "A defeats B": NO is B winning, not "any other answer", so the
+   * ticket prices the named side even on a market with more answers.
+   */
+  opposed?: boolean
 }
 
 /**
@@ -128,6 +134,7 @@ export const showsSideProbability = (
   sideNames?: SideNames
 ) => {
   if (isBinaryMulti(contract)) return true
+  if (sideNames?.opposed) return true
   if (!sideNames || contract.outcomeType !== 'BINARY') return false
   const generic = (name: string) => /^(yes|no)$/i.test(name.trim())
   return !(
