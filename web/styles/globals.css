@@ -595,6 +595,79 @@ text {
   background: inherit;
 }
 
+/* Mana coins rain down the screen when the "Get mana" button is hovered. The rain component
+   only renders these on hover-capable devices without reduced motion. Each coin is a stack of
+   layers spread along Z (the thickness) with a glint sweeping across the face. */
+@keyframes mana-rain-fall {
+  from {
+    transform: translate3d(0, -12vh, 0) rotate(var(--tilt));
+  }
+  to {
+    transform: translate3d(var(--drift), 112vh, 0) rotate(var(--tilt));
+  }
+}
+@keyframes mana-rain-spin {
+  from {
+    transform: perspective(600px) rotateY(0deg);
+  }
+  to {
+    transform: perspective(600px) rotateY(var(--spin));
+  }
+}
+@keyframes mana-rain-glint {
+  from {
+    background-position: 160% 0;
+  }
+  to {
+    background-position: -60% 0;
+  }
+}
+.mana-rain-coin {
+  display: block;
+  position: fixed;
+  top: 0;
+  pointer-events: none;
+  animation: mana-rain-fall var(--dur) cubic-bezier(0.35, 0, 0.8, 0.6)
+    var(--delay) both;
+  will-change: transform;
+}
+.mana-rain-body {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  animation: mana-rain-spin var(--dur) linear var(--delay) both;
+}
+.mana-rain-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: translateZ(calc((var(--i) - 2.5) * var(--step)));
+}
+/* inner layers form the coin's rim: darker and more saturated than the faces */
+.mana-rain-layer[data-rim] {
+  filter: brightness(0.55) saturate(1.5);
+}
+.mana-rain-layer[data-face] {
+  filter: brightness(1.15) saturate(1.25) drop-shadow(0 0 3px rgb(196 148 255 / 0.9));
+}
+.mana-rain-gloss {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  transform: translateZ(calc(2.6 * var(--step)));
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    rgb(255 255 255 / 0.95) 48%,
+    transparent 60%
+  );
+  background-size: 250% 100%;
+  animation: mana-rain-glint 0.9s linear infinite;
+}
+
 /* Waving American flag spotlight behind a nav item; follows the cursor, only visible while hovered.
    Disabled on touch devices, where there is no hover. The wave only animates while hovered,
    and not at all under prefers-reduced-motion. */

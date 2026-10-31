@@ -1,10 +1,120 @@
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useUser } from 'web/hooks/use-user'
 import { usePersonalizedManaOffers } from 'web/hooks/use-personalized-mana-offers'
 import { Button, SizeType } from '../buttons/button'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { AddFundsOfferBadge } from './add-funds-offer-badge'
+
+const RAIN_COINS = 70
+const RAIN_LAYERS = 6
+const RAIN_MAX_MS = 8000
+
+type RainCoin = {
+  left: number
+  size: number
+  delay: number
+  dur: number
+  drift: number
+  spin: number
+  tilt: number
+}
+
+const makeRain = (): RainCoin[] =>
+  Array.from({ length: RAIN_COINS }, () => ({
+    left: Math.random() * 100,
+    size: 24 + Math.random() * 24,
+    delay: Math.random() * 2200,
+    dur: 3000 + Math.random() * 2000,
+    drift: (Math.random() - 0.5) * 80,
+    spin: (Math.random() < 0.5 ? -1 : 1) * (720 + Math.random() * 1080),
+    tilt: (Math.random() - 0.5) * 40,
+  }))
+
+// Hover-capable devices only, and never when the user asked for reduced motion.
+const canRain = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia(
+    '(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)'
+  ).matches
+
+// The rain plays once per visit (browser session), not on every hover.
+const RAIN_SEEN_KEY = 'mana-rain-seen'
+let rainSeen = false
+const hasSeenRain = () => {
+  if (rainSeen) return true
+  try {
+    return sessionStorage.getItem(RAIN_SEEN_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+const markRainSeen = () => {
+  rainSeen = true
+  try {
+    sessionStorage.setItem(RAIN_SEEN_KEY, '1')
+  } catch {}
+}
+
+function useManaRain() {
+  const [coins, setCoins] = useState<RainCoin[]>()
+  const timer = useRef<ReturnType<typeof setTimeout>>()
+
+  useEffect(() => () => clearTimeout(timer.current), [])
+
+  const start = () => {
+    if (coins || hasSeenRain() || !canRain()) return
+    markRainSeen()
+    setCoins(makeRain())
+    timer.current = setTimeout(() => setCoins(undefined), RAIN_MAX_MS)
+  }
+  return { coins, start }
+}
+
+function ManaRain(props: { coins: RainCoin[] }) {
+  return createPortal(
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-50">
+      {props.coins.map((c, i) => (
+        <span
+          key={i}
+          className="mana-rain-coin"
+          style={
+            {
+              left: `${c.left}%`,
+              width: c.size,
+              height: c.size,
+              '--delay': `${c.delay}ms`,
+              '--dur': `${c.dur}ms`,
+              '--drift': `${c.drift}px`,
+              '--spin': `${c.spin}deg`,
+              '--tilt': `${c.tilt}deg`,
+              '--step': `${(c.size * 0.16) / (RAIN_LAYERS - 1)}px`,
+            } as React.CSSProperties
+          }
+        >
+          <span className="mana-rain-body">
+            {Array.from({ length: RAIN_LAYERS }, (_, j) => (
+              <img
+                key={j}
+                src="/mana.svg"
+                alt=""
+                className="mana-rain-layer"
+                style={{ '--i': j } as React.CSSProperties}
+                {...(j === 0 || j === RAIN_LAYERS - 1
+                  ? { 'data-face': '' }
+                  : { 'data-rim': '' })}
+              />
+            ))}
+            <span className="mana-rain-gloss" />
+          </span>
+        </span>
+      ))}
+    </div>,
+    document.body
+  )
+}
 
 export function AddFundsButton(props: {
   userId?: string
@@ -16,6 +126,7 @@ export function AddFundsButton(props: {
   const router = useRouter()
   const { pendingCount, activeCount, nextExpiresAt } =
     usePersonalizedManaOffers()
+  const rain = useManaRain()
 
   if (!userId || user?.id !== userId) return null
 
@@ -24,7 +135,10 @@ export function AddFundsButton(props: {
   // the wrapper). `relative` on the wrapper is the positioning context for
   // the absolutely-positioned badge.
   return (
-    <span className={clsx('relative inline-block', className)}>
+    <span
+      className={clsx('relative inline-block', className)}
+      onMouseEnter={rain.start}
+    >
       <Button
         onClick={() =>
           router.asPath.includes('/checkout')
@@ -37,6 +151,7 @@ export function AddFundsButton(props: {
       >
         Get mana <ManaCoin className="ml-1" />
       </Button>
+      {rain.coins && <ManaRain coins={rain.coins} />}
       <AddFundsOfferBadge
         pendingCount={pendingCount}
         activeCount={activeCount}
