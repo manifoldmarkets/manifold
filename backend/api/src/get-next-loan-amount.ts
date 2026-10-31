@@ -12,6 +12,7 @@ import {
   getMaxPositionLoanToValue,
   isMarketEligibleForLoan,
   getMidnightPacific,
+  keyContractsWithLiveAnswers,
   sumExcludedPerpEquity,
 } from 'common/loans'
 import {
@@ -24,7 +25,7 @@ import {
   getUnresolvedContractMetricsContractsAnswers,
   getUnresolvedStatsForToken,
 } from 'shared/update-user-portfolio-histories-core'
-import { keyBy, sumBy } from 'lodash'
+import { sumBy } from 'lodash'
 import { Contract } from 'common/contract'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import { type Row } from 'common/supabase/utils'
@@ -72,9 +73,10 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
   const maxLoanPercent = getMaxLoanNetWorthPercent(entitlements)
   const freeLoanRate = getFreeLoanRate(entitlements)
 
-  const { metrics, contracts } =
+  const { metrics, contracts, answers } =
     await getUnresolvedContractMetricsContractsAnswers(pg, [userId])
-  const contractsById = keyBy(contracts, 'id')
+  // Value answers at their live probability, as request-loan does.
+  const contractsById = keyContractsWithLiveAnswers(contracts, answers)
   // Perps neither receive loans nor collateralize them — exclude from equity.
   const { value: portfolioValueNet } = getUnresolvedStatsForToken(
     'MANA',

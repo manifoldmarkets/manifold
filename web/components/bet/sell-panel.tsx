@@ -354,7 +354,7 @@ export function SellPanel(props: {
             />
           </span>
         </Row>
-        {netProceeds < 0 && (
+        {netProceeds <= -1 && (
           <div className="text-ink-500 text-xs">
             This {answerId ? "answer's" : "position's"} loan is larger than what
             you'd get for these shares, so{' '}

@@ -14,16 +14,15 @@ import {
   getMaxPositionLoanToValue,
   isUserEligibleForGeneralLoan,
   getMidnightPacific,
+  keyContractsWithLiveAnswers,
 } from 'common/loans'
 import { MarginLoanTxn } from 'common/txn'
-import { floatingLesserEqual } from 'common/util/math'
 import { txnToRow } from 'shared/txn/run-txn'
 import { sumBy } from 'lodash'
 import {
   getUnresolvedContractMetricsContractsAnswers,
   getUnresolvedStatsForToken,
 } from 'shared/update-user-portfolio-histories-core'
-import { keyBy } from 'lodash'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { getInsertQuery } from 'shared/supabase/utils'
@@ -172,9 +171,10 @@ const planGeneralLoan = async (
   midnightPT: Date
 ) => {
   // General loan - distribute proportionally across all markets
-  const { contracts, metrics } =
+  const { contracts, metrics, answers } =
     await getUnresolvedContractMetricsContractsAnswers(tx, [userId])
-  const contractsById = keyBy(contracts, 'id')
+  // Value answers at their live probability, not the copy on the contract.
+  const contractsById = keyContractsWithLiveAnswers(contracts, answers)
   // Perps neither receive loans nor collateralize them — exclude from equity.
   const { value: portfolioValueNet } = getUnresolvedStatsForToken(
     'MANA',
@@ -256,7 +256,8 @@ const planGeneralLoan = async (
   // room can run out first.
   const maxLoanToValue = getMaxPositionLoanToValue(maxLoanPercent)
   const capacity = getMarginLoanCapacity(positions, maxLoanToValue)
-  if (!floatingLesserEqual(amount, capacity)) {
+  // Strict, so the amount paid out is exactly the amount distributed.
+  if (!(amount <= capacity)) {
     throw new APIError(
       400,
       `Loan amount exceeds what your eligible positions can carry. Each position can owe up to ${Math.round(

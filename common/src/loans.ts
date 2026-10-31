@@ -1,9 +1,10 @@
-import { sumBy } from 'lodash'
+import { countBy, groupBy, keyBy, sumBy } from 'lodash'
 import { PortfolioMetrics } from './portfolio-metrics'
 import { ContractMetric } from './contract-metric'
+import { Answer } from './answer'
 import { Contract, ContractToken, isMultiCpmm } from './contract'
-import { calculatePayoutFromShares } from './calculate-metrics'
 import { filterDefined } from './util/array'
+import { EPSILON } from './util/math'
 
 export type LoanTrackingRow = {
   id?: number
@@ -390,13 +391,61 @@ export const getMaxPositionLoanToValue = (maxLoanPercent: number): number =>
     ? maxLoanPercent / (1 + maxLoanPercent)
     : 0
 
+/**
+ * Contracts keyed by id, with each multiple choice contract's answers taken
+ * from `answers` (read from the answers table) over the copy denormalized onto
+ * the contract, which a trade can get ahead of. Answers not passed in keep
+ * the denormalized copy.
+ */
+export const keyContractsWithLiveAnswers = <C extends Contract>(
+  contracts: C[],
+  answers: Answer[]
+): Record<string, C> => {
+  const answersByContractId = groupBy(answers, (a) => a.contractId)
+  return keyBy(
+    contracts.map((contract) => {
+      const live = answersByContractId[contract.id]
+      if (!live || !isMultiCpmm(contract)) return contract
+      const liveById = keyBy(live, (a) => a.id)
+      const denormalizedIds = new Set(contract.answers.map((a) => a.id))
+      return {
+        ...contract,
+        answers: [
+          ...contract.answers.map((a) => liveById[a.id] ?? a),
+          ...live.filter((a) => !denormalizedIds.has(a.id)),
+        ],
+      }
+    }),
+    (c) => c.id
+  )
+}
+
 export type MarginLoanPosition = {
   contractId: string
   answerId: string | null
-  // What the shares are worth at the current probability.
+  // What the position is worth as collateral (getCollateralValue).
   value: number
   // Free + margin loan already on the position.
   loan: number
+}
+
+/**
+ * What a position's sale is sure to bring in at the current probability.
+ * A sale of one outcome repays the loan × the share of that outcome sold
+ * (sell-shares' calculateSellResult), so a position holding both YES and NO
+ * is only as good as its smaller side. Trades redeem YES/NO pairs, so this is
+ * almost always just the payout. Holdings too small to sell don't count.
+ */
+const getCollateralValue = (
+  totalShares: { [outcome: string]: number },
+  prob: number
+): number => {
+  const sides = [
+    { shares: totalShares.YES ?? 0, price: prob },
+    { shares: totalShares.NO ?? 0, price: 1 - prob },
+  ].filter((s) => s.shares > EPSILON)
+  if (sides.length === 0) return 0
+  return Math.min(...sides.map((s) => s.shares * s.price))
 }
 
 /**
@@ -404,7 +453,12 @@ export type MarginLoanPosition = {
  * probability: unresolved, ranked, listed MANA markets (and answers) with
  * enough traders and age (isMarketEligibleForLoan). Perps never take loans.
  * Positions are per answer on multiple choice markets, because a sale repays
- * only the sold answer's loan.
+ * only the sold answer's loan. Pass contracts through
+ * keyContractsWithLiveAnswers so answers are valued at their live probability.
+ *
+ * A position whose free or margin loan is negative or not finite is left
+ * out: incrementLoanFieldsQuery floors each column at zero separately, so
+ * netting a bad value against the other would record less debt than paid.
  */
 export const getMarginLoanPositions = (
   metrics: ContractMetric[],
@@ -427,6 +481,17 @@ export const getMarginLoanPositions = (
         return undefined
       }
 
+      const freeLoan = m.loan ?? 0
+      const marginLoan = m.marginLoan ?? 0
+      if (
+        !Number.isFinite(freeLoan) ||
+        !Number.isFinite(marginLoan) ||
+        freeLoan < 0 ||
+        marginLoan < 0
+      ) {
+        return undefined
+      }
+
       let prob: number | undefined
       if (isMultiCpmm(contract)) {
         // Summary rows (no answerId) duplicate the answer rows.
@@ -445,16 +510,16 @@ export const getMarginLoanPositions = (
       return {
         contractId: m.contractId,
         answerId: m.answerId,
-        value: calculatePayoutFromShares(m.totalShares ?? {}, prob),
-        loan: (m.loan ?? 0) + (m.marginLoan ?? 0),
+        value: getCollateralValue(m.totalShares ?? {}, prob),
+        loan: freeLoan + marginLoan,
       }
     })
   )
 
 /**
  * How much more loan a position can take before it owes maxLoanToValue of its
- * value. Zero for anything that isn't a finite, positive value with a finite
- * loan, so bad data never makes room.
+ * value. Zero for anything that isn't a finite, positive value with a finite,
+ * non-negative loan, so bad data never makes room.
  */
 export const getPositionLoanRoom = (
   position: Pick<MarginLoanPosition, 'value' | 'loan'>,
@@ -466,20 +531,36 @@ export const getPositionLoanRoom = (
     !Number.isFinite(loan) ||
     !Number.isFinite(maxLoanToValue) ||
     value <= 0 ||
+    loan < 0 ||
     maxLoanToValue <= 0
   ) {
     return 0
   }
   // Never let a position owe more than it's worth, whatever ratio is passed.
   const cap = value * Math.min(1, maxLoanToValue)
-  return Math.max(0, cap - Math.max(0, loan))
+  return Math.max(0, cap - loan)
+}
+
+// Each position's room. A position listed more than once gets none: the loan
+// increments for one key are merged into one row, so counting its room twice
+// could push that row past its cap.
+const getRooms = (positions: MarginLoanPosition[], maxLoanToValue: number) => {
+  const key = (p: MarginLoanPosition) => `${p.contractId}-${p.answerId ?? ''}`
+  const counts = countBy(positions, key)
+  return positions.map((position) => ({
+    position,
+    room:
+      counts[key(position)] > 1
+        ? 0
+        : getPositionLoanRoom(position, maxLoanToValue),
+  }))
 }
 
 /** The most margin loan the positions can take, summed over their room. */
 export const getMarginLoanCapacity = (
   positions: MarginLoanPosition[],
   maxLoanToValue: number
-): number => sumBy(positions, (p) => getPositionLoanRoom(p, maxLoanToValue))
+): number => sumBy(getRooms(positions, maxLoanToValue), (p) => p.room)
 
 /**
  * Spreads a margin loan over the positions in proportion to their room, so
@@ -497,12 +578,7 @@ export const distributeMarginLoan = (
 ): LoanDistribution[] => {
   if (!Number.isFinite(loanAmount) || loanAmount <= 0) return []
 
-  const withRoom = positions
-    .map((position) => ({
-      position,
-      room: getPositionLoanRoom(position, maxLoanToValue),
-    }))
-    .filter((p) => p.room > 0)
+  const withRoom = getRooms(positions, maxLoanToValue).filter((p) => p.room > 0)
   const capacity = sumBy(withRoom, (p) => p.room)
   if (!(capacity > 0)) return []
 

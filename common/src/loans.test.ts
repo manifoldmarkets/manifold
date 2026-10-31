@@ -1,5 +1,6 @@
 import { sumBy } from 'lodash'
-import { Contract } from './contract'
+import { Answer } from './answer'
+import { Contract, CPMMMultiContract } from './contract'
 import { ContractMetric } from './contract-metric'
 import {
   canTakeLoans,
@@ -9,6 +10,7 @@ import {
   getMarginLoanPositions,
   getMaxPositionLoanToValue,
   getPositionLoanRoom,
+  keyContractsWithLiveAnswers,
   LoanDistribution,
   MarginLoanPosition,
   sumExcludedPerpEquity,
@@ -213,8 +215,8 @@ describe('getPositionLoanRoom', () => {
     expect(getPositionLoanRoom({ value: 100, loan: 0 }, 0)).toBe(0)
   })
 
-  it('treats a negative loan as none rather than as extra room', () => {
-    expect(getPositionLoanRoom({ value: 100, loan: -500 }, 0.5)).toBe(50)
+  it('makes no room from a negative loan', () => {
+    expect(getPositionLoanRoom({ value: 100, loan: -500 }, 0.5)).toBe(0)
   })
 
   it('never lets a position owe more than it is worth', () => {
@@ -237,13 +239,15 @@ const seededRandom = (seed: number) => () => {
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296
 }
 
-const loanByKey = (distributions: LoanDistribution[]) =>
-  Object.fromEntries(
-    distributions.map((d) => [
-      `${d.contractId}-${d.answerId ?? ''}`,
-      d.loanAmount,
-    ])
-  )
+// Sums per key, as incrementLoanFieldsQuery merges duplicate keys.
+const loanByKey = (distributions: LoanDistribution[]) => {
+  const byKey: Record<string, number> = {}
+  for (const d of distributions) {
+    const key = `${d.contractId}-${d.answerId ?? ''}`
+    byKey[key] = (byKey[key] ?? 0) + d.loanAmount
+  }
+  return byKey
+}
 
 describe('distributeMarginLoan', () => {
   it('never pushes a position past its cap (randomized)', () => {
@@ -352,6 +356,24 @@ describe('distributeMarginLoan', () => {
     }
   })
 
+  it('gives a position listed twice no room', () => {
+    // Its increments would merge into one row and could pass the cap.
+    const positions = [
+      position('dup', 100, 0),
+      position('dup', 100, 0),
+      position('ok', 100, 0),
+    ]
+    expect(getMarginLoanCapacity(positions, 0.5)).toBe(50)
+    const byKey = loanByKey(distributeMarginLoan(50, positions, 0.5))
+    expect(byKey['dup-']).toBeUndefined()
+    expect(byKey['ok-']).toBeCloseTo(50)
+  })
+
+  it('tells answers of one market apart', () => {
+    const positions = [position('m', 100, 0, 'a'), position('m', 100, 0, 'b')]
+    expect(getMarginLoanCapacity(positions, 0.5)).toBe(100)
+  })
+
   it('skips positions with NaN value or loan', () => {
     const positions = [
       position('nanValue', NaN, 0),
@@ -426,12 +448,7 @@ describe('getMarginLoanPositions', () => {
   it('values positions at the current probability and sums both loans', () => {
     const positions = getMarginLoanPositions(
       [
-        metricOn(
-          'binary',
-          null,
-          { YES: 100, NO: 20 },
-          { loan: 3, marginLoan: 7 }
-        ),
+        metricOn('binary', null, { YES: 100 }, { loan: 3, marginLoan: 7 }),
         metricOn('set', 'open', { NO: 200 }),
         metricOn('multi2', 'v2', { YES: 10 }),
       ],
@@ -442,9 +459,38 @@ describe('getMarginLoanPositions', () => {
       ['set', 'open', 0],
       ['multi2', 'v2', 0],
     ])
-    expect(positions[0].value).toBeCloseTo(100 * 0.25 + 20 * 0.75)
+    expect(positions[0].value).toBeCloseTo(100 * 0.25)
     expect(positions[1].value).toBeCloseTo(200 * 0.9)
     expect(positions[2].value).toBeCloseTo(10 * 0.6)
+  })
+
+  // Selling all of one side repays the whole loan, so the cap must hold
+  // against the smaller side's value, not the payout of both.
+  it('values a position holding both sides by its smaller side', () => {
+    const [mixed] = getMarginLoanPositions(
+      [metricOn('binary', null, { YES: 100, NO: 20 })],
+      contracts
+    )
+    expect(mixed.value).toBeCloseTo(20 * 0.75)
+    // A side too small to sell doesn't drag the value down.
+    const [dust] = getMarginLoanPositions(
+      [metricOn('binary', null, { YES: 100, NO: 1e-12 })],
+      contracts
+    )
+    expect(dust.value).toBeCloseTo(25)
+  })
+
+  it('leaves out positions with a negative or non-finite loan', () => {
+    const positions = getMarginLoanPositions(
+      [
+        // Nets to zero, but the SQL floors each column separately.
+        metricOn('binary', null, { YES: 100 }, { loan: -100, marginLoan: 100 }),
+        metricOn('multi2', 'v2', { YES: 10 }, { marginLoan: -1 }),
+        metricOn('set', 'open', { NO: 200 }, { loan: NaN }),
+      ],
+      contracts
+    )
+    expect(positions).toEqual([])
   })
 
   it('keeps positions with no cost basis left', () => {
@@ -472,5 +518,72 @@ describe('getMarginLoanPositions', () => {
       contracts
     )
     expect(positions).toEqual([])
+  })
+})
+
+describe('keyContractsWithLiveAnswers', () => {
+  const answer = (id: string, contractId: string, prob: number) =>
+    ({ id, contractId, prob } as Answer)
+  const multi = {
+    id: 'multi',
+    mechanism: 'cpmm-multi-1',
+    answers: [answer('a', 'multi', 0.9), answer('b', 'multi', 0.3)],
+  } as unknown as CPMMMultiContract
+  const binary = {
+    id: 'binary',
+    mechanism: 'cpmm-1',
+    prob: 0.4,
+  } as unknown as Contract
+
+  it('prefers the answers table over the denormalized copy', () => {
+    const byId = keyContractsWithLiveAnswers(
+      [multi, binary],
+      [answer('a', 'multi', 0.1), answer('c', 'multi', 0.2)]
+    )
+    const answers = (byId.multi as CPMMMultiContract).answers
+    // a is live, b keeps the denormalized copy, c was missing from it.
+    expect(answers.map((a) => [a.id, a.prob])).toEqual([
+      ['a', 0.1],
+      ['b', 0.3],
+      ['c', 0.2],
+    ])
+    expect(byId.binary).toBe(binary)
+    // The input contract is not mutated.
+    expect(multi.answers[0].prob).toBe(0.9)
+  })
+
+  it('caps margin loan at the live value when the copy is stale', () => {
+    const eligibleMulti = {
+      ...multi,
+      token: 'MANA',
+      isResolved: false,
+      visibility: 'public',
+      isRanked: true,
+      uniqueBettorCount: 50,
+      createdTime: Date.now() - 7 * 24 * 60 * 60 * 1000,
+    } as unknown as CPMMMultiContract
+    const metric = {
+      contractId: 'multi',
+      answerId: 'a',
+      totalShares: { YES: 1000 },
+      loan: 0,
+      marginLoan: 0,
+    } as unknown as ContractMetric
+    const stale = getMarginLoanCapacity(
+      getMarginLoanPositions([metric], { multi: eligibleMulti }),
+      0.5
+    )
+    const live = getMarginLoanCapacity(
+      getMarginLoanPositions(
+        [metric],
+        keyContractsWithLiveAnswers(
+          [eligibleMulti],
+          [answer('a', 'multi', 0.1)]
+        )
+      ),
+      0.5
+    )
+    expect(stale).toBeCloseTo(450)
+    expect(live).toBeCloseTo(50)
   })
 })
