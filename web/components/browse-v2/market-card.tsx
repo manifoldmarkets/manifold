@@ -124,47 +124,45 @@ export function MarketListRow(props: { contract: Contract; section: string }) {
     !!leadingAnswer(contract)
 
   return (
-    <div className="group">
-      <ContractRow
-        contract={contract}
-        trackingPostfix={section}
-        compactMobile
-        faded={
-          (isClosed(contract) && contract.creatorId !== user?.id) ||
-          contract.isResolved
-        }
-        columns={[
-          {
-            header: 'Topics',
-            width: 'w-6 shrink-0',
-            content: ({ contract }) => <TopicsMenu contract={contract} small />,
-          },
-          {
-            ...traderColumn,
-            width: hasMobileAnswer
-              ? 'hidden sm:flex sm:w-[70px]'
-              : 'w-12 shrink-0 sm:w-[70px]',
-          },
-          {
-            ...liquidityColumn,
-            width: hasMobileAnswer
-              ? 'hidden sm:flex sm:w-[40px]'
-              : 'w-[72px] shrink-0 sm:w-[40px]',
-          },
-          {
-            ...probColumn,
-            width: hasMobileAnswer
-              ? 'min-w-0 flex-1 pr-2 sm:flex-none sm:w-[80px] sm:pr-0'
-              : 'w-[60px] shrink-0 sm:w-[80px]',
-            content: ({ contract }) => <ListProbability contract={contract} />,
-          },
-          {
-            ...actionColumn,
-            width: 'w-10 shrink-0 sm:w-12',
-          },
-        ]}
-      />
-    </div>
+    <ContractRow
+      contract={contract}
+      trackingPostfix={section}
+      compactMobile
+      faded={
+        (isClosed(contract) && contract.creatorId !== user?.id) ||
+        contract.isResolved
+      }
+      columns={[
+        {
+          header: 'Topics',
+          width: 'w-6 shrink-0',
+          content: ({ contract }) => <TopicsMenu contract={contract} small />,
+        },
+        {
+          ...traderColumn,
+          width: hasMobileAnswer
+            ? 'hidden sm:flex sm:w-[70px]'
+            : 'w-12 shrink-0 sm:w-[70px]',
+        },
+        {
+          ...liquidityColumn,
+          width: hasMobileAnswer
+            ? 'hidden sm:flex sm:w-[40px]'
+            : 'w-[72px] shrink-0 sm:w-[40px]',
+        },
+        {
+          ...probColumn,
+          width: hasMobileAnswer
+            ? 'min-w-0 flex-1 pr-2 sm:flex-none sm:w-[80px] sm:pr-0'
+            : 'w-[60px] shrink-0 sm:w-[80px]',
+          content: ({ contract }) => <ListProbability contract={contract} />,
+        },
+        {
+          ...actionColumn,
+          width: 'w-10 shrink-0 sm:w-12',
+        },
+      ]}
+    />
   )
 }
 
@@ -548,9 +546,7 @@ export function TradeButton(props: { contract: Contract; compact?: boolean }) {
   )
 }
 
-// Follow or hide this market's topics without leaving the page. With a mouse
-// it appears on hover, so a page of markets isn't a page of dots; touch
-// screens always show it. Boosted markets use a visible rocket in the same
+// Always show the topics control. Boosted markets use a rocket in the same
 // slot, retaining both the promotion disclosure and access to topics.
 function TopicsMenu(props: { contract: Contract; small?: boolean }) {
   const { contract, small } = props
@@ -562,14 +558,7 @@ function TopicsMenu(props: { contract: Contract; small?: boolean }) {
       <span className="w-7 shrink-0" />
     )
   return (
-    <StopClicks
-      className={clsx(
-        'shrink-0',
-        !contract.boosted &&
-          'transition-opacity focus-within:opacity-100 group-hover:opacity-100 sm:[@media(hover:hover)]:opacity-0'
-      )}
-      preventDefault
-    >
+    <StopClicks className="shrink-0" preventDefault>
       <Popover className="relative">
         <PopoverButton
           aria-label={
