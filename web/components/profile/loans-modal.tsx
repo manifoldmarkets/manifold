@@ -78,19 +78,13 @@ export function LoansModal(props: {
     // Round input to whole number for display
     amountToRequest = Math.floor(amountToRequest)
 
-    // Clamp to maximum available (use actual max, not rounded)
-    const maxAvailable = requestLoanMaxActual
-
-    // If user selected the rounded max (or slider is at max), send the actual max
-    if (amountToRequest === requestLoanMax && requestLoanMax < maxAvailable) {
-      amountToRequest = maxAvailable
-    } else if (amountToRequest > maxAvailable) {
-      amountToRequest = maxAvailable
-      setLoanAmount(Math.floor(maxAvailable))
-    } else {
-      // For display, keep the rounded amount
-      setLoanAmount(amountToRequest)
-    }
+    // At the (rounded) max, ask for the actual max and let the server cut it
+    // to the live limit. The max here was fetched earlier, and equity moves
+    // with every price change, so it's often a fraction over by now.
+    const atMax = requestLoanMax > 0 && amountToRequest >= requestLoanMax
+    if (atMax) amountToRequest = requestLoanMaxActual
+    // For display, keep the rounded amount
+    setLoanAmount(Math.floor(amountToRequest))
 
     setLoaning(true)
     if (isQuickLoan) {
@@ -99,6 +93,7 @@ export function LoansModal(props: {
     try {
       const res = await api('request-loan', {
         amount: amountToRequest,
+        clampToLimit: atMax,
       })
       if (res) {
         toast.success(`Loan received! You borrowed ${formatMoney(res.amount)}`)
@@ -115,6 +110,8 @@ export function LoansModal(props: {
     } catch (e: any) {
       console.error(e)
       toast.error(e.message || 'Error requesting loan')
+      // The limits may have moved; show the current ones.
+      refetchLoanData()
     } finally {
       setLoaning(false)
       setQuickLoanLoading(null)

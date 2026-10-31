@@ -1,6 +1,8 @@
 import {
   canTakeLoans,
   filterLoanEquityMetrics,
+  getGeneralLoanHeadroom,
+  sizeGeneralLoan,
   sumExcludedPerpEquity,
 } from './loans'
 
@@ -152,4 +154,106 @@ describe('sumExcludedPerpEquity', () => {
     expect(kept.map((m) => m.contractId)).toEqual(['binary'])
     expect(sumExcludedPerpEquity(metrics, contractsById)).toEqual(700)
   })
+})
+
+describe('getGeneralLoanHeadroom', () => {
+  it('leaves room under the total and daily limits', () => {
+    expect(getGeneralLoanHeadroom(1000, 1, 300, 40)).toEqual({
+      maxLoan: 1000,
+      dailyLimit: 100,
+      availableTotal: 700,
+      availableToday: 60,
+    })
+  })
+
+  it('never goes negative', () => {
+    const headroom = getGeneralLoanHeadroom(1000, 1, 1200, 150)
+    expect(headroom.availableTotal).toBe(0)
+    expect(headroom.availableToday).toBe(0)
+  })
+})
+
+describe('sizeGeneralLoan', () => {
+  // Here (d - t) + t rounds above d, so the old `todayLoans + amount >
+  // dailyLimit` check rejected the exact figure get-next-loan-amount had
+  // just shown.
+  it('accepts the exact headroom it reported despite float rounding', () => {
+    const todayLoans = 340.937559505199
+    const headroom = getGeneralLoanHeadroom(9097.196438903555, 1, 0, todayLoans)
+    expect(todayLoans + headroom.availableToday).toBeGreaterThan(
+      headroom.dailyLimit
+    )
+    expect(sizeGeneralLoan(headroom.availableToday, false, headroom)).toEqual({
+      loanAmount: headroom.availableToday,
+    })
+  })
+
+  it('lends an amount within the headroom unchanged', () => {
+    const headroom = { availableTotal: 700, availableToday: 60 }
+    expect(sizeGeneralLoan(59.5, false, headroom)).toEqual({ loanAmount: 59.5 })
+    expect(sizeGeneralLoan(59.5, true, headroom)).toEqual({ loanAmount: 59.5 })
+  })
+
+  it('rejects an exact amount over the headroom, naming the limit', () => {
+    expect(
+      sizeGeneralLoan(701, false, { availableTotal: 700, availableToday: 800 })
+    ).toEqual({ exceeded: 'total' })
+    expect(
+      sizeGeneralLoan(60.01, false, { availableTotal: 700, availableToday: 60 })
+    ).toEqual({ exceeded: 'daily' })
+  })
+
+  describe('with clampToLimit', () => {
+    it('cuts a stale max down to the live limit', () => {
+      // The modal showed 15.29 available; a price move since left 15.1.
+      expect(
+        sizeGeneralLoan(15.29, true, {
+          availableTotal: 500,
+          availableToday: 15.1,
+        })
+      ).toEqual({ loanAmount: 15.1 })
+    })
+
+    it('takes the tighter of the two limits', () => {
+      expect(
+        sizeGeneralLoan(100, true, { availableTotal: 42, availableToday: 60 })
+      ).toEqual({ loanAmount: 42 })
+    })
+
+    it('never lends more than asked when the limit has grown', () => {
+      expect(
+        sizeGeneralLoan(15.29, true, {
+          availableTotal: 500,
+          availableToday: 90,
+        })
+      ).toEqual({ loanAmount: 15.29 })
+    })
+
+    it('fails rather than lend under M$1', () => {
+      expect(
+        sizeGeneralLoan(15, true, { availableTotal: 0.4, availableToday: 50 })
+      ).toEqual({ exceeded: 'total' })
+      expect(
+        sizeGeneralLoan(15, true, { availableTotal: 50, availableToday: 0.99 })
+      ).toEqual({ exceeded: 'daily' })
+    })
+  })
+
+  it.each([false, true])(
+    'fails on empty or non-finite headroom (clampToLimit: %s)',
+    (clampToLimit) => {
+      expect(
+        sizeGeneralLoan(10, clampToLimit, {
+          availableTotal: NaN,
+          availableToday: 50,
+        })
+      ).toEqual({ exceeded: 'total' })
+      expect(
+        sizeGeneralLoan(10, clampToLimit, {
+          availableTotal: 50,
+          availableToday: 0,
+        })
+      ).toEqual({ exceeded: 'daily' })
+    }
+  )
 })

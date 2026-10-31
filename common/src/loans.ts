@@ -2,6 +2,7 @@ import { sumBy } from 'lodash'
 import { PortfolioMetrics } from './portfolio-metrics'
 import { ContractMetric } from './contract-metric'
 import { Contract, ContractToken } from './contract'
+import { floatingLesserEqual } from './util/math'
 
 export type LoanTrackingRow = {
   id?: number
@@ -231,22 +232,65 @@ export const isUserEligibleForLoan = (portfolio: PortfolioMetrics) => {
   return investmentValue > 0 && !overLeveraged(loanTotal ?? 0, investmentValue)
 }
 
+export type GeneralLoanHeadroom = {
+  maxLoan: number
+  dailyLimit: number
+  // What's left under each limit.
+  availableTotal: number
+  availableToday: number
+}
+
 /**
- * Check if user is eligible for a general loan based on equity.
+ * The room left under the total and daily general loan limits. Both
+ * get-next-loan-amount (which shows it) and request-loan (which checks it)
+ * use this, so a figure the UI shows passes the check when sent back.
  * Using equity instead of net worth prevents the feedback loop.
  */
-export const isUserEligibleForGeneralLoan = (
-  portfolio: PortfolioMetrics,
+export const getGeneralLoanHeadroom = (
   equity: number,
-  requestedAmount: number,
-  maxLoanPercent: number = MAX_LOAN_NET_WORTH_PERCENT
-): boolean => {
-  const { loanTotal } = portfolio
-  if (equity <= 0) return false
-
+  maxLoanPercent: number,
+  currentLoan: number,
+  todayLoans: number
+): GeneralLoanHeadroom => {
   const maxLoan = calculateMaxGeneralLoanAmount(equity, maxLoanPercent)
-  const currentLoan = loanTotal ?? 0
-  return currentLoan + requestedAmount <= maxLoan
+  const dailyLimit = calculateDailyLoanLimit(equity)
+  return {
+    maxLoan,
+    dailyLimit,
+    availableTotal: Math.max(0, maxLoan - currentLoan),
+    availableToday: Math.max(0, dailyLimit - todayLoans),
+  }
+}
+
+/**
+ * Sizes a general loan request against the live headroom.
+ *
+ * Without clampToLimit the loan is exactly `amount`, or fails. With it, the
+ * loan is cut to the headroom instead of failing, as long as that leaves at
+ * least M$1 (or `amount`, if less). The loan modal's max is a snapshot:
+ * equity moves with every price change, so by the time a max request lands
+ * the live limit is often a fraction lower.
+ */
+export const sizeGeneralLoan = (
+  amount: number,
+  clampToLimit: boolean,
+  headroom: Pick<GeneralLoanHeadroom, 'availableTotal' | 'availableToday'>
+): { loanAmount: number } | { exceeded: 'total' | 'daily' } => {
+  const { availableTotal, availableToday } = headroom
+  const exceeds = (available: number) =>
+    !Number.isFinite(available) ||
+    available <= 0 ||
+    (clampToLimit
+      ? available < Math.min(amount, 1)
+      : !floatingLesserEqual(amount, available))
+
+  if (exceeds(availableTotal)) return { exceeded: 'total' }
+  if (exceeds(availableToday)) return { exceeded: 'daily' }
+  return {
+    loanAmount: clampToLimit
+      ? Math.min(amount, availableTotal, availableToday)
+      : amount,
+  }
 }
 
 /**

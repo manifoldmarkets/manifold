@@ -1780,6 +1780,9 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z.object({
       amount: z.number().positive(),
+      // Lend up to `amount`, cut to the live limit instead of failing when
+      // the limit has dropped below it. `amount` in the reply is what was lent.
+      clampToLimit: z.boolean().optional(),
       contractId: z.string().optional(),
       answerId: z.string().optional(),
     }),

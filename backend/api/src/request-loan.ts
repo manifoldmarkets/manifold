@@ -5,13 +5,12 @@ import {
 } from 'shared/supabase/init'
 import { getUser, log } from 'shared/utils'
 import {
-  calculateMaxGeneralLoanAmount,
-  calculateDailyLoanLimit,
   distributeLoanProportionally,
   filterLoanEquityMetrics,
-  isUserEligibleForGeneralLoan,
+  getGeneralLoanHeadroom,
   isMarketEligibleForLoan,
   getMidnightPacific,
+  sizeGeneralLoan,
 } from 'common/loans'
 import { Contract } from 'common/contract'
 import { MarginLoanTxn } from 'common/txn'
@@ -23,7 +22,6 @@ import {
 } from 'shared/update-user-portfolio-histories-core'
 import { keyBy } from 'lodash'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
-import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { getInsertQuery } from 'shared/supabase/utils'
 import {
   broadcastUserUpdates,
@@ -43,7 +41,7 @@ import { type Row } from 'common/supabase/utils'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 
 export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
-  const { amount, contractId, answerId: _answerId } = props
+  const { amount, clampToLimit, contractId, answerId: _answerId } = props
   const pg = createSupabaseDirectClient()
 
   // Check if loans are globally enabled
@@ -103,58 +101,66 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
   }
 
   const midnightPT = getMidnightPacific()
-  const { txnQuery, balanceUpdateQuery } = payUserLoan(user.id, amount)
 
-  const { userUpdates, distributions } = await betsQueue.enqueueFn(async () => {
-    return pg.tx(async (tx) => {
-      // Lock the user row to serialize loan requests (and bets, which update
-      // the balance before writing metrics) for this user across replicas.
-      // Every loan input is read after this lock: computing from a snapshot
-      // taken before it let concurrent requests each pay out while recording
-      // the debt only once.
-      await tx.oneOrNone('select 1 from users where id = $1 for update', [
-        user.id,
-      ])
-      const now = Date.now()
+  const { userUpdates, loanAmount, distributions } =
+    await betsQueue.enqueueFn(async () => {
+      return pg.tx(async (tx) => {
+        // Lock the user row to serialize loan requests (and bets, which update
+        // the balance before writing metrics) for this user across replicas.
+        // Every loan input is read after this lock: computing from a snapshot
+        // taken before it let concurrent requests each pay out while recording
+        // the debt only once.
+        await tx.oneOrNone('select 1 from users where id = $1 for update', [
+          user.id,
+        ])
+        const now = Date.now()
 
-      const distributions = await planGeneralLoan(
-        tx,
-        user.id,
-        amount,
-        maxLoanPercent,
-        portfolioMetric,
-        midnightPT
-      )
+        const { loanAmount, distributions } = await planGeneralLoan(
+          tx,
+          user.id,
+          amount,
+          !!clampToLimit,
+          maxLoanPercent,
+          midnightPT
+        )
+        const { txnQuery, balanceUpdateQuery } = payUserLoan(
+          user.id,
+          loanAmount
+        )
 
-      // Loan tracking must accrue against the old marginLoan, so it runs
-      // before the increment.
-      const loanTrackingQ = accrueLoanTrackingQuery(user.id, distributions, now)
-      const incrementLoansQ = incrementLoanFieldsQuery(
-        user.id,
-        distributions.map((d) => ({
-          contractId: d.contractId,
-          answerId: d.answerId,
-          marginLoanDelta: d.loanAmount,
-        }))
-      )
+        // Loan tracking must accrue against the old marginLoan, so it runs
+        // before the increment.
+        const loanTrackingQ = accrueLoanTrackingQuery(
+          user.id,
+          distributions,
+          now
+        )
+        const incrementLoansQ = incrementLoanFieldsQuery(
+          user.id,
+          distributions.map((d) => ({
+            contractId: d.contractId,
+            answerId: d.answerId,
+            marginLoanDelta: d.loanAmount,
+          }))
+        )
 
-      const res = await tx.multi(
-        `${balanceUpdateQuery};
+        const res = await tx.multi(
+          `${balanceUpdateQuery};
            ${txnQuery};
            ${loanTrackingQ};
            ${incrementLoansQ}`
-      )
-      const userUpdates = res[0] as UserUpdate[]
-      return { userUpdates, distributions }
-    })
-  }, [auth.uid])
+        )
+        const userUpdates = res[0] as UserUpdate[]
+        return { userUpdates, loanAmount, distributions }
+      })
+    }, [auth.uid])
 
   broadcastUserUpdates(userUpdates)
-  log(`User ${user.id} took general loan of ${amount}`)
+  log(`User ${user.id} took general loan of ${loanAmount}`)
 
   return {
     success: true,
-    amount,
+    amount: loanAmount,
     distributed: distributions,
   }
 }
@@ -165,8 +171,8 @@ const planGeneralLoan = async (
   tx: SupabaseTransaction,
   userId: string,
   amount: number,
+  clampToLimit: boolean,
   maxLoanPercent: number,
-  portfolioMetric: PortfolioMetrics,
   midnightPT: Date
 ) => {
   // General loan - distribute proportionally across all markets
@@ -191,30 +197,7 @@ const planGeneralLoan = async (
   // Note: Balance is not included since loans are taken against positions.
   const equity = Math.max(0, portfolioValueNet)
 
-  // Check total loan limit based on equity (tier-specific)
-  // Override loanTotal with live value so validation matches the UI display
-  if (
-    !isUserEligibleForGeneralLoan(
-      { ...portfolioMetric, loanTotal },
-      equity,
-      amount,
-      maxLoanPercent
-    )
-  ) {
-    const maxLoan = calculateMaxGeneralLoanAmount(equity, maxLoanPercent)
-    const currentLoan = loanTotal
-    throw new APIError(
-      400,
-      `Loan amount exceeds maximum. Max loan: ${maxLoan.toFixed(
-        2
-      )}, current loan: ${currentLoan.toFixed(2)}, available: ${(
-        maxLoan - currentLoan
-      ).toFixed(2)}`
-    )
-  }
-
-  // Check daily loan limit based on equity (10% of equity per day, resets at midnight PT)
-  const dailyLimit = calculateDailyLoanLimit(equity)
+  // Daily limit is 10% of equity per day, resetting at midnight PT.
   const todayLoansResult = await tx.oneOrNone<{ total: number }>(
     `select coalesce(sum(amount), 0)::float as total
      from txns
@@ -225,17 +208,31 @@ const planGeneralLoan = async (
   )
   const todayLoans = todayLoansResult?.total ?? 0
 
-  if (todayLoans + amount > dailyLimit) {
-    const availableToday = Math.max(0, dailyLimit - todayLoans)
+  // Total limit is tier-specific. Use the live loanTotal so validation
+  // matches the UI display.
+  const { maxLoan, dailyLimit, availableTotal, availableToday } =
+    getGeneralLoanHeadroom(equity, maxLoanPercent, loanTotal, todayLoans)
+  const sized = sizeGeneralLoan(amount, clampToLimit, {
+    availableTotal,
+    availableToday,
+  })
+  if ('exceeded' in sized) {
     throw new APIError(
       400,
-      `Daily loan limit exceeded. You can borrow up to ${dailyLimit.toFixed(
-        2
-      )} per day (resets at midnight PT). You've already borrowed ${todayLoans.toFixed(
-        2
-      )} today. Available today: ${availableToday.toFixed(2)}`
+      sized.exceeded === 'total'
+        ? `Loan amount exceeds maximum. Max loan: ${maxLoan.toFixed(
+            2
+          )}, current loan: ${loanTotal.toFixed(
+            2
+          )}, available: ${availableTotal.toFixed(2)}`
+        : `Daily loan limit exceeded. You can borrow up to ${dailyLimit.toFixed(
+            2
+          )} per day (resets at midnight PT). You've already borrowed ${todayLoans.toFixed(
+            2
+          )} today. Available today: ${availableToday.toFixed(2)}`
     )
   }
+  const { loanAmount } = sized
 
   // Filter to only unresolved MANA markets that meet eligibility criteria
   const unresolvedManaMetrics = metrics.filter((m) => {
@@ -263,7 +260,7 @@ const planGeneralLoan = async (
 
   // Distribute loan proportionally
   const distributions = distributeLoanProportionally(
-    amount,
+    loanAmount,
     unresolvedManaMetrics
   )
 
@@ -274,7 +271,7 @@ const planGeneralLoan = async (
     )
   }
 
-  return distributions
+  return { loanAmount, distributions }
 }
 
 const payUserLoan = (userId: string, payout: number) => {
