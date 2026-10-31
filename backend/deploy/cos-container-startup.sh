@@ -33,7 +33,7 @@
 set -euo pipefail
 
 MD_URL="http://metadata.google.internal/computeMetadata/v1/instance/attributes"
-md() { curl -sf -H 'Metadata-Flavor: Google' "${MD_URL}/$1"; }
+md() { curl -sf --retry 5 --retry-connrefused -H 'Metadata-Flavor: Google' "${MD_URL}/$1"; }
 
 IMAGE=$(md container-image)
 NAME=$(md container-name)
@@ -63,7 +63,13 @@ docker-credential-gcr configure-docker --registries=us-east4-docker.pkg.dev,gcr.
 # to do this over SSH). Runs before the pull so a full disk can't block it.
 docker image prune -af >/dev/null || true
 
-docker pull "${IMAGE}"
+# The old agent retried pulls until they worked; a transient registry error
+# here would otherwise leave a fresh VM with no container at all.
+for attempt in 1 2 3 4 5; do
+    docker pull "${IMAGE}" && break
+    [ "${attempt}" -lt 5 ] || exit 1
+    sleep $((attempt * 10))
+done
 
 ENV_ARGS=()
 while IFS= read -r line; do
@@ -72,6 +78,17 @@ while IFS= read -r line; do
         ENV_ARGS+=(--env "${line}")
     fi
 done <<< "${ENV_LINES}"
+
+# VMs migrated from the old agent still have its container (named klt-*, with
+# restart=always), and docker brings it back on every boot. The agent only
+# cleaned those up after reading gce-container-declaration, which the deploy
+# scripts remove, so do it here or the old copy runs next to the new one.
+#   https://github.com/GoogleCloudPlatform/konlet/blob/master/gce-containers-startup/runtime/runtime.go
+for id in $(docker ps -aq --filter "name=^klt-"); do
+    echo "cos-container-startup: removing old agent container ${id}"
+    docker stop "${id}" || true
+    docker rm "${id}" || true
+done
 
 # Replace whatever is running. On a plain reboot docker's restart policy will
 # already have brought the previous container back up; `stop` sends SIGTERM
