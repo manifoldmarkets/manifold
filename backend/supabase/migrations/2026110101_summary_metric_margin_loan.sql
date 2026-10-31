@@ -6,6 +6,12 @@ begin;
 -- still sums only loan. Loan endpoints change margin_loan on answer rows
 -- alone and rely on this trigger, so summary margin_loan has drifted since.
 -- Run backend/scripts/backfill-summary-margin-loan.ts after this.
+--
+-- The summary row is now locked before the answers are summed. Summing first
+-- let a read-committed write wait on the lock held by a concurrent write to a
+-- sibling answer, then overwrite that write's sum with its own stale one. The
+-- lock is the one the UPDATE below already took, taken a statement earlier,
+-- so lock order is unchanged.
 create or replace function public.update_null_answer_metrics () returns trigger language plpgsql as $function$
 DECLARE
     sum_has_yes_shares BOOLEAN := FALSE;
@@ -16,6 +22,13 @@ DECLARE
 BEGIN
     -- Check if the new row has a non-null answer_id
     IF NEW.answer_id IS NOT NULL THEN
+        -- Lock the summary row first, so the sum below sees any concurrent
+        -- answer write that updated it before us
+        PERFORM 1 FROM user_contract_metrics
+        WHERE user_id = NEW.user_id
+          AND contract_id = NEW.contract_id
+          AND answer_id IS NULL
+        FOR UPDATE;
         -- Aggregate boolean fields and loans from rows with the same user_id and contract_id
         SELECT
             BOOL_OR(has_yes_shares),

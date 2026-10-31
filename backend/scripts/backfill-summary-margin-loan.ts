@@ -25,7 +25,6 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 // sum across all 413k multiple-choice positions with a loan.
 
 const BATCH_SIZE = 500
-const MAX_ATTEMPTS = 5
 // Below this a difference is float noise from the bet path, not drift worth
 // reporting; the script still rewrites it.
 const REPORT_EPSILON = 0.005
@@ -40,40 +39,42 @@ type SummaryRow = Position & {
   data_in_sync: boolean
 }
 
-// Each summary with its answer rows' sums, for the given positions.
-const summariesWithAnswerSums = `
-  with positions as (
-    select * from unnest($1::text[], $2::text[]) as p(user_id, contract_id)
-  ),
-  answer_sums as (
-    select ucm.user_id, ucm.contract_id,
-      coalesce(sum(ucm.loan), 0) as answer_loan,
-      coalesce(sum(ucm.margin_loan), 0) as answer_margin_loan
-    from user_contract_metrics ucm
-    join positions p using (user_id, contract_id)
-    where ucm.answer_id is not null
-    group by ucm.user_id, ucm.contract_id
-  )
-  select s.user_id, s.contract_id,
-    s.loan::float8 as loan,
-    s.margin_loan::float8 as margin_loan,
-    a.answer_loan::float8 as answer_loan,
-    a.answer_margin_loan::float8 as answer_margin_loan,
-    (s.loan = a.answer_loan
-      and s.margin_loan = a.answer_margin_loan
-      and (s.data->>'loan')::numeric is not distinct from a.answer_loan
-      and (s.data->>'marginLoan')::numeric is not distinct from a.answer_margin_loan
-    ) as data_in_sync
-  from user_contract_metrics s
-  join answer_sums a using (user_id, contract_id)
-  where s.answer_id is null
-  order by s.id`
+const positionArrays = (positions: Position[]) => [
+  positions.map((p) => p.user_id),
+  positions.map((p) => p.contract_id),
+]
 
+// Each summary with its answer rows' sums, for the given positions.
 const loadSummaries = (pg: SupabaseDirectClient, positions: Position[]) =>
-  pg.manyOrNone<SummaryRow>(summariesWithAnswerSums, [
-    positions.map((p) => p.user_id),
-    positions.map((p) => p.contract_id),
-  ])
+  pg.manyOrNone<SummaryRow>(
+    `with positions as (
+       select * from unnest($1::text[], $2::text[]) as p(user_id, contract_id)
+     ),
+     answer_sums as (
+       select ucm.user_id, ucm.contract_id,
+         coalesce(sum(ucm.loan), 0) as answer_loan,
+         coalesce(sum(ucm.margin_loan), 0) as answer_margin_loan
+       from user_contract_metrics ucm
+       join positions p using (user_id, contract_id)
+       where ucm.answer_id is not null
+       group by ucm.user_id, ucm.contract_id
+     )
+     select s.user_id, s.contract_id,
+       s.loan::float8 as loan,
+       s.margin_loan::float8 as margin_loan,
+       a.answer_loan::float8 as answer_loan,
+       a.answer_margin_loan::float8 as answer_margin_loan,
+       (s.loan = a.answer_loan
+         and s.margin_loan = a.answer_margin_loan
+         and (s.data->>'loan')::numeric is not distinct from a.answer_loan
+         and (s.data->>'marginLoan')::numeric is not distinct from a.answer_margin_loan
+       ) as data_in_sync
+     from user_contract_metrics s
+     join answer_sums a using (user_id, contract_id)
+     where s.answer_id is null
+     order by s.id`,
+    positionArrays(positions)
+  )
 
 const report = (rows: SummaryRow[]) => {
   const drifted = rows.filter(
@@ -97,60 +98,53 @@ const report = (rows: SummaryRow[]) => {
 }
 
 // One batch in its own read-committed transaction. The summary rows are
-// locked before the answer rows are summed: a concurrent answer write's
-// trigger then either committed before the sum (and is included) or waits on
-// the lock and writes its own, fresher sum after ours. Summing first and
-// updating after could overwrite that fresher sum with a stale one.
-// lock_timeout keeps a batch stuck behind a long transaction from holding the
-// rest of its rows, and the bets on them, while it waits; it retries instead.
+// locked before the answer rows are summed, so a concurrent answer write has
+// either committed (and is counted) or is waiting on our lock and will write
+// its own, fresher sum after us. `skip locked` means the batch never waits on
+// a lock: it can't deadlock with a loan or repayment that holds several of
+// these summaries, and it skips rows a live write is about to correct anyway.
 const fixBatch = async (pg: SupabaseDirectClient, positions: Position[]) =>
   pg.tx(async (tx) => {
-    await tx.none(`set local lock_timeout = '5s'`)
-    await tx.none(
-      `select s.id from user_contract_metrics s
+    const locked = await tx.manyOrNone<Position>(
+      `select s.user_id, s.contract_id from user_contract_metrics s
        join unnest($1::text[], $2::text[]) as p(user_id, contract_id)
          using (user_id, contract_id)
        where s.answer_id is null
-       order by s.id
-       for update of s`,
-      [positions.map((p) => p.user_id), positions.map((p) => p.contract_id)]
+       for update of s skip locked`,
+      positionArrays(positions)
     )
-    const stale = (await loadSummaries(tx, positions)).filter(
+    const stale = (await loadSummaries(tx, locked)).filter(
       (r) => !r.data_in_sync
     )
-    if (stale.length === 0) return 0
-    await tx.none(
-      `with positions as (
-         select * from unnest($1::text[], $2::text[]) as p(user_id, contract_id)
-       ),
-       answer_sums as (
-         select ucm.user_id, ucm.contract_id,
-           coalesce(sum(ucm.loan), 0) as answer_loan,
-           coalesce(sum(ucm.margin_loan), 0) as answer_margin_loan
-         from user_contract_metrics ucm
-         join positions p using (user_id, contract_id)
-         where ucm.answer_id is not null
-         group by ucm.user_id, ucm.contract_id
-       )
-       update user_contract_metrics s
-       set loan = a.answer_loan,
-           margin_loan = a.answer_margin_loan,
-           data = s.data || jsonb_build_object(
-             'loan', a.answer_loan,
-             'marginLoan', a.answer_margin_loan
-           )
-       from answer_sums a
-       where s.answer_id is null
-         and s.user_id = a.user_id
-         and s.contract_id = a.contract_id`,
-      [stale.map((r) => r.user_id), stale.map((r) => r.contract_id)]
-    )
-    return stale.length
+    if (stale.length > 0)
+      await tx.none(
+        `with positions as (
+           select * from unnest($1::text[], $2::text[]) as p(user_id, contract_id)
+         ),
+         answer_sums as (
+           select ucm.user_id, ucm.contract_id,
+             coalesce(sum(ucm.loan), 0) as answer_loan,
+             coalesce(sum(ucm.margin_loan), 0) as answer_margin_loan
+           from user_contract_metrics ucm
+           join positions p using (user_id, contract_id)
+           where ucm.answer_id is not null
+           group by ucm.user_id, ucm.contract_id
+         )
+         update user_contract_metrics s
+         set loan = a.answer_loan,
+             margin_loan = a.answer_margin_loan,
+             data = s.data || jsonb_build_object(
+               'loan', a.answer_loan,
+               'marginLoan', a.answer_margin_loan
+             )
+         from answer_sums a
+         where s.answer_id is null
+           and s.user_id = a.user_id
+           and s.contract_id = a.contract_id`,
+        positionArrays(stale)
+      )
+    return { locked: locked.length, written: stale.length }
   })
-
-// serialization failure, deadlock, lock_timeout
-const isRetryable = (e: unknown) =>
-  ['40001', '40P01', '55P03'].includes((e as { code?: string })?.code ?? '')
 
 if (require.main === module)
   runScript(async ({ pg }) => {
@@ -164,9 +158,8 @@ if (require.main === module)
     )
     log(`${positions.length} positions (binary ones have no answer rows)`)
 
-    const batches = chunk(positions, BATCH_SIZE)
     const before: SummaryRow[] = []
-    for (const batch of batches)
+    for (const batch of chunk(positions, BATCH_SIZE))
       before.push(...(await loadSummaries(pg, batch)))
     log('Before:', report(before))
     const worst = [...before]
@@ -189,23 +182,26 @@ if (require.main === module)
       return
     }
 
+    const toFix = before.filter((r) => !r.data_in_sync)
+    const batches = chunk(toFix, BATCH_SIZE)
     let written = 0
+    let skipped = 0
     for (const [i, batch] of batches.entries()) {
-      for (let attempt = 1; ; attempt++) {
-        try {
-          written += await fixBatch(pg, batch)
-          break
-        } catch (e) {
-          if (!isRetryable(e) || attempt >= MAX_ATTEMPTS) throw e
-          log(`Batch ${i + 1} conflicted (attempt ${attempt}), retrying`)
-          await new Promise((resolve) => setTimeout(resolve, attempt * 1000))
-        }
-      }
+      const result = await fixBatch(pg, batch)
+      written += result.written
+      skipped += batch.length - result.locked
       if ((i + 1) % 5 === 0 || i === batches.length - 1)
-        log(`Batch ${i + 1}/${batches.length}: ${written} summaries written`)
+        log(
+          `Batch ${i + 1}/${
+            batches.length
+          }: ${written} written, ${skipped} skipped as locked`
+        )
     }
 
     const after: SummaryRow[] = []
-    for (const batch of batches) after.push(...(await loadSummaries(pg, batch)))
+    for (const batch of chunk(positions, BATCH_SIZE))
+      after.push(...(await loadSummaries(pg, batch)))
     log('After:', report(after))
+    if (skipped > 0)
+      log(`${skipped} summaries were locked by live writes; rerun to recheck.`)
   })
