@@ -140,6 +140,39 @@ export const getFixedPayouts = (
   }
 }
 
+// An answer added this soon after a whole-market provision that doesn't record
+// its answers counts as one it was made for: a market's first answers can be
+// written a moment after its own provision, in the same transaction.
+const UNRECORDED_PROVISION_GRACE_MS = 5 * 1000
+
+// What a cancelled answer gets back of a whole-market provision. One that
+// records its answers went to them in equal shares. One that doesn't is
+// credited in equal shares to the answers open when it was made, which the
+// drizzle moved it into. An older market's unrecorded ante is different: it
+// stands for the funding of its answers at creation and of answers added
+// later, all dated at the market's creation, in amounts it doesn't break down.
+// It keeps its old share, amount / number of answers, for answers without an
+// ante of their own.
+const getCancelRefundShare = (
+  l: LiquidityProvision,
+  answer: Answer,
+  answers: Answer[],
+  ownAnteAnswerIds: Set<string>
+) => {
+  if (l.answerIds)
+    return l.answerIds.includes(answer.id) ? l.amount / l.answerIds.length : 0
+  if (l.isAnte)
+    return ownAnteAnswerIds.has(answer.id) ? 0 : l.amount / answers.length
+  const openThen = answers.filter(
+    (a) =>
+      a.createdTime <= l.createdTime + UNRECORDED_PROVISION_GRACE_MS &&
+      (a.resolutionTime ?? Infinity) >= l.createdTime
+  )
+  return openThen.some((a) => a.id === answer.id)
+    ? l.amount / openThen.length
+    : 0
+}
+
 export const getIndependentMultiFixedPayouts = (
   answer: Answer,
   outcome: string | undefined,
@@ -148,14 +181,18 @@ export const getIndependentMultiFixedPayouts = (
   liquidities: LiquidityProvision[],
   resolutionProbability: number
 ) => {
-  const filteredLiquidities = liquidities
-    .filter((l) => l.answerId === answer.id)
-    // Also include liquidity that is not assigned to an answer, and divide it by the number of answers.
-    .concat(
-      liquidities
-        .filter((l) => !l.answerId)
-        .map((l) => ({ ...l, amount: l.amount / contract.answers.length }))
-    )
+  const answerLiquidities = liquidities.filter((l) => l.answerId === answer.id)
+  const wholeMarketLiquidities = liquidities.filter((l) => !l.answerId)
+  // A whole-market provision went to the answers it records, in equal shares.
+  // One that doesn't record them is divided by the number of answers.
+  const sharedLiquidities = wholeMarketLiquidities.flatMap((l) =>
+    l.answerIds
+      ? l.answerIds.includes(answer.id)
+        ? [{ ...l, amount: l.amount / l.answerIds.length }]
+        : []
+      : [{ ...l, amount: l.amount / contract.answers.length }]
+  )
+  const filteredLiquidities = answerLiquidities.concat(sharedLiquidities)
   // Divide contract's subsidy pool among UNRESOLVED answers only
   const unresolvedAnswers = contract.answers.filter((a) => !a.resolution)
   const numUnresolved = unresolvedAnswers.length || 1 // Avoid division by zero
@@ -179,11 +216,32 @@ export const getIndependentMultiFixedPayouts = (
         contractSubsidyPoolShare
       )
     default:
-    case 'CANCEL':
+    case 'CANCEL': {
+      // A cancellation refunds what providers put into this answer, where the
+      // outcomes above pay out its pool by their weights: its own provisions,
+      // and its share of each whole-market provision (getCancelRefundShare).
+      // Unresolving an answer is refused once an unrecorded whole-market
+      // provision came while it was resolved (unresolve.ts), so an answer open
+      // now that was there when one was made was open then.
+      const ownAnteAnswerIds = new Set(
+        liquidities.flatMap((l) => (l.isAnte && l.answerId ? [l.answerId] : []))
+      )
+      const refundableLiquidities = answerLiquidities.concat(
+        wholeMarketLiquidities.flatMap((l) => {
+          const amount = getCancelRefundShare(
+            l,
+            answer,
+            contract.answers,
+            ownAnteAnswerIds
+          )
+          return amount !== 0 ? [{ ...l, amount }] : []
+        })
+      )
       return getFixedCancelPayouts(
         contractMetrics.filter((metric) => metric.answerId === answer.id),
-        filteredLiquidities
+        refundableLiquidities
       )
+    }
   }
 }
 
