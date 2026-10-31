@@ -36,6 +36,13 @@ DECLARE
 BEGIN
     -- Check if the new row has a non-null answer_id
     IF NEW.answer_id IS NOT NULL THEN
+        -- Lock the summary row first, so the sum below sees any concurrent
+        -- answer write that updated it before us
+        PERFORM 1 FROM user_contract_metrics
+        WHERE user_id = NEW.user_id
+          AND contract_id = NEW.contract_id
+          AND answer_id IS NULL
+        FOR UPDATE;
         -- Aggregate boolean fields and loans from rows with the same user_id and contract_id
         SELECT
             BOOL_OR(has_yes_shares),

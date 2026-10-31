@@ -25,6 +25,7 @@ import {
 } from 'common/supporter-config'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 import { DAY_MS } from 'common/util/time'
+import { MULTI_CPMM_MECHANISMS_SQL } from 'common/contract'
 
 // Runs large read-only aggregate queries OUTSIDE the write transaction to avoid
 // holding locks open during expensive scans.
@@ -147,11 +148,14 @@ async function checkItemRequirement(
       break
     }
     case 'loan': {
+      // A multiple-choice summary row (answer_id null) repeats the sum of its
+      // answer rows' loans, so counting it would count those loans twice.
       const row = await pg.oneOrNone<{ totalLoans: number }>(
         `SELECT COALESCE(SUM(ucm.loan + ucm.margin_loan), 0) as "totalLoans"
          FROM user_contract_metrics ucm
          JOIN contracts c ON c.id = ucm.contract_id
-         WHERE ucm.user_id = $1 AND c.resolution_time IS NULL`,
+         WHERE ucm.user_id = $1 AND c.resolution_time IS NULL
+           AND NOT (ucm.answer_id IS NULL AND c.mechanism IN ${MULTI_CPMM_MECHANISMS_SQL})`,
         [userId]
       )
       userValue = row?.totalLoans ?? 0
