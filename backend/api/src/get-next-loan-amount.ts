@@ -7,6 +7,9 @@ import {
   canClaimDailyFreeLoan,
   calculateTotalFreeLoanAvailable,
   filterLoanEquityMetrics,
+  getMarginLoanCapacity,
+  getMarginLoanPositions,
+  getMaxPositionLoanToValue,
   isMarketEligibleForLoan,
   getMidnightPacific,
   sumExcludedPerpEquity,
@@ -135,6 +138,14 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
     }).eligible
   })
 
+  // Margin loans also stop at each eligible position's loan-to-value cap
+  // (request-loan rejects more), which can bind before the limits above.
+  const maxPositionLoanToValue = getMaxPositionLoanToValue(maxLoanPercent)
+  const marginLoanCapacity = getMarginLoanCapacity(
+    getMarginLoanPositions(metrics, contractsById),
+    maxPositionLoanToValue
+  )
+
   const freeLoanAvailable = canClaimFreeLoan
     ? Math.min(
         calculateTotalFreeLoanAvailable(
@@ -162,6 +173,8 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
     freeLoanAvailable,
     canClaimFreeLoan: canClaimFreeLoan && freeLoanAvailable >= 1,
     hasMarginLoanAccess,
+    marginLoanCapacity,
+    maxPositionLoanToValue,
     // Equity-based calculation fields (equity = portfolioValue - loans)
     equity,
     portfolioValue,

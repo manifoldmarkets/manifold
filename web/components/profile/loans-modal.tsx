@@ -59,6 +59,10 @@ export function LoansModal(props: {
   const availableToday = loanData?.availableToday ?? 0
   const hasOutstandingLoan = (latestPortfolio?.loanTotal ?? 0) > 0
   const hasMarginLoanAccess = loanData?.hasMarginLoanAccess ?? false
+  // Margin loans only go on eligible positions, each up to a share of its
+  // value, so their room can run out before the limits above.
+  const marginLoanCapacity = loanData?.marginLoanCapacity ?? Infinity
+  const maxPositionLoanToValue = loanData?.maxPositionLoanToValue
   // Perps don't back loans, so the equity here is lower than the portfolio
   // value shown elsewhere. Call the difference out rather than let it look
   // like a bug.
@@ -130,7 +134,13 @@ export function LoansModal(props: {
   }, [isOpen, user.hasSeenLoanModal])
 
   // Store actual max (before rounding) for use in API calls and validation
-  const requestLoanMaxActual = Math.min(availableGeneralLoan, availableToday)
+  const requestLoanMaxActual = Math.min(
+    availableGeneralLoan,
+    availableToday,
+    marginLoanCapacity
+  )
+  const isCappedByPositions =
+    marginLoanCapacity < Math.min(availableGeneralLoan, availableToday)
   // Round down for display/slider max
   const requestLoanMax = Math.floor(requestLoanMaxActual)
 
@@ -227,6 +237,13 @@ export function LoansModal(props: {
             <span className="text-ink-500 text-xs">
               Daily limit: {formatMoney(dailyLimit)} • Total max:{' '}
               {formatMoney(maxGeneralLoan)}
+              {isCappedByPositions && maxPositionLoanToValue !== undefined && (
+                <>
+                  <br />
+                  Limited by your eligible positions: each can owe up to{' '}
+                  {Math.round(maxPositionLoanToValue * 100)}% of its value
+                </>
+              )}
             </span>
           </Col>
           <Col className="border-ink-200 flex-1 gap-1 border-l pl-3">
@@ -270,16 +287,9 @@ export function LoansModal(props: {
               </h3>
               <Row className="flex-wrap gap-2">
                 {[50, 100, 1000, 5000].map((quickAmount) => {
-                  const maxAvailable = Math.min(
-                    availableGeneralLoan,
-                    availableToday
-                  )
                   const isButtonLoading = quickLoanLoading === quickAmount
                   const isDisabled =
-                    loaning ||
-                    quickAmount > maxAvailable ||
-                    quickAmount > availableGeneralLoan ||
-                    quickAmount > availableToday
+                    loaning || quickAmount > requestLoanMaxActual
 
                   return (
                     <button

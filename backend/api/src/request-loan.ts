@@ -7,14 +7,16 @@ import { getUser, log } from 'shared/utils'
 import {
   calculateMaxGeneralLoanAmount,
   calculateDailyLoanLimit,
-  distributeLoanProportionally,
+  distributeMarginLoan,
   filterLoanEquityMetrics,
+  getMarginLoanCapacity,
+  getMarginLoanPositions,
+  getMaxPositionLoanToValue,
   isUserEligibleForGeneralLoan,
-  isMarketEligibleForLoan,
   getMidnightPacific,
 } from 'common/loans'
-import { Contract } from 'common/contract'
 import { MarginLoanTxn } from 'common/txn'
+import { floatingLesserEqual } from 'common/util/math'
 import { txnToRow } from 'shared/txn/run-txn'
 import { sumBy } from 'lodash'
 import {
@@ -237,40 +239,38 @@ const planGeneralLoan = async (
     )
   }
 
-  // Filter to only unresolved MANA markets that meet eligibility criteria
-  const unresolvedManaMetrics = metrics.filter((m) => {
-    const contract = contractsById[m.contractId]
-    if (!contract || contract.isResolved || contract.token !== 'MANA') {
-      return false
-    }
-    // Perps are inherently leveraged — exclude from the loans system.
-    if ((contract as Contract).mechanism === 'perp') return false
-    // Apply market eligibility criteria for new loans
-    return isMarketEligibleForLoan({
-      visibility: contract.visibility,
-      isRanked: contract.isRanked,
-      uniqueBettorCount: contract.uniqueBettorCount,
-      createdTime: contract.createdTime,
-    }).eligible
-  })
+  // Only unresolved MANA markets that meet the eligibility criteria take the
+  // loan. Perps are inherently leveraged and never do.
+  const positions = getMarginLoanPositions(metrics, contractsById)
 
-  if (unresolvedManaMetrics.length === 0) {
+  if (positions.length === 0) {
     throw new APIError(
       400,
       'No eligible markets to distribute loan across. Markets must be listed, ranked, have >10 traders, and be at least 24 hours old.'
     )
   }
 
-  // Distribute loan proportionally
-  const distributions = distributeLoanProportionally(
-    amount,
-    unresolvedManaMetrics
-  )
+  // Each position can owe at most maxLoanToValue of its current value, so
+  // selling one doesn't cost more in loan repayment than it brings in. The
+  // limits above count every position, but only these take the loan, so their
+  // room can run out first.
+  const maxLoanToValue = getMaxPositionLoanToValue(maxLoanPercent)
+  const capacity = getMarginLoanCapacity(positions, maxLoanToValue)
+  if (!floatingLesserEqual(amount, capacity)) {
+    throw new APIError(
+      400,
+      `Loan amount exceeds what your eligible positions can carry. Each position can owe up to ${Math.round(
+        maxLoanToValue * 100
+      )}% of its current value. Available: ${capacity.toFixed(2)}`
+    )
+  }
+
+  const distributions = distributeMarginLoan(amount, positions, maxLoanToValue)
 
   if (distributions.length === 0) {
     throw new APIError(
       400,
-      'No markets with investment to distribute loan across'
+      'None of your eligible positions has room for more loan'
     )
   }
 

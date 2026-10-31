@@ -594,10 +594,11 @@ export function AnswerPosition(props: {
 }) {
   const { contract, user, answer, className, addDot, myMetric } = props
 
-  const { invested, totalShares, loan } = myMetric ?? {
+  const { invested, totalShares, loan, marginLoan } = myMetric ?? {
     invested: 0,
     totalShares: { YES: 0, NO: 0 },
     loan: 0,
+    marginLoan: 0,
   }
 
   const yesWinnings = totalShares.YES ?? 0
@@ -613,7 +614,8 @@ export function AnswerPosition(props: {
 
   if (floatingEqual(yesWinnings, 0) && floatingEqual(noWinnings, 0)) return null
 
-  const answerLoan = loan ?? 0
+  // Free and margin loan both come out of this answer's sale proceeds.
+  const answerLoan = (loan ?? 0) + (marginLoan ?? 0)
   const hasLoan = answerLoan > 0
 
   return (

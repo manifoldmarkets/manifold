@@ -1,7 +1,9 @@
 import { sumBy } from 'lodash'
 import { PortfolioMetrics } from './portfolio-metrics'
 import { ContractMetric } from './contract-metric'
-import { Contract, ContractToken } from './contract'
+import { Contract, ContractToken, isMultiCpmm } from './contract'
+import { calculatePayoutFromShares } from './calculate-metrics'
+import { filterDefined } from './util/array'
 
 export type LoanTrackingRow = {
   id?: number
@@ -371,41 +373,148 @@ export type LoanDistribution = {
   loanAmount: number
 }
 
-export const distributeLoanProportionally = (
+/**
+ * The most a position may owe (free + margin loan), as a share of its current
+ * value, for it to take more margin loan.
+ *
+ * A user at their tier's total limit owes maxLoanPercent × equity, which is
+ * maxLoanPercent / (1 + maxLoanPercent) of their portfolio's value. Capping
+ * each position at that same ratio (100% → 50%, 200% → 67%, 300% → 75%) puts
+ * the cap where the tier's leverage already says it is, and keeps it under
+ * 100%: right after a margin loan, selling a position that took some of it
+ * at its current value repays its loan with room to spare for slippage.
+ * Later price moves can still push a position's loan past its value.
+ */
+export const getMaxPositionLoanToValue = (maxLoanPercent: number): number =>
+  Number.isFinite(maxLoanPercent) && maxLoanPercent > 0
+    ? maxLoanPercent / (1 + maxLoanPercent)
+    : 0
+
+export type MarginLoanPosition = {
+  contractId: string
+  answerId: string | null
+  // What the shares are worth at the current probability.
+  value: number
+  // Free + margin loan already on the position.
+  loan: number
+}
+
+/**
+ * The positions a new margin loan can go on, valued at the current
+ * probability: unresolved, ranked, listed MANA markets (and answers) with
+ * enough traders and age (isMarketEligibleForLoan). Perps never take loans.
+ * Positions are per answer on multiple choice markets, because a sale repays
+ * only the sold answer's loan.
+ */
+export const getMarginLoanPositions = (
+  metrics: ContractMetric[],
+  contractsById: Record<string, Contract | undefined>
+): MarginLoanPosition[] =>
+  filterDefined(
+    metrics.map((m) => {
+      const contract = contractsById[m.contractId]
+      if (!contract || contract.isResolved || contract.token !== 'MANA') {
+        return undefined
+      }
+      if (
+        !isMarketEligibleForLoan({
+          visibility: contract.visibility,
+          isRanked: contract.isRanked,
+          uniqueBettorCount: contract.uniqueBettorCount ?? 0,
+          createdTime: contract.createdTime,
+        }).eligible
+      ) {
+        return undefined
+      }
+
+      let prob: number | undefined
+      if (isMultiCpmm(contract)) {
+        // Summary rows (no answerId) duplicate the answer rows.
+        const answer = m.answerId
+          ? contract.answers?.find((a) => a.id === m.answerId)
+          : undefined
+        if (!answer || answer.resolution || answer.resolutionTime) {
+          return undefined
+        }
+        prob = answer.prob
+      } else if (contract.mechanism === 'cpmm-1') {
+        prob = contract.prob
+      }
+      if (prob === undefined) return undefined
+
+      return {
+        contractId: m.contractId,
+        answerId: m.answerId,
+        value: calculatePayoutFromShares(m.totalShares ?? {}, prob),
+        loan: (m.loan ?? 0) + (m.marginLoan ?? 0),
+      }
+    })
+  )
+
+/**
+ * How much more loan a position can take before it owes maxLoanToValue of its
+ * value. Zero for anything that isn't a finite, positive value with a finite
+ * loan, so bad data never makes room.
+ */
+export const getPositionLoanRoom = (
+  position: Pick<MarginLoanPosition, 'value' | 'loan'>,
+  maxLoanToValue: number
+): number => {
+  const { value, loan } = position
+  if (
+    !Number.isFinite(value) ||
+    !Number.isFinite(loan) ||
+    !Number.isFinite(maxLoanToValue) ||
+    value <= 0 ||
+    maxLoanToValue <= 0
+  ) {
+    return 0
+  }
+  // Never let a position owe more than it's worth, whatever ratio is passed.
+  const cap = value * Math.min(1, maxLoanToValue)
+  return Math.max(0, cap - Math.max(0, loan))
+}
+
+/** The most margin loan the positions can take, summed over their room. */
+export const getMarginLoanCapacity = (
+  positions: MarginLoanPosition[],
+  maxLoanToValue: number
+): number => sumBy(positions, (p) => getPositionLoanRoom(p, maxLoanToValue))
+
+/**
+ * Spreads a margin loan over the positions in proportion to their room, so
+ * every position uses up the same share of its room and none passes its cap.
+ * Positions already at their cap take nothing.
+ *
+ * Distributes at most the positions' capacity: callers must reject (or cut)
+ * a request larger than getMarginLoanCapacity, since the shortfall goes
+ * nowhere.
+ */
+export const distributeMarginLoan = (
   loanAmount: number,
-  metrics: ContractMetric[]
+  positions: MarginLoanPosition[],
+  maxLoanToValue: number
 ): LoanDistribution[] => {
-  // Filter to only unresolved MANA markets with investment
-  const metricsWithInvestment = metrics.filter((m) => (m.invested ?? 0) > 0)
+  if (!Number.isFinite(loanAmount) || loanAmount <= 0) return []
 
-  if (metricsWithInvestment.length === 0) {
-    return []
-  }
+  const withRoom = positions
+    .map((position) => ({
+      position,
+      room: getPositionLoanRoom(position, maxLoanToValue),
+    }))
+    .filter((p) => p.room > 0)
+  const capacity = sumBy(withRoom, (p) => p.room)
+  if (!(capacity > 0)) return []
 
-  // Calculate total investment
-  const totalInvestment = sumBy(metricsWithInvestment, (m) => m.invested ?? 0)
-
-  if (totalInvestment <= 0) {
-    return []
-  }
-
-  // Distribute proportionally
-  const distributions: LoanDistribution[] = []
-  for (const metric of metricsWithInvestment) {
-    const investment = metric.invested ?? 0
-    const proportion = investment / totalInvestment
-    const loanForMarket = loanAmount * proportion
-
-    if (loanForMarket > 0) {
-      distributions.push({
-        contractId: metric.contractId,
-        answerId: metric.answerId,
-        loanAmount: loanForMarket,
-      })
-    }
-  }
-
-  return distributions
+  // fill <= 1, so room * fill <= room even after rounding.
+  const fill = Math.min(1, loanAmount / capacity)
+  return withRoom
+    .map(({ position, room }) => ({
+      contractId: position.contractId,
+      answerId: position.answerId,
+      loanAmount: room * fill,
+    }))
+    .filter((d) => d.loanAmount > 0)
 }
 
 export const distributeRepaymentProportionally = (

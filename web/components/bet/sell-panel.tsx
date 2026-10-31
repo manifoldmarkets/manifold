@@ -303,7 +303,10 @@ export function SellPanel(props: {
         )}
         {!isLoadPaid && (
           <Row className="items-center justify-between">
-            <span className="text-ink-500">Loan repayment</span>
+            <span className="text-ink-500">
+              Loan repayment
+              {answerId && <span className="text-ink-400"> (this answer)</span>}
+            </span>
             <span className="text-ink-900 tabular-nums">
               <MoneyDisplay
                 amount={Math.floor(-loanPaid)}
@@ -351,6 +354,17 @@ export function SellPanel(props: {
             />
           </span>
         </Row>
+        {netProceeds < 0 && (
+          <div className="text-ink-500 text-xs">
+            This {answerId ? "answer's" : "position's"} loan is larger than what
+            you'd get for these shares, so{' '}
+            {formatWithToken({
+              amount: -netProceeds,
+              token: isCashContract ? 'CASH' : 'M$',
+            })}{' '}
+            comes out of your balance.
+          </div>
+        )}
       </Col>
 
       <Spacer h={6} />
