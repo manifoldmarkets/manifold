@@ -102,8 +102,7 @@ export function USElectionsPage(
     presidency2028PartyContract,
     rawSenateStateContracts,
     rawGovernorStateContracts,
-    rawSenateCandidateContracts,
-    rawGovernorCandidateContracts,
+    linkedMarketCounts,
     balanceOfPowerContract,
     houseControlContract,
     senateControlContract,
@@ -205,8 +204,7 @@ export function USElectionsPage(
           senateControlContract={senateControlContract}
           rawSenateStateContracts={rawSenateStateContracts}
           rawGovernorStateContracts={rawGovernorStateContracts}
-          rawSenateCandidateContracts={rawSenateCandidateContracts}
-          rawGovernorCandidateContracts={rawGovernorCandidateContracts}
+          linkedMarketCounts={linkedMarketCounts}
           houseDistrictsContract={houseDistrictsContract}
           additionalHouseContracts={additionalHouseContracts}
           ballotMeasureContracts={ballotMeasureContracts}

@@ -25,56 +25,58 @@ import type { Race } from './election-map-model'
 import { useMarketLink } from './market-link'
 import {
   createLinkedMarketHref,
-  linkedRaceParents,
-  mergeLinkedChildren,
+  linkedRaceParent,
+  openLinkedChildren,
 } from './race-linked-markets-model'
 import styles from './election-explorer.module.css'
 
-// `markets-by-ids` takes at most this many; each parent lists at most 50.
+// `markets-by-ids` takes at most this many; a parent lists at most 50.
 const MAX_LISTED = 100
 
+/** "3 linked markets" on a hovered race, from the page's preloaded counts. */
+export function LinkedMarketsBadge(props: { count?: number }) {
+  const { count } = props
+  if (!count) return null
+  return (
+    <span className={styles.linkedBadge}>{plural(count, 'linked market')}</span>
+  )
+}
+
 /**
- * The markets linked to a race (common/market-links): props and lines on the
- * race's own market or its candidate market, under the race's details. Closed
- * by default; the list and its live prices load only when it's opened. Shows
- * nothing for a race with no links, and nothing for a district priced only by
- * a shared portfolio answer, which has no market of its own to link to.
+ * The markets linked to a race's market (common/market-links): props and
+ * lines, under the race's details. Closed by default. `expectedCount` is the
+ * page's preloaded count (at most a minute old), so the section and its count
+ * show the moment a race is pinned; the list is read then, and the contracts
+ * with their live prices load when it is opened. Nothing renders for a race
+ * without links, or for a district priced only by a shared portfolio answer,
+ * which has no market of its own to link to.
  */
 export function RaceLinkedMarkets(props: {
   race: Race
-  // The race's candidate market from the page data, if any.
-  candidate?: Contract | null
+  expectedCount?: number
 }) {
-  const { race, candidate } = props
-  const parents = linkedRaceParents(race, candidate)
-  const [first, second] = parents
-  // Each parent reads once per session. The in-memory data slot is per
-  // parent, so a newly selected race never shows the previous race's list.
-  const firstLinks = useAPIGetter(
+  const { race, expectedCount = 0 } = props
+  const parent = linkedRaceParent(race)
+  const parentId = parent?.id
+  // The in-memory data slot is per parent, so a newly selected race never
+  // shows the previous race's list.
+  const links = useAPIGetter(
     'get-market-links',
-    first ? { contractId: first.id } : undefined,
+    parentId ? { contractId: parentId } : undefined,
     undefined,
-    first && `election-links-${first.id}`,
-    !!first
+    parentId && `election-links-${parentId}`,
+    !!parentId
   )
-  const secondLinks = useAPIGetter(
-    'get-market-links',
-    second ? { contractId: second.id } : undefined,
-    undefined,
-    second && `election-links-${second.id}`,
-    !!second
-  )
-  const parentIds = parents.map((p) => p.id).join(',')
   const children = useMemo(
     () =>
-      mergeLinkedChildren(
-        [firstLinks.data?.children, secondLinks.data?.children],
-        parentIds.split(',')
-      ).slice(0, MAX_LISTED),
-    [firstLinks.data, secondLinks.data, parentIds]
+      parentId && links.data
+        ? openLinkedChildren(links.data.children, parentId).slice(0, MAX_LISTED)
+        : undefined,
+    [links.data, parentId]
   )
+  const count = children ? children.length : expectedCount
   const [open, setOpen] = useState(false)
-  if (!first || children.length === 0) return null
+  if (!parent || count === 0) return null
   return (
     <details
       className={styles.linked}
@@ -83,23 +85,41 @@ export function RaceLinkedMarkets(props: {
         const next = e.currentTarget.open
         setOpen(next)
         if (next)
-          track('election linked markets open', {
-            raceId: race.id,
-            count: children.length,
-          })
+          track('election linked markets open', { raceId: race.id, count })
       }}
     >
       <summary aria-label={`Linked markets for ${race.label}`}>
         <span className={styles.eyebrow}>Linked markets</span>
-        <span className={styles.linkedCount}>{children.length}</span>
+        <span className={styles.linkedCount}>{count}</span>
       </summary>
-      {open && (
-        <>
-          <LinkedMarketList race={race} refs={children} />
-          <AddLinkedMarket race={race} parent={first} />
-        </>
-      )}
+      {open &&
+        (links.error && !links.data ? (
+          <LoadError refresh={links.refresh} />
+        ) : !children ? (
+          <p className={styles.note} role="status">
+            Loading linked markets…
+          </p>
+        ) : (
+          <>
+            <LinkedMarketList race={race} refs={children} />
+            <AddLinkedMarket race={race} parent={parent} />
+          </>
+        ))}
     </details>
+  )
+}
+
+function LoadError(props: { refresh: () => unknown }) {
+  return (
+    <p className={styles.note} role="alert">
+      Couldn't load these markets.{' '}
+      <button
+        className={styles.linkedRetry}
+        onClick={() => void props.refresh()}
+      >
+        Retry
+      </button>
+    </p>
   )
 }
 
@@ -119,15 +139,7 @@ function LinkedMarketList(props: {
     () => new Map((data ?? []).map((c) => [c.id, c])),
     [data]
   )
-  if (error && !data)
-    return (
-      <p className={styles.note} role="alert">
-        Couldn't load these markets.{' '}
-        <button className={styles.linkedRetry} onClick={() => void refresh()}>
-          Retry
-        </button>
-      </p>
-    )
+  if (error && !data) return <LoadError refresh={refresh} />
   if (!data)
     return (
       <p className={styles.note} role="status">
