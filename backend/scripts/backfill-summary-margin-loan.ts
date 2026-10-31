@@ -25,7 +25,7 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 // sum across all 413k multiple-choice positions with a loan.
 
 const BATCH_SIZE = 500
-const MAX_ATTEMPTS = 3
+const MAX_ATTEMPTS = 5
 // Below this a difference is float noise from the bet path, not drift worth
 // reporting; the script still rewrites it.
 const REPORT_EPSILON = 0.005
@@ -101,8 +101,11 @@ const report = (rows: SummaryRow[]) => {
 // trigger then either committed before the sum (and is included) or waits on
 // the lock and writes its own, fresher sum after ours. Summing first and
 // updating after could overwrite that fresher sum with a stale one.
+// lock_timeout keeps a batch stuck behind a long transaction from holding the
+// rest of its rows, and the bets on them, while it waits; it retries instead.
 const fixBatch = async (pg: SupabaseDirectClient, positions: Position[]) =>
   pg.tx(async (tx) => {
+    await tx.none(`set local lock_timeout = '5s'`)
     await tx.none(
       `select s.id from user_contract_metrics s
        join unnest($1::text[], $2::text[]) as p(user_id, contract_id)
@@ -145,8 +148,9 @@ const fixBatch = async (pg: SupabaseDirectClient, positions: Position[]) =>
     return stale.length
   })
 
+// serialization failure, deadlock, lock_timeout
 const isRetryable = (e: unknown) =>
-  ['40001', '40P01'].includes((e as { code?: string })?.code ?? '')
+  ['40001', '40P01', '55P03'].includes((e as { code?: string })?.code ?? '')
 
 if (require.main === module)
   runScript(async ({ pg }) => {
@@ -194,6 +198,7 @@ if (require.main === module)
         } catch (e) {
           if (!isRetryable(e) || attempt >= MAX_ATTEMPTS) throw e
           log(`Batch ${i + 1} conflicted (attempt ${attempt}), retrying`)
+          await new Promise((resolve) => setTimeout(resolve, attempt * 1000))
         }
       }
       if ((i + 1) % 5 === 0 || i === batches.length - 1)
