@@ -27,8 +27,9 @@ import { broadcastNewChartAnnotation } from 'shared/websockets/helpers'
 
 // On by default now that placement is validated across real games. Kept as an
 // emergency kill switch: set SPORTS_GOAL_ANNOTATIONS=false on the backend service
-// to disable without a rebuild (gcloud ... update-container --container-env, then
-// the container restarts). Gating the whole annotator means when off we do zero
+// to disable without a rebuild (add it to the VM's `container-env` metadata, then
+// rerun backend/deploy/cos-container-startup.sh; the next deploy resets the env).
+// Gating the whole annotator means when off we do zero
 // bet queries / inserts / broadcasts — the live score-write path is unchanged.
 const ANNOTATIONS_ENABLED = process.env.SPORTS_GOAL_ANNOTATIONS !== 'false'
 
