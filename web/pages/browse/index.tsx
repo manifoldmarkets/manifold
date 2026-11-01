@@ -71,6 +71,9 @@ export function BrowseViewToggle(props: { browseView: BrowseViewState }) {
       type="button"
       onClick={() => browseView.setView(isNew ? 'legacy' : 'new')}
       aria-label={isNew ? 'Switch to classic browse' : 'Try the new browse'}
+      data-browse-cohort={browseView.cohort}
+      data-browse-variant={browseView.variant ?? 'not-randomized'}
+      data-browse-choice={browseView.choiceSource}
       className="text-primary-700 hover:text-primary-800 ml-auto shrink-0 py-0.5 text-xs font-medium"
     >
       {isNew ? (

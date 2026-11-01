@@ -4,6 +4,11 @@ import {
   PLATFORM_KEY,
 } from 'common/native-message'
 import { PrivateUser } from 'common/user'
+import {
+  BROWSE_CHOICE_KEY,
+  BROWSE_ENROLLMENT_KEY,
+  DEVICE_HISTORY_KEY,
+} from 'common/browse-rollout'
 import { uniq } from 'lodash'
 import { safeLocalStorage, safeSessionStorage } from 'web/lib/util/local'
 import { api } from '../api/api'
@@ -38,9 +43,15 @@ const getNativeInfo = () => {
 export const clearLocalStoragePreservingNativeInfo = () => {
   if (typeof window === 'undefined') return
   const { isNative, platform } = getNativeInfo()
-  const preserved = NATIVE_INFO_LOCAL_KEYS.map(
-    (key) => [key, safeLocalStorage?.getItem(key) ?? null] as const
-  )
+  // These describe this browser, not the account. Keep the experiment and
+  // explicit layout choice stable through logout, as well as native flags.
+  const preserved = [
+    ...NATIVE_INFO_LOCAL_KEYS,
+    'device-token',
+    DEVICE_HISTORY_KEY,
+    BROWSE_ENROLLMENT_KEY,
+    BROWSE_CHOICE_KEY,
+  ].map((key) => [key, safeLocalStorage?.getItem(key) ?? null] as const)
   localStorage.clear()
   if (isNative) setIsNativeOld(true, platform ?? '')
   preserved.forEach(([key, value]) => {
