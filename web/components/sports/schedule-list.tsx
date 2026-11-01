@@ -1,11 +1,10 @@
 import clsx from 'clsx'
 import {
-  SearchIcon,
-  HeartIcon,
+  CalendarIcon,
+  ChevronDownIcon,
   TicketIcon,
   ViewGridIcon,
   ViewListIcon,
-  XIcon,
 } from '@heroicons/react/solid'
 import dayjs from 'dayjs'
 import { ReactNode, useEffect, useState } from 'react'
@@ -13,7 +12,6 @@ import {
   raceHeart,
   RaceSessionEvent,
   raceSessionEvents,
-  raceSessionSearchText,
   RaceWeekend,
 } from 'common/race-weekends'
 import { ScheduleGame } from 'common/sports-schedule'
@@ -26,7 +24,7 @@ import {
   RaceSessionCard,
 } from 'web/components/sports/race-session-card'
 import { RaceWeekendHero } from 'web/components/sports/race-weekend-hero'
-import { Carousel } from 'web/components/widgets/carousel'
+import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -38,11 +36,7 @@ import {
   profitLabel,
   sumGameStakes,
 } from './game-positions'
-import {
-  compareGameStartTime,
-  compareGameVolume,
-  selectFeaturedGame,
-} from './game-feed-utils'
+import { compareGameStartTime, selectFeaturedGame } from './game-feed-utils'
 
 type DaySection<T> = { key: string; label: string; items: T[] }
 
@@ -77,9 +71,11 @@ export function groupByDay<T>(
 }
 
 /**
- * A filterable board of live and upcoming games, grouped by local date.
- * Likes use the account's existing market reactions. Search covers loaded games; filtered
- * views expose pagination explicitly so an empty result is not a dead end.
+ * A filterable board of live and upcoming games, grouped by local date, under
+ * one compact row of controls: All / Live / My bets, a date menu, and the
+ * card or list layout. Hearts use the account's existing market reactions.
+ * Filters cover loaded games; filtered views expose pagination explicitly so
+ * an empty result is not a dead end.
  */
 export function GameFeed(props: {
   games: ScheduleGame[]
@@ -119,10 +115,8 @@ export function GameFeed(props: {
     belowFeatured,
     empty,
   } = props
-  const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<'all' | 'live' | 'liked' | 'mine'>('all')
+  const [filter, setFilter] = useState<'all' | 'live' | 'mine'>('all')
   const [date, setDate] = useState('all')
-  const [sort, setSort] = useState('time')
   const [featuredId, setFeaturedId] = useState<string>()
   const [view, setView] = usePersistentLocalState<'cards' | 'compact'>(
     'cards',
@@ -151,8 +145,6 @@ export function GameFeed(props: {
       toggle: () => change.forEach((id) => void likes.toggle(id)),
     }
   }
-  const sessionLiked = (s: RaceSessionEvent) =>
-    s.session.markets.some((m) => likes.liked.has(m.id))
   const positions = useGamePositions(active.map((game) => game.id))
   // One stake per game, marked to the live prices, shared by the cards, the
   // My bets filter and its totals so they can't disagree.
@@ -162,8 +154,7 @@ export function GameFeed(props: {
     if (stake) stakes[game.id] = stake
   }
   const stakedCount = Object.keys(stakes).length
-  const normalized = query.trim().toLowerCase()
-  const hasFilters = filter !== 'all' || date !== 'all' || !!normalized
+  const hasFilters = filter !== 'all' || date !== 'all'
   const everything: FeedItem[] = [...active, ...sessions]
   const selectedFeatured = selectFeaturedGame(
     everything,
@@ -178,29 +169,21 @@ export function GameFeed(props: {
   const filteredGames = active.filter(
     (game) =>
       (filter !== 'live' || game.status === 'live') &&
-      (filter !== 'liked' || likes.liked.has(game.id)) &&
       (filter !== 'mine' || !!stakes[game.id]) &&
-      (date === 'all' || dayjs(game.startTime).format('YYYY-MM-DD') === date) &&
-      (!normalized ||
-        `${game.home.name} ${game.home.shortName} ${game.away.name} ${game.away.shortName} ${game.league}`
-          .toLowerCase()
-          .includes(normalized))
+      (date === 'all' || dayjs(game.startTime).format('YYYY-MM-DD') === date)
   )
   // Sessions take the same filters as games, except My bets: positions don't
-  // cover them yet. A session is liked when any of its markets is.
+  // cover them yet.
   const filteredSessions =
     filter === 'mine'
       ? []
       : sessions.filter(
           (s) =>
             (filter !== 'live' || s.status === 'live') &&
-            (filter !== 'liked' || sessionLiked(s)) &&
-            (date === 'all' ||
-              dayjs(s.startTime).format('YYYY-MM-DD') === date) &&
-            (!normalized || raceSessionSearchText(s).includes(normalized))
+            (date === 'all' || dayjs(s.startTime).format('YYYY-MM-DD') === date)
         )
   const filtered: FeedItem[] = [...filteredGames, ...filteredSessions].sort(
-    sort === 'volume' ? compareGameVolume : compareGameStartTime
+    compareGameStartTime
   )
   // A featured session brings its whole weekend: the featured card's pills
   // cover the other sessions, so they aren't listed again below.
@@ -231,10 +214,8 @@ export function GameFeed(props: {
           return stake ? [stake] : []
         })
       : []
-  const needsSignIn =
-    (filter === 'liked' || filter === 'mine') && likes.user === null
+  const needsSignIn = filter === 'mine' && likes.user === null
   const reset = () => {
-    setQuery('')
     setDate('all')
     setFilter('all')
   }
@@ -285,47 +266,69 @@ export function GameFeed(props: {
     <div className="min-w-0">
       <Col className="min-w-0 gap-5">
         <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="border-ink-200 bg-canvas-0 focus-within:border-primary-400 focus-within:ring-primary-200 flex min-w-[8rem] flex-1 items-center gap-2 rounded-xl border px-3 focus-within:ring-2">
-              <SearchIcon className="text-ink-400 h-4 w-4 shrink-0" />
-              <input
-                aria-label="Search loaded games"
-                placeholder="Search games"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                className="placeholder:text-ink-400 w-full min-w-0 border-0 bg-transparent py-2 text-sm focus:outline-none focus:ring-0"
-              />
-              {query && (
-                <button
-                  type="button"
-                  onClick={() => setQuery('')}
-                  aria-label="Clear game search"
-                  className="text-ink-500 flex h-9 w-9 shrink-0 items-center justify-center"
-                >
-                  <XIcon className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-            <label className="text-ink-500 flex items-center gap-2 text-xs">
-              <span className="sr-only sm:not-sr-only">Sort</span>
-              <select
-                aria-label="Sort games"
-                className="border-ink-200 bg-canvas-0 text-ink-700 min-h-[40px] w-28 rounded-lg border py-1.5 pl-2 pr-7 text-xs disabled:opacity-50 sm:w-auto"
-                value={filter === 'live' ? 'time' : sort}
-                disabled={filter === 'live'}
-                title={
-                  filter === 'live'
-                    ? 'Live games are ordered by start time'
-                    : undefined
-                }
-                onChange={(event) => setSort(event.target.value)}
-              >
-                <option value="time">Start time</option>
-                <option value="volume">Most traded per day</option>
-              </select>
-            </label>
+          <div className="flex min-w-0 items-center gap-1 sm:gap-2">
             <div
-              className="border-ink-200 flex shrink-0 rounded-lg border p-0.5"
+              className="flex shrink-0 items-center gap-0.5 sm:gap-1"
+              role="group"
+              aria-label="Game filters"
+            >
+              {(
+                [
+                  {
+                    value: 'all',
+                    label: 'All',
+                    count: everything.length,
+                  },
+                  {
+                    value: 'live',
+                    label: 'Live',
+                    count: everything.filter((item) => item.status === 'live')
+                      .length,
+                  },
+                  {
+                    value: 'mine',
+                    label: 'My bets',
+                    count: positions.loading ? undefined : stakedCount,
+                  },
+                ] as const
+              ).map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  aria-pressed={filter === item.value}
+                  onClick={() => {
+                    setFilter(item.value)
+                    setDate('all')
+                  }}
+                  className={clsx(
+                    'flex min-h-[40px] items-center gap-1 whitespace-nowrap rounded-lg px-1.5 text-xs font-semibold min-[375px]:px-2 sm:gap-1.5 sm:px-3 sm:text-sm',
+                    filter === item.value
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-canvas-0 text-ink-600 hover:bg-canvas-100'
+                  )}
+                >
+                  {item.value === 'live' && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                  )}
+                  {item.value === 'mine' && (
+                    <TicketIcon className="hidden h-3.5 w-3.5 sm:block" />
+                  )}
+                  {item.label}
+                  <span className="text-xs tabular-nums opacity-70">
+                    {item.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <DateMenu
+              days={allDays}
+              date={date}
+              setDate={setDate}
+              // Live is now: there's no other day to pick.
+              disabled={filter === 'live'}
+            />
+            <div
+              className="border-ink-200 ml-auto flex shrink-0 rounded-lg border p-0.5"
               role="group"
               aria-label="Game board layout"
             >
@@ -347,7 +350,7 @@ export function GameFeed(props: {
                   aria-pressed={view === value}
                   onClick={() => setView(value)}
                   className={clsx(
-                    'flex h-9 w-9 items-center justify-center rounded-md',
+                    'flex h-9 w-8 items-center justify-center rounded-md sm:w-9',
                     view === value
                       ? 'bg-primary-50 text-primary-700'
                       : 'text-ink-400 hover:bg-canvas-100'
@@ -357,121 +360,6 @@ export function GameFeed(props: {
                 </button>
               ))}
             </div>
-          </div>
-          <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
-            <div
-              className="flex flex-wrap items-center gap-2"
-              aria-label="Game filters"
-            >
-              {(
-                [
-                  {
-                    value: 'all',
-                    label: 'All games',
-                    count: everything.length,
-                  },
-                  {
-                    value: 'live',
-                    label: 'Live',
-                    count: everything.filter((item) => item.status === 'live')
-                      .length,
-                  },
-                  {
-                    value: 'liked',
-                    label: 'Liked',
-                    count: likes.loading
-                      ? undefined
-                      : active.filter((game) => likes.liked.has(game.id))
-                          .length + sessions.filter(sessionLiked).length,
-                  },
-                  {
-                    value: 'mine',
-                    label: 'My bets',
-                    count: positions.loading ? undefined : stakedCount,
-                  },
-                ] as const
-              ).map((item) => (
-                <button
-                  key={item.value}
-                  type="button"
-                  aria-pressed={filter === item.value}
-                  onClick={() => {
-                    setFilter(item.value)
-                    setDate('all')
-                  }}
-                  className={clsx(
-                    'flex min-h-[40px] items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold sm:px-3 sm:text-sm',
-                    filter === item.value
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-canvas-0 text-ink-600 hover:bg-canvas-100'
-                  )}
-                >
-                  {item.value === 'live' && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                  )}
-                  {item.value === 'liked' && (
-                    <HeartIcon className="h-3.5 w-3.5" />
-                  )}
-                  {item.value === 'mine' && (
-                    <TicketIcon className="h-3.5 w-3.5" />
-                  )}
-                  {item.value === 'all' ? (
-                    // Four chips: keep them on one line on small phones.
-                    <>
-                      All<span className="hidden sm:inline"> games</span>
-                    </>
-                  ) : (
-                    item.label
-                  )}
-                  <span className="text-xs opacity-70">{item.count}</span>
-                </button>
-              ))}
-            </div>
-            {/* Keep this strip's space in Live so the filter row stays put. */}
-            <Carousel
-              className={clsx(
-                'min-w-0 basis-full md:flex-1 md:basis-0',
-                filter === 'live' && 'invisible'
-              )}
-              labelsParentClassName="gap-2"
-              fadeEdges
-              showArrowsOnHover
-              aria-label="Game dates"
-              aria-hidden={filter === 'live'}
-            >
-              <button
-                type="button"
-                disabled={filter === 'live'}
-                aria-pressed={date === 'all'}
-                onClick={() => setDate('all')}
-                className={clsx(
-                  'h-10 shrink-0 whitespace-nowrap rounded-lg border px-3 text-xs font-semibold',
-                  date === 'all'
-                    ? 'border-primary-300 bg-primary-50 text-primary-700'
-                    : 'border-ink-200 text-ink-500'
-                )}
-              >
-                All dates
-              </button>
-              {allDays.map((day) => (
-                <button
-                  type="button"
-                  key={day.key}
-                  disabled={filter === 'live'}
-                  aria-pressed={date === day.key}
-                  onClick={() => setDate(day.key)}
-                  className={clsx(
-                    'h-10 shrink-0 whitespace-nowrap rounded-lg border px-3 text-left text-xs',
-                    date === day.key
-                      ? 'border-primary-300 bg-primary-50 text-primary-700'
-                      : 'border-ink-200 text-ink-500'
-                  )}
-                >
-                  <span className="block font-semibold">{day.label}</span>
-                  <span>{dayjs(day.key).format('MMM D')}</span>
-                </button>
-              ))}
-            </Carousel>
           </div>
           {hasFilters && (
             <div
@@ -545,15 +433,7 @@ export function GameFeed(props: {
         {filtered.length === 0 && (
           <div className="border-ink-200 rounded-xl border border-dashed px-5 py-8 text-center">
             <h3 className="text-ink-900 font-semibold">
-              {filter === 'liked'
-                ? !likes.user && !likes.loading
-                  ? 'Sign in to see your liked games'
-                  : likes.error
-                  ? 'Your likes are unavailable'
-                  : likes.loading
-                  ? 'Loading your liked games…'
-                  : 'No liked games here yet'
-                : filter === 'mine'
+              {filter === 'mine'
                 ? needsSignIn
                   ? 'Sign in to see your bets'
                   : positions.error
@@ -570,11 +450,9 @@ export function GameFeed(props: {
                 : 'No matching games'}
             </h3>
             <p className="text-ink-500 mt-1 text-sm">
-              {filter === 'liked'
-                ? 'Heart a game to add it to your Manifold likes.'
-                : filter === 'mine'
+              {filter === 'mine'
                 ? 'Tap a price to back a team. Your picks and open orders show up here.'
-                : 'Try another date, team, or filter.'}
+                : 'Try another date or filter.'}
             </p>
             <button
               type="button"
@@ -615,7 +493,7 @@ export function GameFeed(props: {
                 onClick={() => void loadMore()}
                 className="text-primary-700 border-ink-200 rounded-lg border p-3 text-sm font-semibold"
               >
-                Load more games to search
+                Load more games
               </button>
             ) : (
               <>
@@ -633,6 +511,98 @@ export function GameFeed(props: {
       </Col>
     </div>
   )
+}
+
+/**
+ * Which day the board shows: every date, or one. A menu rather than a strip
+ * of day chips, so it shares the filters' row. Shrinks before they do.
+ */
+function DateMenu(props: {
+  days: DaySection<FeedItem>[]
+  date: string
+  setDate: (date: string) => void
+  disabled?: boolean
+}) {
+  const { days, date, setDate, disabled } = props
+  const picked = date !== 'all'
+  const total = days.reduce((n, day) => n + day.items.length, 0)
+  const label = picked
+    ? shortDayLabel(date, days.find((day) => day.key === date)?.label)
+    : 'All dates'
+  return (
+    <DropdownMenu
+      className="min-w-0"
+      buttonDisabled={disabled}
+      buttonClass={clsx(
+        'min-h-[40px] max-w-full gap-1 rounded-lg border px-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50 sm:px-3 sm:text-sm',
+        picked
+          ? 'border-primary-300 bg-primary-50 !text-primary-700'
+          : 'border-ink-200 bg-canvas-0 hover:bg-canvas-100 !text-ink-600'
+      )}
+      buttonContent={(open) => (
+        <>
+          <CalendarIcon
+            className="hidden h-4 w-4 shrink-0 opacity-70 sm:block"
+            aria-hidden
+          />
+          <span className="sr-only">Date: </span>
+          <span className="min-w-0 truncate">{label}</span>
+          <ChevronDownIcon
+            className={clsx(
+              'h-4 w-4 shrink-0 transition-transform',
+              open && 'rotate-180'
+            )}
+            aria-hidden
+          />
+        </>
+      )}
+      anchor={{ to: 'bottom start', gap: 8, padding: 8 }}
+      menuWidth="w-56"
+      menuItemsClass="!max-h-[60vh] overflow-y-auto"
+      selectedItemName={date}
+      closeOnClick
+      items={[
+        {
+          name: 'all',
+          onClick: () => setDate('all'),
+          buttonContent: <DateMenuItem label="All dates" count={total} />,
+        },
+        ...days.map((day) => ({
+          name: day.key,
+          onClick: () => setDate(day.key),
+          buttonContent: (
+            <DateMenuItem
+              label={day.label}
+              sublabel={dayjs(day.key).format('MMM D')}
+              count={day.items.length}
+            />
+          ),
+        })),
+      ]}
+    />
+  )
+}
+
+function DateMenuItem(props: {
+  label: string
+  sublabel?: string
+  count: number
+}) {
+  const { label, sublabel, count } = props
+  return (
+    <span className="flex min-w-0 flex-1 items-baseline gap-1.5">
+      <span className="text-ink-900 font-medium">{label}</span>
+      {sublabel && <span className="text-ink-500 text-xs">{sublabel}</span>}
+      <span className="text-ink-400 ml-auto text-xs tabular-nums">{count}</span>
+    </span>
+  )
+}
+
+/** "Today", "Tomorrow", else "Sat, Nov 7": short enough for the filter row. */
+function shortDayLabel(key: string, label: string | undefined) {
+  return label === 'Today' || label === 'Tomorrow'
+    ? label
+    : dayjs(key).format('ddd, MMM D')
 }
 
 /** The My bets filter's totals: games, mana in, current value and profit. */

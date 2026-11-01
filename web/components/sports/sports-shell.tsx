@@ -18,12 +18,14 @@ import { SEO } from 'web/components/SEO'
 import { SportsRailData } from 'web/hooks/use-sports-schedule'
 import { HideBlockedTopics, HidesBlocked } from './blocked-topics'
 import { SportRail } from './sport-rail'
+import { SportsShareButton } from './sports-share-button'
 import { SportsMarketSections } from './sports-market-sections'
 import { UpcomingMarkets } from './upcoming-markets'
 
 /**
- * The frame every sports page shares: the heading, the sport navigation
- * (sticky), and a responsive game board or market columns under it.
+ * The frame every sports page shares: the heading with Follow and Share,
+ * the sport navigation (sticky), and a responsive game board or market
+ * columns under it.
  * The heading block is the same height on every sports page, so switching
  * sports never moves the rail or the content under it.
  */
@@ -35,7 +37,7 @@ export function SportsShell(props: {
   heading: ReactNode
   /** One line; truncated rather than wrapped. */
   subheading?: ReactNode
-  /** Beside Create, like the Follow button. */
+  /** Beside Share, like the Follow button. */
   actions?: ReactNode
   /** Leaves blocked topics' markets out of the lists (useBlockedTopicFilter). */
   hides?: HidesBlocked
@@ -58,44 +60,38 @@ export function SportsShell(props: {
   return (
     <Page trackPageView={trackPageView} className="min-w-0">
       <SEO {...seo} />
-      <Col className="w-full min-w-0 gap-3 px-3 pt-5 sm:px-6 sm:pt-7">
-        <Row className="items-center justify-between gap-2 px-1">
-          <Row className="min-w-0 items-center gap-1">
-            {/* Goes back in history (to the previous sport, or wherever the
-                visitor came from), or Home when they arrived from off-site.
-                The button only appears once it can tell which, so it gets a
-                fixed slot and the heading never moves. Remount when the sport
-                or topic changes so its history check stays current on
-                Back/Forward.
-                On desktop the sidebar covers it, so the slot is hidden too. */}
-            <div className="-ml-2.5 h-8 w-10 shrink-0 lg:hidden">
-              <BackButton
-                key={`${selected}/${selectedTopic ?? ''}`}
-                size="xs"
-                homeFallback
-              />
-            </div>
-            <h1 className="text-ink-1000 min-w-0 truncate text-3xl font-bold tracking-tight sm:text-4xl">
-              {heading}
-            </h1>
+      <Col className="w-full min-w-0 gap-3 px-3 pt-4 sm:px-6 sm:pt-6">
+        <Col className="gap-0.5">
+          <Row className="items-center justify-between gap-2 px-1">
+            <Row className="min-w-0 items-center gap-1">
+              {/* Goes back in history (to the previous sport, or wherever the
+                  visitor came from), or Home when they arrived from off-site.
+                  The button only appears once it can tell which, so it gets a
+                  fixed slot and the heading never moves. Remount when the sport
+                  or topic changes so its history check stays current on
+                  Back/Forward.
+                  On desktop the sidebar covers it, so the slot is hidden too. */}
+              <div className="-ml-2.5 h-8 w-10 shrink-0 lg:hidden">
+                <BackButton
+                  key={`${selected}/${selectedTopic ?? ''}`}
+                  size="xs"
+                  homeFallback
+                />
+              </div>
+              <h1 className="text-ink-1000 min-w-0 truncate text-3xl font-bold tracking-tight sm:text-4xl">
+                {heading}
+              </h1>
+            </Row>
+            <Row className="shrink-0 items-center gap-2">
+              {actions}
+              <SportsShareButton />
+            </Row>
           </Row>
-          <Row className="shrink-0 items-center gap-2">
-            {actions}
-            <Link
-              href="/create"
-              className="bg-primary-600 hover:bg-primary-700 text-ink-0 flex min-h-[40px] shrink-0 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium"
-            >
-              <PlusIcon className="h-4 w-4" />
-              <span>
-                Create<span className="sr-only sm:not-sr-only"> market</span>
-              </span>
-            </Link>
-          </Row>
-        </Row>
-        {/* Always one line, even while a sport is loading. */}
-        <p className="text-ink-500 truncate px-1 text-sm">
-          {subheading ?? '\u00a0'}
-        </p>
+          {/* Always one line, even while a sport is loading. */}
+          <p className="text-ink-500 truncate px-1 text-sm">
+            {subheading ?? '\u00a0'}
+          </p>
+        </Col>
 
         <div className="bg-canvas-0 border-ink-100 sticky top-0 z-20 -mx-3 border-b px-3 sm:-mx-6 sm:px-6">
           <SportRail
