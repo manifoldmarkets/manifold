@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import { memo, useState } from 'react'
+import Router from 'next/router'
+import { memo, ReactNode, useState } from 'react'
 
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -16,6 +17,8 @@ import { Topic } from 'common/group'
 import { FeedBinaryChart } from 'web/components/feed/feed-chart'
 import { UserHovercard } from '../user/user-hovercard'
 import { MarketTitleLabel } from './market-title-label'
+import { ClickFrame } from '../widgets/click-frame'
+import { PerpBetButtons } from '../perps/perp-bet-buttons'
 
 export const SidebarRelatedContractsList = memo(function (props: {
   contracts: Contract[]
@@ -117,6 +120,56 @@ export const RelatedContractsGrid = memo(function (props: {
   )
 })
 
+type RelatedCardContentProps = {
+  contract: Contract
+  onContractClick?: (contract: Contract) => void
+  className: string
+  children: ReactNode
+}
+
+function RelatedCardFrame(props: RelatedCardContentProps) {
+  const { contract, onContractClick, className, children } = props
+  if (contract.outcomeType !== 'PERP')
+    return (
+      <Link
+        href={contractPath(contract)}
+        onClick={() => onContractClick?.(contract)}
+        className={className}
+      >
+        {children}
+      </Link>
+    )
+
+  return (
+    <ClickFrame
+      tabIndex={-1}
+      className={className}
+      onClick={() => {
+        onContractClick?.(contract)
+        Router.push(contractPath(contract))
+      }}
+    >
+      {children}
+    </ClickFrame>
+  )
+}
+
+function RelatedCardTitle(props: RelatedCardContentProps) {
+  const { contract, onContractClick, className, children } = props
+  if (contract.outcomeType !== 'PERP')
+    return <div className={className}>{children}</div>
+
+  return (
+    <Link
+      href={contractPath(contract)}
+      onClick={() => onContractClick?.(contract)}
+      className={className}
+    >
+      {children}
+    </Link>
+  )
+}
+
 const SidebarRelatedContractCard = memo(function (props: {
   contract: Contract
   onContractClick?: (contract: Contract) => void
@@ -134,17 +187,19 @@ const SidebarRelatedContractCard = memo(function (props: {
   } = contract
 
   return (
-    <Link
+    <RelatedCardFrame
+      contract={contract}
+      onContractClick={onContractClick}
       className={clsx(
         'whitespace-nowrap outline-none',
         'bg-canvas-0 lg:hover:bg-primary-50 focus:bg-primary-50 transition-colors',
         'px-4 py-3',
         className
       )}
-      href={contractPath(contract)}
-      onClick={() => onContractClick?.(contract)}
     >
-      <div
+      <RelatedCardTitle
+        contract={contract}
+        onContractClick={onContractClick}
         className={clsx(
           'break-anywhere mb-2 whitespace-normal font-medium',
           twoLines ? 'line-clamp-2' : 'line-clamp-3'
@@ -152,7 +207,7 @@ const SidebarRelatedContractCard = memo(function (props: {
       >
         <MarketTitleLabel contract={contract} className="mr-1" />
         {question}
-      </div>
+      </RelatedCardTitle>
       <Row className="w-full items-end justify-between">
         <UserHovercard userId={creatorId}>
           <Row className="items-center gap-1.5">
@@ -175,15 +230,23 @@ const SidebarRelatedContractCard = memo(function (props: {
           </Row>
         </UserHovercard>
 
-        <Row className="items-center gap-1">
+        <Row className="items-center gap-2">
           <ContractStatusLabel
             contract={contract}
             chanceLabel
             className="font-semibold"
           />
+          {contract.outcomeType === 'PERP' && (
+            <PerpBetButtons
+              contract={contract}
+              variant="bet"
+              size="2xs"
+              location="sidebar related card"
+            />
+          )}
         </Row>
       </Row>
-    </Link>
+    </RelatedCardFrame>
   )
 })
 
@@ -211,17 +274,19 @@ const RelatedContractCard = memo(function (props: {
       : 0
 
   return (
-    <Link
+    <RelatedCardFrame
+      contract={contract}
+      onContractClick={onContractClick}
       className={clsx(
         'whitespace-nowrap outline-none',
         'bg-canvas-0 lg:hover:bg-primary-50 focus:bg-primary-50 transition-colors',
         'border-ink-300 my-2 flex flex-col rounded-lg border-2 p-2',
         className
       )}
-      href={contractPath(contract)}
-      onClick={() => onContractClick?.(contract)}
     >
-      <div
+      <RelatedCardTitle
+        contract={contract}
+        onContractClick={onContractClick}
         className={clsx(
           'break-anywhere mb-2 whitespace-normal font-medium',
           twoLines ? 'line-clamp-2' : 'line-clamp-3'
@@ -229,7 +294,7 @@ const RelatedContractCard = memo(function (props: {
       >
         <MarketTitleLabel contract={contract} className="mr-1" />
         {question}
-      </div>
+      </RelatedCardTitle>
       <Row className="w-full items-end justify-between">
         <UserHovercard userId={creatorId}>
           <Row className="items-center gap-1.5">
@@ -271,9 +336,16 @@ const RelatedContractCard = memo(function (props: {
           />
         </Row>
       </Row>
+      {contract.outcomeType === 'PERP' && (
+        <PerpBetButtons
+          contract={contract}
+          className="mt-2 justify-end"
+          location="related card"
+        />
+      )}
       {contract.outcomeType === 'BINARY' && probChange !== 0 && (
         <FeedBinaryChart contract={contract} className="my-4" />
       )}
-    </Link>
+    </RelatedCardFrame>
   )
 })

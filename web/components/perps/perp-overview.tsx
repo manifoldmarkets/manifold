@@ -1,11 +1,9 @@
-import { ORACLE_HEALTH_MAX_AGE_MS } from 'common/perps/oracle-health'
 import { getMnxInstrument } from 'common/perps/mnx'
 import { formatOraclePrice } from 'common/perps/oracle-display'
 import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { fromNow } from 'client-common/lib/time'
 import { PerpContract } from 'common/contract'
-import { PERPS_SKIP_ORACLE_FRESHNESS } from 'common/envs/constants'
 import { nextFundingTimes } from 'common/perps/chart-projections'
 import {
   fundingPeriodNoun,
@@ -14,7 +12,6 @@ import {
   getPerpFundingRate,
 } from 'common/perps/funding'
 import { formatCountdown, inferPriceDecimals } from 'common/perps/format'
-import { getPerpOracleFreshness } from 'common/perps/oracle'
 import { YEAR_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -26,13 +23,7 @@ import { PerpOracleAttribution } from './perp-oracle-attribution'
 import { PerpPositionPanel } from './perp-position-panel'
 import { useLivePerpContract } from './use-live-perp-contract'
 import { usePerpPositions } from './use-perp-positions'
-
-// Re-render cadence for the "last update arrived N ago" freshness label. This
-// is a clock tick, not a data fetch — price itself arrives by websocket push
-// (see useLivePerpContract), so this only needs to be often enough that the
-// relative timestamp does not visibly lag.
-const FRESHNESS_CLOCK_MS = 15_000
-const MAX_TIMEOUT_MS = 2_147_483_647
+import { usePerpTradingStatus } from './use-perp-trading-status'
 
 // Exchange-style tick flash: returns 'up' | 'down' for ~700ms after the
 // value changes, so the price header can pulse green/red like a real book.
@@ -47,42 +38,6 @@ const useTickFlash = (value: number) => {
     return () => clearTimeout(t)
   }, [value])
   return flash
-}
-
-const useOracleFreshness = (contract: PerpContract) => {
-  const [now, setNow] = useState<number | null>(null)
-
-  useEffect(() => {
-    const update = () => setNow(Date.now())
-    update()
-    const sourceStaleAt =
-      (contract.oraclePriceTime ?? Number.NaN) + contract.maxOraclePriceAgeMs
-    const staleAt = contract.oracleFeedHealth
-      ? Math.min(
-          sourceStaleAt,
-          contract.oracleFeedHealth.checkedAt + ORACLE_HEALTH_MAX_AGE_MS,
-          contract.oracleFeedHealth.expiresAt ?? 0
-        )
-      : sourceStaleAt
-    const delay = staleAt - Date.now()
-    const timeout =
-      Number.isFinite(delay) && delay >= 0
-        ? setTimeout(update, Math.min(delay + 1, MAX_TIMEOUT_MS))
-        : undefined
-    const interval = setInterval(update, FRESHNESS_CLOCK_MS)
-    return () => {
-      if (timeout !== undefined) clearTimeout(timeout)
-      clearInterval(interval)
-    }
-  }, [
-    contract.oraclePriceTime,
-    contract.maxOraclePriceAgeMs,
-    contract.oracleFeedId,
-    contract.oracleFeedHealth?.checkedAt,
-    contract.oracleFeedHealth?.expiresAt,
-  ])
-
-  return now == null ? null : getPerpOracleFreshness(contract, now)
 }
 
 export const PerpOverview = (props: {
@@ -116,17 +71,8 @@ export const PerpOverview = (props: {
   // would still see the previous period's rate — often with the opposite
   // sign — until the next funding tick, which reads as "backwards".
   const liveFundingRate = getPerpFundingRate(contract)
-  const oracleFreshness = useOracleFreshness(contract)
-  // A solvency halt keeps the mark FRESH on purpose (see runOracleUpdate), so
-  // freshness alone no longer tells you whether the engine will accept a trade.
-  // Fold it into the same flag the panels already gate on, or the controls stay
-  // live until the API answers 503.
-  const solvencyHalted = contract.solvencyHaltTime != null
-  const oracleTradingPaused =
-    solvencyHalted ||
-    (!PERPS_SKIP_ORACLE_FRESHNESS &&
-      oracleFreshness != null &&
-      oracleFreshness.status !== 'fresh')
+  const { oracleFreshness, solvencyHalted, oracleTradingPaused } =
+    usePerpTradingStatus(contract)
 
   return (
     <Col className="gap-4">

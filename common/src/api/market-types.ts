@@ -97,6 +97,7 @@ export type LiteMarket = {
   oraclePriceTime?: number
   oracleSourceTime?: number | null
   oracleFeedHealth?: OracleFeedHealth
+  solvencyHaltTime?: number | null
   poolLong?: number
   poolShort?: number
   // Drives the live funding rate (getPerpFundingRate) — must travel with the
@@ -259,6 +260,7 @@ export function toLiteMarket(
           oraclePriceTime: contract.oraclePriceTime,
           oracleSourceTime: contract.oracleSourceTime,
           oracleFeedHealth: contract.oracleFeedHealth,
+          solvencyHaltTime: contract.solvencyHaltTime ?? null,
           poolLong: contract.poolLong,
           poolShort: contract.poolShort,
           openInterestLong: contract.openInterestLong,

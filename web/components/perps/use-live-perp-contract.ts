@@ -195,10 +195,15 @@ export const useLivePerpContract = (
                   volume: market.volume,
                   uniqueBettorCount: market.uniqueBettorCount,
                   isResolved: market.isResolved,
+                  closeTime: market.closeTime,
                   resolution,
                   resolutionTime: market.resolutionTime,
                   resolverId: market.resolverId,
                   resolvedOraclePrice: market.resolvedOraclePrice,
+                  // Null clears a halt retained in the initial card snapshot.
+                  ...(market.solvencyHaltTime !== undefined
+                    ? { solvencyHaltTime: market.solvencyHaltTime }
+                    : {}),
                   lastUpdatedTime: market.lastUpdatedTime,
                   ...(market.lastFundingTime != null
                     ? { lastFundingTime: market.lastFundingTime }

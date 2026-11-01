@@ -19,13 +19,7 @@ import { PerpPosition } from 'common/perps/position'
 import { getDisplayProbability } from 'common/calculate'
 import { Contract, PerpContract, contractPath } from 'common/contract'
 import { isEligibleRelatedMarket } from 'common/related-markets'
-import {
-  ENV,
-  ENV_CONFIG,
-  PERPS_SKIP_ORACLE_FRESHNESS,
-  isAdminId,
-  isModId,
-} from 'common/envs/constants'
+import { ENV, ENV_CONFIG, isAdminId, isModId } from 'common/envs/constants'
 import { contractFields, convertContract } from 'common/supabase/contracts'
 import { fromNow } from 'client-common/lib/time'
 import { nextFundingTimes } from 'common/perps/chart-projections'
@@ -49,7 +43,6 @@ import {
   PerpExplainerContent,
   PerpExplainerModal,
 } from 'web/components/perps/perp-market-explainer'
-import { getPerpOracleFreshness } from 'common/perps/oracle'
 import { DAY_MS, HOUR_MS, YEAR_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
@@ -73,6 +66,7 @@ import {
 } from 'web/components/perps/perp-rail'
 import { useLivePerpContract } from 'web/components/perps/use-live-perp-contract'
 import { usePerpPositions } from 'web/components/perps/use-perp-positions'
+import { usePerpTradingStatus } from 'web/components/perps/use-perp-trading-status'
 import { Avatar } from 'web/components/widgets/avatar'
 import { TokenNumber } from 'web/components/widgets/token-number'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -1846,18 +1840,6 @@ const LeanHistory = (props: { contract: PerpContract; className?: string }) => {
 // Terminal: the selected market's chart, with trading folded away until asked
 // for so the chart is the view.
 
-const useOracleTradingPaused = (contract: PerpContract) => {
-  // Client-only: Date.now() on the server would hydrate differently.
-  const [now, setNow] = useState<number | null>(null)
-  useEffect(() => {
-    setNow(Date.now())
-    const id = setInterval(() => setNow(Date.now()), POLL_MS)
-    return () => clearInterval(id)
-  }, [contract.oraclePriceTime])
-  if (now == null || PERPS_SKIP_ORACLE_FRESHNESS) return false
-  return getPerpOracleFreshness(contract, now).status !== 'fresh'
-}
-
 // On phones the card's gutter + border + padding cost the chart ~40px of a
 // 360px screen. While the card is the thing on screen — it spans the
 // upper-middle of the viewport — it slides out to the screen edges and the
@@ -1902,7 +1884,7 @@ const Terminal = (props: {
     contract.id,
     refreshKey
   )
-  const oracleTradingPaused = useOracleTradingPaused(contract)
+  const { solvencyHalted, oracleTradingPaused } = usePerpTradingStatus(contract)
 
   const price = Number(contract.oraclePrice)
   const flash = useTickFlash(price)
@@ -2066,7 +2048,21 @@ const Terminal = (props: {
           role="alert"
           className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm text-amber-950 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-100"
         >
-          Oracle update delayed — trading is paused until a fresh price arrives.
+          {solvencyHalted ? (
+            <>
+              <div className="font-semibold">
+                Trading paused for a risk check
+              </div>
+              A risk update could not be applied to this market, so trading and
+              position closes are paused. Trading resumes automatically once the
+              market processes its next update.
+            </>
+          ) : (
+            <>
+              Oracle update delayed — trading is paused until a fresh price
+              arrives.
+            </>
+          )}
         </div>
       )}
 

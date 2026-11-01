@@ -50,6 +50,7 @@ import { TradesButton } from 'web/components/contract/trades-button'
 import { ReactButton } from 'web/components/contract/react-button'
 import { RepostButton } from 'web/components/comments/repost-modal'
 import { FeedPerpPriceSparkline } from 'web/components/perps/feed-perp-price-sparkline'
+import { PerpBetButtons } from 'web/components/perps/perp-bet-buttons'
 import { MarketTitleLabel } from 'web/components/contract/market-title-label'
 import { LiquidityTooltip } from 'web/components/tiers/liquidity-tooltip'
 
@@ -238,12 +239,15 @@ export const ActivityCard = memo(function ActivityCard(props: {
 
         {contract.outcomeType === 'PERP' && (
           <>
-            <Row className="items-baseline gap-1.5">
-              <ContractStatusLabel
-                className="text-lg font-bold"
-                contract={contract}
-              />
-              <span className="text-ink-400 text-xs">oracle price</span>
+            <Row className="flex-wrap items-center justify-between gap-2">
+              <Row className="items-baseline gap-1.5">
+                <ContractStatusLabel
+                  className="text-lg font-bold"
+                  contract={contract}
+                />
+                <span className="text-ink-400 text-xs">oracle price</span>
+              </Row>
+              <PerpBetButtons contract={contract} location="activity card" />
             </Row>
             <FeedPerpPriceSparkline
               contract={contract}

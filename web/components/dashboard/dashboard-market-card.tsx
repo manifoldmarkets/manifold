@@ -40,6 +40,7 @@ import { useUnfilledBets } from 'client-common/hooks/use-bets'
 import { api } from 'web/lib/api/api'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { FeedPerpPriceSparkline } from '../perps/feed-perp-price-sparkline'
+import { PerpBetButtons } from '../perps/perp-bet-buttons'
 import { MarketTitleLabel } from '../contract/market-title-label'
 import { ClickFrame } from '../widgets/click-frame'
 
@@ -250,7 +251,10 @@ export function DashboardMarketCard({
 
   return (
     <ClickFrame
-      className="bg-canvas-50 border-ink-200 hover:border-primary-300 flex h-[340px] cursor-pointer flex-col rounded-xl border transition-colors"
+      className={clsx(
+        'bg-canvas-50 border-ink-200 hover:border-primary-300 flex cursor-pointer flex-col rounded-xl border transition-colors',
+        perpContract ? 'min-h-[340px]' : 'h-[340px]'
+      )}
       onClick={() => Router.push(contractUrl)}
       role="link"
       ariaLabel={
@@ -411,12 +415,18 @@ export function DashboardMarketCard({
 
         {perpContract && (
           <Col className="h-full gap-0">
-            <Row className="items-baseline gap-1.5 pb-2">
-              <ContractStatusLabel
+            <Row className="flex-wrap items-center justify-between gap-2 pb-2">
+              <Row className="items-baseline gap-1.5">
+                <ContractStatusLabel
+                  contract={perpContract}
+                  className="text-ink-900 text-2xl font-bold"
+                />
+                <span className="text-ink-400 text-xs">oracle price</span>
+              </Row>
+              <PerpBetButtons
                 contract={perpContract}
-                className="text-ink-900 text-2xl font-bold"
+                location="dashboard card"
               />
-              <span className="text-ink-400 text-xs">oracle price</span>
             </Row>
             <FeedPerpPriceSparkline
               contract={perpContract}

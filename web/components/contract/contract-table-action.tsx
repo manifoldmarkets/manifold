@@ -24,6 +24,7 @@ import { PollPanel } from '../poll/poll-panel'
 import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
 import { BinaryOutcomes } from '../bet/bet-panel'
+import { PerpBetButtons } from '../perps/perp-bet-buttons'
 
 export function Action(props: { contract: Contract }) {
   const { contract } = props
@@ -85,6 +86,16 @@ export function BetButton(props: {
   const user = useUser()
   const [open, setOpen] = useState(false)
   const [openMC, setOpenMC] = useState(false)
+  if (contract.mechanism === 'perp') {
+    return (
+      <PerpBetButtons
+        contract={contract}
+        variant="bet"
+        size="2xs"
+        location="contract table"
+      />
+    )
+  }
   if (
     !isClosed(contract) &&
     !contract.isResolved &&

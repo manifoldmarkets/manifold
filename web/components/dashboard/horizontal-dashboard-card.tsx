@@ -28,6 +28,7 @@ import { capitalize } from 'lodash'
 import { SWEEPIES_NAME } from 'common/envs/constants'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { MarketTitleLabel } from '../contract/market-title-label'
+import { PerpBetButtons } from '../perps/perp-bet-buttons'
 
 export function HorizontalDashboardCard(props: {
   contract: Contract
@@ -144,6 +145,12 @@ export function HorizontalDashboardCard(props: {
             </Row>
           )}
           {isBinaryCpmm && !isClosed && <BinaryBetButton contract={contract} />}
+          {contract.outcomeType === 'PERP' && (
+            <PerpBetButtons
+              contract={contract}
+              location="horizontal dashboard card"
+            />
+          )}
         </Row>
         <div
           className={clsx(

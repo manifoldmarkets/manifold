@@ -146,7 +146,11 @@ export const PerpPositionPanel = (props: {
 
   const close = async (direction: 'long' | 'short', fraction = 1) => {
     if (oracleTradingPaused) {
-      toast.error('Closing is paused until the oracle publishes a fresh price')
+      toast.error(
+        contract.solvencyHaltTime != null
+          ? 'Closing is paused while this market completes a risk check'
+          : 'Closing is paused until the oracle publishes a fresh price'
+      )
       return false
     }
     if (closePending) return false
@@ -407,6 +411,7 @@ const PositionSummary = (props: {
     oracleTradingPaused,
   } = props
   const markPrice = Number(contract.oraclePrice)
+  const solvencyHalted = contract.solvencyHaltTime != null
   const priceDecimals = inferPriceDecimals([
     markPrice,
     p.entryPrice,
@@ -744,7 +749,9 @@ const PositionSummary = (props: {
 
       {oracleTradingPaused && (
         <div className="text-ink-500 px-4 pb-4 text-xs sm:px-5">
-          Closing is paused until the oracle updates.
+          {solvencyHalted
+            ? 'Closing is paused while this market completes a risk check.'
+            : 'Closing is paused until the oracle updates.'}
         </div>
       )}
 
@@ -967,7 +974,9 @@ const PositionSummary = (props: {
               className="w-full"
             >
               {oracleTradingPaused
-                ? 'Close paused — waiting for oracle'
+                ? solvencyHalted
+                  ? 'Close paused — risk check'
+                  : 'Close paused — waiting for oracle'
                 : closeFraction == null || effectiveFraction == null
                 ? 'Enter a valid close amount'
                 : isPartial

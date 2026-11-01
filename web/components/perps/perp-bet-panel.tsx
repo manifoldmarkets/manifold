@@ -8,7 +8,7 @@ import {
 import clsx from 'clsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
-import { PerpContract } from 'common/contract'
+import { PerpContract, tradingAllowed } from 'common/contract'
 import {
   assertPerpPositionNumbers,
   getPerpBackingPool,
@@ -38,6 +38,7 @@ import {
   fundingPerPeriod,
   getPerpPositionTotalCost,
   getPerpProfitScenarios,
+  getUserFacingPnl,
   PerpPnlPositionInput,
 } from 'common/perps/pnl'
 import { formatFeePct, inferPriceDecimals } from 'common/perps/format'
@@ -83,6 +84,8 @@ const getLeverageMarks = (maxLeverage: number) => {
 export const PerpBetPanel = (props: {
   contract: PerpContract
   initialDirection?: 'long' | 'short'
+  // Modal forms stay expanded; the containing dialog owns dismissal.
+  alwaysExpanded?: boolean
   // Called after a successful trade so the page re-polls positions/pools
   // immediately instead of waiting for the next 15s tick.
   onTrade?: () => void
@@ -105,11 +108,18 @@ export const PerpBetPanel = (props: {
     oracleTradingPaused = false,
   } = props
   const user = useUser()
-  const { order, pending, acceptOrder } = usePerpOrder(contract.id, onTrade)
+  const marketClosed = !tradingAllowed(contract)
+  const {
+    order,
+    pending,
+    loading: orderLoading,
+    acceptOrder,
+  } = usePerpOrder(contract.id, onTrade)
 
   const [direction, setDirection] = useState<'long' | 'short'>(
     props.initialDirection ?? 'long'
   )
+  const directionPicked = useRef(false)
   const [expanded, setExpanded] = useState(!!props.initialDirection)
   const [margin, setMargin] = useState<number | undefined>(10)
   const [leverage, setLeverage] = usePersistentLocalState<number>(
@@ -142,7 +152,8 @@ export const PerpBetPanel = (props: {
   // Preselect the held side, so "add to position" is the default action when
   // one exists (one-way mode: opening the opposite side is a flip).
   useEffect(() => {
-    if (openDirection && !props.initialDirection) setDirection(openDirection)
+    if (openDirection && !props.initialDirection && !directionPicked.current)
+      setDirection(openDirection)
   }, [openDirection, props.initialDirection])
 
   const price = Number(contract.oraclePrice)
@@ -417,8 +428,20 @@ export const PerpBetPanel = (props: {
     )
 
   const onSubmit = async () => {
+    if (!tradingAllowed(contract)) {
+      toast.error('Trading has ended for this market')
+      return
+    }
+    if (orderLoading) {
+      toast.error('Still checking for pending orders — try again in a moment')
+      return
+    }
     if (oracleTradingPaused) {
-      toast.error('Trading is paused until the oracle publishes a fresh price')
+      toast.error(
+        contract.solvencyHaltTime != null
+          ? 'Trading is paused for a risk check'
+          : 'Trading is paused until the oracle publishes a fresh price'
+      )
       return
     }
     if (!user) {
@@ -432,7 +455,13 @@ export const PerpBetPanel = (props: {
       toast.error('Still loading positions — try again in a moment')
       return
     }
-    if (!margin || margin <= 0 || effectiveLeverage <= 0) {
+    if (
+      !margin ||
+      !Number.isFinite(margin) ||
+      margin <= 0 ||
+      !Number.isFinite(effectiveLeverage) ||
+      effectiveLeverage <= 0
+    ) {
       toast.error('Enter a positive margin and leverage')
       return
     }
@@ -541,6 +570,7 @@ export const PerpBetPanel = (props: {
       )}`
 
   const setDirectionWithTracking = (d: 'long' | 'short') => {
+    directionPicked.current = true
     track('bet intent', {
       location: 'bet panel',
       option: d,
@@ -558,7 +588,7 @@ export const PerpBetPanel = (props: {
 
   // Collapsed state: two big side-by-side Long/Short buttons, matching the
   // binary YES/NO entry point on normal markets.
-  if (!expanded) {
+  if (!expanded && !props.alwaysExpanded) {
     return (
       <Col className="mt-2 w-full gap-1">
         {order && order.status !== 'filled' && (
@@ -595,20 +625,109 @@ export const PerpBetPanel = (props: {
 
   return (
     <Col className="bg-canvas-50 border-ink-200 gap-4 rounded-lg border p-4">
+      {user && props.alwaysExpanded && (
+        <Col className="border-ink-200 gap-2 border-b pb-3">
+          <Row className="items-center justify-between gap-2">
+            <span className="text-ink-600 text-sm font-medium">
+              Your position
+            </span>
+            <span
+              aria-live="polite"
+              className={clsx(
+                'text-sm font-semibold',
+                openDirection === 'long'
+                  ? 'text-teal-700 dark:text-teal-400'
+                  : openDirection === 'short'
+                  ? 'text-scarlet-600'
+                  : 'text-ink-500'
+              )}
+            >
+              {positions == null
+                ? 'Loading positions…'
+                : unsoundPositions?.some((p) => p.userId === user.id)
+                ? 'Position unavailable'
+                : openDirection ?? 'No open position'}
+            </span>
+          </Row>
+          {myPosition && (
+            <>
+              <Row className="flex-wrap justify-between gap-x-4 gap-y-1 text-sm tabular-nums">
+                <span className="text-ink-600">
+                  {formatMoney(myPosition.size)} notional ·{' '}
+                  {formatMoneyPrecise(myPosition.costBasis)} margin
+                </span>
+                <span className="text-ink-700">
+                  Value{' '}
+                  {Number.isFinite(price) && price > 0
+                    ? formatMoneyPrecise(myPositionValue)
+                    : '—'}
+                </span>
+              </Row>
+              <Row className="flex-wrap justify-between gap-x-4 gap-y-1 text-xs tabular-nums">
+                <span className="text-ink-500">
+                  Entry{' '}
+                  {formatOraclePrice(
+                    contract.oracleFeedId,
+                    myPosition.entryPrice,
+                    inferPriceDecimals([myPosition.entryPrice])
+                  )}
+                  {' · '}Liquidation{' '}
+                  {formatOraclePrice(
+                    contract.oracleFeedId,
+                    myPosition.liquidationPrice,
+                    inferPriceDecimals([myPosition.liquidationPrice])
+                  )}
+                </span>
+                <span className="text-ink-600">
+                  P&L{' '}
+                  {Number.isFinite(price) && price > 0
+                    ? formatMoneyPrecise(
+                        getUserFacingPnl(
+                          { ...myPosition, contractId: contract.id },
+                          price
+                        )
+                      )
+                    : '—'}
+                </span>
+              </Row>
+            </>
+          )}
+        </Col>
+      )}
       <Row className="items-center justify-between">
         <DirectionToggle
           direction={direction}
           onChange={setDirectionWithTracking}
+          disabled={submitting || pending}
         />
-        <button
-          type="button"
-          onClick={() => setExpanded(false)}
-          className="text-ink-500 hover:text-ink-700 ml-3 shrink-0"
-          aria-label="Close"
-        >
-          <XIcon className="h-5 w-5" />
-        </button>
+        {!props.alwaysExpanded && (
+          <button
+            type="button"
+            onClick={() => setExpanded(false)}
+            className="text-ink-500 hover:text-ink-700 ml-3 shrink-0"
+            aria-label="Close"
+          >
+            <XIcon className="h-5 w-5" />
+          </button>
+        )}
       </Row>
+
+      {isFlip && (
+        <div
+          className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-100"
+          role="status"
+        >
+          <p className="font-semibold">
+            Flip your entire {openDirection} to {direction}
+          </p>
+          <p className="mt-1">
+            This closes your entire {openDirection} position and opens a new{' '}
+            {direction} position when the order fills. The close proceeds can
+            fund the new margin and fee. You can only hold one direction at a
+            time.
+          </p>
+        </div>
+      )}
 
       <Col className="gap-1.5">
         {/* Visual heading; the input's accessible name comes from fieldLabel. */}
@@ -622,7 +741,7 @@ export const PerpBetPanel = (props: {
           // Balance is validated against margin + fee (and a flip's payout)
           // above, not against margin alone.
           disregardUserBalance
-          disabled={submitting}
+          disabled={submitting || pending}
           showSlider
           showSliderMarks
           token="M$"
@@ -644,6 +763,7 @@ export const PerpBetPanel = (props: {
           onChange={setLeverage}
           maxLeverage={maxLeverage}
           color={submitColor as 'green' | 'red'}
+          disabled={submitting || pending}
         />
       </Col>
 
@@ -701,6 +821,7 @@ export const PerpBetPanel = (props: {
         onClick={onSubmit}
         loading={submitting}
         disabled={
+          orderLoading ||
           pending ||
           submitting ||
           !user ||
@@ -720,13 +841,18 @@ export const PerpBetPanel = (props: {
           // The previewed fee cannot be trusted (non-finite mark, pools, or
           // position value), so there is nothing for the user to consent to.
           feePreviewInvalid ||
-          oracleTradingPaused
+          oracleTradingPaused ||
+          marketClosed
         }
         size="lg"
         className="w-full"
       >
         {oracleTradingPaused
-          ? 'Trading paused — waiting for oracle'
+          ? contract.solvencyHaltTime != null
+            ? 'Trading paused for a risk check'
+            : 'Trading paused — waiting for oracle'
+          : orderLoading
+          ? 'Checking pending orders…'
           : submitLabel}
       </Button>
     </Col>
@@ -736,12 +862,14 @@ export const PerpBetPanel = (props: {
 const DirectionToggle = (props: {
   direction: 'long' | 'short'
   onChange: (d: 'long' | 'short') => void
+  disabled?: boolean
 }) => {
   const { direction, onChange } = props
   return (
     <Row className="bg-canvas-100 border-ink-200 flex-1 overflow-hidden rounded-lg border p-1">
       <ToggleButton
         active={direction === 'long'}
+        disabled={props.disabled}
         onClick={() => onChange('long')}
         activeClass="bg-teal-600 text-white shadow-sm"
         inactiveClass="text-teal-700 dark:text-teal-400 hover:bg-canvas-50"
@@ -750,6 +878,7 @@ const DirectionToggle = (props: {
       </ToggleButton>
       <ToggleButton
         active={direction === 'short'}
+        disabled={props.disabled}
         onClick={() => onChange('short')}
         activeClass="bg-scarlet-600 text-white shadow-sm"
         inactiveClass="text-scarlet-700 hover:bg-canvas-50"
@@ -762,6 +891,7 @@ const DirectionToggle = (props: {
 
 const ToggleButton = (props: {
   active: boolean
+  disabled?: boolean
   onClick: () => void
   activeClass: string
   inactiveClass: string
@@ -769,6 +899,8 @@ const ToggleButton = (props: {
 }) => (
   <button
     type="button"
+    disabled={props.disabled}
+    aria-pressed={props.active}
     onClick={props.onClick}
     className={clsx(
       'flex-1 rounded-md py-2 text-center text-sm font-semibold transition-colors',
@@ -790,6 +922,7 @@ const LeverageSlider = (props: {
   onChange: (v: number) => void
   maxLeverage: number
   color: keyof typeof sliderColors
+  disabled?: boolean
 }) => {
   const { value, onChange, maxLeverage, color } = props
   const logMax = Math.log(maxLeverage)
@@ -817,6 +950,7 @@ const LeverageSlider = (props: {
       color={color}
       marks={displayMarks}
       ariaLabel="Leverage"
+      disabled={props.disabled}
       ariaValueText={`${value}x leverage`}
     />
   )

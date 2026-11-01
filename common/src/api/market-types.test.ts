@@ -309,6 +309,15 @@ describe('toLiteMarket', () => {
     ).not.toHaveProperty('searchMatchType')
     expect(toFullMarket(contract).takerFeeBps).toBe(12)
     expect(toFullMarket(contract).takerFeeImpact).toBe(90)
+    // A card's initial snapshot may be halted. Polling must send an explicit
+    // null after recovery, so JSON serialization does not drop the clear.
+    expect(JSON.stringify(toLiteMarket(contract))).toContain(
+      '"solvencyHaltTime":null'
+    )
+    expect(
+      toLiteMarket({ ...contract, solvencyHaltTime: 1_700_000_090_000 })
+        .solvencyHaltTime
+    ).toBe(1_700_000_090_000)
   })
 
   it('projects the effective legacy default while preserving explicit zero', () => {

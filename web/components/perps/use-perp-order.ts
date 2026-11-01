@@ -8,6 +8,8 @@ import { toast } from 'react-hot-toast'
 // refresh and across tabs. The same hook disables both trade and close panels.
 export const usePerpOrder = (contractId: string, onFilled?: () => void) => {
   const user = useUser()
+  const recoveryKey = user ? `${contractId}:${user.id}` : null
+  const [recoveredFor, setRecoveredFor] = useState<string | null>(null)
   const [order, setOrder] = useState<PerpOrder | null>(null)
   const current = useRef<PerpOrder | null>(null)
   const revision = useRef(0)
@@ -15,6 +17,7 @@ export const usePerpOrder = (contractId: string, onFilled?: () => void) => {
   const onFilledRef = useRef(onFilled)
   onFilledRef.current = onFilled
   useEffect(() => {
+    setRecoveredFor(null)
     setOrder(null)
     current.current = null
     revision.current++
@@ -42,6 +45,9 @@ export const usePerpOrder = (contractId: string, onFilled?: () => void) => {
         // state. Nor may an older poll turn a completed order pending again,
         // or replace a newer order with an older one that is not waiting.
         if (disposed || startedRevision !== revision.current) return
+        // A failed request leaves recovery unresolved so a reopened modal
+        // cannot offer another order before learning what is already waiting.
+        setRecoveredFor(recoveryKey)
         const previous = current.current
         if (
           previous &&
@@ -85,10 +91,12 @@ export const usePerpOrder = (contractId: string, onFilled?: () => void) => {
   }, [contractId, user?.id])
   return {
     order,
+    loading: recoveryKey !== null && recoveredFor !== recoveryKey,
     pending: order?.status === 'pending',
     // Optional: an API still on immediate execution answers without `order`.
     acceptOrder: (next: PerpOrder | undefined) => {
       if (!next) return
+      setRecoveredFor(recoveryKey)
       revision.current++
       current.current = next
       seen.current = next.id

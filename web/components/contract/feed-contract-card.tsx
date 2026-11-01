@@ -41,6 +41,7 @@ import { FeedDropdown } from '../feed/card-dropdown'
 import { CardReason } from '../feed/card-reason'
 import { FeedBinaryChart } from '../feed/feed-chart'
 import { FeedPerpPriceSparkline } from '../perps/feed-perp-price-sparkline'
+import { PerpBetButtons } from '../perps/perp-bet-buttons'
 import { MarketTitleLabel } from './market-title-label'
 import FeedContractCardDescription from '../feed/feed-contract-card-description'
 import { Col } from '../layout/col'
@@ -262,7 +263,12 @@ export function FeedContractCard(props: {
             {removeEmojis(contract.question)}
           </Link>
           {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
-            <Row className="items-center justify-between">
+            <Row
+              className={clsx(
+                'items-center justify-between',
+                isPerp && 'flex-wrap gap-2'
+              )}
+            >
               <ContractStatusLabel
                 className="text-lg font-bold"
                 contract={contract}
@@ -288,6 +294,13 @@ export function FeedContractCard(props: {
                 />
               )}
               {isNumber && <NumericBetButton contract={contract} user={user} />}
+              {isPerp && (
+                <PerpBetButtons
+                  contract={contract}
+                  feedReason={feedReason}
+                  location="feed card"
+                />
+              )}
             </Row>
           )}
         </Col>

@@ -131,8 +131,9 @@ export function PerpExplainerModal(props: {
 export function PerpExplainerContent(props: {
   contract?: PerpContract
   hideHeading?: boolean
+  inTradeModal?: boolean
 }) {
-  const { contract, hideHeading } = props
+  const { contract, hideHeading, inTradeModal = false } = props
   const user = useUser()
   return (
     <>
@@ -170,9 +171,12 @@ export function PerpExplainerContent(props: {
 
       <ExplainerItem title="Oracle price">
         {contract ? 'This market uses' : 'Each market uses'} Manifold's latest
-        accepted update from the source shown below the chart. Long positions
-        benefit when the value rises; short positions benefit when it falls.
-        Oracle updates can lag the source.
+        accepted update from the source{' '}
+        {inTradeModal
+          ? 'shown at the top of this dialog'
+          : 'shown below the chart'}
+        . Long positions benefit when the value rises; short positions benefit
+        when it falls. Oracle updates can lag the source.
       </ExplainerItem>
 
       <ExplainerItem title="Leverage and liquidation">
@@ -220,11 +224,13 @@ export function PerpExplainerContent(props: {
               signed-out reader on a phone has no route to that panel at all.
               Point at it only under the exact condition that renders it;
               the sentence above is complete and true without this. */}
-          <span className={clsx(!user && 'hidden md:inline')}>
-            {' '}
-            The full list is in the market info panel, under the ··· menu → See
-            info.
-          </span>
+          {!inTradeModal && (
+            <span className={clsx(!user && 'hidden md:inline')}>
+              {' '}
+              The full list is in the market info panel, under the ··· menu →
+              See info.
+            </span>
+          )}
         </p>
       )}
 
