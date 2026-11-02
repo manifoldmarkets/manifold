@@ -27,7 +27,7 @@ export const onCreateMarket = async (
   const contractCreator = await getUser(creatorId)
   if (!contractCreator) throw new Error('Could not find contract creator')
 
-  await completeMarketCreationQuests(contractCreator, eventId, contract.id)
+  await completeMarketCreationQuests(contractCreator, contract)
   const desc = contract.description as JSONContent
   const mentioned = parseMentions(desc)
   const pg = createSupabaseDirectClient()

@@ -750,7 +750,7 @@ export async function runSportsMarketPostCreate(
   const eventId = contract.id + '-on-create'
 
   // Quest progress — a no-op for the bot account, kept for parity.
-  await completeMarketCreationQuests(creator, eventId, contract.id)
+  await completeMarketCreationQuests(creator, contract)
 
   // Creator follows its own market so resolution updates reach it (replicates
   // followContractInternal, which lives in backend/api).

@@ -77,3 +77,8 @@ export function getQuestWeekStart(now: Date = new Date()): number {
     new Date(todayStart - daysSinceMonday * DAY_MS + 12 * HOUR_MS)
   )
 }
+
+/** The Monday 00:00 Pacific that ends the quest week starting at `weekStart`. */
+export function getNextQuestWeekStart(weekStart: number): number {
+  return getQuestWeekStart(new Date(weekStart + 8 * DAY_MS))
+}

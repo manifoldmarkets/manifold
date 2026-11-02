@@ -1,4 +1,4 @@
-import { getQuestWeekStart } from './quest'
+import { getNextQuestWeekStart, getQuestWeekStart } from './quest'
 import { laWallClockMsPastMidnight } from './streak-snapshot'
 import { DAY_MS, HOUR_MS } from './util/time'
 
@@ -61,6 +61,16 @@ describe('getQuestWeekStart', () => {
     )
   })
 
+  it('ends the week at the next Monday midnight, across DST', () => {
+    const next = (iso: string) =>
+      new Date(getNextQuestWeekStart(Date.parse(iso))).toISOString()
+    expect(next('2026-10-19T07:00:00Z')).toBe('2026-10-26T07:00:00.000Z')
+    // DST ends inside this week: it runs 7 days + 1 hour
+    expect(next('2026-10-26T07:00:00Z')).toBe('2026-11-02T08:00:00.000Z')
+    // DST starts inside this week: it runs 7 days - 1 hour
+    expect(next('2027-03-08T08:00:00Z')).toBe('2027-03-15T07:00:00.000Z')
+  })
+
   it('is always a Monday midnight at or before now, under a week (+1h) back', () => {
     const ranges: [string, string][] = [
       ['2026-10-19T00:00:00Z', '2026-11-16T00:00:00Z'],
@@ -74,6 +84,7 @@ describe('getQuestWeekStart', () => {
         expect(start).toBeLessThanOrEqual(t)
         // The DST-end week is 7 days + 1 hour long.
         expect(t - start).toBeLessThan(7 * DAY_MS + HOUR_MS)
+        expect(getNextQuestWeekStart(start)).toBeGreaterThan(t)
       }
     }
   })

@@ -476,6 +476,9 @@ type QuestReward = {
   data: {
     questType: QuestType
     questCount: number
+    // Start (epoch ms) of the day or week this reward pays for. Each quest
+    // pays once per period. Missing on rewards paid before Nov 2026.
+    periodStart?: number
     // See BettingStreakBonus.data for usage of these fields.
     effectiveTier?: string
     questMultiplier?: number
