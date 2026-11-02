@@ -4,7 +4,7 @@ import { JSONContent } from '@tiptap/core'
 import { getUser, log } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
-import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
+import { completeMarketCreationQuests } from 'shared/complete-quest-internal'
 import { createNewContractNotification } from 'shared/notifications/create-new-contract-notif'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
@@ -27,12 +27,7 @@ export const onCreateMarket = async (
   const contractCreator = await getUser(creatorId)
   if (!contractCreator) throw new Error('Could not find contract creator')
 
-  await completeCalculatedQuestFromTrigger(
-    contractCreator,
-    'MARKETS_CREATED',
-    eventId,
-    contract.id
-  )
+  await completeMarketCreationQuests(contractCreator, eventId, contract.id)
   const desc = contract.description as JSONContent
   const mentioned = parseMentions(desc)
   const pg = createSupabaseDirectClient()
