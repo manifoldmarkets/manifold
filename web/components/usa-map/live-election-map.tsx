@@ -7,8 +7,8 @@ import { ElectionExplorer } from './election-explorer'
 type Props = {
   rawSenateStateContracts: MapContractsDictionary
   rawGovernorStateContracts: MapContractsDictionary
-  rawSenateCandidateContracts: MapContractsDictionary
-  rawGovernorCandidateContracts: MapContractsDictionary
+  // Open markets linked to each race market, by that market's id.
+  linkedMarketCounts?: Record<string, number>
   houseDistrictsContract: Contract | null
   additionalHouseContracts?: MapContractsDictionary
   ballotMeasureContracts?: MapContractsDictionary
@@ -35,8 +35,6 @@ export function LiveElectionMap(props: Props) {
     const all = [
       ...Object.values(props.rawSenateStateContracts),
       ...Object.values(props.rawGovernorStateContracts),
-      ...Object.values(props.rawSenateCandidateContracts),
-      ...Object.values(props.rawGovernorCandidateContracts),
       props.houseDistrictsContract,
       ...Object.values(props.additionalHouseContracts ?? {}),
       ...Object.values(props.ballotMeasureContracts ?? {}),
@@ -62,8 +60,7 @@ export function LiveElectionMap(props: Props) {
       <ElectionExplorer
         senate={dictionary(props.rawSenateStateContracts)}
         governor={dictionary(props.rawGovernorStateContracts)}
-        senateCandidates={dictionary(props.rawSenateCandidateContracts)}
-        governorCandidates={dictionary(props.rawGovernorCandidateContracts)}
+        linkedMarketCounts={props.linkedMarketCounts}
         house={live(props.houseDistrictsContract)}
         additionalHouse={dictionary(props.additionalHouseContracts ?? {})}
         measures={dictionary(props.ballotMeasureContracts ?? {})}

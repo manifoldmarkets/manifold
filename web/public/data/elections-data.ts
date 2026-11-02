@@ -288,9 +288,9 @@ export type ElectionsPageProps = {
   // Per-state maps (community markets, keyed by state code).
   rawSenateStateContracts: MapContractsDictionary
   rawGovernorStateContracts: MapContractsDictionary
-  // Candidate ("who will win") markets for races that have one, keyed by state.
-  rawSenateCandidateContracts: MapContractsDictionary
-  rawGovernorCandidateContracts: MapContractsDictionary
+  // Open markets linked to each race's market (common/market-links), keyed by
+  // that market's id: what a hovered race shows before any request is made.
+  linkedMarketCounts: Record<string, number>
   // Headline aggregate markets.
   balanceOfPowerContract: Contract | null
   houseControlContract: Contract | null
