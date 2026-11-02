@@ -33,8 +33,7 @@ export function countLinkedMarkets(
   const counts: Record<string, number> = {}
   for (const link of links) {
     if (!open.has(link.child_contract_id)) continue
-    counts[link.parent_contract_id] =
-      (counts[link.parent_contract_id] ?? 0) + 1
+    counts[link.parent_contract_id] = (counts[link.parent_contract_id] ?? 0) + 1
   }
   return counts
 }
