@@ -1,5 +1,6 @@
 import { runScript } from 'run-script'
 import {
+  getNextQuestWeekStart,
   getQuestWeekStart,
   MARKET_CREATION_QUESTS,
   QUEST_DETAILS,
@@ -10,11 +11,12 @@ import {
 } from 'shared/complete-quest-internal'
 import { getUser } from 'shared/utils'
 
-// Pays this week's creation quests to users who already qualify but haven't
-// been paid: after the 3-question quest launches mid-week, and for creators
-// the old week-start math skipped (the week DST ended). It uses the live
-// payout path, so each quest still pays at most once per week and reruns are
-// safe. Dry run by default; pass --apply to pay.
+// Pays the current week's creation quests to users who already qualify but
+// haven't been paid: after the 3-question quest launches mid-week, and, run in
+// the week of 2026-11-02, for the creators the old week-start math skipped
+// when DST ended. It only covers the current week. It uses the live payout
+// path, so each quest still pays at most once per week and reruns are safe.
+// Dry run by default; pass --apply to pay.
 if (require.main === module) {
   runScript(async ({ pg }) => {
     const apply = process.argv.includes('--apply')
@@ -22,12 +24,14 @@ if (require.main === module) {
     const minCount = Math.min(
       ...MARKET_CREATION_QUESTS.map((q) => QUEST_DETAILS[q].requiredCount)
     )
+    // Bounded like the live count, in case this runs across Monday midnight.
     const creators = await pg.manyOrNone<{ creator_id: string; count: number }>(
       `select creator_id, count(*)::int as count from contracts
       where created_time >= millis_to_ts($1)
+      and created_time < millis_to_ts($2)
       group by creator_id
-      having count(*) >= $2`,
-      [weekStart, minCount]
+      having count(*) >= $3`,
+      [weekStart, getNextQuestWeekStart(weekStart), minCount]
     )
     console.log(
       `Week starting ${new Date(weekStart).toISOString()}: ${

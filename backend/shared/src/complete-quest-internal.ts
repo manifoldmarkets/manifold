@@ -21,6 +21,7 @@ import * as utc from 'dayjs/plugin/utc'
 import * as timezone from 'dayjs/plugin/timezone'
 import { getQuestScore, setQuestScoreValue } from 'common/supabase/set-scores'
 import { millisToTs } from 'common/supabase/utils'
+import { DAY_MS } from 'common/util/time'
 import { log } from 'shared/utils'
 import {
   getEffectiveBonusMultiplier,
@@ -94,7 +95,11 @@ export const getUnpaidMarketCreationQuests = async (
     (questType) => count >= QUEST_DETAILS[questType].requiredCount
   )
   if (reached.length === 0) return []
-  const paid = await getQuestTypesPaidForPeriod(pg, userId, weekStart)
+  const paid = await getQuestTypesPaidForPeriod(
+    pg,
+    userId,
+    weekPeriod(weekStart)
+  )
   return reached.filter((questType) => !paid.includes(questType))
 }
 
@@ -112,7 +117,12 @@ export const payMarketCreationQuests = async (
     count
   )
   for (const questType of unpaid) {
-    const resp = await awardQuestBonus(user, questType, count, weekStart)
+    const resp = await awardQuestBonus(
+      user,
+      questType,
+      count,
+      weekPeriod(weekStart)
+    )
     if (!resp) continue
     if (!resp.txn) {
       log(`Quest bonus rounded to zero for user ${user.id} (${questType})`)
@@ -165,7 +175,10 @@ const completeQuestInternal = async (
   // All users receive a quest bonus, but the amount scales with their effective
   // tier (flagged = 0, bonus-blocked = 0.2x, free = 1x, subscribers higher).
   if (count !== oldScore && count === QUEST_DETAILS[questType].requiredCount) {
-    const resp = await awardQuestBonus(user, questType, count, startOfDay)
+    const resp = await awardQuestBonus(user, questType, count, {
+      periodStart: startOfDay,
+      periodEnd: startOfDay + DAY_MS,
+    })
     if (!resp) throw new APIError(400, 'Already awarded quest bonus today')
     if (!resp.txn) {
       log(`Quest bonus rounded to zero for user ${user.id} (${questType})`)
@@ -199,36 +212,49 @@ const getCurrentCountForQuest = async (
   } else return 0
 }
 
-// A reward paid for the period starting at periodStart: it records that
-// periodStart, or, if paid before rewards recorded one, was paid after it.
-// A reward for an earlier period paid late (just past the boundary) records
-// its own period, so it doesn't block this one.
+// The day or week a quest reward pays for, as epoch ms [start, end).
+type QuestPeriod = { periodStart: number; periodEnd: number }
+
+const weekPeriod = (weekStart: number): QuestPeriod => ({
+  periodStart: weekStart,
+  periodEnd: getNextQuestWeekStart(weekStart),
+})
+
+// A reward paid for the period: it records that periodStart, or, if paid
+// before rewards recorded one, was paid within the period. A reward for an
+// earlier period paid late (just past the boundary) records its own period,
+// so it doesn't block this one.
 const PAID_FOR_PERIOD_SQL = `
   created_time >= millis_to_ts($/periodStart/)
-  and coalesce((data->'data'->>'periodStart')::bigint, $/periodStart/) = $/periodStart/`
+  and (
+    (data->'data'->>'periodStart')::bigint = $/periodStart/
+    or (
+      data->'data'->>'periodStart' is null
+      and created_time < millis_to_ts($/periodEnd/)
+    )
+  )`
 
 const getQuestTypesPaidForPeriod = async (
   pg: SupabaseDirectClient,
   userId: string,
-  periodStart: number
+  period: QuestPeriod
 ) =>
   await pg.map(
     `select distinct data->'data'->>'questType' as quest_type from txns
     where to_id = $/userId/
     and category = 'QUEST_REWARD'
     and ${PAID_FOR_PERIOD_SQL}`,
-    { userId, periodStart },
+    { userId, ...period },
     (row) => row.quest_type as QuestType
   )
 
 // Pays the quest's bonus once per period. Returns null if it already paid out
-// for the period starting at periodStart, and no txn if the tier multiplier
-// makes the bonus zero.
+// for the period, and no txn if the tier multiplier makes the bonus zero.
 const awardQuestBonus = async (
   user: User,
   questType: QuestType,
   newCount: number,
-  periodStart: number
+  period: QuestPeriod
 ) => {
   const pg = createSupabaseDirectClient()
   return await pg.tx(async (tx) => {
@@ -246,7 +272,7 @@ const awardQuestBonus = async (
       and data->'data'->>'questType' = $/questType/
       and ${PAID_FOR_PERIOD_SQL}
       limit 1`,
-      { userId: user.id, questType, periodStart }
+      { userId: user.id, questType, ...period }
     )
     if (previousTxn) return null
 
@@ -268,7 +294,7 @@ const awardQuestBonus = async (
     const bonusTxnData = {
       questType,
       questCount: newCount,
-      periodStart,
+      periodStart: period.periodStart,
       effectiveTier,
       questMultiplier,
       supporterBonus: questMultiplier > 1,
