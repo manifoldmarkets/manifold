@@ -6,6 +6,7 @@ import {
 import { PrivateUser } from 'common/user'
 import {
   BROWSE_CHOICE_KEY,
+  BROWSE_BROWSER_KEY,
   BROWSE_ENROLLMENT_KEY,
   DEVICE_HISTORY_KEY,
 } from 'common/browse-rollout'
@@ -47,7 +48,7 @@ export const clearLocalStoragePreservingNativeInfo = () => {
   // explicit layout choice stable through logout, as well as native flags.
   const preserved = [
     ...NATIVE_INFO_LOCAL_KEYS,
-    'device-token',
+    BROWSE_BROWSER_KEY,
     DEVICE_HISTORY_KEY,
     BROWSE_ENROLLMENT_KEY,
     BROWSE_CHOICE_KEY,

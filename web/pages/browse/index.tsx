@@ -80,7 +80,7 @@ export function BrowseViewToggle(props: { browseView: BrowseViewState }) {
         '← Classic'
       ) : (
         <>
-          <span className="sm:hidden">Try new browse →</span>
+          <span className="sm:hidden">Try the new browse →</span>
           <span className="hidden sm:inline">Try the new browse →</span>
         </>
       )}

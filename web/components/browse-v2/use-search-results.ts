@@ -7,7 +7,12 @@ import { useEffect, useRef, useState } from 'react'
 export function useSearchResults<T extends { id: string }>(
   term: string,
   pageSize: number,
-  fetchPage: (term: string, offset: number, signal: AbortSignal) => Promise<T[]>
+  fetchPage: (
+    term: string,
+    offset: number,
+    signal: AbortSignal
+  ) => Promise<T[]>,
+  enabled = true
 ) {
   const [state, setState] = useState<{
     term?: string
@@ -20,6 +25,7 @@ export function useSearchResults<T extends { id: string }>(
   const pending = useRef<AbortController>()
 
   const load = useEvent(async (fresh: boolean) => {
+    if (!enabled) return
     if (!fresh && pending.current) return
     const controller = new AbortController()
     pending.current = controller
@@ -54,9 +60,9 @@ export function useSearchResults<T extends { id: string }>(
   })
 
   useEffect(() => {
-    load(true)
+    if (enabled) load(true)
     return () => pending.current?.abort()
-  }, [term])
+  }, [term, enabled])
 
   const current = state.term === term
   return {

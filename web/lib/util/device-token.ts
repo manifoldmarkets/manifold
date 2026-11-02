@@ -1,5 +1,9 @@
 import { randomString } from 'common/util/random'
-import { DEVICE_HISTORY_KEY, readDeviceHistory } from 'common/browse-rollout'
+import {
+  BROWSE_BROWSER_KEY,
+  DEVICE_HISTORY_KEY,
+  readDeviceHistory,
+} from 'common/browse-rollout'
 import { safeJsonParse } from 'common/util/json'
 
 import { safeLocalStorage } from './local'
@@ -11,20 +15,26 @@ export const ensureDeviceToken = () => {
     deviceToken = randomString()
     safeLocalStorage?.setItem('device-token', deviceToken)
   }
-  // Record this when the token is first created, on any page, before another
-  // analytics caller can make a first-time visitor look like a returning one.
+  // Experiment identity is separate from the moderation/signup token, which
+  // must still rotate at logout. Record first-seen on any page's first event.
+  let browserId = safeLocalStorage?.getItem(BROWSE_BROWSER_KEY)
+  const isNewBrowser = !browserId
+  if (!browserId) {
+    browserId = randomString()
+    safeLocalStorage?.setItem(BROWSE_BROWSER_KEY, browserId)
+  }
   if (
     safeLocalStorage &&
     !readDeviceHistory(
       safeJsonParse(safeLocalStorage.getItem(DEVICE_HISTORY_KEY)),
-      deviceToken
+      browserId
     )
   ) {
     safeLocalStorage.setItem(
       DEVICE_HISTORY_KEY,
       JSON.stringify({
-        deviceId: deviceToken,
-        firstSeenTime: isNewDevice ? Date.now() : null,
+        browserId,
+        firstSeenTime: isNewDevice && isNewBrowser ? Date.now() : null,
       })
     )
   }
@@ -33,9 +43,9 @@ export const ensureDeviceToken = () => {
 
 export const getDeviceHistory = () => {
   if (!safeLocalStorage) return undefined
-  const deviceId = ensureDeviceToken()
+  ensureDeviceToken()
   return readDeviceHistory(
     safeJsonParse(safeLocalStorage.getItem(DEVICE_HISTORY_KEY)),
-    deviceId
+    safeLocalStorage.getItem(BROWSE_BROWSER_KEY) ?? ''
   )
 }

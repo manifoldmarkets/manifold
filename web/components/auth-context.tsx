@@ -246,7 +246,7 @@ export function AuthProvider(props: {
             if (auth.currentUser?.uid !== fbUser.uid) return
 
             // When testing on a mobile device, we'll be pointed at a local ip or ngrok address, so this will fail
-            if (supabaseJwt) updateSupabaseAuth(supabaseJwt.jwt)
+            updateSupabaseAuth(supabaseJwt?.jwt)
 
             if (!user || !privateUser) {
               const deviceToken = ensureDeviceToken()
@@ -269,6 +269,7 @@ export function AuthProvider(props: {
             changes.stop()
           }
         } else {
+          updateSupabaseAuth(undefined)
           // User logged out; reset to null
           setUserCookie(undefined)
           setUser(null)

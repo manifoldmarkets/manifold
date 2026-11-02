@@ -254,7 +254,7 @@ export function ContractRow(props: {
           e.preventDefault()
         }}
         className={clsx(
-          'flex w-full flex-col p-2 outline-none transition-colors sm:rounded-md',
+          'group/market-row flex w-full flex-col p-2 outline-none transition-colors sm:rounded-md',
           compactMobile ? 'text-sm sm:text-base' : 'text-base',
           highlighted
             ? 'bg-primary-100'

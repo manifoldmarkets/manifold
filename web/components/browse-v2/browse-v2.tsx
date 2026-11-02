@@ -84,6 +84,14 @@ function BrowseV2Inner() {
   // Most browse clicks land several markets down the list, so phones default
   // to the denser list view. A choice either way is remembered.
   const isMobile = useIsMobile()
+  const [showRail, setShowRail] = useState(false)
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1024px)')
+    const update = () => setShowRail(media.matches)
+    update()
+    media.addEventListener('change', update)
+    return () => media.removeEventListener('change', update)
+  }, [])
   const searchRef = useRef<HTMLDivElement>(null)
   const filtersRef = useRef<HTMLDivElement>(null)
   useScrollReveal(searchRef, filtersRef, isMobile)
@@ -110,7 +118,6 @@ function BrowseV2Inner() {
     return () => clearTimeout(t)
   }, [input])
   const [yourTopicsOpen, setYourTopicsOpen] = useState(false)
-  const [retry, setRetry] = useState(0)
 
   // Links into browse (/browse?q=..., ?tf=<topic>, ?s=, ?f=, ?fy=1, ?ct=,
   // ?li=) keep working: apply them once before the first fetch.
@@ -204,7 +211,7 @@ function BrowseV2Inner() {
   )
 
   const query: BrowseMarketsQuery | undefined =
-    lensReady && urlReady
+    showMarkets && lensReady && urlReady
       ? {
           term: searching ? term : undefined,
           sort: searching ? 'score' : sortForLens(lens),
@@ -216,11 +223,13 @@ function BrowseV2Inner() {
           ...scope,
         }
       : undefined
-  const { contracts, hasMore, loadMore, error } = useBrowseMarkets(
-    query,
-    PAGE_SIZE,
-    `${topics.version}-${retry}`
-  )
+  const {
+    contracts,
+    hasMore,
+    loadMore,
+    error,
+    retry: retryMarkets,
+  } = useBrowseMarkets(query, PAGE_SIZE, topics.version)
   // Fold hub markets out of the general feed only; a search, a topic or a
   // type filter means the person is looking for something specific.
   const fold =
@@ -423,6 +432,18 @@ function BrowseV2Inner() {
                     ) : undefined
                   }
                 />
+                {error && !!visible?.length && (
+                  <p role="alert" className="text-ink-600 py-2 text-sm">
+                    More markets failed to load.{' '}
+                    <button
+                      type="button"
+                      className="text-primary-700"
+                      onClick={() => retryMarkets()}
+                    >
+                      Try again
+                    </button>
+                  </p>
+                )}
                 {searching && visible && visible.length === 0 ? (
                   <p className="text-ink-500 py-2 text-sm">
                     {error
@@ -433,7 +454,7 @@ function BrowseV2Inner() {
                       className="text-primary-700"
                       onClick={
                         error
-                          ? () => setRetry((r) => r + 1)
+                          ? () => retryMarkets()
                           : () => {
                               setTopicChoice(ALL_TOPICS)
                               setFilters({ ...DEFAULT_FILTERS, status: 'all' })
@@ -458,7 +479,7 @@ function BrowseV2Inner() {
                         error
                           ? {
                               label: 'Try again',
-                              onClick: () => setRetry((r) => r + 1),
+                              onClick: () => retryMarkets(),
                             }
                           : noFollows
                           ? {
@@ -484,7 +505,7 @@ function BrowseV2Inner() {
           aria-label="More markets"
           className="hidden w-[calc(25vw-2rem)] shrink-0 flex-col gap-6 lg:flex xl:w-72"
         >
-          {urlReady && !searching && (
+          {showRail && urlReady && !searching && (
             <>
               <ClosingSoonList scope={scope} fold={fold} />
               <NewMarketsList scope={scope} fold={fold} />

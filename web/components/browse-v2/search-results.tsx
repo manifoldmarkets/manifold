@@ -32,7 +32,7 @@ export function SearchTabs(props: {
 }) {
   return (
     <div
-      role="tablist"
+      role="group"
       aria-label="Search categories"
       className="flex shrink-0 items-center gap-0.5"
     >
@@ -40,8 +40,7 @@ export function SearchTabs(props: {
         <button
           key={key}
           type="button"
-          role="tab"
-          aria-selected={props.category === key}
+          aria-pressed={props.category === key}
           onClick={() => props.onCategory(key)}
           className={clsx(
             'shrink-0 rounded-full px-2 py-1 text-xs font-medium transition-colors',
@@ -65,12 +64,16 @@ export function SearchResults(props: {
   const { term, category, onCategory } = props
   const privateUser = usePrivateUser()
   const topics = useBrowseTopics()
-  const users = useSearchResults(term, PAGE_SIZE, (term, offset, signal) =>
-    api(
-      'search-users',
-      { term, limit: PAGE_SIZE, page: offset / PAGE_SIZE },
-      { signal }
-    )
+  const users = useSearchResults(
+    term,
+    PAGE_SIZE,
+    (term, offset, signal) =>
+      api(
+        'search-users',
+        { term, limit: PAGE_SIZE, page: offset / PAGE_SIZE },
+        { signal }
+      ),
+    category === 'all' || category === 'users'
   )
   const groups = useSearchResults(
     term,
@@ -82,14 +85,19 @@ export function SearchResults(props: {
           { term, limit: PAGE_SIZE, offset, type: 'lite' },
           { signal }
         )
-      ).lite
+      ).lite,
+    category === 'all' || category === 'topics'
   )
-  const posts = useSearchResults(term, PAGE_SIZE, (term, offset, signal) =>
-    api(
-      'get-posts',
-      { term, limit: PAGE_SIZE, offset, sortBy: 'importance_score' },
-      { signal }
-    )
+  const posts = useSearchResults(
+    term,
+    PAGE_SIZE,
+    (term, offset, signal) =>
+      api(
+        'get-posts',
+        { term, limit: PAGE_SIZE, offset, sortBy: 'importance_score' },
+        { signal }
+      ),
+    category === 'all' || category === 'posts'
   )
   const visibleUsers = users.items.filter((u) => !isBlocked(privateUser, u.id))
   const nonSpamUsers = visibleUsers.filter(

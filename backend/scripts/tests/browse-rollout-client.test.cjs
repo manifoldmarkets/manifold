@@ -2,33 +2,7 @@
 // browser: node --test backend/scripts/tests/browse-rollout-client.test.cjs
 const assert = require('node:assert/strict')
 const { test } = require('node:test')
-const fs = require('node:fs')
-const path = require('node:path')
-const vm = require('node:vm')
-const ts = require('typescript')
-const root = path.resolve(__dirname, '../../..')
-
-function load(file, dependencies, globals = {}) {
-  const exports = {}
-  vm.runInNewContext(
-    ts.transpileModule(fs.readFileSync(path.join(root, file), 'utf8'), {
-      compilerOptions: {
-        module: ts.ModuleKind.CommonJS,
-        target: ts.ScriptTarget.ES2020,
-      },
-    }).outputText,
-    {
-      exports,
-      ...globals,
-      require(id) {
-        if (Object.prototype.hasOwnProperty.call(dependencies, id))
-          return dependencies[id]
-        throw new Error(`Unexpected dependency: ${id}`)
-      },
-    }
-  )
-  return exports
-}
+const { load } = require('./load-ts.cjs')
 const random = load('common/src/util/random.ts', {})
 const abTest = load('common/src/ab-test.ts', { './util/random': random })
 const rules = load('common/src/browse-rollout.ts', { './ab-test': abTest })
@@ -42,8 +16,9 @@ function fixture(entries = {}) {
     removeItem: (key) => values.delete(key),
     clear: () => values.clear(),
   }
+  let nextToken = 0
   const token = load('web/lib/util/device-token.ts', {
-    'common/util/random': { randomString: () => 'new-browser-token' },
+    'common/util/random': { randomString: () => `new-token-${++nextToken}` },
     'common/browse-rollout': rules,
     'common/util/json': json,
     './local': { safeLocalStorage: store },
@@ -55,12 +30,16 @@ test('analytics creating the token before Browse does not lose new-visitor eligi
   const { token } = fixture()
   token.ensureDeviceToken()
   const first = token.getDeviceHistory()
-  assert.equal(first.deviceId, 'new-browser-token')
+  assert.equal(first.browserId, 'new-token-2')
   assert.ok(first.firstSeenTime > 0)
   token.ensureDeviceToken()
   assert.deepEqual(token.getDeviceHistory(), first)
   assert.equal(
-    rules.enrollBrowseVisitor({ history: first, now: Date.now() }).cohort,
+    rules.enrollBrowseVisitor({
+      history: first,
+      experimentStart: 1,
+      now: Date.now(),
+    }).cohort,
     'new-visitor'
   )
 })
@@ -72,6 +51,7 @@ test('a pre-rollout token gets an unknown historical date, never a fresh one', (
   assert.equal(
     rules.enrollBrowseVisitor({
       history: token.getDeviceHistory(),
+      experimentStart: 1,
       now: Date.now(),
     }).cohort,
     'returning-visitor'
@@ -86,6 +66,11 @@ test('malformed history on an existing token fails conservatively', () => {
   assert.equal(token.getDeviceHistory().firstSeenTime, null)
 })
 
+test('a missing moderation token does not make an existing browser new', () => {
+  const { token } = fixture({ [rules.BROWSE_BROWSER_KEY]: 'existing-browser' })
+  assert.equal(token.getDeviceHistory().firstSeenTime, null)
+})
+
 test('blocked local storage does not enroll a new randomized visitor', () => {
   const token = load('web/lib/util/device-token.ts', {
     'common/util/random': { randomString: () => 'ephemeral' },
@@ -97,6 +82,7 @@ test('blocked local storage does not enroll a new randomized visitor', () => {
   assert.equal(
     rules.enrollBrowseVisitor({
       history: token.getDeviceHistory(),
+      experimentStart: 1,
       now: Date.now(),
     }).variant,
     null
@@ -109,7 +95,11 @@ test('logout clears account data while preserving the browser assignment and cho
     'is-native': 'true',
   })
   const history = token.getDeviceHistory()
-  const enrollment = rules.enrollBrowseVisitor({ history, now: Date.now() })
+  const enrollment = rules.enrollBrowseVisitor({
+    history,
+    experimentStart: 1,
+    now: Date.now(),
+  })
   store.setItem(rules.BROWSE_ENROLLMENT_KEY, JSON.stringify(enrollment))
   store.setItem(rules.BROWSE_CHOICE_KEY, JSON.stringify('legacy'))
   const native = load(
@@ -138,5 +128,7 @@ test('logout clears account data while preserving the browser assignment and cho
     store.getItem(rules.BROWSE_ENROLLMENT_KEY),
     JSON.stringify(enrollment)
   )
+  assert.equal(store.getItem('device-token'), null)
+  assert.equal(token.ensureDeviceToken(), 'new-token-3')
   assert.deepEqual(token.getDeviceHistory(), history)
 })

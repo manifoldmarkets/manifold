@@ -136,7 +136,9 @@ export function MarketListRow(props: { contract: Contract; section: string }) {
         {
           header: 'Topics',
           width: 'w-6 shrink-0',
-          content: ({ contract }) => <TopicsMenu contract={contract} small />,
+          content: ({ contract }) => (
+            <TopicsMenu contract={contract} small hoverOnly />
+          ),
         },
         {
           ...traderColumn,
@@ -546,10 +548,14 @@ export function TradeButton(props: { contract: Contract; compact?: boolean }) {
   )
 }
 
-// Always show the topics control. Boosted markets use a rocket in the same
-// slot, retaining both the promotion disclosure and access to topics.
-function TopicsMenu(props: { contract: Contract; small?: boolean }) {
-  const { contract, small } = props
+// List rows reveal topics on mouse hover or keyboard focus. Touch controls
+// and boost disclosures stay visible; use a named group to isolate chart hovers.
+function TopicsMenu(props: {
+  contract: Contract
+  small?: boolean
+  hoverOnly?: boolean
+}) {
+  const { contract, small, hoverOnly } = props
   const slugs = (contract.groupSlugs ?? []).slice(0, 6)
   if (slugs.length === 0)
     return contract.boosted ? (
@@ -573,7 +579,10 @@ function TopicsMenu(props: { contract: Contract; small?: boolean }) {
           }
           className={clsx(
             'text-ink-400 hover:text-ink-700 hover:bg-ink-100 flex items-center justify-center rounded-md outline-none',
-            small ? 'h-5 w-6' : 'h-7 w-7'
+            small ? 'h-5 w-6' : 'h-7 w-7',
+            hoverOnly &&
+              !contract.boosted &&
+              'group-focus-within/market-row:!opacity-100 group-hover/market-row:!opacity-100 data-[open]:!opacity-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0'
           )}
         >
           {contract.boosted ? (

@@ -2,24 +2,52 @@ import {
   BROWSE_EXPERIMENT,
   BrowseEnrollment,
   enrollBrowseVisitor,
-  getBrowseView,
+  getBrowseView as view,
+  getBrowseExperimentStart,
   isExistingBrowseUser,
   readBrowseEnrollment,
   readBrowseView,
   readDeviceHistory,
 } from './browse-rollout'
 
-const history = { deviceId: 'fresh-browser', firstSeenTime: 1000 }
+const getBrowseView = (args: Parameters<typeof view>[0]) =>
+  view({ experimentEnabled: true, ...args })
+const history = { browserId: 'fresh-browser', firstSeenTime: 1000 }
 const enroll = (
   overrides: Partial<Parameters<typeof enrollBrowseVisitor>[0]> = {}
-) => enrollBrowseVisitor({ history, now: 2000, ...overrides })
+) =>
+  enrollBrowseVisitor({
+    history,
+    now: 2000,
+    experimentStart: 1,
+    deviceToken: history.browserId,
+    ...overrides,
+  })
 
 describe('browse beta and new-visitor rollout', () => {
+  it('requires an explicit production launch, and honors the kill switch', () => {
+    expect(getBrowseExperimentStart('manifold.markets')).toBeUndefined()
+    expect(
+      getBrowseExperimentStart('www.manifold.markets', 'invalid')
+    ).toBeUndefined()
+    expect(getBrowseExperimentStart('preview.vercel.app')).toBe(1)
+    expect(
+      getBrowseExperimentStart('manifold.markets', '2026-11-04T00:00:00Z')
+    ).toBe(Date.parse('2026-11-04T00:00:00Z'))
+    expect(enroll({ experimentStart: undefined }).cohort).toBe('not-started')
+    expect(enroll({ experimentStart: 3000 }).variant).toBeNull()
+    expect(enroll({ experimentStart: 1500 }).cohort).toBe('returning-visitor')
+    const enrollment = { ...enroll(), variant: 'treatment' as const }
+    expect(view({ enrollment, existingUser: false })).toBe('legacy')
+    expect(view({ enrollment, existingUser: false, preference: 'new' })).toBe(
+      'new'
+    )
+  })
   it('keeps returning anonymous browsers and existing accounts on Classic', () => {
     for (const enrollment of [
       enroll({ history: { ...history, firstSeenTime: null } }),
       enroll({ user: { initialDeviceToken: 'old-browser' } }),
-      enroll({ user: { initialDeviceToken: history.deviceId, isBot: true } }),
+      enroll({ user: { initialDeviceToken: history.browserId, isBot: true } }),
       enroll({ user: {} }),
     ]) {
       expect(enrollment.variant).toBeNull()
@@ -30,7 +58,7 @@ describe('browse beta and new-visitor rollout', () => {
   it('assigns fresh visitors consistently and approximately 50/50', () => {
     let treatment = 0
     for (let i = 0; i < 10000; i++) {
-      const browser = { ...history, deviceId: `browser-${i}` }
+      const browser = { ...history, browserId: `browser-${i}` }
       const first = enroll({ history: browser })
       expect(enroll({ history: browser, now: 9000 }).variant).toBe(
         first.variant
@@ -44,9 +72,9 @@ describe('browse beta and new-visitor rollout', () => {
 
   it('preserves the default through signup without rerandomizing on user id', () => {
     const before = enroll()
-    const user = { initialDeviceToken: history.deviceId }
+    const user = { initialDeviceToken: history.browserId }
     const after = enroll({ user })
-    expect(isExistingBrowseUser(history, user)).toBe(false)
+    expect(isExistingBrowseUser(history, user, history.browserId)).toBe(false)
     expect(after.variant).toBe(before.variant)
     expect(after.cohort).toBe('new-visitor')
   })
@@ -59,7 +87,7 @@ describe('browse beta and new-visitor rollout', () => {
     ).toBe('legacy')
     const restored = readBrowseEnrollment(
       JSON.parse(JSON.stringify(enrollment)),
-      history.deviceId
+      history.browserId
     )
     expect(restored).toEqual(enrollment)
     expect(restored?.variant).toBe('treatment')
@@ -111,25 +139,28 @@ describe('browse beta and new-visitor rollout', () => {
       null,
       'new',
       {},
-      { ...valid, deviceId: 'other' },
+      { ...valid, browserId: 'other' },
       { ...valid, experiment: 'old' },
       { ...valid, enrolledAt: NaN },
       { ...valid, signedInAtEnrollment: undefined },
       { ...valid, cohort: 'existing-user' },
       { ...valid, variant: null },
     ])
-      expect(readBrowseEnrollment(value, history.deviceId)).toBeUndefined()
+      expect(readBrowseEnrollment(value, history.browserId)).toBeUndefined()
     expect(valid.experiment).toBe(BROWSE_EXPERIMENT)
   })
 
   it('does not turn missing historical dates into new visitors', () => {
     expect(
-      readDeviceHistory({ ...history, firstSeenTime: null }, history.deviceId)
+      readDeviceHistory({ ...history, firstSeenTime: null }, history.browserId)
         ?.firstSeenTime
     ).toBeNull()
-    expect(readDeviceHistory({}, history.deviceId)).toBeUndefined()
+    expect(readDeviceHistory({}, history.browserId)).toBeUndefined()
     expect(
-      readDeviceHistory({ ...history, firstSeenTime: '1000' }, history.deviceId)
+      readDeviceHistory(
+        { ...history, firstSeenTime: '1000' },
+        history.browserId
+      )
     ).toBeUndefined()
     expect(readDeviceHistory(history, 'other')).toBeUndefined()
     expect(readBrowseView('cards')).toBeUndefined()

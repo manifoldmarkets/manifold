@@ -172,7 +172,7 @@ export function LensBar(props: {
       <ScrollableFilters>
         {searchTabs ?? (
           <div
-            role="tablist"
+            role="group"
             aria-label="Sort markets"
             className={clsx(
               'flex shrink-0 items-center gap-0.5',
@@ -185,8 +185,7 @@ export function LensBar(props: {
                 <button
                   key={l.key}
                   type="button"
-                  role="tab"
-                  aria-selected={selected}
+                  aria-pressed={selected}
                   onClick={() => onLens(l.key)}
                   className={clsx(
                     'shrink-0 whitespace-nowrap rounded-full px-2 py-1 text-xs font-medium transition-colors',
@@ -583,6 +582,7 @@ function MenuOption(props: {
   return (
     <button
       type="button"
+      aria-pressed={selected}
       onClick={onClick}
       className={clsx(
         'hover:bg-ink-100 flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-sm',

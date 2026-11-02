@@ -18,7 +18,7 @@ export default function Home() {
   const user = useUser()
   useSaveReferral(user)
   useRedirectIfSignedOut()
-  const browseView = useBrowseView()
+  const browseView = useBrowseView({ enabled: !!user })
 
   return (
     <Page trackPageView={'home'} className="min-w-0 lg:px-4">

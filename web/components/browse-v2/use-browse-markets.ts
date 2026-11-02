@@ -86,11 +86,20 @@ export function useBrowseMarkets(
 
   useEffect(() => {
     if (key) fetchPage(true)
+    return () => {
+      requestRef.current++
+    }
   }, [key])
 
   const loadMore = useEvent(async () => {
     if (state.loading || !state.hasMore || state.key !== key) return false
     return fetchPage(false)
+  })
+
+  const retry = useEvent(async () => {
+    if (state.loading || state.key !== key || !state.error) return false
+    // Keep the successful pages and retry the failed offset/time cursor.
+    return fetchPage(state.contracts.length === 0)
   })
 
   const current = state.key === key
@@ -102,5 +111,6 @@ export function useBrowseMarkets(
     hasMore: current && state.hasMore,
     error: current ? state.error : undefined,
     loadMore,
+    retry,
   }
 }
