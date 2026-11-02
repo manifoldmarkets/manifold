@@ -1,3 +1,4 @@
+import { LimitBet } from './bet'
 import { mapValues, sum } from 'lodash'
 import {
   addCpmmLiquidity,
@@ -9,6 +10,7 @@ import {
   calculateCpmmSale,
   calculateCpmmShares,
   computeFills,
+  getCpmmProbabilityAfterSale,
   CPMM_ARBITRAGE_ERROR_PREFIX,
   cpmmMulti2SumToOnePools,
   CpmmState,
@@ -205,6 +207,117 @@ describe('CPMM Calculations', () => {
     })
   })
 
+  describe('open limit orders', () => {
+    const makeLimitOrder = (overrides: Partial<LimitBet> = {}): LimitBet => ({
+      id: 'limit-order',
+      userId: 'maker',
+      contractId: 'contract',
+      createdTime: 0,
+      amount: 0,
+      shares: 0,
+      outcome: 'YES',
+      limitProb: 0.5,
+      orderAmount: 10000,
+      isFilled: false,
+      isCancelled: false,
+      fills: [],
+      probBefore: 0.5,
+      probAfter: 0.5,
+      fees: noFees,
+      isRedemption: false,
+      ...overrides,
+    })
+
+    const state: CpmmState = {
+      pool: { YES: 10000, NO: 10000 },
+      p: 0.5,
+      collectedFees: noFees,
+    }
+    const balanceByUserId = { maker: 100000 }
+
+    it('matches a buyer against an open order', () => {
+      const { makers } = computeFills(
+        state,
+        'NO',
+        1000,
+        undefined,
+        [makeLimitOrder()],
+        balanceByUserId
+      )
+      expect(makers).toHaveLength(1)
+    })
+
+    it('ignores a cancelled order', () => {
+      const { makers } = computeFills(
+        state,
+        'NO',
+        1000,
+        undefined,
+        [makeLimitOrder({ isCancelled: true })],
+        balanceByUserId
+      )
+      expect(makers).toHaveLength(0)
+    })
+
+    it('ignores a filled order', () => {
+      const { makers } = computeFills(
+        state,
+        'NO',
+        1000,
+        undefined,
+        [makeLimitOrder({ isFilled: true })],
+        balanceByUserId
+      )
+      expect(makers).toHaveLength(0)
+    })
+
+    it('ignores an expired order', () => {
+      const { makers } = computeFills(
+        state,
+        'NO',
+        1000,
+        undefined,
+        [makeLimitOrder({ expiresAt: Date.now() - 1000 })],
+        balanceByUserId
+      )
+      expect(makers).toHaveLength(0)
+    })
+
+    it('cancelling your own order moves the price your sale would make', () => {
+      const shares = 2000
+      const order = makeLimitOrder()
+
+      // The order is big enough to absorb the whole sale at its limit price.
+      const withOpenOrder = getCpmmProbabilityAfterSale(
+        state,
+        shares,
+        'YES',
+        [order],
+        balanceByUserId
+      )
+      expect(withOpenOrder).toBeCloseTo(0.5, 6)
+
+      const withoutOrders = getCpmmProbabilityAfterSale(
+        state,
+        shares,
+        'YES',
+        [],
+        balanceByUserId
+      )
+      expect(withoutOrders).toBeLessThan(0.5)
+
+      // Once cancelled it can't be the counterparty any more, so the sale has
+      // to move the pool just as it would with an empty order book.
+      const withCancelledOrder = getCpmmProbabilityAfterSale(
+        state,
+        shares,
+        'YES',
+        [{ ...order, isCancelled: true }],
+        balanceByUserId
+      )
+      expect(withCancelledOrder).toBeCloseTo(withoutOrders, 6)
+    })
+  })
   describe('calculateCpmmAmountToBuySharesFixedP (general p, cpmm-multi-2)', () => {
     it("prices a share count below the pool's float resolution at 0", () => {
       const state = {

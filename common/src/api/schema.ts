@@ -691,6 +691,8 @@ export const API = (_apiTypeCheck = {
         commentRepliesOnly: coerceBoolean.optional(),
         count: coerceBoolean.optional(),
         points: coerceBoolean.optional(),
+        // Bypass caches for open-limit reads. See isUncachedQuoteRead.
+        fresh: coerceBoolean.optional(),
       })
       .strict(),
   },
@@ -913,6 +915,8 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         ids: z.array(z.string()).max(100),
+        // Bypass caches. See isUncachedQuoteRead.
+        fresh: coerceBoolean.optional(),
       })
       .strict(),
   },
@@ -2018,7 +2022,13 @@ export const API = (_apiTypeCheck = {
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as { id: string; balance: number }[],
-    props: z.object({ ids: z.array(z.string()) }).strict(),
+    props: z
+      .object({
+        ids: z.array(z.string()),
+        // Bypass caches. See isUncachedQuoteRead.
+        fresh: coerceBoolean.optional(),
+      })
+      .strict(),
   },
   'user/by-id/:id/block': {
     method: 'POST',
