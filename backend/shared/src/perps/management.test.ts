@@ -46,10 +46,12 @@ jest.mock('./queries', () => ({
 
 const mnx = 'mnx-test'
 const house = getPerpLaunchCreatorId(ENV)
-// In PROD the house account is itself adminIds[0], whose balance the older
-// tests call adminBalance. This admin has its own balance, so the house paying
-// is distinguishable from the signed-in manager paying.
-const admin = ENV_CONFIG.adminIds.find((id) => id !== house)!
+// The older tests sign in as adminIds[0] (the house account itself in PROD)
+// and read adminBalance. This admin is neither, and has its own balance, so
+// the house paying is distinguishable from the signed-in manager paying.
+const admin = ENV_CONFIG.adminIds.find(
+  (id) => id !== house && id !== ENV_CONFIG.adminIds[0]
+)!
 const ids = { ...MNX_CREATOR_IDS }
 let contract: PerpContract
 let balance: number
@@ -288,14 +290,18 @@ const creatorSubsidyRequest = {
   ...mnxSubsidyRequest,
   fundingAccount: 'creator' as const,
 }
+const pinned = (expectedFunderId: string) => ({
+  ...creatorSubsidyRequest,
+  expectedFunderId,
+})
 
 it('debits the house creator, not the admin, for a house market, including on retry', async () => {
   contract = { ...contract, creatorId: house, oracleFeedId: 'btc-usd' }
   await expect(
-    addManagedPerpSubsidy(creatorSubsidyRequest, admin)
+    addManagedPerpSubsidy(pinned(house), admin)
   ).resolves.toMatchObject({ funderId: house, poolLong: 150, poolShort: 150 })
   await expect(
-    addManagedPerpSubsidy(creatorSubsidyRequest, admin)
+    addManagedPerpSubsidy(pinned(house), admin)
   ).resolves.toMatchObject({ replayed: true })
   expect(receipts).toEqual([
     { fromId: house, amount: 100, side: 'both', key: 'abcdefghjk' },
@@ -308,7 +314,7 @@ it('debits the house creator, not the admin, for a house market, including on re
 
 it('refuses a creator-funded retry once a different account would pay', async () => {
   contract = { ...contract, creatorId: house, oracleFeedId: 'btc-usd' }
-  const reviewed = { ...creatorSubsidyRequest, expectedFunderId: house }
+  const reviewed = pinned(house)
   await addManagedPerpSubsidy(reviewed, admin)
   // Ownership moves to MNX before the operator retries the lost response.
   contract = { ...contract, creatorId: mnx, oracleFeedId: 'mnx-openai-mark' }
@@ -321,13 +327,13 @@ it('refuses a creator-funded retry once a different account would pay', async ()
 
 it('spends MNX funds as the creator only on MNX-owned MNX markets', async () => {
   await expect(
-    addManagedPerpSubsidy(creatorSubsidyRequest, admin)
+    addManagedPerpSubsidy(pinned(mnx), admin)
   ).resolves.toMatchObject({ funderId: mnx })
   expect(balance).toBe(900)
   contract = { ...contract, oracleFeedId: 'btc-usd' }
   await expect(
     addManagedPerpSubsidy(
-      { ...creatorSubsidyRequest, idempotencyKey: 'bcdefghjkm' },
+      { ...pinned(mnx), idempotencyKey: 'bcdefghjkm' },
       admin
     )
   ).rejects.toThrow('MNX-owned MNX markets')
@@ -359,7 +365,7 @@ it.each([
     contract = { ...contract, creatorId, oracleFeedId: 'btc-usd' }
     houseAccountData = data
     await expect(
-      addManagedPerpSubsidy(creatorSubsidyRequest, admin)
+      addManagedPerpSubsidy(pinned(creatorId), admin)
     ).rejects.toThrow(message)
     expect(locked).toBe(true)
     expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
@@ -368,9 +374,17 @@ it.each([
 
 it('never lets the MNX account spend house funds as the creator', async () => {
   contract = { ...contract, creatorId: house, oracleFeedId: 'btc-usd' }
+  await expect(addManagedPerpSubsidy(pinned(house), mnx)).rejects.toThrow(
+    'Only admins'
+  )
+  expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
+})
+
+it('refuses creator funding that does not name the payer it reviewed', async () => {
+  contract = { ...contract, creatorId: house, oracleFeedId: 'btc-usd' }
   await expect(
-    addManagedPerpSubsidy(creatorSubsidyRequest, mnx)
-  ).rejects.toThrow('Only admins')
+    addManagedPerpSubsidy(creatorSubsidyRequest, admin)
+  ).rejects.toThrow('expected payer')
   expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
 })
 

@@ -160,6 +160,16 @@ it('keeps legacy personal-account requests for reconciliation without sending or
   )
 })
 
+it('refuses to replay a creator-funded request that does not pin its payer', async () => {
+  const unpinned = batch()
+  for (const item of unpinned.items)
+    if (item.kind === 'liquidity') item.params.fundingAccount = 'creator'
+  const send = jest.fn()
+  const result = await runMnxBatch(unpinned, jest.fn(), send, () => true)
+  expect(send).not.toHaveBeenCalled()
+  expect(result.items[0].error).toContain('did not pin its payer')
+})
+
 it('retries creator-funded requests from the admin console with the same payer and key', async () => {
   const creatorBatch = batch()
   for (const item of creatorBatch.items)
