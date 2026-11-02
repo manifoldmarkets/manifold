@@ -298,7 +298,7 @@ export function ContractRow(props: {
           <Col className="mb-2 ml-6 mt-1 gap-1 text-sm sm:ml-8">
             {answers.map((answer) => (
               <Row key={answer.id} className="items-center px-2">
-                <span className="text-ink-700 line-clamp-1 mr-1">
+                <span className="text-ink-700 mr-1 line-clamp-1">
                   {answer.text}
                 </span>
                 <span className="text-sm">
