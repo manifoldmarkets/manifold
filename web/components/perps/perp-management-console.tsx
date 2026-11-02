@@ -336,6 +336,9 @@ export function PerpManagementConsole({
                 fundingAccount: scope === 'mnx' ? 'mnx' : 'creator',
                 idempotencyKey: randomString(),
                 expectedManagerId: data.payer.id,
+                ...(scope === 'all' && {
+                  expectedFunderId: contract.creatorId,
+                }),
               },
             }
           const patch = buildMnxRulePatch(rules, contract)
@@ -542,15 +545,18 @@ export function PerpManagementConsole({
           </div>
         )}
         {data.markets.length > 0 ? (
-          <div className="overflow-x-auto">
+          // relative: the sr-only header labels are absolutely positioned and
+          // would otherwise widen the page instead of this scroll box.
+          <div className="relative overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="text-ink-500 bg-canvas-50 border-ink-200 border-y text-xs">
                 <tr>
                   <th className="p-3">
                     <span className="sr-only">Select</span>
                   </th>
-                  <th className="py-3 pr-4">Market / oracle</th>
-                  {scope === 'all' && <th className="py-3 pr-4">Creator</th>}
+                  <th className="py-3 pr-4">
+                    Market / oracle{scope === 'all' && ' · creator'}
+                  </th>
                   <th className="py-3 pr-4">Backing · L / S</th>
                   <th className="py-3 pr-4">Open interest</th>
                   <th className="py-3 pr-4">24h volume / fees</th>
@@ -597,6 +603,11 @@ export function PerpManagementConsole({
                         >
                           {perpLabel(c)}
                         </Link>
+                        {scope === 'all' && (
+                          <span className="text-ink-500 ml-1.5 whitespace-nowrap text-xs">
+                            {creatorName(c.creatorId)}
+                          </span>
+                        )}
                         <div className="text-ink-500 whitespace-nowrap text-xs">
                           {formatOraclePrice(
                             c.oracleFeedId,
@@ -619,11 +630,6 @@ export function PerpManagementConsole({
                           {status}
                         </div>
                       </td>
-                      {scope === 'all' && (
-                        <td className="whitespace-nowrap py-4 pr-4">
-                          {creatorName(c.creatorId)}
-                        </td>
-                      )}
                       <td className="whitespace-nowrap py-4 pr-4 tabular-nums">
                         <div>{mana(c.poolLong)}</div>
                         <div className="text-ink-500">{mana(c.poolShort)}</div>

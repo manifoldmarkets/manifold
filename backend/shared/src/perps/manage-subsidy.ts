@@ -30,6 +30,13 @@ export const addManagedPerpSubsidy = async (
   await requirePerpManager(pg, managerId)
   const funderId = await getFunderId(pg, body, managerId)
   if (!funderId) throw new APIError(403, 'The MNX account is not configured.')
+  // Receipts are keyed by payer, so a retry charged to a different payer
+  // would not find the first payment and would pay again.
+  if (body.expectedFunderId !== undefined && body.expectedFunderId !== funderId)
+    throw new APIError(
+      409,
+      'The account paying for this market changed since the preview. Check the earlier payment before retrying.'
+    )
   const spendsMnx =
     body.fundingAccount === 'mnx' ||
     (body.fundingAccount === 'creator' && funderId === getMnxCreatorId(ENV))

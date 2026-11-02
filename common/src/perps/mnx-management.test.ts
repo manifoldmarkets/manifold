@@ -160,16 +160,36 @@ it('keeps legacy personal-account requests for reconciliation without sending or
   )
 })
 
-it('replays creator-funded requests from the admin console unchanged', async () => {
+it('retries creator-funded requests from the admin console with the same payer and key', async () => {
   const creatorBatch = batch()
   for (const item of creatorBatch.items)
-    if (item.kind === 'liquidity') item.params.fundingAccount = 'creator'
-  const send = jest.fn().mockResolvedValue({})
-  const result = await runMnxBatch(creatorBatch, jest.fn(), send, () => true)
-  expect(result.items.every((item) => item.status === 'done')).toBe(true)
-  expect(send.mock.calls.map(([item]) => item.params)).toEqual(
-    creatorBatch.items.map((item) => item.params)
+    if (item.kind === 'liquidity')
+      item.params = {
+        ...item.params,
+        fundingAccount: 'creator',
+        expectedFunderId: 'house',
+      }
+  const reviewed = JSON.parse(JSON.stringify(creatorBatch.items)).map(
+    (item: MnxBatch['items'][number]) => item.params
   )
+  const send = jest
+    .fn()
+    .mockResolvedValueOnce({})
+    .mockRejectedValueOnce(new Error('Lost response'))
+  const first = await runMnxBatch(creatorBatch, jest.fn(), send, () => true)
+  expect(first.items.map((i) => i.status)).toEqual(['done', 'error', 'pending'])
+  const retry = jest.fn().mockResolvedValue({})
+  // Reloaded from storage, as a retry after a page reload would be.
+  const last = await runMnxBatch(
+    JSON.parse(JSON.stringify(first)),
+    jest.fn(),
+    retry,
+    () => true
+  )
+  expect(last.items.every((i) => i.status === 'done')).toBe(true)
+  expect(
+    [...send.mock.calls, ...retry.mock.calls].map(([item]) => item.params)
+  ).toEqual([reviewed[0], reviewed[1], reviewed[1], reviewed[2]])
 })
 
 it('accepts MNX and creator funding but rejects arbitrary funding accounts in the subsidy API', () => {

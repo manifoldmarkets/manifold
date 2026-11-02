@@ -46,10 +46,15 @@ jest.mock('./queries', () => ({
 
 const mnx = 'mnx-test'
 const house = getPerpLaunchCreatorId(ENV)
+// In PROD the house account is itself adminIds[0], whose balance the older
+// tests call adminBalance. This admin has its own balance, so the house paying
+// is distinguishable from the signed-in manager paying.
+const admin = ENV_CONFIG.adminIds.find((id) => id !== house)!
 const ids = { ...MNX_CREATOR_IDS }
 let contract: PerpContract
 let balance: number
 let adminBalance: number
+let otherAdminBalance: number
 type AccountData = {
   userDeleted?: boolean
   isBannedFromPosting?: boolean
@@ -71,6 +76,7 @@ beforeEach(() => {
   MNX_CREATOR_IDS[ENV] = mnx
   balance = 1000
   adminBalance = 1000
+  otherAdminBalance = 1000
   mnxAccountData = {}
   houseAccountData = {}
   ledger = 200
@@ -143,7 +149,12 @@ beforeEach(() => {
         const row = {
           id: values[0],
           username: values[0] === mnx ? 'RenamedMNX' : 'Admin',
-          balance: values[0] === mnx ? balance : adminBalance,
+          balance:
+            values[0] === mnx
+              ? balance
+              : values[0] === admin
+              ? otherAdminBalance
+              : adminBalance,
           data,
         }
         return convert ? convert(row) : row
@@ -158,6 +169,7 @@ beforeEach(() => {
   jest.mocked(runTxnOutsideBetQueue).mockImplementation(async (_tx, txn) => {
     expect(locked).toBe(true)
     if (txn.fromId === mnx) balance -= txn.amount
+    else if (txn.fromId === admin) otherAdminBalance -= txn.amount
     else adminBalance -= txn.amount
     ledger += txn.amount
     receipts.push({
@@ -272,9 +284,6 @@ it('preserves personal funding for existing non-dashboard subsidy callers', asyn
   expect(adminBalance).toBe(900)
 })
 
-// In PROD the house account is itself an admin; use another admin so the
-// house paying is distinguishable from the signed-in manager paying.
-const admin = ENV_CONFIG.adminIds.find((id) => id !== house)!
 const creatorSubsidyRequest = {
   ...mnxSubsidyRequest,
   fundingAccount: 'creator' as const,
@@ -291,6 +300,22 @@ it('debits the house creator, not the admin, for a house market, including on re
   expect(receipts).toEqual([
     { fromId: house, amount: 100, side: 'both', key: 'abcdefghjk' },
   ])
+  // adminBalance is the house's here (see `admin` above).
+  expect(adminBalance).toBe(900)
+  expect(otherAdminBalance).toBe(1000)
+  expect(balance).toBe(1000)
+})
+
+it('refuses a creator-funded retry once a different account would pay', async () => {
+  contract = { ...contract, creatorId: house, oracleFeedId: 'btc-usd' }
+  const reviewed = { ...creatorSubsidyRequest, expectedFunderId: house }
+  await addManagedPerpSubsidy(reviewed, admin)
+  // Ownership moves to MNX before the operator retries the lost response.
+  contract = { ...contract, creatorId: mnx, oracleFeedId: 'mnx-openai-mark' }
+  await expect(addManagedPerpSubsidy(reviewed, admin)).rejects.toThrow(
+    'paying for this market changed'
+  )
+  expect(receipts.map((r) => r.fromId)).toEqual([house])
   expect(balance).toBe(1000)
 })
 

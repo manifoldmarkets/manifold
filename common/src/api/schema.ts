@@ -1327,6 +1327,9 @@ export const API = (_apiTypeCheck = {
         side: z.enum(['long', 'short', 'both']),
         fundingAccount: z.enum(['mnx', 'creator']).optional(),
         expectedManagerId: z.string().min(1).optional(),
+        // The payer the operator reviewed. A retry fails rather than charge
+        // someone else if the market's creator changed in between.
+        expectedFunderId: z.string().min(1).optional(),
         amount: z.number().finite().gt(0).lte(1_000_000),
         idempotencyKey: z
           .string()
