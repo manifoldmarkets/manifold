@@ -1,6 +1,7 @@
 import { LinkIcon } from '@heroicons/react/solid'
 import { Row } from '../layout/row'
 import clsx from 'clsx'
+import { PiXLogo } from 'react-icons/pi'
 
 export function UserHandles(props: {
   website?: string | null
@@ -41,7 +42,7 @@ export function UserHandles(props: {
             .replace(/^@/, '')}`}
         >
           <Row className="items-center gap-1">
-            <img src="/twitter-logo.svg" className="h-4 w-4" alt="Twitter" />
+            <PiXLogo className="h-4 w-4" aria-label="X" />
             <span className="text-ink-400 text-sm">{twitterHandle}</span>
           </Row>
         </a>
