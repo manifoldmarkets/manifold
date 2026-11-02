@@ -12,7 +12,11 @@ import {
 import { PerpOrder } from '../perps/orders'
 import { PerpSuggestion } from '../perps/suggestion'
 import { MNX_LINK_LOCATIONS } from 'common/perps/mnx-cta'
-import { MnxDashboard, perpConfigFields } from 'common/perps/management'
+import {
+  MnxDashboard,
+  perpConfigFields,
+  PerpsDashboard,
+} from 'common/perps/management'
 import { randomStringRegex } from 'common/util/random'
 import type { BrowsePersonalization } from 'common/browse-personalization'
 import { MAX_ANSWER_LENGTH, type Answer } from 'common/answer'
@@ -1300,8 +1304,17 @@ export const API = (_apiTypeCheck = {
     returns: {} as MnxDashboard,
     props: z.object({}).strict(),
   },
-  // Defaults to the signed-in manager; the MNX dashboard uses MNX funds.
-  // For 'both', amount is added to EACH side.
+  // Admin console over every perp market, whoever created it.
+  'get-perps-dashboard': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as PerpsDashboard,
+    props: z.object({}).strict(),
+  },
+  // Defaults to the signed-in manager. 'mnx' spends MNX funds on MNX markets
+  // (MNX dashboard); 'creator' spends the market creator's own funds (perps
+  // console). For 'both', amount is added to EACH side.
   // A request key makes retrying a dashboard operation safe after a timeout.
   'add-perp-subsidy': {
     method: 'POST',
@@ -1312,7 +1325,7 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string().min(1),
         side: z.enum(['long', 'short', 'both']),
-        fundingAccount: z.enum(['mnx']).optional(),
+        fundingAccount: z.enum(['mnx', 'creator']).optional(),
         expectedManagerId: z.string().min(1).optional(),
         amount: z.number().finite().gt(0).lte(1_000_000),
         idempotencyKey: z

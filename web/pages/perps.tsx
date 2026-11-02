@@ -997,7 +997,7 @@ export default function PerpsPage(props: { perps: Contract[] }) {
           </Col>
           {user && (isAdminId(user.id) || isMnxCreator) && (
             <Link
-              href="/admin/mnx"
+              href={isMnxCreator ? '/admin/mnx' : '/admin/perps'}
               className={clsx(
                 'text-sm hover:underline',
                 isMnxCreator
@@ -1006,7 +1006,7 @@ export default function PerpsPage(props: { perps: Contract[] }) {
               )}
             >
               {!isMnxCreator && <ModActionBadge admin />}
-              Manage MNX markets
+              {isMnxCreator ? 'Manage MNX markets' : 'Manage perp markets'}
             </Link>
           )}
           <div className="sm:divide-ink-200 sm:dark:divide-ink-300 grid w-full grid-cols-2 gap-x-6 gap-y-3 sm:flex sm:w-auto sm:divide-x">

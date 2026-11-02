@@ -231,7 +231,13 @@ export const runMnxBatch = async (
         const item = current.items[index]
         // Old receipts are keyed to the original payer. Changing their funding
         // account on retry could debit MNX for an already-committed payment.
-        if (item.kind === 'liquidity' && item.params.fundingAccount !== 'mnx')
+        // Both consoles pin a named account ('mnx' or 'creator') when they
+        // build the batch, so a retry replays the same payer.
+        if (
+          item.kind === 'liquidity' &&
+          item.params.fundingAccount !== 'mnx' &&
+          item.params.fundingAccount !== 'creator'
+        )
           throw new Error(
             'This saved contribution used the signed-in account. Check its payment results and finish the batch before creating a new MNX-funded contribution.'
           )

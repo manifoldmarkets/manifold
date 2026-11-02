@@ -160,13 +160,28 @@ it('keeps legacy personal-account requests for reconciliation without sending or
   )
 })
 
-it('accepts MNX funding but rejects arbitrary funding accounts in the subsidy API', () => {
+it('replays creator-funded requests from the admin console unchanged', async () => {
+  const creatorBatch = batch()
+  for (const item of creatorBatch.items)
+    if (item.kind === 'liquidity') item.params.fundingAccount = 'creator'
+  const send = jest.fn().mockResolvedValue({})
+  const result = await runMnxBatch(creatorBatch, jest.fn(), send, () => true)
+  expect(result.items.every((item) => item.status === 'done')).toBe(true)
+  expect(send.mock.calls.map(([item]) => item.params)).toEqual(
+    creatorBatch.items.map((item) => item.params)
+  )
+})
+
+it('accepts MNX and creator funding but rejects arbitrary funding accounts in the subsidy API', () => {
   const props = API['add-perp-subsidy'].props
   const params = { contractId: 'c', side: 'both', amount: 50 }
   expect(props.safeParse(params).success).toBe(true)
   expect(props.safeParse({ ...params, fundingAccount: 'mnx' }).success).toBe(
     true
   )
+  expect(
+    props.safeParse({ ...params, fundingAccount: 'creator' }).success
+  ).toBe(true)
   expect(
     props.safeParse({ ...params, fundingAccount: 'another-user' }).success
   ).toBe(false)

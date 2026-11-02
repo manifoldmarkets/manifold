@@ -11,6 +11,7 @@ import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import { getContract } from 'shared/utils'
 import { addPerpPoolSubsidy } from './engine'
+import { getPerpLaunchCreatorId } from './launch-manifest'
 import { setPerpConfig } from './manage-config'
 import { addManagedPerpSubsidy } from './manage-subsidy'
 import { requirePerpManager } from './management-auth'
@@ -44,14 +45,17 @@ jest.mock('./queries', () => ({
 }))
 
 const mnx = 'mnx-test'
+const house = getPerpLaunchCreatorId(ENV)
 const ids = { ...MNX_CREATOR_IDS }
 let contract: PerpContract
 let balance: number
 let adminBalance: number
-let mnxAccountData: {
+type AccountData = {
   userDeleted?: boolean
   isBannedFromPosting?: boolean
 } | null
+let mnxAccountData: AccountData
+let houseAccountData: AccountData
 let ledger: number
 let receipts: { fromId: string; amount: number; side: string; key: string }[]
 let locked: boolean
@@ -68,6 +72,7 @@ beforeEach(() => {
   balance = 1000
   adminBalance = 1000
   mnxAccountData = {}
+  houseAccountData = {}
   ledger = 200
   receipts = []
   locked = false
@@ -128,12 +133,18 @@ beforeEach(() => {
         return convert ? convert(row) : row
       }
       if (query.includes('from users')) {
-        if (values[0] === mnx && mnxAccountData === null) return null
+        const data =
+          values[0] === mnx
+            ? mnxAccountData
+            : values[0] === house
+            ? houseAccountData
+            : {}
+        if (data === null) return null
         const row = {
           id: values[0],
           username: values[0] === mnx ? 'RenamedMNX' : 'Admin',
           balance: values[0] === mnx ? balance : adminBalance,
-          data: values[0] === mnx ? mnxAccountData : {},
+          data,
         }
         return convert ? convert(row) : row
       }
@@ -259,6 +270,83 @@ it('preserves personal funding for existing non-dashboard subsidy callers', asyn
   )
   expect(balance).toBe(1000)
   expect(adminBalance).toBe(900)
+})
+
+// In PROD the house account is itself an admin; use another admin so the
+// house paying is distinguishable from the signed-in manager paying.
+const admin = ENV_CONFIG.adminIds.find((id) => id !== house)!
+const creatorSubsidyRequest = {
+  ...mnxSubsidyRequest,
+  fundingAccount: 'creator' as const,
+}
+
+it('debits the house creator, not the admin, for a house market, including on retry', async () => {
+  contract = { ...contract, creatorId: house, oracleFeedId: 'btc-usd' }
+  await expect(
+    addManagedPerpSubsidy(creatorSubsidyRequest, admin)
+  ).resolves.toMatchObject({ funderId: house, poolLong: 150, poolShort: 150 })
+  await expect(
+    addManagedPerpSubsidy(creatorSubsidyRequest, admin)
+  ).resolves.toMatchObject({ replayed: true })
+  expect(receipts).toEqual([
+    { fromId: house, amount: 100, side: 'both', key: 'abcdefghjk' },
+  ])
+  expect(balance).toBe(1000)
+})
+
+it('spends MNX funds as the creator only on MNX-owned MNX markets', async () => {
+  await expect(
+    addManagedPerpSubsidy(creatorSubsidyRequest, admin)
+  ).resolves.toMatchObject({ funderId: mnx })
+  expect(balance).toBe(900)
+  contract = { ...contract, oracleFeedId: 'btc-usd' }
+  await expect(
+    addManagedPerpSubsidy(
+      { ...creatorSubsidyRequest, idempotencyKey: 'bcdefghjkm' },
+      admin
+    )
+  ).rejects.toThrow('MNX-owned MNX markets')
+  expect(runTxnOutsideBetQueue).toHaveBeenCalledTimes(1)
+})
+
+it.each([
+  [
+    'an account that is not a perp creator',
+    'personal-admin',
+    {},
+    'perp creator account',
+  ],
+  [
+    'a deleted house account',
+    house,
+    { userDeleted: true },
+    'active and unbanned',
+  ],
+  [
+    'a banned house account',
+    house,
+    { isBannedFromPosting: true },
+    'active and unbanned',
+  ],
+] as const)(
+  'refuses creator funding from %s',
+  async (_, creatorId, data, message) => {
+    contract = { ...contract, creatorId, oracleFeedId: 'btc-usd' }
+    houseAccountData = data
+    await expect(
+      addManagedPerpSubsidy(creatorSubsidyRequest, admin)
+    ).rejects.toThrow(message)
+    expect(locked).toBe(true)
+    expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
+  }
+)
+
+it('never lets the MNX account spend house funds as the creator', async () => {
+  contract = { ...contract, creatorId: house, oracleFeedId: 'btc-usd' }
+  await expect(
+    addManagedPerpSubsidy(creatorSubsidyRequest, mnx)
+  ).rejects.toThrow('Only admins')
+  expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
 })
 
 it('funds both sides in one transaction and debits the combined cost exactly once', async () => {
