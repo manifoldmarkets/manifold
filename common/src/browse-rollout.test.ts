@@ -163,6 +163,17 @@ describe('browse beta and new-visitor rollout', () => {
       )
     ).toBeUndefined()
     expect(readDeviceHistory(history, 'other')).toBeUndefined()
+    for (const deviceTokens of ['token', [''], [null], [42]]) {
+      expect(
+        readDeviceHistory({ ...history, deviceTokens }, history.browserId)
+      ).toBeUndefined()
+    }
+    expect(
+      readDeviceHistory(
+        { ...history, deviceTokens: ['token'] },
+        history.browserId
+      )?.deviceTokens
+    ).toEqual(['token'])
     expect(readBrowseView('cards')).toBeUndefined()
   })
 })

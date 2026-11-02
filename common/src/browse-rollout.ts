@@ -23,6 +23,9 @@ export type BrowseCohort =
 export type DeviceHistory = {
   browserId: string
   firstSeenTime: number | null
+  // Signup recognition only. These tokens are never reused for moderation
+  // or authentication; the current device-token still rotates at logout.
+  deviceTokens?: string[]
 }
 
 export type BrowseEnrollment = {
@@ -44,6 +47,11 @@ export const readDeviceHistory = (
   const history = value as DeviceHistory | undefined
   return history &&
     history.browserId === browserId &&
+    (history.deviceTokens === undefined ||
+      (Array.isArray(history.deviceTokens) &&
+        history.deviceTokens.every(
+          (token) => typeof token === 'string' && token.length > 0
+        ))) &&
     (history.firstSeenTime === null ||
       (Number.isFinite(history.firstSeenTime) && history.firstSeenTime > 0))
     ? history
@@ -90,10 +98,11 @@ export const isExistingBrowseUser = (
   !!user &&
   (user.isBot === true ||
     !history?.firstSeenTime ||
-    // Signup already records the browser token on the private profile. Match
-    // that proof instead of comparing server/client clocks at signup.
-    !deviceToken ||
-    user.initialDeviceToken !== deviceToken)
+    // Signup records the token on the private profile. Recognize older tokens
+    // issued by this experiment browser even after logout rotates the current one.
+    !user.initialDeviceToken ||
+    (user.initialDeviceToken !== deviceToken &&
+      !history.deviceTokens?.includes(user.initialDeviceToken)))
 
 // Preview/local testing is independent of production. Production assignment
 // requires an explicit UTC launch timestamp; unsetting it is the kill switch.

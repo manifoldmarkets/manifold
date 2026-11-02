@@ -7,7 +7,10 @@ the production report.
 
 After approval, set `NEXT_PUBLIC_BROWSE_EXPERIMENT_START` to an explicit UTC
 timestamp such as `2026-11-10T00:00:00Z` in the production build environment and
-redeploy. Only browsers first seen on or after that time are eligible for 50/50
+redeploy. Pick a launch time after the production deployment is expected to
+finish, then verify the deployment before that time. This avoids old bundles
+recording pre-launch cohorts after the experiment starts. Only browsers first
+seen on or after that time are eligible for 50/50
 assignment. Browsers already seen during the soft launch, existing accounts,
 prior layout choices and unavailable storage keep Classic by default. Returning
 accounts discovered after assignment also keep Classic unless they chose New.
@@ -16,6 +19,12 @@ still win. Do not change the start time of a running experiment.
 
 The v2 experiment identity (`browserId`) is independent of analytics' `deviceId`.
 The latter still rotates at logout for existing signup/moderation semantics.
+The browser's first-seen history also remembers tokens issued under that
+experiment identity. This lets a same-browser signup keep its assigned default
+after logout and re-login. Those historical tokens are only used for experiment
+eligibility, never as the active moderation token or for authentication. History
+from older previews learns the current token on upgrade; unrecorded older tokens
+cannot be recovered and remain conservatively unrecognized.
 Only the experiment identity, enrollment, first-seen history, explicit choice and
 native flags survive logout. v1 preview assignments are not used by v2.
 

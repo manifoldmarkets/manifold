@@ -23,18 +23,21 @@ export const ensureDeviceToken = () => {
     browserId = randomString()
     safeLocalStorage?.setItem(BROWSE_BROWSER_KEY, browserId)
   }
-  if (
-    safeLocalStorage &&
-    !readDeviceHistory(
-      safeJsonParse(safeLocalStorage.getItem(DEVICE_HISTORY_KEY)),
-      browserId
-    )
-  ) {
+  const history = readDeviceHistory(
+    safeJsonParse(safeLocalStorage?.getItem(DEVICE_HISTORY_KEY)),
+    browserId
+  )
+  if (safeLocalStorage && !history?.deviceTokens?.includes(deviceToken)) {
     safeLocalStorage.setItem(
       DEVICE_HISTORY_KEY,
       JSON.stringify({
         browserId,
-        firstSeenTime: isNewDevice && isNewBrowser ? Date.now() : null,
+        firstSeenTime: history
+          ? history.firstSeenTime
+          : isNewDevice && isNewBrowser
+          ? Date.now()
+          : null,
+        deviceTokens: [...(history?.deviceTokens ?? []), deviceToken],
       })
     )
   }

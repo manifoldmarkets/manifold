@@ -282,3 +282,181 @@ test('Supabase auth can reset REST and realtime credentials after logout', () =>
   assert.equal(db.rest.headers.Authorization, undefined)
   assert.deepEqual(realtime, ['old-account', null])
 })
+
+async function authFixture() {
+  const noop = () => {}
+  const auth = { currentUser: null }
+  const realtime = []
+  const db = {
+    rest: { headers: {} },
+    realtime: { setAuth: (token) => realtime.push(token) },
+  }
+  const supabase = load(
+    'web/lib/supabase/db.ts',
+    {
+      'common/supabase/utils': { createClient: () => db },
+      'common/envs/constants': { ENV_CONFIG: {} },
+    },
+    { process: { env: {} } }
+  )
+  let listener
+  let tokenRequest = async () => ({ jwt: `jwt-${auth.currentUser.uid}` })
+  const { AuthProvider } = load(
+    'web/components/auth-context.tsx',
+    {
+      react: React,
+      'react/jsx-runtime': require('react/jsx-runtime'),
+      lodash: require('lodash'),
+      'firebase/auth': {
+        onIdTokenChanged: (_, callback) => {
+          listener = callback
+          return noop
+        },
+      },
+      'web/lib/firebase/users': { auth, firebaseLogout: async () => {} },
+      'web/lib/api/api': {
+        getSupabaseToken: () => tokenRequest(),
+        createUser: () => {
+          throw new Error('Unexpected signup')
+        },
+      },
+      'web/hooks/use-state-check-equality': {
+        useStateCheckEquality: React.useState,
+      },
+      'common/envs/constants': {
+        AUTH_COOKIE_NAME: 'auth',
+        BANNED_TRADING_USER_IDS: [],
+        TEN_YEARS_SECS: 315360000,
+      },
+      'web/lib/util/cookie': { getCookie: noop, setCookie: noop },
+      'web/lib/native/native-messages': {
+        nativePassUsers: noop,
+        nativeSetStreak: noop,
+        nativeSignOut: noop,
+      },
+      'web/lib/native/is-native': {
+        clearLocalStoragePreservingNativeInfo: noop,
+      },
+      'common/native-message': { streakBonusPerDay: () => 0 },
+      'web/lib/util/local': { safeLocalStorage: undefined },
+      'web/hooks/use-save-visits': { getSavedContractVisitsLocally: () => [] },
+      'web/hooks/use-user': {
+        useWebsocketUser: noop,
+        useWebsocketPrivateUser: noop,
+      },
+      'client-common/hooks/use-websocket-user': {
+        trackUserChanges: () => ({ since: {}, stop: noop }),
+      },
+      'web/hooks/use-effect-check-equality': {
+        useEffectCheckEquality: React.useEffect,
+      },
+      'web/lib/supabase/users': {
+        getUserSafe: async (id) => ({ id }),
+        getPrivateUserSafe: async () => ({ id: auth.currentUser.uid }),
+      },
+      'react-hot-toast': { default: { success: noop } },
+      'web/lib/util/device-token': { ensureDeviceToken: () => 'device' },
+      './layout/row': { Row: noop },
+      './widgets/token-number': { TokenNumber: noop },
+      'web/lib/supabase/db': supabase,
+      'common/util/api': { setLocalOnlyUserId: noop },
+    },
+    { ...globals, process: { env: {} }, console: { error: noop } }
+  )
+  const probe = await mount(() =>
+    AuthProvider({ children: null, serverUser: null })
+  )
+  return {
+    db,
+    realtime,
+    probe,
+    request: (fn) => {
+      tokenRequest = fn
+    },
+    change: (uid) => {
+      auth.currentUser = uid
+        ? {
+            uid,
+            toJSON: () => ({ uid, stsTokenManager: {} }),
+            getIdToken: async () => 'firebase-token',
+          }
+        : null
+      return listener(auth.currentUser)
+    },
+  }
+}
+
+function deferred() {
+  let resolve
+  let reject
+  const promise = new Promise((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+  return { promise, resolve, reject }
+}
+
+test('same-user refresh failure retains the JWT, and a later refresh replaces it', async () => {
+  const f = await authFixture()
+  await act(async () => f.change('alice'))
+  assert.equal(f.db.rest.headers.Authorization, 'Bearer jwt-alice')
+  const calls = f.realtime.length
+  f.request(async () => {
+    throw new Error('temporary network failure')
+  })
+  await act(async () => f.change('alice'))
+  assert.equal(f.db.rest.headers.Authorization, 'Bearer jwt-alice')
+  assert.equal(f.realtime.length, calls)
+  assert.equal(f.probe.value.props.value.authLoaded, true)
+  f.request(async () => ({ jwt: 'refreshed-alice' }))
+  await act(async () => f.change('alice'))
+  assert.equal(f.db.rest.headers.Authorization, 'Bearer refreshed-alice')
+})
+
+test('account change clears the previous JWT immediately, even if new credentials fail', async () => {
+  const f = await authFixture()
+  await act(async () => f.change('alice'))
+  const next = deferred()
+  f.request(() => next.promise)
+  let pending
+  await act(async () => {
+    pending = f.change('bob')
+  })
+  assert.equal(f.db.rest.headers.Authorization, undefined)
+  assert.equal(f.realtime.at(-1), null)
+  assert.equal(f.probe.value.props.value.authLoaded, false)
+  await act(async () => {
+    next.reject(new Error('offline'))
+    await pending
+  })
+  assert.equal(f.db.rest.headers.Authorization, undefined)
+  assert.equal(f.probe.value.props.value.user.id, 'bob')
+  f.request(async () => ({ jwt: 'jwt-bob' }))
+  await act(async () => f.change('bob'))
+  assert.equal(f.db.rest.headers.Authorization, 'Bearer jwt-bob')
+})
+
+for (const nextUser of [null, 'bob']) {
+  test(`a late refresh cannot restore Alice's credentials after ${
+    nextUser ? 'switching accounts' : 'logout'
+  }`, async () => {
+    const f = await authFixture()
+    await act(async () => f.change('alice'))
+    const old = deferred()
+    f.request(() => old.promise)
+    let pending
+    await act(async () => {
+      pending = f.change('alice')
+    })
+    f.request(async () => ({ jwt: 'jwt-bob' }))
+    await act(async () => f.change(nextUser))
+    const expected = nextUser ? 'Bearer jwt-bob' : undefined
+    assert.equal(f.db.rest.headers.Authorization, expected)
+    await act(async () => {
+      old.resolve({ jwt: 'stale-alice' })
+      await pending
+    })
+    assert.equal(f.db.rest.headers.Authorization, expected)
+    assert.equal(f.probe.value.props.value?.user.id ?? null, nextUser)
+  })
+}

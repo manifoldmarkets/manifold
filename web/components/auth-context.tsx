@@ -105,6 +105,9 @@ export function AuthProvider(props: {
   // Whether this page session has ever observed a signed-in Firebase user. Gates
   // the sign-out we forward to the native app — see the null branch below.
   const sawFbUser = useRef(false)
+  // Track observed Firebase identity separately from the asynchronously loaded
+  // profile, so credentials clear as soon as an account switch begins.
+  const supabaseUserId = useRef<string>()
   const committedUserId = useRef(user?.id)
   committedUserId.current = user?.id
 
@@ -207,6 +210,11 @@ export function AuthProvider(props: {
     return onIdTokenChanged(
       auth,
       async (fbUser) => {
+        if (auth.currentUser?.uid !== fbUser?.uid) return
+        if (supabaseUserId.current !== fbUser?.uid) {
+          updateSupabaseAuth(undefined)
+          supabaseUserId.current = fbUser?.uid
+        }
         // Firebase switches its request credential before the profile lookup
         // below finishes. Mark real identity changes transitional immediately
         // so requests cannot use the previous app user with the new token.
@@ -245,8 +253,9 @@ export function AuthProvider(props: {
             // the old user back to the native app (via onAuthLoad -> 'users').
             if (auth.currentUser?.uid !== fbUser.uid) return
 
-            // When testing on a mobile device, we'll be pointed at a local ip or ngrok address, so this will fail
-            updateSupabaseAuth(supabaseJwt?.jwt)
+            // A failed same-user refresh must not discard a still-valid JWT.
+            // Logout/account changes already clear credentials above/below.
+            if (supabaseJwt) updateSupabaseAuth(supabaseJwt.jwt)
 
             if (!user || !privateUser) {
               const deviceToken = ensureDeviceToken()
