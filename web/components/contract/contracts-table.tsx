@@ -252,7 +252,7 @@ export function ContractRow(props: {
           e.preventDefault()
         }}
         className={clsx(
-          'flex w-full flex-col p-2 text-base outline-none transition-colors sm:rounded-md',
+          'group flex w-full flex-col p-2 text-base outline-none transition-colors sm:rounded-md',
           highlighted
             ? 'bg-primary-100'
             : 'hover:bg-primary-100 focus-visible:bg-primary-100 active:bg-primary-100'

@@ -67,7 +67,7 @@ export function FeedContractCard(props: {
   className?: string
   /** whether this card is small, like in card grids.*/
   size?: 'md' | 'sm' | 'xs'
-  hide?: () => void
+  setHidden?: (hidden: boolean) => void
   showGraph?: boolean
   hideBottomRow?: boolean
   hideTags?: boolean
@@ -79,7 +79,7 @@ export function FeedContractCard(props: {
     trackingPostfix,
     className,
     children,
-    hide,
+    setHidden,
     showGraph,
     hideBottomRow,
     size = 'md',
@@ -237,12 +237,12 @@ export function FeedContractCard(props: {
             ) : (
               <LiquidityTooltip contract={contract} />
             )}
-            {hide && (
+            {setHidden && (
               <FeedDropdown
                 contract={contract}
                 itemCreatorId={undefined}
                 interesting={true}
-                toggleInteresting={hide}
+                setInteresting={(interesting) => setHidden(!interesting)}
                 importanceScore={props.contract.importanceScore}
               />
             )}

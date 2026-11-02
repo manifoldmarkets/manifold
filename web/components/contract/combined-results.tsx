@@ -12,9 +12,10 @@ import {
 } from 'common/search-result-order'
 import { TopLevelPost } from 'common/top-level-post'
 import { buildArray } from 'common/util/array'
-import { Key } from 'react'
+import { Key, useState } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { isABTestAssignmentCurrent } from 'web/hooks/use-ab-test'
+import { useUser } from 'web/hooks/use-user'
 import { PostRow } from '../posts/post-row'
 import {
   FOR_YOU_KEY,
@@ -26,11 +27,13 @@ import {
 import {
   actionColumn,
   boostedColumn,
+  ColumnFormat,
   liquidityColumn,
   probColumn,
   traderColumn,
 } from './contract-table-col-formats'
 import { ContractRow } from './contracts-table'
+import { UninterestedRowButton } from './uninterested'
 
 type CombinedResultsProps = {
   contracts: FullMarketSearchResult[]
@@ -73,11 +76,37 @@ export function CombinedResults(props: CombinedResultsProps) {
     discoveryTracking,
   } = props
 
+  const user = useUser()
+  // Rows the user marked uninterested from this result set. Dropped here so
+  // the row goes at once; the next fetch won't return them.
+  const [hiddenByUser, setHiddenByUser] = useState<Record<string, string[]>>({})
+  const isForYou =
+    searchParams[FOR_YOU_KEY] === '1' && !searchParams[QUERY_KEY].trim()
+  const showUninterested = !!user && !hideActions && isForYou
+  const hiddenContractIds = user && isForYou ? hiddenByUser[user.id] ?? [] : []
+  const setHidden = (contractId: string, hidden: boolean) => {
+    if (!user) return
+    setHiddenByUser((byUser) => {
+      const ids = byUser[user.id] ?? []
+      return {
+        ...byUser,
+        [user.id]: hidden
+          ? ids.includes(contractId)
+            ? ids
+            : [...ids, contractId]
+          : ids.filter((id) => id !== contractId),
+      }
+    })
+  }
+
   const sort =
     searchParams[TOPIC_FILTER_KEY] === 'recent'
       ? undefined
       : searchParams[SORT_KEY]
-  const combinedItems = orderCombinedSearchResults(contracts, posts, {
+  const visibleContracts = hiddenContractIds.length
+    ? contracts.filter((c) => !hiddenContractIds.includes(c.id))
+    : contracts
+  const combinedItems = orderCombinedSearchResults(visibleContracts, posts, {
     sort,
     preserveBackendMarketOrder: shouldPreserveBackendMarketOrder(
       discoveryVariant,
@@ -88,12 +117,24 @@ export function CombinedResults(props: CombinedResultsProps) {
   if (!combinedItems.length) return null
 
   // Define columns for ContractRow, similar to how ContractsTable did
+  const uninterestedColumn: ColumnFormat = {
+    header: 'Uninterested',
+    width: 'w-7 justify-center',
+    content: ({ contract }) => (
+      <UninterestedRowButton
+        contract={contract}
+        onHidden={() => setHidden(contract.id, true)}
+        onRestored={() => setHidden(contract.id, false)}
+      />
+    ),
+  }
   const contractDisplayColumns = buildArray([
     !hasBets && boostedColumn,
     traderColumn,
     liquidityColumn,
     probColumn,
     !hideActions && actionColumn,
+    showUninterested && uninterestedColumn,
   ])
 
   return (

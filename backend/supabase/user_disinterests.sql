@@ -7,6 +7,7 @@ create table if not exists
     creator_id text not null,
     feed_id bigint,
     id bigint primary key generated always as identity not null,
+    source_contract_id text,
     user_id text not null
   );
 
@@ -29,6 +30,12 @@ drop index if exists user_disinterests_user_id;
 
 create index user_disinterests_user_id on public.user_disinterests using btree (user_id);
 
-drop index if exists user_disinterests_user_id_contract_id;
+drop index if exists user_disinterests_user_id_contract_id_unique;
 
-create index user_disinterests_user_id_contract_id on public.user_disinterests using btree (user_id, contract_id);
+create unique index user_disinterests_user_id_contract_id_unique on public.user_disinterests using btree (user_id, contract_id);
+
+drop index if exists user_disinterests_user_id_source_contract_id;
+
+create index user_disinterests_user_id_source_contract_id on public.user_disinterests using btree (user_id, source_contract_id)
+where
+  (source_contract_id is not null);

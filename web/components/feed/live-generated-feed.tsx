@@ -166,14 +166,14 @@ const FeedCard = (props: {
       trackingLocation={'feed'}
       bet={bet}
       user={user}
-      hide={() => setHidden(true)}
+      setHidden={setHidden}
     />
   ) : (
     <FeedContractCard
       trackingPostfix={'feed'}
       contract={contract}
       key={contract.id}
-      hide={() => setHidden(true)}
+      setHidden={setHidden}
       feedReason={reason}
     />
   )

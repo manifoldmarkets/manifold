@@ -205,6 +205,10 @@ import { updateMe } from './update-me'
 import { updateModReport } from './update-mod-report'
 import { updateNotifSettings } from './update-notif-settings'
 import { updatePrivateUser } from './update-private-user'
+import {
+  getMarketUninterestedStatus,
+  setMarketUninterested,
+} from './update-user-disinterests'
 import { setJobInterest } from './set-job-interest'
 import { getJobInterest } from './get-job-interest'
 import { getMnxInviteLink } from './get-mnx-invite-link'
@@ -418,6 +422,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:contractId/answer': createAnswerCPMM,
   'market/:contractId/block': blockMarket,
   'market/:contractId/unblock': unblockMarket,
+  'market/:contractId/uninterested': setMarketUninterested,
+  'market/:contractId/uninterested-status': getMarketUninterestedStatus,
   'get-user-limit-orders-with-contracts': getUserLimitOrdersWithContracts,
   'get-interesting-groups-from-views': getInterestingGroupsFromViews,
   leagues: getLeagues,

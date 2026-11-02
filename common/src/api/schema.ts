@@ -1064,6 +1064,26 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z.object({ contractId: z.string() }).strict(),
   },
+  // "Uninterested": hides the market and its near-duplicates from the user's
+  // feeds and weighs down its topics. Idempotent; false undoes it. Semantics
+  // live in common/disinterests.ts.
+  'market/:contractId/uninterested': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { uninterested: boolean; hiddenSimilarCount: number },
+    props: z
+      .object({ contractId: z.string(), uninterested: z.boolean() })
+      .strict(),
+  },
+  'market/:contractId/uninterested-status': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'private, no-store',
+    returns: {} as { uninterested: boolean },
+    props: z.object({ contractId: z.string() }).strict(),
+  },
   unresolve: {
     method: 'POST',
     visibility: 'undocumented',

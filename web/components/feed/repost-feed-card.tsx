@@ -40,9 +40,9 @@ export const RepostFeedCard = memo(function (props: {
   bet?: Bet
   trackingLocation: string
   user: User | null | undefined
-  hide: () => void
+  setHidden: (hidden: boolean) => void
 }) {
-  const { contract, user, repost, bet, hide, comment } = props
+  const { contract, user, repost, bet, setHidden, comment } = props
   const privateUser = usePrivateUser()
   const { userUsername, userAvatarUrl, userId } = comment
   const commenter = useDisplayUserById(userId)
@@ -82,7 +82,7 @@ export const RepostFeedCard = memo(function (props: {
           bet={bet}
           comment={comment}
           contract={contract}
-          hide={hide}
+          setHidden={setHidden}
           commenterIsBettor={commenterIsBettor}
           repost={repost}
         />
@@ -114,7 +114,7 @@ export const RepostFeedCard = memo(function (props: {
                     contract={contract}
                     itemCreatorId={repost.user_id}
                     interesting={true}
-                    toggleInteresting={hide}
+                    setInteresting={(interesting) => setHidden(!interesting)}
                     importanceScore={props.contract.importanceScore}
                   />
                 </Row>
@@ -160,7 +160,7 @@ function RepostLabel(props: {
   bet?: Bet
   comment: ContractComment
   contract: Contract
-  hide: () => void
+  setHidden: (hidden: boolean) => void
   commenterIsBettor: boolean
   repost: Repost
 }) {
@@ -170,7 +170,7 @@ function RepostLabel(props: {
     bet,
     comment,
     contract,
-    hide,
+    setHidden,
     commenterIsBettor,
     repost,
   } = props
@@ -181,7 +181,7 @@ function RepostLabel(props: {
       contract={contract}
       itemCreatorId={repost.user_id}
       interesting={true}
-      toggleInteresting={hide}
+      setInteresting={(interesting) => setHidden(!interesting)}
       importanceScore={props.contract.importanceScore}
     />
   )
