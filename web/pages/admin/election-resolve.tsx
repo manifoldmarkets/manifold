@@ -23,7 +23,8 @@ export default function ElectionResolvePage() {
   }
 
   return (
-    <Page trackPageView="admin-election-resolve">
+    // The table needs more than the default content column.
+    <Page trackPageView="admin-election-resolve" className="lg:col-span-10">
       <NoSEO />
       <Col className="gap-4 px-2 pb-24 sm:px-4">
         <Title className="!mb-0">

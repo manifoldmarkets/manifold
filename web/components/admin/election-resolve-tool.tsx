@@ -315,7 +315,7 @@ function UnitRow(props: {
           onChange={(e) => onToggle(e.target.checked)}
         />
       </td>
-      <td className="whitespace-nowrap px-3 py-2">
+      <td className="min-w-[7rem] max-w-[11rem] px-3 py-2">
         <div className="font-semibold">{unit.race}</div>
         <div className="text-ink-500 text-xs">{OFFICE_LABEL[unit.office]}</div>
       </td>
