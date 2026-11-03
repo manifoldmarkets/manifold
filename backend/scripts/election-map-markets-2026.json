@@ -1,0 +1,3135 @@
+{
+  "generated": "2026-11-03",
+  "note": "Every market the /election map renders (web/public/data: senate2026, governors2026, HOUSE_DISTRICT_MARKETS, HOUSE_RACE_MARKETS, MIDTERMS_2026, ballot-measures-2026.json), resolved to contract ids on prod 2026-11-03.",
+  "markets": [
+    {
+      "id": "upscnQcUqt",
+      "slug": "who-controls-congress-after-the-202",
+      "office": "headline",
+      "race": "balanceOfPower",
+      "question": "Who controls Congress after the 2026 Midterms?"
+    },
+    {
+      "id": "uISNlAqC2E",
+      "slug": "republicans-have-house-majority-aft",
+      "office": "headline",
+      "race": "houseControl",
+      "question": "Republicans have a House majority after 2026 midterms?"
+    },
+    {
+      "id": "sqUzOZN8Cs",
+      "slug": "will-a-democrat-win-these-us-house",
+      "office": "headline",
+      "race": "houseDistricts",
+      "question": "Will a Democrat win these US House races in 2026?"
+    },
+    {
+      "id": "BpoEJNtlQoDBpfjBmK0y",
+      "slug": "will-republicans-win-the-senate-in-738388924521",
+      "office": "headline",
+      "race": "senateControl",
+      "question": "Will Republicans win the Senate in the 2026 elections?"
+    },
+    {
+      "id": "0L8uQURR06",
+      "slug": "which-party-will-win-the-2026-alask",
+      "office": "senate",
+      "race": "AK",
+      "question": "Which party will win the 2026 Alaska Senate race?"
+    },
+    {
+      "id": "cPIhILst2U",
+      "slug": "which-party-will-win-the-2026-alaba",
+      "office": "senate",
+      "race": "AL",
+      "question": "Which party will win the 2026 Alabama Senate Election"
+    },
+    {
+      "id": "9RzRPRtgNg",
+      "slug": "what-party-will-win-the-2026-arkans",
+      "office": "senate",
+      "race": "AR",
+      "question": "What Party will win the 2026 Arkansas Senate Election?"
+    },
+    {
+      "id": "OEc2QzlS2l",
+      "slug": "which-party-will-win-the-2026-color",
+      "office": "senate",
+      "race": "CO",
+      "question": "Which party will win the 2026 Colorado Senate Election?"
+    },
+    {
+      "id": "c9sUL8EsOy",
+      "slug": "which-party-will-win-the-2026-delaw",
+      "office": "senate",
+      "race": "DE",
+      "question": "Which Party will win the 2026 Delaware Senate Election?"
+    },
+    {
+      "id": "CcysACRQAh",
+      "slug": "will-a-republican-win-the-us-senate",
+      "office": "senate",
+      "race": "FL",
+      "question": "Will a Republican win the US Senate special election in Florida in 2026?"
+    },
+    {
+      "id": "cOqt565CRZ",
+      "slug": "which-party-will-win-the-2026-us-se",
+      "office": "senate",
+      "race": "GA",
+      "question": "Which party will win the 2026 US Senate election in Georgia?"
+    },
+    {
+      "id": "I9QNz9Q2L2",
+      "slug": "who-will-win-the-2026-united-states-u09U0PqQSn",
+      "office": "senate",
+      "race": "IA",
+      "question": "Who will win the 2026 United States Senate election in Iowa?"
+    },
+    {
+      "id": "NLt0U0pC9n",
+      "slug": "which-party-will-win-the-2026-idaho-2PNUOhCEyR",
+      "office": "senate",
+      "race": "ID",
+      "question": "Which Party will win the 2026 Idaho Senate Election?"
+    },
+    {
+      "id": "n8czNPuEOU",
+      "slug": "which-party-will-win-the-2026-illin",
+      "office": "senate",
+      "race": "IL",
+      "question": "Which Party will win the 2026 Illinois Senate Election"
+    },
+    {
+      "id": "nZsucEQ8gQ",
+      "slug": "which-party-will-win-the-2026-kansa",
+      "office": "senate",
+      "race": "KS",
+      "question": "Which party will win the 2026 Kansas Senate race?"
+    },
+    {
+      "id": "LnRZCqd2Ig",
+      "slug": "which-party-will-win-the-kentucky-s",
+      "office": "senate",
+      "race": "KY",
+      "question": "Which party will win the Kentucky Senate Seat in 2026?"
+    },
+    {
+      "id": "y5lqNSOcnU",
+      "slug": "which-party-will-win-the-2026-louis",
+      "office": "senate",
+      "race": "LA",
+      "question": "Which party will win the 2026  Louisiana Senate Election"
+    },
+    {
+      "id": "s9lU80QdlO",
+      "slug": "which-party-will-win-the-2026-us-se-dqI00SN65q",
+      "office": "senate",
+      "race": "MA",
+      "question": "Which Party will win the 2026 US Senate election in Massachusetts?"
+    },
+    {
+      "id": "RcL0Q9O0EU",
+      "slug": "will-the-democratic-party-candidate-NQOPZAnOA8",
+      "office": "senate",
+      "race": "ME",
+      "question": "Will the Democratic Party Candidate win the 2026 Maine Senate Election?"
+    },
+    {
+      "id": "Ad6z6OsuQ5",
+      "slug": "which-party-will-win-the-2026-michi",
+      "office": "senate",
+      "race": "MI",
+      "question": "Which party will win the 2026 Michigan Senate race?"
+    },
+    {
+      "id": "QcRNIRZSNg",
+      "slug": "which-party-will-win-the-2026-senat-RLNdnAsdEg",
+      "office": "senate",
+      "race": "MN",
+      "question": "Which Party will win the 2026 Senate Election in Minnesota"
+    },
+    {
+      "id": "ZRSP0ZAd0q",
+      "slug": "which-party-will-win-the-2026-missi",
+      "office": "senate",
+      "race": "MS",
+      "question": "Which Party will win the 2026 Mississippi Senate Race?"
+    },
+    {
+      "id": "tydQt5d26u",
+      "slug": "who-will-win-the-2026-montana-senat",
+      "office": "senate",
+      "race": "MT",
+      "question": "Who will win the 2026 Montana senate election?"
+    },
+    {
+      "id": "9EALhuO9dp",
+      "slug": "which-party-will-win-the-2026-north",
+      "office": "senate",
+      "race": "NC",
+      "question": "Which Party will win the 2026 North Carolina senate election?"
+    },
+    {
+      "id": "6I5SSguQ8I",
+      "slug": "which-party-will-win-the-2026-nebra",
+      "office": "senate",
+      "race": "NE",
+      "question": "Which party will win the 2026 Nebraska Senate race?"
+    },
+    {
+      "id": "lRd6Sz0dC8",
+      "slug": "which-party-will-win-the-2026-new-h",
+      "office": "senate",
+      "race": "NH",
+      "question": "Which Party will win the 2026 New Hampshire Senate Election"
+    },
+    {
+      "id": "l96q6LRqsg",
+      "slug": "which-party-will-win-the-2026-senat-L2SAyPRu9l",
+      "office": "senate",
+      "race": "NJ",
+      "question": "Which party will win the 2026 Senate election in New Jersey"
+    },
+    {
+      "id": "cZIqAcCZ05",
+      "slug": "which-party-will-win-the-2026-new-m",
+      "office": "senate",
+      "race": "NM",
+      "question": "Which Party will win the 2026 New Mexico Senate Election?"
+    },
+    {
+      "id": "Eg96Z2066n",
+      "slug": "what-party-will-win-the-special-ele",
+      "office": "senate",
+      "race": "OH",
+      "question": "What party will win the special election to fill JD Vance's Senate seat?"
+    },
+    {
+      "id": "d8ShtZz98g",
+      "slug": "which-party-will-win-the-2026-senat-uSIZt2dAUq",
+      "office": "senate",
+      "race": "OK",
+      "question": "Which Party will win the 2026 Senate Election in Oklahoma?"
+    },
+    {
+      "id": "2ASA8q6Zt9",
+      "slug": "which-party-will-win-the-2026-us-se-ltdn9uyhqI",
+      "office": "senate",
+      "race": "OR",
+      "question": "Which Party will win the 2026 U.S. Senate Election in Oregon?"
+    },
+    {
+      "id": "Ztsy99QUyP",
+      "slug": "which-party-will-win-the-2026-us-se-npU0Adq2gh",
+      "office": "senate",
+      "race": "RI",
+      "question": "Which Party will win the 2026 US Senate Election in Rhode Island?"
+    },
+    {
+      "id": "LsEpnppAcc",
+      "slug": "which-party-will-win-the-2026-south",
+      "office": "senate",
+      "race": "SC",
+      "question": "Which party will win the 2026 South Carolina Senate race?"
+    },
+    {
+      "id": "sshNUOnpCZ",
+      "slug": "which-party-will-win-the-2026-senat-OCp8sREOUZ",
+      "office": "senate",
+      "race": "SD",
+      "question": "Which Party will win the 2026 Senate Election in South Dakota?"
+    },
+    {
+      "id": "IUNRCEs0zs",
+      "slug": "which-party-will-win-the-2026-senat-I2ZRR8czlU",
+      "office": "senate",
+      "race": "TN",
+      "question": "Which Party will win the 2026 Senate Election in Tennessee?"
+    },
+    {
+      "id": "tdA9NqRnpZ",
+      "slug": "which-party-will-win-the-2026-texas",
+      "office": "senate",
+      "race": "TX",
+      "question": "Which party will win the 2026 Texas Senate race?"
+    },
+    {
+      "id": "tgPtN825A2",
+      "slug": "which-party-will-win-the-2026-senat-p2Q8cz2qqZ",
+      "office": "senate",
+      "race": "VA",
+      "question": "Which Party will win the 2026 Senate Election in Virginia?"
+    },
+    {
+      "id": "QEIy2CItpZ",
+      "slug": "which-party-will-will-the-2026-us-s",
+      "office": "senate",
+      "race": "WV",
+      "question": "Which Party will will the 2026 US Senate Election in West Virginia"
+    },
+    {
+      "id": "9UsuPpP8Ph",
+      "slug": "which-party-will-win-the-2026-senat-OdACN5q9PP",
+      "office": "senate",
+      "race": "WY",
+      "question": "Which Party will win the 2026 Senate Election in Wyoming?"
+    },
+    {
+      "id": "UEnlNUy92z",
+      "slug": "which-party-will-win-the-alaska-gov",
+      "office": "governor",
+      "race": "AK",
+      "question": "Which Party will win the Alaska Governors race in 2026?"
+    },
+    {
+      "id": "Qlg62L5zAE",
+      "slug": "which-party-will-win-the-2026-alaba-Sg9ROtngq6",
+      "office": "governor",
+      "race": "AL",
+      "question": "Which Party will win the 2026 Alabama gubernatorial election?"
+    },
+    {
+      "id": "zUEPLyNN0P",
+      "slug": "which-party-will-win-the-arkansas-g",
+      "office": "governor",
+      "race": "AR",
+      "question": "Which Party will win the Arkansas Governor's Election in 2026?"
+    },
+    {
+      "id": "kM41Ov078DlxVyqciouN",
+      "slug": "arizona-governors-race-which-party",
+      "office": "governor",
+      "race": "AZ",
+      "question": "Arizona Governor's Race: Which party will win in 2026?"
+    },
+    {
+      "id": "pRsyVoO38fHU2psY5PBf",
+      "slug": "california-governors-race-which-par",
+      "office": "governor",
+      "race": "CA",
+      "question": "California Governor's Race: Which party will win in 2026?"
+    },
+    {
+      "id": "8ustL98CUg",
+      "slug": "who-will-win-the-2026-colorado-gube",
+      "office": "governor",
+      "race": "CO",
+      "question": "Who will win the 2026 Colorado gubernatorial election?"
+    },
+    {
+      "id": "8dOsCEc9ZL",
+      "slug": "which-party-will-win-the-2026-conne",
+      "office": "governor",
+      "race": "CT",
+      "question": "Which Party will win the 2026 Connecticut gubernatorial election?"
+    },
+    {
+      "id": "uODgxBgIoHZWqFqHGPbe",
+      "slug": "will-a-republican-win-the-florida-g",
+      "office": "governor",
+      "race": "FL",
+      "question": "Will a Republican win the Florida governorship in 2026?"
+    },
+    {
+      "id": "JCkqQkGivcOi59ArT0BY",
+      "slug": "georgia-governors-race-which-party",
+      "office": "governor",
+      "race": "GA",
+      "question": "Georgia Governor's Race: Which party will win in 2026?"
+    },
+    {
+      "id": "6IgNyCCSUn",
+      "slug": "which-party-will-win-the-2026-hawai",
+      "office": "governor",
+      "race": "HI",
+      "question": "Which Party will win the 2026 Hawaii gubernatorial election?"
+    },
+    {
+      "id": "8NuShEdyCh",
+      "slug": "which-party-will-win-iowas-2026-gub",
+      "office": "governor",
+      "race": "IA",
+      "question": "Which party will win Iowa's 2026 Gubernatorial Election?"
+    },
+    {
+      "id": "lhIcPAERzU",
+      "slug": "which-party-will-win-the-2026-idaho-qdpIthLqnl",
+      "office": "governor",
+      "race": "ID",
+      "question": "Which Party will win the 2026 Idaho Gubernatorial election?"
+    },
+    {
+      "id": "Pyl66EshPl",
+      "slug": "which-party-will-win-the-2026-illin-q5Nnz0zzcd",
+      "office": "governor",
+      "race": "IL",
+      "question": "Which Party will win the 2026 Illinois Gubernatorial Election?"
+    },
+    {
+      "id": "n2A2ySggys",
+      "slug": "will-the-republicans-win-the-2026-k",
+      "office": "governor",
+      "race": "KS",
+      "question": "Will the Republicans win the 2026 Kansas Governor election?"
+    },
+    {
+      "id": "Hvlx213sUvoKxeP9do21",
+      "slug": "massachusetts-governors-race-which",
+      "office": "governor",
+      "race": "MA",
+      "question": "Massachusetts Governor's Race: Which party will win in 2026?"
+    },
+    {
+      "id": "yqOnLgpc6C",
+      "slug": "which-party-will-win-the-2026-maryl",
+      "office": "governor",
+      "race": "MD",
+      "question": "Which Party will win the 2026 Maryland Gubernatorial Election?"
+    },
+    {
+      "id": "lypQhntEzA",
+      "slug": "which-party-will-in-the-2026-maine",
+      "office": "governor",
+      "race": "ME",
+      "question": "Which Party will in the 2026 Maine Gubernatorial election?"
+    },
+    {
+      "id": "LE6s82ZcAp",
+      "slug": "who-will-the-2026-michigan-governor",
+      "office": "governor",
+      "race": "MI",
+      "question": "Who Will the 2026 Michigan Governors election?"
+    },
+    {
+      "id": "LNPL28tA80",
+      "slug": "democrats-win-2026-minnesota-gubern",
+      "office": "governor",
+      "race": "MN",
+      "question": "Democrats win 2026 Minnesota gubernatorial election?"
+    },
+    {
+      "id": "QcRqudlpPl",
+      "slug": "which-party-will-win-the-2026-nebra-hCZdznyt5s",
+      "office": "governor",
+      "race": "NE",
+      "question": "Which Party will win the 2026 Nebraska Governor's race?"
+    },
+    {
+      "id": "L20yNCI9nt",
+      "slug": "which-party-will-win-the-2026-new-h-2UlpPIy0NQ",
+      "office": "governor",
+      "race": "NH",
+      "question": "Which party will win the 2026 New Hampshire Governor election?"
+    },
+    {
+      "id": "U2AgLROnZC",
+      "slug": "which-party-will-win-the-2026-new-m-EyudAL0LqQ",
+      "office": "governor",
+      "race": "NM",
+      "question": "Which Party will win the 2026 New Mexico Governor's Election?"
+    },
+    {
+      "id": "qdC0cQduhC",
+      "slug": "which-party-will-win-the-2026-nevad",
+      "office": "governor",
+      "race": "NV",
+      "question": "Which Party will win the 2026 Nevada Governors Race?"
+    },
+    {
+      "id": "5ElGq01XrCeDtPRsFjUM",
+      "slug": "new-york-governors-race-which-party",
+      "office": "governor",
+      "race": "NY",
+      "question": "New York Governor's Race: Which party will win in 2026?"
+    },
+    {
+      "id": "tyqgQCS0zd",
+      "slug": "2026-ohio-governor-election-winner",
+      "office": "governor",
+      "race": "OH",
+      "question": "2026 Ohio Governor election winner?"
+    },
+    {
+      "id": "ECpCNAhRlE",
+      "slug": "which-party-will-win-the-2026-oklah",
+      "office": "governor",
+      "race": "OK",
+      "question": "Which Party will win the 2026 Oklahoma gubernatorial election?"
+    },
+    {
+      "id": "InE0tLCOC0",
+      "slug": "2026-oregon-governor-election-winne",
+      "office": "governor",
+      "race": "OR",
+      "question": "2026 Oregon Governor election winner?"
+    },
+    {
+      "id": "QcPEg95OS6",
+      "slug": "which-party-will-win-the-2026-penns",
+      "office": "governor",
+      "race": "PA",
+      "question": "Which Party will win the 2026 Pennsylvania Gubernatorial election?"
+    },
+    {
+      "id": "5U0E2zEduP",
+      "slug": "who-will-win-the-2026-rhode-island",
+      "office": "governor",
+      "race": "RI",
+      "question": "Who will win the 2026 Rhode Island governor election?"
+    },
+    {
+      "id": "0Ep202R8RS",
+      "slug": "which-party-will-win-the-2026-south-E22N0t2lNg",
+      "office": "governor",
+      "race": "SC",
+      "question": "Which Party will win the 2026 South Carolina Gubernatorial Election?"
+    },
+    {
+      "id": "88upNEt2tn",
+      "slug": "which-party-will-win-the-2026-south-IPqyQsUU0z",
+      "office": "governor",
+      "race": "SD",
+      "question": "Which Party will win the 2026 South Dakota Gubernatorial Election?"
+    },
+    {
+      "id": "SIsCPzP6sZ",
+      "slug": "which-party-will-win-the-2026-tenne",
+      "office": "governor",
+      "race": "TN",
+      "question": "Which Party will win the 2026 Tennessee Gubernatorial Election?"
+    },
+    {
+      "id": "OZv5O8iPqPQhdavqQOSQ",
+      "slug": "texas-governors-race-which-party-wi",
+      "office": "governor",
+      "race": "TX",
+      "question": "Texas Governor's Race: Which party will win in 2026?"
+    },
+    {
+      "id": "ungp6gZIzh",
+      "slug": "which-party-will-win-the-2026-vermo",
+      "office": "governor",
+      "race": "VT",
+      "question": "Which Party will win the 2026 Vermont Gubernatorial Election?"
+    },
+    {
+      "id": "qScqn2tS8Q",
+      "slug": "which-party-will-win-the-2026-wisco",
+      "office": "governor",
+      "race": "WI",
+      "question": "Which Party will win the 2026 Wisconsin gubernatorial election?"
+    },
+    {
+      "id": "dtZA0OZ8yZ",
+      "slug": "what-party-will-win-the-2026-wyomin",
+      "office": "governor",
+      "race": "WY",
+      "question": "What Party will win the 2026 Wyoming Gubernatorial Election?"
+    },
+    {
+      "id": "USqLR8OSCI",
+      "slug": "which-california-house-districts-wi",
+      "office": "house",
+      "race": "",
+      "question": "Which California House Districts will Democrats win in the 2026 Midterms?"
+    },
+    {
+      "id": "cN025dzLdO",
+      "slug": "which-florida-house-districts-will",
+      "office": "house",
+      "race": "",
+      "question": "Which Florida House Districts will the Democrats win in the 2026 midterms?"
+    },
+    {
+      "id": "Qzqdd2ptO6",
+      "slug": "which-iowa-congressional-districts",
+      "office": "house",
+      "race": "",
+      "question": "Which Iowa congressional districts will the Democrats win in the 2026 midterms?"
+    },
+    {
+      "id": "ps6uhP6ttd",
+      "slug": "which-nevada-us-house-seats-will-de",
+      "office": "house",
+      "race": "",
+      "question": "Which Nevada U.S. House Seats will Democrats win in the 2026 midterms?"
+    },
+    {
+      "id": "9nS9P2scql",
+      "slug": "which-new-york-house-districts-will",
+      "office": "house",
+      "race": "",
+      "question": "Which New York House Districts will the Democrats win in the 2026 midterms?"
+    },
+    {
+      "id": "NZuO50NCLg",
+      "slug": "which-texas-house-districts-will-th",
+      "office": "house",
+      "race": "",
+      "question": "Which Texas House Districts will the Democrats win in the 2026 midterms?"
+    },
+    {
+      "id": "SRynqNSuEL",
+      "slug": "which-texas-us-house-districts-will",
+      "office": "house",
+      "race": "",
+      "question": "Which Texas US House Districts will a Democrat win?"
+    },
+    {
+      "id": "s2uNNQ2N5I",
+      "slug": "which-us-house-districts-in-the-mid",
+      "office": "house",
+      "race": "",
+      "question": "Which US House districts in the Midwest will a Democrat win?"
+    },
+    {
+      "id": "9zPhhzEnCc",
+      "slug": "who-will-win-the-alaska-house-elect",
+      "office": "house",
+      "race": "AK-0",
+      "question": "Who will win the 2026 Alaska House election?"
+    },
+    {
+      "id": "q5Opz89IsE",
+      "slug": "which-party-will-win-the-2026-us-ho",
+      "office": "house",
+      "race": "AL-1",
+      "question": "Which party will win the 2026 U.S. House election in Alabama's 1st District?"
+    },
+    {
+      "id": "2gnh0c6NqI",
+      "slug": "will-democrat-shomari-figures-win-a",
+      "office": "house",
+      "race": "AL-2",
+      "question": "Will Democrat Shomari Figures win Alabamas 2nd congressional district in 2026?"
+    },
+    {
+      "id": "hURAzpSUsg",
+      "slug": "which-party-will-win-the-2026-us-ho-zEOqy9nn9c",
+      "office": "house",
+      "race": "AL-3",
+      "question": "Which party will win the 2026 U.S. House election in Alabama's 3rd District?"
+    },
+    {
+      "id": "9O8lAcQ2sn",
+      "slug": "which-party-will-win-the-2026-us-ho-Sh5EyRUn6q",
+      "office": "house",
+      "race": "AL-4",
+      "question": "Which party will win the 2026 U.S. House election in Alabama's 4th District?"
+    },
+    {
+      "id": "OnALOLS8g9",
+      "slug": "which-party-will-win-the-2026-us-ho-9dzS6cIENU",
+      "office": "house",
+      "race": "AL-5",
+      "question": "Which party will win the 2026 U.S. House election in Alabama's 5th District?"
+    },
+    {
+      "id": "gZyQOZA9L6",
+      "slug": "which-party-will-win-the-2026-us-ho-yscLRRpzsQ",
+      "office": "house",
+      "race": "AL-6",
+      "question": "Which party will win the 2026 U.S. House election in Alabama's 6th District?"
+    },
+    {
+      "id": "LyRI9c5tq6",
+      "slug": "which-party-will-win-the-2026-us-ho-AqUpzn2zhN",
+      "office": "house",
+      "race": "AL-7",
+      "question": "Which party will win the 2026 U.S. House election in Alabama's 7th District?"
+    },
+    {
+      "id": "nAOcp9gC5l",
+      "slug": "which-party-will-win-the-2026-us-ho-0usLcNPuzS",
+      "office": "house",
+      "race": "AR-1",
+      "question": "Which party will win the 2026 U.S. House election in Arkansas' 1st District?"
+    },
+    {
+      "id": "ElpUnlZRsN",
+      "slug": "which-party-will-win-the-2026-us-ho-sECPNQSlCQ",
+      "office": "house",
+      "race": "AR-2",
+      "question": "Which party will win the 2026 U.S. House election in Arkansas' 2nd District?"
+    },
+    {
+      "id": "Q6yAsAhO8E",
+      "slug": "which-party-will-win-the-2026-us-ho-ClgyRu0pQU",
+      "office": "house",
+      "race": "AR-3",
+      "question": "Which party will win the 2026 U.S. House election in Arkansas' 3rd District?"
+    },
+    {
+      "id": "6pzsuzRLpP",
+      "slug": "which-party-will-win-the-2026-us-ho-CL5sAsUR8s",
+      "office": "house",
+      "race": "AR-4",
+      "question": "Which party will win the 2026 U.S. House election in Arkansas' 4th District?"
+    },
+    {
+      "id": "d0pCQnSCRN",
+      "slug": "which-party-will-win-the-2026-us-ho-5PAhdzyRzP",
+      "office": "house",
+      "race": "AZ-3",
+      "question": "Which party will win the 2026 U.S. House election in Arizona's 3rd District?"
+    },
+    {
+      "id": "R0uZnlE9cU",
+      "slug": "which-party-will-win-the-2026-us-ho-uEUnA5nhqC",
+      "office": "house",
+      "race": "AZ-4",
+      "question": "Which party will win the 2026 U.S. House election in Arizona's 4th District?"
+    },
+    {
+      "id": "Suzd0nnIsU",
+      "slug": "which-party-will-win-the-2026-us-ho-UC5PSsgddP",
+      "office": "house",
+      "race": "AZ-5",
+      "question": "Which party will win the 2026 U.S. House election in Arizona's 5th District?"
+    },
+    {
+      "id": "ypsI2llcpI",
+      "slug": "which-party-will-win-the-2026-us-ho-ys2nqIltnU",
+      "office": "house",
+      "race": "AZ-7",
+      "question": "Which party will win the 2026 U.S. House election in Arizona's 7th District?"
+    },
+    {
+      "id": "6ngslU8A5Q",
+      "slug": "which-party-will-win-the-2026-us-ho-gnRUUNLSlP",
+      "office": "house",
+      "race": "AZ-8",
+      "question": "Which party will win the 2026 U.S. House election in Arizona's 8th District?"
+    },
+    {
+      "id": "PzsRhNcucz",
+      "slug": "which-party-will-win-the-2026-us-ho-dt9ZhE0NUu",
+      "office": "house",
+      "race": "AZ-9",
+      "question": "Which party will win the 2026 U.S. House election in Arizona's 9th District?"
+    },
+    {
+      "id": "yZRqg50ddy",
+      "slug": "who-will-win-the-ca4-house-election-0suAR0A066",
+      "office": "house",
+      "race": "CA-4",
+      "question": "Who will win the CA-4 house election?"
+    },
+    {
+      "id": "OuAAPuqpzE",
+      "slug": "2026-us-house-ca-7-winner",
+      "office": "house",
+      "race": "CA-7",
+      "question": "2026 Us House Ca 7 winner?"
+    },
+    {
+      "id": "8uzA88lE2A",
+      "slug": "who-will-win-the-2026-election-for-AndtddsLn0",
+      "office": "house",
+      "race": "CA-11",
+      "question": "Who will win the 2026 election for California's 11th Congressional District"
+    },
+    {
+      "id": "UyqlzUzdAQ",
+      "slug": "2026-california-12th-congressional",
+      "office": "house",
+      "race": "CA-12",
+      "question": "2026 California 12th congressional district winner?"
+    },
+    {
+      "id": "PsPO6z5zZt",
+      "slug": "will-jamie-joyce-win-the-2026-12th",
+      "office": "house",
+      "race": "CA-12",
+      "question": "Will Jamie Joyce win the 2026 12th California Congressional district race?"
+    },
+    {
+      "id": "zU5S55uNOA",
+      "slug": "who-will-win-the-2026-election-for-chQddtRLUt",
+      "office": "house",
+      "race": "CA-14",
+      "question": "Who will win the 2026 election for California's 14th Congressional District"
+    },
+    {
+      "id": "5Zuc9gPcsR",
+      "slug": "who-will-win-the-2026-us-house-elec",
+      "office": "house",
+      "race": "CA-29",
+      "question": "Who will win the 2026 U.S. House election in California's 29th District?"
+    },
+    {
+      "id": "N0sqEU0nCn",
+      "slug": "2026-us-house-ca34-winner",
+      "office": "house",
+      "race": "CA-34",
+      "question": "2026 Us House Ca-34 winner?"
+    },
+    {
+      "id": "PLdO9EPtLN",
+      "slug": "2026-californias-37th-congressional",
+      "office": "house",
+      "race": "CA-37",
+      "question": "2026 californias 37th congressional district winner?"
+    },
+    {
+      "id": "U9PL8hI5sU",
+      "slug": "who-will-win-the-us-house-race-in-c",
+      "office": "house",
+      "race": "CA-40",
+      "question": "Who will win the U.S. House Race in California's 40th District?"
+    },
+    {
+      "id": "uZUpQyzOOE",
+      "slug": "who-will-win-colorado-house-distric",
+      "office": "house",
+      "race": "CO-1",
+      "question": "Who will win Colorado House district CO-1 in 2026?"
+    },
+    {
+      "id": "ENgUn2pd8q",
+      "slug": "which-party-will-win-the-2026-us-ho-8nA6QIPnu2",
+      "office": "house",
+      "race": "CO-2",
+      "question": "Which party will win the 2026 U.S. House election in Colorado's 2nd District?"
+    },
+    {
+      "id": "5EIC9A05cU",
+      "slug": "will-lauren-boebert-be-reelected-to",
+      "office": "house",
+      "race": "CO-4",
+      "question": "Will Lauren Boebert be re-elected to the House in 2026?"
+    },
+    {
+      "id": "zgPqS9yAN0",
+      "slug": "which-party-will-win-the-2026-us-ho-cC90qp6nCP",
+      "office": "house",
+      "race": "CO-5",
+      "question": "Which party will win the 2026 U.S. House election in Colorado's 5th District?"
+    },
+    {
+      "id": "0py856CPPn",
+      "slug": "which-party-will-win-the-2026-us-ho-Ud8s6EcUUg",
+      "office": "house",
+      "race": "CO-6",
+      "question": "Which party will win the 2026 U.S. House election in Colorado's 6th District?"
+    },
+    {
+      "id": "LAOOtcnSuZ",
+      "slug": "which-party-will-win-the-2026-us-ho-cQ6AO0nz5R",
+      "office": "house",
+      "race": "CO-7",
+      "question": "Which party will win the 2026 U.S. House election in Colorado's 7th District?"
+    },
+    {
+      "id": "5dC0zz88ln",
+      "slug": "which-party-will-win-the-2026-us-ho-UdPlUUyNqn",
+      "office": "house",
+      "race": "CT-1",
+      "question": "Which party will win the 2026 U.S. House election in Connecticut's 1st District?"
+    },
+    {
+      "id": "cUcpyz2Sc2",
+      "slug": "which-party-will-win-the-2026-us-ho-qCId6dnZS2",
+      "office": "house",
+      "race": "CT-2",
+      "question": "Which party will win the 2026 U.S. House election in Connecticut's 2nd District?"
+    },
+    {
+      "id": "lpl2y2duCP",
+      "slug": "which-party-will-win-the-2026-us-ho-lsPRSyhCPg",
+      "office": "house",
+      "race": "CT-3",
+      "question": "Which party will win the 2026 U.S. House election in Connecticut's 3rd District?"
+    },
+    {
+      "id": "pLdg0LC05z",
+      "slug": "which-party-will-win-the-2026-us-ho-nLAgd8tccL",
+      "office": "house",
+      "race": "CT-4",
+      "question": "Which party will win the 2026 U.S. House election in Connecticut's 4th District?"
+    },
+    {
+      "id": "N6hOZSuhLQ",
+      "slug": "which-party-will-win-the-2026-us-ho-ysgtp9NU6y",
+      "office": "house",
+      "race": "DE-0",
+      "question": "Which party will win the 2026 U.S. House election in Delaware's at-large district?"
+    },
+    {
+      "id": "EyzOtEtsgP",
+      "slug": "which-party-will-win-ga01-in-the-20",
+      "office": "house",
+      "race": "GA-1",
+      "question": "Which party will win GA-01 in the 2026 midterms?"
+    },
+    {
+      "id": "gsOssAZR8h",
+      "slug": "which-party-will-win-the-2026-us-ho-zNPuQ2h2sy",
+      "office": "house",
+      "race": "GA-2",
+      "question": "Which party will win the 2026 U.S. House election in Georgia's 2nd District?"
+    },
+    {
+      "id": "OZdSNC8uqu",
+      "slug": "which-party-will-win-the-2026-us-ho-0EcNcSnRdy",
+      "office": "house",
+      "race": "GA-3",
+      "question": "Which party will win the 2026 U.S. House election in Georgia's 3rd District?"
+    },
+    {
+      "id": "p6U5cOEcQC",
+      "slug": "which-party-will-win-the-2026-us-ho-sNS28P2t0g",
+      "office": "house",
+      "race": "GA-4",
+      "question": "Which party will win the 2026 U.S. House election in Georgia's 4th District?"
+    },
+    {
+      "id": "AzCNnsN8y6",
+      "slug": "which-party-will-win-the-2026-us-ho-t59ulI6RLR",
+      "office": "house",
+      "race": "GA-5",
+      "question": "Which party will win the 2026 U.S. House election in Georgia's 5th District?"
+    },
+    {
+      "id": "Ss8s6lIqOR",
+      "slug": "which-party-will-win-the-2026-us-ho-2SOzcy8L5O",
+      "office": "house",
+      "race": "GA-6",
+      "question": "Which party will win the 2026 U.S. House election in Georgia's 6th District?"
+    },
+    {
+      "id": "5IUzlAAOCq",
+      "slug": "which-party-will-win-the-2026-us-ho-LE8IgR6pOP",
+      "office": "house",
+      "race": "GA-7",
+      "question": "Which party will win the 2026 U.S. House election in Georgia's 7th District?"
+    },
+    {
+      "id": "cqAc9qZAA0",
+      "slug": "which-party-will-win-the-2026-us-ho-lu8UUqsEAt",
+      "office": "house",
+      "race": "GA-8",
+      "question": "Which party will win the 2026 U.S. House election in Georgia's 8th District?"
+    },
+    {
+      "id": "6dnc59Zlns",
+      "slug": "which-party-will-win-the-2026-us-ho-pnSAEOQ9ZU",
+      "office": "house",
+      "race": "GA-9",
+      "question": "Which party will win the 2026 U.S. House election in Georgia's 9th District?"
+    },
+    {
+      "id": "d2LZCQ80P9",
+      "slug": "which-party-will-win-the-2026-us-ho-uPSgtyqc9S",
+      "office": "house",
+      "race": "GA-10",
+      "question": "Which party will win the 2026 U.S. House election in Georgia's 10th District?"
+    },
+    {
+      "id": "lqQUSgs9Z2",
+      "slug": "which-party-will-win-the-2026-us-ho-8nIAqRZQAh",
+      "office": "house",
+      "race": "GA-11",
+      "question": "Which party will win the 2026 U.S. House election in Georgia's 11th District?"
+    },
+    {
+      "id": "tILd2I9QlE",
+      "slug": "which-party-will-win-the-2026-us-ho-2d6h5ILcS0",
+      "office": "house",
+      "race": "GA-12",
+      "question": "Which party will win the 2026 U.S. House election in Georgia's 12th District?"
+    },
+    {
+      "id": "2592l9pIuu",
+      "slug": "which-party-will-win-the-2026-us-ho-AOzSuAccnu",
+      "office": "house",
+      "race": "GA-13",
+      "question": "Which party will win the 2026 U.S. House election in Georgia's 13th District?"
+    },
+    {
+      "id": "P0OnSEgALQ",
+      "slug": "which-party-will-win-the-2026-us-ho-Ig6ORRNNtn",
+      "office": "house",
+      "race": "GA-14",
+      "question": "Which party will win the 2026 U.S. House election in Georgia's 14th District?"
+    },
+    {
+      "id": "gd2d2tQuP2",
+      "slug": "which-party-will-win-the-2026-us-ho-NA2ggnZNqO",
+      "office": "house",
+      "race": "HI-1",
+      "question": "Which party will win the 2026 U.S. House election in Hawaii's 1st District?"
+    },
+    {
+      "id": "ClCOn0sUnO",
+      "slug": "which-party-will-win-the-2026-us-ho-zgZ6g889nQ",
+      "office": "house",
+      "race": "HI-2",
+      "question": "Which party will win the 2026 U.S. House election in Hawaii's 2nd District?"
+    },
+    {
+      "id": "A2h85Z6ZSU",
+      "slug": "which-party-will-win-the-iowas-2nd",
+      "office": "house",
+      "race": "IA-2",
+      "question": "Which Party will win the Iowas 2nd House District Election?"
+    },
+    {
+      "id": "cPQSlP0q0h",
+      "slug": "which-party-will-win-the-2026-us-ho-6EtsRPZsSg",
+      "office": "house",
+      "race": "ID-1",
+      "question": "Which party will win the 2026 U.S. House election in Idaho's 1st District?"
+    },
+    {
+      "id": "OpEQAINLU6",
+      "slug": "which-party-will-win-the-2026-us-ho-9nSRt0qRAU",
+      "office": "house",
+      "race": "ID-2",
+      "question": "Which party will win the 2026 U.S. House election in Idaho's 2nd District?"
+    },
+    {
+      "id": "lp25AngIng",
+      "slug": "which-party-will-win-the-2026-us-ho-L6IlE0nq88",
+      "office": "house",
+      "race": "IL-1",
+      "question": "Which party will win the 2026 U.S. House election in Illinois's 1st District?"
+    },
+    {
+      "id": "hhlL2p0NQz",
+      "slug": "which-party-will-win-the-2026-us-ho-tLQAA5n52p",
+      "office": "house",
+      "race": "IL-2",
+      "question": "Which party will win the 2026 U.S. House election in Illinois's 2nd District?"
+    },
+    {
+      "id": "gZsEIlAsu2",
+      "slug": "which-party-will-win-the-2026-us-ho-L0Q6tp9Ag6",
+      "office": "house",
+      "race": "IL-3",
+      "question": "Which party will win the 2026 U.S. House election in Illinois's 3rd District?"
+    },
+    {
+      "id": "6EEZ8E8usd",
+      "slug": "which-party-will-win-the-2026-us-ho-6uOZOZddAL",
+      "office": "house",
+      "race": "IL-4",
+      "question": "Which party will win the 2026 U.S. House election in Illinois's 4th District?"
+    },
+    {
+      "id": "96IzOltlEp",
+      "slug": "which-party-will-win-the-2026-us-ho-ghltZht9s0",
+      "office": "house",
+      "race": "IL-5",
+      "question": "Which party will win the 2026 U.S. House election in Illinois's 5th District?"
+    },
+    {
+      "id": "NAO2yZh59A",
+      "slug": "which-party-will-win-the-2026-us-ho-yuSzdEpZ6N",
+      "office": "house",
+      "race": "IL-6",
+      "question": "Which party will win the 2026 U.S. House election in Illinois's 6th District?"
+    },
+    {
+      "id": "nZstIA50z9",
+      "slug": "which-party-will-win-the-2026-us-ho-RyPntOqOq8",
+      "office": "house",
+      "race": "IL-7",
+      "question": "Which party will win the 2026 U.S. House election in Illinois's 7th District?"
+    },
+    {
+      "id": "5A8nh2CNdz",
+      "slug": "which-party-will-win-the-2026-us-ho-2PSQLnhtPu",
+      "office": "house",
+      "race": "IL-8",
+      "question": "Which party will win the 2026 U.S. House election in Illinois's 8th District?"
+    },
+    {
+      "id": "NU6OqOEZ2c",
+      "slug": "which-party-will-win-the-2026-us-ho-Sytl0QlzNE",
+      "office": "house",
+      "race": "IL-9",
+      "question": "Which party will win the 2026 U.S. House election in Illinois's 9th District?"
+    },
+    {
+      "id": "6qyClAsqZP",
+      "slug": "which-party-will-win-the-2026-us-ho-Cl0hNIZ9Op",
+      "office": "house",
+      "race": "IL-10",
+      "question": "Which party will win the 2026 U.S. House election in Illinois's 10th District?"
+    },
+    {
+      "id": "ZZR9tnzpZZ",
+      "slug": "which-party-will-win-the-2026-us-ho-Ozu9ZtAI9d",
+      "office": "house",
+      "race": "IL-11",
+      "question": "Which party will win the 2026 U.S. House election in Illinois's 11th District?"
+    },
+    {
+      "id": "yqUIp9yAUQ",
+      "slug": "which-party-will-win-the-2026-us-ho-R9N6gIdctn",
+      "office": "house",
+      "race": "IL-12",
+      "question": "Which party will win the 2026 U.S. House election in Illinois's 12th District?"
+    },
+    {
+      "id": "ysQ9LnCh0p",
+      "slug": "which-party-will-win-the-2026-us-ho-6SEgt0suQt",
+      "office": "house",
+      "race": "IL-13",
+      "question": "Which party will win the 2026 U.S. House election in Illinois's 13th District?"
+    },
+    {
+      "id": "8UR22hhAEA",
+      "slug": "which-party-will-win-the-2026-us-ho-PcEuR9lchQ",
+      "office": "house",
+      "race": "IL-14",
+      "question": "Which party will win the 2026 U.S. House election in Illinois's 14th District?"
+    },
+    {
+      "id": "C9sNdtyCAd",
+      "slug": "which-party-will-win-the-2026-us-ho-Ay02c0RLIU",
+      "office": "house",
+      "race": "IL-15",
+      "question": "Which party will win the 2026 U.S. House election in Illinois's 15th District?"
+    },
+    {
+      "id": "sPQ9glscQ8",
+      "slug": "which-party-will-win-the-2026-us-ho-g6ytPZsR6q",
+      "office": "house",
+      "race": "IL-16",
+      "question": "Which party will win the 2026 U.S. House election in Illinois's 16th District?"
+    },
+    {
+      "id": "5ppg2RNL98",
+      "slug": "which-party-will-win-the-2026-us-ho-RlSCs2SzC9",
+      "office": "house",
+      "race": "IN-2",
+      "question": "Which party will win the 2026 U.S. House election in Indiana's 2nd District?"
+    },
+    {
+      "id": "8lI0OSlhdS",
+      "slug": "which-party-will-win-the-2026-us-ho-C2IUIQQPRp",
+      "office": "house",
+      "race": "IN-3",
+      "question": "Which party will win the 2026 U.S. House election in Indiana's 3rd District?"
+    },
+    {
+      "id": "u5SqRuUyCs",
+      "slug": "which-party-will-win-the-2026-us-ho-l0Snn8hspq",
+      "office": "house",
+      "race": "IN-4",
+      "question": "Which party will win the 2026 U.S. House election in Indiana's 4th District?"
+    },
+    {
+      "id": "yPIyRptlQt",
+      "slug": "which-party-will-win-the-2026-us-ho-Rcdz0s6qIU",
+      "office": "house",
+      "race": "IN-5",
+      "question": "Which party will win the 2026 U.S. House election in Indiana's 5th District?"
+    },
+    {
+      "id": "0NUQINhphU",
+      "slug": "which-party-will-win-the-2026-us-ho-L9u0lyIpUL",
+      "office": "house",
+      "race": "IN-6",
+      "question": "Which party will win the 2026 U.S. House election in Indiana's 6th District?"
+    },
+    {
+      "id": "8q6h0qcP0l",
+      "slug": "which-party-will-win-the-2026-us-ho-PsnOc8QAPA",
+      "office": "house",
+      "race": "IN-7",
+      "question": "Which party will win the 2026 U.S. House election in Indiana's 7th District?"
+    },
+    {
+      "id": "q6Ssyy0qph",
+      "slug": "which-party-will-win-the-2026-us-ho-LQ9RL6InZQ",
+      "office": "house",
+      "race": "IN-8",
+      "question": "Which party will win the 2026 U.S. House election in Indiana's 8th District?"
+    },
+    {
+      "id": "9EUpgt62Qs",
+      "slug": "which-party-will-win-the-2026-us-ho-SLOgPpO89l",
+      "office": "house",
+      "race": "IN-9",
+      "question": "Which party will win the 2026 U.S. House election in Indiana's 9th District?"
+    },
+    {
+      "id": "hA2IdSCnQE",
+      "slug": "which-party-will-win-the-2026-us-ho-Edqcc0tl9R",
+      "office": "house",
+      "race": "KS-1",
+      "question": "Which party will win the 2026 U.S. House election in Kansas' 1st District?"
+    },
+    {
+      "id": "nqhdgyz6OU",
+      "slug": "which-party-will-win-the-2026-us-ho-0ucz2RNNlZ",
+      "office": "house",
+      "race": "KS-2",
+      "question": "Which party will win the 2026 U.S. House election in Kansas' 2nd District?"
+    },
+    {
+      "id": "U2h9ALqR9Z",
+      "slug": "which-party-will-win-the-2026-us-ho-ZZEZduZ0nt",
+      "office": "house",
+      "race": "KS-3",
+      "question": "Which party will win the 2026 U.S. House election in Kansas' 3rd District?"
+    },
+    {
+      "id": "C2chRU2N9L",
+      "slug": "which-party-will-win-the-2026-us-ho-dOL50UzIIl",
+      "office": "house",
+      "race": "KS-4",
+      "question": "Which party will win the 2026 U.S. House election in Kansas' 4th District?"
+    },
+    {
+      "id": "IytLR8t2UN",
+      "slug": "which-party-will-win-the-2026-us-ho-EQAOuqPqqN",
+      "office": "house",
+      "race": "KY-1",
+      "question": "Which party will win the 2026 U.S. House election in Kentucky's 1st District?"
+    },
+    {
+      "id": "yApuQ6cQ9q",
+      "slug": "which-party-will-win-the-2026-us-ho-9RtSU0PCAn",
+      "office": "house",
+      "race": "KY-2",
+      "question": "Which party will win the 2026 U.S. House election in Kentucky's 2nd District?"
+    },
+    {
+      "id": "U9lEqhgdLI",
+      "slug": "which-party-will-win-the-2026-us-ho-RSQRZzqQ09",
+      "office": "house",
+      "race": "KY-3",
+      "question": "Which party will win the 2026 U.S. House election in Kentucky's 3rd District?"
+    },
+    {
+      "id": "8pScpgsc9O",
+      "slug": "which-party-will-win-the-2026-us-ho-l8n6PsNuNs",
+      "office": "house",
+      "race": "KY-4",
+      "question": "Which party will win the 2026 U.S. House election in Kentucky's 4th District?"
+    },
+    {
+      "id": "2guUzgU26z",
+      "slug": "which-party-will-win-the-2026-us-ho-zCOE25Op65",
+      "office": "house",
+      "race": "KY-5",
+      "question": "Which party will win the 2026 U.S. House election in Kentucky's 5th District?"
+    },
+    {
+      "id": "65ShsdN2Oh",
+      "slug": "who-will-win-kentuckys-6th-congress",
+      "office": "house",
+      "race": "KY-6",
+      "question": "Who will win Kentuckys 6th congressional district in 2026?"
+    },
+    {
+      "id": "lzql5qqCPL",
+      "slug": "which-party-will-win-the-2026-us-ho-65I6QSztOp",
+      "office": "house",
+      "race": "LA-1",
+      "question": "Which party will win the 2026 U.S. House election in Louisiana's 1st District?"
+    },
+    {
+      "id": "0N6SPOy6yQ",
+      "slug": "which-party-will-win-the-2026-us-ho-zltIc5U9ZP",
+      "office": "house",
+      "race": "LA-2",
+      "question": "Which party will win the 2026 U.S. House election in Louisiana's 2nd District?"
+    },
+    {
+      "id": "nutlNucQh5",
+      "slug": "which-party-will-win-the-2026-us-ho-u2SLdSptRu",
+      "office": "house",
+      "race": "LA-3",
+      "question": "Which party will win the 2026 U.S. House election in Louisiana's 3rd District?"
+    },
+    {
+      "id": "CndzIdpS6R",
+      "slug": "which-party-will-win-the-2026-us-ho-AEQ2OAEhAL",
+      "office": "house",
+      "race": "LA-4",
+      "question": "Which party will win the 2026 U.S. House election in Louisiana's 4th District?"
+    },
+    {
+      "id": "n0hOh0snQ2",
+      "slug": "which-party-will-win-the-2026-us-ho-L8ZOAt82Rq",
+      "office": "house",
+      "race": "LA-5",
+      "question": "Which party will win the 2026 U.S. House election in Louisiana's 5th District?"
+    },
+    {
+      "id": "tQSnz2Epnq",
+      "slug": "which-party-will-win-the-2026-us-ho-dsl5hd8yAR",
+      "office": "house",
+      "race": "LA-6",
+      "question": "Which party will win the 2026 U.S. House election in Louisiana's 6th District?"
+    },
+    {
+      "id": "zcgsQ5cNyN",
+      "slug": "which-party-will-win-the-2026-us-ho-lh0P0EAsPO",
+      "office": "house",
+      "race": "MA-1",
+      "question": "Which party will win the 2026 U.S. House election in Massachusetts' 1st District?"
+    },
+    {
+      "id": "ul0UlstnU2",
+      "slug": "which-party-will-win-the-2026-us-ho-uLps8ynu8c",
+      "office": "house",
+      "race": "MA-3",
+      "question": "Which party will win the 2026 U.S. House election in Massachusetts' 3rd District?"
+    },
+    {
+      "id": "z0c9Us0UR5",
+      "slug": "which-party-will-win-the-2026-us-ho-QdOUOqUgQz",
+      "office": "house",
+      "race": "MA-4",
+      "question": "Which party will win the 2026 U.S. House election in Massachusetts' 4th District?"
+    },
+    {
+      "id": "qOLAzuzA2u",
+      "slug": "which-party-will-win-the-2026-us-ho-SydccnCgEL",
+      "office": "house",
+      "race": "MA-6",
+      "question": "Which party will win the 2026 U.S. House election in Massachusetts' 6th District?"
+    },
+    {
+      "id": "ZgQ26U99PZ",
+      "slug": "which-party-will-win-the-2026-us-ho-y6cduUqq8h",
+      "office": "house",
+      "race": "MA-8",
+      "question": "Which party will win the 2026 U.S. House election in Massachusetts' 8th District?"
+    },
+    {
+      "id": "sISEZdzSdu",
+      "slug": "which-party-will-win-the-2026-us-ho-glQn6nhZC8",
+      "office": "house",
+      "race": "MA-9",
+      "question": "Which party will win the 2026 U.S. House election in Massachusetts' 9th District?"
+    },
+    {
+      "id": "ROASQpAyg2",
+      "slug": "which-party-will-win-the-2026-us-ho-S5tROycyQC",
+      "office": "house",
+      "race": "MD-1",
+      "question": "Which party will win the 2026 U.S. House election in Maryland's 1st District?"
+    },
+    {
+      "id": "LLcz0OIAIQ",
+      "slug": "which-party-will-win-the-2026-us-ho-t9hy80uEEu",
+      "office": "house",
+      "race": "MD-2",
+      "question": "Which party will win the 2026 U.S. House election in Maryland's 2nd District?"
+    },
+    {
+      "id": "25p0U0Pg2z",
+      "slug": "which-party-will-win-the-2026-us-ho-lusRPgy8SE",
+      "office": "house",
+      "race": "MD-3",
+      "question": "Which party will win the 2026 U.S. House election in Maryland's 3rd District?"
+    },
+    {
+      "id": "C5Esl98PS9",
+      "slug": "which-party-will-win-the-2026-us-ho-ZEL9y6g580",
+      "office": "house",
+      "race": "MD-4",
+      "question": "Which party will win the 2026 U.S. House election in Maryland's 4th District?"
+    },
+    {
+      "id": "Nplpy5qOtL",
+      "slug": "which-party-will-win-the-2026-us-ho-OgyOsE2OEZ",
+      "office": "house",
+      "race": "MD-5",
+      "question": "Which party will win the 2026 U.S. House election in Maryland's 5th District?"
+    },
+    {
+      "id": "0t8Cz2n6AA",
+      "slug": "which-party-will-win-the-2026-us-ho-tRSsSC2Q0C",
+      "office": "house",
+      "race": "MD-6",
+      "question": "Which party will win the 2026 U.S. House election in Maryland's 6th District?"
+    },
+    {
+      "id": "5AQs0Q0qhA",
+      "slug": "which-party-will-win-the-2026-us-ho-6PCI9pqzPS",
+      "office": "house",
+      "race": "MD-7",
+      "question": "Which party will win the 2026 U.S. House election in Maryland's 7th District?"
+    },
+    {
+      "id": "nRscqc6ntE",
+      "slug": "which-party-will-win-the-2026-us-ho-O0NcUuNgqA",
+      "office": "house",
+      "race": "MD-8",
+      "question": "Which party will win the 2026 U.S. House election in Maryland's 8th District?"
+    },
+    {
+      "id": "2dL9EdguUd",
+      "slug": "which-party-will-win-the-2026-us-ho-L8phUPQ206",
+      "office": "house",
+      "race": "ME-1",
+      "question": "Which party will win the 2026 U.S. House election in Maine's 1st District?"
+    },
+    {
+      "id": "RSc8OEqNLu",
+      "slug": "which-party-will-win-the-2026-us-ho-SusE9IIhOS",
+      "office": "house",
+      "race": "MI-1",
+      "question": "Which party will win the 2026 U.S. House election in Michigan's 1st District?"
+    },
+    {
+      "id": "2u88Rp9y5S",
+      "slug": "which-party-will-win-the-2026-us-ho-yQLNq6EAqy",
+      "office": "house",
+      "race": "MI-2",
+      "question": "Which party will win the 2026 U.S. House election in Michigan's 2nd District?"
+    },
+    {
+      "id": "yl6PZ8OlSE",
+      "slug": "which-party-will-win-the-2026-us-ho-clZ6SOyqZ6",
+      "office": "house",
+      "race": "MI-5",
+      "question": "Which party will win the 2026 U.S. House election in Michigan's 5th District?"
+    },
+    {
+      "id": "yU8EZhO9cZ",
+      "slug": "which-party-will-win-the-2026-us-ho-Z0LLOQngPc",
+      "office": "house",
+      "race": "MI-6",
+      "question": "Which party will win the 2026 U.S. House election in Michigan's 6th District?"
+    },
+    {
+      "id": "sPP8QgcqN8",
+      "slug": "which-party-will-win-the-2026-us-ho-p8scEOQ0y9",
+      "office": "house",
+      "race": "MI-9",
+      "question": "Which party will win the 2026 U.S. House election in Michigan's 9th District?"
+    },
+    {
+      "id": "h2gR9cCuAh",
+      "slug": "which-party-will-win-the-2026-us-ho-cspq8ORELN",
+      "office": "house",
+      "race": "MI-11",
+      "question": "Which party will win the 2026 U.S. House election in Michigan's 11th District?"
+    },
+    {
+      "id": "Cz9ZlzIIdh",
+      "slug": "which-party-will-win-the-2026-us-ho-O2zZhC62p9",
+      "office": "house",
+      "race": "MI-12",
+      "question": "Which party will win the 2026 U.S. House election in Michigan's 12th District?"
+    },
+    {
+      "id": "9qRpNNAPNq",
+      "slug": "which-party-will-win-the-2026-us-ho-0gSNPAI0RR",
+      "office": "house",
+      "race": "MI-13",
+      "question": "Which party will win the 2026 U.S. House election in Michigan's 13th District?"
+    },
+    {
+      "id": "zCz2z5p5St",
+      "slug": "who-will-win-the-us-house-seat-for",
+      "office": "house",
+      "race": "MN-1",
+      "question": "Who will win the U.S. House seat for Minnesota's 1st Congressional District in November 2026?"
+    },
+    {
+      "id": "gsu5A9qP2L",
+      "slug": "which-party-will-win-the-2026-us-ho-gUqq6ZOEIz",
+      "office": "house",
+      "race": "MN-3",
+      "question": "Which party will win the 2026 U.S. House election in Minnesota's 3rd District?"
+    },
+    {
+      "id": "AqtUy25u95",
+      "slug": "which-party-will-win-the-2026-us-ho-QUdtpuphIO",
+      "office": "house",
+      "race": "MN-4",
+      "question": "Which party will win the 2026 U.S. House election in Minnesota's 4th District?"
+    },
+    {
+      "id": "CPU6QOplsN",
+      "slug": "which-party-will-win-the-2026-us-ho-PUz52dZnZA",
+      "office": "house",
+      "race": "MN-5",
+      "question": "Which party will win the 2026 U.S. House election in Minnesota's 5th District?"
+    },
+    {
+      "id": "zEzIUsQ6pZ",
+      "slug": "which-party-will-win-the-2026-us-ho-shs8N5Z9gC",
+      "office": "house",
+      "race": "MN-6",
+      "question": "Which party will win the 2026 U.S. House election in Minnesota's 6th District?"
+    },
+    {
+      "id": "ggPg5zR8Zl",
+      "slug": "which-party-will-win-the-2026-us-ho-6lSudqUuNE",
+      "office": "house",
+      "race": "MN-7",
+      "question": "Which party will win the 2026 U.S. House election in Minnesota's 7th District?"
+    },
+    {
+      "id": "PCZ0QtcNLQ",
+      "slug": "which-party-will-win-the-2026-us-ho-RI9lOCpu0Q",
+      "office": "house",
+      "race": "MN-8",
+      "question": "Which party will win the 2026 U.S. House election in Minnesota's 8th District?"
+    },
+    {
+      "id": "P6CP0RAEU2",
+      "slug": "which-party-will-win-the-2026-us-ho-5Z6zsgnczp",
+      "office": "house",
+      "race": "MO-1",
+      "question": "Which party will win the 2026 U.S. House election in Missouri's 1st District?"
+    },
+    {
+      "id": "sQQgCq6Eu6",
+      "slug": "which-party-will-win-the-2026-us-ho-zA8EZ0N5N0",
+      "office": "house",
+      "race": "MO-2",
+      "question": "Which party will win the 2026 U.S. House election in Missouri's 2nd District?"
+    },
+    {
+      "id": "8h0SLdLC9C",
+      "slug": "which-party-will-win-the-2026-us-ho-PQRIRgtONq",
+      "office": "house",
+      "race": "MO-3",
+      "question": "Which party will win the 2026 U.S. House election in Missouri's 3rd District?"
+    },
+    {
+      "id": "CggpL8yZ9N",
+      "slug": "which-party-will-win-the-2026-us-ho-NnEZ9NOu0d",
+      "office": "house",
+      "race": "MO-4",
+      "question": "Which party will win the 2026 U.S. House election in Missouri's 4th District?"
+    },
+    {
+      "id": "uZZyLC0ASP",
+      "slug": "which-party-will-win-the-2026-us-ho-692sQgZz2s",
+      "office": "house",
+      "race": "MO-5",
+      "question": "Which party will win the 2026 U.S. House election in Missouri's 5th District?"
+    },
+    {
+      "id": "pQE8PqQQdn",
+      "slug": "which-party-will-win-the-2026-us-ho-280lIztzyS",
+      "office": "house",
+      "race": "MO-6",
+      "question": "Which party will win the 2026 U.S. House election in Missouri's 6th District?"
+    },
+    {
+      "id": "OdhQ6gZpCc",
+      "slug": "which-party-will-win-the-2026-us-ho-tn9g9yIhUN",
+      "office": "house",
+      "race": "MO-7",
+      "question": "Which party will win the 2026 U.S. House election in Missouri's 7th District?"
+    },
+    {
+      "id": "IZAyQO6zAP",
+      "slug": "which-party-will-win-the-2026-us-ho-NU6zZRLncU",
+      "office": "house",
+      "race": "MO-8",
+      "question": "Which party will win the 2026 U.S. House election in Missouri's 8th District?"
+    },
+    {
+      "id": "ppl6Qsguls",
+      "slug": "which-party-will-win-the-2026-us-ho-6y5clIz6qC",
+      "office": "house",
+      "race": "MS-1",
+      "question": "Which party will win the 2026 U.S. House election in Mississippi's 1st District?"
+    },
+    {
+      "id": "OC2st8950h",
+      "slug": "which-party-will-win-the-2026-us-ho-SgISZz5z0R",
+      "office": "house",
+      "race": "MS-2",
+      "question": "Which party will win the 2026 U.S. House election in Mississippi's 2nd District?"
+    },
+    {
+      "id": "nNUnIANsCt",
+      "slug": "which-party-will-win-the-2026-us-ho-ZclqPlcdzh",
+      "office": "house",
+      "race": "MS-3",
+      "question": "Which party will win the 2026 U.S. House election in Mississippi's 3rd District?"
+    },
+    {
+      "id": "g9uIdELQ0P",
+      "slug": "which-party-will-win-the-2026-us-ho-2cUtQI2CgU",
+      "office": "house",
+      "race": "MS-4",
+      "question": "Which party will win the 2026 U.S. House election in Mississippi's 4th District?"
+    },
+    {
+      "id": "ynA8tEZ8O2",
+      "slug": "which-party-will-win-the-2026-us-ho-sph9lRn690",
+      "office": "house",
+      "race": "MT-2",
+      "question": "Which party will win the 2026 U.S. House election in Montana's 2nd District?"
+    },
+    {
+      "id": "At6UL96nuh",
+      "slug": "which-party-will-win-the-2026-us-ho-dSLuOUQPLU",
+      "office": "house",
+      "race": "NC-2",
+      "question": "Which party will win the 2026 U.S. House election in North Carolina's 2nd District?"
+    },
+    {
+      "id": "2IzCEuclAd",
+      "slug": "which-party-will-win-the-2026-us-ho-q8SdUUCu2n",
+      "office": "house",
+      "race": "NC-3",
+      "question": "Which party will win the 2026 U.S. House election in North Carolina's 3rd District?"
+    },
+    {
+      "id": "t8zqll0QIC",
+      "slug": "which-party-will-win-the-2026-us-ho-8l5OqQZg5h",
+      "office": "house",
+      "race": "NC-4",
+      "question": "Which party will win the 2026 U.S. House election in North Carolina's 4th District?"
+    },
+    {
+      "id": "C8SN5zQScp",
+      "slug": "which-party-will-win-the-2026-us-ho-2nOnEUZ9NZ",
+      "office": "house",
+      "race": "NC-5",
+      "question": "Which party will win the 2026 U.S. House election in North Carolina's 5th District?"
+    },
+    {
+      "id": "dS8pZsO9N2",
+      "slug": "which-party-will-win-the-2026-us-ho-8yUtOuU9yc",
+      "office": "house",
+      "race": "NC-6",
+      "question": "Which party will win the 2026 U.S. House election in North Carolina's 6th District?"
+    },
+    {
+      "id": "CSuyzpgOIc",
+      "slug": "which-party-will-win-the-2026-us-ho-gnSt89NQ8A",
+      "office": "house",
+      "race": "NC-7",
+      "question": "Which party will win the 2026 U.S. House election in North Carolina's 7th District?"
+    },
+    {
+      "id": "uq8ppQcLN8",
+      "slug": "which-party-will-win-the-2026-us-ho-RZLNIhupny",
+      "office": "house",
+      "race": "NC-8",
+      "question": "Which party will win the 2026 U.S. House election in North Carolina's 8th District?"
+    },
+    {
+      "id": "RZSnU2csSI",
+      "slug": "will-richard-ojeda-win-north-caroli",
+      "office": "house",
+      "race": "NC-9",
+      "question": "Will Richard Ojeda win North Carolinas 9th District?"
+    },
+    {
+      "id": "pc5ERZzgtd",
+      "slug": "which-party-will-win-the-2026-us-ho-lNOQLpUy50",
+      "office": "house",
+      "race": "NC-10",
+      "question": "Which party will win the 2026 U.S. House election in North Carolina's 10th District?"
+    },
+    {
+      "id": "ZLcuNpd9ZS",
+      "slug": "nc11-house-winner",
+      "office": "house",
+      "race": "NC-11",
+      "question": "NC-11 House winner?"
+    },
+    {
+      "id": "sPCQsphEpO",
+      "slug": "which-party-will-win-the-2026-us-ho-QnEn8zSOAl",
+      "office": "house",
+      "race": "NC-12",
+      "question": "Which party will win the 2026 U.S. House election in North Carolina's 12th District?"
+    },
+    {
+      "id": "EO2EPndZ9t",
+      "slug": "which-party-will-win-the-2026-us-ho-czycsQSAO0",
+      "office": "house",
+      "race": "NC-13",
+      "question": "Which party will win the 2026 U.S. House election in North Carolina's 13th District?"
+    },
+    {
+      "id": "NAnshulz20",
+      "slug": "which-party-will-win-the-2026-us-ho-znP9Uc9uRg",
+      "office": "house",
+      "race": "NC-14",
+      "question": "Which party will win the 2026 U.S. House election in North Carolina's 14th District?"
+    },
+    {
+      "id": "E8ulEgcIRz",
+      "slug": "which-party-will-win-the-2026-us-ho-lQA62UuUAs",
+      "office": "house",
+      "race": "ND-0",
+      "question": "Which party will win the 2026 U.S. House election in North Dakota's at-large district?"
+    },
+    {
+      "id": "An5nNqZzZN",
+      "slug": "which-party-will-win-the-2026-us-ho-P2sZNgUzzA",
+      "office": "house",
+      "race": "NE-1",
+      "question": "Which party will win the 2026 U.S. House election in Nebraska's 1st District?"
+    },
+    {
+      "id": "RId8nyt5zy",
+      "slug": "which-party-will-win-the-2026-us-ho-dIuIh2z6Ig",
+      "office": "house",
+      "race": "NE-3",
+      "question": "Which party will win the 2026 U.S. House election in Nebraska's 3rd District?"
+    },
+    {
+      "id": "pgh2sLlSIt",
+      "slug": "which-party-will-win-the-2026-us-ho-8clPZ66stZ",
+      "office": "house",
+      "race": "NJ-1",
+      "question": "Which party will win the 2026 U.S. House election in New Jersey's 1st District?"
+    },
+    {
+      "id": "AUOhtq2N89",
+      "slug": "which-party-will-win-the-2026-us-ho-IOAdtyECnR",
+      "office": "house",
+      "race": "NJ-2",
+      "question": "Which party will win the 2026 U.S. House election in New Jersey's 2nd District?"
+    },
+    {
+      "id": "cNOPnPUptd",
+      "slug": "which-party-will-win-the-2026-us-ho-uuuQCcPlNq",
+      "office": "house",
+      "race": "NJ-3",
+      "question": "Which party will win the 2026 U.S. House election in New Jersey's 3rd District?"
+    },
+    {
+      "id": "g8EOOqINSP",
+      "slug": "which-party-will-win-the-2026-us-ho-LLh82ON86d",
+      "office": "house",
+      "race": "NJ-4",
+      "question": "Which party will win the 2026 U.S. House election in New Jersey's 4th District?"
+    },
+    {
+      "id": "hlScUZSups",
+      "slug": "which-party-will-win-the-2026-us-ho-qdsOQ9tz8L",
+      "office": "house",
+      "race": "NJ-6",
+      "question": "Which party will win the 2026 U.S. House election in New Jersey's 6th District?"
+    },
+    {
+      "id": "sCudzENQC0",
+      "slug": "which-party-will-win-the-2026-us-ho-s5ZcchzqP5",
+      "office": "house",
+      "race": "NJ-8",
+      "question": "Which party will win the 2026 U.S. House election in New Jersey's 8th District?"
+    },
+    {
+      "id": "I8p6Cz8c0P",
+      "slug": "which-party-will-win-the-2026-us-ho-OU0Rculzsu",
+      "office": "house",
+      "race": "NJ-10",
+      "question": "Which party will win the 2026 U.S. House election in New Jersey's 10th District?"
+    },
+    {
+      "id": "gCsluhOEgI",
+      "slug": "which-party-will-win-the-2026-us-ho-CzngNgtQnQ",
+      "office": "house",
+      "race": "NJ-11",
+      "question": "Which party will win the 2026 U.S. House election in New Jersey's 11th District?"
+    },
+    {
+      "id": "EZsdE8n096",
+      "slug": "which-party-will-win-the-2026-us-ho-C6y9PR9LAg",
+      "office": "house",
+      "race": "NJ-12",
+      "question": "Which party will win the 2026 U.S. House election in New Jersey's 12th District?"
+    },
+    {
+      "id": "5sQ2ZIS8Lt",
+      "slug": "which-party-will-win-the-2026-us-ho-pSzUCyLgNE",
+      "office": "house",
+      "race": "NM-1",
+      "question": "Which party will win the 2026 U.S. House election in New Mexico's 1st District?"
+    },
+    {
+      "id": "yOyt8OChIu",
+      "slug": "which-party-will-win-the-2026-us-ho-s0dZOCQuu8",
+      "office": "house",
+      "race": "NM-3",
+      "question": "Which party will win the 2026 U.S. House election in New Mexico's 3rd District?"
+    },
+    {
+      "id": "LE6SO0gs9y",
+      "slug": "which-party-will-win-the-2026-us-ho-NROlcOqS5S",
+      "office": "house",
+      "race": "OH-2",
+      "question": "Which party will win the 2026 U.S. House election in Ohio's 2nd District?"
+    },
+    {
+      "id": "RnNSEU02qz",
+      "slug": "which-party-will-win-the-2026-us-ho-2lnyP0qCEL",
+      "office": "house",
+      "race": "OH-3",
+      "question": "Which party will win the 2026 U.S. House election in Ohio's 3rd District?"
+    },
+    {
+      "id": "hAInCR9l60",
+      "slug": "which-party-will-win-the-2026-us-ho-hN66uUqcuq",
+      "office": "house",
+      "race": "OH-4",
+      "question": "Which party will win the 2026 U.S. House election in Ohio's 4th District?"
+    },
+    {
+      "id": "8cuESdLZqZ",
+      "slug": "which-party-will-win-the-2026-us-ho-Q2yd8Zzygn",
+      "office": "house",
+      "race": "OH-5",
+      "question": "Which party will win the 2026 U.S. House election in Ohio's 5th District?"
+    },
+    {
+      "id": "6LdLqEtQ6I",
+      "slug": "which-party-will-win-the-2026-us-ho-Z80dUn0QQS",
+      "office": "house",
+      "race": "OH-6",
+      "question": "Which party will win the 2026 U.S. House election in Ohio's 6th District?"
+    },
+    {
+      "id": "2s6nul8lsu",
+      "slug": "which-party-wins-ohio-7th-congressi",
+      "office": "house",
+      "race": "OH-7",
+      "question": "Which party wins Ohio 7th congressional district in 2026?"
+    },
+    {
+      "id": "CZug5PpNO0",
+      "slug": "which-party-will-win-the-2026-us-ho-0Pqn5POzuL",
+      "office": "house",
+      "race": "OH-8",
+      "question": "Which party will win the 2026 U.S. House election in Ohio's 8th District?"
+    },
+    {
+      "id": "6cyERp9l0Q",
+      "slug": "which-party-will-win-the-2026-us-ho-U2RhtEtSy8",
+      "office": "house",
+      "race": "OH-11",
+      "question": "Which party will win the 2026 U.S. House election in Ohio's 11th District?"
+    },
+    {
+      "id": "Euu5IC6pg0",
+      "slug": "which-party-will-win-the-2026-us-ho-5ZPg9A6gdZ",
+      "office": "house",
+      "race": "OH-12",
+      "question": "Which party will win the 2026 U.S. House election in Ohio's 12th District?"
+    },
+    {
+      "id": "sC0LchuuSp",
+      "slug": "which-party-will-win-the-2026-us-ho-pPucqdZPhn",
+      "office": "house",
+      "race": "OH-14",
+      "question": "Which party will win the 2026 U.S. House election in Ohio's 14th District?"
+    },
+    {
+      "id": "Rn8zlNdz62",
+      "slug": "which-party-will-win-ohios-15th-con",
+      "office": "house",
+      "race": "OH-15",
+      "question": "Which Party will win Ohios 15th congressional district in 2026?"
+    },
+    {
+      "id": "5n85Qu8qys",
+      "slug": "which-party-will-win-the-2026-us-ho-OIUqR9SynS",
+      "office": "house",
+      "race": "OK-1",
+      "question": "Which party will win the 2026 U.S. House election in Oklahoma's 1st District?"
+    },
+    {
+      "id": "p0dlzSOI8A",
+      "slug": "which-party-will-win-the-2026-us-ho-0AUqPU9nS5",
+      "office": "house",
+      "race": "OK-2",
+      "question": "Which party will win the 2026 U.S. House election in Oklahoma's 2nd District?"
+    },
+    {
+      "id": "2P8qQOyZl9",
+      "slug": "which-party-will-win-the-2026-us-ho-hONL6gNLq8",
+      "office": "house",
+      "race": "OK-3",
+      "question": "Which party will win the 2026 U.S. House election in Oklahoma's 3rd District?"
+    },
+    {
+      "id": "Z2IQPUq5cs",
+      "slug": "which-party-will-win-the-2026-us-ho-AC9OtCyhph",
+      "office": "house",
+      "race": "OK-4",
+      "question": "Which party will win the 2026 U.S. House election in Oklahoma's 4th District?"
+    },
+    {
+      "id": "9NCtcSRpNh",
+      "slug": "which-party-will-win-the-2026-us-ho-ONPc5R0UdQ",
+      "office": "house",
+      "race": "OK-5",
+      "question": "Which party will win the 2026 U.S. House election in Oklahoma's 5th District?"
+    },
+    {
+      "id": "0nqh2nIIn8",
+      "slug": "which-party-will-win-the-2026-us-ho-z8PgCPztuC",
+      "office": "house",
+      "race": "OR-1",
+      "question": "Which party will win the 2026 U.S. House election in Oregon's 1st District?"
+    },
+    {
+      "id": "8Uh5AP0IUA",
+      "slug": "which-party-will-win-the-2026-us-ho-NSyuA5td6g",
+      "office": "house",
+      "race": "OR-2",
+      "question": "Which party will win the 2026 U.S. House election in Oregon's 2nd District?"
+    },
+    {
+      "id": "Slly2LINhh",
+      "slug": "which-party-will-win-the-2026-us-ho-ZUSqls2SNz",
+      "office": "house",
+      "race": "OR-3",
+      "question": "Which party will win the 2026 U.S. House election in Oregon's 3rd District?"
+    },
+    {
+      "id": "zASRyZ2dnd",
+      "slug": "which-party-will-win-the-2026-us-ho-stECsPRtN8",
+      "office": "house",
+      "race": "OR-4",
+      "question": "Which party will win the 2026 U.S. House election in Oregon's 4th District?"
+    },
+    {
+      "id": "qzlg6nCuLL",
+      "slug": "which-party-will-win-the-2026-us-ho-PpsZQuzUc9",
+      "office": "house",
+      "race": "OR-6",
+      "question": "Which party will win the 2026 U.S. House election in Oregon's 6th District?"
+    },
+    {
+      "id": "tl9sRIRddE",
+      "slug": "which-party-will-win-the-2026-us-ho-ChdshRUAsn",
+      "office": "house",
+      "race": "PA-2",
+      "question": "Which party will win the 2026 U.S. House election in Pennsylvania's 2nd District?"
+    },
+    {
+      "id": "6qcqOI6nlI",
+      "slug": "which-party-will-win-the-2026-us-ho-2UhSOzpnRu",
+      "office": "house",
+      "race": "PA-3",
+      "question": "Which party will win the 2026 U.S. House election in Pennsylvania's 3rd District?"
+    },
+    {
+      "id": "9tzczCQ208",
+      "slug": "which-party-will-win-the-2026-us-ho-LgtNyOQyRl",
+      "office": "house",
+      "race": "PA-4",
+      "question": "Which party will win the 2026 U.S. House election in Pennsylvania's 4th District?"
+    },
+    {
+      "id": "2zRzccSqZC",
+      "slug": "which-party-will-win-the-2026-us-ho-CNL6p06EsS",
+      "office": "house",
+      "race": "PA-5",
+      "question": "Which party will win the 2026 U.S. House election in Pennsylvania's 5th District?"
+    },
+    {
+      "id": "6uChshszzU",
+      "slug": "which-party-will-win-the-2026-us-ho-qylOq9t6Sd",
+      "office": "house",
+      "race": "PA-6",
+      "question": "Which party will win the 2026 U.S. House election in Pennsylvania's 6th District?"
+    },
+    {
+      "id": "Ed6q8UPp6q",
+      "slug": "which-party-will-win-the-2026-us-ho-tISyZlp8tZ",
+      "office": "house",
+      "race": "PA-9",
+      "question": "Which party will win the 2026 U.S. House election in Pennsylvania's 9th District?"
+    },
+    {
+      "id": "5IAqlIpQ0S",
+      "slug": "which-party-will-win-the-2026-us-ho-CtCqgq6uI6",
+      "office": "house",
+      "race": "PA-11",
+      "question": "Which party will win the 2026 U.S. House election in Pennsylvania's 11th District?"
+    },
+    {
+      "id": "LShRdqSzLL",
+      "slug": "which-party-will-win-the-2026-us-ho-lt0yERUCO9",
+      "office": "house",
+      "race": "PA-12",
+      "question": "Which party will win the 2026 U.S. House election in Pennsylvania's 12th District?"
+    },
+    {
+      "id": "gClNUqtpSE",
+      "slug": "which-party-will-win-the-2026-us-ho-y5l8qtyIzl",
+      "office": "house",
+      "race": "PA-13",
+      "question": "Which party will win the 2026 U.S. House election in Pennsylvania's 13th District?"
+    },
+    {
+      "id": "ES2q6Rnlhc",
+      "slug": "which-party-will-win-the-2026-us-ho-CqlL5Q8Eds",
+      "office": "house",
+      "race": "PA-14",
+      "question": "Which party will win the 2026 U.S. House election in Pennsylvania's 14th District?"
+    },
+    {
+      "id": "NdQ6hQz9hL",
+      "slug": "which-party-will-win-the-2026-us-ho-qy6LU6n5y6",
+      "office": "house",
+      "race": "PA-15",
+      "question": "Which party will win the 2026 U.S. House election in Pennsylvania's 15th District?"
+    },
+    {
+      "id": "qQ0EZtOPL2",
+      "slug": "which-party-will-win-the-2026-us-ho-QqzQRnsOz5",
+      "office": "house",
+      "race": "PA-16",
+      "question": "Which party will win the 2026 U.S. House election in Pennsylvania's 16th District?"
+    },
+    {
+      "id": "USSEdh8h5p",
+      "slug": "which-party-will-win-the-2026-us-ho-qRdQsqp5t5",
+      "office": "house",
+      "race": "RI-1",
+      "question": "Which party will win the 2026 U.S. House election in Rhode Island's 1st District?"
+    },
+    {
+      "id": "qOC5schc9h",
+      "slug": "which-party-will-win-the-2026-us-ho-hZEZuzqp8s",
+      "office": "house",
+      "race": "RI-2",
+      "question": "Which party will win the 2026 U.S. House election in Rhode Island's 2nd District?"
+    },
+    {
+      "id": "zg60cQUscP",
+      "slug": "which-party-will-win-the-2026-us-ho-00lz0pyZEs",
+      "office": "house",
+      "race": "SC-1",
+      "question": "Which party will win the 2026 U.S. House election in South Carolina's 1st District?"
+    },
+    {
+      "id": "u298Z9dSRS",
+      "slug": "which-party-will-win-the-2026-us-ho-URSg2sEqU8",
+      "office": "house",
+      "race": "SC-2",
+      "question": "Which party will win the 2026 U.S. House election in South Carolina's 2nd District?"
+    },
+    {
+      "id": "0dun2Z8zQc",
+      "slug": "which-party-will-win-the-2026-us-ho-g05hntCAOC",
+      "office": "house",
+      "race": "SC-3",
+      "question": "Which party will win the 2026 U.S. House election in South Carolina's 3rd District?"
+    },
+    {
+      "id": "dqOhpdIlgc",
+      "slug": "which-party-will-win-the-2026-us-ho-y0zCtIPRuR",
+      "office": "house",
+      "race": "SC-4",
+      "question": "Which party will win the 2026 U.S. House election in South Carolina's 4th District?"
+    },
+    {
+      "id": "ENctc28hSc",
+      "slug": "which-party-will-win-the-2026-us-ho-5ZE22lOCNt",
+      "office": "house",
+      "race": "SC-5",
+      "question": "Which party will win the 2026 U.S. House election in South Carolina's 5th District?"
+    },
+    {
+      "id": "9UqIqq9g6I",
+      "slug": "which-party-will-win-the-2026-us-ho-dqlCt5RUcZ",
+      "office": "house",
+      "race": "SC-6",
+      "question": "Which party will win the 2026 U.S. House election in South Carolina's 6th District?"
+    },
+    {
+      "id": "OEAlQnSy2S",
+      "slug": "which-party-will-win-the-2026-us-ho-Z82dnlqgUh",
+      "office": "house",
+      "race": "SC-7",
+      "question": "Which party will win the 2026 U.S. House election in South Carolina's 7th District?"
+    },
+    {
+      "id": "RnuOgZcccL",
+      "slug": "which-party-will-win-the-2026-us-ho-NIp6gPASZz",
+      "office": "house",
+      "race": "SD-0",
+      "question": "Which party will win the 2026 U.S. House election in South Dakota's at-large district?"
+    },
+    {
+      "id": "0SlCdn6dLd",
+      "slug": "which-party-will-win-the-2026-us-ho-Eg0UUPdRqZ",
+      "office": "house",
+      "race": "TN-1",
+      "question": "Which party will win the 2026 U.S. House election in Tennessee's 1st District?"
+    },
+    {
+      "id": "Ozt0SppqqL",
+      "slug": "which-party-will-win-the-2026-us-ho-qA08I9nhgS",
+      "office": "house",
+      "race": "TN-2",
+      "question": "Which party will win the 2026 U.S. House election in Tennessee's 2nd District?"
+    },
+    {
+      "id": "Qtd6lCO6OI",
+      "slug": "which-party-will-win-the-2026-us-ho-lcnPhUP6RN",
+      "office": "house",
+      "race": "TN-3",
+      "question": "Which party will win the 2026 U.S. House election in Tennessee's 3rd District?"
+    },
+    {
+      "id": "l2zRgIlyP0",
+      "slug": "which-party-will-win-the-2026-us-ho-uPOpcEt2h0",
+      "office": "house",
+      "race": "TN-4",
+      "question": "Which party will win the 2026 U.S. House election in Tennessee's 4th District?"
+    },
+    {
+      "id": "6nQypEE5OO",
+      "slug": "which-party-will-win-the-2026-us-ho-gUAt0952lt",
+      "office": "house",
+      "race": "TN-5",
+      "question": "Which party will win the 2026 U.S. House election in Tennessee's 5th District?"
+    },
+    {
+      "id": "QgAOA9RIc0",
+      "slug": "which-party-will-win-the-2026-us-ho-nA0gpOgONP",
+      "office": "house",
+      "race": "TN-6",
+      "question": "Which party will win the 2026 U.S. House election in Tennessee's 6th District?"
+    },
+    {
+      "id": "8ssEIdEcpu",
+      "slug": "which-party-will-win-the-2026-us-ho-AZ955qPgEC",
+      "office": "house",
+      "race": "TN-7",
+      "question": "Which party will win the 2026 U.S. House election in Tennessee's 7th District?"
+    },
+    {
+      "id": "5yO52CclhI",
+      "slug": "which-party-will-win-the-2026-us-ho-yqCAIhPU9d",
+      "office": "house",
+      "race": "TN-8",
+      "question": "Which party will win the 2026 U.S. House election in Tennessee's 8th District?"
+    },
+    {
+      "id": "9sRcZsA2O0",
+      "slug": "which-party-will-win-the-2026-us-ho-IhLS288ygC",
+      "office": "house",
+      "race": "TN-9",
+      "question": "Which party will win the 2026 U.S. House election in Tennessee's 9th District?"
+    },
+    {
+      "id": "SlRuIpcug6",
+      "slug": "which-party-will-win-the-2026-us-ho-QScuqUNRcl",
+      "office": "house",
+      "race": "UT-1",
+      "question": "Which party will win the 2026 U.S. House election in Utah's 1st District?"
+    },
+    {
+      "id": "nCgzqQIRCN",
+      "slug": "which-party-will-win-the-2026-us-ho-SS8gC9R5U8",
+      "office": "house",
+      "race": "UT-2",
+      "question": "Which party will win the 2026 U.S. House election in Utah's 2nd District?"
+    },
+    {
+      "id": "Ctgl0yRt6h",
+      "slug": "which-party-will-win-the-2026-us-ho-0sIqqSzPCy",
+      "office": "house",
+      "race": "UT-3",
+      "question": "Which party will win the 2026 U.S. House election in Utah's 3rd District?"
+    },
+    {
+      "id": "CzgsysIR6h",
+      "slug": "which-party-will-win-the-2026-us-ho-gudNthgSg0",
+      "office": "house",
+      "race": "UT-4",
+      "question": "Which party will win the 2026 U.S. House election in Utah's 4th District?"
+    },
+    {
+      "id": "q60L0OPUuQ",
+      "slug": "which-party-will-win-the-2026-us-ho-lCC690LZnO",
+      "office": "house",
+      "race": "VA-3",
+      "question": "Which party will win the 2026 U.S. House election in Virginia's 3rd District?"
+    },
+    {
+      "id": "lzAlSpqO60",
+      "slug": "which-party-will-win-the-2026-us-ho-PpnNhI685c",
+      "office": "house",
+      "race": "VA-4",
+      "question": "Which party will win the 2026 U.S. House election in Virginia's 4th District?"
+    },
+    {
+      "id": "n0OpUzhZNS",
+      "slug": "which-party-will-win-the-2026-us-ho-SORPzscQLc",
+      "office": "house",
+      "race": "VA-5",
+      "question": "Which party will win the 2026 U.S. House election in Virginia's 5th District?"
+    },
+    {
+      "id": "6pCh6IApE5",
+      "slug": "which-party-will-win-the-2026-us-ho-sUtPdyuShN",
+      "office": "house",
+      "race": "VA-6",
+      "question": "Which party will win the 2026 U.S. House election in Virginia's 6th District?"
+    },
+    {
+      "id": "PP8uuS92Al",
+      "slug": "which-party-will-win-the-2026-us-ho-cZN96gL0Ay",
+      "office": "house",
+      "race": "VA-8",
+      "question": "Which party will win the 2026 U.S. House election in Virginia's 8th District?"
+    },
+    {
+      "id": "Ecc5EtlhQu",
+      "slug": "which-party-will-win-the-2026-us-ho-nSCp528ltP",
+      "office": "house",
+      "race": "VA-9",
+      "question": "Which party will win the 2026 U.S. House election in Virginia's 9th District?"
+    },
+    {
+      "id": "ZyIEhc6Oz6",
+      "slug": "which-party-will-win-the-2026-us-ho-SQIRQ69p2q",
+      "office": "house",
+      "race": "VA-11",
+      "question": "Which party will win the 2026 U.S. House election in Virginia's 11th District?"
+    },
+    {
+      "id": "p0uUEuzhCh",
+      "slug": "which-party-will-win-the-2026-us-ho-OyR8yILlyp",
+      "office": "house",
+      "race": "VT-0",
+      "question": "Which party will win the 2026 U.S. House election in Vermont's at-large district?"
+    },
+    {
+      "id": "qs90ptSLnR",
+      "slug": "which-party-will-win-the-2026-us-ho-RR0lASOggE",
+      "office": "house",
+      "race": "WA-1",
+      "question": "Which party will win the 2026 U.S. House election in Washington's 1st District?"
+    },
+    {
+      "id": "qU2cgq6qcn",
+      "slug": "which-party-will-win-the-2026-us-ho-UzIIIdgLgU",
+      "office": "house",
+      "race": "WA-2",
+      "question": "Which party will win the 2026 U.S. House election in Washington's 2nd District?"
+    },
+    {
+      "id": "ygttREpZyE",
+      "slug": "which-party-will-win-the-2026-us-ho-nuySP6upsy",
+      "office": "house",
+      "race": "WA-4",
+      "question": "Which party will win the 2026 U.S. House election in Washington's 4th District?"
+    },
+    {
+      "id": "ulpEdOOczu",
+      "slug": "which-party-will-win-the-2026-us-ho-QhdEztUgCC",
+      "office": "house",
+      "race": "WA-5",
+      "question": "Which party will win the 2026 U.S. House election in Washington's 5th District?"
+    },
+    {
+      "id": "0EOOdRAzZE",
+      "slug": "which-party-will-win-the-2026-us-ho-gI9R0sC9An",
+      "office": "house",
+      "race": "WA-6",
+      "question": "Which party will win the 2026 U.S. House election in Washington's 6th District?"
+    },
+    {
+      "id": "2hOLCtQnC9",
+      "slug": "which-party-will-win-the-2026-us-ho-982q9ZPS2l",
+      "office": "house",
+      "race": "WA-7",
+      "question": "Which party will win the 2026 U.S. House election in Washington's 7th District?"
+    },
+    {
+      "id": "ndRP5ZOA55",
+      "slug": "who-will-win-washingtons-9th-house",
+      "office": "house",
+      "race": "WA-9",
+      "question": "Who will win Washington’s 9th house election in 2026?"
+    },
+    {
+      "id": "nthtOls2Zq",
+      "slug": "which-party-will-win-the-2026-us-ho-ZyqQzcp8sq",
+      "office": "house",
+      "race": "WA-10",
+      "question": "Which party will win the 2026 U.S. House election in Washington's 10th District?"
+    },
+    {
+      "id": "cpzdn65OSl",
+      "slug": "which-party-will-win-the-2026-us-ho-SRQnCSQ5S0",
+      "office": "house",
+      "race": "WI-4",
+      "question": "Which party will win the 2026 U.S. House election in Wisconsin's 4th District?"
+    },
+    {
+      "id": "qSEt9Z2LdO",
+      "slug": "which-party-will-win-the-2026-us-ho-dgNugz80St",
+      "office": "house",
+      "race": "WI-5",
+      "question": "Which party will win the 2026 U.S. House election in Wisconsin's 5th District?"
+    },
+    {
+      "id": "Ph2LE9l6qI",
+      "slug": "which-party-will-win-the-2026-us-ho-UsnIntCntO",
+      "office": "house",
+      "race": "WI-6",
+      "question": "Which party will win the 2026 U.S. House election in Wisconsin's 6th District?"
+    },
+    {
+      "id": "g8pgO2Q9zP",
+      "slug": "republicans-win-wisconsin-7th-congr",
+      "office": "house",
+      "race": "WI-7",
+      "question": "Republicans win Wisconsin 7th Congressional District in 2026?"
+    },
+    {
+      "id": "PzpAPERLgn",
+      "slug": "which-party-will-win-the-2026-us-ho-SzNS958APl",
+      "office": "house",
+      "race": "WI-8",
+      "question": "Which party will win the 2026 U.S. House election in Wisconsin's 8th District?"
+    },
+    {
+      "id": "Stt5ElnRun",
+      "slug": "which-party-will-win-the-2026-us-ho-Ig5qZS2tuR",
+      "office": "house",
+      "race": "WV-1",
+      "question": "Which party will win the 2026 U.S. House election in West Virginia's 1st District?"
+    },
+    {
+      "id": "s0tyEdLt9y",
+      "slug": "which-party-will-win-the-2026-us-ho-S6yAS0l5Q5",
+      "office": "house",
+      "race": "WV-2",
+      "question": "Which party will win the 2026 U.S. House election in West Virginia's 2nd District?"
+    },
+    {
+      "id": "zu82nEU6nc",
+      "slug": "which-party-will-win-the-2026-us-ho-5SsOZ2Q2Su",
+      "office": "house",
+      "race": "WY-0",
+      "question": "Which party will win the 2026 U.S. House election in Wyoming's at-large district?"
+    },
+    {
+      "id": "ng0d0ShghR",
+      "slug": "will-alaska-measure-2-to-repeal-ran",
+      "office": "measure",
+      "race": "AK-measure-2",
+      "question": "Will Alaska Measure 2, to repeal ranked choice voting, be approved in the November 3rd election?"
+    },
+    {
+      "id": "tl2ydgd80Q",
+      "slug": "will-alabama-amendment-1-lt-governo",
+      "office": "measure",
+      "race": "AL-lt-gov-vacancies",
+      "question": "Will Alabama Amendment 1 (Lt. governor vacancy elections and salaries) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "Qd9Z9nZIQu",
+      "slug": "will-alabama-pass-the-mandatory-ple",
+      "office": "measure",
+      "race": "AL-pledge-prayer",
+      "question": "Will Alabama pass the mandatory pledge of allegiance in schools ballot measure in 2026?"
+    },
+    {
+      "id": "0npZICA95A",
+      "slug": "will-alabama-amendment-2-county-sch",
+      "office": "measure",
+      "race": "AL-school-consolidation",
+      "question": "Will Alabama Amendment 2 (county school system consolidation process) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "tpcINQdlp6",
+      "slug": "will-alabama-amendment-4-weekly-nat",
+      "office": "measure",
+      "race": "AL-star-spangled-banner",
+      "question": "Will Alabama Amendment 4 (weekly national anthem in public schools) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "h2yzQ6AAyU",
+      "slug": "will-arkansas-issue-1-citizenship-r",
+      "office": "measure",
+      "race": "AR-issue-1",
+      "question": "Will Arkansas Issue 1 (citizenship requirement to vote) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "U509gZUqEN",
+      "slug": "will-arkansas-issue-2-right-to-keep",
+      "office": "measure",
+      "race": "AR-issue-2",
+      "question": "Will Arkansas Issue 2 (right to keep and bear arms) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "EPZRIOqcEg",
+      "slug": "will-arkansas-issue-3-economic-deve",
+      "office": "measure",
+      "race": "AR-issue-3",
+      "question": "Will Arkansas Issue 3 (economic development districts) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "tyOlSN5ZIt",
+      "slug": "will-arkansas-issue-4-water-and-pol",
+      "office": "measure",
+      "race": "AR-water-bond",
+      "question": "Will Arkansas Issue 4 (water and pollution-control facility bonds) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "pgRndcpPUd",
+      "slug": "will-arizona-pass-the-antitrans-pro",
+      "office": "measure",
+      "race": "AZ-prop-318",
+      "question": "Will Arizona pass the Anti-Trans Prop 318 ballot measure in 2026?"
+    },
+    {
+      "id": "dE989yuCtO",
+      "slug": "will-california-proposition-1-1125b",
+      "office": "measure",
+      "race": "CA-prop-1",
+      "question": "Will California Proposition 1 ($11.25B housing bond) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "cA0OZzC88C",
+      "slug": "will-california-proposition-2-large",
+      "office": "measure",
+      "race": "CA-prop-2",
+      "question": "Will California Proposition 2 (larger state rainy day fund) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "s8UCzu29Ih",
+      "slug": "will-california-proposition-3-exten",
+      "office": "measure",
+      "race": "CA-prop-3",
+      "question": "Will California Proposition 3 (extending high-income tax rates) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "uLQCU5QPuc",
+      "slug": "which-2026-ca-ballot-measures-will",
+      "office": "measure",
+      "race": "CA-prop-37, CA-prop-4, CA-prop-5",
+      "question": "Which 2026 California ballot measures will pass?"
+    },
+    {
+      "id": "dRcZIO5PS0",
+      "slug": "will-california-proposition-38-84b",
+      "office": "measure",
+      "race": "CA-prop-38",
+      "question": "Will California Proposition 38 ($8.4B immunology research bond) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "lRZgqlQttA",
+      "slug": "california-voter-id-ballot-proposit",
+      "office": "measure",
+      "race": "CA-prop-39",
+      "question": "California Voter ID ballot proposition passes?"
+    },
+    {
+      "id": "9nsyLEANnz",
+      "slug": "will-california-billionaires-have-t",
+      "office": "measure",
+      "race": "CA-prop-40",
+      "question": "Will the California billionaire wealth tax pass?"
+    },
+    {
+      "id": "R8Oz2hgPyU",
+      "slug": "will-california-proposition-41-tax",
+      "office": "measure",
+      "race": "CA-prop-41",
+      "question": "Will California Proposition 41 (tax limits and special-tax audits) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "6O2g5QNRch",
+      "slug": "will-california-proposition-42-ban",
+      "office": "measure",
+      "race": "CA-prop-42",
+      "question": "Will California Proposition 42 (ban on new state personal property taxes) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "SOIC6UEE60",
+      "slug": "which-nov-2026-california-ballot-pr",
+      "office": "measure",
+      "race": "CA-prop-43",
+      "question": "Which Nov 2026 California ballot propositions will pass?"
+    },
+    {
+      "id": "S2pzstPLgy",
+      "slug": "will-california-proposition-44-90-s",
+      "office": "measure",
+      "race": "CA-prop-44",
+      "question": "Will California Proposition 44 (90% spending rule for community clinics) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "6dIlzZuQNS",
+      "slug": "will-california-proposition-45-fast",
+      "office": "measure",
+      "race": "CA-prop-45",
+      "question": "Will California Proposition 45 (faster CEQA environmental review) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "yuOzIq9585",
+      "slug": "will-colorado-amendment-82-constitu",
+      "office": "measure",
+      "race": "CO-amend-82",
+      "question": "Will Colorado Amendment 82 (constitutional right to natural gas) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "ps5ECSPRL5",
+      "slug": "will-colorado-amendment-83-constitu",
+      "office": "measure",
+      "race": "CO-amend-83",
+      "question": "Will Colorado Amendment 83 (constitutional right to hunt and fish) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "nqU80cyss5",
+      "slug": "will-colorado-amendment-84-id-requi",
+      "office": "measure",
+      "race": "CO-amend-84",
+      "question": "Will Colorado Amendment 84 (ID requirement for mail ballots) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "LPN9E6glNn",
+      "slug": "will-colorado-amendment-85-plainlan",
+      "office": "measure",
+      "race": "CO-amend-85",
+      "question": "Will Colorado Amendment 85 (plain-language ballot titles) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "O9sCCE0O2S",
+      "slug": "will-colorado-amendment-86-offcycle",
+      "office": "measure",
+      "race": "CO-amend-86",
+      "question": "Will Colorado Amendment 86 (off-cycle congressional redistricting limits) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "LUlI0yPAtu",
+      "slug": "will-colorado-amendment-87-graduate",
+      "office": "measure",
+      "race": "CO-amend-87",
+      "question": "Will Colorado Amendment 87 (graduated income tax) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "UOt2ZnLlZS",
+      "slug": "will-colorado-initiative-85-pass-in",
+      "office": "measure",
+      "race": "CO-prop-132",
+      "question": "Will Colorado Initiative 85 pass in 2026?"
+    },
+    {
+      "id": "ElpzU8EIZg",
+      "slug": "will-colorado-proposition-133-penal",
+      "office": "measure",
+      "race": "CO-prop-133",
+      "question": "Will Colorado Proposition 133 (penalties for trafficking of a minor) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "RIt2NLyLSZ",
+      "slug": "will-colorado-proposition-134-male",
+      "office": "measure",
+      "race": "CO-prop-134",
+      "question": "Will Colorado Proposition 134 (male and female school sports) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "9z9ASRc9Qg",
+      "slug": "will-colorado-proposition-135-prohi",
+      "office": "measure",
+      "race": "CO-prop-135",
+      "question": "Will Colorado Proposition 135 (prohibiting certain surgeries on minors) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "dghE2StCNC",
+      "slug": "will-colorado-proposition-136-44-in",
+      "office": "measure",
+      "race": "CO-prop-136",
+      "question": "Will Colorado Proposition 136 (4.4% income tax rate cap) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "yO9IEEN5qu",
+      "slug": "will-colorado-proposition-137-sport",
+      "office": "measure",
+      "race": "CO-prop-137",
+      "question": "Will Colorado Proposition 137 (sporting goods tax for conservation) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "dRPshhPN8U",
+      "slug": "will-colorado-proposition-nn-keepin",
+      "office": "measure",
+      "race": "CO-prop-nn",
+      "question": "Will Colorado Proposition NN (keeping excess revenue for K-12 schools) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "tqzgUqhthq",
+      "slug": "will-florida-amendment-2-agricultur",
+      "office": "measure",
+      "race": "FL-ag-property-exemption",
+      "question": "Will Florida Amendment 2 (agricultural personal property tax exemption) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "ZZ5IdLtlU2",
+      "slug": "will-florida-amendment-1-budget-sta",
+      "office": "measure",
+      "race": "FL-budget-stabilization",
+      "question": "Will Florida Amendment 1 (Budget Stabilization Fund changes) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "Nnp6hlL0t5",
+      "slug": "will-georgia-amendment-1-conservati",
+      "office": "measure",
+      "race": "GA-conservation-acres",
+      "question": "Will Georgia Amendment 1 (conservation use acreage limit increase) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "R9cQcUsQtE",
+      "slug": "will-georgia-amendment-3-next-gener",
+      "office": "measure",
+      "race": "GA-ng911-fund",
+      "question": "Will Georgia Amendment 3 (Next Generation 9-1-1 Fund) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "ggAlhyq98h",
+      "slug": "will-georgia-amendment-2-nonpartisa",
+      "office": "measure",
+      "race": "GA-probate-judges",
+      "question": "Will Georgia Amendment 2 (nonpartisan probate judge elections) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "lgQy5Ey9d6",
+      "slug": "will-hawaii-question-1-more-senate",
+      "office": "measure",
+      "race": "HI-q-1",
+      "question": "Will Hawaii Question 1 (more Senate time for judicial appointments) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "AOZ9dqZpyE",
+      "slug": "will-hawaii-question-2-county-rise",
+      "office": "measure",
+      "race": "HI-q-2",
+      "question": "Will Hawaii Question 2 (county RISE infrastructure bonds) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "N5ctE50hNz",
+      "slug": "will-iowa-amendment-1-twothirds-vot",
+      "office": "measure",
+      "race": "IA-amend-1",
+      "question": "Will Iowa Amendment 1 (two-thirds vote for income tax increases) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "NO0sQC0nu8",
+      "slug": "will-idaho-hjr-4-legislative-author",
+      "office": "measure",
+      "race": "ID-hjr-4",
+      "question": "Will Idaho HJR 4 (legislative authority over psychoactive drugs) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "PNOlPLOclR",
+      "slug": "will-idaho-hjr-6-english-as-officia",
+      "office": "measure",
+      "race": "ID-hjr-6",
+      "question": "Will Idaho HJR 6 (English as official state language) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "0S5QPtNucq",
+      "slug": "will-idaho-proposition-1-reproducti",
+      "office": "measure",
+      "race": "ID-prop-1",
+      "question": "Will Idaho Proposition 1 (reproductive freedom and privacy act) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "qy8n6hyOAz",
+      "slug": "will-indiana-public-question-1-deny",
+      "office": "measure",
+      "race": "IN-bail-substantial-risk",
+      "question": "Will Indiana Public Question 1 (denying bail for public-safety risk) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "ugng2Q59hZ",
+      "slug": "will-indiana-public-question-2-city",
+      "office": "measure",
+      "race": "IN-judge-residency",
+      "question": "Will Indiana Public Question 2 (city and town court judge residency) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "gLL6PE8dh8",
+      "slug": "will-kentucky-amendment-1-governor",
+      "office": "measure",
+      "race": "KY-pardon-limits",
+      "question": "Will Kentucky Amendment 1 (governor pardon limits near elections) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "qCEzQCcspO",
+      "slug": "will-louisiana-amendment-9-income-l",
+      "office": "measure",
+      "race": "LA-assessment-freeze-income",
+      "question": "Will Louisiana Amendment 9 (income limit for special assessment level) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "luqRhpL9y0",
+      "slug": "will-louisiana-amendment-8-foreign",
+      "office": "measure",
+      "race": "LA-foreign-adversaries",
+      "question": "Will Louisiana Amendment 8 (foreign adversary expropriation ban) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "UAtCnl6IQ5",
+      "slug": "will-louisiana-amendment-4-lifetime",
+      "office": "measure",
+      "race": "LA-gov-term-limit",
+      "question": "Will Louisiana Amendment 4 (lifetime term limit for governor) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "ClAUdZ9nLl",
+      "slug": "will-louisiana-amendment-2-millage",
+      "office": "measure",
+      "race": "LA-millage-limits",
+      "question": "Will Louisiana Amendment 2 (millage rate adjustment authority) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "sgCSIqnOh6",
+      "slug": "will-louisiana-amendment-3-postconv",
+      "office": "measure",
+      "race": "LA-post-conviction-bail",
+      "question": "Will Louisiana Amendment 3 (post-conviction bail ban for child offenses) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "UptpNPhIuI",
+      "slug": "will-louisiana-amendment-10-tax-exe",
+      "office": "measure",
+      "race": "LA-rehab-property",
+      "question": "Will Louisiana Amendment 10 (tax exemption for rehabilitated property) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "SI0uqIPANN",
+      "slug": "will-louisiana-amendment-5-retireme",
+      "office": "measure",
+      "race": "LA-retirement-ual",
+      "question": "Will Louisiana Amendment 5 (retirement system debt payment order) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "PCQ6AnEdQC",
+      "slug": "will-louisiana-amendment-6-local-se",
+      "office": "measure",
+      "race": "LA-senior-exemption",
+      "question": "Will Louisiana Amendment 6 (local senior property tax exemption) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "2IzUdLQOhg",
+      "slug": "will-louisiana-amendment-1-transfer",
+      "office": "measure",
+      "race": "LA-veteran-spouse-exemption",
+      "question": "Will Louisiana Amendment 1 (transfer of veteran spouse tax exemption) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "6Agcq6NZdd",
+      "slug": "will-louisiana-amendment-7-public-f",
+      "office": "measure",
+      "race": "LA-water-service-lines",
+      "question": "Will Louisiana Amendment 7 (public funds for water service lines) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "gdgt00gApu",
+      "slug": "which-massachusetts-2026-ballot-que",
+      "office": "measure",
+      "race": "MA-q-1, MA-q-2, MA-q-4, MA-q-5, MA-q-6, MA-q-7, MA-q-8",
+      "question": "Which Massachusetts 2026 ballot measures will pass?"
+    },
+    {
+      "id": "yscS66uzy8",
+      "slug": "will-the-massachusetts-allparty-pri",
+      "office": "measure",
+      "race": "MA-q-3",
+      "question": "Will the Massachusetts all-party primary voting format ballot measure pass?"
+    },
+    {
+      "id": "htRyUtcZlg",
+      "slug": "will-maryland-question-1-funding-st",
+      "office": "measure",
+      "race": "MD-q-1",
+      "question": "Will Maryland Question 1 (funding state employee arbitration awards) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "C8lq0lIsPz",
+      "slug": "will-maryland-question-2-temporary",
+      "office": "measure",
+      "race": "MD-q-2",
+      "question": "Will Maryland Question 2 (temporary judicial disabilities panel seats) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "RChszQ6sln",
+      "slug": "will-maryland-question-3-congressio",
+      "office": "measure",
+      "race": "MD-q-3",
+      "question": "Will Maryland Question 3 (congressional redistricting amendment) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "gOENsI2plE",
+      "slug": "will-michigan-proposal-2-utility-co",
+      "office": "measure",
+      "race": "MI-prop-2",
+      "question": "Will Michigan Proposal 2 (utility & contractor campaign donation ban) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "CsucN0p2sS",
+      "slug": "will-minnesotas-permanent-school-fu",
+      "office": "measure",
+      "race": "MN-permanent-school-fund",
+      "question": "Will Minnesota's permanent school fund distributions amendment be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "NzdUgscpSp",
+      "slug": "will-missouri-amendment-3-repealing",
+      "office": "measure",
+      "race": "MO-amend-3",
+      "question": "Will Missouri Amendment 3 (repealing 2024 abortion-rights amendment) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "LSdUPcluEp",
+      "slug": "will-missouri-amendment-6-initiativ",
+      "office": "measure",
+      "race": "MO-amend-6",
+      "question": "Will Missouri Amendment 6 (initiative and referendum protections) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "lpPuycsEhP",
+      "slug": "will-missouri-amendment-7-permanent",
+      "office": "measure",
+      "race": "MO-amend-7",
+      "question": "Will Missouri Amendment 7 (permanent fund to replace state taxes) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "695ughQ6Zq",
+      "slug": "will-missouri-amendment-8-constitut",
+      "office": "measure",
+      "race": "MO-amend-8",
+      "question": "Will Missouri Amendment 8 (constitutional office of county sheriff) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "nEUCdz5As9",
+      "slug": "will-missouris-redistricting-refere",
+      "office": "measure",
+      "race": "MO-prop-a",
+      "question": "Will Missouris redistricting referendum pass?"
+    },
+    {
+      "id": "ZgpnROpQdh",
+      "slug": "will-montana-ci132-nonpartisan-judi",
+      "office": "measure",
+      "race": "MT-ci-132",
+      "question": "Will Montana CI-132 (nonpartisan judicial elections) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "OtNScA0N69",
+      "slug": "will-montana-ci133-right-of-initiat",
+      "office": "measure",
+      "race": "MT-ci-133",
+      "question": "Will Montana CI-133 (right of initiative and referendum) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "IRugUQspcZ",
+      "slug": "will-montana-i194-montana-plan-ban",
+      "office": "measure",
+      "race": "MT-i-194",
+      "question": "Will Montana I-194 (Montana Plan ban on entity election spending) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "s5NInUZOz2",
+      "slug": "will-north-carolinas-35-cap-on-stat",
+      "office": "measure",
+      "race": "NC-income-tax-cap",
+      "question": "Will North Carolina's 3.5% cap on state income tax rate amendment be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "ECUS8ccLU2",
+      "slug": "will-north-carolinas-limits-on-loca",
+      "office": "measure",
+      "race": "NC-property-tax-limit",
+      "question": "Will North Carolina's limits on local property tax increases amendment be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "lq5Lgt2gsc",
+      "slug": "will-north-carolinas-photo-id-for-a",
+      "office": "measure",
+      "race": "NC-voter-id",
+      "question": "Will North Carolina's photo ID for all voting methods amendment be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "phnS8hnQ2d",
+      "slug": "will-north-dakota-measure-1-60-vote",
+      "office": "measure",
+      "race": "ND-measure-1",
+      "question": "Will North Dakota Measure 1 (60% vote for constitutional amendments) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "n8P5PQgNEL",
+      "slug": "will-north-dakota-measure-2-free-sc",
+      "office": "measure",
+      "race": "ND-measure-2",
+      "question": "Will North Dakota Measure 2 (free school breakfast and lunch) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "pP96N2QEQs",
+      "slug": "will-nebraska-initiative-measure-44",
+      "office": "measure",
+      "race": "NE-sports-sex",
+      "question": "Will Nebraska Initiative Measure 442 (sex-based school sports teams) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "Upq0E9dAQ9",
+      "slug": "will-nebraska-initiative-measure-44-Uq0ZQ8E28y",
+      "office": "measure",
+      "race": "NE-sports-wagering-amendment",
+      "question": "Will Nebraska Initiative Measure 440 (online sports betting amendment) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "AsPz0RP0CP",
+      "slug": "will-nebraska-initiative-measure-44-8OhLOS8INl",
+      "office": "measure",
+      "race": "NE-sports-wagering-statute",
+      "question": "Will Nebraska Initiative Measure 441 (online sports betting statute) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "ERhcyO8NqU",
+      "slug": "will-new-mexico-bond-question-3-hig",
+      "office": "measure",
+      "race": "NM-higher-ed-bond",
+      "question": "Will New Mexico Bond Question 3 (higher education and tribal school bonds) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "L5llNQ6StI",
+      "slug": "will-new-mexico-amendment-4-salarie",
+      "office": "measure",
+      "race": "NM-legislator-salary",
+      "question": "Will New Mexico Amendment 4 (salaries for state legislators) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "lC5RUdlcCq",
+      "slug": "will-new-mexico-bond-question-2-lib",
+      "office": "measure",
+      "race": "NM-library-bond",
+      "question": "Will New Mexico Bond Question 2 (library acquisition bonds) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "yNOO5s8suA",
+      "slug": "will-new-mexico-amendment-1-pocket",
+      "office": "measure",
+      "race": "NM-pocket-veto",
+      "question": "Will New Mexico Amendment 1 (pocket veto and veto explanations) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "quQUu9OUg8",
+      "slug": "will-new-mexico-amendment-3-nominat",
+      "office": "measure",
+      "race": "NM-regents",
+      "question": "Will New Mexico Amendment 3 (nominating committees for university regents) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "pLOclhcOcE",
+      "slug": "will-new-mexico-amendment-2-combini",
+      "office": "measure",
+      "race": "NM-school-election-dates",
+      "question": "Will New Mexico Amendment 2 (combining school and partisan elections) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "qQQdp2UcLu",
+      "slug": "will-new-mexico-bond-question-1-sen",
+      "office": "measure",
+      "race": "NM-senior-facilities-bond",
+      "question": "Will New Mexico Bond Question 1 (senior citizen facility bonds) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "psU5ytQOIp",
+      "slug": "will-nevada-question-6-right-to-abo",
+      "office": "measure",
+      "race": "NV-q-6",
+      "question": "Will Nevada Question 6 (Right to Abortion) pass in 2026?"
+    },
+    {
+      "id": "E06l9Ntq8S",
+      "slug": "will-nevada-question-7-require-vote",
+      "office": "measure",
+      "race": "NV-q-7",
+      "question": "Will Nevada Question 7 (Require Voter Identification) pass in 2026?"
+    },
+    {
+      "id": "EguC5EqzpA",
+      "slug": "will-ohio-issue-3-voter-photo-id-am",
+      "office": "measure",
+      "race": "OH-issue-3",
+      "question": "Will Ohio Issue 3 (voter photo ID amendment) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "Id2NupPdzp",
+      "slug": "will-oklahoma-state-question-845-ju",
+      "office": "measure",
+      "race": "OK-sq-845",
+      "question": "Will Oklahoma State Question 845 (Judicial Nominating Commission changes) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "nuPUA962S0",
+      "slug": "will-oklahoma-state-question-847-pr",
+      "office": "measure",
+      "race": "OK-sq-847",
+      "question": "Will Oklahoma State Question 847 (property value caps and senior freeze) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "2QhyZs2N6p",
+      "slug": "will-south-dakota-amendment-i-medic",
+      "office": "measure",
+      "race": "SD-amend-i",
+      "question": "Will South Dakota Amendment I (Medicaid expansion federal-funding trigger) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "nPnzpIQQEy",
+      "slug": "will-south-dakota-amendment-j-citiz",
+      "office": "measure",
+      "race": "SD-amend-j",
+      "question": "Will South Dakota Amendment J (citizenship requirement to vote) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "LsnAn2SZsL",
+      "slug": "will-south-dakota-amendment-k-uncla",
+      "office": "measure",
+      "race": "SD-amend-k",
+      "question": "Will South Dakota Amendment K (unclaimed property trust fund) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "Z9sEgUtZuC",
+      "slug": "will-south-dakota-amendment-l-60-vo",
+      "office": "measure",
+      "race": "SD-amend-l",
+      "question": "Will South Dakota Amendment L (60% vote for constitutional amendments) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "nsds5C9hSP",
+      "slug": "will-tennessee-amendment-1-denying",
+      "office": "measure",
+      "race": "TN-amend-1",
+      "question": "Will Tennessee Amendment 1 (denying bail for certain offenses) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "50Q9zcC0Ct",
+      "slug": "will-tennessee-amendment-2-ban-on-a",
+      "office": "measure",
+      "race": "TN-amend-2",
+      "question": "Will Tennessee Amendment 2 (ban on a state property tax) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "Zz85POSAu5",
+      "slug": "will-tennessee-amendment-3-marsys-l",
+      "office": "measure",
+      "race": "TN-amend-3",
+      "question": "Will Tennessee Amendment 3 (Marsy's Law crime victims' rights) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "ZOQN2gtZnE",
+      "slug": "will-utah-amendment-b-60-vote-for-t",
+      "office": "measure",
+      "race": "UT-60pct-tax-initiatives",
+      "question": "Will Utah Amendment B (60% vote for tax-increasing initiatives) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "lNI6sduOP2",
+      "slug": "will-utah-amendment-a-online-public",
+      "office": "measure",
+      "race": "UT-amendment-publication",
+      "question": "Will Utah Amendment A (online publication of proposed amendments) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "5RRcEd0C9S",
+      "slug": "will-virginia-question-1-right-to-r",
+      "office": "measure",
+      "race": "VA-q-1",
+      "question": "Will Virginia Question 1 (right to reproductive freedom) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "cp682ULyc0",
+      "slug": "will-virginia-question-2-removing-s",
+      "office": "measure",
+      "race": "VA-q-2",
+      "question": "Will Virginia Question 2 (removing same-sex marriage ban) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "N2UzCSzzpu",
+      "slug": "will-virginia-question-3-voting-rig",
+      "office": "measure",
+      "race": "VA-q-3",
+      "question": "Will Virginia Question 3 (voting rights restoration after prison) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "8sdRLRdnsE",
+      "slug": "will-vermont-proposal-3-right-to-co",
+      "office": "measure",
+      "race": "VT-prop-3",
+      "question": "Will Vermont Proposal 3 (right to collectively bargain) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "u9lA59PEuc",
+      "slug": "will-vermont-proposal-4-equal-prote",
+      "office": "measure",
+      "race": "VT-prop-4",
+      "question": "Will Vermont Proposal 4 (equal protection amendment) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "NhsNAzU0Pg",
+      "slug": "will-washington-initiative-il26001",
+      "office": "measure",
+      "race": "WA-il26-001",
+      "question": "Will Washington Initiative IL26-001 (restoring 2024 parents' rights law) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "zq2UpLUNlO",
+      "slug": "will-washington-initiative-il26638",
+      "office": "measure",
+      "race": "WA-il26-638",
+      "question": "Will Washington Initiative IL26-638 (girls' sports eligibility by sex) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "pI5dgp8OUu",
+      "slug": "will-washington-initiative-ip26645",
+      "office": "measure",
+      "race": "WA-il26-645",
+      "question": "Will Washington Initiative IP26-645 (income tax repeal and prohibition) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "8S2PzA2Ogz",
+      "slug": "will-wisconsin-question-1-limit-on",
+      "office": "measure",
+      "race": "WI-partial-veto",
+      "question": "Will Wisconsin Question 1 (limit on partial veto to raise taxes/fees) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "c9ESNqL2pp",
+      "slug": "will-wisconsin-question-2-no-emerge",
+      "office": "measure",
+      "race": "WI-places-of-worship",
+      "question": "Will Wisconsin Question 2 (no emergency closures of places of worship) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "h2ynZQyOc5",
+      "slug": "will-wisconsin-question-3-ban-on-go",
+      "office": "measure",
+      "race": "WI-preferential-treatment",
+      "question": "Will Wisconsin Question 3 (ban on government preferential treatment) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "lNq9hOQlLP",
+      "slug": "will-west-virginia-amendment-1-citi",
+      "office": "measure",
+      "race": "WV-citizenship-voting",
+      "question": "Will West Virginia Amendment 1 (citizenship requirement to vote) be approved in the November 3, 2026 election?"
+    },
+    {
+      "id": "ORzdEn66CO",
+      "slug": "will-wyomings-2026-property-tax-ini",
+      "office": "measure",
+      "race": "WY-initiative-1",
+      "question": "Will Wyoming's 2026 property tax initiative pass?"
+    }
+  ]
+}
