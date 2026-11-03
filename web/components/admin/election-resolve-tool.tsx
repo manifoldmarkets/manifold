@@ -35,8 +35,8 @@ const REFRESH_MS = 15_000
 
 export function ElectionResolveTool() {
   const sources = useMemo(mapSources, [])
-  const { ids, contracts, loadedAt, error, refresh } = useMapMarkets(sources)
-  const trades = useElectionTrades(ids)
+  const { contracts, loadedAt, error, refresh } = useMapMarkets(sources)
+  const trades = useElectionTrades(contracts)
   const contractsBySlug = useMemo(() => keyBy(contracts, 'slug'), [contracts])
   const units = useMemo(
     () => buildUnits(sources, contractsBySlug, keyBy(contracts, 'id')),
@@ -450,5 +450,5 @@ function useMapMarkets(sources: MapSource[]) {
     return () => clearInterval(timer)
   }, [ids, refresh])
 
-  return { ids, contracts, loadedAt, error, refresh }
+  return { contracts, loadedAt, error, refresh }
 }

@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import { chunk } from 'lodash'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { Contract, isMultiCpmm } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -107,7 +108,15 @@ export function ElectionMovers(props: {
         <span className="text-ink-500 text-xs">
           {!ready
             ? 'Loading trades…'
-            : `Since ${etTime(since)} · ${moves.length} moved`}
+            : `Since ${etTime(since, windowMs >= 6 * 60 * MINUTE)} · ${
+                moves.length
+              } moved`}
+          {ready && trades.partial && (
+            <span className="ml-2 text-amber-700">
+              Partial: a batch hit the row limit, so some long-window moves are
+              approximate.
+            </span>
+          )}
           {trades.error && (
             <span className="text-scarlet-600 ml-2">{trades.error}</span>
           )}
@@ -240,49 +249,95 @@ function Delta(props: { d: number }) {
   )
 }
 
-const etTime = (ms: number) =>
+// With the date for windows long enough to start on another day.
+const etTime = (ms: number, withDate: boolean) =>
   new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/New_York',
+    ...(withDate && { weekday: 'short', month: 'short', day: 'numeric' }),
     hour: 'numeric',
     minute: '2-digit',
     second: '2-digit',
   }).format(ms) + ' ET'
 
 const REFRESH_MS = 15_000
-// Up to this span, a window loads as full bets for 100 markets per call;
-// longer ones as compact price points, one call per market.
+// Windows up to this span, and every refresh, load full bets for 100
+// markets per call. Longer windows load compact price points for the
+// multi-choice markets (25 per call; each row's answer id names its
+// market) and full bets for the binaries (100 per call). Either way a
+// window costs a handful of calls, not one per market.
 const FULL_BETS_MAX_SPAN = 15 * MINUTE
 const FULL_BETS_PAGE = 10_000
+const POINTS_CHUNK = 25
 const POINTS_LIMIT = 50_000
-const POINTS_CONCURRENCY = 12
 
 export type ElectionTrades = ReturnType<typeof useElectionTrades>
 
 const needsLoad = (wanted?: number, covered?: number) =>
   wanted !== undefined && (covered === undefined || covered > wanted)
 
+// One retry after a pause: a burst can briefly hit the API's rate limit.
+const withRetry = async <T,>(call: () => Promise<T>): Promise<T> => {
+  try {
+    return await call()
+  } catch {
+    await new Promise((r) => setTimeout(r, 1500))
+    return await call()
+  }
+}
+
+type Markets = {
+  ids: string[]
+  binary: string[]
+  multi: string[]
+  // answer id -> its market, to place points rows (they carry no market id)
+  answerContract: Map<string, string>
+}
+
+const marketsOf = (contracts: Contract[]): Markets => {
+  const answerContract = new Map<string, string>()
+  const binary: string[] = []
+  const multi: string[] = []
+  for (const c of contracts) {
+    if (isMultiCpmm(c)) {
+      multi.push(c.id)
+      for (const a of c.answers) answerContract.set(a.id, c.id)
+    } else binary.push(c.id)
+  }
+  return { ids: contracts.map((c) => c.id), binary, multi, answerContract }
+}
+
 // The map markets' trades, complete from `coveredSince` to `updatedAt`.
 // ensureCovered(t) loads further back when a longer window needs it; a
 // refresh every REFRESH_MS adds new trades.
-export function useElectionTrades(ids: string[] | undefined) {
+export function useElectionTrades(contracts: Contract[]) {
+  // Read through a ref: contracts refresh every few seconds, and the
+  // loaders should not restart with them.
+  const markets = useRef<Markets>(marketsOf([]))
+  useEffect(() => {
+    markets.current = marketsOf(contracts)
+  }, [contracts])
+  const hasMarkets = contracts.length > 0
+
   const store = useRef<TradeStore>(new Map())
   const seen = useRef(new Set<string>())
   const covered = useRef<number>()
   const lastFetch = useRef<number>()
   const busy = useRef(false)
+  // The earliest moment any window has asked for.
+  const wanted = useRef<number>()
   const [coveredSince, setCoveredSince] = useState<number>()
   const [updatedAt, setUpdatedAt] = useState<number>()
   const [version, setVersion] = useState(0)
   const [error, setError] = useState<string>()
+  const [partial, setPartial] = useState(false)
 
   const fetchFull = useCallback(
-    async (afterTime: number, beforeTime?: number) => {
-      if (!ids) return
-      await Promise.all(
-        chunk(ids, 100).map(async (c) => {
-          let after = afterTime
-          for (let page = 0; page < 20; page++) {
-            const bets = await api(
+    async (ids: string[], afterTime: number, beforeTime?: number) => {
+      for (const c of chunk(ids, 100)) {
+        let after = afterTime
+        for (let page = 0; page < 20; page++) {
+          const bets = await withRetry(() =>
+            api(
               'bets',
               {
                 contractId: c,
@@ -293,46 +348,50 @@ export function useElectionTrades(ids: string[] | undefined) {
               },
               { cache: 'no-store' }
             )
-            addTrades(store.current, seen.current, bets)
-            if (bets.length < FULL_BETS_PAGE) break
-            // Same-millisecond rows at the boundary are skipped as seen.
-            after = bets[bets.length - 1].createdTime - 1
-          }
-        })
-      )
+          )
+          addTrades(store.current, seen.current, bets)
+          if (bets.length < FULL_BETS_PAGE) break
+          // Same-millisecond rows at the boundary are skipped as seen.
+          after = bets[bets.length - 1].createdTime - 1
+        }
+      }
     },
-    [ids]
+    []
   )
 
   const fetchPoints = useCallback(
     async (afterTime: number, beforeTime?: number) => {
-      if (!ids) return
-      const queue = [...ids]
-      await Promise.all(
-        Array.from({ length: POINTS_CONCURRENCY }, async () => {
-          for (let id = queue.shift(); id; id = queue.shift()) {
-            const points = await api('bets', {
-              contractId: id,
-              afterTime,
-              beforeTime,
-              points: true,
-              limit: POINTS_LIMIT,
-            })
-            addTrades(store.current, seen.current, points, id)
-          }
-        })
-      )
+      const { multi, binary, answerContract } = markets.current
+      for (const c of chunk(multi, POINTS_CHUNK)) {
+        const points = await withRetry(() =>
+          api('bets', {
+            contractId: c,
+            afterTime,
+            beforeTime,
+            points: true,
+            limit: POINTS_LIMIT,
+          })
+        )
+        // A full batch is a sample, not every trade.
+        if (points.length >= POINTS_LIMIT) setPartial(true)
+        addTrades(
+          store.current,
+          seen.current,
+          points.flatMap((p) => {
+            const contractId = p.answerId && answerContract.get(p.answerId)
+            return contractId ? [{ ...p, contractId }] : []
+          })
+        )
+      }
+      await fetchFull(binary, afterTime, beforeTime)
     },
-    [ids]
+    [fetchFull]
   )
 
-  // The earliest moment any window has asked for. Loading runs until the
-  // store covers it, one load at a time; a failed load retries after the
-  // next refresh.
-  const wanted = useRef<number>()
-
+  // Runs until the store covers `wanted`, one load at a time; a failed
+  // load retries on the next refresh.
   const load = useCallback(async () => {
-    if (!ids || busy.current) return
+    if (busy.current || !markets.current.ids.length) return
     busy.current = true
     try {
       while (needsLoad(wanted.current, covered.current)) {
@@ -343,7 +402,7 @@ export function useElectionTrades(ids: string[] | undefined) {
         const before = covered.current
         if (lastFetch.current === undefined) lastFetch.current = now
         if ((before ?? now) - since <= FULL_BETS_MAX_SPAN)
-          await fetchFull(since, before)
+          await fetchFull(markets.current.ids, since, before)
         else await fetchPoints(since, before)
         covered.current = since
         setCoveredSince(since)
@@ -360,7 +419,7 @@ export function useElectionTrades(ids: string[] | undefined) {
     } finally {
       busy.current = false
     }
-  }, [ids, fetchFull, fetchPoints])
+  }, [fetchFull, fetchPoints])
 
   const ensureCovered = useCallback(
     (since: number) => {
@@ -372,8 +431,8 @@ export function useElectionTrades(ids: string[] | undefined) {
   )
 
   useEffect(() => {
-    if (!ids) return
-    // Windows asked for before the ids arrived.
+    if (!hasMarkets) return
+    // Windows asked for before the markets arrived.
     void load()
     const timer = setInterval(async () => {
       if (busy.current) return
@@ -388,7 +447,7 @@ export function useElectionTrades(ids: string[] | undefined) {
       const start = Date.now()
       try {
         // Overlap the last fetch: a trade can commit after its timestamp.
-        await fetchFull(lastFetch.current - 10_000)
+        await fetchFull(markets.current.ids, lastFetch.current - 10_000)
         lastFetch.current = start
         setUpdatedAt(Date.now())
         setVersion((v) => v + 1)
@@ -404,7 +463,15 @@ export function useElectionTrades(ids: string[] | undefined) {
       }
     }, REFRESH_MS)
     return () => clearInterval(timer)
-  }, [ids, fetchFull, load])
+  }, [hasMarkets, fetchFull, load])
 
-  return { store, coveredSince, updatedAt, version, error, ensureCovered }
+  return {
+    store,
+    coveredSince,
+    updatedAt,
+    version,
+    error,
+    partial,
+    ensureCovered,
+  }
 }
