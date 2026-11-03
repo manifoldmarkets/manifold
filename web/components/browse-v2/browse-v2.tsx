@@ -293,88 +293,88 @@ function BrowseV2Inner() {
   const section = `browse-v2 ${searching ? 'search' : lens} ${layout}`
 
   return (
-    <div className="flex w-full flex-col gap-2 px-3 pb-10 lg:px-0">
-      <div
-        ref={searchRef}
-        className="bg-canvas-0 sticky top-0 z-30 -mx-3 flex h-[44px] shrink-0 items-center gap-2 px-3 py-0.5 will-change-transform sm:mx-0 sm:h-9 sm:px-0 sm:py-0 sm:will-change-auto"
-      >
-        <h1 className="sr-only">Browse</h1>
-        <label className="border-ink-300 focus-within:border-primary-500 bg-canvas-0 flex min-w-0 flex-1 items-center gap-2 rounded-md border px-3 py-1.5 transition-colors">
-          <SearchIcon className="text-ink-400 h-5 w-5 shrink-0" />
-          <span className="sr-only">
-            Search markets, users, topics, and posts
-          </span>
-          <input
-            type="search"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Search markets, users, topics, and posts"
-            className="text-ink-1000 placeholder:text-ink-400 min-w-0 flex-1 text-ellipsis border-0 bg-transparent p-0 text-base focus:outline-none focus:ring-0 sm:text-sm [&::-webkit-search-cancel-button]:hidden"
-          />
-          {input && (
+    <div className="flex w-full gap-4 px-3 pb-10 lg:px-0 xl:gap-8">
+      <div className="flex w-full min-w-0 shrink-0 flex-col gap-2">
+        <div
+          ref={searchRef}
+          className="bg-canvas-0 sticky top-0 z-30 -mx-3 flex h-[44px] shrink-0 items-center gap-2 px-3 py-0.5 will-change-transform sm:mx-0 sm:h-9 sm:px-0 sm:py-0 sm:will-change-auto"
+        >
+          <h1 className="sr-only">Browse</h1>
+          <label className="border-ink-300 focus-within:border-primary-500 bg-canvas-0 flex min-w-0 flex-1 items-center gap-2 rounded-md border px-3 py-1.5 transition-colors">
+            <SearchIcon className="text-ink-400 h-5 w-5 shrink-0" />
+            <span className="sr-only">
+              Search markets, users, topics, and posts
+            </span>
+            <input
+              type="search"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Search markets, users, topics, and posts"
+              className="text-ink-1000 placeholder:text-ink-400 min-w-0 flex-1 text-ellipsis border-0 bg-transparent p-0 text-base focus:outline-none focus:ring-0 sm:text-sm [&::-webkit-search-cancel-button]:hidden"
+            />
+            {input && (
+              <button
+                type="button"
+                onClick={() => setInput('')}
+                aria-label="Clear search"
+                className="text-ink-400 hover:text-ink-700"
+              >
+                <XIcon className="h-4 w-4" />
+              </button>
+            )}
+          </label>
+          {/* Phones: one button that flips between cards and list, so the
+              layout switch isn't hidden at the end of the scrolling row. */}
+          {showMarkets && (
             <button
               type="button"
-              onClick={() => setInput('')}
-              aria-label="Clear search"
-              className="text-ink-400 hover:text-ink-700"
+              onClick={() => onLayout(layout === 'list' ? 'cards' : 'list')}
+              aria-label={layout === 'list' ? 'Show cards' : 'Show list'}
+              title={layout === 'list' ? 'Show cards' : 'Show list'}
+              className="border-ink-300 text-ink-600 hover:text-ink-900 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border sm:hidden"
             >
-              <XIcon className="h-4 w-4" />
+              {layout === 'list' ? (
+                <ViewGridIcon className="h-4 w-4" />
+              ) : (
+                <ViewListIcon className="h-4 w-4" />
+              )}
             </button>
           )}
-        </label>
-        {/* Phones: one button that flips between cards and list, so the
-            layout switch isn't hidden at the end of the scrolling row. */}
-        {showMarkets && (
-          <button
-            type="button"
-            onClick={() => onLayout(layout === 'list' ? 'cards' : 'list')}
-            aria-label={layout === 'list' ? 'Show cards' : 'Show list'}
-            title={layout === 'list' ? 'Show cards' : 'Show list'}
-            className="border-ink-300 text-ink-600 hover:text-ink-900 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border sm:hidden"
-          >
-            {layout === 'list' ? (
-              <ViewGridIcon className="h-4 w-4" />
-            ) : (
-              <ViewListIcon className="h-4 w-4" />
-            )}
-          </button>
-        )}
-      </div>
+        </div>
 
-      {!searching && <HubCards />}
+        {!searching && <HubCards />}
 
-      <div
-        ref={filtersRef}
-        // Cover seams between the sticky bars without spanning the full 8px
-        // row gap: the hub cards' outline rings extend into that gap.
-        className="bg-canvas-0 before:bg-canvas-0 sticky top-[44px] z-20 -mx-3 px-3 py-0.5 will-change-transform before:pointer-events-none before:absolute before:inset-x-0 before:-top-1 before:h-1 sm:top-9 sm:will-change-auto lg:mx-0 lg:px-0"
-      >
-        <LensBar
-          lens={lens}
-          onLens={onLens}
-          signedIn={signedIn}
-          topic={topic}
-          followedTopics={followedChoices}
-          onTopic={onTopic}
-          filters={filters}
-          onFilters={onFilters}
-          layout={layout}
-          onLayout={onLayout}
-          onYourTopics={openYourTopics}
-          searching={searching}
-          searchTabs={
-            searching ? (
-              <SearchTabs
-                category={searchCategory}
-                onCategory={setSearchCategory}
-              />
-            ) : undefined
-          }
-          showMarketFilters={showMarkets}
-        />
-      </div>
+        <div
+          ref={filtersRef}
+          // Cover seams between the sticky bars without spanning the full 8px
+          // row gap: the hub cards' outline rings extend into that gap.
+          className="bg-canvas-0 before:bg-canvas-0 sticky top-[44px] z-20 -mx-3 px-3 py-0.5 will-change-transform before:pointer-events-none before:absolute before:inset-x-0 before:-top-1 before:h-1 sm:top-9 sm:will-change-auto lg:mx-0 lg:px-0"
+        >
+          <LensBar
+            lens={lens}
+            onLens={onLens}
+            signedIn={signedIn}
+            topic={topic}
+            followedTopics={followedChoices}
+            onTopic={onTopic}
+            filters={filters}
+            onFilters={onFilters}
+            layout={layout}
+            onLayout={onLayout}
+            onYourTopics={openYourTopics}
+            searching={searching}
+            searchTabs={
+              searching ? (
+                <SearchTabs
+                  category={searchCategory}
+                  onCategory={setSearchCategory}
+                />
+              ) : undefined
+            }
+            showMarketFilters={showMarkets}
+          />
+        </div>
 
-      <div className="flex gap-4 xl:gap-8">
         <div className="flex w-full min-w-0 shrink-0 flex-col gap-4">
           {urlReady && showMovers && !isMobile && lens !== 'best' && (
             <MoversStrip scope={scope} fold={fold} layout={layout} />
@@ -503,24 +503,27 @@ function BrowseV2Inner() {
           </section>
         </div>
 
-        {/* Keep the feed at the standard Page width. The rail uses the
-            three unused columns to its right, within Page's 1440px cap. */}
-        <aside
-          aria-label="More markets"
-          className="hidden w-[calc(25vw-2rem)] shrink-0 flex-col gap-6 lg:flex xl:w-72"
-        >
-          {showRail && urlReady && !searching && (
-            <>
-              <ClosingSoonList scope={scope} fold={fold} />
-              <NewMarketsList scope={scope} fold={fold} />
-            </>
-          )}
-        </aside>
+        {yourTopicsOpen && (
+          <YourTopicsModal open={yourTopicsOpen} setOpen={setYourTopicsOpen} />
+        )}
       </div>
 
-      {yourTopicsOpen && (
-        <YourTopicsModal open={yourTopicsOpen} setOpen={setYourTopicsOpen} />
-      )}
+      {/* Keep the feed at the standard Page width. The rail uses the
+          three unused columns to its right, within Page's 1440px cap.
+          It sits beside the whole column, so its first heading starts
+          level with the search bar; pt-2 centres that 20px heading on
+          the 36px bar. */}
+      <aside
+        aria-label="More markets"
+        className="hidden w-[calc(25vw-2rem)] shrink-0 flex-col gap-6 pt-2 lg:flex xl:w-72"
+      >
+        {showRail && urlReady && !searching && (
+          <>
+            <ClosingSoonList scope={scope} fold={fold} />
+            <NewMarketsList scope={scope} fold={fold} />
+          </>
+        )}
+      </aside>
     </div>
   )
 }
