@@ -112,6 +112,22 @@
   box-shadow: 0 1px 3px #00000012;
   font-weight: 600;
 }
+/* The selected tab's label is bold, and bold text is wider: each label
+   reserves its bold width up front, so switching tabs never resizes them. */
+.steadyLabel {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+.steadyLabel::after {
+  content: attr(data-text);
+  font-weight: 600;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  user-select: none;
+  pointer-events: none;
+}
 .controls {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 270px));

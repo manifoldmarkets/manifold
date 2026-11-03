@@ -16,6 +16,10 @@ import {
   sourceAudit,
 } from 'web/components/usa-map/audited-sources'
 import {
+  BALLOT_MEASURES,
+  BallotMeasure,
+} from 'web/components/usa-map/ballot-measures-model'
+import {
   binaryRows,
   OutcomeParty,
   partyLabel,
@@ -233,6 +237,126 @@ export const outcomeTone = (outcome: keyof Odds | undefined) =>
     : outcome === 'other'
     ? 'other'
     : undefined
+
+// Watchlist ----------------------------------------------------------------
+
+// The account's stake in one market, or in one answer of it.
+export type BoardPosition = {
+  hasShares: boolean
+  // Current value of the shares held, and profit to date (realised included).
+  payout: number
+  profit: number
+  lastBetTime: number
+}
+
+// A market's whole-market position (answerId null) or one answer's.
+export const positionKey = (contractId: string, answerId?: string | null) =>
+  answerId ? `${contractId}:${answerId}` : contractId
+
+// The board's markets that are not races: chamber control and the ballot
+// measures on the map's Measures tab.
+export type BoardMarket = {
+  key: string
+  label: string
+  detail: string
+  contract: Contract
+  // A measure priced by one answer of a portfolio market.
+  answerId?: string
+  measure?: BallotMeasure
+  chamber?: 'Senate' | 'House'
+}
+
+export const isBoardRace = (item: BoardRace | BoardMarket): item is BoardRace =>
+  'mode' in item
+
+export function boardMarkets(contracts: {
+  senateControl: Contract | null
+  houseControl: Contract | null
+  measures: MapContractsDictionary
+}): { control: BoardMarket[]; measures: BoardMarket[] } {
+  const control = (
+    [
+      ['senate', 'Senate', contracts.senateControl],
+      ['house', 'House', contracts.houseControl],
+    ] as const
+  ).flatMap(([key, chamber, contract]) =>
+    contract
+      ? [
+          {
+            key: `control:${key}`,
+            label: `${chamber} control`,
+            detail: 'Which party controls the chamber',
+            contract,
+            chamber,
+          },
+        ]
+      : []
+  )
+  const measures = BALLOT_MEASURES.flatMap((measure) => {
+    const source = measure.source
+    const contract = source && contracts.measures[source.contractId]
+    if (!source || !contract) return []
+    return [
+      {
+        key: `measure:${measure.key}`,
+        label: `${measure.state} ${measure.designation ?? measure.title}`,
+        detail: measure.designation ? measure.title : 'Ballot measure',
+        contract,
+        answerId:
+          source.kind === 'portfolio-answer' ? source.answerId : undefined,
+        measure,
+      },
+    ]
+  })
+  return { control, measures }
+}
+
+// Anything on the board with a market: a race or another board market.
+type Watchable = { key: string; contract?: Contract; answerId?: string }
+
+// The position in an item's own market, or, for one priced by an answer of
+// a portfolio market (a House district, some measures), in that answer only.
+export const itemPosition = (
+  item: Watchable,
+  positions: Map<string, BoardPosition>
+) =>
+  item.contract
+    ? positions.get(positionKey(item.contract.id, item.answerId))
+    : undefined
+
+// Liking needs a market of the item's own: liking a portfolio market would
+// like every district (or measure) it prices.
+export const likeableContractId = (item: Watchable) =>
+  item.contract && !item.answerId ? item.contract.id : undefined
+
+export type Watchlist<T> = {
+  // Traded on: open positions first, then the most recently traded.
+  traded: { item: T; position: BoardPosition }[]
+  // Liked and not traded, in board order.
+  liked: T[]
+}
+
+export function watchlist<T extends Watchable>(
+  items: T[],
+  liked: Set<string>,
+  positions: Map<string, BoardPosition>
+): Watchlist<T> {
+  const traded: Watchlist<T>['traded'] = []
+  const likedOnly: T[] = []
+  for (const item of items) {
+    const position = itemPosition(item, positions)
+    const likeable = likeableContractId(item)
+    if (position) traded.push({ item, position })
+    else if (likeable && liked.has(likeable)) likedOnly.push(item)
+  }
+  return {
+    traded: sortBy(traded, [
+      (t) => (t.position.hasShares ? 0 : 1),
+      (t) => -t.position.lastBetTime,
+    ]),
+    liked: likedOnly,
+  }
+}
 
 // Trades -------------------------------------------------------------------
 

@@ -4,11 +4,10 @@ import Link from 'next/link'
 import {
   ChevronDownIcon,
   ExternalLinkIcon,
+  HeartIcon as OutlineHeartIcon,
   LocationMarkerIcon,
-  SearchIcon,
 } from '@heroicons/react/outline'
-import { StarIcon as StarOutlineIcon } from '@heroicons/react/outline'
-import { StarIcon } from '@heroicons/react/solid'
+import { HeartIcon } from '@heroicons/react/solid'
 
 import { contractPath, isMultiCpmm } from 'common/contract'
 import { formatMoney } from 'common/util/format'
@@ -20,19 +19,27 @@ import {
   RaceOutcomes,
 } from 'web/components/usa-map/race-outcome-rows'
 import {
-  matchesRaceQuery,
+  electionOdds,
   outcomeLabel,
 } from 'web/components/usa-map/election-map-model'
+import { BallotMeasureCard } from 'web/components/usa-map/ballot-measure-card'
+import { approvalChance } from 'web/components/usa-map/ballot-measures-model'
+import { ControlCard } from 'web/components/usa-map/control-card'
 import { modeName } from 'web/components/usa-map/chamber-tabs'
 import { formatOdds } from 'web/components/usa-map/election-display'
 import mapStyles from 'web/components/usa-map/election-explorer.module.css'
 import {
+  BoardMarket,
+  BoardPosition,
   BoardRace,
   BoardTrade,
+  isBoardRace,
   leaderText,
+  likeableContractId,
   outcomeTone,
   RaceCall,
   RaceMove,
+  Watchlist,
 } from './election-board-model'
 import { leadingParty } from 'web/components/usa-map/election-map-model'
 
@@ -118,23 +125,34 @@ export function BoardTabs(props: {
   )
 }
 
+// Market likes (the account's hearts, as on market pages), by market id.
+export type BoardLikes = {
+  liked: Set<string>
+  disabled: (contractId: string) => boolean
+  toggle: (contractId: string) => void
+}
+
 type RowActions = {
-  starred: Set<string>
-  onStar: (key: string) => void
+  likes: BoardLikes
   onShowOnMap: (race: BoardRace) => void
 }
 
-// One race: its quote, an optional 24h move, a star, and when opened the
-// map's own outcome rows with their Bet buttons.
-export function BoardRaceRow(
-  props: RowActions & { race: BoardRace; move?: RaceMove; called?: RaceCall }
-) {
-  const { race, move, called, starred, onStar, onShowOnMap } = props
+type RowData = {
+  race: BoardRace
+  move?: RaceMove
+  called?: RaceCall
+  position?: BoardPosition
+}
+
+// One race: its quote, an optional 24h move or the account's position, a
+// heart for its market, and when opened the map's own outcome rows with
+// their Bet buttons.
+export function BoardRaceRow(props: RowActions & RowData) {
+  const { race, move, called, position, likes, onShowOnMap } = props
   const [open, setOpen] = useState(false)
   const leader = leadingParty(race.odds)
   const quote = leaderText(race)
   const flash = useFlash(quote)
-  const isStarred = starred.has(race.key)
 
   return (
     <li
@@ -144,18 +162,11 @@ export function BoardRaceRow(
       )}
     >
       <div className="flex items-center gap-1.5 py-2 pr-1">
-        <button
-          className="text-ink-400 shrink-0 p-1 hover:text-amber-500"
-          aria-label={isStarred ? `Unstar ${race.label}` : `Star ${race.label}`}
-          aria-pressed={isStarred}
-          onClick={() => onStar(race.key)}
-        >
-          {isStarred ? (
-            <StarIcon className="h-4 w-4 text-amber-500" />
-          ) : (
-            <StarOutlineIcon className="h-4 w-4" />
-          )}
-        </button>
+        <LikeHeart
+          contractId={likeableContractId(race)}
+          label={race.label}
+          likes={likes}
+        />
         <button
           className="flex min-w-0 grow items-center gap-2 text-left"
           aria-expanded={open}
@@ -193,6 +204,7 @@ export function BoardRaceRow(
                 {outcomeLabel(move.gainer)} +{Math.round(move.gain * 100)}
               </span>
             )}
+            {position && <PositionText position={position} />}
           </span>
           <ChevronDownIcon
             className={clsx(
@@ -230,6 +242,133 @@ export function BoardRaceRow(
   )
 }
 
+// The heart on a market, as on market pages. A district priced by a
+// portfolio market has no market of its own to like: the rows stay aligned.
+function LikeHeart(props: {
+  contractId: string | undefined
+  label: string
+  likes: BoardLikes
+}) {
+  const { contractId, label, likes } = props
+  if (!contractId) return <span className="w-6 shrink-0" />
+  const liked = likes.liked.has(contractId)
+  return (
+    <button
+      className={clsx(
+        'hover:text-primary-600 shrink-0 p-1 disabled:opacity-50',
+        liked ? 'text-primary-600' : 'text-ink-400'
+      )}
+      aria-label={`${liked ? 'Unlike' : 'Like'} ${label} market`}
+      title={liked ? 'Unlike' : 'Like'}
+      aria-pressed={liked}
+      disabled={likes.disabled(contractId)}
+      onClick={() => likes.toggle(contractId)}
+    >
+      {liked ? (
+        <HeartIcon className="h-4 w-4" aria-hidden />
+      ) : (
+        <OutlineHeartIcon className="h-4 w-4" aria-hidden />
+      )}
+    </button>
+  )
+}
+
+// A board market that is not a race: chamber control or a ballot measure,
+// opening into the map's own control card or measure card.
+function BoardMarketRow(
+  props: RowActions & { market: BoardMarket; position?: BoardPosition }
+) {
+  const { market, position, likes } = props
+  const [open, setOpen] = useState(false)
+  const quote = marketQuote(market)
+  const flash = useFlash(quote.text)
+  return (
+    <li
+      className={clsx(
+        'border-ink-100 border-b transition-colors duration-700 last:border-b-0',
+        flash && 'bg-primary-100/60 dark:bg-primary-900/40'
+      )}
+    >
+      <div className="flex items-center gap-1.5 py-2 pr-1">
+        <LikeHeart
+          contractId={likeableContractId(market)}
+          label={market.label}
+          likes={likes}
+        />
+        <button
+          className="flex min-w-0 grow items-center gap-2 text-left"
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+        >
+          <span className="min-w-0 grow">
+            <span className="text-ink-900 block truncate text-sm font-medium">
+              {market.label}
+            </span>
+            <span className="text-ink-500 block truncate text-xs">
+              {market.detail}
+            </span>
+          </span>
+          <span className="flex shrink-0 flex-col items-end">
+            <span
+              className={clsx(
+                'text-sm font-semibold tabular-nums',
+                toneText(quote.tone)
+              )}
+            >
+              {quote.text}
+            </span>
+            {position && <PositionText position={position} />}
+          </span>
+          <ChevronDownIcon
+            className={clsx(
+              'text-ink-400 h-4 w-4 shrink-0 transition-transform',
+              open && 'rotate-180'
+            )}
+          />
+        </button>
+      </div>
+      {open && (
+        <div className="pb-3 pl-8 pr-1">
+          <div className={clsx(mapStyles.layout, 'z-0')}>
+            {market.measure ? (
+              <BallotMeasureCard
+                measure={market.measure}
+                contract={market.contract}
+              />
+            ) : market.chamber ? (
+              <ControlCard label={market.chamber} contract={market.contract} />
+            ) : null}
+          </div>
+          <Link
+            href={contractPath(market.contract)}
+            target="_blank"
+            className="text-primary-700 mt-2 flex items-center gap-1 text-xs hover:underline"
+          >
+            <ExternalLinkIcon className="h-3.5 w-3.5" />
+            Market
+          </Link>
+        </div>
+      )}
+    </li>
+  )
+}
+
+// "R 62%" for chamber control; "Pass 58%" or "Fail 70%" for a measure.
+function marketQuote(market: BoardMarket): { text: string; tone?: string } {
+  if (market.measure) {
+    const chance = approvalChance(market.measure, market.contract)
+    if (chance === undefined) return { text: 'No odds' }
+    return chance >= 0.5
+      ? { text: `Pass ${formatOdds(chance)}`, tone: 'other' }
+      : { text: `Fail ${formatOdds(1 - chance)}` }
+  }
+  const odds = electionOdds(market.contract, true)
+  if (!odds) return { text: 'No odds' }
+  return odds.rep > odds.dem
+    ? { text: `R ${formatOdds(odds.rep)}`, tone: 'rep' }
+    : { text: `D ${formatOdds(odds.dem)}`, tone: 'dem' }
+}
+
 // The map's outcome rows (party, candidate, chance, Bet), inside the map's
 // CSS scope so they keep its colors in both themes.
 function RaceBetRows(props: { race: BoardRace }) {
@@ -254,9 +393,35 @@ function RaceBetRows(props: { race: BoardRace }) {
   )
 }
 
+// The account's stake: its current value and profit, or the profit on a
+// position it has sold out of.
+function PositionText(props: { position: BoardPosition }) {
+  const { hasShares, payout, profit } = props.position
+  const rounded = Math.round(profit)
+  return (
+    <span className="text-xs tabular-nums">
+      <span className="text-ink-600">
+        {hasShares ? formatMoney(payout) : 'Sold'}
+      </span>{' '}
+      <span
+        className={clsx(
+          rounded > 0
+            ? 'text-teal-600'
+            : rounded < 0
+            ? 'text-scarlet-600'
+            : 'text-ink-500'
+        )}
+      >
+        {rounded > 0 ? '+' : rounded < 0 ? '−' : '±'}
+        {formatMoney(Math.abs(rounded))}
+      </span>
+    </span>
+  )
+}
+
 function RaceList(
   props: RowActions & {
-    rows: { race: BoardRace; move?: RaceMove; called?: RaceCall }[]
+    rows: RowData[]
     empty: ReactNode
   }
 ) {
@@ -320,43 +485,55 @@ export function CloseRacesPanel(props: RowActions & { races: BoardRace[] }) {
   )
 }
 
-export function WatchlistPanel(props: RowActions & { races: BoardRace[] }) {
-  const { races, starred, ...actions } = props
-  const [query, setQuery] = useState('')
-  const watched = races.filter((r) => starred.has(r.key))
-  const results = query.trim()
-    ? races.filter((r) => r.contract && matchesRaceQuery(r, query)).slice(0, 8)
-    : []
-  return (
-    <>
-      <label className="border-ink-200 bg-canvas-0 focus-within:ring-primary-500 mx-1 mt-1 flex items-center gap-2 rounded-lg border px-2 py-1.5 focus-within:ring-2">
-        <SearchIcon className="text-ink-400 h-4 w-4 shrink-0" />
-        <input
-          className="placeholder:text-ink-400 min-w-0 grow border-none bg-transparent p-0 text-sm focus:ring-0"
-          placeholder="Add a race: PA, Ohio, AZ-6…"
-          aria-label="Find a race to add"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-      </label>
-      {query.trim() && (
-        <>
-          <SectionLabel>Results</SectionLabel>
-          <RaceList
-            rows={results.map((race) => ({ race }))}
-            empty="No race matches."
-            starred={starred}
-            {...actions}
-          />
-        </>
-      )}
-      <SectionLabel>Your races</SectionLabel>
-      <RaceList
-        rows={watched.map((race) => ({ race }))}
-        empty="Star a race to follow it here."
-        starred={starred}
+// The board's markets the account has traded on or liked: races, chamber
+// control and ballot measures.
+export function WatchlistPanel(
+  props: RowActions & {
+    list: Watchlist<BoardRace | BoardMarket>
+    signedIn: boolean | undefined
+  }
+) {
+  const { list, signedIn, ...actions } = props
+  if (signedIn === false)
+    return (
+      <p className="text-ink-500 px-2 py-6 text-center text-sm">
+        Sign in to see the election markets you’ve traded on or liked.
+      </p>
+    )
+  const row = (item: BoardRace | BoardMarket, position?: BoardPosition) =>
+    isBoardRace(item) ? (
+      <BoardRaceRow
+        key={item.key}
+        race={item}
+        position={position}
         {...actions}
       />
+    ) : (
+      <BoardMarketRow
+        key={item.key}
+        market={item}
+        position={position}
+        {...actions}
+      />
+    )
+  return (
+    <>
+      <SectionLabel>Your positions</SectionLabel>
+      {list.traded.length === 0 ? (
+        <p className="text-ink-500 px-2 py-4 text-center text-sm">
+          Election markets you trade on show up here.
+        </p>
+      ) : (
+        <ul>{list.traded.map((t) => row(t.item, t.position))}</ul>
+      )}
+      <SectionLabel>Liked</SectionLabel>
+      {list.liked.length === 0 ? (
+        <p className="text-ink-500 px-2 py-4 text-center text-sm">
+          Tap ♡ on a race to like its market and keep it here.
+        </p>
+      ) : (
+        <ul>{list.liked.map((item) => row(item))}</ul>
+      )}
     </>
   )
 }

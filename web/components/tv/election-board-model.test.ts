@@ -13,8 +13,11 @@ import {
   pricedADayAgo,
   raceMove,
   TradeTarget,
+  boardMarkets,
   tradeTargets,
+  watchlist,
 } from './election-board-model'
+import { BALLOT_MEASURES } from 'web/components/usa-map/ballot-measures-model'
 import { raceCandidates } from 'web/components/usa-map/election-candidates'
 
 const binary = (
@@ -318,4 +321,101 @@ test('tradeTargets labels a candidate binary with the candidate, as the map does
   assert.match(yes.side, /Figures/)
   assert.equal(yes.tone, 'dem')
   assert.equal(no.side, 'Any other winner')
+})
+
+test('watchlist: traded races first (open before closed), then liked ones', () => {
+  const a = race(
+    'A',
+    { dem: 0.5, rep: 0.5, other: 0 },
+    binary(0.5, 0, { id: 'a' })
+  )
+  const b = race(
+    'B',
+    { dem: 0.5, rep: 0.5, other: 0 },
+    binary(0.5, 0, { id: 'b' })
+  )
+  const c = race(
+    'C',
+    { dem: 0.5, rep: 0.5, other: 0 },
+    binary(0.5, 0, { id: 'c' })
+  )
+  const d = race(
+    'D',
+    { dem: 0.5, rep: 0.5, other: 0 },
+    binary(0.5, 0, { id: 'd' })
+  )
+  // A House district priced by an answer of portfolio market p.
+  const district = {
+    ...race('E', undefined, binary(0.5, 0, { id: 'p' })),
+    answerId: 'e1',
+  }
+  const other = {
+    ...race('F', undefined, binary(0.5, 0, { id: 'p' })),
+    answerId: 'f1',
+  }
+  const position = (hasShares: boolean, lastBetTime: number) => ({
+    hasShares,
+    payout: 10,
+    profit: 1,
+    lastBetTime,
+  })
+  const list = watchlist(
+    [a, b, c, d, district, other],
+    // Liking the portfolio market must not list every district it prices.
+    new Set(['c', 'b', 'p']),
+    new Map([
+      ['a', position(false, 300)],
+      ['b', position(true, 100)],
+      ['p:e1', position(true, 200)],
+    ])
+  )
+  assert.deepEqual(
+    list.traded.map((t) => t.item.id),
+    ['E', 'B', 'A']
+  )
+  assert.deepEqual(
+    list.liked.map((r) => r.id),
+    ['C']
+  )
+})
+
+test('boardMarkets lists chamber control and the measures with markets', () => {
+  const measure = BALLOT_MEASURES.find((m) => m.source?.kind === 'binary')!
+  const contract = binary(0.6, 0, { id: measure.source!.contractId })
+  const senate = binary(0.3, 0, { id: 'senate' })
+  const { control, measures } = boardMarkets({
+    senateControl: senate,
+    houseControl: null,
+    measures: { [contract.id]: contract },
+  })
+  assert.deepEqual(
+    control.map((m) => m.label),
+    ['Senate control']
+  )
+  assert.equal(measures.length >= 1, true)
+  const listed = measures.find((m) => m.measure?.key === measure.key)
+  assert.equal(listed?.contract.id, contract.id)
+  assert.equal(listed?.answerId, undefined)
+  // A measure the map has no market for is left out.
+  assert.equal(
+    measures.every((m) => m.contract.id === contract.id),
+    true
+  )
+
+  // Traded measures and liked control markets reach the watchlist.
+  const list = watchlist(
+    [...control, ...measures],
+    new Set(['senate']),
+    new Map([
+      [contract.id, { hasShares: true, payout: 5, profit: 1, lastBetTime: 1 }],
+    ])
+  )
+  assert.deepEqual(
+    list.traded.map((t) => t.item.key),
+    measures.map((m) => m.key)
+  )
+  assert.deepEqual(
+    list.liked.map((m) => m.key),
+    ['control:senate']
+  )
 })

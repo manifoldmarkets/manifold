@@ -8,6 +8,7 @@ import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
 import { TV_ELECTION_BOARD_ID } from 'common/tv'
+import { filterDefined } from 'common/util/array'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { SEO } from 'web/components/SEO'
@@ -16,7 +17,7 @@ import { Page } from 'web/components/layout/page'
 import { ModActionBadge } from 'web/components/moderation/mod-action'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { useGameLikes } from 'web/components/sports/use-game-likes'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
@@ -35,6 +36,7 @@ import { useTVChat } from './tv-chat'
 import { ScheduleTVModal } from './schedule-tv-modal'
 import { ScheduleItem } from './tv-schedule'
 import { TVStreamPlayer } from './tv-stream'
+import { useBoardPositions } from './use-board-positions'
 import {
   biggestMovers,
   BoardRace,
@@ -43,7 +45,10 @@ import {
   BoardTrade,
   boardTrades,
   closestRaces,
+  boardMarkets,
   latestCalls,
+  likeableContractId,
+  watchlist,
   MIN_TRADE,
   TradeTarget,
   tradeTargets,
@@ -272,18 +277,24 @@ function ElectionBoard(props: {
     [races]
   )
 
-  const [starredKeys, setStarredKeys] = usePersistentLocalState<string[]>(
-    [],
-    'tv-election-watchlist'
+  // The watchlist: the board's markets (races, chamber control, ballot
+  // measures) the account has liked (the same hearts as on market pages) or
+  // traded on.
+  const watchItems = useMemo(() => {
+    const { control, measures } = boardMarkets(board)
+    return [...control, ...races, ...measures]
+  }, [board, races])
+  const likeableIds = useMemo(
+    () => filterDefined(watchItems.map(likeableContractId)),
+    [watchItems]
   )
-  const starred = useMemo(() => new Set(starredKeys), [starredKeys])
-  const onStar = (key: string) => {
-    const next = starred.has(key)
-      ? starredKeys.filter((k) => k !== key)
-      : [...starredKeys, key]
-    setStarredKeys(next)
-    track('tv election star race', { race: key, starred: !starred.has(key) })
-  }
+  const marketIds = useMemo(
+    () => filterDefined(watchItems.map((item) => item.contract?.id)),
+    [watchItems]
+  )
+  const likes = useGameLikes(likeableIds, 'tv election')
+  const positions = useBoardPositions(marketIds)
+  const list = watchlist(watchItems, likes.liked, positions)
 
   const trades = useBoardTrades(races, board)
 
@@ -323,18 +334,29 @@ function ElectionBoard(props: {
     if (race) onShowOnMap(race)
   }
 
-  const actions = { starred, onStar, onShowOnMap }
+  const actions = {
+    likes: {
+      liked: likes.liked,
+      disabled: likes.disabled,
+      toggle: (id: string) => void likes.toggle(id),
+    },
+    onShowOnMap,
+  }
   const panel = (t: BoardTab) =>
     t === 'movers' ? (
       <MoversPanel moves={moves} calls={calls} {...actions} />
     ) : t === 'close' ? (
       <CloseRacesPanel races={close} {...actions} />
     ) : t === 'watch' ? (
-      <WatchlistPanel races={races} {...actions} />
+      <WatchlistPanel
+        list={list}
+        signedIn={likes.user === undefined ? undefined : !!likes.user}
+        {...actions}
+      />
     ) : t === 'trades' ? (
       <TradesPanel trades={trades} onShowRace={onShowRace} />
     ) : null
-  const counts = { watch: starredKeys.length }
+  const counts = { watch: list.traded.length + list.liked.length }
 
   return (
     <>
