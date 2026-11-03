@@ -8,7 +8,13 @@ import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { useEvent } from 'client-common/hooks/use-event'
 import { useUser } from 'web/hooks/use-user'
 import { db } from 'web/lib/supabase/db'
-import { BoardPosition, boardPositions } from './election-board-model'
+import {
+  applyMetricRead,
+  BoardPosition,
+  boardPositions,
+  MetricReads,
+  NO_READS,
+} from './election-board-model'
 
 const CHUNK = 100
 // Metrics are written with the bet; a moment's grace before re-reading.
@@ -47,39 +53,41 @@ export function useBoardPositions(
   const user = useUser()
   const userId = user?.id
   const idsKey = JSON.stringify([...new Set(contracts.map((c) => c.id))].sort())
-  const [state, setState] = useState<{
-    userId: string | undefined
-    metrics: Metrics
-  }>({ userId, metrics: {} })
-  const requests = useRef(0)
+  const [state, setState] = useState<
+    { userId: string | undefined } & MetricReads
+  >({ userId, ...NO_READS })
+  // Read through refs: a subscription keeps the callback it started with.
+  const account = useRef(userId)
+  account.current = userId
 
-  const refresh = useEvent(async () => {
-    const request = ++requests.current
-    if (!userId) {
-      setState({ userId, metrics: {} })
-      return
-    }
+  // Every read, of all the board's markets or just a few, goes through
+  // applyMetricRead: reads finish out of order, and each market keeps the
+  // newest. Reads are numbered as they start (only their order matters, so a
+  // counter: no ties, no clock). A read for an account no longer signed in
+  // is dropped.
+  const reads = useRef(0)
+  const read = useEvent(async (ids: string[]) => {
+    const reader = userId
+    if (!reader || ids.length === 0) return
+    const startedAt = ++reads.current
     try {
-      const metrics = await fetchMetrics(userId, JSON.parse(idsKey))
-      if (request === requests.current) setState({ userId, metrics })
+      const fetched = await fetchMetrics(reader, ids)
+      if (account.current !== reader) return
+      setState((old) => ({
+        userId: reader,
+        ...applyMetricRead(
+          old.userId === reader ? old : NO_READS,
+          fetched,
+          startedAt
+        ),
+      }))
     } catch (e) {
       console.error('Failed to load TV board positions', e)
     }
   })
-
-  // Re-read just these markets, merged into the same account's state.
-  const refreshMarkets = useEvent(async (ids: string[]) => {
-    if (!userId || ids.length === 0) return
-    try {
-      const metrics = await fetchMetrics(userId, ids)
-      setState((old) =>
-        old.userId === userId
-          ? { userId, metrics: { ...old.metrics, ...metrics } }
-          : old
-      )
-    } catch (e) {
-      console.error('Failed to refresh TV board positions', e)
-    }
+  const refresh = useEvent(() => {
+    if (!userId) setState({ userId, ...NO_READS })
+    else void read(JSON.parse(idsKey))
   })
 
   useEffect(() => {
@@ -90,16 +98,12 @@ export function useBoardPositions(
     window.addEventListener('focus', refresh)
     document.addEventListener('visibilitychange', onVisible)
     return () => {
-      requests.current++
       window.removeEventListener('focus', refresh)
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [userId, idsKey, refresh])
 
   // Markets the account just traded on, re-read together after a moment.
-  // Read through refs: a subscription keeps the callback it started with.
-  const account = useRef(userId)
-  account.current = userId
   const ids = useRef(new Set<string>())
   ids.current = new Set(JSON.parse(idsKey) as string[])
   const pending = useRef(new Set<string>())
@@ -112,7 +116,7 @@ export function useBoardPositions(
     timer.current = setTimeout(() => {
       const next = [...pending.current]
       pending.current.clear()
-      void refreshMarkets(next)
+      void read(next)
     }, AFTER_BET_MS)
   }
   useEffect(() => () => clearTimeout(timer.current), [])

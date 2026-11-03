@@ -255,6 +255,35 @@ export type BoardPosition = {
 export const positionKey = (contractId: string, answerId?: string | null) =>
   answerId ? `${contractId}:${answerId}` : contractId
 
+// The account's metric rows by market, and when each market's rows were read
+// (the start of the read that supplied them, in any increasing order).
+export type MetricReads = {
+  metrics: Record<string, ContractMetric[]>
+  readAt: Record<string, number>
+}
+
+export const NO_READS: MetricReads = { metrics: {}, readAt: {} }
+
+// Apply one read (of every board market, or just the few the account traded
+// on) that started at `startedAt`. Reads finish out of order, so each market
+// keeps the newest read: one that started earlier than the read a market
+// already shows is ignored for that market, so a slow full read can never
+// put back what a later targeted read found (a fill), and vice versa.
+export function applyMetricRead(
+  held: MetricReads,
+  fetched: Record<string, ContractMetric[]>,
+  startedAt: number
+): MetricReads {
+  const metrics = { ...held.metrics }
+  const readAt = { ...held.readAt }
+  for (const [id, rows] of Object.entries(fetched)) {
+    if ((readAt[id] ?? -Infinity) > startedAt) continue
+    metrics[id] = rows
+    readAt[id] = startedAt
+  }
+  return { metrics, readAt }
+}
+
 // The account's positions, valued at the markets' current (live) prices with
 // the same helper the backend uses to revalue metrics. The stored metrics
 // carry shares and cash flows; their payout and profit are as of the last

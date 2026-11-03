@@ -15,7 +15,9 @@ import {
   raceMove,
   TradeTarget,
   boardMarkets,
+  applyMetricRead,
   boardPositions,
+  NO_READS,
   tradeTargets,
   watchlist,
 } from './election-board-model'
@@ -483,4 +485,27 @@ test('boardPositions values each answer live and rebuilds the summary', () => {
   assert.equal(summary?.lastBetTime, 9)
   // The stored metrics are untouched.
   assert.equal(stored[2].payout, 20)
+})
+
+test('applyMetricRead: a slower, older full read never erases a newer fill', () => {
+  const fill = [metric({ contractId: 'x' })]
+  // The full read starts at t=1, before the fill, and sees nothing on x.
+  // The targeted read for x starts at t=2, after the fill, and lands first.
+  let reads = applyMetricRead(NO_READS, { x: fill }, 2)
+  reads = applyMetricRead(reads, { x: [], y: [] }, 1)
+  assert.equal(reads.metrics.x, fill)
+  assert.deepEqual(reads.metrics.y, [])
+  assert.equal(reads.readAt.x, 2)
+  assert.equal(reads.readAt.y, 1)
+})
+
+test('applyMetricRead: an older targeted read loses to a newer full read', () => {
+  const newer = [metric({ contractId: 'x', payout: 50 })]
+  const older = [metric({ contractId: 'x', payout: 10 })]
+  let reads = applyMetricRead(NO_READS, { x: newer }, 5)
+  reads = applyMetricRead(reads, { x: older }, 3)
+  assert.equal(reads.metrics.x, newer)
+  // And a later read still replaces it.
+  reads = applyMetricRead(reads, { x: [] }, 6)
+  assert.deepEqual(reads.metrics.x, [])
 })
