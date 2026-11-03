@@ -96,7 +96,11 @@ export function BoardTabs(props: {
     <div
       role="tablist"
       className={clsx(
-        'bg-canvas-50 flex gap-1 overflow-x-auto rounded-lg p-1 text-sm',
+        // A fixed height that never shrinks: in the rail's fixed-height
+        // column a long list would otherwise squeeze the strip, and its
+        // sideways scrolling (fine on phones, where the tabs may not fit) would
+        // sprout a vertical scrollbar.
+        'bg-canvas-50 flex h-11 shrink-0 items-stretch gap-1 overflow-x-auto overflow-y-hidden rounded-lg p-1 text-sm',
         className
       )}
     >
@@ -107,7 +111,7 @@ export function BoardTabs(props: {
           aria-selected={tab === t.id}
           onClick={() => onTab(t.id)}
           className={clsx(
-            'flex shrink-0 grow items-center justify-center gap-1 whitespace-nowrap rounded-md px-2.5 py-1.5 font-medium transition-colors',
+            'flex shrink-0 grow items-center justify-center gap-1 whitespace-nowrap rounded-md px-3 font-medium transition-colors',
             tab === t.id
               ? 'bg-canvas-0 text-primary-700 shadow-sm'
               : 'text-ink-600 hover:text-ink-900'
