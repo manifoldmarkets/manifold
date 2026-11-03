@@ -34,7 +34,7 @@ const random = load('common/src/util/random.ts', {})
 const ab = load('common/src/ab-test.ts', { './util/random': random })
 const rules = load('common/src/browse-rollout.ts', { './ab-test': ab })
 const mounted = []
-async function mount(render) {
+async function mount(render, renderValue = false) {
   const element = document.createElement('div')
   document.body.appendChild(element)
   const root = createRoot(element)
@@ -42,7 +42,7 @@ async function mount(render) {
   let value
   function Probe() {
     value = render()
-    return null
+    return renderValue ? value : null
   }
   await act(async () => root.render(React.createElement(Probe)))
   return {
@@ -52,6 +52,219 @@ async function mount(render) {
     rerender: () => act(async () => root.render(React.createElement(Probe))),
   }
 }
+
+function visibilityFixture() {
+  const observers = []
+  const timers = new Map()
+  let nextTimer = 0
+  class IntersectionObserver {
+    constructor(callback) {
+      this.callback = callback
+      this.active = false
+      observers.push(this)
+    }
+    observe() {
+      this.active = true
+    }
+    unobserve() {
+      this.active = false
+    }
+    disconnect() {
+      this.active = false
+    }
+    emit(visible) {
+      this.callback([{ isIntersecting: visible }])
+    }
+  }
+  const { LoadMoreUntilNotVisible } = load(
+    'web/components/widgets/visibility-observer.tsx',
+    {
+      react: React,
+      'react/jsx-runtime': require('react/jsx-runtime'),
+      'client-common/hooks/use-event': useEvent,
+    },
+    {
+      ...globals,
+      IntersectionObserver,
+      setTimeout: (callback) => {
+        const id = ++nextTimer
+        timers.set(id, callback)
+        return id
+      },
+      clearTimeout: (id) => timers.delete(id),
+    }
+  )
+  return {
+    Loader: LoadMoreUntilNotVisible,
+    observers,
+    timers,
+    tick: () => {
+      const pending = [...timers.values()]
+      timers.clear()
+      pending.forEach((callback) => callback())
+    },
+  }
+}
+
+test('load-more cancels a scheduled repeat when its sentinel unmounts', async () => {
+  const f = visibilityFixture()
+  let calls = 0
+  let show = true
+  const probe = await mount(
+    () =>
+      show
+        ? React.createElement(f.Loader, {
+            loadMore: async () => {
+              calls++
+              return true
+            },
+          })
+        : null,
+    true
+  )
+  await act(async () => f.observers.at(-1).emit(true))
+  assert.equal(calls, 1)
+  assert.equal(f.timers.size, 1)
+  show = false
+  await probe.rerender()
+  await act(async () => f.tick())
+  assert.equal(calls, 1, 'an unmounted sentinel must not load again')
+  assert.equal(f.timers.size, 0)
+})
+
+test('load-more cannot restart when an in-flight request resolves after unmount', async () => {
+  const f = visibilityFixture()
+  const page = deferred()
+  let calls = 0
+  let show = true
+  const probe = await mount(
+    () =>
+      show
+        ? React.createElement(f.Loader, {
+            loadMore: () => {
+              calls++
+              return page.promise
+            },
+          })
+        : null,
+    true
+  )
+  const observer = f.observers.at(-1)
+  await act(async () => observer.emit(true))
+  show = false
+  await probe.rerender()
+  // An observer notification already queued before disconnect is stale too.
+  await act(async () => observer.emit(true))
+  await act(async () => page.resolve(true))
+  await act(async () => f.tick())
+  assert.equal(calls, 1)
+  assert.equal(f.timers.size, 0)
+})
+
+test('load-more stays serial and resumes on visibility in StrictMode', async () => {
+  const f = visibilityFixture()
+  const page = deferred()
+  let calls = 0
+  await mount(
+    () =>
+      React.createElement(
+        React.StrictMode,
+        null,
+        React.createElement(f.Loader, {
+          loadMore: async () => {
+            calls++
+            return calls === 1 ? page.promise : false
+          },
+        })
+      ),
+    true
+  )
+  const observer = f.observers.at(-1)
+  await act(async () => {
+    observer.emit(true)
+    observer.emit(true)
+  })
+  assert.equal(
+    calls,
+    1,
+    'visibility callbacks must not start overlapping loops'
+  )
+  await act(async () => page.resolve(true))
+  assert.equal(f.timers.size, 1)
+  await act(async () => observer.emit(false))
+  await act(async () => f.tick())
+  assert.equal(calls, 1)
+  await act(async () => observer.emit(true))
+  assert.equal(calls, 2)
+  assert.equal(f.timers.size, 0, 'exhausted results must stop pagination')
+})
+
+async function settleUntil(check) {
+  const deadline = Date.now() + 3000
+  while (!check()) {
+    assert.ok(Date.now() < deadline, 'React did not reach the expected state')
+    await new Promise((resolve) => setTimeout(resolve, 5))
+  }
+}
+
+test('a lens switch cannot let an orphaned sentinel paginate the new feed', async () => {
+  // Use normal React scheduling: act() can batch away the intermediate loading
+  // render that unmounts the old sentinel during a real query change.
+  global.IS_REACT_ACT_ENVIRONMENT = false
+  const f = visibilityFixture()
+  const calls = []
+  const useMarkets = markets(async (_, args) => {
+    calls.push(args)
+    return [0, 1].map((i) => ({ id: `${args.sort}-${args.offset + i}` }))
+  })
+  let feed
+  function Feed({ sort }) {
+    feed = useMarkets({ sort }, 2)
+    return feed.contracts && feed.hasMore
+      ? React.createElement(f.Loader, { loadMore: feed.loadMore })
+      : null
+  }
+  const element = document.createElement('div')
+  document.body.appendChild(element)
+  const root = createRoot(element)
+  try {
+    root.render(React.createElement(Feed, { sort: 'score' }))
+    await settleUntil(() => f.observers.some((o) => o.active))
+    f.observers.at(-1).emit(true)
+    await settleUntil(() => feed.contracts?.length === 4 && f.timers.size > 0)
+    root.render(React.createElement(Feed, { sort: 'most-popular' }))
+    await settleUntil(
+      () =>
+        feed.contracts?.[0]?.id === 'most-popular-0' && f.observers.length > 1
+    )
+    assert.equal(f.observers[0].active, false)
+    const before = calls.length
+    // Neither a new observation nor user scrolling has made the new sentinel visible.
+    f.tick()
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    f.tick()
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    assert.equal(calls.length, before, 'old loop must not page the new lens')
+    assert.equal(feed.contracts.length, 2)
+    assert.equal(f.timers.size, 0)
+    // Normal pagination still works once the replacement sentinel is visible.
+    f.observers.at(-1).emit(true)
+    await settleUntil(() => feed.contracts.length === 4)
+    root.unmount()
+    const afterUnmount = calls.length
+    f.tick()
+    await new Promise((resolve) => setTimeout(resolve, 30))
+    assert.equal(
+      calls.length,
+      afterUnmount,
+      'navigation away must stop requests'
+    )
+    assert.equal(f.timers.size, 0)
+  } finally {
+    root.unmount()
+    global.IS_REACT_ACT_ENVIRONMENT = true
+  }
+})
 afterEach(async () => {
   await act(async () => mounted.splice(0).forEach((root) => root.unmount()))
   document.body.innerHTML = ''
