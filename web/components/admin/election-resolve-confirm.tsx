@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { formatPercent } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
@@ -8,6 +8,8 @@ import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { api } from 'web/lib/api/api'
 import {
+  Choice,
+  isStale,
   optionFor,
   resolveCall,
   ResolveUnit,
@@ -22,19 +24,42 @@ export function ElectionResolveConfirm(props: {
   open: boolean
   setOpen: (open: boolean) => void
   units: ResolveUnit[]
-  choices: Record<string, string>
+  choices: Record<string, Choice>
   onFinished: (results: Record<string, RunResult>) => void
 }) {
   const { open, setOpen, units, choices, onFinished } = props
   const [acknowledged, setAcknowledged] = useState(false)
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState<Record<string, RunResult>>({})
+  // The units of the run in progress or just finished. Resolved units leave
+  // the selection, so the list shows these rather than the live selection.
+  const [ran, setRan] = useState<{
+    units: ResolveUnit[]
+    values: Record<string, string>
+  }>()
+  const listed = ran?.units ?? units
+  const valueOf = (u: ResolveUnit) =>
+    ran?.values[u.key] ?? choices[u.key]?.value ?? ''
   const stop = useRef(false)
+
+  // The acknowledgement covers exactly what was on screen: any change to
+  // the selection, an outcome, or a market's text since then clears it.
+  const signature = units
+    .map((u) => `${u.key}=${choices[u.key]?.fingerprint}`)
+    .join('|')
+  useEffect(() => {
+    if (!running) setAcknowledged(false)
+  }, [signature, running])
+  const stale = units.filter((u) => {
+    const c = choices[u.key]
+    return !c || isStale(u, c)
+  })
 
   const close = () => {
     if (running) return
     setAcknowledged(false)
     setProgress({})
+    setRan(undefined)
     setOpen(false)
   }
 
@@ -44,11 +69,25 @@ export function ElectionResolveConfirm(props: {
     const out: Record<string, RunResult> = {}
     // Fixed at the start, so units leaving the selection as they resolve
     // (or a refresh) cannot reorder or skip the run.
-    const queue = units.map((u) => ({ unit: u, value: choices[u.key] }))
-    for (const { unit, value } of queue) {
+    const queue = units.map((u) => ({ unit: u, choice: choices[u.key] }))
+    setRan({
+      units,
+      values: Object.fromEntries(
+        queue.map(({ unit, choice }) => [unit.key, choice?.value ?? ''])
+      ),
+    })
+    for (const { unit, choice } of queue) {
       if (stop.current) break
+      if (!choice || isStale(unit, choice)) {
+        out[unit.key] = {
+          status: 'error',
+          message: 'Edited since it was ticked. Review it again.',
+        }
+        setProgress({ ...out })
+        continue
+      }
       try {
-        await api('market/:contractId/resolve', resolveCall(unit, value))
+        await api('market/:contractId/resolve', resolveCall(unit, choice.value))
         out[unit.key] = { status: 'ok' }
       } catch (e) {
         out[unit.key] = {
@@ -65,14 +104,20 @@ export function ElectionResolveConfirm(props: {
   const done = Object.keys(progress).length
   const failed = Object.values(progress).filter((r) => r.status === 'error')
   const finished = !running && done > 0
-  const against = units.filter((u) => choices[u.key] !== u.leader.value)
+  const against = listed.filter((u) => valueOf(u) !== u.leader.value)
 
   return (
     <Modal open={open} setOpen={close} size="lg">
       <Col className={clsx(MODAL_CLASS, '!items-stretch')}>
         <div className="text-lg font-semibold">
-          Resolve {units.length} {units.length === 1 ? 'market' : 'markets'}
+          Resolve {listed.length} {listed.length === 1 ? 'market' : 'markets'}
         </div>
+        {stale.length > 0 && (
+          <div className="bg-scarlet-50 text-scarlet-700 rounded-md px-3 py-2 text-sm">
+            {stale.length} of these changed after you ticked them (the question
+            or an answer was edited). Close this, untick and tick them again.
+          </div>
+        )}
         {against.length > 0 && (
           <div className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-800">
             {against.length} of these resolve against the current market leader.
@@ -82,11 +127,12 @@ export function ElectionResolveConfirm(props: {
         <div className="border-ink-200 max-h-[50vh] overflow-auto rounded-md border">
           <table className="w-full text-sm">
             <tbody>
-              {units.map((u) => {
-                const value = choices[u.key]
+              {listed.map((u) => {
+                const value = valueOf(u)
                 const option = optionFor(u, value)
                 const r = progress[u.key]
                 const isAgainst = value !== u.leader.value
+                const isEdited = stale.includes(u)
                 return (
                   <tr key={u.key} className="border-ink-100 border-t">
                     <td className="whitespace-nowrap px-3 py-2 font-semibold">
@@ -113,7 +159,11 @@ export function ElectionResolveConfirm(props: {
                     </td>
                     <td className="whitespace-nowrap px-3 py-2 text-xs">
                       {!r ? (
-                        ''
+                        isEdited && (
+                          <span className="text-scarlet-600">
+                            Edited since ticked
+                          </span>
+                        )
                       ) : r.status === 'ok' ? (
                         <span className="text-teal-700">Resolved</span>
                       ) : (
@@ -132,7 +182,7 @@ export function ElectionResolveConfirm(props: {
             <span className="text-sm">
               {done - failed.length} resolved
               {failed.length ? `, ${failed.length} failed (see above)` : ''}
-              {done < units.length ? `, ${units.length - done} not run` : ''}.
+              {done < listed.length ? `, ${listed.length - done} not run` : ''}.
             </span>
             <Button color="gray-outline" onClick={close}>
               Close
@@ -154,7 +204,7 @@ export function ElectionResolveConfirm(props: {
               {running ? (
                 <>
                   <span className="text-ink-600 text-sm">
-                    Resolving {done + 1} of {units.length}…
+                    Resolving {done + 1} of {listed.length}…
                   </span>
                   <Button
                     color="gray-outline"
@@ -170,7 +220,9 @@ export function ElectionResolveConfirm(props: {
                   </Button>
                   <Button
                     color="red"
-                    disabled={!acknowledged || !units.length}
+                    disabled={
+                      !acknowledged || !units.length || stale.length > 0
+                    }
                     onClick={runAll}
                   >
                     Resolve {units.length}

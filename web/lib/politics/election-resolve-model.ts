@@ -62,11 +62,14 @@ export type MapSource = {
 export function mapSources(): MapSource[] {
   const headline = (
     Object.entries(MIDTERMS_2026) as [keyof typeof MIDTERMS_2026, string][]
-  ).map(([key, slug]) => ({
-    office: 'headline' as const,
-    race: HEADLINE_LABEL[key],
-    ref: { slug },
-  }))
+  )
+    // The district portfolio prices the House map, so it files under House.
+    .filter(([key]) => key !== 'houseDistricts')
+    .map(([key, slug]) => ({
+      office: 'headline' as const,
+      race: HEADLINE_LABEL[key],
+      ref: { slug },
+    }))
   const senate = senate2026.map((m) => ({
     office: 'senate' as const,
     race: `${m.state} Senate`,
@@ -77,11 +80,18 @@ export function mapSources(): MapSource[] {
     race: `${m.state} Governor`,
     ref: { slug: m.slug },
   }))
-  const portfolios = HOUSE_DISTRICT_MARKETS.map((slug) => ({
-    office: 'house' as const,
-    race: 'House portfolio',
-    ref: { slug },
-  }))
+  const portfolios = [
+    {
+      office: 'house' as const,
+      race: HEADLINE_LABEL.houseDistricts,
+      ref: { slug: MIDTERMS_2026.houseDistricts },
+    },
+    ...HOUSE_DISTRICT_MARKETS.map((slug) => ({
+      office: 'house' as const,
+      race: 'House portfolio',
+      ref: { slug },
+    })),
+  ]
   const houseRaces = HOUSE_RACE_MARKETS.map((m) => ({
     office: 'house' as const,
     race: m.district,
@@ -169,12 +179,13 @@ export function buildUnits(
       answerRace.set(`${s.ref.id}:${s.answerId}`, s.race)
 
   for (const source of sources) {
-    const contract =
+    const raw =
       'slug' in source.ref
         ? contractsBySlug[source.ref.slug]
         : contractsById[source.ref.id]
-    if (!contract || seen.has(contract.id)) continue
-    seen.add(contract.id)
+    if (!raw || seen.has(raw.id)) continue
+    seen.add(raw.id)
+    const contract = withResolvedOdds(raw)
     const base = {
       contractId: contract.id,
       office: source.office,
@@ -207,9 +218,13 @@ export function buildUnits(
           prob: clampProb(getAnswerProbability(contract, a.id)),
         }))
       if (!options.length) continue
-      const winner = contract.answers.find(
-        (a) => a.id === contract.resolution
-      )
+      // The result is the answer id, or a resolutions map that
+      // withResolvedOdds has turned into per-answer probabilities.
+      const winner =
+        contract.answers.find((a) => a.id === contract.resolution) ??
+        contract.answers.find(
+          (a) => getAnswerProbability(contract, a.id) >= 0.999
+        )
       units.push({
         ...base,
         key: contract.id,
@@ -352,17 +367,51 @@ export type CalledTally = {
   other: number
 }
 
-// A resolved binary keeps its last pool price; the map's odds should read
-// the result instead, so pin its display probability to the resolution.
-export function withResolvedProbability(c: Contract): Contract {
-  if (
-    c.outcomeType !== 'BINARY' ||
-    c.resolutionProbability !== undefined ||
-    (c.resolution !== 'YES' && c.resolution !== 'NO')
-  )
-    return c
-  return { ...c, resolutionProbability: c.resolution === 'YES' ? 1 : 0 }
+// A resolved market keeps its last prices. A binary stores the
+// pre-resolution price as resolutionProbability, and a linked multi-choice
+// market records the result on the contract (resolution, resolutions)
+// without resolving each answer (resolveMarketHelper). Rewrite both to read
+// the result, so units and the map's odds show what each market resolved to.
+export function withResolvedOdds(c: Contract): Contract {
+  if (!c.resolution || c.resolution === 'CANCEL') return c
+  if (c.outcomeType === 'BINARY') {
+    if (c.resolution !== 'YES' && c.resolution !== 'NO') return c
+    return { ...c, resolutionProbability: c.resolution === 'YES' ? 1 : 0 }
+  }
+  if (!isMultiCpmm(c) || !c.shouldAnswersSumToOne) return c
+  const { resolution, resolutions } = c
+  return {
+    ...c,
+    answers: c.answers.map((a) =>
+      a.resolution
+        ? a
+        : resolutions
+        ? {
+            ...a,
+            resolution: 'MKT' as const,
+            resolutionProbability: (resolutions[a.id] ?? 0) / 100,
+          }
+        : {
+            ...a,
+            resolution: a.id === resolution ? ('YES' as const) : ('NO' as const),
+          }
+    ),
+  }
 }
+
+// What the admin saw when ticking a unit. A selection whose fingerprint no
+// longer matches (question or answer edited since) must be reviewed again.
+export const unitFingerprint = (unit: ResolveUnit, value: string) =>
+  JSON.stringify([
+    unit.question,
+    unit.answerText ?? '',
+    optionFor(unit, value)?.label ?? '',
+  ])
+
+export type Choice = { value: string; fingerprint: string }
+
+export const isStale = (unit: ResolveUnit, choice: Choice) =>
+  unitFingerprint(unit, choice.value) !== choice.fingerprint
 
 // Map races whose market (or, for a portfolio-priced House seat, whose
 // answer) has resolved, by the party the map now reads for them. Party
@@ -392,7 +441,7 @@ export function calledByOffice(
 ): SummaryInput['called'] {
   const bySlug = (slug: string) => {
     const c = contractsBySlug[slug]
-    return c ? withResolvedProbability(c) : null
+    return c ? withResolvedOdds(c) : null
   }
   const byState = (list: { state: string; slug: string }[]) =>
     Object.fromEntries(list.map((m) => [m.state, bySlug(m.slug)]))
@@ -434,9 +483,12 @@ const moverName = (m: Mover) => {
 export type SummaryInput = {
   now: number
   baseline?: Snapshot
-  // P(Republicans win control) now, from the chamber-control binaries.
+  // P(Republicans win control) now, from the chamber-control binaries, and
+  // whether those markets have resolved.
   senateRep?: number
   houseRep?: number
+  senateResolved?: boolean
+  houseResolved?: boolean
   called: Partial<Record<'senate' | 'house' | 'governor', CalledTally>>
   movers: Mover[]
 }
@@ -452,11 +504,13 @@ const controlLine = (
   chamber: string,
   rep: number | undefined,
   key: string,
-  baseline?: Snapshot
+  baseline?: Snapshot,
+  resolved?: boolean
 ) => {
   if (rep === undefined || !Number.isFinite(rep)) return undefined
   const dem = 1 - rep
   const lead = rep >= dem ? 'R' : 'D'
+  if (resolved) return `${chamber}: ${lead} control, resolved on Manifold`
   const leadProb = Math.max(rep, dem)
   const before = baseline?.probs[`${key}|YES`]
   const change =
@@ -483,7 +537,16 @@ export function buildSummary(
   input: SummaryInput,
   keys: { senateControl?: string; houseControl?: string }
 ): string {
-  const { now, baseline, senateRep, houseRep, called, movers } = input
+  const {
+    now,
+    baseline,
+    senateRep,
+    houseRep,
+    senateResolved,
+    houseResolved,
+    called,
+    movers,
+  } = input
   const since = baseline
     ? `Moves since ${etTime(baseline.t)}`
     : 'Moves: not enough history yet'
@@ -495,10 +558,22 @@ export function buildSummary(
   const lines = [
     `Manifold midterms, ${etTime(now)}`,
     keys.senateControl
-      ? controlLine('Senate', senateRep, keys.senateControl, baseline)
+      ? controlLine(
+          'Senate',
+          senateRep,
+          keys.senateControl,
+          baseline,
+          senateResolved
+        )
       : undefined,
     keys.houseControl
-      ? controlLine('House', houseRep, keys.houseControl, baseline)
+      ? controlLine(
+          'House',
+          houseRep,
+          keys.houseControl,
+          baseline,
+          houseResolved
+        )
       : undefined,
     calledParts.length ? `Resolved so far: ${calledParts.join(' · ')}` : undefined,
     movers.length ? `${since}:` : undefined,

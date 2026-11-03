@@ -1,16 +1,20 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { Contract } from 'common/contract'
+import { BinaryContract, Contract } from 'common/contract'
+import { MIDTERMS_2026 } from 'web/public/data/elections-data'
 import {
   baselineFor,
   biggestMovers,
   buildSummary,
   buildUnits,
+  isStale,
   MapSource,
+  mapSources,
   resolveCall,
   snapshotOf,
   sortUnits,
-  withResolvedProbability,
+  unitFingerprint,
+  withResolvedOdds,
 } from './election-resolve-model'
 
 // A pool whose CPMM price at p = 0.5 is `prob`.
@@ -190,17 +194,103 @@ test('buildSummary reports control from the leader’s side and its change', () 
   assert.match(text, /manifold\.markets\/election$/)
 })
 
-test('withResolvedProbability pins a resolved binary to its result', () => {
+test('withResolvedOdds reads a resolved binary as its result', () => {
+  // The backend keeps the pre-resolution price in resolutionProbability.
+  const resolvedNo = binary('X', 0.9, {
+    resolution: 'NO',
+    resolutionProbability: 0.9,
+  })
   assert.equal(
-    withResolvedProbability(binary('X', 0.4, { resolution: 'YES' }))
-      .resolutionProbability,
-    1
-  )
-  assert.equal(
-    withResolvedProbability(binary('X', 0.4, { resolution: 'NO' }))
-      .resolutionProbability,
+    (withResolvedOdds(resolvedNo) as BinaryContract).resolutionProbability,
     0
   )
+  const resolvedYes = binary('X', 0.1, {
+    resolution: 'YES',
+    resolutionProbability: 0.1,
+  })
+  assert.equal(
+    (withResolvedOdds(resolvedYes) as BinaryContract).resolutionProbability,
+    1
+  )
   const open = binary('X', 0.4)
-  assert.equal(withResolvedProbability(open), open)
+  assert.equal(withResolvedOdds(open), open)
+})
+
+test('a resolved linked market reads its winner, not its last prices', () => {
+  // resolveMarketHelper sets the contract's resolution but not each answer's.
+  const byAnswerId = multi(
+    'G2',
+    true,
+    [answer('d', 'Democratic Party', 0.2), answer('r', 'Republican Party', 0.8)],
+    { resolution: 'd', isResolved: true }
+  )
+  const [u] = buildUnits(
+    [{ office: 'governor', race: 'TX Governor', ref: { id: 'G2' } }],
+    {},
+    { G2: byAnswerId }
+  )
+  assert.equal(u.resolved, true)
+  assert.equal(u.resolutionLabel, 'Democratic Party')
+  assert.equal(u.leader.value, 'd')
+  assert.equal(u.leader.prob, 1)
+
+  const byMap = multi(
+    'G3',
+    true,
+    [answer('d', 'Democratic Party', 0.7), answer('r', 'Republican Party', 0.3)],
+    { resolution: 'MKT', resolutions: { r: 100 }, isResolved: true }
+  )
+  const [m] = buildUnits(
+    [{ office: 'governor', race: 'OH Governor', ref: { id: 'G3' } }],
+    {},
+    { G3: byMap }
+  )
+  assert.equal(m.resolutionLabel, 'Republican Party')
+  assert.equal(m.leader.value, 'r')
+})
+
+test('a selection goes stale when its question or answer is edited', () => {
+  const before = unit('P1:pa')
+  const choice = { value: 'YES', fingerprint: unitFingerprint(before, 'YES') }
+  assert.equal(isStale(before, choice), false)
+  const edited = buildUnits(
+    sources,
+    bySlug(contracts),
+    byId([
+      senateBinary,
+      governor,
+      multi('P1', false, [
+        answer('pa', 'Prop A2', 0.97),
+        answer('pb', 'Prop B', 0.2),
+        answer('pc', 'Prop C', 0.6, { resolution: 'YES' }),
+      ]),
+    ])
+  ).find((u) => u.key === 'P1:pa')
+  assert.ok(edited)
+  assert.equal(isStale(edited, choice), true)
+})
+
+test('the House district portfolio files under House', () => {
+  const s = mapSources().find(
+    (x) => 'slug' in x.ref && x.ref.slug === MIDTERMS_2026.houseDistricts
+  )
+  assert.equal(s?.office, 'house')
+  assert.equal(
+    mapSources().filter((x) => x.office === 'headline').length,
+    3
+  )
+})
+
+test('a resolved chamber reads as resolved, not as a price', () => {
+  const text = buildSummary(
+    {
+      now: Date.UTC(2026, 10, 4, 5, 0),
+      senateRep: 1,
+      senateResolved: true,
+      called: {},
+      movers: [],
+    },
+    { senateControl: 'SC' }
+  )
+  assert.match(text, /Senate: R control, resolved on Manifold/)
 })

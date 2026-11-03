@@ -19,8 +19,11 @@ import {
   Office,
   OFFICE_LABEL,
   OFFICES,
+  Choice,
+  isStale,
   optionFor,
   ResolveUnit,
+  unitFingerprint,
   Snapshot,
   snapshotOf,
   SortKey,
@@ -60,8 +63,9 @@ export function ElectionResolveTool() {
   const [minChance, setMinChance] = useState(0)
 
   // unit key -> the outcome chosen for it, fixed when it was ticked, so a
-  // price move after selection can never change what gets resolved.
-  const [choices, setChoices] = useState<Record<string, string>>({})
+  // price move after selection can never change what gets resolved. The
+  // fingerprint catches the question or answer being edited after that.
+  const [choices, setChoices] = useState<Record<string, Choice>>({})
   const [results, setResults] = useState<Record<string, RunResult>>({})
   const [confirmOpen, setConfirmOpen] = useState(false)
 
@@ -88,20 +92,24 @@ export function ElectionResolveTool() {
   const countByOffice = (o: Office) =>
     units.filter((u) => u.office === o && !u.resolved).length
 
+  const choiceFor = (unit: ResolveUnit, value: string): Choice => ({
+    value,
+    fingerprint: unitFingerprint(unit, value),
+  })
   const toggle = (unit: ResolveUnit, on: boolean) =>
     setChoices((c) => {
       const next = { ...c }
-      if (on) next[unit.key] = c[unit.key] ?? unit.leader.value
+      if (on) next[unit.key] = c[unit.key] ?? choiceFor(unit, unit.leader.value)
       else delete next[unit.key]
       return next
     })
   const choose = (unit: ResolveUnit, value: string) =>
-    setChoices((c) => ({ ...c, [unit.key]: value }))
+    setChoices((c) => ({ ...c, [unit.key]: choiceFor(unit, value) }))
   const selectShown = () =>
     setChoices((c) => {
       const next = { ...c }
       for (const u of shown)
-        if (!u.resolved) next[u.key] = c[u.key] ?? u.leader.value
+        if (!u.resolved) next[u.key] = c[u.key] ?? choiceFor(u, u.leader.value)
       return next
     })
 
@@ -289,15 +297,17 @@ export function ElectionResolveTool() {
 
 function UnitRow(props: {
   unit: ResolveUnit
-  choice?: string
+  choice?: Choice
   result?: RunResult
   onToggle: (on: boolean) => void
   onChoose: (value: string) => void
 }) {
-  const { unit, choice, result, onToggle, onChoose } = props
-  const picked = choice !== undefined
-  const pickedOption = picked ? optionFor(unit, choice) : undefined
-  const againstLeader = picked && choice !== unit.leader.value
+  const { unit, choice: picked, result, onToggle, onChoose } = props
+  const choice = picked?.value
+  const pickedOption =
+    choice !== undefined ? optionFor(unit, choice) : undefined
+  const againstLeader = choice !== undefined && choice !== unit.leader.value
+  const edited = !!picked && isStale(unit, picked)
   return (
     <tr
       className={clsx(
@@ -310,7 +320,7 @@ function UnitRow(props: {
           type="checkbox"
           aria-label={`Select ${unit.race}`}
           className="border-ink-300 text-primary-600 h-4 w-4 rounded"
-          checked={picked}
+          checked={!!picked}
           disabled={unit.resolved}
           onChange={(e) => onToggle(e.target.checked)}
         />
@@ -360,6 +370,11 @@ function UnitRow(props: {
             {againstLeader && pickedOption && (
               <span className="text-xs text-amber-700">
                 Against the market ({formatPercent(pickedOption.prob)})
+              </span>
+            )}
+            {edited && (
+              <span className="text-scarlet-600 text-xs">
+                Edited since you ticked it. Untick and tick again.
               </span>
             )}
           </Col>

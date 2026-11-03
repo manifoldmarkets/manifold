@@ -40,8 +40,10 @@ export function ElectionTweetDraft(props: {
   )
   const senateId = contractsBySlug[MIDTERMS_2026.senateControl]?.id
   const houseId = contractsBySlug[MIDTERMS_2026.houseControl]?.id
+  const unitOf = (id?: string) =>
+    id ? units.find((u) => u.key === id) : undefined
   const yesOf = (id?: string) => {
-    const unit = id ? units.find((u) => u.key === id) : undefined
+    const unit = unitOf(id)
     return unit ? optionFor(unit, 'YES')?.prob : undefined
   }
 
@@ -55,6 +57,8 @@ export function ElectionTweetDraft(props: {
       baseline,
       senateRep: yesOf(senateId),
       houseRep: yesOf(houseId),
+      senateResolved: unitOf(senateId)?.resolved,
+      houseResolved: unitOf(houseId)?.resolved,
       called,
       movers: biggestMovers(units, baseline, 3),
     },
