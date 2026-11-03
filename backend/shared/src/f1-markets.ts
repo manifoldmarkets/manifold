@@ -878,7 +878,7 @@ function resolveLog(result: F1ResolveResult, alerted: Set<string>) {
         ``,
         `https://${DOMAIN}${contractPath(contract)}`,
         ``,
-        `It won't pay out by itself: resolve it by hand, or fix what's missing and the resolver picks it up. From sports-f1-resolve, once per scheduler process.`,
+        `Resolve it by hand to settle it now. The resolver keeps checking every 15 minutes, so if the provider's data turns up and checks out, it pays by itself. From sports-f1-resolve, once per scheduler process.`,
       ].join('\n')
     ).catch((e) =>
       log.error(
