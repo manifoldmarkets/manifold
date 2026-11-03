@@ -374,11 +374,6 @@ function ElectionBoard(props: {
         <div className="contents xl:flex xl:min-w-0 xl:flex-col xl:pt-2">
           <TVStreamPlayer stream={stream} className="xl:rounded-lg" />
           {header}
-          <ControlStrip
-            senate={board.senateControl}
-            house={board.houseControl}
-            className="px-3 sm:px-4 xl:px-0"
-          />
 
           <BoardTabs
             tabs={BOARD_TABS}
@@ -391,7 +386,7 @@ function ElectionBoard(props: {
             className="mx-3 mt-3 sm:mx-4 xl:hidden"
           />
           {tab !== 'map' && (
-            <div className="isolate mx-3 mt-1 min-h-[50vh] pb-24 sm:mx-4 xl:hidden">
+            <div className="isolate mx-3 mt-1 min-h-[50vh] sm:mx-4 xl:hidden">
               {panel(tab)}
             </div>
           )}
@@ -401,7 +396,7 @@ function ElectionBoard(props: {
           <div
             ref={mapRef}
             className={clsx(
-              'mt-3 scroll-mt-2 px-1 pb-24 sm:px-2 xl:mt-4 xl:px-0',
+              'mt-3 scroll-mt-2 px-1 sm:px-2 xl:mt-4 xl:px-0',
               tab !== 'map' && 'max-xl:hidden'
             )}
           >
@@ -414,6 +409,15 @@ function ElectionBoard(props: {
               hideDetails={mapHidden}
             />
           </div>
+
+          {/* The chamber toplines follow the map, as on /election. As the
+              column's last item, they keep room to scroll clear of the chat
+              bubble and, from md, the corner mini player. */}
+          <ControlStrip
+            senate={board.senateControl}
+            house={board.houseControl}
+            className="mt-4 px-3 pb-24 sm:px-4 md:pb-60 xl:px-0"
+          />
         </div>
 
         <aside className="sticky top-0 hidden h-screen flex-col gap-2 py-2 xl:flex">
