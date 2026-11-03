@@ -20,8 +20,11 @@
 // Louisiana runoff markets keep their December dates. Rerunning is a no-op.
 //
 // Each change is the same write as the update-market API: the closeTime field
-// under a row lock (re-checked there, so a market resolved in the meantime is
-// skipped), a contract_edits row, then a page revalidation.
+// and a contract_edits row in one transaction under a row lock (re-checked
+// there, so a market resolved in the meantime is skipped), then a page
+// revalidation. There is no live broadcast: the API's websocket fan-out runs
+// over a Redis only its instances reach, so a tab already open shows the new
+// close time after a reload.
 
 import * as fs from 'fs'
 import * as path from 'path'
@@ -30,7 +33,6 @@ import { Contract, contractPath } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { tsToMillis } from 'common/supabase/utils'
 import { runScript } from 'run-script'
-import { recordContractEdit } from 'shared/record-contract-edit'
 import { updateContract } from 'shared/supabase/contracts'
 import { getContract, revalidateContractStaticProps } from 'shared/utils'
 
@@ -95,6 +97,22 @@ const planFor = (
 
 const fmt = (ms: number) => new Date(ms).toISOString().slice(0, 16) + 'Z'
 
+const FLAGS = ['--apply', '--skip-closed']
+const VALUE_FLAGS = ['--close', '--as']
+
+// A mistyped flag (--close=..., --dry) must not fall back to a default.
+const checkArgs = (args: string[]) => {
+  for (let i = 0; i < args.length; i++) {
+    if (VALUE_FLAGS.includes(args[i])) i++
+    else if (!FLAGS.includes(args[i]))
+      throw new Error(
+        `Unknown argument ${args[i]}. Use ${[...FLAGS, ...VALUE_FLAGS].join(
+          ', '
+        )} (values after a space).`
+      )
+  }
+}
+
 const argValue = (args: string[], flag: string) => {
   const i = args.indexOf(flag)
   if (i < 0) return undefined
@@ -105,6 +123,7 @@ const argValue = (args: string[], flag: string) => {
 
 runScript(async ({ pg }) => {
   const args = process.argv.slice(2)
+  checkArgs(args)
   const apply = args.includes('--apply')
   const skipClosed = args.includes('--skip-closed')
   const editorId = argValue(args, '--as') ?? MANIFOLD_POLITICS_ID
@@ -191,9 +210,10 @@ runScript(async ({ pg }) => {
   for (const { market } of toExtend) {
     try {
       const before = await pg.tx(async (tx) => {
-        await tx.none(`select 1 from contracts where id = $1 for update`, [
-          market.id,
-        ])
+        await tx.oneOrNone(
+          `select id from contracts where id = $1 for update`,
+          [market.id]
+        )
         const contract = await getContract(tx, market.id)
         // Re-check under the lock, in case the market moved since the read.
         const plan = planFor(contract, newClose, Date.now(), skipClosed)
@@ -209,11 +229,17 @@ runScript(async ({ pg }) => {
           { closeTime: newClose, lastUpdatedTime: Date.now() },
           { broadcast: false }
         )
+        // The row recordContractEdit writes (the pre-update contract), but in
+        // this transaction, so a failure rolls the change back for a rerun.
+        await tx.none(
+          `insert into contract_edits (contract_id, editor_id, data, updated_keys)
+           values ($1, $2, $3, $4)
+           on conflict do nothing`,
+          [contract.id, editorId, contract, ['closeTime']]
+        )
         return contract
       })
       if (!before) continue
-      // The pre-update contract, as the update-market API records it.
-      await recordContractEdit(before, editorId, ['closeTime'])
       extended.push(before)
       console.log(`  extended ${market.id} ${contractPath(before)}`)
     } catch (e) {
