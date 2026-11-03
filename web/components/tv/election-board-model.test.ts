@@ -4,6 +4,7 @@ import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
 import { BinaryContract, Contract, CPMMMultiContract } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
 import {
   biggestMovers,
   BoardRace,
@@ -14,6 +15,7 @@ import {
   raceMove,
   TradeTarget,
   boardMarkets,
+  boardPositions,
   tradeTargets,
   watchlist,
 } from './election-board-model'
@@ -418,4 +420,67 @@ test('boardMarkets lists chamber control and the measures with markets', () => {
     list.liked.map((m) => m.key),
     ['control:senate']
   )
+})
+
+// 100 YES shares bought for Ṁ20 at 20%, as stored then.
+const metric = (extra: Partial<ContractMetric>) =>
+  ({
+    userId: 'u1',
+    contractId: 'b1',
+    answerId: null,
+    loan: 0,
+    marginLoan: 0,
+    invested: 20,
+    totalShares: { YES: 100, NO: 0 },
+    totalSpent: { YES: 20, NO: 0 },
+    payout: 20,
+    profit: 0,
+    profitPercent: 0,
+    hasShares: true,
+    hasYesShares: true,
+    hasNoShares: false,
+    maxSharesOutcome: 'YES',
+    lastBetTime: 5,
+    totalAmountInvested: 20,
+    totalAmountSold: 0,
+    lastProb: 0.2,
+    ...extra,
+  } as ContractMetric)
+
+test('boardPositions values a binary position at the live price', () => {
+  const positions = boardPositions([binary(0.8, 0)], { b1: [metric({})] })
+  const p = positions.get('b1')
+  assert.ok(p && Math.abs(p.payout - 80) < 1e-9)
+  assert.ok(p && Math.abs(p.profit - 60) < 1e-9)
+  assert.equal(p?.hasShares, true)
+  assert.equal(p?.lastBetTime, 5)
+})
+
+test('boardPositions values each answer live and rebuilds the summary', () => {
+  const contract = multi([answer('a1', 0.8, 0), answer('a2', 0.2, 0)])
+  const stored = [
+    metric({ contractId: 'm1', answerId: 'a1' }),
+    // Sold out of a2: no shares, Ṁ5 realised.
+    metric({
+      contractId: 'm1',
+      answerId: 'a2',
+      totalShares: { YES: 0, NO: 0 },
+      hasShares: false,
+      totalAmountInvested: 10,
+      totalAmountSold: 15,
+      lastBetTime: 9,
+    }),
+    // The stored summary, stale: rebuilt from the answers instead.
+    metric({ contractId: 'm1', answerId: null, payout: 20, profit: 0 }),
+  ]
+  const positions = boardPositions([contract], { m1: stored })
+  assert.ok(Math.abs((positions.get('m1:a1')?.payout ?? 0) - 80) < 1e-9)
+  assert.ok(Math.abs((positions.get('m1:a2')?.profit ?? 0) - 5) < 1e-9)
+  const summary = positions.get('m1')
+  assert.ok(summary && Math.abs(summary.payout - 80) < 1e-9)
+  assert.ok(summary && Math.abs(summary.profit - 65) < 1e-9)
+  assert.equal(summary?.hasShares, true)
+  assert.equal(summary?.lastBetTime, 9)
+  // The stored metrics are untouched.
+  assert.equal(stored[2].payout, 20)
 })

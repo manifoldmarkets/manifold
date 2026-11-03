@@ -1,7 +1,9 @@
 import { sortBy } from 'lodash'
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
+import { calculateUpdatedMetricsForContracts } from 'common/calculate-metrics'
 import { Contract, isMultiCpmm } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
 import { MapContractsDictionary } from 'web/public/data/elections-data'
 import {
   buildRaces,
@@ -252,6 +254,40 @@ export type BoardPosition = {
 // A market's whole-market position (answerId null) or one answer's.
 export const positionKey = (contractId: string, answerId?: string | null) =>
   answerId ? `${contractId}:${answerId}` : contractId
+
+// The account's positions, valued at the markets' current (live) prices with
+// the same helper the backend uses to revalue metrics. The stored metrics
+// carry shares and cash flows; their payout and profit are as of the last
+// write, so they are recomputed here on every price change. A multi-choice
+// summary is rebuilt from its answers; it holds shares if any answer does
+// (the database sets that by trigger).
+export function boardPositions(
+  contracts: Contract[],
+  metricsByContract: Record<string, ContractMetric[]>
+): Map<string, BoardPosition> {
+  const { metricsByContract: valued } = calculateUpdatedMetricsForContracts(
+    contracts
+      .filter((c) => metricsByContract[c.id]?.length)
+      .map((contract) => ({
+        contract,
+        metrics: metricsByContract[contract.id],
+      }))
+  )
+  const out = new Map<string, BoardPosition>()
+  for (const [contractId, metrics] of Object.entries(valued)) {
+    const anyShares = metrics.some((m) => m.answerId !== null && m.hasShares)
+    for (const m of metrics) {
+      const isMultiSummary = m.answerId === null && metrics.length > 1
+      out.set(positionKey(contractId, m.answerId), {
+        hasShares: isMultiSummary ? anyShares : m.hasShares,
+        payout: m.payout,
+        profit: m.profit,
+        lastBetTime: m.lastBetTime,
+      })
+    }
+  }
+  return out
+}
 
 // The board's markets that are not races: chamber control and the ballot
 // measures on the map's Measures tab.

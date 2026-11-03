@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { uniqBy } from 'lodash'
 import Link from 'next/link'
 import Router from 'next/router'
 
@@ -288,12 +289,13 @@ function ElectionBoard(props: {
     () => filterDefined(watchItems.map(likeableContractId)),
     [watchItems]
   )
-  const marketIds = useMemo(
-    () => filterDefined(watchItems.map((item) => item.contract?.id)),
+  const watchContracts = useMemo(
+    () => uniqBy(filterDefined(watchItems.map((item) => item.contract)), 'id'),
     [watchItems]
   )
   const likes = useGameLikes(likeableIds, 'tv election')
-  const positions = useBoardPositions(marketIds)
+  // Valued at the board's (throttled) live prices.
+  const positions = useBoardPositions(watchContracts)
   const list = watchlist(watchItems, likes.liked, positions)
 
   const trades = useBoardTrades(races, board)
