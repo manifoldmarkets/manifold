@@ -8,7 +8,9 @@ import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { api } from 'web/lib/api/api'
 import {
+  checkBeforeResolve,
   Choice,
+  freshUnit,
   isStale,
   optionFor,
   resolveCall,
@@ -78,16 +80,23 @@ export function ElectionResolveConfirm(props: {
     })
     for (const { unit, choice } of queue) {
       if (stop.current) break
-      if (!choice || isStale(unit, choice)) {
-        out[unit.key] = {
-          status: 'error',
-          message: 'Edited since it was ticked. Review it again.',
-        }
-        setProgress({ ...out })
-        continue
-      }
       try {
-        await api('market/:contractId/resolve', resolveCall(unit, choice.value))
+        // Re-read the market right before resolving it, so an edit made
+        // while earlier markets were resolving is still caught.
+        const [contract] = await api('markets-by-ids', {
+          ids: [unit.contractId],
+        })
+        const fresh = freshUnit(unit, contract)
+        const problem = checkBeforeResolve(fresh, choice)
+        if (problem || !fresh || !choice) {
+          out[unit.key] = { status: 'error', message: problem ?? '' }
+          setProgress({ ...out })
+          continue
+        }
+        await api(
+          'market/:contractId/resolve',
+          resolveCall(fresh, choice.value)
+        )
         out[unit.key] = { status: 'ok' }
       } catch (e) {
         out[unit.key] = {

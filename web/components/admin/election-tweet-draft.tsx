@@ -12,7 +12,7 @@ import {
   biggestMovers,
   buildSummary,
   calledByOffice,
-  optionFor,
+  chamberControl,
   ResolveUnit,
   Snapshot,
 } from 'web/lib/politics/election-resolve-model'
@@ -42,10 +42,8 @@ export function ElectionTweetDraft(props: {
   const houseId = contractsBySlug[MIDTERMS_2026.houseControl]?.id
   const unitOf = (id?: string) =>
     id ? units.find((u) => u.key === id) : undefined
-  const yesOf = (id?: string) => {
-    const unit = unitOf(id)
-    return unit ? optionFor(unit, 'YES')?.prob : undefined
-  }
+  const senate = chamberControl(unitOf(senateId))
+  const house = chamberControl(unitOf(houseId))
 
   const now = loadedAt ?? Date.now()
   const found = baselineFor(history.current, now, windowMin * 60_000)
@@ -55,10 +53,10 @@ export function ElectionTweetDraft(props: {
     {
       now,
       baseline,
-      senateRep: yesOf(senateId),
-      houseRep: yesOf(houseId),
-      senateResolved: unitOf(senateId)?.resolved,
-      houseResolved: unitOf(houseId)?.resolved,
+      senateRep: senate.rep,
+      houseRep: house.rep,
+      senateResolved: senate.resolved,
+      houseResolved: house.resolved,
       called,
       movers: biggestMovers(units, baseline, 3),
     },

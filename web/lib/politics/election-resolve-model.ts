@@ -413,6 +413,49 @@ export type Choice = { value: string; fingerprint: string }
 export const isStale = (unit: ResolveUnit, choice: Choice) =>
   unitFingerprint(unit, choice.value) !== choice.fingerprint
 
+// `unit` rebuilt from a freshly read copy of its market.
+export function freshUnit(
+  unit: ResolveUnit,
+  contract: Contract | undefined
+): ResolveUnit | undefined {
+  if (!contract || contract.id !== unit.contractId) return undefined
+  return buildUnits(
+    [{ office: unit.office, race: unit.race, ref: { id: contract.id } }],
+    {},
+    { [contract.id]: contract }
+  ).find((u) => u.key === unit.key)
+}
+
+// Why a unit must not be resolved now, judged on a copy read just before
+// the call; undefined when it is still exactly what the admin approved.
+export function checkBeforeResolve(
+  fresh: ResolveUnit | undefined,
+  choice: Choice | undefined
+): string | undefined {
+  if (!choice) return 'No outcome chosen.'
+  if (!fresh) return 'Market or answer no longer found.'
+  if (fresh.resolved) return 'Already resolved.'
+  if (isStale(fresh, choice))
+    return 'Edited since it was ticked. Review it again.'
+  return undefined
+}
+
+// The chamber-control line's input from its binary (YES = Republicans).
+// Only a YES or NO result names a winner; N/A or a partial resolution says
+// nothing rather than reading its last price as an outcome.
+export function chamberControl(unit?: ResolveUnit): {
+  rep?: number
+  resolved?: boolean
+} {
+  if (!unit || unit.kind !== 'binary') return {}
+  if (unit.resolved) {
+    if (unit.resolutionLabel === 'YES') return { rep: 1, resolved: true }
+    if (unit.resolutionLabel === 'NO') return { rep: 0, resolved: true }
+    return {}
+  }
+  return { rep: optionFor(unit, 'YES')?.prob }
+}
+
 // Map races whose market (or, for a portfolio-priced House seat, whose
 // answer) has resolved, by the party the map now reads for them. Party
 // semantics come from the map's own audited sources via buildRaces.

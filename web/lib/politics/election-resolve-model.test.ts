@@ -7,6 +7,9 @@ import {
   biggestMovers,
   buildSummary,
   buildUnits,
+  chamberControl,
+  checkBeforeResolve,
+  freshUnit,
   isStale,
   MapSource,
   mapSources,
@@ -268,6 +271,61 @@ test('a selection goes stale when its question or answer is edited', () => {
   ).find((u) => u.key === 'P1:pa')
   assert.ok(edited)
   assert.equal(isStale(edited, choice), true)
+})
+
+test('the run re-checks each unit against a fresh copy of its market', () => {
+  const ticked = unit('P1:pa')
+  const choice = { value: 'YES', fingerprint: unitFingerprint(ticked, 'YES') }
+  const reread = (answers: ReturnType<typeof answer>[]) =>
+    freshUnit(ticked, multi('P1', false, answers))
+  // Unchanged: fine to resolve.
+  assert.equal(
+    checkBeforeResolve(reread([answer('pa', 'Prop A', 0.97)]), choice),
+    undefined
+  )
+  // Edited while earlier units were resolving.
+  assert.match(
+    checkBeforeResolve(reread([answer('pa', 'Prop A2', 0.97)]), choice) ?? '',
+    /Edited/
+  )
+  // Resolved by someone else meanwhile.
+  assert.match(
+    checkBeforeResolve(
+      reread([answer('pa', 'Prop A', 0.97, { resolution: 'NO' })]),
+      choice
+    ) ?? '',
+    /Already resolved/
+  )
+  // The answer is gone, or the wrong market came back.
+  assert.match(checkBeforeResolve(reread([]), choice) ?? '', /no longer/)
+  assert.equal(freshUnit(ticked, senateBinary), undefined)
+})
+
+test('chamber control names a winner only for a YES or NO result', () => {
+  const [open] = buildUnits(
+    [{ office: 'headline', race: 'Senate control', ref: { id: 'C' } }],
+    {},
+    { C: binary('C', 0.7) }
+  )
+  assert.ok(Math.abs((chamberControl(open).rep ?? 0) - 0.7) < 1e-9)
+  const resolvedAs = (resolution: string) =>
+    chamberControl(
+      buildUnits(
+        [{ office: 'headline', race: 'Senate control', ref: { id: 'C' } }],
+        {},
+        {
+          C: binary('C', 0.8, {
+            resolution,
+            resolutionProbability: 0.8,
+            isResolved: true,
+          }),
+        }
+      )[0]
+    )
+  assert.deepEqual(resolvedAs('NO'), { rep: 0, resolved: true })
+  assert.deepEqual(resolvedAs('YES'), { rep: 1, resolved: true })
+  assert.deepEqual(resolvedAs('CANCEL'), {})
+  assert.deepEqual(resolvedAs('MKT'), {})
 })
 
 test('the House district portfolio files under House', () => {
