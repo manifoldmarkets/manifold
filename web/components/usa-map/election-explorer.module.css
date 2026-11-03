@@ -132,7 +132,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 270px));
   gap: 16px;
-  margin-bottom: 18px;
+  margin-top: 18px;
   justify-content: start;
 }
 .controlCard {
@@ -1399,7 +1399,7 @@
   }
   .controls {
     gap: 10px;
-    margin-bottom: 12px;
+    margin-top: 12px;
   }
   .controlCard {
     padding: 8px;

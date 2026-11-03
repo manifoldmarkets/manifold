@@ -796,12 +796,6 @@ export function ElectionExplorer(props: Props) {
 
   return (
     <div className={clsx(styles.layout, interactions.scope)}>
-      {!props.hideControls && (
-        <div className={styles.controls} aria-label="Chamber control">
-          <ControlCard label="Senate" contract={props.senateControl} />
-          <ControlCard label="House" contract={props.houseControl} />
-        </div>
-      )}
       <section
         ref={explorerRef}
         className={styles.explorer}
@@ -1436,6 +1430,13 @@ export function ElectionExplorer(props: Props) {
           measures={isMeasures}
         />
       </section>
+      {/* The chamber toplines follow the map: the races lead. */}
+      {!props.hideControls && (
+        <div className={styles.controls} aria-label="Chamber control">
+          <ControlCard label="Senate" contract={props.senateControl} />
+          <ControlCard label="House" contract={props.houseControl} />
+        </div>
+      )}
     </div>
   )
 }

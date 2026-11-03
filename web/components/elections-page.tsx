@@ -196,7 +196,7 @@ export function USElectionsPage(
         </CopyLinkOrShareButton>
       </Row>
 
-      {/* Chamber controls sit above the map's own surface. */}
+      {/* Chamber controls sit below the map's own surface. */}
       <SectionInView section="midterms map" className="gap-3">
         <SectionHeader>2026 Midterms</SectionHeader>
         <LiveElectionMap

@@ -164,8 +164,8 @@ the selected chamber highlights its wing. The mobile selector uses the complete
 Capitol icon instead of an isolated wing. At narrow container widths,
 the chamber tabs become a labelled selector and search opens inline below the
 row. There is no scroll-triggered resizing. The map height is capped to fit the
-viewport. Compact chamber-control cards sit outside the map section and scroll
-away above the tabs, aligned left. Their small top-right chart links open the market, while
+viewport. Compact chamber-control cards sit outside the map section, below the
+map, aligned left. Their small top-right chart links open the market, while
 each party button opens an in-page trade. Labels default on; map guidance is
 available through the More info footnote. States with
 no Senate or gubernatorial election can be selected in either map view: they
