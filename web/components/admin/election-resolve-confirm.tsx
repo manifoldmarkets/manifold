@@ -82,10 +82,14 @@ export function ElectionResolveConfirm(props: {
       if (stop.current) break
       try {
         // Re-read the market right before resolving it, so an edit made
-        // while earlier markets were resolving is still caught.
-        const [contract] = await api('markets-by-ids', {
-          ids: [unit.contractId],
-        })
+        // while earlier markets were resolving is still caught. no-store:
+        // the endpoint is cacheable for a second, and consecutive answers
+        // of one portfolio would otherwise share a read.
+        const [contract] = await api(
+          'markets-by-ids',
+          { ids: [unit.contractId] },
+          { cache: 'no-store' }
+        )
         const fresh = freshUnit(unit, contract)
         const problem = checkBeforeResolve(fresh, choice)
         if (problem || !fresh || !choice) {
