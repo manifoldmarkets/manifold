@@ -100,7 +100,20 @@ type Props = {
   houseControl: Contract | null
   senateControl: Contract | null
   measures?: MapContractsDictionary
+  // Opens a race from outside the explorer, e.g. Manifold TV's race list.
+  // The URL does this on /election; a new `key` repeats a request.
+  focus?: ExplorerFocus
+  // For a host page that shows chamber control itself (Manifold TV).
+  hideControls?: boolean
+  // The pinned race, e.g. so a host page can keep its floating controls off
+  // the race panel's bottom sheet on phones.
+  onSelect?: (race: string | undefined) => void
+  // The race panel is portaled to the body, so a host that hides the
+  // explorer must also hide the panel. The selection is kept.
+  hideDetails?: boolean
 }
+
+export type ExplorerFocus = { mode: ExplorerMode; race: string; key: number }
 
 // Small northeastern states are labelled from a column to their right; their
 // map labels would overlap (VT/NH) or not fit.
@@ -538,6 +551,10 @@ export function ElectionExplorer(props: Props) {
     return accepted
   }
   useExplorerUrl({ mode, race: selected, apply: applyUrl })
+  useEffect(() => {
+    if (props.focus) applyUrl(props.focus.mode, props.focus.race)
+  }, [props.focus?.key])
+  useEffect(() => props.onSelect?.(selected), [selected])
 
   const moveFocus = (from: string, key: string) => {
     const origin = shapeById.get(from)?.center
@@ -779,10 +796,12 @@ export function ElectionExplorer(props: Props) {
 
   return (
     <div className={clsx(styles.layout, interactions.scope)}>
-      <div className={styles.controls} aria-label="Chamber control">
-        <ControlCard label="Senate" contract={props.senateControl} />
-        <ControlCard label="House" contract={props.houseControl} />
-      </div>
+      {!props.hideControls && (
+        <div className={styles.controls} aria-label="Chamber control">
+          <ControlCard label="Senate" contract={props.senateControl} />
+          <ControlCard label="House" contract={props.houseControl} />
+        </div>
+      )}
       <section
         ref={explorerRef}
         className={styles.explorer}
@@ -1298,7 +1317,7 @@ export function ElectionExplorer(props: Props) {
           <button onClick={() => setSources(true)}>More info</button>
         </p>
 
-        {detailTitle && (
+        {detailTitle && !props.hideDetails && (
           <RaceDetailsPanel
             title={detailTitle}
             eyebrow={
