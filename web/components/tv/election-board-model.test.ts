@@ -13,7 +13,9 @@ import {
   pricedADayAgo,
   raceMove,
   TradeTarget,
+  tradeTargets,
 } from './election-board-model'
+import { raceCandidates } from 'web/components/usa-map/election-candidates'
 
 const binary = (
   prob: number,
@@ -278,4 +280,42 @@ test('boardTrades keeps a trader’s separate trades and folds one bet group', (
     trades.map((t) => t.bet.amount),
     [100, 20, 60]
   )
+})
+
+test('tradeTargets labels a candidate binary with the candidate, as the map does', () => {
+  // AL-2's audited source: a bet on Shomari Figures, the Democratic nominee.
+  // YES is not the Republican, whatever electionOdds assumes of party
+  // binaries.
+  const contract = binary(0.7, 0, {
+    id: '2gnh0c6NqI',
+    slug: 'will-democrat-shomari-figures-win-a',
+  })
+  const al2: BoardRace = {
+    id: 'AL-2',
+    key: 'house:AL-2',
+    mode: 'house',
+    state: 'AL',
+    district: 2,
+    label: 'Alabama District 2',
+    shortLabel: 'AL-2',
+    contract,
+    candidates: raceCandidates('house', 'AL-2'),
+    odds: { dem: 0.7, rep: 0.3, other: 0 },
+  }
+  const targets = tradeTargets([al2], { senate: null, house: null })
+  const target = targets.get('2gnh0c6NqI')
+  assert.match(target?.yes ?? '', /Figures/)
+  assert.equal(target?.yesTone, 'dem')
+  assert.equal(target?.no, 'Any other winner')
+
+  const [yes, no] = boardTrades(
+    [
+      bet({ contractId: '2gnh0c6NqI', outcome: 'YES' }),
+      bet({ userId: 'u2', contractId: '2gnh0c6NqI', outcome: 'NO' }),
+    ],
+    targets
+  )
+  assert.match(yes.side, /Figures/)
+  assert.equal(yes.tone, 'dem')
+  assert.equal(no.side, 'Any other winner')
 })

@@ -111,7 +111,9 @@ export function useTVChat(props: {
     floating: (
       <>
         <div
-          role="dialog"
+          // Only while open: the map's Escape handler stands down whenever a
+          // dialog is on the page.
+          role={open ? 'dialog' : undefined}
           aria-label="Live chat"
           aria-hidden={!open}
           className={clsx(

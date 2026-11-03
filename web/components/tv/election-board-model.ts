@@ -11,7 +11,15 @@ import {
   outcomeLabel,
   Race,
 } from 'web/components/usa-map/election-map-model'
-import { sourceAudit } from 'web/components/usa-map/audited-sources'
+import {
+  complementParty,
+  sourceAudit,
+} from 'web/components/usa-map/audited-sources'
+import {
+  binaryRows,
+  OutcomeParty,
+  partyLabel,
+} from 'web/components/usa-map/race-outcomes'
 import {
   isDemocraticAnswer,
   isRepublicanAnswer,
@@ -228,9 +236,9 @@ export const outcomeTone = (outcome: keyof Odds | undefined) =>
 
 // Trades -------------------------------------------------------------------
 
-// What a bet on one market or answer means in race terms. `yes` is the party
-// (or answer) a YES bet backs, and `no` what a NO bet backs, when that is a
-// single party.
+// What a bet on one market or answer means in race terms, in the map's own
+// words: `yes` is what a YES bet backs (a party, or a candidate's name), `no`
+// what a NO bet backs.
 export type TradeTarget = {
   label: string
   mode?: ElectionMode
@@ -241,8 +249,14 @@ export type TradeTarget = {
   noTone?: 'dem' | 'rep' | 'other'
 }
 
-const partyTone = (party: string) =>
-  party === 'D' ? 'dem' : party === 'R' ? 'rep' : 'other'
+const partyTone = (party: OutcomeParty) =>
+  party === 'D'
+    ? 'dem'
+    : party === 'R'
+    ? 'rep'
+    : party === 'any' || party === 'unknown'
+    ? undefined
+    : 'other'
 
 const answerParty = (contract: Contract, answer: Answer) => {
   const audited = sourceAudit(contract.slug)
@@ -254,15 +268,6 @@ const answerParty = (contract: Contract, answer: Answer) => {
   if (isDemocraticAnswer(answer.text)) return 'D'
   if (isRepublicanAnswer(answer.text)) return 'R'
   return undefined
-}
-
-// Who a binary market's YES stands for: the audit's party, else Republican,
-// which is what the map assumes of its curated binaries (electionOdds).
-const binaryYesParty = (contract: Contract) => {
-  const audited = sourceAudit(contract.slug)
-  return audited?.contractId === contract.id && audited.binaryYes
-    ? audited.binaryYes
-    : 'R'
 }
 
 // Index every board market (and House portfolio answer) by the ids a bet
@@ -279,8 +284,8 @@ export function tradeTargets(
     if (contract)
       targets.set(contract.id, {
         label,
-        yes: 'R',
-        no: 'D',
+        yes: partyLabel('R'),
+        no: partyLabel('D'),
         yesTone: 'rep',
         noTone: 'dem',
       })
@@ -290,31 +295,38 @@ export function tradeTargets(
     if (!contract) continue
     const base = { label: race.label, mode: race.mode, raceKey: race.key }
     if (answerId) {
-      // House portfolios price the Democrat winning each district.
+      // House portfolios price the Democrat winning each district; NO is the
+      // Republican where one is on the ballot, as in the map's district rows.
+      const noIsRep = complementParty('house', race.id, 'D') === 'R'
       targets.set(`${contract.id}:${answerId}`, {
         ...base,
-        yes: 'D',
-        no: 'Not D',
+        yes: partyLabel('D'),
+        no: noIsRep ? partyLabel('R') : `Not ${partyLabel('D')}`,
         yesTone: 'dem',
+        noTone: noIsRep ? 'rep' : undefined,
       })
     } else if (
       contract.mechanism === 'cpmm-1' &&
       contract.outcomeType === 'BINARY'
     ) {
-      const yes = binaryYesParty(contract)
+      // The map's own rows: a candidate binary is a bet on the named
+      // candidate, NO on any other winner.
+      const rows = binaryRows(contract, race, race.mode)
       targets.set(contract.id, {
         ...base,
-        yes,
-        no: `Not ${yes}`,
-        yesTone: partyTone(yes),
+        yes: rows.YES.label,
+        no: rows.NO.label,
+        yesTone: partyTone(rows.YES.party),
+        noTone: partyTone(rows.NO.party),
       })
     } else if (isMultiCpmm(contract)) {
       for (const answer of contract.answers) {
         const party = answerParty(contract, answer)
+        const yes = party ? partyLabel(party) : answer.text
         targets.set(`${contract.id}:${answer.id}`, {
           ...base,
-          yes: party ?? answer.text,
-          no: `Not ${party ?? answer.text}`,
+          yes,
+          no: `Not ${yes}`,
           yesTone: party ? partyTone(party) : undefined,
         })
       }
