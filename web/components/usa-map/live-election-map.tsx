@@ -108,8 +108,16 @@ export function LiveElectionExplorer(props: {
   focus?: ExplorerFocus
   hideControls?: boolean
   onSelect?: (race: string | undefined) => void
+  hideDetails?: boolean
 }) {
-  const { live, linkedMarketCounts, focus, hideControls, onSelect } = props
+  const {
+    live,
+    linkedMarketCounts,
+    focus,
+    hideControls,
+    onSelect,
+    hideDetails,
+  } = props
   return (
     <ElectionExplorer
       senate={live.senate}
@@ -123,6 +131,7 @@ export function LiveElectionExplorer(props: {
       focus={focus}
       hideControls={hideControls}
       onSelect={onSelect}
+      hideDetails={hideDetails}
     />
   )
 }

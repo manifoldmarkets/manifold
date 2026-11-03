@@ -15,6 +15,7 @@ import { Button } from 'web/components/buttons/button'
 import { Page } from 'web/components/layout/page'
 import { ModActionBadge } from 'web/components/moderation/mod-action'
 import { useAdminOrMod } from 'web/hooks/use-admin'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
@@ -117,20 +118,7 @@ export function TVElectionDisplay(props: {
               isStreamCreator={isStreamCreator}
               onModify={() => setShowSettings(true)}
             />
-            <p className="text-ink-600 px-4 py-8 text-center">
-              The live election map is loading.{' '}
-              <button
-                className="text-primary-700 underline"
-                onClick={() => Router.reload()}
-              >
-                Refresh
-              </button>{' '}
-              in a minute, or{' '}
-              <Link href="/election" className="text-primary-700 underline">
-                open the election page
-              </Link>
-              .
-            </p>
+            <MapLoading />
           </>
         )}
       </div>
@@ -142,6 +130,35 @@ export function TVElectionDisplay(props: {
       />
       <FloatingChat channelId={channelId} makeRoom={raceOpen} />
     </Page>
+  )
+}
+
+const RETRY_MS = 15_000
+const MAX_RETRIES = 8
+
+// The page was built before this stream became the board (it switches live
+// with the schedule), so its props have no map yet. Refetch them until the
+// next build has the map: props update in place, without a reload.
+function MapLoading() {
+  const [tries, setTries] = useState(0)
+  useEffect(() => {
+    if (tries >= MAX_RETRIES) return
+    const timeout = setTimeout(() => {
+      Router.replace(Router.asPath, undefined, { scroll: false })
+        .catch(() => false)
+        .finally(() => setTries((t) => t + 1))
+    }, RETRY_MS)
+    return () => clearTimeout(timeout)
+  }, [tries])
+  return (
+    <p className="text-ink-600 px-4 py-8 text-center">
+      {tries < MAX_RETRIES
+        ? 'Loading the live election map…'
+        : 'The live election map is unavailable right now.'}{' '}
+      <Link href="/election" className="text-primary-700 underline">
+        Open the election page
+      </Link>
+    </p>
   )
 }
 
@@ -220,10 +237,22 @@ function ElectionBoard(props: {
 }) {
   const { stream, electionMap, header, onRaceOpen } = props
   const { subscriptions, live } = useLiveElectionMap(electionMap)
+  // A day ago, from the page's own snapshot, where each price and its
+  // probChanges were read together (see pricedADayAgo). Live prices are
+  // then compared against it.
+  const dayAgo = useMemo(
+    () =>
+      boardRacesADayAgo({
+        senate: electionMap.rawSenateStateContracts,
+        governor: electionMap.rawGovernorStateContracts,
+        house: electionMap.houseDistrictsContract,
+        additionalHouse: electionMap.additionalHouseContracts,
+      }),
+    [electionMap]
+  )
   const board = useThrottled(live, 2000)
 
   const races = useMemo(() => boardRaces(board), [board])
-  const dayAgo = useMemo(() => boardRacesADayAgo(board), [board])
   const moves = useMemo(() => biggestMovers(races, dayAgo), [races, dayAgo])
   const calls = useMemo(() => latestCalls(races), [races])
   const close = useMemo(() => closestRaces(races), [races])
@@ -253,6 +282,14 @@ function ElectionBoard(props: {
     'map',
     `tv-election-tab-${stream.id}`
   )
+  // Below xl the map shares the tab strip; behind another tab it is hidden,
+  // and so must be its race panel. While that panel is a bottom sheet
+  // (phones), the chat bubble steps aside.
+  const narrow = useIsMobile(1280)
+  const mapHidden = narrow && tab !== 'map'
+  const [mapRace, setMapRace] = useState<string>()
+  const sheetOpen = !!mapRace && !mapHidden
+  useEffect(() => onRaceOpen(sheetOpen), [sheetOpen])
   const [railTab, setRailTab] = usePersistentInMemoryState<BoardTab>(
     'movers',
     `tv-election-rail-tab-${stream.id}`
@@ -348,7 +385,8 @@ function ElectionBoard(props: {
           linkedMarketCounts={electionMap.linkedMarketCounts}
           focus={focus}
           hideControls
-          onSelect={(race) => onRaceOpen(!!race)}
+          onSelect={setMapRace}
+          hideDetails={mapHidden}
         />
       </div>
     </>

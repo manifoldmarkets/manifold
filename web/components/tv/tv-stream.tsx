@@ -63,7 +63,8 @@ export function TVStreamPlayer(props: {
       <div
         className={clsx(
           mini
-            ? 'fixed bottom-4 left-4 z-50 hidden aspect-video w-[360px] overflow-hidden rounded-lg shadow-2xl ring-1 ring-black/10 md:block'
+            ? // Above the bottom bar, which shows below lg.
+              'fixed bottom-[74px] left-4 z-50 hidden aspect-video w-[360px] overflow-hidden rounded-lg shadow-2xl ring-1 ring-black/10 md:block lg:bottom-4'
             : 'relative h-full w-full'
         )}
       >

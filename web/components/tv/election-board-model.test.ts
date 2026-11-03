@@ -258,3 +258,24 @@ test('boardTrades keeps one trade per trader and market, on board markets only',
   const no = trades[1]
   assert.ok(Math.abs(no.from - 0.4) < 1e-9 && Math.abs(no.to - 0.45) < 1e-9)
 })
+
+test('boardTrades keeps a trader’s separate trades and folds one bet group', () => {
+  const targets = new Map<string, TradeTarget>([
+    ['c1', { label: 'PA Senate', yes: 'R', no: 'Not R', yesTone: 'rep' }],
+  ])
+  const trades = boardTrades(
+    [
+      bet({ amount: 100, createdTime: 1 }),
+      // A later, smaller trade by the same trader on the same market.
+      bet({ amount: 20, createdTime: 2 }),
+      // One multi-choice purchase: the bet and its fill share a group.
+      bet({ amount: 60, createdTime: 3, betGroupId: 'g' }),
+      bet({ amount: 15, createdTime: 3, betGroupId: 'g', answerId: 'other' }),
+    ],
+    targets
+  )
+  assert.deepEqual(
+    trades.map((t) => t.bet.amount),
+    [100, 20, 60]
+  )
+})

@@ -69,6 +69,9 @@ const isResolvedAnswer = (answer: Answer) =>
 // resolutionProbability, so pinning each price there lets buildRaces run
 // unchanged, audits and complement folding included. Never sent anywhere.
 // Settled markets keep their final prices: a call is not a move.
+// Use it on a snapshot whose prices and probChanges were read together (a
+// page's props), never on live-updated contracts: a live bet moves the price
+// but not probChanges, which would drag the baseline along with it.
 export function pricedADayAgo(contract: Contract): Contract {
   if (contract.isResolved) return contract
   if (contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY')
@@ -333,9 +336,9 @@ export type BoardTrade = {
 
 export const MIN_TRADE = 10
 
-// The trades worth showing from one broadcast: board markets only, at least
-// MIN_TRADE, and one per trader and market (a multi-choice bet arrives with
-// its arbitrage fills on the other answers).
+// The trades worth showing: board markets only, at least MIN_TRADE, and one
+// per trade (a multi-choice bet arrives with its arbitrage fills on the other
+// answers, sharing its betGroupId).
 export function boardTrades(
   bets: Bet[],
   targets: Map<string, TradeTarget>
@@ -344,7 +347,9 @@ export function boardTrades(
   for (const bet of bets) {
     if (bet.isRedemption || !Number.isFinite(bet.amount)) continue
     if (Math.abs(bet.amount) < MIN_TRADE) continue
-    const key = `${bet.userId}:${bet.contractId}`
+    const key = `${bet.userId}:${bet.contractId}:${
+      bet.betGroupId ?? bet.createdTime
+    }`
     const current = largest.get(key)
     if (!current || Math.abs(bet.amount) > Math.abs(current.amount))
       largest.set(key, bet)

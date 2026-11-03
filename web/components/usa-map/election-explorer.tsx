@@ -108,6 +108,9 @@ type Props = {
   // The pinned race, e.g. so a host page can keep its floating controls off
   // the race panel's bottom sheet on phones.
   onSelect?: (race: string | undefined) => void
+  // The race panel is portaled to the body, so a host that hides the
+  // explorer must also hide the panel. The selection is kept.
+  hideDetails?: boolean
 }
 
 export type ExplorerFocus = { mode: ExplorerMode; race: string; key: number }
@@ -1314,7 +1317,7 @@ export function ElectionExplorer(props: Props) {
           <button onClick={() => setSources(true)}>More info</button>
         </p>
 
-        {detailTitle && (
+        {detailTitle && !props.hideDetails && (
           <RaceDetailsPanel
             title={detailTitle}
             eyebrow={
