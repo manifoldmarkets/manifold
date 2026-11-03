@@ -4,6 +4,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getContractIdFromSlug } from 'shared/supabase/contracts'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { broadcastTVScheduleUpdate } from 'shared/websockets/helpers'
+import { isTVElectionBoardInput, TV_ELECTION_BOARD_ID } from 'common/tv'
 
 const schema = z.object({
   id: z.string().optional(),
@@ -30,7 +31,10 @@ export const settv = authEndpoint(async (req, auth) => {
   const isFeatured =
     (isModId(auth.uid) || isAdminId(auth.uid)) && tvSettings.isFeatured
 
-  const contractId = await getContractIdFromSlug(pg, slug)
+  // "election" schedules the live election board instead of a single market.
+  const contractId = isTVElectionBoardInput(slug)
+    ? TV_ELECTION_BOARD_ID
+    : await getContractIdFromSlug(pg, slug)
 
   if (id) {
     await pg.none(

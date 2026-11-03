@@ -67,10 +67,14 @@
   padding: 0 20px 1px;
   isolation: isolate;
   container: explorer / inline-size;
+  /* A host page with its own sticky bar above the map (Manifold TV's video on
+     phones) sets --explorer-sticky-top so the header and focusMap's scroll
+     stop below it. */
+  scroll-margin-top: var(--explorer-sticky-top, 0px);
 }
 .header {
   position: sticky;
-  top: 0;
+  top: var(--explorer-sticky-top, 0px);
   z-index: 10;
   margin: 0 -20px 12px;
   background: var(--paper);

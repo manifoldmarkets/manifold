@@ -13,6 +13,7 @@ import { useUser } from 'web/hooks/use-user'
 import { deleteTV, setTV } from 'web/lib/api/api'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { removeUndefinedProps } from 'common/util/object'
+import { isTVElectionBoardInput } from 'common/tv'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { ScheduleItem } from './tv-schedule'
 import { LoadingIndicator } from '../widgets/loading-indicator'
@@ -159,13 +160,21 @@ export function ScheduleTVModal(props: {
           />
         </Row>
 
-        <Row className="items-center justify-between gap-2">
-          <div>Market link</div>
-          <Input
-            value={slug}
-            onChange={(e) => setSlug(processUrl(e.target.value))}
-          />
-        </Row>
+        <Col className="gap-1">
+          <Row className="items-center justify-between gap-2">
+            <div>Market link</div>
+            <Input
+              value={slug}
+              placeholder="Market link, or election"
+              onChange={(e) => setSlug(processUrl(e.target.value))}
+            />
+          </Row>
+          <div className="text-ink-500 text-right text-xs">
+            {isTVElectionBoardInput(slug)
+              ? 'Shows the live election map, races and trades under the stream.'
+              : 'Type “election” to show the live election map instead.'}
+          </div>
+        </Col>
 
         <Row className="items-center justify-between gap-2">
           <div>Start</div>

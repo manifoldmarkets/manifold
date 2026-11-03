@@ -25,17 +25,24 @@ import { filterDefined } from 'common/util/array'
 import { Button } from 'web/components/buttons/button'
 import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { run } from 'common/supabase/utils'
+import { ChatMessage } from 'common/chat-message'
 import { db } from 'web/lib/supabase/db'
 
 export const PublicChat = (props: {
   channelId: string
   className?: string
+  // Every update to the channel's messages (newest first), e.g. for an
+  // unread badge while the chat is collapsed.
+  onMessages?: (messages: ChatMessage[]) => void
 }) => {
-  const { channelId, className } = props
+  const { channelId, className, onMessages } = props
   const user = useUser()
   const isMobile = useIsMobile()
 
   const realtimeMessages = usePublicChat(channelId, 100)
+  useEffect(() => {
+    if (realtimeMessages) onMessages?.(realtimeMessages)
+  }, [realtimeMessages])
 
   const messageUserIds = uniq(
     (realtimeMessages ?? [])
@@ -162,6 +169,8 @@ export const PublicChat = (props: {
           </Button>
         ) : (
           <CommentInputTextArea
+            // false: the chat input never takes focus on its own.
+            // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus={false}
             editor={editor}
             user={user}
