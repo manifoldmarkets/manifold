@@ -163,7 +163,13 @@ export function ElectionMovers(props: {
               <th className="px-2 py-1">Rose</th>
               <th className="px-2 py-1 text-right">Then → now</th>
               <th className="px-2 py-1 text-right">Change</th>
-              <th className="px-2 py-1 text-right">Trades</th>
+              <th
+                className="px-2 py-1 text-right"
+                title="Bet rows in the window, counting the moves a trade causes in other answers"
+              >
+                Bet rows
+              </th>
+              <th className="px-2 py-1">Leader now (ticking queues it)</th>
             </tr>
           </thead>
           <tbody>
@@ -172,7 +178,7 @@ export function ElectionMovers(props: {
                 <td className="px-2 py-1">
                   <input
                     type="checkbox"
-                    aria-label={`Select ${m.unit.race}`}
+                    aria-label={`Queue ${m.unit.race} to resolve to ${m.unit.leader.label}`}
                     className="border-ink-300 text-primary-600 h-3.5 w-3.5 rounded"
                     checked={!!choices[m.unit.key]}
                     disabled={m.unit.resolved}
@@ -211,6 +217,13 @@ export function ElectionMovers(props: {
                 </td>
                 <td className="text-ink-500 px-2 py-1 text-right tabular-nums">
                   {m.trades}
+                </td>
+                <td className="max-w-[12rem] truncate px-2 py-1">
+                  {m.unit.resolved
+                    ? '—'
+                    : `${m.unit.leader.label} ${formatPercent(
+                        m.unit.leader.prob
+                      )}`}
                 </td>
               </tr>
             ))}
@@ -267,6 +280,7 @@ const REFRESH_MS = 15_000
 // window costs a handful of calls, not one per market.
 const FULL_BETS_MAX_SPAN = 15 * MINUTE
 const FULL_BETS_PAGE = 10_000
+const MAX_PAGES = 20
 const POINTS_CHUNK = 25
 const POINTS_LIMIT = 50_000
 
@@ -335,7 +349,12 @@ export function useElectionTrades(contracts: Contract[]) {
     async (ids: string[], afterTime: number, beforeTime?: number) => {
       for (const c of chunk(ids, 100)) {
         let after = afterTime
-        for (let page = 0; page < 20; page++) {
+        for (let page = 0; ; page++) {
+          if (page === MAX_PAGES) {
+            // Stopped short of the end: what loaded is only part.
+            setPartial(true)
+            break
+          }
           const bets = await withRetry(() =>
             api(
               'bets',
@@ -345,6 +364,9 @@ export function useElectionTrades(contracts: Contract[]) {
                 beforeTime,
                 order: 'asc',
                 limit: FULL_BETS_PAGE,
+                // Zero-share redemption rows record the price moves a
+                // trade causes in a linked market's other answers.
+                includeZeroShareRedemptions: true,
               },
               { cache: 'no-store' }
             )
@@ -370,6 +392,7 @@ export function useElectionTrades(contracts: Contract[]) {
             beforeTime,
             points: true,
             limit: POINTS_LIMIT,
+            includeZeroShareRedemptions: true,
           })
         )
         // A full batch is a sample, not every trade.
@@ -398,8 +421,10 @@ export function useElectionTrades(contracts: Contract[]) {
         if (wanted.current === undefined) break
         const since = wanted.current
         const now = Date.now()
-        // Fill only the gap: [since, what is already covered).
-        const before = covered.current
+        // Fill only the gap: [since, what is already covered]. Both API
+        // bounds are strict, so overlap by 1ms; repeats are skipped.
+        const before =
+          covered.current === undefined ? undefined : covered.current + 1
         if (lastFetch.current === undefined) lastFetch.current = now
         if ((before ?? now) - since <= FULL_BETS_MAX_SPAN)
           await fetchFull(markets.current.ids, since, before)
