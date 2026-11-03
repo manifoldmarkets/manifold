@@ -24,9 +24,35 @@ import { floatingEqual } from 'common/util/math'
 import { MINUTE_MS } from 'common/util/time'
 
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
+// Matches the server's per-user cache TTL for this endpoint.
 const DAILY_PROFIT_REFRESH_MS = MINUTE_MS
-// Module-level so navigating back to a page with the widget doesn't refetch.
+
+type DailyProfitData = APIResponse<'get-daily-changed-metrics-and-contracts'>
+
+// Module-level so remounts (navigation, StrictMode) share one request per user
+// and the throttle survives them.
 const lastFetchTimeByUserId: Record<string, number> = {}
+const inFlightByUserId: Record<string, Promise<DailyProfitData> | undefined> =
+  {}
+
+const fetchDailyProfit = (userId: string, balance: number) => {
+  const pending = inFlightByUserId[userId]
+  if (pending) return pending
+  lastFetchTimeByUserId[userId] = Date.now()
+  const request = api('get-daily-changed-metrics-and-contracts', {
+    limit: 24,
+    userId,
+    balance,
+  }).finally(() => {
+    delete inFlightByUserId[userId]
+    // Time the next refetch from the response: the server caches the result
+    // from when it finished computing, so a refetch timed from the request
+    // could land inside that cache and get the same snapshot back.
+    lastFetchTimeByUserId[userId] = Date.now()
+  })
+  inFlightByUserId[userId] = request
+  return request
+}
 
 export const DailyProfit = function DailyProfit(props: {
   user: User | null | undefined
@@ -34,7 +60,7 @@ export const DailyProfit = function DailyProfit(props: {
 }) {
   const { user } = props
   const [data, setData] = usePersistentInMemoryState<
-    APIResponse<'get-daily-changed-metrics-and-contracts'> | undefined
+    DailyProfitData | undefined
   >(undefined, 'daily-profit-' + user?.id)
   const hasDataRef = useRef(data !== undefined)
   hasDataRef.current = data !== undefined
@@ -48,25 +74,34 @@ export const DailyProfit = function DailyProfit(props: {
     // while the tab is visible, using the latest balance when the wait ends.
     let timeout: ReturnType<typeof setTimeout> | undefined
     let fetched = false
+    // Set on cleanup, so a response for a previous user or balance is never
+    // applied by this instance (the setter targets the current user's key).
+    let cancelled = false
     const refresh = () => {
       timeout = undefined
-      if (fetched || document.visibilityState === 'hidden') return
-      const wait = hasDataRef.current
-        ? (lastFetchTimeByUserId[userId] ?? 0) +
-          DAILY_PROFIT_REFRESH_MS -
-          Date.now()
-        : 0
+      if (fetched || cancelled || document.visibilityState === 'hidden') return
+      const joinRequest = inFlightByUserId[userId] !== undefined
+      const wait =
+        hasDataRef.current && !joinRequest
+          ? (lastFetchTimeByUserId[userId] ?? 0) +
+            DAILY_PROFIT_REFRESH_MS -
+            Date.now()
+          : 0
       if (wait > 0) {
         timeout = setTimeout(refresh, wait)
         return
       }
       fetched = true
-      lastFetchTimeByUserId[userId] = Date.now()
-      api('get-daily-changed-metrics-and-contracts', {
-        limit: 24,
-        userId,
-        balance,
-      }).then(setData)
+      fetchDailyProfit(userId, balance).then((result) => {
+        if (cancelled) return
+        setData(result)
+        // A cached or shared response can predate this balance. Try again
+        // once the server's cache has expired so the last trade shows up.
+        if (result.balance !== balance) {
+          fetched = false
+          refresh()
+        }
+      })
     }
     const onVisibilityChange = () => {
       if (!timeout) refresh()
@@ -74,6 +109,7 @@ export const DailyProfit = function DailyProfit(props: {
     refresh()
     document.addEventListener('visibilitychange', onVisibilityChange)
     return () => {
+      cancelled = true
       clearTimeout(timeout)
       document.removeEventListener('visibilitychange', onVisibilityChange)
     }
@@ -85,14 +121,15 @@ export const DailyProfit = function DailyProfit(props: {
 
   const [openMana, setOpenMana] = useState(false)
   useEffect(() => {
-    if (openMana && !data && user) {
-      api('get-daily-changed-metrics-and-contracts', {
-        limit: 24,
-        userId: user.id,
-        balance: Math.floor(user.balance),
-      }).then(setData)
+    if (!openMana || data || !userId || balance === undefined) return
+    let cancelled = false
+    fetchDailyProfit(userId, balance).then((result) => {
+      if (!cancelled) setData(result)
+    })
+    return () => {
+      cancelled = true
     }
-  }, [user?.id, openMana])
+  }, [userId, openMana])
 
   return (
     <>
