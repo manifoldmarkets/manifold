@@ -24,37 +24,24 @@ import {
   optionFor,
   ResolveUnit,
   unitFingerprint,
-  Snapshot,
-  snapshotOf,
   SortKey,
   sortUnits,
 } from 'web/lib/politics/election-resolve-model'
 import { db } from 'web/lib/supabase/db'
 import { ElectionResolveConfirm, RunResult } from './election-resolve-confirm'
-import { ElectionTweetDraft } from './election-tweet-draft'
+import { ElectionMovers, useElectionTrades } from './election-movers'
 
-const REFRESH_MS = 30_000
-const HISTORY_MS = 2 * 60 * 60 * 1000
+const REFRESH_MS = 15_000
 
 export function ElectionResolveTool() {
   const sources = useMemo(mapSources, [])
-  const { contracts, loadedAt, error, refresh } = useMapMarkets(sources)
+  const { ids, contracts, loadedAt, error, refresh } = useMapMarkets(sources)
+  const trades = useElectionTrades(ids)
   const contractsBySlug = useMemo(() => keyBy(contracts, 'slug'), [contracts])
   const units = useMemo(
     () => buildUnits(sources, contractsBySlug, keyBy(contracts, 'id')),
     [sources, contracts, contractsBySlug]
   )
-
-  // Every refresh's prices, for the tweet draft's "moves since".
-  const history = useRef<Snapshot[]>([])
-  useEffect(() => {
-    if (!loadedAt || !units.length) return
-    if (history.current.some((s) => s.t === loadedAt)) return
-    history.current = [
-      ...history.current.filter((s) => s.t > loadedAt - HISTORY_MS),
-      snapshotOf(units, loadedAt),
-    ]
-  }, [loadedAt, units])
 
   const [office, setOffice] = useState<Office | 'all'>('all')
   const [status, setStatus] = useState<'open' | 'resolved' | 'all'>('open')
@@ -128,11 +115,11 @@ export function ElectionResolveTool() {
 
   return (
     <Col className="gap-4">
-      <ElectionTweetDraft
+      <ElectionMovers
         units={units}
-        contractsBySlug={contractsBySlug}
-        history={history}
-        loadedAt={loadedAt}
+        trades={trades}
+        choices={choices}
+        onToggle={toggle}
       />
 
       <Row className="text-ink-600 flex-wrap items-center gap-x-4 gap-y-1 text-sm">
@@ -142,7 +129,7 @@ export function ElectionResolveTool() {
           {uniq(units.map((u) => u.contractId)).length} markets
         </span>
         <span>
-          Prices refresh every 30s
+          Prices refresh every 15s
           {loadedAt
             ? `, last at ${new Date(loadedAt).toLocaleTimeString()}`
             : ''}
@@ -463,5 +450,5 @@ function useMapMarkets(sources: MapSource[]) {
     return () => clearInterval(timer)
   }, [ids, refresh])
 
-  return { contracts, loadedAt, error, refresh }
+  return { ids, contracts, loadedAt, error, refresh }
 }

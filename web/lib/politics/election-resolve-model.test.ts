@@ -3,18 +3,20 @@ import { test } from 'node:test'
 import { BinaryContract, Contract } from 'common/contract'
 import { MIDTERMS_2026 } from 'web/public/data/elections-data'
 import {
-  baselineFor,
-  biggestMovers,
-  buildSummary,
+  addTrades,
   buildUnits,
-  chamberControl,
   checkBeforeResolve,
+  leaderChange,
+  movesSince,
+  pricesAt,
+  resolvedSince,
+  seriesKey,
+  TradeStore,
   freshUnit,
   isStale,
   MapSource,
   mapSources,
   resolveCall,
-  snapshotOf,
   sortUnits,
   unitFingerprint,
   withResolvedOdds,
@@ -72,7 +74,7 @@ const governor = multi('G1', true, [
 const portfolio = multi('P1', false, [
   answer('pa', 'Prop A', 0.97),
   answer('pb', 'Prop B', 0.2),
-  answer('pc', 'Prop C', 0.6, { resolution: 'YES' }),
+  answer('pc', 'Prop C', 0.6, { resolution: 'YES', resolutionTime: 500 }),
 ])
 
 const sources: MapSource[] = [
@@ -154,47 +156,6 @@ test('sortUnits orders by the leader’s chance', () => {
   assert.equal(desc[1], 'P1:pa')
   const asc = sortUnits(units, 'chance-asc').map((u) => u.key)
   assert.equal(asc[0], 'G1') // Republican Party at 65%
-})
-
-test('movers compare the leader with the snapshot from the window', () => {
-  const t0 = 1_000_000
-  const earlier = buildUnits(
-    sources,
-    bySlug([binary('S1', 0.6), governor, portfolio]),
-    byId([binary('S1', 0.6), governor, portfolio])
-  )
-  const history = [snapshotOf(earlier, t0), snapshotOf(units, t0 + 600_000)]
-  const baseline = baselineFor(history, t0 + 600_000, 600_000)
-  assert.equal(baseline?.t, t0)
-  const movers = biggestMovers(units, baseline, 3)
-  assert.equal(movers.length, 1)
-  assert.equal(movers[0].unit.key, 'S1')
-  assert.ok(Math.abs(movers[0].from - 0.6) < 1e-9)
-  // With too little history, the oldest snapshot stands in.
-  assert.equal(baselineFor(history, t0 + 60_000, 600_000)?.t, t0)
-})
-
-test('buildSummary reports control from the leader’s side and its change', () => {
-  const text = buildSummary(
-    {
-      now: Date.UTC(2026, 10, 4, 2, 30),
-      baseline: {
-        t: Date.UTC(2026, 10, 4, 2, 20),
-        probs: { 'SC|YES': 0.6, 'HC|YES': 0.45 },
-      },
-      senateRep: 0.7,
-      houseRep: 0.4,
-      called: { senate: { called: 3, dem: 1, rep: 2, other: 0 } },
-      movers: [],
-    },
-    { senateControl: 'SC', houseControl: 'HC' }
-  )
-  assert.match(text, /9:30 PM ET/)
-  assert.match(text, /Senate: R 70% to control \(\+10\)/)
-  // House: D leads at 60%, up 5 from 55%.
-  assert.match(text, /House: D 60% to control \(\+5\)/)
-  assert.match(text, /Resolved so far: Senate 3 \(D 1, R 2\)/)
-  assert.match(text, /manifold\.markets\/election$/)
 })
 
 test('withResolvedOdds reads a resolved binary as its result', () => {
@@ -301,33 +262,6 @@ test('the run re-checks each unit against a fresh copy of its market', () => {
   assert.equal(freshUnit(ticked, senateBinary), undefined)
 })
 
-test('chamber control names a winner only for a YES or NO result', () => {
-  const [open] = buildUnits(
-    [{ office: 'headline', race: 'Senate control', ref: { id: 'C' } }],
-    {},
-    { C: binary('C', 0.7) }
-  )
-  assert.ok(Math.abs((chamberControl(open).rep ?? 0) - 0.7) < 1e-9)
-  const resolvedAs = (resolution: string) =>
-    chamberControl(
-      buildUnits(
-        [{ office: 'headline', race: 'Senate control', ref: { id: 'C' } }],
-        {},
-        {
-          C: binary('C', 0.8, {
-            resolution,
-            resolutionProbability: 0.8,
-            isResolved: true,
-          }),
-        }
-      )[0]
-    )
-  assert.deepEqual(resolvedAs('NO'), { rep: 0, resolved: true })
-  assert.deepEqual(resolvedAs('YES'), { rep: 1, resolved: true })
-  assert.deepEqual(resolvedAs('CANCEL'), {})
-  assert.deepEqual(resolvedAs('MKT'), {})
-})
-
 test('the House district portfolio files under House', () => {
   const s = mapSources().find(
     (x) => 'slug' in x.ref && x.ref.slug === MIDTERMS_2026.houseDistricts
@@ -339,16 +273,94 @@ test('the House district portfolio files under House', () => {
   )
 })
 
-test('a resolved chamber reads as resolved, not as a price', () => {
-  const text = buildSummary(
-    {
-      now: Date.UTC(2026, 10, 4, 5, 0),
-      senateRep: 1,
-      senateResolved: true,
-      called: {},
-      movers: [],
-    },
-    { senateControl: 'SC' }
+
+// Trades: S1 YES was 0.6 at t=100 and 0.7 at t=300 (now 0.9). One bet
+// group at t=150 moved G1's Republican from 0.4 and its Democrat from 0.55.
+// P1's Prop B was 0.5 YES at t=150 (now 0.2).
+const tradeStore = () => {
+  const store: TradeStore = new Map()
+  const seen = new Set<string>()
+  addTrades(store, seen, [
+    { contractId: 'S1', createdTime: 300, probBefore: 0.7 },
+    { contractId: 'S1', createdTime: 100, probBefore: 0.6 },
+    { contractId: 'P1', answerId: 'pb', createdTime: 150, probBefore: 0.5 },
+  ])
+  // Points rows carry no contract id; the caller supplies it.
+  addTrades(
+    store,
+    seen,
+    [
+      { answerId: 'gr', createdTime: 150, probBefore: 0.4 },
+      { answerId: 'gd', createdTime: 150, probBefore: 0.55 },
+    ],
+    'G1'
   )
-  assert.match(text, /Senate: R control, resolved on Manifold/)
+  return { store, seen }
+}
+
+test('addTrades keeps each series sorted and skips rows it already has', () => {
+  const { store, seen } = tradeStore()
+  assert.deepEqual(
+    store.get(seriesKey('S1'))?.map((t) => t.t),
+    [100, 300]
+  )
+  assert.equal(
+    addTrades(store, seen, [
+      { contractId: 'S1', createdTime: 100, probBefore: 0.6 },
+    ]),
+    0
+  )
+  assert.equal(store.get(seriesKey('S1'))?.length, 2)
+  assert.ok(store.get(seriesKey('G1', 'gr')))
+})
+
+test('a price at a moment is the first trade after it, else unchanged', () => {
+  const { store } = tradeStore()
+  assert.deepEqual(pricesAt(unit('S1'), store, 50), { YES: 0.6, NO: 0.4 })
+  const at200 = pricesAt(unit('S1'), store, 200)
+  assert.equal(at200.YES, 0.7)
+  assert.ok(Math.abs(at200.NO - 0.3) < 1e-9)
+  // Nothing traded after 400: still at today's price.
+  assert.ok(Math.abs(pricesAt(unit('S1'), store, 400).YES - 0.9) < 1e-9)
+  const g = pricesAt(unit('G1'), store, 50)
+  assert.equal(g.gr, 0.4)
+  assert.equal(g.gd, 0.55)
+  // Other never traded in the window.
+  assert.ok(Math.abs(g.go - 0.05) < 1e-9)
+})
+
+test('movesSince reports what rose most in each unit, biggest first', () => {
+  const { store } = tradeStore()
+  const moves = movesSince(units, store, 50)
+  const byKey = Object.fromEntries(moves.map((m) => [m.unit.key, m]))
+  assert.equal(byKey.S1.option.value, 'YES')
+  assert.ok(Math.abs(byKey.S1.to - byKey.S1.from - 0.3) < 1e-9)
+  assert.equal(byKey.S1.trades, 2)
+  assert.equal(byKey.G1.option.value, 'gr')
+  assert.equal(byKey.G1.trades, 2)
+  // Prop B fell from 0.5 YES to 0.2: its NO side rose.
+  assert.equal(byKey['P1:pb'].option.value, 'NO')
+  // Untraded units are not movers.
+  assert.equal(byKey['P1:pa'], undefined)
+  assert.ok(moves[0].to - moves[0].from >= moves[1].to - moves[1].from)
+  // A minimum move filters the rest out.
+  assert.deepEqual(
+    movesSince(units, store, 50, 0.26).map((m) => m.unit.key),
+    ['P1:pb', 'S1']
+  )
+  // A window after every trade has no movers.
+  assert.equal(movesSince(units, store, 400).length, 0)
+})
+
+test('leaderChange and resolvedSince', () => {
+  const { store } = tradeStore()
+  const g = leaderChange(unit('G1'), store, 50)
+  assert.equal(g.option.value, 'gr')
+  assert.equal(g.from, 0.4)
+  assert.ok(Math.abs(g.to - 0.65) < 1e-9)
+  assert.deepEqual(
+    resolvedSince(units, 400).map((u) => u.key),
+    ['P1:pc']
+  )
+  assert.equal(resolvedSince(units, 600).length, 0)
 })

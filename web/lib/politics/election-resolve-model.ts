@@ -1,6 +1,6 @@
 // Pure model for /admin/election-resolve: every market the /election map
 // shows, broken into the units an admin resolves one at a time, the exact
-// resolve-API call for each, and the draft post the team tweets.
+// resolve-API call for each, and how each unit moved over a recent window.
 //
 // A unit is what one resolve call settles:
 // - a binary market (YES or NO),
@@ -11,12 +11,8 @@
 
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
 import { Contract, isMultiCpmm } from 'common/contract'
+import { sumBy } from 'lodash'
 import { BALLOT_MEASURES } from 'web/components/usa-map/ballot-measures-model'
-import {
-  buildRaces,
-  leadingParty,
-  Race,
-} from 'web/components/usa-map/election-map-model'
 import { MIDTERMS_2026 } from 'web/public/data/elections-data'
 import { governors2026 } from 'web/public/data/governors-data'
 import {
@@ -145,8 +141,9 @@ export type ResolveUnit = {
   options: UnitOption[]
   leader: UnitOption
   resolved: boolean
-  // What it resolved to, for display.
+  // What it resolved to, for display, and when.
   resolutionLabel?: string
+  resolutionTime?: number
 }
 
 const clampProb = (p: number) => (Number.isFinite(p) ? Math.min(1, Math.max(0, p)) : 0)
@@ -204,6 +201,7 @@ export function buildUnits(
         leader: pickLeader(options),
         resolved: !!contract.resolution,
         resolutionLabel: contract.resolution,
+        resolutionTime: contract.resolutionTime,
       })
       continue
     }
@@ -234,6 +232,7 @@ export function buildUnits(
         leader: pickLeader(options),
         resolved: !!contract.resolution,
         resolutionLabel: winner?.text ?? contract.resolution,
+        resolutionTime: contract.resolutionTime,
       })
       continue
     }
@@ -254,6 +253,7 @@ export function buildUnits(
         leader: pickLeader(options),
         resolved: !!answer.resolution || !!contract.resolution,
         resolutionLabel: answer.resolution ?? contract.resolution,
+        resolutionTime: answer.resolutionTime ?? contract.resolutionTime,
       })
     }
   }
@@ -303,68 +303,6 @@ export function sortUnits(units: ResolveUnit[], sort: SortKey) {
           ? b.leader.prob - a.leader.prob
           : a.leader.prob - b.leader.prob) || byRace(a, b)
   )
-}
-
-// ─── Movement and the tweet draft ────────────────────────────────────────────
-
-// Every option's probability at one moment, keyed `${unit.key}|${value}`.
-export type Snapshot = { t: number; probs: Record<string, number> }
-
-export function snapshotOf(units: ResolveUnit[], t: number): Snapshot {
-  const probs: Record<string, number> = {}
-  for (const u of units)
-    for (const o of u.options) probs[`${u.key}|${o.value}`] = o.prob
-  return { t, probs }
-}
-
-// The newest snapshot at least `windowMs` old, else the oldest one held.
-export function baselineFor(
-  history: Snapshot[],
-  now: number,
-  windowMs: number
-): Snapshot | undefined {
-  let best: Snapshot | undefined
-  for (const s of history) {
-    if (s.t <= now - windowMs && (!best || s.t > best.t)) best = s
-  }
-  return best ?? history.reduce<Snapshot | undefined>(
-    (oldest, s) => (!oldest || s.t < oldest.t ? s : oldest),
-    undefined
-  )
-}
-
-export type Mover = {
-  unit: ResolveUnit
-  option: UnitOption
-  from: number
-  to: number
-}
-
-// Open units whose leading option moved the most since `baseline`.
-export function biggestMovers(
-  units: ResolveUnit[],
-  baseline: Snapshot | undefined,
-  limit: number
-): Mover[] {
-  if (!baseline) return []
-  const movers: Mover[] = []
-  for (const unit of units) {
-    if (unit.resolved) continue
-    const from = baseline.probs[`${unit.key}|${unit.leader.value}`]
-    if (from === undefined || !Number.isFinite(from)) continue
-    movers.push({ unit, option: unit.leader, from, to: unit.leader.prob })
-  }
-  return movers
-    .filter((m) => Math.abs(m.to - m.from) >= 0.02)
-    .sort((a, b) => Math.abs(b.to - b.from) - Math.abs(a.to - a.from))
-    .slice(0, limit)
-}
-
-export type CalledTally = {
-  called: number
-  dem: number
-  rep: number
-  other: number
 }
 
 // A resolved market keeps its last prices. A binary stores the
@@ -440,188 +378,176 @@ export function checkBeforeResolve(
   return undefined
 }
 
-// The chamber-control line's input from its binary (YES = Republicans).
-// Only a YES or NO result names a winner; N/A or a partial resolution says
-// nothing rather than reading its last price as an outcome.
-export function chamberControl(unit?: ResolveUnit): {
-  rep?: number
-  resolved?: boolean
-} {
-  if (!unit || unit.kind !== 'binary') return {}
-  if (unit.resolved) {
-    if (unit.resolutionLabel === 'YES') return { rep: 1, resolved: true }
-    if (unit.resolutionLabel === 'NO') return { rep: 0, resolved: true }
-    return {}
-  }
-  return { rep: optionFor(unit, 'YES')?.prob }
+// ─── Recent movers ───────────────────────────────────────────────────────────
+//
+// Built from trades rather than from what this tab has watched, so a window
+// is complete the moment its trades load. Every bet row carries the price
+// before it, so the first trade on a series after a moment gives the
+// series' price at that moment, and a series with no trade since has not
+// moved. A trade on one answer of a linked market records each sibling it
+// moved as its own row in the same bet group, so every answer is covered.
+
+// One price line: a binary market, or one answer of a multi-choice market.
+export const seriesKey = (contractId: string, answerId?: string | null) =>
+  `${contractId}|${answerId ?? ''}`
+
+export type Trade = { t: number; before: number }
+// series key -> its trades, ascending by time
+export type TradeStore = Map<string, Trade[]>
+
+export type TradeRow = {
+  contractId?: string
+  answerId?: string | null
+  createdTime: number
+  probBefore: number
 }
 
-// Map races whose market (or, for a portfolio-priced House seat, whose
-// answer) has resolved, by the party the map now reads for them. Party
-// semantics come from the map's own audited sources via buildRaces.
-export function calledTally(races: Race[]): CalledTally {
-  const tally = { called: 0, dem: 0, rep: 0, other: 0 }
-  for (const race of races) {
-    const c = race.contract
-    if (!c) continue
-    const answer =
-      race.answerId && isMultiCpmm(c)
-        ? c.answers.find((a) => a.id === race.answerId)
-        : undefined
-    const resolution = race.answerId ? answer?.resolution : c.resolution
-    if (!resolution || resolution === 'CANCEL') continue
-    tally.called++
-    const party = leadingParty(race.odds)
-    if (party === 'dem') tally.dem++
-    else if (party === 'rep') tally.rep++
-    else tally.other++
-  }
-  return tally
-}
-
-export function calledByOffice(
-  contractsBySlug: Record<string, Contract | undefined>
-): SummaryInput['called'] {
-  const bySlug = (slug: string) => {
-    const c = contractsBySlug[slug]
-    return c ? withResolvedOdds(c) : null
-  }
-  const byState = (list: { state: string; slug: string }[]) =>
-    Object.fromEntries(list.map((m) => [m.state, bySlug(m.slug)]))
-  const additionalHouse = Object.fromEntries(
-    [...HOUSE_DISTRICT_MARKETS, ...HOUSE_RACE_MARKETS.map((m) => m.slug)].map(
-      (slug) => [slug, bySlug(slug)]
+// Adds rows to the store in place, skipping rows it already holds: the
+// incremental refresh overlaps the previous one. Points rows carry no
+// contract id, so their caller passes it. Returns how many were new.
+export function addTrades(
+  store: TradeStore,
+  seen: Set<string>,
+  rows: TradeRow[],
+  contractId?: string
+): number {
+  let added = 0
+  const touched = new Set<Trade[]>()
+  for (const row of rows) {
+    const cid = row.contractId ?? contractId
+    if (
+      !cid ||
+      !Number.isFinite(row.createdTime) ||
+      !Number.isFinite(row.probBefore)
     )
-  )
-  return {
-    senate: calledTally(buildRaces('senate', byState(senate2026))),
-    governor: calledTally(buildRaces('governor', byState(governors2026))),
-    house: calledTally(
-      buildRaces(
-        'house',
-        {},
-        bySlug(MIDTERMS_2026.houseDistricts),
-        additionalHouse
+      continue
+    const key = seriesKey(cid, row.answerId)
+    const id = `${key}|${row.createdTime}|${row.probBefore}`
+    if (seen.has(id)) continue
+    seen.add(id)
+    let list = store.get(key)
+    if (!list) {
+      list = []
+      store.set(key, list)
+    }
+    list.push({ t: row.createdTime, before: row.probBefore })
+    touched.add(list)
+    added++
+  }
+  for (const list of touched) list.sort((a, b) => a.t - b.t)
+  return added
+}
+
+// Index of the first trade strictly after `since`.
+const firstAfter = (trades: Trade[], since: number) => {
+  let lo = 0
+  let hi = trades.length
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if (trades[mid].t > since) hi = mid
+    else lo = mid + 1
+  }
+  return lo
+}
+
+const priceAt = (store: TradeStore, key: string, since: number) => {
+  const trades = store.get(key)
+  if (!trades) return undefined
+  const i = firstAfter(trades, since)
+  return i < trades.length ? trades[i].before : undefined
+}
+
+const unitSeries = (unit: ResolveUnit) =>
+  unit.kind === 'choose-one'
+    ? unit.options.map((o) => seriesKey(unit.contractId, o.value))
+    : [seriesKey(unit.contractId, unit.answerId)]
+
+export function tradesSince(
+  unit: ResolveUnit,
+  store: TradeStore,
+  since: number
+) {
+  return sumBy(unitSeries(unit), (key) => {
+    const trades = store.get(key)
+    return trades ? trades.length - firstAfter(trades, since) : 0
+  })
+}
+
+// Each option's price at `since`. An option whose series has not traded
+// since then is still at its current price.
+export function pricesAt(
+  unit: ResolveUnit,
+  store: TradeStore,
+  since: number
+): Record<string, number> {
+  const out: Record<string, number> = {}
+  if (unit.kind === 'choose-one') {
+    for (const o of unit.options)
+      out[o.value] = clampProb(
+        priceAt(store, seriesKey(unit.contractId, o.value), since) ?? o.prob
       )
-    ),
+    return out
+  }
+  const yes = priceAt(store, seriesKey(unit.contractId, unit.answerId), since)
+  for (const o of unit.options)
+    out[o.value] =
+      yes === undefined
+        ? o.prob
+        : clampProb(o.value === 'YES' ? yes : 1 - yes)
+  return out
+}
+
+export type Move = {
+  unit: ResolveUnit
+  // The option that gained the most over the window.
+  option: UnitOption
+  from: number
+  to: number
+  trades: number
+}
+
+// Units that traded since `since`, each with the option that gained the
+// most, biggest gain first. Gains under `minChange` are left out.
+export function movesSince(
+  units: ResolveUnit[],
+  store: TradeStore,
+  since: number,
+  minChange = 0
+): Move[] {
+  const moves: Move[] = []
+  for (const unit of units) {
+    const trades = tradesSince(unit, store, since)
+    if (!trades) continue
+    const then = pricesAt(unit, store, since)
+    let best: Move | undefined
+    for (const option of unit.options) {
+      const from = then[option.value]
+      if (!best || option.prob - from > best.to - best.from)
+        best = { unit, option, from, to: option.prob, trades }
+    }
+    const gain = best ? best.to - best.from : 0
+    if (best && gain > 1e-9 && gain >= minChange) moves.push(best)
+  }
+  return moves.sort(
+    (a, b) =>
+      b.to - b.from - (a.to - a.from) || a.unit.race.localeCompare(b.unit.race)
+  )
+}
+
+// The current leader and its price at `since`.
+export function leaderChange(
+  unit: ResolveUnit,
+  store: TradeStore,
+  since: number
+) {
+  return {
+    option: unit.leader,
+    from: pricesAt(unit, store, since)[unit.leader.value],
+    to: unit.leader.prob,
   }
 }
 
-const pct = (p: number) => `${Math.round(100 * p)}%`
-const signedPts = (d: number) => {
-  const pts = Math.round(100 * d)
-  return pts === 0 ? 'no change' : `${pts > 0 ? '+' : '−'}${Math.abs(pts)}`
-}
-
-const moverName = (m: Mover) => {
-  const what =
-    m.unit.kind === 'answer'
-      ? `${m.unit.answerText} ${m.option.value === 'YES' ? 'YES' : 'NO'}`
-      : m.unit.kind === 'choose-one'
-      ? m.option.label
-      : m.option.value
-  return `${m.unit.race}: ${what} ${pct(m.to)} (${signedPts(m.to - m.from)})`
-}
-
-export type SummaryInput = {
-  now: number
-  baseline?: Snapshot
-  // P(Republicans win control) now, from the chamber-control binaries, and
-  // whether those markets have resolved.
-  senateRep?: number
-  houseRep?: number
-  senateResolved?: boolean
-  houseResolved?: boolean
-  called: Partial<Record<'senate' | 'house' | 'governor', CalledTally>>
-  movers: Mover[]
-}
-
-const etTime = (ms: number) =>
-  new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/New_York',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(ms) + ' ET'
-
-const controlLine = (
-  chamber: string,
-  rep: number | undefined,
-  key: string,
-  baseline?: Snapshot,
-  resolved?: boolean
-) => {
-  if (rep === undefined || !Number.isFinite(rep)) return undefined
-  const dem = 1 - rep
-  const lead = rep >= dem ? 'R' : 'D'
-  if (resolved) return `${chamber}: ${lead} control, resolved on Manifold`
-  const leadProb = Math.max(rep, dem)
-  const before = baseline?.probs[`${key}|YES`]
-  const change =
-    before === undefined
-      ? ''
-      : ` (${signedPts(lead === 'R' ? rep - before : before - rep)})`
-  return `${chamber}: ${lead} ${pct(leadProb)} to control${change}`
-}
-
-const tallyText = (label: string, t?: CalledTally) =>
-  t && t.called
-    ? `${label} ${t.called} (` +
-      [
-        t.dem ? `D ${t.dem}` : '',
-        t.rep ? `R ${t.rep}` : '',
-        t.other ? `other ${t.other}` : '',
-      ]
-        .filter(Boolean)
-        .join(', ') +
-      ')'
-    : undefined
-
-export function buildSummary(
-  input: SummaryInput,
-  keys: { senateControl?: string; houseControl?: string }
-): string {
-  const {
-    now,
-    baseline,
-    senateRep,
-    houseRep,
-    senateResolved,
-    houseResolved,
-    called,
-    movers,
-  } = input
-  const since = baseline
-    ? `Moves since ${etTime(baseline.t)}`
-    : 'Moves: not enough history yet'
-  const calledParts = [
-    tallyText('Senate', called.senate),
-    tallyText('House', called.house),
-    tallyText('Governor', called.governor),
-  ].filter(Boolean)
-  const lines = [
-    `Manifold midterms, ${etTime(now)}`,
-    keys.senateControl
-      ? controlLine(
-          'Senate',
-          senateRep,
-          keys.senateControl,
-          baseline,
-          senateResolved
-        )
-      : undefined,
-    keys.houseControl
-      ? controlLine(
-          'House',
-          houseRep,
-          keys.houseControl,
-          baseline,
-          houseResolved
-        )
-      : undefined,
-    calledParts.length ? `Resolved so far: ${calledParts.join(' · ')}` : undefined,
-    movers.length ? `${since}:` : undefined,
-    ...movers.map((m) => `• ${moverName(m)}`),
-    'manifold.markets/election',
-  ]
-  return lines.filter((l): l is string => !!l).join('\n')
-}
+export const resolvedSince = (units: ResolveUnit[], since: number) =>
+  units
+    .filter((u) => u.resolved && (u.resolutionTime ?? 0) > since)
+    .sort((a, b) => (b.resolutionTime ?? 0) - (a.resolutionTime ?? 0))
