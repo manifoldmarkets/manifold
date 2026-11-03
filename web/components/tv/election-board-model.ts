@@ -213,6 +213,55 @@ export function raceCall(race: BoardRace): RaceCall | undefined {
     : undefined
 }
 
+// What a called race's market resolved to, in the map's own words. The
+// displayed odds can't say: a resolved binary keeps its last trading price,
+// and a resolved multi-choice market names its winner only in
+// contract.resolution (its answers' own resolutions stay empty). Binary
+// labels come from binaryRows, so audited candidate and party markets read
+// as the map reads them; a candidate binary resolving NO says only that the
+// candidate lost, since its NO is any other winner.
+type CallResult = { text: string; tone?: 'dem' | 'rep' | 'other' }
+
+export function callResult(race: BoardRace): CallResult | undefined {
+  const { contract, answerId } = race
+  if (!contract) return undefined
+  const won = (label: string, party?: OutcomeParty): CallResult => ({
+    text: `${label} won`,
+    tone: party && partyTone(party),
+  })
+  // A House portfolio answer prices the Democrat winning the district.
+  if (answerId && isMultiCpmm(contract)) {
+    const answer = contract.answers.find((a) => a.id === answerId)
+    if (answer?.resolution === 'YES') return won(partyLabel('D'), 'D')
+    if (answer?.resolution === 'NO')
+      return complementParty('house', race.id, 'D') === 'R'
+        ? won(partyLabel('R'), 'R')
+        : { text: `${partyLabel('D')} lost` }
+    return answer?.resolution ? { text: 'Resolved' } : undefined
+  }
+  if (contract.mechanism === 'cpmm-1' && contract.outcomeType === 'BINARY') {
+    if (!contract.resolution) return undefined
+    const rows = binaryRows(contract, race, race.mode)
+    if (contract.resolution === 'YES')
+      return won(rows.YES.label, rows.YES.party)
+    if (contract.resolution === 'NO')
+      return rows.NO.party === 'any'
+        ? { text: `${rows.YES.label} lost` }
+        : won(rows.NO.label, rows.NO.party)
+    return { text: 'Resolved' }
+  }
+  if (isMultiCpmm(contract)) {
+    if (!contract.resolution) return undefined
+    const winner =
+      contract.answers.find((a) => a.id === contract.resolution) ??
+      contract.answers.find((a) => a.resolution === 'YES')
+    if (!winner) return { text: 'Resolved' }
+    const party = answerParty(contract, winner)
+    return party ? won(partyLabel(party), party) : won(winner.text)
+  }
+  return undefined
+}
+
 export function latestCalls(races: BoardRace[]): RaceCall[] {
   const calls = races
     .map(raceCall)

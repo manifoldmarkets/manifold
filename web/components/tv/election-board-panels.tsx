@@ -33,6 +33,7 @@ import {
   BoardPosition,
   BoardRace,
   BoardTrade,
+  callResult,
   isBoardRace,
   leaderText,
   likeableContractId,
@@ -156,6 +157,8 @@ export function BoardRaceRow(props: RowActions & RowData) {
   const [open, setOpen] = useState(false)
   const leader = leadingParty(race.odds)
   const quote = leaderText(race)
+  // A call reads the market's resolution, never its last price.
+  const call = called ? callResult(race) : undefined
   const flash = useFlash(quote)
 
   return (
@@ -192,10 +195,10 @@ export function BoardRaceRow(props: RowActions & RowData) {
             <span
               className={clsx(
                 'text-sm font-semibold tabular-nums',
-                toneText(outcomeTone(leader))
+                toneText(call ? call.tone : outcomeTone(leader))
               )}
             >
-              {called && leader ? `${outcomeLabel(leader)} won` : quote}
+              {call ? call.text : quote}
             </span>
             {move && (
               <span

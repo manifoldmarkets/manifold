@@ -17,6 +17,7 @@ import {
   boardMarkets,
   applyMetricRead,
   boardPositions,
+  callResult,
   NO_READS,
   tradeTargets,
   watchlist,
@@ -508,4 +509,64 @@ test('applyMetricRead: an older targeted read loses to a newer full read', () =>
   // And a later read still replaces it.
   reads = applyMetricRead(reads, { x: [] }, 6)
   assert.deepEqual(reads.metrics.x, [])
+})
+
+test('callResult reads the resolution, not the last price', () => {
+  // AL-2's audited candidate binary on Shomari Figures (D), resolved NO
+  // while trading at 70%: he lost; NO is any other winner, not "D won".
+  const al2 = (resolution: 'YES' | 'NO') =>
+    ({
+      ...race('AL-2', { dem: 0.7, rep: 0.3, other: 0 }),
+      id: 'AL-2',
+      mode: 'house',
+      district: 2,
+      candidates: raceCandidates('house', 'AL-2'),
+      contract: binary(0.7, 0, {
+        id: '2gnh0c6NqI',
+        slug: 'will-democrat-shomari-figures-win-a',
+        isResolved: true,
+        resolution,
+      }),
+    } as BoardRace)
+  const lost = callResult(al2('NO'))
+  assert.match(lost?.text ?? '', /Figures lost/)
+  assert.equal(lost?.tone, undefined)
+  const won = callResult(al2('YES'))
+  assert.match(won?.text ?? '', /Figures won/)
+  assert.equal(won?.tone, 'dem')
+
+  // An unaudited binary asks whether the Republican wins: NO is the
+  // Democrat, wherever the price was.
+  const party = callResult(
+    race(
+      'ZZ',
+      { dem: 0.2, rep: 0.8, other: 0 },
+      binary(0.8, 0, { isResolved: true, resolution: 'NO' })
+    )
+  )
+  assert.equal(party?.text, 'Democratic won')
+  assert.equal(party?.tone, 'dem')
+
+  // Open markets have no call.
+  assert.equal(
+    callResult(race('ZZ', { dem: 0.5, rep: 0.5, other: 0 })),
+    undefined
+  )
+})
+
+test('callResult names a multi-choice winner from contract.resolution', () => {
+  const contract = {
+    ...multi([
+      answer('Democratic Party', 0.7, 0),
+      answer('Republican Party', 0.3, 0),
+    ]),
+    isResolved: true,
+    // The winner, by answer id; the answers' own resolutions stay empty.
+    resolution: 'Republican Party',
+  } as CPMMMultiContract
+  const result = callResult(
+    race('ZZ', { dem: 0.7, rep: 0.3, other: 0 }, contract)
+  )
+  assert.equal(result?.text, 'Republican won')
+  assert.equal(result?.tone, 'rep')
 })

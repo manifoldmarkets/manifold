@@ -153,13 +153,18 @@ const MAX_RETRIES = 8
 
 // The page was built before this stream became the board (it switches live
 // with the schedule), so its props have no map yet. Refetch them until the
-// next build has the map: props update in place, without a reload.
+// next build has the map: props update in place, without a reload. Each try
+// skips Next's client data cache, which would otherwise hand back the same
+// map-less props every time.
 function MapLoading() {
   const [tries, setTries] = useState(0)
   useEffect(() => {
     if (tries >= MAX_RETRIES) return
     const timeout = setTimeout(() => {
-      Router.replace(Router.asPath, undefined, { scroll: false })
+      Router.replace(Router.asPath, undefined, {
+        scroll: false,
+        unstable_skipClientCache: true,
+      })
         .catch(() => false)
         .finally(() => setTries((t) => t + 1))
     }, RETRY_MS)
