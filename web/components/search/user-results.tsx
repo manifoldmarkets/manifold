@@ -8,8 +8,12 @@ import { isUserLikelySpammer } from 'common/user'
 
 export const MAX_SHOWN = 9
 
-export function UserResults(props: { userResults: FullUser[] }) {
-  const { userResults } = props
+export function UserResults(props: {
+  userResults: FullUser[]
+  showHeading?: boolean
+  initialShown?: number
+}) {
+  const { userResults, showHeading = true, initialShown = MAX_SHOWN } = props
   const [expanded, setExpanded] = useState(false)
 
   const nonSpamUsers = userResults.filter(
@@ -18,10 +22,10 @@ export function UserResults(props: { userResults: FullUser[] }) {
   // Determine initial users: prefer non-spammers, but show spammers if they are the only results.
   let initialUsersToShow: FullUser[]
   if (nonSpamUsers.length > 0) {
-    initialUsersToShow = nonSpamUsers.slice(0, MAX_SHOWN)
+    initialUsersToShow = nonSpamUsers.slice(0, initialShown)
   } else if (userResults.length > 0) {
     // Show spammers if no non-spammers exist
-    initialUsersToShow = userResults.slice(0, MAX_SHOWN)
+    initialUsersToShow = userResults.slice(0, initialShown)
   } else {
     initialUsersToShow = []
   }
@@ -31,14 +35,16 @@ export function UserResults(props: { userResults: FullUser[] }) {
   const shouldShowButton = numInitiallyHidden > 0
 
   return (
-    <Col className="mb-4 px-2 sm:px-0">
-      <Row className="text-ink-500 items-center gap-1 text-sm">
-        <hr className="border-ink-300 ml-2 grow sm:ml-0" />
-        <span>
-          {userResults.length} user{userResults.length > 1 && 's'}
-        </span>
-        <hr className="border-ink-300 mr-2 grow sm:mr-0" />
-      </Row>
+    <Col className={showHeading ? 'mb-4 px-2 sm:px-0' : undefined}>
+      {showHeading && (
+        <Row className="text-ink-500 items-center gap-1 text-sm">
+          <hr className="border-ink-300 ml-2 grow sm:ml-0" />
+          <span>
+            {userResults.length} user{userResults.length > 1 && 's'}
+          </span>
+          <hr className="border-ink-300 mr-2 grow sm:mr-0" />
+        </Row>
+      )}
       <Row className="flex-wrap gap-1 text-sm">
         {shownUsers.map((u) => (
           <Link
