@@ -198,11 +198,15 @@ describe('resolveF1Markets', () => {
     expect(getF1Sessions).not.toHaveBeenCalled()
   })
 
-  // A market waiting on a session the provider doesn't list.
+  // A market waiting on a session the provider doesn't list, closed just
+  // now, so not yet a person's job.
   const stuck = (n: number) =>
     Array.from({ length: n }, (_, i) => {
       const m = market(`stuck${i}`, 'winner', [11, 22, 33, null])
-      return { ...m, data: { ...m.data, sportsEventId: 'bdl-f1:374:9999' } }
+      return {
+        ...m,
+        data: { ...m.data, closeTime: NOW, sportsEventId: 'bdl-f1:374:9999' },
+      }
     })
 
   it('pays a market waiting behind a hundred stuck ones', async () => {
@@ -434,23 +438,30 @@ describe('resolveF1Markets', () => {
   })
 
   it('waits for a final classification, then asks a person', async () => {
+    // Due at CLOSE + 2h (the race's start + 3h + 2h) while it isn't final.
+    jest.mocked(Date.now).mockReturnValue(CLOSE + 3 * HOUR_MS)
     jest.mocked(getF1Sessions).mockResolvedValue([session('delayed')])
     const db = database([winner], { winner: winnerAnswers })
     expect((await resolveF1Markets(db.pg)).waiting).toBe(1)
+    jest.mocked(Date.now).mockReturnValue(CLOSE + 4 * HOUR_MS)
+    expect((await resolveF1Markets(db.pg)).attention).toBe(1)
+    jest.mocked(log.error).mockClear()
 
-    // Final but empty, as the US Grand Prix was two days after the race.
+    // Final but empty, as the US Grand Prix was for over a week. First seen
+    // final at CLOSE + 1h, so due at CLOSE + 3h: just under two hours on it
+    // waits, two hours on it needs a person.
     jest.mocked(getF1Sessions).mockResolvedValue([session('final')])
     jest.mocked(getF1SessionResults).mockResolvedValue([])
     expect((await resolveF1Markets(db.pg)).waiting).toBe(1)
-    expect(log.error).not.toHaveBeenCalled()
-
-    // Due at CLOSE + 2h (the race's start + 3h + 2h): 11 hours on it waits,
-    // 13 hours on it needs a person.
-    jest.mocked(Date.now).mockReturnValue(CLOSE + 13 * HOUR_MS)
+    jest.mocked(Date.now).mockReturnValue(CLOSE + 5 * HOUR_MS - 60_000)
     expect((await resolveF1Markets(db.pg)).waiting).toBe(1)
-    jest.mocked(Date.now).mockReturnValue(CLOSE + 15 * HOUR_MS)
+    expect(log.error).not.toHaveBeenCalled()
+    jest.mocked(Date.now).mockReturnValue(CLOSE + 5 * HOUR_MS)
     const late = await resolveF1Markets(db.pg)
     expect(late.attention).toBe(1)
+    expect(late.log[0].reason).toBe(
+      'the session is final but has no classification yet, 2 hours after it was due'
+    )
     expect(log.error).toHaveBeenCalledTimes(1)
     expect(resolveMarketHelper).not.toHaveBeenCalled()
   })
@@ -1195,10 +1206,12 @@ describe('resolveF1TitleMarkets', () => {
     const db = titleDb([title('wdc', FINAL_CLOSE)], { wdc: driversAnswers() })
     jest.mocked(Date.now).mockReturnValue(FINAL_CLOSE + HOUR_MS)
     expect((await resolveF1TitleMarkets(db.pg)).waiting).toBe(1)
-    jest.mocked(Date.now).mockReturnValue(DUE + 13 * HOUR_MS)
+    jest.mocked(Date.now).mockReturnValue(DUE + 2 * HOUR_MS - 60_000)
+    expect((await resolveF1TitleMarkets(db.pg)).waiting).toBe(1)
+    jest.mocked(Date.now).mockReturnValue(DUE + 2 * HOUR_MS)
     const r = await resolveF1TitleMarkets(db.pg)
     expect(r.attention).toBe(1)
-    expect(r.log[0].reason).toMatch(/isn't over, 13 hours after it was due/)
+    expect(r.log[0].reason).toMatch(/isn't over, 2 hours after it was due/)
     expect(getF1DriverStandings).not.toHaveBeenCalled()
   })
 

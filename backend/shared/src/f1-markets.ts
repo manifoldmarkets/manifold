@@ -751,8 +751,13 @@ export async function createF1MarketsForActiveCalendar(
 
 const iso = (t: number) => new Date(t).toISOString().slice(0, 16) + 'Z'
 
-/** An unresolved market this long after it was due to pay out needs a person. */
-const ATTENTION_AFTER_MS = 12 * HOUR_MS
+/**
+ * An unresolved market this long after it was due to pay out needs a person.
+ * The provider posts results about ten minutes after a session, so a market
+ * still waiting by then has a feed problem, and in late 2026 those lasted
+ * days.
+ */
+const ATTENTION_AFTER_MS = 2 * HOUR_MS
 /**
  * A postponed session waits this long past its old time for a new date or
  * a cancellation before its market needs a person.
