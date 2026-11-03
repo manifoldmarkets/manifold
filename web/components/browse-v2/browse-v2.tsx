@@ -214,8 +214,12 @@ function BrowseV2Inner() {
     showMarkets && lensReady && urlReady
       ? {
           term: searching ? term : undefined,
+          enableSemanticSearch: term.trim() ? true : undefined,
           sort: searching ? 'score' : sortForLens(lens),
-          filter: lens === 'close-date' && !searching ? 'open' : filters.status,
+          filter:
+            lens === 'close-date' && !searching && filters.status === 'all'
+              ? 'open'
+              : filters.status,
           contractType: filters.contractType,
           liquidity: filters.liquidity,
           forYou: lens === 'for-you' && !searching ? '1' : '0',

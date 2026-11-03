@@ -12,7 +12,8 @@ import * as pgPromise from 'pg-promise'
  * (use a read-only reporting replica) and BROWSE_EXPERIMENT_START (the same UTC
  * timestamp as NEXT_PUBLIC_BROWSE_EXPERIMENT_START). No default primary access. Run from backend/scripts:
  *   yarn ts-node browse-redesign-report.ts YYYY-MM-DD [YYYY-MM-DD]
- * Dates delimit FIRST exposures in UTC; the end is exclusive, defaulting to
+ * Dates delimit FIRST exposures in UTC; the start may be the launch date,
+ * even when launch is after midnight. The end is exclusive, defaulting to
  * now so the launch-day counts are available immediately. Outcomes mature
  * for seven days after each first exposure, regardless of the requested end.
  *
@@ -56,9 +57,13 @@ if (
 
 const launch = new Date(process.env.BROWSE_EXPERIMENT_START ?? '')
 const connectionString = process.env.BROWSE_REPORT_DATABASE_URL
-if (!connectionString || !Number.isFinite(launch.getTime()) || launch > from) {
+if (
+  !connectionString ||
+  !Number.isFinite(launch.getTime()) ||
+  launch >= until
+) {
   throw new Error(
-    'Set BROWSE_REPORT_DATABASE_URL explicitly and BROWSE_EXPERIMENT_START no later than the cohort start.'
+    'Set BROWSE_REPORT_DATABASE_URL explicitly and BROWSE_EXPERIMENT_START before the cohort end.'
   )
 }
 const pgp = pgPromise()

@@ -277,6 +277,138 @@ function markets(api) {
     'web/lib/api/api': { api },
   }).useBrowseMarkets
 }
+
+// Exercise the actual Browse caller and pagination hook, replacing only the
+// surrounding widgets and network boundary.
+function browsePageFixture(query = {}, results = []) {
+  const empty = () => null
+  const shared = {
+    react: React,
+    'react/jsx-runtime': require('react/jsx-runtime'),
+    clsx: { default: require('clsx') },
+    '@heroicons/react/outline': {
+      SearchIcon: empty,
+      ViewGridIcon: empty,
+      ViewListIcon: empty,
+      XIcon: empty,
+    },
+  }
+  const lenses = load('web/components/browse-v2/lens-bar.tsx', {
+    ...shared,
+    '@headlessui/react': {},
+    '@heroicons/react/solid': {},
+    'common/topics': { SEARCH_TOPICS_TO_SUBTOPICS: {} },
+    'common/util/string': { removeEmojis: (value) => value },
+  })
+  const calls = []
+  let controls
+  window.matchMedia = () => ({
+    matches: false,
+    addEventListener() {},
+    removeEventListener() {},
+  })
+  const Market = ({ contract }) =>
+    React.createElement('div', { 'data-market-id': contract.id })
+  const { BrowseV2 } = load(
+    'web/components/browse-v2/browse-v2.tsx',
+    {
+      ...shared,
+      'client-common/hooks/use-persistent-in-memory-state': {
+        usePersistentInMemoryState: React.useState,
+      },
+      'next/router': { useRouter: () => ({ isReady: true, query }) },
+      'web/components/widgets/visibility-observer': {
+        LoadMoreUntilNotVisible: empty,
+      },
+      'web/hooks/use-persistent-local-state': persistent,
+      'web/hooks/use-is-mobile': { useIsMobile: () => false },
+      'web/hooks/use-user': { useUser: () => null },
+      'web/lib/firebase/users': { firebaseLogin: empty },
+      'web/lib/service/analytics': { track: empty },
+      'web/lib/supabase/groups': { listGroupsBySlug: async () => [] },
+      './browse-topics': {
+        BrowseTopicsProvider: ({ children }) => children,
+        useBrowseTopics: () => ({
+          version: 0,
+          followed: [],
+          isExcluded: () => false,
+        }),
+      },
+      './hub-cards': { HubCards: empty },
+      './hub-fold': { isHubMarket: () => false },
+      './lens-bar': {
+        ...lenses,
+        LensBar: (props) => {
+          controls = props
+          return null
+        },
+      },
+      './market-card': {
+        MarketCard: Market,
+        MarketListRow: Market,
+        MarketCardSkeleton: empty,
+        MarketRowSkeleton: empty,
+      },
+      './market-shelves': {
+        ClosingSoonList: empty,
+        MoversStrip: empty,
+        NewMarketsList: empty,
+      },
+      './use-browse-markets': {
+        useBrowseMarkets: markets(async (endpoint, params) => {
+          assert.equal(endpoint, 'search-markets-full')
+          calls.push(params)
+          return results
+        }),
+      },
+      './your-topics-modal': { YourTopicsModal: empty },
+      './use-scroll-reveal': { useScrollReveal: empty },
+      './search-results': { SearchResults: empty, SearchTabs: empty },
+    },
+    { ...globals, setTimeout, clearTimeout }
+  )
+  return {
+    calls,
+    get controls() {
+      return controls
+    },
+    mount: () => mount(() => React.createElement(BrowseV2), true),
+  }
+}
+
+test('Closing soonest preserves closing-week and substitutes open for all', async () => {
+  const f = browsePageFixture({ s: 'close-date', f: 'closing-week' })
+  await f.mount()
+  assert.equal(f.calls.at(-1).sort, 'close-date')
+  assert.equal(f.calls.at(-1).filter, 'closing-week')
+  await act(async () =>
+    f.controls.onFilters({ ...f.controls.filters, status: 'all' })
+  )
+  assert.equal(f.calls.at(-1).sort, 'close-date')
+  assert.equal(f.calls.at(-1).filter, 'open')
+})
+
+test('Browse enables semantic text search, omits it for browsing and keeps server order', async () => {
+  const f = browsePageFixture({ q: '  climate  ' }, [
+    { id: 'z-lexical', searchMatchType: 'lexical' },
+    { id: 'a-semantic', searchMatchType: 'semantic' },
+  ])
+  await f.mount()
+  assert.equal(f.calls.at(-1).term, 'climate')
+  assert.equal(f.calls.at(-1).enableSemanticSearch, true)
+  assert.deepEqual(
+    [...document.querySelectorAll('[data-market-id]')].map((element) =>
+      element.getAttribute('data-market-id')
+    ),
+    ['z-lexical', 'a-semantic']
+  )
+  for (const query of [{}, { q: '   ' }]) {
+    const browsing = browsePageFixture(query)
+    await browsing.mount()
+    assert.equal(browsing.calls.at(-1).enableSemanticSearch, undefined)
+  }
+})
+
 function browseFixture() {
   const AuthContext = React.createContext(null)
   const events = []

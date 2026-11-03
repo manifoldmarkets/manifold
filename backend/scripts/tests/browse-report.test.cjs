@@ -54,6 +54,111 @@ async function report(db, parameters = args(), explain = false) {
   }
 }
 
+// Run the real CLI validation and SQL with a fixed clock and an in-memory DB.
+async function reportCli(db, start, end, launch) {
+  let finish
+  const done = new Promise((resolve) => (finish = resolve))
+  let rows
+  let error
+  const pgp = Object.assign(
+    () => ({
+      tx: (_mode, run) =>
+        run({
+          none: async () => {},
+          manyOrNone: (query, parameters) => {
+            assert.equal(query, sql)
+            return report(db, parameters)
+          },
+        }),
+    }),
+    {
+      txMode: {
+        TransactionMode: class {},
+        isolationLevel: { repeatableRead: 'repeatable read' },
+      },
+      end: () => finish(),
+    }
+  )
+  load(
+    'backend/scripts/browse-redesign-report.ts',
+    { 'common/browse-rollout': rules, fs, path, 'pg-promise': () => pgp },
+    {
+      __dirname: path.join(__dirname, '..'),
+      Date: class extends Date {
+        constructor(value) {
+          super(value ?? day(13))
+        }
+      },
+      process: {
+        argv: ['node', 'browse-redesign-report.ts', start, end],
+        env: {
+          BROWSE_REPORT_DATABASE_URL: 'postgres://unused/report',
+          BROWSE_EXPERIMENT_START: launch,
+        },
+      },
+      console: {
+        log() {},
+        table: (value) => (rows = value),
+        error: (...parts) => (error = new Error(parts.join(' '))),
+      },
+    }
+  )
+  await done
+  if (error) throw error
+  return rows
+}
+
+test('report CLI includes a midday launch date and rejects launch at or after the end', async () => {
+  const db = await database()
+  const launch = '2026-11-05T14:00:00Z'
+  try {
+    for (const [browserId, time] of [
+      ['before-only', '2026-11-05T13:00:00Z'],
+      ['launch-day', '2026-11-05T13:00:00Z'],
+      ['launch-day', launch],
+      ['launch-day', day(7)],
+      ['after-window', day(6)],
+    ]) {
+      await db.query(
+        'insert into user_events (ts, name, data) values ($1,$2,$3)',
+        [
+          time,
+          rules.BROWSE_EXPOSURE_EVENT,
+          {
+            experiment: rules.BROWSE_EXPERIMENT,
+            environment: 'production',
+            browserId,
+            deviceId: browserId,
+            cohort: 'new-visitor',
+            variant: 'control',
+            signedInAtEnrollment: false,
+          },
+        ]
+      )
+    }
+    await db.exec(`
+      insert into users values ('pre-launch','2026-11-05T13:00Z'),('signup','2026-11-05T15:00Z');
+      insert into private_users values ('pre-launch','{"initialDeviceToken":"launch-day"}'),('signup','{"initialDeviceToken":"launch-day"}');
+      insert into contract_bets values ('trade','signup','2026-11-05T16:00Z',10,20,false,false);
+    `)
+    const rows = await reportCli(db, '2026-11-05', '2026-11-06', launch)
+    assert.equal(rows.length, 1)
+    assert.equal(rows[0].browsers, 1)
+    assert.equal(rows[0].mature_browsers, 1)
+    assert.equal(rows[0].signups_7d, 1)
+    assert.equal(rows[0].activated_7d, 1)
+    assert.equal(rows[0].returned_days_1_to_7, 1)
+    for (const lateLaunch of [day(6), '2026-11-06T14:00:00Z']) {
+      await assert.rejects(
+        reportCli(db, '2026-11-05', '2026-11-06', lateLaunch),
+        /BROWSE_EXPERIMENT_START before the cohort end/
+      )
+    }
+  } finally {
+    await db.close()
+  }
+})
+
 test('report preserves first assignment, UTC windows, maturity, rotating tokens and funded signup activation', async () => {
   const db = await database()
   try {
