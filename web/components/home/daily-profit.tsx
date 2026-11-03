@@ -32,6 +32,7 @@ type DailyProfitData = APIResponse<'get-daily-changed-metrics-and-contracts'>
 // Module-level so remounts (navigation, StrictMode) share one request per user
 // and the throttle survives them.
 const lastFetchTimeByUserId: Record<string, number> = {}
+const lastResultByUserId: Record<string, DailyProfitData | undefined> = {}
 const inFlightByUserId: Record<string, Promise<DailyProfitData> | undefined> =
   {}
 
@@ -39,17 +40,24 @@ const fetchDailyProfit = (userId: string, balance: number) => {
   const pending = inFlightByUserId[userId]
   if (pending) return pending
   lastFetchTimeByUserId[userId] = Date.now()
-  const request = api('get-daily-changed-metrics-and-contracts', {
-    limit: 24,
-    userId,
-    balance,
-  }).finally(() => {
-    delete inFlightByUserId[userId]
-    // Time the next refetch from the response: the server caches the result
-    // from when it finished computing, so a refetch timed from the request
-    // could land inside that cache and get the same snapshot back.
-    lastFetchTimeByUserId[userId] = Date.now()
-  })
+  const request = api(
+    'get-daily-changed-metrics-and-contracts',
+    { limit: 24, userId, balance },
+    // The server caches this for a minute. The endpoint's 15-minute HTTP
+    // cache would replay a stale snapshot stored under this balance's URL.
+    { cache: 'no-store' }
+  )
+    .then((result) => {
+      lastResultByUserId[userId] = result
+      return result
+    })
+    .finally(() => {
+      delete inFlightByUserId[userId]
+      // Time the next refetch from the response: the server caches the result
+      // from when it finished computing, so a refetch timed from the request
+      // could land inside that cache and get the same snapshot back.
+      lastFetchTimeByUserId[userId] = Date.now()
+    })
   inFlightByUserId[userId] = request
   return request
 }
@@ -62,46 +70,60 @@ export const DailyProfit = function DailyProfit(props: {
   const [data, setData] = usePersistentInMemoryState<
     DailyProfitData | undefined
   >(undefined, 'daily-profit-' + user?.id)
-  const hasDataRef = useRef(data !== undefined)
-  hasDataRef.current = data !== undefined
-
   const userId = user?.id
   const balance = user ? Math.floor(user.balance) : undefined
+  // Updated during render, before the persistent setter switches to the new
+  // user's key in a layout effect, so a response for the previous user is
+  // dropped rather than written under the current user's key.
+  const currentUserIdRef = useRef(userId)
+  currentUserIdRef.current = userId
+
   useEffect(() => {
     if (!userId || balance === undefined) return
+    // A response that landed after an unmount can still fill the widget.
+    const lastResult = lastResultByUserId[userId]
+    if (!data && lastResult) setData(lastResult)
     // The server recomputes the user's whole portfolio for this, and the
     // balance changes on every trade. Refetch at most once a minute, only
     // while the tab is visible, using the latest balance when the wait ends.
     let timeout: ReturnType<typeof setTimeout> | undefined
     let fetched = false
-    // Set on cleanup, so a response for a previous user or balance is never
-    // applied by this instance (the setter targets the current user's key).
     let cancelled = false
     const refresh = () => {
       timeout = undefined
       if (fetched || cancelled || document.visibilityState === 'hidden') return
-      const joinRequest = inFlightByUserId[userId] !== undefined
+      const lastFetchTime = lastFetchTimeByUserId[userId]
+      // Joining the request in flight costs nothing, and a user's first
+      // request goes out at once. Otherwise wait a minute after the last
+      // response, whatever is on screen.
       const wait =
-        hasDataRef.current && !joinRequest
-          ? (lastFetchTimeByUserId[userId] ?? 0) +
-            DAILY_PROFIT_REFRESH_MS -
-            Date.now()
-          : 0
+        inFlightByUserId[userId] || lastFetchTime === undefined
+          ? 0
+          : lastFetchTime + DAILY_PROFIT_REFRESH_MS - Date.now()
       if (wait > 0) {
         timeout = setTimeout(refresh, wait)
         return
       }
       fetched = true
-      fetchDailyProfit(userId, balance).then((result) => {
-        if (cancelled) return
-        setData(result)
-        // A cached or shared response can predate this balance. Try again
-        // once the server's cache has expired so the last trade shows up.
-        if (result.balance !== balance) {
+      fetchDailyProfit(userId, balance).then(
+        (result) => {
+          if (cancelled || currentUserIdRef.current !== userId) return
+          setData(result)
+          // A cached or shared response can predate this balance. Try again
+          // once the server's cache has expired so the last trade shows up.
+          if (result.balance !== balance) {
+            fetched = false
+            refresh()
+          }
+        },
+        (error) => {
+          if (cancelled) return
+          console.error('Failed to load daily profit', error)
+          // Retry a minute after the failure, while the tab is visible.
           fetched = false
           refresh()
         }
-      })
+      )
     }
     const onVisibilityChange = () => {
       if (!timeout) refresh()
@@ -123,9 +145,13 @@ export const DailyProfit = function DailyProfit(props: {
   useEffect(() => {
     if (!openMana || data || !userId || balance === undefined) return
     let cancelled = false
-    fetchDailyProfit(userId, balance).then((result) => {
-      if (!cancelled) setData(result)
-    })
+    fetchDailyProfit(userId, balance).then(
+      (result) => {
+        if (!cancelled && currentUserIdRef.current === userId) setData(result)
+      },
+      // The main effect logs failures and retries.
+      () => {}
+    )
     return () => {
       cancelled = true
     }
