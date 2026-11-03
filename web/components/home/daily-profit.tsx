@@ -19,6 +19,7 @@ import { TRADE_TERM } from 'common/envs/constants'
 import { api } from 'web/lib/api/api'
 import { APIResponse } from 'common/api/schema'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { useSafeLayoutEffect } from 'client-common/hooks/use-safe-layout-effect'
 import { TokenNumber } from '../widgets/token-number'
 import { floatingEqual } from 'common/util/math'
 import { MINUTE_MS } from 'common/util/time'
@@ -72,11 +73,14 @@ export const DailyProfit = function DailyProfit(props: {
   >(undefined, 'daily-profit-' + user?.id)
   const userId = user?.id
   const balance = user ? Math.floor(user.balance) : undefined
-  // Updated during render, before the persistent setter switches to the new
-  // user's key in a layout effect, so a response for the previous user is
-  // dropped rather than written under the current user's key.
+  // The persistent setter switches to the new user's key in a layout effect
+  // (useEvent). This one runs in the same commit, right after it, so a response
+  // for the previous user is dropped rather than written under the new key, and
+  // a render React abandons never changes it.
   const currentUserIdRef = useRef(userId)
-  currentUserIdRef.current = userId
+  useSafeLayoutEffect(() => {
+    currentUserIdRef.current = userId
+  })
 
   useEffect(() => {
     if (!userId || balance === undefined) return
@@ -141,21 +145,8 @@ export const DailyProfit = function DailyProfit(props: {
   const manaInvestmentValue = data?.manaInvestmentValue ?? 0
   const manaNetWorth = manaInvestmentValue + (data?.balance ?? 0)
 
+  // The modal shows loading rows until the effect above has data.
   const [openMana, setOpenMana] = useState(false)
-  useEffect(() => {
-    if (!openMana || data || !userId || balance === undefined) return
-    let cancelled = false
-    fetchDailyProfit(userId, balance).then(
-      (result) => {
-        if (!cancelled && currentUserIdRef.current === userId) setData(result)
-      },
-      // The main effect logs failures and retries.
-      () => {}
-    )
-    return () => {
-      cancelled = true
-    }
-  }, [userId, openMana])
 
   return (
     <>
