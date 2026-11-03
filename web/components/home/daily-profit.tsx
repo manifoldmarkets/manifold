@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/solid'
 import { TrendingUpIcon } from '@heroicons/react/outline'
@@ -21,8 +21,12 @@ import { APIResponse } from 'common/api/schema'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { TokenNumber } from '../widgets/token-number'
 import { floatingEqual } from 'common/util/math'
+import { MINUTE_MS } from 'common/util/time'
 
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
+const DAILY_PROFIT_REFRESH_MS = MINUTE_MS
+// Module-level so navigating back to a page with the widget doesn't refetch.
+const lastFetchTimeByUserId: Record<string, number> = {}
 
 export const DailyProfit = function DailyProfit(props: {
   user: User | null | undefined
@@ -32,15 +36,48 @@ export const DailyProfit = function DailyProfit(props: {
   const [data, setData] = usePersistentInMemoryState<
     APIResponse<'get-daily-changed-metrics-and-contracts'> | undefined
   >(undefined, 'daily-profit-' + user?.id)
+  const hasDataRef = useRef(data !== undefined)
+  hasDataRef.current = data !== undefined
 
+  const userId = user?.id
+  const balance = user ? Math.floor(user.balance) : undefined
   useEffect(() => {
-    if (!user) return
-    api('get-daily-changed-metrics-and-contracts', {
-      limit: 24,
-      userId: user.id,
-      balance: Math.floor(user.balance),
-    }).then(setData)
-  }, [user?.balance])
+    if (!userId || balance === undefined) return
+    // The server recomputes the user's whole portfolio for this, and the
+    // balance changes on every trade. Refetch at most once a minute, only
+    // while the tab is visible, using the latest balance when the wait ends.
+    let timeout: ReturnType<typeof setTimeout> | undefined
+    let fetched = false
+    const refresh = () => {
+      timeout = undefined
+      if (fetched || document.visibilityState === 'hidden') return
+      const wait = hasDataRef.current
+        ? (lastFetchTimeByUserId[userId] ?? 0) +
+          DAILY_PROFIT_REFRESH_MS -
+          Date.now()
+        : 0
+      if (wait > 0) {
+        timeout = setTimeout(refresh, wait)
+        return
+      }
+      fetched = true
+      lastFetchTimeByUserId[userId] = Date.now()
+      api('get-daily-changed-metrics-and-contracts', {
+        limit: 24,
+        userId,
+        balance,
+      }).then(setData)
+    }
+    const onVisibilityChange = () => {
+      if (!timeout) refresh()
+    }
+    refresh()
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      clearTimeout(timeout)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [userId, balance])
 
   const manaProfit = data?.manaProfit ?? 0
   const manaInvestmentValue = data?.manaInvestmentValue ?? 0
