@@ -31,7 +31,7 @@ import { ControlBetDialog } from 'web/components/usa-map/control-card'
 import { electionOdds } from 'web/components/usa-map/election-map-model'
 import { formatOdds } from 'web/components/usa-map/election-display'
 import { DEM_COLOR, REP_COLOR } from 'web/components/usa-map/state-election-map'
-import { FloatingChat } from './floating-chat'
+import { useTVChat } from './tv-chat'
 import { ScheduleTVModal } from './schedule-tv-modal'
 import { ScheduleItem } from './tv-schedule'
 import { TVStreamPlayer } from './tv-stream'
@@ -74,6 +74,7 @@ export function TVElectionDisplay(props: {
   const [showSettings, setShowSettings] = useState(false)
   const [raceOpen, setRaceOpen] = useState(false)
   const channelId = `tv-${stream.id}`
+  const chat = useTVChat({ channelId, makeRoom: raceOpen })
   const live =
     dayjs().isAfter(stream.start_time) && dayjs().isBefore(stream.end_time)
 
@@ -98,6 +99,7 @@ export function TVElectionDisplay(props: {
             stream={stream}
             electionMap={electionMap}
             onRaceOpen={setRaceOpen}
+            chatDock={chat.docked}
             header={
               <StreamHeader
                 stream={stream}
@@ -109,17 +111,24 @@ export function TVElectionDisplay(props: {
             }
           />
         ) : (
-          <>
-            <TVStreamPlayer stream={stream} />
-            <StreamHeader
-              stream={stream}
-              live={live}
-              canModify={isStreamCreator || isMod}
-              isStreamCreator={isStreamCreator}
-              onModify={() => setShowSettings(true)}
-            />
-            <MapLoading />
-          </>
+          <div className="xl:flex xl:items-start xl:gap-4 xl:px-2">
+            <div className="contents xl:block xl:min-w-0 xl:flex-1 xl:pt-2">
+              <TVStreamPlayer stream={stream} className="xl:rounded-lg" />
+              <StreamHeader
+                stream={stream}
+                live={live}
+                canModify={isStreamCreator || isMod}
+                isStreamCreator={isStreamCreator}
+                onModify={() => setShowSettings(true)}
+              />
+              <MapLoading />
+            </div>
+            {chat.docked && (
+              <aside className="sticky top-0 hidden h-screen w-[350px] shrink-0 py-2 xl:block">
+                {chat.docked}
+              </aside>
+            )}
+          </div>
         )}
       </div>
       <ScheduleTVModal
@@ -128,7 +137,7 @@ export function TVElectionDisplay(props: {
         stream={stream}
         slug={TV_ELECTION_BOARD_ID}
       />
-      <FloatingChat channelId={channelId} makeRoom={raceOpen} />
+      {chat.floating}
     </Page>
   )
 }
@@ -234,8 +243,10 @@ function ElectionBoard(props: {
   electionMap: ElectionMapProps
   header: ReactNode
   onRaceOpen: (open: boolean) => void
+  // The pinned chat (desktop), shown under the race lists.
+  chatDock: ReactNode
 }) {
-  const { stream, electionMap, header, onRaceOpen } = props
+  const { stream, electionMap, header, onRaceOpen, chatDock } = props
   const { subscriptions, live } = useLiveElectionMap(electionMap)
   // A day ago, from the page's own snapshot, where each price and its
   // probChanges were read together (see pricedADayAgo). Live prices are
@@ -277,7 +288,8 @@ function ElectionBoard(props: {
   const trades = useBoardTrades(races, board)
 
   // Phones and tablets get one tab strip with the map in it; from xl the
-  // lists sit beside the stream and the map spans the page below.
+  // stream and then the map run down the left, beside a sticky column with
+  // the race lists and, when pinned, the chat.
   const [tab, setTab] = usePersistentInMemoryState<BoardTab>(
     'map',
     `tv-election-tab-${stream.id}`
@@ -329,8 +341,8 @@ function ElectionBoard(props: {
       {subscriptions}
       {/* Below xl these wrappers are `contents`, so the phone's sticky
           stream stays pinned for the whole page, not just this block. */}
-      <div className="contents xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(320px,380px)] xl:gap-4 xl:px-2 xl:pt-2">
-        <div className="contents xl:flex xl:flex-col">
+      <div className="contents xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(320px,370px)] xl:items-start xl:gap-4 xl:px-2">
+        <div className="contents xl:flex xl:min-w-0 xl:flex-col xl:pt-2">
           <TVStreamPlayer stream={stream} className="xl:rounded-lg" />
           {header}
           <ControlStrip
@@ -338,9 +350,45 @@ function ElectionBoard(props: {
             house={board.houseControl}
             className="px-3 sm:px-4 xl:px-0"
           />
+
+          <BoardTabs
+            tabs={BOARD_TABS}
+            tab={tab}
+            onTab={(t) => {
+              setTab(t)
+              track('tv election tab', { tab: t })
+            }}
+            counts={counts}
+            className="mx-3 mt-3 sm:mx-4 xl:hidden"
+          />
+          {tab !== 'map' && (
+            <div className="isolate mx-3 mt-1 min-h-[50vh] pb-24 sm:mx-4 xl:hidden">
+              {panel(tab)}
+            </div>
+          )}
+
+          {/* One explorer for every layout, hidden (not unmounted) behind the
+              other tabs so its zoom and selection survive. */}
+          <div
+            ref={mapRef}
+            className={clsx(
+              'mt-3 scroll-mt-2 px-1 pb-24 sm:px-2 xl:mt-4 xl:px-0',
+              tab !== 'map' && 'max-xl:hidden'
+            )}
+          >
+            <LiveElectionExplorer
+              live={live}
+              linkedMarketCounts={electionMap.linkedMarketCounts}
+              focus={focus}
+              hideControls
+              onSelect={setMapRace}
+              hideDetails={mapHidden}
+            />
+          </div>
         </div>
-        <aside className="border-ink-200 bg-canvas-0 relative isolate hidden min-h-[480px] rounded-lg border xl:block">
-          <div className="absolute inset-0 flex flex-col">
+
+        <aside className="sticky top-0 hidden h-screen flex-col gap-2 py-2 xl:flex">
+          <div className="border-ink-200 bg-canvas-0 isolate flex min-h-0 flex-1 flex-col rounded-lg border">
             <BoardTabs
               tabs={BOARD_TABS.filter((t) => t.id !== 'map')}
               tab={railTab}
@@ -352,42 +400,10 @@ function ElectionBoard(props: {
               {panel(railTab)}
             </div>
           </div>
+          {chatDock && (
+            <div className="flex min-h-0 flex-1 flex-col">{chatDock}</div>
+          )}
         </aside>
-      </div>
-
-      <BoardTabs
-        tabs={BOARD_TABS}
-        tab={tab}
-        onTab={(t) => {
-          setTab(t)
-          track('tv election tab', { tab: t })
-        }}
-        counts={counts}
-        className="mx-3 mt-3 sm:mx-4 xl:hidden"
-      />
-      {tab !== 'map' && (
-        <div className="isolate mx-3 mt-1 min-h-[50vh] pb-24 sm:mx-4 xl:hidden">
-          {panel(tab)}
-        </div>
-      )}
-
-      {/* One explorer for every layout, hidden (not unmounted) behind the
-          other tabs so its zoom and selection survive. */}
-      <div
-        ref={mapRef}
-        className={clsx(
-          'mt-3 scroll-mt-2 px-1 pb-24 sm:px-2 xl:mt-6',
-          tab !== 'map' && 'max-xl:hidden'
-        )}
-      >
-        <LiveElectionExplorer
-          live={live}
-          linkedMarketCounts={electionMap.linkedMarketCounts}
-          focus={focus}
-          hideControls
-          onSelect={setMapRace}
-          hideDetails={mapHidden}
-        />
       </div>
     </>
   )

@@ -23,7 +23,7 @@ import {
 import { ScheduleItem } from './tv-schedule'
 import { ScheduleTVModal } from './schedule-tv-modal'
 import { TVStreamPlayer } from './tv-stream'
-import { FloatingChat } from './floating-chat'
+import { useTVChat } from './tv-chat'
 import { TRADE_TERM } from 'common/envs/constants'
 import { UserBetsSummary } from '../bet/user-bet-summary'
 import { MarketTitleLabel } from '../contract/market-title-label'
@@ -69,6 +69,7 @@ export function TVDisplay(props: {
   )
 
   const channelId = `tv-${stream?.id ?? 'default'}`
+  const chat = useTVChat({ channelId })
 
   return (
     <Page trackPageView="tv page" className="!mt-0 xl:col-span-10 xl:pr-0">
@@ -137,8 +138,14 @@ export function TVDisplay(props: {
             />
           </Row>
         </Col>
+
+        {chat.docked && (
+          <Col className="sticky top-0 ml-4 hidden h-screen w-[350px] shrink-0 py-2 xl:flex">
+            {chat.docked}
+          </Col>
+        )}
       </Row>
-      <FloatingChat channelId={channelId} />
+      {chat.floating}
     </Page>
   )
 }
