@@ -1,4 +1,4 @@
-# Seeds for the 2028 / 2030 / 2032 (and optional 2036) generic markets
+# Seeds for the 2028–2036 generic markets
 
 Stage A is what the committed manifests carry. We don't use Kalshi's prices: we don't have permission to use their data (decided 13 Oct 2026). The seeding that relied on them has been removed. Another
 market-price source can be added later if its terms allow this use.
@@ -38,8 +38,8 @@ For a unit *u* (state, DC, ME/NE elector district, or House district on the
 3. **Win probability**: `P(D) = Φ( lean / σ )`, with Φ the standard normal CDF
    and `σ = sigma2028[office] × horizonMultiplier(cycle)`, where
    `horizonMultiplier(cycle) = 1 + (cycle − 2028) / 12` (`horizonBaseCycle`,
-   `horizonYears` in `SEED_PARAMS`): 1, 7/6, 4/3 and 5/3 for 2028, 2030, 2032
-   and 2036. The formula reproduces the earlier fixed 2032/2036 multipliers
+   `horizonYears` in `SEED_PARAMS`): 1, 7/6, 4/3, 3/2 and 5/3 for 2028, 2030,
+   2032, 2034 and 2036. The formula reproduces the earlier fixed 2032/2036 multipliers
    exactly, so no 2028/2032/2036 seed changed when 2030 was added.
 
    | office    | σ for 2028 | 2030 (×7/6) | 2032 (×4/3) | 2036 (×5/3) |
@@ -104,6 +104,8 @@ entry's seed note):
 | 2030 Senate VT | 10% | Class 1 seat is Bernie Sanders's (independent since 2007), up in 2030; an independent winner, Sanders or a successor, is plausible. Same share as 2036. |
 | 2032 Senate AK | 5% | The same top-four/ranked-choice system and independent tradition as for the 2028 seat, with less specific evidence for this Class 2 seat. |
 | 2032 Senate ME | 6% | Strong independent tradition (Angus King; governors Longley and King) plus ranked-choice tabulation; Class 2 seat (Collins's). |
+| 2034 Senate AK | 8% | The Class 3 seat Lisa Murkowski won as a write-in in 2010; with top-four/RCV (if it survives the 2026 repeal vote) a non-party-line winner stays plausible. Same share as 2028. |
+| 2034 Senate UT | 6% | The Class 3 seat where Democrats endorsed independent Evan McMullin in 2022 and he took 42.8% against Mike Lee. Same share as 2028. |
 | 2032 Senate NE | 10% | Independent Dan Osborn took 46.5% against Deb Fischer in 2024 with no Democratic nominee and is the 2026 challenger to Pete Ricketts for this Class 2 seat. |
 | 2036 Senate ME | 10% | Class 1 seat is Angus King's (independent); his successor race may again feature a serious independent. |
 | 2036 Senate NE | 5% | Osborn-style independent candidacies ran in 2024 and 2026; Class 1 seat (Fischer's). |
@@ -111,6 +113,7 @@ entry's seed note):
 
 The 2030 list is the 2036 Class 1 list (Maine, Nebraska, Vermont) with the
 same shares: the same seats, kept consistent with the reviewed 2036 values.
+Likewise the 2034 list is the 2028 Class 3 list (Alaska, Utah).
 2030 is the year King's and Sanders's own seats are up, which could argue for
 more than 10%; that is left to the seed review (README, open questions).
 

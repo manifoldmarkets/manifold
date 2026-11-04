@@ -1,5 +1,5 @@
 {
-  "description": "Governorships elected in midterm years. Thirty-four states elect governors to four-year terms in midterm years; New Hampshire and Vermont elect every two years, so they vote in every cycle (their presidential-year races are in governors.json). The same 36 states that voted on November 3, 2026 vote again on November 5, 2030.",
+  "description": "Governorships elected in midterm years. Thirty-four states elect governors to four-year terms in midterm years; New Hampshire and Vermont elect every two years, so they vote in every cycle (their presidential-year races are in governors.json). The same 36 states that voted on November 3, 2026 vote again on November 5, 2030 and November 7, 2034.",
   "sources": [
     {
       "name": "Wikipedia — 2026 United States gubernatorial elections (36 states, election day November 3, 2026; New Hampshire and Vermont two-year terms; incumbents and their 2026 status)",

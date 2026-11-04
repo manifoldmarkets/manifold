@@ -33,7 +33,8 @@
     }
   ],
   "notes": [
-    "Class 3 (34 seats) is up in 2028, Class 1 (33) in 2030 and again in 2036, Class 2 (33) in 2032. The counts match the task brief.",
+    "Class 3 (34 seats) is up in 2028 and again in 2034, Class 1 (33) in 2030 and again in 2036, Class 2 (33) in 2032. The counts match the task brief.",
+    "2034 (added 2026-11-05) reuses the Class 3 seats listed for 2028. The incumbents are informational only (the generic markets name nobody); a special election or vacancy before 2034 does not change which seats are up.",
     "Class 1 for 2030 was re-verified on 2026-11-05: senate.gov's class pages answer automated requests with HTTP 403 that day, so the 33 states were checked against the congress-legislators file and Wikipedia's 2030 page instead. Same 33 states as on 2026-10-06.",
     "No special Senate election is scheduled for 2030 as of 2026-11-05. Two Class 1 senators were their party's nominees for governor on 2026-11-03 (Minnesota, Tennessee): a senator who becomes governor leaves the seat to an appointee and a special election for the rest of the term ending January 3, 2031, which is a different term from the 2030 regular election and is not in this inventory. Add a 2030 special when one is called.",
     "The Florida and Ohio Class 3 seats are filled by appointees (Moody, Husted) until the November 3, 2026 special elections; those specials cover the unexpired terms ending January 3, 2029, so both seats have their regular full-term election in 2028 as part of Class 3. They are not extra 2028 seats.",
@@ -42,8 +43,8 @@
   ],
   "classes": {
     "3": {
-      "cycles": [2028],
-      "termsExpire": { "2028": "2029-01-03" },
+      "cycles": [2028, 2034],
+      "termsExpire": { "2028": "2029-01-03", "2034": "2035-01-03" },
       "seats": [
         { "state": "AL", "incumbent": "Katie Britt", "party": "R" },
         { "state": "AK", "incumbent": "Lisa Murkowski", "party": "R" },

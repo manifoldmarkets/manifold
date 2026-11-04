@@ -44,6 +44,18 @@
       "modelledOn": "2028-us-elections"
     },
     {
+      "slug": "2034-us-elections",
+      "suggestedName": "2034 US Elections",
+      "usedBy": ["every 2034 market"],
+      "modelledOn": "2030-us-elections ('2034 Midterms' is the alternative name)"
+    },
+    {
+      "slug": "2034-us-congressional-elections",
+      "suggestedName": "2034 US Congressional Elections",
+      "usedBy": ["2034 senate"],
+      "modelledOn": "2026-us-congressional-elections"
+    },
+    {
       "slug": "2036-us-elections",
       "suggestedName": "2036 US Elections",
       "usedBy": ["every 2036 market"],

@@ -1,4 +1,4 @@
-// Regression tests for the 2028/2030/2032 (+ optional 2036) manifest
+// Regression tests for the 2028, 2030, 2032, 2034 and 2036 manifest
 // generator. Run from the repository root:
 //   TS_NODE_PROJECT=backend/scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 \
 //     node -r ts-node/register --test backend/scripts/elections-2028-2036/generate-manifests.test.ts
@@ -18,7 +18,6 @@ import {
   EXPECTED_ELECTION_DATES,
   longDate,
   noonUtcAfter,
-  OPTIONAL_CYCLES,
 } from './cycles'
 import {
   buildManifest,
@@ -76,11 +75,20 @@ test('election days are the Tuesday after the first Monday in November', () => {
     '2030-11-06T12:00:00.000Z'
   )
   assert.equal(cycleConfig(2030).georgiaRunoffDate, '2030-12-03')
+  assert.equal(electionDay(2034), '2034-11-07')
+  assert.equal(
+    new Date(cycleConfig(2034).closeTime).toISOString(),
+    '2034-11-08T12:00:00.000Z'
+  )
+  assert.equal(cycleConfig(2034).georgiaRunoffDate, '2034-12-05')
+  assert.equal(
+    new Date(cycleConfig(2034).georgiaCloseTime).toISOString(),
+    '2034-12-06T12:00:00.000Z'
+  )
 })
 
-test('counts per cycle and office match the brief; 707 markets at Ṁ1,000 for 2028–2032, 808 with 2036', () => {
-  assert.deepEqual([...CYCLES], [2028, 2030, 2032, 2036])
-  assert.deepEqual([...OPTIONAL_CYCLES], [2036])
+test('counts per cycle and office match the brief: 878 markets at Ṁ1,000 for 2028–2036', () => {
+  assert.deepEqual([...CYCLES], [2028, 2030, 2032, 2034, 2036])
   let total = 0
   let mana = 0
   for (const cycle of CYCLES) {
@@ -100,15 +108,10 @@ test('counts per cycle and office match the brief; 707 markets at Ṁ1,000 for 2
   assert.equal(entriesOf(2028).length, 537)
   assert.equal(entriesOf(2030).length, 69)
   assert.equal(entriesOf(2032).length, 101)
+  assert.equal(entriesOf(2034).length, 70)
   assert.equal(entriesOf(2036).length, 101)
-  assert.equal(total, 808)
-  assert.equal(mana, 808_000)
-  const core = CYCLES.filter((c) => !OPTIONAL_CYCLES.includes(c))
-  assert.deepEqual(core, [2028, 2030, 2032])
-  assert.equal(
-    core.reduce((s, c) => s + built[c].totalMana, 0),
-    707_000
-  )
+  assert.equal(total, 878)
+  assert.equal(mana, 878_000)
 })
 
 test('every generated manifest validates with zero errors and is not approved', () => {
@@ -118,12 +121,8 @@ test('every generated manifest validates with zero errors and is not approved', 
     assert.equal(m.review.approved, false)
     assert.equal(m.series, `us-${cycle}-general-v1`)
     assert.equal(m.kind, 'races')
-    // 2036 says it is optional; the launch-scope cycles do not.
-    assert.equal(
-      /Optional cycle/.test(m.review.notes ?? ''),
-      OPTIONAL_CYCLES.includes(cycle),
-      `${cycle}`
-    )
+    // Every cycle through 2036 is planned; none is marked optional.
+    assert.doesNotMatch(m.review.notes ?? '', /optional/i, `${cycle}`)
   }
 })
 
@@ -329,6 +328,73 @@ test('2030 midterm: the 33 Class 1 seats and the 36 governorships of the 2026 cy
   assert.equal(source.sigma, Number(((20 * 7) / 6).toFixed(3)))
 })
 
+test('2034 midterm: the 34 Class 3 seats of 2028 and the 36 governorships of 2030', () => {
+  const statesOf = (cycle: number, office: string) =>
+    entriesOf(cycle)
+      .filter((e) => e.identity.office === office)
+      .map((e) => e.identity.state)
+      .sort()
+  assert.equal(statesOf(2034, 'senate').length, 34)
+  assert.deepEqual(statesOf(2034, 'senate'), statesOf(2028, 'senate'))
+  assert.deepEqual(statesOf(2034, 'governor'), statesOf(2030, 'governor'))
+  assert.equal(statesOf(2034, 'president').length, 0)
+  assert.equal(statesOf(2034, 'house').length, 0)
+  const cfg = cycleConfig(2034)
+  assert.equal(cfg.series, 'us-2034-general-v1')
+  for (const e of entriesOf(2034)) {
+    const { office, state } = e.identity
+    assert.match(e.raceKey, /^2034-(senate|governor)-[A-Z]{2}-regular-general$/)
+    assert.equal(
+      e.dashboard.list,
+      `${office === 'governor' ? 'governors' : office}2034`
+    )
+    if (office === 'senate')
+      assert.equal(
+        String(e.evidence?.seat),
+        'Class 3 seat; term beginning January 3, 2035'
+      )
+    // Georgia's runoff (December 5, 2034) keeps Senate and governor open.
+    assert.equal(
+      e.payload!.closeTime,
+      state === 'GA' ? cfg.georgiaCloseTime : cfg.closeTime,
+      e.raceKey
+    )
+    assert.ok(
+      e.payload!.descriptionMarkdown.includes('November 7, 2034'),
+      e.raceKey
+    )
+  }
+  const desc = (k: string) =>
+    entriesOf(2034).find((e) => e.raceKey === k)!.payload!.descriptionMarkdown
+  assert.ok(
+    desc('2034-senate-GA-regular-general').includes(
+      'If no candidate gets a majority, the December 5, 2034 runoff decides.'
+    )
+  )
+  assert.ok(
+    desc('2034-governor-VT-regular-general').includes(
+      'the Vermont legislature picks the governor in January 2035'
+    )
+  )
+  // σ for 2034 is the 2028 σ × 1.5 (horizon 1 + 6/12).
+  assert.equal(horizonMultiplier(2034), 1.5)
+  const pa = entriesOf(2034).find(
+    (e) => e.raceKey === '2034-senate-PA-regular-general'
+  )!
+  assert.equal(
+    (pa.seed as { source?: { sigma: number } }).source!.sigma,
+    14 * 1.5
+  )
+  // The 2028 Class 3 "Other" exceptions carry over to the same seats.
+  const other = (k: string) => {
+    const [d, r] = entriesOf(2034).find((e) => e.raceKey === k)!.payload!
+      .answerProbs!
+    return Math.round((100 - d - r) * 10) / 10
+  }
+  assert.equal(other('2034-senate-AK-regular-general'), 8)
+  assert.equal(other('2034-senate-UT-regular-general'), 6)
+})
+
 // The server's "Other" opens at 100 minus the two listed seeds.
 const otherOf = (e: RaceManifestEntry) =>
   Math.round(
@@ -479,7 +545,7 @@ test('descriptions are short plain paragraphs: the election and date, the party 
           `Resolves to the party that wins the ${longDate(
             cfg.electionDate
           )} U.S. Senate election in ${stateName} (Class ${
-            { 2028: 3, 2030: 1, 2032: 2, 2036: 1 }[cycle]
+            { 2028: 3, 2030: 1, 2032: 2, 2034: 3, 2036: 1 }[cycle]
           } seat).`
         ),
         e.raceKey
@@ -808,6 +874,7 @@ test('horizon multiplier is 1 + (cycle − 2028)/12 and leaves the 2028/2032/203
   assert.equal(horizonMultiplier(2028), 1)
   assert.equal(horizonMultiplier(2030), 7 / 6)
   assert.equal(horizonMultiplier(2032), 4 / 3)
+  assert.equal(horizonMultiplier(2034), 3 / 2)
   assert.equal(horizonMultiplier(2036), 5 / 3)
   // Exactly the values of the earlier fixed table, so no 2032/2036 seed moves.
   for (const office of ['president', 'house', 'senate', 'governor'] as const) {

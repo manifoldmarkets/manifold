@@ -113,6 +113,16 @@ export const SEED_PARAMS = {
       other: 10,
       why: 'Nebraska: independent Dan Osborn took 46.5% against Deb Fischer in 2024 with no Democratic nominee and is the 2026 challenger to Pete Ricketts for this Class 2 seat; a repeat independent candidacy is likely.',
     },
+    // 2034 (Class 3): the same two seats and shares as the reviewed 2028
+    // Class 3 list.
+    '2034-senate-AK': {
+      other: 8,
+      why: 'Alaska: the Class 3 seat Lisa Murkowski won as a write-in in 2010; with the top-four/ranked-choice system (if it survives the 2026 repeal vote) a non-party-line winner stays plausible. Same share as the reviewed 2028 exception.',
+    },
+    '2034-senate-UT': {
+      other: 6,
+      why: 'Utah: the Class 3 seat where Democrats endorsed independent Evan McMullin in 2022 instead of fielding a nominee, and he took 42.8% against Mike Lee. Same share as the reviewed 2028 exception.',
+    },
     '2036-senate-ME': {
       other: 10,
       why: 'Maine: the Class 1 seat is Angus King’s (independent, caucuses with Democrats); his successor race may again feature a serious independent.',

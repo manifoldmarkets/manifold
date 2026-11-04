@@ -8,6 +8,8 @@ Creation fails with a 404 on a missing topic id, so the generator attaches only 
 | `2030-us-elections` | 2030 US Elections | every 2030 market | 2028-us-elections; the 2026 midterm markets used 2026-midterms (2e9fc841-389f-4e11-99bb-c26ca54ecac2), so '2030 Midterms' is the alternative name |
 | `2030-us-congressional-elections` | 2030 US Congressional Elections | 2030 senate | 2026-us-congressional-elections (1f785ecd-2cbc-4a04-8c20-0459dc31e4ad) |
 | `2032-us-elections` | 2032 US Elections | every 2032 market | 2028-us-elections |
+| `2034-us-elections` | 2034 US Elections | every 2034 market | 2030-us-elections ('2034 Midterms' is the alternative name) |
+| `2034-us-congressional-elections` | 2034 US Congressional Elections | 2034 senate | 2026-us-congressional-elections |
 | `2036-us-elections` | 2036 US Elections | every 2036 market | 2028-us-elections |
 | `2032-us-congressional-elections` | 2032 US Congressional Elections | 2032 senate | 2026-us-congressional-elections |
 | `2036-us-congressional-elections` | 2036 US Congressional Elections | 2036 senate | 2026-us-congressional-elections |
@@ -17,6 +19,7 @@ Creation fails with a 404 on a missing topic id, so the generator attaches only 
 - 2028: `2028-us-congressional-elections`
 - 2030: `2030-us-congressional-elections`, `2030-us-elections`
 - 2032: `2032-us-congressional-elections`, `2032-us-elections`
+- 2034: `2034-us-congressional-elections`, `2034-us-elections`
 - 2036: `2036-us-congressional-elections`, `2036-us-elections`
 
 ## Existing topics attached

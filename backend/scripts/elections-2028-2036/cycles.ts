@@ -3,11 +3,11 @@
 // from statute or the calendar, never from a forecast.
 import { Office } from 'shared/elections/election-market-creation'
 
-// Launch scope (CEO, November 2026): the next three general elections, 2028,
-// 2030 and 2032. 2036 stays prepared but is optional.
-export type Cycle = 2028 | 2030 | 2032 | 2036
-export const CYCLES: readonly Cycle[] = [2028, 2030, 2032, 2036]
-export const OPTIONAL_CYCLES: readonly Cycle[] = [2036]
+// Launch scope (Tod, 2026-11-05): every general election from 2028 through
+// 2036, the cutoff ("If the market set for 2036 is prepared, we should
+// include it. That can be the cutoff, do 2034 as well then").
+export type Cycle = 2028 | 2030 | 2032 | 2034 | 2036
+export const CYCLES: readonly Cycle[] = [2028, 2030, 2032, 2034, 2036]
 
 // Presidential years elect presidential electors and the eleven
 // presidential-year governors; midterm years elect neither.
@@ -49,7 +49,6 @@ export type CycleConfig = {
   termStart: Record<Office, string>
   president: boolean
   house: boolean
-  optional: boolean
 }
 
 export function cycleConfig(cycle: Cycle): CycleConfig {
@@ -72,7 +71,6 @@ export function cycleConfig(cycle: Cycle): CycleConfig {
     // House districts only for 2028: the 2030 lines may still change
     // mid-decade, and 2032 onwards uses the 2030 census.
     house: cycle === 2028,
-    optional: OPTIONAL_CYCLES.includes(cycle),
   }
 }
 
@@ -81,6 +79,7 @@ export const EXPECTED_ELECTION_DATES: Record<Cycle, string> = {
   2028: '2028-11-07',
   2030: '2030-11-05',
   2032: '2032-11-02',
+  2034: '2034-11-07',
   2036: '2036-11-04',
 }
 

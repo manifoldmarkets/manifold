@@ -22,7 +22,7 @@ Duplicate policy: only an EQUIVALENT market by @ManifoldPolitics skips an entry;
 | duplicate check (saved online results) | races |
 |---|---|
 | create | 101 |
-| …of which other markets also exist (information) | 2 |
+| …of which other markets also exist (information) | 1 |
 | skip (equivalent market blocks) | 0 |
 | hold for review | 0 |
 | already created at the reserved id | 0 |
@@ -236,7 +236,6 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Texas voted 11.3 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 31.1% and Republicans 67.9%. Other opens at 1%.
 - liquidity: Generic market opened years ahead: tier 1,000 everywhere (the brief). Raise after the 2026 results if a race is competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 or +extraLiquidity for marquee races.
 - reserved idempotency key (not yet a contract): `AC5ANu8PcA`
-- online recheck (create): [information only: related market] AMBIGUOUS kmIRNMqklHt2NLjfl1Db @jks "Will Texas elect a Democrat to the U.S. Senate in any election through 2036?" (same race, different proposition or answer set)
 
 ## 2036-senate-UT-regular-general — create
 **Which party will win the 2036 U.S. Senate election in Utah?**

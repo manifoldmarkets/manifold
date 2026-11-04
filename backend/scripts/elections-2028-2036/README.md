@@ -1,12 +1,14 @@
-# 2028 / 2030 / 2032 generic election markets (and optional 2036)
+# 2028–2036 generic election markets
 
 Generic party markets (Democratic Party / Republican Party, plus the server's
-"Other") for the next three general elections: every Senate seat and
-governorship up in 2028, 2030 and 2032, every presidential elector unit in
-2028 and 2032, and every 2028 House district. They are created years ahead with
-the pipeline that launched the 2026 midterm markets. 2036 stays prepared in
-this folder but is **optional**: launch it only if Tod decides to. Prepared on
-2026-10-06; 2030 added on 2026-11-05. **Nothing here has been launched.** Tod
+"Other") for every general election from 2028 through 2036 (Tod,
+2026-11-05: "If the market set for 2036 is prepared, we should include it.
+That can be the cutoff, do 2034 as well"): every Senate seat and governorship
+up in 2028, 2030, 2032, 2034 and 2036, every presidential state and district
+in 2028, 2032 and 2036, and every 2028 House district. They are created years
+ahead with the pipeline that launched the 2026 midterm markets. Prepared on
+2026-10-06; on 2026-11-05 2030 and 2034 were added and 2036 became a planned
+cycle (it was optional). **Nothing here has been launched.** Tod
 approves and runs the launch after the 2026 results are certified (December
 2026).
 
@@ -15,9 +17,9 @@ approves and runs the launch after the 2026 results are certified (December
 | 2028 | 34 (Class 3) | 11 | 57 (50 states + DC + ME-1/2, NE-1/2/3 + national) | 435 | 537 | 537,000 |
 | 2030 | 33 (Class 1) | 36 | — | — | 69 | 69,000 |
 | 2032 | 33 (Class 2) | 11 | 57 | — (2030 census) | 101 | 101,000 |
-| **2028–2032** | | | | | **707** | **707,000** |
-| 2036 (optional) | 33 (Class 1) | 11 | 57 | — | 101 | 101,000 |
-| All four | | | | | 808 | 808,000 |
+| 2034 | 34 (Class 3) | 36 | — | — (2030 census) | 70 | 70,000 |
+| 2036 | 33 (Class 1) | 11 | 57 | — | 101 | 101,000 |
+| **2028–2036** | | | | | **878** | **878,000** |
 
 Creator: `@ManifoldPolitics`. Every market: `cpmm-multi-2` (the default),
 answers sum to one, `addAnswersMode: ONLY_CREATOR`, tier Ṁ1,000, public after
@@ -110,19 +112,44 @@ ante, so no cost changed.
   governor "before 2030") and Texas governor (a binary "Will the democratic
   party win the 2030 texas gubernatorial election?", created 2026-11-04).
 
+### 2034 (midterm)
+
+- **Senate**: the 34 Class 3 seats, the same states as 2028 (Class 3's
+  `cycles` in `inventories/senate-classes.json` is now 2028 and 2034; the
+  term replaced expires January 3, 2035). The incumbents listed are
+  informational only: these are party markets, so term limits, retirements
+  or vacancies before 2034 don't affect how any market resolves.
+- **Governors**: the same 36 midterm-year governorships as 2030 (34 four-year
+  terms plus New Hampshire and Vermont), from
+  `inventories/governors-midterm.json`.
+- **No House** (new maps after the 2030 census) and no president.
+- Election day **November 7, 2034**; markets close at noon UTC on November 8.
+  Georgia's Senate and governor markets close on December 6 after the
+  December 5, 2034 runoff. The round rules are the 2028 Senate / 2030
+  governor ones (Alaska's counting method, Louisiana, Maine, Vermont's
+  legislature, California and Washington top-two, the DFL and Democratic-NPL
+  lines).
+- Seeds: Stage A with the horizon multiplier 1 + (2034 − 2028)/12 = 1.5.
+  "Other" for the Alaska and Utah Class 3 seats copies the reviewed 2028
+  shares (8% and 6%).
+- Series `us-2034-general-v1`; race keys `2034-senate-<ST>-regular-general`
+  and `2034-governor-<ST>-regular-general`; dashboard lists `senate2034` and
+  `governors2034`. Topics to create: `2034-us-elections` and
+  `2034-us-congressional-elections` (`topics-needed.md`).
+
 ## Files
 
 | File | What |
 |---|---|
 | `inventories/senate-classes.json`, `governors.json`, `governors-midterm.json`, `presidential-units.json`, `house-2028-states.json` | Source inventories with citations (senate.gov class pages and cross-checks, Wikipedia/NGA, FEC/Census, the redistricting trackers). `governors.json` holds the 11 presidential-year governorships, `governors-midterm.json` the 36 midterm-year ones. |
-| `inventories/2028.json`, `2030.json`, `2032.json`, `2036.json` | Generated per-cycle race inventories (one row per market, with round, close time and sources). |
+| `inventories/2028.json`, `2030.json`, `2032.json`, `2034.json`, `2036.json` | Generated per-cycle race inventories (one row per market, with round, close time and sources). |
 | `data/` | Certified presidential results used by the seeds, with provenance (`data/README.md`). |
-| `cycles.ts` | Cycles in scope (2036 optional), election dates, close times, idempotency series, per-state round rules (Georgia runoff, Louisiana, Maine/Alaska RCV, Vermont and the other governor rules). |
+| `cycles.ts` | Cycles in scope (2028–2036), election dates, close times, idempotency series, per-state round rules (Georgia runoff, Louisiana, Maine/Alaska RCV, Vermont and the other governor rules). |
 | `inventory.ts`, `templates.ts`, `seeds.ts` | Race list, question/description/search-term templates, Stage A seed math. |
 | `generate-manifests.ts` (+ `.test.ts`) | Writes `<cycle>/manifest.json`, `inventories/<cycle>.json`, `topics-needed.md`. |
 | `topics.json`, `topics-needed.md` | Prod topic ids used, and the topics Tod still has to create. |
 | `SEEDS.md` | The seed formula, parameters, the "Other" exceptions and the reviewers' seed note. |
-| `2028/manifest.json`, `2030/…`, `2032/…`, `2036/…` | The manifests (series `us-<cycle>-general-v1`), `review.approved: false`. |
+| `2028/manifest.json`, `2030/…`, `2032/…`, `2034/…`, `2036/…` | The manifests (series `us-<cycle>-general-v1`), `review.approved: false`. |
 | `<cycle>/out/` | Dry-run output (`dry-run-report.md`, `-payloads.json`, `-plan.json`, `-dashboard-mapping.json`, `dry-run-online.json`). |
 | `../create-election-markets.ts`, `../../shared/src/elections/` | The 2026 creation CLI and library (from the 2026 launch), generalised for later cycles and the `president` office. |
 
@@ -219,7 +246,8 @@ outside the repo:
 C:\Users\User\elections-2028-prod\   state.prod.json  dashboard-mapping.prod.json
 C:\Users\User\elections-2030-prod\   state.prod.json  dashboard-mapping.prod.json
 C:\Users\User\elections-2032-prod\   state.prod.json  dashboard-mapping.prod.json
-C:\Users\User\elections-2036-prod\   (only if the optional 2036 cycle is launched)
+C:\Users\User\elections-2034-prod\   state.prod.json  dashboard-mapping.prod.json
+C:\Users\User\elections-2036-prod\   state.prod.json  dashboard-mapping.prod.json
 ```
 
 (The page importer expects `state.prod.json` and `dashboard-mapping.prod.json`
@@ -258,11 +286,11 @@ CLI writes into `<cycle>/out/` next to the state file after each run.)
    validation errors, expected counts and cost.
 6. **Pilot one market per cycle**: the first apply for a cycle creates its
    state file; `--only` picks the pilot and `--max-mana 1000` stops after it.
-   Recommended pilots: `2028-president-US-general` and
-   `2032-president-US-general` (the most-watched markets), and for 2030
-   `2030-senate-PA-regular-general` (a swing seat with the plain plurality
-   rule and the full Senate topic set); `2036-president-US-general` if 2036 is
-   launched.
+   Recommended pilots: `2028-president-US-general`,
+   `2032-president-US-general` and `2036-president-US-general` (the
+   most-watched markets), and `2030-senate-PA-regular-general` and
+   `2034-senate-PA-regular-general` (swing seats with the plain plurality rule
+   and the full Senate topic set).
    ```powershell
    $env:MANIFOLD_API_KEY = '<@ManifoldPolitics key, never on the command line>'
    npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2028/manifest.json --out elections-2028-2036/2028/out --state C:\Users\User\elections-2028-prod\state.prod.json --env prod --apply --init-state --quiet --creator-username ManifoldPolitics --max-mana 1000 --only 2028-president-US-general
@@ -274,7 +302,7 @@ CLI writes into `<cycle>/out/` next to the state file after each run.)
    colours and visibility, and the topics.
 7. **Full runs**, one cycle at a time, same state file, no `--init-state`,
    no `--only` (`--max-mana`: 537000 for 2028, 69000 for 2030, 101000 for
-   2032):
+   2032, 70000 for 2034, 101000 for 2036):
    ```powershell
    npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2028/manifest.json --out elections-2028-2036/2028/out --state C:\Users\User\elections-2028-prod\state.prod.json --env prod --apply --quiet --creator-username ManifoldPolitics --max-mana 537000
    ```

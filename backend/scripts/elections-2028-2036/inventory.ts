@@ -89,7 +89,8 @@ export const inventories = {
   senate: () =>
     readJson<SenateClasses>(path.join(INVENTORY_DIR, 'senate-classes.json')),
   // Presidential years: the eleven presidential-year governorships; midterm
-  // years (2030): the 36 midterm-year governorships. NH and VT are in both.
+  // years (2030, 2034): the 36 midterm-year governorships. NH and VT are in
+  // both.
   governors: (cycle: Cycle) =>
     readJson<Governors>(
       path.join(
@@ -132,7 +133,9 @@ export const ORDINAL = (n: number) =>
   }`
 
 export function senateClassFor(cycle: Cycle): '3' | '2' | '1' {
-  return ({ 2028: '3', 2030: '1', 2032: '2', 2036: '1' } as const)[cycle]
+  return ({ 2028: '3', 2030: '1', 2032: '2', 2034: '3', 2036: '1' } as const)[
+    cycle
+  ]
 }
 
 export function racesFor(cycle: Cycle): Race[] {
@@ -327,5 +330,9 @@ export const EXPECTED_COUNTS: Record<Cycle, Record<Office, number>> = {
   // (district lines may still change before 2030) and no president.
   2030: { senate: 33, governor: 36, president: 0, house: 0 },
   2032: { senate: 33, governor: 11, president: 57, house: 0 },
+  // Midterm: Class 3 Senate (the 2028 seats again) and the same 36
+  // midterm-year governorships as 2030; no House (new maps after the 2030
+  // census) and no president.
+  2034: { senate: 34, governor: 36, president: 0, house: 0 },
   2036: { senate: 33, governor: 11, president: 57, house: 0 },
 }

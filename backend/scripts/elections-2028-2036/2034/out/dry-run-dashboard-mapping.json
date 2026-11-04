@@ -1,0 +1,2172 @@
+[
+  {
+    "raceKey": "2034-senate-AL-regular-general",
+    "list": "senate2034",
+    "key": "AL",
+    "slug": "PENDING:2034-senate-AL-regular-general",
+    "contractId": "PENDING:2034-senate-AL-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-AL-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-AL-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-AL-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-AK-regular-general",
+    "list": "senate2034",
+    "key": "AK",
+    "slug": "PENDING:2034-senate-AK-regular-general",
+    "contractId": "PENDING:2034-senate-AK-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-AK-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-AK-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-AK-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-AZ-regular-general",
+    "list": "senate2034",
+    "key": "AZ",
+    "slug": "PENDING:2034-senate-AZ-regular-general",
+    "contractId": "PENDING:2034-senate-AZ-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-AZ-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-AZ-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-AZ-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-AR-regular-general",
+    "list": "senate2034",
+    "key": "AR",
+    "slug": "PENDING:2034-senate-AR-regular-general",
+    "contractId": "PENDING:2034-senate-AR-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-AR-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-AR-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-AR-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-CA-regular-general",
+    "list": "senate2034",
+    "key": "CA",
+    "slug": "PENDING:2034-senate-CA-regular-general",
+    "contractId": "PENDING:2034-senate-CA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-CA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-CA-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-CA-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-CO-regular-general",
+    "list": "senate2034",
+    "key": "CO",
+    "slug": "PENDING:2034-senate-CO-regular-general",
+    "contractId": "PENDING:2034-senate-CO-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-CO-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-CO-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-CO-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-CT-regular-general",
+    "list": "senate2034",
+    "key": "CT",
+    "slug": "PENDING:2034-senate-CT-regular-general",
+    "contractId": "PENDING:2034-senate-CT-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-CT-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-CT-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-CT-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-FL-regular-general",
+    "list": "senate2034",
+    "key": "FL",
+    "slug": "PENDING:2034-senate-FL-regular-general",
+    "contractId": "PENDING:2034-senate-FL-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-FL-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-FL-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-FL-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-GA-regular-general",
+    "list": "senate2034",
+    "key": "GA",
+    "slug": "PENDING:2034-senate-GA-regular-general",
+    "contractId": "PENDING:2034-senate-GA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-GA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-GA-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-GA-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-HI-regular-general",
+    "list": "senate2034",
+    "key": "HI",
+    "slug": "PENDING:2034-senate-HI-regular-general",
+    "contractId": "PENDING:2034-senate-HI-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-HI-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-HI-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-HI-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-ID-regular-general",
+    "list": "senate2034",
+    "key": "ID",
+    "slug": "PENDING:2034-senate-ID-regular-general",
+    "contractId": "PENDING:2034-senate-ID-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-ID-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-ID-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-ID-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-IL-regular-general",
+    "list": "senate2034",
+    "key": "IL",
+    "slug": "PENDING:2034-senate-IL-regular-general",
+    "contractId": "PENDING:2034-senate-IL-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-IL-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-IL-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-IL-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-IN-regular-general",
+    "list": "senate2034",
+    "key": "IN",
+    "slug": "PENDING:2034-senate-IN-regular-general",
+    "contractId": "PENDING:2034-senate-IN-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-IN-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-IN-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-IN-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-IA-regular-general",
+    "list": "senate2034",
+    "key": "IA",
+    "slug": "PENDING:2034-senate-IA-regular-general",
+    "contractId": "PENDING:2034-senate-IA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-IA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-IA-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-IA-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-KS-regular-general",
+    "list": "senate2034",
+    "key": "KS",
+    "slug": "PENDING:2034-senate-KS-regular-general",
+    "contractId": "PENDING:2034-senate-KS-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-KS-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-KS-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-KS-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-KY-regular-general",
+    "list": "senate2034",
+    "key": "KY",
+    "slug": "PENDING:2034-senate-KY-regular-general",
+    "contractId": "PENDING:2034-senate-KY-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-KY-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-KY-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-KY-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-LA-regular-general",
+    "list": "senate2034",
+    "key": "LA",
+    "slug": "PENDING:2034-senate-LA-regular-general",
+    "contractId": "PENDING:2034-senate-LA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-LA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-LA-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-LA-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-MD-regular-general",
+    "list": "senate2034",
+    "key": "MD",
+    "slug": "PENDING:2034-senate-MD-regular-general",
+    "contractId": "PENDING:2034-senate-MD-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-MD-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-MD-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-MD-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-MO-regular-general",
+    "list": "senate2034",
+    "key": "MO",
+    "slug": "PENDING:2034-senate-MO-regular-general",
+    "contractId": "PENDING:2034-senate-MO-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-MO-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-MO-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-MO-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-NV-regular-general",
+    "list": "senate2034",
+    "key": "NV",
+    "slug": "PENDING:2034-senate-NV-regular-general",
+    "contractId": "PENDING:2034-senate-NV-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-NV-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-NV-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-NV-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-NH-regular-general",
+    "list": "senate2034",
+    "key": "NH",
+    "slug": "PENDING:2034-senate-NH-regular-general",
+    "contractId": "PENDING:2034-senate-NH-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-NH-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-NH-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-NH-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-NY-regular-general",
+    "list": "senate2034",
+    "key": "NY",
+    "slug": "PENDING:2034-senate-NY-regular-general",
+    "contractId": "PENDING:2034-senate-NY-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-NY-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-NY-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-NY-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-NC-regular-general",
+    "list": "senate2034",
+    "key": "NC",
+    "slug": "PENDING:2034-senate-NC-regular-general",
+    "contractId": "PENDING:2034-senate-NC-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-NC-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-NC-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-NC-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-ND-regular-general",
+    "list": "senate2034",
+    "key": "ND",
+    "slug": "PENDING:2034-senate-ND-regular-general",
+    "contractId": "PENDING:2034-senate-ND-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-ND-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-ND-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-ND-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-OH-regular-general",
+    "list": "senate2034",
+    "key": "OH",
+    "slug": "PENDING:2034-senate-OH-regular-general",
+    "contractId": "PENDING:2034-senate-OH-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-OH-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-OH-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-OH-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-OK-regular-general",
+    "list": "senate2034",
+    "key": "OK",
+    "slug": "PENDING:2034-senate-OK-regular-general",
+    "contractId": "PENDING:2034-senate-OK-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-OK-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-OK-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-OK-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-OR-regular-general",
+    "list": "senate2034",
+    "key": "OR",
+    "slug": "PENDING:2034-senate-OR-regular-general",
+    "contractId": "PENDING:2034-senate-OR-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-OR-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-OR-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-OR-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-PA-regular-general",
+    "list": "senate2034",
+    "key": "PA",
+    "slug": "PENDING:2034-senate-PA-regular-general",
+    "contractId": "PENDING:2034-senate-PA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-PA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-PA-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-PA-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-SC-regular-general",
+    "list": "senate2034",
+    "key": "SC",
+    "slug": "PENDING:2034-senate-SC-regular-general",
+    "contractId": "PENDING:2034-senate-SC-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-SC-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-SC-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-SC-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-SD-regular-general",
+    "list": "senate2034",
+    "key": "SD",
+    "slug": "PENDING:2034-senate-SD-regular-general",
+    "contractId": "PENDING:2034-senate-SD-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-SD-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-SD-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-SD-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-UT-regular-general",
+    "list": "senate2034",
+    "key": "UT",
+    "slug": "PENDING:2034-senate-UT-regular-general",
+    "contractId": "PENDING:2034-senate-UT-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-UT-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-UT-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-UT-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-VT-regular-general",
+    "list": "senate2034",
+    "key": "VT",
+    "slug": "PENDING:2034-senate-VT-regular-general",
+    "contractId": "PENDING:2034-senate-VT-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-VT-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-VT-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-VT-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-WA-regular-general",
+    "list": "senate2034",
+    "key": "WA",
+    "slug": "PENDING:2034-senate-WA-regular-general",
+    "contractId": "PENDING:2034-senate-WA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-WA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-WA-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-WA-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-senate-WI-regular-general",
+    "list": "senate2034",
+    "key": "WI",
+    "slug": "PENDING:2034-senate-WI-regular-general",
+    "contractId": "PENDING:2034-senate-WI-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-senate-WI-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-senate-WI-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-senate-WI-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-AL-regular-general",
+    "list": "governors2034",
+    "key": "AL",
+    "slug": "PENDING:2034-governor-AL-regular-general",
+    "contractId": "PENDING:2034-governor-AL-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-AL-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-AL-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-AL-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-AK-regular-general",
+    "list": "governors2034",
+    "key": "AK",
+    "slug": "PENDING:2034-governor-AK-regular-general",
+    "contractId": "PENDING:2034-governor-AK-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-AK-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-AK-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-AK-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-AZ-regular-general",
+    "list": "governors2034",
+    "key": "AZ",
+    "slug": "PENDING:2034-governor-AZ-regular-general",
+    "contractId": "PENDING:2034-governor-AZ-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-AZ-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-AZ-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-AZ-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-AR-regular-general",
+    "list": "governors2034",
+    "key": "AR",
+    "slug": "PENDING:2034-governor-AR-regular-general",
+    "contractId": "PENDING:2034-governor-AR-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-AR-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-AR-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-AR-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-CA-regular-general",
+    "list": "governors2034",
+    "key": "CA",
+    "slug": "PENDING:2034-governor-CA-regular-general",
+    "contractId": "PENDING:2034-governor-CA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-CA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-CA-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-CA-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-CO-regular-general",
+    "list": "governors2034",
+    "key": "CO",
+    "slug": "PENDING:2034-governor-CO-regular-general",
+    "contractId": "PENDING:2034-governor-CO-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-CO-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-CO-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-CO-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-CT-regular-general",
+    "list": "governors2034",
+    "key": "CT",
+    "slug": "PENDING:2034-governor-CT-regular-general",
+    "contractId": "PENDING:2034-governor-CT-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-CT-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-CT-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-CT-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-FL-regular-general",
+    "list": "governors2034",
+    "key": "FL",
+    "slug": "PENDING:2034-governor-FL-regular-general",
+    "contractId": "PENDING:2034-governor-FL-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-FL-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-FL-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-FL-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-GA-regular-general",
+    "list": "governors2034",
+    "key": "GA",
+    "slug": "PENDING:2034-governor-GA-regular-general",
+    "contractId": "PENDING:2034-governor-GA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-GA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-GA-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-GA-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-HI-regular-general",
+    "list": "governors2034",
+    "key": "HI",
+    "slug": "PENDING:2034-governor-HI-regular-general",
+    "contractId": "PENDING:2034-governor-HI-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-HI-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-HI-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-HI-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-ID-regular-general",
+    "list": "governors2034",
+    "key": "ID",
+    "slug": "PENDING:2034-governor-ID-regular-general",
+    "contractId": "PENDING:2034-governor-ID-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-ID-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-ID-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-ID-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-IL-regular-general",
+    "list": "governors2034",
+    "key": "IL",
+    "slug": "PENDING:2034-governor-IL-regular-general",
+    "contractId": "PENDING:2034-governor-IL-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-IL-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-IL-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-IL-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-IA-regular-general",
+    "list": "governors2034",
+    "key": "IA",
+    "slug": "PENDING:2034-governor-IA-regular-general",
+    "contractId": "PENDING:2034-governor-IA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-IA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-IA-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-IA-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-KS-regular-general",
+    "list": "governors2034",
+    "key": "KS",
+    "slug": "PENDING:2034-governor-KS-regular-general",
+    "contractId": "PENDING:2034-governor-KS-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-KS-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-KS-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-KS-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-ME-regular-general",
+    "list": "governors2034",
+    "key": "ME",
+    "slug": "PENDING:2034-governor-ME-regular-general",
+    "contractId": "PENDING:2034-governor-ME-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-ME-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-ME-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-ME-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-MD-regular-general",
+    "list": "governors2034",
+    "key": "MD",
+    "slug": "PENDING:2034-governor-MD-regular-general",
+    "contractId": "PENDING:2034-governor-MD-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-MD-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-MD-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-MD-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-MA-regular-general",
+    "list": "governors2034",
+    "key": "MA",
+    "slug": "PENDING:2034-governor-MA-regular-general",
+    "contractId": "PENDING:2034-governor-MA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-MA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-MA-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-MA-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-MI-regular-general",
+    "list": "governors2034",
+    "key": "MI",
+    "slug": "PENDING:2034-governor-MI-regular-general",
+    "contractId": "PENDING:2034-governor-MI-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-MI-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-MI-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-MI-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-MN-regular-general",
+    "list": "governors2034",
+    "key": "MN",
+    "slug": "PENDING:2034-governor-MN-regular-general",
+    "contractId": "PENDING:2034-governor-MN-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-MN-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-MN-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-MN-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-NE-regular-general",
+    "list": "governors2034",
+    "key": "NE",
+    "slug": "PENDING:2034-governor-NE-regular-general",
+    "contractId": "PENDING:2034-governor-NE-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-NE-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-NE-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-NE-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-NV-regular-general",
+    "list": "governors2034",
+    "key": "NV",
+    "slug": "PENDING:2034-governor-NV-regular-general",
+    "contractId": "PENDING:2034-governor-NV-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-NV-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-NV-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-NV-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-NH-regular-general",
+    "list": "governors2034",
+    "key": "NH",
+    "slug": "PENDING:2034-governor-NH-regular-general",
+    "contractId": "PENDING:2034-governor-NH-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-NH-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-NH-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-NH-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-NM-regular-general",
+    "list": "governors2034",
+    "key": "NM",
+    "slug": "PENDING:2034-governor-NM-regular-general",
+    "contractId": "PENDING:2034-governor-NM-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-NM-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-NM-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-NM-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-NY-regular-general",
+    "list": "governors2034",
+    "key": "NY",
+    "slug": "PENDING:2034-governor-NY-regular-general",
+    "contractId": "PENDING:2034-governor-NY-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-NY-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-NY-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-NY-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-OH-regular-general",
+    "list": "governors2034",
+    "key": "OH",
+    "slug": "PENDING:2034-governor-OH-regular-general",
+    "contractId": "PENDING:2034-governor-OH-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-OH-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-OH-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-OH-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-OK-regular-general",
+    "list": "governors2034",
+    "key": "OK",
+    "slug": "PENDING:2034-governor-OK-regular-general",
+    "contractId": "PENDING:2034-governor-OK-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-OK-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-OK-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-OK-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-OR-regular-general",
+    "list": "governors2034",
+    "key": "OR",
+    "slug": "PENDING:2034-governor-OR-regular-general",
+    "contractId": "PENDING:2034-governor-OR-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-OR-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-OR-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-OR-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-PA-regular-general",
+    "list": "governors2034",
+    "key": "PA",
+    "slug": "PENDING:2034-governor-PA-regular-general",
+    "contractId": "PENDING:2034-governor-PA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-PA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-PA-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-PA-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-RI-regular-general",
+    "list": "governors2034",
+    "key": "RI",
+    "slug": "PENDING:2034-governor-RI-regular-general",
+    "contractId": "PENDING:2034-governor-RI-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-RI-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-RI-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-RI-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-SC-regular-general",
+    "list": "governors2034",
+    "key": "SC",
+    "slug": "PENDING:2034-governor-SC-regular-general",
+    "contractId": "PENDING:2034-governor-SC-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-SC-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-SC-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-SC-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-SD-regular-general",
+    "list": "governors2034",
+    "key": "SD",
+    "slug": "PENDING:2034-governor-SD-regular-general",
+    "contractId": "PENDING:2034-governor-SD-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-SD-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-SD-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-SD-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-TN-regular-general",
+    "list": "governors2034",
+    "key": "TN",
+    "slug": "PENDING:2034-governor-TN-regular-general",
+    "contractId": "PENDING:2034-governor-TN-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-TN-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-TN-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-TN-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-TX-regular-general",
+    "list": "governors2034",
+    "key": "TX",
+    "slug": "PENDING:2034-governor-TX-regular-general",
+    "contractId": "PENDING:2034-governor-TX-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-TX-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-TX-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-TX-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-VT-regular-general",
+    "list": "governors2034",
+    "key": "VT",
+    "slug": "PENDING:2034-governor-VT-regular-general",
+    "contractId": "PENDING:2034-governor-VT-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-VT-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-VT-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-VT-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-WI-regular-general",
+    "list": "governors2034",
+    "key": "WI",
+    "slug": "PENDING:2034-governor-WI-regular-general",
+    "contractId": "PENDING:2034-governor-WI-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-WI-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-WI-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-WI-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2034-governor-WY-regular-general",
+    "list": "governors2034",
+    "key": "WY",
+    "slug": "PENDING:2034-governor-WY-regular-general",
+    "contractId": "PENDING:2034-governor-WY-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2034-governor-WY-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2034-governor-WY-regular-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2034-governor-WY-regular-general#Other"
+      }
+    ],
+    "status": "planned"
+  }
+]
