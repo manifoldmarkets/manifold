@@ -37,9 +37,20 @@ export const parseSeatCount = (text: string): number | undefined => {
   return match ? Number(match[1]) : undefined
 }
 
+// A resolved market pays by its resolution, not its last price: the winner
+// (or the MKT split), and nothing for a cancelled one.
+function settledProb(contract: MultiContract, answerId: string) {
+  const { isResolved, resolution, resolutions } = contract
+  if (!isResolved || !resolution || resolution === 'CANCEL') return undefined
+  if (resolutions) return (resolutions[answerId] ?? 0) / 100
+  if (resolution === 'MKT') return undefined
+  return resolution === answerId ? 1 : 0
+}
+
 // What each answer was 24 hours ago, read from a page snapshot: live bets move
 // an answer's probability but not its stored probChanges, so subtracting
-// those from a live probability would drift.
+// those from a live probability would drift. probChanges refresh about every
+// 20 minutes, so moves since the last refresh are not in the baseline yet.
 export function dayAgoProbs(contract: MultiContract): Record<string, number> {
   const probs: Record<string, number> = {}
   for (const answer of contract.answers) {
@@ -58,7 +69,8 @@ export function seatDistribution(
   const buckets = contract.answers
     .filter((a) => a.resolution !== 'CANCEL')
     .map((a): SeatBucket => {
-      const prob = getAnswerProbability(contract, a.id)
+      const prob =
+        settledProb(contract, a.id) ?? getAnswerProbability(contract, a.id)
       return {
         answerId: a.id,
         label: a.isOther ? 'Other' : a.text.trim(),

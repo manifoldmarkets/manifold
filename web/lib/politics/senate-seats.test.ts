@@ -132,6 +132,39 @@ test('24 hours ago comes from the snapshot, clamped, skipping missing changes', 
   assert.equal(dist.buckets[2].dayAgoProb, undefined)
 })
 
+test('a resolved market shows its payout, not its last price', () => {
+  const answers = [answer('a', '50', 0.3), answer('b', '51', 0.7)]
+  const winner = seatDistribution({
+    ...market(answers),
+    isResolved: true,
+    resolution: 'b',
+  } as MultiContract)
+  assert.deepEqual(
+    winner.buckets.map((b) => b.prob),
+    [0, 1]
+  )
+  assert.equal(winner.mostLikely?.label, '51')
+
+  const split = seatDistribution({
+    ...market(answers),
+    isResolved: true,
+    resolution: 'MKT',
+    resolutions: { a: 25, b: 75 },
+  } as MultiContract)
+  assert.deepEqual(
+    split.buckets.map((b) => b.prob),
+    [0.25, 0.75]
+  )
+
+  // N/A pays everyone back: keep the last prices on show.
+  const cancelled = seatDistribution({
+    ...market(answers),
+    isResolved: true,
+    resolution: 'CANCEL',
+  } as MultiContract)
+  assert.ok(Math.abs(cancelled.buckets[1].prob - 0.7) < 1e-9)
+})
+
 test('a non-finite price shows as zero', () => {
   const dist = seatDistribution(
     market([answer('a', '52', NaN), answer('b', '53', 1)])

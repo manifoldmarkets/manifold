@@ -67,7 +67,8 @@ function SeatsChart(props: { contract: CPMMMultiContract }) {
   const { ref } = useIsVisible(() => setRevealed(true), true)
 
   const winner = live.isResolved
-    ? buckets.find((b) => b.answerId === live.resolution)
+    ? buckets.find((b) => b.answerId === live.resolution) ??
+      buckets.find((b) => b.prob >= 1)
     : undefined
   const tradable =
     !live.isResolved && (live.closeTime == null || live.closeTime > Date.now())
@@ -200,9 +201,16 @@ function SeatsChart(props: { contract: CPMMMultiContract }) {
                       ? DEM_TINT
                       : undefined,
                 }}
-                aria-label={`${name}, ${formatOdds(b.prob)}${
-                  tradable ? ', bet on it' : ''
-                }`}
+                aria-label={[
+                  `${name}, ${formatOdds(b.prob)}`,
+                  b.seats === undefined
+                    ? 'any count not listed'
+                    : seatOutcome(b.seats),
+                  moved && `${formatOdds(b.dayAgoProb ?? 0)} 24 hours ago`,
+                  tradable && 'bet on it',
+                ]
+                  .filter(Boolean)
+                  .join(', ')}
                 aria-haspopup={tradable ? 'dialog' : undefined}
                 aria-disabled={!tradable}
                 onMouseEnter={() => setActiveId(b.answerId)}
