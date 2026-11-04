@@ -59,11 +59,18 @@ const query = (params: Record<string, string | string[]>) => {
   return q.toString()
 }
 
+// Rate limited or failing: wait as the API asks (Retry-After), or back off,
+// for up to about two minutes.
 async function getJson<T>(url: string, attempt = 0): Promise<T> {
   const res = await fetch(url)
   if (res.ok) return (await res.json()) as T
-  if (attempt < 4 && (res.status === 429 || res.status >= 500)) {
-    await new Promise((r) => setTimeout(r, 2_000 * (attempt + 1)))
+  if (attempt < 8 && (res.status === 429 || res.status >= 500)) {
+    const retryAfter = Number(res.headers.get('retry-after'))
+    const wait =
+      Number.isFinite(retryAfter) && retryAfter > 0
+        ? retryAfter * 1000
+        : 3_000 * (attempt + 1)
+    await new Promise((r) => setTimeout(r, wait))
     return getJson(url, attempt + 1)
   }
   throw new Error(`${res.status} ${url.slice(0, 160)}`)
