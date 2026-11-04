@@ -1,5 +1,5 @@
 {
-  "description": "U.S. Senate seats by class. A class is up for its regular six-year election in the cycle listed; the incumbent is the senator holding the seat on 2026-10-06 (informational only — the generic markets name nobody).",
+  "description": "U.S. Senate seats by class. A class is up for its regular six-year election in the cycles listed (`termsExpire` gives, per cycle, the date the term being replaced expires); the incumbent is the senator holding the seat on 2026-10-06 (informational only — the generic markets name nobody).",
   "sources": [
     {
       "name": "U.S. Senate — Class I (terms expire 2031)",
@@ -20,18 +20,30 @@
       "name": "Wikipedia — 2028 United States Senate elections (cross-check: 34 Class 3 seats, election day November 7, 2028)",
       "url": "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
       "fetchedAt": "2026-10-06"
+    },
+    {
+      "name": "Wikipedia — 2030 United States Senate elections (cross-check: 33 Class 1 seats, election day November 5, 2030, terms January 3, 2031 to January 3, 2037; no 2030 special listed)",
+      "url": "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+      "fetchedAt": "2026-11-05"
+    },
+    {
+      "name": "@unitedstates congress-legislators — current legislators (cross-check of Class 1: 33 senators whose terms end 2031-01-03; 17 D, 14 R, 2 I)",
+      "url": "https://unitedstates.github.io/congress-legislators/legislators-current.json",
+      "fetchedAt": "2026-11-05"
     }
   ],
   "notes": [
-    "Class 3 (34 seats) is up in 2028, Class 2 (33) in 2032 and Class 1 (33) in 2036. The counts match the task brief.",
+    "Class 3 (34 seats) is up in 2028, Class 1 (33) in 2030 and again in 2036, Class 2 (33) in 2032. The counts match the task brief.",
+    "Class 1 for 2030 was re-verified on 2026-11-05: senate.gov's class pages answer automated requests with HTTP 403 that day, so the 33 states were checked against the congress-legislators file and Wikipedia's 2030 page instead. Same 33 states as on 2026-10-06.",
+    "No special Senate election is scheduled for 2030 as of 2026-11-05. Two Class 1 senators were their party's nominees for governor on 2026-11-03 (Minnesota, Tennessee): a senator who becomes governor leaves the seat to an appointee and a special election for the rest of the term ending January 3, 2031, which is a different term from the 2030 regular election and is not in this inventory. Add a 2030 special when one is called.",
     "The Florida and Ohio Class 3 seats are filled by appointees (Moody, Husted) until the November 3, 2026 special elections; those specials cover the unexpired terms ending January 3, 2029, so both seats have their regular full-term election in 2028 as part of Class 3. They are not extra 2028 seats.",
     "Special elections for seats vacated after this inventory was written are out of scope; add them when they are called, as the brief says.",
     "Vermont has no Class 2 seat and Nebraska/Alaska have no Class 3 / Class 1 seat respectively, so the 'Another party or independent' exceptions in SEEDS.md apply only to the cycles in which those states actually vote."
   ],
   "classes": {
     "3": {
-      "cycle": 2028,
-      "termsExpire": "2029-01-03",
+      "cycles": [2028],
+      "termsExpire": { "2028": "2029-01-03" },
       "seats": [
         { "state": "AL", "incumbent": "Katie Britt", "party": "R" },
         { "state": "AK", "incumbent": "Lisa Murkowski", "party": "R" },
@@ -80,8 +92,8 @@
       ]
     },
     "2": {
-      "cycle": 2032,
-      "termsExpire": "2033-01-03",
+      "cycles": [2032],
+      "termsExpire": { "2032": "2033-01-03" },
       "note": "Incumbents listed are the holders before the November 3, 2026 election; the 2032 election is for the term beginning January 3, 2033.",
       "seats": [
         { "state": "AL", "incumbent": "Tommy Tuberville", "party": "R" },
@@ -120,9 +132,9 @@
       ]
     },
     "1": {
-      "cycle": 2036,
-      "termsExpire": "2037-01-03",
-      "note": "Class 1 is also up in 2030; the 2036 election is for the term beginning January 3, 2037.",
+      "cycles": [2030, 2036],
+      "termsExpire": { "2030": "2031-01-03", "2036": "2037-01-03" },
+      "note": "Class 1 is up in 2030 (term beginning January 3, 2031) and again in 2036 (term beginning January 3, 2037).",
       "seats": [
         { "state": "AZ", "incumbent": "Ruben Gallego", "party": "D" },
         { "state": "CA", "incumbent": "Adam Schiff", "party": "D" },
@@ -135,7 +147,12 @@
         { "state": "MD", "incumbent": "Angela Alsobrooks", "party": "D" },
         { "state": "MA", "incumbent": "Elizabeth Warren", "party": "D" },
         { "state": "MI", "incumbent": "Elissa Slotkin", "party": "D" },
-        { "state": "MN", "incumbent": "Amy Klobuchar", "party": "D" },
+        {
+          "state": "MN",
+          "incumbent": "Amy Klobuchar",
+          "party": "D",
+          "note": "DFL nominee for governor on 2026-11-03; if she becomes governor, an appointee holds the seat until a special election for the rest of the term (to January 3, 2031)."
+        },
         { "state": "MS", "incumbent": "Roger Wicker", "party": "R" },
         { "state": "MO", "incumbent": "Josh Hawley", "party": "R" },
         { "state": "MT", "incumbent": "Tim Sheehy", "party": "R" },
@@ -148,7 +165,12 @@
         { "state": "OH", "incumbent": "Bernie Moreno", "party": "R" },
         { "state": "PA", "incumbent": "David McCormick", "party": "R" },
         { "state": "RI", "incumbent": "Sheldon Whitehouse", "party": "D" },
-        { "state": "TN", "incumbent": "Marsha Blackburn", "party": "R" },
+        {
+          "state": "TN",
+          "incumbent": "Marsha Blackburn",
+          "party": "R",
+          "note": "Republican nominee for governor on 2026-11-03; if she becomes governor, an appointee holds the seat until a special election for the rest of the term (to January 3, 2031)."
+        },
         { "state": "TX", "incumbent": "Ted Cruz", "party": "R" },
         { "state": "UT", "incumbent": "John Curtis", "party": "R" },
         { "state": "VT", "incumbent": "Bernie Sanders", "party": "I" },

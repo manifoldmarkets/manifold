@@ -1,0 +1,712 @@
+{
+  "cycle": 2030,
+  "electionDate": "2030-11-05",
+  "series": "us-2030-general-v1",
+  "counts": {
+    "senate": 33,
+    "governor": 36
+  },
+  "total": 69,
+  "sources": {
+    "senate": [
+      {
+        "name": "U.S. Senate — Class I (terms expire 2031)",
+        "url": "https://www.senate.gov/senators/Class_I.htm",
+        "fetchedAt": "2026-10-06"
+      },
+      {
+        "name": "U.S. Senate — Class II (terms expire 2027)",
+        "url": "https://www.senate.gov/senators/Class_II.htm",
+        "fetchedAt": "2026-10-06"
+      },
+      {
+        "name": "U.S. Senate — Class III (terms expire 2029)",
+        "url": "https://www.senate.gov/senators/Class_III.htm",
+        "fetchedAt": "2026-10-06"
+      },
+      {
+        "name": "Wikipedia — 2028 United States Senate elections (cross-check: 34 Class 3 seats, election day November 7, 2028)",
+        "url": "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+        "fetchedAt": "2026-10-06"
+      },
+      {
+        "name": "Wikipedia — 2030 United States Senate elections (cross-check: 33 Class 1 seats, election day November 5, 2030, terms January 3, 2031 to January 3, 2037; no 2030 special listed)",
+        "url": "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+        "fetchedAt": "2026-11-05"
+      },
+      {
+        "name": "@unitedstates congress-legislators — current legislators (cross-check of Class 1: 33 senators whose terms end 2031-01-03; 17 D, 14 R, 2 I)",
+        "url": "https://unitedstates.github.io/congress-legislators/legislators-current.json",
+        "fetchedAt": "2026-11-05"
+      }
+    ],
+    "governors": [
+      {
+        "name": "Wikipedia — 2026 United States gubernatorial elections (36 states, election day November 3, 2026; New Hampshire and Vermont two-year terms; incumbents and their 2026 status)",
+        "url": "https://en.wikipedia.org/wiki/2026_United_States_gubernatorial_elections",
+        "fetchedAt": "2026-11-05",
+        "note": "Wikipedia has no 2030 gubernatorial elections page yet (HTTP 404 on 2026-11-05). The 2030 set is the 2026 set: the four-year terms elected in 2026 end in January 2031 (December 2030 in Alaska and Hawaii), and New Hampshire and Vermont elect every two years. Neither state's 2026 ballot carried a four-year-term amendment."
+      },
+      {
+        "name": "National Governors Association — Governors (current governors of the 36 states)",
+        "url": "https://www.nga.org/governors/",
+        "fetchedAt": "2026-11-05"
+      },
+      {
+        "name": "Wikipedia — Governor of Alaska (terms begin on the first Monday in December after the election; Alaska Const. art. III, § 4)",
+        "url": "https://en.wikipedia.org/wiki/Governor_of_Alaska",
+        "fetchedAt": "2026-11-05"
+      },
+      {
+        "name": "Wikipedia — Governor of Hawaii (inauguration on the first Monday in December after the election; Hawaii Const. art. V, § 1)",
+        "url": "https://en.wikipedia.org/wiki/Governor_of_Hawaii",
+        "fetchedAt": "2026-11-05"
+      }
+    ]
+  },
+  "notes": {
+    "senate": [
+      "Class 3 (34 seats) is up in 2028, Class 1 (33) in 2030 and again in 2036, Class 2 (33) in 2032. The counts match the task brief.",
+      "Class 1 for 2030 was re-verified on 2026-11-05: senate.gov's class pages answer automated requests with HTTP 403 that day, so the 33 states were checked against the congress-legislators file and Wikipedia's 2030 page instead. Same 33 states as on 2026-10-06.",
+      "No special Senate election is scheduled for 2030 as of 2026-11-05. Two Class 1 senators were their party's nominees for governor on 2026-11-03 (Minnesota, Tennessee): a senator who becomes governor leaves the seat to an appointee and a special election for the rest of the term ending January 3, 2031, which is a different term from the 2030 regular election and is not in this inventory. Add a 2030 special when one is called.",
+      "The Florida and Ohio Class 3 seats are filled by appointees (Moody, Husted) until the November 3, 2026 special elections; those specials cover the unexpired terms ending January 3, 2029, so both seats have their regular full-term election in 2028 as part of Class 3. They are not extra 2028 seats.",
+      "Special elections for seats vacated after this inventory was written are out of scope; add them when they are called, as the brief says.",
+      "Vermont has no Class 2 seat and Nebraska/Alaska have no Class 3 / Class 1 seat respectively, so the 'Another party or independent' exceptions in SEEDS.md apply only to the cycles in which those states actually vote."
+    ],
+    "governors": [
+      "The brief expected the 36 states of the 2026 cycle; confirmed: AK, AL, AR, AZ, CA, CO, CT, FL, GA, HI, IA, ID, IL, KS, MA, MD, ME, MI, MN, NE, NH, NM, NV, NY, OH, OK, OR, PA, RI, SC, SD, TN, TX, VT, WI, WY.",
+      "Kentucky, Louisiana and Mississippi (2027) and New Jersey and Virginia (2029) elect governors in odd years; territories are out of scope.",
+      "Incumbents are as of October 2026 (before the 2026-11-03 elections) and informational only, cross-checked against the 2026 launch audit (backend/scripts/elections-2026/audit/race-inventory.json, 2026-10-03). Every one of these seats was on the 2026 ballot, so the 2030 incumbents are the 2026 winners (New Hampshire's and Vermont's, the 2028 winners); 2026 results are not recorded here.",
+      "Alaska and Hawaii governors take office on the first Monday in December after the election (Alaska Const. art. III, § 4; Hawaii Const. art. V, § 1): December 2, 2030. Every other state's term begins in January 2031.",
+      "Georgia: a majority is required; otherwise a runoff between the top two on the 28th day after the general (O.C.G.A. § 21-2-501): December 3, 2030.",
+      "Alaska: top-four primary and ranked-choice general (2020 Ballot Measure 2); a repeal initiative was on the November 3, 2026 ballot.",
+      "California: top-two primary; the general is between the two candidates who advance (plurality of the two).",
+      "Maine: the general election for governor is decided by plurality; Maine's ranked-choice voting covers primaries and federal general elections only (the 2026 launch audit applied the same rule).",
+      "Vermont: Vt. Const. ch. II, § 47 — if no candidate has a majority, the General Assembly elects the governor from the top three by joint ballot in January.",
+      "Minnesota's Democratic Party is the Democratic-Farmer-Labor Party (DFL); recorded as D below."
+    ]
+  },
+  "races": [
+    {
+      "raceKey": "2030-senate-AZ-regular-general",
+      "office": "senate",
+      "state": "AZ",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Ruben Gallego (D) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-CA-regular-general",
+      "office": "senate",
+      "state": "CA",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Adam Schiff (D) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-CT-regular-general",
+      "office": "senate",
+      "state": "CT",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Chris Murphy (D) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-DE-regular-general",
+      "office": "senate",
+      "state": "DE",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Lisa Blunt Rochester (D) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-FL-regular-general",
+      "office": "senate",
+      "state": "FL",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Rick Scott (R) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-HI-regular-general",
+      "office": "senate",
+      "state": "HI",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Mazie Hirono (D) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-IN-regular-general",
+      "office": "senate",
+      "state": "IN",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Jim Banks (R) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-ME-regular-general",
+      "office": "senate",
+      "state": "ME",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Angus King (I) as of October 2026",
+      "round": "the November 5, 2030 general election, using the final round of ranked-choice tabulation if no candidate has a first-round majority (21-A M.R.S. § 723-A)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-MD-regular-general",
+      "office": "senate",
+      "state": "MD",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Angela Alsobrooks (D) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-MA-regular-general",
+      "office": "senate",
+      "state": "MA",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Elizabeth Warren (D) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-MI-regular-general",
+      "office": "senate",
+      "state": "MI",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Elissa Slotkin (D) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-MN-regular-general",
+      "office": "senate",
+      "state": "MN",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Amy Klobuchar (D) as of October 2026; DFL nominee for governor on 2026-11-03; if she becomes governor, an appointee holds the seat until a special election for the rest of the term (to January 3, 2031).",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-MS-regular-general",
+      "office": "senate",
+      "state": "MS",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Roger Wicker (R) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality; Mississippi's majority/runoff rule applies to state offices, not to federal ones)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-MO-regular-general",
+      "office": "senate",
+      "state": "MO",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Josh Hawley (R) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-MT-regular-general",
+      "office": "senate",
+      "state": "MT",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Tim Sheehy (R) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-NE-regular-general",
+      "office": "senate",
+      "state": "NE",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Deb Fischer (R) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-NV-regular-general",
+      "office": "senate",
+      "state": "NV",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Jacky Rosen (D) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-NJ-regular-general",
+      "office": "senate",
+      "state": "NJ",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Andy Kim (D) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-NM-regular-general",
+      "office": "senate",
+      "state": "NM",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Martin Heinrich (D) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-NY-regular-general",
+      "office": "senate",
+      "state": "NY",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Kirsten Gillibrand (D) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-ND-regular-general",
+      "office": "senate",
+      "state": "ND",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Kevin Cramer (R) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-OH-regular-general",
+      "office": "senate",
+      "state": "OH",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Bernie Moreno (R) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-PA-regular-general",
+      "office": "senate",
+      "state": "PA",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "David McCormick (R) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-RI-regular-general",
+      "office": "senate",
+      "state": "RI",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Sheldon Whitehouse (D) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-TN-regular-general",
+      "office": "senate",
+      "state": "TN",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Marsha Blackburn (R) as of October 2026; Republican nominee for governor on 2026-11-03; if she becomes governor, an appointee holds the seat until a special election for the rest of the term (to January 3, 2031).",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-TX-regular-general",
+      "office": "senate",
+      "state": "TX",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Ted Cruz (R) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-UT-regular-general",
+      "office": "senate",
+      "state": "UT",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "John Curtis (R) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-VT-regular-general",
+      "office": "senate",
+      "state": "VT",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Bernie Sanders (I) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-VA-regular-general",
+      "office": "senate",
+      "state": "VA",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Tim Kaine (D) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-WA-regular-general",
+      "office": "senate",
+      "state": "WA",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Maria Cantwell (D) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-WV-regular-general",
+      "office": "senate",
+      "state": "WV",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Jim Justice (R) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-WI-regular-general",
+      "office": "senate",
+      "state": "WI",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "Tammy Baldwin (D) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-senate-WY-regular-general",
+      "office": "senate",
+      "state": "WY",
+      "seat": "Class 1 seat; term beginning January 3, 2031",
+      "incumbentOctober2026": "John Barrasso (R) as of October 2026",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-AL-regular-general",
+      "office": "governor",
+      "state": "AL",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Kay Ivey (R) as of October 2026; Term-limited; open seat on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-AK-regular-general",
+      "office": "governor",
+      "state": "AK",
+      "seat": "4-year term beginning December 2030",
+      "incumbentOctober2026": "Mike Dunleavy (R) as of October 2026; Term-limited; open seat on 2026-11-03. Top-four primary and ranked-choice general; the term begins on the first Monday in December.",
+      "round": "the November 5, 2030 general election under the system Alaska uses for it: the final round of ranked-choice tabulation under the current top-four system, or a plurality if voters repeal that system (a repeal initiative is on the November 3, 2026 ballot)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-AZ-regular-general",
+      "office": "governor",
+      "state": "AZ",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Katie Hobbs (D) as of October 2026; Sought re-election on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-AR-regular-general",
+      "office": "governor",
+      "state": "AR",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Sarah Huckabee Sanders (R) as of October 2026; Sought re-election on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-CA-regular-general",
+      "office": "governor",
+      "state": "CA",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Gavin Newsom (D) as of October 2026; Term-limited; open seat on 2026-11-03. Top-two general.",
+      "round": "the November 5, 2030 top-two general election (the two candidates who advance from California's top-two primary; plurality of the two)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-CO-regular-general",
+      "office": "governor",
+      "state": "CO",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Jared Polis (D) as of October 2026; Term-limited; open seat on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-CT-regular-general",
+      "office": "governor",
+      "state": "CT",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Ned Lamont (D) as of October 2026; Sought a third term on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-FL-regular-general",
+      "office": "governor",
+      "state": "FL",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Ron DeSantis (R) as of October 2026; Term-limited; open seat on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-GA-regular-general",
+      "office": "governor",
+      "state": "GA",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Brian Kemp (R) as of October 2026; Term-limited; open seat on 2026-11-03. Majority required; runoff on the 28th day after.",
+      "round": "the November 5, 2030 general election if a candidate wins a majority of the votes; otherwise the December 3, 2030 runoff between the top two (O.C.G.A. § 21-2-501: majority required, runoff on the 28th day after)",
+      "closeTimeUtc": "2030-12-04T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-HI-regular-general",
+      "office": "governor",
+      "state": "HI",
+      "seat": "4-year term beginning December 2030",
+      "incumbentOctober2026": "Josh Green (D) as of October 2026; Sought re-election on 2026-11-03. The term begins on the first Monday in December.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-ID-regular-general",
+      "office": "governor",
+      "state": "ID",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Brad Little (R) as of October 2026; Sought a third term on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-IL-regular-general",
+      "office": "governor",
+      "state": "IL",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "JB Pritzker (D) as of October 2026; Sought a third term on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-IA-regular-general",
+      "office": "governor",
+      "state": "IA",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Kim Reynolds (R) as of October 2026; Did not seek re-election; open seat on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-KS-regular-general",
+      "office": "governor",
+      "state": "KS",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Laura Kelly (D) as of October 2026; Term-limited; open seat on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-ME-regular-general",
+      "office": "governor",
+      "state": "ME",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Janet Mills (D) as of October 2026; Term-limited; open seat on 2026-11-03. Plurality general (no ranked-choice tabulation for governor).",
+      "round": "the November 5, 2030 general election (plurality winner: Maine's ranked-choice tabulation covers primaries and federal general elections, not the general election for governor, which its constitution decides by plurality; if Maine adopts ranked-choice tabulation for this election, the final round counts)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-MD-regular-general",
+      "office": "governor",
+      "state": "MD",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Wes Moore (D) as of October 2026; Sought re-election on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-MA-regular-general",
+      "office": "governor",
+      "state": "MA",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Maura Healey (D) as of October 2026; Sought re-election on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-MI-regular-general",
+      "office": "governor",
+      "state": "MI",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Gretchen Whitmer (D) as of October 2026; Term-limited; open seat on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-MN-regular-general",
+      "office": "governor",
+      "state": "MN",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Tim Walz (D) as of October 2026; Ended his re-election bid in January 2026; open seat on 2026-11-03 (DFL).",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-NE-regular-general",
+      "office": "governor",
+      "state": "NE",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Jim Pillen (R) as of October 2026; Sought re-election on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-NV-regular-general",
+      "office": "governor",
+      "state": "NV",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Joe Lombardo (R) as of October 2026; Sought re-election on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-NH-regular-general",
+      "office": "governor",
+      "state": "NH",
+      "seat": "2-year term beginning January 2031",
+      "incumbentOctober2026": "Kelly Ayotte (R) as of October 2026; Two-year term; sought re-election on 2026-11-03; elected again in 2028.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-NM-regular-general",
+      "office": "governor",
+      "state": "NM",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Michelle Lujan Grisham (D) as of October 2026; Term-limited; open seat on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-NY-regular-general",
+      "office": "governor",
+      "state": "NY",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Kathy Hochul (D) as of October 2026; Sought re-election on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-OH-regular-general",
+      "office": "governor",
+      "state": "OH",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Mike DeWine (R) as of October 2026; Term-limited; open seat on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-OK-regular-general",
+      "office": "governor",
+      "state": "OK",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Kevin Stitt (R) as of October 2026; Term-limited; open seat on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-OR-regular-general",
+      "office": "governor",
+      "state": "OR",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Tina Kotek (D) as of October 2026; Sought re-election on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-PA-regular-general",
+      "office": "governor",
+      "state": "PA",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Josh Shapiro (D) as of October 2026; Sought re-election on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-RI-regular-general",
+      "office": "governor",
+      "state": "RI",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Dan McKee (D) as of October 2026; Lost renomination in the 2026 Democratic primary; open seat on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-SC-regular-general",
+      "office": "governor",
+      "state": "SC",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Henry McMaster (R) as of October 2026; Term-limited; open seat on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-SD-regular-general",
+      "office": "governor",
+      "state": "SD",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Larry Rhoden (R) as of October 2026; Succeeded to the office in January 2025; sought a full term on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-TN-regular-general",
+      "office": "governor",
+      "state": "TN",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Bill Lee (R) as of October 2026; Term-limited; open seat on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-TX-regular-general",
+      "office": "governor",
+      "state": "TX",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Greg Abbott (R) as of October 2026; Sought a fourth term on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-VT-regular-general",
+      "office": "governor",
+      "state": "VT",
+      "seat": "2-year term beginning January 2031",
+      "incumbentOctober2026": "Phil Scott (R) as of October 2026; Two-year term; sought re-election on 2026-11-03; elected again in 2028. General Assembly chooses if no majority.",
+      "round": "the November 5, 2030 general election if a candidate wins a majority; if no one does, the Vermont General Assembly elects the governor from the top three by joint ballot in January 2031 (Vt. Const. ch. II, § 47), and the market resolves to the party of the person it elects",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-WI-regular-general",
+      "office": "governor",
+      "state": "WI",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Tony Evers (D) as of October 2026; Did not seek a third term; open seat on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2030-governor-WY-regular-general",
+      "office": "governor",
+      "state": "WY",
+      "seat": "4-year term beginning January 2031",
+      "incumbentOctober2026": "Mark Gordon (R) as of October 2026; Term-limited; open seat on 2026-11-03.",
+      "round": "the November 5, 2030 general election (plurality winner)",
+      "closeTimeUtc": "2030-11-06T12:00:00.000Z"
+    }
+  ]
+}

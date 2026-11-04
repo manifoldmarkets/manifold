@@ -67,11 +67,11 @@ export const SEED_PARAMS = {
     senate: 14,
     governor: 20,
   } as Record<SeedOffice, number>,
-  // Horizon: 2032 and 2036 regress further toward even.
-  horizonMultiplier: { 2028: 1, 2032: 4 / 3, 2036: 5 / 3 } as Record<
-    Cycle,
-    number
-  >,
+  // Horizon: later cycles regress further toward even. The multiplier is
+  // 1 + (cycle − 2028)/12: 1, 7/6, 4/3 and 5/3 for 2028, 2030, 2032 and 2036
+  // (see horizonMultiplier).
+  horizonBaseCycle: 2028,
+  horizonYears: 12,
   // "Another party or independent" share in percentage points.
   otherDefault: 1,
   // Seats where an independent or third-party win is a live possibility.
@@ -85,6 +85,20 @@ export const SEED_PARAMS = {
     '2028-senate-UT': {
       other: 6,
       why: 'Utah: in 2022 Democrats endorsed independent Evan McMullin instead of fielding a nominee and he took 42.8% against Mike Lee; the same seat is up in 2028.',
+    },
+    // 2030 (Class 1): the same three states and shares as the reviewed 2036
+    // Class 1 list.
+    '2030-senate-ME': {
+      other: 10,
+      why: 'Maine: the Class 1 seat is Angus King’s (independent, caucuses with Democrats), up in 2030; a strong independent tradition and ranked-choice tabulation make an independent winner plausible. Same share as the reviewed 2036 exception.',
+    },
+    '2030-senate-NE': {
+      other: 5,
+      why: 'Nebraska: independent Dan Osborn took 46.5% for this Class 1 seat against Deb Fischer in 2024 with no Democratic nominee, and ran again for the Class 2 seat in 2026. Same share as the reviewed 2036 exception.',
+    },
+    '2030-senate-VT': {
+      other: 10,
+      why: 'Vermont: the Class 1 seat is Bernie Sanders’s (independent since 2007), up in 2030; an independent winner, Sanders or a successor, is plausible. Same share as the reviewed 2036 exception.',
     },
     '2032-senate-AK': {
       other: 5,
@@ -159,9 +173,18 @@ export function leanOf(unit: UnitResults, national: UnitResults): number {
   return sum / weight
 }
 
+// 1 + (cycle − base)/years, written as one division so 2030, 2032 and 2036
+// get exactly the doubles 7/6, 4/3 and 5/3 (the 2032/2036 seeds are unchanged).
+export function horizonMultiplier(cycle: Cycle): number {
+  const { horizonBaseCycle, horizonYears } = SEED_PARAMS
+  const m = (horizonYears + cycle - horizonBaseCycle) / horizonYears
+  if (!Number.isFinite(m) || m < 1)
+    throw new Error(`horizonMultiplier: bad cycle ${cycle}`)
+  return m
+}
+
 export function sigmaFor(office: SeedOffice, cycle: Cycle): number {
-  const sigma =
-    SEED_PARAMS.sigma2028[office] * SEED_PARAMS.horizonMultiplier[cycle]
+  const sigma = SEED_PARAMS.sigma2028[office] * horizonMultiplier(cycle)
   if (!Number.isFinite(sigma) || sigma <= 0)
     throw new Error(`sigmaFor: bad sigma for ${office} ${cycle}`)
   return sigma

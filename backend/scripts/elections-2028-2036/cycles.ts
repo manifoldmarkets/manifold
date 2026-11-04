@@ -3,8 +3,15 @@
 // from statute or the calendar, never from a forecast.
 import { Office } from 'shared/elections/election-market-creation'
 
-export type Cycle = 2028 | 2032 | 2036
-export const CYCLES: readonly Cycle[] = [2028, 2032, 2036]
+// Launch scope (CEO, November 2026): the next three general elections, 2028,
+// 2030 and 2032. 2036 stays prepared but is optional.
+export type Cycle = 2028 | 2030 | 2032 | 2036
+export const CYCLES: readonly Cycle[] = [2028, 2030, 2032, 2036]
+export const OPTIONAL_CYCLES: readonly Cycle[] = [2036]
+
+// Presidential years elect presidential electors and the eleven
+// presidential-year governors; midterm years elect neither.
+export const isPresidentialYear = (cycle: number) => cycle % 4 === 0
 
 // Federal general elections fall on the Tuesday after the first Monday in
 // November (2 U.S.C. § 7; 3 U.S.C. § 1).
@@ -35,15 +42,14 @@ export type CycleConfig = {
   series: string
   electionDate: string
   closeTime: number
-  // O.C.G.A. § 21-2-501: a majority is required for Senate and House seats
-  // (not presidential electors); the runoff is on the 28th day after.
+  // O.C.G.A. § 21-2-501: a majority is required for Senate, House and
+  // governor (not presidential electors); the runoff is on the 28th day after.
   georgiaRunoffDate: string
   georgiaCloseTime: number
   termStart: Record<Office, string>
+  president: boolean
   house: boolean
-  // The 2026 midterm results are certified by December 2026; the planning
-  // horizon drives how far the Stage A seeds regress to even.
-  horizonMultiplier: number
+  optional: boolean
 }
 
 export function cycleConfig(cycle: Cycle): CycleConfig {
@@ -62,14 +68,18 @@ export function cycleConfig(cycle: Cycle): CycleConfig {
       president: `January 20, ${cycle + 1}`,
       governor: `January ${cycle + 1}`,
     },
+    president: isPresidentialYear(cycle),
+    // House districts only for 2028: the 2030 lines may still change
+    // mid-decade, and 2032 onwards uses the 2030 census.
     house: cycle === 2028,
-    horizonMultiplier: { 2028: 1, 2032: 4 / 3, 2036: 5 / 3 }[cycle],
+    optional: OPTIONAL_CYCLES.includes(cycle),
   }
 }
 
 // Expected calendar, verified by the tests against electionDay().
 export const EXPECTED_ELECTION_DATES: Record<Cycle, string> = {
   2028: '2028-11-07',
+  2030: '2030-11-05',
   2032: '2032-11-02',
   2036: '2036-11-04',
 }
@@ -79,6 +89,30 @@ export type RoundRule = {
   closeTime: number
 }
 
+// Georgia (O.C.G.A. § 21-2-501): a majority wins; otherwise a runoff between
+// the top two on the 28th day after. Senate, House and governor (2030) use it.
+function georgiaMajorityRound(cfg: CycleConfig): RoundRule {
+  return {
+    text: `the ${longDate(
+      cfg.electionDate
+    )} general election if a candidate wins a majority of the votes; otherwise the ${longDate(
+      cfg.georgiaRunoffDate
+    )} runoff between the top two (O.C.G.A. § 21-2-501: majority required, runoff on the 28th day after)`,
+    closeTime: cfg.georgiaCloseTime,
+  }
+}
+
+// Alaska's top-four primary and ranked-choice general cover Senate, House and
+// governor alike.
+function alaskaRound(cfg: CycleConfig): RoundRule {
+  return {
+    text: `the ${longDate(
+      cfg.electionDate
+    )} general election under the system Alaska uses for it: the final round of ranked-choice tabulation under the current top-four system, or a plurality if voters repeal that system (a repeal initiative is on the November 3, 2026 ballot)`,
+    closeTime: cfg.closeTime,
+  }
+}
+
 // Which round decides a Senate or House seat, by state.
 export function congressionalRound(
   state: string,
@@ -86,13 +120,7 @@ export function congressionalRound(
   cfg: CycleConfig
 ): RoundRule {
   const general = longDate(cfg.electionDate)
-  if (state === 'GA')
-    return {
-      text: `the ${general} general election if a candidate wins a majority of the votes; otherwise the ${longDate(
-        cfg.georgiaRunoffDate
-      )} runoff between the top two (O.C.G.A. § 21-2-501: majority required, runoff on the 28th day after)`,
-      closeTime: cfg.georgiaCloseTime,
-    }
+  if (state === 'GA') return georgiaMajorityRound(cfg)
   if (state === 'LA')
     return {
       text: `the ${general} general election, decided by plurality among the party nominees chosen in Louisiana's closed party primaries and any other qualified candidates (La. Act 1 of the 2024 First Extraordinary Session; the 2026-only open primary with a December runoff under HB 842 of 2026 does not apply to this election). If Louisiana adopts a system with a later deciding round for this election, that round counts and the creator will extend the close time`,
@@ -103,11 +131,7 @@ export function congressionalRound(
       text: `the ${general} general election, using the final round of ranked-choice tabulation if no candidate has a first-round majority (21-A M.R.S. § 723-A)`,
       closeTime: cfg.closeTime,
     }
-  if (state === 'AK')
-    return {
-      text: `the ${general} general election under the system Alaska uses for it: the final round of ranked-choice tabulation under the current top-four system, or a plurality if voters repeal that system (a repeal initiative is on the November 3, 2026 ballot)`,
-      closeTime: cfg.closeTime,
-    }
+  if (state === 'AK') return alaskaRound(cfg)
   if (state === 'MS' && office === 'senate')
     return {
       text: `the ${general} general election (plurality; Mississippi's majority/runoff rule applies to state offices, not to federal ones)`,
@@ -131,6 +155,19 @@ export function governorRound(state: string, cfg: CycleConfig): RoundRule {
   if (state === 'WA')
     return {
       text: `the ${general} top-two general election (the two candidates who advance from the August primary; plurality of the two)`,
+      closeTime: cfg.closeTime,
+    }
+  // The midterm-year governorships (2030) bring the states below.
+  if (state === 'GA') return georgiaMajorityRound(cfg)
+  if (state === 'AK') return alaskaRound(cfg)
+  if (state === 'CA')
+    return {
+      text: `the ${general} top-two general election (the two candidates who advance from California's top-two primary; plurality of the two)`,
+      closeTime: cfg.closeTime,
+    }
+  if (state === 'ME')
+    return {
+      text: `the ${general} general election (plurality winner: Maine's ranked-choice tabulation covers primaries and federal general elections, not the general election for governor, which its constitution decides by plurality; if Maine adopts ranked-choice tabulation for this election, the final round counts)`,
       closeTime: cfg.closeTime,
     }
   return {

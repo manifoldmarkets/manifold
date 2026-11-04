@@ -1,5 +1,5 @@
-// Regression tests for the 2028/2032/2036 manifest generator. Run from the
-// repository root:
+// Regression tests for the 2028/2030/2032 (+ optional 2036) manifest
+// generator. Run from the repository root:
 //   TS_NODE_PROJECT=backend/scripts/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 \
 //     node -r ts-node/register --test backend/scripts/elections-2028-2036/generate-manifests.test.ts
 import * as assert from 'node:assert/strict'
@@ -15,14 +15,17 @@ import {
   electionDay,
   EXPECTED_ELECTION_DATES,
   noonUtcAfter,
+  OPTIONAL_CYCLES,
 } from './cycles'
 import { buildManifest, loadTopics, topicIdsFor } from './generate-manifests'
 import { EXPECTED_COUNTS, inventories, racesFor } from './inventory'
 import {
   assertSeedConstraints,
+  horizonMultiplier,
   leanOf,
   normalCdf,
   SEED_PARAMS,
+  sigmaFor,
   stageASeed,
 } from './seeds'
 import { ANSWERS } from './templates'
@@ -59,9 +62,17 @@ test('election days are the Tuesday after the first Monday in November', () => {
   }
   assert.equal(electionDay(2026), '2026-11-03')
   assert.equal(electionDay(2024), '2024-11-05')
+  assert.equal(electionDay(2030), '2030-11-05')
+  assert.equal(
+    new Date(cycleConfig(2030).closeTime).toISOString(),
+    '2030-11-06T12:00:00.000Z'
+  )
+  assert.equal(cycleConfig(2030).georgiaRunoffDate, '2030-12-03')
 })
 
-test('counts per cycle and office match the brief; 739 markets at Ṁ1,000', () => {
+test('counts per cycle and office match the brief; 707 markets at Ṁ1,000 for 2028–2032, 808 with 2036', () => {
+  assert.deepEqual([...CYCLES], [2028, 2030, 2032, 2036])
+  assert.deepEqual([...OPTIONAL_CYCLES], [2036])
   let total = 0
   let mana = 0
   for (const cycle of CYCLES) {
@@ -79,10 +90,17 @@ test('counts per cycle and office match the brief; 739 markets at Ṁ1,000', () 
     assert.equal(built[cycle].totalMana, entriesOf(cycle).length * 1000)
   }
   assert.equal(entriesOf(2028).length, 537)
+  assert.equal(entriesOf(2030).length, 69)
   assert.equal(entriesOf(2032).length, 101)
   assert.equal(entriesOf(2036).length, 101)
-  assert.equal(total, 739)
-  assert.equal(mana, 739_000)
+  assert.equal(total, 808)
+  assert.equal(mana, 808_000)
+  const core = CYCLES.filter((c) => !OPTIONAL_CYCLES.includes(c))
+  assert.deepEqual(core, [2028, 2030, 2032])
+  assert.equal(
+    core.reduce((s, c) => s + built[c].totalMana, 0),
+    707_000
+  )
 })
 
 test('every generated manifest validates with zero errors and is not approved', () => {
@@ -92,7 +110,36 @@ test('every generated manifest validates with zero errors and is not approved', 
     assert.equal(m.review.approved, false)
     assert.equal(m.series, `us-${cycle}-general-v1`)
     assert.equal(m.kind, 'races')
+    // 2036 says it is optional; the launch-scope cycles do not.
+    assert.equal(
+      /Optional cycle/.test(m.review.notes ?? ''),
+      OPTIONAL_CYCLES.includes(cycle),
+      `${cycle}`
+    )
   }
+})
+
+test('2030 race keys are validated against the identity: a wrong cycle, office or state fails', () => {
+  const ok = entriesOf(2030).find(
+    (e) => e.raceKey === '2030-governor-GA-regular-general'
+  )!
+  const one = (entry: RaceManifestEntry) =>
+    validateManifest({ ...built[2030].manifest, entries: [entry] }, NOW).join(
+      ' '
+    )
+  assert.equal(one(ok), '')
+  assert.match(
+    one({ ...ok, raceKey: '2028-governor-GA-regular-general' }),
+    /cycle 2028 must match identity.cycle 2030/
+  )
+  assert.match(
+    one({ ...ok, raceKey: '2030-senate-GA-regular-general' }),
+    /office senate must match identity.office governor/
+  )
+  assert.match(
+    one({ ...ok, raceKey: '2030-governor-AL-regular-general' }),
+    /state AL must match identity.state GA/
+  )
 })
 
 test('race keys follow the 2026 style and reserved ids are unique across cycles', () => {
@@ -124,6 +171,11 @@ test('race keys follow the 2026 style and reserved ids are unique across cycles'
   assert.ok(keys.has('2028-president-US-general'))
   assert.ok(keys.has('2032-senate-ME-regular-general'))
   assert.ok(keys.has('2036-senate-VT-regular-general'))
+  assert.ok(keys.has('2030-senate-ME-regular-general'))
+  assert.ok(keys.has('2030-senate-VT-regular-general'))
+  assert.ok(keys.has('2030-governor-GA-regular-general'))
+  assert.ok(keys.has('2030-governor-NH-regular-general'))
+  assert.ok(keys.has('2030-governor-VT-regular-general'))
   assert.ok(
     !keys.has('2032-senate-VT-regular-general'),
     'Vermont has no Class 2 seat'
@@ -132,6 +184,141 @@ test('race keys follow the 2026 style and reserved ids are unique across cycles'
     !keys.has('2028-senate-NE-regular-general'),
     'Nebraska has no Class 3 seat'
   )
+  assert.ok(
+    !keys.has('2030-senate-GA-regular-general'),
+    'Georgia has no Class 1 seat'
+  )
+  assert.ok(
+    ![...keys].some((k) => /^2030-(president|house)-/.test(k)),
+    '2030 has no presidential or House entries'
+  )
+})
+
+test('2030 midterm: the 33 Class 1 seats and the 36 governorships of the 2026 cycle', () => {
+  const statesOf = (cycle: number, office: string) =>
+    entriesOf(cycle)
+      .filter((e) => e.identity.office === office)
+      .map((e) => e.identity.state)
+      .sort()
+  const senate2030 = statesOf(2030, 'senate')
+  // The Class 1 states, as verified on 2026-11-05 (senate-classes.json
+  // sources): spelled out so a wrong seat in the inventory fails here.
+  assert.deepEqual(senate2030, [
+    'AZ',
+    'CA',
+    'CT',
+    'DE',
+    'FL',
+    'HI',
+    'IN',
+    'MA',
+    'MD',
+    'ME',
+    'MI',
+    'MN',
+    'MO',
+    'MS',
+    'MT',
+    'ND',
+    'NE',
+    'NJ',
+    'NM',
+    'NV',
+    'NY',
+    'OH',
+    'PA',
+    'RI',
+    'TN',
+    'TX',
+    'UT',
+    'VA',
+    'VT',
+    'WA',
+    'WI',
+    'WV',
+    'WY',
+  ])
+  assert.deepEqual(senate2030, statesOf(2036, 'senate'), 'same Class 1 seats')
+  assert.equal(
+    new Set([
+      ...senate2030,
+      ...statesOf(2028, 'senate'),
+      ...statesOf(2032, 'senate'),
+    ]).size,
+    50,
+    'the three classes cover every state'
+  )
+  assert.deepEqual(statesOf(2030, 'governor'), [
+    'AK',
+    'AL',
+    'AR',
+    'AZ',
+    'CA',
+    'CO',
+    'CT',
+    'FL',
+    'GA',
+    'HI',
+    'IA',
+    'ID',
+    'IL',
+    'KS',
+    'MA',
+    'MD',
+    'ME',
+    'MI',
+    'MN',
+    'NE',
+    'NH',
+    'NM',
+    'NV',
+    'NY',
+    'OH',
+    'OK',
+    'OR',
+    'PA',
+    'RI',
+    'SC',
+    'SD',
+    'TN',
+    'TX',
+    'VT',
+    'WI',
+    'WY',
+  ])
+  // New Hampshire and Vermont (two-year terms) are the only governorships
+  // up in both 2028 and 2030.
+  assert.deepEqual(
+    statesOf(2030, 'governor').filter((s) =>
+      statesOf(2028, 'governor').includes(s)
+    ),
+    ['NH', 'VT']
+  )
+  for (const e of entriesOf(2030)) {
+    const { office, state } = e.identity
+    const seat = String(e.evidence?.seat)
+    if (office === 'senate')
+      assert.equal(seat, 'Class 1 seat; term beginning January 3, 2031')
+    else
+      assert.equal(
+        seat,
+        `${state === 'NH' || state === 'VT' ? 2 : 4}-year term beginning ${
+          state === 'AK' || state === 'HI' ? 'December 2030' : 'January 2031'
+        }`,
+        e.raceKey
+      )
+    assert.equal(
+      e.dashboard.list,
+      `${office === 'governor' ? 'governors' : office}2030`
+    )
+    assert.ok(!e.reviewedRejectedContractIds?.length)
+  }
+  // σ for 2030 is the 2028 σ × 7/6.
+  const ga = entriesOf(2030).find(
+    (e) => e.raceKey === '2030-governor-GA-regular-general'
+  )!
+  const source = (ga.seed as { source?: { sigma: number } }).source!
+  assert.equal(source.sigma, Number(((20 * 7) / 6).toFixed(3)))
 })
 
 test('answers are exactly the three generic party labels with valid seeds', () => {
@@ -222,19 +409,50 @@ test('descriptions state the round, the party rule, the N/A cases and the electo
       if (state === 'GA')
         assert.match(d, /does not apply to presidential electors/, e.raceKey)
     }
-    if (state === 'GA' && (office === 'senate' || office === 'house')) {
+    if (state === 'GA' && office !== 'president') {
       assert.match(d, /runoff/, e.raceKey)
       assert.match(d, /28th day/, e.raceKey)
       assert.match(d, new RegExp(cfg.georgiaRunoffDate.slice(0, 4)), e.raceKey)
+      if (cfg.cycle === 2030)
+        assert.match(d, /December 3, 2030 runoff/, e.raceKey)
     }
     if (state === 'ME' && office !== 'governor')
-      assert.match(d, /ranked-choice/, e.raceKey)
-    if (state === 'AK' && office !== 'governor')
-      assert.match(d, /ranked-choice|repeal/, e.raceKey)
+      assert.match(d, /final round of ranked-choice tabulation/, e.raceKey)
+    if (state === 'ME' && office === 'governor') {
+      assert.match(d, /plurality winner/, e.raceKey)
+      assert.match(d, /not the general election for governor/, e.raceKey)
+    }
+    if (state === 'AK') assert.match(d, /ranked-choice|repeal/, e.raceKey)
+    if (state === 'CA' && office === 'governor')
+      assert.match(d, /top-two general election/, e.raceKey)
     if (state === 'LA' && (office === 'senate' || office === 'house'))
       assert.match(d, /closed party primaries/, e.raceKey)
     if (state === 'VT' && office === 'governor')
       assert.match(d, /General Assembly/, e.raceKey)
+    if ((state === 'AK' || state === 'HI') && office === 'governor')
+      assert.match(d, /term beginning December 2030\)/, e.raceKey)
+    if (state === 'ND' && office === 'governor')
+      assert.match(
+        d,
+        new RegExp(`term beginning December ${e.identity.cycle}\\)`),
+        e.raceKey
+      )
+    // Minnesota's and North Dakota's Democratic parties use other ballot
+    // names; the description says they count as the Democratic Party.
+    assert.equal(
+      /Democratic-Farmer-Labor Party \(DFL\), which counts as the Democratic Party/.test(
+        d
+      ),
+      state === 'MN',
+      e.raceKey
+    )
+    assert.equal(
+      /Democratic-Nonpartisan League Party \(Democratic-NPL\), which counts as the Democratic Party/.test(
+        d
+      ),
+      state === 'ND',
+      e.raceKey
+    )
   }
 })
 
@@ -243,21 +461,49 @@ test('close times are noon UTC the day after the general, later only for Georgia
     const cfg = cycleConfig(cycle)
     for (const e of entriesOf(cycle)) {
       const { office, state } = e.identity
+      // Georgia's majority rule covers Senate, House and governor, not
+      // presidential electors.
       const expected =
-        state === 'GA' && (office === 'senate' || office === 'house')
+        state === 'GA' && office !== 'president'
           ? cfg.georgiaCloseTime
           : cfg.closeTime
       assert.equal(e.payload!.closeTime, expected, e.raceKey)
       assert.ok(e.payload!.closeTime > NOW)
     }
   }
+  const close2030 = (key: string) =>
+    new Date(
+      entriesOf(2030).find((e) => e.raceKey === key)!.payload!.closeTime
+    ).toISOString()
+  assert.equal(
+    close2030('2030-senate-PA-regular-general'),
+    '2030-11-06T12:00:00.000Z'
+  )
+  assert.equal(
+    close2030('2030-governor-GA-regular-general'),
+    '2030-12-04T12:00:00.000Z'
+  )
+  assert.equal(
+    close2030('2030-governor-AK-regular-general'),
+    '2030-11-06T12:00:00.000Z'
+  )
+  assert.equal(
+    entriesOf(2030).filter(
+      (e) => e.payload!.closeTime !== cycleConfig(2030).closeTime
+    ).length,
+    1,
+    'only Georgia governor closes after the runoff in 2030'
+  )
 })
 
 test('no candidate names anywhere traders see or the duplicate search uses', () => {
   const names = new Set<string>()
   for (const cls of Object.values(inventories.senate().classes))
     for (const s of cls.seats) names.add(s.incumbent)
-  for (const g of inventories.governors().states) names.add(g.incumbent)
+  for (const cycle of CYCLES)
+    for (const g of inventories.governors(cycle).states) names.add(g.incumbent)
+  // The midterm-year governors are in the list too.
+  assert.ok(names.has('Brian Kemp') && names.has('Kay Ivey'))
   for (const d of Object.values(inventories.results().districts))
     if (d.incumbent) names.add(d.incumbent)
   assert.ok(names.size > 400)
@@ -296,6 +542,17 @@ test('topics: at most five existing prod ids per market; missing slugs are repor
   assert.deepEqual(built[2028].missingTopics, [
     '2028-us-congressional-elections',
   ])
+  assert.deepEqual(built[2030].missingTopics, [
+    '2030-us-congressional-elections',
+    '2030-us-elections',
+  ])
+  // Every missing slug is listed for Tod in topics.json → missing.
+  for (const cycle of CYCLES)
+    for (const slug of built[cycle].missingTopics)
+      assert.ok(
+        topics.missing.some((m) => m.slug === slug),
+        `${slug} is not in topics.json missing`
+      )
   assert.deepEqual(built[2032].missingTopics, [
     '2032-us-congressional-elections',
     '2032-us-elections',
@@ -320,6 +577,26 @@ test('dashboard block is consistent: list, key, cycle and office', () => {
   }
 })
 
+test('horizon multiplier is 1 + (cycle − 2028)/12 and leaves the 2028/2032/2036 σ unchanged', () => {
+  assert.equal(horizonMultiplier(2028), 1)
+  assert.equal(horizonMultiplier(2030), 7 / 6)
+  assert.equal(horizonMultiplier(2032), 4 / 3)
+  assert.equal(horizonMultiplier(2036), 5 / 3)
+  // Exactly the values of the earlier fixed table, so no 2032/2036 seed moves.
+  for (const office of ['president', 'house', 'senate', 'governor'] as const) {
+    assert.equal(
+      sigmaFor(office, 2032),
+      SEED_PARAMS.sigma2028[office] * (4 / 3)
+    )
+    assert.equal(
+      sigmaFor(office, 2036),
+      SEED_PARAMS.sigma2028[office] * (5 / 3)
+    )
+  }
+  assert.ok(Math.abs(sigmaFor('senate', 2030) - 14 * (7 / 6)) < 1e-12)
+  assert.ok(Math.abs(sigmaFor('governor', 2030) - 20 * (7 / 6)) < 1e-12)
+})
+
 test('Stage A seed math: symmetric, monotone, and regressed by horizon', () => {
   assert.ok(Math.abs(normalCdf(0) - 0.5) < 1e-9)
   assert.ok(Math.abs(normalCdf(1.959964) - 0.975) < 1e-5)
@@ -339,8 +616,10 @@ test('Stage A seed math: symmetric, monotone, and regressed by horizon', () => {
       national,
     })
   )
-  assert.ok(seeds[0].pDem > seeds[1].pDem && seeds[1].pDem > seeds[2].pDem)
-  assert.ok(seeds[2].pDem > 0.5)
+  // CYCLES is in date order: each later cycle regresses further.
+  for (let i = 1; i < seeds.length; i++)
+    assert.ok(seeds[i - 1].pDem > seeds[i].pDem, `${CYCLES[i]}`)
+  assert.ok(seeds[seeds.length - 1].pDem > 0.5)
   for (const s of seeds)
     assert.doesNotThrow(() => assertSeedConstraints(s.probs))
   const landslide = stageASeed({
@@ -411,15 +690,17 @@ test('rejections become reviewedRejectedContractIds and holds make entries unres
 })
 
 test('generation is deterministic for a fixed generatedAt', () => {
-  const again = buildManifest(2032, {
-    topics,
-    generatedAt: GENERATED_AT,
-    now: NOW,
-  })
-  assert.equal(
-    JSON.stringify(again.manifest),
-    JSON.stringify(built[2032].manifest)
-  )
+  for (const cycle of [2030, 2032] as const) {
+    const again = buildManifest(cycle, {
+      topics,
+      generatedAt: GENERATED_AT,
+      now: NOW,
+    })
+    assert.equal(
+      JSON.stringify(again.manifest),
+      JSON.stringify(built[cycle].manifest)
+    )
+  }
 })
 
 test('the race inventory matches the manifests one to one', () => {

@@ -1235,34 +1235,35 @@ const genericEntry = (
   office: 'senate' | 'governor' | 'house' | 'president',
   state: string,
   stateName: string,
-  district?: number
+  district?: number,
+  cycle = 2028
 ): ManifestEntry => ({
   ...partyEntry(state, stateName),
   raceKey:
     office === 'president'
-      ? `2028-president-${state}${
+      ? `${cycle}-president-${state}${
           district !== undefined ? `-0${district}` : ''
         }-general`
-      : `2028-${office}-${state}${
+      : `${cycle}-${office}-${state}${
           district !== undefined ? `-0${district}` : ''
         }-regular-general`,
   identity: {
-    cycle: 2028,
+    cycle,
     office,
     state,
     stateName,
     ...(district !== undefined ? { district } : {}),
     election: 'regular',
-    round: 'Nov 7, 2028 general',
+    round: cycle === 2028 ? 'Nov 7, 2028 general' : `Nov ${cycle} general`,
     candidateNames: [],
   },
   payload: {
     ...partyEntry(state, stateName).payload!,
-    question: `Which party will win the 2028 ${stateName} ${office} election?`,
-    closeTime: Date.UTC(2028, 10, 8, 12),
+    question: `Which party will win the ${cycle} ${stateName} ${office} election?`,
+    closeTime: Date.UTC(cycle, 10, 8, 12),
   },
   dashboard: {
-    list: `${office === 'governor' ? 'governors' : office}2028`,
+    list: `${office === 'governor' ? 'governors' : office}${cycle}`,
     key: state,
   },
 })
@@ -1532,5 +1533,53 @@ describe('generic 2028+ classification', () => {
     expect(
       validateManifest(manifest([candidatePresident]), NOW).join(' ')
     ).toMatch(/resolve by party/)
+  })
+
+  test('a 2030 midterm entry is tied to 2030: other years are other elections', () => {
+    const me = genericEntry('senate', 'ME', 'Maine', undefined, 2030)
+    const ga = genericEntry('governor', 'GA', 'Georgia', undefined, 2030)
+    expect(validateManifest(manifest([me, ga]), NOW)).toEqual([])
+    expect(
+      validateManifest(
+        manifest([{ ...ga, raceKey: '2026-governor-GA-regular-general' }]),
+        NOW
+      ).join(' ')
+    ).toMatch(/cycle 2026 must match identity.cycle 2030/)
+    expect(
+      verdict(
+        me,
+        partyMulti('27', 'Which party will win the 2030 Maine Senate election?')
+      )
+    ).toBe('equivalent')
+    expect(
+      verdict(
+        me,
+        partyMulti('28', 'Which party will win the 2026 Maine Senate election?')
+      )
+    ).toBe('unrelated')
+    expect(
+      verdict(
+        ga,
+        partyMulti(
+          '29',
+          'Which party will win the 2030 Georgia governor election?'
+        )
+      )
+    ).toBe('equivalent')
+    expect(
+      verdict(
+        ga,
+        partyMulti(
+          '30',
+          'Which party will win the 2026 Georgia governor election?'
+        )
+      )
+    ).toBe('unrelated')
+    expect(
+      verdict(
+        ga,
+        binary('31', 'Will a Democrat win the 2030 Georgia governor race?')
+      )
+    ).toBe('ambiguous')
   })
 })

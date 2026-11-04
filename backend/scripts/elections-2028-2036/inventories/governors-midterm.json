@@ -1,0 +1,294 @@
+{
+  "description": "Governorships elected in midterm years. Thirty-four states elect governors to four-year terms in midterm years; New Hampshire and Vermont elect every two years, so they vote in every cycle (their presidential-year races are in governors.json). The same 36 states that voted on November 3, 2026 vote again on November 5, 2030.",
+  "sources": [
+    {
+      "name": "Wikipedia — 2026 United States gubernatorial elections (36 states, election day November 3, 2026; New Hampshire and Vermont two-year terms; incumbents and their 2026 status)",
+      "url": "https://en.wikipedia.org/wiki/2026_United_States_gubernatorial_elections",
+      "fetchedAt": "2026-11-05",
+      "note": "Wikipedia has no 2030 gubernatorial elections page yet (HTTP 404 on 2026-11-05). The 2030 set is the 2026 set: the four-year terms elected in 2026 end in January 2031 (December 2030 in Alaska and Hawaii), and New Hampshire and Vermont elect every two years. Neither state's 2026 ballot carried a four-year-term amendment."
+    },
+    {
+      "name": "National Governors Association — Governors (current governors of the 36 states)",
+      "url": "https://www.nga.org/governors/",
+      "fetchedAt": "2026-11-05"
+    },
+    {
+      "name": "Wikipedia — Governor of Alaska (terms begin on the first Monday in December after the election; Alaska Const. art. III, § 4)",
+      "url": "https://en.wikipedia.org/wiki/Governor_of_Alaska",
+      "fetchedAt": "2026-11-05"
+    },
+    {
+      "name": "Wikipedia — Governor of Hawaii (inauguration on the first Monday in December after the election; Hawaii Const. art. V, § 1)",
+      "url": "https://en.wikipedia.org/wiki/Governor_of_Hawaii",
+      "fetchedAt": "2026-11-05"
+    }
+  ],
+  "notes": [
+    "The brief expected the 36 states of the 2026 cycle; confirmed: AK, AL, AR, AZ, CA, CO, CT, FL, GA, HI, IA, ID, IL, KS, MA, MD, ME, MI, MN, NE, NH, NM, NV, NY, OH, OK, OR, PA, RI, SC, SD, TN, TX, VT, WI, WY.",
+    "Kentucky, Louisiana and Mississippi (2027) and New Jersey and Virginia (2029) elect governors in odd years; territories are out of scope.",
+    "Incumbents are as of October 2026 (before the 2026-11-03 elections) and informational only, cross-checked against the 2026 launch audit (backend/scripts/elections-2026/audit/race-inventory.json, 2026-10-03). Every one of these seats was on the 2026 ballot, so the 2030 incumbents are the 2026 winners (New Hampshire's and Vermont's, the 2028 winners); 2026 results are not recorded here.",
+    "Alaska and Hawaii governors take office on the first Monday in December after the election (Alaska Const. art. III, § 4; Hawaii Const. art. V, § 1): December 2, 2030. Every other state's term begins in January 2031.",
+    "Georgia: a majority is required; otherwise a runoff between the top two on the 28th day after the general (O.C.G.A. § 21-2-501): December 3, 2030.",
+    "Alaska: top-four primary and ranked-choice general (2020 Ballot Measure 2); a repeal initiative was on the November 3, 2026 ballot.",
+    "California: top-two primary; the general is between the two candidates who advance (plurality of the two).",
+    "Maine: the general election for governor is decided by plurality; Maine's ranked-choice voting covers primaries and federal general elections only (the 2026 launch audit applied the same rule).",
+    "Vermont: Vt. Const. ch. II, § 47 — if no candidate has a majority, the General Assembly elects the governor from the top three by joint ballot in January.",
+    "Minnesota's Democratic Party is the Democratic-Farmer-Labor Party (DFL); recorded as D below."
+  ],
+  "states": [
+    {
+      "state": "AL",
+      "incumbent": "Kay Ivey",
+      "party": "R",
+      "termYears": 4,
+      "note": "Term-limited; open seat on 2026-11-03."
+    },
+    {
+      "state": "AK",
+      "incumbent": "Mike Dunleavy",
+      "party": "R",
+      "termYears": 4,
+      "termBegins": "December",
+      "note": "Term-limited; open seat on 2026-11-03. Top-four primary and ranked-choice general; the term begins on the first Monday in December."
+    },
+    {
+      "state": "AZ",
+      "incumbent": "Katie Hobbs",
+      "party": "D",
+      "termYears": 4,
+      "note": "Sought re-election on 2026-11-03."
+    },
+    {
+      "state": "AR",
+      "incumbent": "Sarah Huckabee Sanders",
+      "party": "R",
+      "termYears": 4,
+      "note": "Sought re-election on 2026-11-03."
+    },
+    {
+      "state": "CA",
+      "incumbent": "Gavin Newsom",
+      "party": "D",
+      "termYears": 4,
+      "note": "Term-limited; open seat on 2026-11-03. Top-two general."
+    },
+    {
+      "state": "CO",
+      "incumbent": "Jared Polis",
+      "party": "D",
+      "termYears": 4,
+      "note": "Term-limited; open seat on 2026-11-03."
+    },
+    {
+      "state": "CT",
+      "incumbent": "Ned Lamont",
+      "party": "D",
+      "termYears": 4,
+      "note": "Sought a third term on 2026-11-03."
+    },
+    {
+      "state": "FL",
+      "incumbent": "Ron DeSantis",
+      "party": "R",
+      "termYears": 4,
+      "note": "Term-limited; open seat on 2026-11-03."
+    },
+    {
+      "state": "GA",
+      "incumbent": "Brian Kemp",
+      "party": "R",
+      "termYears": 4,
+      "note": "Term-limited; open seat on 2026-11-03. Majority required; runoff on the 28th day after."
+    },
+    {
+      "state": "HI",
+      "incumbent": "Josh Green",
+      "party": "D",
+      "termYears": 4,
+      "termBegins": "December",
+      "note": "Sought re-election on 2026-11-03. The term begins on the first Monday in December."
+    },
+    {
+      "state": "ID",
+      "incumbent": "Brad Little",
+      "party": "R",
+      "termYears": 4,
+      "note": "Sought a third term on 2026-11-03."
+    },
+    {
+      "state": "IL",
+      "incumbent": "JB Pritzker",
+      "party": "D",
+      "termYears": 4,
+      "note": "Sought a third term on 2026-11-03."
+    },
+    {
+      "state": "IA",
+      "incumbent": "Kim Reynolds",
+      "party": "R",
+      "termYears": 4,
+      "note": "Did not seek re-election; open seat on 2026-11-03."
+    },
+    {
+      "state": "KS",
+      "incumbent": "Laura Kelly",
+      "party": "D",
+      "termYears": 4,
+      "note": "Term-limited; open seat on 2026-11-03."
+    },
+    {
+      "state": "ME",
+      "incumbent": "Janet Mills",
+      "party": "D",
+      "termYears": 4,
+      "note": "Term-limited; open seat on 2026-11-03. Plurality general (no ranked-choice tabulation for governor)."
+    },
+    {
+      "state": "MD",
+      "incumbent": "Wes Moore",
+      "party": "D",
+      "termYears": 4,
+      "note": "Sought re-election on 2026-11-03."
+    },
+    {
+      "state": "MA",
+      "incumbent": "Maura Healey",
+      "party": "D",
+      "termYears": 4,
+      "note": "Sought re-election on 2026-11-03."
+    },
+    {
+      "state": "MI",
+      "incumbent": "Gretchen Whitmer",
+      "party": "D",
+      "termYears": 4,
+      "note": "Term-limited; open seat on 2026-11-03."
+    },
+    {
+      "state": "MN",
+      "incumbent": "Tim Walz",
+      "party": "D",
+      "termYears": 4,
+      "note": "Ended his re-election bid in January 2026; open seat on 2026-11-03 (DFL)."
+    },
+    {
+      "state": "NE",
+      "incumbent": "Jim Pillen",
+      "party": "R",
+      "termYears": 4,
+      "note": "Sought re-election on 2026-11-03."
+    },
+    {
+      "state": "NV",
+      "incumbent": "Joe Lombardo",
+      "party": "R",
+      "termYears": 4,
+      "note": "Sought re-election on 2026-11-03."
+    },
+    {
+      "state": "NH",
+      "incumbent": "Kelly Ayotte",
+      "party": "R",
+      "termYears": 2,
+      "note": "Two-year term; sought re-election on 2026-11-03; elected again in 2028."
+    },
+    {
+      "state": "NM",
+      "incumbent": "Michelle Lujan Grisham",
+      "party": "D",
+      "termYears": 4,
+      "note": "Term-limited; open seat on 2026-11-03."
+    },
+    {
+      "state": "NY",
+      "incumbent": "Kathy Hochul",
+      "party": "D",
+      "termYears": 4,
+      "note": "Sought re-election on 2026-11-03."
+    },
+    {
+      "state": "OH",
+      "incumbent": "Mike DeWine",
+      "party": "R",
+      "termYears": 4,
+      "note": "Term-limited; open seat on 2026-11-03."
+    },
+    {
+      "state": "OK",
+      "incumbent": "Kevin Stitt",
+      "party": "R",
+      "termYears": 4,
+      "note": "Term-limited; open seat on 2026-11-03."
+    },
+    {
+      "state": "OR",
+      "incumbent": "Tina Kotek",
+      "party": "D",
+      "termYears": 4,
+      "note": "Sought re-election on 2026-11-03."
+    },
+    {
+      "state": "PA",
+      "incumbent": "Josh Shapiro",
+      "party": "D",
+      "termYears": 4,
+      "note": "Sought re-election on 2026-11-03."
+    },
+    {
+      "state": "RI",
+      "incumbent": "Dan McKee",
+      "party": "D",
+      "termYears": 4,
+      "note": "Lost renomination in the 2026 Democratic primary; open seat on 2026-11-03."
+    },
+    {
+      "state": "SC",
+      "incumbent": "Henry McMaster",
+      "party": "R",
+      "termYears": 4,
+      "note": "Term-limited; open seat on 2026-11-03."
+    },
+    {
+      "state": "SD",
+      "incumbent": "Larry Rhoden",
+      "party": "R",
+      "termYears": 4,
+      "note": "Succeeded to the office in January 2025; sought a full term on 2026-11-03."
+    },
+    {
+      "state": "TN",
+      "incumbent": "Bill Lee",
+      "party": "R",
+      "termYears": 4,
+      "note": "Term-limited; open seat on 2026-11-03."
+    },
+    {
+      "state": "TX",
+      "incumbent": "Greg Abbott",
+      "party": "R",
+      "termYears": 4,
+      "note": "Sought a fourth term on 2026-11-03."
+    },
+    {
+      "state": "VT",
+      "incumbent": "Phil Scott",
+      "party": "R",
+      "termYears": 2,
+      "note": "Two-year term; sought re-election on 2026-11-03; elected again in 2028. General Assembly chooses if no majority."
+    },
+    {
+      "state": "WI",
+      "incumbent": "Tony Evers",
+      "party": "D",
+      "termYears": 4,
+      "note": "Did not seek a third term; open seat on 2026-11-03."
+    },
+    {
+      "state": "WY",
+      "incumbent": "Mark Gordon",
+      "party": "R",
+      "termYears": 4,
+      "note": "Term-limited; open seat on 2026-11-03."
+    }
+  ]
+}

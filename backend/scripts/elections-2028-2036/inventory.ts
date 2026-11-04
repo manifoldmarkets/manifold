@@ -6,7 +6,7 @@ import {
   Office,
   US_STATE_NAMES,
 } from 'shared/elections/election-market-creation'
-import { Cycle, CYCLES } from './cycles'
+import { Cycle, CYCLES, cycleConfig, isPresidentialYear } from './cycles'
 import { UnitResults } from './seeds'
 
 export const STATE_NAMES: Record<string, string> = {
@@ -26,8 +26,10 @@ type SenateClasses = {
   classes: Record<
     string,
     {
-      cycle: number
-      termsExpire: string
+      // Cycles in scope in which the class has its regular election, and
+      // the date the term being replaced expires in each (January 3 after).
+      cycles: number[]
+      termsExpire: Record<string, string>
       note?: string
       seats: {
         state: string
@@ -46,6 +48,10 @@ type Governors = {
     incumbent: string
     party: string
     termYears: number
+    // Default: the term begins in January after the election. Alaska and
+    // Hawaii (first Monday in December) and North Dakota (December 15)
+    // start in December of the election year.
+    termBegins?: 'December'
     note: string
   }[]
 }
@@ -82,8 +88,15 @@ export type Results = {
 export const inventories = {
   senate: () =>
     readJson<SenateClasses>(path.join(INVENTORY_DIR, 'senate-classes.json')),
-  governors: () =>
-    readJson<Governors>(path.join(INVENTORY_DIR, 'governors.json')),
+  // Presidential years: the eleven presidential-year governorships; midterm
+  // years (2030): the 36 midterm-year governorships. NH and VT are in both.
+  governors: (cycle: Cycle) =>
+    readJson<Governors>(
+      path.join(
+        INVENTORY_DIR,
+        isPresidentialYear(cycle) ? 'governors.json' : 'governors-midterm.json'
+      )
+    ),
   president: () =>
     readJson<PresidentialUnits>(
       path.join(INVENTORY_DIR, 'presidential-units.json')
@@ -119,17 +132,24 @@ export const ORDINAL = (n: number) =>
   }`
 
 export function senateClassFor(cycle: Cycle): '3' | '2' | '1' {
-  return ({ 2028: '3', 2032: '2', 2036: '1' } as const)[cycle]
+  return ({ 2028: '3', 2030: '1', 2032: '2', 2036: '1' } as const)[cycle]
 }
 
 export function racesFor(cycle: Cycle): Race[] {
   if (!CYCLES.includes(cycle)) throw new Error(`unsupported cycle ${cycle}`)
+  const cfg = cycleConfig(cycle)
   const races: Race[] = []
   const senate = inventories.senate()
   const cls = senate.classes[senateClassFor(cycle)]
-  if (cls.cycle !== cycle)
+  if (!cls.cycles.includes(cycle))
     throw new Error(
       `senate class ${senateClassFor(cycle)} is not up in ${cycle}`
+    )
+  if (cls.termsExpire[cycle] !== `${cycle + 1}-01-03`)
+    throw new Error(
+      `senate class ${senateClassFor(
+        cycle
+      )}: the term replaced in ${cycle} must expire on ${cycle + 1}-01-03`
     )
   for (const seat of cls.seats) {
     races.push({
@@ -149,7 +169,7 @@ export function racesFor(cycle: Cycle): Race[] {
       }`,
     })
   }
-  const governors = inventories.governors()
+  const governors = inventories.governors(cycle)
   for (const g of governors.states)
     races.push({
       cycle,
@@ -159,10 +179,20 @@ export function racesFor(cycle: Cycle): Race[] {
       raceKey: `${cycle}-governor-${g.state}-regular-general`,
       unitKey: g.state,
       dashboardKey: g.state,
-      seat: `${g.termYears}-year term beginning January ${cycle + 1}`,
+      seat: `${g.termYears}-year term beginning ${
+        g.termBegins === 'December'
+          ? `December ${cycle}`
+          : `January ${cycle + 1}`
+      }`,
       sources: governors.sources.map((s) => s.url),
       incumbentNote: `${g.incumbent} (${g.party}) as of October 2026; ${g.note}`,
     })
+  if (cfg.president) racesForPresident(cycle, races)
+  if (cfg.house) racesForHouse(cycle, races)
+  return races
+}
+
+function racesForPresident(cycle: Cycle, races: Race[]) {
   const president = inventories.president()
   const pSources = president.sources.map((s) => s.url)
   for (const state of Object.keys(president.electoralVotes2024).sort())
@@ -209,53 +239,54 @@ export function racesFor(cycle: Cycle): Race[] {
     sources: pSources,
     electoralVotes: president.national.totalElectors,
   })
-  if (cycle === 2028) {
-    const house = inventories.house()
-    const results = inventories.results()
-    const perState: Record<string, number> = {}
-    for (const key of Object.keys(results.districts).sort()) {
-      const [state, dist] = key.split('-')
-      const district = dist === 'AL' ? 0 : Number(dist)
-      if (!STATE_NAMES[state] || !Number.isInteger(district))
-        throw new Error(`bad district key ${key}`)
-      const st = house.states[state]
-      if (!st) throw new Error(`no House inventory for ${state}`)
-      perState[state] = (perState[state] ?? 0) + 1
-      const row = results.districts[key]
-      races.push({
-        cycle,
-        office: 'house',
-        state,
-        stateName: STATE_NAMES[state],
-        district,
-        raceKey: `${cycle}-house-${state}-${pad2(district)}-regular-general`,
-        unitKey: key,
-        dashboardKey: `${state}-${district}`,
-        seat: `${
-          district === 0 ? 'at-large district' : `${ORDINAL(district)} district`
-        } on the map in effect for the 2026 election; term beginning January 3, ${
-          cycle + 1
-        }`,
-        sources: house.sources.map((s) => s.url),
-        incumbentNote: row.incumbent
-          ? `${row.incumbent} ${row.party ?? ''} as of October 2026`.trim()
-          : undefined,
-        redistricting: {
-          mapInUse2026: st.mapInUse2026,
-          risk: st.risk,
-          note: st.note,
-        },
-      })
-    }
-    for (const [state, st] of Object.entries(house.states))
-      if ((perState[state] ?? 0) !== st.seats)
-        throw new Error(
-          `${state}: inventory says ${st.seats} seats, results list ${
-            perState[state] ?? 0
-          } districts`
-        )
+}
+
+// 2028 only: the 435 districts on the lines in force for November 2026.
+function racesForHouse(cycle: Cycle, races: Race[]) {
+  const house = inventories.house()
+  const results = inventories.results()
+  const perState: Record<string, number> = {}
+  for (const key of Object.keys(results.districts).sort()) {
+    const [state, dist] = key.split('-')
+    const district = dist === 'AL' ? 0 : Number(dist)
+    if (!STATE_NAMES[state] || !Number.isInteger(district))
+      throw new Error(`bad district key ${key}`)
+    const st = house.states[state]
+    if (!st) throw new Error(`no House inventory for ${state}`)
+    perState[state] = (perState[state] ?? 0) + 1
+    const row = results.districts[key]
+    races.push({
+      cycle,
+      office: 'house',
+      state,
+      stateName: STATE_NAMES[state],
+      district,
+      raceKey: `${cycle}-house-${state}-${pad2(district)}-regular-general`,
+      unitKey: key,
+      dashboardKey: `${state}-${district}`,
+      seat: `${
+        district === 0 ? 'at-large district' : `${ORDINAL(district)} district`
+      } on the map in effect for the 2026 election; term beginning January 3, ${
+        cycle + 1
+      }`,
+      sources: house.sources.map((s) => s.url),
+      incumbentNote: row.incumbent
+        ? `${row.incumbent} ${row.party ?? ''} as of October 2026`.trim()
+        : undefined,
+      redistricting: {
+        mapInUse2026: st.mapInUse2026,
+        risk: st.risk,
+        note: st.note,
+      },
+    })
   }
-  return races
+  for (const [state, st] of Object.entries(house.states))
+    if ((perState[state] ?? 0) !== st.seats)
+      throw new Error(
+        `${state}: inventory says ${st.seats} seats, results list ${
+          perState[state] ?? 0
+        } districts`
+      )
 }
 
 export function nationalResults(results: Results): UnitResults {
@@ -292,6 +323,9 @@ export function unitResults(results: Results, race: Race): UnitResults {
 
 export const EXPECTED_COUNTS: Record<Cycle, Record<Office, number>> = {
   2028: { senate: 34, governor: 11, president: 57, house: 435 },
+  // Midterm: Class 1 Senate and the 36 midterm-year governorships; no House
+  // (district lines may still change before 2030) and no president.
+  2030: { senate: 33, governor: 36, president: 0, house: 0 },
   2032: { senate: 33, governor: 11, president: 57, house: 0 },
   2036: { senate: 33, governor: 11, president: 57, house: 0 },
 }

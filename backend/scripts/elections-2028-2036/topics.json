@@ -1,5 +1,5 @@
 {
-  "description": "Prod topics (groups) for the 2028/2032/2036 markets. `existing` maps slug → id as read from GET https://api.manifold.markets/search-groups and /v0/group/by-id on 2026-10-06. `missing` lists topics that do not exist yet: Tod creates them (creation fails with a 404 on a missing id), adds the ids under `existing`, and regenerates. The generator attaches at most 5 topics per market (MAX_GROUPS_PER_MARKET) and silently drops missing slugs, listing them in topics-needed.md.",
+  "description": "Prod topics (groups) for the 2028/2030/2032/2036 markets. `existing` maps slug → id as read from GET https://api.manifold.markets/search-groups and /v0/group/by-id on 2026-10-06 (searched again for 2030 election topics on 2026-11-05: none exist). `missing` lists topics that do not exist yet: Tod creates them (creation fails with a 404 on a missing id), adds the ids under `existing`, and regenerates. The generator attaches at most 5 topics per market (MAX_GROUPS_PER_MARKET) and silently drops missing slugs, listing them in topics-needed.md.",
   "existing": {
     "us-politics": "AjxQR8JMpNyDqtiqoA96",
     "elections": "i5JOzjrK5ZMHPSkhgzoi",
@@ -23,6 +23,18 @@
       "slug": "2028-us-congressional-elections",
       "suggestedName": "2028 US Congressional Elections",
       "usedBy": ["2028 senate", "2028 house"],
+      "modelledOn": "2026-us-congressional-elections (1f785ecd-2cbc-4a04-8c20-0459dc31e4ad)"
+    },
+    {
+      "slug": "2030-us-elections",
+      "suggestedName": "2030 US Elections",
+      "usedBy": ["every 2030 market"],
+      "modelledOn": "2028-us-elections; the 2026 midterm markets used 2026-midterms (2e9fc841-389f-4e11-99bb-c26ca54ecac2), so '2030 Midterms' is the alternative name"
+    },
+    {
+      "slug": "2030-us-congressional-elections",
+      "suggestedName": "2030 US Congressional Elections",
+      "usedBy": ["2030 senate"],
       "modelledOn": "2026-us-congressional-elections (1f785ecd-2cbc-4a04-8c20-0459dc31e4ad)"
     },
     {

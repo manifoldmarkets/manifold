@@ -19,7 +19,9 @@
     "Incumbents are as of 2026-10-06 and informational only. NH and VT hold elections on 2026-11-03, so their 2028 incumbents are unknown.",
     "Vermont: Vt. Const. ch. II, § 47 — if no candidate has a majority, the General Assembly elects the governor from the top three by joint ballot in January. The market resolves to the party of whoever is finally elected by that process.",
     "Washington: top-two general election (two candidates advance from the August primary; the general is decided by plurality of the two).",
-    "No presidential-year governor race has a general-election runoff."
+    "No presidential-year governor race has a general-election runoff.",
+    "North Dakota's governor takes office on December 15 after the election (North Dakota law; Kelly Armstrong took office on December 15, 2024, per Wikipedia's 'Governor of North Dakota', fetched 2026-11-05); the other ten take office in January.",
+    "The midterm-year governorships (2030) are in governors-midterm.json."
   ],
   "states": [
     {
@@ -69,7 +71,8 @@
       "incumbent": "Kelly Armstrong",
       "party": "R",
       "termYears": 4,
-      "note": "Eligible to run again."
+      "termBegins": "December",
+      "note": "Eligible to run again. The term begins on December 15 after the election."
     },
     {
       "state": "UT",

@@ -1,0 +1,2072 @@
+[
+  {
+    "raceKey": "2030-senate-AZ-regular-general",
+    "list": "senate2030",
+    "key": "AZ",
+    "slug": "PENDING:2030-senate-AZ-regular-general",
+    "contractId": "PENDING:2030-senate-AZ-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-AZ-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-AZ-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-AZ-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-CA-regular-general",
+    "list": "senate2030",
+    "key": "CA",
+    "slug": "PENDING:2030-senate-CA-regular-general",
+    "contractId": "PENDING:2030-senate-CA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-CA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-CA-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-CA-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-CT-regular-general",
+    "list": "senate2030",
+    "key": "CT",
+    "slug": "PENDING:2030-senate-CT-regular-general",
+    "contractId": "PENDING:2030-senate-CT-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-CT-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-CT-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-CT-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-DE-regular-general",
+    "list": "senate2030",
+    "key": "DE",
+    "slug": "PENDING:2030-senate-DE-regular-general",
+    "contractId": "PENDING:2030-senate-DE-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-DE-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-DE-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-DE-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-FL-regular-general",
+    "list": "senate2030",
+    "key": "FL",
+    "slug": "PENDING:2030-senate-FL-regular-general",
+    "contractId": "PENDING:2030-senate-FL-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-FL-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-FL-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-FL-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-HI-regular-general",
+    "list": "senate2030",
+    "key": "HI",
+    "slug": "PENDING:2030-senate-HI-regular-general",
+    "contractId": "PENDING:2030-senate-HI-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-HI-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-HI-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-HI-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-IN-regular-general",
+    "list": "senate2030",
+    "key": "IN",
+    "slug": "PENDING:2030-senate-IN-regular-general",
+    "contractId": "PENDING:2030-senate-IN-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-IN-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-IN-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-IN-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-ME-regular-general",
+    "list": "senate2030",
+    "key": "ME",
+    "slug": "PENDING:2030-senate-ME-regular-general",
+    "contractId": "PENDING:2030-senate-ME-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-ME-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-ME-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-ME-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-MD-regular-general",
+    "list": "senate2030",
+    "key": "MD",
+    "slug": "PENDING:2030-senate-MD-regular-general",
+    "contractId": "PENDING:2030-senate-MD-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-MD-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-MD-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-MD-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-MA-regular-general",
+    "list": "senate2030",
+    "key": "MA",
+    "slug": "PENDING:2030-senate-MA-regular-general",
+    "contractId": "PENDING:2030-senate-MA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-MA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-MA-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-MA-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-MI-regular-general",
+    "list": "senate2030",
+    "key": "MI",
+    "slug": "PENDING:2030-senate-MI-regular-general",
+    "contractId": "PENDING:2030-senate-MI-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-MI-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-MI-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-MI-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-MN-regular-general",
+    "list": "senate2030",
+    "key": "MN",
+    "slug": "PENDING:2030-senate-MN-regular-general",
+    "contractId": "PENDING:2030-senate-MN-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-MN-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-MN-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-MN-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-MS-regular-general",
+    "list": "senate2030",
+    "key": "MS",
+    "slug": "PENDING:2030-senate-MS-regular-general",
+    "contractId": "PENDING:2030-senate-MS-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-MS-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-MS-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-MS-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-MO-regular-general",
+    "list": "senate2030",
+    "key": "MO",
+    "slug": "PENDING:2030-senate-MO-regular-general",
+    "contractId": "PENDING:2030-senate-MO-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-MO-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-MO-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-MO-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-MT-regular-general",
+    "list": "senate2030",
+    "key": "MT",
+    "slug": "PENDING:2030-senate-MT-regular-general",
+    "contractId": "PENDING:2030-senate-MT-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-MT-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-MT-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-MT-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-NE-regular-general",
+    "list": "senate2030",
+    "key": "NE",
+    "slug": "PENDING:2030-senate-NE-regular-general",
+    "contractId": "PENDING:2030-senate-NE-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-NE-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-NE-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-NE-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-NV-regular-general",
+    "list": "senate2030",
+    "key": "NV",
+    "slug": "PENDING:2030-senate-NV-regular-general",
+    "contractId": "PENDING:2030-senate-NV-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-NV-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-NV-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-NV-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-NJ-regular-general",
+    "list": "senate2030",
+    "key": "NJ",
+    "slug": "PENDING:2030-senate-NJ-regular-general",
+    "contractId": "PENDING:2030-senate-NJ-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-NJ-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-NJ-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-NJ-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-NM-regular-general",
+    "list": "senate2030",
+    "key": "NM",
+    "slug": "PENDING:2030-senate-NM-regular-general",
+    "contractId": "PENDING:2030-senate-NM-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-NM-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-NM-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-NM-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-NY-regular-general",
+    "list": "senate2030",
+    "key": "NY",
+    "slug": "PENDING:2030-senate-NY-regular-general",
+    "contractId": "PENDING:2030-senate-NY-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-NY-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-NY-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-NY-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-ND-regular-general",
+    "list": "senate2030",
+    "key": "ND",
+    "slug": "PENDING:2030-senate-ND-regular-general",
+    "contractId": "PENDING:2030-senate-ND-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-ND-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-ND-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-ND-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-OH-regular-general",
+    "list": "senate2030",
+    "key": "OH",
+    "slug": "PENDING:2030-senate-OH-regular-general",
+    "contractId": "PENDING:2030-senate-OH-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-OH-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-OH-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-OH-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-PA-regular-general",
+    "list": "senate2030",
+    "key": "PA",
+    "slug": "PENDING:2030-senate-PA-regular-general",
+    "contractId": "PENDING:2030-senate-PA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-PA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-PA-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-PA-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-RI-regular-general",
+    "list": "senate2030",
+    "key": "RI",
+    "slug": "PENDING:2030-senate-RI-regular-general",
+    "contractId": "PENDING:2030-senate-RI-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-RI-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-RI-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-RI-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-TN-regular-general",
+    "list": "senate2030",
+    "key": "TN",
+    "slug": "PENDING:2030-senate-TN-regular-general",
+    "contractId": "PENDING:2030-senate-TN-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-TN-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-TN-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-TN-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-TX-regular-general",
+    "list": "senate2030",
+    "key": "TX",
+    "slug": "PENDING:2030-senate-TX-regular-general",
+    "contractId": "PENDING:2030-senate-TX-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-TX-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-TX-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-TX-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-UT-regular-general",
+    "list": "senate2030",
+    "key": "UT",
+    "slug": "PENDING:2030-senate-UT-regular-general",
+    "contractId": "PENDING:2030-senate-UT-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-UT-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-UT-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-UT-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-VT-regular-general",
+    "list": "senate2030",
+    "key": "VT",
+    "slug": "PENDING:2030-senate-VT-regular-general",
+    "contractId": "PENDING:2030-senate-VT-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-VT-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-VT-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-VT-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-VA-regular-general",
+    "list": "senate2030",
+    "key": "VA",
+    "slug": "PENDING:2030-senate-VA-regular-general",
+    "contractId": "PENDING:2030-senate-VA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-VA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-VA-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-VA-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-WA-regular-general",
+    "list": "senate2030",
+    "key": "WA",
+    "slug": "PENDING:2030-senate-WA-regular-general",
+    "contractId": "PENDING:2030-senate-WA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-WA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-WA-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-WA-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-WV-regular-general",
+    "list": "senate2030",
+    "key": "WV",
+    "slug": "PENDING:2030-senate-WV-regular-general",
+    "contractId": "PENDING:2030-senate-WV-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-WV-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-WV-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-WV-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-WI-regular-general",
+    "list": "senate2030",
+    "key": "WI",
+    "slug": "PENDING:2030-senate-WI-regular-general",
+    "contractId": "PENDING:2030-senate-WI-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-WI-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-WI-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-WI-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-senate-WY-regular-general",
+    "list": "senate2030",
+    "key": "WY",
+    "slug": "PENDING:2030-senate-WY-regular-general",
+    "contractId": "PENDING:2030-senate-WY-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-senate-WY-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-senate-WY-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-senate-WY-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-AL-regular-general",
+    "list": "governors2030",
+    "key": "AL",
+    "slug": "PENDING:2030-governor-AL-regular-general",
+    "contractId": "PENDING:2030-governor-AL-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-AL-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-AL-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-AL-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-AK-regular-general",
+    "list": "governors2030",
+    "key": "AK",
+    "slug": "PENDING:2030-governor-AK-regular-general",
+    "contractId": "PENDING:2030-governor-AK-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-AK-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-AK-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-AK-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-AZ-regular-general",
+    "list": "governors2030",
+    "key": "AZ",
+    "slug": "PENDING:2030-governor-AZ-regular-general",
+    "contractId": "PENDING:2030-governor-AZ-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-AZ-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-AZ-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-AZ-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-AR-regular-general",
+    "list": "governors2030",
+    "key": "AR",
+    "slug": "PENDING:2030-governor-AR-regular-general",
+    "contractId": "PENDING:2030-governor-AR-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-AR-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-AR-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-AR-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-CA-regular-general",
+    "list": "governors2030",
+    "key": "CA",
+    "slug": "PENDING:2030-governor-CA-regular-general",
+    "contractId": "PENDING:2030-governor-CA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-CA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-CA-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-CA-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-CO-regular-general",
+    "list": "governors2030",
+    "key": "CO",
+    "slug": "PENDING:2030-governor-CO-regular-general",
+    "contractId": "PENDING:2030-governor-CO-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-CO-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-CO-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-CO-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-CT-regular-general",
+    "list": "governors2030",
+    "key": "CT",
+    "slug": "PENDING:2030-governor-CT-regular-general",
+    "contractId": "PENDING:2030-governor-CT-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-CT-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-CT-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-CT-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-FL-regular-general",
+    "list": "governors2030",
+    "key": "FL",
+    "slug": "PENDING:2030-governor-FL-regular-general",
+    "contractId": "PENDING:2030-governor-FL-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-FL-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-FL-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-FL-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-GA-regular-general",
+    "list": "governors2030",
+    "key": "GA",
+    "slug": "PENDING:2030-governor-GA-regular-general",
+    "contractId": "PENDING:2030-governor-GA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-GA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-GA-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-GA-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-HI-regular-general",
+    "list": "governors2030",
+    "key": "HI",
+    "slug": "PENDING:2030-governor-HI-regular-general",
+    "contractId": "PENDING:2030-governor-HI-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-HI-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-HI-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-HI-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-ID-regular-general",
+    "list": "governors2030",
+    "key": "ID",
+    "slug": "PENDING:2030-governor-ID-regular-general",
+    "contractId": "PENDING:2030-governor-ID-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-ID-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-ID-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-ID-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-IL-regular-general",
+    "list": "governors2030",
+    "key": "IL",
+    "slug": "PENDING:2030-governor-IL-regular-general",
+    "contractId": "PENDING:2030-governor-IL-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-IL-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-IL-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-IL-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-IA-regular-general",
+    "list": "governors2030",
+    "key": "IA",
+    "slug": "PENDING:2030-governor-IA-regular-general",
+    "contractId": "PENDING:2030-governor-IA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-IA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-IA-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-IA-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-KS-regular-general",
+    "list": "governors2030",
+    "key": "KS",
+    "slug": "PENDING:2030-governor-KS-regular-general",
+    "contractId": "PENDING:2030-governor-KS-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-KS-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-KS-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-KS-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-ME-regular-general",
+    "list": "governors2030",
+    "key": "ME",
+    "slug": "PENDING:2030-governor-ME-regular-general",
+    "contractId": "PENDING:2030-governor-ME-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-ME-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-ME-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-ME-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-MD-regular-general",
+    "list": "governors2030",
+    "key": "MD",
+    "slug": "PENDING:2030-governor-MD-regular-general",
+    "contractId": "PENDING:2030-governor-MD-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-MD-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-MD-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-MD-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-MA-regular-general",
+    "list": "governors2030",
+    "key": "MA",
+    "slug": "PENDING:2030-governor-MA-regular-general",
+    "contractId": "PENDING:2030-governor-MA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-MA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-MA-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-MA-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-MI-regular-general",
+    "list": "governors2030",
+    "key": "MI",
+    "slug": "PENDING:2030-governor-MI-regular-general",
+    "contractId": "PENDING:2030-governor-MI-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-MI-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-MI-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-MI-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-MN-regular-general",
+    "list": "governors2030",
+    "key": "MN",
+    "slug": "PENDING:2030-governor-MN-regular-general",
+    "contractId": "PENDING:2030-governor-MN-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-MN-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-MN-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-MN-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-NE-regular-general",
+    "list": "governors2030",
+    "key": "NE",
+    "slug": "PENDING:2030-governor-NE-regular-general",
+    "contractId": "PENDING:2030-governor-NE-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-NE-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-NE-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-NE-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-NV-regular-general",
+    "list": "governors2030",
+    "key": "NV",
+    "slug": "PENDING:2030-governor-NV-regular-general",
+    "contractId": "PENDING:2030-governor-NV-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-NV-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-NV-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-NV-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-NH-regular-general",
+    "list": "governors2030",
+    "key": "NH",
+    "slug": "PENDING:2030-governor-NH-regular-general",
+    "contractId": "PENDING:2030-governor-NH-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-NH-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-NH-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-NH-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-NM-regular-general",
+    "list": "governors2030",
+    "key": "NM",
+    "slug": "PENDING:2030-governor-NM-regular-general",
+    "contractId": "PENDING:2030-governor-NM-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-NM-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-NM-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-NM-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-NY-regular-general",
+    "list": "governors2030",
+    "key": "NY",
+    "slug": "PENDING:2030-governor-NY-regular-general",
+    "contractId": "PENDING:2030-governor-NY-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-NY-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-NY-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-NY-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-OH-regular-general",
+    "list": "governors2030",
+    "key": "OH",
+    "slug": "PENDING:2030-governor-OH-regular-general",
+    "contractId": "PENDING:2030-governor-OH-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-OH-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-OH-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-OH-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-OK-regular-general",
+    "list": "governors2030",
+    "key": "OK",
+    "slug": "PENDING:2030-governor-OK-regular-general",
+    "contractId": "PENDING:2030-governor-OK-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-OK-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-OK-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-OK-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-OR-regular-general",
+    "list": "governors2030",
+    "key": "OR",
+    "slug": "PENDING:2030-governor-OR-regular-general",
+    "contractId": "PENDING:2030-governor-OR-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-OR-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-OR-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-OR-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-PA-regular-general",
+    "list": "governors2030",
+    "key": "PA",
+    "slug": "PENDING:2030-governor-PA-regular-general",
+    "contractId": "PENDING:2030-governor-PA-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-PA-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-PA-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-PA-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-RI-regular-general",
+    "list": "governors2030",
+    "key": "RI",
+    "slug": "PENDING:2030-governor-RI-regular-general",
+    "contractId": "PENDING:2030-governor-RI-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-RI-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-RI-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-RI-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-SC-regular-general",
+    "list": "governors2030",
+    "key": "SC",
+    "slug": "PENDING:2030-governor-SC-regular-general",
+    "contractId": "PENDING:2030-governor-SC-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-SC-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-SC-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-SC-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-SD-regular-general",
+    "list": "governors2030",
+    "key": "SD",
+    "slug": "PENDING:2030-governor-SD-regular-general",
+    "contractId": "PENDING:2030-governor-SD-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-SD-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-SD-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-SD-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-TN-regular-general",
+    "list": "governors2030",
+    "key": "TN",
+    "slug": "PENDING:2030-governor-TN-regular-general",
+    "contractId": "PENDING:2030-governor-TN-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-TN-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-TN-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-TN-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-TX-regular-general",
+    "list": "governors2030",
+    "key": "TX",
+    "slug": "PENDING:2030-governor-TX-regular-general",
+    "contractId": "PENDING:2030-governor-TX-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-TX-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-TX-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-TX-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-VT-regular-general",
+    "list": "governors2030",
+    "key": "VT",
+    "slug": "PENDING:2030-governor-VT-regular-general",
+    "contractId": "PENDING:2030-governor-VT-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-VT-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-VT-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-VT-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-WI-regular-general",
+    "list": "governors2030",
+    "key": "WI",
+    "slug": "PENDING:2030-governor-WI-regular-general",
+    "contractId": "PENDING:2030-governor-WI-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-WI-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-WI-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-WI-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2030-governor-WY-regular-general",
+    "list": "governors2030",
+    "key": "WY",
+    "slug": "PENDING:2030-governor-WY-regular-general",
+    "contractId": "PENDING:2030-governor-WY-regular-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2030-governor-WY-regular-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2030-governor-WY-regular-general#Republican Party"
+      },
+      {
+        "label": "Another party or independent",
+        "kind": "other",
+        "party": "other",
+        "answerId": "PENDING:2030-governor-WY-regular-general#Another party or independent"
+      }
+    ],
+    "status": "planned"
+  }
+]

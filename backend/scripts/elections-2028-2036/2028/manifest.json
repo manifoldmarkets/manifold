@@ -1,8 +1,8 @@
 {
   "kind": "races",
-  "manifestVersion": "2026-10-06.1",
+  "manifestVersion": "2026-11-04.1",
   "series": "us-2028-general-v1",
-  "generatedAt": "2026-10-06T22:00:00.000Z",
+  "generatedAt": "2026-11-04T18:00:00.000Z",
   "review": {
     "approved": false,
     "reviewedBy": null,
@@ -14,7 +14,7 @@
   },
   "defaults": {
     "closeTimeUtc": "2028-11-08T12:00:00.000Z",
-    "timezoneNote": "Close after US election-night counting has ended: noon UTC on November 7, 2028 + 1 day. Georgia Senate/House entries stay open through the December 5, 2028 runoff. The creator must still handle postponements and any later deciding round a state adds."
+    "timezoneNote": "Close after US election-night counting has ended: noon UTC on November 7, 2028 + 1 day. Georgia Senate/House/governor entries stay open through the December 5, 2028 runoff. The creator must still handle postponements and any later deciding round a state adds."
   },
   "entries": [
     {
@@ -119,7 +119,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Katie Britt (R) as of October 2026",
@@ -230,7 +232,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Lisa Murkowski (R) as of October 2026",
@@ -341,7 +345,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Mark Kelly (D) as of October 2026",
@@ -452,7 +458,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "John Boozman (R) as of October 2026",
@@ -563,7 +571,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Alex Padilla (D) as of October 2026",
@@ -674,7 +684,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Michael Bennet (D) as of October 2026",
@@ -785,7 +797,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Richard Blumenthal (D) as of October 2026",
@@ -896,7 +910,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Ashley Moody (R) as of October 2026; Appointed January 2025 (Rubio seat); special election for the unexpired term on 2026-11-03; regular full-term election 2028.",
@@ -1007,7 +1023,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Raphael Warnock (D) as of October 2026",
@@ -1118,7 +1136,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Brian Schatz (D) as of October 2026",
@@ -1229,7 +1249,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Mike Crapo (R) as of October 2026",
@@ -1340,7 +1362,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Tammy Duckworth (D) as of October 2026",
@@ -1451,7 +1475,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Todd Young (R) as of October 2026",
@@ -1562,7 +1588,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Chuck Grassley (R) as of October 2026",
@@ -1673,7 +1701,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Jerry Moran (R) as of October 2026",
@@ -1784,7 +1814,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Rand Paul (R) as of October 2026",
@@ -1895,7 +1927,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "John Kennedy (R) as of October 2026",
@@ -2006,7 +2040,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Chris Van Hollen (D) as of October 2026",
@@ -2117,7 +2153,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Eric Schmitt (R) as of October 2026",
@@ -2228,7 +2266,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Catherine Cortez Masto (D) as of October 2026",
@@ -2339,7 +2379,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Maggie Hassan (D) as of October 2026",
@@ -2450,7 +2492,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Chuck Schumer (D) as of October 2026",
@@ -2561,7 +2605,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Ted Budd (R) as of October 2026",
@@ -2587,7 +2633,7 @@
       "shapeRationale": "Generic ballot-party multi (Democratic Party / Republican Party / Another party or independent), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one and cannot be added to.",
       "payload": {
         "question": "Which party will win the 2028 U.S. Senate election in North Dakota?",
-        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Senator from North Dakota** (Class 3 seat; term beginning January 3, 2029).\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this seat and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean -37.4 pts), regressed toward even with σ = 14.0 pts for 2028 (P(Dem) = 0.4%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
+        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Senator from North Dakota** (Class 3 seat; term beginning January 3, 2029).\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. In North Dakota the Democratic Party appears on the ballot as the Democratic-Nonpartisan League Party (Democratic-NPL), which counts as the Democratic Party here. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this seat and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean -37.4 pts), regressed toward even with σ = 14.0 pts for 2028 (P(Dem) = 0.4%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
         "outcomeType": "MULTIPLE_CHOICE",
         "answers": [
           "Democratic Party",
@@ -2672,7 +2718,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "John Hoeven (R) as of October 2026",
@@ -2783,7 +2831,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Jon Husted (R) as of October 2026; Appointed January 2025 (Vance seat); special election for the unexpired term on 2026-11-03; regular full-term election 2028.",
@@ -2894,7 +2944,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "James Lankford (R) as of October 2026",
@@ -3005,7 +3057,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Ron Wyden (D) as of October 2026",
@@ -3116,7 +3170,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "John Fetterman (D) as of October 2026",
@@ -3227,7 +3283,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Tim Scott (R) as of October 2026",
@@ -3338,7 +3396,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "John Thune (R) as of October 2026",
@@ -3449,7 +3509,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Mike Lee (R) as of October 2026",
@@ -3560,7 +3622,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Peter Welch (D) as of October 2026",
@@ -3671,7 +3735,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Patty Murray (D) as of October 2026",
@@ -3782,7 +3848,9 @@
           "https://www.senate.gov/senators/Class_I.htm",
           "https://www.senate.gov/senators/Class_II.htm",
           "https://www.senate.gov/senators/Class_III.htm",
-          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections"
+          "https://en.wikipedia.org/wiki/2028_United_States_Senate_elections",
+          "https://en.wikipedia.org/wiki/2030_United_States_Senate_elections",
+          "https://unitedstates.github.io/congress-legislators/legislators-current.json"
         ],
         "seat": "Class 3 seat; term beginning January 3, 2029",
         "incumbentOctober2026": "Ron Johnson (R) as of October 2026",
@@ -4438,7 +4506,7 @@
       "shapeRationale": "Generic ballot-party multi (Democratic Party / Republican Party / Another party or independent), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one and cannot be added to.",
       "payload": {
         "question": "Which party will win the 2028 North Dakota governor election?",
-        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **Governor of North Dakota** (4-year term beginning January 2029).\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries and conventions do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this office and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean -37.4 pts), regressed toward even with σ = 20.0 pts for 2028 (P(Dem) = 3.1%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
+        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **Governor of North Dakota** (4-year term beginning December 2028).\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries and conventions do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. In North Dakota the Democratic Party appears on the ballot as the Democratic-Nonpartisan League Party (Democratic-NPL), which counts as the Democratic Party here. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this office and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean -37.4 pts), regressed toward even with σ = 20.0 pts for 2028 (P(Dem) = 3.1%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
         "outcomeType": "MULTIPLE_CHOICE",
         "answers": [
           "Democratic Party",
@@ -4522,8 +4590,8 @@
           "https://en.wikipedia.org/wiki/2028_United_States_gubernatorial_elections",
           "https://www.nga.org/governors/"
         ],
-        "seat": "4-year term beginning January 2029",
-        "incumbentOctober2026": "Kelly Armstrong (R) as of October 2026; Eligible to run again."
+        "seat": "4-year term beginning December 2028",
+        "incumbentOctober2026": "Kelly Armstrong (R) as of October 2026; Eligible to run again. The term begins on December 15 after the election."
       }
     },
     {
@@ -7447,7 +7515,7 @@
       "shapeRationale": "Generic ballot-party multi (Democratic Party / Republican Party / Another party or independent), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one and cannot be added to.",
       "payload": {
         "question": "Which party will win Minnesota in the 2028 presidential election?",
-        "descriptionMarkdown": "This market resolves to the **party** of the presidential ticket that wins **Minnesota's electoral votes** in the 2028 U.S. presidential election (all of the state’s electors (statewide popular vote)).\n\n**Which round counts:** the November 7, 2028 general election for presidential electors (plurality). Primaries and caucuses do not count.\n\n**Party rule:** the party is the party designation under which the winning presidential ticket appears on the official general-election ballot. A ticket nominated by the Democratic Party or the Republican Party that also appears on other parties' lines (fusion) counts as that major party. A ticket that is independent, unaffiliated or nominated by any other party resolves to \"Another party or independent\". A candidate's later party change does not change the resolution.\n\n**Electors:** the market resolves on which ticket's slate of electors is certified as elected by the state's voters (the state's certified results and certificate of ascertainment). How the electors later vote does not matter: faithless electors, replaced electors, or disputes when Congress counts the votes do **not** change the resolution.\n\n**Results:** resolves on Minnesota's certified presidential results (certificate of ascertainment). It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**N/A:** the market resolves N/A if  if no popular election for presidential electors is held in Minnesota for the 2028 election (for example the election is cancelled, or electors are appointed without a popular vote). If the election is postponed, the market stays open until the rescheduled election.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean 4.3 pts), regressed toward even with σ = 9.0 pts for 2028 (P(Dem) = 68.3%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
+        "descriptionMarkdown": "This market resolves to the **party** of the presidential ticket that wins **Minnesota's electoral votes** in the 2028 U.S. presidential election (all of the state’s electors (statewide popular vote)).\n\n**Which round counts:** the November 7, 2028 general election for presidential electors (plurality). Primaries and caucuses do not count.\n\n**Party rule:** the party is the party designation under which the winning presidential ticket appears on the official general-election ballot. A ticket nominated by the Democratic Party or the Republican Party that also appears on other parties' lines (fusion) counts as that major party. In Minnesota the Democratic Party appears on the ballot as the Democratic-Farmer-Labor Party (DFL), which counts as the Democratic Party here. A ticket that is independent, unaffiliated or nominated by any other party resolves to \"Another party or independent\". A candidate's later party change does not change the resolution.\n\n**Electors:** the market resolves on which ticket's slate of electors is certified as elected by the state's voters (the state's certified results and certificate of ascertainment). How the electors later vote does not matter: faithless electors, replaced electors, or disputes when Congress counts the votes do **not** change the resolution.\n\n**Results:** resolves on Minnesota's certified presidential results (certificate of ascertainment). It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**N/A:** the market resolves N/A if  if no popular election for presidential electors is held in Minnesota for the 2028 election (for example the election is cancelled, or electors are appointed without a popular vote). If the election is postponed, the market stays open until the rescheduled election.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean 4.3 pts), regressed toward even with σ = 9.0 pts for 2028 (P(Dem) = 68.3%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
         "outcomeType": "MULTIPLE_CHOICE",
         "answers": [
           "Democratic Party",
@@ -7987,7 +8055,7 @@
       "shapeRationale": "Generic ballot-party multi (Democratic Party / Republican Party / Another party or independent), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one and cannot be added to.",
       "payload": {
         "question": "Which party will win North Dakota in the 2028 presidential election?",
-        "descriptionMarkdown": "This market resolves to the **party** of the presidential ticket that wins **North Dakota's electoral votes** in the 2028 U.S. presidential election (all of the state’s electors (statewide popular vote)).\n\n**Which round counts:** the November 7, 2028 general election for presidential electors (plurality). Primaries and caucuses do not count.\n\n**Party rule:** the party is the party designation under which the winning presidential ticket appears on the official general-election ballot. A ticket nominated by the Democratic Party or the Republican Party that also appears on other parties' lines (fusion) counts as that major party. A ticket that is independent, unaffiliated or nominated by any other party resolves to \"Another party or independent\". A candidate's later party change does not change the resolution.\n\n**Electors:** the market resolves on which ticket's slate of electors is certified as elected by the state's voters (the state's certified results and certificate of ascertainment). How the electors later vote does not matter: faithless electors, replaced electors, or disputes when Congress counts the votes do **not** change the resolution.\n\n**Results:** resolves on North Dakota's certified presidential results (certificate of ascertainment). It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**N/A:** the market resolves N/A if  if no popular election for presidential electors is held in North Dakota for the 2028 election (for example the election is cancelled, or electors are appointed without a popular vote). If the election is postponed, the market stays open until the rescheduled election.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean -37.4 pts), regressed toward even with σ = 9.0 pts for 2028 (P(Dem) = 0.0%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
+        "descriptionMarkdown": "This market resolves to the **party** of the presidential ticket that wins **North Dakota's electoral votes** in the 2028 U.S. presidential election (all of the state’s electors (statewide popular vote)).\n\n**Which round counts:** the November 7, 2028 general election for presidential electors (plurality). Primaries and caucuses do not count.\n\n**Party rule:** the party is the party designation under which the winning presidential ticket appears on the official general-election ballot. A ticket nominated by the Democratic Party or the Republican Party that also appears on other parties' lines (fusion) counts as that major party. In North Dakota the Democratic Party appears on the ballot as the Democratic-Nonpartisan League Party (Democratic-NPL), which counts as the Democratic Party here. A ticket that is independent, unaffiliated or nominated by any other party resolves to \"Another party or independent\". A candidate's later party change does not change the resolution.\n\n**Electors:** the market resolves on which ticket's slate of electors is certified as elected by the state's voters (the state's certified results and certificate of ascertainment). How the electors later vote does not matter: faithless electors, replaced electors, or disputes when Congress counts the votes do **not** change the resolution.\n\n**Results:** resolves on North Dakota's certified presidential results (certificate of ascertainment). It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**N/A:** the market resolves N/A if  if no popular election for presidential electors is held in North Dakota for the 2028 election (for example the election is cancelled, or electors are appointed without a popular vote). If the election is postponed, the market stays open until the rescheduled election.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean -37.4 pts), regressed toward even with σ = 9.0 pts for 2028 (P(Dem) = 0.0%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
         "outcomeType": "MULTIPLE_CHOICE",
         "answers": [
           "Democratic Party",
@@ -37609,7 +37677,7 @@
       "shapeRationale": "Generic ballot-party multi (Democratic Party / Republican Party / Another party or independent), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one and cannot be added to.",
       "payload": {
         "question": "Which party will win the 2028 U.S. House election in Minnesota's 1st District?",
-        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Representative for Minnesota's 1st District** — the term beginning January 3, 2029.\n\n**District:** the district numbered 1 on the congressional map in effect for the 2028 election. Mid-decade redistricting is active: if Minnesota adopts a new map before the election that keeps a district numbered 1, the market follows district 1 on that map, however much the boundaries change. If the state **abolishes** district 1 or **renumbers** its districts before the election (so that the new district numbers do not correspond to the current ones), or if the state's number of seats changes, the market resolves **N/A**.\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this district and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean -12.3 pts), regressed toward even with σ = 10.0 pts for 2028 (P(Dem) = 10.9%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
+        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Representative for Minnesota's 1st District** — the term beginning January 3, 2029.\n\n**District:** the district numbered 1 on the congressional map in effect for the 2028 election. Mid-decade redistricting is active: if Minnesota adopts a new map before the election that keeps a district numbered 1, the market follows district 1 on that map, however much the boundaries change. If the state **abolishes** district 1 or **renumbers** its districts before the election (so that the new district numbers do not correspond to the current ones), or if the state's number of seats changes, the market resolves **N/A**.\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. In Minnesota the Democratic Party appears on the ballot as the Democratic-Farmer-Labor Party (DFL), which counts as the Democratic Party here. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this district and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean -12.3 pts), regressed toward even with σ = 10.0 pts for 2028 (P(Dem) = 10.9%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
         "outcomeType": "MULTIPLE_CHOICE",
         "answers": [
           "Democratic Party",
@@ -37735,7 +37803,7 @@
       "shapeRationale": "Generic ballot-party multi (Democratic Party / Republican Party / Another party or independent), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one and cannot be added to.",
       "payload": {
         "question": "Which party will win the 2028 U.S. House election in Minnesota's 2nd District?",
-        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Representative for Minnesota's 2nd District** — the term beginning January 3, 2029.\n\n**District:** the district numbered 2 on the congressional map in effect for the 2028 election. Mid-decade redistricting is active: if Minnesota adopts a new map before the election that keeps a district numbered 2, the market follows district 2 on that map, however much the boundaries change. If the state **abolishes** district 2 or **renumbers** its districts before the election (so that the new district numbers do not correspond to the current ones), or if the state's number of seats changes, the market resolves **N/A**.\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this district and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean 5.1 pts), regressed toward even with σ = 10.0 pts for 2028 (P(Dem) = 69.6%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
+        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Representative for Minnesota's 2nd District** — the term beginning January 3, 2029.\n\n**District:** the district numbered 2 on the congressional map in effect for the 2028 election. Mid-decade redistricting is active: if Minnesota adopts a new map before the election that keeps a district numbered 2, the market follows district 2 on that map, however much the boundaries change. If the state **abolishes** district 2 or **renumbers** its districts before the election (so that the new district numbers do not correspond to the current ones), or if the state's number of seats changes, the market resolves **N/A**.\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. In Minnesota the Democratic Party appears on the ballot as the Democratic-Farmer-Labor Party (DFL), which counts as the Democratic Party here. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this district and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean 5.1 pts), regressed toward even with σ = 10.0 pts for 2028 (P(Dem) = 69.6%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
         "outcomeType": "MULTIPLE_CHOICE",
         "answers": [
           "Democratic Party",
@@ -37861,7 +37929,7 @@
       "shapeRationale": "Generic ballot-party multi (Democratic Party / Republican Party / Another party or independent), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one and cannot be added to.",
       "payload": {
         "question": "Which party will win the 2028 U.S. House election in Minnesota's 3rd District?",
-        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Representative for Minnesota's 3rd District** — the term beginning January 3, 2029.\n\n**District:** the district numbered 3 on the congressional map in effect for the 2028 election. Mid-decade redistricting is active: if Minnesota adopts a new map before the election that keeps a district numbered 3, the market follows district 3 on that map, however much the boundaries change. If the state **abolishes** district 3 or **renumbers** its districts before the election (so that the new district numbers do not correspond to the current ones), or if the state's number of seats changes, the market resolves **N/A**.\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this district and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean 20.0 pts), regressed toward even with σ = 10.0 pts for 2028 (P(Dem) = 97.7%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
+        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Representative for Minnesota's 3rd District** — the term beginning January 3, 2029.\n\n**District:** the district numbered 3 on the congressional map in effect for the 2028 election. Mid-decade redistricting is active: if Minnesota adopts a new map before the election that keeps a district numbered 3, the market follows district 3 on that map, however much the boundaries change. If the state **abolishes** district 3 or **renumbers** its districts before the election (so that the new district numbers do not correspond to the current ones), or if the state's number of seats changes, the market resolves **N/A**.\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. In Minnesota the Democratic Party appears on the ballot as the Democratic-Farmer-Labor Party (DFL), which counts as the Democratic Party here. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this district and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean 20.0 pts), regressed toward even with σ = 10.0 pts for 2028 (P(Dem) = 97.7%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
         "outcomeType": "MULTIPLE_CHOICE",
         "answers": [
           "Democratic Party",
@@ -37987,7 +38055,7 @@
       "shapeRationale": "Generic ballot-party multi (Democratic Party / Republican Party / Another party or independent), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one and cannot be added to.",
       "payload": {
         "question": "Which party will win the 2028 U.S. House election in Minnesota's 4th District?",
-        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Representative for Minnesota's 4th District** — the term beginning January 3, 2029.\n\n**District:** the district numbered 4 on the congressional map in effect for the 2028 election. Mid-decade redistricting is active: if Minnesota adopts a new map before the election that keeps a district numbered 4, the market follows district 4 on that map, however much the boundaries change. If the state **abolishes** district 4 or **renumbers** its districts before the election (so that the new district numbers do not correspond to the current ones), or if the state's number of seats changes, the market resolves **N/A**.\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this district and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean 35.9 pts), regressed toward even with σ = 10.0 pts for 2028 (P(Dem) = 100.0%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
+        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Representative for Minnesota's 4th District** — the term beginning January 3, 2029.\n\n**District:** the district numbered 4 on the congressional map in effect for the 2028 election. Mid-decade redistricting is active: if Minnesota adopts a new map before the election that keeps a district numbered 4, the market follows district 4 on that map, however much the boundaries change. If the state **abolishes** district 4 or **renumbers** its districts before the election (so that the new district numbers do not correspond to the current ones), or if the state's number of seats changes, the market resolves **N/A**.\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. In Minnesota the Democratic Party appears on the ballot as the Democratic-Farmer-Labor Party (DFL), which counts as the Democratic Party here. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this district and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean 35.9 pts), regressed toward even with σ = 10.0 pts for 2028 (P(Dem) = 100.0%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
         "outcomeType": "MULTIPLE_CHOICE",
         "answers": [
           "Democratic Party",
@@ -38113,7 +38181,7 @@
       "shapeRationale": "Generic ballot-party multi (Democratic Party / Republican Party / Another party or independent), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one and cannot be added to.",
       "payload": {
         "question": "Which party will win the 2028 U.S. House election in Minnesota's 5th District?",
-        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Representative for Minnesota's 5th District** — the term beginning January 3, 2029.\n\n**District:** the district numbered 5 on the congressional map in effect for the 2028 election. Mid-decade redistricting is active: if Minnesota adopts a new map before the election that keeps a district numbered 5, the market follows district 5 on that map, however much the boundaries change. If the state **abolishes** district 5 or **renumbers** its districts before the election (so that the new district numbers do not correspond to the current ones), or if the state's number of seats changes, the market resolves **N/A**.\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this district and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean 62.5 pts), regressed toward even with σ = 10.0 pts for 2028 (P(Dem) = 100.0%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
+        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Representative for Minnesota's 5th District** — the term beginning January 3, 2029.\n\n**District:** the district numbered 5 on the congressional map in effect for the 2028 election. Mid-decade redistricting is active: if Minnesota adopts a new map before the election that keeps a district numbered 5, the market follows district 5 on that map, however much the boundaries change. If the state **abolishes** district 5 or **renumbers** its districts before the election (so that the new district numbers do not correspond to the current ones), or if the state's number of seats changes, the market resolves **N/A**.\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. In Minnesota the Democratic Party appears on the ballot as the Democratic-Farmer-Labor Party (DFL), which counts as the Democratic Party here. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this district and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean 62.5 pts), regressed toward even with σ = 10.0 pts for 2028 (P(Dem) = 100.0%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
         "outcomeType": "MULTIPLE_CHOICE",
         "answers": [
           "Democratic Party",
@@ -38239,7 +38307,7 @@
       "shapeRationale": "Generic ballot-party multi (Democratic Party / Republican Party / Another party or independent), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one and cannot be added to.",
       "payload": {
         "question": "Which party will win the 2028 U.S. House election in Minnesota's 6th District?",
-        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Representative for Minnesota's 6th District** — the term beginning January 3, 2029.\n\n**District:** the district numbered 6 on the congressional map in effect for the 2028 election. Mid-decade redistricting is active: if Minnesota adopts a new map before the election that keeps a district numbered 6, the market follows district 6 on that map, however much the boundaries change. If the state **abolishes** district 6 or **renumbers** its districts before the election (so that the new district numbers do not correspond to the current ones), or if the state's number of seats changes, the market resolves **N/A**.\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this district and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean -20.6 pts), regressed toward even with σ = 10.0 pts for 2028 (P(Dem) = 2.0%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
+        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Representative for Minnesota's 6th District** — the term beginning January 3, 2029.\n\n**District:** the district numbered 6 on the congressional map in effect for the 2028 election. Mid-decade redistricting is active: if Minnesota adopts a new map before the election that keeps a district numbered 6, the market follows district 6 on that map, however much the boundaries change. If the state **abolishes** district 6 or **renumbers** its districts before the election (so that the new district numbers do not correspond to the current ones), or if the state's number of seats changes, the market resolves **N/A**.\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. In Minnesota the Democratic Party appears on the ballot as the Democratic-Farmer-Labor Party (DFL), which counts as the Democratic Party here. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this district and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean -20.6 pts), regressed toward even with σ = 10.0 pts for 2028 (P(Dem) = 2.0%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
         "outcomeType": "MULTIPLE_CHOICE",
         "answers": [
           "Democratic Party",
@@ -38365,7 +38433,7 @@
       "shapeRationale": "Generic ballot-party multi (Democratic Party / Republican Party / Another party or independent), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one and cannot be added to.",
       "payload": {
         "question": "Which party will win the 2028 U.S. House election in Minnesota's 7th District?",
-        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Representative for Minnesota's 7th District** — the term beginning January 3, 2029.\n\n**District:** the district numbered 7 on the congressional map in effect for the 2028 election. Mid-decade redistricting is active: if Minnesota adopts a new map before the election that keeps a district numbered 7, the market follows district 7 on that map, however much the boundaries change. If the state **abolishes** district 7 or **renumbers** its districts before the election (so that the new district numbers do not correspond to the current ones), or if the state's number of seats changes, the market resolves **N/A**.\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this district and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean -37.0 pts), regressed toward even with σ = 10.0 pts for 2028 (P(Dem) = 0.0%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
+        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Representative for Minnesota's 7th District** — the term beginning January 3, 2029.\n\n**District:** the district numbered 7 on the congressional map in effect for the 2028 election. Mid-decade redistricting is active: if Minnesota adopts a new map before the election that keeps a district numbered 7, the market follows district 7 on that map, however much the boundaries change. If the state **abolishes** district 7 or **renumbers** its districts before the election (so that the new district numbers do not correspond to the current ones), or if the state's number of seats changes, the market resolves **N/A**.\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. In Minnesota the Democratic Party appears on the ballot as the Democratic-Farmer-Labor Party (DFL), which counts as the Democratic Party here. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this district and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean -37.0 pts), regressed toward even with σ = 10.0 pts for 2028 (P(Dem) = 0.0%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
         "outcomeType": "MULTIPLE_CHOICE",
         "answers": [
           "Democratic Party",
@@ -38491,7 +38559,7 @@
       "shapeRationale": "Generic ballot-party multi (Democratic Party / Republican Party / Another party or independent), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one and cannot be added to.",
       "payload": {
         "question": "Which party will win the 2028 U.S. House election in Minnesota's 8th District?",
-        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Representative for Minnesota's 8th District** — the term beginning January 3, 2029.\n\n**District:** the district numbered 8 on the congressional map in effect for the 2028 election. Mid-decade redistricting is active: if Minnesota adopts a new map before the election that keeps a district numbered 8, the market follows district 8 on that map, however much the boundaries change. If the state **abolishes** district 8 or **renumbers** its districts before the election (so that the new district numbers do not correspond to the current ones), or if the state's number of seats changes, the market resolves **N/A**.\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this district and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean -14.6 pts), regressed toward even with σ = 10.0 pts for 2028 (P(Dem) = 7.3%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
+        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Representative for Minnesota's 8th District** — the term beginning January 3, 2029.\n\n**District:** the district numbered 8 on the congressional map in effect for the 2028 election. Mid-decade redistricting is active: if Minnesota adopts a new map before the election that keeps a district numbered 8, the market follows district 8 on that map, however much the boundaries change. If the state **abolishes** district 8 or **renumbers** its districts before the election (so that the new district numbers do not correspond to the current ones), or if the state's number of seats changes, the market resolves **N/A**.\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. In Minnesota the Democratic Party appears on the ballot as the Democratic-Farmer-Labor Party (DFL), which counts as the Democratic Party here. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this district and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean -14.6 pts), regressed toward even with σ = 10.0 pts for 2028 (P(Dem) = 7.3%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
         "outcomeType": "MULTIPLE_CHOICE",
         "answers": [
           "Democratic Party",
@@ -42131,7 +42199,7 @@
       "shapeRationale": "Generic ballot-party multi (Democratic Party / Republican Party / Another party or independent), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one and cannot be added to.",
       "payload": {
         "question": "Which party will win the 2028 U.S. House election in North Dakota's at-large district?",
-        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Representative for North Dakota's at-large district** — the term beginning January 3, 2029.\n\n**District:** North Dakota's single, at-large congressional district. Mid-decade redistricting is active: if North Dakota adopts a new map before the election that keeps a single at-large seat, the market follows the at-large seat on that map, however much the boundaries change. If the state **abolishes** the at-large seat or **renumbers** its districts before the election (so that the new district numbers do not correspond to the current ones), or if the state's number of seats changes, the market resolves **N/A**.\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this district and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean -37.4 pts), regressed toward even with σ = 10.0 pts for 2028 (P(Dem) = 0.0%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
+        "descriptionMarkdown": "This market resolves to the **party** of the winner of the 2028 election for **U.S. Representative for North Dakota's at-large district** — the term beginning January 3, 2029.\n\n**District:** North Dakota's single, at-large congressional district. Mid-decade redistricting is active: if North Dakota adopts a new map before the election that keeps a single at-large seat, the market follows the at-large seat on that map, however much the boundaries change. If the state **abolishes** the at-large seat or **renumbers** its districts before the election (so that the new district numbers do not correspond to the current ones), or if the state's number of seats changes, the market resolves **N/A**.\n\n**Which round counts:** the November 7, 2028 general election (plurality winner). Primaries, conventions and party runoffs do not count.\n\n**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. In North Dakota the Democratic Party appears on the ballot as the Democratic-Nonpartisan League Party (Democratic-NPL), which counts as the Democratic Party here. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to \"Another party or independent\", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.\n\n**Results:** resolves on the state's certified results. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.\n\n**No election or postponement:** if the 2028 general election is postponed, the market stays open until the rescheduled election for the same term. If no election for this district and term is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.\n\n**Starting probabilities** are seeds for the initial pool, not forecasts: SEED, not a forecast (Stage A prior): two-party presidential margin in 2020 and 2024 relative to the national margin (lean -37.4 pts), regressed toward even with σ = 10.0 pts for 2028 (P(Dem) = 0.0%); \"Another party or independent\" = 1%; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.",
         "outcomeType": "MULTIPLE_CHOICE",
         "answers": [
           "Democratic Party",

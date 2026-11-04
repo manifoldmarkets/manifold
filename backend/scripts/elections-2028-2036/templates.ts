@@ -60,7 +60,21 @@ export function questionFor(race: Race): string {
   }
 }
 
-const PARTY_RULE = `**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate. A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to "Another party or independent", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.`
+// The Democratic Party's state parties in Minnesota and North Dakota appear on
+// the ballot under their own names (the 2026 launch labelled the Minnesota
+// answer "Democratic Party (DFL)"); say so, so that line is not read as
+// "another party".
+const DEMOCRATIC_STATE_PARTY: Record<string, string> = {
+  MN: 'In Minnesota the Democratic Party appears on the ballot as the Democratic-Farmer-Labor Party (DFL), which counts as the Democratic Party here.',
+  ND: 'In North Dakota the Democratic Party appears on the ballot as the Democratic-Nonpartisan League Party (Democratic-NPL), which counts as the Democratic Party here.',
+}
+const withStateParty = (state: string) =>
+  DEMOCRATIC_STATE_PARTY[state] ? ` ${DEMOCRATIC_STATE_PARTY[state]}` : ''
+
+const PARTY_RULE = (state: string) =>
+  `**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate.${withStateParty(
+    state
+  )} A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to "Another party or independent", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.`
 
 const RESULTS_RULE = (certifier: string) =>
   `**Results:** resolves on ${certifier}. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.`
@@ -84,7 +98,7 @@ export function descriptionFor(
         '',
         `**Which round counts:** ${round.text}. Primaries, conventions and party runoffs do not count.`,
         '',
-        PARTY_RULE,
+        PARTY_RULE(race.state),
         '',
         RESULTS_RULE("the state's certified results"),
         '',
@@ -98,7 +112,7 @@ export function descriptionFor(
         '',
         `**Which round counts:** ${round.text}. Primaries and conventions do not count.`,
         '',
-        PARTY_RULE,
+        PARTY_RULE(race.state),
         '',
         RESULTS_RULE("the state's certified results"),
         '',
@@ -124,7 +138,7 @@ export function descriptionFor(
         '',
         `**Which round counts:** ${round.text}. Primaries, conventions and party runoffs do not count.`,
         '',
-        PARTY_RULE,
+        PARTY_RULE(race.state),
         '',
         RESULTS_RULE("the state's certified results"),
         '',
@@ -140,7 +154,10 @@ export function descriptionFor(
   }
 }
 
-const PRESIDENT_PARTY_RULE = `**Party rule:** the party is the party designation under which the winning presidential ticket appears on the official general-election ballot. A ticket nominated by the Democratic Party or the Republican Party that also appears on other parties' lines (fusion) counts as that major party. A ticket that is independent, unaffiliated or nominated by any other party resolves to "Another party or independent". A candidate's later party change does not change the resolution.`
+const PRESIDENT_PARTY_RULE = (state: string) =>
+  `**Party rule:** the party is the party designation under which the winning presidential ticket appears on the official general-election ballot. A ticket nominated by the Democratic Party or the Republican Party that also appears on other parties' lines (fusion) counts as that major party.${withStateParty(
+    state
+  )} A ticket that is independent, unaffiliated or nominated by any other party resolves to "Another party or independent". A candidate's later party change does not change the resolution.`
 
 function stateDescription(
   race: Race,
@@ -167,7 +184,7 @@ function stateDescription(
     '',
     `**Which round counts:** ${round.text}. Primaries and caucuses do not count.`,
     '',
-    PRESIDENT_PARTY_RULE,
+    PRESIDENT_PARTY_RULE(race.state),
     '',
     `**Electors:** the market resolves on which ticket's slate of electors is certified as elected by the ${
       district ? 'district' : 'state'
@@ -203,7 +220,7 @@ function nationalDescription(
       cycle + 1
     } (3 U.S.C. § 15, as amended by the Electoral Count Reform Act of 2022). Primaries, caucuses and conventions do not count.`,
     '',
-    PRESIDENT_PARTY_RULE,
+    PRESIDENT_PARTY_RULE(race.state),
     '',
     `**Winner:** the candidate declared elected President when Congress counts the electoral votes (a majority of the appointed electors, 270 of 538 under the current apportionment). **Faithless electors:** the market follows the count Congress accepts, so an elector's vote cast for someone other than their ticket's candidate counts as Congress counts it. **Contingent election:** if no candidate has a majority of electoral votes, the market resolves to the party (as defined above) of the person the House of Representatives elects President under the Twelfth Amendment.`,
     '',
@@ -286,7 +303,7 @@ export function shapeRationale(): string {
 export function closeNote(cfg: CycleConfig): string {
   return `Close after US election-night counting has ended: noon UTC on ${longDate(
     cfg.electionDate
-  )} + 1 day. Georgia Senate/House entries stay open through the ${longDate(
+  )} + 1 day. Georgia Senate/House/governor entries stay open through the ${longDate(
     cfg.georgiaRunoffDate
   )} runoff. The creator must still handle postponements and any later deciding round a state adds.`
 }
