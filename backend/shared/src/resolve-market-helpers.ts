@@ -21,9 +21,14 @@ import { getPayouts, groupPayoutsByUser, Payout } from 'common/payouts'
 import { LOAN_DAILY_INTEREST_RATE, MS_PER_DAY } from 'common/loans'
 import { getLoanTrackingForContract } from './helpers/user-contract-loans'
 import { convertTxn } from 'common/supabase/txns'
-import { CancelUniqueBettorBonusTxn, Txn } from 'common/txn'
+import {
+  CancelUniqueBettorBonusTxn,
+  ContractResolutionSubsidyTxn,
+  Txn,
+} from 'common/txn'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
+import { randomString } from 'common/util/random'
 import { groupBy, keyBy, mapValues, sum, sumBy, uniqBy } from 'lodash'
 import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
@@ -166,6 +171,7 @@ export const resolveMarketHelper = async (
         lastUpdatedTime: newCloseTime,
       })
     let updateAnswerAttrs: Partial<Answer> | undefined
+    let subsidyTaken: ResolutionSubsidyTaken | undefined
 
     if (isMultiCpmm(unresolvedContract) && answerId) {
       // Only resolve the contract if all other answers are resolved.
@@ -198,6 +204,21 @@ export const resolveMarketHelper = async (
           id: unresolvedContract.id,
           subsidyPool: newContractSubsidyPool,
         })
+      }
+      if (isIndieMC) {
+        // What this resolution takes from the pending subsidy: the answer's
+        // own, and from the market's, its share, or all of it when it resolves
+        // the market. Recorded with the payouts, for unresolve (which puts back
+        // exactly the answer's own, and refuses once it took the market's).
+        subsidyTaken = {
+          resolutionTime,
+          answerSubsidyPool:
+            unresolvedContract.answers.find((a) => a.id === answerId)
+              ?.subsidyPool ?? 0,
+          contractSubsidyShare: allOtherAnswersResolved
+            ? unresolvedContract.subsidyPool ?? 0
+            : subsidyPoolShare,
+        }
       }
       updateAnswerAttrs = removeUndefinedProps({
         resolution: outcome,
@@ -289,7 +310,14 @@ export const resolveMarketHelper = async (
         : []
 
     const { balanceUpdatesQuery, insertTxnsQuery, balanceUpdates } =
-      getPayUsersQueries(payouts, contractId, answerId, token, payoutFees)
+      getPayUsersQueries(
+        payouts,
+        contractId,
+        answerId,
+        token,
+        payoutFees,
+        subsidyTaken
+      )
     const contractUpdateQuery = updateDataQuery(
       'contracts',
       'id',
@@ -545,17 +573,30 @@ async function undoUniqueBettorRewardsIfCancelResolution(
   log(`Cancel Bonus txn for user: ${contract.creatorId} completed: ${txn.id}`)
 }
 
+const RESOLUTION_ID_LENGTH = 16
+
+// What resolving an answer of an independent market took from the pending
+// subsidy, as a CONTRACT_RESOLUTION_SUBSIDY txn records it.
+export type ResolutionSubsidyTaken = Pick<
+  ContractResolutionSubsidyTxn['data'],
+  'resolutionTime' | 'answerSubsidyPool' | 'contractSubsidyShare'
+>
+
 export const getPayUsersQueries = (
   payouts: Payout[],
   contractId: string,
   answerId: string | undefined,
   token: ContractToken,
-  payoutFees: Payout[]
+  payoutFees: Payout[],
+  subsidyTaken?: ResolutionSubsidyTaken
 ) => {
   const payoutCash = token === 'CASH'
   const payoutToken = token === 'CASH' ? 'CASH' : 'M$'
   const mergedPayouts = checkAndMergePayouts(payouts)
   const payoutStartTime = Date.now()
+  // Ties a recorded resolution's payouts to its record, as no time can.
+  const resolutionId =
+    answerId && subsidyTaken ? randomString(RESOLUTION_ID_LENGTH) : undefined
 
   const balanceUpdates: {
     id: string
@@ -593,6 +634,7 @@ export const getPayUsersQueries = (
         deposit: deposit ?? 0,
         payoutStartTime,
         answerId,
+        resolutionId,
       }),
       description: 'Contract payout for resolution: ' + contractId,
     })
@@ -622,6 +664,22 @@ export const getPayUsersQueries = (
         payoutStartTime,
         answerId,
       }),
+    })
+  }
+
+  // One per resolution, even one that pays nobody, inserted with the payouts.
+  // It moves nothing.
+  if (answerId && subsidyTaken && resolutionId) {
+    txns.push({
+      category: 'CONTRACT_RESOLUTION_SUBSIDY',
+      fromType: 'CONTRACT',
+      fromId: contractId,
+      toType: 'CONTRACT',
+      toId: contractId,
+      amount: 0,
+      token: payoutToken,
+      data: { answerId, resolutionId, payoutStartTime, ...subsidyTaken },
+      description: 'Pending subsidy taken by resolution: ' + contractId,
     })
   }
 
