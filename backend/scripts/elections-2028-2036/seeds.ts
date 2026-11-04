@@ -277,7 +277,7 @@ export function assertSeedConstraints(probs: number[]) {
 
 const pct = (x: number) => `${Number(x.toFixed(1))}%`
 
-// An exception's justification, as traders read it: without the leading
+// An exception's justification in the seed note: without the leading
 // "State: " and without the note that only matters to reviewers.
 export function publicWhy(why: string): string {
   return why
@@ -286,12 +286,13 @@ export function publicWhy(why: string): string {
     .trim()
 }
 
-// The market's last paragraph, in plain language: what the opening odds are
-// based on, with the real numbers (SEEDS.md has the formula). `place` is who
+// The seed's basis in plain language with the real numbers, recorded as the
+// manifest's seed.basis for reviewers. Market descriptions don't describe the
+// opening odds (Tod, 2026-11-05). SEEDS.md has the formula. `place` is who
 // voted ("Alabama", "Alabama's 1st District"); omit it for the national market.
 export function describeSeed(seed: SeedResult, place?: string): string {
   const [d, r, other] = seed.probs
-  const head = '**Opening odds** are a starting point, not a forecast.'
+  const head = 'Opening odds are a starting point, not a forecast.'
   const otherLine = seed.otherWhy
     ? `Other opens at ${pct(other)} rather than ${pct(
         SEED_PARAMS.otherDefault

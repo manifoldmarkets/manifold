@@ -1,6 +1,8 @@
 // Question, description and search-term templates for the generic party
-// markets. Every description states which round counts, the party rule,
-// the N/A cases and (for presidential markets) the elector rules.
+// markets. Descriptions are short plain paragraphs (Tod, 2026-11-05): which
+// election and date, the state's deciding-round rule where it differs, that
+// only the party matters, how and when it resolves, and when it is N/A.
+// Opening odds stay in the payload but are not described.
 import { OTHER_ANSWER_TEXT } from 'shared/elections/election-market-creation'
 import {
   CycleConfig,
@@ -10,7 +12,7 @@ import {
   presidentialRound,
   RoundRule,
 } from './cycles'
-import { ORDINAL, Race } from './inventory'
+import { ORDINAL, Race, senateClassFor } from './inventory'
 
 // The two listed answers. Markets are created with addAnswersMode
 // ONLY_CREATOR, so the server appends "Other" (at the remainder of the seeds)
@@ -24,7 +26,7 @@ export const ANSWER_META = [
   { label: OTHER_ANSWER_TEXT, kind: 'other', party: 'other', isOther: true },
 ] as const
 
-// Who the seed paragraph says voted: "Alabama", "Alabama's 1st District",
+// Who the seed note says voted: "Alabama", "Alabama's 1st District",
 // "The District of Columbia"; undefined for the national market.
 export function seedPlace(race: Race): string | undefined {
   if (race.office === 'president' && race.state === 'US') return undefined
@@ -38,6 +40,8 @@ const districtLabel = (race: Race) =>
     ? `${race.stateName}'s at-large district`
     : `${race.stateName}'s ${ORDINAL(race.district!)} District`
 
+// The full round rule (with statute citations) stays in the manifest's
+// identity.round and the inventories; it also sets the close time.
 export function roundFor(race: Race, cfg: CycleConfig): RoundRule {
   if (race.office === 'president') return presidentialRound(race.state, cfg)
   if (race.office === 'governor') return governorRound(race.state, cfg)
@@ -70,184 +74,184 @@ export function questionFor(race: Race): string {
   }
 }
 
-// The Democratic Party's state parties in Minnesota and North Dakota appear on
-// the ballot under their own names (the 2026 launch labelled the Minnesota
-// answer "Democratic Party (DFL)"); say so, so that line is not read as
-// "another party".
-const DEMOCRATIC_STATE_PARTY: Record<string, string> = {
-  MN: 'In Minnesota the Democratic Party appears on the ballot as the Democratic-Farmer-Labor Party (DFL), which counts as the Democratic Party here.',
-  ND: 'In North Dakota the Democratic Party appears on the ballot as the Democratic-Nonpartisan League Party (Democratic-NPL), which counts as the Democratic Party here.',
+// ---------------------------------------------------------------------------
+// Descriptions
+// ---------------------------------------------------------------------------
+
+// Minnesota's and North Dakota's Democratic parties use their own ballot
+// names; say they count as Democratic.
+const STATE_PARTY_LINE: Record<string, string> = {
+  MN: 'The DFL line counts as Democratic.',
+  ND: 'The Democratic-NPL line counts as Democratic.',
 }
 const withStateParty = (state: string) =>
-  DEMOCRATIC_STATE_PARTY[state] ? ` ${DEMOCRATIC_STATE_PARTY[state]}` : ''
+  STATE_PARTY_LINE[state] ? ` ${STATE_PARTY_LINE[state]}` : ''
 
 const PARTY_RULE = (state: string) =>
-  `**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate.${withStateParty(
+  `Only the party matters: a Democratic or Republican nominee counts as that party even if also listed on other parties' lines. Anyone else resolves to ${OTHER_ANSWER_TEXT}, or to their own answer if one has been added.${withStateParty(
     state
-  )} Any other winner (an independent, an unaffiliated candidate, someone with no party preference, or another party's candidate) resolves to the answer @ManifoldPolitics has added for that party or candidate, if there is one, and otherwise to "${OTHER_ANSWER_TEXT}", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.`
+  )}`
 
-const ANSWERS_RULE = (what: 'candidate' | 'ticket') =>
-  `**Answers:** only @ManifoldPolitics can add answers. It may add a third party or a named independent ${what} if one becomes a serious contender; a new answer takes its share out of "${OTHER_ANSWER_TEXT}", and a bet on "${OTHER_ANSWER_TEXT}" includes every answer added later.`
+const TICKET_PARTY_RULE = (state: string) =>
+  `Only the party matters: a ticket on the Democratic or Republican line counts as that party even if also listed on other parties' lines. Any other ticket resolves to ${OTHER_ANSWER_TEXT}, or to its own answer if one has been added.${withStateParty(
+    state
+  )}`
 
-const RESULTS_RULE = (certifier: string) =>
-  `**Results:** resolves on ${certifier}. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.`
+const alaskaCount = (cycle: number) =>
+  `The final count under whatever counting method Alaska uses in ${cycle} decides.`
 
-// The seed paragraph is written in full by describeSeed (seeds.ts).
-const SEED_LINE = (seedText: string) => seedText
-
-export function descriptionFor(
+// One short sentence for a state whose deciding round differs from a
+// plurality on election day; undefined everywhere else.
+export function roundSentence(
   race: Race,
-  cfg: CycleConfig,
-  seedText: string
-): string {
-  const { cycle, stateName } = race
-  const round = roundFor(race, cfg)
-  const noElection = (what: string, term: string) =>
-    `**No election or postponement:** if the ${what} is postponed, the market stays open until the rescheduled election for the same term. If no election for ${term} is held (for example it is cancelled, or the office or seat is abolished), the market resolves N/A. A special election for a different term does not count.`
-  switch (race.office) {
-    case 'senate':
-      return [
-        `This market resolves to the **party** of the winner of the ${cycle} election for **U.S. Senator from ${stateName}** (${race.seat}).`,
-        '',
-        `**Which round counts:** ${round.text}. Primaries, conventions and party runoffs do not count.`,
-        '',
-        PARTY_RULE(race.state),
-        '',
-        ANSWERS_RULE('candidate'),
-        '',
-        RESULTS_RULE("the state's certified results"),
-        '',
-        noElection(`${cycle} general election`, `this seat and term`),
-        '',
-        SEED_LINE(seedText),
-      ].join('\n')
-    case 'governor':
-      return [
-        `This market resolves to the **party** of the winner of the ${cycle} election for **Governor of ${stateName}** (${race.seat}).`,
-        '',
-        `**Which round counts:** ${round.text}. Primaries and conventions do not count.`,
-        '',
-        PARTY_RULE(race.state),
-        '',
-        ANSWERS_RULE('candidate'),
-        '',
-        RESULTS_RULE("the state's certified results"),
-        '',
-        noElection(`${cycle} general election`, `this office and term`),
-        '',
-        SEED_LINE(seedText),
-      ].join('\n')
-    case 'house': {
-      const n = race.district!
-      return [
-        `This market resolves to the **party** of the winner of the ${cycle} election for **U.S. Representative for ${districtLabel(
-          race
-        )}** — the term beginning January 3, ${cycle + 1}.`,
-        '',
-        n === 0
-          ? `**District:** ${stateName}'s at-large seat, which covers the whole state. The market resolves **N/A** only if ${stateName} has no at-large seat in the ${cycle} election.`
-          : `**District:** whichever district is numbered ${n} on the congressional map in effect for ${stateName}'s ${cycle} election, however much its boundaries differ from today's (states can redraw their maps before then). The market resolves **N/A** only if that map has no district numbered ${n}.`,
-        '',
-        `**Which round counts:** ${round.text}. Primaries, conventions and party runoffs do not count.`,
-        '',
-        PARTY_RULE(race.state),
-        '',
-        ANSWERS_RULE('candidate'),
-        '',
-        RESULTS_RULE("the state's certified results"),
-        '',
-        noElection(`${cycle} general election`, `this district and term`),
-        '',
-        SEED_LINE(seedText),
-      ].join('\n')
+  cfg: CycleConfig
+): string | undefined {
+  const { state, cycle, office } = race
+  const georgiaRunoff = `If no candidate gets a majority, the ${longDate(
+    cfg.georgiaRunoffDate
+  )} runoff decides.`
+  if (office === 'president') {
+    if (state === 'ME')
+      return 'If no ticket gets a first-round majority, the final ranked-choice round decides.'
+    if (state === 'AK') return alaskaCount(cycle)
+    return undefined
+  }
+  if (office === 'governor') {
+    switch (state) {
+      case 'VT':
+        return `If no candidate gets a majority, the Vermont legislature picks the governor in January ${
+          cycle + 1
+        }, and that pick decides.`
+      case 'WA':
+        return "Washington's general election is between the top two primary finishers, whatever their parties."
+      case 'CA':
+        return "California's general election is between the top two primary finishers, whatever their parties."
+      case 'GA':
+        return georgiaRunoff
+      case 'AK':
+        return alaskaCount(cycle)
+      case 'ME':
+        return 'Decided by plurality, unless Maine extends ranked-choice counting to governor races, in which case the final round decides.'
+      default:
+        return undefined
     }
-    case 'president':
-      return race.state === 'US'
-        ? nationalDescription(race, cfg, round, seedText)
-        : stateDescription(race, cfg, round, seedText)
+  }
+  switch (state) {
+    case 'GA':
+      return georgiaRunoff
+    case 'AK':
+      return alaskaCount(cycle)
+    case 'ME':
+      return 'If no candidate gets a first-round majority, the final ranked-choice round decides.'
+    case 'LA':
+      return 'If Louisiana adds a later deciding round (such as a runoff) for this election, that round decides.'
+    default:
+      return undefined
   }
 }
 
-const PRESIDENT_PARTY_RULE = (state: string) =>
-  `**Party rule:** the party is the party designation under which the winning presidential ticket appears on the official general-election ballot. A ticket nominated by the Democratic Party or the Republican Party that also appears on other parties' lines (fusion) counts as that major party.${withStateParty(
-    state
-  )} Any other ticket (independent, unaffiliated or nominated by another party) resolves to the answer @ManifoldPolitics has added for that party or ticket, if there is one, and otherwise to "${OTHER_ANSWER_TEXT}". A candidate's later party change does not change the resolution.`
-
-function stateDescription(
-  race: Race,
-  cfg: CycleConfig,
-  round: RoundRule,
-  seedText: string
-) {
-  const { cycle, stateName } = race
-  const district = race.district !== undefined
-  const unit = district
-    ? `the electoral vote of **${stateName}'s ${ORDINAL(
-        race.district!
-      )} congressional district** (${race.state}-${race.district})`
-    : `**${stateName}'s electoral votes**`
-  const statute = district
-    ? race.state === 'ME'
-      ? '21-A M.R.S. § 802'
-      : 'Neb. Rev. Stat. § 32-710'
-    : undefined
-  return [
-    `This market resolves to the **party** of the presidential ticket that wins ${unit} in the ${cycle} U.S. presidential election (${
-      race.seat
-    }${district ? `, under ${statute}` : ''}).`,
-    '',
-    `**Which round counts:** ${round.text}. Primaries and caucuses do not count.`,
-    '',
-    PRESIDENT_PARTY_RULE(race.state),
-    '',
-    ANSWERS_RULE('ticket'),
-    '',
-    `**Electors:** the market resolves on which ticket's slate of electors is certified as elected by the ${
-      district ? 'district' : 'state'
-    }'s voters (the state's certified results and certificate of ascertainment). How the electors later vote does not matter: faithless electors, replaced electors, or disputes when Congress counts the votes do **not** change the resolution.`,
-    '',
-    RESULTS_RULE(
-      `${stateName}'s certified presidential results (certificate of ascertainment)`
-    ),
-    '',
-    `**N/A:** the market resolves N/A if ${
-      district
-        ? `${stateName} stops awarding an elector by congressional district before this election, if this district no longer exists (for example after reapportionment), or`
-        : ''
-    } if no popular election for presidential electors is held in ${stateName} for the ${cycle} election (for example the election is cancelled, or electors are appointed without a popular vote). If the election is postponed, the market stays open until the rescheduled election.`,
-    '',
-    SEED_LINE(seedText),
-  ].join('\n')
+const withRound = (sentence: string, race: Race, cfg: CycleConfig) => {
+  const round = roundSentence(race, cfg)
+  return round ? `${sentence} ${round}` : sentence
 }
 
-function nationalDescription(
-  race: Race,
-  cfg: CycleConfig,
-  round: RoundRule,
-  seedText: string
-) {
-  const { cycle } = race
+const RESULTS = (what: string) =>
+  `Resolves on the certified result, or earlier once the AP has called the race and no recount could change it. N/A if no election for this ${what} is held.`
+
+export function descriptionFor(race: Race, cfg: CycleConfig): string {
+  const { cycle, stateName, state } = race
+  const date = longDate(cfg.electionDate)
+  switch (race.office) {
+    case 'senate':
+      return [
+        withRound(
+          `Resolves to the party that wins the ${date} U.S. Senate election in ${stateName} (Class ${senateClassFor(
+            cycle
+          )} seat).`,
+          race,
+          cfg
+        ),
+        PARTY_RULE(state),
+        RESULTS('seat'),
+      ].join('\n\n')
+    case 'governor':
+      return [
+        withRound(
+          `Resolves to the party that wins the ${date} election for Governor of ${stateName}.`,
+          race,
+          cfg
+        ),
+        PARTY_RULE(state),
+        RESULTS('office'),
+      ].join('\n\n')
+    case 'house': {
+      const n = race.district!
+      const where =
+        n === 0
+          ? `${stateName}'s at-large seat. N/A if ${stateName} has no at-large seat in ${cycle}.`
+          : `${stateName}'s ${ORDINAL(
+              n
+            )} District: whichever district is numbered ${n} on the map in effect for that election. N/A if that map has no district numbered ${n}.`
+      return [
+        withRound(
+          `Resolves to the party that wins the ${date} U.S. House election in ${where}`,
+          race,
+          cfg
+        ),
+        PARTY_RULE(state),
+        RESULTS('seat'),
+      ].join('\n\n')
+    }
+    case 'president':
+      return state === 'US'
+        ? nationalDescription(race, cfg)
+        : stateDescription(race, cfg)
+  }
+}
+
+function stateDescription(race: Race, cfg: CycleConfig) {
+  const { stateName, state } = race
+  const date = longDate(cfg.electionDate)
+  const district = race.district !== undefined
+  const name = state === 'DC' ? 'the District of Columbia' : stateName
+  const unit = district
+    ? `the electoral vote of ${stateName}'s ${ORDINAL(
+        race.district!
+      )} congressional district (${state}-${race.district})`
+    : state === 'ME' || state === 'NE'
+    ? `${stateName}'s two statewide electoral votes`
+    : `${name}'s electoral votes`
+  const called = district ? 'district' : state === 'DC' ? 'District' : 'state'
+  const na = district
+    ? `N/A if ${stateName} stops awarding electors by district or has no ${ORDINAL(
+        race.district!
+      )} district.`
+    : `N/A if ${name} holds no popular vote for electors.`
   return [
-    `This market resolves to the **party** of the candidate who wins the ${cycle} U.S. presidential election: the person elected President for the term beginning ${cfg.termStart.president} through the **Electoral College** — ${race.seat}.`,
-    '',
-    `**Which round counts:** ${
-      round.text
-    }, followed by the Electoral College vote and the counting of electoral votes by Congress in January ${
+    withRound(
+      `Resolves to the party of the presidential ticket that wins ${unit} in the ${date} election.`,
+      race,
+      cfg
+    ),
+    "What counts is which ticket's electors are certified as elected, not the popular-vote margin; how electors later vote doesn't matter.",
+    TICKET_PARTY_RULE(state),
+    `Resolves on the certified result, or earlier once the AP has called the ${called} and no recount could change it. ${na}`,
+  ].join('\n\n')
+}
+
+function nationalDescription(race: Race, cfg: CycleConfig) {
+  const { cycle } = race
+  const toWin = Math.floor(race.electoralVotes! / 2) + 1
+  return [
+    `Resolves to the party of the candidate elected President in the ${longDate(
+      cfg.electionDate
+    )} election.`,
+    `That's whoever wins ${toWin} or more electoral votes as counted by Congress in January ${
       cycle + 1
-    } (3 U.S.C. § 15, as amended by the Electoral Count Reform Act of 2022). Primaries, caucuses and conventions do not count.`,
-    '',
-    PRESIDENT_PARTY_RULE(race.state),
-    '',
-    ANSWERS_RULE('ticket'),
-    '',
-    `**Winner:** the candidate declared elected President when Congress counts the electoral votes (a majority of the appointed electors, 270 of 538 under the current apportionment). **Faithless electors:** the market follows the count Congress accepts, so an elector's vote cast for someone other than their ticket's candidate counts as Congress counts it. **Contingent election:** if no candidate has a majority of electoral votes, the market resolves to the party (as defined above) of the person the House of Representatives elects President under the Twelfth Amendment.`,
-    '',
-    `**Results:** resolves on the official count of electoral votes by Congress. It may resolve earlier once the Associated Press has called the election and the result cannot change (no pending recount, contest or dispute could alter the Electoral College majority). If a court or certified correction changes the outcome before resolution, the corrected result controls.`,
-    '',
-    `**N/A:** if no presidential election for the term beginning ${cfg.termStart.president} is held (for example it is cancelled), the market resolves N/A. If the election is postponed, or a contingent election runs past Inauguration Day, the market stays open until a President is elected for that term.`,
-    '',
-    SEED_LINE(seedText),
-  ].join('\n')
+    }, or whom the House picks if no one does. The national popular vote doesn't matter.`,
+    TICKET_PARTY_RULE(race.state),
+    `N/A if no presidential election is held for the term starting ${cfg.termStart.president}.`,
+  ].join('\n\n')
 }
 
 export function searchTermsFor(race: Race): string[] {

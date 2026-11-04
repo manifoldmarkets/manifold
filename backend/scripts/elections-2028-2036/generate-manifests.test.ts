@@ -16,6 +16,7 @@ import {
   cycleConfig,
   electionDay,
   EXPECTED_ELECTION_DATES,
+  longDate,
   noonUtcAfter,
   OPTIONAL_CYCLES,
 } from './cycles'
@@ -391,174 +392,242 @@ test('"Other" opens at 1% except the reviewed exceptions', () => {
   }
 })
 
-test('descriptions state the round, the party rule, the N/A cases and the elector rules', () => {
+// The one-sentence deciding-round rule a description carries, if any.
+const expectedRound = (e: RaceManifestEntry): RegExp | undefined => {
+  const { office, state, cycle } = e.identity
+  const cfg = cycleConfig(cycle as 2028)
+  if (office === 'president')
+    return state === 'ME'
+      ? /If no ticket gets a first-round majority, the final ranked-choice round decides\./
+      : state === 'AK'
+      ? new RegExp(
+          `The final count under whatever counting method Alaska uses in ${cycle} decides\\.`
+        )
+      : undefined
+  if (state === 'GA')
+    return new RegExp(
+      `If no candidate gets a majority, the ${longDate(
+        cfg.georgiaRunoffDate
+      )} runoff decides\\.`
+    )
+  if (state === 'AK')
+    return new RegExp(
+      `The final count under whatever counting method Alaska uses in ${cycle} decides\\.`
+    )
+  if (office === 'governor')
+    return state === 'VT'
+      ? new RegExp(
+          `If no candidate gets a majority, the Vermont legislature picks the governor in January ${
+            cycle + 1
+          }, and that pick decides\\.`
+        )
+      : state === 'WA' || state === 'CA'
+      ? /general election is between the top two primary finishers, whatever their parties\./
+      : state === 'ME'
+      ? /Decided by plurality, unless Maine extends ranked-choice counting to governor races/
+      : undefined
+  return state === 'ME'
+    ? /If no candidate gets a first-round majority, the final ranked-choice round decides\./
+    : state === 'LA'
+    ? /If Louisiana adds a later deciding round \(such as a runoff\) for this election, that round decides\./
+    : undefined
+}
+
+test('descriptions are short plain paragraphs: the election and date, the party rule, how it resolves and when it is N/A', () => {
+  const lengths: number[] = []
   for (const e of allEntries) {
     const d = e.payload!.descriptionMarkdown
-    const cfg = cycleConfig(e.identity.cycle as 2028)
-    assert.match(d, /\*\*Which round counts:\*\*/, e.raceKey)
-    assert.match(d, /\*\*Party rule:\*\*/, e.raceKey)
-    assert.match(d, /fusion/, e.raceKey)
-    assert.match(
-      d,
-      /resolves to the answer @ManifoldPolitics has added for that party or (candidate|ticket), if there is one, and otherwise to "Other"/,
-      e.raceKey
-    )
-    assert.match(
-      d,
-      /\*\*Answers:\*\* only @ManifoldPolitics can add answers/,
-      e.raceKey
-    )
-    assert.doesNotMatch(d, /Another party or independent/, e.raceKey)
-    assert.match(d, /N\/A/, e.raceKey)
-    assert.match(d, /certified/, e.raceKey)
-    // The opening-odds paragraph is plain language: no repo files or jargon.
-    assert.match(
-      d,
-      /\*\*Opening odds\*\* are a starting point, not a forecast\. .*Other opens at \d+(\.\d)?%/,
-      e.raceKey
-    )
+    const { office, state, cycle, stateName } = e.identity
+    const cfg = cycleConfig(cycle as 2028)
+    const paras = d.split('\n\n')
+    lengths.push(d.length)
+    // Plain text only: no labels, seeds, answer-curation or hub paragraphs.
     assert.doesNotMatch(
       d,
-      /SEEDS\.md|Stage A|SEED, not|σ|Same share as the reviewed/,
+      /\*\*|@ManifoldPolitics|Opening odds|manifold\.markets|SEEDS\.md|Stage A|Another party|fusion|Which round counts/,
       e.raceKey
     )
-    assert.ok(d.length >= 400, e.raceKey)
-    assert.ok(e.payload!.question.length <= 120, e.raceKey)
-    const { office, state } = e.identity
-    if (office === 'house') {
-      // Follow whatever district carries the number; N/A only if none does.
-      assert.doesNotMatch(d, /renumber|abolishes|number of seats/, e.raceKey)
-      const n = e.identity.district!
-      if (n === 0)
-        assert.match(
-          d,
-          /at-large seat, which covers the whole state\. The market resolves \*\*N\/A\*\* only if .+ has no at-large seat in the 2028 election\./,
-          e.raceKey
-        )
-      else {
-        assert.match(
-          d,
-          new RegExp(
-            `\\*\\*District:\\*\\* whichever district is numbered ${n} on the congressional map in effect for .+'s 2028 election, however much its boundaries differ`
-          ),
-          e.raceKey
-        )
-        assert.match(
-          d,
-          new RegExp(
-            `resolves \\*\\*N/A\\*\\* only if that map has no district numbered ${n}\\.`
-          ),
-          e.raceKey
-        )
-      }
-    }
-    if (office === 'president') {
-      assert.match(d, /faithless/i, e.raceKey)
-      if (state === 'US') {
-        assert.match(d, /Electoral College/, e.raceKey)
-        assert.match(d, /contingent election/i, e.raceKey)
-        assert.match(d, /Twelfth Amendment/, e.raceKey)
-        assert.match(d, /270 of 538/, e.raceKey)
-      } else {
-        assert.match(d, /certificate of ascertainment/, e.raceKey)
-        assert.match(d, /electoral vote/i, e.raceKey)
-      }
-      if (e.identity.district !== undefined)
-        assert.match(
-          d,
-          /stops awarding an elector by congressional district/,
-          e.raceKey
-        )
-      if (state === 'GA')
-        assert.match(d, /does not apply to presidential electors/, e.raceKey)
-    }
-    if (state === 'GA' && office !== 'president') {
-      assert.match(d, /runoff/, e.raceKey)
-      assert.match(d, /28th day/, e.raceKey)
-      assert.match(d, new RegExp(cfg.georgiaRunoffDate.slice(0, 4)), e.raceKey)
-      if (cfg.cycle === 2030)
-        assert.match(d, /December 3, 2030 runoff/, e.raceKey)
-    }
-    if (state === 'ME' && office !== 'governor')
-      assert.match(d, /final round of ranked-choice tabulation/, e.raceKey)
-    if (state === 'ME' && office === 'governor') {
-      assert.match(d, /plurality winner/, e.raceKey)
-      assert.match(d, /not the general election for governor/, e.raceKey)
-    }
-    if (state === 'AK') assert.match(d, /ranked-choice|repeal/, e.raceKey)
-    if (state === 'CA' && office === 'governor')
-      assert.match(d, /top-two general election/, e.raceKey)
-    if (state === 'LA' && (office === 'senate' || office === 'house'))
-      assert.match(d, /closed party primaries/, e.raceKey)
-    if (state === 'VT' && office === 'governor')
-      assert.match(d, /General Assembly/, e.raceKey)
-    if ((state === 'AK' || state === 'HI') && office === 'governor')
-      assert.match(d, /term beginning December 2030\)/, e.raceKey)
-    if (state === 'ND' && office === 'governor')
+    assert.ok(d.length >= 400 && d.length <= 800, `${e.raceKey}: ${d.length}`)
+    assert.equal(paras.length, office === 'president' ? 4 : 3, e.raceKey)
+    // What it resolves to, on which date.
+    assert.match(paras[0], /^Resolves to the party /, e.raceKey)
+    assert.ok(d.includes(longDate(cfg.electionDate)), e.raceKey)
+    // Only the party matters, and anyone else is Other (or their own answer).
+    assert.match(
+      d,
+      office === 'president'
+        ? /Only the party matters: a ticket on the Democratic or Republican line counts as that party even if also listed on other parties' lines\. Any other ticket resolves to Other, or to its own answer if one has been added\./
+        : /Only the party matters: a Democratic or Republican nominee counts as that party even if also listed on other parties' lines\. Anyone else resolves to Other, or to their own answer if one has been added\./,
+      e.raceKey
+    )
+    // When it is N/A, and (except nationally) how it resolves.
+    assert.match(d, /N\/A (if|only if) /, e.raceKey)
+    if (state !== 'US')
       assert.match(
-        d,
-        new RegExp(`term beginning December ${e.identity.cycle}\\)`),
+        paras[paras.length - 1],
+        /^Resolves on the certified result, or earlier once the AP has called the (race|state|district|District) and no recount could change it\. N\/A if /,
         e.raceKey
       )
+    if (office === 'senate')
+      assert.ok(
+        paras[0].startsWith(
+          `Resolves to the party that wins the ${longDate(
+            cfg.electionDate
+          )} U.S. Senate election in ${stateName} (Class ${
+            { 2028: 3, 2030: 1, 2032: 2, 2036: 1 }[cycle]
+          } seat).`
+        ),
+        e.raceKey
+      )
+    if (office === 'governor')
+      assert.ok(
+        paras[0].startsWith(
+          `Resolves to the party that wins the ${longDate(
+            cfg.electionDate
+          )} election for Governor of ${stateName}.`
+        ),
+        e.raceKey
+      )
+    if (office === 'house') {
+      // Follow whatever district carries the number; N/A if none does.
+      const n = e.identity.district!
+      assert.doesNotMatch(d, /renumber|abolish|number of seats/, e.raceKey)
+      assert.ok(
+        paras[0].includes(
+          n === 0
+            ? `U.S. House election in ${stateName}'s at-large seat. N/A if ${stateName} has no at-large seat in 2028.`
+            : `whichever district is numbered ${n} on the map in effect for that election. N/A if that map has no district numbered ${n}.`
+        ),
+        e.raceKey
+      )
+    }
+    if (office === 'president') {
+      if (state === 'US') {
+        assert.match(
+          d,
+          new RegExp(
+            `270 or more electoral votes as counted by Congress in January ${
+              cycle + 1
+            }, or whom the House picks if no one does\\. The national popular vote doesn't matter\\.`
+          ),
+          e.raceKey
+        )
+        assert.ok(
+          d.endsWith(
+            `N/A if no presidential election is held for the term starting January 20, ${
+              cycle + 1
+            }.`
+          ),
+          e.raceKey
+        )
+      } else {
+        assert.equal(
+          paras[1],
+          "What counts is which ticket's electors are certified as elected, not the popular-vote margin; how electors later vote doesn't matter.",
+          e.raceKey
+        )
+        if (e.identity.district !== undefined)
+          assert.match(
+            d,
+            /electoral vote of .+'s \d(st|nd|rd) congressional district \([A-Z]{2}-\d\).*N\/A if .+ stops awarding electors by district/s,
+            e.raceKey
+          )
+        else if (state === 'ME' || state === 'NE')
+          assert.match(d, /two statewide electoral votes/, e.raceKey)
+        else assert.match(d, /holds no popular vote for electors\.$/, e.raceKey)
+      }
+    }
+    // A state's deciding-round rule is one short sentence in the first
+    // paragraph; every other race has none.
+    const round = expectedRound(e)
+    if (round) assert.match(paras[0], round, e.raceKey)
+    else
+      assert.doesNotMatch(
+        paras[0],
+        /runoff|ranked-choice|top two|legislature|counting method|deciding round|plurality/,
+        e.raceKey
+      )
+    if (state === 'AK') assert.doesNotMatch(d, /repeal/, e.raceKey)
     // Minnesota's and North Dakota's Democratic parties use other ballot
-    // names; the description says they count as the Democratic Party.
+    // names; the party rule says they count as Democratic.
     assert.equal(
-      /Democratic-Farmer-Labor Party \(DFL\), which counts as the Democratic Party/.test(
-        d
-      ),
+      d.includes('The DFL line counts as Democratic.'),
       state === 'MN',
       e.raceKey
     )
     assert.equal(
-      /Democratic-Nonpartisan League Party \(Democratic-NPL\), which counts as the Democratic Party/.test(
-        d
-      ),
+      d.includes('The Democratic-NPL line counts as Democratic.'),
       state === 'ND',
       e.raceKey
     )
   }
+  // Short: about a fifth of the earlier ~2,500 characters.
+  const mean = lengths.reduce((a, b) => a + b, 0) / lengths.length
+  assert.ok(mean < 650, `mean description length ${mean}`)
 })
 
-test('the opening-odds paragraph reads as plain language with the real numbers', () => {
-  const para = (key: string) =>
-    allEntries
-      .find((e) => e.raceKey === key)!
-      .payload!.descriptionMarkdown.split('\n\n')
-      .find((p) => p.startsWith('**Opening odds**'))
+test('the exact text for one market of each kind', () => {
+  const desc = (key: string) =>
+    allEntries.find((e) => e.raceKey === key)!.payload!.descriptionMarkdown
   assert.equal(
-    para('2028-senate-AL-regular-general'),
-    '**Opening odds** are a starting point, not a forecast. Alabama voted 29.9 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1.6% and Republicans 97.4%. Other opens at 1%.'
+    desc('2028-senate-GA-regular-general'),
+    [
+      'Resolves to the party that wins the November 7, 2028 U.S. Senate election in Georgia (Class 3 seat). If no candidate gets a majority, the December 5, 2028 runoff decides.',
+      "Only the party matters: a Democratic or Republican nominee counts as that party even if also listed on other parties' lines. Anyone else resolves to Other, or to their own answer if one has been added.",
+      'Resolves on the certified result, or earlier once the AP has called the race and no recount could change it. N/A if no election for this seat is held.',
+    ].join('\n\n')
   )
   assert.equal(
-    para('2028-president-US-general'),
-    '**Opening odds** are a starting point, not a forecast. The national market opens with the parties even: Democrats 49.5%, Republicans 49.5%. Other opens at 1%.'
+    desc('2028-house-AL-01-regular-general').split('\n\n')[0],
+    "Resolves to the party that wins the November 7, 2028 U.S. House election in Alabama's 1st District: whichever district is numbered 1 on the map in effect for that election. N/A if that map has no district numbered 1."
   )
   assert.equal(
-    para('2028-house-AL-01-regular-general'),
-    "**Opening odds** are a starting point, not a forecast. Alabama's 1st District voted 34.8 points more Republican than the country in the 2024 presidential election (on its current lines); pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%."
+    desc('2028-president-NE-02-general').split('\n\n')[0],
+    "Resolves to the party of the presidential ticket that wins the electoral vote of Nebraska's 2nd congressional district (NE-2) in the November 7, 2028 election."
+  )
+  assert.equal(
+    desc('2028-president-US-general'),
+    [
+      'Resolves to the party of the candidate elected President in the November 7, 2028 election.',
+      "That's whoever wins 270 or more electoral votes as counted by Congress in January 2029, or whom the House picks if no one does. The national popular vote doesn't matter.",
+      "Only the party matters: a ticket on the Democratic or Republican line counts as that party even if also listed on other parties' lines. Any other ticket resolves to Other, or to its own answer if one has been added.",
+      'N/A if no presidential election is held for the term starting January 20, 2029.',
+    ].join('\n\n')
+  )
+  assert.equal(
+    desc('2030-governor-VT-regular-general').split('\n\n')[0],
+    'Resolves to the party that wins the November 5, 2030 election for Governor of Vermont. If no candidate gets a majority, the Vermont legislature picks the governor in January 2031, and that pick decides.'
+  )
+})
+
+test('seeds are documented for reviewers in seed.basis, not in the market text', () => {
+  const basis = (key: string) =>
+    allEntries.find((e) => e.raceKey === key)!.seed!.basis
+  assert.equal(
+    basis('2028-senate-AL-regular-general'),
+    'Opening odds are a starting point, not a forecast. Alabama voted 29.9 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1.6% and Republicans 97.4%. Other opens at 1%.'
+  )
+  assert.equal(
+    basis('2028-president-US-general'),
+    'Opening odds are a starting point, not a forecast. The national market opens with the parties even: Democrats 49.5%, Republicans 49.5%. Other opens at 1%.'
   )
   assert.match(
-    para('2028-president-DC-general')!,
-    /^\*\*Opening odds\*\* are a starting point, not a forecast\. The District of Columbia voted [\d.]+ points more Democratic/
-  )
-  // A reviewed exception gives its reason, without the state prefix or the
-  // reviewer-only note.
-  assert.match(
-    para('2030-senate-ME-regular-general')!,
+    basis('2030-senate-ME-regular-general'),
     /Other opens at 10% rather than 1%: the Class 1 seat is Angus King’s .*plausible\.$/
   )
-  // The Democratic and Republican figures are the payload's own seeds.
   for (const e of allEntries) {
-    const p = para(e.raceKey)!
+    const b = e.seed!.basis
     const [d, r] = e.payload!.answerProbs!
-    if (e.identity.state === 'US')
-      assert.ok(p.includes(`Democrats ${d}%, Republicans ${r}%`), e.raceKey)
-    else
-      assert.ok(
-        p.includes(`that gives Democrats ${d}% and Republicans ${r}%.`),
-        e.raceKey
-      )
-    assert.ok(p.includes(`Other opens at ${otherOf(e)}%`), e.raceKey)
+    assert.ok(
+      b.includes(
+        e.identity.state === 'US'
+          ? `Democrats ${d}%, Republicans ${r}%`
+          : `that gives Democrats ${d}% and Republicans ${r}%.`
+      ),
+      e.raceKey
+    )
+    assert.ok(b.includes(`Other opens at ${otherOf(e)}%`), e.raceKey)
+    assert.ok(!e.payload!.descriptionMarkdown.includes(b), e.raceKey)
   }
 })
 

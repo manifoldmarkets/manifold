@@ -146,7 +146,7 @@ export function buildEntry(
     shapeRationale: shapeRationale(),
     payload: {
       question,
-      descriptionMarkdown: descriptionFor(race, cfg, seedText),
+      descriptionMarkdown: descriptionFor(race, cfg),
       outcomeType: 'MULTIPLE_CHOICE',
       // Democratic and Republican seeds; the server appends "Other" at the
       // remainder (seed.probs[2]) because answers can be added (creator only).
@@ -290,6 +290,18 @@ export function buildManifest(
     entries,
   }
   const errors = validateManifest(manifest, opts.now ?? Date.now())
+  // The short descriptions must still say what the market resolves to and
+  // when it is N/A.
+  for (const e of entries) {
+    const d = e.payload?.descriptionMarkdown ?? ''
+    if (
+      e.status === 'ready' &&
+      !(/^Resolves to /.test(d) && /\bN\/A\b/.test(d))
+    )
+      errors.push(
+        `${e.raceKey}: description must say what it resolves to and when it is N/A`
+      )
+  }
   if (errors.length)
     throw new Error(
       `${cycle}: generated manifest fails validation:\n${errors.join('\n')}`

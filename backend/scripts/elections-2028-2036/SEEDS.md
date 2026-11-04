@@ -65,12 +65,13 @@ For a unit *u* (state, DC, ME/NE elector district, or House district on the
 6. **National market**: no lean by construction (it *is* the even
    environment): 49.5 / 49.5 / 1 in every cycle.
 
-### What traders read
+### The seed note
 
-Each market's last paragraph explains its opening odds in plain language
+Market descriptions don't describe the opening odds (Tod, 2026-11-05). Each
+entry's `seed.basis` keeps a plain-language note for reviewers
 (`describeSeed` in `seeds.ts`), with the numbers above and no formula:
 
-> **Opening odds** are a starting point, not a forecast. Alabama voted 29.9
+> Opening odds are a starting point, not a forecast. Alabama voted 29.9
 > points more Republican than the country in the 2020 and 2024 presidential
 > elections; pulled toward even for a race this far off, that gives Democrats
 > 1.6% and Republicans 97.4%. Other opens at 1%.
@@ -78,10 +79,10 @@ Each market's last paragraph explains its opening odds in plain language
 The lean is the one in step 2 (one decimal), the years are the unit's
 `yearsUsed` (a district with only 2024 says "in the 2024 presidential election
 (on its current lines)"), and the percentages are the seeds themselves. The
-national market says it opens with the parties even. Where an exception
-below applies, the paragraph ends "Other opens at N% rather than 1%:"
+national market's note says it opens with the parties even. Where an
+exception below applies, the note ends "Other opens at N% rather than 1%:"
 followed by the reason, without the leading state name and without
-"Same share as the reviewed 2036 exception", which is for reviewers.
+"Same share as the reviewed 2036 exception".
 
 Changing a parameter: edit `SEED_PARAMS`, run
 `npx ts-node --transpile-only elections-2028-2036/generate-manifests.ts`, and
@@ -91,8 +92,8 @@ used) for every entry, so a reviewer can recompute any seed by hand.
 ### "Other" exceptions
 
 Everywhere else "Other" opens at 1%. These seats get more, each with its
-reason (also stored in `SEED_PARAMS.otherExceptions`, and shown to traders in
-the opening-odds paragraph):
+reason (also stored in `SEED_PARAMS.otherExceptions`, and quoted in the
+entry's seed note):
 
 | race | other | why |
 |---|---:|---|

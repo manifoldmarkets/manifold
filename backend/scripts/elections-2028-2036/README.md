@@ -33,20 +33,46 @@ ante, so no cost changed.
 
 - **Answers**: Democratic Party + Republican Party + the server's "Other",
   creator-only additions (was a fixed third answer, "Another party or
-  independent", with additions disabled). The party rule says an independent
-  or third-party winner resolves to the answer @ManifoldPolitics added for
-  that party or candidate, if any, and otherwise to "Other".
+  independent", with additions disabled). Anyone who isn't the Democratic or
+  Republican nominee resolves to "Other", or to their own answer if
+  @ManifoldPolitics has added one.
 - **House 2028: create all 435** now; `holds.json` stays empty. Each market
   follows whichever district is numbered N on the map in effect for the 2028
-  election, however its boundaries change, and resolves N/A only if that map
-  has no district numbered N (the renumbering and seat-count N/A clauses are
-  gone; apportionment is fixed until the 2030 census anyway).
-- **Opening-odds paragraph**: one plain-language paragraph with the real
-  numbers ("Alabama voted 29.9 points more Republican than the country in the
-  2020 and 2024 presidential elections; pulled toward even for a race this far
-  off, that gives Democrats 1.6% and Republicans 97.4%. Other opens at 1%."),
-  with no repository file names or jargon. The formula stays in `SEEDS.md`
-  and each entry's `seed.source`.
+  election, and is N/A if that map has no district numbered N (the
+  renumbering and seat-count N/A clauses are gone; apportionment is fixed
+  until the 2030 census anyway).
+- **Short descriptions**: three short plain paragraphs (four for president),
+  no labels, about 560 characters instead of about 2,500:
+  1. what it resolves to, with the election date (and the Senate class, the
+     House district rule or the electoral unit), plus at most one sentence
+     for a state whose deciding round differs (Georgia runoff, Alaska's
+     counting method, Maine ranked-choice, Louisiana, Vermont's legislature,
+     California/Washington top-two, Maine governor plurality);
+  2. for president, that certified electors count, not the popular-vote
+     margin (state markets), or that 270 electoral votes as counted by
+     Congress decide, not the national popular vote (national market);
+  3. only the party matters (DFL and Democratic-NPL count as Democratic);
+  4. resolves on the certified result or an AP call no recount could change,
+     and when it is N/A.
+
+  Opening odds, answer curation, term-start notes and the hub link are no
+  longer described. The seeds stay in the payload; a plain-language seed note
+  is kept in each entry's `seed.basis` for reviewers, and the formula in
+  `SEEDS.md` and `seed.source`. The full round rule with statute citations
+  stays in `identity.round` and the inventories. Example (2028 Georgia
+  Senate):
+
+  > Resolves to the party that wins the November 7, 2028 U.S. Senate election
+  > in Georgia (Class 3 seat). If no candidate gets a majority, the December
+  > 5, 2028 runoff decides.
+  >
+  > Only the party matters: a Democratic or Republican nominee counts as that
+  > party even if also listed on other parties' lines. Anyone else resolves to
+  > Other, or to their own answer if one has been added.
+  >
+  > Resolves on the certified result, or earlier once the AP has called the
+  > race and no recount could change it. N/A if no election for this seat is
+  > held.
 
 ### 2030 (midterm)
 
@@ -87,7 +113,7 @@ ante, so no cost changed.
 | `inventory.ts`, `templates.ts`, `seeds.ts` | Race list, question/description/search-term templates, Stage A seed math. |
 | `generate-manifests.ts` (+ `.test.ts`) | Writes `<cycle>/manifest.json`, `inventories/<cycle>.json`, `topics-needed.md`. |
 | `topics.json`, `topics-needed.md` | Prod topic ids used, and the topics Tod still has to create. |
-| `SEEDS.md` | The seed formula, parameters, the "Other" exceptions and the market's opening-odds paragraph. |
+| `SEEDS.md` | The seed formula, parameters, the "Other" exceptions and the reviewers' seed note. |
 | `2028/manifest.json`, `2030/…`, `2032/…`, `2036/…` | The manifests (series `us-<cycle>-general-v1`), `review.approved: false`. |
 | `<cycle>/out/` | Dry-run output (`dry-run-report.md`, `-payloads.json`, `-plan.json`, `-dashboard-mapping.json`, `dry-run-online.json`). |
 | `../create-election-markets.ts`, `../../shared/src/elections/` | The 2026 creation CLI and library (from the 2026 launch), generalised for later cycles and the `president` office. |
@@ -237,13 +263,13 @@ CLI writes into `<cycle>/out/` next to the state file after each run.)
 
 ## Open questions for the 2030 review
 
-- **Alaska**: every Alaska market (the 2030 governor, the 2028 and 2032
-  Senate seats, the presidential ones) still says the repeal initiative "is on
-  the November 3, 2026 ballot". Once that result is certified, state which
-  system applies and regenerate.
-- **Maine governor**: the market says plurality, with a clause that a final
-  ranked-choice round counts if Maine adopts it for this election (that needs
-  a constitutional change).
+- **Alaska**: the market text is neutral ("The final count under whatever
+  counting method Alaska uses in <year> decides."), but `identity.round` and
+  the inventories still say the repeal initiative "is on the November 3, 2026
+  ballot". Once that result is certified, update `cycles.ts` and regenerate.
+- **Maine governor**: the market says plurality unless Maine extends
+  ranked-choice counting to governor races (that needs a constitutional
+  change).
 - **"Other" shares**: 2030 copies the reviewed 2036 Class 1 shares
   (ME 10%, NE 5%, VT 10%), but 2030 is when King's and Sanders's own seats are
   up. Alaska and Maine governors stay at 1% by convention despite independent
