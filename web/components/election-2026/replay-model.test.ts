@@ -98,6 +98,17 @@ test('playback holds on milestones it reaches, not the one it starts on', () => 
   assert.ok(week >= 60 && week <= 400)
 })
 
+test('with milestone pauses off, playback runs straight through', () => {
+  const { milestones } = replayPlan(REPLAY_MILESTONES, T0 + 6 * HOUR_MS)
+  const day = milestones[1].frame
+  const step = playbackDelay(milestones, day + 1, 0, false)
+  assert.equal(playbackDelay(milestones, day, 0, false), step)
+  assert.equal(
+    playbackDelay(milestones, day, 0, true),
+    step + MILESTONE_HOLD_MS
+  )
+})
+
 test('scrubber keys step frames and jump milestones', () => {
   const { times, milestones } = replayPlan(REPLAY_MILESTONES, T0 + HOUR_MS)
   const last = times.length - 1

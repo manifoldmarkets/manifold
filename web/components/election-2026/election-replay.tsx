@@ -5,9 +5,11 @@ import Link from 'next/link'
 import { PauseIcon, PlayIcon, RefreshIcon } from '@heroicons/react/solid'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { referralQuery } from 'common/util/share'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import ShortToggle from 'web/components/widgets/short-toggle'
 import { ElectionAsOfContext } from 'web/components/usa-map/election-as-of'
 import { formatOdds } from 'web/components/usa-map/election-display'
 import {
@@ -73,6 +75,11 @@ export function ElectionReplay(
   const [playing, setPlaying] = useState(false)
   // Where playback started, so it doesn't pause on that milestone.
   const [startFrame, setStartFrame] = useState(0)
+  // Off plays straight through, for a recording.
+  const [holdAtMilestones, setHoldAtMilestones] = usePersistentInMemoryState(
+    true,
+    'election-2026-replay-milestone-pauses'
+  )
   const last = snapshot ? snapshot.times.length - 1 : 0
 
   useEffect(() => {
@@ -83,10 +90,10 @@ export function ElectionReplay(
     }
     const timer = setTimeout(
       () => setFrame(frame + 1),
-      playbackDelay(snapshot.milestones, frame, startFrame)
+      playbackDelay(snapshot.milestones, frame, startFrame, holdAtMilestones)
     )
     return () => clearTimeout(timer)
-  }, [playing, frame, last, snapshot, startFrame])
+  }, [playing, frame, last, snapshot, startFrame, holdAtMilestones])
 
   const shown = useMemo(
     () => (snapshot ? liveAsOf(contracts, snapshot, frame) : undefined),
@@ -127,6 +134,8 @@ export function ElectionReplay(
             playing={playing}
             onPlay={play}
             onJump={jump}
+            holdAtMilestones={holdAtMilestones}
+            setHoldAtMilestones={setHoldAtMilestones}
             chambers={chambers}
           />
           {/* The player has the chamber odds, so no control cards here. */}
@@ -309,15 +318,29 @@ const milestoneLabel = (m: ReplayMilestone) =>
 
 // Every line here has a fixed height and every comparison row is always
 // drawn, so scrubbing never moves the page.
+// Top to bottom: the controls (play, milestone pauses, milestone jumps), then
+// the progress bar, the countdown and the odds, so a recording can crop the
+// controls off and keep the rest.
 function ReplayPlayer(props: {
   snapshot: ReplaySnapshot
   frame: number
   playing: boolean
   onPlay: () => void
   onJump: (frame: number) => void
+  holdAtMilestones: boolean
+  setHoldAtMilestones: (on: boolean) => void
   chambers: ReplayChambers
 }) {
-  const { snapshot, frame, playing, onPlay, onJump, chambers } = props
+  const {
+    snapshot,
+    frame,
+    playing,
+    onPlay,
+    onJump,
+    holdAtMilestones,
+    setHoldAtMilestones,
+    chambers,
+  } = props
   const { milestones, times } = snapshot
   const time = times[frame]
   const milestone = milestoneAt(milestones, frame)
@@ -331,9 +354,9 @@ function ReplayPlayer(props: {
       aria-label="Replay"
       className="bg-canvas-0 border-ink-200 flex flex-col gap-3 rounded-xl border p-3 sm:p-4"
     >
-      <Row className="items-center gap-3">
+      <Row className="items-center justify-between gap-3">
         <button
-          className="bg-primary-500 hover:bg-primary-600 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white"
+          className="bg-primary-500 hover:bg-primary-600 flex h-9 shrink-0 items-center gap-1.5 rounded-full pl-3 pr-4 text-sm font-semibold text-white"
           onClick={onPlay}
           aria-label={
             playing
@@ -350,18 +373,53 @@ function ReplayPlayer(props: {
           ) : (
             <PlayIcon className="h-5 w-5" aria-hidden />
           )}
+          <span aria-hidden>
+            {playing ? 'Pause' : atEnd ? 'Replay' : 'Play'}
+          </span>
         </button>
-        {/* Quiet while playing, so screen readers aren't read every frame. */}
-        <Col className="min-w-0 flex-1" aria-live={playing ? 'off' : 'polite'}>
-          <div className="text-primary-700 truncate text-base font-semibold leading-6 sm:text-xl sm:leading-7">
-            {title}
-          </div>
-          <div className="text-ink-600 truncate text-xs tabular-nums leading-5 sm:text-sm">
-            {formatRewindTime(time)}
-            {milestone?.note && ` · ${milestone.note}`}
-          </div>
-        </Col>
+        {/* The switch carries its own name; the text is for sight. */}
+        <Row className="text-ink-700 items-center gap-2 text-xs sm:text-sm">
+          <span aria-hidden>Pause at milestones</span>
+          <ShortToggle
+            size="sm"
+            on={holdAtMilestones}
+            setOn={(on) => {
+              track('election 2026 replay', { action: 'milestone pauses', on })
+              setHoldAtMilestones(on)
+            }}
+            ariaLabel="Pause at milestones"
+          />
+        </Row>
       </Row>
+
+      {/* One scrolling row on phones, wrapped from sm up. The buttons never
+          change size, so the rows don't change while scrubbing. */}
+      <div
+        className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible"
+        role="group"
+        aria-label="Jump to a milestone"
+      >
+        {milestones.map((m) => (
+          <button
+            key={m.id}
+            aria-pressed={m.frame === frame}
+            onClick={() => {
+              track('election 2026 replay', { action: 'jump', to: m.id })
+              onJump(m.frame)
+            }}
+            className={clsx(
+              'shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs',
+              m.frame === frame
+                ? 'border-primary-500 bg-primary-500 text-white'
+                : m.frame < frame
+                ? 'border-primary-300 text-primary-700 hover:bg-primary-50'
+                : 'border-ink-300 text-ink-700 hover:bg-canvas-50'
+            )}
+          >
+            {m.id === LATEST_MILESTONE_ID ? 'Latest' : m.label}
+          </button>
+        ))}
+      </div>
 
       <div className="relative">
         <input
@@ -400,34 +458,16 @@ function ReplayPlayer(props: {
         </div>
       </div>
 
-      {/* One scrolling row on phones, wrapped from sm up. The buttons never
-          change size, so the rows don't change while scrubbing. */}
-      <div
-        className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible"
-        role="group"
-        aria-label="Jump to a milestone"
-      >
-        {milestones.map((m) => (
-          <button
-            key={m.id}
-            aria-pressed={m.frame === frame}
-            onClick={() => {
-              track('election 2026 replay', { action: 'jump', to: m.id })
-              onJump(m.frame)
-            }}
-            className={clsx(
-              'shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs',
-              m.frame === frame
-                ? 'border-primary-500 bg-primary-500 text-white'
-                : m.frame < frame
-                ? 'border-primary-300 text-primary-700 hover:bg-primary-50'
-                : 'border-ink-300 text-ink-700 hover:bg-canvas-50'
-            )}
-          >
-            {m.id === LATEST_MILESTONE_ID ? 'Latest' : m.label}
-          </button>
-        ))}
-      </div>
+      {/* Quiet while playing, so screen readers aren't read every frame. */}
+      <Col className="min-w-0" aria-live={playing ? 'off' : 'polite'}>
+        <div className="text-primary-700 truncate text-base font-semibold leading-6 sm:text-xl sm:leading-7">
+          {title}
+        </div>
+        <div className="text-ink-600 truncate text-xs tabular-nums leading-5 sm:text-sm">
+          {formatRewindTime(time)}
+          {milestone?.note && ` · ${milestone.note}`}
+        </div>
+      </Col>
 
       <div className="border-ink-200 grid gap-x-8 gap-y-3 border-t pt-3 sm:grid-cols-2">
         {(['senate', 'house'] as const).map((chamber) => (
