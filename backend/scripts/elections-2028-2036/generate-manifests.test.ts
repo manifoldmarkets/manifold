@@ -87,7 +87,7 @@ test('election days are the Tuesday after the first Monday in November', () => {
   )
 })
 
-test('counts per cycle and office match the brief: 878 markets at Ṁ1,000 for 2028–2036', () => {
+test('counts per cycle and office match the brief: 878 markets, Ṁ1,877,000 for 2028–2036', () => {
   assert.deepEqual([...CYCLES], [2028, 2030, 2032, 2034, 2036])
   let total = 0
   let mana = 0
@@ -103,7 +103,10 @@ test('counts per cycle and office match the brief: 878 markets at Ṁ1,000 for 2
       built[cycle].manifest.budget.approvedMaxTotalMana,
       built[cycle].totalMana
     )
-    assert.equal(built[cycle].totalMana, entriesOf(cycle).length * 1000)
+    assert.equal(
+      built[cycle].totalMana,
+      entriesOf(cycle).reduce((sum, e) => sum + e.payload!.liquidityTier, 0)
+    )
   }
   assert.equal(entriesOf(2028).length, 537)
   assert.equal(entriesOf(2030).length, 69)
@@ -111,7 +114,11 @@ test('counts per cycle and office match the brief: 878 markets at Ṁ1,000 for 2
   assert.equal(entriesOf(2034).length, 70)
   assert.equal(entriesOf(2036).length, 101)
   assert.equal(total, 878)
-  assert.equal(mana, 878_000)
+  assert.deepEqual(
+    CYCLES.map((c) => built[c].totalMana),
+    [1_518_000, 69_000, 110_000, 70_000, 110_000]
+  )
+  assert.equal(mana, 1_877_000)
 })
 
 test('every generated manifest validates with zero errors and is not approved', () => {
@@ -423,13 +430,14 @@ test('answers are the two party labels plus the server\'s "Other", with valid se
     )
     assert.equal(e.payload!.shouldAnswersSumToOne, true)
     assert.equal(e.payload!.addAnswersMode, 'ONLY_CREATOR')
-    // Two listed answers plus Other: still the Ṁ1,000 minimum ante.
+    // Two listed answers plus Other: the ante is the tier itself (three
+    // answers never exceed the tier's minimum).
     assert.equal(hasOtherAnswer(e.payload!), true)
+    assert.ok([1_000, 10_000, 100_000].includes(e.payload!.liquidityTier))
     assert.deepEqual(
       [costOf(e.payload!).numAnswers, costOf(e.payload!).total],
-      [3, 1000]
+      [3, e.payload!.liquidityTier]
     )
-    assert.equal(e.payload!.liquidityTier, 1000)
     assert.equal(e.payload!.visibility, 'public')
     assert.equal(e.proposition, 'ballot-party')
     assert.deepEqual(e.identity.candidateNames, [])
@@ -737,6 +745,98 @@ test('seeds are documented for reviewers in seed.basis, not in the market text',
   }
 })
 
+test('liquidity tiers: Ṁ100k for the 2028 presidential market, Ṁ10k for the other 2028 presidential, winner and competitive 2028 markets', () => {
+  const code = (e: RaceManifestEntry) =>
+    e.identity.district !== undefined
+      ? `${e.identity.state}-${String(e.identity.district).padStart(2, '0')}`
+      : e.identity.state
+  const at = (cycle: number, office: string, tier: number) =>
+    entriesOf(cycle)
+      .filter(
+        (e) => e.identity.office === office && e.payload!.liquidityTier === tier
+      )
+      .map(code)
+  assert.deepEqual(at(2028, 'president', 100_000), ['US'])
+  assert.equal(at(2028, 'president', 10_000).length, 56)
+  assert.deepEqual(at(2032, 'president', 10_000), ['US'])
+  assert.deepEqual(at(2036, 'president', 10_000), ['US'])
+  assert.deepEqual(at(2028, 'senate', 10_000).sort(), [
+    'AZ',
+    'GA',
+    'NC',
+    'NH',
+    'NV',
+    'PA',
+    'WI',
+  ])
+  assert.deepEqual(at(2028, 'governor', 10_000).sort(), ['NC', 'NH'])
+  assert.deepEqual(at(2028, 'house', 10_000).sort(), [
+    'AZ-01',
+    'AZ-06',
+    'CA-13',
+    'CA-22',
+    'CA-48',
+    'CO-08',
+    'IA-03',
+    'IL-17',
+    'IN-01',
+    'KS-03',
+    'MI-07',
+    'MI-08',
+    'NE-02',
+    'NH-01',
+    'NH-02',
+    'NJ-07',
+    'NM-02',
+    'NV-01',
+    'NV-03',
+    'NV-04',
+    'NY-03',
+    'NY-17',
+    'NY-18',
+    'NY-19',
+    'OH-01',
+    'OH-13',
+    'PA-01',
+    'PA-07',
+    'PA-17',
+    'VA-02',
+    'VA-07',
+    'WA-08',
+    'WI-01',
+  ])
+  for (const e of allEntries) {
+    const tier = e.payload!.liquidityTier
+    const lean = Math.abs(
+      Math.round((e.seed as { source?: { lean: number } }).source!.lean * 10) /
+        10
+    )
+    // Competitive 2028 races are within 8 points (Senate, governor) or 5
+    // points (House) of the national environment; later cycles stay 1,000.
+    if (e.identity.cycle === 2028 && e.identity.office !== 'president')
+      assert.equal(
+        tier === 10_000,
+        lean <= (e.identity.office === 'house' ? 5 : 8),
+        e.raceKey
+      )
+    if (e.identity.cycle !== 2028 && e.identity.state !== 'US')
+      assert.equal(tier, 1_000, e.raceKey)
+    // Every raised market says why in its liquidity plan.
+    assert.equal(e.liquidityPlan!.tier, tier, e.raceKey)
+    if (tier > 1_000)
+      assert.match(
+        e.liquidityPlan!.rationale,
+        /Tod, 5 Nov 2026|Competitive: within/,
+        e.raceKey
+      )
+  }
+  for (const cycle of CYCLES)
+    assert.match(
+      built[cycle].manifest.review.notes!,
+      new RegExp(`Planned spend for this cycle: ${built[cycle].totalMana} mana`)
+    )
+})
+
 test('every manifest creates official markets even where a community market exists', () => {
   // Only an EQUIVALENT @ManifoldPolitics market skips an entry; the policy
   // lives in the manifest, so the apply run can't forget it.
@@ -977,7 +1077,14 @@ test('rejections become reviewedRejectedContractIds and holds make entries unres
   assert.equal(ga.payload, undefined)
   assert.match(ga.unresolvedFields![0], /held: map likely to change/)
   assert.equal(entries.length, 537)
-  assert.equal(r.totalMana, (537 - 34) * 1000)
+  // Held entries cost nothing; the rest keep their own tiers.
+  const heldKeys = new Set(r.held)
+  assert.equal(
+    r.totalMana,
+    entriesOf(2028)
+      .filter((e) => !heldKeys.has(e.raceKey))
+      .reduce((sum, e) => sum + e.payload!.liquidityTier, 0)
+  )
   assert.equal(r.manifest.budget.approvedMaxTotalMana, r.totalMana)
   assert.deepEqual(validateManifest(r.manifest, NOW), [])
   assert.match(r.manifest.review.notes!, /34 entries held/)

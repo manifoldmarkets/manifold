@@ -1106,9 +1106,9 @@
       "action": "create",
       "idempotencyKey": "z89QsEnnZE",
       "cost": {
-        "ante": 1000,
+        "ante": 10000,
         "extraLiquidity": 0,
-        "total": 1000,
+        "total": 10000,
         "numAnswers": 3
       }
     }

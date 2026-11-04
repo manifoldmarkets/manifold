@@ -40,7 +40,70 @@ import {
   shapeRationale,
 } from './templates'
 
+// The default tier; LIQUIDITY_RULES raise particular markets.
 export const LIQUIDITY_TIER = 1000
+
+// Markets of particular importance or uncertainty get more liquidity (Tod,
+// 2026-11-05: "add M10k liquidity to all of 2028 [presidential], and add M10k
+// to the presidential winner markets for every year ... The 2028
+// presidential market should have M100k"). The first matching rule wins;
+// everything else stays at LIQUIDITY_TIER. Later cycles' competitive races
+// stay at 1,000 for now and are raised as each cycle approaches. `lean` is
+// the seed's lean in points (D+ / R−) against the national environment.
+export type LiquidityRule = {
+  id: string
+  tier: 1_000 | 10_000 | 100_000
+  rationale: string
+  applies: (race: Race, lean: number) => boolean
+}
+export const LIQUIDITY_RULES: LiquidityRule[] = [
+  {
+    id: 'president-2028-national',
+    tier: 100_000,
+    rationale: '2028 presidential market (Tod, 5 Nov 2026): Ṁ100,000.',
+    applies: (r) =>
+      r.cycle === 2028 && r.office === 'president' && r.state === 'US',
+  },
+  {
+    id: 'president-2028-units',
+    tier: 10_000,
+    rationale:
+      '2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.',
+    applies: (r) => r.cycle === 2028 && r.office === 'president',
+  },
+  {
+    id: 'president-national',
+    tier: 10_000,
+    rationale:
+      'Presidential winner market for its cycle (Tod, 5 Nov 2026): Ṁ10,000.',
+    applies: (r) => r.office === 'president' && r.state === 'US',
+  },
+  {
+    id: 'competitive-2028-statewide',
+    tier: 10_000,
+    rationale:
+      'Competitive: within 8 points of the national environment (2028 Senate or governor): Ṁ10,000.',
+    applies: (r, lean) =>
+      r.cycle === 2028 &&
+      (r.office === 'senate' || r.office === 'governor') &&
+      Math.abs(lean) <= 8,
+  },
+  {
+    id: 'competitive-2028-house',
+    tier: 10_000,
+    rationale:
+      'Competitive: within 5 points of the national environment (2028 House district): Ṁ10,000.',
+    applies: (r, lean) =>
+      r.cycle === 2028 && r.office === 'house' && Math.abs(lean) <= 5,
+  },
+]
+
+// The seed lean as the manifest shows it (one decimal), so a race's tier never
+// depends on digits nobody can see.
+export function liquidityFor(race: Race, lean: number) {
+  const shown = Math.round(lean * 10) / 10
+  return LIQUIDITY_RULES.find((rule) => rule.applies(race, shown))
+}
 
 // Every 2028+ market is an official @ManifoldPolitics market, created even
 // where a community market already asks the same question (Tod, 2026-11-05).
@@ -131,6 +194,8 @@ export function buildEntry(
   })
   const seedText = describeSeed(seed, seedPlace(race))
   const round = roundFor(race, cfg)
+  const liquidity = liquidityFor(race, seed.lean)
+  const tier = liquidity?.tier ?? LIQUIDITY_TIER
   const { ids, missing } = topicIdsFor(opts.topics, race.office, race.cycle)
   for (const m of missing) opts.missingTopics.add(m)
   const question = questionFor(race)
@@ -161,7 +226,7 @@ export function buildEntry(
       shouldAnswersSumToOne: true,
       addAnswersMode: 'ONLY_CREATOR',
       closeTime: round.closeTime,
-      liquidityTier: LIQUIDITY_TIER,
+      liquidityTier: tier,
       groupIds: ids,
       visibility: 'public',
     },
@@ -182,13 +247,15 @@ export function buildEntry(
         },
       } as object),
     },
-    liquidityPlan: {
-      tier: LIQUIDITY_TIER,
-      rationale:
-        'Generic market opened years ahead: tier 1,000 everywhere (the brief). Raise after the 2026 results if a race is competitive enough that a Ṁ100 trade should move the price by a point rather than ten.',
-      alternatives:
-        'Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 or +extraLiquidity for marquee races.',
-    },
+    liquidityPlan: liquidity
+      ? { tier, rationale: liquidity.rationale }
+      : {
+          tier,
+          rationale:
+            'Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten.',
+          alternatives:
+            'Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.',
+        },
     reviewedRejectedContractIds: [...(opts.rejections?.[race.raceKey] ?? [])],
     searchTerms: searchTermsFor(race),
     dashboard: {
@@ -269,6 +336,15 @@ export function buildManifest(
     0
   )
   const generatedAt = opts.generatedAt ?? new Date().toISOString()
+  const tiers: Record<number, number> = {}
+  for (const e of entries)
+    if (e.status === 'ready')
+      tiers[e.payload!.liquidityTier] =
+        (tiers[e.payload!.liquidityTier] ?? 0) + 1
+  const tierText = Object.entries(tiers)
+    .sort(([a], [b]) => Number(b) - Number(a))
+    .map(([t, n]) => `${n} at tier ${Number(t).toLocaleString('en-US')}`)
+    .join(', ')
   const manifest: Manifest = {
     kind: 'races',
     manifestVersion: `${generatedAt.slice(0, 10)}.1`,
@@ -278,7 +354,7 @@ export function buildManifest(
       approved: false,
       reviewedBy: null,
       reviewedAt: null,
-      notes: `Generated by elections-2028-2036/generate-manifests.ts from the cited inventories with Stage A prior seeds (SEEDS.md). Not reviewed. Review the seeds (SEEDS.md), then approve. Creator: @ManifoldPolitics. Planned spend for this cycle: ${totalMana} mana at tier ${LIQUIDITY_TIER}${
+      notes: `Generated by elections-2028-2036/generate-manifests.ts from the cited inventories with Stage A prior seeds (SEEDS.md). Not reviewed. Review the seeds (SEEDS.md), then approve. Creator: @ManifoldPolitics. Planned spend for this cycle: ${totalMana} mana (${tierText})${
         held.length ? `; ${held.length} entries held (holds.json)` : ''
       }.`,
     },

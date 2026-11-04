@@ -12,26 +12,47 @@ cycle (it was optional). **Nothing here has been launched.** Tod
 approves and runs the launch after the 2026 results are certified (December
 2026).
 
-| Cycle | Senate | Governor | President | House | Markets | Mana (tier 1,000) |
+| Cycle | Senate | Governor | President | House | Markets | Mana |
 |---|---:|---:|---:|---:|---:|---:|
-| 2028 | 34 (Class 3) | 11 | 57 (50 states + DC + ME-1/2, NE-1/2/3 + national) | 435 | 537 | 537,000 |
+| 2028 | 34 (Class 3) | 11 | 57 (50 states + DC + ME-1/2, NE-1/2/3 + national) | 435 | 537 | 1,518,000 |
 | 2030 | 33 (Class 1) | 36 | — | — | 69 | 69,000 |
-| 2032 | 33 (Class 2) | 11 | 57 | — (2030 census) | 101 | 101,000 |
+| 2032 | 33 (Class 2) | 11 | 57 | — (2030 census) | 101 | 110,000 |
 | 2034 | 34 (Class 3) | 36 | — | — (2030 census) | 70 | 70,000 |
-| 2036 | 33 (Class 1) | 11 | 57 | — | 101 | 101,000 |
-| **2028–2036** | | | | | **878** | **878,000** |
+| 2036 | 33 (Class 1) | 11 | 57 | — | 101 | 110,000 |
+| **2028–2036** | | | | | **878** | **1,877,000** |
 
 Creator: `@ManifoldPolitics`. Every market: `cpmm-multi-2` (the default),
-answers sum to one, `addAnswersMode: ONLY_CREATOR`, tier Ṁ1,000, public after
+answers sum to one, `addAnswersMode: ONLY_CREATOR`, tier Ṁ1,000 unless raised
+(see "Liquidity tiers" below), public after
 a quiet (unlisted → verified → published) creation. The payload lists
 "Democratic Party" and "Republican Party"; because answers can be added, the
 server appends "Other" at the remainder of the two seeds (1% unless an
 exception in `SEEDS.md` applies). Only @ManifoldPolitics can add an answer
 later (a third party or a named independent), and every added answer takes
-its share out of "Other". Two answers plus Other is still the Ṁ1,000 minimum
-ante, so no cost changed.
+its share out of "Other". With three answers the ante is the tier itself
+(Ṁ1,000, Ṁ10,000 or Ṁ100,000). Adding an answer later costs the tier's
+per-answer price: Ṁ100 at 1,000, Ṁ1,000 at 10,000, Ṁ10,000 at 100,000.
 
 ### Decisions (Tod, 2026-11-05)
+
+- **Liquidity tiers**: "add M10k liquidity to all of 2028 [presidential], and
+  add M10k to the presidential winner markets for every year ... The 2028
+  presidential market should have M100k." `LIQUIDITY_RULES` in
+  `generate-manifests.ts` sets them (first match wins; everything else
+  stays at 1,000; each raised entry says why in `liquidityPlan.rationale`):
+  - `2028-president-US-general`: 100,000.
+  - The other 56 presidential states, DC and districts in 2028: 10,000.
+  - `2032-president-US-general` and `2036-president-US-general`: 10,000.
+  - Competitive 2028 races: Senate and governor within 8 points of the
+    national environment (Senate AZ, GA, NV, NH, NC, PA, WI; governor NH, NC)
+    and House districts within 5 points (33 districts): 10,000. The lean is
+    the seed's, rounded to one decimal as the manifest shows it. Later
+    cycles' competitive races stay at 1,000 for now, to be raised as each
+    cycle approaches.
+
+  Planned totals: 2028 Ṁ1,518,000 (1 at 100,000, 98 at 10,000, 438 at
+  1,000), 2030 Ṁ69,000, 2032 Ṁ110,000, 2034 Ṁ70,000, 2036 Ṁ110,000; Ṁ1,877,000
+  in all. Each manifest's `budget.approvedMaxTotalMana` is its total.
 
 - **Answers**: Democratic Party + Republican Party + the server's "Other",
   creator-only additions (was a fixed third answer, "Another party or
@@ -285,15 +306,19 @@ CLI writes into `<cycle>/out/` next to the state file after each run.)
 5. **Dry runs again** (offline, then online) on the approved manifests: zero
    validation errors, expected counts and cost.
 6. **Pilot one market per cycle**: the first apply for a cycle creates its
-   state file; `--only` picks the pilot and `--max-mana 1000` stops after it.
-   Recommended pilots: `2028-president-US-general`,
-   `2032-president-US-general` and `2036-president-US-general` (the
-   most-watched markets), and `2030-senate-PA-regular-general` and
-   `2034-senate-PA-regular-general` (swing seats with the plain plurality rule
-   and the full Senate topic set).
+   state file; `--only` picks the pilot and `--max-mana` stops after it. Pilot
+   a Ṁ1,000 market first, so a pipeline problem costs Ṁ1,000: for 2028
+   `2028-senate-AL-regular-general`, for 2030, 2034 and 2036
+   `<cycle>-senate-PA-regular-general` (a plain plurality seat with the full
+   Senate topic set; Pennsylvania is at 1,000 outside 2028), for 2032
+   `2032-senate-AL-regular-general` (Class 2). Then create the 2028 national
+   market on its own and check it before the full run, since it costs
+   Ṁ100,000 (the 2032 and 2036 national markets cost Ṁ10,000 each and can go
+   with the full runs).
    ```powershell
    $env:MANIFOLD_API_KEY = '<@ManifoldPolitics key, never on the command line>'
-   npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2028/manifest.json --out elections-2028-2036/2028/out --state C:\Users\User\elections-2028-prod\state.prod.json --env prod --apply --init-state --quiet --creator-username ManifoldPolitics --max-mana 1000 --only 2028-president-US-general
+   npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2028/manifest.json --out elections-2028-2036/2028/out --state C:\Users\User\elections-2028-prod\state.prod.json --env prod --apply --init-state --quiet --creator-username ManifoldPolitics --max-mana 1000 --only 2028-senate-AL-regular-general
+   npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2028/manifest.json --out elections-2028-2036/2028/out --state C:\Users\User\elections-2028-prod\state.prod.json --env prod --apply --quiet --creator-username ManifoldPolitics --max-mana 100000 --only 2028-president-US-general
    npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2030/manifest.json --out elections-2028-2036/2030/out --state C:\Users\User\elections-2030-prod\state.prod.json --env prod --apply --init-state --quiet --creator-username ManifoldPolitics --max-mana 1000 --only 2030-senate-PA-regular-general
    ```
    Check the market page, the three opening prices (Democratic, Republican
@@ -301,10 +326,13 @@ CLI writes into `<cycle>/out/` next to the state file after each run.)
    answer count and the answer mode), that only the creator can add answers,
    colours and visibility, and the topics.
 7. **Full runs**, one cycle at a time, same state file, no `--init-state`,
-   no `--only` (`--max-mana`: 537000 for 2028, 69000 for 2030, 101000 for
-   2032, 70000 for 2034, 101000 for 2036):
+   no `--only` (`--max-mana`: each cycle's planned total, which is also its
+   `budget.approvedMaxTotalMana`: 1518000 for 2028, 69000 for 2030, 110000
+   for 2032, 70000 for 2034, 110000 for 2036; the run cap counts only what that
+   run spends, so after the pilots the 2028 full run needs at most
+   1417000):
    ```powershell
-   npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2028/manifest.json --out elections-2028-2036/2028/out --state C:\Users\User\elections-2028-prod\state.prod.json --env prod --apply --quiet --creator-username ManifoldPolitics --max-mana 537000
+   npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2028/manifest.json --out elections-2028-2036/2028/out --state C:\Users\User\elections-2028-prod\state.prod.json --env prod --apply --quiet --creator-username ManifoldPolitics --max-mana 1518000
    ```
    A stop (`stoppedReason`) is normal for a needs-review entry, a seed
    mismatch or a rate limit: read the state file, fix, re-run; nothing is

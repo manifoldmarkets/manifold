@@ -248,6 +248,22 @@ describe('validation and cost', () => {
     expect(validateManifest(manifest([ok]), NOW)).toEqual([])
     // Two answers + Other = 3 answers: the Ṁ1,000 minimum, as before.
     expect(costOf(ok.payload!)).toMatchObject({ numAnswers: 3, total: 1000 })
+    // The raised 2028 tiers validate and cost the tier itself:
+    // max(3 × 1,000, 10,000) and max(3 × 10,000, 100,000).
+    for (const tier of [10_000, 100_000]) {
+      const raised = otherEntry('AL', 'Alabama')
+      raised.payload = { ...raised.payload!, liquidityTier: tier }
+      expect(validateManifest(manifest([raised]), NOW)).toEqual([])
+      expect(costOf(raised.payload!)).toMatchObject({
+        numAnswers: 3,
+        total: tier,
+      })
+    }
+    const odd = otherEntry('AL', 'Alabama')
+    odd.payload = { ...odd.payload!, liquidityTier: 5_000 }
+    expect(validateManifest(manifest([odd]), NOW).join('\n')).toMatch(
+      /liquidityTier must be one of/
+    )
 
     const anyone = otherEntry('AL', 'Alabama')
     anyone.payload = { ...anyone.payload!, addAnswersMode: 'ANYONE' }
