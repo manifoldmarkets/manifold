@@ -16,6 +16,7 @@ import {
   sideProbability,
   tradeFor,
 } from './ballot-measures-model'
+import { useElectionAsOf } from './election-as-of'
 import { useMarketLink } from './market-link'
 import styles from './election-explorer.module.css'
 
@@ -40,6 +41,8 @@ export function BallotMeasureCard({
     !!contract?.resolution ||
     !!answer?.resolution ||
     (contract?.closeTime != null && contract.closeTime <= Date.now())
+  // Rewound odds are for display only.
+  const rewound = useElectionAsOf() !== undefined
   const approveIsYes = measure.source?.yesOrientation !== 'reject'
   const pass = { pseudonymName: 'Pass', pseudonymColor: 'green' as const }
   const fail = { pseudonymName: 'Fail', pseudonymColor: 'gray' as const }
@@ -80,7 +83,7 @@ export function BallotMeasureCard({
             {(['pass', 'fail'] as const).map((s) => (
               <button
                 key={s}
-                disabled={closed}
+                disabled={closed || rewound}
                 aria-haspopup="dialog"
                 onClick={() => setSide(s)}
               >
@@ -89,7 +92,7 @@ export function BallotMeasureCard({
               </button>
             ))}
           </div>
-          {closed && <p className={styles.note}>Trading closed.</p>}
+          {closed && !rewound && <p className={styles.note}>Trading closed.</p>}
         </>
       ) : (
         <p className={styles.note}>

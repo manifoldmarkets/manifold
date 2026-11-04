@@ -20,6 +20,7 @@ import { useLiveContract } from 'web/hooks/use-contract'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
+import { useElectionAsOf } from './election-as-of'
 import { formatOdds, plural } from './election-display'
 import type { Race } from './election-map-model'
 import { useMarketLink } from './market-link'
@@ -211,7 +212,9 @@ function LinkedMarketRow(props: {
     : !isOpen(contract)
     ? 'Closed'
     : undefined
-  const canBet = isOpen(contract) && (isBinary || !!multi)
+  // Linked markets stay live, but the rewound panel says betting is off.
+  const rewound = useElectionAsOf() !== undefined
+  const canBet = !rewound && isOpen(contract) && (isBinary || !!multi)
   const bet = () => {
     if (!user) return firebaseLogin()
     track('bet intent', { location: 'election map linked market' })

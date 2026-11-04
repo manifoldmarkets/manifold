@@ -111,6 +111,10 @@ type Props = {
   // The race panel is portaled to the body, so a host that hides the
   // explorer must also hide the panel. The selection is kept.
   hideDetails?: boolean
+  // A host's controls at the end of the coverage line, and a panel under it:
+  // the rewind's toggle and its time controls. The toolbar has no room left.
+  tools?: ReactNode
+  timeline?: ReactNode
 }
 
 export type ExplorerFocus = { mode: ExplorerMode; race: string; key: number }
@@ -891,16 +895,20 @@ export function ElectionExplorer(props: Props) {
             {zoomControls(styles.toolbarZoom)}
           </div>
         </header>
-        <CoverageLine
-          isMeasures={isMeasures}
-          measuresWithOdds={
-            BALLOT_MEASURES.filter((m) => measureQuote(m.key) !== undefined)
-              .length
-          }
-          races={races}
-          summary={summary}
-          mode={mode}
-        />
+        <div className={styles.coverageRow}>
+          <CoverageLine
+            isMeasures={isMeasures}
+            measuresWithOdds={
+              BALLOT_MEASURES.filter((m) => measureQuote(m.key) !== undefined)
+                .length
+            }
+            races={races}
+            summary={summary}
+            mode={mode}
+          />
+          {props.tools}
+        </div>
+        {props.timeline}
         {!isMeasures &&
           (summary.leaders.notDem > 0 || summary.leaders.notRep > 0) && (
             <p className={styles.note}>
