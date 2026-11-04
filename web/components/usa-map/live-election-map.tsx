@@ -31,6 +31,26 @@ export type LiveElectionContracts = {
   senateControl: Contract | null
 }
 
+// The page's map markets in the explorer's shape, each through `current`
+// (the latest live update, or the market as loaded).
+export function electionContracts(
+  props: LiveElectionMapProps,
+  current: (contract: Contract) => Contract = (c) => c
+): LiveElectionContracts {
+  const one = (c?: Contract | null) => (c ? current(c) : null)
+  const dictionary = (raw: MapContractsDictionary) =>
+    Object.fromEntries(Object.entries(raw).map(([key, c]) => [key, one(c)]))
+  return {
+    senate: dictionary(props.rawSenateStateContracts),
+    governor: dictionary(props.rawGovernorStateContracts),
+    house: one(props.houseDistrictsContract),
+    additionalHouse: dictionary(props.additionalHouseContracts ?? {}),
+    measures: dictionary(props.ballotMeasureContracts ?? {}),
+    houseControl: one(props.houseControlContract),
+    senateControl: one(props.senateControlContract),
+  }
+}
+
 // Isolate each subscription so missing or newly added markets never change
 // hook order. One snapshot drives the map, seat totals, and race details.
 function LiveMarket({
@@ -70,22 +90,10 @@ export function useLiveElectionMap(props: LiveElectionMapProps): {
       old[contract.id] === contract ? old : { ...old, [contract.id]: contract }
     )
   }, [])
-  const live = useMemo(() => {
-    const current = (c?: Contract | null) => (c ? updates[c.id] ?? c : null)
-    const dictionary = (raw: MapContractsDictionary) =>
-      Object.fromEntries(
-        Object.entries(raw).map(([key, c]) => [key, current(c)])
-      )
-    return {
-      senate: dictionary(props.rawSenateStateContracts),
-      governor: dictionary(props.rawGovernorStateContracts),
-      house: current(props.houseDistrictsContract),
-      additionalHouse: dictionary(props.additionalHouseContracts ?? {}),
-      measures: dictionary(props.ballotMeasureContracts ?? {}),
-      houseControl: current(props.houseControlContract),
-      senateControl: current(props.senateControlContract),
-    }
-  }, [props, updates])
+  const live = useMemo(
+    () => electionContracts(props, (c) => updates[c.id] ?? c),
+    [props, updates]
+  )
   const subscriptions = Object.values(initial).map((contract) => (
     <LiveMarket key={contract.id} contract={contract} onUpdate={onUpdate} />
   ))
