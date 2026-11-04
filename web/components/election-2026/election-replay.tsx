@@ -19,7 +19,8 @@ import {
 } from 'web/components/usa-map/live-election-map'
 import { track } from 'web/lib/service/analytics'
 import {
-  COMPARISON_METHODS,
+  comparisonLabel,
+  COMPARISON_SOURCES,
   comparisonsAt,
   REPLAY_COMPARISONS,
   ReplayChamber,
@@ -378,7 +379,7 @@ function ChamberOdds(props: {
             key={other.source}
             className="text-ink-600 flex justify-between text-xs tabular-nums"
           >
-            <span>{other.source}</span>
+            <span>{comparisonLabel(other.source)}</span>
             <span>
               D {formatOdds(theirs.dem)} · R {formatOdds(theirs.rep)}
             </span>
@@ -413,9 +414,8 @@ function MilestoneTable(props: {
         </h2>
         <p className="text-ink-600 text-sm">
           Manifold’s chance of each party winning control of Congress
-          {sources.length > 0 &&
-            `, beside real-money odds from ${sources.join(' and ')}`}
-          . Select a milestone to see the map at that moment.
+          {sources.length > 0 && ', beside real-money prediction market odds'}.
+          Select a milestone to see the map at that moment.
         </p>
       </Col>
       <div className="border-ink-200 overflow-x-auto rounded-xl border">
@@ -466,8 +466,7 @@ function MilestoneTable(props: {
                         <SplitOdds
                           key={other.source}
                           rep={other.republicanProb}
-                          source={other.source}
-                          href={other.url}
+                          source={comparisonLabel(other.source)}
                         />
                       )
                     )}
@@ -486,8 +485,8 @@ function MilestoneTable(props: {
           </li>
           {sources.map(
             (source) =>
-              COMPARISON_METHODS[source] && (
-                <li key={source}>{COMPARISON_METHODS[source]}</li>
+              COMPARISON_SOURCES[source] && (
+                <li key={source}>{COMPARISON_SOURCES[source].method}</li>
               )
           )}
         </ul>
@@ -497,12 +496,8 @@ function MilestoneTable(props: {
 }
 
 // Named by source once the table has other markets' odds beside Manifold's.
-function SplitOdds(props: {
-  rep: number | undefined
-  source?: string
-  href?: string
-}) {
-  const { rep, source, href } = props
+function SplitOdds(props: { rep: number | undefined; source?: string }) {
+  const { rep, source } = props
   if (rep === undefined || !Number.isFinite(rep))
     return <div className="text-ink-500">—</div>
   const split = partySplit(rep)
@@ -514,18 +509,7 @@ function SplitOdds(props: {
       <span className="text-sienna-700 dark:text-sienna-400 font-semibold">
         R {formatOdds(split.rep)}
       </span>
-      {href ? (
-        <a
-          href={href}
-          className="text-ink-600 text-xs hover:underline"
-          target="_blank"
-          rel="noreferrer"
-        >
-          {source}
-        </a>
-      ) : (
-        source && <span className="text-ink-600 text-xs">{source}</span>
-      )}
+      {source && <span className="text-ink-600 text-xs">{source}</span>}
     </Row>
   )
 }

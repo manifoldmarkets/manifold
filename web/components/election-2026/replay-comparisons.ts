@@ -22,13 +22,20 @@ export type ReplayComparison = {
 
 export type ReplayComparisonsFile = { rows: ReplayComparison[] }
 
-// How each source's price at a milestone is read, for the table's notes.
-export const COMPARISON_METHODS: { [source: string]: string } = {
-  Kalshi:
-    'Kalshi: the midpoint of the best bid and ask for the Republican contract at the end of the minute before each milestone.',
-  Polymarket:
-    'Polymarket: the last price of the Republican outcome at or before each milestone.',
+// How the page names each source, and how its price at a milestone is read,
+// for the table's notes. The data keeps the real source.
+export const COMPARISON_SOURCES: {
+  [source: string]: { label: string; method: string }
+} = {
+  Kalshi: {
+    label: 'Real money',
+    method:
+      'Real money: the midpoint of the best bid and ask for the Republican contract on a real-money prediction market, at the end of the minute before each milestone.',
+  },
 }
+
+export const comparisonLabel = (source: string) =>
+  COMPARISON_SOURCES[source]?.label ?? source
 
 export const REPLAY_COMPARISONS = (data as ReplayComparisonsFile).rows
 
