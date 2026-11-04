@@ -137,6 +137,7 @@ export function RaceCard(props: {
           highlightId={highlightId}
           onHighlight={setHighlightId}
           onSelect={openBet}
+          selectDisabled={!hasLoaded}
           animationKey={`${chart.key}-${range}`}
         />
         <RaceLeaderboard

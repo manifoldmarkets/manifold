@@ -15,6 +15,7 @@ import {
   thinHistory,
   TimePoint,
 } from './race-history'
+import { STATE_MARKETS_2028, UNIT_PRIORS_2028 } from './elections-2028-config'
 import {
   ELECTORAL_UNITS,
   EV_TO_WIN,
@@ -276,4 +277,14 @@ test('rating buckets follow whole-percent thresholds', () => {
   // Symmetric with safeD: a 10% Democratic chance is a 90% Republican one.
   assert.equal(ratingOf(0.104), 'safeR')
   assert.equal(ratingOf(0.02), 'safeR')
+})
+
+test('every electoral unit has a fallback prior, and only real units have markets', () => {
+  const keys = new Set(ELECTORAL_UNITS.map((u) => u.key))
+  for (const u of ELECTORAL_UNITS) {
+    const p = UNIT_PRIORS_2028[u.key]
+    assert.ok(Number.isFinite(p) && p > 0 && p < 1, `${u.key}: ${p}`)
+  }
+  for (const k of Object.keys(UNIT_PRIORS_2028)) assert.ok(keys.has(k), k)
+  for (const k of Object.keys(STATE_MARKETS_2028)) assert.ok(keys.has(k), k)
 })

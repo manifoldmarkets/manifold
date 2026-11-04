@@ -30,6 +30,8 @@ type Props = {
   highlightId?: string
   onHighlight?: (id: string | undefined) => void
   onSelect?: (id: string) => void
+  // The faces open a bet; until the full market has loaded they're inert.
+  selectDisabled?: boolean
   className?: string
   // Remount key for the draw-in animation (the range, usually).
   animationKey?: string
@@ -107,6 +109,7 @@ export function RaceChart(props: Props) {
     highlightId,
     onHighlight,
     onSelect,
+    selectDisabled,
     className,
     animationKey,
   } = props
@@ -374,6 +377,7 @@ export function RaceChart(props: Props) {
               className={clsx(
                 animate && styles.fadeIn,
                 'absolute flex items-center gap-1.5 rounded-full text-left transition-opacity',
+                selectDisabled && 'cursor-default',
                 dim(s.id) && 'opacity-30'
               )}
               style={{
@@ -386,7 +390,8 @@ export function RaceChart(props: Props) {
               onMouseLeave={() => onHighlight?.(undefined)}
               onFocus={() => onHighlight?.(s.id)}
               onBlur={() => onHighlight?.(undefined)}
-              onClick={() => onSelect?.(s.id)}
+              onClick={() => !selectDisabled && onSelect?.(s.id)}
+              aria-disabled={selectDisabled || undefined}
               aria-label={`${s.candidate.name}: ${formatOdds(s.prob)}. Bet`}
             >
               <CandidateAvatar

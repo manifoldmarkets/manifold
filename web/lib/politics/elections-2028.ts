@@ -197,14 +197,17 @@ const MAX_POINT_QUERIES = 6
 let inFlight = 0
 const waiting: (() => void)[] = []
 async function limited<T>(task: () => Promise<T>): Promise<T> {
+  // A freed slot passes straight to the next waiter, so the count never
+  // dips below the cap while anyone is queued.
   if (inFlight >= MAX_POINT_QUERIES)
     await new Promise<void>((resolve) => waiting.push(resolve))
-  inFlight++
+  else inFlight++
   try {
     return await task()
   } finally {
-    inFlight--
-    waiting.shift()?.()
+    const next = waiting.shift()
+    if (next) next()
+    else inFlight--
   }
 }
 

@@ -126,14 +126,70 @@ export const STATE_MARKETS_2028: Record<string, string> = {
   WY: 'yQLnLqP5gu',
 }
 
-// The Democrat's chance in a unit with no market (or whose market is
-// unreadable): the generic pipeline's Stage A seed for the unit, Phi(lean / 9)
-// with lean = its mean 2020/2024 two-party margin minus the national one, in
-// an even national environment (`2028-president-ME-02-general` in
-// backend/scripts/elections-2028-2036/2028/manifest.json on branch
-// elections-2028-2036: 15 / 84 / 1). Only Maine's 2nd district needs one today.
+// The Democrat's chance in a unit whose market is missing, unlisted or
+// resolved: the generic pipeline's Stage A seed for that unit (two-party
+// share), Phi(lean / 9) with lean = its mean 2020/2024 two-party margin minus
+// the national one, in an even national environment (the 2028 manifest on
+// branch elections-2028-2036). Maine's 2nd district has no market today, so
+// it always reads this; any other unit only falls back to it, and the model
+// is skipped (not guessed) for a unit with neither.
 export const UNIT_PRIORS_2028: Record<string, number> = {
-  'ME-2': 0.15,
+  AK: 0.065,
+  AL: 0.01,
+  AR: 0.01,
+  AZ: 0.322,
+  CA: 0.99,
+  CO: 0.891,
+  CT: 0.963,
+  DC: 0.99,
+  DE: 0.959,
+  FL: 0.137,
+  GA: 0.39,
+  HI: 0.99,
+  IA: 0.084,
+  ID: 0.01,
+  IL: 0.921,
+  IN: 0.016,
+  KS: 0.028,
+  KY: 0.01,
+  LA: 0.01,
+  MA: 0.99,
+  MD: 0.99,
+  ME: 0.772,
+  'ME-1': 0.99,
+  'ME-2': 0.152,
+  MI: 0.464,
+  MN: 0.683,
+  MO: 0.019,
+  MS: 0.01,
+  MT: 0.012,
+  NC: 0.335,
+  ND: 0.01,
+  NE: 0.01,
+  'NE-1': 0.063,
+  'NE-2': 0.674,
+  'NE-3': 0.01,
+  NH: 0.657,
+  NJ: 0.857,
+  NM: 0.784,
+  NV: 0.417,
+  NY: 0.967,
+  OH: 0.106,
+  OK: 0.01,
+  OR: 0.943,
+  PA: 0.421,
+  RI: 0.964,
+  SC: 0.033,
+  SD: 0.01,
+  TN: 0.01,
+  TX: 0.105,
+  UT: 0.01,
+  VA: 0.768,
+  VT: 0.99,
+  WA: 0.977,
+  WI: 0.428,
+  WV: 0.01,
+  WY: 0.01,
 }
 
 // How strongly states move together in the model (see ec-model.ts).

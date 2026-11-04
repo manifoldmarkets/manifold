@@ -71,9 +71,11 @@ export function AccuracyBanner(props: { story: AccuracyStory }) {
                 <span className="text-ink-600 text-xs">
                   {!c.resolved
                     ? 'vs real money'
-                    : c.points >= 0
+                    : c.points > 0
                     ? 'closer than real money'
-                    : 'further than real money'}
+                    : c.points < 0
+                    ? 'further than real money'
+                    : 'even with real money'}
                   , {c.ahead}/{c.compared} checkpoints
                 </span>
               </div>
