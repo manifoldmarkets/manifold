@@ -54,14 +54,15 @@ const scoreLine = (s: ChamberScore) =>
 export default function Election2026(props: Props) {
   const { scores } = props
   const { sawIt, demsAheadEverywhere } = replayStory(scores)
-  const ogProps = Object.fromEntries(
-    scores.flatMap((s) => [
+  const ogProps = Object.fromEntries([
+    ['sawIt', sawIt ? '1' : ''],
+    ...scores.flatMap((s) => [
       [`${s.chamber}Points`, String(s.averagePoints)],
       [`${s.chamber}Winner`, s.winner ?? ''],
       [`${s.chamber}Ahead`, String(s.ahead)],
       [`${s.chamber}Compared`, String(s.compared)],
-    ])
-  )
+    ]),
+  ])
   const description = demsAheadEverywhere
     ? 'Before the polls closed, Manifold had Democrats further ahead than the real-money markets in both chambers. Replay a week of the 2026 midterms, race by race.'
     : "Replay Manifold's 2026 midterm odds from a week out through election night, beside the real-money markets."

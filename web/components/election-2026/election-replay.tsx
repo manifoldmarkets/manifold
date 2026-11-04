@@ -466,7 +466,7 @@ function ChamberComparison(props: {
         <span className="text-ink-600 shrink-0 text-xs font-semibold uppercase tracking-wide">
           {label} control
         </span>
-        {first && (
+        {rep !== undefined && first?.rep !== undefined && (
           <Row className="min-w-0 items-center gap-1.5">
             <span className="text-ink-600 truncate text-xs">
               Manifold’s edge

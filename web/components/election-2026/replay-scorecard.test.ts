@@ -45,6 +45,7 @@ test('scores cover only the milestones up to the polls closing', () => {
     house: { id: 'h' },
   })
   // 1 week, 1 day, 12h, 6h, 3h, 1h out and polls close; not 9 PM.
+  assert.equal(senate.milestones, 7)
   assert.equal(senate.compared, 7)
   assert.equal(senate.ahead, 7)
   assert.equal(senate.averagePoints, 6)
@@ -117,6 +118,50 @@ test('the story claims only what the scores show', () => {
     ).sawIt,
     false
   )
+})
+
+test('a displayed tie is not a milestone Manifold led', () => {
+  // D 80.49% against 79.51%: both read "80%", so the badge says Even.
+  const { snapshot, series } = replay(0.1951, 0.2049)
+  const scores = chamberScores(snapshot, series, {
+    senate: { id: 's', winner: 'D' },
+    house: { id: 'h', winner: 'D' },
+  })
+  for (const s of scores) assert.equal(s.ahead, 0)
+  assert.equal(replayStory(scores).sawIt, false)
+  assert.equal(replayStory(scores).demsAheadEverywhere, false)
+})
+
+test('claims need every forecast milestone, in both chambers', () => {
+  const { snapshot, series } = replay(0.2, 0.26)
+  // Real money missing at one forecast milestone.
+  const gappy: ComparisonSeries[] = [
+    {
+      ...series[0],
+      chambers: {
+        senate: series[0].chambers.senate?.slice(1),
+        house: series[0].chambers.house,
+      },
+    },
+  ]
+  const scores = chamberScores(snapshot, gappy, {
+    senate: { id: 's', winner: 'D' },
+    house: { id: 'h' },
+  })
+  const senate = scores.find((s) => s.chamber === 'senate')!
+  assert.equal(senate.compared, 6)
+  assert.equal(senate.ahead, 6)
+  const story = replayStory(scores)
+  assert.equal(story.sawIt, false)
+  assert.equal(story.demsAheadEverywhere, false)
+  // One chamber alone is never "both chambers".
+  const houseOnly = chamberScores(snapshot, series, {
+    senate: {},
+    house: { id: 'h', winner: 'D' },
+  })
+  assert.equal(houseOnly.length, 1)
+  assert.equal(replayStory(houseOnly).demsAheadEverywhere, false)
+  assert.equal(replayStory(houseOnly).sawIt, true)
 })
 
 test('chamber winners come from resolved control markets', () => {

@@ -15,6 +15,8 @@ export type OgElectionReplayProps = {
   senateWinner?: string
   senateAhead?: string
   senateCompared?: string
+  // "1" when the page's replayStory says Manifold saw it coming.
+  sawIt?: string
   housePoints?: string
   houseWinner?: string
   houseAhead?: string
@@ -130,7 +132,8 @@ export function OgElectionReplay(props: OgElectionReplayProps) {
       props.senateCompared
     ),
   ].filter((s): s is Score => !!s)
-  const sawIt = scores.some((s) => s.winner && s.points > 0)
+  // The page's own replayStory decides the headline; the card only follows.
+  const sawIt = props.sawIt === '1'
 
   return (
     <div

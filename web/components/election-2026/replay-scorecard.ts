@@ -6,7 +6,7 @@ import {
   comparisonsAt,
   ReplayChamber,
 } from './replay-comparisons'
-import { ReplaySnapshot, snapshotProb } from './replay-model'
+import { chamberGap, ReplaySnapshot, snapshotProb } from './replay-model'
 
 export type ChamberWinner = 'D' | 'R'
 
@@ -28,15 +28,22 @@ export type ReplayChambers = {
 // the first poll closings: the forecast, before any results. Points are how
 // much more Manifold put on the winner (once the chamber's market resolved)
 // or on the Democrats (before), on average; `ahead` counts the milestones
-// where that was at least a point. Page props, so no undefined.
+// where the badge shows Manifold ahead (chamberGap, as displayed), out of
+// `compared` with both prices and `milestones` in the forecast. Page props,
+// so no undefined.
 export type ChamberScore = {
   chamber: ReplayChamber
   winner: ChamberWinner | null
   source: string
+  milestones: number
   compared: number
   ahead: number
   averagePoints: number
 }
+
+// Every forecast milestone compared, and Manifold ahead at each.
+const aheadThroughout = (s: ChamberScore) =>
+  s.milestones > 0 && s.compared === s.milestones && s.ahead === s.compared
 
 export function chamberScores(
   snapshot: ReplaySnapshot,
@@ -55,7 +62,9 @@ export function chamberScores(
       const theirs = comparisonsAt([other], chamber, m.time)[0]?.republicanProb
       if (ours === undefined || theirs === undefined) return []
       const edge = (share(ours) - share(theirs)) * 100
-      return Number.isFinite(edge) ? [edge] : []
+      if (!Number.isFinite(edge)) return []
+      const shown = chamberGap(ours, theirs, winner)
+      return [{ edge, ahead: !!shown && shown.points > 0 }]
     })
     if (edges.length === 0) return []
     return [
@@ -63,9 +72,10 @@ export function chamberScores(
         chamber,
         winner: winner ?? null,
         source: other.source,
+        milestones: forecast.length,
         compared: edges.length,
-        ahead: edges.filter((e) => e >= 0.5).length,
-        averagePoints: Math.round(mean(edges)),
+        ahead: edges.filter((e) => e.ahead).length,
+        averagePoints: Math.round(mean(edges.map((e) => e.edge))),
       },
     ]
   })
@@ -84,17 +94,16 @@ export const signedPoints = (n: number) =>
   `${n > 0 ? '+' : n < 0 ? '−' : ''}${pts(n)}`
 
 // The headline claims the scores support, and nothing more: which chambers
-// were won, and whether Manifold had the Democrats further ahead at every
-// forecast milestone in every chamber (when that's the side it measured).
+// were won; "saw it coming" when a resolved chamber had Manifold closer at
+// every forecast milestone; and whether Manifold had the Democrats further
+// ahead at every milestone in both chambers (when that's the side it
+// measured).
 export function replayStory(scores: ChamberScore[]) {
   const won = scores.filter((s) => s.winner !== null)
-  const sawIt = won.some((s) => s.averagePoints > 0 && s.ahead === s.compared)
+  const sawIt = won.some((s) => s.averagePoints > 0 && aheadThroughout(s))
   const demsAheadEverywhere =
-    scores.length > 0 &&
-    scores.every(
-      (s) =>
-        (s.winner ?? 'D') === 'D' && s.compared > 0 && s.ahead === s.compared
-    )
+    scores.length === 2 &&
+    scores.every((s) => (s.winner ?? 'D') === 'D' && aheadThroughout(s))
   const winners = (['D', 'R'] as const).flatMap((party) => {
     const chambers = won.filter((s) => s.winner === party)
     return chambers.length
