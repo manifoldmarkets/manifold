@@ -410,7 +410,7 @@ export const ENTRIES: Entry[] = [
     addAnswersMode: 'ONLY_CREATOR',
     question: 'Who will be elected vice president of the United States in 2028?',
     description:
-      'Resolves to the person elected Vice President in the November 7, 2028 election: whoever wins a majority of electoral votes for Vice President as counted by Congress in January 2029, or whom the Senate picks if no one does. N/A if no 2028 presidential election is held.',
+      'Resolves to the person elected Vice President in the November 7, 2028 election, however the winner is officially decided. N/A if no 2028 presidential election is held.',
     topics: [...TOPICS_2028, 'vice-president'],
     liquidityTier: 1000,
     closeTime: AFTER_2028,
@@ -433,7 +433,7 @@ export const ENTRIES: Entry[] = [
     question:
       'Which party will win the national popular vote in the 2028 presidential election?',
     description: desc(
-      'Resolves to the party of the presidential candidate with the most votes nationwide (50 states and DC) in the November 7, 2028 election, per certified results. Electoral votes don\'t matter here.',
+      'Resolves to the party of the presidential candidate with the most votes nationwide (50 states and DC) in the November 7, 2028 election, per certified results.',
       PARTY_RULE
     ),
     topics: [...TOPICS_2028, 'electoral-college'],
@@ -455,7 +455,7 @@ export const ENTRIES: Entry[] = [
     question:
       'How many electoral votes will the 2028 Democratic presidential nominee win?',
     description:
-      "Resolves to the range containing the number of electoral votes the Democratic nominee wins on November 7, 2028: the electors pledged to them by each state's certified results, including Maine's and Nebraska's districts. Faithless electors are ignored. If the nominee is replaced on the ballot, the replacement's electoral votes count.",
+      "Resolves to the range containing the number of electoral votes the Democratic nominee wins on November 7, 2028: the electors pledged to them by each state's certified results, including Maine's and Nebraska's districts. Faithless electors are ignored. If the nominee is replaced on the ballot, the replacement's electoral votes count. N/A if the President is no longer chosen by electoral votes.",
     topics: [...TOPICS_2028, 'electoral-college'],
     liquidityTier: 1000,
     closeTime: AFTER_2028,
@@ -485,9 +485,9 @@ export const ENTRIES: Entry[] = [
     cycle: 2028,
     phase: 'general',
     outcome: 'BINARY',
-    question: 'Will the 2028 popular vote winner lose the Electoral College?',
+    question: 'Will the 2028 popular vote winner lose the presidential election?',
     description:
-      'Resolves YES if the candidate with the most votes nationwide in the November 7, 2028 election (certified results, 50 states and DC) does not win 270 or more electoral votes, and NO if they do. Faithless electors are ignored.',
+      'Resolves YES if the candidate with the most votes nationwide in the November 7, 2028 election (certified results, 50 states and DC) is not the one elected President, however the winner is officially decided, and NO if they are.',
     topics: [...TOPICS_2028, 'electoral-college'],
     liquidityTier: 1000,
     closeTime: AFTER_2028,
@@ -505,7 +505,7 @@ export const ENTRIES: Entry[] = [
     addAnswersMode: 'ONLY_CREATOR',
     question: 'Which state will be the tipping point in the 2028 presidential election?',
     description:
-      "Resolves to the state that gives the November 7, 2028 winner their 270th electoral vote, when every state and DC is ranked by the winner's margin there, widest first, using certified results. Maine's and Nebraska's districts are ranked on their own and count as their state. N/A if no one wins 270.",
+      "Resolves to the state that gives the November 7, 2028 winner their 270th electoral vote, when every state and DC is ranked by the winner's margin there, widest first, using certified results. Maine's and Nebraska's districts are ranked on their own and count as their state. N/A if no one wins 270, or if the President is no longer chosen by electoral votes.",
     topics: [...TOPICS_2028, 'electoral-college'],
     liquidityTier: 1000,
     closeTime: AFTER_2028,
@@ -760,7 +760,7 @@ export const ENTRIES: Entry[] = [
     addAnswersMode: 'ONLY_CREATOR',
     question: 'Who will win the 2032 US presidential election?',
     description:
-      'Resolves to the person elected President in the November 2, 2032 election: whoever wins 270 or more electoral votes as counted by Congress in January 2033, or whom the House picks if no one does. The national popular vote doesn\'t matter. N/A if no 2032 presidential election is held.',
+      'Resolves to the person elected President in the November 2, 2032 election, however the winner is officially decided. N/A if no 2032 presidential election is held.',
     topics: ['us-politics', 'elections', '2032-us-presidential-election'],
     liquidityTier: 1000,
     closeTime: '2032-11-03T12:00:00Z',

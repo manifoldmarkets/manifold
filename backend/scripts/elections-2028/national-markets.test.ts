@@ -446,6 +446,19 @@ test('descriptions say only what decides the market', () => {
   }
 })
 
+test('presidential markets hold up under any system for choosing the President', () => {
+  const get = (key: string) => ENTRIES.find((x) => x.key === key)!.description
+  // Tod, 5 Nov 2026: word them for whoever is officially elected, however
+  // that's decided, and leave the Electoral College out where possible.
+  for (const key of ['2028-vp-winner', '2032-winner', '2028-ec-popular-split', '2028-popular-vote'])
+    assert.doesNotMatch(get(key), /electoral|Congress|\b270\b/i, key)
+  for (const key of ['2028-vp-winner', '2032-winner', '2028-ec-popular-split'])
+    assert.match(get(key), /however the winner is officially decided/, key)
+  // Markets that only make sense with electoral votes say what happens without them.
+  for (const key of ['2028-dem-electoral-votes', '2028-tipping-point'])
+    assert.match(get(key), /N\/A if .*no longer chosen by electoral votes\.$/, key)
+})
+
 const clone = (e: Entry): Entry => JSON.parse(JSON.stringify(e))
 
 test('validation catches broken entries', () => {
