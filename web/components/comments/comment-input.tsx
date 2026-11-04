@@ -109,6 +109,8 @@ export function CommentInput(props: {
         // Force clear save, because it can fail if the editor unmounts.
         safeLocalStorage?.removeItem(`text ${key}`)
         onClearInput?.()
+        // Mod comments are opt-in per comment, including Yap posts
+        setIsModComment(false)
       }
       await onSubmitComment?.(
         editor,
@@ -119,8 +121,6 @@ export function CommentInput(props: {
       // Sharing opens a second composer; keep the original draft until published.
       if (type === 'repost') return
       clearInput()
-      // Mod comments are opt-in per comment
-      setIsModComment(false)
     } catch (e) {
       console.error(e)
       if (e instanceof APIError) {
