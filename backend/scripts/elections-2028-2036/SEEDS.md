@@ -8,7 +8,10 @@ Nothing here reads a poll, a PVI or a race rating.
 ## Constraints from the create-market API
 
 - every answer between 1% and 99%;
-- the three answers sum to 100, written to one decimal place;
+- Democratic, Republican and "Other" sum to 100, written to one decimal
+  place. The payload lists only the Democratic and Republican seeds; because
+  the markets let the creator add answers, the server appends "Other" at the
+  remainder, which is the third seed;
 - normalisation floors each answer at 1% and gives the rounding remainder to
   the largest answer, so the most lopsided seed is **98 / 1 / 1**.
 
@@ -58,18 +61,38 @@ For a unit *u* (state, DC, ME/NE elector district, or House district on the
    2036, 74.8% / 66.6% / 61.8%.
 4. **Other**: `other = 1` point by default (`otherDefault`), see exceptions.
 5. **Seeds**: `normalizeSeeds([P(D) × (100 − other), (1 − P(D)) × (100 − other), other])`.
+   The payload's `answerProbs` are the first two; "Other" opens at the third.
 6. **National market**: no lean by construction (it *is* the even
    environment): 49.5 / 49.5 / 1 in every cycle.
+
+### What traders read
+
+Each market's last paragraph explains its opening odds in plain language
+(`describeSeed` in `seeds.ts`), with the numbers above and no formula:
+
+> **Opening odds** are a starting point, not a forecast. Alabama voted 29.9
+> points more Republican than the country in the 2020 and 2024 presidential
+> elections; pulled toward even for a race this far off, that gives Democrats
+> 1.6% and Republicans 97.4%. Other opens at 1%.
+
+The lean is the one in step 2 (one decimal), the years are the unit's
+`yearsUsed` (a district with only 2024 says "in the 2024 presidential election
+(on its current lines)"), and the percentages are the seeds themselves. The
+national market says it opens with the parties even. Where an exception
+below applies, the paragraph ends "Other opens at N% rather than 1%:"
+followed by the reason, without the leading state name and without
+"Same share as the reviewed 2036 exception", which is for reviewers.
 
 Changing a parameter: edit `SEED_PARAMS`, run
 `npx ts-node --transpile-only elections-2028-2036/generate-manifests.ts`, and
 re-run the tests. The manifests record `seed.source` (lean, σ, P(D), years
 used) for every entry, so a reviewer can recompute any seed by hand.
 
-### "Another party or independent" exceptions
+### "Other" exceptions
 
-Everywhere else the third answer opens at 1%. These seats get more, each with
-its reason (also stored in `SEED_PARAMS.otherExceptions`):
+Everywhere else "Other" opens at 1%. These seats get more, each with its
+reason (also stored in `SEED_PARAMS.otherExceptions`, and shown to traders in
+the opening-odds paragraph):
 
 | race | other | why |
 |---|---:|---|
@@ -78,7 +101,7 @@ its reason (also stored in `SEED_PARAMS.otherExceptions`):
 | 2030 Senate ME | 10% | Class 1 seat is Angus King's (independent), up in 2030; independent tradition plus ranked-choice tabulation. Same share as the reviewed 2036 exception. |
 | 2030 Senate NE | 5% | Class 1 seat: independent Dan Osborn took 46.5% for it against Deb Fischer in 2024 (no Democratic nominee) and ran for the Class 2 seat in 2026. Same share as 2036. |
 | 2030 Senate VT | 10% | Class 1 seat is Bernie Sanders's (independent since 2007), up in 2030; an independent winner, Sanders or a successor, is plausible. Same share as 2036. |
-| 2032 Senate AK | 5% | Same system and tradition as 2028; less seat-specific evidence for the Class 2 seat. |
+| 2032 Senate AK | 5% | The same top-four/ranked-choice system and independent tradition as for the 2028 seat, with less specific evidence for this Class 2 seat. |
 | 2032 Senate ME | 6% | Strong independent tradition (Angus King; governors Longley and King) plus ranked-choice tabulation; Class 2 seat (Collins's). |
 | 2032 Senate NE | 10% | Independent Dan Osborn took 46.5% against Deb Fischer in 2024 with no Democratic nominee and is the 2026 challenger to Pete Ricketts for this Class 2 seat. |
 | 2036 Senate ME | 10% | Class 1 seat is Angus King's (independent); his successor race may again feature a serious independent. |

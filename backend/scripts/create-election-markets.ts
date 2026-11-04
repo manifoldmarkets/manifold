@@ -40,6 +40,7 @@ import {
   costOf,
   emptyState,
   findExisting,
+  hasOtherAnswer,
   idempotencyKeyFor,
   isMeasureEntry,
   makeHttpApi,
@@ -211,13 +212,26 @@ function report(
     lines.push(
       `- ${entry.proposition} · ${pl.outcomeType} · sum-to-one ${
         pl.shouldAnswersSumToOne
-      } · close ${new Date(pl.closeTime).toISOString()} · tier ${
-        pl.liquidityTier
-      }${pl.extraLiquidity ? ` + Ṁ${pl.extraLiquidity}` : ''} → **Ṁ${c.total}**`
+      } · add answers ${pl.addAnswersMode ?? 'DISABLED'} · close ${new Date(
+        pl.closeTime
+      ).toISOString()} · tier ${pl.liquidityTier}${
+        pl.extraLiquidity ? ` + Ṁ${pl.extraLiquidity}` : ''
+      } → **Ṁ${c.total}**`
     )
+    // The server appends "Other" (at the remainder) when answers can be added.
+    const otherPct = hasOtherAnswer(pl)
+      ? Math.round(
+          (100 - (pl.answerProbs ?? []).reduce((a, b) => a + b, 0)) * 10
+        ) / 10
+      : undefined
     lines.push(
       `- answers (seed %): ${(pl.answers ?? [])
         .map((a, i) => `${a} ${pl.answerProbs?.[i]}%`)
+        .concat(
+          otherPct !== undefined
+            ? [`Other ${otherPct}% (added by the server)`]
+            : []
+        )
         .join(' · ')}`
     )
     lines.push(`- seed basis: ${entry.seed?.basis}`)

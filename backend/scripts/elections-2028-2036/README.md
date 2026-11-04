@@ -1,7 +1,7 @@
 # 2028 / 2030 / 2032 generic election markets (and optional 2036)
 
-Generic party markets (Democratic Party / Republican Party / Another party or
-independent) for the next three general elections: every Senate seat and
+Generic party markets (Democratic Party / Republican Party, plus the server's
+"Other") for the next three general elections: every Senate seat and
 governorship up in 2028, 2030 and 2032, every presidential elector unit in
 2028 and 2032, and every 2028 House district. They are created years ahead with
 the pipeline that launched the 2026 midterm markets. 2036 stays prepared in
@@ -20,8 +20,33 @@ approves and runs the launch after the 2026 results are certified (December
 | All four | | | | | 808 | 808,000 |
 
 Creator: `@ManifoldPolitics`. Every market: `cpmm-multi-2` (the default),
-answers sum to one, adding answers disabled, tier Ṁ1,000, public after a quiet
-(unlisted → verified → published) creation.
+answers sum to one, `addAnswersMode: ONLY_CREATOR`, tier Ṁ1,000, public after
+a quiet (unlisted → verified → published) creation. The payload lists
+"Democratic Party" and "Republican Party"; because answers can be added, the
+server appends "Other" at the remainder of the two seeds (1% unless an
+exception in `SEEDS.md` applies). Only @ManifoldPolitics can add an answer
+later (a third party or a named independent), and every added answer takes
+its share out of "Other". Two answers plus Other is still the Ṁ1,000 minimum
+ante, so no cost changed.
+
+### Decisions (Tod, 2026-11-05)
+
+- **Answers**: Democratic Party + Republican Party + the server's "Other",
+  creator-only additions (was a fixed third answer, "Another party or
+  independent", with additions disabled). The party rule says an independent
+  or third-party winner resolves to the answer @ManifoldPolitics added for
+  that party or candidate, if any, and otherwise to "Other".
+- **House 2028: create all 435** now; `holds.json` stays empty. Each market
+  follows whichever district is numbered N on the map in effect for the 2028
+  election, however its boundaries change, and resolves N/A only if that map
+  has no district numbered N (the renumbering and seat-count N/A clauses are
+  gone; apportionment is fixed until the 2030 census anyway).
+- **Opening-odds paragraph**: one plain-language paragraph with the real
+  numbers ("Alabama voted 29.9 points more Republican than the country in the
+  2020 and 2024 presidential elections; pulled toward even for a race this far
+  off, that gives Democrats 1.6% and Republicans 97.4%. Other opens at 1%."),
+  with no repository file names or jargon. The formula stays in `SEEDS.md`
+  and each entry's `seed.source`.
 
 ### 2030 (midterm)
 
@@ -62,7 +87,7 @@ answers sum to one, adding answers disabled, tier Ṁ1,000, public after a quiet
 | `inventory.ts`, `templates.ts`, `seeds.ts` | Race list, question/description/search-term templates, Stage A seed math. |
 | `generate-manifests.ts` (+ `.test.ts`) | Writes `<cycle>/manifest.json`, `inventories/<cycle>.json`, `topics-needed.md`. |
 | `topics.json`, `topics-needed.md` | Prod topic ids used, and the topics Tod still has to create. |
-| `SEEDS.md` | The seed formula, parameters and the "Another party" exceptions. |
+| `SEEDS.md` | The seed formula, parameters, the "Other" exceptions and the market's opening-odds paragraph. |
 | `2028/manifest.json`, `2030/…`, `2032/…`, `2036/…` | The manifests (series `us-<cycle>-general-v1`), `review.approved: false`. |
 | `<cycle>/out/` | Dry-run output (`dry-run-report.md`, `-payloads.json`, `-plan.json`, `-dashboard-mapping.json`, `dry-run-online.json`). |
 | `../create-election-markets.ts`, `../../shared/src/elections/` | The 2026 creation CLI and library (from the 2026 launch), generalised for later cycles and the `president` office. |
@@ -119,6 +144,17 @@ that the DFL and Democratic-NPL lines count as the Democratic Party (as the
 2026 launch did with its "Democratic Party (DFL)" label). No seed, close time,
 count or cost of 2028/2032/2036 changed.
 
+Added on 2026-11-05 for the creator-curated answer set (shared library):
+validation accepts `addAnswersMode` DISABLED (the 2026 manifests) or
+ONLY_CREATOR (never ANYONE); with ONLY_CREATOR the listed seeds must leave
+"Other" between 1% and 99%, "Other" must not be listed, and `answerMeta` ends
+with the server's Other (`isOther: true`). The post-create check compares the
+"Other" price too (100 minus the listed seeds, within 1.5 points), the answer
+count and the answer mode, and stops before publishing on any difference.
+"Other" gets the grey answer colour, found by `isOther` from the full market
+read, and the dashboard mapping records its answer id. No 2026 behaviour
+changed: every 2026 test passes unchanged.
+
 ## Launch runbook (December 2026)
 
 One apply process at a time, from one machine. The API restarts daily at
@@ -144,17 +180,23 @@ CLI writes into `<cycle>/out/` next to the state file after each run.)
 2. **Review seeds**: the manifests carry the Stage A priors (`SEEDS.md`).
    We don't use Kalshi's prices: we don't have permission to use their data (decided 13 Oct 2026). The seeding that relied on them has been removed.
 3. **Review the online dry runs**: re-run `--online` for each cycle (the
-   October runs are in `<cycle>/out/dry-run-online.json`, the 2030 run is from
-   2026-11-05, and markets will have been created since). For every EQUIVALENT
+   runs in `<cycle>/out/dry-run-online.json` are all from 2026-11-05, and
+   markets will have been created since). On 2026-11-05: 2028 had 59 races
+   with an EQUIVALENT market (55 state and district presidential markets,
+   the national one, and the Senate seats in PA, NC and ND, the last two new
+   since October) and 12 more with only AMBIGUOUS ones (Ohio's Senate seat
+   new); 2030 had none and 2 AMBIGUOUS (California and Texas governor);
+   2032 had 1 EQUIVALENT (the national market) and no AMBIGUOUS. For every EQUIVALENT
    finding decide: skip ours (do nothing; the run records `skipped-existing`)
    or create ours anyway (list the contract id under that race in
    `rejections.json` and regenerate; it lands in
    `reviewedRejectedContractIds`). Every AMBIGUOUS finding blocks that entry
    until it is either rejected the same way or accepted as equivalent (then
    hold the entry via `holds.json`, or remove it). Races to keep out of a run
-   for any other reason (for example House districts in a state about to
-   redraw) go in `holds.json`; they stay in the manifest as `unresolved`, cost
-   nothing and are skipped by apply.
+   for any other reason go in `holds.json`; they stay in the manifest as
+   `unresolved`, cost nothing and are skipped by apply. House districts are
+   **not** held (Tod, 2026-11-05): all 435 are created, and each follows
+   whichever district carries its number on the 2028 map.
 4. **Approve**: set `review.approved: true`, `reviewedBy`, `reviewedAt` in each
    manifest; `budget.approvedMaxTotalMana` already equals the cycle's planned
    total (raise it if tiers change). Commit the approved manifests on this
@@ -173,8 +215,10 @@ CLI writes into `<cycle>/out/` next to the state file after each run.)
    npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2028/manifest.json --out elections-2028-2036/2028/out --state C:\Users\User\elections-2028-prod\state.prod.json --env prod --apply --init-state --quiet --creator-username ManifoldPolitics --max-mana 1000 --only 2028-president-US-general
    npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2030/manifest.json --out elections-2028-2036/2030/out --state C:\Users\User\elections-2030-prod\state.prod.json --env prod --apply --init-state --quiet --creator-username ManifoldPolitics --max-mana 1000 --only 2030-senate-PA-regular-general
    ```
-   Check the market page, the three opening prices (the script already
-   verified them within 1.5 points), colours and visibility, and the topics.
+   Check the market page, the three opening prices (Democratic, Republican
+   and "Other"; the script already verified all three within 1.5 points, the
+   answer count and the answer mode), that only the creator can add answers,
+   colours and visibility, and the topics.
 7. **Full runs**, one cycle at a time, same state file, no `--init-state`,
    no `--only` (`--max-mana`: 537000 for 2028, 69000 for 2030, 101000 for
    2032):
@@ -200,7 +244,7 @@ CLI writes into `<cycle>/out/` next to the state file after each run.)
 - **Maine governor**: the market says plurality, with a clause that a final
   ranked-choice round counts if Maine adopts it for this election (that needs
   a constitutional change).
-- **"Another party" shares**: 2030 copies the reviewed 2036 Class 1 shares
+- **"Other" shares**: 2030 copies the reviewed 2036 Class 1 shares
   (ME 10%, NE 5%, VT 10%), but 2030 is when King's and Sanders's own seats are
   up. Alaska and Maine governors stay at 1% by convention despite independent
   winners in the past.

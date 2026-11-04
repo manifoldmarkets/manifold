@@ -34,9 +34,16 @@
   "2028-senate-NY-regular-general": [
     "AMBIGUOUS cpgsPsNnQE \"2028 New York Democratic Senate Nominee?\" (primary/margin/conditional/derivative wording)"
   ],
-  "2028-senate-NC-regular-general": [],
-  "2028-senate-ND-regular-general": [],
-  "2028-senate-OH-regular-general": [],
+  "2028-senate-NC-regular-general": [
+    "EQUIVALENT zCZU6Chy6z \"2028 North Carolina Senate winner?\" (same office/state/district/year with party outcomes)",
+    "AMBIGUOUS 8y0ZQhI8IC \"2028 North Carolina Senate Democratic Primary Winner?\" (primary/margin/conditional/derivative wording)"
+  ],
+  "2028-senate-ND-regular-general": [
+    "EQUIVALENT lRO8d8LUyz \"Which party will win the 2028 US Senate Election in North Dakota?\" (same office/state/district/year with party outcomes)"
+  ],
+  "2028-senate-OH-regular-general": [
+    "AMBIGUOUS 6QIEqgO9nd \"Who will win the 2028 Ohio Senate election?\" (same race, different proposition or answer set)"
+  ],
   "2028-senate-OK-regular-general": [],
   "2028-senate-OR-regular-general": [
     "AMBIGUOUS S2SAZShzgp \"Which 2028 US Senate elections will a Democrat win?\" (regular/special election wording differs)"
@@ -107,7 +114,8 @@
   ],
   "2028-president-GA-general": [
     "EQUIVALENT AgRpZNIOsq \"Which party will win the 2028 presidential election in Georgia?\" (same office/state/district/year with party outcomes)",
-    "EQUIVALENT ZP59COZzOS \"Which party will win the 2028 presidential election in Georgia?\" (same office/state/district/year with party outcomes)"
+    "EQUIVALENT ZP59COZzOS \"Which party will win the 2028 presidential election in Georgia?\" (same office/state/district/year with party outcomes)",
+    "AMBIGUOUS QQZy2CLA2y \"If Jon Ossoff is the Democratic Nominee for President in 2028, will he win Georgia?\" (primary/margin/conditional/derivative wording)"
   ],
   "2028-president-HI-general": [
     "EQUIVALENT 8uOl9NEgzQ \"Which party will win the 2028 presidential election in Hawaii?\" (same office/state/district/year with party outcomes)"
@@ -191,7 +199,7 @@
     "EQUIVALENT sNzuhCSgtR \"Which party will win the 2028 presidential election in New York?\" (same office/state/district/year with party outcomes)"
   ],
   "2028-president-OH-general": [
-    "EQUIVALENT Ehqphnz0tA \"Which party will win the 2028 presidential election in Ohio?\" (same office/state/district/year with party outcomes)"
+    "EQUIVALENT PRI92CyLy0 \"Which party will win the 2028 presidential election in Ohio?\" (same office/state/district/year with party outcomes)"
   ],
   "2028-president-OK-general": [
     "EQUIVALENT zSStNCPRht \"Which party will win the 2028 presidential election in Oklahoma?\" (same office/state/district/year with party outcomes)"
@@ -263,6 +271,24 @@
     "EQUIVALENT dm9roaqls1 \"Which party will win the 2028 US Presidential election?\" (same office/state/district/year with party outcomes)",
     "EQUIVALENT dgUXwJtDik3QaYJKQCrv \"Which party will win the 2028 US Presidential Election?\" (same office/state/district/year with party outcomes)",
     "EQUIVALENT 8p6sy5snq9 \"Which political party wins the US presidency in 2028?\" (same office/state/district/year with party outcomes)",
+    "AMBIGUOUS cEzt6cShg2 \"Will the 2028 US Presidental Election Winner be a Governor?\" (same race, different proposition or answer set)",
+    "AMBIGUOUS zhu6gzZS6h \"Will The 2028 President Elect be a Neo-Con or Liberal Hawk?\" (same race, different proposition or answer set)",
+    "AMBIGUOUS gO28NINztN \"Will Jon Ossoff run and win the 2028 Presidential Election?\" (same race, different proposition or answer set)",
+    "AMBIGUOUS q0QZs8lPQ2 \"Will Democrats win 2028 white house election?\" (binary party market for this race; ours is three-way)",
+    "AMBIGUOUS 5cclR289cE \"If a Republican wins the presidency in 2028, will Bitcoin be above $250,000 at the end of 2030?\" (primary/margin/conditional/derivative wording)",
+    "AMBIGUOUS l0g5lAQLg2 \"If a Democrat wins the presidency in 2028, will Bitcoin be above $250,000 at the end of 2030?\" (primary/margin/conditional/derivative wording)",
+    "AMBIGUOUS p0z5t2cp0g \"If a Republican wins the presidency in 2028, will Congress enact a federal abortion-rights law before Jan 20, 2033?\" (primary/margin/conditional/derivative wording)",
+    "AMBIGUOUS ycRlQ0g0qE \"If a Democrat wins the presidency in 2028, will Congress enact a federal abortion-rights law before Jan 20, 2033?\" (primary/margin/conditional/derivative wording)",
+    "AMBIGUOUS s9O6zh8q5P \"If a Republican wins the presidency in 2028, will the Senate end the legislative filibuster before January 3, 2031?\" (primary/margin/conditional/derivative wording)",
+    "AMBIGUOUS 8NcSUnlNUZ \"If a Democrat wins the presidency in 2028, will the Senate end the legislative filibuster before January 3, 2031?\" (primary/margin/conditional/derivative wording)",
+    "AMBIGUOUS E5dENyyc8P \"If a Republican wins the presidency in 2028, will marijuana be federally descheduled before Jan 20, 2033?\" (primary/margin/conditional/derivative wording)",
+    "AMBIGUOUS CuChuRRyt2 \"If a Democrat wins the presidency in 2028, will marijuana be federally descheduled before Jan 20, 2033?\" (primary/margin/conditional/derivative wording)",
+    "AMBIGUOUS uC9C9PC9n2 \"If a Republican wins the presidency in 2028, will the Supreme Court have more than nine justices before Jan 20, 2033?\" (primary/margin/conditional/derivative wording)",
+    "AMBIGUOUS cR0sltZnhC \"If a Democrat wins the presidency in 2028, will the Supreme Court have more than nine justices before Jan 20, 2033?\" (primary/margin/conditional/derivative wording)",
+    "AMBIGUOUS cdlURNhhqR \"If a Republican wins the presidency in 2028, will U.S. real GDP shrink in any quarter of 2029 or 2030?\" (primary/margin/conditional/derivative wording)",
+    "AMBIGUOUS gR9NSt5N98 \"If a Democrat wins the presidency in 2028, will U.S. real GDP shrink in any quarter of 2029 or 2030?\" (primary/margin/conditional/derivative wording)",
+    "AMBIGUOUS pO5Ap9Zsp2 \"If a Republican wins the presidency in 2028, will the S&P 500 close 2029 higher than it closed on Election Day 2028?\" (primary/margin/conditional/derivative wording)",
+    "AMBIGUOUS OAhNt0zI2Q \"If a Democrat wins the presidency in 2028, will the S&P 500 close 2029 higher than it closed on Election Day 2028?\" (primary/margin/conditional/derivative wording)",
     "AMBIGUOUS uRh8q8ZnPs \"Will Democrats win back the white house in 2028?\" (binary party market for this race; ours is three-way)",
     "AMBIGUOUS ZL5Rg0AOSd \"Will Democrats win all 7 ‘swing states’ in the 2028 presidential election?\" (primary/margin/conditional/derivative wording)",
     "AMBIGUOUS Ndg8IlQLPl \"Who will be the Democratic nominee, and will they win the 2028 presidential election?\" (primary/margin/conditional/derivative wording)",
@@ -346,6 +372,7 @@
     "AMBIGUOUS 5oSb9bgyB6l0bOqwNfVn \"If Donald Trump wins the 2024 presidential election, what percentage of Americans will live on less than $40 per day in 2028?\" (primary/margin/conditional/derivative wording)",
     "AMBIGUOUS 6yisd81fOjC994mF5oQu \"Will a third-party or independent candidate win any state in the 2024 or 2028 US presidential elections?\" (names more than one year)",
     "AMBIGUOUS IkPEZEfTqWLnvePM8q47 \"Which party will win the 2028 U.S. presidential election?\" (same race, different proposition or answer set)",
+    "AMBIGUOUS 5tQnnUpQZl \"2028: Who will win the Presidency, House, and Senate?\" (same race, different proposition or answer set)",
     "AMBIGUOUS 6OdhA08pRR \"Under 55! U.S. Rep. Presidential nominee will not have reached age 55 by the time they win the nomination in 2028.\" (primary/margin/conditional/derivative wording)",
     "AMBIGUOUS hLY5IW64tVqVWzt3sbdv \"Which party will win the Presidency? Will the Ukraine sever the land bridge between 2025 and 2028 (inclusive)?\" (combined or multi-part question)",
     "AMBIGUOUS 7I2P89WsBJ828Adys0E7 \"Which party will win the Presidency? Will there be a US recession between 2025 and 2028 (inclusive)?\" (primary/margin/conditional/derivative wording)",

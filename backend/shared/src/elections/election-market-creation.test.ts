@@ -68,6 +68,26 @@ const partyEntry = (
   dashboard: { list: 'governors2026', key: state },
 })
 
+// The 2028+ shape: Democratic and Republican listed, creator-only additions,
+// and the server's "Other" at the remainder (2%).
+const otherEntry = (state: string, stateName: string): ManifestEntry => {
+  const e = partyEntry(state, stateName)
+  return {
+    ...e,
+    payload: {
+      ...e.payload!,
+      answers: ['Democratic Party', 'Republican Party'],
+      answerProbs: [40, 58],
+      addAnswersMode: 'ONLY_CREATOR',
+    },
+    answerMeta: [
+      { label: 'Democratic Party', kind: 'party', party: 'D' },
+      { label: 'Republican Party', kind: 'party', party: 'R' },
+      { label: 'Other', kind: 'other', party: 'other', isOther: true },
+    ],
+  }
+}
+
 const manifest = (
   entries: ManifestEntry[],
   cap: number | null = 100_000
@@ -123,19 +143,45 @@ function mockApi(o: MockOpts = {}) {
     createMarket: jest.fn(async (body) => {
       const i = createCalls++
       api.creates.push(body)
+      // Like the server: answers that can be added get an "Other" answer at
+      // the remainder of the seeds.
+      const withOther =
+        body.shouldAnswersSumToOne === true &&
+        (body.addAnswersMode ?? 'DISABLED') !== 'DISABLED'
+      const listed = body.answers?.length ?? 0
+      const count = listed + (withOther ? 1 : 0)
       const make = () =>
         store.set(body.idempotencyKey, {
           id: body.idempotencyKey,
           slug: body.question.toLowerCase().replace(/\W+/g, '-').slice(0, 35),
           question: body.question,
           url: `https://manifold.markets/ElectionBot/${body.idempotencyKey}`,
-          answers: (body.answers ?? []).map((t, j) => ({
-            id: `${body.idempotencyKey}a${j}`,
-            text: t,
-            probability: o.ignoreSeeds
-              ? 1 / (body.answers?.length ?? 1)
-              : (body.answerProbs?.[j] ?? 0) / 100,
-          })),
+          addAnswersMode: body.addAnswersMode ?? 'DISABLED',
+          shouldAnswersSumToOne: body.shouldAnswersSumToOne,
+          answers: [
+            ...(body.answers ?? []).map((t, j) => ({
+              id: `${body.idempotencyKey}a${j}`,
+              text: t,
+              isOther: false,
+              probability: o.ignoreSeeds
+                ? 1 / count
+                : (body.answerProbs?.[j] ?? 0) / 100,
+            })),
+            ...(withOther
+              ? [
+                  {
+                    id: `${body.idempotencyKey}aOther`,
+                    text: 'Other',
+                    isOther: true,
+                    probability: o.ignoreSeeds
+                      ? 1 / count
+                      : (100 -
+                          (body.answerProbs ?? []).reduce((a, b) => a + b, 0)) /
+                        100,
+                  },
+                ]
+              : []),
+          ],
         })
       if (o.createdButHidden?.has(i)) {
         make()
@@ -190,6 +236,49 @@ describe('validation and cost', () => {
     const errors = validateManifest(manifest([bad]), NOW)
     expect(errors.join('\n')).toMatch(/sum to 82/)
     expect(errors.join('\n')).toMatch(/answerMeta/)
+  })
+
+  test('a creator-curated party market lists two answers and the server adds "Other"', () => {
+    const ok = otherEntry('AL', 'Alabama')
+    expect(validateManifest(manifest([ok]), NOW)).toEqual([])
+    // Two answers + Other = 3 answers: the Ṁ1,000 minimum, as before.
+    expect(costOf(ok.payload!)).toMatchObject({ numAnswers: 3, total: 1000 })
+
+    const anyone = otherEntry('AL', 'Alabama')
+    anyone.payload = { ...anyone.payload!, addAnswersMode: 'ANYONE' }
+    expect(validateManifest(manifest([anyone]), NOW).join('\n')).toMatch(
+      /addAnswersMode must be DISABLED or ONLY_CREATOR/
+    )
+
+    const noRoom = otherEntry('AL', 'Alabama')
+    noRoom.payload = { ...noRoom.payload!, answerProbs: [60, 40] }
+    expect(validateManifest(manifest([noRoom]), NOW).join('\n')).toMatch(
+      /leaving 0% for "Other"/
+    )
+
+    const listsOther = otherEntry('AL', 'Alabama')
+    listsOther.payload = {
+      ...listsOther.payload!,
+      answers: ['Democratic Party', 'Other'],
+    }
+    expect(validateManifest(manifest([listsOther]), NOW).join('\n')).toMatch(
+      /the server adds "Other"; do not list it/
+    )
+
+    const noOtherMeta = otherEntry('AL', 'Alabama')
+    noOtherMeta.answerMeta = noOtherMeta.answerMeta!.slice(0, 2)
+    expect(validateManifest(manifest([noOtherMeta]), NOW).join('\n')).toMatch(
+      /answerMeta must list every answer label in order, then "Other"/
+    )
+
+    const unflagged = otherEntry('AL', 'Alabama')
+    unflagged.answerMeta = unflagged.answerMeta!.map((a) => ({
+      ...a,
+      isOther: undefined,
+    }))
+    expect(validateManifest(manifest([unflagged]), NOW).join('\n')).toMatch(
+      /last answerMeta entry must be the server's "Other"/
+    )
   })
 
   test('idempotency keys are deterministic, valid and distinct', () => {
@@ -967,6 +1056,72 @@ describe('partial failure and resume', () => {
     ).toBeUndefined()
   })
 
+  test('read-back checks the server\'s "Other", the answer count and the answer mode', () => {
+    const p = otherEntry('AL', 'Alabama').payload!
+    const market = (other: number | undefined, extra: object = {}) => ({
+      id: 'x',
+      question: 'q',
+      addAnswersMode: 'ONLY_CREATOR',
+      answers: [
+        { id: 'd', text: 'Democratic Party', isOther: false, probability: 0.4 },
+        {
+          id: 'r',
+          text: 'Republican Party',
+          isOther: false,
+          probability: 0.58,
+        },
+        ...(other === undefined
+          ? []
+          : [{ id: 'o', text: 'Other', isOther: true, probability: other }]),
+      ],
+      ...extra,
+    })
+    expect(seedMismatch(p, market(0.02))).toBeUndefined()
+    expect(seedMismatch(p, market(0.021))).toBeUndefined()
+    expect(seedMismatch(p, market(0.1))).toMatch(
+      /"Other" opened at 10.0%, not the seeded 2.0%/
+    )
+    expect(seedMismatch(p, market(undefined))).toMatch(
+      /expected one "Other" answer, found 0/
+    )
+    expect(seedMismatch(p, market(0.02, { addAnswersMode: 'ANYONE' }))).toMatch(
+      /addAnswersMode is ANYONE, expected ONLY_CREATOR/
+    )
+    const extra = market(0.02)
+    extra.answers.push({
+      id: 'g',
+      text: 'Green Party',
+      isOther: false,
+      probability: 0,
+    })
+    expect(seedMismatch(p, extra)).toMatch(/4 answers, expected 3/)
+    // A lite read without isOther still finds "Other" by its text.
+    const lite = market(0.02)
+    lite.answers = lite.answers.map((a) => ({
+      id: a.id,
+      text: a.text,
+      probability: a.probability,
+    })) as never
+    expect(seedMismatch(p, lite)).toBeUndefined()
+    // A fixed (2026) answer set must not grow an "Other".
+    const fixed = partyEntry('AL', 'Alabama').payload!
+    expect(
+      seedMismatch(fixed, {
+        id: 'x',
+        question: 'q',
+        answers: [
+          ...fixed.answers!.map((text, i) => ({
+            id: `a${i}`,
+            text,
+            isOther: false,
+            probability: fixed.answerProbs![i] / 100,
+          })),
+          { id: 'o', text: 'Other', isOther: true, probability: 0 },
+        ],
+      })
+    ).toMatch(/4 answers, expected 3/)
+  })
+
   test('a 403 balance error stops the whole run', async () => {
     const { api } = mockApi({
       createFailures: {
@@ -1131,6 +1286,64 @@ describe('quiet creation', () => {
     expect(api.createMarket).toHaveBeenCalledTimes(1)
     expect(api.setAnswerColor).toHaveBeenCalledTimes(4)
     expect(api.publishMarket).toHaveBeenCalledTimes(1)
+  })
+
+  test('a creator-curated market colors the server\'s "Other" and maps its answer id', async () => {
+    const { api } = mockApi()
+    const first = otherEntry('AL', 'Alabama')
+    const m = manifest([first])
+    const state = emptyState(m)
+    const result = await applyManifest(
+      m,
+      state,
+      api,
+      opts({ quiet: true }),
+      () => undefined
+    )
+    expect(result.stoppedReason).toBeUndefined()
+    expect(api.creates[0]).toMatchObject({
+      answers: ['Democratic Party', 'Republican Party'],
+      answerProbs: [40, 58],
+      addAnswersMode: 'ONLY_CREATOR',
+      visibility: 'unlisted',
+    })
+    const record = state.entries[first.raceKey]
+    expect(record.costMana).toBe(1000)
+    const id = record.contractId!
+    expect((api.setAnswerColor as jest.Mock).mock.calls).toEqual([
+      [id, `${id}a0`, '#adc4e3'],
+      [id, `${id}a1`, '#ecbab5'],
+      [id, `${id}aOther`, '#9e9fbd'],
+    ])
+    expect(api.publishMarket).toHaveBeenCalledWith(id)
+    const [row] = buildDashboardMapping(m, state)
+    expect(row.answers.map((a) => [a.label, a.party, a.answerId])).toEqual([
+      ['Democratic Party', 'D', `${id}a0`],
+      ['Republican Party', 'R', `${id}a1`],
+      ['Other', 'other', `${id}aOther`],
+    ])
+    // Before creation the Other row is a placeholder like the others.
+    const [planned] = buildDashboardMapping(m, emptyState(m))
+    expect(planned.answers[2].answerId).toBe(`PENDING:${first.raceKey}#Other`)
+  })
+
+  test('an API that ignored the seeds is caught on the "Other" answer too', async () => {
+    const { api } = mockApi({ ignoreSeeds: true })
+    const m = manifest([
+      otherEntry('AL', 'Alabama'),
+      otherEntry('AK', 'Alaska'),
+    ])
+    const state = emptyState(m)
+    const result = await applyManifest(
+      m,
+      state,
+      api,
+      opts({ quiet: true }),
+      () => undefined
+    )
+    expect(result.stoppedReason).toMatch(/opened at 33.3%/)
+    expect(api.createMarket).toHaveBeenCalledTimes(1)
+    expect(api.publishMarket).not.toHaveBeenCalled()
   })
 
   test('candidate colors come from audited affiliation, not their names or answer order', () => {

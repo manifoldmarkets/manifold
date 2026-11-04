@@ -1,6 +1,7 @@
 // Question, description and search-term templates for the generic party
 // markets. Every description states which round counts, the party rule,
 // the N/A cases and (for presidential markets) the elector rules.
+import { OTHER_ANSWER_TEXT } from 'shared/elections/election-market-creation'
 import {
   CycleConfig,
   congressionalRound,
@@ -11,17 +12,26 @@ import {
 } from './cycles'
 import { ORDINAL, Race } from './inventory'
 
-export const ANSWERS = [
-  'Democratic Party',
-  'Republican Party',
-  'Another party or independent',
-] as const
+// The two listed answers. Markets are created with addAnswersMode
+// ONLY_CREATOR, so the server appends "Other" (at the remainder of the seeds)
+// and only @ManifoldPolitics can add an answer later (a third party or a
+// named independent), which takes its share out of "Other".
+export const ANSWERS = ['Democratic Party', 'Republican Party'] as const
 
 export const ANSWER_META = [
   { label: 'Democratic Party', kind: 'party', party: 'D' },
   { label: 'Republican Party', kind: 'party', party: 'R' },
-  { label: 'Another party or independent', kind: 'other', party: 'other' },
+  { label: OTHER_ANSWER_TEXT, kind: 'other', party: 'other', isOther: true },
 ] as const
+
+// Who the seed paragraph says voted: "Alabama", "Alabama's 1st District",
+// "The District of Columbia"; undefined for the national market.
+export function seedPlace(race: Race): string | undefined {
+  if (race.office === 'president' && race.state === 'US') return undefined
+  if (race.district !== undefined && race.district > 0)
+    return `${race.stateName}'s ${ORDINAL(race.district)} District`
+  return race.state === 'DC' ? 'The District of Columbia' : race.stateName
+}
 
 const districtLabel = (race: Race) =>
   race.district === 0
@@ -74,13 +84,16 @@ const withStateParty = (state: string) =>
 const PARTY_RULE = (state: string) =>
   `**Party rule:** the winner's party is the party on whose ballot line, or with whose party designation, they appear on the official general-election ballot. A candidate nominated by the Democratic Party or the Republican Party who also appears on other parties' lines (fusion) counts as that major party's candidate.${withStateParty(
     state
-  )} A candidate who is independent, unaffiliated, has no party preference, or belongs to any other party resolves to "Another party or independent", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.`
+  )} Any other winner (an independent, an unaffiliated candidate, someone with no party preference, or another party's candidate) resolves to the answer @ManifoldPolitics has added for that party or candidate, if there is one, and otherwise to "${OTHER_ANSWER_TEXT}", even if they caucus with a major party or previously ran in a major party's primary. Party switches, caucus decisions, resignations or deaths after the result is certified do **not** change the resolution.`
+
+const ANSWERS_RULE = (what: 'candidate' | 'ticket') =>
+  `**Answers:** only @ManifoldPolitics can add answers. It may add a third party or a named independent ${what} if one becomes a serious contender; a new answer takes its share out of "${OTHER_ANSWER_TEXT}", and a bet on "${OTHER_ANSWER_TEXT}" includes every answer added later.`
 
 const RESULTS_RULE = (certifier: string) =>
   `**Results:** resolves on ${certifier}. It may resolve earlier once the Associated Press has called the race and no recount, contest or further round that could change the winner remains pending. If a recount or court-ordered correction changes the certified winner before resolution, the corrected certified result controls.`
 
-const SEED_LINE = (seedText: string) =>
-  `**Starting probabilities** are seeds for the initial pool, not forecasts: ${seedText}`
+// The seed paragraph is written in full by describeSeed (seeds.ts).
+const SEED_LINE = (seedText: string) => seedText
 
 export function descriptionFor(
   race: Race,
@@ -100,6 +113,8 @@ export function descriptionFor(
         '',
         PARTY_RULE(race.state),
         '',
+        ANSWERS_RULE('candidate'),
+        '',
         RESULTS_RULE("the state's certified results"),
         '',
         noElection(`${cycle} general election`, `this seat and term`),
@@ -114,6 +129,8 @@ export function descriptionFor(
         '',
         PARTY_RULE(race.state),
         '',
+        ANSWERS_RULE('candidate'),
+        '',
         RESULTS_RULE("the state's certified results"),
         '',
         noElection(`${cycle} general election`, `this office and term`),
@@ -122,23 +139,20 @@ export function descriptionFor(
       ].join('\n')
     case 'house': {
       const n = race.district!
-      const number = n === 0 ? 'the at-large seat' : `district ${n}`
       return [
         `This market resolves to the **party** of the winner of the ${cycle} election for **U.S. Representative for ${districtLabel(
           race
         )}** — the term beginning January 3, ${cycle + 1}.`,
         '',
-        `**District:** ${
-          n === 0
-            ? `${stateName}'s single, at-large congressional district`
-            : `the district numbered ${n} on the congressional map in effect for the ${cycle} election`
-        }. Mid-decade redistricting is active: if ${stateName} adopts a new map before the election that keeps ${
-          n === 0 ? 'a single at-large seat' : `a district numbered ${n}`
-        }, the market follows ${number} on that map, however much the boundaries change. If the state **abolishes** ${number} or **renumbers** its districts before the election (so that the new district numbers do not correspond to the current ones), or if the state's number of seats changes, the market resolves **N/A**.`,
+        n === 0
+          ? `**District:** ${stateName}'s at-large seat, which covers the whole state. The market resolves **N/A** only if ${stateName} has no at-large seat in the ${cycle} election.`
+          : `**District:** whichever district is numbered ${n} on the congressional map in effect for ${stateName}'s ${cycle} election, however much its boundaries differ from today's (states can redraw their maps before then). The market resolves **N/A** only if that map has no district numbered ${n}.`,
         '',
         `**Which round counts:** ${round.text}. Primaries, conventions and party runoffs do not count.`,
         '',
         PARTY_RULE(race.state),
+        '',
+        ANSWERS_RULE('candidate'),
         '',
         RESULTS_RULE("the state's certified results"),
         '',
@@ -157,7 +171,7 @@ export function descriptionFor(
 const PRESIDENT_PARTY_RULE = (state: string) =>
   `**Party rule:** the party is the party designation under which the winning presidential ticket appears on the official general-election ballot. A ticket nominated by the Democratic Party or the Republican Party that also appears on other parties' lines (fusion) counts as that major party.${withStateParty(
     state
-  )} A ticket that is independent, unaffiliated or nominated by any other party resolves to "Another party or independent". A candidate's later party change does not change the resolution.`
+  )} Any other ticket (independent, unaffiliated or nominated by another party) resolves to the answer @ManifoldPolitics has added for that party or ticket, if there is one, and otherwise to "${OTHER_ANSWER_TEXT}". A candidate's later party change does not change the resolution.`
 
 function stateDescription(
   race: Race,
@@ -185,6 +199,8 @@ function stateDescription(
     `**Which round counts:** ${round.text}. Primaries and caucuses do not count.`,
     '',
     PRESIDENT_PARTY_RULE(race.state),
+    '',
+    ANSWERS_RULE('ticket'),
     '',
     `**Electors:** the market resolves on which ticket's slate of electors is certified as elected by the ${
       district ? 'district' : 'state'
@@ -221,6 +237,8 @@ function nationalDescription(
     } (3 U.S.C. § 15, as amended by the Electoral Count Reform Act of 2022). Primaries, caucuses and conventions do not count.`,
     '',
     PRESIDENT_PARTY_RULE(race.state),
+    '',
+    ANSWERS_RULE('ticket'),
     '',
     `**Winner:** the candidate declared elected President when Congress counts the electoral votes (a majority of the appointed electors, 270 of 538 under the current apportionment). **Faithless electors:** the market follows the count Congress accepts, so an elector's vote cast for someone other than their ticket's candidate counts as Congress counts it. **Contingent election:** if no candidate has a majority of electoral votes, the market resolves to the party (as defined above) of the person the House of Representatives elects President under the Twelfth Amendment.`,
     '',
@@ -297,7 +315,7 @@ export function searchTermsFor(race: Race): string[] {
 }
 
 export function shapeRationale(): string {
-  return 'Generic ballot-party multi (Democratic Party / Republican Party / Another party or independent), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one and cannot be added to.'
+  return `Generic ballot-party multi (Democratic Party / Republican Party, plus the server's "${OTHER_ANSWER_TEXT}"), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one, and only @ManifoldPolitics can add an answer (a third party or a named independent), which takes its share out of "${OTHER_ANSWER_TEXT}".`
 }
 
 export function closeNote(cfg: CycleConfig): string {

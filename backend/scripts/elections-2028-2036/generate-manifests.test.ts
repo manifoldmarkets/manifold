@@ -5,6 +5,8 @@
 import * as assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
+  costOf,
+  hasOtherAnswer,
   idempotencyKeyFor,
   RaceManifestEntry,
   validateManifest,
@@ -321,21 +323,40 @@ test('2030 midterm: the 33 Class 1 seats and the 36 governorships of the 2026 cy
   assert.equal(source.sigma, Number(((20 * 7) / 6).toFixed(3)))
 })
 
-test('answers are exactly the three generic party labels with valid seeds', () => {
+// The server's "Other" opens at 100 minus the two listed seeds.
+const otherOf = (e: RaceManifestEntry) =>
+  Math.round(
+    (100 - e.payload!.answerProbs![0] - e.payload!.answerProbs![1]) * 10
+  ) / 10
+
+test('answers are the two party labels plus the server\'s "Other", with valid seeds', () => {
   for (const e of allEntries) {
     assert.deepEqual(e.payload!.answers, [...ANSWERS])
+    assert.deepEqual([...ANSWERS], ['Democratic Party', 'Republican Party'])
     assert.deepEqual(
-      e.answerMeta!.map((a) => a.party),
-      ['D', 'R', 'other']
+      e.answerMeta!.map((a) => [a.label, a.party, !!a.isOther]),
+      [
+        ['Democratic Party', 'D', false],
+        ['Republican Party', 'R', false],
+        ['Other', 'other', true],
+      ]
     )
     const probs = e.payload!.answerProbs!
-    assert.doesNotThrow(() => assertSeedConstraints(probs))
+    assert.equal(probs.length, 2, e.raceKey)
+    const all = [...probs, otherOf(e)]
+    assert.doesNotThrow(() => assertSeedConstraints(all))
     assert.ok(
-      probs.every((p) => p >= 1 && p <= 98),
-      `${e.raceKey}: ${probs}`
+      all.every((p) => p >= 1 && p <= 98),
+      `${e.raceKey}: ${all}`
     )
     assert.equal(e.payload!.shouldAnswersSumToOne, true)
-    assert.equal(e.payload!.addAnswersMode, 'DISABLED')
+    assert.equal(e.payload!.addAnswersMode, 'ONLY_CREATOR')
+    // Two listed answers plus Other: still the Ṁ1,000 minimum ante.
+    assert.equal(hasOtherAnswer(e.payload!), true)
+    assert.deepEqual(
+      [costOf(e.payload!).numAnswers, costOf(e.payload!).total],
+      [3, 1000]
+    )
     assert.equal(e.payload!.liquidityTier, 1000)
     assert.equal(e.payload!.visibility, 'public')
     assert.equal(e.proposition, 'ballot-party')
@@ -343,11 +364,11 @@ test('answers are exactly the three generic party labels with valid seeds', () =
   }
 })
 
-test('"Another party or independent" is 1% except the reviewed exceptions', () => {
+test('"Other" opens at 1% except the reviewed exceptions', () => {
   const exceptions = SEED_PARAMS.otherExceptions
   for (const e of allEntries) {
     const key = `${e.identity.cycle}-${e.identity.office}-${e.identity.state}`
-    const other = e.payload!.answerProbs![2]
+    const other = otherOf(e)
     if (exceptions[key]) assert.equal(other, exceptions[key].other, key)
     else assert.equal(other, 1, key)
   }
@@ -377,17 +398,59 @@ test('descriptions state the round, the party rule, the N/A cases and the electo
     assert.match(d, /\*\*Which round counts:\*\*/, e.raceKey)
     assert.match(d, /\*\*Party rule:\*\*/, e.raceKey)
     assert.match(d, /fusion/, e.raceKey)
-    assert.match(d, /Another party or independent/, e.raceKey)
+    assert.match(
+      d,
+      /resolves to the answer @ManifoldPolitics has added for that party or (candidate|ticket), if there is one, and otherwise to "Other"/,
+      e.raceKey
+    )
+    assert.match(
+      d,
+      /\*\*Answers:\*\* only @ManifoldPolitics can add answers/,
+      e.raceKey
+    )
+    assert.doesNotMatch(d, /Another party or independent/, e.raceKey)
     assert.match(d, /N\/A/, e.raceKey)
     assert.match(d, /certified/, e.raceKey)
-    assert.match(d, /seeds for the initial pool, not forecasts/, e.raceKey)
+    // The opening-odds paragraph is plain language: no repo files or jargon.
+    assert.match(
+      d,
+      /\*\*Opening odds\*\* are a starting point, not a forecast\. .*Other opens at \d+(\.\d)?%/,
+      e.raceKey
+    )
+    assert.doesNotMatch(
+      d,
+      /SEEDS\.md|Stage A|SEED, not|σ|Same share as the reviewed/,
+      e.raceKey
+    )
     assert.ok(d.length >= 400, e.raceKey)
     assert.ok(e.payload!.question.length <= 120, e.raceKey)
     const { office, state } = e.identity
     if (office === 'house') {
-      assert.match(d, /renumbers/, e.raceKey)
-      assert.match(d, /abolishes/, e.raceKey)
-      assert.match(d, /map in effect for the 2028 election|at-large/, e.raceKey)
+      // Follow whatever district carries the number; N/A only if none does.
+      assert.doesNotMatch(d, /renumber|abolishes|number of seats/, e.raceKey)
+      const n = e.identity.district!
+      if (n === 0)
+        assert.match(
+          d,
+          /at-large seat, which covers the whole state\. The market resolves \*\*N\/A\*\* only if .+ has no at-large seat in the 2028 election\./,
+          e.raceKey
+        )
+      else {
+        assert.match(
+          d,
+          new RegExp(
+            `\\*\\*District:\\*\\* whichever district is numbered ${n} on the congressional map in effect for .+'s 2028 election, however much its boundaries differ`
+          ),
+          e.raceKey
+        )
+        assert.match(
+          d,
+          new RegExp(
+            `resolves \\*\\*N/A\\*\\* only if that map has no district numbered ${n}\\.`
+          ),
+          e.raceKey
+        )
+      }
     }
     if (office === 'president') {
       assert.match(d, /faithless/i, e.raceKey)
@@ -453,6 +516,49 @@ test('descriptions state the round, the party rule, the N/A cases and the electo
       state === 'ND',
       e.raceKey
     )
+  }
+})
+
+test('the opening-odds paragraph reads as plain language with the real numbers', () => {
+  const para = (key: string) =>
+    allEntries
+      .find((e) => e.raceKey === key)!
+      .payload!.descriptionMarkdown.split('\n\n')
+      .find((p) => p.startsWith('**Opening odds**'))
+  assert.equal(
+    para('2028-senate-AL-regular-general'),
+    '**Opening odds** are a starting point, not a forecast. Alabama voted 29.9 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1.6% and Republicans 97.4%. Other opens at 1%.'
+  )
+  assert.equal(
+    para('2028-president-US-general'),
+    '**Opening odds** are a starting point, not a forecast. The national market opens with the parties even: Democrats 49.5%, Republicans 49.5%. Other opens at 1%.'
+  )
+  assert.equal(
+    para('2028-house-AL-01-regular-general'),
+    "**Opening odds** are a starting point, not a forecast. Alabama's 1st District voted 34.8 points more Republican than the country in the 2024 presidential election (on its current lines); pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%."
+  )
+  assert.match(
+    para('2028-president-DC-general')!,
+    /^\*\*Opening odds\*\* are a starting point, not a forecast\. The District of Columbia voted [\d.]+ points more Democratic/
+  )
+  // A reviewed exception gives its reason, without the state prefix or the
+  // reviewer-only note.
+  assert.match(
+    para('2030-senate-ME-regular-general')!,
+    /Other opens at 10% rather than 1%: the Class 1 seat is Angus King’s .*plausible\.$/
+  )
+  // The Democratic and Republican figures are the payload's own seeds.
+  for (const e of allEntries) {
+    const p = para(e.raceKey)!
+    const [d, r] = e.payload!.answerProbs!
+    if (e.identity.state === 'US')
+      assert.ok(p.includes(`Democrats ${d}%, Republicans ${r}%`), e.raceKey)
+    else
+      assert.ok(
+        p.includes(`that gives Democrats ${d}% and Republicans ${r}%.`),
+        e.raceKey
+      )
+    assert.ok(p.includes(`Other opens at ${otherOf(e)}%`), e.raceKey)
   }
 })
 

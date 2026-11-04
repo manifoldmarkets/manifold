@@ -36,6 +36,7 @@ import {
   questionFor,
   roundFor,
   searchTermsFor,
+  seedPlace,
   shapeRationale,
 } from './templates'
 
@@ -122,7 +123,7 @@ export function buildEntry(
     national: nationalResults(results),
     nationalMarket: race.state === 'US',
   })
-  const seedText = describeSeed(seed, race.cycle)
+  const seedText = describeSeed(seed, seedPlace(race))
   const round = roundFor(race, cfg)
   const { ids, missing } = topicIdsFor(opts.topics, race.office, race.cycle)
   for (const m of missing) opts.missingTopics.add(m)
@@ -147,10 +148,12 @@ export function buildEntry(
       question,
       descriptionMarkdown: descriptionFor(race, cfg, seedText),
       outcomeType: 'MULTIPLE_CHOICE',
+      // Democratic and Republican seeds; the server appends "Other" at the
+      // remainder (seed.probs[2]) because answers can be added (creator only).
       answers: [...ANSWERS],
-      answerProbs: seed.probs,
+      answerProbs: [seed.probs[0], seed.probs[1]],
       shouldAnswersSumToOne: true,
-      addAnswersMode: 'DISABLED',
+      addAnswersMode: 'ONLY_CREATOR',
       closeTime: round.closeTime,
       liquidityTier: LIQUIDITY_TIER,
       groupIds: ids,

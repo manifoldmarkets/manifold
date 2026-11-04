@@ -72,7 +72,8 @@ export const SEED_PARAMS = {
   // (see horizonMultiplier).
   horizonBaseCycle: 2028,
   horizonYears: 12,
-  // "Another party or independent" share in percentage points.
+  // "Other" share in percentage points (the server's Other answer opens at
+  // 100 minus the Democratic and Republican seeds).
   otherDefault: 1,
   // Seats where an independent or third-party win is a live possibility.
   // Keyed `${cycle}-${office}-${state}`; each exception is justified here
@@ -102,7 +103,7 @@ export const SEED_PARAMS = {
     },
     '2032-senate-AK': {
       other: 5,
-      why: 'Alaska: same system and independent tradition as 2028, with less specific evidence for the Class 2 seat.',
+      why: 'Alaska: the same top-four/ranked-choice system and independent tradition as for the 2028 seat, with less specific evidence for this Class 2 seat.',
     },
     '2032-senate-ME': {
       other: 6,
@@ -209,8 +210,9 @@ export function otherShareFor(
 }
 
 export type SeedResult = {
-  // [Democratic, Republican, Another party or independent], one decimal,
-  // sums to 100, each within the API's 1–99.
+  // [Democratic, Republican, Other], one decimal, sums to 100, each within
+  // the API's 1–99. The payload lists the first two; the server's "Other"
+  // opens at the remainder, which is the third.
   probs: [number, number, number]
   lean: number
   sigma: number
@@ -273,18 +275,43 @@ export function assertSeedConstraints(probs: number[]) {
   if (Math.abs(sum - 100) > 1e-9) throw new Error(`seeds sum to ${sum}`)
 }
 
-export function describeSeed(seed: SeedResult, cycle: Cycle): string {
-  const years = seed.yearsUsed.join(' and ')
-  const basis = seed.yearsUsed.length
-    ? `two-party presidential margin in ${years} relative to the national margin (lean ${seed.lean.toFixed(
-        1
-      )} pts)`
-    : 'no lean: the national market opens at the even environment the state seeds are measured against'
-  return `SEED, not a forecast (Stage A prior): ${basis}, regressed toward even with σ = ${seed.sigma.toFixed(
-    1
-  )} pts for ${cycle} (P(Dem) = ${(seed.pDem * 100).toFixed(
-    1
-  )}%); "Another party or independent" = ${seed.other}%${
-    seed.otherWhy ? ` (${seed.otherWhy})` : ''
-  }; 1% floor, one decimal, remainder to the largest answer. See SEEDS.md.`
+const pct = (x: number) => `${Number(x.toFixed(1))}%`
+
+// An exception's justification, as traders read it: without the leading
+// "State: " and without the note that only matters to reviewers.
+export function publicWhy(why: string): string {
+  return why
+    .replace(/^[A-Z][A-Za-z ]{1,20}:\s+/, '')
+    .replace(/\s*Same share as the reviewed \d{4} exception\.\s*$/, '')
+    .trim()
+}
+
+// The market's last paragraph, in plain language: what the opening odds are
+// based on, with the real numbers (SEEDS.md has the formula). `place` is who
+// voted ("Alabama", "Alabama's 1st District"); omit it for the national market.
+export function describeSeed(seed: SeedResult, place?: string): string {
+  const [d, r, other] = seed.probs
+  const head = '**Opening odds** are a starting point, not a forecast.'
+  const otherLine = seed.otherWhy
+    ? `Other opens at ${pct(other)} rather than ${pct(
+        SEED_PARAMS.otherDefault
+      )}: ${publicWhy(seed.otherWhy)}`
+    : `Other opens at ${pct(other)}.`
+  if (!place || !seed.yearsUsed.length)
+    return `${head} The national market opens with the parties even: Democrats ${pct(
+      d
+    )}, Republicans ${pct(r)}. ${otherLine}`
+  const years =
+    seed.yearsUsed.length > 1
+      ? `in the ${seed.yearsUsed.join(' and ')} presidential elections`
+      : `in the ${seed.yearsUsed[0]} presidential election (on its current lines)`
+  const lean =
+    Math.abs(seed.lean) < 0.05
+      ? 'voted about the same as the country'
+      : `voted ${Math.abs(seed.lean).toFixed(1)} points more ${
+          seed.lean > 0 ? 'Democratic' : 'Republican'
+        } than the country`
+  return `${head} ${place} ${lean} ${years}; pulled toward even for a race this far off, that gives Democrats ${pct(
+    d
+  )} and Republicans ${pct(r)}. ${otherLine}`
 }

@@ -66,6 +66,9 @@ export type AnswerMeta = {
   party: PartyCode
   candidate?: string
   partyEvidence?: string
+  // The "Other" answer the server appends when answers can be added. It is
+  // not in payload.answers; its share is 100 minus the listed seeds.
+  isOther?: boolean
 }
 
 export type RaceIdentity = {
@@ -245,7 +248,8 @@ export type EntryState = {
   contractId?: string
   slug?: string
   url?: string
-  answers?: { id: string; text: string }[]
+  // isOther marks the server's "Other" answer (recorded from a full read).
+  answers?: { id: string; text: string; isOther?: boolean }[]
   costMana?: number
   reservedMana?: number
   // Persist with the created record: a rerun must not skip a seed failure.
@@ -286,11 +290,15 @@ export type MarketLike = {
   isResolved?: boolean
   resolution?: string
   closeTime?: number
+  // Multi-answer markets read by id (the full market) only.
+  addAnswersMode?: string
+  shouldAnswersSumToOne?: boolean
   answers?: {
     id: string
     text: string
     resolution?: string
     probability?: number
+    isOther?: boolean
   }[]
 }
 
@@ -327,6 +335,7 @@ export function plannedAnswerColors(entry: AnyManifestEntry) {
   if (isMeasureEntry(entry)) return []
   return (entry.answerMeta ?? []).map((answer) => ({
     label: answer.label,
+    ...(answer.isOther ? { isOther: true } : {}),
     color:
       answer.party === 'D'
         ? '#adc4e3'
@@ -358,11 +367,17 @@ export function payloadHash(payload: CreatePayload | undefined) {
 
 // Mirrors backend/api/src/create-market.ts: an 'Other' answer is added only
 // when answers sum to one and adding answers is enabled.
-export function costOf(payload: CreatePayload) {
-  const hasOther =
+export const OTHER_ANSWER_TEXT = 'Other'
+export function hasOtherAnswer(payload: CreatePayload) {
+  return (
     payload.outcomeType === 'MULTIPLE_CHOICE' &&
     payload.shouldAnswersSumToOne === true &&
     (payload.addAnswersMode ?? 'DISABLED') !== 'DISABLED'
+  )
+}
+
+export function costOf(payload: CreatePayload) {
+  const hasOther = hasOtherAnswer(payload)
   const numAnswers =
     payload.outcomeType === 'MULTIPLE_CHOICE'
       ? (payload.answers?.length ?? 0) + (hasOther ? 1 : 0)
@@ -586,8 +601,21 @@ export function validateEntry(entry: AnyManifestEntry, now = Date.now()) {
       e(`answer labels must be 1-${MAX_ANSWER_LENGTH} characters`)
     if (p.shouldAnswersSumToOne !== true)
       e('race markets must be mutually exclusive (shouldAnswersSumToOne)')
-    if (p.addAnswersMode !== 'DISABLED')
-      e('addAnswersMode must be DISABLED so the answer set is the audited one')
+    // DISABLED keeps the audited answer set fixed (2026). ONLY_CREATOR lets
+    // only the creator add an answer, which the server carves out of the
+    // automatic "Other" answer (2028+). ANYONE is never allowed.
+    if (p.addAnswersMode !== 'DISABLED' && p.addAnswersMode !== 'ONLY_CREATOR')
+      e(
+        'addAnswersMode must be DISABLED or ONLY_CREATOR so only the creator controls the answer set'
+      )
+    const withOther = hasOtherAnswer(p)
+    if (
+      withOther &&
+      answers.some(
+        (a) => a.trim().toLowerCase() === OTHER_ANSWER_TEXT.toLowerCase()
+      )
+    )
+      e(`the server adds "${OTHER_ANSWER_TEXT}"; do not list it as an answer`)
     const probs = p.answerProbs
     if (!probs || probs.length !== answers.length)
       e('answerProbs must give a seed for every answer')
@@ -597,15 +625,39 @@ export function validateEntry(entry: AnyManifestEntry, now = Date.now()) {
           `seed probabilities must be within ${MIN_ANSWER_PROB}-${MAX_ANSWER_PROB}%`
         )
       const sum = probs.reduce((a, b) => a + b, 0)
-      if (Math.abs(sum - 100) > 1e-6)
+      if (withOther) {
+        // "Other" opens at the remainder, within the same bounds.
+        const other = Math.round((100 - sum) * 1e6) / 1e6
+        if (!(other >= MIN_ANSWER_PROB && other <= MAX_ANSWER_PROB))
+          e(
+            `seed probabilities sum to ${sum}, leaving ${other}% for "${OTHER_ANSWER_TEXT}" (must be ${MIN_ANSWER_PROB}-${MAX_ANSWER_PROB}%)`
+          )
+      } else if (Math.abs(sum - 100) > 1e-6)
         e(`seed probabilities sum to ${sum}, not 100`)
     }
     const meta = entry.answerMeta ?? []
+    const labels = withOther ? [...answers, OTHER_ANSWER_TEXT] : answers
     if (
-      meta.length !== answers.length ||
-      meta.some((m, i) => m.label !== answers[i])
+      meta.length !== labels.length ||
+      meta.some((m, i) => m.label !== labels[i])
     )
-      e('answerMeta must list every answer label in order')
+      e(
+        `answerMeta must list every answer label in order${
+          withOther ? `, then "${OTHER_ANSWER_TEXT}"` : ''
+        }`
+      )
+    if (
+      meta.some((m, i) =>
+        withOther && i === labels.length - 1
+          ? !m.isOther || m.kind !== 'other'
+          : !!m.isOther
+      )
+    )
+      e(
+        withOther
+          ? `the last answerMeta entry must be the server's "${OTHER_ANSWER_TEXT}" (isOther, kind other) and no other`
+          : 'isOther is only for the answer the server adds'
+      )
     if (
       entry.proposition === 'candidate' &&
       meta.some((m) => m.kind === 'party')
@@ -1293,12 +1345,18 @@ export function planOffline(
 
 // The API silently drops unknown fields, so an API without answerProbs
 // support would open every multi-answer market at an even split. Compare the
-// created market's answer probabilities with the seeds (matched by text).
+// created market's answer probabilities with the seeds (matched by text),
+// including the server's "Other" (100 minus the listed seeds), and its shape:
+// the answer count, the "Other" answer and the answer mode.
 export function seedMismatch(payload: CreatePayload, market: MarketLike) {
   if (!payload.answerProbs?.length || !payload.answers?.length) return undefined
-  const byText = new Map(
-    (market.answers ?? []).map((a) => [a.text.trim(), a.probability])
-  )
+  const withOther = hasOtherAnswer(payload)
+  const marketAnswers = market.answers ?? []
+  const isOther = (a: { text: string; isOther?: boolean }) =>
+    a.isOther === true ||
+    (a.isOther === undefined && a.text.trim() === OTHER_ANSWER_TEXT)
+  const listed = marketAnswers.filter((a) => !isOther(a))
+  const byText = new Map(listed.map((a) => [a.text.trim(), a.probability]))
   for (let i = 0; i < payload.answers.length; i++) {
     const want = payload.answerProbs[i] / 100
     const got = byText.get(payload.answers[i].trim())
@@ -1309,6 +1367,29 @@ export function seedMismatch(payload: CreatePayload, market: MarketLike) {
         1
       )}%, not the seeded ${payload.answerProbs[i]}%`
   }
+  const others = marketAnswers.filter(isOther)
+  if (withOther) {
+    if (others.length !== 1)
+      return `expected one "${OTHER_ANSWER_TEXT}" answer, found ${others.length}`
+    const want = (100 - payload.answerProbs.reduce((a, b) => a + b, 0)) / 100
+    const got = others[0].probability
+    if (got === undefined || !Number.isFinite(got))
+      return `answer "${OTHER_ANSWER_TEXT}" has no readable probability`
+    if (Math.abs(got - want) > 0.015)
+      return `answer "${OTHER_ANSWER_TEXT}" opened at ${(got * 100).toFixed(
+        1
+      )}%, not the seeded ${(want * 100).toFixed(1)}%`
+  }
+  const expected = payload.answers.length + (withOther ? 1 : 0)
+  if (marketAnswers.length !== expected)
+    return `market has ${marketAnswers.length} answers, expected ${expected}`
+  if (
+    market.addAnswersMode !== undefined &&
+    market.addAnswersMode !== (payload.addAnswersMode ?? 'DISABLED')
+  )
+    return `market's addAnswersMode is ${market.addAnswersMode}, expected ${
+      payload.addAnswersMode ?? 'DISABLED'
+    }`
   return undefined
 }
 
@@ -1455,8 +1536,14 @@ export async function applyManifest(
       if (colors.length) {
         if (!record.contractId || !api.setAnswerColor)
           throw new Error('missing contract ID or answer-color client')
-        const edits = colors.map(({ label, color }) => {
-          const answer = record.answers?.find((a) => a.text === label)
+        const edits = colors.map(({ label, color, isOther }) => {
+          const answer = isOther
+            ? record.answers?.find(
+                (a) =>
+                  a.isOther === true ||
+                  (a.isOther === undefined && a.text === label)
+              )
+            : record.answers?.find((a) => a.text === label && !a.isOther)
           if (!answer) throw new Error(`cannot find answer: ${label}`)
           return { answerId: answer.id, color }
         })
@@ -1783,11 +1870,20 @@ const toMarketLike = (m: any): MarketLike => ({
   isResolved: m.isResolved,
   resolution: m.resolution,
   closeTime: m.closeTime,
+  ...(m.addAnswersMode !== undefined
+    ? { addAnswersMode: m.addAnswersMode }
+    : {}),
+  ...(m.shouldAnswersSumToOne !== undefined
+    ? { shouldAnswersSumToOne: m.shouldAnswersSumToOne }
+    : {}),
   answers: (m.answers ?? []).map((a: any) => ({
     id: a.id,
     text: a.text,
     resolution: a.resolution,
     probability: typeof a.probability === 'number' ? a.probability : undefined,
+    // Full markets (read by id) say which answer is the server's "Other";
+    // search results (lite answers) don't.
+    ...(typeof a.isOther === 'boolean' ? { isOther: a.isOther } : {}),
   })),
 })
 
@@ -2067,7 +2163,14 @@ export function buildDashboardMapping(
           officialSourceUrl: entry.measure.officialSourceUrl,
         },
       }
-    const byText = new Map((s?.answers ?? []).map((a) => [a.text, a.id]))
+    const byText = new Map(
+      (s?.answers ?? []).filter((a) => !a.isOther).map((a) => [a.text, a.id])
+    )
+    const otherId = (s?.answers ?? []).find(
+      (a) =>
+        a.isOther === true ||
+        (a.isOther === undefined && a.text === OTHER_ANSWER_TEXT)
+    )?.id
     return {
       raceKey: entry.raceKey,
       list: entry.dashboard.list,
@@ -2080,7 +2183,7 @@ export function buildDashboardMapping(
       answers: (entry.answerMeta ?? []).map((a) => ({
         ...a,
         answerId:
-          (live && byText.get(a.label)) ||
+          (live && (a.isOther ? otherId : byText.get(a.label))) ||
           `PENDING:${entry.raceKey}#${a.label}`,
       })),
       status:
