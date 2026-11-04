@@ -1,3 +1,4 @@
+import { keyBy } from 'lodash'
 import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { getCpmmInitialLiquidity } from 'common/antes'
 import {
@@ -6,6 +7,8 @@ import {
   CPMMMultiContract,
   isMultiCpmm,
 } from 'common/contract'
+import { APIError } from 'common/api/utils'
+import { addSubsidyToOpenAnswers } from './supabase/answers'
 import { updateContract } from './supabase/contracts'
 import { SupabaseDirectClient } from './supabase/init'
 import { insertLiquidity } from './supabase/liquidity'
@@ -66,6 +69,34 @@ export async function generateAntes(
         token: 'M$',
         fromType: 'USER',
       })
+      if (isMultiCpmm(contract) && !contract.shouldAnswersSumToOne) {
+        // The answers take it as their own pending subsidy, in equal shares,
+        // as a later whole-market add does (addSubsidyToOpenAnswers).
+        await updateContract(tx, contract.id, {
+          totalLiquidity: FieldVal.increment(drizzledAmount),
+        })
+        const answers = await addSubsidyToOpenAnswers(
+          tx,
+          contract.id,
+          drizzledAmount
+        )
+        if (answers.length === 0)
+          throw new APIError(400, 'Multiple choice markets need an answer')
+        // The market's creation announces its answers with their subsidy.
+        const updatedById = keyBy(answers, 'id')
+        contract.answers = contract.answers.map((a) => updatedById[a.id] ?? a)
+        await insertLiquidity(
+          tx,
+          getNewLiquidityProvision(
+            providerId,
+            drizzledAmount,
+            contract,
+            undefined,
+            answers.map((a) => a.id)
+          )
+        )
+        return
+      }
       const newLiquidityProvision = getNewLiquidityProvision(
         providerId,
         drizzledAmount,

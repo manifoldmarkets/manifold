@@ -8,6 +8,11 @@ export type LiquidityProvision = {
   // contract has multiple answers. Furthermore, it's only set on answers added after the question was created
   // (after this commit), and house subsidies.
   answerId?: string
+  // On an independent multiple choice market, liquidity added to the whole
+  // market (no answerId) is split equally among the answers open when it's
+  // added, as each one's pending subsidy. These are those answers. Provisions
+  // made before this was recorded don't have it.
+  answerIds?: string[]
   amount: number // Ṁ quantity
   // On a withdrawal's return of this provider's share: who withdrew it
   withdrawnBy?: string
