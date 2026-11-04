@@ -527,11 +527,15 @@ export const applyMetricToSummary = <
       })
     )
   }
-  // These are set by the trigger:
+  // The update_null_answer_metrics trigger overwrites these with values
+  // rolled up from the answer rows whenever an answer row is written:
   // summaryMetric.hasNoShares
   // summaryMetric.hasYesShares
   // summaryMetric.hasShares
   // summaryMetric.loan
+  // summaryMetric.marginLoan
+  // Loan endpoints write only answer rows and rely on the trigger, so the
+  // loan and marginLoan deltas above must match its sums.
   return summary
 }
 
