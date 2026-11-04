@@ -100,7 +100,10 @@ export function RaceCard(props: {
   const start = startOf(range, contract, now)
   const hero = variant === 'hero'
 
+  // Bets open once the full market has loaded (the page ships only the
+  // listed answers); until then the Bet buttons are disabled.
   const openBet = (id: string) => {
+    if (!hasLoaded) return
     track('bet intent', { location: `election 2028 ${chart.key} chart` })
     setBetId(id)
   }
@@ -146,6 +149,7 @@ export function RaceCard(props: {
           maxRows={hero ? 8 : 5}
           columns={hero ? 2 : 1}
           answerCount={hasLoaded ? contract.answers.length : chart.answerCount}
+          betDisabled={!hasLoaded}
         />
       </div>
       <PhotoCredits

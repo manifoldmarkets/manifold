@@ -4,8 +4,11 @@ The headline markets the 2028+ elections page needs, owned by
 @ManifoldPolitics: nominees and running mates, the popular vote, electoral
 votes, the tipping point, control of Congress, early primary contests, the
 2027 off-year races and the 2030/2032 cycles. 35 markets, about Ṁ61k at
-current answer counts (Ṁ13k + Ṁ10k for the two 2028 nominee markets at the
-Ṁ10,000 tier; the rest at Ṁ1,000).
+the answer counts of 5 Nov 2026. A market's cost is its tier per 10 answers
+(Other included): at the Ṁ10,000 tier each answer costs Ṁ1,000, so the two
+2028 nominee markets cost Ṁ13k and Ṁ10k with that day's 12 and 9 people at
+≥ 1%, and up to Ṁ21k each if 20 qualify. The rest are at the Ṁ1,000 tier.
+Run `--online` for the exact figures before an apply.
 
 Per-state presidential, Senate-seat, governor and House-district markets are
 **not** here: the generic party-market pipeline on branch
@@ -90,7 +93,7 @@ read at run time, or from documented static priors:
    npx ts-node --transpile-only elections-2028/create-national-markets.ts --apply `
      --env prod --creator-username ManifoldPolitics `
      --state C:\Users\User\elections-national-prod\state.prod.json --init-state `
-     --max-mana 13000 --only "^2028-dem-nominee$"
+     --max-mana 21000 --only "^2028-dem-nominee$"
    ```
    Check the market page (answers, odds, faces, topics, description), and that
    nobody got a notification.
@@ -98,7 +101,7 @@ read at run time, or from documented static priors:
    ```powershell
    npx ts-node --transpile-only elections-2028/create-national-markets.ts --apply `
      --env prod --creator-username ManifoldPolitics `
-     --state C:\Users\User\elections-national-prod\state.prod.json --max-mana 62000
+     --state C:\Users\User\elections-national-prod\state.prod.json --max-mana 70000
    ```
    About 35 markets × (create, read back, publish) at `--pace-ms 400`: a few
    minutes. Avoid 07:45–08:15 UTC (the API restarts daily at 08:00).

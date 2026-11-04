@@ -40,6 +40,9 @@ export type MarketRow = SourceMarket & {
   url?: string
   closeTime?: number
   createdTime?: number
+  mechanism?: string
+  addAnswersMode?: string
+  shouldAnswersSumToOne?: boolean
 }
 
 export type Group = { id: string; slug: string; name: string }
@@ -71,6 +74,9 @@ export function toMarketRow(m: any): MarketRow {
     url: m.url,
     closeTime: m.closeTime === undefined ? undefined : Number(m.closeTime),
     createdTime: m.createdTime === undefined ? undefined : Number(m.createdTime),
+    mechanism: m.mechanism,
+    addAnswersMode: m.addAnswersMode,
+    shouldAnswersSumToOne: m.shouldAnswersSumToOne,
   }
 }
 

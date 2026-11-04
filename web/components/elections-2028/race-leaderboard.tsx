@@ -18,6 +18,7 @@ export function RaceLeaderboard(props: {
   onBet: (answerId: string) => void
   maxRows?: number
   answerCount: number
+  betDisabled?: boolean
   columns?: 1 | 2
   className?: string
 }) {
@@ -30,6 +31,7 @@ export function RaceLeaderboard(props: {
     onBet,
     maxRows = 8,
     answerCount,
+    betDisabled,
     columns = 1,
     className,
   } = props
@@ -80,7 +82,8 @@ export function RaceLeaderboard(props: {
             <button
               type="button"
               onClick={() => onBet(s.id)}
-              className="border-primary-500 text-primary-700 hover:bg-primary-500 shrink-0 rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors hover:text-white"
+              disabled={betDisabled}
+              className="border-primary-500 text-primary-700 enabled:hover:bg-primary-500 shrink-0 rounded-md border px-2.5 py-1 text-xs font-semibold transition-colors enabled:hover:text-white disabled:opacity-50"
               aria-label={`Bet on ${s.candidate.name}, ${formatOdds(s.prob)}`}
             >
               Bet

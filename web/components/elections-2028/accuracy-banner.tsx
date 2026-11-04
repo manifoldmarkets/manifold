@@ -7,7 +7,9 @@ import { track } from 'web/lib/service/analytics'
 // the two chamber-control markets, measured at each checkpoint of the final
 // week before polls closed (see /election2026). The headline only makes the
 // claim the numbers support (accuracyStory).
-export const ACCURACY_HEADLINE = 'In 2026, Manifold beat the real-money markets'
+// One real-money venue was measured, so the copy says "real money", singular,
+// as /election2026 does.
+export const ACCURACY_HEADLINE = 'In 2026, Manifold beat real money'
 
 const pts = (n: number) => `${Math.abs(n)} ${Math.abs(n) === 1 ? 'pt' : 'pts'}`
 
@@ -43,10 +45,10 @@ export function AccuracyBanner(props: { story: AccuracyStory }) {
           </h2>
           <p className="text-ink-700 text-sm sm:text-base">
             {beatRealMoney
-              ? `At all ${checkpoints} checkpoints in the final week, Manifold was closer to the results than the real-money prediction markets, in both the Senate and the House.${resultLine(
+              ? `At all ${checkpoints} checkpoints in the final week, Manifold was closer to the results than real-money trading, in both the Senate and the House.${resultLine(
                   props.story
                 )}`
-              : 'Watch Manifold and the real-money markets, checkpoint by checkpoint, from a week out to election night.'}
+              : 'Watch Manifold and real-money trading, checkpoint by checkpoint, from a week out to election night.'}
           </p>
           <span className="text-primary-700 mt-1 text-sm font-semibold group-hover:underline">
             Watch the 2026 replay →
@@ -67,8 +69,12 @@ export function AccuracyBanner(props: { story: AccuracyStory }) {
                   {pts(c.points)}
                 </span>
                 <span className="text-ink-600 text-xs">
-                  {c.resolved ? 'closer than real money' : 'vs real money'},{' '}
-                  {c.ahead}/{c.compared} checkpoints
+                  {!c.resolved
+                    ? 'vs real money'
+                    : c.points >= 0
+                    ? 'closer than real money'
+                    : 'further than real money'}
+                  , {c.ahead}/{c.compared} checkpoints
                 </span>
               </div>
             ))}

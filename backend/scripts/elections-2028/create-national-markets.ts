@@ -19,7 +19,7 @@
 //     npx ts-node --transpile-only elections-2028/create-national-markets.ts --apply \
 //       --env prod --creator-username ManifoldPolitics \
 //       --state C:\Users\User\elections-national-prod\state.prod.json --init-state \
-//       --max-mana 15000 --only "^2028-dem-nominee$"
+//       --max-mana 21000 --only "^2028-dem-nominee$"
 //
 // Options: --only <regex on key>  --out <dir>  --pace-ms <ms>  --loud (create
 // public directly; notifies followers in-app — don't)  --init-state (first
@@ -36,6 +36,7 @@ import {
   MANIFOLD_POLITICS_USERNAME,
   needsOnline,
   priceMismatches,
+  shapeMismatches,
   ResolvedSeed,
   resolveSeed,
   SERIES,
@@ -718,7 +719,11 @@ async function apply(entries: Entry[], args: Args) {
         throw new StopRun(`${e.key}: state reserved id ${r.reservedId} ≠ ${reservedId}`)
       if (r.status === 'published') continue
       if (r.status === 'stopped') {
-        console.warn(`${e.key}: stopped earlier (${r.error}); fix it and clear the record to retry`)
+        console.warn(
+          r.contractId || r.seed
+            ? `${e.key}: stopped earlier (${r.error}). Fix the cause, then set its status back to "creating" (keep "seed") to verify and publish ${r.url ?? r.reservedId}.`
+            : `${e.key}: stopped earlier (${r.error}). Fix the cause, then delete its record to retry.`
+        )
         continue
       }
 
@@ -801,6 +806,8 @@ async function apply(entries: Entry[], args: Args) {
           const off = priceMismatches(r.seed!, m!)
           if (off.length) stop(r, `opening prices off: ${off.join('; ')}`)
         }
+        const shape = shapeMismatches(e, r.seed!, m!)
+        if (shape.length) stop(r, `market shape off: ${shape.join('; ')}`)
         r.status = quiet ? 'verified' : 'published'
         touch(r)
         save()

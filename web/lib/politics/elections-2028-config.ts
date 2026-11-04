@@ -31,8 +31,6 @@ export const NATIONAL_2028 = {
   popularVote: '9pyRSU5A6n',
   // "Which party will control congress after the 2028 elections" (13).
   congress: 'dcN5E02Ocl',
-  // "Will Republicans win the Senate in the 2028 elections?" (binary, YES = R).
-  senate: 'SUTs1ggYgoddnFyALjjV',
 } as const
 
 // The three markets drawn as face-ended line charts, in tab order.

@@ -977,20 +977,24 @@ export async function resolveSeed(
     case 'ev-buckets': {
       const m = await readOpen(need(), seed.partySourceId, 'multi')
       const s = partyShares(m.answers!)
-      const pDem = s.dem / (s.dem + s.rep)
+      // P(D reaches 270) is P(D wins): a third-party win leaves D short too,
+      // so the raw Democratic share, not its share of D+R.
+      const pDem = s.dem
       return {
         outcome: 'MULTIPLE_CHOICE',
         answers: EV_BUCKETS.map((b) => b.label),
         answerProbs: evBucketSeeds(pDem, seed.sigma),
         basis: `Normal(σ=${seed.sigma}) with P(≥270) = ${(pDem * 100).toFixed(
           1
-        )}% (D share of D+R in ${seed.partySourceId})`,
+        )}% (Democratic share in ${seed.partySourceId})`,
       }
     }
     case 'margin-buckets': {
       const m = await readOpen(need(), seed.popularVoteSourceId, 'multi')
       const s = partyShares(m.answers!)
-      const pDem = s.dem / (s.dem + s.rep)
+      // P(D wins the popular vote), raw: the margin is D minus R, and a
+      // third-party plurality isn't a D lead.
+      const pDem = s.dem
       return {
         outcome: 'MULTIPLE_CHOICE',
         answers: MARGIN_BUCKETS.map((b) => b.label),
@@ -1202,6 +1206,41 @@ export function buildPayload(opts: {
     shouldAnswersSumToOne: true,
     ...(prefix.length ? { answerImageUrls: prefix.slice(0, seed.answers.length) } : {}),
   }
+}
+
+// The created market's shape, read back before publishing: type, close time,
+// answer mode, sum-to-one and answer count must be what we sent. (The public
+// API doesn't return visibility; the create payload sets it unlisted.)
+export function shapeMismatches(
+  entry: Entry,
+  seed: ResolvedSeed,
+  market: {
+    outcomeType: string
+    closeTime?: number
+    addAnswersMode?: string
+    shouldAnswersSumToOne?: boolean
+    answers?: unknown[]
+  }
+): string[] {
+  const out: string[] = []
+  if (market.outcomeType !== entry.outcome)
+    out.push(`outcomeType ${market.outcomeType}, expected ${entry.outcome}`)
+  const close = Date.parse(entry.closeTime)
+  if (
+    market.closeTime === undefined ||
+    Math.abs(market.closeTime - close) > 60_000
+  )
+    out.push(`closeTime ${market.closeTime}, expected ${close}`)
+  if (entry.outcome === 'MULTIPLE_CHOICE' && seed.outcome === 'MULTIPLE_CHOICE') {
+    if (market.addAnswersMode !== entry.addAnswersMode)
+      out.push(`addAnswersMode ${market.addAnswersMode}, expected ${entry.addAnswersMode}`)
+    if (market.shouldAnswersSumToOne !== true)
+      out.push(`shouldAnswersSumToOne ${market.shouldAnswersSumToOne}, expected true`)
+    const expected = seed.answers.length + (entry.addAnswersMode !== 'DISABLED' ? 1 : 0)
+    const got = market.answers?.length ?? 0
+    if (got !== expected) out.push(`${got} answers, expected ${expected}`)
+  }
+  return out
 }
 
 // Opening prices read back from the created market, compared to the seed.

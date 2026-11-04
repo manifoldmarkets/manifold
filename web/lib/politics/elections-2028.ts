@@ -164,7 +164,6 @@ export type Elections2028PageProps = {
   partyContract: Contract | null
   popularVoteContract: Contract | null
   congressContract: Contract | null
-  senateContract: Contract | null
   charts: RaceChart[]
   movers: Mover[]
   demVpContract: Contract | null
@@ -191,34 +190,59 @@ const isMulti = (c: Contract | undefined | null): c is MultiContract =>
 
 type PointRow = { createdTime: number; probAfter: number; probBefore: number }
 
+// At most a few bet-points queries in flight per revalidation: each is a
+// sampled scan of contract_bets, and ~50 at once is a burst the read workers
+// don't need.
+const MAX_POINT_QUERIES = 6
+let inFlight = 0
+const waiting: (() => void)[] = []
+async function limited<T>(task: () => Promise<T>): Promise<T> {
+  if (inFlight >= MAX_POINT_QUERIES)
+    await new Promise<void>((resolve) => waiting.push(resolve))
+  inFlight++
+  try {
+    return await task()
+  } finally {
+    inFlight--
+    waiting.shift()?.()
+  }
+}
+
 const fetchPoints = async (
   contractId: string,
   answerId: string,
   afterTime: number,
   beforeTime: number,
-  limit: number
+  limit: number,
+  // Include the zero-share redemptions that record how other answers' trades
+  // move this answer (sum-to-one markets). Accurate, but a scan over years of
+  // a big market takes ~50 s, so only the recent window asks for them (1-5 s).
+  withRedemptions: boolean
 ): Promise<PointRow[]> => {
   if (beforeTime <= afterTime) return []
-  return (await api('bet-points', {
-    contractId,
-    answerId,
-    afterTime,
-    beforeTime,
-    limit,
-    // Real bets only. Zero-share redemptions would add the moves other
-    // answers' trades cause, but on a big market that query takes ~50s; an
-    // answer's own trades sample its price densely enough.
-    filterRedemptions: true,
-  })) as unknown as PointRow[]
+  return (await limited(() =>
+    api('bet-points', {
+      contractId,
+      answerId,
+      afterTime,
+      beforeTime,
+      limit,
+      ...(withRedemptions
+        ? { filterRedemptions: false, includeZeroShareRedemptions: true }
+        : { filterRedemptions: true }),
+    })
+  )) as unknown as PointRow[]
 }
 
 const RECENT_WINDOW = 30 * DAY
 
 // An answer's sampled history (the bet-points API returns an even random
 // sample when there are more bets than `limit`). Two windows so each caches
-// well: everything before the last 30 days changes once a day, the last 30
-// days once an hour. `long: false` fetches only the recent window, enough for
-// the weekly move. The live price is the last point.
+// well: everything before the last 30 days changes once a day (its own trades
+// only), the last 30 days once an hour (every price move, including the ones
+// other answers' trades cause, so the 7-day change is exact). `long: false`
+// fetches only the recent window, enough for the weekly move. The live price
+// is the last point.
 async function getAnswerHistory(
   contract: MultiContract,
   answerId: string,
@@ -237,10 +261,11 @@ async function getAnswerHistory(
           answerId,
           contract.createdTime,
           recentStart,
-          1500
+          1500,
+          false
         )
       : Promise.resolve([] as PointRow[]),
-    fetchPoints(contract.id, answerId, recentStart, hourFloor, 2000),
+    fetchPoints(contract.id, answerId, recentStart, hourFloor, 2000, true),
   ])
   const rows = [...old, ...recent]
   const points: TimePoint[] = rows.map((r) => [r.createdTime, r.probAfter])
@@ -356,7 +381,7 @@ function getUnitOdds(byId: Record<string, Contract>): UnitOdds[] {
         creatorUsername: contract!.creatorUsername,
       }
     }
-    return { key: unit.key, pDem: UNIT_PRIORS_2028[unit.key] ?? 0.5 }
+    return { key: unit.key, pDem: UNIT_PRIORS_2028[unit.key] ?? NaN }
   })
 }
 
@@ -472,10 +497,9 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
   ])
 
   const [fetched, scores, unprecedentedFound, perps] = await Promise.all([
-    getContracts(db, ids, 'id', true).catch((e) => {
-      console.error('elections 2028 contracts failed', e)
-      return [] as Contract[]
-    }),
+    // No catch: without these markets the page is empty, and a failed
+    // revalidation keeps serving the last good one.
+    getContracts(db, ids, 'id', true),
     getScores(db),
     Promise.all(
       UNPRECEDENTED_POLITICS_SLUGS.map((slug) =>
@@ -520,7 +544,16 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
 
   let model: ElectoralModel | null = null
   try {
-    model = getElectoralModel(getUnitOdds(byId))
+    // Only when every unit has a market or a documented prior: a missing,
+    // unlisted or resolved state market must not turn into a coin flip.
+    const units = getUnitOdds(byId)
+    const unpriced = units.filter((u) => !Number.isFinite(u.pDem))
+    if (unpriced.length === 0) model = getElectoralModel(units)
+    else
+      console.error(
+        'electoral model skipped; no odds for',
+        unpriced.map((u) => u.key).join(', ')
+      )
   } catch (e) {
     console.error('electoral model failed', e)
   }
@@ -552,7 +585,6 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
     partyContract: slim(get(NATIONAL_2028.party)),
     popularVoteContract: slim(get(NATIONAL_2028.popularVote)),
     congressContract: slim(get(NATIONAL_2028.congress)),
-    senateContract: slim(get(NATIONAL_2028.senate)),
     charts,
     movers,
     demVpContract: slim(get(NATIONAL_2028.demVp)),
