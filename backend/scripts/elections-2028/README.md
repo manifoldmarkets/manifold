@@ -2,13 +2,27 @@
 
 The headline markets the 2028+ elections page needs, owned by
 @ManifoldPolitics: nominees and running mates, the popular vote, electoral
-votes, the tipping point, control of Congress, early primary contests, the
-2027 off-year races and the 2030/2032 cycles. 35 markets, about Ṁ61k at
-the answer counts of 5 Nov 2026. A market's cost is its tier per 10 answers
-(Other included): at the Ṁ10,000 tier each answer costs Ṁ1,000, so the two
-2028 nominee markets cost Ṁ13k and Ṁ10k with that day's 12 and 9 people at
-≥ 1%, and up to Ṁ21k each if 20 qualify. The rest are at the Ṁ1,000 tier.
-Run `--online` for the exact figures before an apply.
+votes, the tipping point, control of Congress, a 2028 presidential primary
+for each party in every state and DC, the 2027 off-year races and the
+2030/2032 cycles. 129 markets (27 national + 102 state primaries), about
+Ṁ154k at the answer counts of 5 Nov 2026. A market's cost is its tier per
+10 answers (Other included): at the Ṁ10,000 tier each answer costs Ṁ1,000,
+so the two 2028 nominee markets cost Ṁ13k and Ṁ11k with that day's 12 and
+10 people at ≥ 1%, and up to Ṁ21k each if 20 qualify. The rest are at the
+Ṁ1,000 tier: Ṁ1,000 for up to 10 answers, which covers every state primary
+(three candidates + Other). Run `--online` for the exact figures before an
+apply.
+
+## Answers
+
+| Mode | Markets | Who adds answers |
+|---|---|---|
+| fixed (`DISABLED`) | buckets, chamber control, trifecta, Virginia chambers | Nobody; no "Other" |
+| curated (`ONLY_CREATOR`) | nominees, running mates, VP winner, tipping point, 2032 winner; party markets (2027 governors, 2028 popular vote) | @ManifoldPolitics, with an "Other" answer. Party markets open as Democratic Party / Republican Party / Other; @ManifoldPolitics can add another party or an independent if one becomes competitive |
+| open (`ANYONE`) | the 102 state primaries | Anyone, with an "Other" answer. They open with the three likeliest candidates (Tod, 5 Nov 2026: "seed it with maybe 2-3 likely people and open answer 'other' option") |
+
+Chamber-control markets stay Democratic/Republican only: independents count
+with the party they caucus with, so control can't go to anyone else.
 
 Per-state presidential, Senate-seat, governor and House-district markets are
 **not** here: the generic party-market pipeline on branch
@@ -18,7 +32,7 @@ winner market (`t9s0m8tf2v`), so there is no new one.
 | File | What |
 |---|---|
 | `national-markets.ts` | The manifest (`ENTRIES`, series `us-national-2028-v1`), resolution criteria, validation, seed resolution, payloads, price verification |
-| `seeds.ts` | Pure seed math: name normalization, copying a community market, derived VP odds, normal-distribution buckets, early-state flattening, reserved ids |
+| `seeds.ts` | Pure seed math: name normalization, copying a community market, derived VP odds, normal-distribution buckets, state-primary flattening with home-state boosts, reserved ids |
 | `photos.ts` | Candidate photo lookup for answer images (reads the web candidate registry and `credits.json` as text; backend code can't import web) |
 | `api.ts` | Paced, retrying API client; writes refuse to run in dry runs |
 | `create-national-markets.ts` | The CLI |
@@ -67,8 +81,8 @@ read at run time, or from documented static priors:
 | copied | 2028 D/R nominees, D/R VP nominees, 2032 D nominee, 2032 winner | Every person at ≥ 1% in the deepest community market (≤ 20), clamped to [1, 99]; the source's "Other" and long tail go to our "Other" (≥ 1%) |
 | derived | 2028 VP winner | P(X) = P(X is the D VP nominee)·P(D wins) + P(X is the R VP nominee)·P(R wins), party odds from `8p6sy5snq9` |
 | buckets | 2028 Democratic electoral votes; popular-vote margin | Normal(μ, σ=60 EV / 4.5 pts) with μ placed so P(270+) (or P(D>0)) equals the community odds; buckets floored at 1% |
-| flattened | 8 early-state contests | Nominee market weights ^0.8, top 12; a single state is less predictable than the nomination |
-| party | 2028 popular vote (3-way), 2028/2030 Senate control | From the community market's D/R shares |
+| flattened | 102 state primaries | Nominee market weights ^0.8, ×3 for candidates from that state (`HOME_STATES` in `seeds.ts`), top 3; a single state is less predictable than the nomination. Everyone else starts in "Other" |
+| party | 2028 popular vote (D/R + Other), 2028/2030 Senate control | From the community market's D/R shares |
 | static | everything else | Priors documented in the manifest (`note`) |
 
 ## Runbook (from `backend/scripts`)
@@ -101,10 +115,11 @@ read at run time, or from documented static priors:
    ```powershell
    npx ts-node --transpile-only elections-2028/create-national-markets.ts --apply `
      --env prod --creator-username ManifoldPolitics `
-     --state C:\Users\User\elections-national-prod\state.prod.json --max-mana 70000
+     --state C:\Users\User\elections-national-prod\state.prod.json --max-mana 160000
    ```
-   About 35 markets × (create, read back, publish) at `--pace-ms 400`: a few
-   minutes. Avoid 07:45–08:15 UTC (the API restarts daily at 08:00).
+   About 129 markets × (create, read back, publish) at `--pace-ms 400`:
+   roughly 10–15 minutes. Avoid 07:45–08:15 UTC (the API restarts daily at
+   08:00).
 5. Afterwards, wire the new markets into the elections page config (slugs
    from the state file's `url`s).
 

@@ -51,7 +51,6 @@ export const ELECTION_DAYS: Record<Cycle, string> = {
 
 export const DEM = 'Democratic Party'
 export const REP = 'Republican Party'
-export const THIRD = 'Another party or independent'
 
 // Community markets the seeds are read from (prod ids, read at run time).
 export const SOURCES = {
@@ -87,7 +86,15 @@ export type SeedSpec =
   | { kind: 'source-three-party'; sourceId: string; otherPct: number }
   | { kind: 'ev-buckets'; partySourceId: string; sigma: number }
   | { kind: 'margin-buckets'; popularVoteSourceId: string; sigma: number }
-  | { kind: 'flattened-nominee'; nomineeSourceId: string; power: number; maxAnswers: number }
+  | {
+      kind: 'flattened-nominee'
+      nomineeSourceId: string
+      power: number
+      maxAnswers: number
+      // Postal code of the contest's state; its own candidates get homeBoost.
+      homeState?: string
+      homeBoost?: number
+    }
 
 type Base = {
   key: string
@@ -107,9 +114,11 @@ export type BinaryEntry = Base & {
 
 export type MultiEntry = Base & {
   outcome: 'MULTIPLE_CHOICE'
-  // DISABLED: a fixed set of answers (no "Other"); ONLY_CREATOR: candidate
-  // lists @ManifoldPolitics curates, with an "Other" answer.
-  addAnswersMode: 'DISABLED' | 'ONLY_CREATOR'
+  // DISABLED: a fixed set of answers (no "Other"); ONLY_CREATOR: answers
+  // @ManifoldPolitics curates (candidates, or parties it may add to), with an
+  // "Other" answer; ANYONE: open answers for fields nobody knows yet (state
+  // primaries), with an "Other" answer.
+  addAnswersMode: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
   // The fixed answers (DISABLED markets); candidate markets take theirs from
   // the seed.
   answers?: string[]
@@ -126,6 +135,13 @@ const HUB =
   'Part of [Manifold Politics](https://manifold.markets/ManifoldPolitics) election coverage: see every race at [manifold.markets/election](https://manifold.markets/election).'
 const CURATED =
   'Answers are curated by @ManifoldPolitics, who will add candidates as they emerge (ask in the comments). "Other" covers everyone not listed; a bet on "Other" includes any answer added later.'
+const OPEN =
+  'Anyone can add a candidate as an answer. "Other" covers everyone not listed; a bet on "Other" includes any answer added later.'
+const PARTY_ANSWERS =
+  'Answers are the Democratic Party, the Republican Party and "Other". @ManifoldPolitics may add another party or an independent candidate as an answer if one becomes competitive; a bet on "Other" includes any answer added later.'
+// Who counts as which answer in a race between parties.
+const partyRule = (whose: string) =>
+  `A winner who is neither the Democratic nor the Republican nominee resolves to the answer @ManifoldPolitics has added for ${whose} party or for them, if there is one, and otherwise to "Other".`
 const SEEDED =
   "Opening odds were copied from Manifold's most-traded community market on the same question when this market was created."
 const DERIVED =
@@ -157,27 +173,50 @@ const vpNomineeDescription = (party: 'Democratic' | 'Republican') =>
     HUB
   )
 
-type EarlyState = {
-  state: 'Iowa' | 'New Hampshire' | 'South Carolina' | 'Nevada'
-  contest: 'caucuses' | 'primary' | 'contest'
-  slug: string
+// Every state and DC holds a 2028 presidential contest for each party. The
+// first four keep the names they're known by; the rest say "primaries", which
+// covers a caucus too (whichever a state holds is set in its own description).
+type PrimaryState = {
+  state: string
+  code: string
+  contest?: 'caucuses' | 'primary' | 'contest'
 }
-const EARLY_STATES: EarlyState[] = [
-  { state: 'Iowa', contest: 'caucuses', slug: 'iowa' },
-  { state: 'New Hampshire', contest: 'primary', slug: 'new-hampshire' },
-  { state: 'South Carolina', contest: 'primary', slug: 'south-carolina' },
-  { state: 'Nevada', contest: 'contest', slug: 'nevada' },
+export const PRIMARY_STATES: PrimaryState[] = [
+  { state: 'Iowa', code: 'IA', contest: 'caucuses' },
+  { state: 'New Hampshire', code: 'NH', contest: 'primary' },
+  { state: 'South Carolina', code: 'SC', contest: 'primary' },
+  { state: 'Nevada', code: 'NV', contest: 'contest' },
+  ...(
+    [
+      ['Alabama', 'AL'], ['Alaska', 'AK'], ['Arizona', 'AZ'], ['Arkansas', 'AR'],
+      ['California', 'CA'], ['Colorado', 'CO'], ['Connecticut', 'CT'], ['Delaware', 'DE'],
+      ['District of Columbia', 'DC'], ['Florida', 'FL'], ['Georgia', 'GA'], ['Hawaii', 'HI'],
+      ['Idaho', 'ID'], ['Illinois', 'IL'], ['Indiana', 'IN'], ['Kansas', 'KS'],
+      ['Kentucky', 'KY'], ['Louisiana', 'LA'], ['Maine', 'ME'], ['Maryland', 'MD'],
+      ['Massachusetts', 'MA'], ['Michigan', 'MI'], ['Minnesota', 'MN'], ['Mississippi', 'MS'],
+      ['Missouri', 'MO'], ['Montana', 'MT'], ['Nebraska', 'NE'], ['New Jersey', 'NJ'],
+      ['New Mexico', 'NM'], ['New York', 'NY'], ['North Carolina', 'NC'], ['North Dakota', 'ND'],
+      ['Ohio', 'OH'], ['Oklahoma', 'OK'], ['Oregon', 'OR'], ['Pennsylvania', 'PA'],
+      ['Rhode Island', 'RI'], ['South Dakota', 'SD'], ['Tennessee', 'TN'], ['Texas', 'TX'],
+      ['Utah', 'UT'], ['Vermont', 'VT'], ['Virginia', 'VA'], ['Washington', 'WA'],
+      ['West Virginia', 'WV'], ['Wisconsin', 'WI'], ['Wyoming', 'WY'],
+    ] as const
+  ).map(([state, code]) => ({ state, code })),
 ]
 
-const earlyContestDescription = (
-  s: EarlyState,
+// "the District of Columbia" reads right in a sentence; states don't take "the".
+const inText = (s: PrimaryState) =>
+  s.code === 'DC' ? 'the District of Columbia' : s.state
+
+const primaryDescription = (
+  s: PrimaryState,
   party: 'Democratic' | 'Republican'
 ) =>
   desc(
-    `Resolves to the candidate who wins the ${s.state} ${party} presidential nominating contest for 2028: the candidate with the most votes in its presidential preference vote, per certified results (or the Associated Press count if results are not certified within a week). If a contest reports no vote totals, the candidate allocated the most national convention delegates from it wins.`,
-    `Which contest counts: if the state holds a state-run ${party} presidential primary and the state party also holds a separate caucus, the contest that allocates ${s.state}'s national convention delegates counts. If only a state-run primary is held, it counts even if the national party does not award delegates from it. If "uncommitted", "none of these candidates" or a similar line gets the most votes, resolves to "Other". If no ${party} presidential contest is held in ${s.state} before the party formally chooses its 2028 nominee, resolves N/A.`,
-    CURATED,
-    'Opening odds were derived from Manifold\'s 2028 nominee market when this market was created, flattened because a single state is less predictable than the nomination.',
+    `Resolves to the candidate who wins the ${inText(s)} ${party} presidential nominating contest for 2028: the candidate with the most votes in its presidential preference vote, per certified results (or the Associated Press count if results are not certified within a week). If a contest reports no vote totals, the candidate allocated the most national convention delegates from it wins.`,
+    `Which contest counts: if ${inText(s)} holds a state-run ${party} presidential primary and the party also holds a separate caucus there, the contest that allocates ${inText(s)}'s national convention delegates counts. If only a state-run primary is held, it counts even if the national party does not award delegates from it. If "uncommitted", "none of these candidates" or a similar ballot line gets the most votes, resolves to that line's answer if one has been added, otherwise to "Other". If no ${party} presidential contest is held in ${inText(s)} before the party formally chooses its 2028 nominee, resolves N/A.`,
+    OPEN,
+    `Opening odds were derived from Manifold's 2028 ${party} nominee market when this market was created: its three likeliest candidates, flattened because a single state is less predictable than the nomination, with a boost for any candidate from ${inText(s)}. Everyone else starts in "Other".`,
     HUB
   )
 
@@ -210,17 +249,24 @@ const AFTER_2028 = '2028-11-08T12:00:00Z'
 const NOMINATION_2028 = '2028-09-30T12:00:00Z'
 const EARLY_2028 = '2028-06-30T12:00:00Z'
 
-const earlyContest = (
-  s: EarlyState,
+// How strongly a state favors its own candidates in the primary seeds.
+const HOME_BOOST = 3
+
+const statePrimary = (
+  s: PrimaryState,
   party: 'Democratic' | 'Republican'
 ): MultiEntry => ({
-  key: `2028-${party === 'Democratic' ? 'dem' : 'gop'}-${s.slug}`,
+  key: `2028-${party === 'Democratic' ? 'dem' : 'gop'}-${s.state
+    .toLowerCase()
+    .replace(/\s+/g, '-')}`,
   cycle: 2028,
   phase: 'primary',
   outcome: 'MULTIPLE_CHOICE',
-  addAnswersMode: 'ONLY_CREATOR',
-  question: `Who will win the 2028 ${s.state} ${party} presidential ${s.contest}?`,
-  description: earlyContestDescription(s, party),
+  addAnswersMode: 'ANYONE',
+  question: s.contest
+    ? `Who will win the 2028 ${s.state} ${party} presidential ${s.contest}?`
+    : `Who will win ${inText(s)} in the 2028 ${party} presidential primaries?`,
+  description: primaryDescription(s, party),
   topics: [
     'us-politics',
     s.state === 'New Hampshire' ? 'new-hampshire-primary' : 'elections',
@@ -235,7 +281,9 @@ const earlyContest = (
     nomineeSourceId:
       party === 'Democratic' ? SOURCES.demNominee2028 : SOURCES.gopNominee2028,
     power: 0.8,
-    maxAnswers: 12,
+    maxAnswers: 3,
+    homeState: s.code,
+    homeBoost: HOME_BOOST,
   },
 })
 
@@ -270,18 +318,20 @@ const partyControl = (
 const governor2027 = (
   state: 'Kentucky' | 'Mississippi' | 'Louisiana',
   closeTime: string,
-  pcts: [number, number, number],
+  // Democratic and Republican; "Other" opens with the rest.
+  pcts: [number, number],
   extra: string
 ): MultiEntry => ({
   key: `2027-governor-${state.toLowerCase()}`,
   cycle: 2027,
   phase: 'offyear',
   outcome: 'MULTIPLE_CHOICE',
-  addAnswersMode: 'DISABLED',
-  answers: [DEM, REP, THIRD],
+  addAnswersMode: 'ONLY_CREATOR',
+  answers: [DEM, REP],
   question: `Which party will win the 2027 ${state} governor election?`,
   description: desc(
-    `Resolves to the party of the candidate who wins the 2027 ${state} gubernatorial election, per certified results. ${extra} A candidate's party is the party label they carry on the deciding ballot; an independent or minor-party winner resolves to "${THIRD}".`,
+    `Resolves to the party of the candidate who wins the 2027 ${state} gubernatorial election, per certified results. ${extra} A candidate's party is the party label they carry on the deciding ballot. ${partyRule('their')}`,
+    PARTY_ANSWERS,
     PRIOR,
     HUB
   ),
@@ -297,7 +347,7 @@ const governor2027 = (
   seed: {
     kind: 'static-fixed',
     pcts,
-    note: `Static prior (D/R/other) for ${state}; no deep community market to copy.`,
+    note: `Static prior (D/R, Other gets the rest) for ${state}; no deep community market to copy.`,
   },
 })
 
@@ -406,12 +456,13 @@ export const ENTRIES: Entry[] = [
     cycle: 2028,
     phase: 'general',
     outcome: 'MULTIPLE_CHOICE',
-    addAnswersMode: 'DISABLED',
-    answers: [DEM, REP, THIRD],
+    addAnswersMode: 'ONLY_CREATOR',
+    answers: [DEM, REP],
     question:
       'Which party will win the national popular vote in the 2028 presidential election?',
     description: desc(
-      `Resolves to the party of the presidential candidate who receives the most votes nationwide (all 50 states plus DC) in the November 7, 2028 general election, per certified results. A candidate's party is the party whose presidential nomination they hold; an independent or minor-party candidate resolves to "${THIRD}".`,
+      `Resolves to the party of the presidential candidate who receives the most votes nationwide (all 50 states plus DC) in the November 7, 2028 general election, per certified results. A candidate's party is the party whose presidential nomination they hold. ${partyRule('their')}`,
+      PARTY_ANSWERS,
       SEEDED,
       HUB
     ),
@@ -611,28 +662,28 @@ export const ENTRIES: Entry[] = [
       note: 'Prior: the last multi-ballot Republican convention was 1948; the field has a clear front-runner.',
     },
   },
-  ...EARLY_STATES.flatMap((s) => [
-    earlyContest(s, 'Democratic'),
-    earlyContest(s, 'Republican'),
+  ...PRIMARY_STATES.flatMap((s) => [
+    statePrimary(s, 'Democratic'),
+    statePrimary(s, 'Republican'),
   ]),
 
   // ----------------------------------------------------------------- 2027
   governor2027(
     'Kentucky',
     '2027-11-03T12:00:00Z',
-    [24, 75, 1],
+    [24, 75],
     'The general election is on November 2, 2027.'
   ),
   governor2027(
     'Mississippi',
     '2027-11-03T12:00:00Z',
-    [17, 82, 1],
+    [17, 82],
     'The general election is on November 2, 2027. Mississippi requires a majority: if no candidate wins one, the runoff decides and this market resolves after it (the close time may be extended).'
   ),
   governor2027(
     'Louisiana',
     '2027-11-21T12:00:00Z',
-    [9, 90, 1],
+    [9, 90],
     "This covers the whole 2027 election, whether it is decided in the October primary or the November runoff, under whatever primary system Louisiana uses for governor in 2027."
   ),
   {
@@ -903,13 +954,17 @@ export async function resolveSeed(
   switch (seed.kind) {
     case 'static-binary':
       return { outcome: 'BINARY', initialProb: seed.pct, basis: seed.note }
-    case 'static-fixed':
+    case 'static-fixed': {
+      // With an "Other" answer (party markets), it opens with the rest.
+      const rest = Math.round((100 - seed.pcts.reduce((s, x) => s + x, 0)) * 10) / 10
       return {
         outcome: 'MULTIPLE_CHOICE',
         answers: (entry as MultiEntry).answers ?? [],
         answerProbs: seed.pcts,
+        ...(hasOther(entry) ? { otherPct: rest } : {}),
         basis: seed.note,
       }
+    }
     case 'static-candidates': {
       const total = seed.seeds.reduce((s, x) => s + x.pct, 0)
       return {
@@ -967,11 +1022,13 @@ export async function resolveSeed(
         partyShares(m.answers!),
         seed.otherPct
       )
+      // Democratic and Republican; the market's own "Other" opens with the rest.
       return {
         outcome: 'MULTIPLE_CHOICE',
-        answers: [DEM, REP, THIRD],
-        answerProbs: [dem, rep, other],
-        basis: `copied from ${seed.sourceId} (${m.question}${traders(m)}), third answer at ${seed.otherPct}%`,
+        answers: [DEM, REP],
+        answerProbs: [dem, rep],
+        otherPct: other,
+        basis: `copied from ${seed.sourceId} (${m.question}${traders(m)}), Other at ${seed.otherPct}%`,
       }
     }
     case 'ev-buckets': {
@@ -1006,9 +1063,14 @@ export async function resolveSeed(
     }
     case 'flattened-nominee': {
       const m = await readOpen(need(), seed.nomineeSourceId, 'multi')
+      const home = seed.homeState
+        ? { state: seed.homeState, boost: seed.homeBoost ?? 1 }
+        : undefined
       return fromCandidates(
-        flattenedSeeds(m.answers!, seed.power, seed.maxAnswers),
-        `nominee market ${seed.nomineeSourceId} flattened (p^${seed.power}, top ${seed.maxAnswers})`
+        flattenedSeeds(m.answers!, seed.power, seed.maxAnswers, home),
+        `nominee market ${seed.nomineeSourceId} flattened (p^${seed.power}, top ${seed.maxAnswers}${
+          home ? `, ×${home.boost} for ${home.state} candidates` : ''
+        })`
       )
     }
   }

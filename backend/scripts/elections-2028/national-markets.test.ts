@@ -34,6 +34,7 @@ import {
   Entry,
   MultiEntry,
   priceMismatches,
+  REP,
   resolveSeed,
   seedError,
   SERIES,
@@ -297,6 +298,28 @@ test('early-state seeds flatten the nominee field', () => {
   assert.equal(flat.seeds[0].text, 'Jon Ossoff')
 })
 
+test('state primaries open with three candidates, favoring home-state ones', () => {
+  const plain = flattenedSeeds(DEM_NOMINEE, 0.8, 3)
+  assert.deepEqual(
+    plain.seeds.map((s) => s.text),
+    ['Jon Ossoff', 'Alexandria Ocasio-Cortez', 'Gavin Newsom']
+  )
+  // Shapiro (4.4% nationally) makes Pennsylvania's three.
+  const pa = flattenedSeeds(DEM_NOMINEE, 0.8, 3, { state: 'PA', boost: 3 })
+  assert.deepEqual(
+    pa.seeds.map((s) => s.text),
+    ['Jon Ossoff', 'Josh Shapiro', 'Alexandria Ocasio-Cortez']
+  )
+  checkWithOther(
+    pa.seeds.map((s) => s.pct),
+    pa.otherPct
+  )
+  // A state with nobody from it in the field gets the national three.
+  const ia = flattenedSeeds(DEM_NOMINEE, 0.8, 3, { state: 'IA', boost: 3 })
+  assert.deepEqual(ia, plain)
+  assert.throws(() => flattenedSeeds(DEM_NOMINEE, 0.8, 3, { state: 'PA', boost: 0.5 }))
+})
+
 // ------------------------------------------------------------------ ids
 
 test('reserved ids are deterministic, valid and unique', () => {
@@ -315,7 +338,8 @@ test('reserved ids are deterministic, valid and unique', () => {
 
 test('the manifest covers the planned markets and validates', () => {
   assert.deepEqual(validateEntries(ENTRIES, NOW), [])
-  assert.equal(ENTRIES.length, 35)
+  // 27 national markets plus a primary for each party in every state and DC.
+  assert.equal(ENTRIES.length, 27 + 102)
   const keys = ENTRIES.map((e) => e.key)
   for (const k of [
     '2028-dem-nominee',
@@ -335,6 +359,9 @@ test('the manifest covers the planned markets and validates', () => {
     '2028-gop-contested-convention',
     '2028-dem-iowa',
     '2028-gop-nevada',
+    '2028-dem-california',
+    '2028-gop-district-of-columbia',
+    '2028-gop-wyoming',
     '2027-governor-kentucky',
     '2027-governor-mississippi',
     '2027-governor-louisiana',
@@ -360,6 +387,53 @@ test('the manifest covers the planned markets and validates', () => {
     if (e.outcome !== 'MULTIPLE_CHOICE') continue
     if (e.addAnswersMode === 'DISABLED') assert.ok(e.answers?.length, e.key)
   }
+})
+
+test('every state and DC has an open primary for each party', () => {
+  const primaries = ENTRIES.filter((e) => e.phase === 'primary') as MultiEntry[]
+  assert.equal(primaries.length, 102)
+  const states = new Set<string>()
+  for (const e of primaries) {
+    assert.equal(e.addAnswersMode, 'ANYONE', e.key)
+    assert.equal(e.answers, undefined, e.key)
+    assert.match(e.description, /Anyone can add a candidate as an answer/)
+    assert.match(e.description, /resolves N\/A/)
+    if (e.seed.kind !== 'flattened-nominee') assert.fail(`${e.key}: seed ${e.seed.kind}`)
+    assert.equal(e.seed.maxAnswers, 3)
+    assert.equal(e.seed.homeBoost, 3)
+    assert.match(e.seed.homeState ?? '', /^[A-Z]{2}$/)
+    states.add(`${e.seed.homeState}-${e.key.split('-')[1]}`)
+  }
+  assert.equal(states.size, 102)
+  const questions = primaries.map((e) => e.question)
+  assert.ok(questions.includes('Who will win the 2028 Iowa Democratic presidential caucuses?'))
+  assert.ok(
+    questions.includes(
+      'Who will win the District of Columbia in the 2028 Republican presidential primaries?'
+    )
+  )
+})
+
+test('party markets list both parties and leave Other open to @ManifoldPolitics', async () => {
+  for (const key of [
+    '2027-governor-kentucky',
+    '2027-governor-mississippi',
+    '2027-governor-louisiana',
+    '2028-popular-vote',
+  ]) {
+    const e = ENTRIES.find((x) => x.key === key) as MultiEntry
+    assert.equal(e.addAnswersMode, 'ONLY_CREATOR', key)
+    assert.deepEqual(e.answers, [DEM, REP], key)
+    assert.match(e.description, /otherwise to "Other"/, key)
+    assert.match(e.description, /may add another party or an independent/, key)
+  }
+  const ky = await resolveSeed(ENTRIES.find((x) => x.key === '2027-governor-kentucky')!)
+  if (ky.outcome !== 'MULTIPLE_CHOICE') assert.fail('KY seed')
+  assert.deepEqual(ky.answerProbs, [24, 75])
+  assert.equal(ky.otherPct, 1)
+  // Chamber control has no third answer: independents count with their caucus.
+  const control = ENTRIES.find((x) => x.key === '2028-senate-control') as MultiEntry
+  assert.equal(control.addAnswersMode, 'DISABLED')
 })
 
 const clone = (e: Entry): Entry => JSON.parse(JSON.stringify(e))

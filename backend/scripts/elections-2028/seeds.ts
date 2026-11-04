@@ -79,6 +79,61 @@ const DISPLAY_NAMES: Record<string, string> = {
   'beto orourke': "Beto O'Rourke",
 }
 
+// Home state (postal code) of likely 2028 candidates, keyed by canonical name,
+// for the state primary seeds. Only people who hold or held statewide or
+// federal office there; anyone not listed gets no home-state boost.
+export const HOME_STATES: Record<string, string> = {
+  'gavin newsom': 'CA',
+  'kamala harris': 'CA',
+  'ro khanna': 'CA',
+  'josh shapiro': 'PA',
+  'john fetterman': 'PA',
+  'andy beshear': 'KY',
+  'gretchen whitmer': 'MI',
+  'elissa slotkin': 'MI',
+  'jb pritzker': 'IL',
+  'jon ossoff': 'GA',
+  'raphael warnock': 'GA',
+  'mark kelly': 'AZ',
+  'ruben gallego': 'AZ',
+  'alexandria ocasio cortez': 'NY',
+  'wes moore': 'MD',
+  'chris van hollen': 'MD',
+  'cory booker': 'NJ',
+  'phil murphy': 'NJ',
+  'chris murphy': 'CT',
+  'tim walz': 'MN',
+  'amy klobuchar': 'MN',
+  'roy cooper': 'NC',
+  'josh stein': 'NC',
+  'jared polis': 'CO',
+  'james talarico': 'TX',
+  'jasmine crockett': 'TX',
+  'beto orourke': 'TX',
+  'bernie sanders': 'VT',
+  'elizabeth warren': 'MA',
+  'jd vance': 'OH',
+  'vivek ramaswamy': 'OH',
+  'marco rubio': 'FL',
+  'ron desantis': 'FL',
+  'byron donalds': 'FL',
+  'thomas massie': 'KY',
+  'rand paul': 'KY',
+  'brian kemp': 'GA',
+  'marjorie taylor greene': 'GA',
+  'glenn youngkin': 'VA',
+  'ted cruz': 'TX',
+  'greg abbott': 'TX',
+  'josh hawley': 'MO',
+  'nikki haley': 'SC',
+  'tim scott': 'SC',
+  'sarah huckabee sanders': 'AR',
+  'tom cotton': 'AR',
+  'kristi noem': 'SD',
+  'elise stefanik': 'NY',
+  'doug burgum': 'ND',
+}
+
 // Answers that name no person: "Other", "No 2028 Election", "No one", …
 const NON_CANDIDATE =
   /^(others?|no one|noone|nobody|none|none of the above|none of these candidates|no (\d{4} )?(us )?(presidential )?election|someone else|anyone else|n a|na|uncommitted|undecided)$/
@@ -310,12 +365,21 @@ export function derivedVpSeeds(
 export function flattenedSeeds(
   nominee: SourceAnswer[],
   power = 0.8,
-  maxAnswers = 12
+  maxAnswers = 12,
+  // Favorite sons and daughters: a candidate from the contest's own state
+  // gets this multiple of their flattened weight.
+  home?: { state: string; boost: number }
 ): CandidateSeeds {
   if (!(power > 0 && power <= 1)) throw new Error('flattenedSeeds: bad power')
+  if (home && !(home.boost >= 1)) throw new Error('flattenedSeeds: bad boost')
   const people = candidateWeights(nominee)
   const unnamed = Math.max(0, 1 - sum(people.map((w) => w.p)))
-  const weights = people.map((w) => ({ ...w, w: Math.pow(w.p, power) }))
+  const boostOf = (key: string) =>
+    home && HOME_STATES[key] === home.state ? home.boost : 1
+  const weights = people.map((w) => ({
+    ...w,
+    w: Math.pow(w.p, power) * boostOf(w.key),
+  }))
   const total = sum(weights.map((w) => w.w)) + Math.pow(unnamed, power)
   if (!(total > 0)) throw new Error('flattenedSeeds: empty field')
   const kept = weights

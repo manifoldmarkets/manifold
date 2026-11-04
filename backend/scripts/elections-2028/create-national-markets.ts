@@ -30,12 +30,14 @@ import * as path from 'path'
 import {
   buildPayload,
   costOf,
+  DEM,
   ENTRIES,
   Entry,
   MANIFOLD_POLITICS_ID,
   MANIFOLD_POLITICS_USERNAME,
   needsOnline,
   priceMismatches,
+  REP,
   shapeMismatches,
   ResolvedSeed,
   resolveSeed,
@@ -348,8 +350,10 @@ async function photoUrls(
   if (entry.outcome !== 'MULTIPLE_CHOICE' || entry.addAnswersMode === 'DISABLED')
     return undefined
   if (seed.outcome !== 'MULTIPLE_CHOICE') return undefined
-  // Only candidate markets (people), not the tipping-point states.
+  // Only candidate markets (people): not the tipping-point states, and not
+  // the party markets, whose answers are parties.
   if (entry.key === '2028-tipping-point') return undefined
+  if (seed.answers.every((a) => a === DEM || a === REP)) return undefined
   const urls: (string | undefined)[] = []
   for (const answer of seed.answers) {
     const p = photoPathFor(index, answer)
