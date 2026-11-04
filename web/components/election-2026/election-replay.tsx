@@ -19,6 +19,7 @@ import {
 import {
   electionContracts,
   LiveElectionExplorer,
+  LiveElectionContracts,
   LiveElectionMapProps,
 } from 'web/components/usa-map/live-election-map'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -35,6 +36,7 @@ import {
 } from './replay-comparisons'
 import {
   chamberGap,
+  contractProbs,
   defaultFrame,
   frameAtSlider,
   LATEST_MILESTONE_ID,
@@ -43,6 +45,7 @@ import {
   replayCountdown,
   ReplayMilestone,
   ReplaySnapshot,
+  withLatestFrame,
   scrubKeyFrame,
   sliderMax,
   sliderValue,
@@ -64,10 +67,23 @@ import {
 // odds on Senate and House control. Display only: betting stays on the live
 // map.
 export function ElectionReplay(
-  props: LiveElectionMapProps & { scores: ChamberScore[] }
+  props: LiveElectionMapProps & {
+    scores: ChamberScore[]
+    // When the page read the markets (getStaticProps, every few minutes):
+    // the replay's Latest stop.
+    latestAt: number
+  }
 ) {
-  const { snapshot, error, retry } = useReplaySnapshot()
+  const { snapshot: loaded, error, retry } = useReplaySnapshot()
   const contracts = useMemo(() => electionContracts(props), [props])
+  // The snapshot ends when it was last rebuilt; its Latest is the markets
+  // as this page loaded them.
+  const snapshot = useMemo(
+    () =>
+      loaded &&
+      withLatestFrame(loaded, liveProbsById(contracts), props.latestAt),
+    [loaded, contracts, props.latestAt]
+  )
   // Undefined until the reader moves: the default milestone.
   const [chosenFrame, setFrame] = useState<number>()
   const frame =
@@ -151,7 +167,12 @@ export function ElectionReplay(
             }}
             chambers={chambers}
           />
-          <ReplayMethod generatedAt={snapshot.generatedAt} />
+          <ReplayMethod
+            rebuiltThrough={
+              loaded?.times[loaded.times.length - 1] ?? snapshot.generatedAt
+            }
+            latestAt={snapshot.times[snapshot.times.length - 1]}
+          />
         </>
       ) : (
         <div
@@ -171,6 +192,22 @@ export function ElectionReplay(
         </div>
       )}
     </Col>
+  )
+}
+
+// Every map market's traded odds now, by contract id.
+function liveProbsById(live: LiveElectionContracts) {
+  const all = [
+    ...Object.values(live.senate),
+    ...Object.values(live.governor),
+    live.house,
+    ...Object.values(live.additionalHouse),
+    ...Object.values(live.measures),
+    live.houseControl,
+    live.senateControl,
+  ]
+  return Object.fromEntries(
+    all.flatMap((c) => (c ? [[c.id, contractProbs(c)] as const] : []))
   )
 }
 
@@ -344,10 +381,7 @@ function ReplayPlayer(props: {
   const { milestones, times } = snapshot
   const time = times[frame]
   const milestone = milestoneAt(milestones, frame)
-  const title =
-    milestone && milestone.id !== LATEST_MILESTONE_ID
-      ? milestone.label
-      : replayCountdown(time)
+  const title = milestone ? milestone.label : replayCountdown(time)
   const atEnd = frame >= times.length - 1
   return (
     <section
@@ -745,7 +779,7 @@ function SplitOdds(props: {
   )
 }
 
-function ReplayMethod(props: { generatedAt: number }) {
+function ReplayMethod(props: { rebuiltThrough: number; latestAt: number }) {
   return (
     <section className="text-ink-600 flex max-w-3xl flex-col gap-2 text-sm">
       <h2 className="text-ink-900 text-base font-semibold">
@@ -762,8 +796,9 @@ function ReplayMethod(props: { generatedAt: number }) {
         <Link href="/election" className="text-primary-700 hover:underline">
           live map
         </Link>{' '}
-        has today’s odds. Replay data as of{' '}
-        {formatRewindTime(props.generatedAt)}.
+        has today’s odds. The replay is rebuilt from trades through{' '}
+        {formatRewindTime(props.rebuiltThrough)}; Latest is every market as of{' '}
+        {formatRewindTime(props.latestAt)}, refreshed every few minutes.
       </p>
     </section>
   )

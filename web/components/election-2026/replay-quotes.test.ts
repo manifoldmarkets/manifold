@@ -80,3 +80,28 @@ test('the page marks frames from the close as closed', () => {
   ])
   assert.deepEqual(comparisonsAt(series, 'house', T), [])
 })
+
+test('past the series, a closed market holds its last price; an open one has none', () => {
+  const series: ComparisonSeries[] = [
+    {
+      source: 'Kalshi',
+      retrievedAt: '',
+      chambers: {
+        senate: [
+          [T, 0.2],
+          [T + HOUR_MS, 0.0005],
+        ],
+        house: [[T, 0.07]],
+      },
+      closedAt: { senate: T + HOUR_MS },
+    },
+  ]
+  // The page's Latest, a day on: the Senate market had closed.
+  assert.deepEqual(comparisonsAt(series, 'senate', T + 24 * HOUR_MS), [
+    { source: 'Kalshi', republicanProb: 0.0005, closed: true },
+  ])
+  // The House market never closed in this data: no stale price carried.
+  assert.deepEqual(comparisonsAt(series, 'house', T + 24 * HOUR_MS), [])
+  // Between frames of the series is still no price.
+  assert.deepEqual(comparisonsAt(series, 'senate', T + MINUTE_MS), [])
+})

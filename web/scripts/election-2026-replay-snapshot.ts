@@ -13,9 +13,6 @@
 import { writeFileSync } from 'fs'
 import { join } from 'path'
 import { chunk, keyBy, uniq } from 'lodash'
-import { answerP } from 'common/answer'
-import { getCpmmProbability } from 'common/calculate-cpmm'
-import { Contract, isMultiCpmm } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import {
   BetProbRow,
@@ -27,6 +24,7 @@ import { createClient } from 'common/supabase/utils'
 import { DAY_MS, MINUTE_MS } from 'common/util/time'
 import { MEASURE_CONTRACT_IDS } from 'web/components/usa-map/ballot-measures-model'
 import {
+  contractProbs,
   REPLAY_MILESTONES,
   replayPlan,
   ReplaySnapshot,
@@ -112,23 +110,6 @@ async function betPoints(
   ]
 }
 
-// The probability a market shows now, from its pools like the server's
-// history: a resolution rewrites answers' stored prob to 0 or 1.
-function currentProbs(contract: Contract): MarketProbs | undefined {
-  if (contract.mechanism === 'cpmm-1')
-    return { prob: getCpmmProbability(contract.pool, contract.p) }
-  if (isMultiCpmm(contract))
-    return {
-      answerProbs: Object.fromEntries(
-        contract.answers.map((a) => [
-          a.id,
-          getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, answerP(a)),
-        ])
-      ),
-    }
-  return undefined
-}
-
 async function main() {
   const endArg = process.argv.indexOf('--end')
   const now = Date.now()
@@ -161,7 +142,7 @@ async function main() {
 
   const current: { [contractId: string]: MarketProbs } = {}
   for (const c of contracts) {
-    const probs = currentProbs(c)
+    const probs = contractProbs(c)
     if (probs) current[c.id] = probs
   }
   const ids = Object.keys(current)

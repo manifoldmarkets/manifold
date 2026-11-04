@@ -18,7 +18,7 @@ import { SEO } from 'web/components/SEO'
 import { ElectionMapProps, getElectionMapProps } from 'web/lib/politics/home'
 import snapshot from 'web/public/data/election-2026-replay.json'
 
-type Props = ElectionMapProps & { scores: ChamberScore[] }
+type Props = ElectionMapProps & { scores: ChamberScore[]; latestAt: number }
 
 // The scores come from the same snapshot and comparisons the page plays, and
 // each chamber's live resolution, so the headline, cards and share card
@@ -39,7 +39,11 @@ export async function getStaticProps() {
       },
     }
   )
-  return { props: { ...mapProps, scores }, revalidate: 300 }
+  // The replay's Latest stop is these markets, as read now.
+  return {
+    props: { ...mapProps, scores, latestAt: Date.now() },
+    revalidate: 300,
+  }
 }
 
 const scoreLine = (s: ChamberScore) =>
