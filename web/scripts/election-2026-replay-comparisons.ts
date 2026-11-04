@@ -10,8 +10,11 @@
 //     scripts/election-2026-replay-comparisons.ts
 //
 // The price at a frame is the midpoint of the best bid and ask in the last
-// minute at or before it: Kalshi's 1-minute candlesticks, which its public
-// market data API serves without an account, a day per request.
+// minute at or before it with a usable book (usableMid: within 10¢; a closed
+// market's empty book reads $0/$1, a false 50%). Kalshi's 1-minute
+// candlesticks, which its public market data API serves without an account,
+// a day per request. Once a market closes for trading, its last price before
+// the close holds, and the page marks it closed.
 import { readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { HOUR_MS } from 'common/util/time'
@@ -21,6 +24,11 @@ import type {
   ReplayComparisonsFile,
 } from 'web/components/election-2026/replay-comparisons'
 import type { ReplaySnapshot } from 'web/components/election-2026/replay-model'
+import {
+  Quote,
+  quotesAtFrames,
+  usableMid,
+} from 'web/components/election-2026/replay-quotes'
 
 const KALSHI = 'https://api.elections.kalshi.com/trade-api/v2'
 const DATA = join(__dirname, '../public/data')
@@ -44,14 +52,15 @@ const dollars = (side: Side | undefined) => {
     : undefined
 }
 
-// Each minute's closing midpoint in [from, to] (unix seconds), ascending.
+// Each minute's closing midpoint in [from, to] (unix seconds), ascending,
+// for the minutes with a usable book.
 async function quotes(
   series: string,
   ticker: string,
   from: number,
   to: number
 ) {
-  const out: { at: number; prob: number }[] = []
+  const out: Quote[] = []
   for (let start = from; start < to; start += DAY_S) {
     const end = Math.min(start + DAY_S, to)
     const res = await fetch(
@@ -60,10 +69,8 @@ async function quotes(
     if (!res.ok) throw new Error(`${res.status} ${ticker} ${start}-${end}`)
     const { candlesticks } = (await res.json()) as { candlesticks?: Candle[] }
     for (const c of candlesticks ?? []) {
-      const bid = dollars(c.yes_bid)
-      const ask = dollars(c.yes_ask)
-      if (bid !== undefined && ask !== undefined && ask >= bid)
-        out.push({ at: c.end_period_ts * 1000, prob: (bid + ask) / 2 })
+      const prob = usableMid(dollars(c.yes_bid), dollars(c.yes_ask))
+      if (prob !== undefined) out.push({ at: c.end_period_ts * 1000, prob })
     }
   }
   return out
@@ -71,17 +78,15 @@ async function quotes(
     .filter((q, i, all) => i === 0 || q.at !== all[i - 1].at)
 }
 
-// [frame time, price] for every frame with a recent enough quote.
-function atFrames(times: number[], qs: { at: number; prob: number }[]) {
-  const points: [number, number][] = []
-  let next = 0
-  let last: { at: number; prob: number } | undefined
-  for (const time of times) {
-    while (next < qs.length && qs[next].at <= time) last = qs[next++]
-    if (last && time - last.at <= MAX_QUOTE_AGE_MS)
-      points.push([time, Math.round(last.prob * 10_000) / 10_000])
+// When the market closed for trading (ms), if it has.
+async function closedAt(ticker: string, now: number) {
+  const res = await fetch(`${KALSHI}/markets/${ticker}`)
+  if (!res.ok) throw new Error(`${res.status} ${ticker}`)
+  const { market } = (await res.json()) as {
+    market?: { close_time?: string }
   }
-  return points
+  const close = Date.parse(market?.close_time ?? '')
+  return Number.isFinite(close) && close <= now ? close : undefined
 }
 
 async function main() {
@@ -99,18 +104,30 @@ async function main() {
   const { times } = snapshot
   const from = Math.floor((times[0] - MAX_QUOTE_AGE_MS) / 1000)
   const to = Math.ceil(times[times.length - 1] / 1000)
+  const now = Date.now()
   const kalshi: ComparisonSeries = {
     source: SOURCE,
-    retrievedAt: new Date().toISOString(),
+    retrievedAt: new Date(now).toISOString(),
     chambers: {},
+    closedAt: {},
   }
   for (const market of MARKETS) {
     const qs = await quotes(market.series, market.ticker, from, to)
-    kalshi.chambers[market.chamber] = atFrames(times, qs)
+    const closed = await closedAt(market.ticker, now)
+    kalshi.chambers[market.chamber] = quotesAtFrames(
+      times,
+      qs,
+      MAX_QUOTE_AGE_MS,
+      closed
+    )
+    if (closed !== undefined && kalshi.closedAt)
+      kalshi.closedAt[market.chamber] = closed
     console.log(
-      `${market.ticker}: ${qs.length} quotes, ${
+      `${market.ticker}: ${qs.length} usable quotes, ${
         kalshi.chambers[market.chamber]?.length
-      } of ${times.length} frames`
+      } of ${times.length} frames${
+        closed === undefined ? '' : `, closed ${new Date(closed).toISOString()}`
+      }`
     )
   }
   const out: ReplayComparisonsFile = {
