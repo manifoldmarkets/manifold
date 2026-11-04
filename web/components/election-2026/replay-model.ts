@@ -243,11 +243,11 @@ export function replayCountdown(time: number, anchor = POLLS_CLOSE_2026) {
 
 // A chamber's odds for each party, rounded to what formatOdds shows so the
 // two add up: rounded apart, 19.5% and 80.5% would read 20% and 81%.
+// Past 1% or 99% both sides read as the bounds (<1% and >99%).
 export function partySplit(rep: number) {
   const tenths = Math.round(rep * 1000) / 10
-  if (tenths < 0.1 || tenths > 99.9) return { rep, dem: 1 - rep }
-  const shown =
-    tenths < 1 || tenths > 99 ? tenths / 100 : Math.round(rep * 100) / 100
+  if (tenths < 1 || tenths > 99) return { rep, dem: 1 - rep }
+  const shown = Math.round(rep * 100) / 100
   return { rep: shown, dem: 1 - shown }
 }
 

@@ -120,9 +120,11 @@ test('party odds round so both sides add up as shown', () => {
   }
   assert.equal(show(0.195), '80%/20%')
   assert.equal(show(0.805), '19%/81%')
-  assert.equal(show(0.0064), '99.4%/0.6%')
-  assert.equal(show(0.9936), '0.6%/99.4%')
-  assert.equal(show(0.0004), '>99.9%/<0.1%')
+  assert.equal(show(0.0064), '>99%/<1%')
+  assert.equal(show(0.9936), '<1%/>99%')
+  assert.equal(show(0.0004), '>99%/<1%')
+  assert.equal(show(0.0096), '99%/1%')
+  assert.equal(show(0.9906), '<1%/>99%')
   assert.equal(show(0.5), '50%/50%')
 })
 
