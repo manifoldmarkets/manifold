@@ -93,6 +93,7 @@ function BrowseV2Inner() {
     return () => media.removeEventListener('change', update)
   }, [])
   const searchRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const filtersRef = useRef<HTMLDivElement>(null)
   useScrollReveal(searchRef, filtersRef, isMobile)
   const [savedLayout, setLayout] = usePersistentLocalState<
@@ -173,6 +174,13 @@ function BrowseV2Inner() {
       })
     setUrlReady(true)
   }, [router.isReady])
+
+  useEffect(() => {
+    if (!urlReady) return
+    // Select the restored query once on arrival, so typing replaces it.
+    searchInputRef.current?.focus({ preventScroll: true })
+    searchInputRef.current?.select()
+  }, [urlReady])
 
   const followedChoices: TopicChoice[] = (topics.followed ?? []).map((g) => ({
     key: `topic:${g.slug}`,
@@ -306,6 +314,7 @@ function BrowseV2Inner() {
               Search markets, users, topics, and posts
             </span>
             <input
+              ref={searchInputRef}
               type="search"
               value={input}
               onChange={(e) => setInput(e.target.value)}
