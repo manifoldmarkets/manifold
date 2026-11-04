@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import clsx from 'clsx'
 import { Contract, contractPath, isMultiCpmm } from 'common/contract'
-import { formatPercent } from 'common/util/format'
 import { AnswerCpmmBetPanel } from 'web/components/answers/answer-bet-panel'
 import { BetDialog } from 'web/components/bet/bet-dialog'
 import {
@@ -17,6 +16,7 @@ import {
   tradeFor,
 } from './ballot-measures-model'
 import { useElectionAsOf } from './election-as-of'
+import { formatOdds } from './election-display'
 import { useMarketLink } from './market-link'
 import styles from './election-explorer.module.css'
 
@@ -88,7 +88,7 @@ export function BallotMeasureCard({
                 onClick={() => setSide(s)}
               >
                 <span>{s === 'pass' ? 'Pass' : 'Fail'}</span>
-                <strong>{formatPercent(sideProbability(chance, s))}</strong>
+                <strong>{formatOdds(sideProbability(chance, s))}</strong>
               </button>
             ))}
           </div>
