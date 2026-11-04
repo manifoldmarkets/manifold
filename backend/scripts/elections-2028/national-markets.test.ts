@@ -338,8 +338,9 @@ test('reserved ids are deterministic, valid and unique', () => {
 
 test('the manifest covers the planned markets and validates', () => {
   assert.deepEqual(validateEntries(ENTRIES, NOW), [])
-  // 27 national markets plus a primary for each party in every state and DC.
-  assert.equal(ENTRIES.length, 27 + 102)
+  // 31 national markets (control of Congress through 2036) plus a primary for
+  // each party in every state and DC.
+  assert.equal(ENTRIES.length, 31 + 102)
   const keys = ENTRIES.map((e) => e.key)
   for (const k of [
     '2028-dem-nominee',
@@ -374,6 +375,10 @@ test('the manifest covers the planned markets and validates', () => {
     '2032-winner',
     '2032-senate-control',
     '2032-house-control',
+    '2034-senate-control',
+    '2034-house-control',
+    '2036-senate-control',
+    '2036-house-control',
   ])
     assert.ok(keys.includes(k), k)
   // No 2028 winner market: @ManifoldPolitics already owns one.

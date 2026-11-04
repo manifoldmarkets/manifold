@@ -1,11 +1,11 @@
-# National election markets (2027–2032)
+# National election markets (2027–2036)
 
 The headline markets the 2028+ elections page needs, owned by
 @ManifoldPolitics: nominees and running mates, the popular vote, electoral
-votes, the tipping point, control of Congress, a 2028 presidential primary
-for each party in every state and DC, the 2027 off-year races and the
-2030/2032 cycles. 129 markets (27 national + 102 state primaries), about
-Ṁ154k at the answer counts of 5 Nov 2026. A market's cost is its tier per
+votes, the tipping point, control of Congress through 2036, a 2028
+presidential primary for each party in every state and DC, the 2027
+off-year races and the 2030–2036 cycles. 133 markets (31 national + 102
+state primaries), about Ṁ158k at the answer counts of 5 Nov 2026. A market's cost is its tier per
 10 answers (Other included): at the Ṁ10,000 tier each answer costs Ṁ1,000,
 so the two 2028 nominee markets cost Ṁ13k and Ṁ11k with that day's 12 and
 10 people at ≥ 1%, and up to Ṁ21k each if 20 qualify. The rest are at the
@@ -117,7 +117,7 @@ read at run time, or from documented static priors:
      --env prod --creator-username ManifoldPolitics `
      --state C:\Users\User\elections-national-prod\state.prod.json --max-mana 160000
    ```
-   About 129 markets × (create, read back, publish) at `--pace-ms 400`:
+   About 133 markets × (create, read back, publish) at `--pace-ms 400`:
    roughly 10–15 minutes. Avoid 07:45–08:15 UTC (the API restarts daily at
    08:00).
 5. Afterwards, wire the new markets into the elections page config (slugs

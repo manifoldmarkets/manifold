@@ -36,7 +36,7 @@ export const SERIES = 'us-national-2028-v1'
 export const MANIFOLD_POLITICS_ID = 'vuI5upWB8yU00rP7yxj95J2zd952'
 export const MANIFOLD_POLITICS_USERNAME = 'ManifoldPolitics'
 
-export type Cycle = 2027 | 2028 | 2030 | 2032
+export type Cycle = 2027 | 2028 | 2030 | 2032 | 2034 | 2036
 // primary: early-state contests; nomination: conventions/nominees;
 // general: decided on (or after) election day; offyear: 2027 races.
 export type Phase = 'primary' | 'nomination' | 'general' | 'offyear'
@@ -47,6 +47,8 @@ export const ELECTION_DAYS: Record<Cycle, string> = {
   2028: '2028-11-07',
   2030: '2030-11-05',
   2032: '2032-11-02',
+  2034: '2034-11-07',
+  2036: '2036-11-04',
 }
 
 export const DEM = 'Democratic Party'
@@ -205,12 +207,13 @@ const primaryDescription = (
 
 const controlDescription = (
   chamber: 'Senate' | 'House',
-  year: 2028 | 2030 | 2032
+  year: 2028 | 2030 | 2032 | 2034 | 2036
 ) => {
-  const congress = { 2028: '121st', 2030: '122nd', 2032: '123rd' }[year]
-  const convenes = { 2028: '2029', 2030: '2031', 2032: '2033' }[year]
+  const congress = { 2028: '121st', 2030: '122nd', 2032: '123rd', 2034: '124th', 2036: '125th' }[year]
+  const convenes = { 2028: '2029', 2030: '2031', 2032: '2033', 2034: '2035', 2036: '2037' }[year]
+  // Midterms keep the sitting Vice President; presidential years swear one in.
   const vp =
-    year === 2030
+    year === 2030 || year === 2034
       ? 'the Vice President in office then'
       : `the Vice President inaugurated on January 20, ${convenes}`
   return chamber === 'Senate'
@@ -266,7 +269,7 @@ const statePrimary = (
 
 const partyControl = (
   key: string,
-  cycle: 2028 | 2030 | 2032,
+  cycle: 2028 | 2030 | 2032 | 2034 | 2036,
   chamber: 'Senate' | 'House',
   closeTime: string,
   seed: MultiEntry['seed'],
@@ -795,6 +798,43 @@ export const ENTRIES: Entry[] = [
     },
     '2032-us-presidential-election'
   ),
+
+  // ----------------------------------------------------------------- 2034
+  // Tod, 5 Nov 2026: cover every cycle through 2036.
+  partyControl(
+    '2034-senate-control',
+    2034,
+    'Senate',
+    '2034-11-08T12:00:00Z',
+    { kind: 'static-fixed', pcts: [50, 50], note: 'Prior: eight years out, no informative market.' },
+    'us-midterm-elections'
+  ),
+  partyControl(
+    '2034-house-control',
+    2034,
+    'House',
+    '2034-11-08T12:00:00Z',
+    { kind: 'static-fixed', pcts: [50, 50], note: 'Prior: eight years out, on maps drawn after the 2030 census.' },
+    'us-midterm-elections'
+  ),
+
+  // ----------------------------------------------------------------- 2036
+  partyControl(
+    '2036-senate-control',
+    2036,
+    'Senate',
+    '2036-11-05T12:00:00Z',
+    { kind: 'static-fixed', pcts: [50, 50], note: 'Prior: ten years out, no informative market.' },
+    '2036-us-presidential-election'
+  ),
+  partyControl(
+    '2036-house-control',
+    2036,
+    'House',
+    '2036-11-05T12:00:00Z',
+    { kind: 'static-fixed', pcts: [50, 50], note: 'Prior: ten years out, on maps drawn after the 2030 census.' },
+    '2036-us-presidential-election'
+  ),
 ]
 
 // ---------------------------------------------------------------------------
@@ -1014,7 +1054,7 @@ export async function resolveSeed(
 // ---------------------------------------------------------------------------
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]*$/
-const KEY_RE = /^(2027|2028|2030|2032)-[a-z0-9-]+$/
+const KEY_RE = /^(2027|2028|2030|2032|2034|2036)-[a-z0-9-]+$/
 
 const hasOther = (entry: Entry) =>
   entry.outcome === 'MULTIPLE_CHOICE' && entry.addAnswersMode !== 'DISABLED'
