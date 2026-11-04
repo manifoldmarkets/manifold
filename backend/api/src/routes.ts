@@ -150,6 +150,7 @@ import { getMarketContext } from './get-market-context'
 import { getMarketLoanMax } from './get-market-loan-max'
 import { getMarketProb } from './get-market-prob'
 import { getMarketProbs } from './get-market-probs'
+import { getMarketProbsHistory } from './get-market-probs-history'
 import { getMarketsByIds } from './get-markets'
 import { getmaxminprofit2025 } from './get-max-min-profit-2025'
 import { getMe } from './get-me'
@@ -404,6 +405,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
   'market/:id/prob': getMarketProb,
   'market-probs': getMarketProbs,
+  'market-probs-history': getMarketProbsHistory,
   'answer/:answerId': getSingleAnswer,
   'market/:contractId/answers': getContractAnswers,
   'markets-by-ids': getMarketsByIds,
