@@ -66,6 +66,9 @@ export type MidtermSpotlightProps = {
   houseMatrixRows: ConditionalMatrixRow[]
   bothMatrixRows: ConditionalMatrixRow[]
   presidencyMatrixRows: ConditionalMatrixRow[]
+  // How many Senate seats the Democrats hold: the seat chart under the
+  // chamber toplines.
+  senateSeatsContract: Contract | null
 }
 export type MidtermsPageProps = ElectionsPageProps & MidtermSpotlightProps
 
@@ -250,6 +253,7 @@ export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
     presidency2028Contract,
     presidency2028PartyContract,
     pollingPerpsRaw,
+    senateSeatsContract,
   ] = await Promise.all([
     getElectionMapProps(adminDb),
     getTrendingCandidates(),
@@ -260,6 +264,7 @@ export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
     getContractFromSlugFunction(PRESIDENT_2028_SLUG),
     getContractFromSlugFunction(PRESIDENT_2028_PARTY_SLUG),
     Promise.all(POLLING_PERPS.map(getContractFromSlugFunction)),
+    getContractFromSlugFunction(MIDTERMS_2026.senateSeats),
   ])
   const {
     rawSenateStateContracts: senateStateContracts,
@@ -306,7 +311,7 @@ export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
   )
 
   // Nothing twice: the hero markets (balance of power, chamber control,
-  // districts) and the contest, unprecedented, matrix and polling sections
+  // districts, Senate seats) and the contest, unprecedented, matrix and polling sections
   // are all on the page already.
   const trendingContracts = curateTrendingMarkets(trendingCandidates, {
     now,
@@ -340,6 +345,7 @@ export async function getElectionsPageProps(): Promise<MidtermsPageProps> {
     houseMatrixRows,
     bothMatrixRows,
     presidencyMatrixRows,
+    senateSeatsContract,
   }
 }
 
