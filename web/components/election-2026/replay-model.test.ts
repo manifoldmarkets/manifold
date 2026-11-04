@@ -4,6 +4,8 @@ import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { formatOdds } from 'web/components/usa-map/election-display'
 import { POLLS_CLOSE_2026 } from 'web/components/usa-map/election-rewind-model'
 import {
+  chamberGap,
+  defaultFrame,
   frameAtSlider,
   LATEST_MILESTONE_ID,
   MILESTONE_HOLD_MS,
@@ -113,6 +115,45 @@ test('scrubber keys step frames and jump milestones', () => {
   assert.equal(scrubKeyFrame(milestones, 5, last, 'Tab'), undefined)
 })
 
+test('the replay opens 3 hours out', () => {
+  const { milestones } = replayPlan(REPLAY_MILESTONES, T0 + 6 * HOUR_MS)
+  assert.equal(
+    milestones.find((m) => m.frame === defaultFrame(milestones))?.id,
+    '3h'
+  )
+  // A plan that hasn't reached 3 hours out opens at the start.
+  const early = replayPlan(REPLAY_MILESTONES, T0 - 5 * HOUR_MS).milestones
+  assert.equal(defaultFrame(early), 0)
+})
+
+test('chamber gaps read in whole points as shown', () => {
+  // Manifold R 22.4% (D 78%) against real money R 26.5% (D 73%).
+  assert.deepEqual(chamberGap(0.2241, 0.265), {
+    points: 5,
+    party: 'D',
+    resolved: false,
+  })
+  assert.deepEqual(chamberGap(0.265, 0.2241), {
+    points: -5,
+    party: 'D',
+    resolved: false,
+  })
+  // Once resolved, on the winner: positive is Manifold closer to it.
+  assert.deepEqual(chamberGap(0.2241, 0.265, 'D'), {
+    points: 5,
+    party: 'D',
+    resolved: true,
+  })
+  assert.deepEqual(chamberGap(0.2241, 0.265, 'R'), {
+    points: -5,
+    party: 'R',
+    resolved: true,
+  })
+  // Reading the same, or both past the bounds, is no gap.
+  assert.equal(chamberGap(0.2, 0.2049), undefined)
+  assert.equal(chamberGap(0.0074, 0.0045), undefined)
+})
+
 test('party odds round so both sides add up as shown', () => {
   const show = (rep: number) => {
     const { dem, rep: r } = partySplit(rep)
@@ -139,6 +180,6 @@ test('countdown reads days, hours and minutes either side of the polls', () => {
   assert.equal(replayCountdown(T0 - 45 * MINUTE_MS), '45 min out')
   assert.equal(
     replayCountdown(T0 + 3 * HOUR_MS + 15 * MINUTE_MS),
-    '3 hours 15 min after the first polls closed'
+    '3 hours 15 min after polls closed'
   )
 })

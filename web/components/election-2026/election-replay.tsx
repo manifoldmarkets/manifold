@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import clsx from 'clsx'
-import { uniq } from 'lodash'
 import Link from 'next/link'
 import { PauseIcon, PlayIcon, RefreshIcon } from '@heroicons/react/solid'
-import { Button } from 'web/components/buttons/button'
+import { Contract } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { ElectionAsOfContext } from 'web/components/usa-map/election-as-of'
@@ -24,9 +23,10 @@ import {
   comparisonsAt,
   REPLAY_COMPARISONS,
   ReplayChamber,
-  ReplayComparison,
 } from './replay-comparisons'
 import {
+  chamberGap,
+  defaultFrame,
   frameAtSlider,
   LATEST_MILESTONE_ID,
   partySplit,
@@ -42,12 +42,16 @@ import {
 
 // /election2026: the midterm map replayed from a week before the polls
 // closed through election night, stage by stage, from a static snapshot of
-// the odds (web/scripts/election-2026-replay-snapshot.ts). Display only:
-// betting stays on the live map.
+// the odds (web/scripts/election-2026-replay-snapshot.ts), beside real-money
+// odds on Senate and House control. Display only: betting stays on the live
+// map.
 export function ElectionReplay(props: LiveElectionMapProps) {
   const { snapshot, error, retry } = useReplaySnapshot()
   const contracts = useMemo(() => electionContracts(props), [props])
-  const [frame, setFrame] = useState(0)
+  // Undefined until the reader moves: the default milestone.
+  const [chosenFrame, setFrame] = useState<number>()
+  const frame =
+    chosenFrame ?? (snapshot ? defaultFrame(snapshot.milestones) : 0)
   const [playing, setPlaying] = useState(false)
   // Where playback started, so it doesn't pause on that milestone.
   const [startFrame, setStartFrame] = useState(0)
@@ -83,6 +87,16 @@ export function ElectionReplay(props: LiveElectionMapProps) {
     setPlaying(false)
     setFrame(to)
   }
+  const chambers = {
+    senate: {
+      id: props.senateControlContract?.id,
+      winner: winnerOf(props.senateControlContract),
+    },
+    house: {
+      id: props.houseControlContract?.id,
+      winner: winnerOf(props.houseControlContract),
+    },
+  }
 
   return (
     <Col className="mx-auto w-full max-w-6xl gap-6 px-3 pb-12 pt-4 sm:px-4">
@@ -95,11 +109,11 @@ export function ElectionReplay(props: LiveElectionMapProps) {
             playing={playing}
             onPlay={play}
             onJump={jump}
-            senateId={props.senateControlContract?.id}
-            houseId={props.houseControlContract?.id}
+            chambers={chambers}
           />
+          {/* The player has the chamber odds, so no control cards here. */}
           <ElectionAsOfContext.Provider value={snapshot.times[frame]}>
-            <LiveElectionExplorer live={shown} />
+            <LiveElectionExplorer live={shown} hideControls />
           </ElectionAsOfContext.Provider>
           <MilestoneTable
             snapshot={snapshot}
@@ -108,8 +122,7 @@ export function ElectionReplay(props: LiveElectionMapProps) {
               jump(to)
               window.scrollTo({ top: 0, behavior: 'smooth' })
             }}
-            senateId={props.senateControlContract?.id}
-            houseId={props.houseControlContract?.id}
+            chambers={chambers}
           />
           <ReplayMethod generatedAt={snapshot.generatedAt} />
         </>
@@ -133,6 +146,18 @@ export function ElectionReplay(props: LiveElectionMapProps) {
     </Col>
   )
 }
+
+type Chambers = {
+  [chamber in ReplayChamber]: { id?: string; winner?: 'D' | 'R' }
+}
+
+// A chamber-control market (YES = Republicans) that has resolved.
+const winnerOf = (contract: Contract | null): 'D' | 'R' | undefined =>
+  contract?.isResolved && contract.resolution === 'YES'
+    ? 'R'
+    : contract?.isResolved && contract.resolution === 'NO'
+    ? 'D'
+    : undefined
 
 function useReplaySnapshot() {
   const [snapshot, setSnapshot] = useState<ReplaySnapshot>()
@@ -181,16 +206,17 @@ const milestoneAt = (milestones: ReplayMilestone[], frame: number) =>
 const milestoneLabel = (m: ReplayMilestone) =>
   m.id === LATEST_MILESTONE_ID ? `Latest: ${formatRewindTime(m.time)}` : m.label
 
+// Every line here has a fixed height and every comparison row is always
+// drawn, so scrubbing never moves the page.
 function ReplayPlayer(props: {
   snapshot: ReplaySnapshot
   frame: number
   playing: boolean
   onPlay: () => void
   onJump: (frame: number) => void
-  senateId: string | undefined
-  houseId: string | undefined
+  chambers: Chambers
 }) {
-  const { snapshot, frame, playing, onPlay, onJump, senateId, houseId } = props
+  const { snapshot, frame, playing, onPlay, onJump, chambers } = props
   const { milestones, times } = snapshot
   const time = times[frame]
   const milestone = milestoneAt(milestones, frame)
@@ -202,46 +228,11 @@ function ReplayPlayer(props: {
   return (
     <section
       aria-label="Replay"
-      className="bg-canvas-0 border-ink-200 flex flex-col gap-4 rounded-xl border p-4 sm:p-5"
+      className="bg-canvas-0 border-ink-200 flex flex-col gap-3 rounded-xl border p-3 sm:p-4"
     >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        {/* Quiet while playing, so screen readers aren't read every frame. */}
-        <Col className="min-w-0 gap-1" aria-live={playing ? 'off' : 'polite'}>
-          <div className="text-primary-700 text-2xl font-semibold sm:text-3xl">
-            {title}
-          </div>
-          <div className="text-ink-700 text-sm tabular-nums sm:text-base">
-            {formatRewindTime(time)}
-          </div>
-          {milestone?.note && (
-            <div className="text-ink-600 text-sm">{milestone.note}</div>
-          )}
-        </Col>
-        <Row className="gap-4 sm:gap-6">
-          <ChamberOdds
-            label="Senate"
-            rep={snapshotProb(snapshot, senateId, frame)}
-            others={
-              milestone &&
-              comparisonsAt(REPLAY_COMPARISONS, 'senate', milestone.id)
-            }
-          />
-          <ChamberOdds
-            label="House"
-            rep={snapshotProb(snapshot, houseId, frame)}
-            others={
-              milestone &&
-              comparisonsAt(REPLAY_COMPARISONS, 'house', milestone.id)
-            }
-          />
-        </Row>
-      </div>
-
       <Row className="items-center gap-3">
-        <Button
-          color="indigo"
-          size="lg"
-          className="shrink-0 gap-1.5 !rounded-full"
+        <button
+          className="bg-primary-500 hover:bg-primary-600 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white"
           onClick={onPlay}
           aria-label={
             playing
@@ -258,54 +249,60 @@ function ReplayPlayer(props: {
           ) : (
             <PlayIcon className="h-5 w-5" aria-hidden />
           )}
-          <span>{playing ? 'Pause' : atEnd ? 'Replay' : 'Play'}</span>
-        </Button>
-        <div className="relative flex-1">
-          <input
-            type="range"
-            className="accent-primary-600 relative z-10 w-full cursor-pointer"
-            min={0}
-            max={sliderMax(milestones)}
-            step={1}
-            value={sliderValue(milestones, frame)}
-            aria-label="Replay time"
-            aria-valuetext={`${title}, ${formatRewindTime(time)}`}
-            onChange={(e) =>
-              onJump(frameAtSlider(milestones, Number(e.target.value)))
-            }
-            onKeyDown={(e) => {
-              const to = scrubKeyFrame(
-                milestones,
-                frame,
-                times.length - 1,
-                e.key
-              )
-              if (to === undefined) return
-              e.preventDefault()
-              onJump(to)
-            }}
-          />
-          {/* A tick per milestone: every stage is the same width. */}
-          <div className="pointer-events-none absolute inset-x-[7px] top-1/2 h-0">
-            {milestones.map((m, i) => (
-              <span
-                key={m.id}
-                className={clsx(
-                  'absolute -top-[5px] h-[10px] w-[2px] -translate-x-1/2 rounded',
-                  m.frame <= frame ? 'bg-primary-500' : 'bg-ink-300'
-                )}
-                style={{
-                  left: `${(i / Math.max(1, milestones.length - 1)) * 100}%`,
-                }}
-              />
-            ))}
+        </button>
+        {/* Quiet while playing, so screen readers aren't read every frame. */}
+        <Col className="min-w-0 flex-1" aria-live={playing ? 'off' : 'polite'}>
+          <div className="text-primary-700 truncate text-base font-semibold leading-6 sm:text-xl sm:leading-7">
+            {title}
           </div>
-        </div>
+          <div className="text-ink-600 truncate text-xs tabular-nums leading-5 sm:text-sm">
+            {formatRewindTime(time)}
+            {milestone?.note && ` · ${milestone.note}`}
+          </div>
+        </Col>
       </Row>
 
-      {/* One scrolling row on phones; wrapped from sm up. */}
+      <div className="relative">
+        <input
+          type="range"
+          className="accent-primary-600 relative z-10 w-full cursor-pointer"
+          min={0}
+          max={sliderMax(milestones)}
+          step={1}
+          value={sliderValue(milestones, frame)}
+          aria-label="Replay time"
+          aria-valuetext={`${title}, ${formatRewindTime(time)}`}
+          onChange={(e) =>
+            onJump(frameAtSlider(milestones, Number(e.target.value)))
+          }
+          onKeyDown={(e) => {
+            const to = scrubKeyFrame(milestones, frame, times.length - 1, e.key)
+            if (to === undefined) return
+            e.preventDefault()
+            onJump(to)
+          }}
+        />
+        {/* A tick per milestone: every stage is the same width. */}
+        <div className="pointer-events-none absolute inset-x-[7px] top-1/2 h-0">
+          {milestones.map((m, i) => (
+            <span
+              key={m.id}
+              className={clsx(
+                'absolute -top-[5px] h-[10px] w-[2px] -translate-x-1/2 rounded',
+                m.frame <= frame ? 'bg-primary-500' : 'bg-ink-300'
+              )}
+              style={{
+                left: `${(i / Math.max(1, milestones.length - 1)) * 100}%`,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* One scrolling row on phones, wrapped from sm up. The buttons never
+          change size, so the rows don't change while scrubbing. */}
       <div
-        className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible"
+        className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible"
         role="group"
         aria-label="Jump to a milestone"
       >
@@ -318,7 +315,7 @@ function ReplayPlayer(props: {
               onJump(m.frame)
             }}
             className={clsx(
-              'shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-sm',
+              'shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs',
               m.frame === frame
                 ? 'border-primary-500 bg-primary-500 text-white'
                 : m.frame < frame
@@ -326,41 +323,102 @@ function ReplayPlayer(props: {
                 : 'border-ink-300 text-ink-700 hover:bg-canvas-50'
             )}
           >
-            {milestoneLabel(m)}
+            {m.id === LATEST_MILESTONE_ID ? 'Latest' : m.label}
           </button>
+        ))}
+      </div>
+
+      <div className="border-ink-200 grid gap-x-8 gap-y-3 border-t pt-3 sm:grid-cols-2">
+        {(['senate', 'house'] as const).map((chamber) => (
+          <ChamberComparison
+            key={chamber}
+            label={chamber === 'senate' ? 'Senate' : 'House'}
+            rep={snapshotProb(snapshot, chambers[chamber].id, frame)}
+            others={REPLAY_COMPARISONS.map((s) => ({
+              source: s.source,
+              rep: comparisonsAt([s], chamber, time)[0]?.republicanProb,
+            }))}
+            winner={chambers[chamber].winner}
+          />
         ))}
       </div>
     </section>
   )
 }
 
-// Manifold's odds for a chamber, and on a milestone, other markets' beside.
-function ChamberOdds(props: {
+// Manifold's odds on a chamber over each other market's, bar for bar, and
+// how far apart they were.
+function ChamberComparison(props: {
   label: string
   rep: number | undefined
-  others?: ReplayComparison[]
+  others: { source: string; rep: number | undefined }[]
+  winner?: 'D' | 'R'
 }) {
-  const { label, others } = props
-  const split =
-    props.rep !== undefined && Number.isFinite(props.rep)
-      ? partySplit(props.rep)
+  const { label, rep, others, winner } = props
+  const first = others[0]
+  const gap =
+    rep !== undefined && first?.rep !== undefined
+      ? chamberGap(rep, first.rep, winner)
       : undefined
+  const otherName = first && comparisonLabel(first.source)
   return (
-    <Col className="w-36 gap-1 sm:w-40">
-      <div className="text-ink-600 text-xs font-semibold uppercase tracking-wide">
-        {label} control
-      </div>
-      <Row className="justify-between text-sm font-semibold tabular-nums">
-        <span className="text-azure-700 dark:text-azure-400">
-          D {split ? formatOdds(split.dem) : '—'}
+    <Col className="min-w-0 gap-1.5">
+      <Row className="h-5 items-baseline justify-between gap-2">
+        <span className="text-ink-600 shrink-0 text-xs font-semibold uppercase tracking-wide">
+          {label} control
         </span>
-        <span className="text-sienna-700 dark:text-sienna-400">
-          R {split ? formatOdds(split.rep) : '—'}
+        <span
+          className={clsx(
+            'truncate text-xs font-semibold',
+            gap && gap.points > 0 ? 'text-primary-700' : 'text-ink-600'
+          )}
+        >
+          {gap &&
+            (gap.resolved
+              ? gap.points > 0
+                ? `Manifold ${gap.points} pts closer to the result`
+                : `${otherName} ${-gap.points} pts closer to the result`
+              : `Manifold had ${
+                  gap.party === 'D' ? 'Democrats' : 'Republicans'
+                } ${Math.abs(gap.points)} pts ${
+                  gap.points > 0 ? 'higher' : 'lower'
+                }`)}
         </span>
       </Row>
+      <OddsBar name="Manifold" rep={rep} ours />
+      {others.map((o) => (
+        <OddsBar key={o.source} name={comparisonLabel(o.source)} rep={o.rep} />
+      ))}
+    </Col>
+  )
+}
+
+function OddsBar(props: {
+  name: string
+  rep: number | undefined
+  ours?: boolean
+}) {
+  const { name, rep, ours } = props
+  const split =
+    rep !== undefined && Number.isFinite(rep) ? partySplit(rep) : undefined
+  return (
+    <div className="grid grid-cols-[5.5rem_3.75rem_minmax(0,1fr)_3.75rem] items-center gap-2 text-sm tabular-nums">
+      <span
+        className={clsx(
+          'truncate font-semibold',
+          ours ? 'text-primary-700' : 'text-ink-800'
+        )}
+      >
+        {name}
+      </span>
+      <span className="text-azure-700 dark:text-azure-400 text-right font-semibold">
+        <span aria-hidden>D </span>
+        <span className="sr-only">Democrats </span>
+        {split ? formatOdds(split.dem) : '—'}
+      </span>
       <div
         className={clsx(
-          'flex h-2 overflow-hidden rounded-full',
+          'flex h-2.5 overflow-hidden rounded-full',
           split ? 'bg-sienna-600' : 'bg-ink-200'
         )}
         aria-hidden
@@ -372,21 +430,12 @@ function ChamberOdds(props: {
           />
         )}
       </div>
-      {others?.map((other) => {
-        const theirs = partySplit(other.republicanProb)
-        return (
-          <div
-            key={other.source}
-            className="text-ink-600 flex justify-between text-xs tabular-nums"
-          >
-            <span>{comparisonLabel(other.source)}</span>
-            <span>
-              D {formatOdds(theirs.dem)} · R {formatOdds(theirs.rep)}
-            </span>
-          </div>
-        )
-      })}
-    </Col>
+      <span className="text-sienna-700 dark:text-sienna-400 font-semibold">
+        <span aria-hidden>R </span>
+        <span className="sr-only">Republicans </span>
+        {split ? formatOdds(split.rep) : '—'}
+      </span>
+    </div>
   )
 }
 
@@ -394,15 +443,14 @@ function MilestoneTable(props: {
   snapshot: ReplaySnapshot
   frame: number
   onJump: (frame: number) => void
-  senateId: string | undefined
-  houseId: string | undefined
+  chambers: Chambers
 }) {
-  const { snapshot, frame, onJump, senateId, houseId } = props
-  const chambers: { chamber: ReplayChamber; label: string; id?: string }[] = [
-    { chamber: 'senate', label: 'Senate', id: senateId },
-    { chamber: 'house', label: 'House', id: houseId },
+  const { snapshot, frame, onJump, chambers } = props
+  const columns: { chamber: ReplayChamber; label: string }[] = [
+    { chamber: 'senate', label: 'Senate' },
+    { chamber: 'house', label: 'House' },
   ]
-  const sources = uniq(REPLAY_COMPARISONS.map((c) => c.source))
+  const compared = REPLAY_COMPARISONS.length > 0
   return (
     <section className="flex flex-col gap-3" aria-labelledby="milestone-odds">
       <Col className="gap-1">
@@ -414,8 +462,8 @@ function MilestoneTable(props: {
         </h2>
         <p className="text-ink-600 text-sm">
           Manifold’s chance of each party winning control of Congress
-          {sources.length > 0 && ', beside real-money prediction market odds'}.
-          Select a milestone to see the map at that moment.
+          {compared && ', beside real-money prediction market odds'}. Select a
+          milestone to see the map at that moment.
         </p>
       </Col>
       <div className="border-ink-200 overflow-x-auto rounded-xl border">
@@ -425,7 +473,7 @@ function MilestoneTable(props: {
               <th scope="col" className="px-3 py-2 font-semibold">
                 Milestone
               </th>
-              {chambers.map((c) => (
+              {columns.map((c) => (
                 <th key={c.chamber} scope="col" className="px-3 py-2">
                   {c.label} control
                 </th>
@@ -453,15 +501,17 @@ function MilestoneTable(props: {
                     {formatRewindTime(m.time)}
                   </div>
                 </th>
-                {chambers.map((c) => (
+                {columns.map((c) => (
                   <td key={c.chamber} className="px-3 py-2 align-top">
                     <SplitOdds
-                      rep={snapshotProb(snapshot, c.id, m.frame)}
-                      source={
-                        REPLAY_COMPARISONS.length ? 'Manifold' : undefined
-                      }
+                      rep={snapshotProb(
+                        snapshot,
+                        chambers[c.chamber].id,
+                        m.frame
+                      )}
+                      source={compared ? 'Manifold' : undefined}
                     />
-                    {comparisonsAt(REPLAY_COMPARISONS, c.chamber, m.id).map(
+                    {comparisonsAt(REPLAY_COMPARISONS, c.chamber, m.time).map(
                       (other) => (
                         <SplitOdds
                           key={other.source}
@@ -477,16 +527,16 @@ function MilestoneTable(props: {
           </tbody>
         </table>
       </div>
-      {sources.length > 0 && (
+      {compared && (
         <ul className="text-ink-600 flex flex-col gap-1 text-xs">
           <li>
             Manifold: the market’s probability after the last trade before each
-            milestone.
+            moment.
           </li>
-          {sources.map(
-            (source) =>
-              COMPARISON_SOURCES[source] && (
-                <li key={source}>{COMPARISON_SOURCES[source].method}</li>
+          {REPLAY_COMPARISONS.map(
+            (s) =>
+              COMPARISON_SOURCES[s.source] && (
+                <li key={s.source}>{COMPARISON_SOURCES[s.source].method}</li>
               )
           )}
         </ul>

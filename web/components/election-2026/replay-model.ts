@@ -223,8 +223,9 @@ export function playbackDelay(
 
 const unit = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`
 
-// "2 days 6 hours out", "45 min out", "3 hours 15 min after the first polls
-// closed": a frame's time from the first poll closings, to the minute.
+// "2 days 6 hours out", "45 min out", "3 hours 15 min after polls closed": a
+// frame's time from the first poll closings, to the minute. Short enough
+// for one line on a phone.
 export function replayCountdown(time: number, anchor = POLLS_CLOSE_2026) {
   const diff = Math.round((time - anchor) / MINUTE_MS) * MINUTE_MS
   if (diff === 0) return 'Polls close'
@@ -238,7 +239,33 @@ export function replayCountdown(time: number, anchor = POLLS_CLOSE_2026) {
     ? [unit(hours, 'hour'), minutes ? `${minutes} min` : '']
     : [`${minutes} min`]
   const span = parts.filter(Boolean).join(' ')
-  return diff < 0 ? `${span} out` : `${span} after the first polls closed`
+  return diff < 0 ? `${span} out` : `${span} after polls closed`
+}
+
+// The replay opens here, a few hours out, rather than a quiet week back.
+export const DEFAULT_MILESTONE_ID = '3h'
+
+export const defaultFrame = (milestones: ReplayMilestone[]) =>
+  milestones.find((m) => m.id === DEFAULT_MILESTONE_ID)?.frame ?? 0
+
+// How far apart Manifold and another market were on a chamber, in whole
+// points as shown. Once the chamber's market resolved, on the winner: a
+// positive gap means Manifold was that much closer to the result. Before,
+// on the Democrats. Undefined when the two read the same.
+export function chamberGap(
+  manifoldRep: number,
+  otherRep: number,
+  winner?: 'D' | 'R'
+) {
+  const ours = partySplit(manifoldRep)
+  const theirs = partySplit(otherRep)
+  const party = winner ?? 'D'
+  const share = (s: { rep: number; dem: number }) =>
+    party === 'R' ? s.rep : s.dem
+  const points = Math.round((share(ours) - share(theirs)) * 100)
+  return Number.isFinite(points) && points !== 0
+    ? { points, party, resolved: winner !== undefined }
+    : undefined
 }
 
 // A chamber's odds for each party, rounded to what formatOdds shows so the

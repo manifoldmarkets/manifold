@@ -1,28 +1,23 @@
 import data from 'web/public/data/election-2026-comparisons.json'
 
-// Other markets' odds on the headline questions at the replay's milestones,
-// shown beside Manifold's in the milestone table. Each row cites where and
-// when its price was set. Kalshi's rows come from
+// Other markets' odds on the headline questions at each frame of the
+// replay, shown beside Manifold's. Kalshi's series comes from
 // web/scripts/election-2026-replay-comparisons.ts.
 
 export type ReplayChamber = 'senate' | 'house'
 
-export type ReplayComparison = {
+export type ComparisonSeries = {
   source: string
-  url: string
-  chamber: ReplayChamber
-  // A milestone id from REPLAY_MILESTONES.
-  milestoneId: string
-  // The chance Republicans win the chamber, 0 to 1.
-  republicanProb: number
-  // When that price was set and when it was read, as ISO times.
-  quotedAt: string
+  // When the prices were read, as an ISO time.
   retrievedAt: string
+  // [frame time, chance Republicans win the chamber] at each frame with a
+  // price, ascending.
+  chambers: { [chamber in ReplayChamber]?: [number, number][] }
 }
 
-export type ReplayComparisonsFile = { rows: ReplayComparison[] }
+export type ReplayComparisonsFile = { series: ComparisonSeries[] }
 
-// How the page names each source, and how its price at a milestone is read,
+// How the page names each source, and how its price at a moment is read,
 // for the table's notes. The data keeps the real source.
 export const COMPARISON_SOURCES: {
   [source: string]: { label: string; method: string }
@@ -30,24 +25,28 @@ export const COMPARISON_SOURCES: {
   Kalshi: {
     label: 'Real money',
     method:
-      'Real money: the midpoint of the best bid and ask for the Republican contract on a real-money prediction market, at the end of the minute before each milestone.',
+      'Real money: the midpoint of the best bid and ask for the Republican contract on a real-money prediction market, in the last minute before each moment.',
   },
 }
 
 export const comparisonLabel = (source: string) =>
   COMPARISON_SOURCES[source]?.label ?? source
 
-export const REPLAY_COMPARISONS = (data as ReplayComparisonsFile).rows
+export const REPLAY_COMPARISONS = (data as ReplayComparisonsFile).series
 
+export type ComparisonQuote = { source: string; republicanProb: number }
+
+// Each source's price at exactly this frame time. A snapshot extended
+// without rerunning the comparisons has no price at its new frames.
 export function comparisonsAt(
-  comparisons: ReplayComparison[],
+  series: ComparisonSeries[],
   chamber: ReplayChamber,
-  milestoneId: string
-) {
-  return comparisons.filter(
-    (c) =>
-      c.chamber === chamber &&
-      c.milestoneId === milestoneId &&
-      Number.isFinite(c.republicanProb)
-  )
+  time: number
+): ComparisonQuote[] {
+  return series.flatMap((s) => {
+    const point = s.chambers[chamber]?.find(([t]) => t === time)
+    return point && Number.isFinite(point[1])
+      ? [{ source: s.source, republicanProb: point[1] }]
+      : []
+  })
 }
