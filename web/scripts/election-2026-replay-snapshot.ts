@@ -168,11 +168,13 @@ async function main() {
   const { times, milestones } = replayPlan(REPLAY_MILESTONES, end)
   if (times.length < 2) throw new Error('Nothing to replay yet')
   const start = times[0]
-  // Bets up to now, not just to `end`: a series opens at the first bet after
-  // the first frame, however late that bet came.
+  // Bets up to after the markets were read, not just to `end`: a series opens
+  // at the first bet after the first frame, however late that bet came, and
+  // one with no bets at all sits at the price read above.
+  const betsUntil = Date.now()
   const slices: [number, number][] = []
-  for (let t = start; t < now; t += DAY_MS)
-    slices.push([t, Math.min(t + DAY_MS, now) + 1])
+  for (let t = start; t < betsUntil; t += DAY_MS)
+    slices.push([t, Math.min(t + DAY_MS, betsUntil) + 1])
 
   const rows: BetProbRow[] = []
   const add = (contractId: string, answerId: string | null, p: PointRow) =>

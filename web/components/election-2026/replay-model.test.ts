@@ -12,6 +12,7 @@ import {
   REPLAY_MILESTONES,
   replayCountdown,
   replayPlan,
+  scrubKeyFrame,
   sliderMax,
   sliderValue,
   SLIDER_STEPS_PER_STAGE,
@@ -93,6 +94,23 @@ test('playback holds on milestones it reaches, not the one it starts on', () => 
   // A day of six-hour frames plays as fast as an hour of five-minute ones.
   const week = playbackDelay(milestones, 1, 0)
   assert.ok(week >= 60 && week <= 400)
+})
+
+test('scrubber keys step frames and jump milestones', () => {
+  const { times, milestones } = replayPlan(REPLAY_MILESTONES, T0 + HOUR_MS)
+  const last = times.length - 1
+  const day = milestones[1].frame
+  // An arrow moves a whole frame, though a slider step is less than one.
+  assert.equal(scrubKeyFrame(milestones, 0, last, 'ArrowRight'), 1)
+  assert.equal(frameAtSlider(milestones, sliderValue(milestones, 0) + 1), 0)
+  assert.equal(scrubKeyFrame(milestones, 0, last, 'ArrowLeft'), 0)
+  assert.equal(scrubKeyFrame(milestones, last, last, 'ArrowUp'), last)
+  assert.equal(scrubKeyFrame(milestones, 3, last, 'PageUp'), day)
+  assert.equal(scrubKeyFrame(milestones, day, last, 'PageDown'), 0)
+  assert.equal(scrubKeyFrame(milestones, day + 2, last, 'PageDown'), day)
+  assert.equal(scrubKeyFrame(milestones, 5, last, 'End'), last)
+  assert.equal(scrubKeyFrame(milestones, 5, last, 'Home'), 0)
+  assert.equal(scrubKeyFrame(milestones, 5, last, 'Tab'), undefined)
 })
 
 test('party odds round so both sides add up as shown', () => {

@@ -30,6 +30,7 @@ import {
   replayCountdown,
   ReplayMilestone,
   ReplaySnapshot,
+  scrubKeyFrame,
   sliderMax,
   sliderValue,
   snapshotProb,
@@ -266,6 +267,17 @@ function ReplayPlayer(props: {
             onChange={(e) =>
               onJump(frameAtSlider(milestones, Number(e.target.value)))
             }
+            onKeyDown={(e) => {
+              const to = scrubKeyFrame(
+                milestones,
+                frame,
+                times.length - 1,
+                e.key
+              )
+              if (to === undefined) return
+              e.preventDefault()
+              onJump(to)
+            }}
           />
           {/* A tick per milestone: every stage is the same width. */}
           <div className="pointer-events-none absolute inset-x-[7px] top-1/2 h-0">

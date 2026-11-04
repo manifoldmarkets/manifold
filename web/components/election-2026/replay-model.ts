@@ -172,6 +172,34 @@ export function frameAtSlider(milestones: ReplayMilestone[], value: number) {
   return from.frame + Math.round(fraction * (to.frame - from.frame))
 }
 
+// The frame a scrubber key moves to. One slider step is less than a frame
+// in most stages, so arrows step a frame; Page Up and Down jump between
+// milestones, Home and End go to either end. Undefined for other keys.
+export function scrubKeyFrame(
+  milestones: ReplayMilestone[],
+  frame: number,
+  last: number,
+  key: string
+): number | undefined {
+  switch (key) {
+    case 'ArrowRight':
+    case 'ArrowUp':
+      return Math.min(last, frame + 1)
+    case 'ArrowLeft':
+    case 'ArrowDown':
+      return Math.max(0, frame - 1)
+    case 'PageUp':
+      return milestones.find((m) => m.frame > frame)?.frame ?? last
+    case 'PageDown':
+      return [...milestones].reverse().find((m) => m.frame < frame)?.frame ?? 0
+    case 'Home':
+      return 0
+    case 'End':
+      return last
+  }
+  return undefined
+}
+
 // About four seconds a stage, then a beat on each milestone it reaches.
 export const STAGE_PLAY_MS = 4_000
 export const MILESTONE_HOLD_MS = 1_800
