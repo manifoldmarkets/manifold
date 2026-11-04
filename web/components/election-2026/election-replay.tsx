@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import clsx from 'clsx'
+import { uniq } from 'lodash'
 import Link from 'next/link'
 import { PauseIcon, PlayIcon, RefreshIcon } from '@heroicons/react/solid'
 import { Button } from 'web/components/buttons/button'
@@ -18,9 +19,11 @@ import {
 } from 'web/components/usa-map/live-election-map'
 import { track } from 'web/lib/service/analytics'
 import {
+  COMPARISON_METHODS,
   comparisonsAt,
   REPLAY_COMPARISONS,
   ReplayChamber,
+  ReplayComparison,
 } from './replay-comparisons'
 import {
   frameAtSlider,
@@ -223,10 +226,18 @@ function ReplayPlayer(props: {
           <ChamberOdds
             label="Senate"
             rep={snapshotProb(snapshot, senateId, frame)}
+            others={
+              milestone &&
+              comparisonsAt(REPLAY_COMPARISONS, 'senate', milestone.id)
+            }
           />
           <ChamberOdds
             label="House"
             rep={snapshotProb(snapshot, houseId, frame)}
+            others={
+              milestone &&
+              comparisonsAt(REPLAY_COMPARISONS, 'house', milestone.id)
+            }
           />
         </Row>
       </div>
@@ -328,8 +339,13 @@ function ReplayPlayer(props: {
   )
 }
 
-function ChamberOdds(props: { label: string; rep: number | undefined }) {
-  const { label } = props
+// Manifold's odds for a chamber, and on a milestone, other markets' beside.
+function ChamberOdds(props: {
+  label: string
+  rep: number | undefined
+  others?: ReplayComparison[]
+}) {
+  const { label, others } = props
   const split =
     props.rep !== undefined && Number.isFinite(props.rep)
       ? partySplit(props.rep)
@@ -361,6 +377,20 @@ function ChamberOdds(props: { label: string; rep: number | undefined }) {
           />
         )}
       </div>
+      {others?.map((other) => {
+        const theirs = partySplit(other.republicanProb)
+        return (
+          <div
+            key={other.source}
+            className="text-ink-600 flex justify-between text-xs tabular-nums"
+          >
+            <span>{other.source}</span>
+            <span>
+              D {formatOdds(theirs.dem)} · R {formatOdds(theirs.rep)}
+            </span>
+          </div>
+        )
+      })}
     </Col>
   )
 }
@@ -377,6 +407,7 @@ function MilestoneTable(props: {
     { chamber: 'senate', label: 'Senate', id: senateId },
     { chamber: 'house', label: 'House', id: houseId },
   ]
+  const sources = uniq(REPLAY_COMPARISONS.map((c) => c.source))
   return (
     <section className="flex flex-col gap-3" aria-labelledby="milestone-odds">
       <Col className="gap-1">
@@ -387,8 +418,10 @@ function MilestoneTable(props: {
           Odds at each milestone
         </h2>
         <p className="text-ink-600 text-sm">
-          Manifold’s chance of each party winning control of Congress. Select a
-          milestone to see the map at that moment.
+          Manifold’s chance of each party winning control of Congress
+          {sources.length > 0 &&
+            `, beside real-money odds from ${sources.join(' and ')}`}
+          . Select a milestone to see the map at that moment.
         </p>
       </Col>
       <div className="border-ink-200 overflow-x-auto rounded-xl border">
@@ -451,6 +484,20 @@ function MilestoneTable(props: {
           </tbody>
         </table>
       </div>
+      {sources.length > 0 && (
+        <ul className="text-ink-600 flex flex-col gap-1 text-xs">
+          <li>
+            Manifold: the market’s probability after the last trade before each
+            milestone.
+          </li>
+          {sources.map(
+            (source) =>
+              COMPARISON_METHODS[source] && (
+                <li key={source}>{COMPARISON_METHODS[source]}</li>
+              )
+          )}
+        </ul>
+      )}
     </section>
   )
 }

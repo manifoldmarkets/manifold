@@ -1,0 +1,148 @@
+{
+  "rows": [
+    {
+      "source": "Kalshi",
+      "url": "https://kalshi.com/markets/controls",
+      "chamber": "senate",
+      "milestoneId": "week",
+      "republicanProb": 0.365,
+      "quotedAt": "2026-10-27T22:58:00.000Z",
+      "retrievedAt": "2026-11-04T03:57:45.814Z"
+    },
+    {
+      "source": "Kalshi",
+      "url": "https://kalshi.com/markets/controlh",
+      "chamber": "house",
+      "milestoneId": "week",
+      "republicanProb": 0.0945,
+      "quotedAt": "2026-10-27T23:00:00.000Z",
+      "retrievedAt": "2026-11-04T03:57:45.814Z"
+    },
+    {
+      "source": "Kalshi",
+      "url": "https://kalshi.com/markets/controls",
+      "chamber": "senate",
+      "milestoneId": "day",
+      "republicanProb": 0.265,
+      "quotedAt": "2026-11-02T23:00:00.000Z",
+      "retrievedAt": "2026-11-04T03:57:45.814Z"
+    },
+    {
+      "source": "Kalshi",
+      "url": "https://kalshi.com/markets/controlh",
+      "chamber": "house",
+      "milestoneId": "day",
+      "republicanProb": 0.0625,
+      "quotedAt": "2026-11-02T23:00:00.000Z",
+      "retrievedAt": "2026-11-04T03:57:45.814Z"
+    },
+    {
+      "source": "Kalshi",
+      "url": "https://kalshi.com/markets/controls",
+      "chamber": "senate",
+      "milestoneId": "12h",
+      "republicanProb": 0.255,
+      "quotedAt": "2026-11-03T11:00:00.000Z",
+      "retrievedAt": "2026-11-04T03:57:45.814Z"
+    },
+    {
+      "source": "Kalshi",
+      "url": "https://kalshi.com/markets/controlh",
+      "chamber": "house",
+      "milestoneId": "12h",
+      "republicanProb": 0.062,
+      "quotedAt": "2026-11-03T11:00:00.000Z",
+      "retrievedAt": "2026-11-04T03:57:45.814Z"
+    },
+    {
+      "source": "Kalshi",
+      "url": "https://kalshi.com/markets/controls",
+      "chamber": "senate",
+      "milestoneId": "6h",
+      "republicanProb": 0.275,
+      "quotedAt": "2026-11-03T17:00:00.000Z",
+      "retrievedAt": "2026-11-04T03:57:45.814Z"
+    },
+    {
+      "source": "Kalshi",
+      "url": "https://kalshi.com/markets/controlh",
+      "chamber": "house",
+      "milestoneId": "6h",
+      "republicanProb": 0.0675,
+      "quotedAt": "2026-11-03T17:00:00.000Z",
+      "retrievedAt": "2026-11-04T03:57:45.814Z"
+    },
+    {
+      "source": "Kalshi",
+      "url": "https://kalshi.com/markets/controls",
+      "chamber": "senate",
+      "milestoneId": "3h",
+      "republicanProb": 0.265,
+      "quotedAt": "2026-11-03T20:00:00.000Z",
+      "retrievedAt": "2026-11-04T03:57:45.814Z"
+    },
+    {
+      "source": "Kalshi",
+      "url": "https://kalshi.com/markets/controlh",
+      "chamber": "house",
+      "milestoneId": "3h",
+      "republicanProb": 0.0645,
+      "quotedAt": "2026-11-03T20:00:00.000Z",
+      "retrievedAt": "2026-11-04T03:57:45.814Z"
+    },
+    {
+      "source": "Kalshi",
+      "url": "https://kalshi.com/markets/controls",
+      "chamber": "senate",
+      "milestoneId": "1h",
+      "republicanProb": 0.265,
+      "quotedAt": "2026-11-03T22:00:00.000Z",
+      "retrievedAt": "2026-11-04T03:57:45.814Z"
+    },
+    {
+      "source": "Kalshi",
+      "url": "https://kalshi.com/markets/controlh",
+      "chamber": "house",
+      "milestoneId": "1h",
+      "republicanProb": 0.067,
+      "quotedAt": "2026-11-03T22:00:00.000Z",
+      "retrievedAt": "2026-11-04T03:57:45.814Z"
+    },
+    {
+      "source": "Kalshi",
+      "url": "https://kalshi.com/markets/controls",
+      "chamber": "senate",
+      "milestoneId": "polls",
+      "republicanProb": 0.255,
+      "quotedAt": "2026-11-03T23:00:00.000Z",
+      "retrievedAt": "2026-11-04T03:57:45.814Z"
+    },
+    {
+      "source": "Kalshi",
+      "url": "https://kalshi.com/markets/controlh",
+      "chamber": "house",
+      "milestoneId": "polls",
+      "republicanProb": 0.0665,
+      "quotedAt": "2026-11-03T23:00:00.000Z",
+      "retrievedAt": "2026-11-04T03:57:45.814Z"
+    },
+    {
+      "source": "Kalshi",
+      "url": "https://kalshi.com/markets/controls",
+      "chamber": "senate",
+      "milestoneId": "9pm",
+      "republicanProb": 0.0135,
+      "quotedAt": "2026-11-04T02:00:00.000Z",
+      "retrievedAt": "2026-11-04T03:57:45.814Z"
+    },
+    {
+      "source": "Kalshi",
+      "url": "https://kalshi.com/markets/controlh",
+      "chamber": "house",
+      "milestoneId": "9pm",
+      "republicanProb": 0.0045,
+      "quotedAt": "2026-11-04T02:00:00.000Z",
+      "retrievedAt": "2026-11-04T03:57:45.814Z"
+    }
+  ]
+}
