@@ -245,4 +245,206 @@ export const CANDIDATE_DATA: Record<string, CandidateDataType> = {
     photo: '/political-candidates/ossoff.png',
     shortName: 'Ossoff',
   },
+  // Added Nov 2026 for the 2028 page. Photos and licences:
+  // web/public/political-candidates/credits.json.
+  'Ro Khanna': {
+    party: 'Democrat',
+    photo: '/political-candidates/khanna.png',
+    shortName: 'Khanna',
+  },
+  'Wes Moore': {
+    party: 'Democrat',
+    photo: '/political-candidates/moore.png',
+    shortName: 'Moore',
+  },
+  'Bernie Sanders': {
+    party: 'Democrat',
+    photo: '/political-candidates/bsanders.png',
+    shortName: 'Bernie',
+  },
+  'Hunter Biden': {
+    party: 'Democrat',
+    photo: '/political-candidates/hbiden.png',
+    shortName: 'H. Biden',
+  },
+  'Donald Trump Jr.': {
+    party: 'Republican',
+    photo: '/political-candidates/trumpjr.png',
+    shortName: 'Trump Jr.',
+  },
+  'Thomas Massie': {
+    party: 'Republican',
+    photo: '/political-candidates/massie.png',
+    shortName: 'Massie',
+  },
+  'Brian Kemp': {
+    party: 'Republican',
+    photo: '/political-candidates/kemp.png',
+    shortName: 'Kemp',
+  },
+  'Ivanka Trump': {
+    party: 'Republican',
+    photo: '/political-candidates/itrump.png',
+    shortName: 'Ivanka',
+  },
+  'Marjorie Taylor Greene': {
+    party: 'Republican',
+    photo: '/political-candidates/greene.png',
+    shortName: 'Greene',
+  },
+  'Josh Hawley': {
+    party: 'Republican',
+    photo: '/political-candidates/hawley.png',
+    shortName: 'Hawley',
+  },
+  'Chris Van Hollen': {
+    party: 'Democrat',
+    photo: '/political-candidates/vanhollen.png',
+    shortName: 'Van Hollen',
+  },
+  'Amy Klobuchar': {
+    party: 'Democrat',
+    photo: '/political-candidates/klobuchar.png',
+    shortName: 'Klobuchar',
+  },
+  'Mike Johnson': {
+    party: 'Republican',
+    photo: '/political-candidates/mjohnson.png',
+    shortName: 'Johnson',
+  },
+  'Abigail Spanberger': {
+    party: 'Democrat',
+    photo: '/political-candidates/spanberger.png',
+    shortName: 'Spanberger',
+  },
+  'Chris Murphy': {
+    party: 'Democrat',
+    photo: '/political-candidates/cmurphy.png',
+    shortName: 'C. Murphy',
+  },
+  'James Talarico': {
+    party: 'Democrat',
+    photo: '/political-candidates/talarico.png',
+    shortName: 'Talarico',
+  },
+  'Elissa Slotkin': {
+    party: 'Democrat',
+    photo: '/political-candidates/slotkin.png',
+    shortName: 'Slotkin',
+  },
+  'Ruben Gallego': {
+    party: 'Democrat',
+    photo: '/political-candidates/gallego.png',
+    shortName: 'Gallego',
+  },
+  'Cory Booker': {
+    party: 'Democrat',
+    photo: '/political-candidates/booker.png',
+    shortName: 'Booker',
+  },
+  'Tom Cotton': {
+    party: 'Republican',
+    photo: '/political-candidates/cotton.png',
+    shortName: 'Cotton',
+  },
+  'Elizabeth Warren': {
+    party: 'Democrat',
+    photo: '/political-candidates/warren.png',
+    shortName: 'Warren',
+  },
+  'Jasmine Crockett': {
+    party: 'Democrat',
+    photo: '/political-candidates/crockett.png',
+    shortName: 'Crockett',
+  },
+  'Eric Trump': {
+    party: 'Republican',
+    photo: '/political-candidates/etrump.png',
+    shortName: 'E. Trump',
+  },
+  'Adam Kinzinger': {
+    party: 'Other',
+    photo: '/political-candidates/kinzinger.png',
+    shortName: 'Kinzinger',
+  },
+  'Rahm Emanuel': {
+    party: 'Democrat',
+    photo: '/political-candidates/emanuel.png',
+    shortName: 'Emanuel',
+  },
+  'Gina Raimondo': {
+    party: 'Democrat',
+    photo: '/political-candidates/raimondo.png',
+    shortName: 'Raimondo',
+  },
+  'Mitch Landrieu': {
+    party: 'Democrat',
+    photo: '/political-candidates/landrieu.png',
+    shortName: 'Landrieu',
+  },
+  'John N. Kennedy': {
+    party: 'Republican',
+    photo: '/political-candidates/jnkennedy.png',
+    shortName: 'J.N. Kennedy',
+  },
+  'Rand Paul': {
+    party: 'Republican',
+    photo: '/political-candidates/paul.png',
+    shortName: 'Paul',
+  },
+  'Josh Green': {
+    party: 'Democrat',
+    photo: '/political-candidates/green.png',
+    shortName: 'Green',
+  },
+  'Kirsten Gillibrand': {
+    party: 'Democrat',
+    photo: '/political-candidates/gillibrand.png',
+    shortName: 'Gillibrand',
+  },
+  'Greg Casar': {
+    party: 'Democrat',
+    photo: '/political-candidates/casar.png',
+    shortName: 'Casar',
+  },
+  'Ritchie Torres': {
+    party: 'Democrat',
+    photo: '/political-candidates/torres.png',
+    shortName: 'Torres',
+  },
+  'Andrew Yang': {
+    party: 'Other',
+    photo: '/political-candidates/yang.png',
+    shortName: 'Yang',
+  },
+  'Mitt Romney': {
+    party: 'Republican',
+    photo: '/political-candidates/romney.png',
+    shortName: 'Romney',
+  },
+  'Byron Donalds': {
+    party: 'Republican',
+    photo: '/political-candidates/donalds.png',
+    shortName: 'Donalds',
+  },
+  'Phil Murphy': {
+    party: 'Democrat',
+    photo: '/political-candidates/pmurphy.png',
+    shortName: 'P. Murphy',
+  },
+  'Josh Stein': {
+    party: 'Democrat',
+    photo: '/political-candidates/stein.png',
+    shortName: 'Stein',
+  },
+  'Andy Kim': {
+    party: 'Democrat',
+    photo: '/political-candidates/kim.png',
+    shortName: 'Kim',
+  },
+  'Pete Hegseth': {
+    party: 'Republican',
+    photo: '/political-candidates/hegseth.png',
+    shortName: 'Hegseth',
+  },
 }
