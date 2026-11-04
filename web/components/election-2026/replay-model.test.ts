@@ -3,8 +3,11 @@ import { test } from 'node:test'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { formatOdds } from 'web/components/usa-map/election-display'
 import { POLLS_CLOSE_2026 } from 'web/components/usa-map/election-rewind-model'
+import { Contract } from 'common/contract'
+import { marketProbsAtFrame } from 'common/market-probs-history'
 import {
   chamberGap,
+  contractProbs,
   defaultFrame,
   frameAtSlider,
   LATEST_MILESTONE_ID,
@@ -19,6 +22,7 @@ import {
   sliderValue,
   SLIDER_STEPS_PER_STAGE,
   stageOf,
+  withLatestFrame,
 } from './replay-model'
 
 const T0 = POLLS_CLOSE_2026
@@ -201,4 +205,89 @@ test('countdown reads days, hours and minutes either side of the polls', () => {
     replayCountdown(T0 + 3 * HOUR_MS + 15 * MINUTE_MS),
     '3 hours 15 min after polls closed'
   )
+})
+
+test('Latest is the markets as the page read them, after the snapshot', () => {
+  // A snapshot that stopped mid-plan, on its own Latest.
+  const { times, milestones } = replayPlan(
+    REPLAY_MILESTONES,
+    T0 + 2 * HOUR_MS + 7 * MINUTE_MS
+  )
+  const snapshot = {
+    generatedAt: 0,
+    times,
+    milestones,
+    markets: {
+      senate: { prob: [[0, 0.3] as [number, number]] },
+      race: {
+        answerProbs: {
+          a: [[0, 0.6] as [number, number]],
+          b: [[0, 0.4] as [number, number]],
+        },
+      },
+      quiet: { prob: [[0, 0.5] as [number, number]] },
+    },
+  }
+  const now = T0 + 20 * HOUR_MS
+  const latest = withLatestFrame(
+    snapshot,
+    {
+      senate: { prob: 0.0123456 },
+      race: { answerProbs: { a: 0.97, b: 0.4 } },
+      // Not in the page's markets: left as the snapshot had it.
+    },
+    now
+  )
+  const frame = times.length
+  assert.equal(latest.times.length, times.length + 1)
+  assert.equal(latest.times[frame], now)
+  // One Latest, at the new frame; the snapshot's own became a plain frame.
+  const ids = latest.milestones.map((m) => m.id)
+  assert.equal(ids.filter((id) => id === LATEST_MILESTONE_ID).length, 1)
+  assert.deepEqual(latest.milestones[latest.milestones.length - 1], {
+    id: LATEST_MILESTONE_ID,
+    label: 'Latest',
+    note: 'The odds now',
+    time: now,
+    frame,
+  })
+  assert.equal(marketProbsAtFrame(latest.markets.senate, frame).prob, 0.0123)
+  assert.deepEqual(marketProbsAtFrame(latest.markets.race, frame).answerProbs, {
+    a: 0.97,
+    b: 0.4,
+  })
+  // An unchanged answer gets no new point.
+  assert.equal(latest.markets.race.answerProbs?.b.length, 1)
+  assert.equal(marketProbsAtFrame(latest.markets.quiet, frame).prob, 0.5)
+  // The frames before are untouched.
+  assert.equal(marketProbsAtFrame(latest.markets.senate, frame - 1).prob, 0.3)
+})
+
+test('Latest no older than the snapshot leaves it as it is', () => {
+  const { times, milestones } = replayPlan(REPLAY_MILESTONES, T0)
+  const snapshot = { generatedAt: 0, times, milestones, markets: {} }
+  assert.equal(withLatestFrame(snapshot, {}, T0), snapshot)
+  assert.equal(withLatestFrame(snapshot, {}, T0 - HOUR_MS), snapshot)
+  assert.equal(withLatestFrame(snapshot, {}, NaN), snapshot)
+})
+
+test('a market reads its traded odds from its pools, even resolved', () => {
+  const binary = {
+    mechanism: 'cpmm-1',
+    pool: { YES: 300, NO: 100 },
+    p: 0.5,
+    prob: 0,
+    isResolved: true,
+    resolution: 'NO',
+  } as unknown as Contract
+  assert.equal(contractProbs(binary)?.prob, 0.25)
+  const multi = {
+    mechanism: 'cpmm-multi-1',
+    outcomeType: 'MULTIPLE_CHOICE',
+    answers: [
+      { id: 'a', poolYes: 100, poolNo: 300, prob: 1 },
+      { id: 'b', poolYes: 300, poolNo: 100, prob: 0 },
+    ],
+  } as unknown as Contract
+  assert.deepEqual(contractProbs(multi)?.answerProbs, { a: 0.75, b: 0.25 })
 })

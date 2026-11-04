@@ -45,15 +45,23 @@ export type ComparisonQuote = {
 }
 
 // Each source's price at exactly this frame time. A snapshot extended
-// without rerunning the comparisons has no price at its new frames.
+// without rerunning the comparisons has no price at its new frames, except
+// for a market that had closed by then: its last price before the close
+// still holds (the page's live Latest frame, past the series' end).
 export function comparisonsAt(
   series: ComparisonSeries[],
   chamber: ReplayChamber,
   time: number
 ): ComparisonQuote[] {
   return series.flatMap((s) => {
-    const point = s.chambers[chamber]?.find(([t]) => t === time)
+    const points = s.chambers[chamber]
     const closedAt = s.closedAt?.[chamber]
+    const last = points?.[points.length - 1]
+    const point =
+      points?.find(([t]) => t === time) ??
+      (last && closedAt !== undefined && closedAt <= time && last[0] < time
+        ? last
+        : undefined)
     return point && Number.isFinite(point[1])
       ? [
           {

@@ -1,6 +1,12 @@
+import { mapValues } from 'lodash'
+import { answerP } from 'common/answer'
+import { getCpmmProbability } from 'common/calculate-cpmm'
+import { Contract, isMultiCpmm } from 'common/contract'
 import {
   marketProbsAtFrame,
+  MarketProbs,
   MarketProbsHistory,
+  ProbChangePoints,
 } from 'common/market-probs-history'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { formatOdds } from 'web/components/usa-map/election-display'
@@ -281,6 +287,87 @@ export function partySplit(rep: number) {
   if (tenths < 1 || tenths > 99) return { rep, dem: 1 - rep }
   const shown = Math.round(rep * 100) / 100
   return { rep: shown, dem: 1 - shown }
+}
+
+// The probability a market trades at, from its pools, as the snapshot reads
+// every series: a resolution rewrites answers' stored prob to 0 or 1, but
+// the pools keep the last traded price.
+export function contractProbs(contract: Contract): MarketProbs | undefined {
+  if (contract.mechanism === 'cpmm-1')
+    return { prob: getCpmmProbability(contract.pool, contract.p) }
+  if (isMultiCpmm(contract))
+    return {
+      answerProbs: Object.fromEntries(
+        contract.answers.map((a) => [
+          a.id,
+          getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, answerP(a)),
+        ])
+      ),
+    }
+  return undefined
+}
+
+const isProb = (p: number | undefined): p is number =>
+  p !== undefined && Number.isFinite(p) && p >= 0 && p <= 1
+
+// As the snapshot rounds: 0.01%.
+const roundProb = (p: number) => Math.round(p * 10_000) / 10_000
+
+const extend = (
+  points: ProbChangePoints,
+  frame: number,
+  prob: number | undefined
+): ProbChangePoints => {
+  if (!isProb(prob)) return points
+  const rounded = roundProb(prob)
+  const last = points[points.length - 1]
+  return last && last[1] === rounded ? points : [...points, [frame, rounded]]
+}
+
+// The snapshot with one more frame, at `now`, holding every market's odds
+// as the page loaded them (`current`, by contract id): its last stop is the
+// latest, however old the snapshot. A snapshot's own "Latest" (where a
+// mid-plan snapshot stopped) becomes an ordinary frame. Markets or answers
+// the snapshot lacks are left to liveAsOf, which shows them live anyway.
+export function withLatestFrame(
+  snapshot: ReplaySnapshot,
+  current: { [contractId: string]: MarketProbs | undefined },
+  now: number
+): ReplaySnapshot {
+  const { times } = snapshot
+  if (
+    !Number.isFinite(now) ||
+    times.length === 0 ||
+    now <= times[times.length - 1]
+  )
+    return snapshot
+  const frame = times.length
+  return {
+    ...snapshot,
+    times: [...times, now],
+    milestones: [
+      ...snapshot.milestones.filter((m) => m.id !== LATEST_MILESTONE_ID),
+      {
+        id: LATEST_MILESTONE_ID,
+        label: 'Latest',
+        note: 'The odds now',
+        time: now,
+        frame,
+      },
+    ],
+    markets: mapValues(snapshot.markets, (series, id) => {
+      const probs = current[id]
+      if (!probs) return series
+      return {
+        ...(series.prob && { prob: extend(series.prob, frame, probs.prob) }),
+        ...(series.answerProbs && {
+          answerProbs: mapValues(series.answerProbs, (points, answerId) =>
+            extend(points, frame, probs.answerProbs?.[answerId])
+          ),
+        }),
+      }
+    }),
+  }
 }
 
 // One binary market's probability at a frame, from the snapshot.
