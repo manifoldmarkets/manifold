@@ -184,6 +184,8 @@ export const FeedComment = memo(function FeedComment(props: {
               ? 'bg-primary-100 border-primary-300 border-2'
               : isPinned
               ? 'bg-canvas-50 border-primary-300 border-2'
+              : comment.isModComment
+              ? 'bg-canvas-50 border border-purple-300 dark:border-purple-700'
               : 'bg-canvas-50'
           )}
         >
@@ -354,6 +356,7 @@ function HideableContent(props: {
   const [showHidden, setShowHidden] = useState(false)
 
   return initiallyHidden && !showHidden ? (
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
     <div
       className="hover text-ink-600 text-sm font-thin italic hover:cursor-pointer"
       onClick={() => {

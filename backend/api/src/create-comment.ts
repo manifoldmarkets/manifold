@@ -2,6 +2,7 @@ import { JSONContent } from '@tiptap/core'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { type Contract } from 'common/contract'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { convertBet } from 'common/supabase/bets'
 import { millisToTs } from 'common/supabase/utils'
@@ -40,7 +41,11 @@ export const createComment: APIHandler<'comment'> = onlyUsersWhoCanPerformAction
       replyToCommentId,
       replyToAnswerId,
       replyToBetId,
+      isModComment,
     } = props
+    if (isModComment && !isModId(auth.uid) && !isAdminId(auth.uid)) {
+      throw new APIError(403, 'Only moderators can post mod comments')
+    }
     return createCommentOnContractInternal(contractId, auth, {
       content,
       html,
@@ -48,6 +53,7 @@ export const createComment: APIHandler<'comment'> = onlyUsersWhoCanPerformAction
       replyToCommentId,
       replyToAnswerId,
       replyToBetId,
+      isModComment,
     })
   }
 )
@@ -63,6 +69,7 @@ export const createCommentOnContractInternal = async (
     replyToAnswerId?: string
     replyToBetId?: string
     isRepost?: boolean
+    isModComment?: boolean
   }
 ) => {
   const {
@@ -73,6 +80,7 @@ export const createCommentOnContractInternal = async (
     replyToAnswerId,
     replyToBetId,
     isRepost,
+    isModComment,
   } = options
 
   const {
@@ -133,6 +141,7 @@ export const createCommentOnContractInternal = async (
 
     isApi,
     isRepost,
+    isModComment: isModComment || undefined,
   } as ContractComment)
   await pg
     .none(

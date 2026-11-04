@@ -1,6 +1,7 @@
 import { richTextToString } from 'common/util/parse'
 import { RepostModal } from './repost-modal'
-import { PaperAirplaneIcon } from '@heroicons/react/solid'
+import { PaperAirplaneIcon, ShieldCheckIcon } from '@heroicons/react/solid'
+import { ShieldCheckIcon as ShieldCheckOutlineIcon } from '@heroicons/react/outline'
 import { Editor } from '@tiptap/react'
 import { useEvent } from 'client-common/hooks/use-event'
 import clsx from 'clsx'
@@ -13,6 +14,7 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { BiRepost } from 'react-icons/bi'
 import { NewAccountGateNotice } from 'web/components/user/new-account-gate-notice'
+import { useAdminOrMod } from 'web/hooks/use-admin'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAnswer } from 'web/hooks/use-answers'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
@@ -36,7 +38,8 @@ export function CommentInput(props: {
   onSubmitComment: (
     editor: Editor,
     type: CommentType,
-    clearInput: () => void
+    clearInput: () => void,
+    isModComment: boolean
   ) => Promise<void>
   // unique id for autosave
   pageId: string
@@ -50,6 +53,8 @@ export function CommentInput(props: {
   // Market creators can always comment on their own markets (create-comment
   // exempts them from the new-account gate too).
   skipNewAccountGate?: boolean
+  // Mods and admins can mark a comment as a mod comment before sending it
+  canPostAsMod?: boolean
 }) {
   const {
     parentCommentId,
@@ -64,11 +69,13 @@ export function CommentInput(props: {
     onClearInput,
     priorityUserIds,
     skipNewAccountGate,
+    canPostAsMod,
   } = props
   const user = useUser()
 
   const key = `comment ${pageId} ${parentCommentId ?? ''}`
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isModComment, setIsModComment] = useState(false)
 
   const editor = useTextEditor({
     key,
@@ -102,8 +109,15 @@ export function CommentInput(props: {
         // Force clear save, because it can fail if the editor unmounts.
         safeLocalStorage?.removeItem(`text ${key}`)
         onClearInput?.()
+        // Mod comments are opt-in per comment, including Yap posts
+        setIsModComment(false)
       }
-      await onSubmitComment?.(editor, type, clearInput)
+      await onSubmitComment?.(
+        editor,
+        type,
+        clearInput,
+        !!canPostAsMod && isModComment
+      )
       // Sharing opens a second composer; keep the original draft until published.
       if (type === 'repost') return
       clearInput()
@@ -146,12 +160,18 @@ export function CommentInput(props: {
       </div>
       <CommentInputTextArea
         editor={editor}
+        // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus={autoFocus}
         replyTo={replyToUserInfo}
         user={user}
         submit={submitComment}
         isSubmitting={isSubmitting}
         commentTypes={commentTypes}
+        modComment={
+          canPostAsMod
+            ? { on: isModComment, setOn: setIsModComment }
+            : undefined
+        }
       />
     </Row>
   )
@@ -181,6 +201,7 @@ export function CommentInputTextArea(props: {
   autoFocus: boolean
   hideToolbar?: boolean
   commentTypes?: CommentType[]
+  modComment?: { on: boolean; setOn: (on: boolean) => void }
 }) {
   const {
     user,
@@ -192,7 +213,9 @@ export function CommentInputTextArea(props: {
     autoFocus,
     replyTo,
     commentTypes = ['comment'],
+    modComment,
   } = props
+  const modCommentOn = !!modComment?.on
   useEffect(() => {
     editor?.setEditable(!isSubmitting)
   }, [isSubmitting, editor])
@@ -244,7 +267,15 @@ export function CommentInputTextArea(props: {
   }, [editor, autoFocus])
 
   return (
-    <TextEditor editor={editor} simple hideToolbar={hideToolbar}>
+    <TextEditor
+      editor={editor}
+      simple
+      hideToolbar={hideToolbar}
+      className={clsx(
+        modCommentOn &&
+          '!border-purple-400 focus-within:!border-purple-500 focus-within:!ring-purple-500'
+      )}
+    >
       <Row className={''}>
         {user && !isSubmitting && submit && commentTypes.includes('repost') && (
           <Tooltip text={'Post to Yap'} className={'mt-2'}>
@@ -258,12 +289,45 @@ export function CommentInputTextArea(props: {
             </button>
           </Tooltip>
         )}
+        {modComment && !isSubmitting && submit && (
+          <Tooltip
+            text={
+              modCommentOn
+                ? 'Posting as a mod comment'
+                : 'Post as a mod comment'
+            }
+            className="flex"
+          >
+            <button
+              aria-label="Post as a mod comment"
+              aria-pressed={modCommentOn}
+              className={clsx(
+                'px-2 transition-colors',
+                modCommentOn
+                  ? 'text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300'
+                  : 'text-ink-500 hover:text-ink-700'
+              )}
+              onClick={() => modComment.setOn(!modCommentOn)}
+            >
+              {modCommentOn ? (
+                <ShieldCheckIcon className="h-6 w-6" />
+              ) : (
+                <ShieldCheckOutlineIcon className="h-6 w-6" />
+              )}
+            </button>
+          </Tooltip>
+        )}
         {!isSubmitting &&
           submit &&
           (commentTypes[0] === 'comment' ||
             commentTypes[0] === 'top-level-post') && (
             <button
-              className="text-ink-500 hover:text-ink-700 active:bg-ink-300 disabled:text-ink-300 px-4 transition-colors"
+              className={clsx(
+                'active:bg-ink-300 disabled:text-ink-300 px-4 transition-colors',
+                modCommentOn
+                  ? 'text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300'
+                  : 'text-ink-500 hover:text-ink-700'
+              )}
               disabled={!editor || editor.isEmpty}
               onClick={() => submit(commentTypes[0])}
             >
@@ -312,6 +376,7 @@ export function ContractCommentInput(props: {
   } = props
   const user = useUser()
   const privateUser = usePrivateUser()
+  const isAdminOrMod = useAdminOrMod()
   const isReplyToBet = replyTo && 'amount' in replyTo
   const isReplyToAnswer = replyTo && !isReplyToBet
   const replyToUserInfo =
@@ -321,7 +386,12 @@ export function ContractCommentInput(props: {
     onPosted: () => void
   }>()
   const onSubmitComment = useEvent(
-    async (editor: Editor, type: CommentType, clearInput: () => void) => {
+    async (
+      editor: Editor,
+      type: CommentType,
+      clearInput: () => void,
+      isModComment: boolean
+    ) => {
       if (!user) return
 
       let comment: ContractComment | undefined
@@ -332,6 +402,7 @@ export function ContractCommentInput(props: {
           replyToAnswerId: isReplyToAnswer ? replyTo.id : undefined,
           replyToCommentId: parentCommentId,
           replyToBetId: isReplyToBet ? replyTo.id : undefined,
+          isModComment: isModComment || undefined,
         })
       } else {
         setSocialDraft({
@@ -395,6 +466,7 @@ export function ContractCommentInput(props: {
         />
       )}
       <CommentInput
+        // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus={autoFocus}
         replyToUserInfo={replyToUserInfo}
         parentCommentId={parentCommentId}
@@ -413,6 +485,7 @@ export function ContractCommentInput(props: {
         onClearInput={onClearInput}
         priorityUserIds={[playContract.creatorId, ...(commenterUserIds ?? [])]}
         skipNewAccountGate={user?.id === playContract.creatorId}
+        canPostAsMod={isAdminOrMod}
       />
     </>
   )

@@ -113,6 +113,7 @@ export function FeedCommentHeader(props: {
               className={'font-semibold'}
             />
           </UserHovercard>
+          {comment.isModComment && <ModCommentLabel />}
           {!commenterIsBettor || !isReplyToBet ? null : isLimitBet ? (
             <span className={'ml-1'}>
               {betAmount === betOrderAmount ? 'filled' : 'opened'} a{' '}
@@ -661,5 +662,13 @@ function DotMenu(props: {
         />
       )}
     </>
+  )
+}
+
+function ModCommentLabel() {
+  return (
+    <span className="ml-1.5 mr-1 whitespace-nowrap rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+      Mod comment
+    </span>
   )
 }
