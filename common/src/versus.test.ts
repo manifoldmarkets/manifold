@@ -585,4 +585,13 @@ describe('showsSideProbability', () => {
     expect(showsSideProbability(threeWay, generic)).toBe(false)
     expect(showsSideProbability(threeWay, parties)).toBe(false)
   })
+
+  it("shows the side when the names are one answer's two outcomes", () => {
+    const series = {
+      YES: { pseudonymName: 'HLE' },
+      NO: { pseudonymName: 'BLG' },
+      opposed: true,
+    }
+    expect(showsSideProbability(threeWay, series)).toBe(true)
+  })
 })
