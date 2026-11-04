@@ -36,7 +36,7 @@ export type Comment<T extends AnyCommentType = AnyCommentType> = {
   visibility: Visibility
   editedTime?: number
   isApi?: boolean
-  // Posted by a mod or admin acting as a moderator (shows the full mod flair)
+  // Posted by a mod or admin acting as a moderator (shows a "Mod comment" label)
   isModComment?: boolean
 } & T
 

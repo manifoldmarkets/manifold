@@ -110,7 +110,6 @@ export function FeedCommentHeader(props: {
                 }
               }
               marketCreator={inTimeline ? false : marketCreator}
-              mutedModBadge={!comment.isModComment}
               className={'font-semibold'}
             />
           </UserHovercard>

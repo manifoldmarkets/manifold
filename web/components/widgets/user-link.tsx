@@ -137,8 +137,6 @@ export function UserLink(props: {
   hideBadge?: boolean
   marketCreator?: boolean
   displayContext?: DisplayContext
-  // Show the mod badge in gray, for mods commenting as regular users
-  mutedModBadge?: boolean
 }) {
   const {
     user,
@@ -149,7 +147,6 @@ export function UserLink(props: {
     hideBadge,
     marketCreator,
     displayContext,
-    mutedModBadge,
   } = props
 
   if (!user || !user.name || !user.username) {
@@ -174,7 +171,6 @@ export function UserLink(props: {
           marketCreator={marketCreator}
           entitlements={entitlements}
           displayContext={displayContext}
-          mutedModBadge={mutedModBadge}
         />
       )}
     </span>
@@ -292,7 +288,6 @@ export function UserBadge(props: {
   // Filter supporter badge based on display context
   // REQUIRED for badge to show - if not provided, no badge displayed
   displayContext?: DisplayContext
-  mutedModBadge?: boolean
 }) {
   const {
     userId,
@@ -302,7 +297,6 @@ export function UserBadge(props: {
     marketCreator,
     entitlements,
     displayContext,
-    mutedModBadge,
   } = props
 
   // Check if we should show supporter badge in this context
@@ -325,7 +319,7 @@ export function UserBadge(props: {
     badges.push(<CoreBadge key="core" />)
   }
   if (MOD_IDS.includes(userId)) {
-    badges.push(<ModBadge key="mod" muted={mutedModBadge} />)
+    badges.push(<ModBadge key="mod" />)
   }
   if (MVP.includes(username)) {
     badges.push(<MVPBadge key="mvp" />)
@@ -371,15 +365,11 @@ function CoreBadge() {
 }
 
 // Show a normal checkmark next to our mods
-function ModBadge(props: { muted?: boolean }) {
-  const { muted } = props
+function ModBadge() {
   return (
     <Tooltip text="Moderator" placement="right">
       <ShieldCheckIcon
-        className={clsx(
-          'h-4 w-4',
-          muted ? 'text-ink-400' : 'text-purple-700 dark:text-purple-400'
-        )}
+        className="h-4 w-4 text-purple-700 dark:text-purple-400"
         aria-hidden="true"
       />
     </Tooltip>
