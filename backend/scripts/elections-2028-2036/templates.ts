@@ -209,46 +209,48 @@ export function descriptionFor(race: Race, cfg: CycleConfig): string {
   }
 }
 
+// Presidential markets don't depend on the Electoral College (Tod,
+// 2026-11-05): a state market follows who wins the state's presidential vote,
+// a district market who gets the most votes in the district, and the national
+// market whoever is elected President, however the winner is decided.
 function stateDescription(race: Race, cfg: CycleConfig) {
   const { stateName, state } = race
   const date = longDate(cfg.electionDate)
-  const district = race.district !== undefined
+  if (race.district !== undefined) {
+    const where = `${stateName}'s ${ORDINAL(
+      race.district
+    )} congressional district (${state}-${race.district})`
+    return [
+      withRound(
+        `Resolves to the party of the presidential ticket with the most votes in ${where} in the ${date} election.`,
+        race,
+        cfg
+      ),
+      TICKET_PARTY_RULE(state),
+      `Resolves on ${stateName}'s certified result for the district, or earlier once the AP has called it and no recount could change it. N/A if no official presidential result is published for the district.`,
+    ].join('\n\n')
+  }
   const name = state === 'DC' ? 'the District of Columbia' : stateName
-  const unit = district
-    ? `the electoral vote of ${stateName}'s ${ORDINAL(
-        race.district!
-      )} congressional district (${state}-${race.district})`
-    : state === 'ME' || state === 'NE'
-    ? `${stateName}'s two statewide electoral votes`
-    : `${name}'s electoral votes`
-  const called = district ? 'district' : state === 'DC' ? 'District' : 'state'
-  const na = district
-    ? `N/A if ${stateName} stops awarding electors by district or has no ${ORDINAL(
-        race.district!
-      )} district.`
-    : `N/A if ${name} holds no popular vote for electors.`
+  const possessive =
+    state === 'DC' ? "the District of Columbia's" : `${stateName}'s`
+  const wins =
+    state === 'ME' || state === 'NE' ? `${stateName} statewide` : name
   return [
     withRound(
-      `Resolves to the party of the presidential ticket that wins ${unit} in the ${date} election.`,
+      `Resolves to the party of the presidential ticket that wins ${wins} in the ${date} election.`,
       race,
       cfg
     ),
-    "What counts is which ticket's electors are certified as elected, not the popular-vote margin; how electors later vote doesn't matter.",
     TICKET_PARTY_RULE(state),
-    `Resolves on the certified result, or earlier once the AP has called the ${called} and no recount could change it. ${na}`,
+    `Resolves on ${possessive} certified result, or earlier once the AP has called it and no recount could change it. N/A if ${name} holds no presidential vote.`,
   ].join('\n\n')
 }
 
 function nationalDescription(race: Race, cfg: CycleConfig) {
-  const { cycle } = race
-  const toWin = Math.floor(race.electoralVotes! / 2) + 1
   return [
-    `Resolves to the party of the candidate elected President in the ${longDate(
+    `Resolves to the party of the person elected President in the ${longDate(
       cfg.electionDate
-    )} election.`,
-    `That's whoever wins ${toWin} or more electoral votes as counted by Congress in January ${
-      cycle + 1
-    }, or whom the House picks if no one does. The national popular vote doesn't matter.`,
+    )} election, however the winner is officially decided.`,
     TICKET_PARTY_RULE(race.state),
     `N/A if no presidential election is held for the term starting ${cfg.termStart.president}.`,
   ].join('\n\n')

@@ -452,8 +452,8 @@ test('descriptions are short plain paragraphs: the election and date, the party 
       /\*\*|@ManifoldPolitics|Opening odds|manifold\.markets|SEEDS\.md|Stage A|Another party|fusion|Which round counts/,
       e.raceKey
     )
-    assert.ok(d.length >= 400 && d.length <= 800, `${e.raceKey}: ${d.length}`)
-    assert.equal(paras.length, office === 'president' ? 4 : 3, e.raceKey)
+    assert.ok(d.length >= 350 && d.length <= 800, `${e.raceKey}: ${d.length}`)
+    assert.equal(paras.length, 3, e.raceKey)
     // What it resolves to, on which date.
     assert.match(paras[0], /^Resolves to the party /, e.raceKey)
     assert.ok(d.includes(longDate(cfg.electionDate)), e.raceKey)
@@ -470,7 +470,7 @@ test('descriptions are short plain paragraphs: the election and date, the party 
     if (state !== 'US')
       assert.match(
         paras[paras.length - 1],
-        /^Resolves on the certified result, or earlier once the AP has called the (race|state|district|District) and no recount could change it\. N\/A if /,
+        /^Resolves on (the|.+'s) certified result( for the district)?, or earlier once the AP has called (the race|it) and no recount could change it\. N\/A if /,
         e.raceKey
       )
     if (office === 'senate')
@@ -507,14 +507,19 @@ test('descriptions are short plain paragraphs: the election and date, the party 
       )
     }
     if (office === 'president') {
+      // Nothing depends on the Electoral College, electors or Congress's
+      // count: the markets follow whoever wins, however that is decided.
+      assert.doesNotMatch(
+        d,
+        /electoral|elector|\b270\b|\bCongress\b|contingent/i,
+        e.raceKey
+      )
       if (state === 'US') {
-        assert.match(
-          d,
-          new RegExp(
-            `270 or more electoral votes as counted by Congress in January ${
-              cycle + 1
-            }, or whom the House picks if no one does\\. The national popular vote doesn't matter\\.`
-          ),
+        assert.equal(
+          paras[0],
+          `Resolves to the party of the person elected President in the ${longDate(
+            cfg.electionDate
+          )} election, however the winner is officially decided.`,
           e.raceKey
         )
         assert.ok(
@@ -525,21 +530,34 @@ test('descriptions are short plain paragraphs: the election and date, the party 
           ),
           e.raceKey
         )
-      } else {
-        assert.equal(
-          paras[1],
-          "What counts is which ticket's electors are certified as elected, not the popular-vote margin; how electors later vote doesn't matter.",
+      } else if (e.identity.district !== undefined) {
+        assert.match(
+          paras[0],
+          /^Resolves to the party of the presidential ticket with the most votes in .+'s \d(st|nd|rd) congressional district \([A-Z]{2}-\d\) in the /,
           e.raceKey
         )
-        if (e.identity.district !== undefined)
-          assert.match(
-            d,
-            /electoral vote of .+'s \d(st|nd|rd) congressional district \([A-Z]{2}-\d\).*N\/A if .+ stops awarding electors by district/s,
-            e.raceKey
-          )
-        else if (state === 'ME' || state === 'NE')
-          assert.match(d, /two statewide electoral votes/, e.raceKey)
-        else assert.match(d, /holds no popular vote for electors\.$/, e.raceKey)
+        assert.ok(
+          d.endsWith(
+            'N/A if no official presidential result is published for the district.'
+          ),
+          e.raceKey
+        )
+      } else {
+        const wins =
+          state === 'DC'
+            ? 'the District of Columbia'
+            : state === 'ME' || state === 'NE'
+            ? `${stateName} statewide`
+            : stateName
+        assert.ok(
+          paras[0].startsWith(
+            `Resolves to the party of the presidential ticket that wins ${wins} in the ${longDate(
+              cfg.electionDate
+            )} election.`
+          ),
+          e.raceKey
+        )
+        assert.match(d, /holds no presidential vote\.$/, e.raceKey)
       }
     }
     // A state's deciding-round rule is one short sentence in the first
@@ -586,16 +604,33 @@ test('the exact text for one market of each kind', () => {
     desc('2028-house-AL-01-regular-general').split('\n\n')[0],
     "Resolves to the party that wins the November 7, 2028 U.S. House election in Alabama's 1st District: whichever district is numbered 1 on the map in effect for that election. N/A if that map has no district numbered 1."
   )
+  const TICKET =
+    "Only the party matters: a ticket on the Democratic or Republican line counts as that party even if also listed on other parties' lines. Any other ticket resolves to Other, or to its own answer if one has been added."
   assert.equal(
-    desc('2028-president-NE-02-general').split('\n\n')[0],
-    "Resolves to the party of the presidential ticket that wins the electoral vote of Nebraska's 2nd congressional district (NE-2) in the November 7, 2028 election."
+    desc('2028-president-NE-02-general'),
+    [
+      "Resolves to the party of the presidential ticket with the most votes in Nebraska's 2nd congressional district (NE-2) in the November 7, 2028 election.",
+      TICKET,
+      "Resolves on Nebraska's certified result for the district, or earlier once the AP has called it and no recount could change it. N/A if no official presidential result is published for the district.",
+    ].join('\n\n')
+  )
+  assert.equal(
+    desc('2028-president-AL-general'),
+    [
+      'Resolves to the party of the presidential ticket that wins Alabama in the November 7, 2028 election.',
+      TICKET,
+      "Resolves on Alabama's certified result, or earlier once the AP has called it and no recount could change it. N/A if Alabama holds no presidential vote.",
+    ].join('\n\n')
+  )
+  assert.equal(
+    desc('2028-president-ME-general').split('\n\n')[0],
+    'Resolves to the party of the presidential ticket that wins Maine statewide in the November 7, 2028 election. If no ticket gets a first-round majority, the final ranked-choice round decides.'
   )
   assert.equal(
     desc('2028-president-US-general'),
     [
-      'Resolves to the party of the candidate elected President in the November 7, 2028 election.',
-      "That's whoever wins 270 or more electoral votes as counted by Congress in January 2029, or whom the House picks if no one does. The national popular vote doesn't matter.",
-      "Only the party matters: a ticket on the Democratic or Republican line counts as that party even if also listed on other parties' lines. Any other ticket resolves to Other, or to its own answer if one has been added.",
+      'Resolves to the party of the person elected President in the November 7, 2028 election, however the winner is officially decided.',
+      TICKET,
       'N/A if no presidential election is held for the term starting January 20, 2029.',
     ].join('\n\n')
   )

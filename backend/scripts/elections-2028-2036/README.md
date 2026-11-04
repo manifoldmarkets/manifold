@@ -41,19 +41,27 @@ ante, so no cost changed.
   election, and is N/A if that map has no district numbered N (the
   renumbering and seat-count N/A clauses are gone; apportionment is fixed
   until the 2030 census anyway).
-- **Short descriptions**: three short plain paragraphs (four for president),
-  no labels, about 560 characters instead of about 2,500:
+- **Short descriptions**: three short plain paragraphs, no labels, about 540
+  characters instead of about 2,500:
   1. what it resolves to, with the election date (and the Senate class, the
-     House district rule or the electoral unit), plus at most one sentence
-     for a state whose deciding round differs (Georgia runoff, Alaska's
-     counting method, Maine ranked-choice, Louisiana, Vermont's legislature,
-     California/Washington top-two, Maine governor plurality);
-  2. for president, that certified electors count, not the popular-vote
-     margin (state markets), or that 270 electoral votes as counted by
-     Congress decide, not the national popular vote (national market);
-  3. only the party matters (DFL and Democratic-NPL count as Democratic);
-  4. resolves on the certified result or an AP call no recount could change,
+     House district rule, or the state or district), plus at most one
+     sentence for a state whose deciding round differs (Georgia runoff,
+     Alaska's counting method, Maine ranked-choice, Louisiana, Vermont's
+     legislature, California/Washington top-two, Maine governor plurality);
+  2. only the party matters (DFL and Democratic-NPL count as Democratic);
+  3. resolves on the certified result or an AP call no recount could change,
      and when it is N/A.
+- **President without the Electoral College** (Tod, 2026-11-05): nothing in
+  the presidential markets depends on electors, 270, Congress's count or a
+  contingent election, so they still work if the system changes. The
+  national market resolves to the party of "the person elected President in
+  the <date> election, however the winner is officially decided" (N/A only if
+  no presidential election is held for that term). A state market follows
+  the ticket that wins the state (Maine and Nebraska: statewide) and is N/A
+  if the state holds no presidential vote. A district market (ME-1/2,
+  NE-1/2/3) follows the ticket with the most votes in the district and is N/A
+  only if no official presidential result is published for the district, so
+  a switch to winner-take-all doesn't void it while district results exist.
 
   Opening odds, answer curation, term-start notes and the hub link are no
   longer described. The seeds stay in the payload; a plain-language seed note
