@@ -1,6 +1,8 @@
 import { APIHandler } from 'api/helpers/endpoint'
 import { HIDE_FROM_LEADERBOARD_USER_IDS } from 'common/envs/constants'
+import { getBanTypesForLeaderboard } from 'common/ban-utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { leaderboardUserFilter } from 'shared/supabase/leaderboard-users'
 import {
   renderSql,
   select,
@@ -20,16 +22,23 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
   kind,
 }) => {
   const pg = createSupabaseDirectClient()
+  // Every board joins its users as `u`.
+  const whereOnBoard = where(leaderboardUserFilter('$<banTypes>'), {
+    banTypes: getBanTypesForLeaderboard(kind),
+  })
 
   if (kind === 'referral') {
-    const data = await pg.any(
-      `select ur.id, ur.total_referrals, ur.total_referred_profit, ur.total_referred_cash_profit
-      from user_referrals_profit ur
-      join users u on ur.id = u.id
-      where coalesce((u.data->>'isBannedFromPosting')::boolean, false) is not true
-      limit $1`,
-      [limitValue]
+    const query = renderSql(
+      from('user_referrals_profit ur'),
+      join('users u on ur.id = u.id'),
+      select(
+        'ur.id, ur.total_referrals, ur.total_referred_profit, ur.total_referred_cash_profit'
+      ),
+      whereOnBoard,
+      orderBy('ur.total_referrals desc'),
+      limit(limitValue)
     )
+    const data = await pg.any(query)
 
     return data.map((r) => ({
       userId: r.id,
@@ -66,9 +75,7 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
             'uph.cash_balance + uph.cash_investment_value - uph.total_cash_deposits as score'
           ),
       where('user_id not in ($1:list)', [HIDE_FROM_LEADERBOARD_USER_IDS]),
-      where(
-        `coalesce((u.data->>'isBannedFromPosting')::boolean, false) is not true`
-      ),
+      whereOnBoard,
       orderBy(kind === 'loss' ? 'score asc' : 'score desc nulls last'),
       limit(limitValue)
     )
@@ -86,9 +93,7 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
       ),
       groupBy('c.creator_id'),
       where(`coalesce((c.data->'isRanked')::boolean, true) = true`), // unranked included in portfolio
-      where(
-        `coalesce((u.data->>'isBannedFromPosting')::boolean, false) is not true`
-      ),
+      whereOnBoard,
       where('c.token = ${token}', { token }),
       where('c.outcome_type != ${outcomeType}', { outcomeType: 'POLL' }),
       where('c.outcome_type != ${outcomeType}', { outcomeType: 'BOUNTY' }),
@@ -108,9 +113,7 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
     join('users u on u.id = ucm.user_id'),
     where('ucm.answer_id is null'),
     where(`coalesce((c.data->'isRanked')::boolean, true) = true`),
-    where(
-      `coalesce((u.data->>'isBannedFromPosting')::boolean, false) is not true`
-    ),
+    whereOnBoard,
 
     (kind === 'profit' || kind === 'loss') && [
       select(`user_id, sum(profit) as score`),

@@ -143,6 +143,9 @@ beforeAll(async () => {
     );
     create table users (id text primary key, data jsonb not null);
   `)
+  await db.exec(
+    readFileSync(resolve(__dirname, '../../../supabase/user_bans.sql'), 'utf8')
+  )
   for (const migration of [
     '2026102901_sports_leaderboards.sql',
     '2026102902_sports_leaderboard_positions.sql',
@@ -170,23 +173,40 @@ beforeAll(async () => {
        ($1, $2), ($1, $3), ($2, $4), ($1, $5), ($5, $2)`,
     [SPORTS_DEFAULT_GROUP_ID, NFL, CYCLING, SUPER_BOWL, FOOTBALL]
   )
-  for (const [id, banned] of [
-    ['alice', false],
-    ['bob', false],
-    ['carol', false],
-    ['dave', false],
-    ['erin', false],
-    ['mallory', true],
-    ['nana', false],
-    ['infy', false],
-    ['huge', false],
-    [HIDDEN, false],
-    [BOT, false],
+  for (const [id, data] of [
+    ['alice', {}],
+    ['bob', {}],
+    ['carol', {}],
+    ['dave', {}],
+    ['erin', {}],
+    ['mallory', { isBannedFromPosting: true }],
+    // Deleted without the legacy flag, as many deleted accounts are.
+    ['gone', { userDeleted: true }],
+    ['nobets', {}],
+    ['nomarkets', {}],
+    ['nana', {}],
+    ['infy', {}],
+    ['huge', {}],
+    [HIDDEN, {}],
+    [BOT, {}],
   ] as const)
     await db.query(`insert into users (id, data) values ($1, $2)`, [
       id,
-      JSON.stringify(banned ? { isBannedFromPosting: true } : {}),
+      JSON.stringify(data),
     ])
+  // A betting ban takes nobets off the trader boards and a market-control ban
+  // takes nomarkets off the creator boards. The rest move nobody: alice's
+  // posting ban, bob's lifted ban and dave's expired one.
+  await db.query(
+    `insert into user_bans (user_id, ban_type, end_time, ended_at) values
+       ('nobets', 'trading', null, null),
+       ('nomarkets', 'marketControl', null, null),
+       ('alice', 'posting', null, null),
+       ('bob', 'trading', null, '2026-01-01'),
+       ('bob', 'marketControl', null, '2026-01-01'),
+       ('dave', 'trading', '2026-01-01', null),
+       ('dave', 'marketControl', '2026-01-01', null)`
+  )
 
   await addMarkets([
     {
@@ -204,6 +224,10 @@ beforeAll(async () => {
       sportsLeague: 'NFL',
     },
     { id: 'cyc1', topics: [CYCLING], creator: 'dave', traders: 3 },
+    // A betting ban leaves its user on the creator boards.
+    { id: 'cyc2', topics: [CYCLING], creator: 'nobets', traders: 1 },
+    { id: 'nfl3', topics: [NFL], creator: 'nomarkets', traders: 9 },
+    { id: 'nfl5', topics: [NFL], creator: 'gone', traders: 6 },
     { id: 'sb1', topics: [SUPER_BOWL], creator: 'erin', traders: 4 },
     // Under Sports with no sport of its own: All only.
     {
@@ -248,6 +272,10 @@ beforeAll(async () => {
     ['dave', 'sb1', 30],
     ['carol', 'nfl2', -40],
     ['mallory', 'nfl1', 1000],
+    ['gone', 'nfl1', 900],
+    ['nobets', 'nfl1', 800],
+    // A market-control ban leaves its user on the trader boards.
+    ['nomarkets', 'cyc1', 10],
     [HIDDEN, 'nfl1', 500],
     // Broken positions: their sums aren't finite numbers.
     ['nana', 'nfl1', 'NaN'],
@@ -285,19 +313,27 @@ describe('sports leaderboards', () => {
       ],
     })
     expect(await board('road-bicycle-racing')).toEqual({
-      profit: [['alice', 50]],
-      creator: [['dave', 3]],
+      profit: [
+        ['alice', 50],
+        ['nomarkets', 10],
+      ],
+      creator: [
+        ['dave', 3],
+        ['nobets', 1],
+      ],
     })
     expect(await board('all')).toEqual({
       profit: [
         ['bob', 220],
         ['alice', 150],
         ['dave', 30],
+        ['nomarkets', 10],
       ],
       creator: [
         ['erin', 11],
         ['carol', 5],
         ['dave', 3],
+        ['nobets', 1],
       ],
     })
     // A market with no sport of its own makes no board of its own.
@@ -343,10 +379,22 @@ describe('sports leaderboards', () => {
       profit: { rank: 1, score: 30, of: 1 },
       creator: null,
     })
-    // Banned, hidden, the bot as a creator, NaN and infinite scores, and
-    // nobody at all.
+    // Each ban takes its user off only the board for what it blocks.
+    expect(await you('all', 'nobets')).toEqual({
+      profit: null,
+      creator: { rank: 4, score: 1, of: 4 },
+    })
+    expect(await you('all', 'nomarkets')).toEqual({
+      profit: { rank: 4, score: 10, of: 5 },
+      creator: null,
+    })
+    // Banned, deleted, hidden, the bot as a creator, NaN and infinite scores,
+    // and nobody at all.
     for (const userId of [
       'mallory',
+      'gone',
+      'nobets',
+      'nomarkets',
       HIDDEN,
       BOT,
       'nana',
