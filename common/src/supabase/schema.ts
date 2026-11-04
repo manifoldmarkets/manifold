@@ -29,6 +29,7 @@ export type Database = {
           source_contract_id: string | null
           source_comment_id: string | null
           source_bet_id: string | null
+          market_comment_id: string | null
           deleted_time: string | null
           deleted_by: string | null
           removed_by_moderator: boolean
@@ -47,6 +48,7 @@ export type Database = {
           source_contract_id?: string | null
           source_comment_id?: string | null
           source_bet_id?: string | null
+          market_comment_id?: string | null
           deleted_time?: string | null
           deleted_by?: string | null
           removed_by_moderator?: boolean
@@ -65,6 +67,7 @@ export type Database = {
           source_contract_id?: string | null
           source_comment_id?: string | null
           source_bet_id?: string | null
+          market_comment_id?: string | null
           deleted_time?: string | null
           deleted_by?: string | null
           removed_by_moderator?: boolean
@@ -2859,6 +2862,7 @@ export type Database = {
           contract_id: string | null
           created_time: string
           id: number
+          social_post_id: string | null
           user_avatar_url: string
           user_id: string
           user_name: string
@@ -2870,6 +2874,7 @@ export type Database = {
           contract_id?: string | null
           created_time?: string
           id?: never
+          social_post_id?: string | null
           user_avatar_url: string
           user_id: string
           user_name: string
@@ -2881,6 +2886,7 @@ export type Database = {
           contract_id?: string | null
           created_time?: string
           id?: never
+          social_post_id?: string | null
           user_avatar_url?: string
           user_id?: string
           user_name?: string

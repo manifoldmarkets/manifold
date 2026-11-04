@@ -1,3 +1,8 @@
+import {
+  commentToSocialRichContent,
+  SocialRichContent,
+  socialRichContentToText,
+} from 'common/social-rich-content'
 import { richTextToString } from 'common/util/parse'
 import { RepostModal } from './repost-modal'
 import { PaperAirplaneIcon } from '@heroicons/react/solid'
@@ -318,6 +323,7 @@ export function ContractCommentInput(props: {
     useDisplayUserById(replyTo?.userId) ?? props.replyToUserInfo
   const [socialDraft, setSocialDraft] = useState<{
     text: string
+    richContent: SocialRichContent | null
     onPosted: () => void
   }>()
   const onSubmitComment = useEvent(
@@ -334,8 +340,13 @@ export function ContractCommentInput(props: {
           replyToBetId: isReplyToBet ? replyTo.id : undefined,
         })
       } else {
+        const json = editor.getJSON()
+        const richContent = commentToSocialRichContent(json)
         setSocialDraft({
-          text: richTextToString(editor.getJSON()),
+          text: richContent
+            ? socialRichContentToText(richContent)
+            : richTextToString(json),
+          richContent,
           onPosted: () => {
             clearInput()
             clearReply?.()
@@ -387,6 +398,7 @@ export function ContractCommentInput(props: {
           playContract={playContract}
           bet={isReplyToBet ? replyTo : undefined}
           initialText={socialDraft.text}
+          initialRichContent={socialDraft.richContent}
           onPosted={socialDraft.onPosted}
           open
           setOpen={(open) => {
