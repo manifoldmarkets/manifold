@@ -27,6 +27,7 @@ import {
   comparisonLabel,
   COMPARISON_SOURCES,
   comparisonsAt,
+  quoteLabel,
   REPLAY_COMPARISONS,
   ReplayChamber,
 } from './replay-comparisons'
@@ -434,10 +435,14 @@ function ReplayPlayer(props: {
             key={chamber}
             label={chamber === 'senate' ? 'Senate' : 'House'}
             rep={snapshotProb(snapshot, chambers[chamber].id, frame)}
-            others={REPLAY_COMPARISONS.map((s) => ({
-              source: s.source,
-              rep: comparisonsAt([s], chamber, time)[0]?.republicanProb,
-            }))}
+            others={REPLAY_COMPARISONS.map((s) => {
+              const quote = comparisonsAt([s], chamber, time)[0]
+              return {
+                source: s.source,
+                rep: quote?.republicanProb,
+                closed: !!quote?.closed,
+              }
+            })}
             winner={chambers[chamber].winner}
           />
         ))}
@@ -451,7 +456,7 @@ function ReplayPlayer(props: {
 function ChamberComparison(props: {
   label: string
   rep: number | undefined
-  others: { source: string; rep: number | undefined }[]
+  others: { source: string; rep: number | undefined; closed: boolean }[]
   winner?: 'D' | 'R'
 }) {
   const { label, rep, others, winner } = props
@@ -469,7 +474,9 @@ function ChamberComparison(props: {
         {rep !== undefined && first?.rep !== undefined && (
           <Row className="min-w-0 items-center gap-1.5">
             <span className="text-ink-600 truncate text-xs">
-              Manifold’s edge
+              {first.closed
+                ? `${comparisonLabel(first.source)} closed · edge`
+                : 'Manifold’s edge'}
             </span>
             <EdgeBadge gap={gap} />
           </Row>
@@ -477,22 +484,35 @@ function ChamberComparison(props: {
       </Row>
       <OddsBar name="Manifold" rep={rep} ours />
       {others.map((o) => (
-        <OddsBar key={o.source} name={comparisonLabel(o.source)} rep={o.rep} />
+        <OddsBar
+          key={o.source}
+          name={comparisonLabel(o.source)}
+          rep={o.rep}
+          closed={o.closed}
+        />
       ))}
     </Col>
   )
 }
 
+// A closed market's row dims (its last price before the close); the
+// chamber's header says it closed, so the row keeps its height.
 function OddsBar(props: {
   name: string
   rep: number | undefined
   ours?: boolean
+  closed?: boolean
 }) {
-  const { name, rep, ours } = props
+  const { name, rep, ours, closed } = props
   const split =
     rep !== undefined && Number.isFinite(rep) ? partySplit(rep) : undefined
   return (
-    <div className="grid grid-cols-[5.5rem_3.75rem_minmax(0,1fr)_3.75rem] items-center gap-2 text-sm tabular-nums">
+    <div
+      className={clsx(
+        'grid grid-cols-[5.5rem_3.75rem_minmax(0,1fr)_3.75rem] items-center gap-2 text-sm tabular-nums',
+        closed && 'opacity-60'
+      )}
+    >
       <span
         className={clsx(
           'truncate font-semibold',
@@ -500,6 +520,7 @@ function OddsBar(props: {
         )}
       >
         {name}
+        {closed && <span className="sr-only"> (closed)</span>}
       </span>
       <span className="text-azure-700 dark:text-azure-400 text-right font-semibold">
         <span aria-hidden>D </span>
@@ -626,7 +647,7 @@ function MilestoneTable(props: {
                         <SplitOdds
                           key={other.source}
                           rep={other.republicanProb}
-                          source={comparisonLabel(other.source)}
+                          source={quoteLabel(other)}
                         />
                       ))}
                     </td>

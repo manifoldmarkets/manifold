@@ -13,6 +13,9 @@ export type ComparisonSeries = {
   // [frame time, chance Republicans win the chamber] at each frame with a
   // price, ascending.
   chambers: { [chamber in ReplayChamber]?: [number, number][] }
+  // When each chamber's market closed for trading (ms). From then on its
+  // price is the last one before the close.
+  closedAt?: { [chamber in ReplayChamber]?: number }
 }
 
 export type ReplayComparisonsFile = { series: ComparisonSeries[] }
@@ -25,7 +28,7 @@ export const COMPARISON_SOURCES: {
   Kalshi: {
     label: 'Real money',
     method:
-      'Real money: the midpoint of the best bid and ask for the Republican contract on a real-money prediction market, in the last minute before each moment.',
+      'Real money: the midpoint of the best bid and ask for the Republican contract on a real-money prediction market, in the last minute before each moment with bids and offers within 10¢ of each other. It closed for trading once the result was clear; from then on, “closed” marks its last price before the close.',
   },
 }
 
@@ -34,7 +37,12 @@ export const comparisonLabel = (source: string) =>
 
 export const REPLAY_COMPARISONS = (data as ReplayComparisonsFile).series
 
-export type ComparisonQuote = { source: string; republicanProb: number }
+export type ComparisonQuote = {
+  source: string
+  republicanProb: number
+  // The market had closed for trading: this is its last price before then.
+  closed: boolean
+}
 
 // Each source's price at exactly this frame time. A snapshot extended
 // without rerunning the comparisons has no price at its new frames.
@@ -45,8 +53,19 @@ export function comparisonsAt(
 ): ComparisonQuote[] {
   return series.flatMap((s) => {
     const point = s.chambers[chamber]?.find(([t]) => t === time)
+    const closedAt = s.closedAt?.[chamber]
     return point && Number.isFinite(point[1])
-      ? [{ source: s.source, republicanProb: point[1] }]
+      ? [
+          {
+            source: s.source,
+            republicanProb: point[1],
+            closed: closedAt !== undefined && time >= closedAt,
+          },
+        ]
       : []
   })
 }
+
+// "Real money", or "Real money (closed)" once its market stopped trading.
+export const quoteLabel = (quote: ComparisonQuote) =>
+  `${comparisonLabel(quote.source)}${quote.closed ? ' (closed)' : ''}`
