@@ -38,18 +38,71 @@ import {
   buildDashboardMapping,
   CreationState,
   costOf,
+  duplicateAction,
   emptyState,
   findExisting,
+  formatOnlineFinding,
   hasOtherAnswer,
   idempotencyKeyFor,
   isMeasureEntry,
   makeHttpApi,
   Manifest,
   MeasureManifestEntry,
+  onlineDuplicateOutcome,
   planOffline,
   plannedAnswerColors,
   validateManifest,
 } from 'shared/elections/election-market-creation'
+
+// The saved online lines of one entry, labelled by what the manifest's
+// duplicate policy does with each (2028+: only our own EQUIVALENT market
+// skips; community and related markets are information).
+function onlineRecheck(manifest: Manifest, lines: string[]) {
+  const policy = manifest.duplicatePolicy
+  const outcome = onlineDuplicateOutcome(policy, lines)
+  const labels = lines.map((line) => {
+    const f = outcome.skip
+      .concat(outcome.review, outcome.info)
+      .find((x) => x.line === line)
+    if (!f) return line
+    const action = duplicateAction(policy, f)
+    const label =
+      action === 'skip'
+        ? policy
+          ? 'SKIPS OURS (our own market, same question)'
+          : 'skips ours (equivalent)'
+        : action === 'review'
+        ? f.verdict === 'equivalent'
+          ? 'HOLDS for review (equivalent, creator unknown)'
+          : 'holds for review (ambiguous)'
+        : f.verdict === 'equivalent'
+        ? 'information only: community market on the same question'
+        : 'information only: related market'
+    return `[${label}] ${line}`
+  })
+  return `- online recheck (${outcome.action}): ${labels.join('; ')}`
+}
+
+// Per-entry duplicate outcomes from the saved online lines.
+function onlineCounts(manifest: Manifest, online: Record<string, string[]>) {
+  const counts = {
+    create: 0,
+    skip: 0,
+    review: 0,
+    alreadyCreated: 0,
+    createdAlongsideOtherMarkets: 0,
+  }
+  for (const entry of manifest.entries) {
+    if (entry.status !== 'ready') continue
+    const lines = online[entry.raceKey] ?? []
+    const o = onlineDuplicateOutcome(manifest.duplicatePolicy, lines)
+    if (o.action === 'already-created') counts.alreadyCreated++
+    else counts[o.action]++
+    if (o.action === 'create' && o.info.length)
+      counts.createdAlongsideOtherMarkets++
+  }
+  return counts
+}
 
 type Args = Record<string, string | boolean>
 function parseArgs(argv: string[]): Args {
@@ -127,6 +180,29 @@ function report(
   )
   for (const [o, v] of Object.entries(byOffice))
     lines.push(`- ${o}: ${v.n} markets, Ṁ${v.mana.toLocaleString('en-US')}`)
+  if (online) {
+    const c = onlineCounts(manifest, online)
+    const policy = manifest.duplicatePolicy
+    lines.push('')
+    lines.push(
+      policy
+        ? `Duplicate policy: only an EQUIVALENT market by ${policy.blockingCreators
+            .map((u) => `@${u}`)
+            .join(
+              ', '
+            )} skips an entry; community and related markets are listed as information and never skip or hold.`
+        : 'Duplicate policy: any EQUIVALENT market skips an entry; any AMBIGUOUS one holds it for review.'
+    )
+    lines.push('')
+    lines.push(`| duplicate check (saved online results) | races |\n|---|---|`)
+    lines.push(`| create | ${c.create} |`)
+    lines.push(
+      `| …of which other markets also exist (information) | ${c.createdAlongsideOtherMarkets} |`
+    )
+    lines.push(`| skip (equivalent market blocks) | ${c.skip} |`)
+    lines.push(`| hold for review | ${c.review} |`)
+    lines.push(`| already created at the reserved id | ${c.alreadyCreated} |`)
+  }
   // Optional upgrades (ballot measures): the reviewer may raise these entries
   // to their recommended tier; the payloads above use the baseline tier.
   const upgrades = manifest.entries.filter(
@@ -205,7 +281,7 @@ function report(
         `- reserved idempotency key (not yet a contract): \`${p.idempotencyKey}\``
       )
       if (online?.[entry.raceKey]?.length)
-        lines.push(`- online recheck: ${online[entry.raceKey].join('; ')}`)
+        lines.push(onlineRecheck(manifest, online[entry.raceKey]))
       lines.push('')
       continue
     }
@@ -246,7 +322,7 @@ function report(
       `- reserved idempotency key (not yet a contract): \`${p.idempotencyKey}\``
     )
     if (online?.[entry.raceKey]?.length)
-      lines.push(`- online recheck: ${online[entry.raceKey].join('; ')}`)
+      lines.push(onlineRecheck(manifest, online[entry.raceKey]))
     lines.push('')
   }
   return lines.join('\n')
@@ -319,12 +395,10 @@ async function main() {
                 `a market already exists at the reserved id ${key}: ${atKey.question}`,
               ]
             : []),
-          ...found.equivalent.map(
-            (v) => `EQUIVALENT ${v.m.id} "${v.m.question}" (${v.reason})`
-          ),
-          ...found.ambiguous.map(
-            (v) => `AMBIGUOUS ${v.m.id} "${v.m.question}" (${v.reason})`
-          ),
+          // One line per finding, with its creator, so the manifest's
+          // duplicate policy can be applied to the saved results later.
+          ...found.equivalent.map(formatOnlineFinding),
+          ...found.ambiguous.map(formatOnlineFinding),
         ]
         writeAtomic(onlineFile, online)
         await new Promise((r) => setTimeout(r, 300))
@@ -377,6 +451,12 @@ async function main() {
           quiet: !!args.quiet,
           validationErrors: errors.length,
           counts,
+          ...(online
+            ? {
+                duplicatePolicy: manifest.duplicatePolicy ?? null,
+                onlineDuplicates: onlineCounts(manifest, online),
+              }
+            : {}),
           estimatedManaForPlannedCreations: total,
           outDir,
         },

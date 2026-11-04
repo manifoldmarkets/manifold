@@ -25,7 +25,7 @@
   "2036-senate-RI-regular-general": [],
   "2036-senate-TN-regular-general": [],
   "2036-senate-TX-regular-general": [
-    "AMBIGUOUS kmIRNMqklHt2NLjfl1Db \"Will Texas elect a Democrat to the U.S. Senate in any election through 2036?\" (same race, different proposition or answer set)"
+    "AMBIGUOUS kmIRNMqklHt2NLjfl1Db @jks \"Will Texas elect a Democrat to the U.S. Senate in any election through 2036?\" (same race, different proposition or answer set)"
   ],
   "2036-senate-UT-regular-general": [],
   "2036-senate-VT-regular-general": [],
@@ -102,9 +102,9 @@
   "2036-president-NE-02-general": [],
   "2036-president-NE-03-general": [],
   "2036-president-US-general": [
-    "EQUIVALENT Lpd8dcEds5 \"Which political party wins the US presidency in 2036?\" (same office/state/district/year with party outcomes)",
-    "AMBIGUOUS MoUhTyVTG8OLznnjbpok \"Who will win the US presidential elections in 2036?\" (same race, different proposition or answer set)",
-    "AMBIGUOUS 0PbT7DglPGtI9NlFLR0Y \"Will a Democrat win the 2036 presidential election?\" (binary party market for this race; ours is three-way)",
-    "AMBIGUOUS U8OEV1Ily83NDwDeHxxz \"Who will win the 2036 United States presidential election?\" (same race, different proposition or answer set)"
+    "EQUIVALENT Lpd8dcEds5 @Ernie \"Which political party wins the US presidency in 2036?\" (same office/state/district/year with party outcomes)",
+    "AMBIGUOUS MoUhTyVTG8OLznnjbpok @ukaszBartoszcze \"Who will win the US presidential elections in 2036?\" (same race, different proposition or answer set)",
+    "AMBIGUOUS 0PbT7DglPGtI9NlFLR0Y @colorednoise \"Will a Democrat win the 2036 presidential election?\" (binary party market for this race; ours is three-way)",
+    "AMBIGUOUS U8OEV1Ily83NDwDeHxxz @Unown \"Who will win the 2036 United States presidential election?\" (same race, different proposition or answer set)"
   ]
 }

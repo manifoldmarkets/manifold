@@ -17,6 +17,16 @@ Series `us-2032-general-v1` · 101 manifest entries · review approved: **false*
 - governor: 11 markets, Ṁ11,000
 - president: 57 markets, Ṁ57,000
 
+Duplicate policy: only an EQUIVALENT market by @ManifoldPolitics skips an entry; community and related markets are listed as information and never skip or hold.
+
+| duplicate check (saved online results) | races |
+|---|---|
+| create | 101 |
+| …of which other markets also exist (information) | 1 |
+| skip (equivalent market blocks) | 0 |
+| hold for review | 0 |
+| already created at the reserved id | 0 |
+
 Seed probabilities below are SEEDS for the initial pool, not observed market forecasts.
 
 ## 2032-senate-AL-regular-general — create
@@ -826,6 +836,6 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. The national market opens with the parties even: Democrats 49.5%, Republicans 49.5%. Other opens at 1%.
 - liquidity: Generic market opened years ahead: tier 1,000 everywhere (the brief). Raise after the 2026 results if a race is competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 or +extraLiquidity for marquee races.
 - reserved idempotency key (not yet a contract): `NCyEypuCgC`
-- online recheck: EQUIVALENT 6qZZpIhzLn "Which political party wins the US presidency in 2032?" (same office/state/district/year with party outcomes); AMBIGUOUS c2gypz9lng "Will the winner of the 2032 presidential election be an incumbent?" (same race, different proposition or answer set); AMBIGUOUS QgtnCILzA2 "Will a democrat win the 2032 presidential election?" (binary party market for this race; ours is three-way); AMBIGUOUS d0sunNgggN "Will the winner of the 2028 US Presidential Election win the 2032 US Presidential Election?" (names more than one year); AMBIGUOUS RdDaOvPvcZI0QtBFZ1oz "Who will win the 2032 United States presidential election? [ADD RESPONSES]" (same race, different proposition or answer set); AMBIGUOUS UQBHCia2YrwFRJ24TlBw "Who will win the US presidential elections in 2032?" (same race, different proposition or answer set); AMBIGUOUS 2lbO8ztHRtqA7QHDTwsR "Who will win the 2032 United States presidential election?" (same race, different proposition or answer set); AMBIGUOUS rsfOXvYRTXMkjZQTGk45 "Will the democratic party win the 2032 U.S. presidential election?" (binary party market for this race; ours is three-way); AMBIGUOUS wPlFXk0yqztHC95I6mHH "Will the winner of 2032 US presidential election be less than 6ft (183cm) tall?" (same race, different proposition or answer set); AMBIGUOUS YU9NDioufC0djV127nHk "Who will win the 2032 united states presidential election?" (same race, different proposition or answer set)
+- online recheck (create): [information only: community market on the same question] EQUIVALENT 6qZZpIhzLn @Ernie "Which political party wins the US presidency in 2032?" (same office/state/district/year with party outcomes); [information only: related market] AMBIGUOUS c2gypz9lng @realTomBayes "Will the winner of the 2032 presidential election be an incumbent?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS QgtnCILzA2 @Tumbles "Will a democrat win the 2032 presidential election?" (binary party market for this race; ours is three-way); [information only: related market] AMBIGUOUS d0sunNgggN @PrijwalNaidu "Will the winner of the 2028 US Presidential Election win the 2032 US Presidential Election?" (names more than one year); [information only: related market] AMBIGUOUS RdDaOvPvcZI0QtBFZ1oz @TheSchwa "Who will win the 2032 United States presidential election? [ADD RESPONSES]" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS UQBHCia2YrwFRJ24TlBw @ukaszBartoszcze "Who will win the US presidential elections in 2032?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS 2lbO8ztHRtqA7QHDTwsR @Unown "Who will win the 2032 United States presidential election?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS rsfOXvYRTXMkjZQTGk45 @AmmonLam "Will the democratic party win the 2032 U.S. presidential election?" (binary party market for this race; ours is three-way); [information only: related market] AMBIGUOUS wPlFXk0yqztHC95I6mHH @skibidist "Will the winner of 2032 US presidential election be less than 6ft (183cm) tall?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS YU9NDioufC0djV127nHk @Elspeth "Who will win the 2032 united states presidential election?" (same race, different proposition or answer set)
 
 Quiet mode: create unlisted, verify prices, then publish through the visibility update API.

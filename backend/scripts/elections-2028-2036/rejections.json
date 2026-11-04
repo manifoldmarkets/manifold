@@ -1,4 +1,6 @@
 {
-  "_comment": "raceKey → contract ids a reviewer has looked at and REJECTED as not equivalent (or decided to supersede with the official market). The generator copies them into reviewedRejectedContractIds, so they stop blocking creation. Take ids from <cycle>/out/dry-run-online.json or online-findings-2026-10-06.md. Keys starting with _ are ignored. Empty until Tod reviews.",
-  "_example": ["2028-president-US-general: [\"gUpCZZnNQz\", \"6AlnL5h85P\"]"]
+  "_comment": "Not needed for community markets. Since 2026-11-05 every 2028+ manifest carries duplicatePolicy (blockingCreators: [\"ManifoldPolitics\"]): a market by anyone else never skips or holds an entry, and no AMBIGUOUS market does. Only an EQUIVALENT market by @ManifoldPolitics itself skips one. List a contract id here (raceKey → ids) only to create our market even though one of our OWN markets was judged equivalent; the generator copies the ids into reviewedRejectedContractIds. Keys starting with _ are ignored. Empty by design.",
+  "_example": [
+    "2028-president-US-general: [\"<an @ManifoldPolitics contract id>\"]"
+  ]
 }

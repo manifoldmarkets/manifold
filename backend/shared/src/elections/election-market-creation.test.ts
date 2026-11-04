@@ -6,13 +6,18 @@ import {
   costOf,
   CreatePayload,
   CreationState,
+  duplicateAction,
+  duplicateDecision,
   ElectionApi,
   emptyState,
+  formatOnlineFinding,
   idempotencyKeyFor,
   makeHttpApi,
   Manifest,
   ManifestEntry,
   MarketLike,
+  onlineDuplicateOutcome,
+  parseOnlineFinding,
   planOffline,
   plannedAnswerColors,
   SEARCH_PAGE_SIZE,
@@ -621,6 +626,183 @@ describe('duplicate avoidance', () => {
       state.entries['2026-governor-AL-regular-general'].existing?.[0].id
     ).toBe('p1')
     expect(api.createMarket).not.toHaveBeenCalled()
+  })
+
+  // The 2028+ manifests are official @ManifoldPolitics markets: only our own
+  // EQUIVALENT market skips one; community and related markets are recorded
+  // as information.
+  const ownPolicy = { blockingCreators: ['ElectionBot'] }
+  const equivalentBy = (creatorUsername: string | undefined): MarketLike => ({
+    id: `eq-${creatorUsername ?? 'unknown'}`,
+    question: 'Alabama governor 2026: which party?',
+    ...(creatorUsername ? { creatorUsername } : {}),
+    answers: [
+      { id: 'x', text: 'Democrats' },
+      { id: 'y', text: 'Republicans' },
+    ],
+  })
+  const ambiguousBy = (creatorUsername: string): MarketLike => ({
+    id: `amb-${creatorUsername}`,
+    question: 'Who will win the Alabama governor Republican primary?',
+    creatorUsername,
+  })
+
+  test('policy: a community EQUIVALENT market does not skip ours; it is recorded as information', async () => {
+    const { api } = mockApi({ existing: [equivalentBy('SomeUser')] })
+    const m = {
+      ...manifest([partyEntry('AL', 'Alabama')]),
+      duplicatePolicy: ownPolicy,
+    }
+    const state = emptyState(m)
+    const res = await applyManifest(m, state, api, opts(), () => undefined)
+    expect(res.skippedExisting).toEqual([])
+    expect(res.needsReview).toEqual([])
+    expect(res.created).toEqual(['2026-governor-AL-regular-general'])
+    expect(api.createMarket).toHaveBeenCalledTimes(1)
+    const record = state.entries['2026-governor-AL-regular-general']
+    expect(record.existing).toBeUndefined()
+    expect(record.existingInfo).toEqual([
+      expect.objectContaining({
+        id: 'eq-SomeUser',
+        creatorUsername: 'SomeUser',
+        verdict: expect.stringMatching(/^equivalent: /),
+      }),
+    ])
+  })
+
+  test('policy: our own EQUIVALENT market still skips ours', async () => {
+    const { api } = mockApi({
+      existing: [equivalentBy('electionbot'), equivalentBy('SomeUser')],
+    })
+    const m = {
+      ...manifest([partyEntry('AL', 'Alabama')]),
+      duplicatePolicy: ownPolicy,
+    }
+    const state = emptyState(m)
+    const res = await applyManifest(m, state, api, opts(), () => undefined)
+    expect(res.skippedExisting).toEqual(['2026-governor-AL-regular-general'])
+    expect(api.createMarket).not.toHaveBeenCalled()
+    const record = state.entries['2026-governor-AL-regular-general']
+    expect(record.existing?.map((x) => x.id)).toEqual(['eq-electionbot'])
+    expect(record.existingInfo?.map((x) => x.id)).toEqual(['eq-SomeUser'])
+  })
+
+  test('policy: an AMBIGUOUS market, even our own, does not hold ours', async () => {
+    const { api } = mockApi({
+      existing: [ambiguousBy('ElectionBot'), ambiguousBy('SomeUser')],
+    })
+    const m = {
+      ...manifest([partyEntry('AL', 'Alabama')]),
+      duplicatePolicy: ownPolicy,
+    }
+    const state = emptyState(m)
+    const res = await applyManifest(m, state, api, opts(), () => undefined)
+    expect(res.needsReview).toEqual([])
+    expect(res.created).toEqual(['2026-governor-AL-regular-general'])
+    expect(
+      state.entries['2026-governor-AL-regular-general'].existingInfo?.length
+    ).toBe(2)
+  })
+
+  test('policy decisions, the unknown-creator case and the 2026 default', () => {
+    expect(duplicateAction(undefined, { verdict: 'equivalent' })).toBe('skip')
+    expect(duplicateAction(undefined, { verdict: 'ambiguous' })).toBe('review')
+    expect(
+      duplicateAction(ownPolicy, {
+        verdict: 'equivalent',
+        creatorUsername: 'X',
+      })
+    ).toBe('info')
+    expect(
+      duplicateAction(ownPolicy, {
+        verdict: 'equivalent',
+        creatorUsername: 'ELECTIONBOT',
+      })
+    ).toBe('skip')
+    expect(
+      duplicateAction(ownPolicy, {
+        verdict: 'ambiguous',
+        creatorUsername: 'ElectionBot',
+      })
+    ).toBe('info')
+    // An equivalent market of unknown creator might be ours: hold it.
+    expect(duplicateAction(ownPolicy, { verdict: 'equivalent' })).toBe('review')
+    expect(
+      duplicateDecision(ownPolicy, [
+        { verdict: 'ambiguous', creatorUsername: 'A' },
+        { verdict: 'equivalent', creatorUsername: 'B' },
+      ]).action
+    ).toBe('create')
+  })
+
+  test('the 2026 default is unchanged: no policy, a community EQUIVALENT skips', async () => {
+    const { api } = mockApi({ existing: [equivalentBy('SomeUser')] })
+    const m = manifest([partyEntry('AL', 'Alabama')])
+    const state = emptyState(m)
+    const res = await applyManifest(m, state, api, opts(), () => undefined)
+    expect(res.skippedExisting).toEqual(['2026-governor-AL-regular-general'])
+    expect(api.createMarket).not.toHaveBeenCalled()
+  })
+
+  test('a policy must block on the creator itself and list real usernames', async () => {
+    const { api } = mockApi()
+    const m = {
+      ...manifest([partyEntry('AL', 'Alabama')]),
+      duplicatePolicy: { blockingCreators: ['SomeoneElse'] },
+    }
+    await expect(
+      applyManifest(m, emptyState(m), api, opts(), () => undefined)
+    ).rejects.toThrow(/blockingCreators must include the creator @ElectionBot/)
+    expect(api.createMarket).not.toHaveBeenCalled()
+    expect(
+      validateManifest(
+        { ...m, duplicatePolicy: { blockingCreators: [] } },
+        NOW
+      ).join('\n')
+    ).toMatch(/blockingCreators must list one or more usernames/)
+  })
+
+  test('saved online lines carry the creator; the policy reads them back', () => {
+    const line = formatOnlineFinding({
+      verdict: 'equivalent',
+      reason: 'same office/state/district/year with party outcomes',
+      m: equivalentBy('Jack1'),
+    })
+    expect(line).toBe(
+      'EQUIVALENT eq-Jack1 @Jack1 "Alabama governor 2026: which party?" (same office/state/district/year with party outcomes)'
+    )
+    expect(parseOnlineFinding(line)).toEqual({
+      verdict: 'equivalent',
+      id: 'eq-Jack1',
+      creatorUsername: 'Jack1',
+      question: 'Alabama governor 2026: which party?',
+      reason: 'same office/state/district/year with party outcomes',
+    })
+    // Lines saved before creators were recorded still parse, without one.
+    expect(
+      parseOnlineFinding('AMBIGUOUS p1 "Who wins (really)?" (some reason)')
+    ).toEqual({
+      verdict: 'ambiguous',
+      id: 'p1',
+      question: 'Who wins (really)?',
+      reason: 'some reason',
+    })
+    const lines = [
+      line,
+      'AMBIGUOUS m2 @ElectionBot "A related market" (related)',
+    ]
+    expect(onlineDuplicateOutcome(ownPolicy, lines).action).toBe('create')
+    expect(onlineDuplicateOutcome(undefined, lines).action).toBe('skip')
+    expect(
+      onlineDuplicateOutcome(ownPolicy, [
+        'EQUIVALENT m3 @ElectionBot "Ours" (same)',
+      ]).action
+    ).toBe('skip')
+    expect(
+      onlineDuplicateOutcome(ownPolicy, [
+        'a market already exists at the reserved id k: q',
+      ]).action
+    ).toBe('already-created')
   })
 
   test('ignores markets the audit already reviewed and rejected', async () => {

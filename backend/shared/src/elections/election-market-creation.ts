@@ -231,7 +231,54 @@ export type Manifest = {
     // Cap across ALL runs for this manifest series; set by the reviewer.
     approvedMaxTotalMana: number | null
   }
+  // How existing markets found by the duplicate search affect an entry.
+  // Absent (the 2026 manifests): any EQUIVALENT market skips the entry and
+  // any AMBIGUOUS one holds it for review. Present (2028+): see
+  // DuplicatePolicy.
+  duplicatePolicy?: DuplicatePolicy
   entries: AnyManifestEntry[]
+}
+
+// The 2028+ markets are official @ManifoldPolitics markets, created even where
+// a community market asks the same question (Tod, 2026-11-05: "re-create them
+// all as official markets anyway, so that we own them"). Only an EQUIVALENT
+// market created by one of `blockingCreators` (the creator itself: we never
+// duplicate ourselves) skips an entry. Every other existing market, and every
+// AMBIGUOUS one, is information for the report and never skips or holds.
+export type DuplicatePolicy = {
+  blockingCreators: string[]
+}
+
+export type DuplicateAction = 'skip' | 'review' | 'info'
+
+// What one existing market does to an entry under a manifest's policy. An
+// EQUIVALENT market whose creator is unknown is held for review under the
+// 2028+ policy: it might be ours.
+export function duplicateAction(
+  policy: DuplicatePolicy | undefined,
+  finding: { verdict: 'equivalent' | 'ambiguous'; creatorUsername?: string }
+): DuplicateAction {
+  if (!policy) return finding.verdict === 'equivalent' ? 'skip' : 'review'
+  if (finding.verdict !== 'equivalent') return 'info'
+  if (!finding.creatorUsername) return 'review'
+  const creator = finding.creatorUsername.toLowerCase()
+  return policy.blockingCreators.some((c) => c.toLowerCase() === creator)
+    ? 'skip'
+    : 'info'
+}
+
+// The entry's outcome from all its findings: skip beats review beats create.
+export function duplicateDecision<
+  F extends { verdict: 'equivalent' | 'ambiguous'; creatorUsername?: string }
+>(policy: DuplicatePolicy | undefined, findings: F[]) {
+  const by = { skip: [] as F[], review: [] as F[], info: [] as F[] }
+  for (const f of findings) by[duplicateAction(policy, f)].push(f)
+  const action: 'skip' | 'review' | 'create' = by.skip.length
+    ? 'skip'
+    : by.review.length
+    ? 'review'
+    : 'create'
+  return { action, ...by }
 }
 
 export type EntryState = {
@@ -264,7 +311,18 @@ export type EntryState = {
     slug?: string
     question: string
     verdict: string
+    creatorUsername?: string
     answerId?: string
+  }[]
+  // Existing markets the manifest's duplicatePolicy treats as information
+  // (community markets on the same question, related questions): recorded,
+  // never blocking.
+  existingInfo?: {
+    id: string
+    slug?: string
+    question: string
+    verdict: string
+    creatorUsername?: string
   }[]
   message?: string
   updatedAt: string
@@ -675,6 +733,18 @@ export function validateEntry(entry: AnyManifestEntry, now = Date.now()) {
 export function validateManifest(manifest: Manifest, now = Date.now()) {
   const errors: string[] = []
   if (!manifest.series) errors.push('manifest.series is required')
+  const policy = manifest.duplicatePolicy
+  if (
+    policy !== undefined &&
+    (!Array.isArray(policy.blockingCreators) ||
+      !policy.blockingCreators.length ||
+      policy.blockingCreators.some(
+        (c) => typeof c !== 'string' || !/^[A-Za-z0-9_]+$/.test(c)
+      ))
+  )
+    errors.push(
+      'duplicatePolicy.blockingCreators must list one or more usernames'
+    )
   // Keep the two kinds of manifest (and their idempotency series) apart.
   const measures = manifest.kind === 'ballot-measures'
   for (const entry of manifest.entries)
@@ -739,6 +809,19 @@ export function applyPreconditions(manifest: Manifest, opts: ApplyOptions) {
   if (!Number.isFinite(cap) || !(cap && cap > 0))
     errors.push(
       'manifest.budget.approvedMaxTotalMana must be set by the reviewer'
+    )
+  // A creator-scoped duplicate policy must block on the creator's own
+  // markets, or a run could duplicate them.
+  const policy = manifest.duplicatePolicy
+  if (
+    policy &&
+    opts.creatorUsername &&
+    !(policy.blockingCreators ?? []).some(
+      (c) => c.toLowerCase() === opts.creatorUsername!.toLowerCase()
+    )
+  )
+    errors.push(
+      `duplicatePolicy.blockingCreators must include the creator @${opts.creatorUsername}, so a run never duplicates its own markets`
     )
   errors.push(...validateManifest(manifest, opts.now?.() ?? Date.now()))
   return errors
@@ -1285,6 +1368,63 @@ export async function findExisting(
   }
 }
 
+// The online dry run saves one line per existing market it found:
+//   EQUIVALENT <id> @<creator> "<question>" (<reason>)
+// Lines saved before 2026-11-05 have no @creator; parseOnlineFinding returns
+// creatorUsername undefined for them (and for @unknown).
+export function formatOnlineFinding(v: {
+  verdict: string
+  reason: string
+  m: MarketLike
+}) {
+  return `${v.verdict.toUpperCase()} ${v.m.id} @${
+    v.m.creatorUsername || 'unknown'
+  } "${v.m.question}" (${v.reason})`
+}
+
+export function parseOnlineFinding(line: string):
+  | {
+      verdict: 'equivalent' | 'ambiguous'
+      id: string
+      creatorUsername?: string
+      question: string
+      reason: string
+    }
+  | undefined {
+  const m = line.match(
+    /^(EQUIVALENT|AMBIGUOUS) (\S+)(?: @(\S+))? "([\s\S]*)" \(([\s\S]*)\)$/
+  )
+  if (!m) return undefined
+  return {
+    verdict: m[1] === 'EQUIVALENT' ? 'equivalent' : 'ambiguous',
+    id: m[2],
+    ...(m[3] && m[3] !== 'unknown' ? { creatorUsername: m[3] } : {}),
+    question: m[4],
+    reason: m[5],
+  }
+}
+
+// What the saved online lines of one entry mean under a manifest's policy:
+// 'already-created' when a market exists at the reserved id (apply
+// reconciles it), otherwise the duplicate decision.
+export function onlineDuplicateOutcome(
+  policy: DuplicatePolicy | undefined,
+  lines: string[]
+) {
+  const findings = lines
+    .map((line) => ({ line, f: parseOnlineFinding(line) }))
+    .filter((x): x is { line: string; f: NonNullable<typeof x.f> } => !!x.f)
+    .map(({ line, f }) => ({ ...f, line }))
+  const decision = duplicateDecision(policy, findings)
+  const atReservedId = lines.some((l) =>
+    l.startsWith('a market already exists')
+  )
+  return {
+    ...decision,
+    action: atReservedId ? ('already-created' as const) : decision.action,
+  }
+}
+
 // Offline plan: no network. Used by the dry run and as the apply skeleton.
 export function planOffline(
   manifest: Manifest,
@@ -1678,29 +1818,46 @@ export async function applyManifest(
       }`
       break
     }
-    const existing = [...found.equivalent, ...found.ambiguous].map((v) => ({
+    // The manifest's duplicatePolicy decides which findings block: without
+    // one (2026) every EQUIVALENT skips and every AMBIGUOUS holds; with one
+    // (2028+) only an EQUIVALENT market by a blocking creator skips, and the
+    // rest is recorded as information.
+    const decision = duplicateDecision(
+      manifest.duplicatePolicy,
+      [...found.equivalent, ...found.ambiguous].map((v) => ({
+        ...v,
+        verdict: v.verdict as 'equivalent' | 'ambiguous',
+        creatorUsername: v.m.creatorUsername,
+      }))
+    )
+    const describe = (v: (typeof decision.info)[number]) => ({
       id: v.m.id,
       slug: v.m.slug,
       question: v.m.question,
       verdict: `${v.verdict}: ${v.reason}`,
+      ...(v.m.creatorUsername ? { creatorUsername: v.m.creatorUsername } : {}),
       ...(v.answerId ? { answerId: v.answerId } : {}),
-    }))
-    if (found.equivalent.length) {
+    })
+    const existing = [...decision.skip, ...decision.review].map(describe)
+    const existingInfo = decision.info.map(describe)
+    if (decision.action === 'skip') {
       await save(entry.raceKey, {
         status: 'skipped-existing',
         idempotencyKey: key,
         payloadHash: hash,
         existing,
+        ...(existingInfo.length ? { existingInfo } : {}),
       })
       result.skippedExisting.push(entry.raceKey)
       continue
     }
-    if (found.ambiguous.length) {
+    if (decision.action === 'review') {
       await save(entry.raceKey, {
         status: 'needs-review',
         idempotencyKey: key,
         payloadHash: hash,
         existing,
+        ...(existingInfo.length ? { existingInfo } : {}),
         message: 'possible existing market; review before creating',
       })
       result.needsReview.push(entry.raceKey)
@@ -1714,6 +1871,7 @@ export async function applyManifest(
       payloadHash: hash,
       reservedMana: cost.total,
       pendingPublication: !!opts.quiet,
+      ...(existingInfo.length ? { existingInfo } : {}),
     })
     let createdId: string | undefined
     let ambiguous: string | undefined

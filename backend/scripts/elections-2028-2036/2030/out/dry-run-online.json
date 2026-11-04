@@ -37,8 +37,8 @@
   "2030-governor-AZ-regular-general": [],
   "2030-governor-AR-regular-general": [],
   "2030-governor-CA-regular-general": [
-    "AMBIGUOUS XKBGVtkzbTeRIW4KtEoz \"Will Sam Altman be the governor of California before 2030?\" (same race, different proposition or answer set)",
-    "AMBIGUOUS AZBSJbUF3CsZzmWnltEU \"Will Sam Altman run for the governor of California before 2030?\" (primary/margin/conditional/derivative wording)"
+    "AMBIGUOUS XKBGVtkzbTeRIW4KtEoz @_deleted_ \"Will Sam Altman be the governor of California before 2030?\" (same race, different proposition or answer set)",
+    "AMBIGUOUS AZBSJbUF3CsZzmWnltEU @_deleted_ \"Will Sam Altman run for the governor of California before 2030?\" (primary/margin/conditional/derivative wording)"
   ],
   "2030-governor-CO-regular-general": [],
   "2030-governor-CT-regular-general": [],
@@ -68,7 +68,7 @@
   "2030-governor-SD-regular-general": [],
   "2030-governor-TN-regular-general": [],
   "2030-governor-TX-regular-general": [
-    "AMBIGUOUS yQs85NQ59C \"Will the democratic party win the 2030 texas gubernatorial election?\" (binary party market for this race; ours is three-way)"
+    "AMBIGUOUS yQs85NQ59C @Elspeth \"Will the democratic party win the 2030 texas gubernatorial election?\" (binary party market for this race; ours is three-way)"
   ],
   "2030-governor-VT-regular-general": [],
   "2030-governor-WI-regular-general": [],

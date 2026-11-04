@@ -20,7 +20,12 @@ import {
   noonUtcAfter,
   OPTIONAL_CYCLES,
 } from './cycles'
-import { buildManifest, loadTopics, topicIdsFor } from './generate-manifests'
+import {
+  buildManifest,
+  loadRejections,
+  loadTopics,
+  topicIdsFor,
+} from './generate-manifests'
 import { EXPECTED_COUNTS, inventories, racesFor } from './inventory'
 import {
   assertSeedConstraints,
@@ -629,6 +634,18 @@ test('seeds are documented for reviewers in seed.basis, not in the market text',
     assert.ok(b.includes(`Other opens at ${otherOf(e)}%`), e.raceKey)
     assert.ok(!e.payload!.descriptionMarkdown.includes(b), e.raceKey)
   }
+})
+
+test('every manifest creates official markets even where a community market exists', () => {
+  // Only an EQUIVALENT @ManifoldPolitics market skips an entry; the policy
+  // lives in the manifest, so the apply run can't forget it.
+  for (const cycle of CYCLES) {
+    assert.deepEqual(built[cycle].manifest.duplicatePolicy, {
+      blockingCreators: ['ManifoldPolitics'],
+    })
+    assert.deepEqual(validateManifest(built[cycle].manifest, NOW), [])
+  }
+  assert.deepEqual(loadRejections(), {})
 })
 
 test('close times are noon UTC the day after the general, later only for Georgia runoffs', () => {

@@ -16,6 +16,16 @@ Series `us-2030-general-v1` · 69 manifest entries · review approved: **false**
 - senate: 33 markets, Ṁ33,000
 - governor: 36 markets, Ṁ36,000
 
+Duplicate policy: only an EQUIVALENT market by @ManifoldPolitics skips an entry; community and related markets are listed as information and never skip or hold.
+
+| duplicate check (saved online results) | races |
+|---|---|
+| create | 69 |
+| …of which other markets also exist (information) | 2 |
+| skip (equivalent market blocks) | 0 |
+| hold for review | 0 |
+| already created at the reserved id | 0 |
+
 Seed probabilities below are SEEDS for the initial pool, not observed market forecasts.
 
 ## 2030-senate-AZ-regular-general — create
@@ -321,7 +331,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. California voted 23.8 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 83.8% and Republicans 15.2%. Other opens at 1%.
 - liquidity: Generic market opened years ahead: tier 1,000 everywhere (the brief). Raise after the 2026 results if a race is competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 or +extraLiquidity for marquee races.
 - reserved idempotency key (not yet a contract): `26lPsIyAQ2`
-- online recheck: AMBIGUOUS XKBGVtkzbTeRIW4KtEoz "Will Sam Altman be the governor of California before 2030?" (same race, different proposition or answer set); AMBIGUOUS AZBSJbUF3CsZzmWnltEU "Will Sam Altman run for the governor of California before 2030?" (primary/margin/conditional/derivative wording)
+- online recheck (create): [information only: related market] AMBIGUOUS XKBGVtkzbTeRIW4KtEoz @_deleted_ "Will Sam Altman be the governor of California before 2030?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS AZBSJbUF3CsZzmWnltEU @_deleted_ "Will Sam Altman run for the governor of California before 2030?" (primary/margin/conditional/derivative wording)
 
 ## 2030-governor-CO-regular-general — create
 **Which party will win the 2030 Colorado governor election?**
@@ -546,7 +556,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Texas voted 11.3 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 31.1% and Republicans 67.9%. Other opens at 1%.
 - liquidity: Generic market opened years ahead: tier 1,000 everywhere (the brief). Raise after the 2026 results if a race is competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 or +extraLiquidity for marquee races.
 - reserved idempotency key (not yet a contract): `AZsOILLd5s`
-- online recheck: AMBIGUOUS yQs85NQ59C "Will the democratic party win the 2030 texas gubernatorial election?" (binary party market for this race; ours is three-way)
+- online recheck (create): [information only: related market] AMBIGUOUS yQs85NQ59C @Elspeth "Will the democratic party win the 2030 texas gubernatorial election?" (binary party market for this race; ours is three-way)
 
 ## 2030-governor-VT-regular-general — create
 **Which party will win the 2030 Vermont governor election?**

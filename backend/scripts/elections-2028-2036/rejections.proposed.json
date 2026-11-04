@@ -1,5 +1,5 @@
 {
-  "_comment": "Generated from the 2026-10-06 online dry runs: every EQUIVALENT finding keyed by race. If Tod decides to create the official markets regardless of these community markets, rename this file to rejections.json (or merge the keys) and regenerate. Review the ids first; nothing here has been looked at by a person.",
+  "_comment": "Superseded on 2026-11-05: community markets no longer block (see duplicatePolicy in the manifests and rejections.json). Kept only as a record of the 2026-10-06 EQUIVALENT findings; do not copy into rejections.json.",
   "2028-senate-PA-regular-general": [
     "ZRCPgdEEdn"
   ],

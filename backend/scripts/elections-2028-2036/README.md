@@ -157,6 +157,23 @@ npx tsc --noEmit -p backend/scripts
   files, quiet publishing, colours, budgets — is unchanged.
 - `makeHttpApi` gained `paceMs`; the CLI gained `--only`, `--pace-ms` and a
   resumable `--online` run that writes `dry-run-online.json` after every entry.
+- **Duplicate policy (2026-11-05)**: every 2028+ manifest carries
+  `duplicatePolicy: { blockingCreators: ["ManifoldPolitics"] }`, set by the
+  generator. Tod: "I want to re-create them all as official markets anyway, so
+  that we own them." Under it, only an EQUIVALENT market created by
+  @ManifoldPolitics skips an entry (we never duplicate ourselves). A market by
+  anyone else, and any AMBIGUOUS market (ours included), never skips or holds
+  an entry: apply records it in the state file's `existingInfo` and creates
+  ours. An EQUIVALENT market whose creator is unknown is held for review,
+  since it might be ours. The policy is enforced in `applyManifest` through
+  `duplicateDecision`, so no CLI flag can drop it. Apply refuses a policy that
+  doesn't list the run's own creator, and validation refuses an empty one.
+  Manifests without the field (2026) keep the old behaviour: any EQUIVALENT
+  skips, any AMBIGUOUS holds. The online dry run now saves each finding with
+  its creator (`EQUIVALENT <id> @<creator> "<question>" (<reason>)`), labels
+  each one in the report ("information only: community market on the same
+  question", "SKIPS OURS", …), and prints `onlineDuplicates` counts (create,
+  skip, review, already created).
 
 Added with 2030 (generator only; the shared library is unchanged): Senate
 classes list the cycles they are up in (Class 1: 2030 and 2036); governors come
@@ -205,24 +222,26 @@ CLI writes into `<cycle>/out/` next to the state file after each run.)
    without them), paste the ids into `topics.json`, regenerate.
 2. **Review seeds**: the manifests carry the Stage A priors (`SEEDS.md`).
    We don't use Kalshi's prices: we don't have permission to use their data (decided 13 Oct 2026). The seeding that relied on them has been removed.
-3. **Review the online dry runs**: re-run `--online` for each cycle (the
-   runs in `<cycle>/out/dry-run-online.json` are all from 2026-11-05, and
-   markets will have been created since). On 2026-11-05: 2028 had 59 races
-   with an EQUIVALENT market (55 state and district presidential markets,
-   the national one, and the Senate seats in PA, NC and ND, the last two new
-   since October) and 12 more with only AMBIGUOUS ones (Ohio's Senate seat
-   new); 2030 had none and 2 AMBIGUOUS (California and Texas governor);
-   2032 had 1 EQUIVALENT (the national market) and no AMBIGUOUS. For every EQUIVALENT
-   finding decide: skip ours (do nothing; the run records `skipped-existing`)
-   or create ours anyway (list the contract id under that race in
-   `rejections.json` and regenerate; it lands in
-   `reviewedRejectedContractIds`). Every AMBIGUOUS finding blocks that entry
-   until it is either rejected the same way or accepted as equivalent (then
-   hold the entry via `holds.json`, or remove it). Races to keep out of a run
-   for any other reason go in `holds.json`; they stay in the manifest as
-   `unresolved`, cost nothing and are skipped by apply. House districts are
-   **not** held (Tod, 2026-11-05): all 435 are created, and each follows
-   whichever district carries its number on the 2028 map.
+3. **Review the online dry runs**: re-run `--online` for each cycle (markets
+   will have been created since the saved runs) and read `onlineDuplicates`
+   in its output and the labels in `dry-run-report.md`. Community markets
+   don't block: the manifests' duplicate policy creates our official market
+   anyway and lists theirs as information. Only an EQUIVALENT
+   @ManifoldPolitics market skips one of ours (`SKIPS OURS` in the report),
+   which is correct, since we never duplicate ourselves. `rejections.json`
+   stays empty; it is only for creating ours despite one of our own
+   equivalent markets. With the saved results (2028/2032/2030 from
+   2026-11-05; 2036 from 2026-10-06), every entry is creatable (537 / 69 /
+   101 / 101, 0 skipped, 0 held). Community markets also exist for 71 / 2 /
+   1 / 2 of those races (59 2028 races with an equivalent community market,
+   among them Jack1's 55 state and district presidential markets). The 19
+   @ManifoldPolitics findings are all AMBIGUOUS, on the 2028 national market
+   (conditionals and the candidate winner market), so they block nothing.
+   Races to keep out of a run for any other reason go in `holds.json`; they
+   stay in the manifest as `unresolved`, cost nothing and are skipped by
+   apply. House districts are **not** held (Tod, 2026-11-05): all 435 are
+   created, and each follows whichever district carries its number on the
+   2028 map.
 4. **Approve**: set `review.approved: true`, `reviewedBy`, `reviewedAt` in each
    manifest; `budget.approvedMaxTotalMana` already equals the cycle's planned
    total (raise it if tiers change). Commit the approved manifests on this
@@ -287,7 +306,8 @@ CLI writes into `<cycle>/out/` next to the state file after each run.)
   made two 2026 races "ambiguous"); the generic markets name nobody, and the
   tests check that no incumbent's name appears anywhere traders see.
 - Existing community markets for the same race are expected, most of all for
-  the national 2028 winner and swing-state presidential markets. The online
-  dry run lists them with ids; Tod decides.
+  the national 2028 winner and swing-state presidential markets. They no
+  longer block (the duplicate policy above): the online dry run lists them
+  with ids and creators as information, and we create the official market.
 - The seed check (opening prices within 1.5 points of the seeds; stop if a
   reserved id already exists with moved prices) is unchanged.

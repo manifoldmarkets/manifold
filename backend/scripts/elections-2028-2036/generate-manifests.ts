@@ -42,6 +42,12 @@ import {
 
 export const LIQUIDITY_TIER = 1000
 
+// Every 2028+ market is an official @ManifoldPolitics market, created even
+// where a community market already asks the same question (Tod, 2026-11-05).
+// Only an EQUIVALENT market by @ManifoldPolitics itself skips an entry; the
+// manifest carries this so the apply run can't forget it.
+export const DUPLICATE_POLICY = { blockingCreators: ['ManifoldPolitics'] }
+
 type Topics = {
   existing: Record<string, string>
   missing: { slug: string; suggestedName: string; usedBy: string[] }[]
@@ -281,6 +287,9 @@ export function buildManifest(
       }`,
     },
     budget: { approvedMaxTotalMana: totalMana },
+    duplicatePolicy: {
+      blockingCreators: [...DUPLICATE_POLICY.blockingCreators],
+    },
     ...({
       defaults: {
         closeTimeUtc: new Date(cfg.closeTime).toISOString(),

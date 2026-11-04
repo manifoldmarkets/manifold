@@ -100,15 +100,15 @@
   "2032-president-NE-02-general": [],
   "2032-president-NE-03-general": [],
   "2032-president-US-general": [
-    "EQUIVALENT 6qZZpIhzLn \"Which political party wins the US presidency in 2032?\" (same office/state/district/year with party outcomes)",
-    "AMBIGUOUS c2gypz9lng \"Will the winner of the 2032 presidential election be an incumbent?\" (same race, different proposition or answer set)",
-    "AMBIGUOUS QgtnCILzA2 \"Will a democrat win the 2032 presidential election?\" (binary party market for this race; ours is three-way)",
-    "AMBIGUOUS d0sunNgggN \"Will the winner of the 2028 US Presidential Election win the 2032 US Presidential Election?\" (names more than one year)",
-    "AMBIGUOUS RdDaOvPvcZI0QtBFZ1oz \"Who will win the 2032 United States presidential election? [ADD RESPONSES]\" (same race, different proposition or answer set)",
-    "AMBIGUOUS UQBHCia2YrwFRJ24TlBw \"Who will win the US presidential elections in 2032?\" (same race, different proposition or answer set)",
-    "AMBIGUOUS 2lbO8ztHRtqA7QHDTwsR \"Who will win the 2032 United States presidential election?\" (same race, different proposition or answer set)",
-    "AMBIGUOUS rsfOXvYRTXMkjZQTGk45 \"Will the democratic party win the 2032 U.S. presidential election?\" (binary party market for this race; ours is three-way)",
-    "AMBIGUOUS wPlFXk0yqztHC95I6mHH \"Will the winner of 2032 US presidential election be less than 6ft (183cm) tall?\" (same race, different proposition or answer set)",
-    "AMBIGUOUS YU9NDioufC0djV127nHk \"Who will win the 2032 united states presidential election?\" (same race, different proposition or answer set)"
+    "EQUIVALENT 6qZZpIhzLn @Ernie \"Which political party wins the US presidency in 2032?\" (same office/state/district/year with party outcomes)",
+    "AMBIGUOUS c2gypz9lng @realTomBayes \"Will the winner of the 2032 presidential election be an incumbent?\" (same race, different proposition or answer set)",
+    "AMBIGUOUS QgtnCILzA2 @Tumbles \"Will a democrat win the 2032 presidential election?\" (binary party market for this race; ours is three-way)",
+    "AMBIGUOUS d0sunNgggN @PrijwalNaidu \"Will the winner of the 2028 US Presidential Election win the 2032 US Presidential Election?\" (names more than one year)",
+    "AMBIGUOUS RdDaOvPvcZI0QtBFZ1oz @TheSchwa \"Who will win the 2032 United States presidential election? [ADD RESPONSES]\" (same race, different proposition or answer set)",
+    "AMBIGUOUS UQBHCia2YrwFRJ24TlBw @ukaszBartoszcze \"Who will win the US presidential elections in 2032?\" (same race, different proposition or answer set)",
+    "AMBIGUOUS 2lbO8ztHRtqA7QHDTwsR @Unown \"Who will win the 2032 United States presidential election?\" (same race, different proposition or answer set)",
+    "AMBIGUOUS rsfOXvYRTXMkjZQTGk45 @AmmonLam \"Will the democratic party win the 2032 U.S. presidential election?\" (binary party market for this race; ours is three-way)",
+    "AMBIGUOUS wPlFXk0yqztHC95I6mHH @skibidist \"Will the winner of 2032 US presidential election be less than 6ft (183cm) tall?\" (same race, different proposition or answer set)",
+    "AMBIGUOUS YU9NDioufC0djV127nHk @Elspeth \"Who will win the 2032 united states presidential election?\" (same race, different proposition or answer set)"
   ]
 }

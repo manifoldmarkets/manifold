@@ -17,6 +17,16 @@ Series `us-2036-general-v1` · 101 manifest entries · review approved: **false*
 - governor: 11 markets, Ṁ11,000
 - president: 57 markets, Ṁ57,000
 
+Duplicate policy: only an EQUIVALENT market by @ManifoldPolitics skips an entry; community and related markets are listed as information and never skip or hold.
+
+| duplicate check (saved online results) | races |
+|---|---|
+| create | 101 |
+| …of which other markets also exist (information) | 2 |
+| skip (equivalent market blocks) | 0 |
+| hold for review | 0 |
+| already created at the reserved id | 0 |
+
 Seed probabilities below are SEEDS for the initial pool, not observed market forecasts.
 
 ## 2036-senate-AZ-regular-general — create
@@ -226,6 +236,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Texas voted 11.3 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 31.1% and Republicans 67.9%. Other opens at 1%.
 - liquidity: Generic market opened years ahead: tier 1,000 everywhere (the brief). Raise after the 2026 results if a race is competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 or +extraLiquidity for marquee races.
 - reserved idempotency key (not yet a contract): `AC5ANu8PcA`
+- online recheck (create): [information only: related market] AMBIGUOUS kmIRNMqklHt2NLjfl1Db @jks "Will Texas elect a Democrat to the U.S. Senate in any election through 2036?" (same race, different proposition or answer set)
 
 ## 2036-senate-UT-regular-general — create
 **Which party will win the 2036 U.S. Senate election in Utah?**
@@ -826,5 +837,6 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. The national market opens with the parties even: Democrats 49.5%, Republicans 49.5%. Other opens at 1%.
 - liquidity: Generic market opened years ahead: tier 1,000 everywhere (the brief). Raise after the 2026 results if a race is competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 or +extraLiquidity for marquee races.
 - reserved idempotency key (not yet a contract): `z89QsEnnZE`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT Lpd8dcEds5 @Ernie "Which political party wins the US presidency in 2036?" (same office/state/district/year with party outcomes); [information only: related market] AMBIGUOUS MoUhTyVTG8OLznnjbpok @ukaszBartoszcze "Who will win the US presidential elections in 2036?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS 0PbT7DglPGtI9NlFLR0Y @colorednoise "Will a Democrat win the 2036 presidential election?" (binary party market for this race; ours is three-way); [information only: related market] AMBIGUOUS U8OEV1Ily83NDwDeHxxz @Unown "Who will win the 2036 United States presidential election?" (same race, different proposition or answer set)
 
 Quiet mode: create unlisted, verify prices, then publish through the visibility update API.

@@ -2,7 +2,7 @@
   "kind": "races",
   "manifestVersion": "2026-11-04.1",
   "series": "us-2030-general-v1",
-  "generatedAt": "2026-11-04T22:47:14.053Z",
+  "generatedAt": "2026-11-04T23:07:17.481Z",
   "review": {
     "approved": false,
     "reviewedBy": null,
@@ -11,6 +11,11 @@
   },
   "budget": {
     "approvedMaxTotalMana": 69000
+  },
+  "duplicatePolicy": {
+    "blockingCreators": [
+      "ManifoldPolitics"
+    ]
   },
   "defaults": {
     "closeTimeUtc": "2030-11-06T12:00:00.000Z",
