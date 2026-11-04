@@ -205,21 +205,22 @@ export function scrubKeyFrame(
 export const STAGE_PLAY_MS = 4_000
 export const MILESTONE_HOLD_MS = 1_800
 
-// How long to show `frame` before moving on, while playing. Playback that
-// starts on a milestone leaves it at once.
+// How long to show `frame` before moving on, while playing. With `hold` on,
+// playback pauses on each milestone it reaches; playback that starts on a
+// milestone leaves it at once.
 export function playbackDelay(
   milestones: ReplayMilestone[],
   frame: number,
-  startFrame: number
+  startFrame: number,
+  hold = true
 ) {
   const stage = stageOf(milestones, frame)
   const from = milestones[stage]
   const to = milestones[stage + 1]
   const frames = from && to ? Math.max(1, to.frame - from.frame) : 1
   const step = Math.min(400, Math.max(60, STAGE_PLAY_MS / frames))
-  const hold =
-    from && from.frame === frame && frame !== startFrame ? MILESTONE_HOLD_MS : 0
-  return step + hold
+  const holding = hold && from && from.frame === frame && frame !== startFrame
+  return step + (holding ? MILESTONE_HOLD_MS : 0)
 }
 
 const unit = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`
