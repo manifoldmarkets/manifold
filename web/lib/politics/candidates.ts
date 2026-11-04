@@ -61,12 +61,13 @@ const ALIASES: Record<string, string> = {
   mtg: 'marjorie taylor greene',
 }
 
-const INDEX: Map<string, { name: string; data: CandidateDataType }> = new Map(
-  Object.entries(CANDIDATE_DATA).map(([name, data]) => [
-    normalizeCandidateName(name),
-    { name, data },
-  ])
-)
+// First spelling wins: CANDIDATE_DATA lists the properly capitalized one
+// first ("Ron DeSantis" before the community's "Ron Desantis").
+const INDEX = new Map<string, { name: string; data: CandidateDataType }>()
+for (const [name, data] of Object.entries(CANDIDATE_DATA)) {
+  const key = normalizeCandidateName(name)
+  if (!INDEX.has(key)) INDEX.set(key, { name, data })
+}
 
 export function initialsOf(name: string): string {
   const words = name

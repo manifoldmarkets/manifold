@@ -16,7 +16,7 @@ export function MoversStrip(props: { movers: Mover[]; charts: RaceChart[] }) {
   if (movers.length === 0) return null
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex snap-x gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible lg:grid-cols-6">
+      <div className="flex snap-x gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible">
         {movers.map((m) => {
           const candidate = lookupCandidate(m.text)
           const pts = Math.round(m.weekChange * 100)

@@ -29,7 +29,7 @@ import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { MIDTERMS_2026 } from 'web/public/data/elections-data'
 import snapshot from 'web/public/data/election-2026-replay.json'
 import swingsFile from 'web/public/data/election-2026-swings.json'
-import { isCandidateAnswer } from './candidates'
+import { isCandidateAnswer, lookupCandidate } from './candidates'
 import type { Swing2026, Swings2026File } from './swings-2026'
 import {
   AFTER_2028,
@@ -514,7 +514,8 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
       ),
       (m) => -Math.abs(m.weekChange)
     ),
-    (m) => m.text.toLowerCase()
+    // One card per person, however each market spells them.
+    (m) => lookupCandidate(m.text).key
   ).slice(0, 6)
 
   let model: ElectoralModel | null = null

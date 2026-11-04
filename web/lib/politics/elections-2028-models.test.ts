@@ -49,6 +49,14 @@ test('lookups find the same person under different spellings', () => {
     lookupCandidate('Ron Desantis').photo,
     lookupCandidate('Ron DeSantis').photo
   )
+  // The registry's first (properly capitalized) spelling is the display name.
+  assert.equal(lookupCandidate('Ron Desantis').name, 'Ron DeSantis')
+  assert.equal(
+    lookupCandidate('JD Vance').key,
+    lookupCandidate('J.D. Vance').key
+  )
+  assert.equal(lookupCandidate('Donald Trump Jr').shortName, 'Trump Jr.')
+  assert.equal(lookupCandidate('Bernie Sanders').shortName, 'Bernie')
   assert.equal(lookupCandidate('JB Pritzker').shortName, 'Pritzker')
   assert.equal(lookupCandidate('Donald Trump, Sr').shortName, 'Trump')
   assert.equal(
