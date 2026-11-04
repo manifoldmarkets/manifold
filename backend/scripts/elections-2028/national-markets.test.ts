@@ -464,6 +464,29 @@ test('presidential markets hold up under any system for choosing the President',
     assert.match(get(key), /N\/A if .*no longer chosen by electoral votes\.$/, key)
 })
 
+test('liquidity: Ṁ10k for 2028 presidential, winner and control-of-Congress markets', () => {
+  // Tod, 5 Nov 2026: every 2028 presidential market, the presidential winner
+  // markets of every cycle, and markets of particular uncertainty or
+  // importance get the Ṁ10k tier; everything else stays at Ṁ1k.
+  const tier = (k: string) => ENTRIES.find((e) => e.key === k)!.liquidityTier
+  for (const k of [
+    '2028-dem-nominee', '2028-gop-nominee', '2028-dem-vp-nominee', '2028-gop-vp-nominee',
+    '2028-vp-winner', '2028-popular-vote', '2028-dem-electoral-votes',
+    '2028-popular-vote-margin', '2028-ec-popular-split', '2028-tipping-point',
+    '2028-dem-contested-convention', '2028-gop-contested-convention',
+    '2028-dem-iowa', '2028-gop-new-hampshire', '2028-dem-south-carolina', '2028-gop-nevada',
+    '2028-senate-control', '2028-house-control', '2028-trifecta',
+    '2030-senate-control', '2032-house-control', '2034-senate-control', '2036-house-control',
+    '2032-winner',
+  ])
+    assert.equal(tier(k), 10000, k)
+  for (const k of [
+    '2028-dem-ohio', '2028-gop-wyoming', '2027-governor-kentucky', '2027-virginia-house',
+    '2032-dem-nominee', '2032-gop-nominee',
+  ])
+    assert.equal(tier(k), 1000, k)
+})
+
 const clone = (e: Entry): Entry => JSON.parse(JSON.stringify(e))
 
 test('validation catches broken entries', () => {

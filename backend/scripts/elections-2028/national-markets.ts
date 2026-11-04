@@ -254,7 +254,7 @@ const statePrimary = (
     '2028-presidential-primaries',
     party === 'Democratic' ? 'democratic-party' : 'republican-party',
   ],
-  liquidityTier: 1000,
+  liquidityTier: s.contest ? 10000 : 1000,
   closeTime: EARLY_2028,
   seed: {
     kind: 'flattened-nominee',
@@ -290,7 +290,7 @@ const partyControl = (
     chamber === 'Senate' ? 'us-senate' : 'house-of-representatives',
     topicExtra,
   ],
-  liquidityTier: 1000,
+  liquidityTier: 10000,
   closeTime,
   seed,
 })
@@ -378,7 +378,7 @@ export const ENTRIES: Entry[] = [
     question: 'Who will be the 2028 Democratic vice presidential nominee?',
     description: vpNomineeDescription('Democratic'),
     topics: [...TOPICS_2028, 'vice-president', 'democratic-party'],
-    liquidityTier: 1000,
+    liquidityTier: 10000,
     closeTime: NOMINATION_2028,
     seed: {
       kind: 'source-candidates',
@@ -396,7 +396,7 @@ export const ENTRIES: Entry[] = [
     question: 'Who will be the 2028 Republican vice presidential nominee?',
     description: vpNomineeDescription('Republican'),
     topics: [...TOPICS_2028, 'vice-president', 'republican-party'],
-    liquidityTier: 1000,
+    liquidityTier: 10000,
     closeTime: NOMINATION_2028,
     seed: {
       kind: 'source-candidates',
@@ -415,7 +415,7 @@ export const ENTRIES: Entry[] = [
     description:
       'Resolves to the person elected Vice President in the November 7, 2028 election, however the winner is officially decided. N/A if no 2028 presidential election is held.',
     topics: [...TOPICS_2028, 'vice-president'],
-    liquidityTier: 1000,
+    liquidityTier: 10000,
     closeTime: AFTER_2028,
     seed: {
       kind: 'derived-vp',
@@ -440,7 +440,7 @@ export const ENTRIES: Entry[] = [
       PARTY_RULE
     ),
     topics: [...TOPICS_2028, 'electoral-college'],
-    liquidityTier: 1000,
+    liquidityTier: 10000,
     closeTime: AFTER_2028,
     seed: {
       kind: 'source-three-party',
@@ -460,7 +460,7 @@ export const ENTRIES: Entry[] = [
     description:
       "Resolves to the range containing the number of electoral votes the Democratic nominee wins on November 7, 2028: the electors pledged to them by each state's certified results, including Maine's and Nebraska's districts. Faithless electors are ignored. If the nominee is replaced on the ballot, the replacement's electoral votes count. N/A if the President is no longer chosen by electoral votes.",
     topics: [...TOPICS_2028, 'electoral-college'],
-    liquidityTier: 1000,
+    liquidityTier: 10000,
     closeTime: AFTER_2028,
     seed: { kind: 'ev-buckets', partySourceId: SOURCES.party2028, sigma: 60 },
   },
@@ -475,7 +475,7 @@ export const ENTRIES: Entry[] = [
     description:
       'Resolves to the range containing the national popular-vote margin in the November 7, 2028 election: the Democratic nominee\'s share minus the Republican nominee\'s, in percentage points, from certified results (50 states and DC). A margin exactly on a boundary goes to the range farther from zero; exactly 0 resolves 50/50 between "R+0 to R+3" and "D+0 to D+3".',
     topics: [...TOPICS_2028, 'electoral-college'],
-    liquidityTier: 1000,
+    liquidityTier: 10000,
     closeTime: AFTER_2028,
     seed: {
       kind: 'margin-buckets',
@@ -492,7 +492,7 @@ export const ENTRIES: Entry[] = [
     description:
       'Resolves YES if the candidate with the most votes nationwide in the November 7, 2028 election (certified results, 50 states and DC) is not the one elected President, however the winner is officially decided, and NO if they are.',
     topics: [...TOPICS_2028, 'electoral-college'],
-    liquidityTier: 1000,
+    liquidityTier: 10000,
     closeTime: AFTER_2028,
     seed: {
       kind: 'static-binary',
@@ -510,7 +510,7 @@ export const ENTRIES: Entry[] = [
     description:
       "Resolves to the state that gives the November 7, 2028 winner their 270th electoral vote, when every state and DC is ranked by the winner's margin there, widest first, using certified results. Maine's and Nebraska's districts are ranked on their own and count as their state. N/A if no one wins 270, or if the President is no longer chosen by electoral votes.",
     topics: [...TOPICS_2028, 'electoral-college'],
-    liquidityTier: 1000,
+    liquidityTier: 10000,
     closeTime: AFTER_2028,
     seed: {
       kind: 'static-candidates',
@@ -568,7 +568,7 @@ export const ENTRIES: Entry[] = [
     description:
       'Resolves to "Democratic trifecta" if a Democrat is inaugurated President on January 20, 2029 and Democrats control both the Senate and the House (as in the 2028 Senate and House control markets); "Republican trifecta" likewise; otherwise "Divided government".',
     topics: [...TOPICS_2028, 'us-congress', '2028-us-elections'],
-    liquidityTier: 1000,
+    liquidityTier: 10000,
     closeTime: AFTER_2028,
     seed: {
       kind: 'static-fixed',
@@ -585,7 +585,7 @@ export const ENTRIES: Entry[] = [
       'Will the 2028 Democratic convention need more than one ballot to nominate a president?',
     description: contestedDescription('Democratic'),
     topics: [...TOPICS_2028, '2028-presidential-primaries', 'democratic-party'],
-    liquidityTier: 1000,
+    liquidityTier: 10000,
     closeTime: NOMINATION_2028,
     seed: {
       kind: 'static-binary',
@@ -602,7 +602,7 @@ export const ENTRIES: Entry[] = [
       'Will the 2028 Republican convention need more than one ballot to nominate a president?',
     description: contestedDescription('Republican'),
     topics: [...TOPICS_2028, '2028-presidential-primaries', 'republican-party'],
-    liquidityTier: 1000,
+    liquidityTier: 10000,
     closeTime: NOMINATION_2028,
     seed: {
       kind: 'static-binary',
@@ -765,7 +765,7 @@ export const ENTRIES: Entry[] = [
     description:
       'Resolves to the person elected President in the November 2, 2032 election, however the winner is officially decided. N/A if no 2032 presidential election is held.',
     topics: ['us-politics', 'elections', '2032-us-presidential-election'],
-    liquidityTier: 1000,
+    liquidityTier: 10000,
     closeTime: '2032-11-03T12:00:00Z',
     seed: {
       kind: 'source-candidates',

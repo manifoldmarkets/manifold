@@ -5,13 +5,19 @@ The headline markets the 2028+ elections page needs, owned by
 votes, the tipping point, control of Congress through 2036, a 2028
 presidential primary for each party in every state and DC, the 2027
 off-year races and the 2030–2036 cycles. 133 markets (31 national + 102
-state primaries), about Ṁ158k at the answer counts of 5 Nov 2026. A market's cost is its tier per
-10 answers (Other included): at the Ṁ10,000 tier each answer costs Ṁ1,000,
-so the two 2028 nominee markets cost Ṁ13k and Ṁ11k with that day's 12 and
-10 people at ≥ 1%, and up to Ṁ21k each if 20 qualify. The rest are at the
-Ṁ1,000 tier: Ṁ1,000 for up to 10 answers, which covers every state primary
-(three candidates + Other). Run `--online` for the exact figures before an
-apply.
+state primaries), Ṁ451,300 at the answer counts of 5 Nov 2026. A market's
+cost is the larger of its tier and its answers × the tier's per-answer
+price (Ṁ100 at the Ṁ1,000 tier, Ṁ1,000 at Ṁ10,000), "Other" included: the
+2028 nominee markets cost Ṁ13k and Ṁ11k with that day's 12 and 10 people at
+≥ 1%. Run `--online` for the exact figures before an apply.
+
+Liquidity (Tod, 5 Nov 2026): the Ṁ10,000 tier for every 2028 presidential
+market (nominees, running mates, VP winner, popular vote, electoral votes,
+margin, the popular-vote-winner-loses market, tipping point, contested
+conventions, and the first four states' primaries), the 2032 winner, and
+every control-of-Congress market from 2028 to 2036: 32 markets, Ṁ350k. The
+other 101 (the 2027 races, the 2032 nominees, the other 94 state
+primaries) stay at Ṁ1,000.
 
 ## Answers
 
@@ -115,7 +121,7 @@ read at run time, or from documented static priors:
    ```powershell
    npx ts-node --transpile-only elections-2028/create-national-markets.ts --apply `
      --env prod --creator-username ManifoldPolitics `
-     --state C:\Users\User\elections-national-prod\state.prod.json --max-mana 160000
+     --state C:\Users\User\elections-national-prod\state.prod.json --max-mana 470000
    ```
    About 133 markets × (create, read back, publish) at `--pace-ms 400`:
    roughly 10–15 minutes. Avoid 07:45–08:15 UTC (the API restarts daily at
