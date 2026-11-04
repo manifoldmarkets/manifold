@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { ReactNode, useEffect, useMemo, useState } from 'react'
 import clsx from 'clsx'
+import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { PauseIcon, PlayIcon, RefreshIcon } from '@heroicons/react/solid'
-import { Contract } from 'common/contract'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { referralQuery } from 'common/util/share'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { ElectionAsOfContext } from 'web/components/usa-map/election-as-of'
@@ -16,7 +19,10 @@ import {
   LiveElectionExplorer,
   LiveElectionMapProps,
 } from 'web/components/usa-map/live-election-map'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
+import { buildShareUrl } from 'web/lib/util/share-url'
 import {
   comparisonLabel,
   COMPARISON_SOURCES,
@@ -39,13 +45,24 @@ import {
   sliderValue,
   snapshotProb,
 } from './replay-model'
+import {
+  chamberName,
+  ChamberScore,
+  chamberWinner,
+  partyName,
+  ReplayChambers,
+  replayStory,
+  signedPoints,
+} from './replay-scorecard'
 
 // /election2026: the midterm map replayed from a week before the polls
 // closed through election night, stage by stage, from a static snapshot of
 // the odds (web/scripts/election-2026-replay-snapshot.ts), beside real-money
 // odds on Senate and House control. Display only: betting stays on the live
 // map.
-export function ElectionReplay(props: LiveElectionMapProps) {
+export function ElectionReplay(
+  props: LiveElectionMapProps & { scores: ChamberScore[] }
+) {
   const { snapshot, error, retry } = useReplaySnapshot()
   const contracts = useMemo(() => electionContracts(props), [props])
   // Undefined until the reader moves: the default milestone.
@@ -87,20 +104,20 @@ export function ElectionReplay(props: LiveElectionMapProps) {
     setPlaying(false)
     setFrame(to)
   }
-  const chambers = {
+  const chambers: ReplayChambers = {
     senate: {
       id: props.senateControlContract?.id,
-      winner: winnerOf(props.senateControlContract),
+      winner: chamberWinner(props.senateControlContract),
     },
     house: {
       id: props.houseControlContract?.id,
-      winner: winnerOf(props.houseControlContract),
+      winner: chamberWinner(props.houseControlContract),
     },
   }
 
   return (
     <Col className="mx-auto w-full max-w-6xl gap-6 px-3 pb-12 pt-4 sm:px-4">
-      <ReplayHero />
+      <ReplayHero scores={props.scores} />
       {snapshot && shown ? (
         <>
           <ReplayPlayer
@@ -147,18 +164,6 @@ export function ElectionReplay(props: LiveElectionMapProps) {
   )
 }
 
-type Chambers = {
-  [chamber in ReplayChamber]: { id?: string; winner?: 'D' | 'R' }
-}
-
-// A chamber-control market (YES = Republicans) that has resolved.
-const winnerOf = (contract: Contract | null): 'D' | 'R' | undefined =>
-  contract?.isResolved && contract.resolution === 'YES'
-    ? 'R'
-    : contract?.isResolved && contract.resolution === 'NO'
-    ? 'D'
-    : undefined
-
 function useReplaySnapshot() {
   const [snapshot, setSnapshot] = useState<ReplaySnapshot>()
   const [error, setError] = useState(false)
@@ -182,21 +187,116 @@ function useReplaySnapshot() {
   return { snapshot, error, retry: () => setAttempt((a) => a + 1) }
 }
 
-function ReplayHero() {
+// The story, told only as far as the scores support it: the headline and
+// claims come from replayStory, the cards from each chamber's score.
+function ReplayHero(props: { scores: ChamberScore[] }) {
+  const { scores } = props
+  const { sawIt, demsAheadEverywhere, winners } = replayStory(scores)
+  const user = useUser()
+  useSaveReferral(user)
+  const referral = user?.username ? referralQuery(user.username) : undefined
+  const shareUrl = buildShareUrl({
+    domain: ENV_CONFIG.domain,
+    pathname: '/election2026',
+    search: '',
+    referralQuery: referral,
+  })
   return (
-    <Col className="gap-2">
-      <div className="text-primary-700 text-sm font-semibold uppercase tracking-wide">
-        2026 US midterms
-      </div>
-      <h1 className="text-ink-1000 text-3xl font-semibold sm:text-4xl">
-        Watch the midterms unfold
-      </h1>
-      <p className="text-ink-700 max-w-2xl text-base sm:text-lg">
-        Manifold’s odds on every Senate, governor and House race and ballot
-        measure, replayed from a week before the polls closed through election
-        night.
-      </p>
+    <Col className="gap-4">
+      <Col className="gap-2">
+        <Row className="items-center justify-between gap-3">
+          <div className="text-primary-700 text-sm font-semibold uppercase tracking-wide">
+            2026 US midterms
+          </div>
+          <CopyLinkOrShareButton
+            url={shareUrl}
+            eventTrackingName="share election 2026 replay"
+            tooltip="Share this replay"
+            color="gray-outline"
+            size="sm"
+            className="shrink-0 gap-1.5"
+          >
+            Share
+          </CopyLinkOrShareButton>
+        </Row>
+        <h1 className="text-ink-1000 text-3xl font-semibold sm:text-4xl">
+          {sawIt ? 'Manifold saw it coming' : 'Watch the midterms unfold'}
+        </h1>
+        <p className="text-ink-700 max-w-3xl text-base sm:text-lg">
+          {demsAheadEverywhere
+            ? 'Before the polls closed, Manifold had Democrats further ahead than the real-money markets did, at every milestone and in both chambers. '
+            : ''}
+          {winners.join(' ')} Replay a week of Manifold’s odds on every Senate,
+          governor and House race, beside the real-money markets.
+        </p>
+      </Col>
+      {scores.length > 0 && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {sortBy(scores, (s) => (s.winner ? 0 : 1)).map((s) => (
+            <ScoreCard key={s.chamber} score={s} />
+          ))}
+        </div>
+      )}
     </Col>
+  )
+}
+
+// One chamber's forecast-window score: the average edge, big.
+function ScoreCard(props: { score: ChamberScore }) {
+  const { chamber, winner, averagePoints, ahead, compared } = props.score
+  const caption = winner
+    ? averagePoints > 0
+      ? 'closer to the result than real money'
+      : averagePoints < 0
+      ? 'further from the result than real money'
+      : 'level with real money on the result'
+    : 'more on Democrats than real money'
+  return (
+    <Col className="bg-canvas-0 border-ink-200 gap-1 rounded-xl border p-4">
+      <div className="text-ink-600 text-xs font-semibold uppercase tracking-wide">
+        {chamberName(chamber)} control ·{' '}
+        {winner ? `${partyName(winner)} won` : 'result pending'}
+      </div>
+      <div
+        className={clsx(
+          'text-4xl font-bold tabular-nums',
+          winner && averagePoints > 0 ? 'text-teal-700' : 'text-primary-700'
+        )}
+      >
+        {winner ? '' : 'D '}
+        {signedPoints(averagePoints)}
+      </div>
+      <div className="text-ink-800 text-sm font-medium">
+        {caption}, on average before the polls closed
+      </div>
+      <div className="text-ink-600 text-xs">
+        {winner ? 'Closer' : 'Higher'} at {ahead} of {compared} milestones, 1
+        week out to polls close
+      </div>
+    </Col>
+  )
+}
+
+// Manifold's edge over the other market at one moment: "+4 pts" closer to
+// the result once the chamber resolved, "D +6 pts" before.
+function EdgeBadge(props: { gap: ReturnType<typeof chamberGap> }) {
+  const { gap } = props
+  const good = !!gap && gap.points > 0
+  return (
+    <span
+      className={clsx(
+        'inline-flex shrink-0 items-center rounded-full px-2 text-xs font-semibold tabular-nums leading-5',
+        gap?.resolved && good
+          ? 'bg-teal-100 text-teal-800'
+          : gap && !gap.resolved
+          ? 'bg-primary-100 text-primary-800'
+          : 'bg-canvas-50 text-ink-600'
+      )}
+    >
+      {!gap
+        ? 'Even'
+        : `${gap.resolved ? '' : `${gap.party} `}${signedPoints(gap.points)}`}
+    </span>
   )
 }
 
@@ -214,7 +314,7 @@ function ReplayPlayer(props: {
   playing: boolean
   onPlay: () => void
   onJump: (frame: number) => void
-  chambers: Chambers
+  chambers: ReplayChambers
 }) {
   const { snapshot, frame, playing, onPlay, onJump, chambers } = props
   const { milestones, times } = snapshot
@@ -360,30 +460,20 @@ function ChamberComparison(props: {
     rep !== undefined && first?.rep !== undefined
       ? chamberGap(rep, first.rep, winner)
       : undefined
-  const otherName = first && comparisonLabel(first.source)
   return (
     <Col className="min-w-0 gap-1.5">
-      <Row className="h-5 items-baseline justify-between gap-2">
+      <Row className="h-5 items-center justify-between gap-2">
         <span className="text-ink-600 shrink-0 text-xs font-semibold uppercase tracking-wide">
           {label} control
         </span>
-        <span
-          className={clsx(
-            'truncate text-xs font-semibold',
-            gap && gap.points > 0 ? 'text-primary-700' : 'text-ink-600'
-          )}
-        >
-          {gap &&
-            (gap.resolved
-              ? gap.points > 0
-                ? `Manifold ${gap.points} pts closer to the result`
-                : `${otherName} ${-gap.points} pts closer to the result`
-              : `Manifold had ${
-                  gap.party === 'D' ? 'Democrats' : 'Republicans'
-                } ${Math.abs(gap.points)} pts ${
-                  gap.points > 0 ? 'higher' : 'lower'
-                }`)}
-        </span>
+        {first && (
+          <Row className="min-w-0 items-center gap-1.5">
+            <span className="text-ink-600 truncate text-xs">
+              Manifold’s edge
+            </span>
+            <EdgeBadge gap={gap} />
+          </Row>
+        )}
       </Row>
       <OddsBar name="Manifold" rep={rep} ours />
       {others.map((o) => (
@@ -443,7 +533,7 @@ function MilestoneTable(props: {
   snapshot: ReplaySnapshot
   frame: number
   onJump: (frame: number) => void
-  chambers: Chambers
+  chambers: ReplayChambers
 }) {
   const { snapshot, frame, onJump, chambers } = props
   const columns: { chamber: ReplayChamber; label: string }[] = [
@@ -462,8 +552,9 @@ function MilestoneTable(props: {
         </h2>
         <p className="text-ink-600 text-sm">
           Manifold’s chance of each party winning control of Congress
-          {compared && ', beside real-money prediction market odds'}. Select a
-          milestone to see the map at that moment.
+          {compared &&
+            ', beside real-money prediction market odds, with Manifold’s edge'}
+          . Select a milestone to see the map at that moment.
         </p>
       </Col>
       <div className="border-ink-200 overflow-x-auto rounded-xl border">
@@ -501,27 +592,46 @@ function MilestoneTable(props: {
                     {formatRewindTime(m.time)}
                   </div>
                 </th>
-                {columns.map((c) => (
-                  <td key={c.chamber} className="px-3 py-2 align-top">
-                    <SplitOdds
-                      rep={snapshotProb(
-                        snapshot,
-                        chambers[c.chamber].id,
-                        m.frame
-                      )}
-                      source={compared ? 'Manifold' : undefined}
-                    />
-                    {comparisonsAt(REPLAY_COMPARISONS, c.chamber, m.time).map(
-                      (other) => (
+                {columns.map((c) => {
+                  const ours = snapshotProb(
+                    snapshot,
+                    chambers[c.chamber].id,
+                    m.frame
+                  )
+                  const others = comparisonsAt(
+                    REPLAY_COMPARISONS,
+                    c.chamber,
+                    m.time
+                  )
+                  const first = others[0]
+                  return (
+                    <td key={c.chamber} className="px-3 py-2 align-top">
+                      <SplitOdds
+                        rep={ours}
+                        source={compared ? 'Manifold' : undefined}
+                        badge={
+                          ours !== undefined &&
+                          first && (
+                            <EdgeBadge
+                              gap={chamberGap(
+                                ours,
+                                first.republicanProb,
+                                chambers[c.chamber].winner
+                              )}
+                            />
+                          )
+                        }
+                      />
+                      {others.map((other) => (
                         <SplitOdds
                           key={other.source}
                           rep={other.republicanProb}
                           source={comparisonLabel(other.source)}
                         />
-                      )
-                    )}
-                  </td>
-                ))}
+                      ))}
+                    </td>
+                  )
+                })}
               </tr>
             ))}
           </tbody>
@@ -532,6 +642,11 @@ function MilestoneTable(props: {
           <li>
             Manifold: the market’s probability after the last trade before each
             moment.
+          </li>
+          <li>
+            Edge: how many percentage points more Manifold put on the winner
+            than real money did, once the chamber’s market resolved; until then,
+            how many more it put on the Democrats.
           </li>
           {REPLAY_COMPARISONS.map(
             (s) =>
@@ -546,8 +661,12 @@ function MilestoneTable(props: {
 }
 
 // Named by source once the table has other markets' odds beside Manifold's.
-function SplitOdds(props: { rep: number | undefined; source?: string }) {
-  const { rep, source } = props
+function SplitOdds(props: {
+  rep: number | undefined
+  source?: string
+  badge?: ReactNode
+}) {
+  const { rep, source, badge } = props
   if (rep === undefined || !Number.isFinite(rep))
     return <div className="text-ink-500">—</div>
   const split = partySplit(rep)
@@ -560,6 +679,7 @@ function SplitOdds(props: { rep: number | undefined; source?: string }) {
         R {formatOdds(split.rep)}
       </span>
       {source && <span className="text-ink-600 text-xs">{source}</span>}
+      {badge}
     </Row>
   )
 }

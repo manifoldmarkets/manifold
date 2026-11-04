@@ -3,6 +3,7 @@ import {
   MarketProbsHistory,
 } from 'common/market-probs-history'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
+import { formatOdds } from 'web/components/usa-map/election-display'
 import { POLLS_CLOSE_2026 } from 'web/components/usa-map/election-rewind-model'
 
 // The 2026 midterms replay on /election2026: the map's odds from a week
@@ -263,7 +264,10 @@ export function chamberGap(
   const share = (s: { rep: number; dem: number }) =>
     party === 'R' ? s.rep : s.dem
   const points = Math.round((share(ours) - share(theirs)) * 100)
-  return Number.isFinite(points) && points !== 0
+  // Odds that read the same (">99%" and ">99%") are even, however far apart
+  // past the bound.
+  const sameShown = formatOdds(share(ours)) === formatOdds(share(theirs))
+  return Number.isFinite(points) && points !== 0 && !sameShown
     ? { points, party, resolved: winner !== undefined }
     : undefined
 }

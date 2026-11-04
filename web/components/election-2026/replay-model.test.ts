@@ -152,6 +152,14 @@ test('chamber gaps read in whole points as shown', () => {
   // Reading the same, or both past the bounds, is no gap.
   assert.equal(chamberGap(0.2, 0.2049), undefined)
   assert.equal(chamberGap(0.0074, 0.0045), undefined)
+  // Both ">99%" on the Democrats: even, though 0.5 apart past the bound.
+  assert.equal(chamberGap(0.0058, 0.0005, 'D'), undefined)
+  // "99%" against ">99%" is a real gap.
+  assert.deepEqual(chamberGap(0.013, 0.0015, 'D'), {
+    points: -1,
+    party: 'D',
+    resolved: true,
+  })
 })
 
 test('party odds round so both sides add up as shown', () => {
