@@ -131,23 +131,14 @@ export type Entry = BinaryEntry | MultiEntry
 // Description building blocks
 // ---------------------------------------------------------------------------
 
-const HUB =
-  'Part of [Manifold Politics](https://manifold.markets/ManifoldPolitics) election coverage: see every race at [manifold.markets/election](https://manifold.markets/election).'
-const CURATED =
-  'Answers are curated by @ManifoldPolitics, who will add candidates as they emerge (ask in the comments). "Other" covers everyone not listed; a bet on "Other" includes any answer added later.'
-const OPEN =
-  'Anyone can add a candidate as an answer. "Other" covers everyone not listed; a bet on "Other" includes any answer added later.'
-const PARTY_ANSWERS =
-  'Answers are the Democratic Party, the Republican Party and "Other". @ManifoldPolitics may add another party or an independent candidate as an answer if one becomes competitive; a bet on "Other" includes any answer added later.'
-// Who counts as which answer in a race between parties.
-const partyRule = (whose: string) =>
-  `A winner who is neither the Democratic nor the Republican nominee resolves to the answer @ManifoldPolitics has added for ${whose} party or for them, if there is one, and otherwise to "Other".`
-const SEEDED =
-  "Opening odds were copied from Manifold's most-traded community market on the same question when this market was created."
-const DERIVED =
-  "Opening odds were derived from Manifold's community markets (see below) when this market was created."
-const PRIOR =
-  'Opening odds are a rough prior set by Manifold Politics. Trade them to where you think they belong.'
+// Descriptions say only what decides the market: which election, what
+// counts, and when it's N/A (Tod, 5 Nov 2026: "massively simplify"). Nothing
+// about who adds answers, how the odds opened, or links elsewhere.
+
+// Who counts as which answer in a race between parties. Same wording as the
+// per-race pipeline's markets.
+const PARTY_RULE =
+  "Only the party matters: a Democratic or Republican nominee counts as that party even if also listed on other parties' lines. Anyone else resolves to Other, or to their own answer if one has been added."
 
 const desc = (...paragraphs: string[]) => paragraphs.join('\n\n')
 
@@ -158,20 +149,13 @@ const TOPICS_2028 = [
 ]
 
 const nomineeDescription = (party: 'Democratic' | 'Republican', year: number) =>
-  desc(
-    `Resolves to the person the ${party} Party formally nominates for President of the United States for the ${year} election: the winner of the presidential roll call at the ${year} ${party} National Convention, or of an equivalent formal nomination vote (for example a virtual roll call). If that nominee later withdraws or is replaced, this still resolves to the person first formally nominated. If the ${party} Party does not nominate anyone for a ${year} presidential election, resolves N/A.`,
-    CURATED,
-    SEEDED,
-    HUB
-  )
+  `Resolves to the person the ${party} Party formally nominates for President in ${year}: the winner of the roll call at its ${year} national convention (or an equivalent formal vote). If that nominee later withdraws or is replaced, it still resolves to the person first nominated. N/A if the party nominates no one.`
+
+const contestedDescription = (party: 'Democratic' | 'Republican') =>
+  `Resolves YES if no one wins the ${party} presidential nomination on the first roll-call ballot at the 2028 ${party} National Convention (or an equivalent formal vote), so a second ballot is held; NO if the nominee is chosen on the first ballot or by acclamation. N/A if the party nominates no one.`
 
 const vpNomineeDescription = (party: 'Democratic' | 'Republican') =>
-  desc(
-    `Resolves to the person the ${party} Party formally nominates for Vice President of the United States for the 2028 election (at the 2028 ${party} National Convention or an equivalent formal nomination vote). If that nominee later withdraws or is replaced, this still resolves to the person first formally nominated. If the ${party} Party does not nominate a vice presidential candidate for a 2028 election, resolves N/A.`,
-    CURATED,
-    SEEDED,
-    HUB
-  )
+  `Resolves to the person the ${party} Party formally nominates for Vice President in 2028, at its national convention or an equivalent formal vote. If that nominee is later replaced, it still resolves to the person first nominated. N/A if the party nominates no one.`
 
 // Every state and DC holds a 2028 presidential contest for each party. The
 // first four keep the names they're known by; the rest say "primaries", which
@@ -213,11 +197,10 @@ const primaryDescription = (
   party: 'Democratic' | 'Republican'
 ) =>
   desc(
-    `Resolves to the candidate who wins the ${inText(s)} ${party} presidential nominating contest for 2028: the candidate with the most votes in its presidential preference vote, per certified results (or the Associated Press count if results are not certified within a week). If a contest reports no vote totals, the candidate allocated the most national convention delegates from it wins.`,
-    `Which contest counts: if ${inText(s)} holds a state-run ${party} presidential primary and the party also holds a separate caucus there, the contest that allocates ${inText(s)}'s national convention delegates counts. If only a state-run primary is held, it counts even if the national party does not award delegates from it. If "uncommitted", "none of these candidates" or a similar ballot line gets the most votes, resolves to that line's answer if one has been added, otherwise to "Other". If no ${party} presidential contest is held in ${inText(s)} before the party formally chooses its 2028 nominee, resolves N/A.`,
-    OPEN,
-    `Opening odds were derived from Manifold's 2028 ${party} nominee market when this market was created: its three likeliest candidates, flattened because a single state is less predictable than the nomination, with a boost for any candidate from ${inText(s)}. Everyone else starts in "Other".`,
-    HUB
+    `Resolves to the candidate with the most votes in the 2028 ${party} presidential ${
+      s.contest ?? 'primary or caucus'
+    } in ${inText(s)}, per certified results (or the AP count if not certified within a week). If no vote totals are reported, the one awarded the most delegates wins.`,
+    `If the state and the party hold separate contests, the one that awards delegates counts. "Uncommitted" counts as Other. N/A if no ${party} contest is held in ${inText(s)} before the nominee is chosen.`
   )
 
 const controlDescription = (
@@ -226,19 +209,13 @@ const controlDescription = (
 ) => {
   const congress = { 2028: '121st', 2030: '122nd', 2032: '123rd' }[year]
   const convenes = { 2028: '2029', 2030: '2031', 2032: '2033' }[year]
-  const senateTie =
+  const vp =
     year === 2030
-      ? `If the Senate is split evenly, control goes to the party of the Vice President in office when the ${congress} Congress convenes.`
-      : `If the Senate is split evenly, control goes to the party of the Vice President inaugurated on January 20, ${convenes}.`
+      ? 'the Vice President in office then'
+      : `the Vice President inaugurated on January 20, ${convenes}`
   return chamber === 'Senate'
-    ? desc(
-        `Resolves to the party that controls the US Senate after the ${year} elections: the party with a majority of senators when the ${congress} Congress organizes in January ${convenes}, after any runoffs, counting independents with the party they caucus with for organizing the chamber. ${senateTie} Later vacancies, appointments or party switches do not change the resolution.`,
-        HUB
-      )
-    : desc(
-        `Resolves to the party with a majority of seats (218 or more) in the US House of Representatives when the ${congress} Congress convenes on January 3, ${convenes}, based on the ${year} election results (members-elect, after any runoffs and recounts), counting independents with the party they caucus with. If no party has a majority, resolves to the party of the Speaker elected at the start of the ${congress} Congress.`,
-        HUB
-      )
+    ? `Resolves to the party with a Senate majority when the ${congress} Congress organizes in January ${convenes}, after any runoffs, counting independents with the party they caucus with. A 50–50 Senate goes to the party of ${vp}. Later vacancies or party switches don't change it.`
+    : `Resolves to the party with a House majority (218 or more members-elect) when the ${congress} Congress convenes on January 3, ${convenes}, counting independents with the party they caucus with. If no party has a majority, it resolves to the party of the Speaker elected then.`
 }
 
 // ---------------------------------------------------------------------------
@@ -320,7 +297,9 @@ const governor2027 = (
   closeTime: string,
   // Democratic and Republican; "Other" opens with the rest.
   pcts: [number, number],
-  extra: string
+  // The rest of "Resolves to the party that wins the …": the election, its
+  // date, and the state's round rule if it has one.
+  race: string
 ): MultiEntry => ({
   key: `2027-governor-${state.toLowerCase()}`,
   cycle: 2027,
@@ -330,10 +309,8 @@ const governor2027 = (
   answers: [DEM, REP],
   question: `Which party will win the 2027 ${state} governor election?`,
   description: desc(
-    `Resolves to the party of the candidate who wins the 2027 ${state} gubernatorial election, per certified results. ${extra} A candidate's party is the party label they carry on the deciding ballot. ${partyRule('their')}`,
-    PARTY_ANSWERS,
-    PRIOR,
-    HUB
+    `Resolves to the party that wins the ${race}`,
+    PARTY_RULE
   ),
   topics: [
     'us-politics',
@@ -432,13 +409,8 @@ export const ENTRIES: Entry[] = [
     outcome: 'MULTIPLE_CHOICE',
     addAnswersMode: 'ONLY_CREATOR',
     question: 'Who will be elected vice president of the United States in 2028?',
-    description: desc(
-      'Resolves to the person elected Vice President of the United States in the November 7, 2028 election: the candidate who receives a majority of electoral votes for Vice President as counted by Congress in January 2029, or the person the Senate chooses if no candidate has a majority. If no 2028 presidential election is held, resolves N/A.',
-      CURATED,
-      DERIVED,
-      "How: each running mate's chance of being nominated (Manifold's Democratic and Republican 2028 VP-nominee markets) times their party's chance of winning the presidency (Manifold's 2028 party market). People under 1% start in \"Other\".",
-      HUB
-    ),
+    description:
+      'Resolves to the person elected Vice President in the November 7, 2028 election: whoever wins a majority of electoral votes for Vice President as counted by Congress in January 2029, or whom the Senate picks if no one does. N/A if no 2028 presidential election is held.',
     topics: [...TOPICS_2028, 'vice-president'],
     liquidityTier: 1000,
     closeTime: AFTER_2028,
@@ -461,10 +433,8 @@ export const ENTRIES: Entry[] = [
     question:
       'Which party will win the national popular vote in the 2028 presidential election?',
     description: desc(
-      `Resolves to the party of the presidential candidate who receives the most votes nationwide (all 50 states plus DC) in the November 7, 2028 general election, per certified results. A candidate's party is the party whose presidential nomination they hold. ${partyRule('their')}`,
-      PARTY_ANSWERS,
-      SEEDED,
-      HUB
+      'Resolves to the party of the presidential candidate with the most votes nationwide (50 states and DC) in the November 7, 2028 election, per certified results. Electoral votes don\'t matter here.',
+      PARTY_RULE
     ),
     topics: [...TOPICS_2028, 'electoral-college'],
     liquidityTier: 1000,
@@ -484,11 +454,8 @@ export const ENTRIES: Entry[] = [
     answers: EV_BUCKETS.map((b) => b.label),
     question:
       'How many electoral votes will the 2028 Democratic presidential nominee win?',
-    description: desc(
-      "Resolves to the range containing the number of electoral votes the Democratic Party's 2028 presidential nominee wins, counting the electors pledged to them by each state's certified results (statewide and, in Maine and Nebraska, by congressional district). Faithless electors are ignored. If the Democratic nominee is replaced on the ballot before Election Day, the replacement's electoral votes count.",
-      "How the opening odds were set: Democratic electoral votes ~ Normal(μ, 60), with μ placed so that the chance of 270 or more equals the Democratic share of Manifold's 2028 party market; each range opens at no less than 1%.",
-      HUB
-    ),
+    description:
+      "Resolves to the range containing the number of electoral votes the Democratic nominee wins on November 7, 2028: the electors pledged to them by each state's certified results, including Maine's and Nebraska's districts. Faithless electors are ignored. If the nominee is replaced on the ballot, the replacement's electoral votes count.",
     topics: [...TOPICS_2028, 'electoral-college'],
     liquidityTier: 1000,
     closeTime: AFTER_2028,
@@ -502,11 +469,8 @@ export const ENTRIES: Entry[] = [
     addAnswersMode: 'DISABLED',
     answers: MARGIN_BUCKETS.map((b) => b.label),
     question: 'What will the national popular vote margin be in the 2028 presidential election?',
-    description: desc(
-      "The margin is the Democratic nominee's share of the total national popular vote minus the Republican nominee's share, in percentage points, from certified results (all 50 states plus DC), computed to two decimals. Ranges: \"R+6 or more\" = −6.00 or lower; \"R+3 to R+6\" = above −6.00, up to −3.00; \"R+0 to R+3\" = above −3.00, below 0; \"D+0 to D+3\" = above 0, below 3.00; \"D+3 to D+6\" = 3.00 up to (not including) 6.00; \"D+6 to D+9\" = 6.00 up to (not including) 9.00; \"D+9 or more\" = 9.00 or higher. A margin exactly on a boundary goes to the range farther from zero; exactly 0.00 resolves 50/50 between \"R+0 to R+3\" and \"D+0 to D+3\".",
-      "How the opening odds were set: margin ~ Normal(μ, 4.5 points), with μ placed so that the chance of a Democratic popular-vote win equals the Democratic share of Manifold's community 2028 popular-vote market; each range opens at no less than 1%.",
-      HUB
-    ),
+    description:
+      'Resolves to the range containing the national popular-vote margin in the November 7, 2028 election: the Democratic nominee\'s share minus the Republican nominee\'s, in percentage points, from certified results (50 states and DC). A margin exactly on a boundary goes to the range farther from zero; exactly 0 resolves 50/50 between "R+0 to R+3" and "D+0 to D+3".',
     topics: [...TOPICS_2028, 'electoral-college'],
     liquidityTier: 1000,
     closeTime: AFTER_2028,
@@ -522,11 +486,8 @@ export const ENTRIES: Entry[] = [
     phase: 'general',
     outcome: 'BINARY',
     question: 'Will the 2028 popular vote winner lose the Electoral College?',
-    description: desc(
-      'Resolves YES if the 2028 presidential candidate who receives the most votes nationwide (certified results, all 50 states plus DC) does not win a majority of electoral votes (270 or more) by the electors pledged to them in certified state results: either another candidate reaches 270, or no one does. Resolves NO if the national popular-vote winner wins 270 or more. Faithless electors are ignored.',
-      PRIOR,
-      HUB
-    ),
+    description:
+      'Resolves YES if the candidate with the most votes nationwide in the November 7, 2028 election (certified results, 50 states and DC) does not win 270 or more electoral votes, and NO if they do. Faithless electors are ignored.',
     topics: [...TOPICS_2028, 'electoral-college'],
     liquidityTier: 1000,
     closeTime: AFTER_2028,
@@ -543,12 +504,8 @@ export const ENTRIES: Entry[] = [
     outcome: 'MULTIPLE_CHOICE',
     addAnswersMode: 'ONLY_CREATOR',
     question: 'Which state will be the tipping point in the 2028 presidential election?',
-    description: desc(
-      "The tipping-point state is the one that delivers the winner's 270th electoral vote: order every electoral-vote unit (the 50 states, DC, and Maine's and Nebraska's congressional districts, with those two states' statewide results as separate units) by the winning presidential candidate's margin over the runner-up there, in percentage points of all votes cast, from the winner's best unit to worst, and add up the winner's electoral votes in that order. The unit that takes the total to 270 or more is the tipping point. Uses certified results and pledged electors (faithless electors are ignored). A congressional-district unit resolves to its state's answer. If no candidate wins 270 electoral votes, resolves N/A.",
-      CURATED,
-      PRIOR,
-      HUB
-    ),
+    description:
+      "Resolves to the state that gives the November 7, 2028 winner their 270th electoral vote, when every state and DC is ranked by the winner's margin there, widest first, using certified results. Maine's and Nebraska's districts are ranked on their own and count as their state. N/A if no one wins 270.",
     topics: [...TOPICS_2028, 'electoral-college'],
     liquidityTier: 1000,
     closeTime: AFTER_2028,
@@ -605,12 +562,8 @@ export const ENTRIES: Entry[] = [
     answers: ['Democratic trifecta', 'Republican trifecta', 'Divided government'],
     question:
       'Who will control the White House, Senate and House after the 2028 election?',
-    description: desc(
-      'Resolves to "Democratic trifecta" if a Democratic president is inaugurated on January 20, 2029 and Democrats control both the Senate and the House; to "Republican trifecta" if the same holds for Republicans; otherwise to "Divided government", including when the president is neither a Democrat nor a Republican.',
-      'Chamber control is defined as in the Manifold Politics 2028 Senate and House control markets: the Senate majority after the 2028 elections and runoffs, counting independents with the party they caucus with, with an evenly split Senate going to the party of the Vice President inaugurated on January 20, 2029; the House majority (218+) of members-elect when the 121st Congress convenes, or the Speaker\'s party if no party has one.',
-      PRIOR,
-      HUB
-    ),
+    description:
+      'Resolves to "Democratic trifecta" if a Democrat is inaugurated President on January 20, 2029 and Democrats control both the Senate and the House (as in the 2028 Senate and House control markets); "Republican trifecta" likewise; otherwise "Divided government".',
     topics: [...TOPICS_2028, 'us-congress', '2028-us-elections'],
     liquidityTier: 1000,
     closeTime: AFTER_2028,
@@ -627,11 +580,7 @@ export const ENTRIES: Entry[] = [
     outcome: 'BINARY',
     question:
       'Will the 2028 Democratic convention need more than one ballot to nominate a president?',
-    description: desc(
-      'Resolves YES if no candidate wins the Democratic presidential nomination on the first presidential roll-call ballot at the 2028 Democratic National Convention (or the first ballot of an equivalent formal nomination vote, such as a virtual roll call), so that a second ballot is held. Resolves NO if the nominee is chosen on the first ballot or by acclamation. If the Democratic Party does not formally nominate a 2028 presidential candidate, resolves N/A.',
-      PRIOR,
-      HUB
-    ),
+    description: contestedDescription('Democratic'),
     topics: [...TOPICS_2028, '2028-presidential-primaries', 'democratic-party'],
     liquidityTier: 1000,
     closeTime: NOMINATION_2028,
@@ -648,11 +597,7 @@ export const ENTRIES: Entry[] = [
     outcome: 'BINARY',
     question:
       'Will the 2028 Republican convention need more than one ballot to nominate a president?',
-    description: desc(
-      'Resolves YES if no candidate wins the Republican presidential nomination on the first presidential roll-call ballot at the 2028 Republican National Convention (or the first ballot of an equivalent formal nomination vote), so that a second ballot is held. Resolves NO if the nominee is chosen on the first ballot or by acclamation. If the Republican Party does not formally nominate a 2028 presidential candidate, resolves N/A.',
-      PRIOR,
-      HUB
-    ),
+    description: contestedDescription('Republican'),
     topics: [...TOPICS_2028, '2028-presidential-primaries', 'republican-party'],
     liquidityTier: 1000,
     closeTime: NOMINATION_2028,
@@ -672,19 +617,19 @@ export const ENTRIES: Entry[] = [
     'Kentucky',
     '2027-11-03T12:00:00Z',
     [24, 75],
-    'The general election is on November 2, 2027.'
+    'November 2, 2027 election for Governor of Kentucky, per certified results.'
   ),
   governor2027(
     'Mississippi',
     '2027-11-03T12:00:00Z',
     [17, 82],
-    'The general election is on November 2, 2027. Mississippi requires a majority: if no candidate wins one, the runoff decides and this market resolves after it (the close time may be extended).'
+    'November 2, 2027 election for Governor of Mississippi, per certified results. If no candidate gets a majority, the runoff decides.'
   ),
   governor2027(
     'Louisiana',
     '2027-11-21T12:00:00Z',
     [9, 90],
-    "This covers the whole 2027 election, whether it is decided in the October primary or the November runoff, under whatever primary system Louisiana uses for governor in 2027."
+    "2027 election for Governor of Louisiana, per certified results, whether it's decided in the October primary or the November runoff."
   ),
   {
     key: '2027-virginia-senate',
@@ -694,11 +639,8 @@ export const ENTRIES: Entry[] = [
     addAnswersMode: 'DISABLED',
     answers: [DEM, REP],
     question: 'Which party will control the Virginia Senate after the 2027 election?',
-    description: desc(
-      "Resolves to the party that wins a majority (21 or more) of the 40 Virginia Senate seats in the November 2, 2027 election, per certified results, counting independents with the caucus they join. If the chamber is tied 20–20, resolves to the party of the Lieutenant Governor in office when the Senate convenes in January 2028.",
-      PRIOR,
-      HUB
-    ),
+    description:
+      'Resolves to the party that wins a majority (21 or more) of the 40 Virginia Senate seats in the November 2, 2027 election, per certified results, counting independents with the caucus they join. A 20–20 tie goes to the party of the Lieutenant Governor in office when the Senate convenes in January 2028.',
     topics: ['us-politics', 'elections', '2027-us-elections', 'virginia'],
     liquidityTier: 1000,
     closeTime: '2027-11-03T12:00:00Z',
@@ -717,11 +659,8 @@ export const ENTRIES: Entry[] = [
     answers: [DEM, REP],
     question:
       'Which party will control the Virginia House of Delegates after the 2027 election?',
-    description: desc(
-      'Resolves to the party that wins a majority (51 or more) of the 100 House of Delegates seats in the November 2, 2027 election, per certified results, counting independents with the caucus they join. If the chamber is tied 50–50, resolves to the party of the Speaker elected when the House convenes in January 2028; if the parties instead adopt a power-sharing agreement with co-speakers, resolves 50% to each.',
-      PRIOR,
-      HUB
-    ),
+    description:
+      'Resolves to the party that wins a majority (51 or more) of the 100 House of Delegates seats in the November 2, 2027 election, per certified results, counting independents with the caucus they join. A 50–50 tie goes to the party of the Speaker elected in January 2028, or 50/50 if the parties share power under co-speakers.',
     topics: ['us-politics', 'elections', '2027-us-elections', 'virginia'],
     liquidityTier: 1000,
     closeTime: '2027-11-03T12:00:00Z',
@@ -785,9 +724,7 @@ export const ENTRIES: Entry[] = [
     outcome: 'MULTIPLE_CHOICE',
     addAnswersMode: 'ONLY_CREATOR',
     question: 'Who will be the 2032 Republican presidential nominee?',
-    description: desc(
-      nomineeDescription('Republican', 2032).replace(SEEDED, PRIOR)
-    ),
+    description: nomineeDescription('Republican', 2032),
     topics: [
       'us-politics',
       'elections',
@@ -822,12 +759,8 @@ export const ENTRIES: Entry[] = [
     outcome: 'MULTIPLE_CHOICE',
     addAnswersMode: 'ONLY_CREATOR',
     question: 'Who will win the 2032 US presidential election?',
-    description: desc(
-      'Resolves to the person elected President of the United States in the November 2, 2032 election: the candidate who receives a majority of electoral votes as counted by Congress in January 2033, or the person the House chooses in a contingent election. If no 2032 presidential election is held, resolves N/A.',
-      CURATED,
-      SEEDED,
-      HUB
-    ),
+    description:
+      'Resolves to the person elected President in the November 2, 2032 election: whoever wins 270 or more electoral votes as counted by Congress in January 2033, or whom the House picks if no one does. The national popular vote doesn\'t matter. N/A if no 2032 presidential election is held.',
     topics: ['us-politics', 'elections', '2032-us-presidential-election'],
     liquidityTier: 1000,
     closeTime: '2032-11-03T12:00:00Z',

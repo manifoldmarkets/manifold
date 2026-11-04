@@ -396,8 +396,8 @@ test('every state and DC has an open primary for each party', () => {
   for (const e of primaries) {
     assert.equal(e.addAnswersMode, 'ANYONE', e.key)
     assert.equal(e.answers, undefined, e.key)
-    assert.match(e.description, /Anyone can add a candidate as an answer/)
-    assert.match(e.description, /resolves N\/A/)
+    assert.match(e.description, /^Resolves to the candidate with the most votes in the 2028 (Democratic|Republican) presidential /)
+    assert.match(e.description, /N\/A if no (Democratic|Republican) contest is held/)
     if (e.seed.kind !== 'flattened-nominee') assert.fail(`${e.key}: seed ${e.seed.kind}`)
     assert.equal(e.seed.maxAnswers, 3)
     assert.equal(e.seed.homeBoost, 3)
@@ -424,8 +424,8 @@ test('party markets list both parties and leave Other open to @ManifoldPolitics'
     const e = ENTRIES.find((x) => x.key === key) as MultiEntry
     assert.equal(e.addAnswersMode, 'ONLY_CREATOR', key)
     assert.deepEqual(e.answers, [DEM, REP], key)
-    assert.match(e.description, /otherwise to "Other"/, key)
-    assert.match(e.description, /may add another party or an independent/, key)
+    assert.match(e.description, /Only the party matters/, key)
+    assert.match(e.description, /Anyone else resolves to Other, or to their own answer/, key)
   }
   const ky = await resolveSeed(ENTRIES.find((x) => x.key === '2027-governor-kentucky')!)
   if (ky.outcome !== 'MULTIPLE_CHOICE') assert.fail('KY seed')
@@ -434,6 +434,16 @@ test('party markets list both parties and leave Other open to @ManifoldPolitics'
   // Chamber control has no third answer: independents count with their caucus.
   const control = ENTRIES.find((x) => x.key === '2028-senate-control') as MultiEntry
   assert.equal(control.addAnswersMode, 'DISABLED')
+})
+
+test('descriptions say only what decides the market', () => {
+  for (const e of ENTRIES) {
+    // Tod, 5 Nov 2026: nothing about who adds answers, how the odds opened,
+    // or links elsewhere; keep it short.
+    assert.doesNotMatch(e.description, /opening odds|curated|@ManifoldPolitics|manifold\.markets|\]\(/i, e.key)
+    assert.match(e.description, /^Resolves /, e.key)
+    assert.ok(e.description.length <= 500, `${e.key}: ${e.description.length} chars`)
+  }
 })
 
 const clone = (e: Entry): Entry => JSON.parse(JSON.stringify(e))
