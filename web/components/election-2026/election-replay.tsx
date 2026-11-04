@@ -170,12 +170,6 @@ function ReplayHero() {
         measure, replayed from a week before the polls closed through election
         night.
       </p>
-      <Link
-        href="/election"
-        className="text-primary-700 w-fit text-sm font-semibold hover:underline"
-      >
-        See the live map →
-      </Link>
     </Col>
   )
 }
