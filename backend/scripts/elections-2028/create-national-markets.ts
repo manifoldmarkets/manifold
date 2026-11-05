@@ -1141,6 +1141,9 @@ export async function runApply(
           imageUrls: urls,
         })
         r.seed = seed
+        // This run makes the market itself, so its seed is known again (an
+        // earlier blind-adoption stop may have flagged it unknown).
+        delete r.seedUnknown
         r.cost = cost
         r.criteria = criteria
         r.criteriaHash = hash

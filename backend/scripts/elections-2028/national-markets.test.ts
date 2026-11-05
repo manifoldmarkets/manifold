@@ -920,6 +920,29 @@ test('apply: a market from an earlier run is not adopted blind after a missed re
   assert.deepEqual(server.log, [`publish ${id}`])
 })
 
+test('apply: deleting the market after a blind-adoption stop re-creates it with a known seed', async () => {
+  const server = fakeServer()
+  const statePath = tempState()
+  const ky = entry(KY)
+  const id = await earlierRun(server, statePath, ky, { status: 'created-unlisted' })
+  fs.unlinkSync(statePath)
+  server.markets.get(id)!.createdTime = Date.now() - 86_400_000
+  server.hideOnce.add(id)
+  const stopped = await applyWith(server, [ky], statePath)
+  assert.equal(stopped.state.entries[KY].seedUnknown, true)
+  // The operator deletes the market and sets the record back to "creating".
+  server.markets.delete(id)
+  const s = JSON.parse(fs.readFileSync(statePath, 'utf8'))
+  s.entries[KY].status = 'creating'
+  fs.writeFileSync(statePath, JSON.stringify(s))
+  const run = await applyWith(server, [ky], statePath)
+  assert.equal(run.code, 0)
+  assert.equal(run.state.entries[KY].status, 'published')
+  assert.equal(run.state.entries[KY].seedUnknown, undefined)
+  assert.equal(run.state.entries[KY].criteriaHash, criteriaHash(criteriaOf(ky)))
+  assert.deepEqual(server.log, [`create ${id} unlisted`, `publish ${id}`])
+})
+
 test('apply: --accept-criteria on dev accepts a market whose topics were all dropped', async () => {
   const server = fakeServer({ noTopics: true })
   const statePath = tempState()
