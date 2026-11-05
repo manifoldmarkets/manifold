@@ -338,9 +338,9 @@ test('reserved ids are deterministic, valid and unique', () => {
 
 test('the manifest covers the planned markets and validates', () => {
   assert.deepEqual(validateEntries(ENTRIES, NOW), [])
-  // 31 national markets (control of Congress through 2036) plus a primary for
-  // each party in every state and DC.
-  assert.equal(ENTRIES.length, 31 + 102)
+  // 25 national markets (a balance-of-power market for every cycle through
+  // 2036) plus a primary for each party in every state and DC.
+  assert.equal(ENTRIES.length, 25 + 102)
   const keys = ENTRIES.map((e) => e.key)
   for (const k of [
     '2028-dem-nominee',
@@ -353,9 +353,7 @@ test('the manifest covers the planned markets and validates', () => {
     '2028-popular-vote-margin',
     '2028-ec-popular-split',
     '2028-tipping-point',
-    '2028-senate-control',
-    '2028-house-control',
-    '2028-trifecta',
+    '2028-balance-of-power',
     '2028-dem-contested-convention',
     '2028-gop-contested-convention',
     '2028-dem-iowa',
@@ -368,17 +366,13 @@ test('the manifest covers the planned markets and validates', () => {
     '2027-governor-louisiana',
     '2027-virginia-senate',
     '2027-virginia-house',
-    '2030-senate-control',
-    '2030-house-control',
+    '2030-balance-of-power',
     '2032-dem-nominee',
     '2032-gop-nominee',
     '2032-winner',
-    '2032-senate-control',
-    '2032-house-control',
-    '2034-senate-control',
-    '2034-house-control',
-    '2036-senate-control',
-    '2036-house-control',
+    '2032-balance-of-power',
+    '2034-balance-of-power',
+    '2036-balance-of-power',
   ])
     assert.ok(keys.includes(k), k)
   // No 2028 winner market: @ManifoldPolitics already owns one.
@@ -437,7 +431,7 @@ test('party markets list both parties and leave Other open to @ManifoldPolitics'
   assert.deepEqual(ky.answerProbs, [24, 75])
   assert.equal(ky.otherPct, 1)
   // Chamber control has no third answer: independents count with their caucus.
-  const control = ENTRIES.find((x) => x.key === '2028-senate-control') as MultiEntry
+  const control = ENTRIES.find((x) => x.key === '2028-balance-of-power') as MultiEntry
   assert.equal(control.addAnswersMode, 'DISABLED')
 })
 
@@ -475,8 +469,8 @@ test('liquidity: Ṁ10k for 2028 presidential, winner and control-of-Congress ma
     '2028-popular-vote-margin', '2028-ec-popular-split', '2028-tipping-point',
     '2028-dem-contested-convention', '2028-gop-contested-convention',
     '2028-dem-iowa', '2028-gop-new-hampshire', '2028-dem-south-carolina', '2028-gop-nevada',
-    '2028-senate-control', '2028-house-control', '2028-trifecta',
-    '2030-senate-control', '2032-house-control', '2034-senate-control', '2036-house-control',
+    '2028-balance-of-power', '2030-balance-of-power', '2032-balance-of-power',
+    '2034-balance-of-power', '2036-balance-of-power',
     '2032-winner',
   ])
     assert.equal(tier(k), 10000, k)
@@ -487,10 +481,30 @@ test('liquidity: Ṁ10k for 2028 presidential, winner and control-of-Congress ma
     assert.equal(tier(k), 1000, k)
 })
 
+test('balance of power: eight fixed answers per cycle, consistent with the inputs', () => {
+  for (const y of [2028, 2030, 2032, 2034, 2036]) {
+    const e = ENTRIES.find((x) => x.key === `${y}-balance-of-power`) as MultiEntry
+    assert.equal(e.addAnswersMode, 'DISABLED')
+    assert.equal(e.answers!.length, 8)
+    assert.equal(e.liquidityTier, 10000)
+    if (e.seed.kind !== 'static-fixed') assert.fail('seed')
+    near(sum(e.seed.pcts), 100, 1e-9)
+    assert.ok(e.seed.pcts.every((p) => p >= 1))
+    assert.doesNotMatch(e.description, /electoral/i)
+  }
+  // 2028 reproduces the inputs: D President 67%, D Senate 74.4%, D House 60%.
+  const p = (ENTRIES.find((x) => x.key === '2028-balance-of-power') as MultiEntry).seed
+  if (p.kind !== 'static-fixed') assert.fail('seed')
+  const [ddd, , drr, ddr, drd, rdd, rrd, rdr] = p.pcts
+  near(ddd + drr + ddr + drd, 67, 0.2)
+  near(ddd + ddr + rdd + rdr, 74.4, 0.2)
+  near(ddd + drd + rdd + rrd, 60, 0.2)
+})
+
 const clone = (e: Entry): Entry => JSON.parse(JSON.stringify(e))
 
 test('validation catches broken entries', () => {
-  const base = ENTRIES.find((e) => e.key === '2028-house-control')!
+  const base = ENTRIES.find((e) => e.key === '2028-balance-of-power')!
   const long = clone(base)
   long.question = 'x'.repeat(121) + '?'
   assert.ok(validateEntries([long], NOW).some((m) => /chars/.test(m)))
@@ -512,7 +526,7 @@ test('validation catches broken entries', () => {
   assert.ok(validateEntries([past], NOW).some((m) => /past/.test(m)))
 
   const badSum = clone(base) as MultiEntry
-  badSum.seed = { kind: 'static-fixed', pcts: [70, 20], note: 'x' }
+  badSum.seed = { kind: 'static-fixed', pcts: [45, 13, 5, 12, 4, 7, 3, 1], note: 'x' }
   assert.ok(validateEntries([badSum], NOW).some((m) => /add up/.test(m)))
 
   const primary = clone(ENTRIES.find((e) => e.key === '2028-dem-iowa')!)
@@ -707,18 +721,18 @@ test('quiet payloads are unlisted, keyed by the reserved id, images as a prefix'
 })
 
 test('opening prices are verified within 1.5 points', async () => {
-  const e = ENTRIES.find((x) => x.key === '2028-house-control')!
+  const e = ENTRIES.find((x) => x.key === '2027-virginia-house')!
   const seed = await resolveSeed(e)
   const ok = {
     ...market([
-      { text: DEM, probability: 0.6 },
-      { text: 'Republican Party', probability: 0.4 },
+      { text: DEM, probability: 0.8 },
+      { text: 'Republican Party', probability: 0.2 },
     ]),
   }
   assert.deepEqual(priceMismatches(seed, ok), [])
   const off = market([
-    { text: DEM, probability: 0.62 },
-    { text: 'Republican Party', probability: 0.38 },
+    { text: DEM, probability: 0.82 },
+    { text: 'Republican Party', probability: 0.18 },
   ])
   assert.equal(priceMismatches(seed, off).length, 2)
   const binSeed = await resolveSeed(ENTRIES.find((x) => x.key === '2028-ec-popular-split')!)

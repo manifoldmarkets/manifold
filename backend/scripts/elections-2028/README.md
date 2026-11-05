@@ -2,10 +2,11 @@
 
 The headline markets the 2028+ elections page needs, owned by
 @ManifoldPolitics: nominees and running mates, the popular vote, electoral
-votes, the tipping point, control of Congress through 2036, a 2028
-presidential primary for each party in every state and DC, the 2027
-off-year races and the 2030–2036 cycles. 133 markets (31 national + 102
-state primaries), Ṁ451,300 at the answer counts of 5 Nov 2026. A market's
+votes, the tipping point, a balance-of-power market (presidency, Senate and
+House, all eight combinations) for every cycle through 2036, a 2028
+presidential primary for each party in every state and DC, and the 2027
+off-year races. 127 markets (25 national + 102 state primaries), Ṁ391,300
+at the answer counts of 5 Nov 2026. A market's
 cost is the larger of its tier and its answers × the tier's per-answer
 price (Ṁ100 at the Ṁ1,000 tier, Ṁ1,000 at Ṁ10,000), "Other" included: the
 2028 nominee markets cost Ṁ13k and Ṁ11k with that day's 12 and 10 people at
@@ -15,20 +16,30 @@ Liquidity (Tod, 5 Nov 2026): the Ṁ10,000 tier for every 2028 presidential
 market (nominees, running mates, VP winner, popular vote, electoral votes,
 margin, the popular-vote-winner-loses market, tipping point, contested
 conventions, and the first four states' primaries), the 2032 winner, and
-every control-of-Congress market from 2028 to 2036: 32 markets, Ṁ350k. The
-other 101 (the 2027 races, the 2032 nominees, the other 94 state
-primaries) stay at Ṁ1,000.
+the five balance-of-power markets: 26 markets, Ṁ290k. The other 101 (the
+2027 races, the 2032 nominees, the other 94 state primaries) stay at
+Ṁ1,000.
+
+Balance of power (Tod, 5 Nov 2026: "do balance of power markets instead [of
+control of Congress], mimicking" JonasVollmer's 2026 market): eight fixed
+answers, "D President, D Senate, D House (Democratic trifecta)" through
+"R President, D Senate, R House". Midterm markets ask about the President in
+office when the new Congress organizes. Opening odds come from a Gaussian
+copula on P(Democrat) for the three offices (2028: 67% / 74.4% / 60%, from
+the community party and Senate markets and the House prior), correlation 0.6
+in presidential years; in midterms the presidency pulls against Congress
+(-0.2 Senate, -0.3 House) while the chambers move together (0.6).
 
 ## Answers
 
 | Mode | Markets | Who adds answers |
 |---|---|---|
-| fixed (`DISABLED`) | buckets, chamber control, trifecta, Virginia chambers | Nobody; no "Other" |
+| fixed (`DISABLED`) | buckets, balance of power, Virginia chambers | Nobody; no "Other" |
 | curated (`ONLY_CREATOR`) | nominees, running mates, VP winner, tipping point, 2032 winner; party markets (2027 governors, 2028 popular vote) | @ManifoldPolitics, with an "Other" answer. Party markets open as Democratic Party / Republican Party / Other; @ManifoldPolitics can add another party or an independent if one becomes competitive |
 | open (`ANYONE`) | the 102 state primaries | Anyone, with an "Other" answer. They open with the three likeliest candidates (Tod, 5 Nov 2026: "seed it with maybe 2-3 likely people and open answer 'other' option") |
 
-Chamber-control markets stay Democratic/Republican only: independents count
-with the party they caucus with, so control can't go to anyone else.
+Balance-of-power and Virginia chamber markets have no "Other": independents
+count with the party they caucus with, so control can't go to anyone else.
 
 Per-state presidential, Senate-seat, governor and House-district markets are
 **not** here: the generic party-market pipeline on branch
@@ -88,7 +99,8 @@ read at run time, or from documented static priors:
 | derived | 2028 VP winner | P(X) = P(X is the D VP nominee)·P(D wins) + P(X is the R VP nominee)·P(R wins), party odds from `8p6sy5snq9` |
 | buckets | 2028 Democratic electoral votes; popular-vote margin | Normal(μ, σ=60 EV / 4.5 pts) with μ placed so P(270+) (or P(D>0)) equals the community odds; buckets floored at 1% |
 | flattened | 102 state primaries | Nominee market weights ^0.8, ×3 for candidates from that state (`HOME_STATES` in `seeds.ts`), top 3; a single state is less predictable than the nomination. Everyone else starts in "Other" |
-| party | 2028 popular vote (D/R + Other), 2028/2030 Senate control | From the community market's D/R shares |
+| party | 2028 popular vote (D/R + Other) | From the community market's D/R shares |
+| copula | the five balance-of-power markets | Static, from P(Democrat) for the presidency, Senate and House (see Balance of power above) |
 | static | everything else | Priors documented in the manifest (`note`) |
 
 ## Runbook (from `backend/scripts`)
@@ -121,9 +133,9 @@ read at run time, or from documented static priors:
    ```powershell
    npx ts-node --transpile-only elections-2028/create-national-markets.ts --apply `
      --env prod --creator-username ManifoldPolitics `
-     --state C:\Users\User\elections-national-prod\state.prod.json --max-mana 470000
+     --state C:\Users\User\elections-national-prod\state.prod.json --max-mana 400000
    ```
-   About 133 markets × (create, read back, publish) at `--pace-ms 400`:
+   About 127 markets × (create, read back, publish) at `--pace-ms 400`:
    roughly 10–15 minutes. Avoid 07:45–08:15 UTC (the API restarts daily at
    08:00).
 5. Afterwards, wire the new markets into the elections page config (slugs

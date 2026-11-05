@@ -205,21 +205,67 @@ const primaryDescription = (
     `If the state and the party hold separate contests, the one that awards delegates counts. "Uncommitted" counts as Other. N/A if no ${party} contest is held in ${inText(s)} before the nominee is chosen.`
   )
 
-const controlDescription = (
-  chamber: 'Senate' | 'House',
-  year: 2028 | 2030 | 2032 | 2034 | 2036
-) => {
+// Balance of power (Tod, 5 Nov 2026: "do balance of power markets instead
+// [of control of Congress], mimicking" JonasVollmer's 2026 market): who holds
+// the presidency, the Senate and the House after each election, as eight
+// fixed answers. Midterms ask about the President in office then.
+type BopCycle = 2028 | 2030 | 2032 | 2034 | 2036
+const BOP_ANSWERS = [
+  'D President, D Senate, D House (Democratic trifecta)',
+  'R President, R Senate, R House (Republican trifecta)',
+  'D President, R Senate, R House',
+  'D President, D Senate, R House',
+  'D President, R Senate, D House',
+  'R President, D Senate, D House',
+  'R President, R Senate, D House',
+  'R President, D Senate, R House',
+]
+
+const bopDescription = (year: BopCycle) => {
   const congress = { 2028: '121st', 2030: '122nd', 2032: '123rd', 2034: '124th', 2036: '125th' }[year]
   const convenes = { 2028: '2029', 2030: '2031', 2032: '2033', 2034: '2035', 2036: '2037' }[year]
-  // Midterms keep the sitting Vice President; presidential years swear one in.
-  const vp =
-    year === 2030 || year === 2034
-      ? 'the Vice President in office then'
-      : `the Vice President inaugurated on January 20, ${convenes}`
-  return chamber === 'Senate'
-    ? `Resolves to the party with a Senate majority when the ${congress} Congress organizes in January ${convenes}, after any runoffs, counting independents with the party they caucus with. A 50–50 Senate goes to the party of ${vp}. Later vacancies or party switches don't change it.`
-    : `Resolves to the party with a House majority (218 or more members-elect) when the ${congress} Congress convenes on January 3, ${convenes}, counting independents with the party they caucus with. If no party has a majority, it resolves to the party of the Speaker elected then.`
+  const midterm = year === 2030 || year === 2034
+  const day = `November ${ELECTION_DAYS[year].slice(-2).replace(/^0/, '')}, ${year}`
+  return desc(
+    midterm
+      ? `Resolves to the parties holding the presidency, Senate and House when the ${congress} Congress organizes in January ${convenes}, after the ${day} elections.`
+      : `Resolves to the parties holding the presidency, Senate and House after the ${day} elections: the President inaugurated on January 20, ${convenes}, and the majority in each chamber when the ${congress} Congress organizes.`,
+    "Independents count with the party they caucus with. A 50–50 Senate goes to the Vice President's party; a House with no majority, to the Speaker's. It waits for any runoffs or special elections that decide control.",
+    'N/A if the President is neither a Democrat nor a Republican.'
+  )
 }
+
+const balanceOfPower = (
+  year: BopCycle,
+  closeTime: string,
+  pcts: number[],
+  note: string,
+  topic: string
+): MultiEntry => ({
+  key: `${year}-balance-of-power`,
+  cycle: year,
+  phase: 'general',
+  outcome: 'MULTIPLE_CHOICE',
+  addAnswersMode: 'DISABLED',
+  answers: BOP_ANSWERS,
+  question: `Balance of power: who will control the presidency, Senate and House after the ${year} US elections?`,
+  description: bopDescription(year),
+  topics: ['us-politics', 'elections', 'us-congress', topic],
+  liquidityTier: 10000,
+  closeTime,
+  seed: { kind: 'static-fixed', pcts, note },
+})
+
+// Opening odds: a Gaussian copula on the three marginals (P(Democrat) for the
+// presidency, Senate and House), correlation 0.6 in presidential years; in
+// midterms the presidency and Congress pull apart (-0.2 Senate, -0.3 House)
+// while the chambers move together (0.6). 1% floor, one decimal.
+const bopNote = (pDem: string, midterm: boolean) =>
+  `Prior from P(Democrat) for the presidency, Senate and House of ${pDem}, linked by a Gaussian copula (correlation 0.6${
+    midterm
+      ? ' between the chambers; -0.2 and -0.3 between the presidency and each chamber, the midterm penalty'
+      : ''
+  }).`
 
 // ---------------------------------------------------------------------------
 // The manifest
@@ -265,34 +311,6 @@ const statePrimary = (
     homeState: s.code,
     homeBoost: HOME_BOOST,
   },
-})
-
-const partyControl = (
-  key: string,
-  cycle: 2028 | 2030 | 2032 | 2034 | 2036,
-  chamber: 'Senate' | 'House',
-  closeTime: string,
-  seed: MultiEntry['seed'],
-  topicExtra: string
-): MultiEntry => ({
-  key,
-  cycle,
-  phase: 'general',
-  outcome: 'MULTIPLE_CHOICE',
-  addAnswersMode: 'DISABLED',
-  answers: [DEM, REP],
-  question: `Which party will control the US ${chamber} after the ${cycle} election?`,
-  description: controlDescription(chamber, cycle),
-  topics: [
-    'us-politics',
-    'elections',
-    'us-congress',
-    chamber === 'Senate' ? 'us-senate' : 'house-of-representatives',
-    topicExtra,
-  ],
-  liquidityTier: 10000,
-  closeTime,
-  seed,
 })
 
 const governor2027 = (
@@ -532,50 +550,7 @@ export const ENTRIES: Entry[] = [
       ],
     },
   },
-  partyControl(
-    '2028-senate-control',
-    2028,
-    'Senate',
-    AFTER_2028,
-    {
-      kind: 'source-binary-party',
-      sourceId: SOURCES.senateRep2028,
-      yesParty: REP,
-    },
-    '2028-us-elections'
-  ),
-  partyControl(
-    '2028-house-control',
-    2028,
-    'House',
-    AFTER_2028,
-    {
-      kind: 'static-fixed',
-      pcts: [60, 40],
-      note: 'No community 2028 House-control market with ≥10 traders (checked 2026-11-05; only trifecta markets). Democrats won the House in 2026 and lead the 2028 party market.',
-    },
-    '2028-us-elections'
-  ),
-  {
-    key: '2028-trifecta',
-    cycle: 2028,
-    phase: 'general',
-    outcome: 'MULTIPLE_CHOICE',
-    addAnswersMode: 'DISABLED',
-    answers: ['Democratic trifecta', 'Republican trifecta', 'Divided government'],
-    question:
-      'Who will control the White House, Senate and House after the 2028 election?',
-    description:
-      'Resolves to "Democratic trifecta" if a Democrat is inaugurated President on January 20, 2029 and Democrats control both the Senate and the House (as in the 2028 Senate and House control markets); "Republican trifecta" likewise; otherwise "Divided government".',
-    topics: [...TOPICS_2028, 'us-congress', '2028-us-elections'],
-    liquidityTier: 10000,
-    closeTime: AFTER_2028,
-    seed: {
-      kind: 'static-fixed',
-      pcts: [40, 22, 38],
-      note: 'Prior: P(D president) ≈ 0.67 and P(D Senate) ≈ 0.67 from community markets, strongly correlated; R trifecta needs an R president (~0.32) plus both chambers.',
-    },
-  },
+  balanceOfPower(2028, AFTER_2028, [45.3, 13.3, 5.1, 12.5, 4.1, 7.5, 3.1, 9.1], bopNote('67/74/60%', false), '2028-us-elections'),
   {
     key: '2028-dem-contested-convention',
     cycle: 2028,
@@ -675,28 +650,10 @@ export const ENTRIES: Entry[] = [
   },
 
   // ----------------------------------------------------------------- 2030
-  partyControl(
-    '2030-senate-control',
-    2030,
-    'Senate',
-    '2030-11-06T12:00:00Z',
-    { kind: 'source-two-party', sourceId: SOURCES.senate2030 },
-    'us-midterm-elections'
-  ),
-  partyControl(
-    '2030-house-control',
-    2030,
-    'House',
-    '2030-11-06T12:00:00Z',
-    {
-      kind: 'static-fixed',
-      pcts: [45, 55],
-      note: "Prior: the president's party usually loses House seats at midterms, and Democrats are favored to win the presidency in 2028.",
-    },
-    'us-midterm-elections'
-  ),
+  balanceOfPower(2030, '2030-11-06T12:00:00Z', [18.2, 8.8, 28.9, 12.4, 7.6, 14.4, 4.8, 4.9], bopNote('67/50/45%', true), 'us-midterm-elections'),
 
   // ----------------------------------------------------------------- 2032
+  balanceOfPower(2032, '2032-11-03T12:00:00Z', [27.8, 27.8, 7.4, 7.4, 7.4, 7.4, 7.4, 7.4], bopNote('50/50/50%', false), '2032-us-presidential-election'),
   {
     key: '2032-dem-nominee',
     cycle: 2032,
@@ -774,67 +731,12 @@ export const ENTRIES: Entry[] = [
       maxAnswers: 20,
     },
   },
-  partyControl(
-    '2032-senate-control',
-    2032,
-    'Senate',
-    '2032-11-03T12:00:00Z',
-    {
-      kind: 'static-fixed',
-      pcts: [50, 50],
-      note: 'Prior: six years out, no informative market.',
-    },
-    '2032-us-presidential-election'
-  ),
-  partyControl(
-    '2032-house-control',
-    2032,
-    'House',
-    '2032-11-03T12:00:00Z',
-    {
-      kind: 'static-fixed',
-      pcts: [50, 50],
-      note: 'Prior: six years out, and the 2030 census will redraw the map.',
-    },
-    '2032-us-presidential-election'
-  ),
 
   // ----------------------------------------------------------------- 2034
-  // Tod, 5 Nov 2026: cover every cycle through 2036.
-  partyControl(
-    '2034-senate-control',
-    2034,
-    'Senate',
-    '2034-11-08T12:00:00Z',
-    { kind: 'static-fixed', pcts: [50, 50], note: 'Prior: eight years out, no informative market.' },
-    'us-midterm-elections'
-  ),
-  partyControl(
-    '2034-house-control',
-    2034,
-    'House',
-    '2034-11-08T12:00:00Z',
-    { kind: 'static-fixed', pcts: [50, 50], note: 'Prior: eight years out, on maps drawn after the 2030 census.' },
-    'us-midterm-elections'
-  ),
+  balanceOfPower(2034, '2034-11-08T12:00:00Z', [13.6, 13.6, 21.7, 8.2, 6.5, 21.7, 8.2, 6.5], bopNote('50/50/50%', true), 'us-midterm-elections'),
 
   // ----------------------------------------------------------------- 2036
-  partyControl(
-    '2036-senate-control',
-    2036,
-    'Senate',
-    '2036-11-05T12:00:00Z',
-    { kind: 'static-fixed', pcts: [50, 50], note: 'Prior: ten years out, no informative market.' },
-    '2036-us-presidential-election'
-  ),
-  partyControl(
-    '2036-house-control',
-    2036,
-    'House',
-    '2036-11-05T12:00:00Z',
-    { kind: 'static-fixed', pcts: [50, 50], note: 'Prior: ten years out, on maps drawn after the 2030 census.' },
-    '2036-us-presidential-election'
-  ),
+  balanceOfPower(2036, '2036-11-05T12:00:00Z', [27.8, 27.8, 7.4, 7.4, 7.4, 7.4, 7.4, 7.4], bopNote('50/50/50%', false), '2036-us-presidential-election'),
 ]
 
 // ---------------------------------------------------------------------------
