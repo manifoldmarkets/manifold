@@ -109,6 +109,9 @@ export function RaceBoard(props: {
   if (!current) return null
   const weight = current === 'P' ? 'ev' : 'races'
   const totals = columnTotals(shown, mode)
+  const wonAsChips =
+    mode === 'results' &&
+    groups.some((g) => g.key !== 'uncalled' && g.races.length > COLUMN_ROWS)
   const called = calledTotals(shown, weight)
   const anyCalled = called.D + called.R + called.O > 0
 
@@ -180,11 +183,14 @@ export function RaceBoard(props: {
           {groups.map((g) => {
             const rating = BOARD_COLUMNS.find((c) => c.key === g.key)
             const t = totals[g.key] ?? { races: 0, ev: 0 }
-            // Easy wins (or, by result, the won columns) list as chips.
+            // Long easy-win columns list as chips. By result, the won
+            // columns go to chips together (any of them long), so a view
+            // doesn't mix rows and chips for the same kind of column.
             const compact =
               mode === 'results'
-                ? g.key !== 'uncalled'
-                : g.key === 'solidD' || g.key === 'solidR'
+                ? g.key !== 'uncalled' && wonAsChips
+                : (g.key === 'solidD' || g.key === 'solidR') &&
+                  g.races.length > COLUMN_ROWS
             const count =
               current === 'P'
                 ? `${t.races} · ${t.ev} EV`
@@ -208,7 +214,7 @@ export function RaceBoard(props: {
                 </header>
                 {g.races.length === 0 ? (
                   <div className="text-ink-500 text-xs">None</div>
-                ) : compact && g.races.length > 12 ? (
+                ) : compact ? (
                   <div className="flex flex-wrap gap-1">
                     {g.races.map((r) => (
                       <RaceChip key={raceId(r)} race={r} />
