@@ -82,16 +82,15 @@ function PrimaryTable(props: {
                   scope="row"
                   className="text-ink-1000 px-3 py-1.5 text-left font-medium sm:px-4"
                 >
-                  <span className="block truncate">
+                  <span className="block break-words leading-tight">
                     {placeName(row.st)}
-                    {showOffice && (
-                      <span className="text-ink-600 font-normal">
-                        {' '}
-                        · {row.o === 'S' ? 'Senate' : 'Governor'}
-                        {row.sp ? ' (special)' : ''}
-                      </span>
-                    )}
                   </span>
+                  {showOffice && (
+                    <span className="text-ink-600 block text-xs font-normal">
+                      {row.o === 'S' ? 'Senate' : 'Governor'}
+                      {row.sp ? ' (special)' : ''}
+                    </span>
+                  )}
                   {early && (
                     <span className="text-ink-500 block text-xs font-normal">
                       Early state

@@ -33,15 +33,11 @@ export const BOARD_COLUMNS: {
   label: string
   range: string
 }[] = [
-  { key: 'solidD', label: 'Democrats expected to win easily', range: 'D 90%+' },
-  { key: 'leanD', label: 'Democrats narrowly', range: 'D 60–90%' },
-  { key: 'tossup', label: 'Most competitive', range: '40–60%' },
-  { key: 'leanR', label: 'Republicans narrowly', range: 'R 60–90%' },
-  {
-    key: 'solidR',
-    label: 'Republicans expected to win easily',
-    range: 'R 90%+',
-  },
+  { key: 'solidD', label: 'Democrats, easily', range: 'D 90%+' },
+  { key: 'leanD', label: 'Democrats, narrowly', range: 'D 60–90%' },
+  { key: 'tossup', label: 'Toss-ups', range: '40–60%' },
+  { key: 'leanR', label: 'Republicans, narrowly', range: 'R 60–90%' },
+  { key: 'solidR', label: 'Republicans, easily', range: 'R 90%+' },
 ]
 
 // The EC model's seven ratings folded into five columns, so a race reads the

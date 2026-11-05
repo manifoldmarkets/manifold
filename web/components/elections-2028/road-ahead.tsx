@@ -127,7 +127,8 @@ function Leader(props: { party: 'D' | 'R'; cell: PrimaryCell }) {
       href={`/${cell.u ?? 'ManifoldPolitics'}/${cell.s}`}
       className="hover:underline"
     >
-      {party}: {cell.l} {cell.p !== undefined ? formatOdds(cell.p) : ''}
+      {party}: {cell.won ? `✓ ${cell.l}` : cell.l}
+      {!cell.won && cell.p !== undefined ? ` ${formatOdds(cell.p)}` : ''}
     </Link>
   )
 }
