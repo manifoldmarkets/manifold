@@ -265,9 +265,10 @@ export const president2024Winner = (unit: string): 'D' | 'R' =>
   DEM_2024.has(unit) ? 'D' : 'R'
 
 // The party holding each Senate seat up in 2028 (Class 3, last elected in
-// 2022) and the two 2028 specials (Klobuchar's and Blackburn's seats, filled
-// by appointees of their own parties' governors). Ohio's and Florida's seats
-// had 2026 specials, so they're left out until those results are recorded.
+// 2022; Ohio and Florida in their 2026 specials: Sherrod Brown won Ohio, a
+// Republican won Florida) and Tennessee's 2028 special (Blackburn's seat,
+// filled by a Republican governor's appointee). Minnesota's special for
+// Klobuchar's seat is in 2027 (Minn. Stat. 204D.28), not on this board.
 export const SENATE_2028_HOLDER: Record<string, 'D' | 'R'> = {
   AL: 'R',
   AK: 'R',
@@ -276,6 +277,7 @@ export const SENATE_2028_HOLDER: Record<string, 'D' | 'R'> = {
   CA: 'D',
   CO: 'D',
   CT: 'D',
+  FL: 'R',
   GA: 'D',
   HI: 'D',
   ID: 'R',
@@ -292,6 +294,7 @@ export const SENATE_2028_HOLDER: Record<string, 'D' | 'R'> = {
   NY: 'D',
   NC: 'R',
   ND: 'R',
+  OH: 'D',
   OK: 'R',
   OR: 'D',
   PA: 'D',
@@ -303,13 +306,13 @@ export const SENATE_2028_HOLDER: Record<string, 'D' | 'R'> = {
   WI: 'R',
 }
 export const SENATE_2028_SPECIAL_HOLDER: Record<string, 'D' | 'R'> = {
-  MN: 'D',
   TN: 'R',
 }
 
 // Governors up in 2028 whose seats weren't on the 2026 ballot (NGA roster,
-// October 2026). New Hampshire and Vermont elect every two years; they're
-// left out until their 2026 results are recorded.
+// October 2026), plus New Hampshire (two-year terms; Republicans won 2026).
+// Vermont also elects every two years; it's left out until its 2026 result
+// is recorded.
 export const GOVERNOR_2028_HOLDER: Record<string, 'D' | 'R'> = {
   DE: 'D',
   IN: 'R',
@@ -317,6 +320,7 @@ export const GOVERNOR_2028_HOLDER: Record<string, 'D' | 'R'> = {
   MT: 'R',
   NC: 'D',
   ND: 'R',
+  NH: 'R',
   UT: 'R',
   WA: 'D',
   WV: 'R',
