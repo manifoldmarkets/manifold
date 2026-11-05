@@ -1,4 +1,4 @@
-import { keyBy, mean, omit, sortBy, uniq, uniqBy } from 'lodash'
+import { keyBy, maxBy, mean, minBy, omit, sortBy, uniq, uniqBy } from 'lodash'
 
 import { getAnswerProbability } from 'common/calculate'
 import { Contract, isMultiCpmm, MultiContract } from 'common/contract'
@@ -10,9 +10,30 @@ import {
   chamberScores,
   chamberWinner,
 } from 'web/components/election-2026/replay-scorecard'
-import { getPartyProbs } from 'web/components/usa-map/state-election-map'
+import {
+  getPartyProbs,
+  isDemocraticAnswer,
+} from 'web/components/usa-map/state-election-map'
 import { api } from 'web/lib/api/api'
 import { isOpenPublicMarket } from 'web/lib/politics/election-curation'
+import officialFile from 'web/public/data/election-markets-2028.json'
+import { ElectionPhase, electionPhase, showsSection } from './election-phase'
+import {
+  GOVERNOR_2028_HOLDER,
+  MarketRef,
+  OfficialMarketsFile,
+  pickSlot,
+  president2024Winner,
+  SENATE_2028_HOLDER,
+  SENATE_2028_SPECIAL_HOLDER,
+} from './official-markets'
+import {
+  orderPrimaryRows,
+  pickLeader,
+  PrimaryCell,
+  PrimaryRow,
+} from './primaries'
+import { BoardOffice, BoardRace, calledFrom } from './race-board'
 import {
   buildConditionalMatrixRows,
   conditionalMatrixIds,
@@ -34,10 +55,16 @@ import type { Swing2026, Swings2026File } from './swings-2026'
 import {
   AFTER_2028,
   BEFORE_2028,
+  BOARD_FREEZE,
   CHART_SERIES,
+  COMMUNITY_EQUIVALENTS,
   EC_MODEL_RHO,
+  HOUSE_2026_DISTRICTS_SLUG,
+  LATER_KEYS,
   LIST_SERIES,
   NATIONAL_2028,
+  OFFICIAL_PRESIDENT_2028,
+  OFFICIAL_SLOTS,
   POLLING_PERPS_2028,
   PRESIDENTIAL_2028_TOPIC_SLUG,
   PRIMARY_MARKETS_2028,
@@ -161,8 +188,12 @@ export type Mover = {
 
 export type Elections2028PageProps = {
   now: number
+  phase: ElectionPhase
   partyContract: Contract | null
   popularVoteContract: Contract | null
+  // The official 2028 balance-of-power market, or (until it exists) the
+  // community control-of-Congress market.
+  balanceOfPowerContract: Contract | null
   congressContract: Contract | null
   charts: RaceChart[]
   movers: Mover[]
@@ -172,16 +203,50 @@ export type Elections2028PageProps = {
   model: ElectoralModel | null
   accuracy: AccuracyStory
   swings: Swing2026[]
+  // The 2028 race board (President by unit, Senate, governor, House), and
+  // whether its columns have frozen for election night.
+  board2028: BoardRace[]
+  board2028Frozen: boolean
+  // From 2029: the 2030 board and balance of power.
+  board2030: BoardRace[]
+  board2030Frozen: boolean
+  balanceOfPower2030: Contract | null
+  primaries: PrimaryRow[]
   primaryContracts: Contract[]
-  before2028Us: Contract[]
+  // Official 2028 markets with no slot of their own (tipping point, margins,
+  // conventions, …): placed automatically as the scripts add them.
+  more2028: Contract[]
+  offYear: Contract[]
   before2028World: Contract[]
-  contracts2030: Contract[]
-  contracts2032: Contract[]
+  later: Contract[]
   presidencyMatrixRows: ConditionalMatrixRow[]
   unprecedentedContracts: Contract[]
   pollingPerpContracts: Contract[]
   trendingContracts: Contract[]
 }
+
+// ---------------------------------------------------------------------------
+// Official markets
+// ---------------------------------------------------------------------------
+
+const OFFICIAL = (officialFile as unknown as OfficialMarketsFile).markets
+const officialId = (key: string): string | undefined => OFFICIAL[key]?.id
+const officialEntries = (
+  pred: (ref: MarketRef, key: string) => boolean
+): [string, MarketRef][] =>
+  Object.entries(OFFICIAL).filter(([k, r]) => pred(r, k))
+
+const unitKeyOf = (ref: MarketRef) =>
+  ref.district !== undefined ? `${ref.state}-${ref.district}` : ref.state ?? ''
+
+// The 2028 presidential units' official markets, by unit key ('PA', 'ME-2').
+const OFFICIAL_UNITS_2028: Record<string, string> = Object.fromEntries(
+  officialEntries((r) => r.cycle === 2028 && r.kind === 'president-unit').map(
+    ([, r]) => [unitKeyOf(r), r.id]
+  )
+)
+
+const MANIFOLD_POLITICS = 'ManifoldPolitics'
 
 type AdminDb = Awaited<ReturnType<typeof initSupabaseAdmin>>
 
@@ -366,19 +431,31 @@ async function getRaceChart(
   }
 }
 
+// Each electoral unit's market: the official one once it has caught up on
+// traders, else the community one.
+function unitContract(
+  unitKey: string,
+  byId: Record<string, Contract>
+): Contract | undefined {
+  const official = OFFICIAL_UNITS_2028[unitKey]
+  const community = STATE_MARKETS_2028[unitKey]
+  return pickSlot(
+    official ? byId[official] : undefined,
+    community ? byId[community] : undefined
+  )
+}
+
 // The Democrat's two-party chance in each electoral unit, from its market, or
 // the unit's prior when it has none.
 function getUnitOdds(byId: Record<string, Contract>): UnitOdds[] {
   return ELECTORAL_UNITS.map((unit) => {
-    const id = STATE_MARKETS_2028[unit.key]
-    const contract = id ? byId[id] : undefined
-    const probs =
-      contract && !contract.isResolved ? getPartyProbs(contract) : undefined
-    const twoParty = probs ? probs.dem + probs.rep : 0
-    if (probs && twoParty > 0 && Number.isFinite(probs.dem / twoParty)) {
+    const contract = unitContract(unit.key, byId)
+    const odds =
+      contract && !contract.isResolved ? partyOdds(contract) : undefined
+    if (odds) {
       return {
         key: unit.key,
-        pDem: probs.dem / twoParty,
+        pDem: odds.p,
         contractId: contract!.id,
         slug: contract!.slug,
         creatorUsername: contract!.creatorUsername,
@@ -386,6 +463,281 @@ function getUnitOdds(byId: Record<string, Contract>): UnitOdds[] {
     }
     return { key: unit.key, pDem: UNIT_PRIORS_2028[unit.key] ?? NaN }
   })
+}
+
+// ---------------------------------------------------------------------------
+// Race boards
+// ---------------------------------------------------------------------------
+
+const round3 = (x: number) => Math.round(x * 1000) / 1000
+
+// A party market's Democratic two-party chance, its weekly move, and whether
+// it's called. `allowPriceCall`: a party at 99%+ counts as called (election
+// night on); otherwise only a resolved market is.
+function partyOdds(contract: Contract, allowPriceCall = false) {
+  const probs = getPartyProbs(contract)
+  if (!probs) return undefined
+  const twoParty = probs.dem + probs.rep
+  if (!(twoParty > 0) || !Number.isFinite(probs.dem / twoParty))
+    return undefined
+  const demAnswer = isMultiCpmm(contract)
+    ? contract.answers.find((a) => isDemocraticAnswer(a.text))
+    : undefined
+  const week = demAnswer?.probChanges?.week
+  const resolved = contract.isResolved && contract.resolution !== 'CANCEL'
+  return {
+    p: probs.dem / twoParty,
+    other: probs.other,
+    w: Number.isFinite(week) ? (week as number) : undefined,
+    c:
+      resolved || allowPriceCall
+        ? calledFrom({ dem: probs.dem, rep: probs.rep, other: probs.other })
+        : undefined,
+    demAnswerId: demAnswer?.id,
+  }
+}
+
+// The Democrat's price when the board froze: the last trade before it (or,
+// with none in the three days before, the price the first trade after it
+// started from). Fixed once known, so cached for the server's lifetime.
+const frozenPrices = new Map<string, number>()
+async function priceAt(
+  contractId: string,
+  answerId: string,
+  at: number
+): Promise<number | undefined> {
+  const cacheKey = `${contractId}:${answerId}:${at}`
+  if (frozenPrices.has(cacheKey)) return frozenPrices.get(cacheKey)
+  try {
+    let p: number | undefined
+    const before = await fetchPoints(
+      contractId,
+      answerId,
+      at - 3 * DAY,
+      at,
+      500,
+      true
+    )
+    if (before.length) p = maxBy(before, (r) => r.createdTime)?.probAfter
+    else {
+      const after = await fetchPoints(
+        contractId,
+        answerId,
+        at,
+        at + 3 * DAY,
+        500,
+        true
+      )
+      if (after.length) p = minBy(after, (r) => r.createdTime)?.probBefore
+    }
+    if (p !== undefined && Number.isFinite(p)) frozenPrices.set(cacheKey, p)
+    return p
+  } catch (e) {
+    console.error('frozen price failed', contractId, e)
+    return undefined
+  }
+}
+
+type BoardSeat = {
+  o: BoardOffice
+  st: string
+  d?: number
+  sp?: boolean
+  holder?: 'D' | 'R'
+  ev?: number
+  prior?: number
+}
+
+async function boardRow(
+  seat: BoardSeat,
+  contract: Contract | undefined,
+  freezeAt: number | undefined
+): Promise<BoardRace | undefined> {
+  const odds = contract
+    ? partyOdds(contract, freezeAt !== undefined)
+    : undefined
+  if (!odds && seat.prior === undefined) return undefined
+  let f: number | undefined
+  if (odds && contract && freezeAt !== undefined && odds.demAnswerId) {
+    const at = await priceAt(contract.id, odds.demAnswerId, freezeAt)
+    // Two-party, against today's third-party share.
+    if (at !== undefined && odds.other < 1)
+      f = round3(Math.min(1, Math.max(0, at / (1 - odds.other))))
+  }
+  const row: BoardRace = {
+    o: seat.o,
+    st: seat.st,
+    p: round3(odds?.p ?? (seat.prior as number)),
+  }
+  if (seat.d !== undefined) row.d = seat.d
+  if (seat.sp) row.sp = 1
+  if (odds?.w !== undefined && Math.abs(odds.w) >= 0.0005)
+    row.w = round3(odds.w)
+  if (f !== undefined) row.f = f
+  if (odds?.c) row.c = odds.c
+  if (seat.holder) row.h = seat.holder
+  if (contract) {
+    row.s = contract.slug
+    if (contract.creatorUsername !== MANIFOLD_POLITICS)
+      row.u = contract.creatorUsername
+  }
+  if (seat.ev) row.ev = seat.ev
+  return row
+}
+
+// 2026 House winners where known: the competitive-district market's
+// resolved answers ("Arizona 1", "Alaska at-large", "Arizona 2 · …").
+function house2026Winners(
+  contract: Contract | null
+): Record<string, 'D' | 'R'> {
+  const out: Record<string, 'D' | 'R'> = {}
+  if (!contract || !isMultiCpmm(contract)) return out
+  const codeByName = Object.fromEntries(
+    ELECTORAL_UNITS.filter((u) => u.key === u.state).map((u) => [u.name, u.key])
+  )
+  for (const a of contract.answers) {
+    if (a.resolution !== 'YES' && a.resolution !== 'NO') continue
+    const m = a.text
+      .split('·')[0]
+      .trim()
+      .match(/^(.+?) (at-large|\d+)$/)
+    const code = m ? codeByName[m[1]] : undefined
+    if (!code) continue
+    const d = m![2] === 'at-large' ? 0 : Number(m![2])
+    out[`${code}-${d}`] = a.resolution === 'YES' ? 'D' : 'R'
+  }
+  return out
+}
+
+async function raceBoard(
+  cycle: number,
+  byId: Record<string, Contract>,
+  now: number,
+  house2026: Record<string, 'D' | 'R'>
+): Promise<{ races: BoardRace[]; frozen: boolean }> {
+  const freezeTime = BOARD_FREEZE[cycle]
+  const frozen = freezeTime !== undefined && now >= freezeTime
+  const freezeAt = frozen ? freezeTime : undefined
+  const tasks: Promise<BoardRace | undefined>[] = []
+
+  if (cycle === 2028) {
+    for (const unit of ELECTORAL_UNITS) {
+      const [st, d] = unit.key.split('-')
+      tasks.push(
+        boardRow(
+          {
+            o: 'P',
+            st,
+            d: d === undefined ? undefined : Number(d),
+            holder: president2024Winner(unit.key),
+            ev: unit.ev,
+            prior: UNIT_PRIORS_2028[unit.key],
+          },
+          unitContract(unit.key, byId),
+          freezeAt
+        )
+      )
+    }
+  }
+  for (const [, ref] of officialEntries(
+    (r) =>
+      r.cycle === cycle &&
+      (r.kind === 'senate' || r.kind === 'governor' || r.kind === 'house')
+  )) {
+    const contract = byId[ref.id]
+    if (!contract) continue // not created yet
+    const st = ref.state ?? ''
+    const o: BoardOffice =
+      ref.kind === 'senate' ? 'S' : ref.kind === 'governor' ? 'G' : 'H'
+    const holder =
+      cycle !== 2028
+        ? undefined
+        : o === 'S'
+        ? (ref.special ? SENATE_2028_SPECIAL_HOLDER : SENATE_2028_HOLDER)[st]
+        : o === 'G'
+        ? GOVERNOR_2028_HOLDER[st]
+        : house2026[`${st}-${ref.district ?? 0}`]
+    tasks.push(
+      boardRow(
+        { o, st, d: ref.district, sp: ref.special, holder },
+        contract,
+        freezeAt
+      )
+    )
+  }
+  const races = (await Promise.all(tasks)).filter((r): r is BoardRace => !!r)
+  return { races, frozen }
+}
+
+// ---------------------------------------------------------------------------
+// Primaries
+// ---------------------------------------------------------------------------
+
+function leaderCell(contract: Contract | undefined): PrimaryCell | undefined {
+  if (!contract || !isMulti(contract)) return undefined
+  const won = contract.isResolved && contract.resolution !== 'CANCEL'
+  const leader = pickLeader(
+    contract.answers.map((a) => {
+      const prob = getAnswerProbability(contract, a.id)
+      return {
+        text: a.text.trim(),
+        prob,
+        isOther: a.isOther,
+        won: won && prob >= 0.999,
+      }
+    })
+  )
+  const cell: PrimaryCell = { s: contract.slug }
+  if (contract.creatorUsername !== MANIFOLD_POLITICS)
+    cell.u = contract.creatorUsername
+  if (leader) {
+    cell.l = leader.text
+    cell.p = round3(leader.prob)
+    if (leader.won) cell.won = 1
+  }
+  return cell
+}
+
+function primaryRows(byId: Record<string, Contract>): PrimaryRow[] {
+  const rows = new Map<string, PrimaryRow>()
+  for (const [key, ref] of officialEntries(
+    (r) =>
+      r.kind === 'presidential-primary' ||
+      r.kind === 'senate-primary' ||
+      r.kind === 'governor-primary'
+  )) {
+    const community = COMMUNITY_EQUIVALENTS[key]
+    const contract = pickSlot(
+      byId[ref.id],
+      community ? byId[community] : undefined
+    )
+    const cell = leaderCell(contract)
+    if (!cell || !ref.state) continue
+    const o: PrimaryRow['o'] =
+      ref.kind === 'presidential-primary'
+        ? 'P'
+        : ref.kind === 'senate-primary'
+        ? 'S'
+        : 'G'
+    const k = `${o}-${ref.state}${ref.special ? '-sp' : ''}`
+    const row: PrimaryRow = rows.get(k) ?? { k, o, st: ref.state }
+    if (ref.special) row.sp = 1
+    if (ref.party === 'D') row.D = cell
+    else if (ref.party === 'R') row.R = cell
+    else row.A = cell
+    rows.set(k, row)
+  }
+  return orderPrimaryRows([...rows.values()])
+}
+
+// An official market by key, or the community market it replaces.
+function slotFor(key: string, byId: Record<string, Contract>) {
+  const id = officialId(key)
+  const community = COMMUNITY_EQUIVALENTS[key]
+  return pickSlot(
+    id ? byId[id] : undefined,
+    community ? byId[community] : undefined
+  )
 }
 
 function getElectoralModel(units: UnitOdds[]): ElectoralModel {
@@ -485,42 +837,83 @@ const openOnly = (contracts: (Contract | undefined)[], now: number) =>
 
 export async function getElections2028PageProps(): Promise<Elections2028PageProps> {
   const now = Date.now()
+  const phase = electionPhase(now)
   const db = await initSupabaseAdmin()
+
+  const wants2030 = showsSection(phase, 'midterms2030')
+  const wantsPrimaries = showsSection(phase, 'primaries')
+
+  // Official markets the page may show, by id. Ones not created yet (or
+  // still unlisted while being created) simply don't come back.
+  const officialIds = officialEntries((r) => {
+    if (r.cycle === 2028) {
+      if (r.kind === 'president-popular') return false
+      if (r.kind.endsWith('-primary')) return wantsPrimaries
+      return true
+    }
+    if (r.kind === 'national' || r.kind === 'president-national') return true
+    if (r.cycle === 2030) return wants2030
+    return false
+  }).map(([, r]) => r.id)
 
   const matrixIds = uniq(conditionalMatrixIds([PRESIDENT_2028_MATRIX]))
   const ids = uniq([
     ...Object.values(NATIONAL_2028),
+    OFFICIAL_PRESIDENT_2028,
     ...Object.values(STATE_MARKETS_2028),
     ...BEFORE_2028.us,
     ...BEFORE_2028.world,
     ...AFTER_2028[2030],
     ...AFTER_2028[2032],
+    ...Object.values(COMMUNITY_EQUIVALENTS),
     ...PRIMARY_MARKETS_2028,
     ...matrixIds,
+    ...officialIds,
   ])
 
-  const [fetched, scores, unprecedentedFound, perps] = await Promise.all([
-    // No catch: without these markets the page is empty, and a failed
-    // revalidation keeps serving the last good one.
-    getContracts(db, ids, 'id', true),
-    getScores(db),
-    Promise.all(
-      UNPRECEDENTED_POLITICS_SLUGS.map((slug) =>
-        getContractFromSlug(db, slug).catch(() => null)
-      )
-    ),
-    Promise.all(
-      POLLING_PERPS_2028.map((slug) =>
-        getContractFromSlug(db, slug).catch(() => null)
-      )
-    ),
-  ])
+  const [fetched, scores, unprecedentedFound, perps, house2026Market] =
+    await Promise.all([
+      // No catch: without these markets the page is empty, and a failed
+      // revalidation keeps serving the last good one. Public only, so a
+      // market mid-creation (unlisted) isn't shown early.
+      getContracts(db, ids, 'id', true),
+      getScores(db),
+      Promise.all(
+        UNPRECEDENTED_POLITICS_SLUGS.map((slug) =>
+          getContractFromSlug(db, slug).catch(() => null)
+        )
+      ),
+      Promise.all(
+        POLLING_PERPS_2028.map((slug) =>
+          getContractFromSlug(db, slug).catch(() => null)
+        )
+      ),
+      getContractFromSlug(db, HOUSE_2026_DISTRICTS_SLUG).catch(() => null),
+    ])
   const byId = keyBy(fetched, (c) => c.id)
   const get = (id: string) => byId[id] ?? null
 
+  // Each slot: the official market once it has as many traders as the
+  // community one there.
+  const slot = (key: keyof typeof OFFICIAL_SLOTS, community: string) =>
+    pickSlot(byId[officialId(OFFICIAL_SLOTS[key]) ?? ''], byId[community]) ??
+    null
+  const partyContract = slot('party', NATIONAL_2028.party)
+  const chartContracts: Record<RaceChartKey, Contract | undefined> = {
+    president: pickSlot(
+      byId[OFFICIAL_PRESIDENT_2028],
+      byId[NATIONAL_2028.president]
+    ),
+    demNominee: slot('demNominee', NATIONAL_2028.demNominee) ?? undefined,
+    gopNominee: slot('gopNominee', NATIONAL_2028.gopNominee) ?? undefined,
+  }
+  const officialBop = byId[officialId(OFFICIAL_SLOTS.balanceOfPower) ?? '']
+
   const charts = (
     await Promise.all(
-      RACE_CHARTS.map((config) => getRaceChart(config, byId[config.id], now))
+      RACE_CHARTS.map((config) =>
+        getRaceChart(config, chartContracts[config.key], now)
+      )
     )
   ).filter((c): c is RaceChart => !!c)
 
@@ -561,6 +954,14 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
     console.error('electoral model failed', e)
   }
 
+  const house2026 = house2026Winners(house2026Market)
+  const [board2028, board2030] = await Promise.all([
+    raceBoard(2028, byId, now, house2026),
+    wants2030
+      ? raceBoard(2030, byId, now, {})
+      : Promise.resolve({ races: [] as BoardRace[], frozen: false }),
+  ])
+
   const presidencyMatrixRows = slimMatrixRows(
     buildConditionalMatrixRows(PRESIDENT_2028_MATRIX, fetched, now)
   )
@@ -569,12 +970,53 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
   // over (or about to be) and don't belong on the 2028 page.
   const unprecedentedContracts = pickUnprecedentedPolitics(
     unprecedentedFound.filter(
-      (c): c is Contract => !!c && !/2026/.test(c.question)
+      (c): c is Contract => !!c && !/2026/.test(c.question)
     ),
     {
       now,
       excludeIds: matrixRowContracts(presidencyMatrixRows).map((c) => c.id),
     }
+  )
+
+  // Official national markets placed by cycle, as the scripts add them: the
+  // off-year races (2027, 2029), 2028 markets with no slot of their own, and
+  // the later cycles in LATER_KEYS order (then anything else).
+  const slotted = new Set<string>([
+    ...Object.values(OFFICIAL_SLOTS),
+    ...LATER_KEYS,
+  ])
+  const national = officialEntries((r) => r.kind === 'national')
+  const offYearOfficial = national
+    .filter(([, r]) => r.cycle % 2 === 1)
+    .map(([key]) => slotFor(key, byId))
+  const offYear = uniqBy(
+    [
+      ...offYearOfficial,
+      // Community-only off-year markets (Speaker, mayors, specials), until
+      // they resolve.
+      ...BEFORE_2028.us
+        .filter((id) => !Object.values(COMMUNITY_EQUIVALENTS).includes(id))
+        .map((id) => byId[id]),
+    ].filter((c): c is Contract => !!c && isOpenPublicMarket(c, now)),
+    (c) => c.id
+  )
+  const more2028 = national
+    .filter(([key, r]) => r.cycle === 2028 && !slotted.has(key))
+    .map(([, r]) => byId[r.id])
+    .filter((c): c is Contract => !!c && isOpenPublicMarket(c, now))
+  const laterKeys = [
+    ...LATER_KEYS,
+    ...national
+      .filter(([key, r]) => r.cycle >= 2030 && !LATER_KEYS.includes(key))
+      .map(([key]) => key),
+  ].filter((key) => !(wants2030 && key === '2030-balance-of-power'))
+  const later = uniqBy(
+    [
+      ...laterKeys.map((key) => slotFor(key, byId)),
+      // Community-only later markets until the official ones exist.
+      ...[...AFTER_2028[2030], ...AFTER_2028[2032]].map((id) => byId[id]),
+    ].filter((c): c is Contract => !!c && isOpenPublicMarket(c, now)),
+    (c) => c.id
   )
 
   const shown = new Set<string>([
@@ -585,37 +1027,40 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
 
   return {
     now,
-    partyContract: slim(get(NATIONAL_2028.party)),
-    popularVoteContract: slim(get(NATIONAL_2028.popularVote)),
-    congressContract: slim(get(NATIONAL_2028.congress)),
+    phase,
+    partyContract: slim(partyContract),
+    popularVoteContract: slim(slot('popularVote', NATIONAL_2028.popularVote)),
+    balanceOfPowerContract: officialBop ? slim(officialBop) : null,
+    congressContract: officialBop ? null : slim(get(NATIONAL_2028.congress)),
     charts,
     movers,
-    demVpContract: slim(get(NATIONAL_2028.demVp)),
-    gopVpContract: slim(get(NATIONAL_2028.gopVp)),
+    demVpContract: slim(slot('demVp', NATIONAL_2028.demVp)),
+    gopVpContract: slim(slot('gopVp', NATIONAL_2028.gopVp)),
     ticketContract: slimOrNull(get(NATIONAL_2028.ticket)),
     model,
     accuracy: accuracyStory(scores),
     swings: (swingsFile as Swings2026File).swings.slice(0, 2 + SWING_CARDS),
+    board2028: board2028.races,
+    board2028Frozen: board2028.frozen,
+    board2030: board2030.races,
+    board2030Frozen: board2030.frozen,
+    balanceOfPower2030: wants2030
+      ? slim(slotFor('2030-balance-of-power', byId) ?? null)
+      : null,
+    primaries: wantsPrimaries ? primaryRows(byId) : [],
     primaryContracts: openOnly(
-      PRIMARY_MARKETS_2028.map((id) => byId[id]),
+      PRIMARY_MARKETS_2028.filter(
+        (id) => !Object.values(COMMUNITY_EQUIVALENTS).includes(id)
+      ).map((id) => byId[id]),
       now
     ).map(slimCard),
-    before2028Us: openOnly(
-      BEFORE_2028.us.map((id) => byId[id]),
-      now
-    ).map(slimCard),
+    more2028: more2028.map(slimCard),
+    offYear: offYear.map(slimCard),
     before2028World: openOnly(
       BEFORE_2028.world.map((id) => byId[id]),
       now
     ).map(slimCard),
-    contracts2030: openOnly(
-      AFTER_2028[2030].map((id) => byId[id]),
-      now
-    ).map(slimCard),
-    contracts2032: openOnly(
-      AFTER_2028[2032].map((id) => byId[id]),
-      now
-    ).map(slimCard),
+    later: later.map(slimCard),
     presidencyMatrixRows,
     unprecedentedContracts: unprecedentedContracts.map(slimCard),
     pollingPerpContracts: perps
