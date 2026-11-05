@@ -661,6 +661,12 @@ describe('sports from the topic tree', () => {
     )
     expect(page(nfl, 'nfl')).toBe('/sports/nfl')
     expect(page(formula1, 'formula-1')).toBe('/sports/f1')
+    expect(
+      sportsPathForTopic(
+        { id: 'f1-topic', slug: 'f1' },
+        { sports: index.sports, topics: [{ id: 'f1-topic', sport: 'f1' }] }
+      )
+    ).toBe('/sports/f1')
     expect(page(collegeBasketball, 'college-basketball')).toBe('/sports/ncaab')
     expect(page('cycling', 'road-bicycle-racing')).toBe(
       '/sports/road-bicycle-racing'
