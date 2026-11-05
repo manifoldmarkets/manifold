@@ -1,10 +1,11 @@
 // Which market fills each slot of the 2028-and-beyond /election page.
 //
-// Every slot is a market id, so swapping a community market for an official
-// @ManifoldPolitics one (once backend/scripts/elections-2028 creates them) is a
-// one-line change here. Today most slots hold the deepest community market for
-// the question, picked from prod by traders and volume on 2026-11-05; the
-// multi-year charts need their history.
+// Two layers. The community markets below were the deepest for each question
+// on 2026-11-05 (the multi-year charts need their history). The official
+// @ManifoldPolitics markets come from public/data/election-markets-2028.json, by key
+// (OFFICIAL_SLOTS and friends); each slot switches to its official market on
+// its own once that market has at least as many traders (pickSlot in
+// official-markets.ts). Nothing here needs editing as markets are created.
 
 export const NATIONAL_2028 = {
   // "Which political party wins the US presidency in 2028?" (Ernie, 256
@@ -32,6 +33,64 @@ export const NATIONAL_2028 = {
   // "Which party will control congress after the 2028 elections" (13).
   congress: 'dcN5E02Ocl',
 } as const
+
+// The official market for each national slot, by key in
+// public/data/election-markets-2028.json. The balance-of-power market replaces the
+// community "control of Congress" slot outright once it exists.
+export const OFFICIAL_SLOTS = {
+  party: '2028-president-US-general',
+  demNominee: '2028-dem-nominee',
+  gopNominee: '2028-gop-nominee',
+  demVp: '2028-dem-vp-nominee',
+  gopVp: '2028-gop-vp-nominee',
+  popularVote: '2028-popular-vote',
+  balanceOfPower: '2028-balance-of-power',
+} as const
+
+// @ManifoldPolitics' own "Who will win the 2028 US presidential election?",
+// made before the scripts (604 traders on 2026-11-05).
+export const OFFICIAL_PRESIDENT_2028 = 't9s0m8tf2v'
+
+// Community markets an official market replaces in the off-year and later
+// sections (official key → community id).
+export const COMMUNITY_EQUIVALENTS: Record<string, string> = {
+  '2027-governor-kentucky': 'lSEy8OEpAP',
+  '2027-governor-mississippi': 'lOgOZz5U0p',
+  '2027-governor-louisiana': 'SORZzEPORl',
+  '2030-balance-of-power': '06GTQ5wGTbIbtEIEfIXh',
+  '2032-winner': '2lbO8ztHRtqA7QHDTwsR',
+  '2032-dem-nominee': 'IpRZ6zS9hQ',
+  '2032-president-US-general': '6qZZpIhzLn',
+  // Early-state primaries that already had community markets.
+  '2028-gop-iowa': 'EgLsNldtZl',
+  '2028-dem-new-hampshire': 'yQQLsZsqNZ',
+  '2028-gop-new-hampshire': 'tZptdQEpu8',
+  '2028-dem-south-carolina': 'OsZngC899Z',
+}
+
+// The later national markets in reading order (official keys).
+export const LATER_KEYS = [
+  '2030-balance-of-power',
+  '2032-winner',
+  '2032-president-US-general',
+  '2032-dem-nominee',
+  '2032-gop-nominee',
+  '2032-balance-of-power',
+  '2034-balance-of-power',
+  '2036-president-US-general',
+  '2036-balance-of-power',
+]
+
+// When each cycle's race board freezes its columns: the first polls opening
+// on Election Day (6am ET).
+export const BOARD_FREEZE: Record<number, number> = {
+  2028: Date.UTC(2028, 10, 7, 11),
+  2030: Date.UTC(2030, 10, 5, 11),
+}
+
+// The district-by-district 2026 House market: YES = a Democrat won. Its 68
+// competitive seats are the 2026 winners the board knows for "flipped".
+export const HOUSE_2026_DISTRICTS_SLUG = 'will-a-democrat-win-these-us-house'
 
 // The three markets drawn as face-ended line charts, in tab order.
 export const RACE_CHARTS = [
@@ -247,44 +306,133 @@ export const POLLING_PERPS_2028 = [
   'jd-vance-favorability-votehub-avg',
 ]
 
-// Fixed dates on the road ahead. Election days are set by law (the Tuesday
+// The calendar on the road ahead. Election days are set by law (the Tuesday
 // after the first Monday in November); the electoral college meets on the
-// first Monday after the second Wednesday in December.
-export const KEY_DATES = [
+// first Monday after the second Wednesday in December. Super Tuesday is the
+// first Tuesday in March under most of those states' laws. Dates the parties
+// haven't set yet (the early contests, the conventions, the debates) show as
+// a season and drop off once it's over (`until`), with no day count.
+export type TimelineEntry = {
+  key: string
+  label: string
+  detail: string
+  // A fixed date (with a day count), or a season shown as text.
+  time?: number
+  season?: string
+  // Where the entry sits in the timeline, and when it drops off.
+  sortAt: number
+  until: number
+  // A section of the page the entry links to.
+  href?: string
+}
+
+export const TIMELINE: TimelineEntry[] = [
   {
     key: '2027',
     label: '2027 elections',
-    detail: 'Governors in KY, LA and MS',
+    detail: 'Governors in KY, LA and MS; legislatures',
     time: Date.UTC(2027, 10, 2, 11),
+    sortAt: Date.UTC(2027, 10, 2, 11),
+    until: Date.UTC(2027, 10, 3, 11),
+    href: '#off-year',
+  },
+  {
+    key: 'early',
+    label: 'Early contests',
+    detail: 'Iowa, New Hampshire, South Carolina, Nevada',
+    season: 'Early 2028',
+    sortAt: Date.UTC(2028, 0, 15),
+    until: Date.UTC(2028, 2, 1),
+    href: '#primaries',
+  },
+  {
+    key: 'super-tuesday',
+    label: 'Super Tuesday',
+    detail: 'The biggest day of primaries',
+    time: Date.UTC(2028, 2, 7, 12),
+    sortAt: Date.UTC(2028, 2, 7, 12),
+    until: Date.UTC(2028, 2, 8, 12),
+    href: '#primaries',
+  },
+  {
+    key: 'last-primaries',
+    label: 'Last primaries',
+    detail: 'The final states vote',
+    season: 'June 2028',
+    sortAt: Date.UTC(2028, 5, 15),
+    until: Date.UTC(2028, 6, 1),
+    href: '#primaries',
+  },
+  {
+    key: 'conventions',
+    label: 'Party conventions',
+    detail: 'Each party formally nominates',
+    season: 'Summer 2028',
+    sortAt: Date.UTC(2028, 6, 20),
+    until: Date.UTC(2028, 8, 1),
+    href: '#race',
+  },
+  {
+    key: 'debates',
+    label: 'Debates',
+    detail: 'Presidential and vice presidential',
+    season: 'Fall 2028',
+    sortAt: Date.UTC(2028, 9, 1),
+    until: Date.UTC(2028, 10, 1),
   },
   {
     key: '2028',
     label: 'Election Day 2028',
     detail: 'President, Senate, House',
     time: Date.UTC(2028, 10, 7, 11),
+    sortAt: Date.UTC(2028, 10, 7, 11),
+    until: Date.UTC(2028, 10, 8, 11),
+    href: '#board',
   },
   {
     key: 'electors',
     label: 'Electors vote',
     detail: 'Electoral college',
     time: Date.UTC(2028, 11, 18, 17),
+    sortAt: Date.UTC(2028, 11, 18, 17),
+    until: Date.UTC(2028, 11, 19, 17),
   },
   {
     key: 'inauguration',
     label: 'Inauguration',
     detail: 'The next president',
     time: Date.UTC(2029, 0, 20, 17),
+    sortAt: Date.UTC(2029, 0, 20, 17),
+    until: Date.UTC(2029, 0, 21, 17),
+  },
+  {
+    key: '2029',
+    label: '2029 elections',
+    detail: 'Governors in VA and NJ',
+    time: Date.UTC(2029, 10, 6, 11),
+    sortAt: Date.UTC(2029, 10, 6, 11),
+    until: Date.UTC(2029, 10, 7, 11),
+    href: '#off-year',
   },
   {
     key: '2030',
     label: '2030 midterms',
     detail: 'Senate, House, 36 governors',
     time: Date.UTC(2030, 10, 5, 11),
+    sortAt: Date.UTC(2030, 10, 5, 11),
+    until: Date.UTC(2030, 10, 6, 11),
+    href: '#midterms-2030',
   },
   {
     key: '2032',
     label: '2032 election',
     detail: 'President',
     time: Date.UTC(2032, 10, 2, 11),
+    sortAt: Date.UTC(2032, 10, 2, 11),
+    until: Date.UTC(2032, 10, 3, 11),
   },
-] as const
+]
+
+// What the timeline shows: everything not yet over, in order.
+export const upcomingTimeline = (now: number) =>
+  TIMELINE.filter((e) => e.until > now).sort((a, b) => a.sortAt - b.sortAt)

@@ -1,0 +1,432 @@
+import clsx from 'clsx'
+import Link from 'next/link'
+import { useMemo, useState } from 'react'
+
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { formatOdds } from 'web/components/usa-map/election-display'
+import { DEM_COLOR, REP_COLOR } from 'web/components/usa-map/state-election-map'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
+import {
+  BOARD_COLUMNS,
+  BoardColumn,
+  BoardGroupBy,
+  BoardOffice,
+  BoardRace,
+  calledTotals,
+  columnTotals,
+  flipped,
+  groupRaces,
+  raceId,
+  raceLabel,
+  raceName,
+  raceUrl,
+} from 'web/lib/politics/race-board'
+import { track } from 'web/lib/service/analytics'
+
+// Every race of an office on one board, NYT-style: five columns by how our
+// markets rate each race (same thresholds as the electoral college model),
+// or grouped by state, or by the week's biggest moves. On election night the
+// columns freeze at the pre-election prices; called races fill with the
+// winner's colour, hatched when the seat flipped.
+
+const OFFICE_LABEL: Record<BoardOffice, string> = {
+  P: 'President',
+  S: 'Senate',
+  G: 'Governor',
+  H: 'House',
+}
+
+const OTHER_COLOR = '#8a8a8a'
+const partyColor = (p: 'D' | 'R' | 'O') =>
+  p === 'D' ? DEM_COLOR : p === 'R' ? REP_COLOR : OTHER_COLOR
+
+// Column accents: the party colour at full strength for the easy wins, a
+// lighter one for the narrow ones, neutral gray for the toss-ups.
+const COLUMN_ACCENT: Record<BoardColumn, string> = {
+  solidD: DEM_COLOR,
+  leanD: '#9fb3dc',
+  tossup: '#cfcac4',
+  leanR: '#e3a5a2',
+  solidR: REP_COLOR,
+}
+
+// Leader and chance as the reader sees it: "D 64%".
+function leaderOf(race: BoardRace) {
+  if (race.c) return { party: race.c, text: race.c === 'O' ? 'Other' : race.c }
+  const p = race.p
+  return p >= 0.5
+    ? { party: 'D' as const, text: `D ${formatOdds(p)}` }
+    : { party: 'R' as const, text: `R ${formatOdds(1 - p)}` }
+}
+
+function weekText(w: number | undefined) {
+  if (w === undefined || Math.abs(w) < 0.01) return undefined
+  const pts = Math.round(Math.abs(w) * 100)
+  return `${w > 0 ? 'D' : 'R'} +${pts}`
+}
+
+export function RaceBoard(props: {
+  races: BoardRace[]
+  frozen: boolean
+  freezeTime?: number
+  cycle: number
+  trackingName: string
+}) {
+  const { races, frozen, cycle, trackingName } = props
+  const offices = useMemo(
+    () =>
+      (['P', 'S', 'G', 'H'] as BoardOffice[]).filter((o) =>
+        races.some((r) => r.o === o)
+      ),
+    [races]
+  )
+  const [office, setOffice] = usePersistentInMemoryState<BoardOffice>(
+    offices[0] ?? 'P',
+    `election-board-office-${cycle}`
+  )
+  const [groupBy, setGroupBy] = usePersistentInMemoryState<BoardGroupBy>(
+    'rating',
+    `election-board-group-${cycle}`
+  )
+  const current = offices.includes(office) ? office : offices[0]
+  const shown = useMemo(
+    () => races.filter((r) => r.o === current),
+    [races, current]
+  )
+  const groups = useMemo(
+    () => groupRaces(shown, groupBy, frozen),
+    [shown, groupBy, frozen]
+  )
+  if (!current) return null
+  const weight = current === 'P' ? 'ev' : 'races'
+  const totals = columnTotals(shown, frozen)
+  const called = calledTotals(shown, weight)
+  const anyCalled = called.D + called.R + called.O > 0
+
+  return (
+    <div className="bg-canvas-0 border-ink-200 flex flex-col gap-3 rounded-xl border p-3 sm:p-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        {offices.length > 1 ? (
+          <ChoicesToggleGroup
+            currentChoice={current}
+            choicesMap={Object.fromEntries(
+              offices.map((o) => [OFFICE_LABEL[o], o])
+            )}
+            setChoice={(o) => {
+              track(`${trackingName} office`, { office: o })
+              setOffice(o as BoardOffice)
+            }}
+            color="gray"
+            ariaLabel="Office"
+            toggleClassName="!px-3 !py-1 text-sm"
+          />
+        ) : (
+          <h3 className="text-ink-1000 text-base font-semibold">
+            {OFFICE_LABEL[current]}
+            {current === 'P' ? ' by state' : ''}
+          </h3>
+        )}
+        <ChoicesToggleGroup
+          currentChoice={groupBy}
+          choicesMap={{
+            Rating: 'rating',
+            State: 'state',
+            'Biggest moves': 'moves',
+          }}
+          setChoice={(g) => {
+            track(`${trackingName} group`, { by: g })
+            setGroupBy(g as BoardGroupBy)
+          }}
+          color="gray"
+          ariaLabel="Group races by"
+          toggleClassName="!px-2.5 !py-1 text-xs"
+        />
+      </div>
+
+      {anyCalled && (
+        <div className="text-ink-700 text-sm">
+          Called so far: <CalledCount party="D" n={called.D} weight={weight} />
+          {' · '}
+          <CalledCount party="R" n={called.R} weight={weight} />
+          {called.O > 0 && (
+            <>
+              {' · '}
+              <CalledCount party="O" n={called.O} weight={weight} />
+            </>
+          )}
+        </div>
+      )}
+
+      {groupBy === 'rating' ? (
+        <div className="grid gap-3 lg:grid-cols-5">
+          {groups.map((g) => {
+            const col = BOARD_COLUMNS.find((c) => c.key === g.key)!
+            const t = totals[col.key]
+            const compact = col.key === 'solidD' || col.key === 'solidR'
+            return (
+              <section key={g.key} aria-label={col.label} className="min-w-0">
+                <header
+                  className="border-t-4 pb-2 pt-1.5"
+                  style={{ borderColor: COLUMN_ACCENT[col.key] }}
+                >
+                  <div className="text-ink-1000 text-sm font-semibold leading-tight">
+                    {col.label}
+                  </div>
+                  <div className="text-ink-600 text-xs tabular-nums">
+                    {col.range} ·{' '}
+                    {current === 'P'
+                      ? `${t.races} · ${t.ev} EV`
+                      : `${t.races} ${t.races === 1 ? 'race' : 'races'}`}
+                  </div>
+                </header>
+                {g.races.length === 0 ? (
+                  <div className="text-ink-500 text-xs">None</div>
+                ) : compact && g.races.length > 12 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {g.races.map((r) => (
+                      <RaceChip key={raceId(r)} race={r} />
+                    ))}
+                  </div>
+                ) : (
+                  <ColumnRows
+                    key={`${current}-${g.key}`}
+                    races={g.races}
+                    trackingName={trackingName}
+                  />
+                )}
+              </section>
+            )
+          })}
+        </div>
+      ) : (
+        <div
+          className={clsx(
+            'grid gap-3',
+            groupBy === 'state' && 'sm:grid-cols-2 lg:grid-cols-3'
+          )}
+        >
+          {groups.map((g) => (
+            <section key={g.key} aria-label={g.label} className="min-w-0">
+              {groupBy === 'state' && (
+                <h4 className="text-ink-900 mb-1 text-sm font-semibold">
+                  {g.label}
+                </h4>
+              )}
+              {g.races.length === 0 ? (
+                <div className="text-ink-500 text-sm">
+                  No race moved a point or more this week.
+                </div>
+              ) : (
+                <ul className="flex flex-col gap-1">
+                  {g.races.map((r) => (
+                    <RaceRow
+                      key={raceId(r)}
+                      race={r}
+                      showWeek={groupBy === 'moves'}
+                    />
+                  ))}
+                </ul>
+              )}
+            </section>
+          ))}
+        </div>
+      )}
+
+      <BoardLegend frozen={frozen} freezeTime={props.freezeTime} />
+    </div>
+  )
+}
+
+// A long column (the House has 100+ narrow races) shows its closest races
+// first, with the rest a click away.
+const COLUMN_ROWS = 12
+function ColumnRows(props: { races: BoardRace[]; trackingName: string }) {
+  const { races, trackingName } = props
+  const [all, setAll] = useState(false)
+  const shown =
+    all || races.length <= COLUMN_ROWS + 3 ? races : races.slice(0, COLUMN_ROWS)
+  return (
+    <>
+      <ul className="flex flex-col gap-1">
+        {shown.map((r) => (
+          <RaceRow key={raceId(r)} race={r} />
+        ))}
+      </ul>
+      {shown.length < races.length && (
+        <button
+          type="button"
+          className="text-primary-700 hover:text-primary-800 mt-1.5 text-xs font-medium hover:underline"
+          onClick={() => {
+            track(`${trackingName} show all`, { races: races.length })
+            setAll(true)
+          }}
+        >
+          Show all {races.length}
+        </button>
+      )}
+    </>
+  )
+}
+
+function CalledCount(props: {
+  party: 'D' | 'R' | 'O'
+  n: number
+  weight: 'ev' | 'races'
+}) {
+  const { party, n, weight } = props
+  const name =
+    party === 'D' ? 'Democrats' : party === 'R' ? 'Republicans' : 'Others'
+  return (
+    <span className="inline-flex items-center gap-1 font-semibold tabular-nums">
+      <span
+        aria-hidden
+        className="inline-block h-2.5 w-2.5 rounded-full"
+        style={{ backgroundColor: partyColor(party) }}
+      />
+      {name} {n}
+      {weight === 'ev' ? ' EV' : ''}
+    </span>
+  )
+}
+
+// A called race fills with the winner's colour (white text); hatched when
+// it flipped, with the theme's ink so it reads in light and dark mode.
+function calledStyle(race: BoardRace) {
+  if (!race.c) return undefined
+  const color = partyColor(race.c)
+  return flipped(race)
+    ? {
+        backgroundImage: `repeating-linear-gradient(135deg, ${color}cc 0 4px, transparent 4px 9px)`,
+        backgroundColor: `${color}33`,
+      }
+    : { backgroundColor: color, color: 'white' }
+}
+const calledClass = (race: BoardRace) =>
+  race.c && flipped(race) ? 'text-ink-1000 font-semibold' : undefined
+
+function RaceRow(props: { race: BoardRace; showWeek?: boolean }) {
+  const { race, showWeek } = props
+  const url = raceUrl(race)
+  const leader = leaderOf(race)
+  const week = weekText(race.w)
+  const called = calledStyle(race)
+  const name = raceName(race)
+  const body = (
+    <span
+      className={clsx(
+        'flex min-h-[2rem] items-center gap-2 rounded-md px-2 py-1 text-sm',
+        !called && 'bg-canvas-50 hover:bg-canvas-100',
+        calledClass(race),
+        url && 'cursor-pointer'
+      )}
+      style={called}
+      title={`${name}${race.c ? `: called for ${leader.text}` : ''}`}
+    >
+      <span className="min-w-0 flex-1 truncate font-semibold tabular-nums">
+        {raceLabel(race)}
+        {race.sp ? '*' : ''}
+      </span>
+      {race.c ? (
+        <span className="shrink-0 text-xs font-semibold">
+          ✓ {race.c === 'O' ? 'Other' : race.c}
+          {flipped(race) ? ' flip' : ''}
+        </span>
+      ) : (
+        <span className="inline-flex shrink-0 items-center gap-1 text-xs tabular-nums">
+          <span
+            aria-hidden
+            className="inline-block h-2 w-2 rounded-full"
+            style={{ backgroundColor: partyColor(leader.party) }}
+          />
+          {leader.text}
+        </span>
+      )}
+      {showWeek && !race.c && (
+        <span className="text-ink-600 w-12 shrink-0 text-right text-xs tabular-nums">
+          {week ?? '—'}
+        </span>
+      )}
+    </span>
+  )
+  return (
+    <li>
+      {url ? (
+        <Link
+          href={url}
+          className="block"
+          aria-label={`${name}: ${leader.text}`}
+        >
+          {body}
+        </Link>
+      ) : (
+        body
+      )}
+    </li>
+  )
+}
+
+// The easy wins, compact: just the label, as a chip.
+function RaceChip(props: { race: BoardRace }) {
+  const { race } = props
+  const url = raceUrl(race)
+  const leader = leaderOf(race)
+  const called = calledStyle(race)
+  const chip = (
+    <span
+      className={clsx(
+        'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium tabular-nums',
+        !called && 'bg-canvas-50 text-ink-800 hover:bg-canvas-100',
+        calledClass(race)
+      )}
+      style={called}
+      title={`${raceName(race)}: ${leader.text}`}
+    >
+      {raceLabel(race)}
+      {race.sp ? '*' : ''}
+    </span>
+  )
+  return url ? (
+    <Link href={url} aria-label={`${raceName(race)}: ${leader.text}`}>
+      {chip}
+    </Link>
+  ) : (
+    chip
+  )
+}
+
+function BoardLegend(props: { frozen: boolean; freezeTime?: number }) {
+  const { frozen, freezeTime } = props
+  return (
+    <div className="text-ink-600 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+      <span>
+        Odds are the leading party&apos;s chance from each race&apos;s market.
+      </span>
+      {frozen && freezeTime && (
+        <span>
+          Columns hold the odds from{' '}
+          {new Date(freezeTime).toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            timeZone: 'America/New_York',
+            timeZoneName: 'short',
+          })}
+          , before the first polls opened.
+        </span>
+      )}
+      <span className="inline-flex items-center gap-1">
+        <span
+          aria-hidden
+          className="inline-block h-3 w-5 rounded-sm"
+          style={{
+            backgroundImage: `repeating-linear-gradient(135deg, ${DEM_COLOR} 0 6px, transparent 6px 10px)`,
+            backgroundColor: `${DEM_COLOR}55`,
+          }}
+        />
+        Hatched: won by a different party than held the seat
+      </span>
+      <span>* special election</span>
+    </div>
+  )
+}
