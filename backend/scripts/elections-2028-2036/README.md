@@ -407,15 +407,17 @@ payload is left alone and logged ("NOT recreating").
 The same goes for a market found at its reserved id that the state file has
 no record of (the state file was lost, or a new one was started with
 `--init-state` after an earlier run). Nothing says what payload it was
-created with, so with `--quiet` the run records it as created with
-`"payloadHash": "unknown"`, keeps it unlisted and stops ("a market exists at
-the reserved id … but this state file has no record of the payload it was
-created with"). Later runs stop on the changed-payload check until you check
-its question, description, answers, close time and opening prices on the
-site against the manifest and set `payloadHash` to the printed value (or
-delete the market). Then the next run sets its colours and publishes it. Keep
-one state file per cycle and environment, and never start a second one
-for markets that already exist.
+created with, or whether it is public yet, so the run (`--quiet` or `--loud`)
+records it as created with `"payloadHash": "unknown"` and publication
+pending, publishes nothing and stops ("a market exists at the reserved id …
+but this state file has no record of the payload it was created with").
+Later runs stop on the changed-payload check until you check its question,
+description, answers, close time and opening prices on the site against the
+manifest and set `payloadHash` to the printed value (or delete the market).
+Then the next run sets its colours and publishes it (if it was already
+public, setting public again changes nothing and notifies no one). Keep one
+state file per cycle and environment, and never start a second one for
+markets that already exist.
 
 1. **Create the missing topics** in `topics-needed.md` (or decide to launch
    without them), paste the ids into `topics.json`, regenerate.

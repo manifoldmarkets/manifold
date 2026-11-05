@@ -1162,7 +1162,21 @@ describe('partial failure and resume', () => {
         },
       ],
     })
-    const state = emptyState(m)
+    // A create of this same payload went out and its outcome was unknown
+    // (an unrecorded market stops earlier, on its unknown payload).
+    const state: CreationState = {
+      ...emptyState(m),
+      entries: {
+        [first.raceKey]: {
+          raceKey: first.raceKey,
+          idempotencyKey: key,
+          payloadHash: payloadHash(first.payload),
+          status: 'in-flight',
+          reservedMana: 1000,
+          updatedAt: '2026-10-04',
+        },
+      },
+    }
     const result = await applyManifest(m, state, api, opts(), () => undefined)
     expect(result.stoppedReason).toMatch(/review its opening prices/)
     expect(state.entries[first.raceKey]).toMatchObject({
@@ -1865,16 +1879,33 @@ describe('quiet creation', () => {
     expect(api.publishMarket).toHaveBeenCalledTimes(2)
   })
 
-  test('without quiet publication the unrecorded market is adopted as before', async () => {
+  test('a loud run stops on an unrecorded market too: the state file cannot know whether it is public', async () => {
+    // An earlier quiet run may have left it unlisted; adopting it as public
+    // would leave it unlisted for good and treat later edits as published.
     const { first, m, key, api, state } = unrecorded()
     const res = await applyManifest(m, state, api, opts(), () => undefined)
-    expect(res.stoppedReason).toBeUndefined()
+    expect(res.stoppedReason).toMatch(
+      /has no record of the payload it was created with/
+    )
     expect(state.entries[first.raceKey]).toMatchObject({
       status: 'created',
       contractId: key,
-      payloadHash: payloadHash(first.payload),
+      payloadHash: UNKNOWN_PAYLOAD_HASH,
+      pendingPublication: true,
     })
     expect(api.publishMarket).not.toHaveBeenCalled()
+    expect(api.createMarket).not.toHaveBeenCalled()
+    const again = await applyManifest(m, state, api, opts(), () => undefined)
+    expect(again.stoppedReason).toMatch(/from an earlier payload/)
+    expect(api.publishMarket).not.toHaveBeenCalled()
+
+    // Once checked and recorded, even a loud run publishes it (setting public
+    // again on an already public market changes nothing).
+    state.entries[first.raceKey].payloadHash = payloadHash(first.payload)
+    const fixed = await applyManifest(m, state, api, opts(), () => undefined)
+    expect(fixed.stoppedReason).toBeUndefined()
+    expect(api.publishMarket).toHaveBeenCalledWith(key)
+    expect(state.entries[first.raceKey].pendingPublication).toBe(false)
   })
 })
 

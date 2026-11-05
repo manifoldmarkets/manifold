@@ -1845,10 +1845,14 @@ export async function applyManifest(
       const pendingPublication = prior?.pendingPublication ?? opts.quiet
       // No record of the payload it was created with (the state file was
       // lost, or this is a new one): adopting the manifest's hash would
-      // publish whatever question and criteria it was created with. Keep it
-      // unlisted under an unknown hash until a person checks it; the next
-      // runs stop on the stale-payload check until they record the hash.
-      const unknownPayload = !prior?.payloadHash && !!pendingPublication
+      // publish whatever question and criteria it was created with, quiet or
+      // loud. Nor can the state file know whether it is public: an earlier
+      // quiet run may have left it unlisted, and a loud run must not adopt it
+      // as published. Record an unknown hash with publication pending and
+      // stop; later runs stop on the stale-payload check until a person
+      // records the hash, then finishCreation publishes it (re-setting public
+      // on a market that already is changes nothing and notifies no one).
+      const unknownPayload = !prior?.payloadHash
       const seedProblem =
         stale || unknownPayload
           ? undefined
