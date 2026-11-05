@@ -15,8 +15,10 @@ export type DownballotRace = {
   code: string
   special?: boolean
   system: 'party' | 'top-two' | 'top-four'
-  // ISO date of the primary (or the runoff, where one decides the nominee);
-  // markets close the day after. Unknown: the default close.
+  // ISO date of the contest that decides it: the primary, or the latest a
+  // runoff or convention could fall (primary + 10 weeks, capped at Sep 29).
+  // Where the date is in doubt, the later candidate date. Markets close the
+  // day after; closing late is harmless, closing early is not.
   decidedBy?: string
   markets: {
     party: 'Democratic' | 'Republican' | null
@@ -59,7 +61,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Alaska',
     code: 'AK',
     system: 'top-four',
-    decidedBy: '2028-08-16',
+    decidedBy: '2028-08-15',
     markets: [
       {
         party: null,
@@ -82,7 +84,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Arizona',
     code: 'AZ',
     system: 'party',
-    decidedBy: '2028-07-19',
+    decidedBy: '2028-08-01',
     markets: [
       {
         party: 'Democratic',
@@ -128,7 +130,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'California',
     code: 'CA',
     system: 'top-two',
-    decidedBy: '2028-03-08',
+    decidedBy: '2028-03-07',
     markets: [
       {
         party: null,
@@ -147,7 +149,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Colorado',
     code: 'CO',
     system: 'party',
-    decidedBy: '2028-06-28',
+    decidedBy: '2028-06-27',
     markets: [
       {
         party: 'Democratic',
@@ -193,7 +195,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Florida',
     code: 'FL',
     system: 'party',
-    decidedBy: '2028-08-23',
+    decidedBy: '2028-08-22',
     markets: [
       {
         party: 'Democratic',
@@ -253,7 +255,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Hawaii',
     code: 'HI',
     system: 'party',
-    decidedBy: '2028-08-13',
+    decidedBy: '2028-08-12',
     markets: [
       {
         party: 'Democratic',
@@ -276,7 +278,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Idaho',
     code: 'ID',
     system: 'party',
-    decidedBy: '2028-05-17',
+    decidedBy: '2028-05-16',
     markets: [
       {
         party: 'Democratic',
@@ -299,7 +301,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Illinois',
     code: 'IL',
     system: 'party',
-    decidedBy: '2028-03-22',
+    decidedBy: '2028-03-21',
     markets: [
       {
         party: 'Democratic',
@@ -322,7 +324,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Indiana',
     code: 'IN',
     system: 'party',
-    decidedBy: '2028-05-03',
+    decidedBy: '2028-05-02',
     markets: [
       {
         party: 'Democratic',
@@ -380,7 +382,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Kansas',
     code: 'KS',
     system: 'party',
-    decidedBy: '2028-08-02',
+    decidedBy: '2028-08-01',
     markets: [
       {
         party: 'Democratic',
@@ -403,7 +405,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Kentucky',
     code: 'KY',
     system: 'party',
-    decidedBy: '2028-05-17',
+    decidedBy: '2028-05-16',
     markets: [
       {
         party: 'Democratic',
@@ -453,7 +455,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Maryland',
     code: 'MD',
     system: 'party',
-    decidedBy: '2028-04-26',
+    decidedBy: '2028-04-25',
     markets: [
       {
         party: 'Democratic',
@@ -476,7 +478,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Missouri',
     code: 'MO',
     system: 'party',
-    decidedBy: '2028-08-09',
+    decidedBy: '2028-08-08',
     markets: [
       {
         party: 'Democratic',
@@ -499,7 +501,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Nevada',
     code: 'NV',
     system: 'party',
-    decidedBy: '2028-06-14',
+    decidedBy: '2028-06-13',
     markets: [
       {
         party: 'Democratic',
@@ -522,7 +524,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'New Hampshire',
     code: 'NH',
     system: 'party',
-    decidedBy: '2028-06-14',
+    decidedBy: '2028-09-12',
     markets: [
       {
         party: 'Democratic',
@@ -545,7 +547,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'New York',
     code: 'NY',
     system: 'party',
-    decidedBy: '2028-06-28',
+    decidedBy: '2028-06-27',
     markets: [
       {
         party: 'Democratic',
@@ -599,7 +601,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'North Dakota',
     code: 'ND',
     system: 'party',
-    decidedBy: '2028-06-14',
+    decidedBy: '2028-06-13',
     markets: [
       {
         party: 'Democratic',
@@ -622,7 +624,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Ohio',
     code: 'OH',
     system: 'party',
-    decidedBy: '2028-03-22',
+    decidedBy: '2028-05-02',
     markets: [
       {
         party: 'Democratic',
@@ -668,7 +670,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Oregon',
     code: 'OR',
     system: 'party',
-    decidedBy: '2028-05-17',
+    decidedBy: '2028-05-16',
     markets: [
       {
         party: 'Democratic',
@@ -691,7 +693,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Pennsylvania',
     code: 'PA',
     system: 'party',
-    decidedBy: '2028-04-26',
+    decidedBy: '2028-04-25',
     markets: [
       {
         party: 'Democratic',
@@ -791,7 +793,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Vermont',
     code: 'VT',
     system: 'party',
-    decidedBy: '2028-08-09',
+    decidedBy: '2028-08-08',
     markets: [
       {
         party: 'Democratic',
@@ -814,7 +816,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Washington',
     code: 'WA',
     system: 'top-two',
-    decidedBy: '2028-08-02',
+    decidedBy: '2028-08-01',
     markets: [
       {
         party: null,
@@ -833,7 +835,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Wisconsin',
     code: 'WI',
     system: 'party',
-    decidedBy: '2028-08-09',
+    decidedBy: '2028-08-08',
     markets: [
       {
         party: 'Democratic',
@@ -863,7 +865,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     code: 'MN',
     special: true,
     system: 'party',
-    decidedBy: '2027-08-11',
+    decidedBy: '2027-08-10',
     markets: [
       {
         party: 'Democratic',
@@ -895,7 +897,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     code: 'TN',
     special: true,
     system: 'party',
-    decidedBy: '2028-08-04',
+    decidedBy: '2028-08-03',
     markets: [
       {
         party: 'Democratic',
@@ -926,7 +928,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Delaware',
     code: 'DE',
     system: 'party',
-    decidedBy: '2028-09-13',
+    decidedBy: '2028-09-12',
     markets: [
       {
         party: 'Democratic',
@@ -949,7 +951,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Indiana',
     code: 'IN',
     system: 'party',
-    decidedBy: '2028-05-03',
+    decidedBy: '2028-05-02',
     markets: [
       {
         party: 'Democratic',
@@ -972,7 +974,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Missouri',
     code: 'MO',
     system: 'party',
-    decidedBy: '2028-08-09',
+    decidedBy: '2028-08-08',
     markets: [
       {
         party: 'Democratic',
@@ -995,7 +997,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Montana',
     code: 'MT',
     system: 'party',
-    decidedBy: '2028-06-07',
+    decidedBy: '2028-06-06',
     markets: [
       {
         party: 'Democratic',
@@ -1026,7 +1028,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'New Hampshire',
     code: 'NH',
     system: 'party',
-    decidedBy: '2028-06-14',
+    decidedBy: '2028-09-12',
     markets: [
       {
         party: 'Democratic',
@@ -1081,7 +1083,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'North Dakota',
     code: 'ND',
     system: 'party',
-    decidedBy: '2028-06-14',
+    decidedBy: '2028-06-13',
     markets: [
       {
         party: 'Democratic',
@@ -1135,7 +1137,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Vermont',
     code: 'VT',
     system: 'party',
-    decidedBy: '2028-08-09',
+    decidedBy: '2028-08-08',
     markets: [
       {
         party: 'Democratic',
@@ -1158,7 +1160,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'Washington',
     code: 'WA',
     system: 'top-two',
-    decidedBy: '2028-08-02',
+    decidedBy: '2028-08-01',
     markets: [
       {
         party: null,
@@ -1181,7 +1183,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     state: 'West Virginia',
     code: 'WV',
     system: 'party',
-    decidedBy: '2028-05-10',
+    decidedBy: '2028-05-09',
     markets: [
       {
         party: 'Democratic',

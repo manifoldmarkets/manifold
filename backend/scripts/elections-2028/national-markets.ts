@@ -440,6 +440,12 @@ const territoryPrimary = (
 // isn't set yet.
 const DOWNBALLOT_DEFAULT_CLOSE = '2028-09-30T00:00:00Z'
 
+// States whose Democratic Party runs under another name.
+const PARTY_LINE_ALIAS: Record<string, string> = {
+  MN: ' The DFL counts as the Democratic Party.',
+  ND: ' The Democratic-NPL Party counts as the Democratic Party.',
+}
+
 const downballotPrimaries = (race: DownballotRace): MultiEntry[] =>
   race.markets
     .filter((m) => m.candidates.length > 0)
@@ -487,9 +493,11 @@ const downballotPrimaries = (race: DownballotRace): MultiEntry[] =>
           ...base,
           key: `${year}-${race.office}${race.special ? '-special' : ''}-${slug}-primary`,
           question: `Who will finish first in the ${year} ${kind} primary for ${seat} in ${race.state}?`,
+          // If the state drops its open primary (Alaska's repeal of top-four
+          // was on the 2026 ballot), there's nothing to count: N/A.
           description: desc(
             `Resolves to the candidate with the most votes in the ${year} ${kind} primary for ${where}, per certified results or an AP call once the outcome is settled. Party labels don't matter, only the vote count.`,
-            naIfNone
+            `N/A if ${race.state} holds no ${kind} primary for this seat in ${year}.`
           ),
         }
       }
@@ -503,10 +511,13 @@ const downballotPrimaries = (race: DownballotRace): MultiEntry[] =>
           ? `Who will be the ${year} ${m.party} nominee for U.S. Senate in ${race.state}?`
           : `Who will be the ${year} ${m.party} nominee for governor of ${race.state}?`,
         description: desc(
-          `Resolves to the person the ${m.party} Party nominates for ${where} in ${year}: the winner of its primary, runoff or convention, whichever decides the nomination, per certified results or an AP call once the outcome is settled.`,
+          // A special's `where` already names its year.
+          `Resolves to the person the ${m.party} Party nominates for ${where}${
+            race.special ? '' : ` in ${year}`
+          }: the winner of its primary, runoff or convention, whichever decides the nomination, per certified results or an AP call once the outcome is settled.`,
           `If the nominee later withdraws or is replaced, it still resolves to the person first nominated. ${
             race.special ? naIfNone.replace('.', ', or if the party nominates no one.') : 'N/A if the party nominates no one for this race.'
-          }`
+          }${m.party === 'Democratic' ? PARTY_LINE_ALIAS[race.code] ?? '' : ''}`
         ),
       }
     })
