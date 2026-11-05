@@ -46,6 +46,49 @@ Per-state presidential, Senate-seat, governor and House-district markets are
 `elections-2028-2036` covers those. @ManifoldPolitics already owns the 2028
 winner market (`t9s0m8tf2v`), so there is no new one.
 
+## Scope
+
+Together with the pipeline (1,031 race markets), this is 1,158 markets,
+about Ṁ2.88M at 5 Nov 2026 answer counts. They cover the regular federal and
+governor elections of 2027–2036, not every US election:
+
+- **In:** the 2027 Kentucky, Mississippi and Louisiana governor races and
+  Virginia's legislature; 2028 nominees, running mates, VP winner, popular
+  vote, electoral votes, margin, tipping point, contested conventions, and
+  each party's primary in every state and DC; presidential markets by state
+  (electoral votes and popular vote) and by Maine/Nebraska district for 2028,
+  2032 and 2036; Senate and governor races every cycle 2028–2036; House races
+  in 2028; balance of power every cycle; the 2032 nominees and winner.
+- **Not yet:** House races after 2028, special elections, off-year races
+  after 2027 (2029 Virginia and New Jersey governors and later), the
+  territories' and Democrats Abroad's presidential contests, 2032 and 2036
+  primaries, and state legislatures other than Virginia's. These are on the
+  additions list in Notion ("Elections 2028+: additions list"), with when
+  each should be created.
+- **Reapportionment:** the 2028 House map keeps the 2020 apportionment, so
+  all 435 districts exist (each market follows its district number). After
+  the 2030 census, recheck Maine's and Nebraska's district counts before the
+  2032 and 2036 district markets matter: a district that disappears resolves
+  N/A by its wording, but a new one (a Nebraska 4th, say) needs a new market,
+  as does any state that switches to awarding electors by district.
+
+## Resolution conventions
+
+- Primaries: certified state or party results, or an AP call once the
+  outcome is settled; caucuses and ranked-choice contests count final-round
+  votes. "Uncommitted" resolves to its own answer if someone adds it,
+  otherwise to Other.
+- National popular vote (winner, margin, and the popular-vote winner losing):
+  certified first-preference totals from the 50 states and DC. The pipeline's
+  state popular-vote markets follow each state's certified winner instead,
+  final ranked-choice round included.
+- Tipping point: states ranked by the winner's signed margin over the
+  national runner-up; only electoral votes awarded to the winner add up;
+  Maine and Nebraska count as a two-vote statewide unit plus their districts.
+- Balance of power: in presidential years a 50–50 Senate goes to the party of
+  the Vice President inaugurated on January 20; N/A if no listed combination
+  applies (a third-party President or Speaker, say).
+
 | File | What |
 |---|---|
 | `national-markets.ts` | The manifest (`ENTRIES`, series `us-national-2028-v1`), resolution criteria, validation, seed resolution, payloads, price verification |
@@ -61,10 +104,16 @@ winner market (`t9s0m8tf2v`), so there is no new one.
 @ManifoldPolitics has ~23k followers. Follower notifications only fire when a
 market is created **public** (`createNewContractNotification` checks
 `contract.visibility == 'public'`), and publishing later through
-`POST /v0/market/:id/update` only revalidates and records an edit. So every
+`POST /v0/market/:id/update` only revalidates, logs an analytics event and
+records an edit (`update-market.ts`; no notification code on that path). The
+live "new market" broadcast is skipped for unlisted markets too. So every
 market is created **unlisted**, read back, its opening odds checked against
 the seed (within 1.5 points), and only then published. `--loud` skips this;
-don't use it.
+don't use it. (Rechecked 5 Nov 2026. New-market emails to followers are also
+off for @ManifoldPolitics, via `NO_NEW_MARKET_EMAIL_CREATOR_IDS`.)
+
+One notification ignores visibility: an @mention in a description notifies
+the mentioned user. No description mentions anyone (a test enforces it).
 
 ## How it stays safe to re-run
 
@@ -87,6 +136,25 @@ don't use it.
   or delete that key's record in the state file and re-run.
 - `--max-mana` caps what one run may spend; the run also stops when the
   balance is short.
+- One run per state file: apply takes `<state>.lock` (created exclusively)
+  before reading the state file and removes it at the end. A crash leaves it
+  behind on purpose; delete it once you're sure no run is active.
+- The criteria each market was created with (question, description, answer
+  mode, fixed answers, close time, topics, tier) are saved with a hash. A
+  market created under different criteria than the manifest's now is never
+  verified or published: the run stops and names what changed. Edit the
+  unlisted market on the site to match, then re-run with
+  `--accept-criteria "^<key>$"`, or delete the market and its record.
+  Already-published markets only get a warning.
+- Before every create, the run checks @ManifoldPolitics' open public markets
+  (refreshed every 5 minutes) for one asking the same question: same years,
+  same party/office/kind-of-count words, same states, similar wording. The
+  reserved ids stop this script repeating itself; this stops it repeating a
+  market someone made another way. A match skips that entry
+  (`skipped-duplicate`) and the run goes on; `--allow-duplicate <id>` overrides
+  after review. The online dry run marks matches that would block
+  ("BLOCKS at apply"). Sibling markets never block each other, and neither do
+  the pipeline's race markets (tested both ways).
 
 ## Seeds (opening odds)
 
@@ -143,7 +211,8 @@ read at run time, or from documented static priors:
 
 Options: `--only <regex on key>`, `--out <dir>`, `--pace-ms <ms>` (default 250
 online, 400 apply), `--env dev` (writes to dev; seeds still read prod; topics
-missing on dev are dropped).
+missing on dev are dropped), `--allow-duplicate <id,id>` and
+`--accept-criteria <regex on key>` (see "How it stays safe to re-run").
 
 ## Tests and typecheck
 

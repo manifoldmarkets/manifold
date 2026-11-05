@@ -26,9 +26,15 @@ import {
   threePartySeeds,
   twoPartySeeds,
 } from './seeds'
+import * as fs from 'fs'
+import * as os from 'os'
+import * as path from 'path'
 import {
   buildPayload,
+  changedCriteria,
   costOf,
+  criteriaHash,
+  criteriaOf,
   DEM,
   ENTRIES,
   Entry,
@@ -43,7 +49,12 @@ import {
   validateEntries,
 } from './national-markets'
 import { buildPhotoIndex, parsePhotoRegistry, photoPathFor } from './photos'
-import { similarQuestions } from './create-national-markets'
+import {
+  blockingDuplicates,
+  similarQuestions,
+  statesIn,
+  takeLock,
+} from './create-national-markets'
 
 const NOW = Date.parse('2026-11-05T00:00:00Z')
 const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0)
@@ -397,6 +408,12 @@ test('every state and DC has an open primary for each party', () => {
     assert.equal(e.answers, undefined, e.key)
     assert.match(e.description, /^Resolves to the candidate with the most votes in the 2028 (Democratic|Republican) presidential /)
     assert.match(e.description, /N\/A if no (Democratic|Republican) contest is held/)
+    // Same standard as the general-election markets; no deadline that could
+    // resolve on an unfinished count.
+    assert.match(e.description, /per certified state or party results, or an AP call once the outcome is settled\./)
+    assert.doesNotMatch(e.description, /within a week/)
+    assert.match(e.description, /Caucuses and ranked-choice contests count final-round votes\./)
+    assert.match(e.description, /Uncommitted resolves to its own answer if listed, otherwise Other\./)
     if (e.seed.kind !== 'flattened-nominee') assert.fail(`${e.key}: seed ${e.seed.kind}`)
     assert.equal(e.seed.maxAnswers, 3)
     assert.equal(e.seed.homeBoost, 3)
@@ -439,10 +456,138 @@ test('descriptions say only what decides the market', () => {
   for (const e of ENTRIES) {
     // Tod, 5 Nov 2026: nothing about who adds answers, how the odds opened,
     // or links elsewhere; keep it short.
-    assert.doesNotMatch(e.description, /opening odds|curated|@ManifoldPolitics|manifold\.markets|\]\(/i, e.key)
+    assert.doesNotMatch(e.description, /opening odds|curated|manifold\.markets|\]\(/i, e.key)
+    // An @mention notifies that user even while the market is unlisted.
+    assert.doesNotMatch(e.description, /@\w/, e.key)
     assert.match(e.description, /^Resolves /, e.key)
-    assert.ok(e.description.length <= 500, `${e.key}: ${e.description.length} chars`)
+    assert.ok(e.description.length <= 600, `${e.key}: ${e.description.length} chars`)
   }
+})
+
+test('balance of power: a tied Senate follows the incoming VP; N/A for unlisted outcomes', () => {
+  const get = (y: number) => ENTRIES.find((x) => x.key === `${y}-balance-of-power`)!.description
+  for (const [y, inaugurated] of [[2028, 2029], [2032, 2033], [2036, 2037]]) {
+    assert.match(get(y), new RegExp(`President inaugurated on January 20, ${inaugurated}`))
+    assert.match(
+      get(y),
+      new RegExp(`A 50–50 Senate goes to the party of the Vice President inaugurated on January 20, ${inaugurated};`)
+    )
+  }
+  for (const y of [2030, 2034])
+    assert.match(get(y), /A 50–50 Senate goes to the Vice President's party;/)
+  for (const y of [2028, 2030, 2032, 2034, 2036]) {
+    assert.match(get(y), /It waits for any runoffs or special elections that decide control\./)
+    assert.match(get(y), /N\/A if no listed combination applies\.$/)
+    assert.doesNotMatch(get(y), /neither a Democrat/)
+  }
+})
+
+test('national popular-vote markets share one counting convention', () => {
+  for (const key of ['2028-popular-vote', '2028-popular-vote-margin', '2028-ec-popular-split'])
+    assert.match(
+      ENTRIES.find((x) => x.key === key)!.description,
+      /using certified first-preference vote totals from the 50 states and DC/,
+      key
+    )
+})
+
+test('tipping point: signed margins, votes awarded to the winner, Maine and Nebraska once', () => {
+  const d = ENTRIES.find((x) => x.key === '2028-tipping-point')!.description
+  assert.match(d, /margin over the national runner-up in percentage points \(negative where the winner lost\), largest first/)
+  assert.match(d, /add up the electoral votes each awarded the winner/)
+  assert.match(d, /Maine and Nebraska enter as a statewide unit worth two votes plus one unit per district/)
+  assert.match(d, /a district that tips it resolves to its state/)
+})
+
+test('criteria: hashed from the manifest only, and every change is named', () => {
+  const copy = (x: Entry): Entry => JSON.parse(JSON.stringify(x))
+  const hashes = ENTRIES.map((e) => criteriaHash(criteriaOf(e)))
+  assert.ok(hashes.every((h) => /^[0-9a-f]{16}$/.test(h)))
+  assert.equal(new Set(hashes).size, ENTRIES.length)
+  const e = ENTRIES.find((x) => x.key === '2028-dem-nominee')!
+  assert.equal(criteriaHash(criteriaOf(e)), criteriaHash(criteriaOf(copy(e))))
+  // Candidate answers come from live seeds, not the manifest.
+  assert.equal(criteriaOf(e).answers, undefined)
+  const edited = copy(e)
+  edited.description += ' Edited.'
+  assert.notEqual(criteriaHash(criteriaOf(edited)), criteriaHash(criteriaOf(e)))
+  assert.deepEqual(changedCriteria(criteriaOf(e), criteriaOf(edited)), ['description'])
+  const moved = copy(e)
+  moved.closeTime = '2028-09-01T00:00:00.000Z'
+  moved.question = 'Who will be the Democratic nominee in 2028?'
+  assert.deepEqual(changedCriteria(criteriaOf(e), criteriaOf(moved)).sort(), ['closeTime', 'question'])
+  assert.deepEqual(changedCriteria(undefined, criteriaOf(e)), ['all'])
+  // Fixed answers are part of the criteria.
+  const bop = ENTRIES.find((x) => x.key === '2028-balance-of-power')!
+  const renamed = copy(bop) as MultiEntry
+  renamed.answers = [...renamed.answers!.slice(1), renamed.answers![0]]
+  assert.deepEqual(changedCriteria(criteriaOf(bop), criteriaOf(renamed)), ['answers'])
+})
+
+test('apply-time duplicates: same question blocks; siblings and race markets never do', () => {
+  const row = (id: string, question: string) =>
+    ({ id, question, outcomeType: 'MULTIPLE_CHOICE', isResolved: false }) as never
+  // No national market blocks another: each party's nominee, each state's
+  // primary, the national and state popular votes, every cycle's balance of
+  // power.
+  const all = ENTRIES.map((e) => row(e.key, e.question))
+  for (const e of ENTRIES)
+    assert.deepEqual(
+      blockingDuplicates(e.question, all).map(({ m }) => (m as { id: string }).id),
+      [e.key],
+      e.key
+    )
+  // The per-race pipeline's markets (one of each kind) don't block either.
+  const pipeline = [
+    'Which party will win the 2028 U.S. presidential election?',
+    'Which party will win Alaska in the 2028 presidential election?',
+    'Which party will win the popular vote in Alaska in the 2028 presidential election?',
+    "Which party will win Maine's 2nd District (ME-2) in the 2028 presidential election?",
+    'Which party will win the 2028 U.S. Senate election in Alabama?',
+    'Which party will win the 2028 Delaware governor election?',
+    "Which party will win the 2028 U.S. House election in Virginia's 2nd District?",
+    "Which party will win the 2028 U.S. House election in Alaska's at-large district?",
+    'Which party will win the popular vote in Pennsylvania in the 2032 presidential election?',
+  ].map((q, i) => row(`p${i}`, q))
+  for (const e of ENTRIES)
+    assert.deepEqual(blockingDuplicates(e.question, pipeline), [], e.key)
+  // The same question in other words does block.
+  const blocks = (ours: string, theirs: string) =>
+    blockingDuplicates(ours, [row('x', theirs)]).length === 1
+  const q = (key: string) => ENTRIES.find((e) => e.key === key)!.question
+  assert.ok(blocks(q('2028-dem-nominee'), 'Who will win the 2028 Democratic presidential nomination?'))
+  assert.ok(blocks(q('2028-gop-new-hampshire'), 'Who will win the 2028 New Hampshire Republican primary?'))
+  assert.ok(
+    blocks(
+      q('2030-balance-of-power'),
+      'Balance of power after the 2030 US elections: who will control the presidency, Senate and House?'
+    )
+  )
+  assert.ok(blocks(q('2028-dem-ohio'), q('2028-dem-ohio')))
+  assert.ok(!blocks(q('2028-dem-ohio'), q('2028-gop-ohio')))
+  assert.ok(!blocks(q('2028-dem-nominee'), 'Who will be the 2032 Democratic presidential nominee?'))
+})
+
+test('statesIn reads state names, longest first', () => {
+  const s = (q: string) => [...statesIn(q)].sort()
+  assert.deepEqual(s('Who will win West Virginia in the 2028 Democratic presidential primaries?'), ['WV'])
+  assert.deepEqual(s('Who will win Virginia?'), ['VA'])
+  assert.deepEqual(s("Which party will win Maine's 2nd District (ME-2)?"), ['ME'])
+  assert.deepEqual(s('Who will win the District of Columbia in 2028?'), ['DC'])
+  assert.deepEqual(s('Washington DC or Washington?'), ['DC', 'WA'])
+  assert.deepEqual(s('Arkansas, not Kansas'), ['AR', 'KS'])
+  assert.deepEqual(s('Who will win the 2028 US presidential election?'), [])
+})
+
+test('one apply per state file', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'national-lock-'))
+  const state = path.join(dir, 'state.json')
+  const release = takeLock(state)
+  assert.throws(() => takeLock(state), /exists: another apply may be running/)
+  release()
+  assert.ok(!fs.existsSync(`${state}.lock`))
+  takeLock(state)()
+  fs.rmSync(dir, { recursive: true })
 })
 
 test('presidential markets hold up under any system for choosing the President', () => {

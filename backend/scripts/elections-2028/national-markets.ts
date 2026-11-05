@@ -1,13 +1,16 @@
-// The @ManifoldPolitics national/headline election markets for 2027–2032:
-// nominees, running mates, the popular vote, electoral votes, the tipping
-// point, control of Congress, early primary contests, the 2027 off-year races
-// and the 2030/2032 cycles. Per-state presidential, Senate-seat, governor and
-// House-district markets are NOT here: the generic party-market pipeline on
-// branch `elections-2028-2036` covers those.
+// The @ManifoldPolitics national/headline election markets for 2027–2036:
+// the 2028 nominees and running mates, VP winner, popular vote, electoral
+// votes, margin, tipping point and contested conventions; a 2028 presidential
+// primary for each party in every state and DC; balance of power for every
+// cycle 2028–2036; the 2032 nominees and winner; and the 2027 off-year races.
+// Per-state presidential, Senate-seat, governor and House-district markets are
+// NOT here: the generic party-market pipeline on branch `elections-2028-2036`
+// covers those.
 //
 // Pure data + pure helpers (validation, seed resolution, payloads). The CLI is
 // create-national-markets.ts; tests are national-markets.test.ts.
 
+import { createHash } from 'crypto'
 import { getAnswerProbsError } from 'common/new-contract'
 import { MAX_QUESTION_LENGTH } from 'common/contract'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
@@ -144,6 +147,14 @@ const PARTY_RULE =
 
 const desc = (...paragraphs: string[]) => paragraphs.join('\n\n')
 
+// One counting convention for every national popular-vote market (winner,
+// margin, and the popular-vote winner losing): the sum of each state's
+// certified first-preference totals, as national tallies are usually
+// reported. Where ballots are ranked (Maine, Alaska), first choices count.
+// The per-state popular-vote markets instead follow each state's own
+// certified winner, final ranked-choice round included.
+const NATIONAL_VOTES = 'certified first-preference vote totals from the 50 states and DC'
+
 const TOPICS_2028 = [
   'us-politics',
   'elections',
@@ -201,8 +212,10 @@ const primaryDescription = (
   desc(
     `Resolves to the candidate with the most votes in the 2028 ${party} presidential ${
       s.contest ?? 'primary or caucus'
-    } in ${inText(s)}, per certified results (or the AP count if not certified within a week). If no vote totals are reported, the one awarded the most delegates wins.`,
-    `If the state and the party hold separate contests, the one that awards delegates counts. "Uncommitted" counts as Other. N/A if no ${party} contest is held in ${inText(s)} before the nominee is chosen.`
+    } in ${inText(s)}, per certified state or party results, or an AP call once the outcome is settled. Caucuses and ranked-choice contests count final-round votes. If no vote totals are reported, the one awarded the most delegates wins.`,
+    // Without this, "the candidate with the most votes" would pass over a
+    // winning Uncommitted line to the top named candidate.
+    `If the state and the party hold separate contests, the one that awards delegates counts. Uncommitted resolves to its own answer if listed, otherwise Other. N/A if no ${party} contest is held in ${inText(s)} before the nominee is chosen.`
   )
 
 // Balance of power (Tod, 5 Nov 2026: "do balance of power markets instead
@@ -226,12 +239,19 @@ const bopDescription = (year: BopCycle) => {
   const convenes = { 2028: '2029', 2030: '2031', 2032: '2033', 2034: '2035', 2036: '2037' }[year]
   const midterm = year === 2030 || year === 2034
   const day = `November ${ELECTION_DAYS[year].slice(-2).replace(/^0/, '')}, ${year}`
+  // Congress organizes on January 3, before the inauguration. In a
+  // presidential year a 50–50 Senate follows the incoming Vice President, as
+  // it did on January 20, 2001, when control passed from Gore's party to
+  // Cheney's.
+  const tie = midterm
+    ? "the Vice President's party"
+    : `the party of the Vice President inaugurated on January 20, ${convenes}`
   return desc(
     midterm
       ? `Resolves to the parties holding the presidency, Senate and House when the ${congress} Congress organizes in January ${convenes}, after the ${day} elections.`
       : `Resolves to the parties holding the presidency, Senate and House after the ${day} elections: the President inaugurated on January 20, ${convenes}, and the majority in each chamber when the ${congress} Congress organizes.`,
-    "Independents count with the party they caucus with. A 50–50 Senate goes to the Vice President's party; a House with no majority, to the Speaker's. It waits for any runoffs or special elections that decide control.",
-    'N/A if the President is neither a Democrat nor a Republican.'
+    `Independents count with the party they caucus with. A 50–50 Senate goes to ${tie}; a House with no majority, to the Speaker's. It waits for any runoffs or special elections that decide control.`,
+    'N/A if no listed combination applies.'
   )
 }
 
@@ -454,7 +474,7 @@ export const ENTRIES: Entry[] = [
     question:
       'Which party will win the national popular vote in the 2028 presidential election?',
     description: desc(
-      'Resolves to the party of the presidential candidate with the most votes nationwide (50 states and DC) in the November 7, 2028 election, per certified results.',
+      `Resolves to the party of the presidential candidate with the most votes nationwide in the November 7, 2028 election, using ${NATIONAL_VOTES}.`,
       PARTY_RULE
     ),
     topics: [...TOPICS_2028, 'electoral-college'],
@@ -490,8 +510,7 @@ export const ENTRIES: Entry[] = [
     addAnswersMode: 'DISABLED',
     answers: MARGIN_BUCKETS.map((b) => b.label),
     question: 'What will the national popular vote margin be in the 2028 presidential election?',
-    description:
-      'Resolves to the range containing the national popular-vote margin in the November 7, 2028 election: the Democratic nominee\'s share minus the Republican nominee\'s, in percentage points, from certified results (50 states and DC). A margin exactly on a boundary goes to the range farther from zero; exactly 0 resolves 50/50 between "R+0 to R+3" and "D+0 to D+3".',
+    description: `Resolves to the range containing the national popular-vote margin in the November 7, 2028 election: the Democratic nominee's share minus the Republican nominee's, in percentage points, using ${NATIONAL_VOTES}. A margin exactly on a boundary goes to the range farther from zero; exactly 0 resolves 50/50 between "R+0 to R+3" and "D+0 to D+3".`,
     topics: [...TOPICS_2028, 'electoral-college'],
     liquidityTier: 10000,
     closeTime: AFTER_2028,
@@ -507,8 +526,7 @@ export const ENTRIES: Entry[] = [
     phase: 'general',
     outcome: 'BINARY',
     question: 'Will the 2028 popular vote winner lose the presidential election?',
-    description:
-      'Resolves YES if the candidate with the most votes nationwide in the November 7, 2028 election (certified results, 50 states and DC) is not the one elected President, however the winner is officially decided, and NO if they are.',
+    description: `Resolves YES if the candidate with the most votes nationwide in the November 7, 2028 election, using ${NATIONAL_VOTES}, is not the one elected President, however the winner is officially decided, and NO if they are.`,
     topics: [...TOPICS_2028, 'electoral-college'],
     liquidityTier: 10000,
     closeTime: AFTER_2028,
@@ -525,8 +543,11 @@ export const ENTRIES: Entry[] = [
     outcome: 'MULTIPLE_CHOICE',
     addAnswersMode: 'ONLY_CREATOR',
     question: 'Which state will be the tipping point in the 2028 presidential election?',
+    // Signed margins, and the electoral votes actually awarded to the winner:
+    // a state the winner lost adds nothing, and Maine's and Nebraska's
+    // statewide votes are counted once, apart from their districts.
     description:
-      "Resolves to the state that gives the November 7, 2028 winner their 270th electoral vote, when every state and DC is ranked by the winner's margin there, widest first, using certified results. Maine's and Nebraska's districts are ranked on their own and count as their state. N/A if no one wins 270, or if the President is no longer chosen by electoral votes.",
+      "Resolves to the state that gives the November 7, 2028 winner their 270th electoral vote. Rank every state and DC by the winner's certified margin over the national runner-up in percentage points (negative where the winner lost), largest first, and add up the electoral votes each awarded the winner. Maine and Nebraska enter as a statewide unit worth two votes plus one unit per district; a district that tips it resolves to its state. N/A if no one wins 270, or if the President is no longer chosen by electoral votes.",
     topics: [...TOPICS_2028, 'electoral-college'],
     liquidityTier: 10000,
     closeTime: AFTER_2028,
@@ -1100,6 +1121,43 @@ export type CreatePayload = Record<string, unknown> & {
   question: string
   idempotencyKey: string
   visibility: 'public' | 'unlisted'
+}
+
+// What a market is created saying: everything from the manifest that goes
+// into it. Seeded answers and odds come from live markets and are recorded
+// separately (the state file's `seed`). A run saves this when it creates a
+// market and refuses to publish that market under different criteria.
+export type Criteria = {
+  question: string
+  description: string
+  outcome: Entry['outcome']
+  addAnswersMode?: MultiEntry['addAnswersMode']
+  answers?: string[]
+  closeTime: string
+  topics: string[]
+  liquidityTier: number
+}
+
+export const criteriaOf = (e: Entry): Criteria => ({
+  question: e.question,
+  description: e.description,
+  outcome: e.outcome,
+  ...(e.outcome === 'MULTIPLE_CHOICE'
+    ? { addAnswersMode: e.addAnswersMode, ...(e.answers ? { answers: e.answers } : {}) }
+    : {}),
+  closeTime: e.closeTime,
+  topics: e.topics,
+  liquidityTier: e.liquidityTier,
+})
+
+export const criteriaHash = (c: Criteria) =>
+  createHash('sha256').update(JSON.stringify(c)).digest('hex').slice(0, 16)
+
+// Which criteria differ, by name ("all" when no earlier snapshot was saved).
+export function changedCriteria(saved: Criteria | undefined, now: Criteria) {
+  if (!saved) return ['all']
+  const keys = new Set([...Object.keys(saved), ...Object.keys(now)]) as Set<keyof Criteria>
+  return [...keys].filter((k) => JSON.stringify(saved[k]) !== JSON.stringify(now[k]))
 }
 
 // The POST /v0/market body. `imageUrls` must be index-aligned with the

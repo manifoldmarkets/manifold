@@ -23,13 +23,26 @@
 //
 // Options: --only <regex on key>  --out <dir>  --pace-ms <ms>  --loud (create
 // public directly; notifies followers in-app — don't)  --init-state (first
-// apply with a new state file).
+// apply with a new state file)  --allow-duplicate <id,id> (existing markets
+// reviewed as NOT duplicates)  --accept-criteria <regex on key> (a created,
+// unpublished market was edited to match the manifest; publish it).
+//
+// Apply safeguards: a lock file next to the state file (one run per state
+// file); before every create, a check that the creator has no open market
+// asking the same question (the entry is skipped, not created, if it does);
+// and the criteria each market was created with are saved, so a market is
+// never published after the manifest's question, description, answers,
+// close time, topics or tier changed under it.
 
 import * as fs from 'fs'
 import * as path from 'path'
 import {
   buildPayload,
+  changedCriteria,
   costOf,
+  Criteria,
+  criteriaHash,
+  criteriaOf,
   DEM,
   ENTRIES,
   Entry,
@@ -37,6 +50,7 @@ import {
   MANIFOLD_POLITICS_USERNAME,
   needsOnline,
   priceMismatches,
+  PRIMARY_STATES,
   REP,
   shapeMismatches,
   ResolvedSeed,
@@ -313,6 +327,44 @@ const STEMS: Record<string, string> = {
   nominated: 'nominee',
   elected: 'elect',
   controls: 'control',
+  primaries: 'primary',
+  caucus: 'primary',
+  caucuses: 'primary',
+  contest: 'primary',
+  vp: 'vice',
+  governorship: 'governor',
+}
+
+// Words that tell sibling markets apart: the party, the office, the kind of
+// count. Questions that differ in one of these (or in the states they name)
+// ask different things, however alike the rest of the wording is.
+const MARKERS = new Set([
+  'democratic', 'republican', 'vice', 'popular', 'electoral', 'margin',
+  'tipping', 'balance', 'contested', 'convention', 'governor', 'senate',
+  'house', 'congress', 'primary', 'lose',
+])
+
+// The states (and DC) a question names, as postal codes. Longer names go
+// first and are blanked once found, so "West Virginia" isn't also Virginia
+// and "Washington DC" isn't also Washington.
+const STATE_NAMES = PRIMARY_STATES.map((s) => ({ code: s.code, name: s.state.toLowerCase() }))
+  .concat([
+    { code: 'DC', name: 'washington dc' },
+    { code: 'DC', name: 'dc' },
+  ])
+  .sort((a, b) => b.name.length - a.name.length)
+
+export function statesIn(question: string) {
+  let q = ` ${normalizeName(question).replace(/[?!:;,.]/g, ' ')} `
+  const found = new Set<string>()
+  for (const { code, name } of STATE_NAMES) {
+    // normalizeName drops apostrophes: "Maine's" arrives as "maines".
+    const re = new RegExp(`\\b${name}s?\\b`, 'g')
+    if (!re.test(q)) continue
+    found.add(code)
+    q = q.replace(re, ' ')
+  }
+  return found
 }
 
 const questionTokens = (q: string) =>
@@ -338,6 +390,46 @@ export function similarQuestions(question: string, candidates: MarketRow[]) {
     })
     .filter(({ m, score }) => score >= 0.6 && years(m.question) === y)
     .sort((p, q) => q.score - p.score)
+}
+
+// The apply-time check. similarQuestions lists anything alike for a person
+// to read in the dry run; this blocks a create only when an open market asks
+// the same thing: same years, same markers, same states, similar wording.
+// Sibling markets (each party's nominee, each state's primary, the national
+// and state popular votes) differ in a marker or a state, so they never
+// block each other.
+export function blockingDuplicates(question: string, candidates: MarketRow[]) {
+  const markers = (q: string) =>
+    [...questionTokens(q)].filter((t) => MARKERS.has(t)).sort().join(',')
+  const states = (q: string) => [...statesIn(q)].sort().join(',')
+  const m0 = markers(question)
+  const s0 = states(question)
+  return similarQuestions(question, candidates).filter(
+    ({ m }) => markers(m.question) === m0 && states(m.question) === s0
+  )
+}
+
+// One apply per state file: concurrent runs would overwrite each other's
+// records and could each spend up to --max-mana. A crash leaves the lock
+// behind on purpose; delete it once no run is active. (Same rule as the
+// per-race pipeline's create-election-markets.ts.)
+export function takeLock(statePath: string): () => void {
+  const lockFile = `${statePath}.lock`
+  fs.mkdirSync(path.dirname(path.resolve(lockFile)), { recursive: true })
+  let fd: number
+  try {
+    fd = fs.openSync(lockFile, 'wx')
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err
+    throw new Error(
+      `${lockFile} exists: another apply may be running on this state file. Delete it only if none is.`
+    )
+  }
+  fs.writeSync(fd, `pid ${process.pid} at ${new Date().toISOString()}\n`)
+  return () => {
+    fs.closeSync(fd)
+    fs.unlinkSync(lockFile)
+  }
 }
 
 async function photoUrls(
@@ -417,20 +509,33 @@ async function online(entries: Entry[], outDir: string, paceMs: number) {
   console.log('Looking for duplicates among @ManifoldPolitics markets…')
   const now = Date.now()
   const mp = await api.marketsByUser(MANIFOLD_POLITICS_ID)
-  const open = mp.filter((m) => !m.isResolved && (m.closeTime ?? Infinity) > now)
+  // Our own markets (at the reserved ids) are never duplicates of themselves.
+  const ours = new Set(ENTRIES.map((x) => reservedIdFor(SERIES, x.key)))
+  const open = mp.filter(
+    (m) => !m.isResolved && (m.closeTime ?? Infinity) > now && !ours.has(m.id)
+  )
   const duplicates = entries
-    .map((e) => ({
-      key: e.key,
-      question: e.question,
-      matches: similarQuestions(e.question, open).map(({ m, score }) => ({
-        id: m.id,
-        question: m.question,
-        url: m.url,
-        traders: m.uniqueBettorCount,
-        score: Math.round(score * 100) / 100,
-      })),
-    }))
+    .map((e) => {
+      const blocking = new Set(blockingDuplicates(e.question, open).map(({ m }) => m.id))
+      return {
+        key: e.key,
+        question: e.question,
+        matches: similarQuestions(e.question, open).map(({ m, score }) => ({
+          id: m.id,
+          question: m.question,
+          url: m.url,
+          traders: m.uniqueBettorCount,
+          score: Math.round(score * 100) / 100,
+          // An apply skips the entry over this market (--allow-duplicate to override).
+          blocksApply: blocking.has(m.id),
+        })),
+      }
+    })
     .filter((d) => d.matches.length > 0)
+  const blockingCount = duplicates.reduce(
+    (n, d) => n + d.matches.filter((m) => m.blocksApply).length,
+    0
+  )
 
   console.log('Checking candidate photos on manifold.markets…')
   const { index, sources: photoSources } = loadPhotoIndex(REPO_ROOT)
@@ -498,9 +603,14 @@ async function online(entries: Entry[], outDir: string, paceMs: number) {
     `Possible duplicates among open @ManifoldPolitics markets: ${duplicates.length ? '' : 'none'}`,
     ...duplicates.flatMap((d) =>
       d.matches.map(
-        (m) => `- ${d.key}: "${m.question}" (${m.url ?? m.id}, ${m.traders ?? '?'} traders, similarity ${m.score})`
+        (m) =>
+          `- ${d.key}: "${m.question}" (${m.url ?? m.id}, ${m.traders ?? '?'} traders, similarity ${m.score})${
+            m.blocksApply ? ' — BLOCKS at apply' : ''
+          }`
       )
     ),
+    '',
+    `Would block at apply (same question; skipped unless --allow-duplicate <id>): ${blockingCount || 'none'}`,
     '',
     'Candidate photos (attached = leading run of answers with a live photo; the API cannot skip one):',
     ...photos.map(
@@ -535,6 +645,7 @@ type Status =
   | 'created-public'
   | 'verified'
   | 'published'
+  | 'skipped-duplicate'
   | 'stopped'
 
 type StateRecord = {
@@ -545,7 +656,14 @@ type StateRecord = {
   url?: string
   cost?: number
   seed?: ResolvedSeed
+  // The manifest criteria the market was created with, and their hash. A
+  // run never verifies or publishes a market whose criteria have changed
+  // since (it would go public with the old question or description).
+  criteria?: Criteria
+  criteriaHash?: string
   imagesAttached?: number
+  // skipped-duplicate: the open markets by the creator that ask the same.
+  duplicateOf?: { id: string; url?: string; question: string }[]
   error?: string
   updatedAt: string
 }
@@ -577,6 +695,53 @@ async function apply(entries: Entry[], args: Args) {
     throw new Error('--apply needs --max-mana <positive cap for this run>')
   const quiet = !args.loud
   const paceMs = Number(args['pace-ms'] ?? 400)
+  const acceptCriteria =
+    typeof args['accept-criteria'] === 'string'
+      ? new RegExp(args['accept-criteria'])
+      : undefined
+  const allowDuplicates = new Set(
+    typeof args['allow-duplicate'] === 'string'
+      ? args['allow-duplicate'].split(',').map((s) => s.trim()).filter(Boolean)
+      : []
+  )
+
+  // The lock comes before the state file is read, so a run that just
+  // finished can't leave this one holding an older snapshot of it.
+  const release = takeLock(statePath)
+  try {
+    await runApply(entries, args, {
+      env,
+      apiKey,
+      creatorUsername,
+      statePath,
+      maxMana,
+      quiet,
+      paceMs,
+      acceptCriteria,
+      allowDuplicates,
+    })
+  } finally {
+    release()
+  }
+}
+
+async function runApply(
+  entries: Entry[],
+  args: Args,
+  opts: {
+    env: 'prod' | 'dev'
+    apiKey: string
+    creatorUsername: string
+    statePath: string
+    maxMana: number
+    quiet: boolean
+    paceMs: number
+    acceptCriteria?: RegExp
+    allowDuplicates: Set<string>
+  }
+) {
+  const { env, apiKey, creatorUsername, statePath, maxMana, quiet, paceMs } = opts
+  const { acceptCriteria, allowDuplicates } = opts
 
   const api = makeApi({
     apiBase: API_BASES[env],
@@ -710,9 +875,35 @@ async function apply(entries: Entry[], args: Args) {
     return stop(r, `create failed after retries: ${lastMessage}`)
   }
 
+  // Duplicate check before every create: the reserved ids stop this script
+  // from creating a market twice, but not from repeating one the creator
+  // already has under another id. Reads the creator's open public markets
+  // (refreshed every 5 minutes) and leaves out this manifest's reserved ids.
+  const ours = new Set(ENTRIES.map((x) => reservedIdFor(SERIES, x.key)))
+  let official: { at: number; rows: MarketRow[] } | undefined
+  const duplicatesOf = async (e: Entry) => {
+    if (!official || Date.now() - official.at > 5 * 60_000) {
+      const at = Date.now()
+      const rows = await api.marketsByUser(me.id)
+      official = {
+        at,
+        rows: rows.filter(
+          (m) => !m.isResolved && (m.closeTime ?? Infinity) > at && !ours.has(m.id)
+        ),
+      }
+    }
+    return blockingDuplicates(
+      e.question,
+      official.rows.filter((m) => !allowDuplicates.has(m.id))
+    )
+  }
+  const skippedDuplicates: string[] = []
+
   try {
     for (const e of entries) {
       const reservedId = reservedIdFor(SERIES, e.key)
+      const criteria = criteriaOf(e)
+      const hash = criteriaHash(criteria)
       const r: StateRecord = (state.entries[e.key] ??= {
         key: e.key,
         reservedId,
@@ -721,7 +912,16 @@ async function apply(entries: Entry[], args: Args) {
       })
       if (r.reservedId !== reservedId)
         throw new StopRun(`${e.key}: state reserved id ${r.reservedId} ≠ ${reservedId}`)
-      if (r.status === 'published') continue
+      if (r.status === 'published') {
+        if (r.criteriaHash !== hash)
+          console.warn(
+            `${e.key}: published under earlier criteria (changed: ${changedCriteria(
+              r.criteria,
+              criteria
+            ).join(', ')}); edit ${r.url} by hand if the change matters`
+          )
+        continue
+      }
       if (r.status === 'stopped') {
         console.warn(
           r.contractId || r.seed
@@ -736,9 +936,13 @@ async function apply(entries: Entry[], args: Args) {
       // id is idempotent anyway.
       const existing = await api.getMarket(reservedId, { fresh: true })
       if (existing) {
+        // Ours if we made it with this question, or with the question saved
+        // when it was created (a changed question is caught further down).
+        const asked = normalizeName(existing.question)
         if (
           existing.creatorId !== me.id ||
-          normalizeName(existing.question) !== normalizeName(e.question)
+          (asked !== normalizeName(e.question) &&
+            asked !== normalizeName(r.criteria?.question ?? ''))
         )
           stop(r, `reserved id ${reservedId} is a different market: ${existing.url}`)
         if (r.status === 'planned' || !r.seed)
@@ -754,8 +958,31 @@ async function apply(entries: Entry[], args: Args) {
           save()
         }
       } else {
-        if (r.status !== 'planned' && r.status !== 'creating')
+        if (
+          r.status !== 'planned' &&
+          r.status !== 'creating' &&
+          r.status !== 'skipped-duplicate'
+        )
           stop(r, `state says ${r.status} but ${reservedId} does not exist`)
+        // Skips this entry (not the run) when the creator already has an
+        // open market asking the same; later runs check again.
+        const dupes = await duplicatesOf(e)
+        if (dupes.length) {
+          r.status = 'skipped-duplicate'
+          r.duplicateOf = dupes.map(({ m }) => ({ id: m.id, url: m.url, question: m.question }))
+          touch(r)
+          save()
+          skippedDuplicates.push(e.key)
+          console.warn(
+            `${e.key}: SKIPPED, @${me.username} already has ${dupes
+              .map(({ m }) => `"${m.question}" (${m.url ?? m.id})`)
+              .join('; ')}. If it's a different market, re-run with --allow-duplicate ${dupes
+              .map(({ m }) => m.id)
+              .join(',')}`
+          )
+          continue
+        }
+        delete r.duplicateOf
         const seed = await resolveSeed(e, reader)
         const err = seedError(e, seed)
         if (err) stop(r, `seed error: ${err}`)
@@ -781,6 +1008,8 @@ async function apply(entries: Entry[], args: Args) {
         })
         r.seed = seed
         r.cost = cost
+        r.criteria = criteria
+        r.criteriaHash = hash
         r.imagesAttached = Array.isArray(payload.answerImageUrls)
           ? payload.answerImageUrls.length
           : 0
@@ -798,6 +1027,32 @@ async function apply(entries: Entry[], args: Args) {
         touch(r)
         save()
         console.log(`${e.key}: created ${quiet ? 'unlisted' : 'public'} ${r.url} (${mana(cost)})`)
+      }
+
+      // A market created under other criteria (the manifest was edited
+      // between runs) is neither verified nor published: publishing would put
+      // the old question or description in front of everyone. The record
+      // keeps its status, so the next run picks it up once it's settled.
+      if (r.criteriaHash !== hash) {
+        const changed = changedCriteria(r.criteria, criteria).join(', ')
+        if (r.status === 'created-public') {
+          // --loud: it went public at creation; nothing left to hold back.
+          console.warn(
+            `${e.key}: created public under earlier criteria (changed: ${changed}); edit ${r.url} by hand if the change matters`
+          )
+        } else if (acceptCriteria?.test(e.key)) {
+          console.log(
+            `${e.key}: --accept-criteria: recording the current criteria for ${r.url} (changed: ${changed})`
+          )
+          r.criteria = criteria
+          r.criteriaHash = hash
+          touch(r)
+          save()
+        } else {
+          throw new StopRun(
+            `${e.key}: ${r.url ?? reservedId} was created under earlier criteria (changed: ${changed}) and isn't published. Edit it on the site to match the manifest (it's unlisted), then re-run with --accept-criteria "^${e.key}$"; or delete the market and this key's state record.`
+          )
+        }
       }
 
       // 2. Verify opening odds.
@@ -855,6 +1110,12 @@ async function apply(entries: Entry[], args: Args) {
       .map(([k, v]) => `${k} ${v}`)
       .join(', ')}`
   )
+  if (skippedDuplicates.length) {
+    console.warn(
+      `Skipped as duplicates of existing markets: ${skippedDuplicates.join(', ')} (see above)`
+    )
+    process.exitCode = 1
+  }
 }
 
 // ---------------------------------------------------------------------------
