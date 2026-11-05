@@ -16,6 +16,8 @@ export type ComparisonSeries = {
   // When each chamber's market closed for trading (ms). From then on its
   // price is the last one before the close.
   closedAt?: { [chamber in ReplayChamber]?: number }
+  // When each chamber's market resolved (settled), ms.
+  resolvedAt?: { [chamber in ReplayChamber]?: number }
 }
 
 export type ReplayComparisonsFile = { series: ComparisonSeries[] }
@@ -28,7 +30,7 @@ export const COMPARISON_SOURCES: {
   Kalshi: {
     label: 'Real money',
     method:
-      'Real money: the midpoint of the best bid and ask for the Republican contract on a real-money prediction market, in the last minute before each moment with bids and offers within 10¢ of each other. It closed for trading once the result was clear; from then on, “closed” marks its last price before the close.',
+      'Real money: the midpoint of the best bid and ask for the Republican contract on a real-money prediction market, in the last minute before each moment with bids and offers within 10¢ of each other. It closed for trading once the result was clear and resolved about an hour later; from the close on, it shows its last price before the close.',
   },
 }
 
@@ -42,6 +44,8 @@ export type ComparisonQuote = {
   republicanProb: number
   // The market had closed for trading: this is its last price before then.
   closed: boolean
+  // The market had resolved.
+  resolved: boolean
 }
 
 // Each source's price at exactly this frame time. A snapshot extended
@@ -56,6 +60,7 @@ export function comparisonsAt(
   return series.flatMap((s) => {
     const points = s.chambers[chamber]
     const closedAt = s.closedAt?.[chamber]
+    const resolvedAt = s.resolvedAt?.[chamber]
     const last = points?.[points.length - 1]
     const point =
       points?.find(([t]) => t === time) ??
@@ -68,12 +73,23 @@ export function comparisonsAt(
             source: s.source,
             republicanProb: point[1],
             closed: closedAt !== undefined && time >= closedAt,
+            resolved: resolvedAt !== undefined && time >= resolvedAt,
           },
         ]
       : []
   })
 }
 
-// "Real money", or "Real money (closed)" once its market stopped trading.
-export const quoteLabel = (quote: ComparisonQuote) =>
-  `${comparisonLabel(quote.source)}${quote.closed ? ' (closed)' : ''}`
+export type MarketStatus = 'Resolved' | 'Closed'
+
+// What a market had done by a moment: resolved, or closed for trading
+// (its price is then the last before the close).
+export const marketStatus = (s: {
+  closed?: boolean
+  resolved?: boolean
+}): MarketStatus | undefined =>
+  s.resolved ? 'Resolved' : s.closed ? 'Closed' : undefined
+
+// Whether a market had resolved by `time`, from when it resolved.
+export const resolvedBy = (resolvedAt: number | undefined, time: number) =>
+  resolvedAt !== undefined && Number.isFinite(resolvedAt) && resolvedAt <= time

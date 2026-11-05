@@ -12,6 +12,7 @@ import {
   frameAtSlider,
   LATEST_MILESTONE_ID,
   MILESTONE_HOLD_MS,
+  milestoneShortLabel,
   partySplit,
   playbackDelay,
   REPLAY_MILESTONES,
@@ -290,4 +291,17 @@ test('a market reads its traded odds from its pools, even resolved', () => {
     ],
   } as unknown as Contract
   assert.deepEqual(contractProbs(multi)?.answerProbs, { a: 0.75, b: 0.25 })
+})
+
+test('every milestone has a short button label, and Latest reads Latest', () => {
+  for (const spec of REPLAY_MILESTONES) {
+    assert.ok(spec.short.length > 0 && spec.short.length <= spec.label.length)
+    assert.equal(milestoneShortLabel(spec), spec.short)
+  }
+  assert.equal(
+    milestoneShortLabel({ id: LATEST_MILESTONE_ID, label: 'Latest: x' }),
+    'Latest'
+  )
+  // A milestone the plan no longer has keeps its own label.
+  assert.equal(milestoneShortLabel({ id: 'gone', label: 'Gone' }), 'Gone')
 })

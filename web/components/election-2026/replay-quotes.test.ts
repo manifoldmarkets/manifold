@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { HOUR_MS, MINUTE_MS } from 'common/util/time'
-import { comparisonsAt, ComparisonSeries } from './replay-comparisons'
+import {
+  comparisonsAt,
+  ComparisonSeries,
+  marketStatus,
+  resolvedBy,
+} from './replay-comparisons'
 import { quotesAtFrames, usableMid } from './replay-quotes'
 
 test('a working book reads its midpoint', () => {
@@ -70,15 +75,26 @@ test('the page marks frames from the close as closed', () => {
         ],
       },
       closedAt: { senate: T + HOUR_MS },
+      resolvedAt: { senate: T + 2 * HOUR_MS },
     },
   ]
   assert.deepEqual(comparisonsAt(series, 'senate', T), [
-    { source: 'Kalshi', republicanProb: 0.2, closed: false },
+    { source: 'Kalshi', republicanProb: 0.2, closed: false, resolved: false },
   ])
   assert.deepEqual(comparisonsAt(series, 'senate', T + HOUR_MS), [
-    { source: 'Kalshi', republicanProb: 0.0005, closed: true },
+    { source: 'Kalshi', republicanProb: 0.0005, closed: true, resolved: false },
   ])
   assert.deepEqual(comparisonsAt(series, 'house', T), [])
+})
+
+test('a market reads closed from its close and resolved from its resolution', () => {
+  assert.equal(marketStatus({ closed: false, resolved: false }), undefined)
+  assert.equal(marketStatus({ closed: true, resolved: false }), 'Closed')
+  assert.equal(marketStatus({ closed: true, resolved: true }), 'Resolved')
+  assert.equal(resolvedBy(undefined, T), false)
+  assert.equal(resolvedBy(T, T - 1), false)
+  assert.equal(resolvedBy(T, T), true)
+  assert.equal(resolvedBy(NaN, T), false)
 })
 
 test('past the series, a closed market holds its last price; an open one has none', () => {
@@ -94,11 +110,12 @@ test('past the series, a closed market holds its last price; an open one has non
         house: [[T, 0.07]],
       },
       closedAt: { senate: T + HOUR_MS },
+      resolvedAt: { senate: T + 2 * HOUR_MS },
     },
   ]
-  // The page's Latest, a day on: the Senate market had closed.
+  // The page's Latest, a day on: the Senate market had closed and resolved.
   assert.deepEqual(comparisonsAt(series, 'senate', T + 24 * HOUR_MS), [
-    { source: 'Kalshi', republicanProb: 0.0005, closed: true },
+    { source: 'Kalshi', republicanProb: 0.0005, closed: true, resolved: true },
   ])
   // The House market never closed in this data: no stale price carried.
   assert.deepEqual(comparisonsAt(series, 'house', T + 24 * HOUR_MS), [])
