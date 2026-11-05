@@ -1,4 +1,9 @@
 {
-  "_comment": "Races to hold out of a launch: each entry is {pattern, reason}; pattern is a regex on the raceKey. Held entries stay in the manifest as status 'unresolved' (no payload, no cost); the dry run lists them and apply skips them. Example for the four states most likely to redraw their House map for 2028: {\"pattern\": \"^2028-house-(GA|MD|MO|MS)-\", \"reason\": \"map likely to change for 2028 (see inventories/house-2028-states.json)\"}. Empty until Tod decides.",
-  "holds": []
+  "_comment": "Races to hold out of a launch: each entry is {pattern, reason}; pattern is a regex on the raceKey. Held entries stay in the manifest as status 'unresolved' (no payload, no cost); the dry run lists them and apply skips them. Example for the four states most likely to redraw their House map for 2028: {\"pattern\": \"^2028-house-(GA|MD|MO|MS)-\", \"reason\": \"map likely to change for 2028 (see inventories/house-2028-states.json)\"}.",
+  "holds": [
+    {
+      "pattern": "^(2030|2032|2034|2036)-(?!president-US-general$)",
+      "reason": "Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
+    }
+  ]
 }

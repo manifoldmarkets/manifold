@@ -3,762 +3,417 @@
   "plan": [
     {
       "raceKey": "2030-senate-AZ-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "NIs900P5dc",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-CA-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "EIs6LL98Q2",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-CT-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "IILpERcA26",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-DE-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "UAdZAp29yy",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-FL-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "LCl0LztzIt",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-HI-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "5L9lngpOdn",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-IN-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "06ll02dh2E",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-ME-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "gZnz0Ll6tq",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-MD-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "PIPCLupLyO",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-MA-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "Elg5gC0ICd",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-MI-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "0IRUEAy056",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-MN-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "952lE5CzOz",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-MS-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "C0QdAE2ddZ",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-MO-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "Z8pPCL85N2",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-MT-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "Sgcz2ChqLs",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-NE-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "dCShg5hyL0",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-NV-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "NPcE5ZlEEz",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-NJ-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "UOCh0RIEUP",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-NM-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "ZpARdRzEls",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-NY-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "hsttuQN62s",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-ND-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "z5ONOIcROs",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-OH-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "9lg09hZznd",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-PA-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "AUR9c2ELNR",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-RI-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "ngzNsQ0PRP",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-TN-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "qN086hQZAy",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-TX-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "REPl09pAsg",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-UT-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "P9Is5hEyz9",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-VT-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "lg2UnQUuUq",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-VA-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "29CU96ldAl",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-WA-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "9RdguSEACc",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-WV-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "hqOnCnLN9n",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-WI-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "Z2c2RI509P",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-senate-WY-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "h6NlNUdRIp",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-AL-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "pygC9O6ddh",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-AK-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "yAhNQgh6yp",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-AZ-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "0y2tCZ255z",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-AR-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "9h2Q0EIuqU",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-CA-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "26lPsIyAQ2",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-CO-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "Rd0RPqclZ5",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-CT-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "Q2PNQO22dZ",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-FL-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "9ShPlQRycL",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-GA-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "LCz6AsPNRI",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-HI-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "tQhU8cytRt",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-ID-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "hZ2hZhq9UQ",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-IL-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "sSytR5qg5c",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-IA-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "dNUgcPCC8A",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-KS-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "SLz59sRIP8",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-ME-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "I5NcSPtzAd",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-MD-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "zOpq8u68Pn",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-MA-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "z0ECUzq8Nh",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-MI-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "EsQtlzA5s0",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-MN-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "AIAz05pqI8",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-NE-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "NZNzpQAtUA",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-NV-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "L9R6tUNEcC",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-NH-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "6nAhuPO92z",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-NM-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "InqtEnRQyd",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-NY-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "5zn9P09I2C",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-OH-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "l2zZZz208t",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-OK-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "ygqCZl2NUg",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-OR-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "l2EZQpSqgN",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-PA-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "uRlO8UqgE8",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-RI-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "Ih9ppgt6nU",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-SC-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "LySgNNQInn",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-SD-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "pZInzq5Iu9",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-TN-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "LCdUpc8OEy",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-TX-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "AZsOILLd5s",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-VT-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "ZQhhh5nzqA",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-WI-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "tgZs8SgQIC",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     },
     {
       "raceKey": "2030-governor-WY-regular-general",
-      "action": "create",
+      "action": "unresolved",
       "idempotencyKey": "52In5pZNA5",
-      "cost": {
-        "ante": 1000,
-        "extraLiquidity": 0,
-        "total": 1000,
-        "numAnswers": 3
-      }
+      "note": "held: Tod, 2026-11-06: no granular races past 2028 yet, only major markets. Every state-level race after 2028 (Senate, governor, state presidential and state popular vote) is held; the 2032 and 2036 national presidential markets stay."
     }
   ]
 }

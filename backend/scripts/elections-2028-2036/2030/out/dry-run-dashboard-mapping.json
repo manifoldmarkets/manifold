@@ -28,7 +28,7 @@
         "answerId": "PENDING:2030-senate-AZ-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-CA-regular-general",
@@ -59,7 +59,7 @@
         "answerId": "PENDING:2030-senate-CA-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-CT-regular-general",
@@ -90,7 +90,7 @@
         "answerId": "PENDING:2030-senate-CT-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-DE-regular-general",
@@ -121,7 +121,7 @@
         "answerId": "PENDING:2030-senate-DE-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-FL-regular-general",
@@ -152,7 +152,7 @@
         "answerId": "PENDING:2030-senate-FL-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-HI-regular-general",
@@ -183,7 +183,7 @@
         "answerId": "PENDING:2030-senate-HI-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-IN-regular-general",
@@ -214,7 +214,7 @@
         "answerId": "PENDING:2030-senate-IN-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-ME-regular-general",
@@ -245,7 +245,7 @@
         "answerId": "PENDING:2030-senate-ME-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-MD-regular-general",
@@ -276,7 +276,7 @@
         "answerId": "PENDING:2030-senate-MD-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-MA-regular-general",
@@ -307,7 +307,7 @@
         "answerId": "PENDING:2030-senate-MA-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-MI-regular-general",
@@ -338,7 +338,7 @@
         "answerId": "PENDING:2030-senate-MI-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-MN-regular-general",
@@ -369,7 +369,7 @@
         "answerId": "PENDING:2030-senate-MN-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-MS-regular-general",
@@ -400,7 +400,7 @@
         "answerId": "PENDING:2030-senate-MS-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-MO-regular-general",
@@ -431,7 +431,7 @@
         "answerId": "PENDING:2030-senate-MO-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-MT-regular-general",
@@ -462,7 +462,7 @@
         "answerId": "PENDING:2030-senate-MT-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-NE-regular-general",
@@ -493,7 +493,7 @@
         "answerId": "PENDING:2030-senate-NE-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-NV-regular-general",
@@ -524,7 +524,7 @@
         "answerId": "PENDING:2030-senate-NV-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-NJ-regular-general",
@@ -555,7 +555,7 @@
         "answerId": "PENDING:2030-senate-NJ-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-NM-regular-general",
@@ -586,7 +586,7 @@
         "answerId": "PENDING:2030-senate-NM-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-NY-regular-general",
@@ -617,7 +617,7 @@
         "answerId": "PENDING:2030-senate-NY-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-ND-regular-general",
@@ -648,7 +648,7 @@
         "answerId": "PENDING:2030-senate-ND-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-OH-regular-general",
@@ -679,7 +679,7 @@
         "answerId": "PENDING:2030-senate-OH-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-PA-regular-general",
@@ -710,7 +710,7 @@
         "answerId": "PENDING:2030-senate-PA-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-RI-regular-general",
@@ -741,7 +741,7 @@
         "answerId": "PENDING:2030-senate-RI-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-TN-regular-general",
@@ -772,7 +772,7 @@
         "answerId": "PENDING:2030-senate-TN-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-TX-regular-general",
@@ -803,7 +803,7 @@
         "answerId": "PENDING:2030-senate-TX-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-UT-regular-general",
@@ -834,7 +834,7 @@
         "answerId": "PENDING:2030-senate-UT-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-VT-regular-general",
@@ -865,7 +865,7 @@
         "answerId": "PENDING:2030-senate-VT-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-VA-regular-general",
@@ -896,7 +896,7 @@
         "answerId": "PENDING:2030-senate-VA-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-WA-regular-general",
@@ -927,7 +927,7 @@
         "answerId": "PENDING:2030-senate-WA-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-WV-regular-general",
@@ -958,7 +958,7 @@
         "answerId": "PENDING:2030-senate-WV-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-WI-regular-general",
@@ -989,7 +989,7 @@
         "answerId": "PENDING:2030-senate-WI-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-senate-WY-regular-general",
@@ -1020,7 +1020,7 @@
         "answerId": "PENDING:2030-senate-WY-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-AL-regular-general",
@@ -1051,7 +1051,7 @@
         "answerId": "PENDING:2030-governor-AL-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-AK-regular-general",
@@ -1082,7 +1082,7 @@
         "answerId": "PENDING:2030-governor-AK-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-AZ-regular-general",
@@ -1113,7 +1113,7 @@
         "answerId": "PENDING:2030-governor-AZ-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-AR-regular-general",
@@ -1144,7 +1144,7 @@
         "answerId": "PENDING:2030-governor-AR-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-CA-regular-general",
@@ -1175,7 +1175,7 @@
         "answerId": "PENDING:2030-governor-CA-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-CO-regular-general",
@@ -1206,7 +1206,7 @@
         "answerId": "PENDING:2030-governor-CO-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-CT-regular-general",
@@ -1237,7 +1237,7 @@
         "answerId": "PENDING:2030-governor-CT-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-FL-regular-general",
@@ -1268,7 +1268,7 @@
         "answerId": "PENDING:2030-governor-FL-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-GA-regular-general",
@@ -1299,7 +1299,7 @@
         "answerId": "PENDING:2030-governor-GA-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-HI-regular-general",
@@ -1330,7 +1330,7 @@
         "answerId": "PENDING:2030-governor-HI-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-ID-regular-general",
@@ -1361,7 +1361,7 @@
         "answerId": "PENDING:2030-governor-ID-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-IL-regular-general",
@@ -1392,7 +1392,7 @@
         "answerId": "PENDING:2030-governor-IL-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-IA-regular-general",
@@ -1423,7 +1423,7 @@
         "answerId": "PENDING:2030-governor-IA-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-KS-regular-general",
@@ -1454,7 +1454,7 @@
         "answerId": "PENDING:2030-governor-KS-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-ME-regular-general",
@@ -1485,7 +1485,7 @@
         "answerId": "PENDING:2030-governor-ME-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-MD-regular-general",
@@ -1516,7 +1516,7 @@
         "answerId": "PENDING:2030-governor-MD-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-MA-regular-general",
@@ -1547,7 +1547,7 @@
         "answerId": "PENDING:2030-governor-MA-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-MI-regular-general",
@@ -1578,7 +1578,7 @@
         "answerId": "PENDING:2030-governor-MI-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-MN-regular-general",
@@ -1609,7 +1609,7 @@
         "answerId": "PENDING:2030-governor-MN-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-NE-regular-general",
@@ -1640,7 +1640,7 @@
         "answerId": "PENDING:2030-governor-NE-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-NV-regular-general",
@@ -1671,7 +1671,7 @@
         "answerId": "PENDING:2030-governor-NV-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-NH-regular-general",
@@ -1702,7 +1702,7 @@
         "answerId": "PENDING:2030-governor-NH-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-NM-regular-general",
@@ -1733,7 +1733,7 @@
         "answerId": "PENDING:2030-governor-NM-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-NY-regular-general",
@@ -1764,7 +1764,7 @@
         "answerId": "PENDING:2030-governor-NY-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-OH-regular-general",
@@ -1795,7 +1795,7 @@
         "answerId": "PENDING:2030-governor-OH-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-OK-regular-general",
@@ -1826,7 +1826,7 @@
         "answerId": "PENDING:2030-governor-OK-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-OR-regular-general",
@@ -1857,7 +1857,7 @@
         "answerId": "PENDING:2030-governor-OR-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-PA-regular-general",
@@ -1888,7 +1888,7 @@
         "answerId": "PENDING:2030-governor-PA-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-RI-regular-general",
@@ -1919,7 +1919,7 @@
         "answerId": "PENDING:2030-governor-RI-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-SC-regular-general",
@@ -1950,7 +1950,7 @@
         "answerId": "PENDING:2030-governor-SC-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-SD-regular-general",
@@ -1981,7 +1981,7 @@
         "answerId": "PENDING:2030-governor-SD-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-TN-regular-general",
@@ -2012,7 +2012,7 @@
         "answerId": "PENDING:2030-governor-TN-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-TX-regular-general",
@@ -2043,7 +2043,7 @@
         "answerId": "PENDING:2030-governor-TX-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-VT-regular-general",
@@ -2074,7 +2074,7 @@
         "answerId": "PENDING:2030-governor-VT-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-WI-regular-general",
@@ -2105,7 +2105,7 @@
         "answerId": "PENDING:2030-governor-WI-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2030-governor-WY-regular-general",
@@ -2136,6 +2136,6 @@
         "answerId": "PENDING:2030-governor-WY-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   }
 ]

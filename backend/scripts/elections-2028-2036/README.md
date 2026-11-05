@@ -10,9 +10,17 @@ vote in every state and DC in those years, and every 2028 House district.
 They are created years
 ahead with the pipeline that launched the 2026 midterm markets. Prepared on
 2026-10-06; on 2026-11-05 2030 and 2034 were added and 2036 became a planned
-cycle (it was optional). **Nothing here has been launched.** Tod
-approves and runs the launch after the 2026 results are certified (December
-2026).
+cycle (it was optional). **Nothing here has been launched.** The 2028, 2032
+and 2036 manifests were approved on 2026-11-06; Tod runs the launch.
+
+**Held (Tod, 2026-11-06): "no house/senate races for anything past 2028 yet.
+Only major stuff."** `holds.json` holds every state-level race after 2028
+(Senate, governor, state presidential, state popular vote: 441 markets), so
+only the 2032 and 2036 national presidential markets run after 2028. A run
+creates 591 markets for Ṁ1,761,000: all 589 for 2028 plus those two at
+Ṁ10,000 each. 2030 and 2034 have nothing to run. The table below is the full
+plan; remove the hold and regenerate to bring the rest back (regenerating
+resets the approvals).
 
 | Cycle | Senate | Governor | President | Popular vote | House | Markets | Mana |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -504,21 +512,19 @@ markets that already exist.
    branch (never to `main`).
 5. **Dry runs again** (offline, then online) on the approved manifests: zero
    validation errors, expected counts and cost.
-6. **Pilot one market per cycle**: the first apply for a cycle creates its
-   state file; `--only` picks the pilot and `--max-mana` stops after it. Pilot
-   a Ṁ1,000 market first, so a pipeline problem costs Ṁ1,000: for 2028
-   `2028-senate-AL-regular-general`, for 2030, 2034 and 2036
-   `<cycle>-senate-PA-regular-general` (a plain plurality seat with the full
-   Senate topic set; Pennsylvania is at 1,000 outside 2028), for 2032
-   `2032-senate-AL-regular-general` (Class 2). Then create the 2028 national
-   market on its own and check it before the full run, since it costs
-   Ṁ100,000 (the 2032 and 2036 national markets cost Ṁ10,000 each and can go
-   with the full runs).
+6. **Pilot**: the first apply for a cycle creates its state file; `--only`
+   picks the pilot and `--max-mana` stops after it. Pilot a Ṁ1,000 market
+   first, so a pipeline problem costs Ṁ1,000: for 2028
+   `2028-senate-AL-regular-general`. Then create the 2028 national market on
+   its own and check it before the full run, since it costs Ṁ100,000. With the
+   2026-11-06 hold, 2032 and 2036 each have one market (their national market,
+   Ṁ10,000), so their full runs are their pilots. Without the hold, pilot
+   `<cycle>-senate-PA-regular-general` for 2030, 2034 and 2036 and
+   `2032-senate-AL-regular-general` for 2032.
    ```powershell
    $env:MANIFOLD_API_KEY = '<@ManifoldPolitics key, never on the command line>'
    npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2028/manifest.json --out elections-2028-2036/2028/out --state C:\Users\User\elections-2028-prod\state.prod.json --env prod --apply --init-state --quiet --creator-username ManifoldPolitics --max-mana 1000 --only 2028-senate-AL-regular-general
    npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2028/manifest.json --out elections-2028-2036/2028/out --state C:\Users\User\elections-2028-prod\state.prod.json --env prod --apply --quiet --creator-username ManifoldPolitics --max-mana 100000 --only 2028-president-US-general
-   npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2030/manifest.json --out elections-2028-2036/2030/out --state C:\Users\User\elections-2030-prod\state.prod.json --env prod --apply --init-state --quiet --creator-username ManifoldPolitics --max-mana 1000 --only 2030-senate-PA-regular-general
    ```
    Check the market page, the three opening prices (Democratic, Republican
    and "Other"; the script already verified all three within 1.5 points, the
@@ -526,12 +532,14 @@ markets that already exist.
    colours and visibility, and the topics.
 7. **Full runs**, one cycle at a time, same state file, no `--init-state`,
    no `--only` (`--max-mana`: each cycle's planned total, which is also its
-   `budget.approvedMaxTotalMana`: 1741000 for 2028, 69000 for 2030, 161000
-   for 2032, 70000 for 2034, 161000 for 2036; the run cap counts only what that
-   run spends, so after the pilots the 2028 full run needs at most
-   1640000):
+   `budget.approvedMaxTotalMana`: 1741000 for 2028 and, with the 2026-11-06
+   hold, 10000 each for 2032 and 2036; 2030 and 2034 have nothing to run. The
+   run cap counts only what that run spends, so after the pilots the 2028 full
+   run needs at most 1640000):
    ```powershell
    npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2028/manifest.json --out elections-2028-2036/2028/out --state C:\Users\User\elections-2028-prod\state.prod.json --env prod --apply --quiet --creator-username ManifoldPolitics --max-mana 1741000
+   npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2032/manifest.json --out elections-2028-2036/2032/out --state C:\Users\User\elections-2032-prod\state.prod.json --env prod --apply --init-state --quiet --creator-username ManifoldPolitics --max-mana 10000
+   npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2036/manifest.json --out elections-2028-2036/2036/out --state C:\Users\User\elections-2036-prod\state.prod.json --env prod --apply --init-state --quiet --creator-username ManifoldPolitics --max-mana 10000
    ```
    A stop (`stoppedReason`) is normal for a needs-review entry, a seed
    mismatch or a rate limit: read the state file, fix, re-run; nothing is

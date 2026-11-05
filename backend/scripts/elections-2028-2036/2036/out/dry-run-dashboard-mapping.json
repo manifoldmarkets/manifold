@@ -28,7 +28,7 @@
         "answerId": "PENDING:2036-senate-AZ-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-CA-regular-general",
@@ -59,7 +59,7 @@
         "answerId": "PENDING:2036-senate-CA-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-CT-regular-general",
@@ -90,7 +90,7 @@
         "answerId": "PENDING:2036-senate-CT-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-DE-regular-general",
@@ -121,7 +121,7 @@
         "answerId": "PENDING:2036-senate-DE-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-FL-regular-general",
@@ -152,7 +152,7 @@
         "answerId": "PENDING:2036-senate-FL-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-HI-regular-general",
@@ -183,7 +183,7 @@
         "answerId": "PENDING:2036-senate-HI-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-IN-regular-general",
@@ -214,7 +214,7 @@
         "answerId": "PENDING:2036-senate-IN-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-ME-regular-general",
@@ -245,7 +245,7 @@
         "answerId": "PENDING:2036-senate-ME-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-MD-regular-general",
@@ -276,7 +276,7 @@
         "answerId": "PENDING:2036-senate-MD-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-MA-regular-general",
@@ -307,7 +307,7 @@
         "answerId": "PENDING:2036-senate-MA-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-MI-regular-general",
@@ -338,7 +338,7 @@
         "answerId": "PENDING:2036-senate-MI-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-MN-regular-general",
@@ -369,7 +369,7 @@
         "answerId": "PENDING:2036-senate-MN-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-MS-regular-general",
@@ -400,7 +400,7 @@
         "answerId": "PENDING:2036-senate-MS-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-MO-regular-general",
@@ -431,7 +431,7 @@
         "answerId": "PENDING:2036-senate-MO-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-MT-regular-general",
@@ -462,7 +462,7 @@
         "answerId": "PENDING:2036-senate-MT-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-NE-regular-general",
@@ -493,7 +493,7 @@
         "answerId": "PENDING:2036-senate-NE-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-NV-regular-general",
@@ -524,7 +524,7 @@
         "answerId": "PENDING:2036-senate-NV-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-NJ-regular-general",
@@ -555,7 +555,7 @@
         "answerId": "PENDING:2036-senate-NJ-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-NM-regular-general",
@@ -586,7 +586,7 @@
         "answerId": "PENDING:2036-senate-NM-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-NY-regular-general",
@@ -617,7 +617,7 @@
         "answerId": "PENDING:2036-senate-NY-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-ND-regular-general",
@@ -648,7 +648,7 @@
         "answerId": "PENDING:2036-senate-ND-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-OH-regular-general",
@@ -679,7 +679,7 @@
         "answerId": "PENDING:2036-senate-OH-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-PA-regular-general",
@@ -710,7 +710,7 @@
         "answerId": "PENDING:2036-senate-PA-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-RI-regular-general",
@@ -741,7 +741,7 @@
         "answerId": "PENDING:2036-senate-RI-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-TN-regular-general",
@@ -772,7 +772,7 @@
         "answerId": "PENDING:2036-senate-TN-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-TX-regular-general",
@@ -803,7 +803,7 @@
         "answerId": "PENDING:2036-senate-TX-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-UT-regular-general",
@@ -834,7 +834,7 @@
         "answerId": "PENDING:2036-senate-UT-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-VT-regular-general",
@@ -865,7 +865,7 @@
         "answerId": "PENDING:2036-senate-VT-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-VA-regular-general",
@@ -896,7 +896,7 @@
         "answerId": "PENDING:2036-senate-VA-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-WA-regular-general",
@@ -927,7 +927,7 @@
         "answerId": "PENDING:2036-senate-WA-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-WV-regular-general",
@@ -958,7 +958,7 @@
         "answerId": "PENDING:2036-senate-WV-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-WI-regular-general",
@@ -989,7 +989,7 @@
         "answerId": "PENDING:2036-senate-WI-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-senate-WY-regular-general",
@@ -1020,7 +1020,7 @@
         "answerId": "PENDING:2036-senate-WY-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-governor-DE-regular-general",
@@ -1051,7 +1051,7 @@
         "answerId": "PENDING:2036-governor-DE-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-governor-IN-regular-general",
@@ -1082,7 +1082,7 @@
         "answerId": "PENDING:2036-governor-IN-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-governor-MO-regular-general",
@@ -1113,7 +1113,7 @@
         "answerId": "PENDING:2036-governor-MO-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-governor-MT-regular-general",
@@ -1144,7 +1144,7 @@
         "answerId": "PENDING:2036-governor-MT-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-governor-NH-regular-general",
@@ -1175,7 +1175,7 @@
         "answerId": "PENDING:2036-governor-NH-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-governor-NC-regular-general",
@@ -1206,7 +1206,7 @@
         "answerId": "PENDING:2036-governor-NC-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-governor-ND-regular-general",
@@ -1237,7 +1237,7 @@
         "answerId": "PENDING:2036-governor-ND-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-governor-UT-regular-general",
@@ -1268,7 +1268,7 @@
         "answerId": "PENDING:2036-governor-UT-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-governor-VT-regular-general",
@@ -1299,7 +1299,7 @@
         "answerId": "PENDING:2036-governor-VT-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-governor-WA-regular-general",
@@ -1330,7 +1330,7 @@
         "answerId": "PENDING:2036-governor-WA-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-governor-WV-regular-general",
@@ -1361,7 +1361,7 @@
         "answerId": "PENDING:2036-governor-WV-regular-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-AK-general",
@@ -1392,7 +1392,7 @@
         "answerId": "PENDING:2036-president-AK-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-AL-general",
@@ -1423,7 +1423,7 @@
         "answerId": "PENDING:2036-president-AL-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-AR-general",
@@ -1454,7 +1454,7 @@
         "answerId": "PENDING:2036-president-AR-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-AZ-general",
@@ -1485,7 +1485,7 @@
         "answerId": "PENDING:2036-president-AZ-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-CA-general",
@@ -1516,7 +1516,7 @@
         "answerId": "PENDING:2036-president-CA-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-CO-general",
@@ -1547,7 +1547,7 @@
         "answerId": "PENDING:2036-president-CO-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-CT-general",
@@ -1578,7 +1578,7 @@
         "answerId": "PENDING:2036-president-CT-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-DC-general",
@@ -1609,7 +1609,7 @@
         "answerId": "PENDING:2036-president-DC-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-DE-general",
@@ -1640,7 +1640,7 @@
         "answerId": "PENDING:2036-president-DE-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-FL-general",
@@ -1671,7 +1671,7 @@
         "answerId": "PENDING:2036-president-FL-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-GA-general",
@@ -1702,7 +1702,7 @@
         "answerId": "PENDING:2036-president-GA-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-HI-general",
@@ -1733,7 +1733,7 @@
         "answerId": "PENDING:2036-president-HI-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-IA-general",
@@ -1764,7 +1764,7 @@
         "answerId": "PENDING:2036-president-IA-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-ID-general",
@@ -1795,7 +1795,7 @@
         "answerId": "PENDING:2036-president-ID-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-IL-general",
@@ -1826,7 +1826,7 @@
         "answerId": "PENDING:2036-president-IL-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-IN-general",
@@ -1857,7 +1857,7 @@
         "answerId": "PENDING:2036-president-IN-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-KS-general",
@@ -1888,7 +1888,7 @@
         "answerId": "PENDING:2036-president-KS-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-KY-general",
@@ -1919,7 +1919,7 @@
         "answerId": "PENDING:2036-president-KY-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-LA-general",
@@ -1950,7 +1950,7 @@
         "answerId": "PENDING:2036-president-LA-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-MA-general",
@@ -1981,7 +1981,7 @@
         "answerId": "PENDING:2036-president-MA-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-MD-general",
@@ -2012,7 +2012,7 @@
         "answerId": "PENDING:2036-president-MD-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-ME-general",
@@ -2043,7 +2043,7 @@
         "answerId": "PENDING:2036-president-ME-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-MI-general",
@@ -2074,7 +2074,7 @@
         "answerId": "PENDING:2036-president-MI-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-MN-general",
@@ -2105,7 +2105,7 @@
         "answerId": "PENDING:2036-president-MN-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-MO-general",
@@ -2136,7 +2136,7 @@
         "answerId": "PENDING:2036-president-MO-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-MS-general",
@@ -2167,7 +2167,7 @@
         "answerId": "PENDING:2036-president-MS-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-MT-general",
@@ -2198,7 +2198,7 @@
         "answerId": "PENDING:2036-president-MT-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-NC-general",
@@ -2229,7 +2229,7 @@
         "answerId": "PENDING:2036-president-NC-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-ND-general",
@@ -2260,7 +2260,7 @@
         "answerId": "PENDING:2036-president-ND-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-NE-general",
@@ -2291,7 +2291,7 @@
         "answerId": "PENDING:2036-president-NE-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-NH-general",
@@ -2322,7 +2322,7 @@
         "answerId": "PENDING:2036-president-NH-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-NJ-general",
@@ -2353,7 +2353,7 @@
         "answerId": "PENDING:2036-president-NJ-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-NM-general",
@@ -2384,7 +2384,7 @@
         "answerId": "PENDING:2036-president-NM-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-NV-general",
@@ -2415,7 +2415,7 @@
         "answerId": "PENDING:2036-president-NV-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-NY-general",
@@ -2446,7 +2446,7 @@
         "answerId": "PENDING:2036-president-NY-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-OH-general",
@@ -2477,7 +2477,7 @@
         "answerId": "PENDING:2036-president-OH-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-OK-general",
@@ -2508,7 +2508,7 @@
         "answerId": "PENDING:2036-president-OK-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-OR-general",
@@ -2539,7 +2539,7 @@
         "answerId": "PENDING:2036-president-OR-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-PA-general",
@@ -2570,7 +2570,7 @@
         "answerId": "PENDING:2036-president-PA-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-RI-general",
@@ -2601,7 +2601,7 @@
         "answerId": "PENDING:2036-president-RI-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-SC-general",
@@ -2632,7 +2632,7 @@
         "answerId": "PENDING:2036-president-SC-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-SD-general",
@@ -2663,7 +2663,7 @@
         "answerId": "PENDING:2036-president-SD-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-TN-general",
@@ -2694,7 +2694,7 @@
         "answerId": "PENDING:2036-president-TN-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-TX-general",
@@ -2725,7 +2725,7 @@
         "answerId": "PENDING:2036-president-TX-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-UT-general",
@@ -2756,7 +2756,7 @@
         "answerId": "PENDING:2036-president-UT-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-VA-general",
@@ -2787,7 +2787,7 @@
         "answerId": "PENDING:2036-president-VA-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-VT-general",
@@ -2818,7 +2818,7 @@
         "answerId": "PENDING:2036-president-VT-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-WA-general",
@@ -2849,7 +2849,7 @@
         "answerId": "PENDING:2036-president-WA-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-WI-general",
@@ -2880,7 +2880,7 @@
         "answerId": "PENDING:2036-president-WI-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-WV-general",
@@ -2911,7 +2911,7 @@
         "answerId": "PENDING:2036-president-WV-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-WY-general",
@@ -2942,7 +2942,7 @@
         "answerId": "PENDING:2036-president-WY-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-ME-01-general",
@@ -2973,7 +2973,7 @@
         "answerId": "PENDING:2036-president-ME-01-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-ME-02-general",
@@ -3004,7 +3004,7 @@
         "answerId": "PENDING:2036-president-ME-02-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-NE-01-general",
@@ -3035,7 +3035,7 @@
         "answerId": "PENDING:2036-president-NE-01-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-NE-02-general",
@@ -3066,7 +3066,7 @@
         "answerId": "PENDING:2036-president-NE-02-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-NE-03-general",
@@ -3097,7 +3097,7 @@
         "answerId": "PENDING:2036-president-NE-03-general#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-US-general",
@@ -3159,7 +3159,7 @@
         "answerId": "PENDING:2036-president-AK-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-AL-popular-vote",
@@ -3190,7 +3190,7 @@
         "answerId": "PENDING:2036-president-AL-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-AR-popular-vote",
@@ -3221,7 +3221,7 @@
         "answerId": "PENDING:2036-president-AR-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-AZ-popular-vote",
@@ -3252,7 +3252,7 @@
         "answerId": "PENDING:2036-president-AZ-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-CA-popular-vote",
@@ -3283,7 +3283,7 @@
         "answerId": "PENDING:2036-president-CA-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-CO-popular-vote",
@@ -3314,7 +3314,7 @@
         "answerId": "PENDING:2036-president-CO-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-CT-popular-vote",
@@ -3345,7 +3345,7 @@
         "answerId": "PENDING:2036-president-CT-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-DC-popular-vote",
@@ -3376,7 +3376,7 @@
         "answerId": "PENDING:2036-president-DC-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-DE-popular-vote",
@@ -3407,7 +3407,7 @@
         "answerId": "PENDING:2036-president-DE-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-FL-popular-vote",
@@ -3438,7 +3438,7 @@
         "answerId": "PENDING:2036-president-FL-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-GA-popular-vote",
@@ -3469,7 +3469,7 @@
         "answerId": "PENDING:2036-president-GA-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-HI-popular-vote",
@@ -3500,7 +3500,7 @@
         "answerId": "PENDING:2036-president-HI-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-IA-popular-vote",
@@ -3531,7 +3531,7 @@
         "answerId": "PENDING:2036-president-IA-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-ID-popular-vote",
@@ -3562,7 +3562,7 @@
         "answerId": "PENDING:2036-president-ID-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-IL-popular-vote",
@@ -3593,7 +3593,7 @@
         "answerId": "PENDING:2036-president-IL-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-IN-popular-vote",
@@ -3624,7 +3624,7 @@
         "answerId": "PENDING:2036-president-IN-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-KS-popular-vote",
@@ -3655,7 +3655,7 @@
         "answerId": "PENDING:2036-president-KS-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-KY-popular-vote",
@@ -3686,7 +3686,7 @@
         "answerId": "PENDING:2036-president-KY-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-LA-popular-vote",
@@ -3717,7 +3717,7 @@
         "answerId": "PENDING:2036-president-LA-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-MA-popular-vote",
@@ -3748,7 +3748,7 @@
         "answerId": "PENDING:2036-president-MA-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-MD-popular-vote",
@@ -3779,7 +3779,7 @@
         "answerId": "PENDING:2036-president-MD-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-ME-popular-vote",
@@ -3810,7 +3810,7 @@
         "answerId": "PENDING:2036-president-ME-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-MI-popular-vote",
@@ -3841,7 +3841,7 @@
         "answerId": "PENDING:2036-president-MI-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-MN-popular-vote",
@@ -3872,7 +3872,7 @@
         "answerId": "PENDING:2036-president-MN-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-MO-popular-vote",
@@ -3903,7 +3903,7 @@
         "answerId": "PENDING:2036-president-MO-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-MS-popular-vote",
@@ -3934,7 +3934,7 @@
         "answerId": "PENDING:2036-president-MS-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-MT-popular-vote",
@@ -3965,7 +3965,7 @@
         "answerId": "PENDING:2036-president-MT-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-NC-popular-vote",
@@ -3996,7 +3996,7 @@
         "answerId": "PENDING:2036-president-NC-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-ND-popular-vote",
@@ -4027,7 +4027,7 @@
         "answerId": "PENDING:2036-president-ND-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-NE-popular-vote",
@@ -4058,7 +4058,7 @@
         "answerId": "PENDING:2036-president-NE-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-NH-popular-vote",
@@ -4089,7 +4089,7 @@
         "answerId": "PENDING:2036-president-NH-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-NJ-popular-vote",
@@ -4120,7 +4120,7 @@
         "answerId": "PENDING:2036-president-NJ-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-NM-popular-vote",
@@ -4151,7 +4151,7 @@
         "answerId": "PENDING:2036-president-NM-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-NV-popular-vote",
@@ -4182,7 +4182,7 @@
         "answerId": "PENDING:2036-president-NV-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-NY-popular-vote",
@@ -4213,7 +4213,7 @@
         "answerId": "PENDING:2036-president-NY-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-OH-popular-vote",
@@ -4244,7 +4244,7 @@
         "answerId": "PENDING:2036-president-OH-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-OK-popular-vote",
@@ -4275,7 +4275,7 @@
         "answerId": "PENDING:2036-president-OK-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-OR-popular-vote",
@@ -4306,7 +4306,7 @@
         "answerId": "PENDING:2036-president-OR-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-PA-popular-vote",
@@ -4337,7 +4337,7 @@
         "answerId": "PENDING:2036-president-PA-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-RI-popular-vote",
@@ -4368,7 +4368,7 @@
         "answerId": "PENDING:2036-president-RI-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-SC-popular-vote",
@@ -4399,7 +4399,7 @@
         "answerId": "PENDING:2036-president-SC-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-SD-popular-vote",
@@ -4430,7 +4430,7 @@
         "answerId": "PENDING:2036-president-SD-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-TN-popular-vote",
@@ -4461,7 +4461,7 @@
         "answerId": "PENDING:2036-president-TN-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-TX-popular-vote",
@@ -4492,7 +4492,7 @@
         "answerId": "PENDING:2036-president-TX-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-UT-popular-vote",
@@ -4523,7 +4523,7 @@
         "answerId": "PENDING:2036-president-UT-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-VA-popular-vote",
@@ -4554,7 +4554,7 @@
         "answerId": "PENDING:2036-president-VA-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-VT-popular-vote",
@@ -4585,7 +4585,7 @@
         "answerId": "PENDING:2036-president-VT-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-WA-popular-vote",
@@ -4616,7 +4616,7 @@
         "answerId": "PENDING:2036-president-WA-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-WI-popular-vote",
@@ -4647,7 +4647,7 @@
         "answerId": "PENDING:2036-president-WI-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-WV-popular-vote",
@@ -4678,7 +4678,7 @@
         "answerId": "PENDING:2036-president-WV-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   },
   {
     "raceKey": "2036-president-WY-popular-vote",
@@ -4709,6 +4709,6 @@
         "answerId": "PENDING:2036-president-WY-popular-vote#Other"
       }
     ],
-    "status": "planned"
+    "status": "unresolved"
   }
 ]

@@ -25,6 +25,7 @@ import {
 import {
   buildManifest,
   countsOf,
+  loadHolds,
   loadRejections,
   loadTopics,
   NPVIC_MEMBERS,
@@ -45,10 +46,17 @@ import { ANSWERS } from './templates'
 const NOW = Date.UTC(2026, 9, 6)
 const GENERATED_AT = '2026-10-06T00:00:00.000Z'
 const topics = loadTopics()
+// The full plan, with nothing held, so every market's text and seed stays
+// tested while holds.json keeps part of it out of a run (tested below).
 const built = Object.fromEntries(
   CYCLES.map((cycle) => [
     cycle,
-    buildManifest(cycle, { topics, generatedAt: GENERATED_AT, now: NOW }),
+    buildManifest(cycle, {
+      topics,
+      generatedAt: GENERATED_AT,
+      now: NOW,
+      holds: [],
+    }),
   ])
 ) as Record<number, ReturnType<typeof buildManifest>>
 const entriesOf = (cycle: number) =>
@@ -1224,13 +1232,9 @@ test('topics: at most five existing prod ids per market; missing slugs are repor
       )
     assert.equal(new Set(ids).size, ids.length)
   }
-  assert.deepEqual(built[2028].missingTopics, [
-    '2028-us-congressional-elections',
-  ])
-  assert.deepEqual(built[2030].missingTopics, [
-    '2030-us-congressional-elections',
-    '2030-us-elections',
-  ])
+  // The nine cycle topics were created on prod on 2026-11-05.
+  for (const cycle of CYCLES)
+    assert.deepEqual(built[cycle].missingTopics, [], `${cycle} missing topics`)
   // Every missing slug is listed for Tod in topics.json → missing.
   for (const cycle of CYCLES)
     for (const slug of built[cycle].missingTopics)
@@ -1238,13 +1242,22 @@ test('topics: at most five existing prod ids per market; missing slugs are repor
         topics.missing.some((m) => m.slug === slug),
         `${slug} is not in topics.json missing`
       )
-  assert.deepEqual(built[2032].missingTopics, [
-    '2032-us-congressional-elections',
-    '2032-us-elections',
-  ])
   const { ids, missing } = topicIdsFor(topics, 'president', 2036)
-  assert.deepEqual(missing, ['2036-us-elections'])
+  assert.deepEqual(missing, [])
+  assert.ok(ids.includes(topics.existing['2036-us-elections']))
   assert.ok(ids.includes(topics.existing['2036-us-presidential-election']))
+  // A slug without a prod id is reported as missing, never given an id.
+  const withoutCycle = {
+    ...topics,
+    existing: Object.fromEntries(
+      Object.entries(topics.existing).filter(
+        ([slug]) => slug !== '2036-us-elections'
+      )
+    ),
+  }
+  const stripped = topicIdsFor(withoutCycle, 'president', 2036)
+  assert.deepEqual(stripped.missing, ['2036-us-elections'])
+  assert.equal(stripped.ids.length, ids.length - 1)
 })
 
 test('dashboard block is consistent: list, key, cycle and office', () => {
@@ -1353,6 +1366,31 @@ test('Stage A seed math: symmetric, monotone, and regressed by horizon', () => {
   assert.ok(seeds[0].pDem > senate.pDem && senate.pDem > governor.pDem)
 })
 
+test('holds.json: past 2028 only the national presidential markets run (Tod, 2026-11-06)', () => {
+  const live = loadHolds()
+  const kept: string[] = []
+  let total = 0
+  for (const cycle of CYCLES) {
+    const r = buildManifest(cycle, {
+      topics,
+      generatedAt: GENERATED_AT,
+      now: NOW,
+      holds: live,
+    })
+    const entries = r.manifest.entries as RaceManifestEntry[]
+    if (cycle === 2028) assert.equal(r.held.length, 0)
+    else
+      for (const e of entries)
+        if (e.status !== 'unresolved') kept.push(e.raceKey)
+    total += r.totalMana
+  }
+  assert.deepEqual(kept, [
+    '2032-president-US-general',
+    '2036-president-US-general',
+  ])
+  assert.equal(total, 1_741_000 + 10_000 + 10_000)
+})
+
 test('rejections become reviewedRejectedContractIds and holds make entries unresolved without cost', () => {
   const r = buildManifest(2028, {
     topics,
@@ -1398,6 +1436,7 @@ test('generation is deterministic for a fixed generatedAt', () => {
       topics,
       generatedAt: GENERATED_AT,
       now: NOW,
+      holds: [],
     })
     assert.equal(
       JSON.stringify(again.manifest),

@@ -4,23 +4,14 @@ Creation fails with a 404 on a missing topic id, so the generator attaches only 
 
 | slug | suggested name | used by | modelled on |
 |---|---|---|---|
-| `2028-us-congressional-elections` | 2028 US Congressional Elections | 2028 senate, 2028 house | 2026-us-congressional-elections (1f785ecd-2cbc-4a04-8c20-0459dc31e4ad) |
-| `2030-us-elections` | 2030 US Elections | every 2030 market | 2028-us-elections; the 2026 midterm markets used 2026-midterms (2e9fc841-389f-4e11-99bb-c26ca54ecac2), so '2030 Midterms' is the alternative name |
-| `2030-us-congressional-elections` | 2030 US Congressional Elections | 2030 senate | 2026-us-congressional-elections (1f785ecd-2cbc-4a04-8c20-0459dc31e4ad) |
-| `2032-us-elections` | 2032 US Elections | every 2032 market | 2028-us-elections |
-| `2034-us-elections` | 2034 US Elections | every 2034 market | 2030-us-elections ('2034 Midterms' is the alternative name) |
-| `2034-us-congressional-elections` | 2034 US Congressional Elections | 2034 senate | 2026-us-congressional-elections |
-| `2036-us-elections` | 2036 US Elections | every 2036 market | 2028-us-elections |
-| `2032-us-congressional-elections` | 2032 US Congressional Elections | 2032 senate | 2026-us-congressional-elections |
-| `2036-us-congressional-elections` | 2036 US Congressional Elections | 2036 senate | 2026-us-congressional-elections |
 
 ## Missing per generated cycle
 
-- 2028: `2028-us-congressional-elections`
-- 2030: `2030-us-congressional-elections`, `2030-us-elections`
-- 2032: `2032-us-congressional-elections`, `2032-us-elections`
-- 2034: `2034-us-congressional-elections`, `2034-us-elections`
-- 2036: `2036-us-congressional-elections`, `2036-us-elections`
+- 2028: none
+- 2030: none
+- 2032: none
+- 2034: none
+- 2036: none
 
 ## Existing topics attached
 
@@ -33,3 +24,12 @@ Creation fails with a 404 on a missing topic id, so the generator attaches only 
 - `2028-us-elections` → `e5e38ea8-fdbc-4f79-9ab1-c28259c7c0aa`
 - `2032-us-presidential-election` → `fb851aab-ea02-4aa3-8cbb-1ee2336ba396`
 - `2036-us-presidential-election` → `25ae6316-429b-4257-a760-0d345bba413a`
+- `2028-us-congressional-elections` → `d9f0a472-9532-4110-b8fd-30c9d0a02b40`
+- `2030-us-elections` → `90752af0-0369-420b-ae24-422c1f7345d8`
+- `2030-us-congressional-elections` → `5187a143-2c12-458f-baac-96ca258c629c`
+- `2032-us-elections` → `d68615c9-f754-4527-b745-0c01881c7bb2`
+- `2032-us-congressional-elections` → `4d1bdd07-670e-4224-8374-614e1a96b2b2`
+- `2034-us-elections` → `6e3fa84a-4521-4c84-add8-223c581847a3`
+- `2034-us-congressional-elections` → `bc2ab000-c119-493c-b7f7-d354971deee5`
+- `2036-us-elections` → `b6c1e097-ae8d-4de1-b2c4-5495c98a9758`
+- `2036-us-congressional-elections` → `6027953c-9e99-4030-b55a-64a7dd046641`

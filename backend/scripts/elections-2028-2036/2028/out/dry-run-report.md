@@ -19,6 +19,16 @@ Series `us-2028-general-v1` · 589 manifest entries · review approved: **false*
 - president (popular vote): 51 markets, Ṁ222,000
 - house: 435 markets, Ṁ732,000
 
+Duplicate policy: only an EQUIVALENT market by @ManifoldPolitics skips an entry; community and related markets are listed as information and never skip or hold.
+
+| duplicate check (saved online results) | races |
+|---|---|
+| create | 589 |
+| …of which other markets also exist (information) | 72 |
+| skip (equivalent market blocks) | 0 |
+| hold for review | 0 |
+| already created at the reserved id | 0 |
+
 Seed probabilities below are SEEDS for the initial pool, not observed market forecasts.
 
 ## 2028-senate-AL-regular-general — create
@@ -36,6 +46,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Alaska voted 13.6 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 15.2% and Republicans 76.8%. Other opens at 8% rather than 1%: Lisa Murkowski won the 2010 general as a write-in and has openly weighed running as an independent; the top-four/ranked-choice system (if it survives the 2026 repeal vote) makes a non-party-line winner plausible.
 - liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
 - reserved idempotency key (not yet a contract): `dc98qQuqq6`
+- online recheck (create): [information only: related market] AMBIGUOUS qslt8Cstdz @Jack1 "Will Lisa Murkowski win the 2028 US Senate election in Alaska?" (same race, different proposition or answer set)
 
 ## 2028-senate-AZ-regular-general — create
 **Which party will win the 2028 U.S. Senate election in Arizona?**
@@ -68,6 +79,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Colorado voted 11.1 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 77.7% and Republicans 21.3%. Other opens at 1%.
 - liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
 - reserved idempotency key (not yet a contract): `lEuQAUQd0A`
+- online recheck (create): [information only: related market] AMBIGUOUS PNnARCuALc @Jack1 "2028 Colorado Senate Democratic Primary Winner?" (primary/margin/conditional/derivative wording)
 
 ## 2028-senate-CT-regular-general — create
 **Which party will win the 2028 U.S. Senate election in Connecticut?**
@@ -92,6 +104,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Georgia voted 2.5 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 42.5% and Republicans 56.5%. Other opens at 1%.
 - liquidity: Competitive: within 8 points of the national environment (2028 Senate or governor): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `yP6NOsP9z6`
+- online recheck (create): [information only: related market] AMBIGUOUS Dea500b0db @JasonMendoza2008 "Democrats win 2028 Georgia Senate election?" (binary party market for this race; ours is three-way); [information only: related market] AMBIGUOUS NRzchgUzPu @Jack1 "Democrats win 2028 Georgia Senate election?" (binary party market for this race; ours is three-way)
 
 ## 2028-senate-HI-regular-general — create
 **Which party will win the 2028 U.S. Senate election in Hawaii?**
@@ -124,6 +137,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Indiana voted 19.4 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 8.2% and Republicans 90.8%. Other opens at 1%.
 - liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
 - reserved idempotency key (not yet a contract): `U2QUI095Ig`
+- online recheck (create): [information only: related market] AMBIGUOUS S2SAZShzgp @Jack1 "Which 2028 US Senate elections will a Democrat win?" (regular/special election wording differs)
 
 ## 2028-senate-IA-regular-general — create
 **Which party will win the 2028 U.S. Senate election in Iowa?**
@@ -132,6 +146,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Iowa voted 12.4 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 18.6% and Republicans 80.4%. Other opens at 1%.
 - liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
 - reserved idempotency key (not yet a contract): `2tCZQL5d90`
+- online recheck (create): [information only: related market] AMBIGUOUS OLgd06CzcN @Conflux "Will Chuck Grassley run for reelection in 2028 to a ninth term as US Senator from Iowa?" (primary/margin/conditional/derivative wording)
 
 ## 2028-senate-KS-regular-general — create
 **Which party will win the 2028 U.S. Senate election in Kansas?**
@@ -196,6 +211,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. New York voted 16.6 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 87.3% and Republicans 11.7%. Other opens at 1%.
 - liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
 - reserved idempotency key (not yet a contract): `hq9g9pgAcy`
+- online recheck (create): [information only: related market] AMBIGUOUS cpgsPsNnQE @Jack1 "2028 New York Democratic Senate Nominee?" (primary/margin/conditional/derivative wording)
 
 ## 2028-senate-NC-regular-general — create
 **Which party will win the 2028 U.S. Senate election in North Carolina?**
@@ -204,6 +220,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. North Carolina voted 3.8 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 38.8% and Republicans 60.2%. Other opens at 1%.
 - liquidity: Competitive: within 8 points of the national environment (2028 Senate or governor): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `s0uPPs0CAy`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT zCZU6Chy6z @Jack1 "2028 North Carolina Senate winner?" (same office/state/district/year with party outcomes); [information only: related market] AMBIGUOUS 8y0ZQhI8IC @Jack1 "2028 North Carolina Senate Democratic Primary Winner?" (primary/margin/conditional/derivative wording)
 
 ## 2028-senate-ND-regular-general — create
 **Which party will win the 2028 U.S. Senate election in North Dakota?**
@@ -212,6 +229,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. North Dakota voted 37.4 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
 - liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
 - reserved idempotency key (not yet a contract): `OEAUQuzhnp`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT lRO8d8LUyz @TheDucksFan "Which party will win the 2028 US Senate Election in North Dakota?" (same office/state/district/year with party outcomes)
 
 ## 2028-senate-OH-regular-general — create
 **Which party will win the 2028 U.S. Senate election in Ohio?**
@@ -220,6 +238,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Ohio voted 11.3 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 20.9% and Republicans 78.1%. Other opens at 1%.
 - liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
 - reserved idempotency key (not yet a contract): `CqPI0COyUs`
+- online recheck (create): [information only: related market] AMBIGUOUS 6QIEqgO9nd @Jack1 "Who will win the 2028 Ohio Senate election?" (same race, different proposition or answer set)
 
 ## 2028-senate-OK-regular-general — create
 **Which party will win the 2028 U.S. Senate election in Oklahoma?**
@@ -236,6 +255,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Oregon voted 14.2 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 83.7% and Republicans 15.3%. Other opens at 1%.
 - liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
 - reserved idempotency key (not yet a contract): `Z859cpsRC0`
+- online recheck (create): [information only: related market] AMBIGUOUS S2SAZShzgp @Jack1 "Which 2028 US Senate elections will a Democrat win?" (regular/special election wording differs)
 
 ## 2028-senate-PA-regular-general — create
 **Which party will win the 2028 U.S. Senate election in Pennsylvania?**
@@ -244,6 +264,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Pennsylvania voted 1.8 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 44.5% and Republicans 54.5%. Other opens at 1%.
 - liquidity: Competitive: within 8 points of the national environment (2028 Senate or governor): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `E5pIllnNq5`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT ZRCPgdEEdn @Jack1 "Who will win the 2028  senate election in Pennsylvania?" (same office/state/district/year with party outcomes); [information only: related market] AMBIGUOUS sROyylpZz6 @Fastcar99 "Pennsylvania Democratic Senate nominee? (2028)" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS I9EszZEtLL @Jack1 "Will John Fetterman win the 2028 Pennsylvania Senate Election?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS AqO59U9nIl @JimD "Who will win the 2028 Pennsylvania Democratic primary for the US Senate?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS zd96hNQlCu @Jack1 "2028 Pennsylvania Democratic Senate Nominee?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS Aups80Qgpy @Jack1 "Which US Senators and Candidates will win?" (same race, different proposition or answer set)
 
 ## 2028-senate-SC-regular-general — create
 **Which party will win the 2028 U.S. Senate election in South Carolina?**
@@ -268,6 +289,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Utah voted 23.3 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 4.5% and Republicans 89.5%. Other opens at 6% rather than 1%: in 2022 Democrats endorsed independent Evan McMullin instead of fielding a nominee and he took 42.8% against Mike Lee; the same seat is up in 2028.
 - liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
 - reserved idempotency key (not yet a contract): `lQqsO6dZhs`
+- online recheck (create): [information only: related market] AMBIGUOUS uZ2gZZun6U @Jack1 "Will the Republican Party candidate win the 2028 US Senate election in Utah?" (binary party market for this race; ours is three-way)
 
 ## 2028-senate-VT-regular-general — create
 **Which party will win the 2028 U.S. Senate election in Vermont?**
@@ -292,6 +314,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Wisconsin voted 1.6 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 44.9% and Republicans 54.1%. Other opens at 1%.
 - liquidity: Competitive: within 8 points of the national environment (2028 Senate or governor): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `t5Zy9QpCQz`
+- online recheck (create): [information only: related market] AMBIGUOUS hZE5pqZ8p8 @Jack1 "Who will win the 2028 Democratic primary for senate in Wisconsin?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS D5951aa2e7 @JasonMendoza2008 "Democrats win 2028 Wisconsin Senate election?" (binary party market for this race; ours is three-way); [information only: related market] AMBIGUOUS IC0sZIpp5U @Jack1 "Democrats win 2028 Wisconsin Senate election?" (binary party market for this race; ours is three-way)
 
 ## 2028-senate-TN-special-general — create
 **Which party will win the 2028 U.S. Senate special election in Tennessee?**
@@ -388,6 +411,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. West Virginia voted 42.7 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1.6% and Republicans 97.4%. Other opens at 1%.
 - liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
 - reserved idempotency key (not yet a contract): `LylZZElRyg`
+- online recheck (create): [information only: related market] AMBIGUOUS CIuEZ90El5 @TheDucksFan "Will Jim Justice run for Governor of West Virginia in 2028?" (primary/margin/conditional/derivative wording)
 
 ## 2028-president-AK-general — create
 **Which party will win Alaska in the 2028 presidential election?**
@@ -396,6 +420,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Alaska voted 13.6 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 6.4% and Republicans 92.6%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `ygRP550O2S`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT glczdn2q09 @Jack1 "Which party will win the 2028 presidential election in Alaska?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-AL-general — create
 **Which party will win Alabama in the 2028 presidential election?**
@@ -404,6 +429,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Alabama voted 29.9 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `hC8yEAhLLU`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT pPONIpP0hC @Jack1 "Which party will win the 2028 presidential election in Alabama?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-AR-general — create
 **Which party will win Arkansas in the 2028 presidential election?**
@@ -412,6 +438,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Arkansas voted 31.4 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `LdS0ulnN8S`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT qRpSnZqnt8 @Jack1 "Which party will win the 2028 presidential election in Arkansas?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-AZ-general — create
 **Which party will win Arizona in the 2028 presidential election?**
@@ -420,6 +447,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Arizona voted 4.2 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 31.9% and Republicans 67.1%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `UIhNLC5q5A`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT 9dgy99NgyR @Jack1 "Which party will win the 2028 presidential election in Arizona?" (same office/state/district/year with party outcomes); [information only: community market on the same question] EQUIVALENT 8p2PP5ZuIy @Jack1 "Which party will win the 2028 presidential election in Arizona?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-CA-general — create
 **Which party will win California in the 2028 presidential election?**
@@ -428,6 +456,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. California voted 23.8 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 98% and Republicans 1%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `clnqghA2Il`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT dLCgElSShN @Jack1 "Which party will win the 2028 presidential election in California?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-CO-general — create
 **Which party will win Colorado in the 2028 presidential election?**
@@ -436,6 +465,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Colorado voted 11.1 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 88.2% and Republicans 10.8%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `qRhlLzhIuA`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT tElnQ0lUUZ @Jack1 "Which party will win the 2028 presidential election in Colorado?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-CT-general — create
 **Which party will win Connecticut in the 2028 presidential election?**
@@ -444,6 +474,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Connecticut voted 16.1 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 95.3% and Republicans 3.7%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `ztE9Qy9LS0`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT Z5ntQsN2LI @Jack1 "Which party will win the 2028 presidential election in Connecticut?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-DC-general — create
 **Which party will win the District of Columbia in the 2028 presidential election?**
@@ -452,6 +483,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. The District of Columbia voted 86.3 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 98% and Republicans 1%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `LQzugAuNny`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT OpEnsCIRg5 @Jack1 "Which party will win the 2028 presidential election in DC?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-DE-general — create
 **Which party will win Delaware in the 2028 presidential election?**
@@ -460,6 +492,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Delaware voted 15.6 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 94.9% and Republicans 4.1%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `ORqz9LqOgC`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT Ay0u92zyqg @Jack1 "Which party will win the 2028 presidential election in Delaware?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-FL-general — create
 **Which party will win Florida in the 2028 presidential election?**
@@ -468,6 +501,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Florida voted 9.8 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 13.6% and Republicans 85.4%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `EdcpOnUqPQ`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT NSOgE5EtQU @Jack1 "Which party will win the 2028 presidential election in Florida?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-GA-general — create
 **Which party will win Georgia in the 2028 presidential election?**
@@ -476,6 +510,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Georgia voted 2.5 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 38.6% and Republicans 60.4%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `t2nqpLENQl`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT AgRpZNIOsq @Jack1 "Which party will win the 2028 presidential election in Georgia?" (same office/state/district/year with party outcomes); [information only: community market on the same question] EQUIVALENT ZP59COZzOS @Jack1 "Which party will win the 2028 presidential election in Georgia?" (same office/state/district/year with party outcomes); [information only: related market] AMBIGUOUS QQZy2CLA2y @Jack1 "If Jon Ossoff is the Democratic Nominee for President in 2028, will he win Georgia?" (primary/margin/conditional/derivative wording)
 
 ## 2028-president-HI-general — create
 **Which party will win Hawaii in the 2028 presidential election?**
@@ -484,6 +519,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Hawaii voted 25.3 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 98% and Republicans 1%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `UpQulLdE20`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT 8uOl9NEgzQ @Jack1 "Which party will win the 2028 presidential election in Hawaii?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-IA-general — create
 **Which party will win Iowa in the 2028 presidential election?**
@@ -492,6 +528,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Iowa voted 12.4 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 8.3% and Republicans 90.7%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `AhOCUACQSg`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT hgEgEL5SEu @Jack1 "Which party will win the 2028 presidential election in Iowa?" (same office/state/district/year with party outcomes); [information only: related market] AMBIGUOUS 9thydC8qSN @evan "Who will win the 2028 Iowa Democratic presidential caucuses?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS EgLsNldtZl @evan "Who will win the 2028 Iowa Republican presidential caucuses?" (same race, different proposition or answer set)
 
 ## 2028-president-ID-general — create
 **Which party will win Idaho in the 2028 presidential election?**
@@ -500,6 +537,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Idaho voted 36.2 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `82l2AlqPlC`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT dpgdNLRRs5 @Jack1 "Which party will win the 2028 presidential election in Idaho?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-IL-general — create
 **Which party will win Illinois in the 2028 presidential election?**
@@ -508,6 +546,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Illinois voted 12.7 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 91.2% and Republicans 7.8%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `8QUNzNpqOS`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT EuU28RzAqR @Jack1 "Which party will win the 2028 presidential election in Illinois?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-IN-general — create
 **Which party will win Indiana in the 2028 presidential election?**
@@ -516,6 +555,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Indiana voted 19.4 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1.6% and Republicans 97.4%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `9QO5yAzyy6`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT UNRdnQ5ZCh @Jack1 "Which party will win the 2028 presidential election in Indiana?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-KS-general — create
 **Which party will win Kansas in the 2028 presidential election?**
@@ -524,6 +564,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Kansas voted 17.2 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 2.8% and Republicans 96.2%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `PS892Pgcdn`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT tzpS2SNpdg @Jack1 "Which party will win the 2028 presidential election in Kansas?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-KY-general — create
 **Which party will win Kentucky in the 2028 presidential election?**
@@ -532,6 +573,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Kentucky voted 30.2 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `0dLhEqc69n`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT d2URcq8Nsz @Jack1 "Which party will win the 2028 presidential election in Kentucky?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-LA-general — create
 **Which party will win Louisiana in the 2028 presidential election?**
@@ -540,6 +582,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Louisiana voted 22.2 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `nspUqRlEtd`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT PREgpUZdpp @Jack1 "Which party will win the 2028 presidential election in Louisiana?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-MA-general — create
 **Which party will win Massachusetts in the 2028 presidential election?**
@@ -548,6 +591,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Massachusetts voted 28.6 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 98% and Republicans 1%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `EphPt0zqPq`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT yzUQLLu2p0 @Jack1 "Which party will win the 2028 presidential election in Massachusetts?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-MD-general — create
 **Which party will win Maryland in the 2028 presidential election?**
@@ -556,6 +600,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Maryland voted 30.3 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 98% and Republicans 1%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `lt0Lqn5Rqy`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT sIyzI9c6IO @Jack1 "Which party will win the 2028 presidential election in Maryland?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-ME-general — create
 **Which party will win Maine in the 2028 presidential election?**
@@ -564,6 +609,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Maine voted 6.7 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 76.4% and Republicans 22.6%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `ZIQps8NRhA`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT pOZ5qnZClc @Jack1 "Which party will win the 2028 presidential election in Maine?" (same office/state/district/year with party outcomes); [information only: related market] AMBIGUOUS FkyWAnOISxd2uEur7Vuh @Noah1 "Will Maine switch to a winner takes all presidential election system by the 2028 elections?" (same race, different proposition or answer set)
 
 ## 2028-president-MI-general — create
 **Which party will win Michigan in the 2028 presidential election?**
@@ -572,6 +618,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Michigan voted 0.8 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 45.9% and Republicans 53.1%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `RZ9ISZCPIl`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT dzPpt56nUp @Jack1 "Which party will win the 2028 presidential election in Michigan?" (same office/state/district/year with party outcomes); [information only: community market on the same question] EQUIVALENT IUtAAARIZZ @Jack1 "Which party will win the 2028 presidential election in Michigan?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-MN-general — create
 **Which party will win Minnesota in the 2028 presidential election?**
@@ -580,6 +627,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Minnesota voted 4.3 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 67.6% and Republicans 31.4%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `tCz5c9ROSt`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT Zy98nNRACn @Jack1 "Which party will win the 2028 presidential election in Minnesota?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-MO-general — create
 **Which party will win Missouri in the 2028 presidential election?**
@@ -588,6 +636,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Missouri voted 18.7 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1.9% and Republicans 97.1%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `cn8CPCzut0`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT I0RhNQPtd6 @Jack1 "Which party will win the 2028 presidential election in Missouri?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-MS-general — create
 **Which party will win Mississippi in the 2028 presidential election?**
@@ -596,6 +645,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Mississippi voted 21.5 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `6thqgSgLUQ`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT AOp2h6CAtq @Jack1 "Which party will win the 2028 presidential election in Mississippi?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-MT-general — create
 **Which party will win Montana in the 2028 presidential election?**
@@ -604,6 +654,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Montana voted 20.2 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1.2% and Republicans 97.8%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `psOU5CyOpd`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT sqCtn95u0z @Jack1 "Which party will win the 2028 presidential election in Montana?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-NC-general — create
 **Which party will win North Carolina in the 2028 presidential election?**
@@ -612,6 +663,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. North Carolina voted 3.8 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 33.2% and Republicans 65.8%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `9zA8lRA6On`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT QpR8ghttIZ @Jack1 "Which party will win the 2028 presidential election in North Carolina?" (same office/state/district/year with party outcomes); [information only: community market on the same question] EQUIVALENT PISlZNCLR2 @Jack1 "Which party will win the 2028 presidential election in North Carolina?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-ND-general — create
 **Which party will win North Dakota in the 2028 presidential election?**
@@ -620,6 +672,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. North Dakota voted 37.4 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `uEUnz5hPsp`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT 8pnz80sS5g @Jack1 "Which party will win the 2028 presidential election in North Dakota?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-NE-general — create
 **Which party will win Nebraska in the 2028 presidential election?**
@@ -628,6 +681,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Nebraska voted 21.7 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `nt9PzSycQ6`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT IglANsO0CS @Jack1 "Which party will win the 2028 presidential election in Nebraska?" (same office/state/district/year with party outcomes); [information only: related market] AMBIGUOUS naMJYS4UuK0fbsgxgYGF @Noah1 "Will Nebraska switch to a winner takes all presidential election system by the 2028 elections?" (same race, different proposition or answer set)
 
 ## 2028-president-NH-general — create
 **Which party will win New Hampshire in the 2028 presidential election?**
@@ -636,6 +690,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. New Hampshire voted 3.6 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 65% and Republicans 34%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `yCCESzRycs`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT 6Ilzq5Lctg @Jack1 "Which party will win the 2028 presidential election in New Hampshire?" (same office/state/district/year with party outcomes); [information only: related market] AMBIGUOUS yQQLsZsqNZ @evan "Who will win the 2028 New Hampshire Democratic presidential primary?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS tZptdQEpu8 @evan "Who will win the 2028 New Hampshire Republican presidential primary?" (primary/margin/conditional/derivative wording)
 
 ## 2028-president-NJ-general — create
 **Which party will win New Jersey in the 2028 presidential election?**
@@ -644,6 +699,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. New Jersey voted 9.6 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 84.8% and Republicans 14.2%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `Sz0PpP0EL5`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT Pds8QhlUuR @Jack1 "Which party will win the 2028 presidential election in New Jersey?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-NM-general — create
 **Which party will win New Mexico in the 2028 presidential election?**
@@ -652,6 +708,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. New Mexico voted 7.1 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 77.6% and Republicans 21.4%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `U8zn9q8d2p`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT Qcu2QpZgQ9 @Jack1 "Which party will win the 2028 presidential election in New Mexico?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-NV-general — create
 **Which party will win Nevada in the 2028 presidential election?**
@@ -660,6 +717,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Nevada voted 1.9 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 41.3% and Republicans 57.7%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `ECCcOUOnlO`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT 2sU8Nn0AlE @Jack1 "Which party will win the 2028 presidential election in Nevada?" (same office/state/district/year with party outcomes); [information only: community market on the same question] EQUIVALENT lpNAnZZtAz @Jack1 "Which party will win the 2028 presidential election in Nevada?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-NY-general — create
 **Which party will win New York in the 2028 presidential election?**
@@ -668,6 +726,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. New York voted 16.6 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 95.7% and Republicans 3.3%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `8lLIlNOdLt`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT sNzuhCSgtR @Jack1 "Which party will win the 2028 presidential election in New York?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-OH-general — create
 **Which party will win Ohio in the 2028 presidential election?**
@@ -676,6 +735,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Ohio voted 11.3 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 10.5% and Republicans 88.5%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `ycd0pN8y8A`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT PRI92CyLy0 @Jack1 "Which party will win the 2028 presidential election in Ohio?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-OK-general — create
 **Which party will win Oklahoma in the 2028 presidential election?**
@@ -684,6 +744,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Oklahoma voted 35.9 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `h0pcs0hOOA`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT zSStNCPRht @Jack1 "Which party will win the 2028 presidential election in Oklahoma?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-OR-general — create
 **Which party will win Oregon in the 2028 presidential election?**
@@ -692,6 +753,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Oregon voted 14.2 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 93.4% and Republicans 5.6%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `SQcgczRnQz`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT Zn9hNCQu02 @Jack1 "Which party will win the 2028 presidential election in Oregon?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-PA-general — create
 **Which party will win Pennsylvania in the 2028 presidential election?**
@@ -700,6 +762,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Pennsylvania voted 1.8 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 41.7% and Republicans 57.3%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `dtcNCqg09A`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT tdQdZd0Plg @Jack1 "Which party will win the 2028 presidential election in Pennsylvania?" (same office/state/district/year with party outcomes); [information only: related market] AMBIGUOUS yqPnn2qd6P @Jack1 "Will the 2028 Democratic Candidate for President win Pennsylvania?" (primary/margin/conditional/derivative wording)
 
 ## 2028-president-RI-general — create
 **Which party will win Rhode Island in the 2028 presidential election?**
@@ -708,6 +771,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Rhode Island voted 16.2 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 95.4% and Republicans 3.6%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `55ASlqltOR`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT ulRdlQIZg2 @Jack1 "Which party will win the 2028 presidential election in Rhode Island?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-SC-general — create
 **Which party will win South Carolina in the 2028 presidential election?**
@@ -716,6 +780,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. South Carolina voted 16.5 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 3.3% and Republicans 95.7%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `SlSAdIC22S`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT L2SLRIRl6U @Jack1 "Which party will win the 2028 presidential election in South Carolina?" (same office/state/district/year with party outcomes); [information only: related market] AMBIGUOUS OsZngC899Z @evan "Who will win the 2028 South Carolina Democratic presidential primary?" (primary/margin/conditional/derivative wording)
 
 ## 2028-president-SD-general — create
 **Which party will win South Dakota in the 2028 presidential election?**
@@ -724,6 +789,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. South Dakota voted 29.9 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `CN95Elns9t`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT yLyuzCPpgS @Jack1 "Which party will win the 2028 presidential election in South Dakota?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-TN-general — create
 **Which party will win Tennessee in the 2028 presidential election?**
@@ -732,6 +798,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Tennessee voted 28.4 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `qqs0tdElsy`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT 8N6RzusU8C @Jack1 "Which party will win the 2028 presidential election in Tennessee?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-TX-general — create
 **Which party will win Texas in the 2028 presidential election?**
@@ -740,6 +807,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Texas voted 11.3 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 10.4% and Republicans 88.6%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `Oy0uCNNg9I`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT yIsQd2Rqcq @Jack1 "Which party will win the 2028 presidential election in Texas?" (same office/state/district/year with party outcomes); [information only: related market] AMBIGUOUS dIXJEEBVF6X78nZV7hST @GG "Will a Democrat win Texas in the 2028 presidential election?" (binary party market for this race; ours is three-way)
 
 ## 2028-president-UT-general — create
 **Which party will win Utah in the 2028 presidential election?**
@@ -748,6 +816,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Utah voted 23.3 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `g5InI5s89O`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT 0099I2E2EL @Jack1 "Which party will win the 2028 presidential election in Utah?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-VA-general — create
 **Which party will win Virginia in the 2028 presidential election?**
@@ -756,6 +825,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Virginia voted 6.6 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 76% and Republicans 23%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `5PZ6nOAuL6`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT USzunIZqQd @Jack1 "Which party will win the 2028 presidential election in Virginia?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-VT-general — create
 **Which party will win Vermont in the 2028 presidential election?**
@@ -764,6 +834,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Vermont voted 33.2 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 98% and Republicans 1%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `EUsAQ995yt`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT 0dPRNShgnl @Jack1 "Which party will win the 2028 presidential election in Vermont?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-WA-general — create
 **Which party will win Washington in the 2028 presidential election?**
@@ -772,6 +843,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Washington voted 17.9 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 96.7% and Republicans 2.3%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `COz2IO5hch`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT c5R68SUuyR @Jack1 "Which party will win the 2028 presidential election in Washington?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-WI-general — create
 **Which party will win Wisconsin in the 2028 presidential election?**
@@ -780,6 +852,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Wisconsin voted 1.6 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 42.4% and Republicans 56.6%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `zUqALQ62dL`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT UgnOcS2ddg @Jack1 "Which party will win the 2028 presidential election in Wisconsin?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-WV-general — create
 **Which party will win West Virginia in the 2028 presidential election?**
@@ -788,6 +861,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. West Virginia voted 42.7 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `ducgR0uI6u`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT 9U5IENILtZ @Jack1 "Which party will win the 2028 presidential election in West Virginia?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-WY-general — create
 **Which party will win Wyoming in the 2028 presidential election?**
@@ -796,6 +870,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Wyoming voted 47.5 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `5nAtEssZpS`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT yQLnLqP5gu @Jack1 "Which party will win the 2028 presidential election in Wyoming?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-ME-01-general — create
 **Which party will win Maine's 1st District (ME-1) in the 2028 presidential election?**
@@ -804,6 +879,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Maine's 1st District voted 21.3 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 98% and Republicans 1%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `98C5qnt2uh`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT Atdns09Oqz @Jack1 "Which party will win the 2028 presidential election in Maines 1st Congressional District?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-ME-02-general — create
 **Which party will win Maine's 2nd District (ME-2) in the 2028 presidential election?**
@@ -820,6 +896,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Nebraska's 1st District voted 13.8 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 6.2% and Republicans 92.8%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `NddRhpNytp`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT ZnPPIg0QRE @Jack1 "Which party will win the 2028 presidential election in Nebraskas 1st Congressional District?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-NE-02-general — create
 **Which party will win Nebraska's 2nd District (NE-2) in the 2028 presidential election?**
@@ -828,6 +905,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Nebraska's 2nd District voted 4.1 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 66.7% and Republicans 32.3%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `IgdAISyOgZ`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT L2gCNl2hZN @Jack1 "Which party will win the 2028 presidential election in Nebraskas 2nd Congressional District?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-NE-03-general — create
 **Which party will win Nebraska's 3rd District (NE-3) in the 2028 presidential election?**
@@ -836,6 +914,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Nebraska's 3rd District voted 55.2 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
 - liquidity: 2028 presidential state or district market (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `N99tAp9UCA`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT nyUuU9t0Pz @Jack1 "Which party will win the 2028 presidential election in Nebraskas 3rd Congressional District?" (same office/state/district/year with party outcomes)
 
 ## 2028-president-US-general — create
 **Which party will win the 2028 U.S. presidential election?**
@@ -844,6 +923,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. The national market opens with the parties even: Democrats 49.5%, Republicans 49.5%. Other opens at 1%.
 - liquidity: 2028 presidential market (Tod, 5 Nov 2026): Ṁ100,000.
 - reserved idempotency key (not yet a contract): `PhINOuC86C`
+- online recheck (create): [information only: community market on the same question] EQUIVALENT gUpCZZnNQz @DudleyDOODOO "Which party will win the 2028 presidential election?" (same office/state/district/year with party outcomes); [information only: community market on the same question] EQUIVALENT PAtudSIsN6 @XBot "What Party will the Winning 2028 Presidential Candidate be?" (same office/state/district/year with party outcomes); [information only: community market on the same question] EQUIVALENT CnIys9Ucc9 @CivilizedGuy "What party will win the November 2028 Presidential election? " (same office/state/district/year with party outcomes); [information only: community market on the same question] EQUIVALENT ghp8ILRnny @PrijwalNaidu "Which party will the winner of the 2028 US Presidential Election be from?" (same office/state/district/year with party outcomes); [information only: community market on the same question] EQUIVALENT 6AlnL5h85P @DionysusTheMad "Which party will win the 2028 US presidential election?" (same office/state/district/year with party outcomes); [information only: community market on the same question] EQUIVALENT dm9roaqls1 @burkh4rt "Which party will win the 2028 US Presidential election?" (same office/state/district/year with party outcomes); [information only: community market on the same question] EQUIVALENT dgUXwJtDik3QaYJKQCrv @Henryc47 "Which party will win the 2028 US Presidential Election?" (same office/state/district/year with party outcomes); [information only: community market on the same question] EQUIVALENT 8p6sy5snq9 @Ernie "Which political party wins the US presidency in 2028?" (same office/state/district/year with party outcomes); [information only: related market] AMBIGUOUS cEzt6cShg2 @ManifoldPolitics "Will the 2028 US Presidental Election Winner be a Governor?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS zhu6gzZS6h @DanzoAlerantos "Will The 2028 President Elect be a Neo-Con or Liberal Hawk?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS gO28NINztN @RaymondChristopherTanto "Will Jon Ossoff run and win the 2028 Presidential Election?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS q0QZs8lPQ2 @DudleyDOODOO "Will Democrats win 2028 white house election?" (binary party market for this race; ours is three-way); [information only: related market] AMBIGUOUS 5cclR289cE @ManifoldPolitics "If a Republican wins the presidency in 2028, will Bitcoin be above $250,000 at the end of 2030?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS l0g5lAQLg2 @ManifoldPolitics "If a Democrat wins the presidency in 2028, will Bitcoin be above $250,000 at the end of 2030?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS p0z5t2cp0g @ManifoldPolitics "If a Republican wins the presidency in 2028, will Congress enact a federal abortion-rights law before Jan 20, 2033?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS ycRlQ0g0qE @ManifoldPolitics "If a Democrat wins the presidency in 2028, will Congress enact a federal abortion-rights law before Jan 20, 2033?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS s9O6zh8q5P @ManifoldPolitics "If a Republican wins the presidency in 2028, will the Senate end the legislative filibuster before January 3, 2031?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS 8NcSUnlNUZ @ManifoldPolitics "If a Democrat wins the presidency in 2028, will the Senate end the legislative filibuster before January 3, 2031?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS E5dENyyc8P @ManifoldPolitics "If a Republican wins the presidency in 2028, will marijuana be federally descheduled before Jan 20, 2033?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS CuChuRRyt2 @ManifoldPolitics "If a Democrat wins the presidency in 2028, will marijuana be federally descheduled before Jan 20, 2033?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS uC9C9PC9n2 @ManifoldPolitics "If a Republican wins the presidency in 2028, will the Supreme Court have more than nine justices before Jan 20, 2033?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS cR0sltZnhC @ManifoldPolitics "If a Democrat wins the presidency in 2028, will the Supreme Court have more than nine justices before Jan 20, 2033?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS cdlURNhhqR @ManifoldPolitics "If a Republican wins the presidency in 2028, will U.S. real GDP shrink in any quarter of 2029 or 2030?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS gR9NSt5N98 @ManifoldPolitics "If a Democrat wins the presidency in 2028, will U.S. real GDP shrink in any quarter of 2029 or 2030?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS pO5Ap9Zsp2 @ManifoldPolitics "If a Republican wins the presidency in 2028, will the S&P 500 close 2029 higher than it closed on Election Day 2028?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS OAhNt0zI2Q @ManifoldPolitics "If a Democrat wins the presidency in 2028, will the S&P 500 close 2029 higher than it closed on Election Day 2028?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS uRh8q8ZnPs @DudleyDOODOO "Will Democrats win back the white house in 2028?" (binary party market for this race; ours is three-way); [information only: related market] AMBIGUOUS ZL5Rg0AOSd @Jack1 "Will Democrats win all 7 ‘swing states’ in the 2028 presidential election?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS Ndg8IlQLPl @JZB "Who will be the Democratic nominee, and will they win the 2028 presidential election?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS De4ac2c409 @JasonMendoza2008 "Will JD Vance, Marco Rubio OR Gavin Newsom win the 2028 presidential election?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS Daaca09d1e @JasonMendoza2008 "Will a Democrat win the 2028 Presidential Election?" (binary party market for this race; ours is three-way); [information only: related market] AMBIGUOUS D9babfa90f @JasonMendoza2008 "Will a Democrat win the 2028 Presidential Election?" (binary party market for this race; ours is three-way); [information only: related market] AMBIGUOUS 6PuIlSlCOO @strutheo "Will the winner of the 2028 presidential election be one of AOC, Newsom, Vance or Rubio?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS IcgRN6gQP2 @AlexanderTurok "Will The Democrats Win Every Presidential Election from 2028 to 2040?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS NN6SZcUq0y @Jack1 "Will JD Vance, Marco Rubio OR Gavin Newsom win the 2028 presidential election?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS nLzhlEl6sO @Yoae "Will the 2028 presidential election winner be a millennial?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS y2CpthtZZg @nikki "Which party will win the 2028 presidential election? / Will prediction markets be legal in 2030?" (combined or multi-part question); [information only: related market] AMBIGUOUS 6ICctR2dA6 @realTomBayes "In 2028, will it be harder to get a DCM license than in 2026? // Will a Democrat win the 2028 presidential election?" (combined or multi-part question); [information only: related market] AMBIGUOUS LqIIOd08np @TappingCat "Will the 2028 Presidential Election Winner Mog the Runner-up?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS lygzZ0sQlE @JoeandSeth "If X is the Republican nominee for president in 2028, will they win the presidency?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS ZCIs8Zhy5A @Qq "Will the winner of the 2028 U.S. presidential election be taller than the runner-up?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS 9uI8OPqREA @EvanDaniel "Will the 2028 Presidential Election winner be Catholic?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS Qy0d2cg2uL @JavierSaladrigas "Will this Democratic ticket win the 2028 Presidential Election?: Mark Kelly-Gretchen Whitmer" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS tCAQQNQCS0 @JavierSaladrigas "“Which candidate has the best chance of winning the 2028 U.S. Presidential Election as the Democratic nominee?”" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS 6LthAAANUO @CivilizedGuy "Will Donald Trump be president of the United States on 12/31/2028?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS 6pdU0lNsOd @Vesperstelo "Will the Republican candidate win the 2028 US presidential election?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS 9pyRSU5A6n @AmmonLam "Which party will win the popular vote in the 2028 Presidential election?" (a popular-vote market; ours follows the electoral outcome); [information only: related market] AMBIGUOUS 9Unqq6gOpQ @Damin "Conditional on (x) being the 2028 democratic nominee, (x) wins the 2028 presidential election" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS ndCpQzhgqR @BoltonBailey "2028 US Vice Presidential Election winner?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS I9nqEQUcSc @pesci9521 "Who will be elected president in 2028?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS zpQhgp9LL9 @yeeta "Who will be on the winning U.S. presidential ticket (President + VP) in 2028?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS Pz9LqZSALy @Yoae "Will a self-described 'democratic socialist' win the US presidential election in 2028?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS q2EChduhg0 @LiBrandon "Which party will win the 2028 US presidential election?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS CtlnPZ6Us2 @Elspeth "If nominated, which Democratic candidate will win the 2028 U.S. presidential election?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS 8CqpA5SCSd @Damin "The winner of the 2028 U.S. presidential election will be the nominee of which party?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS PRcypsA5hu @JoshuaWilkes "Will JD Vance win the 2028 US Presidential Election?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS pz6qOAlNEu @NathanpmYoung "Will Volodymyr Zelenskyy be re-elected as President of Ukraine before 2028" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS RnSLLtEU96 @Robincvgr "Conditional on this candidate winning the 2028 Democratic presidential primary, will they win the general election?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS d0sunNgggN @PrijwalNaidu "Will the winner of the 2028 US Presidential Election win the 2032 US Presidential Election?" (names more than one year); [information only: related market] AMBIGUOUS 6NCgdIRu0I @HenryFT "Will Donald Trump win the 2028 presidential election and be sworn in for a third term?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS y0LCcRUst5 @Tripping "How old will the winner of the 2028 US presidential election be?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS uRgOu0cs0t @4fa "How many electoral votes will the Democratic presidential candidate win in 2028? [overlapping ranges]" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS pAqpd9qu55 @StopPunting "Home State of 2028 US Election Vice-Presidential Winner" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS EszgsUNIdz @Charlie "If X is the Democratic nominee for president in 2028, will they win the presidency?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS yERZP5ngZL @Yoae "Will the 2028 presidential election winner be a white man?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS gIA9ZO8RNl @AIC "Who will be the vice president on the winning ticket in the 2028 US election?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS cUNLyLnNP0 @nixtoshi "Who will win the 2028 US presidential elections?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS u5gs9sl60R @shplogo "Will a Democrat win the 2028 Presidential Election?" (binary party market for this race; ours is three-way); [information only: related market] AMBIGUOUS acuirwp6fw @yaakovgrunsfeld "Will the party that wins the 2024 US presidential election win the 2028 presidential election" (names more than one year); [information only: related market] AMBIGUOUS anknmgg1tv @poloolop "Will Trump win in 2028 Presidential Elections" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS t9s0m8tf2v @ManifoldPolitics "Who will win the 2028 United States Presidential Election?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS mhojsgoybs @predyx_markets "Republicans win 2028 US Presidential Election?" (binary party market for this race; ours is three-way); [information only: related market] AMBIGUOUS 5dfk308wjr @predyx_markets "Democrats win 2028 US Presidential Election?" (binary party market for this race; ours is three-way); [information only: related market] AMBIGUOUS ywhpvq5luc @Tetraspace "Who would win the US Presidential Election, if they were the Democratic Party nominee in 2028?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS 6mm0298z31 @sama "Will Taylor Swift win the 2028 presidential election?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS f3tc20qcne @njmkw "Who will be President on Election Day 2028? (Add answers.)" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS wpdomi6nif @LarsDoucet "Will JD Vance win the 2028 US Presidential Election?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS hsqsez3afy @NathanDickson "Will J.D. Vance win the 2028 Presidential Election of the United States?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS zxgznfnl53 @MattP "Conditional on their 2024 nominee, will the Democratic candidate for president win in 2028?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS gB7slCzEZxhhYXE4lVkc @NathanDickson "Will Marco Rubio win the 2028 Presidential election?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS Txrg61kEjaQYFpZ2QdnK @Noah1 "Will any new state reject winner takes all electoral vote allocation for the 2028 election?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS Pq4fV7eXAPWr2yyhbUbs @StopPunting "Will Donald Trump survive through the end of 2028 if Trump wins the 2024 US Presidential Election?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS 81j9kA428U8Y6E5rs9dG @StopPunting "Will Joe Biden survive through the end of 2028 if Trump wins the 2024 US Presidential Election?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS HYQ9XhnUAF365g9YZDn5 @PlasmaBallin "Will the winner of the 2028 Democratic presidential nomination contest in American Samoa win any other contest?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS 3Wa4QvP8ZlmJuB6BJtzb @ManifoldPolitics "Who will next win a US Presidential Election besides Donald Trump or Joe Biden?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS rF6oK1yuTdy6UdIGHNYe @ManifoldPolitics "Who would win the US Presidential Election, if they were the Democratic Party nominee in 2024 or 2028?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS uvhbK6CbQqojmSNecEY6 @ManifoldPolitics "Who would win the US Presidential Election, if they were the Republican Party nominee in 2024 or 2028?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS e9ygD10lglZ0MmJxBkvY @Tumbles "Will a third party candidate win the 2028 USA presidential election?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS KPt90dwrADWR06eQ2YwB @Tripping "Will the combined age of the winning ticket of the 2024 US presidential election be older than the winners in 2028?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS dqFJXNIO0pG9g7wAdUXc @AmmonLam "Will the winner of the 2028 presidential election be under the age of 50?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS W8mSt6ooDxWmKcGwA7Wm @AmmonLam "Will the 2028 presidential election winner be a female?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS umyyYSgruKqsAKWqGo23 @nsokolsky "Will a person under the age of 60 be elected US President in 2028?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS 3hpDrur4CXnfLysxQdO3 @AmmonLam "Will the Democratic Party win the 2028 Presidential Election?" (binary party market for this race; ours is three-way); [information only: related market] AMBIGUOUS OXJLm8NRwBKhZirRU27I @nsokolsky "Will a person under the age of 70 be elected US President in 2028?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS 461Vv3RpCpvUKKczW8Yw @predyx_markets "2028 US Presidential Election winner?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS EMY2H7HEtpSzsyBtlvQt @CodeandSolder "Who will win 2024 presidential election? && Will SBF receive a presidential pardon before 2028?" (combined or multi-part question); [information only: related market] AMBIGUOUS dkLmp4RvX1iv3z8znA4v @SteveSokolowski "Will Mike Johnson win the 2028 United States Presidential election?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS IPiiXMwXryN0x75PqV9H @Charlie "Who will win the 2028 US presidential election?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS iQhvjJCZS67hBlxCP5uM @DanW "Will a Democrat win the 2028 Presidential Election?" (binary party market for this race; ours is three-way); [information only: related market] AMBIGUOUS hUxUVH64uO3c9mmEdiRP @DylanSlagh "Will a democrat win the 2028 presidential election?" (binary party market for this race; ours is three-way); [information only: related market] AMBIGUOUS OQyAXjTNhdwbqScZS8B1 @Joshua "Will a Republican win the US presidential election in 2024?/Will a Republican win the US presidential election in 2028?" (combined or multi-part question); [information only: related market] AMBIGUOUS Jso5Dys29lTgTom8Hnmy @skibidist "Will the winner of 2028 US presidential election be less than 6ft (183cm) tall?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS QJTKUEFU0UIj4Cm1Fm37 @DylanSlagh "Who will win the 2028 United States presidential election?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS wXtRwDtaLLq6yAWY4SGc @Nadja_L "Will the winner of the 2028 US Presidential Election be a first-time presidential contender?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS J7krYjbhuIYXWmLj1ZR9 @MetaculusBot "Will a Democrat win the 2028 US presidential election?" (binary party market for this race; ours is three-way); [information only: related market] AMBIGUOUS fAodylcNsWtjg3qDNYvB @duck "Will Petr Pavel win the 2028 Czech presidential election?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS 5oSb9bgyB6l0bOqwNfVn @DismalScientist "If Donald Trump wins the 2024 presidential election, what percentage of Americans will live on less than $40 per day in 2028?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS 6yisd81fOjC994mF5oQu @IsaacKing "Will a third-party or independent candidate win any state in the 2024 or 2028 US presidential elections?" (names more than one year); [information only: related market] AMBIGUOUS IkPEZEfTqWLnvePM8q47 @AutopoieticErgodicity "Which party will win the 2028 U.S. presidential election?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS 5tQnnUpQZl @Fastcar99 "2028: Who will win the Presidency, House, and Senate?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS 6OdhA08pRR @Web3ICP "Under 55! U.S. Rep. Presidential nominee will not have reached age 55 by the time they win the nomination in 2028." (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS hLY5IW64tVqVWzt3sbdv @NathanpmYoung "Which party will win the Presidency? Will the Ukraine sever the land bridge between 2025 and 2028 (inclusive)?" (combined or multi-part question); [information only: related market] AMBIGUOUS 7I2P89WsBJ828Adys0E7 @NathanpmYoung "Which party will win the Presidency? Will there be a US recession between 2025 and 2028 (inclusive)?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS n6I6lQUhL0 @MaxGhenis "Will any 2028 presidential primary or caucus winner have publicly backed a universal basic income since 2025?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS shth8syZcc @benmanns "Will the Republican presidential candidate endorsed by Trump win the 2028 Republican primaries?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS RqLRAYhj4fKVt5pt0uoP @Tripping "Who will win at least one state in the 2028 Republican Party presidential primaries?" (primary/margin/conditional/derivative wording); [information only: related market] AMBIGUOUS 9HfKBvMsp5H3bXhjBFJo @Tripping "Who will win at least one state in the 2028 Democratic Party presidential primaries?" (primary/margin/conditional/derivative wording)
 
 ## 2028-president-AK-popular-vote — create
 **Which party will win the popular vote in Alaska in the 2028 presidential election?**
@@ -1084,6 +1164,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Nebraska voted 21.7 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
 - liquidity: 2028 popular-vote market outside the National Popular Vote Interstate Compact (Tod, 6 Nov 2026): Ṁ1,000; the state’s popular vote decides its electoral votes, whose market has Ṁ10,000.
 - reserved idempotency key (not yet a contract): `UNgOdcCCpc`
+- online recheck (create): [information only: related market] AMBIGUOUS IglANsO0CS @Jack1 "Which party will win the 2028 presidential election in Nebraska?" (not about the popular vote; ours is the popular vote)
 
 ## 2028-president-NH-popular-vote — create
 **Which party will win the popular vote in New Hampshire in the 2028 presidential election?**
@@ -4564,6 +4645,7 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - seed basis: Opening odds are a starting point, not a forecast. Vermont voted 33.2 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 98% and Republicans 1%. Other opens at 1%.
 - liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
 - reserved idempotency key (not yet a contract): `LgnZ0Z0gI5`
+- online recheck (create): [information only: related market] AMBIGUOUS 80UHURQSzr7t89dZN6SZ @AndrewG "Will Vermont have had two female representatives by 2028?" (primary/margin/conditional/derivative wording)
 
 ## 2028-house-WA-01-regular-general — create
 **Which party will win the 2028 U.S. House election in Washington's 1st District?**
