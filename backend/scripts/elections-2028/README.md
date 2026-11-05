@@ -228,7 +228,7 @@ read at run time, or from documented static priors:
    ```powershell
    npx ts-node --transpile-only elections-2028/create-national-markets.ts --apply `
      --env prod --creator-username ManifoldPolitics `
-     --state C:\Users\User\elections-national-prod\state.prod.json --max-mana 400000
+     --state C:\Users\User\elections-national-prod\state.prod.json --max-mana 500000
    ```
    About 201 markets × (create, read back, publish) at `--pace-ms 400`:
    roughly 15–25 minutes. Avoid 07:45–08:15 UTC (the API restarts daily at
