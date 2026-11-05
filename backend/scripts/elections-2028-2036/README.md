@@ -22,6 +22,32 @@ approves and runs the launch after the 2026 results are certified (December
 | 2036 | 33 (Class 1) | 11 | 57 | 51 | — | 152 | 161,000 |
 | **2028–2036** | | | | | | **1,031** | **2,489,000** |
 
+### Scope: what is and isn't here
+
+Included: the 2028, 2032 and 2036 presidential elections (the national party
+market, 51 state + 5 district electoral markets and 51 state popular-vote
+markets per cycle); every regular Senate seat and governorship up in 2028,
+2030, 2032, 2034 and 2036; and the 2028 House (all 435 districts). The 2027
+races and the national markets (nominees, primaries, balance of power) are in
+the separate national script (`backend/scripts/elections-2028/` on
+`feat/elections-2028-page`).
+
+Not included: House races after 2028 (new maps after the 2030 census),
+special elections (added when called), off-year races after 2027 (2029
+Virginia and New Jersey governors and later), and contests in the
+territories. Additions are tracked in the Notion additions list for the
+election markets, not here.
+
+**Reapportionment.** House 2028 is fixed by the 2020 apportionment. The 2032
+and 2036 district markets (ME-1/2, NE-1/2/3) need a recheck once the 2030
+census apportionment counts are out (due by December 31, 2030). A new
+district, say a Nebraska 4th, needs a new market. A district that disappears
+while its state keeps awarding votes by district (Nebraska down to two seats)
+has nothing to follow and would be N/A, but the wording only says "N/A if
+<state> no longer awards an electoral vote by district", so add "or has no
+<n>th district" before launch if a loss looks possible. Same recheck if any
+state adopts or drops district allocation before 2032.
+
 Creator: `@ManifoldPolitics`. Every market: `cpmm-multi-2` (the default),
 answers sum to one, `addAnswersMode: ONLY_CREATOR`, tier Ṁ1,000 unless raised
 (see "Liquidity tiers" below), public after
@@ -113,8 +139,9 @@ per-answer price: Ṁ100 at 1,000, Ṁ1,000 at 10,000, Ṁ10,000 at 100,000.
   election, and is N/A if that map has no district numbered N (the
   renumbering and seat-count N/A clauses are gone; apportionment is fixed
   until the 2030 census anyway).
-- **Short descriptions**: three short plain paragraphs, no labels, about 540
-  characters instead of about 2,500:
+- **Short descriptions**: three short plain paragraphs, no labels, about 600
+  characters on average instead of about 2,500 (presidential state markets
+  about 850, the longest 912 for DC):
   1. what it resolves to, with the election date (and the Senate class, the
      House district rule, or the state or district), plus at most one
      sentence for a state whose deciding round differs (Georgia runoff,
@@ -140,9 +167,21 @@ per-answer price: Ṁ100 at 1,000, Ṁ1,000 at 10,000, Ṁ10,000 at 100,000.
   NE-1/2/3) follows the district's electoral vote and is N/A if the state no
   longer awards one by district. State and district markets resolve on the
   electors the state certifies, or an earlier AP call nothing could change;
-  faithless electors don't change the result. They carry no ranked-choice or
-  Alaska counting sentence: the certified electors already reflect each
-  state's counting rules.
+  faithless electors don't change the result. If a state's certified
+  electors are split between tickets, its market resolves to each party in
+  proportion to its share of them (Tod, 2026-11-05: "the existing one can
+  resolve proportionally"); for Maine and Nebraska that means the two
+  statewide electors, whose district electors split from them routinely
+  (Maine went 3–1 in 2024). A district has one elector, so its market has no
+  such sentence. They carry no ranked-choice or Alaska counting sentence: the
+  certified electors already reflect each state's counting rules.
+
+  Example (2028 Alabama, third paragraph):
+
+  > Resolves on the electors Alabama certifies, or earlier once the AP has
+  > called the state and nothing could change it. If those electors are split
+  > between tickets, it resolves to each party in proportion to its share of
+  > them. Faithless electors don't change it.
 
   Opening odds, answer curation, term-start notes and the hub link are no
   longer described. The seeds stay in the payload; a plain-language seed note
@@ -343,6 +382,26 @@ C:\Users\User\elections-2036-prod\   state.prod.json  dashboard-mapping.prod.jso
 (The page importer expects `state.prod.json` and `dashboard-mapping.prod.json`
 together in one folder per batch; copy the `dashboard-mapping.prod.json` the
 CLI writes into `<cycle>/out/` next to the state file after each run.)
+
+**No follower notifications.** `--apply` refuses to run unless it gets
+exactly one of `--quiet` or `--loud`, so a forgotten flag can't notify
+anyone. Always pass `--quiet`: every market is created unlisted, read back,
+its opening prices checked, and only then published. Followers are notified
+only when a market is created public (`createNewContractNotification` checks
+`visibility == 'public'`); publishing later through the visibility update
+only revalidates the page and records an edit. `--loud` would send each of
+@ManifoldPolitics' ~23k followers an in-app notification per market. The
+descriptions mention no one (a test rejects any `@name`), since a mentioned
+user is notified even when the market is unlisted.
+
+**Changed payloads stop before publishing.** If a market was created unlisted
+and the manifest's payload for it has changed since (its `payloadHash` in the
+state file no longer matches), the run stops before publishing it, because
+publishing would show the old question or criteria. To clear it, update the
+unlisted market to match the manifest (question, description, answers, close
+time) or delete it, then set the record's `payloadHash` to the value printed
+in `stoppedReason` and re-run. A market already published from an older
+payload is left alone and logged ("NOT recreating").
 
 1. **Create the missing topics** in `topics-needed.md` (or decide to launch
    without them), paste the ids into `topics.json`, regenerate.
