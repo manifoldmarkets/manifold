@@ -7,6 +7,7 @@ import { placeName } from 'web/lib/politics/official-markets'
 import {
   EARLY_STATES,
   PrimaryCell,
+  primaryOffice,
   PrimaryRow,
 } from 'web/lib/politics/primaries'
 
@@ -87,8 +88,7 @@ function PrimaryTable(props: {
                   </span>
                   {showOffice && (
                     <span className="text-ink-600 block text-xs font-normal">
-                      {row.o === 'S' ? 'Senate' : 'Governor'}
-                      {row.sp ? ' (special)' : ''}
+                      {primaryOffice(row)}
                     </span>
                   )}
                   {early && (

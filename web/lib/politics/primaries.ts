@@ -18,6 +18,7 @@ export type PrimaryRow = {
   o: 'P' | 'S' | 'G' // presidential, Senate, governor
   st: string
   sp?: 1
+  y?: number // election year, when not 2028 (Minnesota's 2027 special)
   D?: PrimaryCell
   R?: PrimaryCell
   A?: PrimaryCell // one market for every party (top-two or top-four primaries)
@@ -50,7 +51,7 @@ export function pickLeader(
 export const EARLY_STATES = ['IA', 'NH', 'SC', 'NV']
 
 // Early states first, then the states and DC alphabetically, then the
-// territories and Democrats Abroad.
+// territories and Democrats Abroad; an earlier year's contest first.
 export function orderPrimaryRows(rows: PrimaryRow[]) {
   const rank = (st: string) => {
     const early = EARLY_STATES.indexOf(st)
@@ -62,6 +63,16 @@ export function orderPrimaryRows(rows: PrimaryRow[]) {
     rows,
     (r) => rank(r.st),
     (r) => placeName(r.st),
-    (r) => r.o
+    (r) => r.o,
+    (r) => r.y ?? 2028
   )
+}
+
+// "Senate", "Senate (special)", "Senate (2027 special)", "Governor".
+export const primaryOffice = (row: Pick<PrimaryRow, 'o' | 'sp' | 'y'>) => {
+  const office = row.o === 'S' ? 'Senate' : 'Governor'
+  if (!row.sp && !row.y) return office
+  return `${office} (${[row.y, row.sp ? 'special' : undefined]
+    .filter(Boolean)
+    .join(' ')})`
 }

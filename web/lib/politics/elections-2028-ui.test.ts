@@ -20,10 +20,16 @@ import {
   classifyNational,
   classifyPipeline,
   OfficialMarketsFile,
+  pageLoads,
   pickSlot,
   placeIn,
 } from './official-markets'
-import { orderPrimaryRows, pickLeader, PrimaryRow } from './primaries'
+import {
+  orderPrimaryRows,
+  pickLeader,
+  primaryOffice,
+  PrimaryRow,
+} from './primaries'
 import {
   boardColumn,
   BoardRace,
@@ -489,4 +495,49 @@ test('primary rows: early states first, territories last', () => {
   assert.deepEqual(ordered.slice(0, 4), ['IA', 'NH', 'SC', 'NV'])
   assert.deepEqual(ordered.slice(4, 7), ['AL', 'DC', 'WY'])
   assert.deepEqual(new Set(ordered.slice(7)), new Set(['PR', 'DA']))
+})
+
+test('the page loads each primary through its own year, 2027 included', () => {
+  const markets = (mapping as unknown as OfficialMarketsFile).markets
+  const mn = markets['2027-senate-special-minnesota-dem']
+  assert.equal(mn?.kind, 'senate-primary')
+  assert.equal(mn?.cycle, 2027)
+  const show = (year: number, primaries = true, midterms2030 = false) => ({
+    primaries,
+    midterms2030,
+    year,
+  })
+  assert.equal(pageLoads(mn, show(2027)), true)
+  assert.equal(pageLoads(mn, show(2028)), false)
+  assert.equal(pageLoads(mn, show(2027, false)), false)
+  const iowa = { cycle: 2028, kind: 'presidential-primary' as const }
+  assert.equal(pageLoads(iowa, show(2027)), true)
+  assert.equal(pageLoads(iowa, show(2028)), true)
+  assert.equal(pageLoads(iowa, show(2029)), false)
+  assert.equal(
+    pageLoads({ cycle: 2028, kind: 'president-popular' }, show(2027)),
+    false
+  )
+  assert.equal(pageLoads({ cycle: 2028, kind: 'senate' }, show(2027)), true)
+  assert.equal(pageLoads({ cycle: 2030, kind: 'senate' }, show(2029)), false)
+  assert.equal(
+    pageLoads({ cycle: 2030, kind: 'senate' }, show(2029, false, true)),
+    true
+  )
+  assert.equal(pageLoads({ cycle: 2027, kind: 'national' }, show(2027)), true)
+})
+
+test('primary rows: an earlier year first, labelled with its year', () => {
+  const rows: PrimaryRow[] = [
+    { k: 'S-MN-sp-2028', o: 'S', st: 'MN', sp: 1 },
+    { k: 'S-MN-sp-2027', o: 'S', st: 'MN', sp: 1, y: 2027 },
+  ]
+  assert.deepEqual(
+    orderPrimaryRows(rows).map((r) => r.k),
+    ['S-MN-sp-2027', 'S-MN-sp-2028']
+  )
+  assert.equal(primaryOffice(rows[1]), 'Senate (2027 special)')
+  assert.equal(primaryOffice(rows[0]), 'Senate (special)')
+  assert.equal(primaryOffice({ o: 'G' }), 'Governor')
+  assert.equal(primaryOffice({ o: 'S', y: 2027 }), 'Senate (2027)')
 })

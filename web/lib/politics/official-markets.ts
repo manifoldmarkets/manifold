@@ -231,6 +231,21 @@ export function pickSlot<C extends SlotMarket>(
     : community
 }
 
+// Which official markets the page loads: 2028's (not the popular vote, which
+// has a community slot), the national ones, each primary through its own
+// year while the primaries show (Minnesota's 2027 Senate special has one),
+// and 2030's once that section shows.
+export function pageLoads(
+  ref: Pick<MarketRef, 'cycle' | 'kind'>,
+  show: { primaries: boolean; midterms2030: boolean; year: number }
+) {
+  if (ref.kind.endsWith('-primary'))
+    return show.primaries && ref.cycle >= show.year
+  if (ref.cycle === 2028) return ref.kind !== 'president-popular'
+  if (ref.kind === 'national' || ref.kind === 'president-national') return true
+  return ref.cycle === 2030 && show.midterms2030
+}
+
 // ---------------------------------------------------------------------------
 // Who held each seat before (for the race board's "flipped" shading)
 // ---------------------------------------------------------------------------

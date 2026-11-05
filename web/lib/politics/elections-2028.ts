@@ -1,4 +1,4 @@
-import { keyBy, maxBy, mean, minBy, omit, sortBy, uniq, uniqBy } from 'lodash'
+import { keyBy, mean, omit, sortBy, uniq, uniqBy } from 'lodash'
 
 import { getAnswerProbability } from 'common/calculate'
 import { Contract, isMultiCpmm, MultiContract } from 'common/contract'
@@ -10,18 +10,27 @@ import {
   chamberScores,
   chamberWinner,
 } from 'web/components/election-2026/replay-scorecard'
-import {
-  getPartyProbs,
-  isDemocraticAnswer,
-} from 'web/components/usa-map/state-election-map'
+import { getPartyProbs } from 'web/components/usa-map/state-election-map'
 import { api } from 'web/lib/api/api'
 import { isOpenPublicMarket } from 'web/lib/politics/election-curation'
+import freezeFile from 'web/public/data/election-board-freeze.json'
 import officialFile from 'web/public/data/election-markets-2028.json'
+import {
+  fetchFrozenProbs,
+  FreezeSnapshots,
+  freezeStep,
+  FrozenProbs,
+  historyServes,
+  twoPartyAtFreeze,
+  twoPartyShare,
+  twoPartyWeekAgo,
+} from './board-odds'
 import { ElectionPhase, electionPhase, showsSection } from './election-phase'
 import {
   GOVERNOR_2028_HOLDER,
   MarketRef,
   OfficialMarketsFile,
+  pageLoads,
   pickSlot,
   president2024Winner,
   SENATE_2028_HOLDER,
@@ -447,11 +456,11 @@ function unitContract(
 
 // The Democrat's two-party chance in each electoral unit, from its market, or
 // the unit's prior when it has none.
-function getUnitOdds(byId: Record<string, Contract>): UnitOdds[] {
+function getUnitOdds(byId: Record<string, Contract>, now: number): UnitOdds[] {
   return ELECTORAL_UNITS.map((unit) => {
     const contract = unitContract(unit.key, byId)
     const odds =
-      contract && !contract.isResolved ? partyOdds(contract) : undefined
+      contract && !contract.isResolved ? partyOdds(contract, now) : undefined
     if (odds) {
       return {
         key: unit.key,
@@ -471,71 +480,74 @@ function getUnitOdds(byId: Record<string, Contract>): UnitOdds[] {
 
 const round3 = (x: number) => Math.round(x * 1000) / 1000
 
-// A party market's Democratic two-party chance, its weekly move, and whether
-// it's called. `allowPriceCall`: a party at 99%+ counts as called (election
-// night on); otherwise only a resolved market is.
-function partyOdds(contract: Contract, allowPriceCall = false) {
+const readParty = (c: Contract) => getPartyProbs(c)
+
+// A party market's Democratic two-party chance, its weekly move (also
+// two-party), and whether it's called. `allowPriceCall`: a party at 99%+
+// counts as called (election night on); otherwise only a resolved market is.
+function partyOdds(contract: Contract, now: number, allowPriceCall = false) {
   const probs = getPartyProbs(contract)
   if (!probs) return undefined
-  const twoParty = probs.dem + probs.rep
-  if (!(twoParty > 0) || !Number.isFinite(probs.dem / twoParty))
-    return undefined
-  const demAnswer = isMultiCpmm(contract)
-    ? contract.answers.find((a) => isDemocraticAnswer(a.text))
-    : undefined
-  const week = demAnswer?.probChanges?.week
+  const p = twoPartyShare(contract, readParty)
+  if (p === undefined) return undefined
+  const weekAgo = contract.isResolved
+    ? undefined
+    : twoPartyWeekAgo(contract, now, readParty)
   const resolved = contract.isResolved && contract.resolution !== 'CANCEL'
   return {
-    p: probs.dem / twoParty,
-    other: probs.other,
-    w: Number.isFinite(week) ? (week as number) : undefined,
+    p,
+    w: weekAgo === undefined ? undefined : p - weekAgo,
     c:
       resolved || allowPriceCall
         ? calledFrom({ dem: probs.dem, rep: probs.rep, other: probs.other })
         : undefined,
-    demAnswerId: demAnswer?.id,
   }
 }
 
-// The Democrat's price when the board froze: the last trade before it (or,
-// with none in the three days before, the price the first trade after it
-// started from). Fixed once known, so cached for the server's lifetime.
-const frozenPrices = new Map<string, number>()
-async function priceAt(
-  contractId: string,
-  answerId: string,
-  at: number
-): Promise<number | undefined> {
-  const cacheKey = `${contractId}:${answerId}:${at}`
-  if (frozenPrices.has(cacheKey)) return frozenPrices.get(cacheKey)
-  try {
-    let p: number | undefined
-    const before = await fetchPoints(
-      contractId,
-      answerId,
-      at - 3 * DAY,
-      at,
-      500,
-      true
-    )
-    if (before.length) p = maxBy(before, (r) => r.createdTime)?.probAfter
-    else {
-      const after = await fetchPoints(
-        contractId,
-        answerId,
-        at,
-        at + 3 * DAY,
-        500,
-        true
-      )
-      if (after.length) p = minBy(after, (r) => r.createdTime)?.probBefore
-    }
-    if (p !== undefined && Number.isFinite(p)) frozenPrices.set(cacheKey, p)
-    return p
-  } catch (e) {
-    console.error('frozen price failed', contractId, e)
-    return undefined
+const FREEZE_SNAPSHOTS = freezeFile as unknown as FreezeSnapshots
+
+// Frozen probabilities by freeze time. A market's never change once known,
+// so they're kept for the server's lifetime and each revalidation asks only
+// for the ones still missing.
+const frozenCache = new Map<number, FrozenProbs>()
+
+// Every board market's probabilities at the freeze: the committed snapshot,
+// else market-probs-history while it still serves the freeze (≤ 6 bounded
+// requests). Never throws: a market it can't price shows its live odds, and
+// the reason is logged.
+async function frozenProbsFor(
+  at: number,
+  ids: string[],
+  now: number
+): Promise<FrozenProbs> {
+  const known: FrozenProbs = {
+    ...FREEZE_SNAPSHOTS[String(at)],
+    ...frozenCache.get(at),
   }
+  const missing = ids.filter((id) => !known[id])
+  if (missing.length === 0) return known
+  const when = new Date(at).toISOString()
+  const step = freezeStep(at)
+  if (step === undefined || !historyServes(at, now, step)) {
+    if (now - at > HOUR)
+      console.error(
+        `board freeze ${when}: ${missing.length} races show live odds; ` +
+          'market-probs-history no longer serves the freeze and the snapshot ' +
+          'lacks them (run web/scripts/election-board-freeze.ts)'
+      )
+    return known
+  }
+  const fetched = await fetchFrozenProbs(missing, at, step, (batch, start, s) =>
+    api('market-probs-history', { ids: batch, start, step: s })
+  )
+  frozenCache.set(at, { ...frozenCache.get(at), ...fetched })
+  const unpriced = missing.filter((id) => !fetched[id])
+  if (unpriced.length > 0)
+    console.error(
+      `board freeze ${when}: no frozen odds yet for ${unpriced.length} races; ` +
+        'they show live odds until a later revalidation'
+    )
+  return { ...known, ...fetched }
 }
 
 type BoardSeat = {
@@ -548,22 +560,26 @@ type BoardSeat = {
   prior?: number
 }
 
-async function boardRow(
+// One board row. `frozen`: the freeze time and every market's probabilities
+// then, once the columns have frozen.
+function boardRow(
   seat: BoardSeat,
   contract: Contract | undefined,
-  freezeAt: number | undefined
-): Promise<BoardRace | undefined> {
-  const odds = contract
-    ? partyOdds(contract, freezeAt !== undefined)
-    : undefined
+  now: number,
+  frozen: { at: number; probs: FrozenProbs } | undefined
+): BoardRace | undefined {
+  const odds = contract ? partyOdds(contract, now, !!frozen) : undefined
   if (!odds && seat.prior === undefined) return undefined
-  let f: number | undefined
-  if (odds && contract && freezeAt !== undefined && odds.demAnswerId) {
-    const at = await priceAt(contract.id, odds.demAnswerId, freezeAt)
-    // Two-party, against today's third-party share.
-    if (at !== undefined && odds.other < 1)
-      f = round3(Math.min(1, Math.max(0, at / (1 - odds.other))))
-  }
+  const fAt =
+    odds && contract && frozen
+      ? twoPartyAtFreeze(
+          contract,
+          frozen.at,
+          frozen.probs[contract.id],
+          readParty
+        )
+      : undefined
+  const f = fAt === undefined ? undefined : round3(fAt)
   const row: BoardRace = {
     o: seat.o,
     st: seat.st,
@@ -617,26 +633,22 @@ async function raceBoard(
 ): Promise<{ races: BoardRace[]; frozen: boolean }> {
   const freezeTime = BOARD_FREEZE[cycle]
   const frozen = freezeTime !== undefined && now >= freezeTime
-  const freezeAt = frozen ? freezeTime : undefined
-  const tasks: Promise<BoardRace | undefined>[] = []
+  const seats: [BoardSeat, Contract | undefined][] = []
 
   if (cycle === 2028) {
     for (const unit of ELECTORAL_UNITS) {
       const [st, d] = unit.key.split('-')
-      tasks.push(
-        boardRow(
-          {
-            o: 'P',
-            st,
-            d: d === undefined ? undefined : Number(d),
-            holder: president2024Winner(unit.key),
-            ev: unit.ev,
-            prior: UNIT_PRIORS_2028[unit.key],
-          },
-          unitContract(unit.key, byId),
-          freezeAt
-        )
-      )
+      seats.push([
+        {
+          o: 'P',
+          st,
+          d: d === undefined ? undefined : Number(d),
+          holder: president2024Winner(unit.key),
+          ev: unit.ev,
+          prior: UNIT_PRIORS_2028[unit.key],
+        },
+        unitContract(unit.key, byId),
+      ])
     }
   }
   for (const [, ref] of officialEntries(
@@ -657,15 +669,27 @@ async function raceBoard(
         : o === 'G'
         ? GOVERNOR_2028_HOLDER[st]
         : house2026[`${st}-${ref.district ?? 0}`]
-    tasks.push(
+    seats.push([{ o, st, d: ref.district, sp: ref.special, holder }, contract])
+  }
+
+  // One batch for the whole board once it has frozen.
+  const frozenProbs = frozen
+    ? await frozenProbsFor(
+        freezeTime,
+        uniq(seats.flatMap(([, c]) => (c ? [c.id] : []))),
+        now
+      )
+    : undefined
+  const races = seats
+    .map(([seat, contract]) =>
       boardRow(
-        { o, st, d: ref.district, sp: ref.special, holder },
+        seat,
         contract,
-        freezeAt
+        now,
+        frozenProbs && { at: freezeTime, probs: frozenProbs }
       )
     )
-  }
-  const races = (await Promise.all(tasks)).filter((r): r is BoardRace => !!r)
+    .filter((r): r is BoardRace => !!r)
   return { races, frozen }
 }
 
@@ -719,9 +743,10 @@ function primaryRows(byId: Record<string, Contract>): PrimaryRow[] {
         : ref.kind === 'senate-primary'
         ? 'S'
         : 'G'
-    const k = `${o}-${ref.state}${ref.special ? '-sp' : ''}`
+    const k = `${o}-${ref.state}${ref.special ? '-sp' : ''}-${ref.cycle}`
     const row: PrimaryRow = rows.get(k) ?? { k, o, st: ref.state }
     if (ref.special) row.sp = 1
+    if (ref.cycle !== 2028) row.y = ref.cycle
     if (ref.party === 'D') row.D = cell
     else if (ref.party === 'R') row.R = cell
     else row.A = cell
@@ -845,16 +870,14 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
 
   // Official markets the page may show, by id. Ones not created yet (or
   // still unlisted while being created) simply don't come back.
-  const officialIds = officialEntries((r) => {
-    if (r.cycle === 2028) {
-      if (r.kind === 'president-popular') return false
-      if (r.kind.endsWith('-primary')) return wantsPrimaries
-      return true
-    }
-    if (r.kind === 'national' || r.kind === 'president-national') return true
-    if (r.cycle === 2030) return wants2030
-    return false
-  }).map(([, r]) => r.id)
+  const show = {
+    primaries: wantsPrimaries,
+    midterms2030: wants2030,
+    year: new Date(now).getUTCFullYear(),
+  }
+  const officialIds = officialEntries((r) => pageLoads(r, show)).map(
+    ([, r]) => r.id
+  )
 
   const matrixIds = uniq(conditionalMatrixIds([PRESIDENT_2028_MATRIX]))
   const ids = uniq([
@@ -942,7 +965,7 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
   try {
     // Only when every unit has a market or a documented prior: a missing,
     // unlisted or resolved state market must not turn into a coin flip.
-    const units = getUnitOdds(byId)
+    const units = getUnitOdds(byId, now)
     const unpriced = units.filter((u) => !Number.isFinite(u.pDem))
     if (unpriced.length === 0) model = getElectoralModel(units)
     else
