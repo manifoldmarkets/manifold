@@ -8,6 +8,7 @@ import ShortToggle from 'web/components/widgets/short-toggle'
 import { Title } from 'web/components/widgets/title'
 import { ModActionTag } from 'web/components/moderation/mod-action'
 import { useAdmin } from 'web/hooks/use-admin'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { handleCreateSportsMarkets } from 'web/lib/admin/create-sports-markets'
 import { api } from 'web/lib/api/api'
@@ -23,6 +24,16 @@ export default function AdminPage() {
 
   const [isLoading, setIsLoading] = useState(false)
   const [isFinished, setIsFinished] = useState(false)
+  // Fetched here purely so the count is visible before clicking through —
+  // the rest of this page is a directory and says nothing about what is
+  // actually waiting.
+  const { data: todo } = useAPIGetter(
+    'get-admin-todo',
+    {},
+    undefined,
+    undefined,
+    isAdmin
+  )
 
   useEffect(() => {
     db.from('system_trading_status')
@@ -74,6 +85,16 @@ export default function AdminPage() {
             disabled={!togglesEnabled}
           />
         </Row>
+
+        <LabCard
+          title={
+            todo && todo.openCount > 0
+              ? `📋 today — ${todo.openCount} waiting on you`
+              : '📋 today'
+          }
+          description="Unshipped merch, unpaid prizes, perp tasks — one feed"
+          href="/admin/todo"
+        />
 
         <LabCard title="🧾 sales" href="/admin/sales" />
         <LabCard title="🎟️ manifest tickets" href="/admin/tickets" />
