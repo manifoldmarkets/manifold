@@ -20,9 +20,23 @@ export const chamberWinner = (
     ? 'D'
     : undefined
 
-export type ReplayChambers = {
-  [chamber in ReplayChamber]: { id?: string; winner?: ChamberWinner }
+// A chamber's control market on Manifold: its id, the winner once resolved,
+// and when it resolved (ms).
+export type ReplayChamberMarket = {
+  id?: string
+  winner?: ChamberWinner
+  resolvedAt?: number
 }
+
+export type ReplayChambers = { [chamber in ReplayChamber]: ReplayChamberMarket }
+
+export const replayChamberMarket = (
+  contract: Contract | null | undefined
+): ReplayChamberMarket => ({
+  id: contract?.id,
+  winner: chamberWinner(contract),
+  resolvedAt: contract?.isResolved ? contract.resolutionTime : undefined,
+})
 
 // Manifold against another market on one chamber, over the milestones up to
 // the first poll closings: the forecast, before any results. Points are how

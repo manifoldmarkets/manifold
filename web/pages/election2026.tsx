@@ -5,7 +5,7 @@ import {
   chamberName,
   ChamberScore,
   chamberScores,
-  chamberWinner,
+  replayChamberMarket,
   replayStory,
   signedPoints,
 } from 'web/components/election-2026/replay-scorecard'
@@ -29,14 +29,8 @@ export async function getStaticProps() {
     snapshot as unknown as ReplaySnapshot,
     REPLAY_COMPARISONS,
     {
-      senate: {
-        id: mapProps.senateControlContract?.id,
-        winner: chamberWinner(mapProps.senateControlContract),
-      },
-      house: {
-        id: mapProps.houseControlContract?.id,
-        winner: chamberWinner(mapProps.houseControlContract),
-      },
+      senate: replayChamberMarket(mapProps.senateControlContract),
+      house: replayChamberMarket(mapProps.houseControlContract),
     }
   )
   // The replay's Latest stop is these markets, as read now.

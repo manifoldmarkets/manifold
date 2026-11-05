@@ -14,7 +14,8 @@
 // market's empty book reads $0/$1, a false 50%). Kalshi's 1-minute
 // candlesticks, which its public market data API serves without an account,
 // a day per request. Once a market closes for trading, its last price before
-// the close holds, and the page marks it closed.
+// the close holds, and the page marks it closed, then resolved once it
+// settles.
 import { readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { HOUR_MS } from 'common/util/time'
@@ -78,15 +79,21 @@ async function quotes(
     .filter((q, i, all) => i === 0 || q.at !== all[i - 1].at)
 }
 
-// When the market closed for trading (ms), if it has.
-async function closedAt(ticker: string, now: number) {
+// When the market closed for trading and when it settled (ms), if it has.
+async function marketTimes(ticker: string, now: number) {
   const res = await fetch(`${KALSHI}/markets/${ticker}`)
   if (!res.ok) throw new Error(`${res.status} ${ticker}`)
   const { market } = (await res.json()) as {
-    market?: { close_time?: string }
+    market?: { close_time?: string; settlement_ts?: string }
   }
-  const close = Date.parse(market?.close_time ?? '')
-  return Number.isFinite(close) && close <= now ? close : undefined
+  const past = (iso: string | undefined) => {
+    const t = Date.parse(iso ?? '')
+    return Number.isFinite(t) && t <= now ? t : undefined
+  }
+  return {
+    closed: past(market?.close_time),
+    settled: past(market?.settlement_ts),
+  }
 }
 
 async function main() {
@@ -110,10 +117,11 @@ async function main() {
     retrievedAt: new Date(now).toISOString(),
     chambers: {},
     closedAt: {},
+    resolvedAt: {},
   }
   for (const market of MARKETS) {
     const qs = await quotes(market.series, market.ticker, from, to)
-    const closed = await closedAt(market.ticker, now)
+    const { closed, settled } = await marketTimes(market.ticker, now)
     kalshi.chambers[market.chamber] = quotesAtFrames(
       times,
       qs,
@@ -122,11 +130,17 @@ async function main() {
     )
     if (closed !== undefined && kalshi.closedAt)
       kalshi.closedAt[market.chamber] = closed
+    if (settled !== undefined && kalshi.resolvedAt)
+      kalshi.resolvedAt[market.chamber] = settled
     console.log(
       `${market.ticker}: ${qs.length} usable quotes, ${
         kalshi.chambers[market.chamber]?.length
       } of ${times.length} frames${
         closed === undefined ? '' : `, closed ${new Date(closed).toISOString()}`
+      }${
+        settled === undefined
+          ? ''
+          : `, settled ${new Date(settled).toISOString()}`
       }`
     )
   }

@@ -20,6 +20,8 @@ import { POLLS_CLOSE_2026 } from 'web/components/usa-map/election-rewind-model'
 export type ReplayMilestoneSpec = {
   id: string
   label: string
+  // For the one-line milestone buttons.
+  short: string
   note?: string
   // From the first poll closings, 6 PM ET on November 3.
   offsetMs: number
@@ -28,11 +30,24 @@ export type ReplayMilestoneSpec = {
 }
 
 export const REPLAY_MILESTONES: ReplayMilestoneSpec[] = [
-  { id: 'week', label: '1 week out', offsetMs: -7 * DAY_MS, stepMs: 0 },
-  { id: 'day', label: '1 day out', offsetMs: -DAY_MS, stepMs: 6 * HOUR_MS },
+  {
+    id: 'week',
+    label: '1 week out',
+    short: '1 week',
+    offsetMs: -7 * DAY_MS,
+    stepMs: 0,
+  },
+  {
+    id: 'day',
+    label: '1 day out',
+    short: '1 day',
+    offsetMs: -DAY_MS,
+    stepMs: 6 * HOUR_MS,
+  },
   {
     id: '12h',
     label: '12 hours out',
+    short: '12h',
     note: 'Polls are opening in the East',
     offsetMs: -12 * HOUR_MS,
     stepMs: 30 * MINUTE_MS,
@@ -40,33 +55,50 @@ export const REPLAY_MILESTONES: ReplayMilestoneSpec[] = [
   {
     id: '6h',
     label: '6 hours out',
+    short: '6h',
     offsetMs: -6 * HOUR_MS,
     stepMs: 15 * MINUTE_MS,
   },
   {
     id: '3h',
     label: '3 hours out',
+    short: '3h',
     offsetMs: -3 * HOUR_MS,
     stepMs: 10 * MINUTE_MS,
   },
-  { id: '1h', label: '1 hour out', offsetMs: -HOUR_MS, stepMs: 5 * MINUTE_MS },
+  {
+    id: '1h',
+    label: '1 hour out',
+    short: '1h',
+    offsetMs: -HOUR_MS,
+    stepMs: 5 * MINUTE_MS,
+  },
   {
     id: 'polls',
     label: 'Polls close',
+    short: 'Polls close',
     note: 'The first polls close, in most of Indiana and Kentucky',
     offsetMs: 0,
     stepMs: 5 * MINUTE_MS,
   },
-  { id: '9pm', label: '9 PM ET', offsetMs: 3 * HOUR_MS, stepMs: 5 * MINUTE_MS },
+  {
+    id: '9pm',
+    label: '9 PM ET',
+    short: '9 PM',
+    offsetMs: 3 * HOUR_MS,
+    stepMs: 5 * MINUTE_MS,
+  },
   {
     id: 'midnight',
     label: 'Midnight ET',
+    short: 'Midnight',
     offsetMs: 6 * HOUR_MS,
     stepMs: 5 * MINUTE_MS,
   },
   {
     id: '6am',
     label: '6 AM ET',
+    short: '6 AM',
     note: 'The morning after',
     offsetMs: 12 * HOUR_MS,
     stepMs: 10 * MINUTE_MS,
@@ -74,12 +106,19 @@ export const REPLAY_MILESTONES: ReplayMilestoneSpec[] = [
   {
     id: 'noon',
     label: 'Noon ET',
+    short: 'Noon',
     offsetMs: 18 * HOUR_MS,
     stepMs: 15 * MINUTE_MS,
   },
 ]
 
 export const LATEST_MILESTONE_ID = 'latest'
+
+// A milestone's button label: its spec's short one, else its label.
+export const milestoneShortLabel = (m: { id: string; label: string }) =>
+  m.id === LATEST_MILESTONE_ID
+    ? 'Latest'
+    : REPLAY_MILESTONES.find((spec) => spec.id === m.id)?.short ?? m.label
 
 export type ReplayMilestone = {
   id: string
