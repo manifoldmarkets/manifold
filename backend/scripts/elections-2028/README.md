@@ -4,9 +4,11 @@ The headline markets the 2028+ elections page needs, owned by
 @ManifoldPolitics: nominees and running mates, the popular vote, electoral
 votes, the tipping point, a balance-of-power market (presidency, Senate and
 House, all eight combinations) for every cycle through 2036, a 2028
-presidential primary for each party in every state and DC, and the 2027
-off-year races. 127 markets (25 national + 102 state primaries), Ṁ391,300
-at the answer counts of 5 Nov 2026. A market's
+presidential primary for each party in every state, DC and territory (and
+Democrats Abroad), each party's 2028 Senate and governor primaries, the
+Speaker vote of January 2029, the popular-vote compact, and the off-year
+races of 2027 and 2029. 201 markets, Ṁ473,300 at the answer counts of
+6 Nov 2026 (online dry run). A market's
 cost is the larger of its tier and its answers × the tier's per-answer
 price (Ṁ100 at the Ṁ1,000 tier, Ṁ1,000 at Ṁ10,000), "Other" included: the
 2028 nominee markets cost Ṁ13k and Ṁ11k with that day's 12 and 10 people at
@@ -16,9 +18,10 @@ Liquidity (Tod, 5 Nov 2026): the Ṁ10,000 tier for every 2028 presidential
 market (nominees, running mates, VP winner, popular vote, electoral votes,
 margin, the popular-vote-winner-loses market, tipping point, contested
 conventions, and the first four states' primaries), the 2032 winner, and
-the five balance-of-power markets: 26 markets, Ṁ290k. The other 101 (the
-2027 races, the 2032 nominees, the other 94 state primaries) stay at
-Ṁ1,000.
+the five balance-of-power markets, and whether the popular-vote compact
+is in effect for 2028: 27 markets. The rest (off-year races, the 2032
+nominees, the other state and territory primaries, the Senate and governor
+primaries, the Speaker) stay at Ṁ1,000.
 
 Balance of power (Tod, 5 Nov 2026: "do balance of power markets instead [of
 control of Congress], mimicking" JonasVollmer's 2026 market): eight fixed
@@ -34,9 +37,9 @@ in presidential years; in midterms the presidency pulls against Congress
 
 | Mode | Markets | Who adds answers |
 |---|---|---|
-| fixed (`DISABLED`) | buckets, balance of power, Virginia chambers | Nobody; no "Other" |
-| curated (`ONLY_CREATOR`) | nominees, running mates, VP winner, tipping point, 2032 winner; party markets (2027 governors, 2028 popular vote) | @ManifoldPolitics, with an "Other" answer. Party markets open as Democratic Party / Republican Party / Other; @ManifoldPolitics can add another party or an independent if one becomes competitive |
-| open (`ANYONE`) | the 102 state primaries | Anyone, with an "Other" answer. They open with the three likeliest candidates (Tod, 5 Nov 2026: "seed it with maybe 2-3 likely people and open answer 'other' option") |
+| fixed (`DISABLED`) | buckets, balance of power, state legislative chambers (2027, 2029) | Nobody; no "Other" |
+| curated (`ONLY_CREATOR`) | nominees, running mates, VP winner, tipping point, 2032 winner; Speaker; party markets (2027 and 2029 governors, Minnesota's 2027 Senate special, 2028 popular vote) | @ManifoldPolitics, with an "Other" answer. Party markets open as Democratic Party / Republican Party / Other; @ManifoldPolitics can add another party or an independent if one becomes competitive |
+| open (`ANYONE`) | the 113 presidential primaries (states, DC, territories, Democrats Abroad) and the 51 Senate and governor primaries | Anyone, with an "Other" answer. They open with the three likeliest candidates (Tod, 5 Nov 2026: "seed it with maybe 2-3 likely people and open answer 'other' option") |
 
 Balance-of-power and Virginia chamber markets have no "Other": independents
 count with the party they caucus with, so control can't go to anyone else.
@@ -48,21 +51,26 @@ winner market (`t9s0m8tf2v`), so there is no new one.
 
 ## Scope
 
-Together with the pipeline (1,031 race markets), this is 1,158 markets,
-about Ṁ2.88M at 5 Nov 2026 answer counts. They cover the regular federal and
+Together with the pipeline (1,032 race markets, Ṁ2,202,000), this is
+1,233 markets, about Ṁ2.68M at 6 Nov 2026 answer counts. They cover the regular federal and
 governor elections of 2027–2036, not every US election:
 
-- **In:** the 2027 Kentucky, Mississippi and Louisiana governor races and
-  Virginia's legislature; 2028 nominees, running mates, VP winner, popular
-  vote, electoral votes, margin, tipping point, contested conventions, and
-  each party's primary in every state and DC; presidential markets by state
+- **In:** the 2027 Kentucky, Mississippi and Louisiana governor races,
+  Minnesota's Senate special and the Virginia, New Jersey, Mississippi and
+  Louisiana legislatures; the 2029 Virginia and New Jersey governors and
+  Virginia House; 2028 nominees, running mates, VP winner, popular vote,
+  electoral votes, margin, tipping point, contested conventions, the
+  popular-vote compact, the January 2029 Speaker vote, each party's primary
+  in every state, DC and territory (and Democrats Abroad), and each party's
+  Senate and governor primaries (Tennessee's 2028 Senate special included); presidential markets by state
   (electoral votes and popular vote) and by Maine/Nebraska district for 2028,
   2032 and 2036; Senate and governor races every cycle 2028–2036; House races
   in 2028; balance of power every cycle; the 2032 nominees and winner.
-- **Not yet:** House races after 2028, special elections, off-year races
-  after 2027 (2029 Virginia and New Jersey governors and later), the
-  territories' and Democrats Abroad's presidential contests, 2032 and 2036
-  primaries, and state legislatures other than Virginia's. These are on the
+- **Not yet:** 39 Senate and governor primaries with no credible candidate
+  yet (the API won't open a market whose only answer is Other), House races
+  after 2028, special elections not yet scheduled, off-year races after 2029,
+  2028 ballot measures (certified mid-2028), 2032 and 2036 primaries, and
+  legislatures other than those above. These are on the
   additions list in Notion ("Elections 2028+: additions list"), with when
   each should be created.
 - **Reapportionment:** the 2028 House map keeps the 2020 apportionment, so
@@ -222,8 +230,8 @@ read at run time, or from documented static priors:
      --env prod --creator-username ManifoldPolitics `
      --state C:\Users\User\elections-national-prod\state.prod.json --max-mana 400000
    ```
-   About 127 markets × (create, read back, publish) at `--pace-ms 400`:
-   roughly 10–15 minutes. Avoid 07:45–08:15 UTC (the API restarts daily at
+   About 201 markets × (create, read back, publish) at `--pace-ms 400`:
+   roughly 15–25 minutes. Avoid 07:45–08:15 UTC (the API restarts daily at
    08:00).
 5. Afterwards, wire the new markets into the elections page config (slugs
    from the state file's `url`s).
