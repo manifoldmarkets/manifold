@@ -122,7 +122,18 @@ export type Race = {
   incumbentNote?: string
   electoralVotes?: number
   redistricting?: { mapInUse2026: string; risk: string; note: string }
+  // A state's popular-vote market (president, 2028/2032/2036): who gets the
+  // most votes in the state, not where its electoral votes go.
+  popularVote?: true
 }
+
+// Generated counts are kept per office, with the state popular-vote markets
+// counted apart from the electoral presidential ones.
+export type CountKey = Office | 'presidentPopularVote'
+export const countKeyOf = (race: {
+  office: Office
+  popularVote?: boolean
+}): CountKey => (race.popularVote ? 'presidentPopularVote' : race.office)
 
 export const pad2 = (n: number) => String(n).padStart(2, '0')
 export const ORDINAL = (n: number) =>
@@ -242,6 +253,23 @@ function racesForPresident(cycle: Cycle, races: Race[]) {
     sources: pSources,
     electoralVotes: president.national.totalElectors,
   })
+  // Popular vote by state (Tod, 2026-11-05): one market per state and DC on
+  // which ticket gets the most votes there, unaffected by how the state
+  // awards its electoral votes. No ME/NE district markets: their electoral
+  // markets already follow the district vote.
+  for (const state of Object.keys(president.electoralVotes2024).sort())
+    races.push({
+      cycle,
+      office: 'president',
+      state,
+      stateName: STATE_NAMES[state],
+      raceKey: `${cycle}-president-${state}-popular-vote`,
+      unitKey: state,
+      dashboardKey: state,
+      seat: 'the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)',
+      sources: pSources,
+      popularVote: true,
+    })
 }
 
 // 2028 only: the 435 districts on the lines in force for November 2026.
@@ -324,15 +352,47 @@ export function unitResults(results: Results, race: Race): UnitResults {
   return row
 }
 
-export const EXPECTED_COUNTS: Record<Cycle, Record<Office, number>> = {
-  2028: { senate: 34, governor: 11, president: 57, house: 435 },
+// president: 50 states + DC + ME-1/2 and NE-1/2/3 + the national market;
+// presidentPopularVote: 50 states + DC.
+export const EXPECTED_COUNTS: Record<Cycle, Record<CountKey, number>> = {
+  2028: {
+    senate: 34,
+    governor: 11,
+    president: 57,
+    presidentPopularVote: 51,
+    house: 435,
+  },
   // Midterm: Class 1 Senate and the 36 midterm-year governorships; no House
   // (district lines may still change before 2030) and no president.
-  2030: { senate: 33, governor: 36, president: 0, house: 0 },
-  2032: { senate: 33, governor: 11, president: 57, house: 0 },
+  2030: {
+    senate: 33,
+    governor: 36,
+    president: 0,
+    presidentPopularVote: 0,
+    house: 0,
+  },
+  2032: {
+    senate: 33,
+    governor: 11,
+    president: 57,
+    presidentPopularVote: 51,
+    house: 0,
+  },
   // Midterm: Class 3 Senate (the 2028 seats again) and the same 36
   // midterm-year governorships as 2030; no House (new maps after the 2030
   // census) and no president.
-  2034: { senate: 34, governor: 36, president: 0, house: 0 },
-  2036: { senate: 33, governor: 11, president: 57, house: 0 },
+  2034: {
+    senate: 34,
+    governor: 36,
+    president: 0,
+    presidentPopularVote: 0,
+    house: 0,
+  },
+  2036: {
+    senate: 33,
+    governor: 11,
+    president: 57,
+    presidentPopularVote: 51,
+    house: 0,
+  },
 }

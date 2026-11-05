@@ -1124,6 +1124,567 @@
       }
     },
     {
+      "raceKey": "2028-president-AK-popular-vote",
+      "action": "create",
+      "idempotencyKey": "6h9IR2IULh",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-AL-popular-vote",
+      "action": "create",
+      "idempotencyKey": "hEl80CcSz6",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-AR-popular-vote",
+      "action": "create",
+      "idempotencyKey": "5NdQAqtUPy",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-AZ-popular-vote",
+      "action": "create",
+      "idempotencyKey": "czSp9NApqc",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-CA-popular-vote",
+      "action": "create",
+      "idempotencyKey": "pcqlEN86hq",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-CO-popular-vote",
+      "action": "create",
+      "idempotencyKey": "6hEZRh0tzg",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-CT-popular-vote",
+      "action": "create",
+      "idempotencyKey": "gsRpZ65duE",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-DC-popular-vote",
+      "action": "create",
+      "idempotencyKey": "R0tPIRd55u",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-DE-popular-vote",
+      "action": "create",
+      "idempotencyKey": "tRcIPhE8S5",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-FL-popular-vote",
+      "action": "create",
+      "idempotencyKey": "AqEZPZuz8Q",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-GA-popular-vote",
+      "action": "create",
+      "idempotencyKey": "N5OCh0yNtA",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-HI-popular-vote",
+      "action": "create",
+      "idempotencyKey": "QLZ5nz0qzA",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-IA-popular-vote",
+      "action": "create",
+      "idempotencyKey": "pNg5qc9hUP",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-ID-popular-vote",
+      "action": "create",
+      "idempotencyKey": "lUqZOcPP9n",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-IL-popular-vote",
+      "action": "create",
+      "idempotencyKey": "gSORnqRdg8",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-IN-popular-vote",
+      "action": "create",
+      "idempotencyKey": "g8gtEARSN5",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-KS-popular-vote",
+      "action": "create",
+      "idempotencyKey": "2UlAnZ9P5R",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-KY-popular-vote",
+      "action": "create",
+      "idempotencyKey": "5S8SSydhZS",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-LA-popular-vote",
+      "action": "create",
+      "idempotencyKey": "nZSppR6gun",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-MA-popular-vote",
+      "action": "create",
+      "idempotencyKey": "y2ROhZpQRs",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-MD-popular-vote",
+      "action": "create",
+      "idempotencyKey": "U9ndsddCA0",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-ME-popular-vote",
+      "action": "create",
+      "idempotencyKey": "9pzU6uCU8N",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-MI-popular-vote",
+      "action": "create",
+      "idempotencyKey": "g92qUn6gyZ",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-MN-popular-vote",
+      "action": "create",
+      "idempotencyKey": "nUC2h9ycs6",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-MO-popular-vote",
+      "action": "create",
+      "idempotencyKey": "c8tqNSs0A2",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-MS-popular-vote",
+      "action": "create",
+      "idempotencyKey": "RUnEzq8uAl",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-MT-popular-vote",
+      "action": "create",
+      "idempotencyKey": "C8gs2gqCLO",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-NC-popular-vote",
+      "action": "create",
+      "idempotencyKey": "cLsE0P0SNE",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-ND-popular-vote",
+      "action": "create",
+      "idempotencyKey": "2SEzNZZ9us",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-NE-popular-vote",
+      "action": "create",
+      "idempotencyKey": "UNgOdcCCpc",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-NH-popular-vote",
+      "action": "create",
+      "idempotencyKey": "tEgss6dQZS",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-NJ-popular-vote",
+      "action": "create",
+      "idempotencyKey": "y822OtlOnt",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-NM-popular-vote",
+      "action": "create",
+      "idempotencyKey": "IsZSs0Eszt",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-NV-popular-vote",
+      "action": "create",
+      "idempotencyKey": "udlnRLgsud",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-NY-popular-vote",
+      "action": "create",
+      "idempotencyKey": "22qld922uP",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-OH-popular-vote",
+      "action": "create",
+      "idempotencyKey": "tgC625t8qg",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-OK-popular-vote",
+      "action": "create",
+      "idempotencyKey": "68gAqhQPyZ",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-OR-popular-vote",
+      "action": "create",
+      "idempotencyKey": "RId5pOCqdO",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-PA-popular-vote",
+      "action": "create",
+      "idempotencyKey": "cngNctNqUN",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-RI-popular-vote",
+      "action": "create",
+      "idempotencyKey": "NPtSd6IUQz",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-SC-popular-vote",
+      "action": "create",
+      "idempotencyKey": "PlN6phc6US",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-SD-popular-vote",
+      "action": "create",
+      "idempotencyKey": "Rz2QhSEP8R",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-TN-popular-vote",
+      "action": "create",
+      "idempotencyKey": "Sdp99qI9zC",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-TX-popular-vote",
+      "action": "create",
+      "idempotencyKey": "sgctAznAdq",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-UT-popular-vote",
+      "action": "create",
+      "idempotencyKey": "RpOPQ5sgZt",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-VA-popular-vote",
+      "action": "create",
+      "idempotencyKey": "nP9lEy5UUQ",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-VT-popular-vote",
+      "action": "create",
+      "idempotencyKey": "CtIuIzz5q5",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-WA-popular-vote",
+      "action": "create",
+      "idempotencyKey": "5PqgnOl0Zt",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-WI-popular-vote",
+      "action": "create",
+      "idempotencyKey": "y0gdEpdCyt",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-WV-popular-vote",
+      "action": "create",
+      "idempotencyKey": "IhCLRsQscC",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2028-president-WY-popular-vote",
+      "action": "create",
+      "idempotencyKey": "AQ5nLAuP5n",
+      "cost": {
+        "ante": 10000,
+        "extraLiquidity": 0,
+        "total": 10000,
+        "numAnswers": 3
+      }
+    },
+    {
       "raceKey": "2028-house-AK-00-regular-general",
       "action": "create",
       "idempotencyKey": "6t5lUNltRI",

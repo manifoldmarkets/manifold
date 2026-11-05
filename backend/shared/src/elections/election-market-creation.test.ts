@@ -1993,4 +1993,213 @@ describe('generic 2028+ classification', () => {
       )
     ).toBe('ambiguous')
   })
+
+  // A state's popular vote (who gets the most votes there) and its electoral
+  // votes are different propositions (Tod, 2026-11-05).
+  const popularEntry = (
+    state: string,
+    stateName: string,
+    cycle = 2028
+  ): ManifestEntry => {
+    const e = genericEntry('president', state, stateName, undefined, cycle)
+    return {
+      ...e,
+      raceKey: `${cycle}-president-${state}-popular-vote`,
+      proposition: 'popular-vote-party',
+      payload: {
+        ...e.payload!,
+        question: `Which party will win the popular vote in ${stateName} in the ${cycle} presidential election?`,
+      },
+      dashboard: { list: `presidentPopular${cycle}`, key: state },
+    }
+  }
+
+  test('a state popular-vote market and the electoral markets are never duplicates of each other', () => {
+    const paPopular = popularEntry('PA', 'Pennsylvania')
+    const ourElectoral = partyMulti(
+      '40',
+      'Which party will win Pennsylvania in the 2028 presidential election?'
+    )
+    const ourPopular = partyMulti(
+      '41',
+      'Which party will win the popular vote in Pennsylvania in the 2028 presidential election?'
+    )
+    // Each entry recognises a market of its own kind...
+    expect(verdict(pa, ourElectoral)).toBe('equivalent')
+    expect(verdict(paPopular, ourPopular)).toBe('equivalent')
+    // ...and never one of the other kind, in either direction.
+    expect(classifyExistingMarket(paPopular, ourElectoral)).toEqual({
+      verdict: 'ambiguous',
+      reason: 'not about the popular vote; ours is the popular vote',
+    })
+    expect(classifyExistingMarket(pa, ourPopular)).toEqual({
+      verdict: 'ambiguous',
+      reason: 'a popular-vote market; ours follows the electoral outcome',
+    })
+    // Under the 2028+ policy a related market, even our own, never skips or
+    // holds an entry.
+    const policy = { blockingCreators: ['ManifoldPolitics'] }
+    for (const [entry, m] of [
+      [paPopular, ourElectoral],
+      [pa, ourPopular],
+    ] as const)
+      expect(
+        duplicateDecision(policy, [
+          {
+            verdict: classifyExistingMarket(entry, m).verdict as 'ambiguous',
+            creatorUsername: 'ManifoldPolitics',
+          },
+        ]).action
+      ).toBe('create')
+    // The national and district electoral markets aren't the state's
+    // popular vote, and the national market is unchanged.
+    expect(
+      verdict(
+        paPopular,
+        partyMulti('42', 'Which party will win the 2028 presidential election?')
+      )
+    ).toBe('unrelated')
+    expect(
+      verdict(
+        popularEntry('NE', 'Nebraska'),
+        partyMulti(
+          '43',
+          'Which party will win the 2028 presidential election in Nebraskas 2nd Congressional District?'
+        )
+      )
+    ).toBe('unrelated')
+    expect(
+      verdict(
+        national,
+        partyMulti(
+          '44',
+          'Which party will win the popular vote in the 2028 Presidential election?'
+        )
+      )
+    ).toBe('ambiguous')
+    expect(
+      verdict(
+        national,
+        partyMulti(
+          '45',
+          'Which party will win the popular vote in Pennsylvania in the 2028 presidential election?'
+        )
+      )
+    ).toBe('unrelated')
+  })
+
+  test('popular-vote wording: other phrasings, states, years and derivatives', () => {
+    const paPopular = popularEntry('PA', 'Pennsylvania')
+    // "most votes" is popular-vote wording too; no "president" needed.
+    expect(
+      verdict(
+        paPopular,
+        partyMulti(
+          '46',
+          'Which party will get the most votes in Pennsylvania in 2028?'
+        )
+      )
+    ).toBe('equivalent')
+    expect(
+      verdict(
+        paPopular,
+        partyMulti(
+          '47',
+          'Which party will win the popular vote in Ohio in the 2028 presidential election?'
+        )
+      )
+    ).toBe('unrelated')
+    expect(
+      verdict(
+        paPopular,
+        partyMulti(
+          '48',
+          'Which party will win the popular vote in Pennsylvania in the 2032 presidential election?'
+        )
+      )
+    ).toBe('unrelated')
+    expect(
+      verdict(
+        paPopular,
+        partyMulti('49', 'Which party will win the 2028 national popular vote?')
+      )
+    ).toBe('unrelated')
+    expect(
+      verdict(
+        paPopular,
+        partyMulti(
+          '50',
+          'Who will win the popular vote in the 2028 Pennsylvania Senate race?'
+        )
+      )
+    ).toBe('unrelated')
+    expect(
+      verdict(
+        paPopular,
+        binary(
+          '51',
+          'Will a Democrat win the popular vote in Pennsylvania in 2028?'
+        )
+      )
+    ).toBe('ambiguous')
+    expect(
+      verdict(
+        paPopular,
+        partyMulti(
+          '52',
+          'Pennsylvania 2028 presidential popular vote margin over 5 points?'
+        )
+      )
+    ).toBe('ambiguous')
+    expect(
+      verdict(
+        popularEntry('DC', 'District of Columbia'),
+        partyMulti(
+          '53',
+          'Which party will win the popular vote in DC in the 2028 presidential election?'
+        )
+      )
+    ).toBe('equivalent')
+  })
+
+  test('validation keeps popular-vote entries statewide and their keys apart', () => {
+    const ok = popularEntry('PA', 'Pennsylvania')
+    expect(validateManifest(manifest([ok]), NOW)).toEqual([])
+    // Both PA markets can sit in one manifest: distinct keys and ids.
+    expect(validateManifest(manifest([pa, ok]), NOW)).toEqual([])
+    const errors = (entry: ManifestEntry) =>
+      validateManifest(manifest([entry]), NOW).join(' ')
+    expect(errors({ ...ok, raceKey: '2028-president-PA-general' })).toMatch(
+      /must end in -popular-vote/
+    )
+    expect(
+      errors({ ...pa, raceKey: '2028-president-PA-popular-vote' })
+    ).toMatch(/only a popular-vote-party entry/)
+    expect(
+      errors({
+        ...ok,
+        raceKey: '2028-president-US-popular-vote',
+        identity: { ...ok.identity, state: 'US', stateName: 'United States' },
+      })
+    ).toMatch(/not a district or the US/)
+    expect(
+      errors({
+        ...ok,
+        raceKey: '2028-president-NE-popular-vote',
+        identity: {
+          ...ok.identity,
+          state: 'NE',
+          stateName: 'Nebraska',
+          district: 2,
+        },
+      })
+    ).toMatch(/not a district or the US/)
+    expect(
+      errors({
+        ...genericEntry('senate', 'PA', 'Pennsylvania'),
+        raceKey: '2028-senate-PA-popular-vote',
+        proposition: 'popular-vote-party',
+      })
+    ).toMatch(/not a district or the US/)
+  })
 })

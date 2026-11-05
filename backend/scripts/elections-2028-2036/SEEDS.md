@@ -64,6 +64,11 @@ For a unit *u* (state, DC, ME/NE elector district, or House district on the
    The payload's `answerProbs` are the first two; "Other" opens at the third.
 6. **National market**: no lean by construction (it *is* the even
    environment): 49.5 / 49.5 / 1 in every cycle.
+7. **Popular-vote markets** (one per state and DC in 2028, 2032 and 2036):
+   the same seed as the state's electoral market (same unit, same σ, same
+   "Other"). The lean is already measured on the state's popular vote, and
+   today every state gives its statewide electoral votes to its popular-vote
+   winner, so the two markets open at the same prices.
 
 ### The seed note
 

@@ -20,6 +20,8 @@ import {
 } from 'shared/elections/election-market-creation'
 import { Cycle, CYCLES, cycleConfig, EXPECTED_ELECTION_DATES } from './cycles'
 import {
+  CountKey,
+  countKeyOf,
   EXPECTED_COUNTS,
   inventories,
   nationalResults,
@@ -63,6 +65,14 @@ export const LIQUIDITY_RULES: LiquidityRule[] = [
     rationale: '2028 presidential market (Tod, 5 Nov 2026): Ṁ100,000.',
     applies: (r) =>
       r.cycle === 2028 && r.office === 'president' && r.state === 'US',
+  },
+  {
+    id: 'president-2028-popular-vote',
+    tier: 10_000,
+    rationale:
+      '2028 presidential popular-vote market for a state (Tod, 5 Nov 2026: every 2028 presidential market at Ṁ10,000): Ṁ10,000.',
+    applies: (r) =>
+      r.cycle === 2028 && r.office === 'president' && !!r.popularVote,
   },
   {
     id: 'president-2028-units',
@@ -178,6 +188,19 @@ export function topicIdsFor(
 
 export type GeneratedEntry = RaceManifestEntry & { seedResult: SeedResult }
 
+// Entries per office, with the state popular-vote markets apart.
+export const countKeyOfEntry = (e: RaceManifestEntry): CountKey =>
+  countKeyOf({
+    office: e.identity.office,
+    popularVote: e.proposition === 'popular-vote-party',
+  })
+export function countsOf(entries: RaceManifestEntry[]) {
+  const counts: Partial<Record<CountKey, number>> = {}
+  for (const e of entries)
+    counts[countKeyOfEntry(e)] = (counts[countKeyOfEntry(e)] ?? 0) + 1
+  return counts as Record<string, number>
+}
+
 export function buildEntry(
   race: Race,
   opts: { topics: Topics; missingTopics: Set<string>; rejections?: Rejections }
@@ -213,8 +236,10 @@ export function buildEntry(
       round: round.text,
       candidateNames: [],
     },
-    proposition: 'ballot-party',
-    shapeRationale: shapeRationale(),
+    // A state's popular vote is its own proposition, so the duplicate check
+    // never treats it and the state's electoral market as the same market.
+    proposition: race.popularVote ? 'popular-vote-party' : 'ballot-party',
+    shapeRationale: shapeRationale(race),
     payload: {
       question,
       descriptionMarkdown: descriptionFor(race, cfg),
@@ -259,9 +284,13 @@ export function buildEntry(
     reviewedRejectedContractIds: [...(opts.rejections?.[race.raceKey] ?? [])],
     searchTerms: searchTermsFor(race),
     dashboard: {
-      list: `${race.office === 'governor' ? 'governors' : race.office}${
-        race.cycle
-      }` as RaceManifestEntry['dashboard']['list'],
+      list: `${
+        race.popularVote
+          ? 'presidentPopular'
+          : race.office === 'governor'
+          ? 'governors'
+          : race.office
+      }${race.cycle}` as RaceManifestEntry['dashboard']['list'],
       key: race.dashboardKey,
       cycle: race.cycle,
       office: race.office,
@@ -323,13 +352,11 @@ export function buildManifest(
       unresolvedFields: [`held: ${hold.reason}`],
     }
   })
-  const counts: Record<string, number> = {}
-  for (const e of entries)
-    counts[e.identity.office] = (counts[e.identity.office] ?? 0) + 1
-  for (const [office, n] of Object.entries(EXPECTED_COUNTS[cycle]))
-    if ((counts[office] ?? 0) !== n)
+  const counts = countsOf(entries)
+  for (const [key, n] of Object.entries(EXPECTED_COUNTS[cycle]))
+    if ((counts[key] ?? 0) !== n)
       throw new Error(
-        `${cycle} ${office}: generated ${counts[office] ?? 0}, expected ${n}`
+        `${cycle} ${key}: generated ${counts[key] ?? 0}, expected ${n}`
       )
   const totalMana = entries.reduce(
     (s, e) => s + (e.status === 'ready' ? costOf(e.payload!).total : 0),
@@ -394,7 +421,8 @@ export function inventoryFor(cycle: Cycle) {
   const races = racesFor(cycle)
   const cfg = cycleConfig(cycle)
   const byOffice: Record<string, number> = {}
-  for (const r of races) byOffice[r.office] = (byOffice[r.office] ?? 0) + 1
+  for (const r of races)
+    byOffice[countKeyOf(r)] = (byOffice[countKeyOf(r)] ?? 0) + 1
   return {
     cycle,
     electionDate: cfg.electionDate,
@@ -415,6 +443,7 @@ export function inventoryFor(cycle: Cycle) {
     races: races.map((r) => ({
       raceKey: r.raceKey,
       office: r.office,
+      ...(r.popularVote ? { popularVote: true } : {}),
       state: r.state,
       ...(r.district !== undefined ? { district: r.district } : {}),
       seat: r.seat,
@@ -495,13 +524,9 @@ export function main(argv = process.argv.slice(2)) {
       inventoryFor(cycle)
     )
     missingByCycle[cycle] = missingTopics
-    const counts: Record<string, number> = {}
-    for (const e of manifest.entries)
-      counts[(e as RaceManifestEntry).identity.office] =
-        (counts[(e as RaceManifestEntry).identity.office] ?? 0) + 1
     summary[cycle] = {
       entries: manifest.entries.length,
-      counts,
+      counts: countsOf(manifest.entries as RaceManifestEntry[]),
       totalMana,
       held: held.length,
       missingTopics,

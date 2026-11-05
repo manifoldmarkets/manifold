@@ -88,7 +88,8 @@ export type RaceIdentity = {
 }
 
 // Page list names: the 2026 launch used `senate2026`, `governors2026` and
-// `HOUSE_RACE_MARKETS`; later cycles use `<office>s?<cycle>`.
+// `HOUSE_RACE_MARKETS`; later cycles use `<office>s?<cycle>`, and
+// `presidentPopular<cycle>` for the state popular-vote markets.
 export type DashboardList =
   | 'senate2026'
   | 'governors2026'
@@ -97,6 +98,19 @@ export type DashboardList =
   | `governors${number}`
   | `house${number}`
   | `president${number}`
+  | `presidentPopular${number}`
+
+// What a race market resolves on. 'ballot-party': the party that wins the
+// race (for president: the party that gets the state's, district's or
+// country's electoral outcome). 'candidate': the winning candidate.
+// 'popular-vote-party': the party of the presidential ticket with the most
+// votes in a state, whatever the state does with its electoral votes (2028+,
+// raceKey `<cycle>-president-<ST>-popular-vote`). The two presidential
+// propositions are never duplicates of each other.
+export type RaceProposition =
+  | 'ballot-party'
+  | 'candidate'
+  | 'popular-vote-party'
 
 export type RaceManifestEntry = {
   kind?: 'race'
@@ -104,7 +118,7 @@ export type RaceManifestEntry = {
   status: 'ready' | 'unresolved'
   unresolvedFields?: string[]
   identity: RaceIdentity
-  proposition: 'ballot-party' | 'candidate'
+  proposition: RaceProposition
   shapeRationale: string
   payload?: CreatePayload
   answerMeta?: AnswerMeta[]
@@ -625,9 +639,25 @@ export function validateEntry(entry: AnyManifestEntry, now = Date.now()) {
   }
   if (
     entry.identity?.office === 'president' &&
-    entry.proposition !== 'ballot-party'
+    entry.proposition !== 'ballot-party' &&
+    entry.proposition !== 'popular-vote-party'
   )
     e('presidential markets resolve by party, not by candidate')
+  // A state popular-vote market is statewide, never national or a district,
+  // and its key can never collide with the state's electoral market.
+  const popularKey = /-popular-vote$/.test(entry.raceKey)
+  if (entry.proposition === 'popular-vote-party') {
+    if (
+      entry.identity?.office !== 'president' ||
+      entry.identity.state === 'US' ||
+      entry.identity.district !== undefined
+    )
+      e(
+        'a popular-vote market is for one state or DC, not a district or the US'
+      )
+    if (!popularKey) e('a popular-vote raceKey must end in -popular-vote')
+  } else if (popularKey)
+    e('only a popular-vote-party entry may use a -popular-vote raceKey')
   if (entry.status !== 'ready') return errors
   const p = entry.payload
   if (!p) return [...errors, `${entry.raceKey}: ready entry has no payload`]
@@ -872,6 +902,10 @@ const otherOfficeRe = (office: Office) =>
 // electors); anything else about the presidency is a different proposition.
 const WIN_RE =
   /\bwins?\b|\bwinning\b|\bwon\b|\bwinners?\b|\belect(ed)?\b|\bcarr(y|ies)\b|\bbe (the )?(next )?president\b|\bflip\b|\bhold\b/i
+// A question about who gets the most votes (a popular-vote market) rather
+// than who wins the race or its electoral votes.
+const POPULAR_VOTE_RE = /\bpopular[- ]vote\b|\bmost votes\b/i
+const POPULAR_VOTE_RE_G = new RegExp(POPULAR_VOTE_RE.source, 'gi')
 // Two questions in one market ("A? / B?", "A && B") never equal one race.
 const COMBINED_RE = /\/\/| \/ |&&|\|\|/
 // Elector-district wording ("ME-2", "Nebraska's 2nd district"): a statewide
@@ -1171,7 +1205,12 @@ export function classifyExistingMarket(
       .replace(/\s+/g, '\\s+')
     return new RegExp(`\\b${full}\\b`, 'i').test(answerText)
   })
-  const office = OFFICE_RE[id.office].test(m.question)
+  // A state popular-vote entry (president) asks who gets the most votes; a
+  // question can name that office by "popular vote" alone.
+  const popularEntry = entry.proposition === 'popular-vote-party'
+  const popularQuestion = POPULAR_VOTE_RE.test(m.question)
+  const office =
+    OFFICE_RE[id.office].test(m.question) || (popularEntry && popularQuestion)
   const year =
     new RegExp(`\\b${cycle}\\b`).test(text) ||
     /\bnovember\b|\bgeneral\b|\bmidterm|\bpresidential election/i.test(text)
@@ -1205,12 +1244,24 @@ export function classifyExistingMarket(
     return { verdict: 'unrelated', reason: 'question names only other states' }
   if (!office && names.length === 0)
     return { verdict: 'unrelated', reason: 'different office' }
-  if (id.office === 'president' && !WIN_RE.test(m.question))
+  if (
+    id.office === 'president' &&
+    !WIN_RE.test(m.question) &&
+    !(popularEntry && popularQuestion)
+  )
     return {
       verdict: 'unrelated',
       reason: 'about the presidency, but not who wins',
     }
-  if (EXCLUDE.test(m.question))
+  // "popular vote" is derivative wording for Senate, governor and House
+  // entries. For presidential entries the popular-vote check below decides.
+  if (
+    EXCLUDE.test(
+      id.office === 'president'
+        ? m.question.replace(POPULAR_VOTE_RE_G, ' ')
+        : m.question
+    )
+  )
     return {
       verdict: office && statePresent ? 'ambiguous' : 'unrelated',
       reason: 'primary/margin/conditional/derivative wording',
@@ -1230,6 +1281,16 @@ export function classifyExistingMarket(
     ELECTOR_DISTRICT_RE.test(m.question)
   )
     return { verdict: 'unrelated', reason: 'an elector-district market' }
+  // A state's popular vote and its (or the country's) electoral outcome are
+  // different propositions: a market about one is never a duplicate of an
+  // entry for the other, in either direction. At most it is related.
+  if (id.office === 'president' && popularQuestion !== popularEntry)
+    return {
+      verdict: office && statePresent ? 'ambiguous' : 'unrelated',
+      reason: popularEntry
+        ? 'not about the popular vote; ours is the popular vote'
+        : 'a popular-vote market; ours follows the electoral outcome',
+    }
   // "Congressional district" names the House office, but a presidential
   // elector-district market is about the presidency, not the House seat.
   if (
@@ -1271,11 +1332,17 @@ export function classifyExistingMarket(
     (/will (a|the) (democrat|republican)/i.test(m.question) ||
       (/\b(democrat|republican)/i.test(m.question) &&
         /\bwin|\bflip\b|\bhold\b|\bcarr(y|ies)\b/i.test(m.question)))
-  if (entry.proposition === 'ballot-party' && office && statePresent) {
+  if (
+    (entry.proposition === 'ballot-party' || popularEntry) &&
+    office &&
+    statePresent
+  ) {
     if (partyAnswers)
       return {
         verdict: 'equivalent',
-        reason: 'same office/state/district/year with party outcomes',
+        reason: popularEntry
+          ? 'same state/year popular vote with party outcomes'
+          : 'same office/state/district/year with party outcomes',
       }
     // The 2026 launch accepted a binary party market as equivalent. The
     // generic 2028+ markets are three-way and meant to be a uniform official

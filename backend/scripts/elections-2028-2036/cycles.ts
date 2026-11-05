@@ -197,3 +197,35 @@ export function presidentialRound(state: string, cfg: CycleConfig): RoundRule {
     closeTime: cfg.closeTime,
   }
 }
+
+// A state's popular vote for President: the ticket with the most votes in the
+// state's certified count, whatever the state does with its electoral votes.
+// Where presidential votes are counted by ranked choice, the final round's
+// totals count.
+export function popularVoteRound(state: string, cfg: CycleConfig): RoundRule {
+  const general = longDate(cfg.electionDate)
+  const text = (count: string) =>
+    `the ${general} general election: the presidential ticket with the most votes in the state's certified count (${count}), whatever the state does with its electoral votes, including under a national popular vote compact`
+  if (state === 'ME')
+    return {
+      text: text(
+        `the final round of ranked-choice tabulation if no ticket has a first-round majority and Maine still counts presidential votes by ranked choice in ${cfg.cycle}, as 21-A M.R.S. § 723-A now provides`
+      ),
+      closeTime: cfg.closeTime,
+    }
+  if (state === 'AK')
+    return {
+      text: text(
+        `the final round of ranked-choice tabulation if Alaska still counts presidential votes by ranked choice in ${cfg.cycle}, otherwise a plurality; a repeal initiative is on the November 3, 2026 ballot`
+      ),
+      closeTime: cfg.closeTime,
+    }
+  if (state === 'GA')
+    return {
+      text: text(
+        "plurality; Georgia's majority/runoff rule does not apply to the presidential race: O.C.G.A. § 21-2-501"
+      ),
+      closeTime: cfg.closeTime,
+    }
+  return { text: text('plurality'), closeTime: cfg.closeTime }
+}

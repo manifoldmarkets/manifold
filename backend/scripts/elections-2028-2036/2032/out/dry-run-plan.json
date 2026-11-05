@@ -1111,6 +1111,567 @@
         "total": 10000,
         "numAnswers": 3
       }
+    },
+    {
+      "raceKey": "2032-president-AK-popular-vote",
+      "action": "create",
+      "idempotencyKey": "hqUZpPghug",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-AL-popular-vote",
+      "action": "create",
+      "idempotencyKey": "6sdp09cqn5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-AR-popular-vote",
+      "action": "create",
+      "idempotencyKey": "0Q2Rz0AcdE",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-AZ-popular-vote",
+      "action": "create",
+      "idempotencyKey": "8UNSCRZc0R",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-CA-popular-vote",
+      "action": "create",
+      "idempotencyKey": "9cIgECE0lU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-CO-popular-vote",
+      "action": "create",
+      "idempotencyKey": "8uI20cZCS5",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-CT-popular-vote",
+      "action": "create",
+      "idempotencyKey": "lhnq996Atd",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-DC-popular-vote",
+      "action": "create",
+      "idempotencyKey": "tNyynnUcqZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-DE-popular-vote",
+      "action": "create",
+      "idempotencyKey": "9Ps0S9pduP",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-FL-popular-vote",
+      "action": "create",
+      "idempotencyKey": "ZdRutNEt5h",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-GA-popular-vote",
+      "action": "create",
+      "idempotencyKey": "dgQPd9th6S",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-HI-popular-vote",
+      "action": "create",
+      "idempotencyKey": "Ih5ARNCs69",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-IA-popular-vote",
+      "action": "create",
+      "idempotencyKey": "5uRA2y02yc",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-ID-popular-vote",
+      "action": "create",
+      "idempotencyKey": "ud8hnLu8sc",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-IL-popular-vote",
+      "action": "create",
+      "idempotencyKey": "6zC5s25QQS",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-IN-popular-vote",
+      "action": "create",
+      "idempotencyKey": "Q5cOnPSqtR",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-KS-popular-vote",
+      "action": "create",
+      "idempotencyKey": "6cps2U8NpQ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-KY-popular-vote",
+      "action": "create",
+      "idempotencyKey": "69Ol6d9dS2",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-LA-popular-vote",
+      "action": "create",
+      "idempotencyKey": "LcPCEI5Ss9",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-MA-popular-vote",
+      "action": "create",
+      "idempotencyKey": "pOU252yzzz",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-MD-popular-vote",
+      "action": "create",
+      "idempotencyKey": "ycy9tAUNnn",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-ME-popular-vote",
+      "action": "create",
+      "idempotencyKey": "sNRNpNNCuS",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-MI-popular-vote",
+      "action": "create",
+      "idempotencyKey": "n0ty8QC9R2",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-MN-popular-vote",
+      "action": "create",
+      "idempotencyKey": "CplPEZgLLg",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-MO-popular-vote",
+      "action": "create",
+      "idempotencyKey": "Npl50nO2lN",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-MS-popular-vote",
+      "action": "create",
+      "idempotencyKey": "IlRgQ8gLSu",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-MT-popular-vote",
+      "action": "create",
+      "idempotencyKey": "uA2Nlu0yUN",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-NC-popular-vote",
+      "action": "create",
+      "idempotencyKey": "QS6hpA92Et",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-ND-popular-vote",
+      "action": "create",
+      "idempotencyKey": "gthuZU562p",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-NE-popular-vote",
+      "action": "create",
+      "idempotencyKey": "E2gRRszQPz",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-NH-popular-vote",
+      "action": "create",
+      "idempotencyKey": "lSC2hdz8Lt",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-NJ-popular-vote",
+      "action": "create",
+      "idempotencyKey": "99LRRgRcZn",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-NM-popular-vote",
+      "action": "create",
+      "idempotencyKey": "Ns6hhPsQqc",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-NV-popular-vote",
+      "action": "create",
+      "idempotencyKey": "ZtLROgcZQS",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-NY-popular-vote",
+      "action": "create",
+      "idempotencyKey": "OgUp8tnzEl",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-OH-popular-vote",
+      "action": "create",
+      "idempotencyKey": "ZsSPR5QCZ0",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-OK-popular-vote",
+      "action": "create",
+      "idempotencyKey": "LpunulSyZI",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-OR-popular-vote",
+      "action": "create",
+      "idempotencyKey": "qOE22Qpl6h",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-PA-popular-vote",
+      "action": "create",
+      "idempotencyKey": "q9ANRRhEOz",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-RI-popular-vote",
+      "action": "create",
+      "idempotencyKey": "yssEhIZA0q",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-SC-popular-vote",
+      "action": "create",
+      "idempotencyKey": "nQ5gZ0hPtq",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-SD-popular-vote",
+      "action": "create",
+      "idempotencyKey": "h6yS8qll6z",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-TN-popular-vote",
+      "action": "create",
+      "idempotencyKey": "IlgPC6hEth",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-TX-popular-vote",
+      "action": "create",
+      "idempotencyKey": "NQpylOc8cN",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-UT-popular-vote",
+      "action": "create",
+      "idempotencyKey": "zUcluppNPZ",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-VA-popular-vote",
+      "action": "create",
+      "idempotencyKey": "LdnlQNOhts",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-VT-popular-vote",
+      "action": "create",
+      "idempotencyKey": "NuInQZSACN",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-WA-popular-vote",
+      "action": "create",
+      "idempotencyKey": "9AR0NR5n2P",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-WI-popular-vote",
+      "action": "create",
+      "idempotencyKey": "69ds0PtENU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-WV-popular-vote",
+      "action": "create",
+      "idempotencyKey": "2lS6qsudtd",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
+      "raceKey": "2032-president-WY-popular-vote",
+      "action": "create",
+      "idempotencyKey": "luPsOsydtU",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
     }
   ]
 }

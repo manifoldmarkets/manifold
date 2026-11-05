@@ -3162,6 +3162,1587 @@
     "status": "planned"
   },
   {
+    "raceKey": "2028-president-AK-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "AK",
+    "slug": "PENDING:2028-president-AK-popular-vote",
+    "contractId": "PENDING:2028-president-AK-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-AK-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-AK-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-AK-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-AL-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "AL",
+    "slug": "PENDING:2028-president-AL-popular-vote",
+    "contractId": "PENDING:2028-president-AL-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-AL-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-AL-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-AL-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-AR-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "AR",
+    "slug": "PENDING:2028-president-AR-popular-vote",
+    "contractId": "PENDING:2028-president-AR-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-AR-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-AR-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-AR-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-AZ-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "AZ",
+    "slug": "PENDING:2028-president-AZ-popular-vote",
+    "contractId": "PENDING:2028-president-AZ-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-AZ-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-AZ-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-AZ-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-CA-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "CA",
+    "slug": "PENDING:2028-president-CA-popular-vote",
+    "contractId": "PENDING:2028-president-CA-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-CA-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-CA-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-CA-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-CO-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "CO",
+    "slug": "PENDING:2028-president-CO-popular-vote",
+    "contractId": "PENDING:2028-president-CO-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-CO-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-CO-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-CO-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-CT-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "CT",
+    "slug": "PENDING:2028-president-CT-popular-vote",
+    "contractId": "PENDING:2028-president-CT-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-CT-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-CT-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-CT-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-DC-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "DC",
+    "slug": "PENDING:2028-president-DC-popular-vote",
+    "contractId": "PENDING:2028-president-DC-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-DC-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-DC-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-DC-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-DE-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "DE",
+    "slug": "PENDING:2028-president-DE-popular-vote",
+    "contractId": "PENDING:2028-president-DE-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-DE-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-DE-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-DE-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-FL-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "FL",
+    "slug": "PENDING:2028-president-FL-popular-vote",
+    "contractId": "PENDING:2028-president-FL-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-FL-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-FL-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-FL-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-GA-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "GA",
+    "slug": "PENDING:2028-president-GA-popular-vote",
+    "contractId": "PENDING:2028-president-GA-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-GA-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-GA-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-GA-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-HI-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "HI",
+    "slug": "PENDING:2028-president-HI-popular-vote",
+    "contractId": "PENDING:2028-president-HI-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-HI-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-HI-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-HI-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-IA-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "IA",
+    "slug": "PENDING:2028-president-IA-popular-vote",
+    "contractId": "PENDING:2028-president-IA-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-IA-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-IA-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-IA-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-ID-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "ID",
+    "slug": "PENDING:2028-president-ID-popular-vote",
+    "contractId": "PENDING:2028-president-ID-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-ID-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-ID-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-ID-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-IL-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "IL",
+    "slug": "PENDING:2028-president-IL-popular-vote",
+    "contractId": "PENDING:2028-president-IL-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-IL-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-IL-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-IL-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-IN-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "IN",
+    "slug": "PENDING:2028-president-IN-popular-vote",
+    "contractId": "PENDING:2028-president-IN-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-IN-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-IN-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-IN-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-KS-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "KS",
+    "slug": "PENDING:2028-president-KS-popular-vote",
+    "contractId": "PENDING:2028-president-KS-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-KS-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-KS-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-KS-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-KY-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "KY",
+    "slug": "PENDING:2028-president-KY-popular-vote",
+    "contractId": "PENDING:2028-president-KY-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-KY-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-KY-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-KY-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-LA-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "LA",
+    "slug": "PENDING:2028-president-LA-popular-vote",
+    "contractId": "PENDING:2028-president-LA-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-LA-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-LA-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-LA-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-MA-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "MA",
+    "slug": "PENDING:2028-president-MA-popular-vote",
+    "contractId": "PENDING:2028-president-MA-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-MA-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-MA-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-MA-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-MD-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "MD",
+    "slug": "PENDING:2028-president-MD-popular-vote",
+    "contractId": "PENDING:2028-president-MD-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-MD-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-MD-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-MD-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-ME-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "ME",
+    "slug": "PENDING:2028-president-ME-popular-vote",
+    "contractId": "PENDING:2028-president-ME-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-ME-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-ME-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-ME-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-MI-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "MI",
+    "slug": "PENDING:2028-president-MI-popular-vote",
+    "contractId": "PENDING:2028-president-MI-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-MI-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-MI-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-MI-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-MN-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "MN",
+    "slug": "PENDING:2028-president-MN-popular-vote",
+    "contractId": "PENDING:2028-president-MN-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-MN-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-MN-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-MN-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-MO-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "MO",
+    "slug": "PENDING:2028-president-MO-popular-vote",
+    "contractId": "PENDING:2028-president-MO-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-MO-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-MO-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-MO-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-MS-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "MS",
+    "slug": "PENDING:2028-president-MS-popular-vote",
+    "contractId": "PENDING:2028-president-MS-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-MS-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-MS-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-MS-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-MT-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "MT",
+    "slug": "PENDING:2028-president-MT-popular-vote",
+    "contractId": "PENDING:2028-president-MT-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-MT-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-MT-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-MT-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-NC-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "NC",
+    "slug": "PENDING:2028-president-NC-popular-vote",
+    "contractId": "PENDING:2028-president-NC-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-NC-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-NC-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-NC-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-ND-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "ND",
+    "slug": "PENDING:2028-president-ND-popular-vote",
+    "contractId": "PENDING:2028-president-ND-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-ND-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-ND-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-ND-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-NE-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "NE",
+    "slug": "PENDING:2028-president-NE-popular-vote",
+    "contractId": "PENDING:2028-president-NE-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-NE-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-NE-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-NE-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-NH-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "NH",
+    "slug": "PENDING:2028-president-NH-popular-vote",
+    "contractId": "PENDING:2028-president-NH-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-NH-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-NH-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-NH-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-NJ-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "NJ",
+    "slug": "PENDING:2028-president-NJ-popular-vote",
+    "contractId": "PENDING:2028-president-NJ-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-NJ-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-NJ-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-NJ-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-NM-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "NM",
+    "slug": "PENDING:2028-president-NM-popular-vote",
+    "contractId": "PENDING:2028-president-NM-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-NM-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-NM-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-NM-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-NV-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "NV",
+    "slug": "PENDING:2028-president-NV-popular-vote",
+    "contractId": "PENDING:2028-president-NV-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-NV-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-NV-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-NV-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-NY-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "NY",
+    "slug": "PENDING:2028-president-NY-popular-vote",
+    "contractId": "PENDING:2028-president-NY-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-NY-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-NY-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-NY-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-OH-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "OH",
+    "slug": "PENDING:2028-president-OH-popular-vote",
+    "contractId": "PENDING:2028-president-OH-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-OH-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-OH-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-OH-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-OK-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "OK",
+    "slug": "PENDING:2028-president-OK-popular-vote",
+    "contractId": "PENDING:2028-president-OK-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-OK-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-OK-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-OK-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-OR-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "OR",
+    "slug": "PENDING:2028-president-OR-popular-vote",
+    "contractId": "PENDING:2028-president-OR-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-OR-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-OR-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-OR-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-PA-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "PA",
+    "slug": "PENDING:2028-president-PA-popular-vote",
+    "contractId": "PENDING:2028-president-PA-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-PA-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-PA-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-PA-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-RI-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "RI",
+    "slug": "PENDING:2028-president-RI-popular-vote",
+    "contractId": "PENDING:2028-president-RI-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-RI-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-RI-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-RI-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-SC-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "SC",
+    "slug": "PENDING:2028-president-SC-popular-vote",
+    "contractId": "PENDING:2028-president-SC-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-SC-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-SC-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-SC-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-SD-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "SD",
+    "slug": "PENDING:2028-president-SD-popular-vote",
+    "contractId": "PENDING:2028-president-SD-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-SD-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-SD-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-SD-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-TN-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "TN",
+    "slug": "PENDING:2028-president-TN-popular-vote",
+    "contractId": "PENDING:2028-president-TN-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-TN-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-TN-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-TN-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-TX-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "TX",
+    "slug": "PENDING:2028-president-TX-popular-vote",
+    "contractId": "PENDING:2028-president-TX-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-TX-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-TX-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-TX-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-UT-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "UT",
+    "slug": "PENDING:2028-president-UT-popular-vote",
+    "contractId": "PENDING:2028-president-UT-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-UT-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-UT-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-UT-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-VA-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "VA",
+    "slug": "PENDING:2028-president-VA-popular-vote",
+    "contractId": "PENDING:2028-president-VA-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-VA-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-VA-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-VA-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-VT-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "VT",
+    "slug": "PENDING:2028-president-VT-popular-vote",
+    "contractId": "PENDING:2028-president-VT-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-VT-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-VT-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-VT-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-WA-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "WA",
+    "slug": "PENDING:2028-president-WA-popular-vote",
+    "contractId": "PENDING:2028-president-WA-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-WA-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-WA-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-WA-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-WI-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "WI",
+    "slug": "PENDING:2028-president-WI-popular-vote",
+    "contractId": "PENDING:2028-president-WI-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-WI-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-WI-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-WI-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-WV-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "WV",
+    "slug": "PENDING:2028-president-WV-popular-vote",
+    "contractId": "PENDING:2028-president-WV-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-WV-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-WV-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-WV-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
+    "raceKey": "2028-president-WY-popular-vote",
+    "list": "presidentPopular2028",
+    "key": "WY",
+    "slug": "PENDING:2028-president-WY-popular-vote",
+    "contractId": "PENDING:2028-president-WY-popular-vote",
+    "url": null,
+    "proposition": "popular-vote-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-president-WY-popular-vote#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-president-WY-popular-vote#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-president-WY-popular-vote#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
     "raceKey": "2028-house-AK-00-regular-general",
     "list": "house2028",
     "key": "AK-0",

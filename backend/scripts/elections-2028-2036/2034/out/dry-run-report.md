@@ -1,4 +1,4 @@
-# Election market creation — 2026-11-04.1
+# Election market creation — 2026-11-05.1
 
 Series `us-2034-general-v1` · 70 manifest entries · review approved: **false** · approved budget: 70000
 

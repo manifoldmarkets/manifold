@@ -5,21 +5,22 @@ Generic party markets (Democratic Party / Republican Party, plus the server's
 2026-11-05: "If the market set for 2036 is prepared, we should include it.
 That can be the cutoff, do 2034 as well"): every Senate seat and governorship
 up in 2028, 2030, 2032, 2034 and 2036, every presidential state and district
-in 2028, 2032 and 2036, and every 2028 House district. They are created years
+in 2028, 2032 and 2036, the popular vote in every state and DC in those
+years, and every 2028 House district. They are created years
 ahead with the pipeline that launched the 2026 midterm markets. Prepared on
 2026-10-06; on 2026-11-05 2030 and 2034 were added and 2036 became a planned
 cycle (it was optional). **Nothing here has been launched.** Tod
 approves and runs the launch after the 2026 results are certified (December
 2026).
 
-| Cycle | Senate | Governor | President | House | Markets | Mana |
-|---|---:|---:|---:|---:|---:|---:|
-| 2028 | 34 (Class 3) | 11 | 57 (50 states + DC + ME-1/2, NE-1/2/3 + national) | 435 | 537 | 1,518,000 |
-| 2030 | 33 (Class 1) | 36 | — | — | 69 | 69,000 |
-| 2032 | 33 (Class 2) | 11 | 57 | — (2030 census) | 101 | 110,000 |
-| 2034 | 34 (Class 3) | 36 | — | — (2030 census) | 70 | 70,000 |
-| 2036 | 33 (Class 1) | 11 | 57 | — | 101 | 110,000 |
-| **2028–2036** | | | | | **878** | **1,877,000** |
+| Cycle | Senate | Governor | President | Popular vote | House | Markets | Mana |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 2028 | 34 (Class 3) | 11 | 57 (50 states + DC + ME-1/2, NE-1/2/3 + national) | 51 (50 states + DC) | 435 | 588 | 2,028,000 |
+| 2030 | 33 (Class 1) | 36 | — | — | — | 69 | 69,000 |
+| 2032 | 33 (Class 2) | 11 | 57 | 51 | — (2030 census) | 152 | 161,000 |
+| 2034 | 34 (Class 3) | 36 | — | — | — (2030 census) | 70 | 70,000 |
+| 2036 | 33 (Class 1) | 11 | 57 | 51 | — | 152 | 161,000 |
+| **2028–2036** | | | | | | **1,031** | **2,489,000** |
 
 Creator: `@ManifoldPolitics`. Every market: `cpmm-multi-2` (the default),
 answers sum to one, `addAnswersMode: ONLY_CREATOR`, tier Ṁ1,000 unless raised
@@ -42,6 +43,8 @@ per-answer price: Ṁ100 at 1,000, Ṁ1,000 at 10,000, Ṁ10,000 at 100,000.
   stays at 1,000; each raised entry says why in `liquidityPlan.rationale`):
   - `2028-president-US-general`: 100,000.
   - The other 56 presidential states, DC and districts in 2028: 10,000.
+  - The 51 popular-vote markets in 2028: 10,000 (every 2028 presidential
+    market at Ṁ10k). In 2032 and 2036 they stay at 1,000.
   - `2032-president-US-general` and `2036-president-US-general`: 10,000.
   - Competitive 2028 races: Senate and governor within 8 points of the
     national environment (Senate AZ, GA, NV, NH, NC, PA, WI; governor NH, NC)
@@ -50,9 +53,55 @@ per-answer price: Ṁ100 at 1,000, Ṁ1,000 at 10,000, Ṁ10,000 at 100,000.
     cycles' competitive races stay at 1,000 for now, to be raised as each
     cycle approaches.
 
-  Planned totals: 2028 Ṁ1,518,000 (1 at 100,000, 98 at 10,000, 438 at
-  1,000), 2030 Ṁ69,000, 2032 Ṁ110,000, 2034 Ṁ70,000, 2036 Ṁ110,000; Ṁ1,877,000
-  in all. Each manifest's `budget.approvedMaxTotalMana` is its total.
+  Planned totals: 2028 Ṁ2,028,000 (1 at 100,000, 149 at 10,000, 438 at
+  1,000), 2030 Ṁ69,000, 2032 Ṁ161,000 (1 at 10,000, 151 at 1,000), 2034
+  Ṁ70,000, 2036 Ṁ161,000; Ṁ2,489,000 in all. The popular-vote markets add
+  Ṁ510,000 in 2028 and Ṁ51,000 each in 2032 and 2036. Each manifest's
+  `budget.approvedMaxTotalMana` is its total.
+
+- **Popular vote by state** (Tod, 2026-11-05): "Add a new market set for
+  every state in the presidential election also: popular vote by state --
+  basically the same as the electoral college one but not impacted by the
+  power/allocations but instead by their popular vote alone." One market per
+  state and DC in 2028, 2032 and 2036 (51 each; no ME/NE districts, whose
+  electoral markets already follow the district vote):
+  - "Which party will win the popular vote in Alabama in the 2028
+    presidential election?" (DC: "in the District of Columbia").
+  - Resolves to the party of the ticket with the most votes in the state, per
+    its certified result. How the state awards its electoral votes, including
+    under a national popular vote compact, doesn't matter. Maine and Alaska
+    add one sentence: if the state counts presidential votes by ranked choice
+    in that cycle, the final round's totals count. Resolves on the certified
+    result or an AP call no recount could change; N/A if the state holds no
+    popular vote for President.
+  - The same answers (Democratic, Republican, the server's "Other"), seeds,
+    close time and topics as the state's electoral market.
+  - Race keys `<cycle>-president-<ST>-popular-vote`, dashboard lists
+    `presidentPopular2028`, `presidentPopular2032` and `presidentPopular2036`
+    (key: the state code); the series per cycle is unchanged.
+  - Their own proposition, `popular-vote-party`, so the duplicate check never
+    treats a state's popular-vote market and its electoral market (or the
+    national market) as the same market, in either direction: at most each
+    lists the other as a related market (information only), so creating one
+    never skips the other.
+
+  Example (2028 Maine):
+
+  > Resolves to the party of the presidential ticket with the most votes in
+  > Maine in the November 7, 2028 election, per Maine's certified result.
+  > Only the vote count matters: how Maine awards its electoral votes,
+  > including under a national popular vote compact, doesn't. If Maine counts
+  > presidential votes by ranked choice in 2028, the final round's totals
+  > count.
+  >
+  > Only the party matters: a ticket on the Democratic or Republican line
+  > counts as that party even if also listed on other parties' lines. Any
+  > other ticket resolves to Other, or to its own answer if one has been
+  > added.
+  >
+  > Resolves on the certified result, or earlier once the AP has called it and
+  > no recount could change it. N/A if Maine holds no popular vote for
+  > President.
 
 - **Answers**: Democratic Party + Republican Party + the server's "Other",
   creator-only additions (was a fixed third answer, "Another party or
@@ -239,6 +288,17 @@ npx tsc --noEmit -p backend/scripts
   each one in the report ("information only: community market on the same
   question", "SKIPS OURS", …), and prints `onlineDuplicates` counts (create,
   skip, review, already created).
+- **Popular-vote proposition (2026-11-05)**: race entries can be
+  `popular-vote-party` (a state's popular vote for President). Validation
+  allows it only for a presidential state or DC entry whose key ends in
+  `-popular-vote` (and that suffix only for it); dashboard lists may be
+  `presidentPopular<cycle>`. The classifier keeps the two presidential
+  propositions apart: a popular-vote question ("popular vote", "most votes")
+  is at most AMBIGUOUS (information only) for an electoral entry, an electoral
+  or "win the state" question is at most AMBIGUOUS for a popular-vote entry,
+  and only a party market on the same state's popular vote in the same year
+  is EQUIVALENT to a popular-vote entry. The dry-run report lists the
+  popular-vote markets on their own cost line.
 
 Added with 2030 (generator only; the shared library is unchanged): Senate
 classes list the cycles they are up in (Class 1: 2030 and 2036); governors come
@@ -296,13 +356,16 @@ CLI writes into `<cycle>/out/` next to the state file after each run.)
    @ManifoldPolitics market skips one of ours (`SKIPS OURS` in the report),
    which is correct, since we never duplicate ourselves. `rejections.json`
    stays empty; it is only for creating ours despite one of our own
-   equivalent markets. With the saved results (2028/2032/2030 from
-   2026-11-05; 2036 from 2026-10-06), every entry is creatable (537 / 69 /
-   101 / 101, 0 skipped, 0 held). Community markets also exist for 71 / 2 /
-   1 / 2 of those races (59 2028 races with an equivalent community market,
-   among them Jack1's 55 state and district presidential markets). The 19
-   @ManifoldPolitics findings are all AMBIGUOUS, on the 2028 national market
-   (conditionals and the candidate winner market), so they block nothing.
+   equivalent markets. With the saved results (the popular-vote markets
+   checked on 2026-11-05), every entry is creatable (2028 / 2030 / 2032 /
+   2034 / 2036: 588 / 69 / 152 / 70 / 152, 0 skipped, 0 held). Other markets
+   also exist, as information, for 72 / 2 / 1 / 0 / 1 of those races (59
+   2028 races with an equivalent community market, among them Jack1's 55
+   state and district presidential markets). The 153 popular-vote markets
+   found one related market: Jack1's Nebraska presidential market, AMBIGUOUS
+   for the 2028 Nebraska popular vote. The 19 @ManifoldPolitics findings are
+   all AMBIGUOUS, on the 2028 national market (conditionals and the candidate
+   winner market), so they block nothing.
    Races to keep out of a run for any other reason go in `holds.json`; they
    stay in the manifest as `unresolved`, cost nothing and are skipped by
    apply. House districts are **not** held (Tod, 2026-11-05): all 435 are
@@ -336,18 +399,18 @@ CLI writes into `<cycle>/out/` next to the state file after each run.)
    colours and visibility, and the topics.
 7. **Full runs**, one cycle at a time, same state file, no `--init-state`,
    no `--only` (`--max-mana`: each cycle's planned total, which is also its
-   `budget.approvedMaxTotalMana`: 1518000 for 2028, 69000 for 2030, 110000
-   for 2032, 70000 for 2034, 110000 for 2036; the run cap counts only what that
+   `budget.approvedMaxTotalMana`: 2028000 for 2028, 69000 for 2030, 161000
+   for 2032, 70000 for 2034, 161000 for 2036; the run cap counts only what that
    run spends, so after the pilots the 2028 full run needs at most
-   1417000):
+   1927000):
    ```powershell
-   npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2028/manifest.json --out elections-2028-2036/2028/out --state C:\Users\User\elections-2028-prod\state.prod.json --env prod --apply --quiet --creator-username ManifoldPolitics --max-mana 1518000
+   npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2028/manifest.json --out elections-2028-2036/2028/out --state C:\Users\User\elections-2028-prod\state.prod.json --env prod --apply --quiet --creator-username ManifoldPolitics --max-mana 2028000
    ```
    A stop (`stoppedReason`) is normal for a needs-review entry, a seed
    mismatch or a rate limit: read the state file, fix, re-run; nothing is
    created twice. Expect roughly 10–15 seconds per market (create, read back,
-   three colour edits, publish), so about two hours for 2028 and 15–20 minutes
-   for 2030.
+   three colour edits, publish), so about two to two and a half hours for 2028
+   (588 markets) and 15–20 minutes for 2030.
 8. **Afterwards**: copy `<cycle>/out/dashboard-mapping.prod.json` next to each
    state file; commit the final manifests on a record branch/tag.
    Page wiring is a separate, later task; the `dashboard` block of every entry

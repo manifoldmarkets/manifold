@@ -9,6 +9,7 @@ import {
   congressionalRound,
   governorRound,
   longDate,
+  popularVoteRound,
   presidentialRound,
   RoundRule,
 } from './cycles'
@@ -43,6 +44,7 @@ const districtLabel = (race: Race) =>
 // The full round rule (with statute citations) stays in the manifest's
 // identity.round and the inventories; it also sets the close time.
 export function roundFor(race: Race, cfg: CycleConfig): RoundRule {
+  if (race.popularVote) return popularVoteRound(race.state, cfg)
   if (race.office === 'president') return presidentialRound(race.state, cfg)
   if (race.office === 'governor') return governorRound(race.state, cfg)
   return congressionalRound(race.state, race.office, cfg)
@@ -60,6 +62,10 @@ export function questionFor(race: Race): string {
         race
       )}?`
     case 'president':
+      if (race.popularVote)
+        return `Which party will win the popular vote in ${
+          race.state === 'DC' ? 'the ' : ''
+        }${stateName} in the ${cycle} presidential election?`
       if (race.state === 'US')
         return `Which party will win the ${cycle} U.S. presidential election?`
       if (race.district !== undefined)
@@ -200,10 +206,34 @@ export function descriptionFor(race: Race, cfg: CycleConfig): string {
       ].join('\n\n')
     }
     case 'president':
-      return state === 'US'
+      return race.popularVote
+        ? popularVoteDescription(race, cfg)
+        : state === 'US'
         ? nationalDescription(race, cfg)
         : stateDescription(race, cfg)
   }
+}
+
+// A state's popular vote (Tod, 2026-11-05): "basically the same as the
+// electoral college one but not impacted by the power/allocations but instead
+// by their popular vote alone". Where presidential votes are counted by
+// ranked choice (Maine; Alaska unless it repeals it), the final round counts.
+const RANKED_CHOICE_STATES = new Set(['ME', 'AK'])
+function popularVoteDescription(race: Race, cfg: CycleConfig) {
+  const { stateName, state, cycle } = race
+  const name = state === 'DC' ? 'the District of Columbia' : stateName
+  const possessive =
+    state === 'DC' ? "the District of Columbia's" : `${stateName}'s`
+  const rankedChoice = RANKED_CHOICE_STATES.has(state)
+    ? ` If ${name} counts presidential votes by ranked choice in ${cycle}, the final round's totals count.`
+    : ''
+  return [
+    `Resolves to the party of the presidential ticket with the most votes in ${name} in the ${longDate(
+      cfg.electionDate
+    )} election, per ${possessive} certified result. Only the vote count matters: how ${name} awards its electoral votes, including under a national popular vote compact, doesn't.${rankedChoice}`,
+    TICKET_PARTY_RULE(state),
+    `Resolves on the certified result, or earlier once the AP has called it and no recount could change it. N/A if ${name} holds no popular vote for President.`,
+  ].join('\n\n')
 }
 
 // A state market follows where the state's electoral votes go, however the
@@ -286,6 +316,18 @@ export function searchTermsFor(race: Race): string[] {
           ]
     }
     case 'president':
+      if (race.popularVote)
+        return state === 'DC'
+          ? [
+              `District of Columbia ${cycle} popular vote`,
+              `DC ${cycle} popular vote`,
+              `Washington DC ${cycle} presidential popular vote`,
+            ]
+          : [
+              `${stateName} ${cycle} popular vote`,
+              `${stateName} popular vote ${cycle} presidential`,
+              `${state} ${cycle} popular vote`,
+            ]
       if (state === 'US')
         return [
           `${cycle} presidential election`,
@@ -316,8 +358,11 @@ export function searchTermsFor(race: Race): string[] {
   }
 }
 
-export function shapeRationale(): string {
-  return `Generic ballot-party multi (Democratic Party / Republican Party, plus the server's "${OTHER_ANSWER_TEXT}"), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one, and only @ManifoldPolitics can add an answer (a third party or a named independent), which takes its share out of "${OTHER_ANSWER_TEXT}".`
+export function shapeRationale(race?: Race): string {
+  const answers = `answers sum to one, and only @ManifoldPolitics can add an answer (a third party or a named independent), which takes its share out of "${OTHER_ANSWER_TEXT}".`
+  if (race?.popularVote)
+    return `Generic party multi on a state's popular vote for President (Democratic Party / Republican Party, plus the server's "${OTHER_ANSWER_TEXT}"), opened years ahead with no candidates named. It follows who gets the most votes in the state, not where the state's electoral votes go, so it is a separate market from the state's electoral one; ${answers}`
+  return `Generic ballot-party multi (Democratic Party / Republican Party, plus the server's "${OTHER_ANSWER_TEXT}"), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; ${answers}`
 }
 
 export function closeNote(cfg: CycleConfig): string {

@@ -5,9 +5,12 @@
 import * as assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
+  classifyExistingMarket,
   costOf,
+  duplicateAction,
   hasOtherAnswer,
   idempotencyKeyFor,
+  MarketLike,
   RaceManifestEntry,
   validateManifest,
 } from 'shared/elections/election-market-creation'
@@ -21,6 +24,7 @@ import {
 } from './cycles'
 import {
   buildManifest,
+  countsOf,
   loadRejections,
   loadTopics,
   topicIdsFor,
@@ -87,16 +91,22 @@ test('election days are the Tuesday after the first Monday in November', () => {
   )
 })
 
-test('counts per cycle and office match the brief: 878 markets, Ṁ1,877,000 for 2028–2036', () => {
+test('counts per cycle and office match the brief: 1,031 markets, Ṁ2,489,000 for 2028–2036', () => {
   assert.deepEqual([...CYCLES], [2028, 2030, 2032, 2034, 2036])
   let total = 0
   let mana = 0
   for (const cycle of CYCLES) {
-    const counts: Record<string, number> = {}
-    for (const e of entriesOf(cycle))
-      counts[e.identity.office] = (counts[e.identity.office] ?? 0) + 1
-    for (const [office, n] of Object.entries(EXPECTED_COUNTS[cycle]))
-      assert.equal(counts[office] ?? 0, n, `${cycle} ${office}`)
+    const counts = countsOf(entriesOf(cycle))
+    for (const [key, n] of Object.entries(EXPECTED_COUNTS[cycle]))
+      assert.equal(counts[key] ?? 0, n, `${cycle} ${key}`)
+    // Every generated entry is counted under one expected key.
+    assert.deepEqual(
+      Object.keys(counts).filter(
+        (k) => !(k in EXPECTED_COUNTS[cycle]) || !counts[k]
+      ),
+      [],
+      `${cycle}`
+    )
     total += entriesOf(cycle).length
     mana += built[cycle].totalMana
     assert.equal(
@@ -108,17 +118,19 @@ test('counts per cycle and office match the brief: 878 markets, Ṁ1,877,000 for
       entriesOf(cycle).reduce((sum, e) => sum + e.payload!.liquidityTier, 0)
     )
   }
-  assert.equal(entriesOf(2028).length, 537)
+  // Presidential cycles: 57 electoral markets plus 51 popular-vote markets.
+  assert.equal(entriesOf(2028).length, 537 + 51)
   assert.equal(entriesOf(2030).length, 69)
-  assert.equal(entriesOf(2032).length, 101)
+  assert.equal(entriesOf(2032).length, 101 + 51)
   assert.equal(entriesOf(2034).length, 70)
-  assert.equal(entriesOf(2036).length, 101)
-  assert.equal(total, 878)
+  assert.equal(entriesOf(2036).length, 101 + 51)
+  assert.equal(total, 1_031)
+  // Popular vote: Ṁ10,000 each in 2028 (51 × 10,000), Ṁ1,000 in 2032/2036.
   assert.deepEqual(
     CYCLES.map((c) => built[c].totalMana),
-    [1_518_000, 69_000, 110_000, 70_000, 110_000]
+    [1_518_000 + 510_000, 69_000, 110_000 + 51_000, 70_000, 110_000 + 51_000]
   )
-  assert.equal(mana, 1_877_000)
+  assert.equal(mana, 2_489_000)
 })
 
 test('every generated manifest validates with zero errors and is not approved', () => {
@@ -165,9 +177,12 @@ test('race keys follow the 2026 style and reserved ids are unique across cycles'
         senate: new RegExp(`^${cycle}-senate-[A-Z]{2}-regular-general$`),
         governor: new RegExp(`^${cycle}-governor-[A-Z]{2}-regular-general$`),
         house: new RegExp(`^${cycle}-house-[A-Z]{2}-\\d{2}-regular-general$`),
-        president: new RegExp(
-          `^${cycle}-president-([A-Z]{2}|[A-Z]{2}-0[1-3])-general$`
-        ),
+        president:
+          e.proposition === 'popular-vote-party'
+            ? new RegExp(`^${cycle}-president-[A-Z]{2}-popular-vote$`)
+            : new RegExp(
+                `^${cycle}-president-([A-Z]{2}|[A-Z]{2}-0[1-3])-general$`
+              ),
       }[e.identity.office]
       assert.match(e.raceKey, re)
       assert.ok(!keys.has(e.raceKey), `duplicate ${e.raceKey}`)
@@ -183,6 +198,10 @@ test('race keys follow the 2026 style and reserved ids are unique across cycles'
   assert.ok(keys.has('2028-president-PA-general'))
   assert.ok(keys.has('2028-president-ME-02-general'))
   assert.ok(keys.has('2028-president-US-general'))
+  assert.ok(keys.has('2028-president-AL-popular-vote'))
+  assert.ok(keys.has('2036-president-DC-popular-vote'))
+  assert.ok(!keys.has('2028-president-US-popular-vote'))
+  assert.ok(!keys.has('2028-president-NE-02-popular-vote'))
   assert.ok(keys.has('2032-senate-ME-regular-general'))
   assert.ok(keys.has('2036-senate-VT-regular-general'))
   assert.ok(keys.has('2030-senate-ME-regular-general'))
@@ -439,7 +458,12 @@ test('answers are the two party labels plus the server\'s "Other", with valid se
       [3, e.payload!.liquidityTier]
     )
     assert.equal(e.payload!.visibility, 'public')
-    assert.equal(e.proposition, 'ballot-party')
+    assert.equal(
+      e.proposition,
+      e.raceKey.endsWith('-popular-vote')
+        ? 'popular-vote-party'
+        : 'ballot-party'
+    )
     assert.deepEqual(e.identity.candidateNames, [])
   }
 })
@@ -475,7 +499,17 @@ test('"Other" opens at 1% except the reviewed exceptions', () => {
 const expectedRound = (e: RaceManifestEntry): RegExp | undefined => {
   const { office, state, cycle } = e.identity
   const cfg = cycleConfig(cycle as 2028)
-  // Presidential markets follow the certified electors: no round sentence.
+  // A popular-vote market in a ranked-choice state counts the final round.
+  if (e.proposition === 'popular-vote-party')
+    return state === 'ME' || state === 'AK'
+      ? new RegExp(
+          `If ${
+            state === 'ME' ? 'Maine' : 'Alaska'
+          } counts presidential votes by ranked choice in ${cycle}, the final round's totals count\\.$`
+        )
+      : undefined
+  // Electoral presidential markets follow the certified electors: no round
+  // sentence.
   if (office === 'president') return undefined
   if (state === 'GA')
     return new RegExp(
@@ -574,7 +608,27 @@ test('descriptions are short plain paragraphs: the election and date, the party 
         e.raceKey
       )
     }
-    if (office === 'president') {
+    if (e.proposition === 'popular-vote-party') {
+      // A state's popular vote: the most votes there, whatever happens to its
+      // electoral votes; the certified result decides.
+      const name = state === 'DC' ? 'the District of Columbia' : stateName
+      const possessive =
+        state === 'DC' ? "the District of Columbia's" : `${stateName}'s`
+      assert.ok(
+        paras[0].startsWith(
+          `Resolves to the party of the presidential ticket with the most votes in ${name} in the ${longDate(
+            cfg.electionDate
+          )} election, per ${possessive} certified result. Only the vote count matters: how ${name} awards its electoral votes, including under a national popular vote compact, doesn't.`
+        ),
+        e.raceKey
+      )
+      assert.equal(
+        paras[2],
+        `Resolves on the certified result, or earlier once the AP has called it and no recount could change it. N/A if ${name} holds no popular vote for President.`,
+        e.raceKey
+      )
+      assert.doesNotMatch(d, /\belectors?\b|faithless/i, e.raceKey)
+    } else if (office === 'president') {
       if (state === 'US') {
         // The national market doesn't depend on the Electoral College,
         // electors or Congress's count: whoever is elected, however decided.
@@ -719,6 +773,23 @@ test('the exact text for one market of each kind', () => {
     ].join('\n\n')
   )
   assert.equal(
+    desc('2028-president-AL-popular-vote'),
+    [
+      "Resolves to the party of the presidential ticket with the most votes in Alabama in the November 7, 2028 election, per Alabama's certified result. Only the vote count matters: how Alabama awards its electoral votes, including under a national popular vote compact, doesn't.",
+      TICKET,
+      'Resolves on the certified result, or earlier once the AP has called it and no recount could change it. N/A if Alabama holds no popular vote for President.',
+    ].join('\n\n')
+  )
+  assert.equal(
+    desc('2028-president-ME-popular-vote').split('\n\n')[0],
+    "Resolves to the party of the presidential ticket with the most votes in Maine in the November 7, 2028 election, per Maine's certified result. Only the vote count matters: how Maine awards its electoral votes, including under a national popular vote compact, doesn't. If Maine counts presidential votes by ranked choice in 2028, the final round's totals count."
+  )
+  assert.equal(
+    allEntries.find((e) => e.raceKey === '2032-president-DC-popular-vote')!
+      .payload!.question,
+    'Which party will win the popular vote in the District of Columbia in the 2032 presidential election?'
+  )
+  assert.equal(
     desc('2030-governor-VT-regular-general').split('\n\n')[0],
     'Resolves to the party that wins the November 5, 2030 election for Governor of Vermont. If no candidate gets a majority, the Vermont legislature picks the governor in January 2031, and that pick decides.'
   )
@@ -767,7 +838,21 @@ test('liquidity tiers: Ṁ100k for the 2028 presidential market, Ṁ10k for the 
       )
       .map(code)
   assert.deepEqual(at(2028, 'president', 100_000), ['US'])
-  assert.equal(at(2028, 'president', 10_000).length, 56)
+  // 2028: the 56 electoral state/district markets and the 51 popular-vote
+  // markets (every 2028 presidential market at Ṁ10k).
+  assert.equal(at(2028, 'president', 10_000).length, 56 + 51)
+  assert.equal(
+    entriesOf(2028).filter(
+      (e) =>
+        e.proposition === 'popular-vote-party' &&
+        e.payload!.liquidityTier === 10_000 &&
+        /popular-vote market for a state \(Tod, 5 Nov 2026/.test(
+          e.liquidityPlan!.rationale
+        )
+    ).length,
+    51
+  )
+  // 2032/2036: only the national market is raised; popular vote stays 1,000.
   assert.deepEqual(at(2032, 'president', 10_000), ['US'])
   assert.deepEqual(at(2036, 'president', 10_000), ['US'])
   assert.deepEqual(at(2028, 'senate', 10_000).sort(), [
@@ -972,7 +1057,13 @@ test('dashboard block is consistent: list, key, cycle and office', () => {
     assert.equal(e.dashboard.office, office)
     assert.equal(
       e.dashboard.list,
-      `${office === 'governor' ? 'governors' : office}${cycle}`
+      `${
+        e.proposition === 'popular-vote-party'
+          ? 'presidentPopular'
+          : office === 'governor'
+          ? 'governors'
+          : office
+      }${cycle}`
     )
     if (e.identity.district !== undefined)
       assert.equal(e.dashboard.key, `${state}-${e.identity.district}`)
@@ -1086,7 +1177,7 @@ test('rejections become reviewedRejectedContractIds and holds make entries unres
   assert.equal(ga.status, 'unresolved')
   assert.equal(ga.payload, undefined)
   assert.match(ga.unresolvedFields![0], /held: map likely to change/)
-  assert.equal(entries.length, 537)
+  assert.equal(entries.length, 588)
   // Held entries cost nothing; the rest keep their own tiers.
   const heldKeys = new Set(r.held)
   assert.equal(
@@ -1112,6 +1203,110 @@ test('generation is deterministic for a fixed generatedAt', () => {
       JSON.stringify(built[cycle].manifest)
     )
   }
+})
+
+test('popular vote: one market per state and DC in each presidential cycle, seeded like the electoral market and never its duplicate', () => {
+  const states = Object.keys(inventories.president().electoralVotes2024).sort()
+  assert.equal(states.length, 51)
+  // A created market as the duplicate search would see it.
+  const asMarket = (x: RaceManifestEntry): MarketLike => ({
+    id: x.raceKey,
+    question: x.payload!.question,
+    outcomeType: 'MULTIPLE_CHOICE',
+    creatorUsername: 'ManifoldPolitics',
+    answers: [...x.payload!.answers!, 'Other'].map((text, i) => ({
+      id: String(i),
+      text,
+    })),
+  })
+  for (const cycle of CYCLES) {
+    const entries = entriesOf(cycle)
+    const popular = entries.filter(
+      (e) => e.proposition === 'popular-vote-party'
+    )
+    assert.deepEqual(
+      popular.map((e) => e.identity.state),
+      cycleConfig(cycle).president ? states : [],
+      `${cycle}`
+    )
+    const policy = built[cycle].manifest.duplicatePolicy
+    for (const e of popular) {
+      const st = e.identity.state
+      const electoral = entries.find(
+        (x) => x.raceKey === `${cycle}-president-${st}-general`
+      )!
+      assert.equal(e.raceKey, `${cycle}-president-${st}-popular-vote`)
+      assert.equal(e.identity.office, 'president')
+      assert.equal(e.identity.district, undefined)
+      assert.deepEqual(e.dashboard, {
+        list: `presidentPopular${cycle}`,
+        key: st,
+        cycle,
+        office: 'president',
+      })
+      assert.equal(
+        e.payload!.question,
+        `Which party will win the popular vote in ${st === 'DC' ? 'the ' : ''}${
+          e.identity.stateName
+        } in the ${cycle} presidential election?`
+      )
+      // The same answers, seeds, close time and topics as the state's
+      // electoral market; Ṁ10,000 in 2028, Ṁ1,000 later.
+      assert.deepEqual(e.payload!.answers, electoral.payload!.answers)
+      assert.deepEqual(e.payload!.answerProbs, electoral.payload!.answerProbs)
+      assert.deepEqual(e.answerMeta, electoral.answerMeta)
+      assert.deepEqual(e.seed, electoral.seed)
+      assert.equal(e.payload!.closeTime, electoral.payload!.closeTime)
+      assert.deepEqual(e.payload!.groupIds, electoral.payload!.groupIds)
+      assert.equal(e.payload!.liquidityTier, cycle === 2028 ? 10_000 : 1_000)
+      // Once one exists, the other is never its duplicate (in either
+      // direction): at most a related market, which the policy only lists.
+      for (const [entry, other] of [
+        [e, electoral],
+        [electoral, e],
+      ]) {
+        const v = classifyExistingMarket(entry, asMarket(other))
+        assert.ok(
+          v.verdict === 'ambiguous' || v.verdict === 'unrelated',
+          `${entry.raceKey} vs ${other.raceKey}: ${v.verdict}`
+        )
+        if (v.verdict === 'ambiguous')
+          assert.equal(
+            duplicateAction(policy, {
+              verdict: v.verdict,
+              creatorUsername: 'ManifoldPolitics',
+            }),
+            'info'
+          )
+      }
+      // Each still finds a copy of itself, so a rerun never creates twice.
+      assert.equal(classifyExistingMarket(e, asMarket(e)).verdict, 'equivalent')
+      assert.equal(
+        classifyExistingMarket(electoral, asMarket(electoral)).verdict,
+        'equivalent'
+      )
+    }
+  }
+  // The national and district electoral markets aren't confused with a
+  // state's popular vote either.
+  const al = entriesOf(2028).find(
+    (e) => e.raceKey === '2028-president-AL-popular-vote'
+  )!
+  const ne = entriesOf(2028).find(
+    (e) => e.raceKey === '2028-president-NE-popular-vote'
+  )!
+  for (const key of [
+    '2028-president-US-general',
+    '2028-president-NE-02-general',
+  ])
+    assert.equal(
+      classifyExistingMarket(
+        key.includes('NE') ? ne : al,
+        asMarket(entriesOf(2028).find((e) => e.raceKey === key)!)
+      ).verdict === 'equivalent',
+      false,
+      key
+    )
 })
 
 test('the race inventory matches the manifests one to one', () => {

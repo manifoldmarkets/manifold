@@ -1,10 +1,10 @@
-# Election market creation — 2026-11-04.1
+# Election market creation — 2026-11-05.1
 
-Series `us-2036-general-v1` · 101 manifest entries · review approved: **false** · approved budget: 110000
+Series `us-2036-general-v1` · 152 manifest entries · review approved: **false** · approved budget: 161000
 
 | action | races |
 |---|---|
-| create | 101 |
+| create | 152 |
 | already-created | 0 |
 | skip-existing | 0 |
 | needs-review | 0 |
@@ -12,16 +12,17 @@ Series `us-2036-general-v1` · 101 manifest entries · review approved: **false*
 | failed-earlier | 0 |
 | unresolved | 0 |
 
-**Estimated cost of planned creations: Ṁ110,000** (ante incl. per-answer charges + extra liquidity; the API charges nothing else at creation).
+**Estimated cost of planned creations: Ṁ161,000** (ante incl. per-answer charges + extra liquidity; the API charges nothing else at creation).
 - senate: 33 markets, Ṁ33,000
 - governor: 11 markets, Ṁ11,000
 - president: 57 markets, Ṁ66,000
+- president (popular vote): 51 markets, Ṁ51,000
 
 Duplicate policy: only an EQUIVALENT market by @ManifoldPolitics skips an entry; community and related markets are listed as information and never skip or hold.
 
 | duplicate check (saved online results) | races |
 |---|---|
-| create | 101 |
+| create | 152 |
 | …of which other markets also exist (information) | 1 |
 | skip (equivalent market blocks) | 0 |
 | hold for review | 0 |
@@ -837,5 +838,413 @@ Seed probabilities below are SEEDS for the initial pool, not observed market for
 - liquidity: Presidential winner market for its cycle (Tod, 5 Nov 2026): Ṁ10,000.
 - reserved idempotency key (not yet a contract): `z89QsEnnZE`
 - online recheck (create): [information only: community market on the same question] EQUIVALENT Lpd8dcEds5 @Ernie "Which political party wins the US presidency in 2036?" (same office/state/district/year with party outcomes); [information only: related market] AMBIGUOUS MoUhTyVTG8OLznnjbpok @ukaszBartoszcze "Who will win the US presidential elections in 2036?" (same race, different proposition or answer set); [information only: related market] AMBIGUOUS 0PbT7DglPGtI9NlFLR0Y @colorednoise "Will a Democrat win the 2036 presidential election?" (binary party market for this race; ours is three-way); [information only: related market] AMBIGUOUS U8OEV1Ily83NDwDeHxxz @Unown "Who will win the 2036 United States presidential election?" (same race, different proposition or answer set)
+
+## 2036-president-AK-popular-vote — create
+**Which party will win the popular vote in Alaska in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 18% · Republican Party 81% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Alaska voted 13.6 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 18% and Republicans 81%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `gQnIc98IRL`
+
+## 2036-president-AL-popular-vote — create
+**Which party will win the popular vote in Alabama in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 2.3% · Republican Party 96.7% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Alabama voted 29.9 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 2.3% and Republicans 96.7%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `OQUqpptshZ`
+
+## 2036-president-AR-popular-vote — create
+**Which party will win the popular vote in Arkansas in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 1.8% · Republican Party 97.2% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Arkansas voted 31.4 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1.8% and Republicans 97.2%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `ttCAlC2Rdu`
+
+## 2036-president-AZ-popular-vote — create
+**Which party will win the popular vote in Arizona in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 38.7% · Republican Party 60.3% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Arizona voted 4.2 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 38.7% and Republicans 60.3%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `NcZdcqZ0Nu`
+
+## 2036-president-CA-popular-vote — create
+**Which party will win the popular vote in California in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 93.4% · Republican Party 5.6% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. California voted 23.8 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 93.4% and Republicans 5.6%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `qQ2pg5IP5n`
+
+## 2036-president-CO-popular-vote — create
+**Which party will win the popular vote in Colorado in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 76.2% · Republican Party 22.8% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Colorado voted 11.1 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 76.2% and Republicans 22.8%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `hOZLOIsqpO`
+
+## 2036-president-CT-popular-vote — create
+**Which party will win the popular vote in Connecticut in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 84.9% · Republican Party 14.1% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Connecticut voted 16.1 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 84.9% and Republicans 14.1%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `Z0ttdQ65pz`
+
+## 2036-president-DC-popular-vote — create
+**Which party will win the popular vote in the District of Columbia in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 98% · Republican Party 1% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. The District of Columbia voted 86.3 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 98% and Republicans 1%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `cC0hlhzp0R`
+
+## 2036-president-DE-popular-vote — create
+**Which party will win the popular vote in Delaware in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 84.2% · Republican Party 14.8% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Delaware voted 15.6 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 84.2% and Republicans 14.8%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `OROcQ5RS0g`
+
+## 2036-president-FL-popular-vote — create
+**Which party will win the popular vote in Florida in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 25.4% · Republican Party 73.6% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Florida voted 9.8 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 25.4% and Republicans 73.6%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `dNhL6qIuQC`
+
+## 2036-president-GA-popular-vote — create
+**Which party will win the popular vote in Georgia in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 42.9% · Republican Party 56.1% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Georgia voted 2.5 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 42.9% and Republicans 56.1%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `QNZIp2AZSq`
+
+## 2036-president-HI-popular-vote — create
+**Which party will win the popular vote in Hawaii in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 94.5% · Republican Party 4.5% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Hawaii voted 25.3 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 94.5% and Republicans 4.5%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `ASsnz2uhSR`
+
+## 2036-president-IA-popular-vote — create
+**Which party will win the popular vote in Iowa in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 20.2% · Republican Party 78.8% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Iowa voted 12.4 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 20.2% and Republicans 78.8%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `gSpC8cQQds`
+
+## 2036-president-ID-popular-vote — create
+**Which party will win the popular vote in Idaho in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 1% · Republican Party 98% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Idaho voted 36.2 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `s5qEuZLuLL`
+
+## 2036-president-IL-popular-vote — create
+**Which party will win the popular vote in Illinois in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 79.4% · Republican Party 19.6% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Illinois voted 12.7 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 79.4% and Republicans 19.6%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `CCuIP9QqUI`
+
+## 2036-president-IN-popular-vote — create
+**Which party will win the popular vote in Indiana in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 9.7% · Republican Party 89.3% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Indiana voted 19.4 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 9.7% and Republicans 89.3%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `d0LZpAyld8`
+
+## 2036-president-KS-popular-vote — create
+**Which party will win the popular vote in Kansas in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 12.4% · Republican Party 86.6% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Kansas voted 17.2 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 12.4% and Republicans 86.6%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `sRndyZ5sNQ`
+
+## 2036-president-KY-popular-vote — create
+**Which party will win the popular vote in Kentucky in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 2.2% · Republican Party 96.8% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Kentucky voted 30.2 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 2.2% and Republicans 96.8%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `sctht5POgA`
+
+## 2036-president-LA-popular-vote — create
+**Which party will win the popular vote in Louisiana in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 6.9% · Republican Party 92.1% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Louisiana voted 22.2 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 6.9% and Republicans 92.1%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `cS2AdNlpdy`
+
+## 2036-president-MA-popular-vote — create
+**Which party will win the popular vote in Massachusetts in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 96.2% · Republican Party 2.8% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Massachusetts voted 28.6 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 96.2% and Republicans 2.8%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `ZO956EcUEU`
+
+## 2036-president-MD-popular-vote — create
+**Which party will win the popular vote in Maryland in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 96.8% · Republican Party 2.2% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Maryland voted 30.3 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 96.8% and Republicans 2.2%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `2585ZNSuhs`
+
+## 2036-president-ME-popular-vote — create
+**Which party will win the popular vote in Maine in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 66.6% · Republican Party 32.4% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Maine voted 6.7 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 66.6% and Republicans 32.4%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `unCldRSSzy`
+
+## 2036-president-MI-popular-vote — create
+**Which party will win the popular vote in Michigan in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 47.3% · Republican Party 51.7% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Michigan voted 0.8 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 47.3% and Republicans 51.7%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `C9pN2QptQl`
+
+## 2036-president-MN-popular-vote — create
+**Which party will win the popular vote in Minnesota in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 60.6% · Republican Party 38.4% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Minnesota voted 4.3 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 60.6% and Republicans 38.4%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `UZqlz9RyCy`
+
+## 2036-president-MO-popular-vote — create
+**Which party will win the popular vote in Missouri in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 10.5% · Republican Party 88.5% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Missouri voted 18.7 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 10.5% and Republicans 88.5%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `92uzOydh9L`
+
+## 2036-president-MS-popular-vote — create
+**Which party will win the popular vote in Mississippi in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 7.5% · Republican Party 91.5% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Mississippi voted 21.5 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 7.5% and Republicans 91.5%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `Ild5S0N28p`
+
+## 2036-president-MT-popular-vote — create
+**Which party will win the popular vote in Montana in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 8.8% · Republican Party 90.2% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Montana voted 20.2 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 8.8% and Republicans 90.2%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `66y9QgPtuU`
+
+## 2036-president-NC-popular-vote — create
+**Which party will win the popular vote in North Carolina in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 39.5% · Republican Party 59.5% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. North Carolina voted 3.8 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 39.5% and Republicans 59.5%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `9QZZZC0QS5`
+
+## 2036-president-ND-popular-vote — create
+**Which party will win the popular vote in North Dakota in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 1% · Republican Party 98% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. North Dakota voted 37.4 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `CCzzPzlysU`
+
+## 2036-president-NE-popular-vote — create
+**Which party will win the popular vote in Nebraska in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 7.3% · Republican Party 91.7% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Nebraska voted 21.7 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 7.3% and Republicans 91.7%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `E5ECIRSSuE`
+
+## 2036-president-NH-popular-vote — create
+**Which party will win the popular vote in New Hampshire in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 59% · Republican Party 40% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. New Hampshire voted 3.6 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 59% and Republicans 40%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `RsUSACutpp`
+
+## 2036-president-NJ-popular-vote — create
+**Which party will win the popular vote in New Jersey in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 73.1% · Republican Party 25.9% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. New Jersey voted 9.6 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 73.1% and Republicans 25.9%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `PnndUI9CdO`
+
+## 2036-president-NM-popular-vote — create
+**Which party will win the popular vote in New Mexico in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 67.4% · Republican Party 31.6% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. New Mexico voted 7.1 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 67.4% and Republicans 31.6%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `0ElPc60OA5`
+
+## 2036-president-NV-popular-vote — create
+**Which party will win the popular vote in Nevada in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 44.6% · Republican Party 54.4% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Nevada voted 1.9 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 44.6% and Republicans 54.4%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `l5zEAcdqOU`
+
+## 2036-president-NY-popular-vote — create
+**Which party will win the popular vote in New York in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 85.6% · Republican Party 13.4% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. New York voted 16.6 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 85.6% and Republicans 13.4%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `g00uSZZ8SU`
+
+## 2036-president-OH-popular-vote — create
+**Which party will win the popular vote in Ohio in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 22.4% · Republican Party 76.6% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Ohio voted 11.3 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 22.4% and Republicans 76.6%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `ItEph0t2cc`
+
+## 2036-president-OK-popular-vote — create
+**Which party will win the popular vote in Oklahoma in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 1% · Republican Party 98% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Oklahoma voted 35.9 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `PICu5p9g90`
+
+## 2036-president-OR-popular-vote — create
+**Which party will win the popular vote in Oregon in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 82% · Republican Party 17% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Oregon voted 14.2 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 82% and Republicans 17%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `Lc9sLuALyq`
+
+## 2036-president-PA-popular-vote — create
+**Which party will win the popular vote in Pennsylvania in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 44.8% · Republican Party 54.2% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Pennsylvania voted 1.8 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 44.8% and Republicans 54.2%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `8LACypLd8n`
+
+## 2036-president-RI-popular-vote — create
+**Which party will win the popular vote in Rhode Island in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 85.1% · Republican Party 13.9% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Rhode Island voted 16.2 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 85.1% and Republicans 13.9%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `z2RtlR85O8`
+
+## 2036-president-SC-popular-vote — create
+**Which party will win the popular vote in South Carolina in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 13.4% · Republican Party 85.6% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. South Carolina voted 16.5 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 13.4% and Republicans 85.6%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `EslyRqCyIs`
+
+## 2036-president-SD-popular-vote — create
+**Which party will win the popular vote in South Dakota in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 2.3% · Republican Party 96.7% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. South Dakota voted 29.9 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 2.3% and Republicans 96.7%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `SQAnA26SCl`
+
+## 2036-president-TN-popular-vote — create
+**Which party will win the popular vote in Tennessee in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 2.9% · Republican Party 96.1% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Tennessee voted 28.4 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 2.9% and Republicans 96.1%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `ht0N5S6dS9`
+
+## 2036-president-TX-popular-vote — create
+**Which party will win the popular vote in Texas in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 22.4% · Republican Party 76.6% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Texas voted 11.3 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 22.4% and Republicans 76.6%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `QZLlPcRs5h`
+
+## 2036-president-UT-popular-vote — create
+**Which party will win the popular vote in Utah in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 5.9% · Republican Party 93.1% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Utah voted 23.3 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 5.9% and Republicans 93.1%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `66nguR6EQP`
+
+## 2036-president-VA-popular-vote — create
+**Which party will win the popular vote in Virginia in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 66.3% · Republican Party 32.7% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Virginia voted 6.6 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 66.3% and Republicans 32.7%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `9LZUgupIPc`
+
+## 2036-president-VT-popular-vote — create
+**Which party will win the popular vote in Vermont in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 97.7% · Republican Party 1.3% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Vermont voted 33.2 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 97.7% and Republicans 1.3%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `Ng9lRzzslh`
+
+## 2036-president-WA-popular-vote — create
+**Which party will win the popular vote in Washington in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 87.4% · Republican Party 11.6% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Washington voted 17.9 points more Democratic than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 87.4% and Republicans 11.6%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `6S6I9g89pz`
+
+## 2036-president-WI-popular-vote — create
+**Which party will win the popular vote in Wisconsin in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 45.2% · Republican Party 53.8% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Wisconsin voted 1.6 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 45.2% and Republicans 53.8%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `IAzS9REO89`
+
+## 2036-president-WV-popular-vote — create
+**Which party will win the popular vote in West Virginia in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 1% · Republican Party 98% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. West Virginia voted 42.7 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `8dEQQygNc9`
+
+## 2036-president-WY-popular-vote — create
+**Which party will win the popular vote in Wyoming in the 2036 presidential election?**
+- popular-vote-party · MULTIPLE_CHOICE · sum-to-one true · add answers ONLY_CREATOR · close 2036-11-05T12:00:00.000Z · tier 1000 → **Ṁ1000**
+- answers (seed %): Democratic Party 1% · Republican Party 98% · Other 1% (added by the server)
+- seed basis: Opening odds are a starting point, not a forecast. Wyoming voted 47.5 points more Republican than the country in the 2020 and 2024 presidential elections; pulled toward even for a race this far off, that gives Democrats 1% and Republicans 98%. Other opens at 1%.
+- liquidity: Default tier 1,000: a generic market opened years ahead. Raise it as the cycle approaches if the race becomes competitive enough that a Ṁ100 trade should move the price by a point rather than ten. Alternatives: Lower: tier 100 (not recommended; repeats the shallow-market problem). Higher: tier 10,000 (the rule for 2028 presidential and competitive races) or +extraLiquidity.
+- reserved idempotency key (not yet a contract): `0uRngud2UI`
 
 Quiet mode: create unlisted, verify prices, then publish through the visibility update API.

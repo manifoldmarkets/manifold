@@ -6,9 +6,10 @@
     "senate": 34,
     "governor": 11,
     "president": 57,
+    "presidentPopularVote": 51,
     "house": 435
   },
-  "total": 537,
+  "total": 588,
   "sources": {
     "senate": [
       {
@@ -1080,6 +1081,465 @@
       "seat": "270 of 538 electoral votes, or a contingent election in the House",
       "electoralVotes": 538,
       "round": "the November 7, 2028 general election for presidential electors (plurality)",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-AK-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "AK",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (the final round of ranked-choice tabulation if Alaska still counts presidential votes by ranked choice in 2028, otherwise a plurality; a repeal initiative is on the November 3, 2026 ballot), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-AL-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "AL",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-AR-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "AR",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-AZ-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "AZ",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-CA-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "CA",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-CO-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "CO",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-CT-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "CT",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-DC-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "DC",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-DE-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "DE",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-FL-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "FL",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-GA-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "GA",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality; Georgia's majority/runoff rule does not apply to the presidential race: O.C.G.A. § 21-2-501), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-HI-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "HI",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-IA-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "IA",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-ID-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "ID",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-IL-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "IL",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-IN-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "IN",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-KS-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "KS",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-KY-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "KY",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-LA-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "LA",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-MA-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "MA",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-MD-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "MD",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-ME-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "ME",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (the final round of ranked-choice tabulation if no ticket has a first-round majority and Maine still counts presidential votes by ranked choice in 2028, as 21-A M.R.S. § 723-A now provides), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-MI-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "MI",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-MN-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "MN",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-MO-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "MO",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-MS-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "MS",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-MT-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "MT",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-NC-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "NC",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-ND-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "ND",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-NE-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "NE",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-NH-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "NH",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-NJ-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "NJ",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-NM-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "NM",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-NV-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "NV",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-NY-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "NY",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-OH-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "OH",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-OK-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "OK",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-OR-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "OR",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-PA-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "PA",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-RI-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "RI",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-SC-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "SC",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-SD-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "SD",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-TN-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "TN",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-TX-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "TX",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-UT-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "UT",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-VA-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "VA",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-VT-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "VT",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-WA-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "WA",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-WI-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "WI",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-WV-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "WV",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
+      "closeTimeUtc": "2028-11-08T12:00:00.000Z"
+    },
+    {
+      "raceKey": "2028-president-WY-popular-vote",
+      "office": "president",
+      "popularVote": true,
+      "state": "WY",
+      "seat": "the statewide popular vote for President (the most votes, whatever the state does with its electoral votes)",
+      "round": "the November 7, 2028 general election: the presidential ticket with the most votes in the state's certified count (plurality), whatever the state does with its electoral votes, including under a national popular vote compact",
       "closeTimeUtc": "2028-11-08T12:00:00.000Z"
     },
     {

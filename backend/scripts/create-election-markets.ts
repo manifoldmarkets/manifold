@@ -143,8 +143,14 @@ function report(
   const by = (a: string) => plan.filter((p) => p.action === a)
   const total = by('create').reduce((s, p) => s + (p.cost?.total ?? 0), 0)
   const byOffice: Record<string, { n: number; mana: number }> = {}
+  const entryByKey = new Map(manifest.entries.map((e) => [e.raceKey, e]))
   for (const p of by('create')) {
-    const office = p.raceKey.split('-')[1]
+    // State popular-vote markets are listed apart from the electoral ones.
+    const office = `${p.raceKey.split('-')[1]}${
+      entryByKey.get(p.raceKey)?.proposition === 'popular-vote-party'
+        ? ' (popular vote)'
+        : ''
+    }`
     byOffice[office] ??= { n: 0, mana: 0 }
     byOffice[office].n++
     byOffice[office].mana += p.cost?.total ?? 0
