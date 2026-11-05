@@ -11,6 +11,7 @@
 // create-national-markets.ts; tests are national-markets.test.ts.
 
 import { createHash } from 'crypto'
+import { DOWNBALLOT_2028, DownballotRace } from './primaries-2028'
 import { getAnswerProbsError } from 'common/new-contract'
 import { MAX_QUESTION_LENGTH } from 'common/contract'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
@@ -432,6 +433,84 @@ const territoryPrimary = (
   }
 }
 
+// Each party's 2028 primary for Senate and governor (or one top-two/top-four
+// primary per race). Open answers, seeded with researched candidates; Other
+// takes the rest. A market closes the day after the contest that decides
+// it, or at the end of September (the latest 2028 primaries) if that date
+// isn't set yet.
+const DOWNBALLOT_DEFAULT_CLOSE = '2028-09-30T00:00:00Z'
+
+const downballotPrimaries = (race: DownballotRace): MultiEntry[] =>
+  race.markets
+    .filter((m) => m.candidates.length > 0)
+    .map((m) => {
+      const year = race.year ?? 2028
+      const slug = race.state.toLowerCase().replace(/[^a-z]+/g, '-')
+      const seat = race.office === 'senate' ? 'U.S. Senate' : `governor`
+      const where =
+        race.office === 'senate'
+          ? `${race.special ? `the ${year} U.S. Senate special election` : 'U.S. Senate'} in ${race.state}`
+          : `governor of ${race.state}`
+      const naIfNone = race.special
+        ? `N/A if no special election for this seat is held in ${year}.`
+        : `N/A if no election for this office is held in ${year}.`
+      const decided = race.decidedBy
+        ? new Date(Date.parse(`${race.decidedBy}T12:00:00Z`) + 86_400_000).toISOString()
+        : DOWNBALLOT_DEFAULT_CLOSE
+      const base = {
+        cycle: year,
+        phase: 'primary' as const,
+        outcome: 'MULTIPLE_CHOICE' as const,
+        addAnswersMode: 'ANYONE' as const,
+        topics: [
+          'us-politics',
+          'elections',
+          `${year}-us-elections`,
+          race.office === 'senate' ? 'us-senate' : 'governor',
+          ...(m.party === 'Democratic'
+            ? ['democratic-party']
+            : m.party === 'Republican'
+            ? ['republican-party']
+            : []),
+        ],
+        liquidityTier: 1000 as const,
+        closeTime: decided,
+        seed: {
+          kind: 'static-candidates' as const,
+          note: race.note,
+          seeds: m.candidates.map((c) => ({ text: c.name, pct: c.pct })),
+        },
+      }
+      if (!m.party) {
+        const kind = race.system === 'top-four' ? 'top-four' : 'top-two'
+        return {
+          ...base,
+          key: `${year}-${race.office}${race.special ? '-special' : ''}-${slug}-primary`,
+          question: `Who will finish first in the ${year} ${kind} primary for ${seat} in ${race.state}?`,
+          description: desc(
+            `Resolves to the candidate with the most votes in the ${year} ${kind} primary for ${where}, per certified results or an AP call once the outcome is settled. Party labels don't matter, only the vote count.`,
+            naIfNone
+          ),
+        }
+      }
+      const p = m.party === 'Democratic' ? 'dem' : 'gop'
+      return {
+        ...base,
+        key: `${year}-${race.office}${race.special ? '-special' : ''}-${slug}-${p}`,
+        question: race.special
+          ? `Who will be the ${m.party} nominee in the ${year} U.S. Senate special election in ${race.state}?`
+          : race.office === 'senate'
+          ? `Who will be the ${year} ${m.party} nominee for U.S. Senate in ${race.state}?`
+          : `Who will be the ${year} ${m.party} nominee for governor of ${race.state}?`,
+        description: desc(
+          `Resolves to the person the ${m.party} Party nominates for ${where} in ${year}: the winner of its primary, runoff or convention, whichever decides the nomination, per certified results or an AP call once the outcome is settled.`,
+          `If the nominee later withdraws or is replaced, it still resolves to the person first nominated. ${
+            race.special ? naIfNone.replace('.', ', or if the party nominates no one.') : 'N/A if the party nominates no one for this race.'
+          }`
+        ),
+      }
+    })
+
 // Party control of a state legislative chamber: the two parties, fixed (no
 // Other: independents count with the caucus they join).
 const chamberControl = (opts: {
@@ -730,6 +809,7 @@ export const ENTRIES: Entry[] = [
       ? [territoryPrimary(t, 'Democratic')]
       : [territoryPrimary(t, 'Democratic'), territoryPrimary(t, 'Republican')]
   ),
+  ...DOWNBALLOT_2028.flatMap(downballotPrimaries),
   {
     key: '2028-npvic-in-effect',
     cycle: 2028,
@@ -826,6 +906,30 @@ export const ENTRIES: Entry[] = [
       kind: 'static-fixed',
       pcts: [80, 20],
       note: 'Prior: Democrats expanded their House of Delegates majority in 2025.',
+    },
+  },
+  {
+    // Klobuchar became governor on January 4, 2027. Minnesota holds the
+    // special at the next November election, odd years included (Minn. Stat.
+    // 204D.28), so: primary August 10, election November 2, 2027.
+    key: '2027-senate-special-minnesota',
+    cycle: 2027,
+    phase: 'offyear',
+    outcome: 'MULTIPLE_CHOICE',
+    addAnswersMode: 'ONLY_CREATOR',
+    answers: [DEM, REP],
+    question: 'Which party will win the 2027 U.S. Senate special election in Minnesota?',
+    description: desc(
+      "Resolves to the party that wins the November 2, 2027 special election for Amy Klobuchar's former U.S. Senate seat (term ending January 3, 2031), per certified results. If it's held on another date before then, that election decides; N/A if none is.",
+      `${PARTY_RULE} The DFL counts as the Democratic Party.`
+    ),
+    topics: ['us-politics', 'elections', '2027-us-elections', 'us-senate', 'minnesota'],
+    liquidityTier: 1000,
+    closeTime: '2027-11-03T12:00:00Z',
+    seed: {
+      kind: 'static-fixed',
+      pcts: [78, 21],
+      note: 'Prior: Minnesota has elected Democrats statewide since 2008, and off-year specials tend to favor the party out of the White House.',
     },
   },
   chamberControl({

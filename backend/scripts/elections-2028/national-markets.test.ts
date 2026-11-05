@@ -51,6 +51,12 @@ import {
   validateEntries,
 } from './national-markets'
 import { buildPhotoIndex, parsePhotoRegistry, photoPathFor } from './photos'
+import { DOWNBALLOT_2028 } from './primaries-2028'
+
+const DOWNBALLOT_MARKETS = DOWNBALLOT_2028.reduce(
+  (n, r) => n + r.markets.filter((m) => m.candidates.length > 0).length,
+  0
+)
 import {
   blockingDuplicates,
   parseOverrides,
@@ -357,9 +363,10 @@ test('the manifest covers the planned markets and validates', () => {
   assert.deepEqual(validateEntries(ENTRIES, NOW), [])
   // 25 national markets (a balance-of-power market for every cycle through
   // 2036), a primary for each party in every state and DC, the territories'
-  // and Democrats Abroad's contests, and the 6 Nov 2026 additions (compact,
-  // Speaker, 2027 legislatures, 2029 races).
-  assert.equal(ENTRIES.length, 25 + 102 + 11 + 11)
+  // and Democrats Abroad's contests, the 6 Nov 2026 additions (compact,
+  // Speaker, 2027 legislatures, 2029 races, Minnesota's 2027 Senate special),
+  // and each party's Senate and governor primaries.
+  assert.equal(ENTRIES.length, 25 + 102 + 11 + 12 + DOWNBALLOT_MARKETS)
   const keys = ENTRIES.map((e) => e.key)
   for (const k of [
     '2028-dem-nominee',
