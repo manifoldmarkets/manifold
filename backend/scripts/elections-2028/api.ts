@@ -40,6 +40,8 @@ export type MarketRow = SourceMarket & {
   url?: string
   closeTime?: number
   createdTime?: number
+  // Full-market reads only (paragraphs separated by blank lines).
+  textDescription?: string
   mechanism?: string
   addAnswersMode?: string
   shouldAnswersSumToOne?: boolean
@@ -74,6 +76,8 @@ export function toMarketRow(m: any): MarketRow {
     url: m.url,
     closeTime: m.closeTime === undefined ? undefined : Number(m.closeTime),
     createdTime: m.createdTime === undefined ? undefined : Number(m.createdTime),
+    textDescription:
+      typeof m.textDescription === 'string' ? m.textDescription : undefined,
     mechanism: m.mechanism,
     addAnswersMode: m.addAnswersMode,
     shouldAnswersSumToOne: m.shouldAnswersSumToOne,

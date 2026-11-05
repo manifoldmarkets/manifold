@@ -547,7 +547,7 @@ export const ENTRIES: Entry[] = [
     // a state the winner lost adds nothing, and Maine's and Nebraska's
     // statewide votes are counted once, apart from their districts.
     description:
-      "Resolves to the state that gives the November 7, 2028 winner their 270th electoral vote. Rank every state and DC by the winner's certified margin over the national runner-up in percentage points (negative where the winner lost), largest first, and add up the electoral votes each awarded the winner. Maine and Nebraska enter as a statewide unit worth two votes plus one unit per district; a district that tips it resolves to its state. N/A if no one wins 270, or if the President is no longer chosen by electoral votes.",
+      "Resolves to the state that gives the November 7, 2028 winner their 270th electoral vote. Rank every state and DC by the winner's certified margin, in percentage points, over the candidate with the second-most electoral votes (negative where that candidate got more votes), largest first, and add up the electoral votes each awarded the winner. Maine and Nebraska enter as a statewide unit worth two votes plus one unit per district; a district that tips it resolves to its state. N/A if no one wins 270, or if the President is no longer chosen by electoral votes.",
     topics: [...TOPICS_2028, 'electoral-college'],
     liquidityTier: 10000,
     closeTime: AFTER_2028,

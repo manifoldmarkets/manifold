@@ -83,8 +83,9 @@ governor elections of 2027–2036, not every US election:
   state popular-vote markets follow each state's certified winner instead,
   final ranked-choice round included.
 - Tipping point: states ranked by the winner's signed margin over the
-  national runner-up; only electoral votes awarded to the winner add up;
-  Maine and Nebraska count as a two-vote statewide unit plus their districts.
+  candidate with the second-most electoral votes; only electoral votes
+  awarded to the winner add up; Maine and Nebraska count as a two-vote
+  statewide unit plus their districts.
 - Balance of power: in presidential years a 50–50 Senate goes to the party of
   the Vice President inaugurated on January 20; N/A if no listed combination
   applies (a third-party President or Speaker, say).
@@ -144,17 +145,31 @@ the mentioned user. No description mentions anyone (a test enforces it).
   market created under different criteria than the manifest's now is never
   verified or published: the run stops and names what changed. Edit the
   unlisted market on the site to match, then re-run with
-  `--accept-criteria "^<key>$"`, or delete the market and its record.
-  Already-published markets only get a warning.
+  `--accept-criteria <key>` (exact keys, comma-separated); the run checks the
+  market's question and description on the site against the manifest before
+  accepting. Or delete the market and its record. Already-published markets
+  only get a warning.
+- A market found at its reserved id that this run didn't create (the read
+  before creating missed it) is not adopted blind: the run stops, since the
+  criteria it was made with aren't known. A resumed market keeps the
+  visibility it was created with, so an unlisted one always gets published.
+- When the budget or balance runs out, the run creates nothing more but
+  still verifies and publishes markets earlier runs created.
 - Before every create, the run checks @ManifoldPolitics' open public markets
   (refreshed every 5 minutes) for one asking the same question: same years,
-  same party/office/kind-of-count words, same states, similar wording. The
-  reserved ids stop this script repeating itself; this stops it repeating a
-  market someone made another way. A match skips that entry
-  (`skipped-duplicate`) and the run goes on; `--allow-duplicate <id>` overrides
-  after review. The online dry run marks matches that would block
-  ("BLOCKS at apply"). Sibling markets never block each other, and neither do
-  the pipeline's race markets (tested both ways).
+  same party/office/kind-of-count words, same states (names or postal codes),
+  similar wording, with shorthand like "Dem", "VP pick" and "gubernatorial"
+  read as the full word. The reserved ids stop this script repeating itself;
+  this stops it repeating a market someone made another way. A match skips
+  that entry (`skipped-duplicate`) and the run goes on;
+  `--allow-duplicate <key>=<id>` overrides after review. Sibling markets
+  never block each other, and neither do the pipeline's race markets (tested
+  both ways); a candidate market for a race we ask about by party is related,
+  not the same question, so it doesn't block either.
+- The online dry run lists a wider net for a person to read (similarity 0.4
+  and up) and marks the matches that would block ("BLOCKS at apply"). Read it
+  before applying: wording that shares few words with ours ("Will the
+  convention be contested?") can't be caught automatically.
 
 ## Seeds (opening odds)
 
@@ -211,8 +226,8 @@ read at run time, or from documented static priors:
 
 Options: `--only <regex on key>`, `--out <dir>`, `--pace-ms <ms>` (default 250
 online, 400 apply), `--env dev` (writes to dev; seeds still read prod; topics
-missing on dev are dropped), `--allow-duplicate <id,id>` and
-`--accept-criteria <regex on key>` (see "How it stays safe to re-run").
+missing on dev are dropped), `--allow-duplicate <key>=<id>,...` and
+`--accept-criteria <key>,...` (see "How it stays safe to re-run").
 
 ## Tests and typecheck
 

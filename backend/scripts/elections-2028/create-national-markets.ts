@@ -23,9 +23,10 @@
 //
 // Options: --only <regex on key>  --out <dir>  --pace-ms <ms>  --loud (create
 // public directly; notifies followers in-app — don't)  --init-state (first
-// apply with a new state file)  --allow-duplicate <id,id> (existing markets
-// reviewed as NOT duplicates)  --accept-criteria <regex on key> (a created,
-// unpublished market was edited to match the manifest; publish it).
+// apply with a new state file)  --allow-duplicate <key>=<id>,... (an existing
+// market reviewed as NOT duplicating that entry)  --accept-criteria <key>,...
+// (a created, unpublished market was edited on the site to match the
+// manifest; checked against the site, then published).
 //
 // Apply safeguards: a lock file next to the state file (one run per state
 // file); before every create, a check that the creator has no open market
@@ -315,69 +316,110 @@ const QUESTION_STOPWORDS = new Set([
   'united', 'states', 'election', 'elections', 'party',
 ])
 
-// Light stemming so "presidential nominee" matches "nominee for president".
+// Light stemming so "presidential nominee" matches "nominee for president",
+// and common shorthand ("Dem", "VP pick", "gubernatorial") reads as the word.
 const STEMS: Record<string, string> = {
   presidential: 'president',
   presidency: 'president',
+  potus: 'president',
   democrat: 'democratic',
   democrats: 'democratic',
+  dem: 'democratic',
+  dems: 'democratic',
   republicans: 'republican',
   gop: 'republican',
   nomination: 'nominee',
   nominated: 'nominee',
+  nominate: 'nominee',
+  nominees: 'nominee',
+  pick: 'nominee',
+  picks: 'nominee',
   elected: 'elect',
   controls: 'control',
+  wins: 'win',
   primaries: 'primary',
   caucus: 'primary',
   caucuses: 'primary',
   contest: 'primary',
   vp: 'vice',
   governorship: 'governor',
+  gubernatorial: 'governor',
 }
 
-// Words that tell sibling markets apart: the party, the office, the kind of
-// count. Questions that differ in one of these (or in the states they name)
-// ask different things, however alike the rest of the wording is.
+// Words that tell sibling markets apart: the party (and whether it's a party
+// market at all), the office, the kind of count. Questions that differ in one
+// of these, or in the states they name, ask different things however alike
+// the rest is. Words that only label a question ("Balance of power:",
+// "electoral college", "primary" for a nomination) aren't markers: siblings
+// already differ in a state or a party where those words would matter.
 const MARKERS = new Set([
-  'democratic', 'republican', 'vice', 'popular', 'electoral', 'margin',
-  'tipping', 'balance', 'contested', 'convention', 'governor', 'senate',
-  'house', 'congress', 'primary', 'lose',
+  'party', 'democratic', 'republican', 'vice', 'popular', 'margin', 'tipping',
+  'contested', 'convention', 'governor', 'senate', 'house', 'congress', 'lose',
 ])
 
-// The states (and DC) a question names, as postal codes. Longer names go
-// first and are blanked once found, so "West Virginia" isn't also Virginia
-// and "Washington DC" isn't also Washington.
-const STATE_NAMES = PRIMARY_STATES.map((s) => ({ code: s.code, name: s.state.toLowerCase() }))
-  .concat([
-    { code: 'DC', name: 'washington dc' },
-    { code: 'DC', name: 'dc' },
-  ])
+// States read as one token each ("xst" + postal code), so "NH", "New
+// Hampshire" and "New Hampshire's" match. Longer names are replaced first,
+// so "West Virginia" isn't also Virginia.
+const stateToken = (code: string) => `xst${code.toLowerCase()}`
+const STATE_CODES = new Set(PRIMARY_STATES.map((s) => s.code))
+const STATE_NAMES = PRIMARY_STATES.filter((s) => s.code !== 'DC')
+  .map((s) => ({ code: s.code, name: s.state.toLowerCase() }))
   .sort((a, b) => b.name.length - a.name.length)
 
+function questionWords(question: string): string[] {
+  // DC first, so "Washington, D.C." isn't the state of Washington.
+  let q = ` ${question} `
+    .replace(/\bwashington,?\s+d\.?\s?c\b\.?/gi, ` ${stateToken('DC')} `)
+    .replace(/\bdistrict of columbia\b/gi, ` ${stateToken('DC')} `)
+    .replace(/\bD\.\s?C\b\.?/g, ` ${stateToken('DC')} `)
+  // Postal codes count only in capitals ("NH", "NE-2"): lower-cased, "in",
+  // "or" and "me" are words. A question written in capitals gives none.
+  const letters = question.replace(/[^A-Za-z]/g, '')
+  const capitals = question.replace(/[^A-Z]/g, '')
+  if (capitals.length <= letters.length / 2)
+    q = q.replace(/\b[A-Z]{2}\b/g, (c) => (STATE_CODES.has(c) ? ` ${stateToken(c)} ` : c))
+  q = q
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    // Unlike normalizeName, keep what's in parentheses: "(2028)" is a year.
+    .replace(/[’‘'"“”.,?!:;()[\]]/g, ' ')
+    .replace(/[-–—_/]/g, ' ')
+    .replace(/\s+/g, ' ')
+  q = ` ${q.trim()} `
+  for (const { code, name } of STATE_NAMES)
+    q = q.replace(new RegExp(`(?<= )${name}(?= )`, 'g'), stateToken(code))
+  return q
+    .trim()
+    .split(' ')
+    .map((t) => STEMS[t] ?? t)
+    .filter(Boolean)
+}
+
 export function statesIn(question: string) {
-  let q = ` ${normalizeName(question).replace(/[?!:;,.]/g, ' ')} `
-  const found = new Set<string>()
-  for (const { code, name } of STATE_NAMES) {
-    // normalizeName drops apostrophes: "Maine's" arrives as "maines".
-    const re = new RegExp(`\\b${name}s?\\b`, 'g')
-    if (!re.test(q)) continue
-    found.add(code)
-    q = q.replace(re, ' ')
-  }
-  return found
+  return new Set(
+    questionWords(question)
+      .filter((t) => t.startsWith('xst') && t.length === 5)
+      .map((t) => t.slice(3).toUpperCase())
+  )
 }
 
 const questionTokens = (q: string) =>
-  new Set(
-    normalizeName(q)
-      .replace(/[?!:;]/g, ' ')
-      .split(' ')
-      .map((t) => STEMS[t] ?? t)
-      .filter((t) => t && !QUESTION_STOPWORDS.has(t))
-  )
+  new Set(questionWords(q).filter((t) => !QUESTION_STOPWORDS.has(t)))
 
-// Likely duplicates: same years mentioned and token Jaccard ≥ 0.6.
-export function similarQuestions(question: string, candidates: MarketRow[]) {
+const markersOf = (q: string) =>
+  [...new Set(questionWords(q).filter((t) => MARKERS.has(t)))].sort().join(',')
+
+// The dry run lists anything at least this alike for a person to read; the
+// apply gate needs 0.6 plus matching markers and states.
+export const REVIEW_SIMILARITY = 0.4
+
+// Likely duplicates: same years mentioned and token Jaccard ≥ minScore.
+export function similarQuestions(
+  question: string,
+  candidates: MarketRow[],
+  minScore = 0.6
+) {
   const a = questionTokens(question)
   const years = (q: string) => (q.match(/\b20\d\d\b/g) ?? []).sort().join(',')
   const y = years(question)
@@ -388,24 +430,45 @@ export function similarQuestions(question: string, candidates: MarketRow[]) {
       const union = new Set([...a, ...b]).size
       return { m, score: union ? inter / union : 0 }
     })
-    .filter(({ m, score }) => score >= 0.6 && years(m.question) === y)
+    .filter(({ m, score }) => score >= minScore && years(m.question) === y)
     .sort((p, q) => q.score - p.score)
 }
 
-// The apply-time check. similarQuestions lists anything alike for a person
-// to read in the dry run; this blocks a create only when an open market asks
+// The dry run's list for a person to read: anything at least 0.4 alike, in
+// the same years and states, that could be the same contest. A Democratic
+// market can't duplicate a Republican one, nor a party market one about a
+// single party's contest, so those pairs are left out (without that, every
+// state primary would list the 2028 winner market and, once the pipeline
+// has run, its state's race markets).
+export function reviewMatches(question: string, candidates: MarketRow[]) {
+  const sides = (q: string) => {
+    const w = new Set(questionWords(q))
+    return { market: w.has('party'), d: w.has('democratic'), r: w.has('republican') }
+  }
+  const states = (q: string) => [...statesIn(q)].sort().join(',')
+  const a = sides(question)
+  const s0 = states(question)
+  return similarQuestions(question, candidates, REVIEW_SIMILARITY).filter(({ m }) => {
+    if (states(m.question) !== s0) return false
+    const b = sides(m.question)
+    if ((a.market && (b.d || b.r)) || (b.market && (a.d || a.r))) return false
+    return !((a.d || a.r) && (b.d || b.r) && (a.d !== b.d || a.r !== b.r))
+  })
+}
+
+// The apply-time check. reviewMatches lists anything alike for a person to
+// read in the dry run; this blocks a create only when an open market asks
 // the same thing: same years, same markers, same states, similar wording.
 // Sibling markets (each party's nominee, each state's primary, the national
 // and state popular votes) differ in a marker or a state, so they never
-// block each other.
+// block each other; nor does a candidate market for a race we ask about by
+// party (it's a related market, not the same question).
 export function blockingDuplicates(question: string, candidates: MarketRow[]) {
-  const markers = (q: string) =>
-    [...questionTokens(q)].filter((t) => MARKERS.has(t)).sort().join(',')
   const states = (q: string) => [...statesIn(q)].sort().join(',')
-  const m0 = markers(question)
+  const m0 = markersOf(question)
   const s0 = states(question)
   return similarQuestions(question, candidates).filter(
-    ({ m }) => markers(m.question) === m0 && states(m.question) === s0
+    ({ m }) => markersOf(m.question) === m0 && states(m.question) === s0
   )
 }
 
@@ -520,7 +583,8 @@ async function online(entries: Entry[], outDir: string, paceMs: number) {
       return {
         key: e.key,
         question: e.question,
-        matches: similarQuestions(e.question, open).map(({ m, score }) => ({
+        // Wider than the apply gate: a person reads these.
+        matches: reviewMatches(e.question, open).map(({ m, score }) => ({
           id: m.id,
           question: m.question,
           url: m.url,
@@ -610,7 +674,7 @@ async function online(entries: Entry[], outDir: string, paceMs: number) {
       )
     ),
     '',
-    `Would block at apply (same question; skipped unless --allow-duplicate <id>): ${blockingCount || 'none'}`,
+    `Would block at apply (same question; skipped unless --allow-duplicate <key>=<id>): ${blockingCount || 'none'}`,
     '',
     'Candidate photos (attached = leading run of answers with a live photo; the API cannot skip one):',
     ...photos.map(
@@ -661,6 +725,9 @@ type StateRecord = {
   // since (it would go public with the old question or description).
   criteria?: Criteria
   criteriaHash?: string
+  // The visibility it was created with: a resumed run publishes an unlisted
+  // market whatever its own flags.
+  visibility?: 'public' | 'unlisted'
   imagesAttached?: number
   // skipped-duplicate: the open markets by the creator that ask the same.
   duplicateOf?: { id: string; url?: string; question: string }[]
@@ -695,15 +762,7 @@ async function apply(entries: Entry[], args: Args) {
     throw new Error('--apply needs --max-mana <positive cap for this run>')
   const quiet = !args.loud
   const paceMs = Number(args['pace-ms'] ?? 400)
-  const acceptCriteria =
-    typeof args['accept-criteria'] === 'string'
-      ? new RegExp(args['accept-criteria'])
-      : undefined
-  const allowDuplicates = new Set(
-    typeof args['allow-duplicate'] === 'string'
-      ? args['allow-duplicate'].split(',').map((s) => s.trim()).filter(Boolean)
-      : []
-  )
+  const { acceptCriteria, allowDuplicates } = parseOverrides(args)
 
   // The lock comes before the state file is read, so a run that just
   // finished can't leave this one holding an older snapshot of it.
@@ -725,7 +784,31 @@ async function apply(entries: Entry[], args: Args) {
   }
 }
 
-async function runApply(
+// The overrides name exact keys: a pattern like "ohio" would also match the
+// other party's Ohio market, and an id reviewed as not duplicating one entry
+// may still duplicate another.
+export function parseOverrides(args: Args) {
+  const list = (flag: string) =>
+    typeof args[flag] === 'string'
+      ? String(args[flag]).split(',').map((s) => s.trim()).filter(Boolean)
+      : []
+  const isKey = (k: string) => ENTRIES.some((e) => e.key === k)
+  const acceptCriteria = new Set(list('accept-criteria'))
+  for (const k of acceptCriteria)
+    if (!isKey(k)) throw new Error(`--accept-criteria: no entry has the key "${k}"`)
+  const allowDuplicates = new Map<string, Set<string>>()
+  for (const pair of list('allow-duplicate')) {
+    const [key, id, extra] = pair.split('=')
+    if (!key || !id || extra !== undefined || !isKey(key))
+      throw new Error(`--allow-duplicate takes <key>=<market id> pairs; got "${pair}"`)
+    allowDuplicates.set(key, (allowDuplicates.get(key) ?? new Set()).add(id))
+  }
+  return { acceptCriteria, allowDuplicates }
+}
+
+export type ApplyDeps = { api?: Api; prodRead?: Api }
+
+export async function runApply(
   entries: Entry[],
   args: Args,
   opts: {
@@ -736,21 +819,24 @@ async function runApply(
     maxMana: number
     quiet: boolean
     paceMs: number
-    acceptCriteria?: RegExp
-    allowDuplicates: Set<string>
-  }
+    acceptCriteria: Set<string>
+    allowDuplicates: Map<string, Set<string>>
+  },
+  // Tests pass fake clients; a real run builds both from the options.
+  deps: ApplyDeps = {}
 ) {
   const { env, apiKey, creatorUsername, statePath, maxMana, quiet, paceMs } = opts
   const { acceptCriteria, allowDuplicates } = opts
 
-  const api = makeApi({
+  const api = deps.api ?? makeApi({
     apiBase: API_BASES[env],
     apiKey,
     allowWrites: true,
     paceMs,
   })
   // Seeds always come from prod community markets (public data).
-  const prodRead = makeApi({ apiBase: API_BASES.prod, allowWrites: false, paceMs })
+  const prodRead =
+    deps.prodRead ?? makeApi({ apiBase: API_BASES.prod, allowWrites: false, paceMs })
 
   const me = await api.me()
   if (me.username !== creatorUsername)
@@ -847,8 +933,24 @@ async function runApply(
   // have created the market anyway, so the reserved id is read first.
   const createWithRetries = async (
     r: StateRecord,
+    e: Entry,
     payload: ReturnType<typeof buildPayload>
   ): Promise<MarketRow> => {
+    const startedAt = Date.now()
+    // A market found at the reserved id is adopted only if this create made
+    // it. One made by an earlier run (the read before creating missed it)
+    // has criteria this run doesn't know, so it isn't verified or published
+    // blind. Two minutes' allowance for clock skew.
+    const adopt = (m: MarketRow): MarketRow => {
+      if (m.creatorId !== me.id || normalizeName(m.question) !== normalizeName(e.question))
+        return stop(r, `reserved id ${r.reservedId} is a different market: ${m.url}`)
+      if (m.createdTime !== undefined && m.createdTime < startedAt - 2 * 60_000)
+        return stop(
+          r,
+          `${m.url} already existed when this run tried to create it, so the criteria it was created with aren't known. Check its question and description against the manifest on the site, then set its status to "creating" to verify and publish it.`
+        )
+      return m
+    }
     let lastMessage = ''
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
@@ -859,7 +961,7 @@ async function runApply(
         if (ae?.kind === 'rejected') {
           if (/already been created/i.test(lastMessage)) {
             const m = await readFresh(r.reservedId)
-            if (m) return m
+            if (m) return adopt(m)
           }
           return stop(r, `create rejected: ${lastMessage}`)
         }
@@ -869,7 +971,7 @@ async function runApply(
         }
         // Ambiguous: look for the market before trying again.
         const m = await readFresh(r.reservedId)
-        if (m) return m
+        if (m) return adopt(m)
       }
     }
     return stop(r, `create failed after retries: ${lastMessage}`)
@@ -892,12 +994,16 @@ async function runApply(
         ),
       }
     }
+    const allowed = allowDuplicates.get(e.key)
     return blockingDuplicates(
       e.question,
-      official.rows.filter((m) => !allowDuplicates.has(m.id))
+      official.rows.filter((m) => !allowed?.has(m.id))
     )
   }
   const skippedDuplicates: string[] = []
+  // Once the budget or balance runs out, nothing more is created, but
+  // markets earlier runs created still get verified and published.
+  let creationsStopped = false
 
   try {
     for (const e of entries) {
@@ -951,7 +1057,10 @@ async function runApply(
             `${existing.url} exists but this state file has no record of its seed; check it on the site, then set its status to "verified" (to publish) or "published"`
           )
         if (r.status === 'creating') {
-          r.status = quiet ? 'created-unlisted' : 'created-public'
+          // The visibility it was created with, not this run's flag. (No
+          // record of it: unlisted, since publishing a public market again
+          // changes nothing.)
+          r.status = r.visibility === 'public' ? 'created-public' : 'created-unlisted'
           r.contractId = existing.id
           r.url = existing.url
           touch(r)
@@ -964,6 +1073,7 @@ async function runApply(
           r.status !== 'skipped-duplicate'
         )
           stop(r, `state says ${r.status} but ${reservedId} does not exist`)
+        if (creationsStopped) continue
         // Skips this entry (not the run) when the creator already has an
         // open market asking the same; later runs check again.
         const dupes = await duplicatesOf(e)
@@ -977,7 +1087,7 @@ async function runApply(
             `${e.key}: SKIPPED, @${me.username} already has ${dupes
               .map(({ m }) => `"${m.question}" (${m.url ?? m.id})`)
               .join('; ')}. If it's a different market, re-run with --allow-duplicate ${dupes
-              .map(({ m }) => m.id)
+              .map(({ m }) => `${e.key}=${m.id}`)
               .join(',')}`
           )
           continue
@@ -987,15 +1097,18 @@ async function runApply(
         const err = seedError(e, seed)
         if (err) stop(r, `seed error: ${err}`)
         const cost = costOf(e, seed)!
-        if (spent + cost > maxMana) {
+        const short =
+          spent + cost > maxMana
+            ? `Budget: ${e.key} costs ${mana(cost)}; run cap ${mana(maxMana)} with ${mana(spent)} spent.`
+            : balance < cost
+            ? `Balance ${mana(Math.floor(balance))} < ${mana(cost)} for ${e.key}.`
+            : undefined
+        if (short) {
           console.log(
-            `Budget: ${e.key} costs ${mana(cost)}; run cap ${mana(maxMana)} with ${mana(spent)} spent. Stopping.`
+            `${short} Creating nothing more this run; markets already created still get verified and published.`
           )
-          break
-        }
-        if (balance < cost) {
-          console.log(`Balance ${mana(Math.floor(balance))} < ${mana(cost)} for ${e.key}. Stopping.`)
-          break
+          creationsStopped = true
+          continue
         }
         const urls = await photoUrls(e, seed, WEB_BASES[env], index, live)
         const payload = buildPayload({
@@ -1010,13 +1123,14 @@ async function runApply(
         r.cost = cost
         r.criteria = criteria
         r.criteriaHash = hash
+        r.visibility = payload.visibility
         r.imagesAttached = Array.isArray(payload.answerImageUrls)
           ? payload.answerImageUrls.length
           : 0
         r.status = 'creating'
         touch(r)
         save()
-        const created = await createWithRetries(r, payload)
+        const created = await createWithRetries(r, e, payload)
         if (created.id !== reservedId)
           stop(r, `created ${created.id}, expected the reserved id ${reservedId}`)
         r.status = quiet ? 'created-unlisted' : 'created-public'
@@ -1040,9 +1154,29 @@ async function runApply(
           console.warn(
             `${e.key}: created public under earlier criteria (changed: ${changed}); edit ${r.url} by hand if the change matters`
           )
-        } else if (acceptCriteria?.test(e.key)) {
+        } else if (acceptCriteria.has(e.key)) {
+          // Accepted only once the market on the site says what the
+          // manifest says (letters and digits compared; other criteria are
+          // checked by the shape check below or can't be edited).
+          const live = await readFresh(r.contractId ?? reservedId)
+          const squash = (s: string) =>
+            s.normalize('NFKC').toLowerCase().replace(/[^a-z0-9]+/g, '')
+          const issues: string[] = []
+          if (!live) issues.push("the market can't be read")
+          else {
+            if (squash(live.question) !== squash(e.question))
+              issues.push(`its question on the site is "${live.question}"`)
+            if (live.textDescription === undefined)
+              issues.push('the API returned no description to compare')
+            else if (squash(live.textDescription) !== squash(e.description))
+              issues.push("its description on the site doesn't match the manifest's")
+          }
+          if (issues.length)
+            throw new StopRun(
+              `${e.key}: --accept-criteria, but ${issues.join('; ')}. Edit ${r.url} to match first.`
+            )
           console.log(
-            `${e.key}: --accept-criteria: recording the current criteria for ${r.url} (changed: ${changed})`
+            `${e.key}: --accept-criteria: ${r.url} matches the manifest; recording its criteria (changed: ${changed})`
           )
           r.criteria = criteria
           r.criteriaHash = hash
@@ -1050,7 +1184,7 @@ async function runApply(
           save()
         } else {
           throw new StopRun(
-            `${e.key}: ${r.url ?? reservedId} was created under earlier criteria (changed: ${changed}) and isn't published. Edit it on the site to match the manifest (it's unlisted), then re-run with --accept-criteria "^${e.key}$"; or delete the market and this key's state record.`
+            `${e.key}: ${r.url ?? reservedId} was created under earlier criteria (changed: ${changed}) and isn't published. Edit it on the site to match the manifest (it's unlisted), then re-run with --accept-criteria ${e.key}; or delete the market and this key's state record.`
           )
         }
       }
@@ -1067,7 +1201,8 @@ async function runApply(
         }
         const shape = shapeMismatches(e, r.seed!, m!)
         if (shape.length) stop(r, `market shape off: ${shape.join('; ')}`)
-        r.status = quiet ? 'verified' : 'published'
+        // An unlisted market still needs publishing, whatever this run's flag.
+        r.status = r.status === 'created-unlisted' ? 'verified' : 'published'
         touch(r)
         save()
       }

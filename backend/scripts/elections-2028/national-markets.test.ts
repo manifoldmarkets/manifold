@@ -51,10 +51,14 @@ import {
 import { buildPhotoIndex, parsePhotoRegistry, photoPathFor } from './photos'
 import {
   blockingDuplicates,
+  parseOverrides,
+  reviewMatches,
+  runApply,
   similarQuestions,
   statesIn,
   takeLock,
 } from './create-national-markets'
+import { Api, ApiError, MarketRow } from './api'
 
 const NOW = Date.parse('2026-11-05T00:00:00Z')
 const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0)
@@ -493,7 +497,10 @@ test('national popular-vote markets share one counting convention', () => {
 
 test('tipping point: signed margins, votes awarded to the winner, Maine and Nebraska once', () => {
   const d = ENTRIES.find((x) => x.key === '2028-tipping-point')!.description
-  assert.match(d, /margin over the national runner-up in percentage points \(negative where the winner lost\), largest first/)
+  assert.match(
+    d,
+    /margin, in percentage points, over the candidate with the second-most electoral votes \(negative where that candidate got more votes\), largest first/
+  )
   assert.match(d, /add up the electoral votes each awarded the winner/)
   assert.match(d, /Maine and Nebraska enter as a statewide unit worth two votes plus one unit per district/)
   assert.match(d, /a district that tips it resolves to its state/)
@@ -566,6 +573,34 @@ test('apply-time duplicates: same question blocks; siblings and race markets nev
   assert.ok(blocks(q('2028-dem-ohio'), q('2028-dem-ohio')))
   assert.ok(!blocks(q('2028-dem-ohio'), q('2028-gop-ohio')))
   assert.ok(!blocks(q('2028-dem-nominee'), 'Who will be the 2032 Democratic presidential nominee?'))
+  // Shorthand, postal codes, labels and parenthesised years (independent
+  // review, 5 Nov 2026).
+  for (const [key, theirs] of [
+    ['2028-dem-nominee', 'Who will be the Dem nominee for president in 2028?'],
+    ['2028-dem-nominee', '2028 Democratic Primary: who will be the nominee?'],
+    ['2028-gop-new-hampshire', 'Who wins NH Republican primary 2028?'],
+    ['2028-dem-vp-nominee', 'Who will be the Democratic VP pick in 2028?'],
+    ['2028-vp-winner', 'Who will be the next Vice President of the United States (2028)?'],
+    ['2028-ec-popular-split', 'Will the 2028 popular vote winner lose the electoral college?'],
+    ['2028-popular-vote', 'Which party wins the 2028 popular vote?'],
+    ['2028-balance-of-power', 'Who controls the presidency, Senate and House after 2028?'],
+  ])
+    assert.ok(blocks(q(key), theirs), `${key} vs "${theirs}"`)
+  // A candidate market for a race we ask about by party is related, not the
+  // same question: listed for review, not blocking.
+  const kyCandidates = row('ky', 'Who will win the 2027 Kentucky gubernatorial election?')
+  assert.ok(!blocks(q('2027-governor-kentucky'), 'Who will win the 2027 Kentucky gubernatorial election?'))
+  assert.equal(reviewMatches(q('2027-governor-kentucky'), [kyCandidates]).length, 1)
+  // The review list leaves out what can't be the same contest: the other
+  // party's primary, another state's, or a party market for a primary.
+  const review = (key: string, theirs: string) => reviewMatches(q(key), [row('x', theirs)]).length
+  assert.equal(review('2028-dem-ohio', q('2028-gop-ohio')), 0)
+  assert.equal(review('2028-dem-ohio', q('2028-dem-iowa')), 0)
+  assert.equal(review('2028-dem-ohio', 'Which party will win Ohio in the 2028 presidential election?'), 0)
+  assert.equal(review('2028-dem-ohio', 'Who will win the 2028 Ohio Democratic primary?'), 1)
+  // Everything that blocks is also listed.
+  for (const e of ENTRIES)
+    assert.equal(review(e.key, e.question), 1, e.key)
 })
 
 test('statesIn reads state names, longest first', () => {
@@ -577,6 +612,290 @@ test('statesIn reads state names, longest first', () => {
   assert.deepEqual(s('Washington DC or Washington?'), ['DC', 'WA'])
   assert.deepEqual(s('Arkansas, not Kansas'), ['AR', 'KS'])
   assert.deepEqual(s('Who will win the 2028 US presidential election?'), [])
+  // Postal codes count in capitals only; "in" and "or" are words.
+  assert.deepEqual(s('Who wins NH Republican primary 2028?'), ['NH'])
+  assert.deepEqual(s('Who will win in Ohio or Iowa?'), ['IA', 'OH'])
+  assert.deepEqual(s('WHO WILL WIN IN 2028? OR NOT?'), [])
+  assert.deepEqual(s('Which party will win Washington, D.C. in 2028?'), ['DC'])
+  assert.deepEqual(s("Which party will win Nebraska's 2nd District (NE-2)?"), ['NE'])
+})
+
+test('overrides name exact keys', () => {
+  const both = parseOverrides({ 'accept-criteria': '2028-dem-ohio, 2028-gop-ohio' })
+  assert.deepEqual([...both.acceptCriteria].sort(), ['2028-dem-ohio', '2028-gop-ohio'])
+  assert.throws(() => parseOverrides({ 'accept-criteria': 'ohio' }), /no entry has the key "ohio"/)
+  const allow = parseOverrides({
+    'allow-duplicate': '2028-balance-of-power=abc,2028-balance-of-power=def,2028-dem-ohio=abc',
+  }).allowDuplicates
+  assert.deepEqual([...allow.get('2028-balance-of-power')!].sort(), ['abc', 'def'])
+  assert.deepEqual([...allow.get('2028-dem-ohio')!], ['abc'])
+  for (const bad of ['abc', 'nokey=abc', '2028-dem-ohio=', '2028-dem-ohio=a=b'])
+    assert.throws(() => parseOverrides({ 'allow-duplicate': bad }), /<key>=<market id> pairs/, bad)
+})
+
+// ------------------------------------------------------- apply, end to end
+
+// An in-memory API: markets keyed by id, the visibility each has, and a log
+// of creates and publishes. `hideOnce` makes the next read of an id miss
+// (a stale CDN 404).
+function fakeServer() {
+  type FakeMarket = MarketRow & { visibility: string }
+  const markets = new Map<string, FakeMarket>()
+  const log: string[] = []
+  const hideOnce = new Set<string>()
+  const api = {
+    me: async () => ({ id: 'mp', username: 'ManifoldPolitics', balance: 10_000_000 }),
+    getGroup: async (slug: string) => ({ id: `g-${slug}`, slug, name: slug }),
+    getMarket: async (id: string) => {
+      if (hideOnce.delete(id)) return undefined
+      const m = markets.get(id)
+      return m ? { ...m } : undefined
+    },
+    marketsByUser: async () =>
+      [...markets.values()].filter((m) => m.visibility === 'public').map((m) => ({ ...m })),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    createMarket: async (p: any) => {
+      const id = String(p.idempotencyKey)
+      if (markets.has(id))
+        throw new ApiError('A market with this key has already been created', 'rejected', 400)
+      const probs: number[] = p.answerProbs ?? []
+      const m: FakeMarket = {
+        id,
+        question: p.question,
+        outcomeType: p.outcomeType,
+        isResolved: false,
+        creatorId: 'mp',
+        creatorUsername: 'ManifoldPolitics',
+        url: `https://manifold.test/${id}`,
+        closeTime: p.closeTime,
+        createdTime: Date.now(),
+        textDescription: p.descriptionMarkdown,
+        addAnswersMode: p.addAnswersMode,
+        shouldAnswersSumToOne: p.shouldAnswersSumToOne,
+        probability: p.outcomeType === 'BINARY' ? p.initialProb / 100 : undefined,
+        answers:
+          p.outcomeType === 'MULTIPLE_CHOICE'
+            ? [
+                ...p.answers.map((text: string, i: number) => ({
+                  text,
+                  probability: probs[i] / 100,
+                  isOther: false,
+                })),
+                ...(p.addAnswersMode !== 'DISABLED'
+                  ? [{ text: 'Other', probability: (100 - sum(probs)) / 100, isOther: true }]
+                  : []),
+              ]
+            : undefined,
+        visibility: p.visibility,
+      }
+      markets.set(id, m)
+      log.push(`create ${id} ${p.visibility}`)
+      return { ...m }
+    },
+    publishMarket: async (id: string) => {
+      const m = markets.get(id)
+      if (!m) throw new Error(`no market ${id}`)
+      m.visibility = 'public'
+      log.push(`publish ${id}`)
+    },
+  }
+  return { api: api as unknown as Api, markets, log, hideOnce }
+}
+
+const entry = (key: string) => ENTRIES.find((e) => e.key === key)!
+const BOP = '2028-balance-of-power'
+const KY = '2027-governor-kentucky'
+const SPLIT = '2028-ec-popular-split'
+
+async function applyWith(
+  server: ReturnType<typeof fakeServer>,
+  entries: Entry[],
+  statePath: string,
+  opts: { quiet?: boolean; maxMana?: number; accept?: string[]; allow?: [string, string][] } = {}
+) {
+  const quietConsole = { log: console.log, warn: console.warn, error: console.error }
+  console.log = console.warn = console.error = () => undefined
+  try {
+    const allowDuplicates = new Map<string, Set<string>>()
+    for (const [k, id] of opts.allow ?? [])
+      allowDuplicates.set(k, (allowDuplicates.get(k) ?? new Set()).add(id))
+    await runApply(
+      entries,
+      { 'init-state': true },
+      {
+        env: 'dev',
+        apiKey: 'test',
+        creatorUsername: 'ManifoldPolitics',
+        statePath,
+        maxMana: opts.maxMana ?? 1_000_000,
+        quiet: opts.quiet ?? true,
+        paceMs: 0,
+        acceptCriteria: new Set(opts.accept ?? []),
+        allowDuplicates,
+      },
+      { api: server.api, prodRead: server.api }
+    )
+  } finally {
+    Object.assign(console, quietConsole)
+  }
+  const code = process.exitCode ?? 0
+  process.exitCode = 0
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const state = JSON.parse(fs.readFileSync(statePath, 'utf8')) as { entries: Record<string, any> }
+  return { code, state }
+}
+
+const tempState = () =>
+  path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'national-apply-')), 'state.json')
+
+// A market an earlier run created (unlisted) from `from`, and its record.
+async function earlierRun(
+  server: ReturnType<typeof fakeServer>,
+  statePath: string,
+  from: Entry,
+  record: { status: string; visibility?: string }
+) {
+  const seed = await resolveSeed(from)
+  const reservedId = reservedIdFor(SERIES, from.key)
+  await server.api.createMarket(
+    buildPayload({ entry: from, seed, groupIds: [], reservedId, quiet: true })
+  )
+  server.log.length = 0
+  fs.writeFileSync(
+    statePath,
+    JSON.stringify({
+      series: SERIES,
+      env: 'dev',
+      creatorId: 'mp',
+      createdAt: new Date().toISOString(),
+      entries: {
+        [from.key]: {
+          key: from.key,
+          reservedId,
+          contractId: reservedId,
+          url: `https://manifold.test/${reservedId}`,
+          seed,
+          cost: costOf(from, seed),
+          criteria: criteriaOf(from),
+          criteriaHash: criteriaHash(criteriaOf(from)),
+          updatedAt: new Date().toISOString(),
+          ...record,
+        },
+      },
+    })
+  )
+  return reservedId
+}
+
+test('apply: creates unlisted, verifies, publishes, and re-runs as a no-op', async () => {
+  const server = fakeServer()
+  const statePath = tempState()
+  const entries = [entry(BOP), entry(KY), entry(SPLIT)]
+  const first = await applyWith(server, entries, statePath)
+  assert.equal(first.code, 0)
+  for (const e of entries) {
+    const r = first.state.entries[e.key]
+    assert.equal(r.status, 'published', e.key)
+    assert.equal(r.visibility, 'unlisted', e.key)
+    assert.equal(r.criteriaHash, criteriaHash(criteriaOf(e)), e.key)
+  }
+  assert.deepEqual(
+    server.log.map((l) => l.split(' ')[0]),
+    ['create', 'publish', 'create', 'publish', 'create', 'publish']
+  )
+  assert.ok(server.log.filter((l) => l.startsWith('create')).every((l) => l.endsWith('unlisted')))
+  const again = await applyWith(server, entries, statePath)
+  assert.equal(again.code, 0)
+  assert.equal(server.log.length, 6)
+})
+
+test('apply: never publishes under changed criteria; --accept-criteria checks the site', async () => {
+  const server = fakeServer()
+  const statePath = tempState()
+  const old = entry(KY)
+  const id = await earlierRun(server, statePath, old, { status: 'created-unlisted', visibility: 'unlisted' })
+  const edited: Entry = { ...old, description: old.description + ' Edited.' }
+  const stopped = await applyWith(server, [edited], statePath)
+  assert.equal(stopped.code, 1)
+  assert.equal(stopped.state.entries[KY].status, 'created-unlisted')
+  assert.equal(server.markets.get(id)!.visibility, 'unlisted')
+  // Accepting before the site matches still stops.
+  const early = await applyWith(server, [edited], statePath, { accept: [KY] })
+  assert.equal(early.code, 1)
+  assert.equal(server.markets.get(id)!.visibility, 'unlisted')
+  // Once the description on the site is edited, it's accepted and published.
+  server.markets.get(id)!.textDescription = edited.description
+  const done = await applyWith(server, [edited], statePath, { accept: [KY] })
+  assert.equal(done.code, 0)
+  assert.equal(done.state.entries[KY].status, 'published')
+  assert.equal(done.state.entries[KY].criteriaHash, criteriaHash(criteriaOf(edited)))
+  assert.deepEqual(server.log, [`publish ${id}`])
+})
+
+test('apply: an open market asking the same question skips the entry until allowed', async () => {
+  const server = fakeServer()
+  const statePath = tempState()
+  server.markets.set('dup1', {
+    id: 'dup1',
+    question: 'Who controls the presidency, Senate and House after 2028?',
+    outcomeType: 'MULTIPLE_CHOICE',
+    isResolved: false,
+    creatorId: 'mp',
+    closeTime: Date.parse('2029-02-01T00:00:00Z'),
+    visibility: 'public',
+  } as MarketRow & { visibility: string })
+  const skipped = await applyWith(server, [entry(BOP), entry(KY)], statePath)
+  assert.equal(skipped.code, 1)
+  assert.equal(skipped.state.entries[BOP].status, 'skipped-duplicate')
+  assert.deepEqual(skipped.state.entries[BOP].duplicateOf.map((d: { id: string }) => d.id), ['dup1'])
+  assert.equal(skipped.state.entries[KY].status, 'published')
+  // The same id allowed for another key doesn't count.
+  const wrongKey = await applyWith(server, [entry(BOP)], statePath, { allow: [[KY, 'dup1']] })
+  assert.equal(wrongKey.state.entries[BOP].status, 'skipped-duplicate')
+  const allowed = await applyWith(server, [entry(BOP)], statePath, { allow: [[BOP, 'dup1']] })
+  assert.equal(allowed.code, 0)
+  assert.equal(allowed.state.entries[BOP].status, 'published')
+  assert.equal(allowed.state.entries[BOP].duplicateOf, undefined)
+})
+
+test('apply: a market from an earlier run is not adopted blind after a missed read', async () => {
+  const server = fakeServer()
+  const statePath = tempState()
+  const ky = entry(KY)
+  const id = await earlierRun(server, statePath, ky, { status: 'created-unlisted' })
+  fs.unlinkSync(statePath) // a lost state file; the market stays
+  server.markets.get(id)!.createdTime = Date.now() - 86_400_000
+  server.hideOnce.add(id) // the read before creating misses it
+  const run = await applyWith(server, [ky], statePath)
+  assert.equal(run.code, 1)
+  assert.equal(run.state.entries[KY].status, 'stopped')
+  assert.match(run.state.entries[KY].error, /already existed when this run tried to create it/)
+  assert.equal(server.markets.get(id)!.visibility, 'unlisted')
+  assert.ok(!server.log.some((l) => l.startsWith('publish')))
+})
+
+test('apply: a resumed market keeps the visibility it was created with', async () => {
+  const server = fakeServer()
+  const statePath = tempState()
+  const ky = entry(KY)
+  const id = await earlierRun(server, statePath, ky, { status: 'creating', visibility: 'unlisted' })
+  const run = await applyWith(server, [ky], statePath, { quiet: false })
+  assert.equal(run.code, 0)
+  assert.equal(run.state.entries[KY].status, 'published')
+  assert.equal(server.markets.get(id)!.visibility, 'public')
+  assert.deepEqual(server.log, [`publish ${id}`])
+})
+
+test('apply: out of budget, it creates nothing more but still publishes earlier markets', async () => {
+  const server = fakeServer()
+  const statePath = tempState()
+  const ky = entry(KY)
+  const id = await earlierRun(server, statePath, ky, { status: 'created-unlisted', visibility: 'unlisted' })
+  // The balance-of-power market (Ṁ10,000) comes first and doesn't fit.
+  const run = await applyWith(server, [entry(BOP), ky], statePath, { maxMana: 5_000 })
+  assert.equal(run.state.entries[BOP].status, 'planned')
+  assert.equal(run.state.entries[KY].status, 'published')
+  assert.deepEqual(server.log, [`publish ${id}`])
 })
 
 test('one apply per state file', () => {
