@@ -70,21 +70,30 @@ per-answer price: Ṁ100 at 1,000, Ṁ1,000 at 10,000, Ṁ10,000 at 100,000.
      House district rule, or the state or district), plus at most one
      sentence for a state whose deciding round differs (Georgia runoff,
      Alaska's counting method, Maine ranked-choice, Louisiana, Vermont's
-     legislature, California/Washington top-two, Maine governor plurality);
+     legislature, California/Washington top-two, Maine governor plurality;
+     none for president);
   2. only the party matters (DFL and Democratic-NPL count as Democratic);
   3. resolves on the certified result or an AP call no recount could change,
-     and when it is N/A.
-- **President without the Electoral College** (Tod, 2026-11-05): nothing in
-  the presidential markets depends on electors, 270, Congress's count or a
-  contingent election, so they still work if the system changes. The
-  national market resolves to the party of "the person elected President in
-  the <date> election, however the winner is officially decided" (N/A only if
-  no presidential election is held for that term). A state market follows
-  the ticket that wins the state (Maine and Nebraska: statewide) and is N/A
-  if the state holds no presidential vote. A district market (ME-1/2,
-  NE-1/2/3) follows the ticket with the most votes in the district and is N/A
-  only if no official presidential result is published for the district, so
-  a switch to winner-take-all doesn't void it while district results exist.
+     and when it is N/A (presidential state and district markets: see
+     below).
+- **President: the national market without the Electoral College, states
+  and districts by their electoral votes** (Tod, 2026-11-05). The national
+  market resolves to the party of "the person elected President in the
+  <date> election, however the winner is officially decided" (N/A only if no
+  presidential election is held for that term). It doesn't mention electors,
+  270, Congress's count or a contingent election, so it still works if the
+  system changes. A state market follows where the state's electoral votes
+  go, however the state awards them: by its own vote, by the national
+  popular vote under an interstate compact (the NPVIC), or any other way. If
+  electoral votes are replaced, it follows whatever say the state has in the
+  new system and is N/A if it has none. Maine's and Nebraska's state markets
+  cover their two statewide electoral votes. A district market (ME-1/2,
+  NE-1/2/3) follows the district's electoral vote and is N/A if the state no
+  longer awards one by district. State and district markets resolve on the
+  electors the state certifies, or an earlier AP call nothing could change;
+  faithless electors don't change the result. They carry no ranked-choice or
+  Alaska counting sentence: the certified electors already reflect each
+  state's counting rules.
 
   Opening odds, answer curation, term-start notes and the hub link are no
   longer described. The seeds stay in the payload; a plain-language seed note

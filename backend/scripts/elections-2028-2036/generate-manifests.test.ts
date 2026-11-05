@@ -475,14 +475,8 @@ test('"Other" opens at 1% except the reviewed exceptions', () => {
 const expectedRound = (e: RaceManifestEntry): RegExp | undefined => {
   const { office, state, cycle } = e.identity
   const cfg = cycleConfig(cycle as 2028)
-  if (office === 'president')
-    return state === 'ME'
-      ? /If no ticket gets a first-round majority, the final ranked-choice round decides\./
-      : state === 'AK'
-      ? new RegExp(
-          `The final count under whatever counting method Alaska uses in ${cycle} decides\\.`
-        )
-      : undefined
+  // Presidential markets follow the certified electors: no round sentence.
+  if (office === 'president') return undefined
   if (state === 'GA')
     return new RegExp(
       `If no candidate gets a majority, the ${longDate(
@@ -526,7 +520,7 @@ test('descriptions are short plain paragraphs: the election and date, the party 
       /\*\*|@ManifoldPolitics|Opening odds|manifold\.markets|SEEDS\.md|Stage A|Another party|fusion|Which round counts/,
       e.raceKey
     )
-    assert.ok(d.length >= 350 && d.length <= 800, `${e.raceKey}: ${d.length}`)
+    assert.ok(d.length >= 350 && d.length <= 850, `${e.raceKey}: ${d.length}`)
     assert.equal(paras.length, 3, e.raceKey)
     // What it resolves to, on which date.
     assert.match(paras[0], /^Resolves to the party /, e.raceKey)
@@ -541,10 +535,10 @@ test('descriptions are short plain paragraphs: the election and date, the party 
     )
     // When it is N/A, and (except nationally) how it resolves.
     assert.match(d, /N\/A (if|only if) /, e.raceKey)
-    if (state !== 'US')
+    if (office !== 'president')
       assert.match(
         paras[paras.length - 1],
-        /^Resolves on (the|.+'s) certified result( for the district)?, or earlier once the AP has called (the race|it) and no recount could change it\. N\/A if /,
+        /^Resolves on the certified result, or earlier once the AP has called the race and no recount could change it\. N\/A if /,
         e.raceKey
       )
     if (office === 'senate')
@@ -581,14 +575,14 @@ test('descriptions are short plain paragraphs: the election and date, the party 
       )
     }
     if (office === 'president') {
-      // Nothing depends on the Electoral College, electors or Congress's
-      // count: the markets follow whoever wins, however that is decided.
-      assert.doesNotMatch(
-        d,
-        /electoral|elector|\b270\b|\bCongress\b|contingent/i,
-        e.raceKey
-      )
       if (state === 'US') {
+        // The national market doesn't depend on the Electoral College,
+        // electors or Congress's count: whoever is elected, however decided.
+        assert.doesNotMatch(
+          d,
+          /electoral|elector|\b270\b|\bCongress\b|contingent/i,
+          e.raceKey
+        )
         assert.equal(
           paras[0],
           `Resolves to the party of the person elected President in the ${longDate(
@@ -605,34 +599,50 @@ test('descriptions are short plain paragraphs: the election and date, the party 
           e.raceKey
         )
       } else if (e.identity.district !== undefined) {
-        assert.match(
+        // A district market follows the district's electoral vote.
+        const n = e.identity.district
+        assert.equal(
           paras[0],
-          /^Resolves to the party of the presidential ticket with the most votes in .+'s \d(st|nd|rd) congressional district \([A-Z]{2}-\d\) in the /,
+          `Resolves to the party of the presidential ticket that gets the electoral vote of ${stateName}'s ${
+            n === 1 ? '1st' : n === 2 ? '2nd' : '3rd'
+          } congressional district (${state}-${n}) in the ${longDate(
+            cfg.electionDate
+          )} election. N/A if ${stateName} no longer awards an electoral vote by district.`,
           e.raceKey
         )
-        assert.ok(
-          d.endsWith(
-            'N/A if no official presidential result is published for the district.'
-          ),
+        assert.equal(
+          paras[2],
+          `Resolves on the electors ${stateName} certifies, or earlier once the AP has called the district and nothing could change it. Faithless electors don't change it.`,
           e.raceKey
         )
       } else {
-        const wins =
-          state === 'DC'
-            ? 'the District of Columbia'
-            : state === 'ME' || state === 'NE'
-            ? `${stateName} statewide`
-            : stateName
-        assert.ok(
-          paras[0].startsWith(
-            `Resolves to the party of the presidential ticket that wins ${wins} in the ${longDate(
-              cfg.electionDate
-            )} election.`
-          ),
+        // A state market follows where the state's electoral votes go,
+        // however it awards them (an interstate compact included), and its
+        // say in any system that replaces them.
+        const name = state === 'DC' ? 'the District of Columbia' : stateName
+        const possessive =
+          state === 'DC' ? "the District of Columbia's" : `${stateName}'s`
+        const votes =
+          state === 'ME' || state === 'NE'
+            ? `${possessive} two statewide electoral votes`
+            : `${possessive} electoral votes`
+        assert.equal(
+          paras[0],
+          `Resolves to the party of the presidential ticket that gets ${votes} in the ${longDate(
+            cfg.electionDate
+          )} election, however ${name} awards them: by its own vote, by the national popular vote under an interstate compact, or any other way. If electoral votes are replaced by another system, it follows whatever say ${name} has in that system; N/A if it has none.`,
           e.raceKey
         )
-        assert.match(d, /holds no presidential vote\.$/, e.raceKey)
+        assert.equal(
+          paras[2],
+          `Resolves on the electors ${name} certifies, or earlier once the AP has called the ${
+            state === 'DC' ? 'District' : 'state'
+          } and nothing could change it. Faithless electors don't change it.`,
+          e.raceKey
+        )
       }
+      // Certified electors decide: no counting-rule sentence.
+      assert.doesNotMatch(d, /ranked-choice|counting method/, e.raceKey)
     }
     // A state's deciding-round rule is one short sentence in the first
     // paragraph; every other race has none.
@@ -683,22 +693,22 @@ test('the exact text for one market of each kind', () => {
   assert.equal(
     desc('2028-president-NE-02-general'),
     [
-      "Resolves to the party of the presidential ticket with the most votes in Nebraska's 2nd congressional district (NE-2) in the November 7, 2028 election.",
+      "Resolves to the party of the presidential ticket that gets the electoral vote of Nebraska's 2nd congressional district (NE-2) in the November 7, 2028 election. N/A if Nebraska no longer awards an electoral vote by district.",
       TICKET,
-      "Resolves on Nebraska's certified result for the district, or earlier once the AP has called it and no recount could change it. N/A if no official presidential result is published for the district.",
+      "Resolves on the electors Nebraska certifies, or earlier once the AP has called the district and nothing could change it. Faithless electors don't change it.",
     ].join('\n\n')
   )
   assert.equal(
     desc('2028-president-AL-general'),
     [
-      'Resolves to the party of the presidential ticket that wins Alabama in the November 7, 2028 election.',
+      "Resolves to the party of the presidential ticket that gets Alabama's electoral votes in the November 7, 2028 election, however Alabama awards them: by its own vote, by the national popular vote under an interstate compact, or any other way. If electoral votes are replaced by another system, it follows whatever say Alabama has in that system; N/A if it has none.",
       TICKET,
-      "Resolves on Alabama's certified result, or earlier once the AP has called it and no recount could change it. N/A if Alabama holds no presidential vote.",
+      "Resolves on the electors Alabama certifies, or earlier once the AP has called the state and nothing could change it. Faithless electors don't change it.",
     ].join('\n\n')
   )
   assert.equal(
     desc('2028-president-ME-general').split('\n\n')[0],
-    'Resolves to the party of the presidential ticket that wins Maine statewide in the November 7, 2028 election. If no ticket gets a first-round majority, the final ranked-choice round decides.'
+    "Resolves to the party of the presidential ticket that gets Maine's two statewide electoral votes in the November 7, 2028 election, however Maine awards them: by its own vote, by the national popular vote under an interstate compact, or any other way. If electoral votes are replaced by another system, it follows whatever say Maine has in that system; N/A if it has none."
   )
   assert.equal(
     desc('2028-president-US-general'),

@@ -110,12 +110,9 @@ export function roundSentence(
   const georgiaRunoff = `If no candidate gets a majority, the ${longDate(
     cfg.georgiaRunoffDate
   )} runoff decides.`
-  if (office === 'president') {
-    if (state === 'ME')
-      return 'If no ticket gets a first-round majority, the final ranked-choice round decides.'
-    if (state === 'AK') return alaskaCount(cycle)
-    return undefined
-  }
+  // Presidential markets follow the certified electors, which already
+  // reflect each state's counting rules.
+  if (office === 'president') return undefined
   if (office === 'governor') {
     switch (state) {
       case 'VT':
@@ -209,10 +206,13 @@ export function descriptionFor(race: Race, cfg: CycleConfig): string {
   }
 }
 
-// Presidential markets don't depend on the Electoral College (Tod,
-// 2026-11-05): a state market follows who wins the state's presidential vote,
-// a district market who gets the most votes in the district, and the national
-// market whoever is elected President, however the winner is decided.
+// A state market follows where the state's electoral votes go, however the
+// state awards them (its own vote, the national popular vote under an
+// interstate compact, anything else), and its say in any system that replaces
+// electoral votes (Tod, 2026-11-05). A district market follows the district's
+// electoral vote. Certified electors decide, so the state's counting rules
+// (Maine's ranked choice, Alaska's method) need no sentence of their own. The
+// national market follows whoever is elected President, however decided.
 function stateDescription(race: Race, cfg: CycleConfig) {
   const { stateName, state } = race
   const date = longDate(cfg.electionDate)
@@ -221,28 +221,24 @@ function stateDescription(race: Race, cfg: CycleConfig) {
       race.district
     )} congressional district (${state}-${race.district})`
     return [
-      withRound(
-        `Resolves to the party of the presidential ticket with the most votes in ${where} in the ${date} election.`,
-        race,
-        cfg
-      ),
+      `Resolves to the party of the presidential ticket that gets the electoral vote of ${where} in the ${date} election. N/A if ${stateName} no longer awards an electoral vote by district.`,
       TICKET_PARTY_RULE(state),
-      `Resolves on ${stateName}'s certified result for the district, or earlier once the AP has called it and no recount could change it. N/A if no official presidential result is published for the district.`,
+      `Resolves on the electors ${stateName} certifies, or earlier once the AP has called the district and nothing could change it. Faithless electors don't change it.`,
     ].join('\n\n')
   }
   const name = state === 'DC' ? 'the District of Columbia' : stateName
   const possessive =
     state === 'DC' ? "the District of Columbia's" : `${stateName}'s`
-  const wins =
-    state === 'ME' || state === 'NE' ? `${stateName} statewide` : name
+  const votes =
+    state === 'ME' || state === 'NE'
+      ? `${possessive} two statewide electoral votes`
+      : `${possessive} electoral votes`
   return [
-    withRound(
-      `Resolves to the party of the presidential ticket that wins ${wins} in the ${date} election.`,
-      race,
-      cfg
-    ),
+    `Resolves to the party of the presidential ticket that gets ${votes} in the ${date} election, however ${name} awards them: by its own vote, by the national popular vote under an interstate compact, or any other way. If electoral votes are replaced by another system, it follows whatever say ${name} has in that system; N/A if it has none.`,
     TICKET_PARTY_RULE(state),
-    `Resolves on ${possessive} certified result, or earlier once the AP has called it and no recount could change it. N/A if ${name} holds no presidential vote.`,
+    `Resolves on the electors ${name} certifies, or earlier once the AP has called the ${
+      state === 'DC' ? 'District' : 'state'
+    } and nothing could change it. Faithless electors don't change it.`,
   ].join('\n\n')
 }
 
