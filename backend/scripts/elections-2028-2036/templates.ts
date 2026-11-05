@@ -241,7 +241,9 @@ function popularVoteDescription(race: Race, cfg: CycleConfig) {
 // interstate compact, anything else), and its say in any system that replaces
 // electoral votes (Tod, 2026-11-05). A district market follows the district's
 // electoral vote. Certified electors decide, so the state's counting rules
-// (Maine's ranked choice, Alaska's method) need no sentence of their own. The
+// (Maine's ranked choice, Alaska's method) need no sentence of their own. A
+// state whose certified electors split between tickets resolves to each party
+// in proportion to its share of them (a district has one elector). The
 // national market follows whoever is elected President, however decided.
 function stateDescription(race: Race, cfg: CycleConfig) {
   const { stateName, state } = race
@@ -259,16 +261,24 @@ function stateDescription(race: Race, cfg: CycleConfig) {
   const name = state === 'DC' ? 'the District of Columbia' : stateName
   const possessive =
     state === 'DC' ? "the District of Columbia's" : `${stateName}'s`
-  const votes =
-    state === 'ME' || state === 'NE'
-      ? `${possessive} two statewide electoral votes`
-      : `${possessive} electoral votes`
+  // Maine's and Nebraska's statewide markets cover only their two statewide
+  // electors: the district electors split from them routinely (Maine 3–1 in
+  // 2024), so a split means the statewide pair itself.
+  const statewidePair = state === 'ME' || state === 'NE'
+  const votes = statewidePair
+    ? `${possessive} two statewide electoral votes`
+    : `${possessive} electoral votes`
+  // Split electors resolve proportionally (Tod, 2026-11-05: "if a state's
+  // electors become split, ... the existing one can resolve proportionally").
+  const split = statewidePair
+    ? 'If the two statewide electors are split between tickets'
+    : 'If those electors are split between tickets'
   return [
     `Resolves to the party of the presidential ticket that gets ${votes} in the ${date} election, however ${name} awards them: by its own vote, by the national popular vote under an interstate compact, or any other way. If electoral votes are replaced by another system, it follows whatever say ${name} has in that system; N/A if it has none.`,
     TICKET_PARTY_RULE(state),
     `Resolves on the electors ${name} certifies, or earlier once the AP has called the ${
       state === 'DC' ? 'District' : 'state'
-    } and nothing could change it. Faithless electors don't change it.`,
+    } and nothing could change it. ${split}, it resolves to each party in proportion to its share of them. Faithless electors don't change it.`,
   ].join('\n\n')
 }
 

@@ -554,7 +554,9 @@ test('descriptions are short plain paragraphs: the election and date, the party 
       /\*\*|@ManifoldPolitics|Opening odds|manifold\.markets|SEEDS\.md|Stage A|Another party|fusion|Which round counts/,
       e.raceKey
     )
-    assert.ok(d.length >= 350 && d.length <= 850, `${e.raceKey}: ${d.length}`)
+    // The longest are the presidential state markets (allocation, successor
+    // system and split-elector sentences): about 850 characters, 912 for DC.
+    assert.ok(d.length >= 350 && d.length <= 950, `${e.raceKey}: ${d.length}`)
     assert.equal(paras.length, 3, e.raceKey)
     // What it resolves to, on which date.
     assert.match(paras[0], /^Resolves to the party /, e.raceKey)
@@ -687,14 +689,23 @@ test('descriptions are short plain paragraphs: the election and date, the party 
           )} election, however ${name} awards them: by its own vote, by the national popular vote under an interstate compact, or any other way. If electoral votes are replaced by another system, it follows whatever say ${name} has in that system; N/A if it has none.`,
           e.raceKey
         )
+        // Split electors resolve proportionally; for Maine and Nebraska that
+        // means the two statewide electors, never the district ones.
         assert.equal(
           paras[2],
           `Resolves on the electors ${name} certifies, or earlier once the AP has called the ${
             state === 'DC' ? 'District' : 'state'
-          } and nothing could change it. Faithless electors don't change it.`,
+          } and nothing could change it. ${
+            state === 'ME' || state === 'NE'
+              ? 'If the two statewide electors are split between tickets'
+              : 'If those electors are split between tickets'
+          }, it resolves to each party in proportion to its share of them. Faithless electors don't change it.`,
           e.raceKey
         )
       }
+      // Districts have one elector: no split sentence.
+      if (e.identity.district !== undefined)
+        assert.doesNotMatch(d, /split|proportion/, e.raceKey)
       // Certified electors decide: no counting-rule sentence.
       assert.doesNotMatch(d, /ranked-choice|counting method/, e.raceKey)
     }
@@ -727,6 +738,13 @@ test('descriptions are short plain paragraphs: the election and date, the party 
   assert.ok(mean < 650, `mean description length ${mean}`)
 })
 
+test('no description mentions anyone: an @mention notifies that user even on an unlisted market', () => {
+  // createNewContractNotification sends tagged_user notifications to every
+  // user mentioned in the description, whatever the market's visibility.
+  for (const e of allEntries)
+    assert.doesNotMatch(e.payload!.descriptionMarkdown, /@\w/, e.raceKey)
+})
+
 test('the exact text for one market of each kind', () => {
   const desc = (key: string) =>
     allEntries.find((e) => e.raceKey === key)!.payload!.descriptionMarkdown
@@ -757,12 +775,24 @@ test('the exact text for one market of each kind', () => {
     [
       "Resolves to the party of the presidential ticket that gets Alabama's electoral votes in the November 7, 2028 election, however Alabama awards them: by its own vote, by the national popular vote under an interstate compact, or any other way. If electoral votes are replaced by another system, it follows whatever say Alabama has in that system; N/A if it has none.",
       TICKET,
-      "Resolves on the electors Alabama certifies, or earlier once the AP has called the state and nothing could change it. Faithless electors don't change it.",
+      "Resolves on the electors Alabama certifies, or earlier once the AP has called the state and nothing could change it. If those electors are split between tickets, it resolves to each party in proportion to its share of them. Faithless electors don't change it.",
     ].join('\n\n')
   )
   assert.equal(
     desc('2028-president-ME-general').split('\n\n')[0],
     "Resolves to the party of the presidential ticket that gets Maine's two statewide electoral votes in the November 7, 2028 election, however Maine awards them: by its own vote, by the national popular vote under an interstate compact, or any other way. If electoral votes are replaced by another system, it follows whatever say Maine has in that system; N/A if it has none."
+  )
+  assert.equal(
+    desc('2028-president-ME-general').split('\n\n')[2],
+    "Resolves on the electors Maine certifies, or earlier once the AP has called the state and nothing could change it. If the two statewide electors are split between tickets, it resolves to each party in proportion to its share of them. Faithless electors don't change it."
+  )
+  assert.equal(
+    desc('2028-president-NE-general').split('\n\n')[2],
+    "Resolves on the electors Nebraska certifies, or earlier once the AP has called the state and nothing could change it. If the two statewide electors are split between tickets, it resolves to each party in proportion to its share of them. Faithless electors don't change it."
+  )
+  assert.equal(
+    desc('2028-president-DC-general').split('\n\n')[2],
+    "Resolves on the electors the District of Columbia certifies, or earlier once the AP has called the District and nothing could change it. If those electors are split between tickets, it resolves to each party in proportion to its share of them. Faithless electors don't change it."
   )
   assert.equal(
     desc('2028-president-US-general'),
