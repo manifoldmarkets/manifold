@@ -39,7 +39,7 @@ export const SERIES = 'us-national-2028-v1'
 export const MANIFOLD_POLITICS_ID = 'vuI5upWB8yU00rP7yxj95J2zd952'
 export const MANIFOLD_POLITICS_USERNAME = 'ManifoldPolitics'
 
-export type Cycle = 2027 | 2028 | 2030 | 2032 | 2034 | 2036
+export type Cycle = 2027 | 2028 | 2029 | 2030 | 2032 | 2034 | 2036
 // primary: early-state contests; nomination: conventions/nominees;
 // general: decided on (or after) election day; offyear: 2027 races.
 export type Phase = 'primary' | 'nomination' | 'general' | 'offyear'
@@ -48,6 +48,7 @@ export type Phase = 'primary' | 'nomination' | 'general' | 'offyear'
 export const ELECTION_DAYS: Record<Cycle, string> = {
   2027: '2027-11-02',
   2028: '2028-11-07',
+  2029: '2029-11-06',
   2030: '2030-11-05',
   2032: '2032-11-02',
   2034: '2034-11-07',
@@ -369,6 +370,120 @@ const governor2027 = (
   },
 })
 
+// Territories and Democrats Abroad hold 2028 presidential contests too
+// (Tod, 6 Nov 2026: create everything before November 2028 now). Same shape
+// as the state primaries; no home-state boost.
+type TerritoryContest = {
+  slug: string
+  name: string // as it reads in a sentence
+  code: string
+  democraticOnly?: boolean
+}
+export const TERRITORY_CONTESTS: TerritoryContest[] = [
+  { slug: 'puerto-rico', name: 'Puerto Rico', code: 'PR' },
+  { slug: 'guam', name: 'Guam', code: 'GU' },
+  { slug: 'us-virgin-islands', name: 'the U.S. Virgin Islands', code: 'VI' },
+  { slug: 'american-samoa', name: 'American Samoa', code: 'AS' },
+  { slug: 'northern-mariana-islands', name: 'the Northern Mariana Islands', code: 'MP' },
+  { slug: 'democrats-abroad', name: 'Democrats Abroad', code: 'DA', democraticOnly: true },
+]
+
+const territoryPrimary = (
+  t: TerritoryContest,
+  party: 'Democratic' | 'Republican'
+): MultiEntry => {
+  const abroad = t.code === 'DA'
+  const contest = abroad
+    ? 'the 2028 Democrats Abroad global presidential primary'
+    : `the 2028 ${party} presidential primary or caucus in ${t.name}`
+  return {
+    key: `2028-${party === 'Democratic' ? 'dem' : 'gop'}-${t.slug}`,
+    cycle: 2028,
+    phase: 'primary',
+    outcome: 'MULTIPLE_CHOICE',
+    addAnswersMode: 'ANYONE',
+    question: abroad
+      ? 'Who will win the 2028 Democrats Abroad presidential primary?'
+      : `Who will win ${t.name} in the 2028 ${party} presidential primaries?`,
+    description: desc(
+      `Resolves to the candidate with the most votes in ${contest}, per certified party or territorial results, or an AP call once the outcome is settled. Caucuses and ranked-choice contests count final-round votes. If no vote totals are reported, the one awarded the most delegates wins.`,
+      `${
+        abroad ? '' : 'If the territory and the party hold separate contests, the one that awards delegates counts. '
+      }Uncommitted resolves to its own answer if listed, otherwise Other. N/A if no such contest is held before the nominee is chosen.`
+    ),
+    topics: [
+      'us-politics',
+      'elections',
+      '2028-us-presidential-election-6tdsp26zly',
+      '2028-presidential-primaries',
+      party === 'Democratic' ? 'democratic-party' : 'republican-party',
+    ],
+    liquidityTier: 1000,
+    closeTime: EARLY_2028,
+    seed: {
+      kind: 'flattened-nominee',
+      nomineeSourceId:
+        party === 'Democratic' ? SOURCES.demNominee2028 : SOURCES.gopNominee2028,
+      power: 0.8,
+      maxAnswers: 3,
+      homeState: t.code,
+      homeBoost: HOME_BOOST,
+    },
+  }
+}
+
+// Party control of a state legislative chamber: the two parties, fixed (no
+// Other: independents count with the caucus they join).
+const chamberControl = (opts: {
+  key: string
+  cycle: Cycle
+  question: string
+  // "the 40 New Jersey Senate seats in the November 2, 2027 election"
+  seats: string
+  majority: number
+  tie: string
+  topics: string[]
+  closeTime: string
+  pcts: [number, number]
+  note: string
+}): MultiEntry => ({
+  key: opts.key,
+  cycle: opts.cycle,
+  phase: 'offyear',
+  outcome: 'MULTIPLE_CHOICE',
+  addAnswersMode: 'DISABLED',
+  answers: [DEM, REP],
+  question: opts.question,
+  description: `Resolves to the party that wins a majority (${opts.majority} or more) of ${opts.seats}, per certified results, counting independents with the caucus they join. ${opts.tie}`,
+  topics: opts.topics,
+  liquidityTier: 1000,
+  closeTime: opts.closeTime,
+  seed: { kind: 'static-fixed', pcts: opts.pcts, note: opts.note },
+})
+
+// An off-year governor race after 2027 (party market, Other open to
+// @ManifoldPolitics, like the 2027 ones).
+const offyearGovernor = (
+  year: 2029,
+  state: 'Virginia' | 'New Jersey',
+  race: string,
+  pcts: [number, number],
+  note: string
+): MultiEntry => ({
+  key: `${year}-governor-${state.toLowerCase().replace(/\s+/g, '-')}`,
+  cycle: year,
+  phase: 'offyear',
+  outcome: 'MULTIPLE_CHOICE',
+  addAnswersMode: 'ONLY_CREATOR',
+  answers: [DEM, REP],
+  question: `Which party will win the ${year} ${state} governor election?`,
+  description: desc(`Resolves to the party that wins the ${race}`, PARTY_RULE),
+  topics: ['us-politics', 'elections', 'governor', state.toLowerCase().replace(/\s+/g, '-')],
+  liquidityTier: 1000,
+  closeTime: `${year}-11-07T12:00:00Z`,
+  seed: { kind: 'static-fixed', pcts, note },
+})
+
 export const ENTRIES: Entry[] = [
   // ----------------------------------------------------------------- 2028
   {
@@ -610,6 +725,50 @@ export const ENTRIES: Entry[] = [
     statePrimary(s, 'Democratic'),
     statePrimary(s, 'Republican'),
   ]),
+  ...TERRITORY_CONTESTS.flatMap((t) =>
+    t.democraticOnly
+      ? [territoryPrimary(t, 'Democratic')]
+      : [territoryPrimary(t, 'Democratic'), territoryPrimary(t, 'Republican')]
+  ),
+  {
+    key: '2028-npvic-in-effect',
+    cycle: 2028,
+    phase: 'general',
+    outcome: 'BINARY',
+    question:
+      'Will the National Popular Vote Interstate Compact be in effect for the 2028 presidential election?',
+    description:
+      'Resolves YES if the National Popular Vote Interstate Compact governs how its member states appoint their presidential electors for the November 7, 2028 election: its members together hold at least 270 electoral votes and the compact is in effect for that election under its own terms. NO otherwise, including if a court stops it from applying before electors are appointed.',
+    topics: [...TOPICS_2028, 'electoral-college'],
+    liquidityTier: 10000,
+    closeTime: AFTER_2028,
+    seed: {
+      kind: 'static-binary',
+      pct: 4,
+      note: 'Prior: members held 222 of the 270 electoral votes after Virginia joined (April 2026); the rest would need states with Republican legislatures before mid-2028.',
+    },
+  },
+  {
+    key: '2028-speaker-january-2029',
+    cycle: 2028,
+    phase: 'general',
+    outcome: 'MULTIPLE_CHOICE',
+    addAnswersMode: 'ONLY_CREATOR',
+    question: 'Who will be elected Speaker of the House when the new Congress meets in January 2029?',
+    description:
+      'Resolves to the person the U.S. House of Representatives elects Speaker when the 121st Congress first elects one (January 2029 or later), however many ballots it takes. N/A if no Speaker is elected by March 31, 2029.',
+    topics: ['us-politics', 'us-congress', 'house-of-representatives', '2028-us-elections'],
+    liquidityTier: 1000,
+    closeTime: '2029-01-03T17:00:00Z',
+    seed: {
+      kind: 'static-candidates',
+      note: 'Prior: the majority leader usually wins; Democrats are 60% to win the House in 2028 (the balance-of-power input), and the Republican leader in 2029 is less settled.',
+      seeds: [
+        { text: 'Hakeem Jeffries', pct: 52 },
+        { text: 'Mike Johnson', pct: 22 },
+      ],
+    },
+  },
 
   // ----------------------------------------------------------------- 2027
   governor2027(
@@ -669,6 +828,106 @@ export const ENTRIES: Entry[] = [
       note: 'Prior: Democrats expanded their House of Delegates majority in 2025.',
     },
   },
+  chamberControl({
+    key: '2027-new-jersey-senate',
+    cycle: 2027,
+    question: 'Which party will control the New Jersey Senate after the 2027 election?',
+    seats: 'the 40 New Jersey Senate seats in the November 2, 2027 election',
+    majority: 21,
+    tie: 'A 20–20 tie goes to the party of the Senate President elected in January 2028.',
+    topics: ['us-politics', 'elections', '2027-us-elections', 'new-jersey'],
+    closeTime: '2027-11-03T12:00:00Z',
+    pcts: [85, 15],
+    note: 'Prior: Democrats have held the New Jersey Senate since 2004.',
+  }),
+  chamberControl({
+    key: '2027-new-jersey-assembly',
+    cycle: 2027,
+    question: 'Which party will control the New Jersey General Assembly after the 2027 election?',
+    seats: 'the 80 General Assembly seats in the November 2, 2027 election',
+    majority: 41,
+    tie: 'A 40–40 tie goes to the party of the Speaker elected in January 2028.',
+    topics: ['us-politics', 'elections', '2027-us-elections', 'new-jersey'],
+    closeTime: '2027-11-03T12:00:00Z',
+    pcts: [85, 15],
+    note: 'Prior: Democrats have held the Assembly since 2002 and gained seats in 2025.',
+  }),
+  chamberControl({
+    key: '2027-mississippi-house',
+    cycle: 2027,
+    question: 'Which party will control the Mississippi House after the 2027 election?',
+    seats: 'the 122 Mississippi House seats in the 2027 election (November 2, 2027, and any runoffs)',
+    majority: 62,
+    tie: 'A 61–61 tie goes to the party of the Speaker elected in January 2028.',
+    topics: ['us-politics', 'elections', '2027-us-elections', 'mississippi'],
+    closeTime: '2027-12-01T12:00:00Z',
+    pcts: [3, 97],
+    note: 'Prior: Republicans hold a supermajority.',
+  }),
+  chamberControl({
+    key: '2027-mississippi-senate',
+    cycle: 2027,
+    question: 'Which party will control the Mississippi Senate after the 2027 election?',
+    seats: 'the 52 Mississippi Senate seats in the 2027 election (November 2, 2027, and any runoffs)',
+    majority: 27,
+    tie: "A 26–26 tie goes to the Lieutenant Governor's party.",
+    topics: ['us-politics', 'elections', '2027-us-elections', 'mississippi'],
+    closeTime: '2027-12-01T12:00:00Z',
+    pcts: [3, 97],
+    note: 'Prior: Republicans hold a supermajority.',
+  }),
+  chamberControl({
+    key: '2027-louisiana-house',
+    cycle: 2027,
+    question: 'Which party will control the Louisiana House after the 2027 election?',
+    seats: "the 105 Louisiana House seats in the 2027 elections (the fall primary and the November general)",
+    majority: 53,
+    tie: 'A tie goes to the party of the Speaker elected when the new House convenes.',
+    topics: ['us-politics', 'elections', '2027-us-elections', 'louisiana'],
+    closeTime: '2027-11-21T12:00:00Z',
+    pcts: [3, 97],
+    note: 'Prior: Republicans hold a supermajority.',
+  }),
+  chamberControl({
+    key: '2027-louisiana-senate',
+    cycle: 2027,
+    question: 'Which party will control the Louisiana Senate after the 2027 election?',
+    seats: "the 39 Louisiana Senate seats in the 2027 elections (the fall primary and the November general)",
+    majority: 20,
+    tie: 'A tie goes to the party of the Senate President elected when the new Senate convenes.',
+    topics: ['us-politics', 'elections', '2027-us-elections', 'louisiana'],
+    closeTime: '2027-11-21T12:00:00Z',
+    pcts: [3, 97],
+    note: 'Prior: Republicans hold a supermajority.',
+  }),
+
+  // ----------------------------------------------------------------- 2029
+  offyearGovernor(
+    2029,
+    'Virginia',
+    'November 6, 2029 election for Governor of Virginia, per certified results.',
+    [55, 44],
+    'Prior: Virginia leans Democratic, but the seat is open (no consecutive terms) and the off-year after a presidential election often favors the party out of the White House.'
+  ),
+  offyearGovernor(
+    2029,
+    'New Jersey',
+    'November 6, 2029 election for Governor of New Jersey, per certified results.',
+    [62, 37],
+    'Prior: New Jersey leans Democratic and the governor elected in 2025 can run again.'
+  ),
+  chamberControl({
+    key: '2029-virginia-house',
+    cycle: 2029,
+    question: 'Which party will control the Virginia House of Delegates after the 2029 election?',
+    seats: 'the 100 House of Delegates seats in the November 6, 2029 election',
+    majority: 51,
+    tie: 'A 50–50 tie goes to the party of the Speaker elected in January 2030, or 50/50 if the parties share power under co-speakers.',
+    topics: ['us-politics', 'elections', 'virginia'],
+    closeTime: '2029-11-07T12:00:00Z',
+    pcts: [65, 35],
+    note: 'Prior: Democrats hold the chamber; the off-year after a presidential election often favors the party out of the White House.',
+  }),
 
   // ----------------------------------------------------------------- 2030
   balanceOfPower(2030, '2030-11-06T12:00:00Z', [18.2, 8.8, 28.9, 12.4, 7.6, 14.4, 4.8, 4.9], bopNote('67/50/45%', true), 'us-midterm-elections'),
@@ -977,7 +1236,7 @@ export async function resolveSeed(
 // ---------------------------------------------------------------------------
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]*$/
-const KEY_RE = /^(2027|2028|2030|2032|2034|2036)-[a-z0-9-]+$/
+const KEY_RE = /^(2027|2028|2029|2030|2032|2034|2036)-[a-z0-9-]+$/
 
 const hasOther = (entry: Entry) =>
   entry.outcome === 'MULTIPLE_CHOICE' && entry.addAnswersMode !== 'DISABLED'

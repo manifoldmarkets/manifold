@@ -46,6 +46,8 @@ import {
   SERIES,
   SOURCES,
   SourceMarket,
+  PRIMARY_STATES,
+  TERRITORY_CONTESTS,
   validateEntries,
 } from './national-markets'
 import { buildPhotoIndex, parsePhotoRegistry, photoPathFor } from './photos'
@@ -354,8 +356,10 @@ test('reserved ids are deterministic, valid and unique', () => {
 test('the manifest covers the planned markets and validates', () => {
   assert.deepEqual(validateEntries(ENTRIES, NOW), [])
   // 25 national markets (a balance-of-power market for every cycle through
-  // 2036) plus a primary for each party in every state and DC.
-  assert.equal(ENTRIES.length, 25 + 102)
+  // 2036), a primary for each party in every state and DC, the territories'
+  // and Democrats Abroad's contests, and the 6 Nov 2026 additions (compact,
+  // Speaker, 2027 legislatures, 2029 races).
+  assert.equal(ENTRIES.length, 25 + 102 + 11 + 11)
   const keys = ENTRIES.map((e) => e.key)
   for (const k of [
     '2028-dem-nominee',
@@ -404,7 +408,12 @@ test('the manifest covers the planned markets and validates', () => {
 })
 
 test('every state and DC has an open primary for each party', () => {
-  const primaries = ENTRIES.filter((e) => e.phase === 'primary') as MultiEntry[]
+  const stateKeys = new Set(
+    PRIMARY_STATES.flatMap((s) =>
+      ['dem', 'gop'].map((p) => `2028-${p}-${s.state.toLowerCase().replace(/\s+/g, '-')}`)
+    )
+  )
+  const primaries = ENTRIES.filter((e) => stateKeys.has(e.key)) as MultiEntry[]
   assert.equal(primaries.length, 102)
   const states = new Set<string>()
   for (const e of primaries) {
@@ -432,6 +441,46 @@ test('every state and DC has an open primary for each party', () => {
       'Who will win the District of Columbia in the 2028 Republican presidential primaries?'
     )
   )
+})
+
+test('territories, Democrats Abroad and the 6 Nov additions', () => {
+  const get = (k: string) => ENTRIES.find((e) => e.key === k)
+  // Five territories for both parties, Democrats Abroad for Democrats only.
+  const territories = TERRITORY_CONTESTS.flatMap((t) =>
+    (t.democraticOnly ? ['dem'] : ['dem', 'gop']).map((p) => get(`2028-${p}-${t.slug}`))
+  )
+  assert.equal(territories.length, 11)
+  for (const e of territories) {
+    assert.ok(e, 'missing territory market')
+    const m = e as MultiEntry
+    assert.equal(m.addAnswersMode, 'ANYONE', m.key)
+    assert.match(m.description, /an AP call once the outcome is settled/, m.key)
+    assert.match(m.description, /Uncommitted resolves to its own answer if listed, otherwise Other\./, m.key)
+  }
+  assert.equal(get('2028-gop-democrats-abroad'), undefined)
+  assert.equal(
+    get('2028-dem-us-virgin-islands')!.question,
+    'Who will win the U.S. Virgin Islands in the 2028 Democratic presidential primaries?'
+  )
+  // Chamber control: two fixed answers, majority and tie rule stated.
+  for (const k of [
+    '2027-new-jersey-senate', '2027-new-jersey-assembly', '2027-mississippi-house',
+    '2027-mississippi-senate', '2027-louisiana-house', '2027-louisiana-senate', '2029-virginia-house',
+  ]) {
+    const m = get(k) as MultiEntry
+    assert.equal(m.addAnswersMode, 'DISABLED', k)
+    assert.deepEqual(m.answers, [DEM, REP], k)
+    assert.match(m.description, /^Resolves to the party that wins a majority \(\d+ or more\)/, k)
+    assert.match(m.description, /tie goes to/, k)
+  }
+  for (const k of ['2029-governor-virginia', '2029-governor-new-jersey']) {
+    const m = get(k) as MultiEntry
+    assert.equal(m.addAnswersMode, 'ONLY_CREATOR', k)
+    assert.match(m.description, /Only the party matters/, k)
+  }
+  assert.equal(get('2028-npvic-in-effect')!.outcome, 'BINARY')
+  assert.equal(get('2028-npvic-in-effect')!.liquidityTier, 10000)
+  assert.match(get('2028-speaker-january-2029')!.description, /N\/A if no Speaker is elected by March 31, 2029\./)
 })
 
 test('party markets list both parties and leave Other open to @ManifoldPolitics', async () => {

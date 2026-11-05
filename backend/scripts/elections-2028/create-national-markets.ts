@@ -362,8 +362,19 @@ const MARKERS = new Set([
 // so "West Virginia" isn't also Virginia.
 const stateToken = (code: string) => `xst${code.toLowerCase()}`
 const STATE_CODES = new Set(PRIMARY_STATES.map((s) => s.code))
+// Territories and Democrats Abroad count as places too (their primaries are
+// siblings of the state ones). Names only: their codes ("AS", "PR") are
+// ordinary words in capitals.
 const STATE_NAMES = PRIMARY_STATES.filter((s) => s.code !== 'DC')
   .map((s) => ({ code: s.code, name: s.state.toLowerCase() }))
+  .concat([
+    { code: 'PR', name: 'puerto rico' },
+    { code: 'GU', name: 'guam' },
+    { code: 'VI', name: 'virgin islands' },
+    { code: 'AS', name: 'american samoa' },
+    { code: 'MP', name: 'northern mariana islands' },
+    { code: 'DA', name: 'democrats abroad' },
+  ])
   .sort((a, b) => b.name.length - a.name.length)
 
 function questionWords(question: string): string[] {
