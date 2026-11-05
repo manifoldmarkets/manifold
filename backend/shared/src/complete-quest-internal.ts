@@ -1,12 +1,19 @@
 import { User } from 'common/user'
-import { QUEST_DETAILS, QuestType } from 'common/quest'
+import { Contract } from 'common/contract'
+import {
+  getNextQuestWeekStart,
+  getQuestWeekStart,
+  MARKET_CREATION_QUESTS,
+  QUEST_DETAILS,
+  QuestType,
+} from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
+  SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { getRecentContractIds } from 'common/supabase/contracts'
 import { APIError } from 'common//api/utils'
 import { createQuestPayoutNotification } from 'shared/create-notification'
 import * as dayjs from 'dayjs'
@@ -14,6 +21,7 @@ import * as utc from 'dayjs/plugin/utc'
 import * as timezone from 'dayjs/plugin/timezone'
 import { getQuestScore, setQuestScoreValue } from 'common/supabase/set-scores'
 import { millisToTs } from 'common/supabase/utils'
+import { DAY_MS } from 'common/util/time'
 import { log } from 'shared/utils'
 import {
   getEffectiveBonusMultiplier,
@@ -38,42 +46,104 @@ export const completeSharingQuest = async (user: User) => {
   )
 }
 
-export const completeCalculatedQuestFromTrigger = async (
+// Runs after each question a user creates. Counts their questions in the week
+// the question was created (not the week this runs in, so a late trigger for a
+// Sunday-night question still counts toward Sunday's week) and pays the weekly
+// creation quests that count has reached. Safe to rerun: each quest pays at
+// most once per week.
+export const completeMarketCreationQuests = async (
   user: User,
-  questType: 'MARKETS_CREATED',
-  // idempotencyKey is used to prevent duplicate quest completions from triggers firing multiple times
-  idempotencyKey: string,
-  contractId: string
+  contract: Pick<Contract, 'id' | 'createdTime'>
 ) => {
-  const db = createSupabaseClient()
-  const startOfWeek = dayjs()
-    .tz('America/Los_Angeles')
-    .startOf('week')
-    .add(1, 'day')
-    .valueOf()
-  const contractIds = await getRecentContractIds(user.id, startOfWeek, db)
-  // In case replication hasn't happened yet, add the id manually
-  if (!contractIds.includes(contractId)) contractIds.push(contractId)
-  const count = contractIds.length
-  log(
-    'markets created this week count:',
-    count,
-    'for user:',
+  const pg = createSupabaseDirectClient()
+  const weekStart = getQuestWeekStart(new Date(contract.createdTime))
+  // Counts this contract even if the query can't see it yet.
+  const { count } = await pg.one<{ count: number }>(
+    `select count(*)::int + 1 as count from contracts
+    where creator_id = $1
+    and created_time >= millis_to_ts($2)
+    and created_time < millis_to_ts($3)
+    and id != $4`,
+    [user.id, weekStart, getNextQuestWeekStart(weekStart), contract.id]
+  )
+  log('markets created this week count:', count, 'for user:', user.id, {
+    contractId: contract.id,
+    weekStart,
+  })
+  // The score only shows the current week's progress in the quests modal.
+  if (weekStart === getQuestWeekStart()) {
+    await setQuestScoreValue(
+      user.id,
+      QUEST_DETAILS.MARKETS_CREATED.scoreId,
+      count,
+      createSupabaseClient()
+    )
+  }
+  await payMarketCreationQuests(user, weekStart, count)
+  return { count }
+}
+
+// The weekly creation quests a user with `count` questions in the week
+// starting at weekStart has earned but not yet been paid.
+export const getUnpaidMarketCreationQuests = async (
+  pg: SupabaseDirectClient,
+  userId: string,
+  weekStart: number,
+  count: number
+) => {
+  const reached = MARKET_CREATION_QUESTS.filter(
+    (questType) => count >= QUEST_DETAILS[questType].requiredCount
+  )
+  if (reached.length === 0) return []
+  const paid = await getQuestTypesPaidForPeriod(
+    pg,
+    userId,
+    weekPeriod(weekStart)
+  )
+  return reached.filter((questType) => !paid.includes(questType))
+}
+
+export const payMarketCreationQuests = async (
+  user: User,
+  weekStart: number,
+  count: number
+) => {
+  // Unlocked pre-check, so prolific creators don't take the user row lock on
+  // every question. awardQuestBonus re-checks under the lock.
+  const unpaid = await getUnpaidMarketCreationQuests(
+    createSupabaseDirectClient(),
     user.id,
-    'and idempotencyKey:',
-    idempotencyKey
+    weekStart,
+    count
   )
-  const oldEntry = await getQuestScore(user.id, questType, db)
-  log('current quest entry:', oldEntry, 'for user:', user.id)
-  if (idempotencyKey && oldEntry.idempotencyKey === idempotencyKey)
-    return { count: oldEntry.score }
-  return await completeQuestInternal(
-    user,
-    questType,
-    oldEntry.score,
-    count,
-    idempotencyKey
-  )
+  for (const questType of unpaid) {
+    const resp = await awardQuestBonus(
+      user,
+      questType,
+      count,
+      weekPeriod(weekStart)
+    )
+    if (!resp) continue
+    if (!resp.txn) {
+      log(`Quest bonus rounded to zero for user ${user.id} (${questType})`)
+      continue
+    }
+    // The reward is already paid, so a failed notification mustn't stop the
+    // next quest's payout.
+    await createQuestPayoutNotification(
+      user,
+      resp.txn.id,
+      resp.bonusAmount,
+      count,
+      questType
+    ).catch((e) =>
+      log.error('Failed to create quest payout notification', {
+        userId: user.id,
+        questType,
+        error: e instanceof Error ? e.message : String(e),
+      })
+    )
+  }
 }
 
 const completeQuestInternal = async (
@@ -105,8 +175,12 @@ const completeQuestInternal = async (
   // All users receive a quest bonus, but the amount scales with their effective
   // tier (flagged = 0, bonus-blocked = 0.2x, free = 1x, subscribers higher).
   if (count !== oldScore && count === QUEST_DETAILS[questType].requiredCount) {
-    const resp = await awardQuestBonus(user, questType, count)
-    if (resp.bonusAmount <= 0) {
+    const resp = await awardQuestBonus(user, questType, count, {
+      periodStart: startOfDay,
+      periodEnd: startOfDay + DAY_MS,
+    })
+    if (!resp) throw new APIError(400, 'Already awarded quest bonus today')
+    if (!resp.txn) {
       log(`Quest bonus rounded to zero for user ${user.id} (${questType})`)
       return { count }
     }
@@ -138,35 +212,69 @@ const getCurrentCountForQuest = async (
   } else return 0
 }
 
+// The day or week a quest reward pays for, as epoch ms [start, end).
+type QuestPeriod = { periodStart: number; periodEnd: number }
+
+const weekPeriod = (weekStart: number): QuestPeriod => ({
+  periodStart: weekStart,
+  periodEnd: getNextQuestWeekStart(weekStart),
+})
+
+// A reward paid for the period: it records that periodStart, or, if paid
+// before rewards recorded one, was paid within the period. A reward for an
+// earlier period paid late (just past the boundary) records its own period,
+// so it doesn't block this one.
+const PAID_FOR_PERIOD_SQL = `
+  created_time >= millis_to_ts($/periodStart/)
+  and (
+    (data->'data'->>'periodStart')::bigint = $/periodStart/
+    or (
+      data->'data'->>'periodStart' is null
+      and created_time < millis_to_ts($/periodEnd/)
+    )
+  )`
+
+const getQuestTypesPaidForPeriod = async (
+  pg: SupabaseDirectClient,
+  userId: string,
+  period: QuestPeriod
+) =>
+  await pg.map(
+    `select distinct data->'data'->>'questType' as quest_type from txns
+    where to_id = $/userId/
+    and category = 'QUEST_REWARD'
+    and ${PAID_FOR_PERIOD_SQL}`,
+    { userId, ...period },
+    (row) => row.quest_type as QuestType
+  )
+
+// Pays the quest's bonus once per period. Returns null if it already paid out
+// for the period, and no txn if the tier multiplier makes the bonus zero.
 const awardQuestBonus = async (
   user: User,
   questType: QuestType,
-  newCount: number
+  newCount: number,
+  period: QuestPeriod
 ) => {
-  const startOfDay = dayjs().tz('America/Los_Angeles').startOf('day').valueOf()
-
   const pg = createSupabaseDirectClient()
   return await pg.tx(async (tx) => {
     // Lock the user row to serialize concurrent quest reward grants for this
-    // user. Without this, two concurrent /completequest calls can both pass
-    // the previousTxn check below and both insert reward txns.
+    // user. Without this, two concurrent /completequest calls (or two
+    // questions created at once) can both pass the previousTxn check below and
+    // both insert reward txns.
     await tx.oneOrNone('select 1 from users where id = $1 for update', [user.id])
 
-    // make sure we don't already have a txn for this user/questType
+    // make sure we don't already have a txn for this user/questType this period
     const previousTxn = await tx.oneOrNone(
-      `select * from txns
-      where to_id = $1
+      `select 1 from txns
+      where to_id = $/userId/
       and category = 'QUEST_REWARD'
-      and data->'data'->>'questType' = $2
-      and (data->'data'->>'questCount')::integer = $3
-      and created_time >= millis_to_ts($4)
+      and data->'data'->>'questType' = $/questType/
+      and ${PAID_FOR_PERIOD_SQL}
       limit 1`,
-      [user.id, questType, newCount, startOfDay]
+      { userId: user.id, questType, ...period }
     )
-
-    if (previousTxn) {
-      throw new APIError(400, 'Already awarded quest bonus today')
-    }
+    if (previousTxn) return null
 
     // Fetch user's supporter entitlements for bonus multiplier
     const entitlements = await getActiveSupporterEntitlements(tx, user.id)
@@ -180,10 +288,13 @@ const awardQuestBonus = async (
     const questMultiplier = getEffectiveBonusMultiplier(effectiveTier, 'quest')
     const baseReward = QUEST_DETAILS[questType].rewardAmount
     const rewardAmount = roundTierBonus(baseReward * questMultiplier)
+    // runTxn rejects non-positive amounts (flagged accounts earn 0x).
+    if (!(rewardAmount > 0)) return { txn: undefined, bonusAmount: 0 }
 
     const bonusTxnData = {
       questType,
       questCount: newCount,
+      periodStart: period.periodStart,
       effectiveTier,
       questMultiplier,
       supporterBonus: questMultiplier > 1,

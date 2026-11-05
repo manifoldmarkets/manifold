@@ -24,7 +24,19 @@ const WIDGET_QUESTS: {
 }[] = [
   { type: 'SHARES', title: 'Share a market', period: 'daily' },
   { type: 'MARKETS_CREATED', title: 'Create a market', period: 'weekly' },
+  { type: 'MARKETS_CREATED_3', title: 'Create 3 markets', period: 'weekly' },
 ]
+
+// The two creation quests share one widget row (a third row overflows short
+// medium widgets): the 1-market quest until it's done, then the 3-market one.
+const showOnWidget = (
+  type: QuestType,
+  doneByType: Partial<Record<QuestType, boolean>>
+) => {
+  if (type === 'MARKETS_CREATED') return !doneByType.MARKETS_CREATED
+  if (type === 'MARKETS_CREATED_3') return !!doneByType.MARKETS_CREATED
+  return true
+}
 
 // Metallic capsule colour family per paid tier (Plus silver / Pro indigo /
 // Premium gold), matching each tier's brand colour in SUPPORTER_TIERS.
@@ -61,15 +73,22 @@ export const useNativeQuestSync = (
     const scoreIds = WIDGET_QUESTS.map((q) => QUEST_DETAILS[q.type].scoreId)
     try {
       const scores = await getQuestScores(userId, scoreIds, db)
-      const quests: NativeQuestItem[] = WIDGET_QUESTS.map((q) => {
-        const { scoreId, requiredCount, rewardAmount } = QUEST_DETAILS[q.type]
-        return {
-          title: q.title,
-          rewardMana: Math.floor(rewardAmount * questMultiplier),
-          done: (scores[scoreId]?.score ?? 0) >= requiredCount,
-          period: q.period,
-        }
-      })
+      const doneByType = Object.fromEntries(
+        WIDGET_QUESTS.map((q) => {
+          const { scoreId, requiredCount } = QUEST_DETAILS[q.type]
+          return [q.type, (scores[scoreId]?.score ?? 0) >= requiredCount]
+        })
+      )
+      const quests: NativeQuestItem[] = WIDGET_QUESTS.filter((q) =>
+        showOnWidget(q.type, doneByType)
+      ).map((q) => ({
+        title: q.title,
+        rewardMana: Math.floor(
+          QUEST_DETAILS[q.type].rewardAmount * questMultiplier
+        ),
+        done: doneByType[q.type],
+        period: q.period,
+      }))
       nativeSetQuests({
         quests,
         updatedAt: Date.now(),

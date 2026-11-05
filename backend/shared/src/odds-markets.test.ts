@@ -41,7 +41,7 @@ jest.mock('shared/update-group-contracts-internal', () => ({
 }))
 jest.mock('shared/websockets/helpers', () => ({}))
 jest.mock('shared/complete-quest-internal', () => ({
-  completeCalculatedQuestFromTrigger: jest.fn().mockResolvedValue(undefined),
+  completeMarketCreationQuests: jest.fn().mockResolvedValue(undefined),
 }))
 jest.mock('shared/notifications/create-new-contract-notif', () => ({}))
 jest.mock('shared/notifications/create-new-contract-comment-notif', () => ({}))
