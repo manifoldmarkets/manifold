@@ -18,6 +18,7 @@ import officialFile from 'web/public/data/election-markets-2028.json'
 import {
   fetchFrozenProbs,
   FreezeSnapshots,
+  freezeHistoryGone,
   freezeStep,
   FrozenProbs,
   historyServes,
@@ -42,7 +43,13 @@ import {
   PrimaryCell,
   PrimaryRow,
 } from './primaries'
-import { BoardOffice, BoardRace, calledFrom } from './race-board'
+import {
+  BoardMode,
+  boardMode,
+  BoardOffice,
+  BoardRace,
+  calledFrom,
+} from './race-board'
 import {
   buildConditionalMatrixRows,
   conditionalMatrixIds,
@@ -213,12 +220,12 @@ export type Elections2028PageProps = {
   accuracy: AccuracyStory
   swings: Swing2026[]
   // The 2028 race board (President by unit, Senate, governor, House), and
-  // whether its columns have frozen for election night.
+  // how it places races: live rating, frozen rating, or result.
   board2028: BoardRace[]
-  board2028Frozen: boolean
+  board2028Mode: BoardMode
   // From 2029: the 2030 board and balance of power.
   board2030: BoardRace[]
-  board2030Frozen: boolean
+  board2030Mode: BoardMode
   balanceOfPower2030: Contract | null
   primaries: PrimaryRow[]
   primaryContracts: Contract[]
@@ -529,11 +536,11 @@ async function frozenProbsFor(
   const when = new Date(at).toISOString()
   const step = freezeStep(at)
   if (step === undefined || !historyServes(at, now, step)) {
-    if (now - at > HOUR)
-      console.error(
-        `board freeze ${when}: ${missing.length} races show live odds; ` +
-          'market-probs-history no longer serves the freeze and the snapshot ' +
-          'lacks them (run web/scripts/election-board-freeze.ts)'
+    if (freezeHistoryGone(at, now))
+      console.log(
+        `board freeze ${when}: no frozen odds for ${missing.length} races ` +
+          'and market-probs-history no longer serves them; the board groups ' +
+          'by result (scripts/election-board-freeze.ts can restore the columns)'
       )
     return known
   }
@@ -566,7 +573,7 @@ function boardRow(
   seat: BoardSeat,
   contract: Contract | undefined,
   now: number,
-  frozen: { at: number; probs: FrozenProbs } | undefined
+  frozen: { at: number; probs: FrozenProbs; missing: string[] } | undefined
 ): BoardRace | undefined {
   const odds = contract ? partyOdds(contract, now, !!frozen) : undefined
   if (!odds && seat.prior === undefined) return undefined
@@ -579,6 +586,8 @@ function boardRow(
           readParty
         )
       : undefined
+  if (odds && contract && frozen && fAt === undefined)
+    frozen.missing.push(contract.id)
   const f = fAt === undefined ? undefined : round3(fAt)
   const row: BoardRace = {
     o: seat.o,
@@ -630,7 +639,7 @@ async function raceBoard(
   byId: Record<string, Contract>,
   now: number,
   house2026: Record<string, 'D' | 'R'>
-): Promise<{ races: BoardRace[]; frozen: boolean }> {
+): Promise<{ races: BoardRace[]; mode: BoardMode }> {
   const freezeTime = BOARD_FREEZE[cycle]
   const frozen = freezeTime !== undefined && now >= freezeTime
   const seats: [BoardSeat, Contract | undefined][] = []
@@ -680,17 +689,27 @@ async function raceBoard(
         now
       )
     : undefined
+  const unfrozen: string[] = []
   const races = seats
     .map(([seat, contract]) =>
       boardRow(
         seat,
         contract,
         now,
-        frozenProbs && { at: freezeTime, probs: frozenProbs }
+        frozenProbs && {
+          at: freezeTime,
+          probs: frozenProbs,
+          missing: unfrozen,
+        }
       )
     )
     .filter((r): r is BoardRace => !!r)
-  return { races, frozen }
+  const mode = boardMode({
+    frozen,
+    missingFrozenOdds: unfrozen.length,
+    historyGone: frozen && freezeHistoryGone(freezeTime, now),
+  })
+  return { races, mode }
 }
 
 // ---------------------------------------------------------------------------
@@ -982,7 +1001,7 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
     raceBoard(2028, byId, now, house2026),
     wants2030
       ? raceBoard(2030, byId, now, {})
-      : Promise.resolve({ races: [] as BoardRace[], frozen: false }),
+      : Promise.resolve({ races: [] as BoardRace[], mode: 'live' as const }),
   ])
 
   const presidencyMatrixRows = slimMatrixRows(
@@ -1064,9 +1083,9 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
     accuracy: accuracyStory(scores),
     swings: (swingsFile as Swings2026File).swings.slice(0, 2 + SWING_CARDS),
     board2028: board2028.races,
-    board2028Frozen: board2028.frozen,
+    board2028Mode: board2028.mode,
     board2030: board2030.races,
-    board2030Frozen: board2030.frozen,
+    board2030Mode: board2030.mode,
     balanceOfPower2030: wants2030
       ? slim(slotFor('2030-balance-of-power', byId) ?? null)
       : null,

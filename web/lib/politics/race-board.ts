@@ -64,6 +64,47 @@ export function columnOf(pDem: number): BoardColumn {
 export const boardColumn = (race: BoardRace, frozen: boolean): BoardColumn =>
   columnOf(frozen && race.f !== undefined ? race.f : race.p)
 
+// How the rating view places races: by live rating before the freeze, by
+// the frozen rating after it, and by result once the frozen odds can't be
+// read (market-probs-history only goes back 72 hours, and no snapshot was
+// committed): sorting by live odds then would move every called race to its
+// winner's easy column, the shuffle the freeze exists to prevent.
+export type BoardMode = 'live' | 'frozen' | 'results'
+
+export type ResultColumn = 'wonD' | 'uncalled' | 'wonR' | 'wonO'
+
+// "Won by others" shows only when an independent or third party wins.
+export const RESULT_COLUMNS: { key: ResultColumn; label: string }[] = [
+  { key: 'wonD', label: 'Won by Democrats' },
+  { key: 'uncalled', label: 'Not yet called' },
+  { key: 'wonR', label: 'Won by Republicans' },
+  { key: 'wonO', label: 'Won by others' },
+]
+
+export const resultColumn = (race: BoardRace): ResultColumn =>
+  race.c === 'D'
+    ? 'wonD'
+    : race.c === 'R'
+    ? 'wonR'
+    : race.c === 'O'
+    ? 'wonO'
+    : 'uncalled'
+
+// Before the freeze, live. After it, frozen while every race has its frozen
+// odds, or while market-probs-history can still supply the missing ones (a
+// failed request the next revalidation retries); by result once it can't.
+export function boardMode(opts: {
+  frozen: boolean
+  missingFrozenOdds: number
+  historyGone: boolean
+}): BoardMode {
+  if (!opts.frozen) return 'live'
+  return opts.missingFrozenOdds > 0 && opts.historyGone ? 'results' : 'frozen'
+}
+
+const columnKey = (race: BoardRace, mode: BoardMode): string =>
+  mode === 'results' ? resultColumn(race) : boardColumn(race, mode === 'frozen')
+
 export const flipped = (race: BoardRace) =>
   !!race.c && !!race.h && race.c !== 'O' && race.c !== race.h
 
@@ -118,13 +159,18 @@ export type BoardGroupBy = 'rating' | 'state' | 'moves'
 
 export type BoardGroup = { key: string; label: string; races: BoardRace[] }
 
+const byPlace = [(r: BoardRace) => placeName(r.st), (r: BoardRace) => r.d ?? -1]
+
 // Within a rating column the closest races come first; by state, alphabetical
-// with districts in order; by moves, the 20 biggest weekly changes.
+// with districts in order; by moves, the 20 biggest weekly changes. By
+// result: flips first in each winner's column, then by state; the closest
+// uncalled races first.
 export function groupRaces(
   races: BoardRace[],
   by: BoardGroupBy,
-  frozen: boolean
+  mode: BoardMode
 ): BoardGroup[] {
+  const frozen = mode === 'frozen'
   if (by === 'moves') {
     const moved = sortBy(
       races.filter((r) => r.w !== undefined && Math.abs(r.w) >= 0.01),
@@ -146,25 +192,34 @@ export function groupRaces(
       races: rs,
     }))
   }
+  if (mode === 'results')
+    return RESULT_COLUMNS.map((col) => {
+      const rs = races.filter((r) => resultColumn(r) === col.key)
+      return {
+        key: col.key,
+        label: col.label,
+        races:
+          col.key === 'uncalled'
+            ? sortBy(rs, (r) => Math.abs(r.p - 0.5), ...byPlace)
+            : sortBy(rs, (r) => (flipped(r) ? 0 : 1), ...byPlace),
+      }
+    }).filter((g) => g.key !== 'wonO' || g.races.length > 0)
   return BOARD_COLUMNS.map((col) => ({
     key: col.key,
     label: col.label,
     races: sortBy(
       races.filter((r) => boardColumn(r, frozen) === col.key),
       (r) => Math.abs((frozen && r.f !== undefined ? r.f : r.p) - 0.5),
-      (r) => placeName(r.st),
-      (r) => r.d ?? -1
+      ...byPlace
     ),
   }))
 }
 
-// Seats and electoral votes per column, for the header.
-export function columnTotals(races: BoardRace[], frozen: boolean) {
-  const totals = Object.fromEntries(
-    BOARD_COLUMNS.map((c) => [c.key, { races: 0, ev: 0 }])
-  ) as Record<BoardColumn, { races: number; ev: number }>
+// Seats and electoral votes per column (rating or result), for the header.
+export function columnTotals(races: BoardRace[], mode: BoardMode) {
+  const totals: Record<string, { races: number; ev: number }> = {}
   for (const r of races) {
-    const t = totals[boardColumn(r, frozen)]
+    const t = (totals[columnKey(r, mode)] ??= { races: 0, ev: 0 })
     t.races++
     t.ev += r.ev ?? 0
   }

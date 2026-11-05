@@ -32,6 +32,7 @@ import {
 } from './primaries'
 import {
   boardColumn,
+  boardMode,
   BoardRace,
   calledFrom,
   calledTotals,
@@ -178,7 +179,7 @@ test('grouping by rating, state and moves', () => {
     race({ st: 'WY', p: 0.03, w: 0.02 }),
     race({ st: 'OH', p: 0.45, w: 0.005 }),
   ]
-  const byRating = groupRaces(races, 'rating', false)
+  const byRating = groupRaces(races, 'rating', 'live')
   assert.deepEqual(
     byRating.map((g) => g.key),
     ['solidD', 'leanD', 'tossup', 'leanR', 'solidR']
@@ -188,12 +189,12 @@ test('grouping by rating, state and moves', () => {
     byRating[2].races.map((r) => r.st),
     ['PA', 'OH', 'GA']
   )
-  const byState = groupRaces(races, 'state', false)
+  const byState = groupRaces(races, 'state', 'live')
   assert.deepEqual(
     byState.map((g) => g.key),
     ['CA', 'GA', 'OH', 'PA', 'TX', 'WY']
   )
-  const moves = groupRaces(races, 'moves', false)
+  const moves = groupRaces(races, 'moves', 'live')
   // Under a point doesn't count as a move.
   assert.deepEqual(
     moves[0].races.map((r) => r.st),
@@ -205,7 +206,7 @@ test('grouping by rating, state and moves', () => {
       race({ p: 0.5, ev: 19 }),
       race({ p: 0.5, ev: 6 }),
     ],
-    false
+    'live'
   )
   assert.deepEqual(totals.tossup, { races: 2, ev: 25 })
   assert.deepEqual(totals.solidD, { races: 1, ev: 10 })
@@ -540,4 +541,58 @@ test('primary rows: an earlier year first, labelled with its year', () => {
   assert.equal(primaryOffice(rows[0]), 'Senate (special)')
   assert.equal(primaryOffice({ o: 'G' }), 'Governor')
   assert.equal(primaryOffice({ o: 'S', y: 2027 }), 'Senate (2027)')
+})
+
+test('by result once the frozen odds are gone: won, not yet called, won', () => {
+  const races = [
+    race({ st: 'PA', p: 0.97, c: 'D', h: 'R' }), // flipped
+    race({ st: 'CA', p: 0.99, c: 'D', h: 'D' }),
+    race({ st: 'GA', p: 0.55, f: 0.4 }),
+    race({ st: 'NC', p: 0.48 }),
+    race({ st: 'TX', p: 0.01, c: 'R', h: 'R', ev: 40 }),
+  ]
+  const groups = groupRaces(races, 'rating', 'results')
+  assert.deepEqual(
+    groups.map((g) => [g.key, g.label]),
+    [
+      ['wonD', 'Won by Democrats'],
+      ['uncalled', 'Not yet called'],
+      ['wonR', 'Won by Republicans'],
+    ]
+  )
+  // Flips first among the won; the closest first among the uncalled.
+  assert.deepEqual(
+    groups[0].races.map((r) => r.st),
+    ['PA', 'CA']
+  )
+  assert.deepEqual(
+    groups[1].races.map((r) => r.st),
+    ['NC', 'GA']
+  )
+  // An independent's win gets its own column.
+  const withOther = groupRaces(
+    [...races, race({ st: 'ME', c: 'O' })],
+    'rating',
+    'results'
+  )
+  assert.deepEqual(withOther[3].key, 'wonO')
+  const totals = columnTotals(races, 'results')
+  assert.deepEqual(totals.wonR, { races: 1, ev: 40 })
+  assert.deepEqual(totals.uncalled, { races: 2, ev: 0 })
+  // Frozen mode still reads the frozen odds.
+  assert.equal(
+    groupRaces(races, 'rating', 'frozen')[3].races.some((r) => r.st === 'GA'),
+    true
+  )
+})
+
+test('the board goes by result only when frozen odds are missing for good', () => {
+  const mode = (frozen: boolean, missingFrozenOdds: number, gone: boolean) =>
+    boardMode({ frozen, missingFrozenOdds, historyGone: gone })
+  assert.equal(mode(false, 0, false), 'live')
+  assert.equal(mode(false, 5, true), 'live')
+  assert.equal(mode(true, 0, false), 'frozen')
+  assert.equal(mode(true, 0, true), 'frozen') // the snapshot covers it
+  assert.equal(mode(true, 3, false), 'frozen') // retried next revalidation
+  assert.equal(mode(true, 3, true), 'results')
 })

@@ -21,6 +21,7 @@ import {
   boardMarketIds,
   fetchFrozenProbs,
   FREEZE_BATCH,
+  freezeHistoryGone,
   freezeStep,
   historyServes,
   probsAtFreeze,
@@ -276,4 +277,13 @@ test('the board snapshot covers official race markets and the community units', 
       Object.values(markets).some((r) => r.id === id && r.cycle === 2030)
     )
   )
+})
+
+test('the freeze history is gone after 72 hours, or with an unusable freeze time', () => {
+  assert.equal(freezeHistoryGone(AT, AT - HOUR_MS), false)
+  assert.equal(freezeHistoryGone(AT, AT + 30_000), false)
+  assert.equal(freezeHistoryGone(AT, AT + 71 * HOUR_MS), false)
+  assert.equal(freezeHistoryGone(AT, AT + 72 * HOUR_MS), true)
+  assert.equal(freezeHistoryGone(AT, AT + 365 * DAY_MS), true)
+  assert.equal(freezeHistoryGone(AT + 1, AT + HOUR_MS), true)
 })

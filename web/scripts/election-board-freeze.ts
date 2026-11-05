@@ -1,9 +1,10 @@
-// Writes the race board's election-night freeze to
-// public/data/election-board-freeze.json, so the board keeps its frozen
-// columns after market-probs-history stops serving the freeze (72 hours).
-// Run once, any time after a freeze (BOARD_FREEZE in
-// lib/politics/elections-2028-config.ts), and commit the file. Reads the
-// public API only. From web/:
+// Optional. Writes the race board's election-night freeze to
+// public/data/election-board-freeze.json. Nothing needs it: once
+// market-probs-history stops serving the freeze (72 hours), a board without
+// its frozen odds groups races by result instead. With the snapshot it keeps
+// the pre-election rating columns for good. Run any time after a freeze
+// (BOARD_FREEZE in lib/politics/elections-2028-config.ts) and commit the
+// file. Reads the public API only. From web/:
 //   TS_NODE_COMPILER_OPTIONS='{"module":"commonjs","moduleResolution":"node"}' \
 //     node --no-experimental-strip-types -r ts-node/register/transpile-only \
 //     -r tsconfig-paths/register scripts/election-board-freeze.ts \

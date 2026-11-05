@@ -10,6 +10,7 @@ import {
   BOARD_COLUMNS,
   BoardColumn,
   BoardGroupBy,
+  BoardMode,
   BoardOffice,
   BoardRace,
   calledTotals,
@@ -20,6 +21,7 @@ import {
   raceLabel,
   raceName,
   raceUrl,
+  ResultColumn,
 } from 'web/lib/politics/race-board'
 import { track } from 'web/lib/service/analytics'
 
@@ -27,7 +29,8 @@ import { track } from 'web/lib/service/analytics'
 // markets rate each race (same thresholds as the electoral college model),
 // or grouped by state, or by the week's biggest moves. On election night the
 // columns freeze at the pre-election prices; called races fill with the
-// winner's colour, hatched when the seat flipped.
+// winner's colour, hatched when the seat flipped. Once the frozen prices
+// can't be read, the board groups by result instead (BoardMode).
 
 const OFFICE_LABEL: Record<BoardOffice, string> = {
   P: 'President',
@@ -49,6 +52,12 @@ const COLUMN_ACCENT: Record<BoardColumn, string> = {
   leanR: '#e3a5a2',
   solidR: REP_COLOR,
 }
+const RESULT_ACCENT: Record<ResultColumn, string> = {
+  wonD: DEM_COLOR,
+  uncalled: COLUMN_ACCENT.tossup,
+  wonR: REP_COLOR,
+  wonO: OTHER_COLOR,
+}
 
 // Leader and chance as the reader sees it: "D 64%".
 function leaderOf(race: BoardRace) {
@@ -67,12 +76,12 @@ function weekText(w: number | undefined) {
 
 export function RaceBoard(props: {
   races: BoardRace[]
-  frozen: boolean
+  mode: BoardMode
   freezeTime?: number
   cycle: number
   trackingName: string
 }) {
-  const { races, frozen, cycle, trackingName } = props
+  const { races, mode, cycle, trackingName } = props
   const offices = useMemo(
     () =>
       (['P', 'S', 'G', 'H'] as BoardOffice[]).filter((o) =>
@@ -94,12 +103,12 @@ export function RaceBoard(props: {
     [races, current]
   )
   const groups = useMemo(
-    () => groupRaces(shown, groupBy, frozen),
-    [shown, groupBy, frozen]
+    () => groupRaces(shown, groupBy, mode),
+    [shown, groupBy, mode]
   )
   if (!current) return null
   const weight = current === 'P' ? 'ev' : 'races'
-  const totals = columnTotals(shown, frozen)
+  const totals = columnTotals(shown, mode)
   const called = calledTotals(shown, weight)
   const anyCalled = called.D + called.R + called.O > 0
 
@@ -129,7 +138,7 @@ export function RaceBoard(props: {
         <ChoicesToggleGroup
           currentChoice={groupBy}
           choicesMap={{
-            Rating: 'rating',
+            [mode === 'results' ? 'Result' : 'Rating']: 'rating',
             State: 'state',
             'Biggest moves': 'moves',
           }}
@@ -158,25 +167,43 @@ export function RaceBoard(props: {
       )}
 
       {groupBy === 'rating' ? (
-        <div className="grid gap-3 lg:grid-cols-5">
+        <div
+          className={clsx(
+            'grid gap-3',
+            mode !== 'results'
+              ? 'lg:grid-cols-5'
+              : groups.length === 4
+              ? 'lg:grid-cols-4'
+              : 'lg:grid-cols-3'
+          )}
+        >
           {groups.map((g) => {
-            const col = BOARD_COLUMNS.find((c) => c.key === g.key)!
-            const t = totals[col.key]
-            const compact = col.key === 'solidD' || col.key === 'solidR'
+            const rating = BOARD_COLUMNS.find((c) => c.key === g.key)
+            const t = totals[g.key] ?? { races: 0, ev: 0 }
+            // Easy wins (or, by result, the won columns) list as chips.
+            const compact =
+              mode === 'results'
+                ? g.key !== 'uncalled'
+                : g.key === 'solidD' || g.key === 'solidR'
+            const count =
+              current === 'P'
+                ? `${t.races} · ${t.ev} EV`
+                : `${t.races} ${t.races === 1 ? 'race' : 'races'}`
             return (
-              <section key={g.key} aria-label={col.label} className="min-w-0">
+              <section key={g.key} aria-label={g.label} className="min-w-0">
                 <header
                   className="border-t-4 pb-2 pt-1.5"
-                  style={{ borderColor: COLUMN_ACCENT[col.key] }}
+                  style={{
+                    borderColor: rating
+                      ? COLUMN_ACCENT[rating.key]
+                      : RESULT_ACCENT[g.key as ResultColumn],
+                  }}
                 >
                   <div className="text-ink-1000 text-sm font-semibold leading-tight">
-                    {col.label}
+                    {g.label}
                   </div>
                   <div className="text-ink-600 text-xs tabular-nums">
-                    {col.range} ·{' '}
-                    {current === 'P'
-                      ? `${t.races} · ${t.ev} EV`
-                      : `${t.races} ${t.races === 1 ? 'race' : 'races'}`}
+                    {rating ? `${rating.range} · ${count}` : count}
                   </div>
                 </header>
                 {g.races.length === 0 ? (
@@ -232,7 +259,7 @@ export function RaceBoard(props: {
         </div>
       )}
 
-      <BoardLegend frozen={frozen} freezeTime={props.freezeTime} />
+      <BoardLegend mode={mode} freezeTime={props.freezeTime} />
     </div>
   )
 }
@@ -394,14 +421,21 @@ function RaceChip(props: { race: BoardRace }) {
   )
 }
 
-function BoardLegend(props: { frozen: boolean; freezeTime?: number }) {
-  const { frozen, freezeTime } = props
+function BoardLegend(props: { mode: BoardMode; freezeTime?: number }) {
+  const { mode, freezeTime } = props
   return (
     <div className="text-ink-600 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
       <span>
         Odds are the leading party&apos;s chance from each race&apos;s market.
       </span>
-      {frozen && freezeTime && (
+      {mode === 'results' && (
+        <span>
+          Races are grouped by result: called (resolved, or a party at 99% or
+          more) under the winner, the rest under Not yet called with their
+          current odds.
+        </span>
+      )}
+      {mode === 'frozen' && freezeTime && (
         <span>
           Columns hold the odds from{' '}
           {new Date(freezeTime).toLocaleString('en-US', {

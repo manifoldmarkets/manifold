@@ -4,9 +4,10 @@
 //
 // The freeze reads market-probs-history: one request per 100 markets, its
 // first frame set to the freeze time. That endpoint only serves the last 72
-// hours, so after that the board reads a snapshot committed to
-// public/data/election-board-freeze.json (scripts/election-board-freeze.ts),
-// and without one it shows live odds and logs why.
+// hours. After that a server that hasn't cached the frozen odds groups the
+// board by result instead (race-board.ts, BoardMode), unless a snapshot was
+// committed to public/data/election-board-freeze.json
+// (scripts/election-board-freeze.ts, optional).
 
 import { chunk, mapValues, pickBy, uniq } from 'lodash'
 
@@ -67,6 +68,15 @@ export function historyServes(at: number, now: number, step: number) {
   )
 }
 
+// Whether market-probs-history will never serve the freeze again: past its
+// window, or a freeze time no step divides.
+export function freezeHistoryGone(at: number, now: number) {
+  const step = freezeStep(at)
+  return (
+    step === undefined || (now - at > LEAD_MS && !historyServes(at, now, step))
+  )
+}
+
 const isProb = (x: number | undefined): x is number =>
   x !== undefined && Number.isFinite(x) && x >= 0 && x <= 1
 
@@ -120,7 +130,8 @@ export async function fetchFrozenProbs(
     log?: (message: string, error?: unknown) => void
   } = {}
 ): Promise<FrozenProbs> {
-  const { concurrency = 3, timeoutMs = 10_000, log = console.error } = opts
+  // Six batches, three at a time, 5 s each: at most ~10 s.
+  const { concurrency = 3, timeoutMs = 5_000, log = console.error } = opts
   // Sorted, so every revalidation sends the same batches and hits the
   // API's cache.
   const batches = chunk(uniq(ids).sort(), FREEZE_BATCH)

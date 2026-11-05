@@ -100,9 +100,9 @@ export function Elections2028Page(props: Elections2028PageProps) {
     accuracy,
     swings,
     board2028,
-    board2028Frozen,
+    board2028Mode,
     board2030,
-    board2030Frozen,
+    board2030Mode,
     balanceOfPower2030,
     primaries,
     primaryContracts,
@@ -286,16 +286,18 @@ export function Elections2028Page(props: Elections2028PageProps) {
         <SectionHeader
           id="board"
           subtitle={
-            board2028Frozen
+            board2028Mode === 'results'
+              ? 'Every 2028 race for president, Senate, governor and House, by who won it.'
+              : board2028Mode === 'frozen'
               ? 'Every 2028 race as the results come in, in the columns our markets put them in before the polls opened.'
               : 'Every 2028 race for president, Senate, governor and House, by how our markets rate it.'
           }
         >
-          {board2028Frozen ? '2028 results' : 'Every race'}
+          {board2028Mode === 'live' ? 'Every race' : '2028 results'}
         </SectionHeader>
         <RaceBoard
           races={board2028}
-          frozen={board2028Frozen}
+          mode={board2028Mode}
           freezeTime={BOARD_FREEZE[2028]}
           cycle={2028}
           trackingName="election 2028 board"
@@ -401,7 +403,7 @@ export function Elections2028Page(props: Elections2028PageProps) {
         {board2030.length > 0 && (
           <RaceBoard
             races={board2030}
-            frozen={board2030Frozen}
+            mode={board2030Mode}
             freezeTime={BOARD_FREEZE[2030]}
             cycle={2030}
             trackingName="election 2030 board"
