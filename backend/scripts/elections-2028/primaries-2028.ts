@@ -52,7 +52,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Katie Britt, running: unknown): Katie Britt 85%, Dale Shelton Deas Jr. 2%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Katie Britt, running: unknown)',
   },
   {
     office: 'senate',
@@ -75,7 +75,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Lisa Murkowski, running: unknown): Lisa Murkowski 35%, Mike Dunleavy 20%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Lisa Murkowski, running: unknown)',
   },
   {
     office: 'senate',
@@ -98,7 +98,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         candidates: [],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Mark Kelly, running: unknown): Mark Kelly 70%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Mark Kelly, running: unknown)',
   },
   {
     office: 'senate',
@@ -121,7 +121,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent John Boozman, running: unknown): John Boozman 75%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent John Boozman, running: unknown)',
   },
   {
     office: 'senate',
@@ -140,7 +140,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Alex Padilla, running: unknown): Alex Padilla 75%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Alex Padilla, running: unknown)',
   },
   {
     office: 'senate',
@@ -163,7 +163,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         candidates: [],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Michael Bennet, running: unknown): Michael Bennet 55%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Michael Bennet, running: unknown)',
   },
   {
     office: 'senate',
@@ -186,7 +186,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         candidates: [],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Richard Blumenthal, running: yes): Richard Blumenthal 82%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Richard Blumenthal, running: yes)',
   },
   {
     office: 'senate',
@@ -218,7 +218,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Ashley Moody, running: unknown): Angie Nixon 20%, Jared Moskowitz 20%, Ashley Moody 85%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Ashley Moody, running: unknown)',
   },
   {
     office: 'senate',
@@ -246,7 +246,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Raphael Warnock, running: unknown): Raphael Warnock 75%, Rich McCormick 20%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Raphael Warnock, running: unknown)',
   },
   {
     office: 'senate',
@@ -269,7 +269,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         candidates: [],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Brian Schatz, running: unknown): Brian Schatz 85%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Brian Schatz, running: unknown)',
   },
   {
     office: 'senate',
@@ -292,7 +292,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Mike Crapo, running: unknown): Mike Crapo 75%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Mike Crapo, running: unknown)',
   },
   {
     office: 'senate',
@@ -315,7 +315,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         candidates: [],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Tammy Duckworth, running: unknown): Tammy Duckworth 82%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Tammy Duckworth, running: unknown)',
   },
   {
     office: 'senate',
@@ -342,7 +342,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Todd Young, running: unknown): Todd Young 72%, Carlin Yoder 8%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Todd Young, running: unknown)',
   },
   {
     office: 'senate',
@@ -373,7 +373,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Chuck Grassley, running: unknown): Chuck Grassley 50%, Pat Grassley 8%, Kari Lake 5%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Chuck Grassley, running: unknown)',
   },
   {
     office: 'senate',
@@ -396,7 +396,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Jerry Moran, running: unknown): Jerry Moran 82%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Jerry Moran, running: unknown)',
   },
   {
     office: 'senate',
@@ -423,7 +423,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Rand Paul, running: unknown): Rand Paul 60%, Nate Morris 7%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Rand Paul, running: unknown)',
   },
   {
     office: 'senate',
@@ -446,7 +446,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent John Kennedy, running: yes): John Kennedy 82%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent John Kennedy, running: yes)',
   },
   {
     office: 'senate',
@@ -469,7 +469,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         candidates: [],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Chris Van Hollen, running: unknown): Chris Van Hollen 75%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Chris Van Hollen, running: unknown)',
   },
   {
     office: 'senate',
@@ -492,7 +492,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Eric Schmitt, running: unknown): Eric Schmitt 85%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Eric Schmitt, running: unknown)',
   },
   {
     office: 'senate',
@@ -515,7 +515,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         candidates: [],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Catherine Cortez Masto, running: unknown): Catherine Cortez Masto 80%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Catherine Cortez Masto, running: unknown)',
   },
   {
     office: 'senate',
@@ -538,7 +538,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         candidates: [],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Maggie Hassan, running: unknown): Maggie Hassan 82%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Maggie Hassan, running: unknown)',
   },
   {
     office: 'senate',
@@ -569,7 +569,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         candidates: [],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Chuck Schumer, running: unknown): Alexandria Ocasio-Cortez 34%, Chuck Schumer 30%, Ritchie Torres 6%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Chuck Schumer, running: unknown)',
   },
   {
     office: 'senate',
@@ -592,7 +592,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Ted Budd, running: yes): Ted Budd 85%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Ted Budd, running: yes)',
   },
   {
     office: 'senate',
@@ -615,7 +615,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent John Hoeven, running: unknown): John Hoeven 82%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent John Hoeven, running: unknown)',
   },
   {
     office: 'senate',
@@ -638,7 +638,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         candidates: [],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Sherrod Brown, running: unknown): Sherrod Brown 75%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Sherrod Brown, running: unknown)',
   },
   {
     office: 'senate',
@@ -661,7 +661,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent James Lankford, running: unknown): James Lankford 72%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent James Lankford, running: unknown)',
   },
   {
     office: 'senate',
@@ -684,7 +684,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         candidates: [],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Ron Wyden, running: yes): Ron Wyden 82%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Ron Wyden, running: yes)',
   },
   {
     office: 'senate',
@@ -715,7 +715,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         candidates: [],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent John Fetterman, running: unknown): John Fetterman 25%, Chris Deluzio 25%, Summer Lee 12%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent John Fetterman, running: unknown)',
   },
   {
     office: 'senate',
@@ -738,7 +738,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Tim Scott, running: yes): Tim Scott 85%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Tim Scott, running: yes)',
   },
   {
     office: 'senate',
@@ -761,7 +761,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent John Thune, running: yes): John Thune 78%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent John Thune, running: yes)',
   },
   {
     office: 'senate',
@@ -784,7 +784,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Mike Lee, running: unknown): Mike Lee 60%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Mike Lee, running: unknown)',
   },
   {
     office: 'senate',
@@ -807,7 +807,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         candidates: [],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Peter Welch, running: unknown): Peter Welch 75%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Peter Welch, running: unknown)',
   },
   {
     office: 'senate',
@@ -826,7 +826,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Patty Murray, running: yes): Patty Murray 80%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Patty Murray, running: yes)',
   },
   {
     office: 'senate',
@@ -854,7 +854,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Ron Johnson, running: unknown): Ben Wikler 20%, Ron Johnson 30%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Ron Johnson, running: unknown)',
   },
   {
     year: 2027,
@@ -887,7 +887,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         candidates: [],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Amy Klobuchar, running: no): Angie Craig 20%, Steve Simon 10%, Kelly Morrison 10%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Amy Klobuchar, running: no)',
   },
   {
     office: 'senate',
@@ -919,7 +919,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Marsha Blackburn, running: no): Tim Burchett 30%, Glenn Jacobs 15%, Damon Hininger 10%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Marsha Blackburn, running: no)',
   },
   {
     office: 'governor',
@@ -942,7 +942,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         candidates: [],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Matt Meyer, running: unknown): Matt Meyer 72%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Matt Meyer, running: unknown)',
   },
   {
     office: 'governor',
@@ -965,7 +965,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Mike Braun, running: yes): Mike Braun 85%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Mike Braun, running: yes)',
   },
   {
     office: 'governor',
@@ -988,7 +988,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Mike Kehoe, running: yes): Mike Kehoe 87%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Mike Kehoe, running: yes)',
   },
   {
     office: 'governor',
@@ -1019,7 +1019,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Greg Gianforte, running: no): Austin Knudsen 25%, Kristen Juras 10%, Troy Downing 10%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Greg Gianforte, running: no)',
   },
   {
     office: 'governor',
@@ -1042,7 +1042,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Kelly Ayotte, running: unknown): Kelly Ayotte 68%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Kelly Ayotte, running: unknown)',
   },
   {
     office: 'governor',
@@ -1074,7 +1074,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Josh Stein, running: unknown): Josh Stein 80%, Dave Boliek 30%, Robert Burns 8%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Josh Stein, running: unknown)',
   },
   {
     office: 'governor',
@@ -1097,7 +1097,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Kelly Armstrong, running: unknown): Kelly Armstrong 80%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Kelly Armstrong, running: unknown)',
   },
   {
     office: 'governor',
@@ -1128,7 +1128,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Spencer Cox, running: no): Jason Chaffetz 28%, John Curtis 18%, Deidre Henderson 7%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Spencer Cox, running: no)',
   },
   {
     office: 'governor',
@@ -1151,7 +1151,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Phil Scott, running: unknown): Phil Scott 60%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Phil Scott, running: unknown)',
   },
   {
     office: 'governor',
@@ -1174,7 +1174,7 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Bob Ferguson, running: unknown): Bob Ferguson 70%, Jim Walsh 12%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Bob Ferguson, running: unknown)',
   },
   {
     office: 'governor',
@@ -1205,6 +1205,6 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
         ],
       },
     ],
-    note: 'Seeds from public reporting as of November 2026 (incumbent Patrick Morrisey, running: unknown): Patrick Morrisey 55%, Jim Justice 25%, Larry Pack 5%.',
+    note: 'Seeds from public reporting as of November 2026 (incumbent Patrick Morrisey, running: unknown)',
   },
 ]

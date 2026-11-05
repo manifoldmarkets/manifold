@@ -477,7 +477,7 @@ const downballotPrimaries = (race: DownballotRace): MultiEntry[] =>
         closeTime: decided,
         seed: {
           kind: 'static-candidates' as const,
-          note: race.note,
+          note: `${race.note}: ${m.candidates.map((c) => `${c.name} ${c.pct}%`).join(', ')}.`,
           seeds: m.candidates.map((c) => ({ text: c.name, pct: c.pct })),
         },
       }
