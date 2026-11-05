@@ -1778,25 +1778,46 @@ export async function applyManifest(
     return publishPending(entry.raceKey)
   }
 
+  // A market created from an earlier payload and still unlisted must not be
+  // published: it would show the old question or criteria under the new
+  // manifest. A person updates it (or deletes it) and records the new hash.
+  const stalePayloadReason = (
+    raceKey: string,
+    contractId: string | undefined,
+    hash: string
+  ) =>
+    `${raceKey} was created unlisted as ${
+      contractId ?? 'its reserved id'
+    } from an earlier payload and is not published; publishing would show the old question or criteria. Update the market to match the manifest (question, description, answers, close time; or delete it), then set its payloadHash in the state file to ${hash} and re-run.`
+
   for (const entry of manifest.entries) {
     if (entry.status !== 'ready') continue
     const key = idempotencyKeyFor(manifest.series, entry.raceKey)
     const hash = payloadHash(entry.payload)
     const prior = state.entries[entry.raceKey]
     if (prior?.status === 'created' || prior?.status === 'skipped-existing') {
-      if (prior.status === 'created' && prior.payloadHash !== hash)
+      if (prior.status === 'created' && prior.payloadHash !== hash) {
+        if (prior.pendingPublication) {
+          result.stoppedReason = stalePayloadReason(
+            entry.raceKey,
+            prior.contractId,
+            hash
+          )
+          break
+        }
         log(
           `${entry.raceKey}: already created as ${prior.contractId}; manifest payload changed since — NOT recreating`
         )
-      if (prior.status === 'created') {
-        // An older created payload may use different answer labels. Do not
-        // rename it or infer which answer to edit from the new manifest.
-        const finished =
-          prior.payloadHash === hash
-            ? await finishCreation(entry)
-            : await publishPending(entry.raceKey)
-        if (!finished) break
       }
+      // An older created payload may use different answer labels. Do not
+      // rename it or infer which answer to edit from the new manifest; it is
+      // already public (an unpublished one stopped above).
+      if (
+        prior.status === 'created' &&
+        prior.payloadHash === hash &&
+        !(await finishCreation(entry))
+      )
+        break
       continue
     }
     // 1) Read-only reconciliation of our reserved id, always first — also for
@@ -1811,7 +1832,11 @@ export async function applyManifest(
       break
     }
     if (atKey) {
-      const seedProblem = seedMismatch(entry.payload!, atKey)
+      // Created from an earlier payload (an unconfirmed or failed create
+      // whose payload has changed since): its seeds can't be checked against
+      // the manifest, and it must not be published as is.
+      const stale = !!prior?.payloadHash && prior.payloadHash !== hash
+      const seedProblem = stale ? undefined : seedMismatch(entry.payload!, atKey)
       await save(entry.raceKey, {
         status: 'created',
         idempotencyKey: key,
@@ -1828,6 +1853,16 @@ export async function applyManifest(
         message: 'reconciled read-only: market exists at the reserved id',
       })
       result.created.push(entry.raceKey)
+      if (stale) {
+        if (state.entries[entry.raceKey].pendingPublication) {
+          result.stoppedReason = stalePayloadReason(entry.raceKey, atKey.id, hash)
+          break
+        }
+        log(
+          `${entry.raceKey}: reconciled ${atKey.id}, created from an earlier payload — NOT recreating`
+        )
+        continue
+      }
       if (seedProblem) {
         result.stoppedReason = `${entry.raceKey} exists, but ${seedProblem}; review its opening prices before creating more (current prices may have moved)`
         break

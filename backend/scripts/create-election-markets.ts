@@ -14,8 +14,15 @@
 //     --env prod --apply --creator-username <username> --max-mana <cap for this run>
 //   The first apply for a manifest and environment also needs --init-state;
 //   later runs must point at that same state file. --env has no default here.
-//   Add --quiet to create unlisted, verify prices, then publish without the
-//   public-creation follower notifications/emails.
+//   Apply needs exactly one of:
+//     --quiet  create unlisted, verify prices, then publish through the
+//              visibility update: no follower notifications or emails.
+//     --loud   create public. Every follower of the creator gets an in-app
+//              notification (createNewContractNotification only notifies on
+//              public creation); for @ManifoldPolitics that is ~23k people.
+//   There is no default, so a forgotten flag can't notify anyone.
+//   A created market that is still unlisted and whose manifest payload has
+//   changed since stops the run before it is published (see the README).
 //
 // Apply re-checks the reserved ids and searches for equivalent markets before
 // every create, persists the state file after every request, stops on any
@@ -480,6 +487,12 @@ async function main() {
   // Apply.
   if (!args.env)
     throw new Error('--env prod|dev is required with --apply (no default)')
+  // Public creation notifies every follower of the creator, so the choice is
+  // always explicit.
+  if (!!args.quiet === !!args.loud)
+    throw new Error(
+      '--apply needs --quiet (create unlisted, verify, then publish: no follower notifications) or an explicit --loud (public creation notifies every follower of the creator)'
+    )
   if (!stateFile)
     throw new Error(
       '--state <file> is required with --apply (it records every request)'

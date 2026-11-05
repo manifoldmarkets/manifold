@@ -18,6 +18,7 @@ import {
   MarketLike,
   onlineDuplicateOutcome,
   parseOnlineFinding,
+  payloadHash,
   planOffline,
   plannedAnswerColors,
   SEARCH_PAGE_SIZE,
@@ -1635,6 +1636,144 @@ describe('quiet creation', () => {
     expect(result.stoppedReason).toMatch(/seeded/)
     expect(state.entries[first.raceKey].pendingPublication).toBe(true)
     expect(api.publishMarket).not.toHaveBeenCalled()
+  })
+
+  // Resuming after a criteria edit must not publish the old text.
+  const edited = (e: ManifestEntry): ManifestEntry => ({
+    ...e,
+    payload: {
+      ...e.payload!,
+      descriptionMarkdown: `${DESCRIPTION}Edited after creation.`,
+    },
+  })
+
+  test('an unpublished market whose payload changed since creation stays unlisted until a person records the new hash', async () => {
+    const { api } = mockApi()
+    const first = otherEntry('AL', 'Alabama')
+    const state = emptyState(manifest([first]))
+    ;(api.publishMarket as jest.Mock).mockRejectedValueOnce(
+      new Error('timeout')
+    )
+    const firstRun = await applyManifest(
+      manifest([first]),
+      state,
+      api,
+      opts({ quiet: true }),
+      () => undefined
+    )
+    expect(firstRun.stoppedReason).toMatch(/publication is pending/)
+    expect(state.entries[first.raceKey].pendingPublication).toBe(true)
+
+    const changed = edited(first)
+    const resumed = await applyManifest(
+      manifest([changed]),
+      state,
+      api,
+      opts({ quiet: true }),
+      () => undefined
+    )
+    const record = state.entries[first.raceKey]
+    expect(resumed.stoppedReason).toMatch(
+      /created unlisted as .+ from an earlier payload and is not published/
+    )
+    expect(resumed.stoppedReason).toContain(payloadHash(changed.payload))
+    expect(api.publishMarket).toHaveBeenCalledTimes(1) // only the failed try
+    expect(api.createMarket).toHaveBeenCalledTimes(1)
+    expect(record.pendingPublication).toBe(true)
+
+    // After updating the market, the operator records the new hash.
+    record.payloadHash = payloadHash(changed.payload)
+    const fixed = await applyManifest(
+      manifest([changed]),
+      state,
+      api,
+      opts({ quiet: true }),
+      () => undefined
+    )
+    expect(fixed.stoppedReason).toBeUndefined()
+    expect(api.publishMarket).toHaveBeenCalledTimes(2)
+    expect(api.createMarket).toHaveBeenCalledTimes(1)
+    expect(state.entries[first.raceKey].pendingPublication).toBe(false)
+  })
+
+  test('a published market whose payload changed since is left alone', async () => {
+    const { api } = mockApi()
+    const first = otherEntry('AL', 'Alabama')
+    const state = emptyState(manifest([first]))
+    await applyManifest(
+      manifest([first]),
+      state,
+      api,
+      opts({ quiet: true }),
+      () => undefined
+    )
+    expect(api.publishMarket).toHaveBeenCalledTimes(1)
+    const logs: string[] = []
+    const again = await applyManifest(
+      manifest([edited(first)]),
+      state,
+      api,
+      opts({ quiet: true, log: (l: string) => logs.push(l) }),
+      () => undefined
+    )
+    expect(again.stoppedReason).toBeUndefined()
+    expect(logs.join('\n')).toMatch(/payload changed since — NOT recreating/)
+    expect(api.publishMarket).toHaveBeenCalledTimes(1)
+    expect(api.setAnswerColor).toHaveBeenCalledTimes(3) // first run only
+    expect(api.createMarket).toHaveBeenCalledTimes(1)
+  })
+
+  test('a market found at the reserved id after an unconfirmed create from an earlier payload is not published', async () => {
+    const first = otherEntry('AL', 'Alabama')
+    const m = manifest([edited(first)])
+    const key = idempotencyKeyFor(m.series, first.raceKey)
+    const { api } = mockApi({
+      existing: [
+        {
+          id: key,
+          question: first.payload!.question,
+          answers: [
+            { id: 'd', text: 'Democratic Party', probability: 0.4 },
+            { id: 'r', text: 'Republican Party', probability: 0.58 },
+            { id: 'o', text: 'Other', probability: 0.02, isOther: true },
+          ],
+        },
+      ],
+    })
+    const state: CreationState = {
+      ...emptyState(m),
+      entries: {
+        [first.raceKey]: {
+          raceKey: first.raceKey,
+          idempotencyKey: key,
+          payloadHash: payloadHash(first.payload),
+          status: 'pending-reconciliation',
+          reservedMana: 1000,
+          pendingPublication: true,
+          updatedAt: '2026-11-05',
+        },
+      },
+    }
+    const res = await applyManifest(
+      m,
+      state,
+      api,
+      opts({ quiet: true, retryUnconfirmed: true }),
+      () => undefined
+    )
+    expect(res.stoppedReason).toMatch(
+      new RegExp(`created unlisted as ${key} from an earlier payload`)
+    )
+    expect(state.entries[first.raceKey]).toMatchObject({
+      status: 'created',
+      contractId: key,
+      costMana: 1000,
+      pendingPublication: true,
+      payloadHash: payloadHash(first.payload),
+    })
+    expect(api.createMarket).not.toHaveBeenCalled()
+    expect(api.publishMarket).not.toHaveBeenCalled()
+    expect(api.setAnswerColor).not.toHaveBeenCalled()
   })
 })
 
