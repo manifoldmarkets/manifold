@@ -1215,7 +1215,10 @@ export function shapeMismatches(
     addAnswersMode?: string
     shouldAnswersSumToOne?: boolean
     answers?: unknown[]
-  }
+  },
+  // answerCount: false for a market made by an earlier attempt whose seed
+  // (and so its candidate list) isn't recorded.
+  opts: { answerCount?: boolean } = {}
 ): string[] {
   const out: string[] = []
   if (market.outcomeType !== entry.outcome)
@@ -1233,7 +1236,8 @@ export function shapeMismatches(
       out.push(`shouldAnswersSumToOne ${market.shouldAnswersSumToOne}, expected true`)
     const expected = seed.answers.length + (entry.addAnswersMode !== 'DISABLED' ? 1 : 0)
     const got = market.answers?.length ?? 0
-    if (got !== expected) out.push(`${got} answers, expected ${expected}`)
+    if (opts.answerCount !== false && got !== expected)
+      out.push(`${got} answers, expected ${expected}`)
   }
   return out
 }

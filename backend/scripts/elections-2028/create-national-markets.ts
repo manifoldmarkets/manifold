@@ -731,6 +731,9 @@ type StateRecord = {
   // The visibility it was created with: a resumed run publishes an unlisted
   // market whatever its own flags.
   visibility?: 'public' | 'unlisted'
+  // Made by an earlier attempt this record knows nothing about: `seed` is
+  // this attempt's, so opening odds and answer count go unchecked.
+  seedUnknown?: boolean
   imagesAttached?: number
   // skipped-duplicate: the open markets by the creator that ask the same.
   duplicateOf?: { id: string; url?: string; question: string }[]
@@ -951,8 +954,11 @@ export async function runApply(
       if (otherQuestion || (m.createdTime !== undefined && m.createdTime < startedAt - 2 * 60_000)) {
         // Unknown criteria: the record forgets the ones saved for this
         // attempt, so publishing needs --accept-criteria's check on the site.
+        // Its seed is unknown too (this attempt's isn't the one it was made
+        // with), so its opening odds and answer count aren't checked later.
         delete r.criteria
         delete r.criteriaHash
+        r.seedUnknown = true
         return stop(
           r,
           `${m.url} already existed when this run tried to create it${
@@ -1192,13 +1198,12 @@ export async function runApply(
               if (labels(onSite) !== labels(criteria.answers))
                 issues.push("its answers on the site don't match the manifest's")
             }
+            // A market with no topics has no groupSlugs at all (dev, where
+            // the manifest's topics may not exist).
             const wanted = e.topics.filter((slug) => topics.found.has(slug))
-            if (live.groupSlugs === undefined)
-              issues.push('the API returned no topics to compare')
-            else {
-              const missing = wanted.filter((slug) => !live.groupSlugs!.includes(slug))
-              if (missing.length) issues.push(`it's missing the topics ${missing.join(', ')}`)
-            }
+            const onSite = live.groupSlugs ?? []
+            const missing = wanted.filter((slug) => !onSite.includes(slug))
+            if (missing.length) issues.push(`it's missing the topics ${missing.join(', ')}`)
           }
           if (issues.length)
             throw new StopRun(
@@ -1227,11 +1232,15 @@ export async function runApply(
         if (!m) stop(r, 'created market not readable')
         if ((m!.uniqueBettorCount ?? 0) > 0)
           console.warn(`${e.key}: already traded; skipping the opening-price check`)
+        else if (r.seedUnknown)
+          console.warn(
+            `${e.key}: made by an earlier attempt whose seed isn't recorded; skipping the opening-price check`
+          )
         else {
           const off = priceMismatches(r.seed!, m!)
           if (off.length) stop(r, `opening prices off: ${off.join('; ')}`)
         }
-        const shape = shapeMismatches(e, r.seed!, m!)
+        const shape = shapeMismatches(e, r.seed!, m!, { answerCount: !r.seedUnknown })
         if (shape.length) stop(r, `market shape off: ${shape.join('; ')}`)
         // An unlisted market still needs publishing, whatever this run's flag.
         r.status = r.status === 'created-unlisted' ? 'verified' : 'published'

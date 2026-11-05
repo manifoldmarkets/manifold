@@ -647,14 +647,16 @@ test('overrides name exact keys', () => {
 // An in-memory API: markets keyed by id, the visibility each has, and a log
 // of creates and publishes. `hideOnce` makes the next read of an id miss
 // (a stale CDN 404).
-function fakeServer() {
+function fakeServer(opts: { noTopics?: boolean } = {}) {
   type FakeMarket = MarketRow & { visibility: string }
   const markets = new Map<string, FakeMarket>()
   const log: string[] = []
   const hideOnce = new Set<string>()
   const api = {
     me: async () => ({ id: 'mp', username: 'ManifoldPolitics', balance: 10_000_000 }),
-    getGroup: async (slug: string) => ({ id: `g-${slug}`, slug, name: slug }),
+    // noTopics: none of the manifest's topics exist (dev).
+    getGroup: async (slug: string) =>
+      opts.noTopics ? undefined : { id: `g-${slug}`, slug, name: slug },
     getMarket: async (id: string) => {
       if (hideOnce.delete(id)) return undefined
       const m = markets.get(id)
@@ -679,7 +681,10 @@ function fakeServer() {
         closeTime: p.closeTime,
         createdTime: Date.now(),
         textDescription: p.descriptionMarkdown,
-        groupSlugs: (p.groupIds ?? []).map((g: string) => g.replace(/^g-/, '')),
+        // Like the real API: a market with no topics has no groupSlugs.
+        groupSlugs: p.groupIds?.length
+          ? p.groupIds.map((g: string) => g.replace(/^g-/, ''))
+          : undefined,
         addAnswersMode: p.addAnswersMode,
         shouldAnswersSumToOne: p.shouldAnswersSumToOne,
         probability: p.outcomeType === 'BINARY' ? p.initialProb / 100 : undefined,
@@ -763,7 +768,8 @@ async function earlierRun(
   server: ReturnType<typeof fakeServer>,
   statePath: string,
   from: Entry,
-  record: { status: string; visibility?: string }
+  record: { status: string; visibility?: string },
+  groupIds = from.topics.map((slug) => `g-${slug}`)
 ) {
   const seed = await resolveSeed(from)
   const reservedId = reservedIdFor(SERIES, from.key)
@@ -771,7 +777,7 @@ async function earlierRun(
     buildPayload({
       entry: from,
       seed,
-      groupIds: from.topics.map((slug) => `g-${slug}`),
+      groupIds,
       reservedId,
       quiet: true,
     })
@@ -900,10 +906,30 @@ test('apply: a market from an earlier run is not adopted blind after a missed re
   const blind = await applyWith(server, [ky], statePath)
   assert.equal(blind.code, 1)
   assert.equal(server.markets.get(id)!.visibility, 'unlisted')
+  // The earlier attempt opened at other odds; this attempt's seed says
+  // nothing about them, so they aren't checked once the market is accepted.
+  assert.equal(blind.state.entries[KY].seedUnknown, true)
+  const market = server.markets.get(id)!
+  market.answers = market.answers!.map((a) => ({
+    ...a,
+    probability: a.isOther ? 0.01 : a.text === DEM ? 0.4 : 0.59,
+  }))
   const checked = await applyWith(server, [ky], statePath, { accept: [KY] })
   assert.equal(checked.code, 0)
   assert.equal(checked.state.entries[KY].status, 'published')
   assert.deepEqual(server.log, [`publish ${id}`])
+})
+
+test('apply: --accept-criteria on dev accepts a market whose topics were all dropped', async () => {
+  const server = fakeServer({ noTopics: true })
+  const statePath = tempState()
+  const old = entry(KY)
+  const id = await earlierRun(server, statePath, old, { status: 'created-unlisted', visibility: 'unlisted' }, [])
+  const edited: Entry = { ...old, description: old.description + ' Edited.' }
+  server.markets.get(id)!.textDescription = edited.description
+  const run = await applyWith(server, [edited], statePath, { accept: [KY] })
+  assert.equal(run.code, 0)
+  assert.equal(server.markets.get(id)!.visibility, 'public')
 })
 
 test('apply: --accept-criteria re-verifies and checks answers and topics on the site', async () => {
