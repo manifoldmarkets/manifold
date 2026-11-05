@@ -23,6 +23,7 @@ import {
   plannedAnswerColors,
   SEARCH_PAGE_SIZE,
   seedMismatch,
+  UNKNOWN_PAYLOAD_HASH,
   validateManifest,
 } from './election-market-creation'
 
@@ -1774,6 +1775,106 @@ describe('quiet creation', () => {
     expect(api.createMarket).not.toHaveBeenCalled()
     expect(api.publishMarket).not.toHaveBeenCalled()
     expect(api.setAnswerColor).not.toHaveBeenCalled()
+  })
+
+  // A lost or new state file: a market already exists at the reserved id, and
+  // nothing records the payload it was created with.
+  const unrecorded = () => {
+    const first = otherEntry('AL', 'Alabama')
+    const m = manifest([first, otherEntry('AK', 'Alaska')])
+    const key = idempotencyKeyFor(m.series, first.raceKey)
+    const { api } = mockApi({
+      existing: [
+        {
+          id: key,
+          // Whatever an earlier run created it with.
+          question: 'Which party will win the 2026 Alabama governor race?',
+          answers: [
+            { id: 'd', text: 'Democratic Party', probability: 0.4 },
+            { id: 'r', text: 'Republican Party', probability: 0.58 },
+            { id: 'o', text: 'Other', probability: 0.02, isOther: true },
+          ],
+        },
+      ],
+    })
+    return { first, m, key, api, state: emptyState(m) }
+  }
+
+  test('a market at the reserved id with no record of its payload stays unlisted and stops the run', async () => {
+    const { first, m, key, api, state } = unrecorded()
+    const res = await applyManifest(
+      m,
+      state,
+      api,
+      opts({ quiet: true }),
+      () => undefined
+    )
+    expect(res.stoppedReason).toMatch(
+      new RegExp(
+        `a market exists at the reserved id \\(${key}\\) but this state file has no record of the payload it was created with`
+      )
+    )
+    expect(res.stoppedReason).toContain(payloadHash(first.payload))
+    expect(state.entries[first.raceKey]).toMatchObject({
+      status: 'created',
+      contractId: key,
+      payloadHash: UNKNOWN_PAYLOAD_HASH,
+      pendingPublication: true,
+      costMana: 1000,
+    })
+    expect(state.entries[first.raceKey].seedReviewRequired).toBeUndefined()
+    expect(api.publishMarket).not.toHaveBeenCalled()
+    expect(api.setAnswerColor).not.toHaveBeenCalled()
+    // The run stopped there: Alaska was not created.
+    expect(api.createMarket).not.toHaveBeenCalled()
+  })
+
+  test('it keeps stopping until a person records the hash, then publishes normally', async () => {
+    const { first, m, key, api, state } = unrecorded()
+    await applyManifest(m, state, api, opts({ quiet: true }), () => undefined)
+    const again = await applyManifest(
+      m,
+      state,
+      api,
+      opts({ quiet: true }),
+      () => undefined
+    )
+    expect(again.stoppedReason).toMatch(
+      new RegExp(`created unlisted as ${key} from an earlier payload`)
+    )
+    expect(api.publishMarket).not.toHaveBeenCalled()
+    expect(api.createMarket).not.toHaveBeenCalled()
+
+    // Checked on the site; the operator records the manifest's hash.
+    state.entries[first.raceKey].payloadHash = payloadHash(first.payload)
+    const fixed = await applyManifest(
+      m,
+      state,
+      api,
+      opts({ quiet: true }),
+      () => undefined
+    )
+    expect(fixed.stoppedReason).toBeUndefined()
+    expect(api.publishMarket).toHaveBeenCalledWith(key)
+    expect(state.entries[first.raceKey].pendingPublication).toBe(false)
+    // finishCreation ran for it (three colors), and the run went on to Alaska.
+    expect(
+      (api.setAnswerColor as jest.Mock).mock.calls.filter(([id]) => id === key)
+    ).toHaveLength(3)
+    expect(api.createMarket).toHaveBeenCalledTimes(1)
+    expect(api.publishMarket).toHaveBeenCalledTimes(2)
+  })
+
+  test('without quiet publication the unrecorded market is adopted as before', async () => {
+    const { first, m, key, api, state } = unrecorded()
+    const res = await applyManifest(m, state, api, opts(), () => undefined)
+    expect(res.stoppedReason).toBeUndefined()
+    expect(state.entries[first.raceKey]).toMatchObject({
+      status: 'created',
+      contractId: key,
+      payloadHash: payloadHash(first.payload),
+    })
+    expect(api.publishMarket).not.toHaveBeenCalled()
   })
 })
 

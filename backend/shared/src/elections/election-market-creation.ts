@@ -437,6 +437,12 @@ export function payloadHash(payload: CreatePayload | undefined) {
     .slice(0, 16)
 }
 
+// Recorded for a market found at its reserved id when the state file has no
+// record of the payload it was created with (a lost or new state file). Never
+// equal to a real hash (16 hex digits), so the market stays unpublished until
+// a person checks it and records the manifest's hash.
+export const UNKNOWN_PAYLOAD_HASH = 'unknown'
+
 // Mirrors backend/api/src/create-market.ts: an 'Other' answer is added only
 // when answers sum to one and adding answers is enabled.
 export const OTHER_ANSWER_TEXT = 'Other'
@@ -1836,11 +1842,23 @@ export async function applyManifest(
       // whose payload has changed since): its seeds can't be checked against
       // the manifest, and it must not be published as is.
       const stale = !!prior?.payloadHash && prior.payloadHash !== hash
-      const seedProblem = stale ? undefined : seedMismatch(entry.payload!, atKey)
+      const pendingPublication = prior?.pendingPublication ?? opts.quiet
+      // No record of the payload it was created with (the state file was
+      // lost, or this is a new one): adopting the manifest's hash would
+      // publish whatever question and criteria it was created with. Keep it
+      // unlisted under an unknown hash until a person checks it; the next
+      // runs stop on the stale-payload check until they record the hash.
+      const unknownPayload = !prior?.payloadHash && !!pendingPublication
+      const seedProblem =
+        stale || unknownPayload
+          ? undefined
+          : seedMismatch(entry.payload!, atKey)
       await save(entry.raceKey, {
         status: 'created',
         idempotencyKey: key,
-        payloadHash: prior?.payloadHash ?? hash,
+        payloadHash: unknownPayload
+          ? UNKNOWN_PAYLOAD_HASH
+          : prior?.payloadHash ?? hash,
         contractId: atKey.id,
         slug: atKey.slug,
         url: atKey.url,
@@ -1849,10 +1867,14 @@ export async function applyManifest(
         costMana: prior?.reservedMana || costOf(entry.payload!).total,
         reservedMana: 0,
         seedReviewRequired: seedProblem,
-        pendingPublication: prior?.pendingPublication ?? opts.quiet,
+        pendingPublication: unknownPayload ? true : pendingPublication,
         message: 'reconciled read-only: market exists at the reserved id',
       })
       result.created.push(entry.raceKey)
+      if (unknownPayload) {
+        result.stoppedReason = `${entry.raceKey}: a market exists at the reserved id (${atKey.id}) but this state file has no record of the payload it was created with; check its question, description, answers, close time and opening prices on the site against the manifest, then set its payloadHash in the state file to ${hash} to publish it (or delete the market).`
+        break
+      }
       if (stale) {
         if (state.entries[entry.raceKey].pendingPublication) {
           result.stoppedReason = stalePayloadReason(entry.raceKey, atKey.id, hash)
