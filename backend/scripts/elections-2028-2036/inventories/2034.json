@@ -40,6 +40,32 @@
         "fetchedAt": "2026-11-05"
       }
     ],
+    "senateSpecials": [
+      {
+        "name": "Tenn. Code Ann. § 2-16-101 (Justia, 2025 Tennessee Code)",
+        "url": "https://law.justia.com/codes/tennessee/title-2/chapter-16/section-2-16-101/",
+        "fetchedAt": "2026-11-06",
+        "note": "A U.S. Senate vacancy is filled for the rest of the term by a successor elected at the next regular November election; the governor makes a temporary appointment until then. Tennessee's regular November election is the even-year general election. Read through search results (the page refuses scripted requests)."
+      },
+      {
+        "name": "Minn. Stat. § 204D.28 (2026 Minnesota Statutes)",
+        "url": "https://www.revisor.mn.gov/statutes/cite/204D.28",
+        "fetchedAt": "2026-11-06",
+        "note": "Subd. 4: a 'November election' is the even-year state general election OR the first Tuesday after the first Monday in November of an odd year. Subd. 5: the odd-year regular state primary is the second Tuesday in August. Subd. 6: the special election for the rest of the term is held at the next November election if the vacancy occurs at least 11 weeks before the regular state primary preceding it (otherwise the second November election), and never in the year before the term expires. Subd. 7: the special primary is that regular state primary. Subd. 11: the governor may appoint until then."
+      },
+      {
+        "name": "WSMV, 'Marsha Blackburn becomes first woman elected to Tennessee governor's office' (November 4, 2026)",
+        "url": "https://www.wsmv.com/2026/11/04/marsha-blackburn-becomes-first-woman-elected-tennessee-governors-office-per-secretary-state/"
+      },
+      {
+        "name": "WVLT, 'It's pretty rare: unique TN governor's race could carry major implications on Capitol Hill' (October 30, 2026)",
+        "url": "https://www.wvlt.tv/2026/10/30/its-pretty-rare-unique-tn-governors-race-could-carry-major-implications-capitol-hill/"
+      },
+      {
+        "name": "CBS Minnesota, 'What happens if Sen. Amy Klobuchar runs for Minnesota governor' (January 2026)",
+        "url": "https://www.cbsnews.com/minnesota/news/amy-klobuchar-tim-walz-minnesota-governor-race-logistics"
+      }
+    ],
     "governors": [
       {
         "name": "Wikipedia — 2026 United States gubernatorial elections (36 states, election day November 3, 2026; New Hampshire and Vermont two-year terms; incumbents and their 2026 status)",
@@ -73,6 +99,12 @@
       "The Florida and Ohio Class 3 seats are filled by appointees (Moody, Husted) until the November 3, 2026 special elections; those specials cover the unexpired terms ending January 3, 2029, so both seats have their regular full-term election in 2028 as part of Class 3. They are not extra 2028 seats.",
       "Special elections for seats vacated after this inventory was written are out of scope; add them when they are called, as the brief says.",
       "Vermont has no Class 2 seat and Nebraska/Alaska have no Class 3 / Class 1 seat respectively, so the 'Another party or independent' exceptions in SEEDS.md apply only to the cycles in which those states actually vote."
+    ],
+    "senateSpecials": [
+      "Two Class 1 senators won 2026 governor races (Tod, 2026-11-06): Amy Klobuchar in Minnesota (community market tQdntLgP0l resolved YES) and Marsha Blackburn in Tennessee. Each resigns the Senate seat before taking office in January 2027, and the seat goes to a special election for the rest of the term ending January 3, 2031; the regular Class 1 election for both seats is in 2030.",
+      "Tennessee: the special is at the next regular November election after the vacancy, November 7, 2028 (party primaries on the August 2028 primary date).",
+      "Minnesota: under Minn. Stat. § 204D.28 subd. 4-7 a vacancy in November 2026 to January 2027 is more than 11 weeks before the August 10, 2027 odd-year primary, so the special primary is August 10, 2027 and the special election November 2, 2027. That is a 2027 race, outside this pipeline's cycles (2028-2036): it belongs with the 2027 races in the national script (backend/scripts/elections-2028 on feat/elections-2028-page). It is listed here so the finding stays with its citation; inventory.ts generates only specials whose cycle is in scope.",
+      "Seat-holder names are informational only and never appear in market text: these are party markets."
     ],
     "governors": [
       "The brief expected the 36 states of the 2026 cycle; confirmed: AK, AL, AR, AZ, CA, CO, CT, FL, GA, HI, IA, ID, IL, KS, MA, MD, ME, MI, MN, NE, NH, NM, NV, NY, OH, OK, OR, PA, RI, SC, SD, TN, TX, VT, WI, WY.",

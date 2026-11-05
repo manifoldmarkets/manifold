@@ -47,14 +47,25 @@ export function roundFor(race: Race, cfg: CycleConfig): RoundRule {
   if (race.popularVote) return popularVoteRound(race.state, cfg)
   if (race.office === 'president') return presidentialRound(race.state, cfg)
   if (race.office === 'governor') return governorRound(race.state, cfg)
-  return congressionalRound(race.state, race.office, cfg)
+  const round = congressionalRound(race.state, race.office, cfg)
+  if (!race.special) return round
+  return {
+    ...round,
+    text: `the special election for the rest of the Class ${
+      race.special.senateClass
+    } term (ending ${longDate(
+      race.special.termEnds
+    )}), held with ${round.text}; if the special election is held on another date before the term ends, that election (the creator moves the close time)`,
+  }
 }
 
 export function questionFor(race: Race): string {
   const { cycle, stateName } = race
   switch (race.office) {
     case 'senate':
-      return `Which party will win the ${cycle} U.S. Senate election in ${stateName}?`
+      return race.special
+        ? `Which party will win the ${cycle} U.S. Senate special election in ${stateName}?`
+        : `Which party will win the ${cycle} U.S. Senate election in ${stateName}?`
     case 'governor':
       return `Which party will win the ${cycle} ${stateName} governor election?`
     case 'house':
@@ -165,7 +176,21 @@ export function descriptionFor(race: Race, cfg: CycleConfig): string {
   const { cycle, stateName, state } = race
   const date = longDate(cfg.electionDate)
   switch (race.office) {
-    case 'senate':
+    case 'senate': {
+      // A special election for the rest of a term: it follows that election
+      // whenever it is held before the term ends, and is N/A if none is.
+      if (race.special) {
+        const ends = longDate(race.special.termEnds)
+        return [
+          withRound(
+            `Resolves to the party that wins the ${date} U.S. Senate special election in ${stateName} for the rest of the Class ${race.special.senateClass} term, which ends ${ends}. If the special election is held on another date before then, that election decides.`,
+            race,
+            cfg
+          ),
+          PARTY_RULE(state),
+          `Resolves on the certified result, or earlier once the AP has called the race and no recount could change it. N/A if no special election for this seat is held before ${ends}.`,
+        ].join('\n\n')
+      }
       return [
         withRound(
           `Resolves to the party that wins the ${date} U.S. Senate election in ${stateName} (Class ${senateClassFor(
@@ -177,6 +202,7 @@ export function descriptionFor(race: Race, cfg: CycleConfig): string {
         PARTY_RULE(state),
         RESULTS('seat'),
       ].join('\n\n')
+    }
     case 'governor':
       return [
         withRound(
@@ -297,12 +323,20 @@ export function searchTermsFor(race: Race): string[] {
   const { cycle, stateName, state } = race
   switch (race.office) {
     case 'senate':
-      return [
-        `${stateName} Senate ${cycle}`,
-        `${cycle} ${stateName} Senate election`,
-        `${stateName} senator ${cycle}`,
-        `${state} Senate ${cycle}`,
-      ]
+      return race.special
+        ? [
+            `${stateName} Senate special election ${cycle}`,
+            `${cycle} ${stateName} Senate special`,
+            `${stateName} Senate ${cycle}`,
+            `${stateName} senator ${cycle}`,
+            `${state} Senate special ${cycle}`,
+          ]
+        : [
+            `${stateName} Senate ${cycle}`,
+            `${cycle} ${stateName} Senate election`,
+            `${stateName} senator ${cycle}`,
+            `${state} Senate ${cycle}`,
+          ]
     case 'governor':
       return [
         `${stateName} governor ${cycle}`,

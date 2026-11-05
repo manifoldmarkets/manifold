@@ -1054,6 +1054,37 @@
     "status": "planned"
   },
   {
+    "raceKey": "2028-senate-TN-special-general",
+    "list": "senate2028",
+    "key": "TN-special",
+    "slug": "PENDING:2028-senate-TN-special-general",
+    "contractId": "PENDING:2028-senate-TN-special-general",
+    "url": null,
+    "proposition": "ballot-party",
+    "answers": [
+      {
+        "label": "Democratic Party",
+        "kind": "party",
+        "party": "D",
+        "answerId": "PENDING:2028-senate-TN-special-general#Democratic Party"
+      },
+      {
+        "label": "Republican Party",
+        "kind": "party",
+        "party": "R",
+        "answerId": "PENDING:2028-senate-TN-special-general#Republican Party"
+      },
+      {
+        "label": "Other",
+        "kind": "other",
+        "party": "other",
+        "isOther": true,
+        "answerId": "PENDING:2028-senate-TN-special-general#Other"
+      }
+    ],
+    "status": "planned"
+  },
+  {
     "raceKey": "2028-governor-DE-regular-general",
     "list": "governors2028",
     "key": "DE",

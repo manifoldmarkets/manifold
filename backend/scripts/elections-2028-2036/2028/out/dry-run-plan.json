@@ -376,6 +376,17 @@
       }
     },
     {
+      "raceKey": "2028-senate-TN-special-general",
+      "action": "create",
+      "idempotencyKey": "hNn6qQyqAd",
+      "cost": {
+        "ante": 1000,
+        "extraLiquidity": 0,
+        "total": 1000,
+        "numAnswers": 3
+      }
+    },
+    {
       "raceKey": "2028-governor-DE-regular-general",
       "action": "create",
       "idempotencyKey": "lp9qq5PQlu",
@@ -1128,9 +1139,9 @@
       "action": "create",
       "idempotencyKey": "6h9IR2IULh",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1139,9 +1150,9 @@
       "action": "create",
       "idempotencyKey": "hEl80CcSz6",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1150,9 +1161,9 @@
       "action": "create",
       "idempotencyKey": "5NdQAqtUPy",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1161,9 +1172,9 @@
       "action": "create",
       "idempotencyKey": "czSp9NApqc",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1227,9 +1238,9 @@
       "action": "create",
       "idempotencyKey": "AqEZPZuz8Q",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1238,9 +1249,9 @@
       "action": "create",
       "idempotencyKey": "N5OCh0yNtA",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1260,9 +1271,9 @@
       "action": "create",
       "idempotencyKey": "pNg5qc9hUP",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1271,9 +1282,9 @@
       "action": "create",
       "idempotencyKey": "lUqZOcPP9n",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1293,9 +1304,9 @@
       "action": "create",
       "idempotencyKey": "g8gtEARSN5",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1304,9 +1315,9 @@
       "action": "create",
       "idempotencyKey": "2UlAnZ9P5R",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1315,9 +1326,9 @@
       "action": "create",
       "idempotencyKey": "5S8SSydhZS",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1326,9 +1337,9 @@
       "action": "create",
       "idempotencyKey": "nZSppR6gun",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1370,9 +1381,9 @@
       "action": "create",
       "idempotencyKey": "g92qUn6gyZ",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1392,9 +1403,9 @@
       "action": "create",
       "idempotencyKey": "c8tqNSs0A2",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1403,9 +1414,9 @@
       "action": "create",
       "idempotencyKey": "RUnEzq8uAl",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1414,9 +1425,9 @@
       "action": "create",
       "idempotencyKey": "C8gs2gqCLO",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1425,9 +1436,9 @@
       "action": "create",
       "idempotencyKey": "cLsE0P0SNE",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1436,9 +1447,9 @@
       "action": "create",
       "idempotencyKey": "2SEzNZZ9us",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1447,9 +1458,9 @@
       "action": "create",
       "idempotencyKey": "UNgOdcCCpc",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1458,9 +1469,9 @@
       "action": "create",
       "idempotencyKey": "tEgss6dQZS",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1491,9 +1502,9 @@
       "action": "create",
       "idempotencyKey": "udlnRLgsud",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1513,9 +1524,9 @@
       "action": "create",
       "idempotencyKey": "tgC625t8qg",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1524,9 +1535,9 @@
       "action": "create",
       "idempotencyKey": "68gAqhQPyZ",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1546,9 +1557,9 @@
       "action": "create",
       "idempotencyKey": "cngNctNqUN",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1568,9 +1579,9 @@
       "action": "create",
       "idempotencyKey": "PlN6phc6US",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1579,9 +1590,9 @@
       "action": "create",
       "idempotencyKey": "Rz2QhSEP8R",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1590,9 +1601,9 @@
       "action": "create",
       "idempotencyKey": "Sdp99qI9zC",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1601,9 +1612,9 @@
       "action": "create",
       "idempotencyKey": "sgctAznAdq",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1612,9 +1623,9 @@
       "action": "create",
       "idempotencyKey": "RpOPQ5sgZt",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1656,9 +1667,9 @@
       "action": "create",
       "idempotencyKey": "y0gdEpdCyt",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1667,9 +1678,9 @@
       "action": "create",
       "idempotencyKey": "IhCLRsQscC",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },
@@ -1678,9 +1689,9 @@
       "action": "create",
       "idempotencyKey": "AQ5nLAuP5n",
       "cost": {
-        "ante": 10000,
+        "ante": 1000,
         "extraLiquidity": 0,
-        "total": 10000,
+        "total": 1000,
         "numAnswers": 3
       }
     },

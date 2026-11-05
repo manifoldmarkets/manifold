@@ -58,6 +58,16 @@ export type LiquidityRule = {
   rationale: string
   applies: (race: Race, lean: number) => boolean
 }
+// National Popular Vote Interstate Compact members (19 jurisdictions, 222
+// electoral votes after Virginia joined in April 2026; it takes effect at
+// 270). Their 2028 popular-vote markets keep Ṁ10,000: if the compact takes
+// effect, their electoral votes follow the national vote, so their own
+// popular vote becomes a separate question (Tod, 2026-11-06).
+export const NPVIC_MEMBERS: readonly string[] = [
+  'CA', 'CO', 'CT', 'DE', 'DC', 'HI', 'IL', 'MD', 'MA', 'MN',
+  'NJ', 'NM', 'NY', 'OR', 'RI', 'VT', 'WA', 'ME', 'VA',
+]
+
 export const LIQUIDITY_RULES: LiquidityRule[] = [
   {
     id: 'president-2028-national',
@@ -67,10 +77,21 @@ export const LIQUIDITY_RULES: LiquidityRule[] = [
       r.cycle === 2028 && r.office === 'president' && r.state === 'US',
   },
   {
-    id: 'president-2028-popular-vote',
+    id: 'president-2028-popular-vote-compact',
     tier: 10_000,
     rationale:
-      '2028 presidential popular-vote market for a state (Tod, 5 Nov 2026: every 2028 presidential market at Ṁ10,000): Ṁ10,000.',
+      '2028 popular-vote market in a National Popular Vote Interstate Compact member (Tod, 6 Nov 2026: Ṁ10,000 for the 19 members): if the compact takes effect, the state’s electoral votes follow the national vote, so its own popular vote is a separate question.',
+    applies: (r) =>
+      r.cycle === 2028 &&
+      r.office === 'president' &&
+      !!r.popularVote &&
+      NPVIC_MEMBERS.includes(r.state),
+  },
+  {
+    id: 'president-2028-popular-vote',
+    tier: 1_000,
+    rationale:
+      '2028 popular-vote market outside the National Popular Vote Interstate Compact (Tod, 6 Nov 2026): Ṁ1,000; the state’s popular vote decides its electoral votes, whose market has Ṁ10,000.',
     applies: (r) =>
       r.cycle === 2028 && r.office === 'president' && !!r.popularVote,
   },
@@ -232,7 +253,7 @@ export function buildEntry(
       state: race.state,
       stateName: race.stateName,
       ...(race.district !== undefined ? { district: race.district } : {}),
-      election: 'regular',
+      election: race.special ? 'special' : 'regular',
       round: round.text,
       candidateNames: [],
     },
@@ -298,7 +319,9 @@ export function buildEntry(
     evidence: {
       inventorySources: race.sources,
       seat: race.seat,
-      ...(race.incumbentNote
+      ...(race.special
+        ? { special: { ...race.special }, vacancy: race.incumbentNote }
+        : race.incumbentNote
         ? { incumbentOctober2026: race.incumbentNote }
         : {}),
       ...(race.electoralVotes !== undefined
@@ -431,12 +454,14 @@ export function inventoryFor(cycle: Cycle) {
     total: races.length,
     sources: {
       senate: inventories.senate().sources,
+      senateSpecials: inventories.senateSpecials().sources,
       governors: inventories.governors(cycle).sources,
       ...(cfg.president ? { president: inventories.president().sources } : {}),
       ...(cfg.house ? { house: inventories.house().sources } : {}),
     },
     notes: {
       senate: inventories.senate().notes,
+      senateSpecials: inventories.senateSpecials().notes,
       governors: inventories.governors(cycle).notes,
       ...(cfg.president ? { president: inventories.president().notes } : {}),
     },
@@ -444,10 +469,15 @@ export function inventoryFor(cycle: Cycle) {
       raceKey: r.raceKey,
       office: r.office,
       ...(r.popularVote ? { popularVote: true } : {}),
+      ...(r.special ? { election: 'special', special: r.special } : {}),
       state: r.state,
       ...(r.district !== undefined ? { district: r.district } : {}),
       seat: r.seat,
-      ...(r.incumbentNote ? { incumbentOctober2026: r.incumbentNote } : {}),
+      ...(r.special
+        ? { vacancy: r.incumbentNote }
+        : r.incumbentNote
+        ? { incumbentOctober2026: r.incumbentNote }
+        : {}),
       ...(r.electoralVotes !== undefined
         ? { electoralVotes: r.electoralVotes }
         : {}),

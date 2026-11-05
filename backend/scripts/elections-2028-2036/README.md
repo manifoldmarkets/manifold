@@ -4,9 +4,10 @@ Generic party markets (Democratic Party / Republican Party, plus the server's
 "Other") for every general election from 2028 through 2036 (Tod,
 2026-11-05: "If the market set for 2036 is prepared, we should include it.
 That can be the cutoff, do 2034 as well"): every Senate seat and governorship
-up in 2028, 2030, 2032, 2034 and 2036, every presidential state and district
-in 2028, 2032 and 2036, the popular vote in every state and DC in those
-years, and every 2028 House district. They are created years
+up in 2028, 2030, 2032, 2034 and 2036 (plus Tennessee's 2028 Senate special),
+every presidential state and district in 2028, 2032 and 2036, the popular
+vote in every state and DC in those years, and every 2028 House district.
+They are created years
 ahead with the pipeline that launched the 2026 midterm markets. Prepared on
 2026-10-06; on 2026-11-05 2030 and 2034 were added and 2036 became a planned
 cycle (it was optional). **Nothing here has been launched.** Tod
@@ -15,28 +16,68 @@ approves and runs the launch after the 2026 results are certified (December
 
 | Cycle | Senate | Governor | President | Popular vote | House | Markets | Mana |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| 2028 | 34 (Class 3) | 11 | 57 (50 states + DC + ME-1/2, NE-1/2/3 + national) | 51 (50 states + DC) | 435 | 588 | 2,028,000 |
+| 2028 | 35 (34 Class 3 + Tennessee's Class 1 special) | 11 | 57 (50 states + DC + ME-1/2, NE-1/2/3 + national) | 51 (50 states + DC) | 435 | 589 | 1,741,000 |
 | 2030 | 33 (Class 1) | 36 | — | — | — | 69 | 69,000 |
 | 2032 | 33 (Class 2) | 11 | 57 | 51 | — (2030 census) | 152 | 161,000 |
 | 2034 | 34 (Class 3) | 36 | — | — | — (2030 census) | 70 | 70,000 |
 | 2036 | 33 (Class 1) | 11 | 57 | 51 | — | 152 | 161,000 |
-| **2028–2036** | | | | | | **1,031** | **2,489,000** |
+| **2028–2036** | | | | | | **1,032** | **2,202,000** |
 
 ### Scope: what is and isn't here
 
 Included: the 2028, 2032 and 2036 presidential elections (the national party
 market, 51 state + 5 district electoral markets and 51 state popular-vote
 markets per cycle); every regular Senate seat and governorship up in 2028,
-2030, 2032, 2034 and 2036; and the 2028 House (all 435 districts). The 2027
-races and the national markets (nominees, primaries, balance of power) are in
-the separate national script (`backend/scripts/elections-2028/` on
-`feat/elections-2028-page`).
+2030, 2032, 2034 and 2036; Tennessee's 2028 Senate special (below); and the
+2028 House (all 435 districts). The 2027 races and the national markets
+(nominees, primaries, balance of power) are in the separate national script
+(`backend/scripts/elections-2028/` on `feat/elections-2028-page`).
 
-Not included: House races after 2028 (new maps after the 2030 census),
-special elections (added when called), off-year races after 2027 (2029
-Virginia and New Jersey governors and later), and contests in the
-territories. Additions are tracked in the Notion additions list for the
-election markets, not here.
+Not included: House races after 2028 (new maps after the 2030 census), other
+special elections (added to `inventories/senate-specials.json` when called;
+Minnesota's November 2, 2027 special is a 2027 race and goes with the
+national script's 2027 set), off-year races after 2027 (2029 Virginia and New
+Jersey governors and later), and contests in the territories. Additions are
+tracked in the Notion additions list for the election markets, not here.
+
+### Senate specials (Tod, 2026-11-06)
+
+Two Class 1 senators won 2026 governor races: Marsha Blackburn in Tennessee
+and Amy Klobuchar in Minnesota. Each seat goes to a special election for the
+rest of the term, which ends January 3, 2031 (the regular Class 1 election
+for both is in 2030). `inventories/senate-specials.json` lists them with the
+statutes; `inventory.ts` generates a market for each special whose cycle is
+in scope, keyed `<cycle>-senate-<ST>-special-general`, with
+`identity.election: "special"` (the duplicate check tells special and
+regular wording apart) and dashboard key `<ST>-special`.
+
+- **Tennessee, November 7, 2028.** Tenn. Code Ann. § 2-16-101(a): the
+  successor is elected at the next regular November election, which in
+  Tennessee is the even-year general; the governor appoints until then.
+  Stage A seed like any 2028 Senate race (R+28.4, so Ṁ1,000).
+- **Minnesota, November 2, 2027: not here.** Minn. Stat. § 204D.28 counts
+  the odd-year November election as a "November election" (subd. 4) and
+  holds the special at the next one if the vacancy comes at least 11 weeks
+  before the regular primary preceding it (subd. 6), the second Tuesday in
+  August in odd years (subd. 5). A vacancy between November 2026 and January
+  2027 puts the special primary on August 10, 2027 and the special election
+  on November 2, 2027. That is a 2027 race, outside this pipeline's cycles,
+  so it is listed (`outOfScope`) but not generated.
+
+Example (2028 Tennessee):
+
+> Which party will win the 2028 U.S. Senate special election in Tennessee?
+>
+> Resolves to the party that wins the November 7, 2028 U.S. Senate special
+> election in Tennessee for the rest of the Class 1 term, which ends January
+> 3, 2031. If the special election is held on another date before then, that
+> election decides.
+>
+> Only the party matters: … (the usual party rule)
+>
+> Resolves on the certified result, or earlier once the AP has called the
+> race and no recount could change it. N/A if no special election for this
+> seat is held before January 3, 2031.
 
 **Reapportionment.** House 2028 is fixed by the 2020 apportionment. The 2032
 and 2036 district markets (ME-1/2, NE-1/2/3) need a recheck once the 2030
@@ -68,8 +109,13 @@ per-answer price: Ṁ100 at 1,000, Ṁ1,000 at 10,000, Ṁ10,000 at 100,000.
   stays at 1,000; each raised entry says why in `liquidityPlan.rationale`):
   - `2028-president-US-general`: 100,000.
   - The other 56 presidential states, DC and districts in 2028: 10,000.
-  - The 51 popular-vote markets in 2028: 10,000 (every 2028 presidential
-    market at Ṁ10k). In 2032 and 2036 they stay at 1,000.
+  - The 2028 popular-vote markets (Tod, 2026-11-06): 10,000 in the 19
+    National Popular Vote Interstate Compact members (CA, CO, CT, DE, DC,
+    HI, IL, MD, MA, MN, NJ, NM, NY, OR, RI, VT, WA, ME, VA; 222 electoral
+    votes), where the compact would make the state's own popular vote a
+    separate question from its electoral votes; 1,000 in the other 32. The
+    list is one constant, `NPVIC_MEMBERS` in `generate-manifests.ts`. In
+    2032 and 2036 they stay at 1,000.
   - `2032-president-US-general` and `2036-president-US-general`: 10,000.
   - Competitive 2028 races: Senate and governor within 8 points of the
     national environment (Senate AZ, GA, NV, NH, NC, PA, WI; governor NH, NC)
@@ -78,10 +124,11 @@ per-answer price: Ṁ100 at 1,000, Ṁ1,000 at 10,000, Ṁ10,000 at 100,000.
     cycles' competitive races stay at 1,000 for now, to be raised as each
     cycle approaches.
 
-  Planned totals: 2028 Ṁ2,028,000 (1 at 100,000, 149 at 10,000, 438 at
+  Planned totals: 2028 Ṁ1,741,000 (1 at 100,000, 117 at 10,000, 471 at
   1,000), 2030 Ṁ69,000, 2032 Ṁ161,000 (1 at 10,000, 151 at 1,000), 2034
-  Ṁ70,000, 2036 Ṁ161,000; Ṁ2,489,000 in all. The popular-vote markets add
-  Ṁ510,000 in 2028 and Ṁ51,000 each in 2032 and 2036. Each manifest's
+  Ṁ70,000, 2036 Ṁ161,000; Ṁ2,202,000 in all. The popular-vote markets add
+  Ṁ222,000 in 2028 (19 × 10,000 + 32 × 1,000; was Ṁ510,000 with all 51 at
+  10,000) and Ṁ51,000 each in 2032 and 2036. Each manifest's
   `budget.approvedMaxTotalMana` is its total.
 
 - **Popular vote by state** (Tod, 2026-11-05): "Add a new market set for
@@ -208,9 +255,11 @@ per-answer price: Ṁ100 at 1,000, Ṁ1,000 at 10,000, Ṁ10,000 at 100,000.
 - **Senate**: the 33 regular Class 1 seats, the same states as 2036 (verified
   on 2026-11-05 against the congress-legislators file and Wikipedia's 2030
   page: 17 D, 14 R, 2 I, all terms ending January 3, 2031). **No special
-  election is known for 2030 yet**; add one when it is called. Two Class 1
-  senators were 2026 nominees for governor (Minnesota, Tennessee); if they won,
-  their seats get specials for the rest of the term, which are not 2030 races.
+  election is known for 2030 yet**; add one when it is called. The Minnesota
+  and Tennessee Class 1 senators won 2026 governor races; the specials for
+  the rest of their terms are Tennessee's in 2028 (in the 2028 manifest) and
+  Minnesota's on November 2, 2027 (a 2027 race; see "Senate specials"), not
+  2030 races. Both seats' regular elections are these 2030 markets.
 - **Governors**: the 36 states that voted on November 3, 2026 (34 four-year
   terms plus New Hampshire and Vermont, which elect every two years and so are
   in 2028 as well). Inventory: `inventories/governors-midterm.json`.
@@ -433,7 +482,10 @@ markets that already exist.
    stays empty; it is only for creating ours despite one of our own
    equivalent markets. With the saved results (the popular-vote markets
    checked on 2026-11-05), every entry is creatable (2028 / 2030 / 2032 /
-   2034 / 2036: 588 / 69 / 152 / 70 / 152, 0 skipped, 0 held). Other markets
+   2034 / 2036: 588 / 69 / 152 / 70 / 152, 0 skipped, 0 held). Tennessee's
+   2028 special (added 2026-11-06) has not had an online check yet, so the
+   committed 2028 report is an offline one; the online re-run here covers it
+   and restores the report's duplicate labels. Other markets
    also exist, as information, for 72 / 2 / 1 / 0 / 1 of those races (59
    2028 races with an equivalent community market, among them Jack1's 55
    state and district presidential markets). The 153 popular-vote markets
@@ -474,18 +526,18 @@ markets that already exist.
    colours and visibility, and the topics.
 7. **Full runs**, one cycle at a time, same state file, no `--init-state`,
    no `--only` (`--max-mana`: each cycle's planned total, which is also its
-   `budget.approvedMaxTotalMana`: 2028000 for 2028, 69000 for 2030, 161000
+   `budget.approvedMaxTotalMana`: 1741000 for 2028, 69000 for 2030, 161000
    for 2032, 70000 for 2034, 161000 for 2036; the run cap counts only what that
    run spends, so after the pilots the 2028 full run needs at most
-   1927000):
+   1640000):
    ```powershell
-   npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2028/manifest.json --out elections-2028-2036/2028/out --state C:\Users\User\elections-2028-prod\state.prod.json --env prod --apply --quiet --creator-username ManifoldPolitics --max-mana 2028000
+   npx ts-node --transpile-only create-election-markets.ts --manifest elections-2028-2036/2028/manifest.json --out elections-2028-2036/2028/out --state C:\Users\User\elections-2028-prod\state.prod.json --env prod --apply --quiet --creator-username ManifoldPolitics --max-mana 1741000
    ```
    A stop (`stoppedReason`) is normal for a needs-review entry, a seed
    mismatch or a rate limit: read the state file, fix, re-run; nothing is
    created twice. Expect roughly 10–15 seconds per market (create, read back,
    three colour edits, publish), so about two to two and a half hours for 2028
-   (588 markets) and 15–20 minutes for 2030.
+   (589 markets) and 15–20 minutes for 2030.
 8. **Afterwards**: copy `<cycle>/out/dashboard-mapping.prod.json` next to each
    state file; commit the final manifests on a record branch/tag.
    Page wiring is a separate, later task; the `dashboard` block of every entry
@@ -504,10 +556,12 @@ markets that already exist.
   (ME 10%, NE 5%, VT 10%), but 2030 is when King's and Sanders's own seats are
   up. Alaska and Maine governors stay at 1% by convention despite independent
   winners in the past.
-- **Specials**: Minnesota's and Tennessee's Class 1 seats get specials for
-  the rest of the term if their senators were elected governor on 2026-11-03.
-  Those specials would be extra 2028 (or earlier) races, not part of this
-  inventory.
+- **Specials**: both Class 1 senators were elected governor on 2026-11-03.
+  Tennessee's special is in the 2028 manifest; Minnesota's is on November 2,
+  2027 (Minn. Stat. § 204D.28) and belongs with the national script's 2027
+  races. If a Senate vacancy comes later than expected (Minnesota's after
+  about May 25, 2027, less than 11 weeks before its August 10 primary), its
+  special moves to November 2028; move the entry with it.
 - **Topics**: no 2030 election topic exists in prod; `2030-us-elections` could
   be named "2030 Midterms" to match the 2026 topic.
 

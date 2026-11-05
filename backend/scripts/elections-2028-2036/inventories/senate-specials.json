@@ -1,0 +1,55 @@
+{
+  "sources": [
+    {
+      "name": "Tenn. Code Ann. § 2-16-101 (Justia, 2025 Tennessee Code)",
+      "url": "https://law.justia.com/codes/tennessee/title-2/chapter-16/section-2-16-101/",
+      "fetchedAt": "2026-11-06",
+      "note": "A U.S. Senate vacancy is filled for the rest of the term by a successor elected at the next regular November election; the governor makes a temporary appointment until then. Tennessee's regular November election is the even-year general election. Read through search results (the page refuses scripted requests)."
+    },
+    {
+      "name": "Minn. Stat. § 204D.28 (2026 Minnesota Statutes)",
+      "url": "https://www.revisor.mn.gov/statutes/cite/204D.28",
+      "fetchedAt": "2026-11-06",
+      "note": "Subd. 4: a 'November election' is the even-year state general election OR the first Tuesday after the first Monday in November of an odd year. Subd. 5: the odd-year regular state primary is the second Tuesday in August. Subd. 6: the special election for the rest of the term is held at the next November election if the vacancy occurs at least 11 weeks before the regular state primary preceding it (otherwise the second November election), and never in the year before the term expires. Subd. 7: the special primary is that regular state primary. Subd. 11: the governor may appoint until then."
+    },
+    {
+      "name": "WSMV, 'Marsha Blackburn becomes first woman elected to Tennessee governor's office' (November 4, 2026)",
+      "url": "https://www.wsmv.com/2026/11/04/marsha-blackburn-becomes-first-woman-elected-tennessee-governors-office-per-secretary-state/"
+    },
+    {
+      "name": "WVLT, 'It's pretty rare: unique TN governor's race could carry major implications on Capitol Hill' (October 30, 2026)",
+      "url": "https://www.wvlt.tv/2026/10/30/its-pretty-rare-unique-tn-governors-race-could-carry-major-implications-capitol-hill/"
+    },
+    {
+      "name": "CBS Minnesota, 'What happens if Sen. Amy Klobuchar runs for Minnesota governor' (January 2026)",
+      "url": "https://www.cbsnews.com/minnesota/news/amy-klobuchar-tim-walz-minnesota-governor-race-logistics"
+    }
+  ],
+  "notes": [
+    "Two Class 1 senators won 2026 governor races (Tod, 2026-11-06): Amy Klobuchar in Minnesota (community market tQdntLgP0l resolved YES) and Marsha Blackburn in Tennessee. Each resigns the Senate seat before taking office in January 2027, and the seat goes to a special election for the rest of the term ending January 3, 2031; the regular Class 1 election for both seats is in 2030.",
+    "Tennessee: the special is at the next regular November election after the vacancy, November 7, 2028 (party primaries on the August 2028 primary date).",
+    "Minnesota: under Minn. Stat. § 204D.28 subd. 4-7 a vacancy in November 2026 to January 2027 is more than 11 weeks before the August 10, 2027 odd-year primary, so the special primary is August 10, 2027 and the special election November 2, 2027. That is a 2027 race, outside this pipeline's cycles (2028-2036): it belongs with the 2027 races in the national script (backend/scripts/elections-2028 on feat/elections-2028-page). It is listed here so the finding stays with its citation; inventory.ts generates only specials whose cycle is in scope.",
+    "Seat-holder names are informational only and never appear in market text: these are party markets."
+  ],
+  "specials": [
+    {
+      "cycle": 2028,
+      "state": "TN",
+      "class": "1",
+      "termEnds": "2031-01-03",
+      "electionDate": "2028-11-07",
+      "vacatedBy": "Marsha Blackburn (R), elected governor on November 3, 2026; the Senate seat becomes vacant when she resigns before her January 2027 inauguration",
+      "law": "Tenn. Code Ann. § 2-16-101(a): the next regular November election (even years) after the vacancy"
+    },
+    {
+      "cycle": 2027,
+      "state": "MN",
+      "class": "1",
+      "termEnds": "2031-01-03",
+      "electionDate": "2027-11-02",
+      "vacatedBy": "Amy Klobuchar (DFL), elected governor on November 3, 2026; the Senate seat becomes vacant when she resigns before taking office on January 4, 2027",
+      "law": "Minn. Stat. § 204D.28 subd. 4-7: special primary August 10, 2027, special election November 2, 2027",
+      "outOfScope": "2027 race: belongs with the 2027 races in the national script"
+    }
+  ]
+}

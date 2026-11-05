@@ -6,7 +6,13 @@ import {
   Office,
   US_STATE_NAMES,
 } from 'shared/elections/election-market-creation'
-import { Cycle, CYCLES, cycleConfig, isPresidentialYear } from './cycles'
+import {
+  Cycle,
+  CYCLES,
+  cycleConfig,
+  isPresidentialYear,
+  longDate,
+} from './cycles'
 import { UnitResults } from './seeds'
 
 export const STATE_NAMES: Record<string, string> = {
@@ -39,6 +45,24 @@ type SenateClasses = {
       }[]
     }
   >
+}
+// Senate special elections for the rest of a term (inventories/
+// senate-specials.json). Only specials whose cycle is in scope generate a
+// market; the rest (Minnesota's November 2027 special) stay listed with
+// their citation.
+type SenateSpecials = {
+  sources: Source[]
+  notes: string[]
+  specials: {
+    cycle: number
+    state: string
+    class: '1' | '2' | '3'
+    termEnds: string // YYYY-MM-DD
+    electionDate: string // YYYY-MM-DD
+    vacatedBy: string
+    law: string
+    outOfScope?: string
+  }[]
 }
 type Governors = {
   sources: Source[]
@@ -88,6 +112,8 @@ export type Results = {
 export const inventories = {
   senate: () =>
     readJson<SenateClasses>(path.join(INVENTORY_DIR, 'senate-classes.json')),
+  senateSpecials: () =>
+    readJson<SenateSpecials>(path.join(INVENTORY_DIR, 'senate-specials.json')),
   // Presidential years: the eleven presidential-year governorships; midterm
   // years (2030, 2034): the 36 midterm-year governorships. NH and VT are in
   // both.
@@ -125,6 +151,9 @@ export type Race = {
   // A state's popular-vote market (president, 2028/2032/2036): who gets the
   // most votes in the state, not where its electoral votes go.
   popularVote?: true
+  // A Senate special election for the rest of a term (the regular races
+  // leave these unset): the seat's class and the end of the term.
+  special?: { senateClass: '1' | '2' | '3'; termEnds: string }
 }
 
 // Generated counts are kept per office, with the state popular-vote markets
@@ -183,6 +212,7 @@ export function racesFor(cycle: Cycle): Race[] {
       }`,
     })
   }
+  racesForSenateSpecials(cycle, races)
   const governors = inventories.governors(cycle)
   for (const g of governors.states)
     races.push({
@@ -204,6 +234,42 @@ export function racesFor(cycle: Cycle): Race[] {
   if (cfg.president) racesForPresident(cycle, races)
   if (cfg.house) racesForHouse(cycle, races)
   return races
+}
+
+// Specials held with the cycle's general election, for the rest of a term.
+// Key `<cycle>-senate-<ST>-special-general`; dashboard key `<ST>-special`, so
+// a state with a regular race the same year keeps both.
+function racesForSenateSpecials(cycle: Cycle, races: Race[]) {
+  const cfg = cycleConfig(cycle)
+  const inv = inventories.senateSpecials()
+  for (const s of inv.specials) {
+    if (s.cycle !== cycle) continue
+    if (s.outOfScope)
+      throw new Error(`${s.state} special: marked out of scope but in ${cycle}`)
+    if (s.electionDate !== cfg.electionDate)
+      throw new Error(
+        `${s.state} special: ${s.electionDate} is not the ${cycle} general election (${cfg.electionDate})`
+      )
+    if (!(Date.parse(`${s.termEnds}T00:00:00Z`) > Date.parse(s.electionDate)))
+      throw new Error(`${s.state} special: the term ends before the election`)
+    if (races.some((r) => r.raceKey === `${cycle}-senate-${s.state}-special-general`))
+      throw new Error(`${s.state} special listed twice for ${cycle}`)
+    races.push({
+      cycle,
+      office: 'senate',
+      state: s.state,
+      stateName: STATE_NAMES[s.state],
+      raceKey: `${cycle}-senate-${s.state}-special-general`,
+      unitKey: s.state,
+      dashboardKey: `${s.state}-special`,
+      seat: `Class ${s.class} seat; special election for the rest of the term ending ${longDate(
+        s.termEnds
+      )}`,
+      sources: inv.sources.map((src) => src.url),
+      incumbentNote: `${s.vacatedBy}. ${s.law}.`,
+      special: { senateClass: s.class, termEnds: s.termEnds },
+    })
+  }
 }
 
 function racesForPresident(cycle: Cycle, races: Race[]) {
@@ -355,8 +421,9 @@ export function unitResults(results: Results, race: Race): UnitResults {
 // president: 50 states + DC + ME-1/2 and NE-1/2/3 + the national market;
 // presidentPopularVote: 50 states + DC.
 export const EXPECTED_COUNTS: Record<Cycle, Record<CountKey, number>> = {
+  // Senate: the 34 Class 3 seats plus Tennessee's Class 1 special.
   2028: {
-    senate: 34,
+    senate: 35,
     governor: 11,
     president: 57,
     presidentPopularVote: 51,

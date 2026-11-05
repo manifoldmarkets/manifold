@@ -27,6 +27,7 @@ import {
   countsOf,
   loadRejections,
   loadTopics,
+  NPVIC_MEMBERS,
   topicIdsFor,
 } from './generate-manifests'
 import { EXPECTED_COUNTS, inventories, racesFor } from './inventory'
@@ -91,7 +92,7 @@ test('election days are the Tuesday after the first Monday in November', () => {
   )
 })
 
-test('counts per cycle and office match the brief: 1,031 markets, Ṁ2,489,000 for 2028–2036', () => {
+test('counts per cycle and office match the brief: 1,032 markets, Ṁ2,202,000 for 2028–2036', () => {
   assert.deepEqual([...CYCLES], [2028, 2030, 2032, 2034, 2036])
   let total = 0
   let mana = 0
@@ -118,19 +119,27 @@ test('counts per cycle and office match the brief: 1,031 markets, Ṁ2,489,000 f
       entriesOf(cycle).reduce((sum, e) => sum + e.payload!.liquidityTier, 0)
     )
   }
-  // Presidential cycles: 57 electoral markets plus 51 popular-vote markets.
-  assert.equal(entriesOf(2028).length, 537 + 51)
+  // Presidential cycles: 57 electoral markets plus 51 popular-vote markets;
+  // 2028 also has Tennessee's Senate special.
+  assert.equal(entriesOf(2028).length, 537 + 51 + 1)
   assert.equal(entriesOf(2030).length, 69)
   assert.equal(entriesOf(2032).length, 101 + 51)
   assert.equal(entriesOf(2034).length, 70)
   assert.equal(entriesOf(2036).length, 101 + 51)
-  assert.equal(total, 1_031)
-  // Popular vote: Ṁ10,000 each in 2028 (51 × 10,000), Ṁ1,000 in 2032/2036.
+  assert.equal(total, 1_032)
+  // Popular vote in 2028: Ṁ10,000 in the 19 compact members, Ṁ1,000 in the
+  // other 32; Ṁ1,000 each in 2032/2036. The Tennessee special: Ṁ1,000.
   assert.deepEqual(
     CYCLES.map((c) => built[c].totalMana),
-    [1_518_000 + 510_000, 69_000, 110_000 + 51_000, 70_000, 110_000 + 51_000]
+    [
+      1_518_000 + 19 * 10_000 + 32 * 1_000 + 1_000,
+      69_000,
+      110_000 + 51_000,
+      70_000,
+      110_000 + 51_000,
+    ]
   )
-  assert.equal(mana, 2_489_000)
+  assert.equal(mana, 2_202_000)
 })
 
 test('every generated manifest validates with zero errors and is not approved', () => {
@@ -174,7 +183,10 @@ test('race keys follow the 2026 style and reserved ids are unique across cycles'
   for (const cycle of CYCLES)
     for (const e of entriesOf(cycle)) {
       const re = {
-        senate: new RegExp(`^${cycle}-senate-[A-Z]{2}-regular-general$`),
+        senate:
+          e.identity.election === 'special'
+            ? new RegExp(`^${cycle}-senate-[A-Z]{2}-special-general$`)
+            : new RegExp(`^${cycle}-senate-[A-Z]{2}-regular-general$`),
         governor: new RegExp(`^${cycle}-governor-[A-Z]{2}-regular-general$`),
         house: new RegExp(`^${cycle}-house-[A-Z]{2}-\\d{2}-regular-general$`),
         president:
@@ -355,9 +367,12 @@ test('2030 midterm: the 33 Class 1 seats and the 36 governorships of the 2026 cy
 })
 
 test('2034 midterm: the 34 Class 3 seats of 2028 and the 36 governorships of 2030', () => {
+  // Regular races only: 2028 also has Tennessee's Class 1 special.
   const statesOf = (cycle: number, office: string) =>
     entriesOf(cycle)
-      .filter((e) => e.identity.office === office)
+      .filter(
+        (e) => e.identity.office === office && e.identity.election === 'regular'
+      )
       .map((e) => e.identity.state)
       .sort()
   assert.equal(statesOf(2034, 'senate').length, 34)
@@ -577,7 +592,29 @@ test('descriptions are short plain paragraphs: the election and date, the party 
         /^Resolves on the certified result, or earlier once the AP has called the race and no recount could change it\. N\/A if /,
         e.raceKey
       )
-    if (office === 'senate')
+    if (office === 'senate' && e.identity.election === 'special') {
+      // A special for the rest of a term: it follows that election whenever
+      // it is held before the term ends, and is N/A if none is.
+      const special = (e.evidence as { special?: { senateClass: string; termEnds: string } })
+        .special!
+      const ends = longDate(special.termEnds)
+      assert.ok(
+        paras[0].startsWith(
+          `Resolves to the party that wins the ${longDate(
+            cfg.electionDate
+          )} U.S. Senate special election in ${stateName} for the rest of the Class ${
+            special.senateClass
+          } term, which ends ${ends}. If the special election is held on another date before then, that election decides.`
+        ),
+        e.raceKey
+      )
+      assert.ok(
+        d.endsWith(
+          `N/A if no special election for this seat is held before ${ends}.`
+        ),
+        e.raceKey
+      )
+    } else if (office === 'senate')
       assert.ok(
         paras[0].startsWith(
           `Resolves to the party that wins the ${longDate(
@@ -776,6 +813,76 @@ test('every ME/NE district market is N/A if its district no longer exists (reapp
   )
 })
 
+test('Senate specials: Tennessee in 2028; Minnesota is a November 2027 race, listed but not generated', () => {
+  const specials = allEntries.filter((e) => e.identity.election === 'special')
+  assert.deepEqual(
+    specials.map((e) => e.raceKey),
+    ['2028-senate-TN-special-general']
+  )
+  const tn = specials[0]
+  assert.equal(
+    tn.payload!.question,
+    'Which party will win the 2028 U.S. Senate special election in Tennessee?'
+  )
+  assert.equal(
+    tn.payload!.descriptionMarkdown,
+    [
+      'Resolves to the party that wins the November 7, 2028 U.S. Senate special election in Tennessee for the rest of the Class 1 term, which ends January 3, 2031. If the special election is held on another date before then, that election decides.',
+      "Only the party matters: a Democratic or Republican nominee counts as that party even if also listed on other parties' lines. Anyone else resolves to Other, or to their own answer if one has been added.",
+      'Resolves on the certified result, or earlier once the AP has called the race and no recount could change it. N/A if no special election for this seat is held before January 3, 2031.',
+    ].join('\n\n')
+  )
+  assert.equal(tn.payload!.closeTime, cycleConfig(2028).closeTime)
+  assert.equal(tn.payload!.liquidityTier, 1_000) // far from competitive
+  assert.deepEqual(tn.dashboard, {
+    list: 'senate2028',
+    key: 'TN-special',
+    cycle: 2028,
+    office: 'senate',
+  })
+  // Seeded like any 2028 Senate race (Stage A, 1% Other).
+  assert.equal(
+    100 - tn.payload!.answerProbs!.reduce((a, b) => a + b, 0),
+    1
+  )
+  // No seat-holder's name where traders see it.
+  assert.doesNotMatch(
+    `${tn.payload!.question} ${tn.payload!.descriptionMarkdown}`,
+    /Blackburn|Klobuchar/
+  )
+  // Minnesota (Minn. Stat. § 204D.28): November 2, 2027, out of this
+  // pipeline's cycles; no Minnesota Senate entry in 2028.
+  const mn = inventories
+    .senateSpecials()
+    .specials.find((s) => s.state === 'MN')!
+  assert.equal(mn.cycle, 2027)
+  assert.equal(mn.electionDate, '2027-11-02')
+  assert.ok(mn.outOfScope)
+  assert.ok(
+    !allEntries.some(
+      (e) =>
+        e.identity.office === 'senate' &&
+        e.identity.state === 'MN' &&
+        e.identity.cycle === 2028
+    )
+  )
+  // The duplicate check keeps special and regular wording apart.
+  const regular: MarketLike = {
+    id: 'x',
+    question: 'Which party will win the 2028 U.S. Senate election in Tennessee?',
+    answers: [
+      { id: 'a', text: 'Democratic Party' },
+      { id: 'b', text: 'Republican Party' },
+    ],
+  }
+  assert.equal(classifyExistingMarket(tn, regular).verdict, 'ambiguous')
+  assert.equal(
+    classifyExistingMarket(tn, { ...regular, question: tn.payload!.question })
+      .verdict,
+    'equivalent'
+  )
+})
+
 test('no description mentions anyone: an @mention notifies that user even on an unlisted market', () => {
   // createNewContractNotification sends tagged_user notifications to every
   // user mentioned in the description, whatever the market's visibility.
@@ -906,19 +1013,41 @@ test('liquidity tiers: Ṁ100k for the 2028 presidential market, Ṁ10k for the 
       )
       .map(code)
   assert.deepEqual(at(2028, 'president', 100_000), ['US'])
-  // 2028: the 56 electoral state/district markets and the 51 popular-vote
-  // markets (every 2028 presidential market at Ṁ10k).
-  assert.equal(at(2028, 'president', 10_000).length, 56 + 51)
+  // 2028: the 56 electoral state/district markets, and the popular-vote
+  // markets of the 19 National Popular Vote Interstate Compact members (Tod,
+  // 6 Nov 2026); the other 32 popular-vote markets are at Ṁ1k.
+  assert.equal(at(2028, 'president', 10_000).length, 56 + 19)
+  const popular = entriesOf(2028).filter(
+    (e) => e.proposition === 'popular-vote-party'
+  )
+  const compact = popular.filter((e) => NPVIC_MEMBERS.includes(e.identity.state))
+  assert.equal(compact.length, 19)
+  for (const e of compact) {
+    assert.equal(e.payload!.liquidityTier, 10_000, e.raceKey)
+    assert.match(e.liquidityPlan!.rationale, /Compact member \(Tod, 6 Nov 2026/)
+  }
+  const outside = popular.filter((e) => !NPVIC_MEMBERS.includes(e.identity.state))
+  assert.equal(outside.length, 32)
+  for (const e of outside) {
+    assert.equal(e.payload!.liquidityTier, 1_000, e.raceKey)
+    assert.match(e.liquidityPlan!.rationale, /outside the National Popular Vote/)
+  }
+  // The member list is the compact's: 19 jurisdictions, 222 electoral votes.
+  const ev = inventories.president().electoralVotes2024
+  assert.equal(new Set(NPVIC_MEMBERS).size, 19)
   assert.equal(
-    entriesOf(2028).filter(
-      (e) =>
-        e.proposition === 'popular-vote-party' &&
-        e.payload!.liquidityTier === 10_000 &&
-        /popular-vote market for a state \(Tod, 5 Nov 2026/.test(
-          e.liquidityPlan!.rationale
-        )
-    ).length,
-    51
+    NPVIC_MEMBERS.reduce((s, st) => s + ev[st], 0),
+    222
+  )
+  // The electoral market stays at Ṁ10k everywhere in 2028.
+  assert.ok(
+    entriesOf(2028)
+      .filter(
+        (e) =>
+          e.identity.office === 'president' &&
+          e.proposition !== 'popular-vote-party'
+      )
+      .every((e) => e.payload!.liquidityTier >= 10_000)
   )
   // 2032/2036: only the national market is raised; popular vote stays 1,000.
   assert.deepEqual(at(2032, 'president', 10_000), ['US'])
@@ -989,7 +1118,7 @@ test('liquidity tiers: Ṁ100k for the 2028 presidential market, Ṁ10k for the 
     if (tier > 1_000)
       assert.match(
         e.liquidityPlan!.rationale,
-        /Tod, 5 Nov 2026|Competitive: within/,
+        /Tod, [56] Nov 2026|Competitive: within/,
         e.raceKey
       )
   }
@@ -1135,6 +1264,10 @@ test('dashboard block is consistent: list, key, cycle and office', () => {
     )
     if (e.identity.district !== undefined)
       assert.equal(e.dashboard.key, `${state}-${e.identity.district}`)
+    // A special keeps its own key, so a regular race the same year can't
+    // collide with it.
+    else if (e.identity.election === 'special')
+      assert.equal(e.dashboard.key, `${state}-special`)
     else assert.equal(e.dashboard.key, state)
   }
 })
@@ -1245,7 +1378,7 @@ test('rejections become reviewedRejectedContractIds and holds make entries unres
   assert.equal(ga.status, 'unresolved')
   assert.equal(ga.payload, undefined)
   assert.match(ga.unresolvedFields![0], /held: map likely to change/)
-  assert.equal(entries.length, 588)
+  assert.equal(entries.length, 589)
   // Held entries cost nothing; the rest keep their own tiers.
   const heldKeys = new Set(r.held)
   assert.equal(
@@ -1319,14 +1452,19 @@ test('popular vote: one market per state and DC in each presidential cycle, seed
         } in the ${cycle} presidential election?`
       )
       // The same answers, seeds, close time and topics as the state's
-      // electoral market; Ṁ10,000 in 2028, Ṁ1,000 later.
+      // electoral market; Ṁ10,000 in 2028 for compact members, Ṁ1,000
+      // otherwise.
       assert.deepEqual(e.payload!.answers, electoral.payload!.answers)
       assert.deepEqual(e.payload!.answerProbs, electoral.payload!.answerProbs)
       assert.deepEqual(e.answerMeta, electoral.answerMeta)
       assert.deepEqual(e.seed, electoral.seed)
       assert.equal(e.payload!.closeTime, electoral.payload!.closeTime)
       assert.deepEqual(e.payload!.groupIds, electoral.payload!.groupIds)
-      assert.equal(e.payload!.liquidityTier, cycle === 2028 ? 10_000 : 1_000)
+      assert.equal(
+        e.payload!.liquidityTier,
+        cycle === 2028 && NPVIC_MEMBERS.includes(st) ? 10_000 : 1_000,
+        e.raceKey
+      )
       // Once one exists, the other is never its duplicate (in either
       // direction): at most a related market, which the policy only lists.
       for (const [entry, other] of [
