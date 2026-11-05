@@ -387,6 +387,9 @@ function questionWords(question: string): string[] {
     .replace(/[-–—_/]/g, ' ')
     .replace(/\s+/g, ' ')
   q = ` ${q.trim()} `
+  // "Democratic Party" names a party; "party" alone marks a party market
+  // ("Which party will win…"), so the name mustn't read as one.
+  q = q.replace(/(?<= )(democratic|democrat|republican|gop) party(?= )/g, '$1')
   for (const { code, name } of STATE_NAMES)
     q = q.replace(new RegExp(`(?<= )${name}(?= )`, 'g'), stateToken(code))
   return q
@@ -942,13 +945,21 @@ export async function runApply(
     // has criteria this run doesn't know, so it isn't verified or published
     // blind. Two minutes' allowance for clock skew.
     const adopt = (m: MarketRow): MarketRow => {
-      if (m.creatorId !== me.id || normalizeName(m.question) !== normalizeName(e.question))
-        return stop(r, `reserved id ${r.reservedId} is a different market: ${m.url}`)
-      if (m.createdTime !== undefined && m.createdTime < startedAt - 2 * 60_000)
+      if (m.creatorId !== me.id)
+        return stop(r, `reserved id ${r.reservedId} holds another account's market: ${m.url}`)
+      const otherQuestion = normalizeName(m.question) !== normalizeName(e.question)
+      if (otherQuestion || (m.createdTime !== undefined && m.createdTime < startedAt - 2 * 60_000)) {
+        // Unknown criteria: the record forgets the ones saved for this
+        // attempt, so publishing needs --accept-criteria's check on the site.
+        delete r.criteria
+        delete r.criteriaHash
         return stop(
           r,
-          `${m.url} already existed when this run tried to create it, so the criteria it was created with aren't known. Check its question and description against the manifest on the site, then set its status to "creating" to verify and publish it.`
+          `${m.url} already existed when this run tried to create it${
+            otherQuestion ? ` (asking "${m.question}")` : ''
+          }, so the criteria it was created with aren't known. Edit it on the site to match the manifest if needed, set its status to "creating", then re-run with --accept-criteria ${e.key}: the run compares it with the manifest before publishing.`
         )
+      }
       return m
     }
     let lastMessage = ''
@@ -1045,16 +1056,20 @@ export async function runApply(
         // Ours if we made it with this question, or with the question saved
         // when it was created (a changed question is caught further down).
         const asked = normalizeName(existing.question)
+        if (existing.creatorId !== me.id)
+          stop(r, `reserved id ${reservedId} holds another account's market: ${existing.url}`)
         if (
-          existing.creatorId !== me.id ||
-          (asked !== normalizeName(e.question) &&
-            asked !== normalizeName(r.criteria?.question ?? ''))
+          asked !== normalizeName(e.question) &&
+          asked !== normalizeName(r.criteria?.question ?? '')
         )
-          stop(r, `reserved id ${reservedId} is a different market: ${existing.url}`)
+          stop(
+            r,
+            `${existing.url} asks "${existing.question}", not this entry's question. Edit it on the site to match the manifest, set its status to "creating", then re-run with --accept-criteria ${e.key}.`
+          )
         if (r.status === 'planned' || !r.seed)
           stop(
             r,
-            `${existing.url} exists but this state file has no record of its seed; check it on the site, then set its status to "verified" (to publish) or "published"`
+            `${existing.url} exists, but this state file has no record of creating it (a lost or new state file?). Restore its record from the old state file to carry on, set its status to "published" if it's already public and correct, or delete the market to create it afresh.`
           )
         if (r.status === 'creating') {
           // The visibility it was created with, not this run's flag. (No
@@ -1155,9 +1170,10 @@ export async function runApply(
             `${e.key}: created public under earlier criteria (changed: ${changed}); edit ${r.url} by hand if the change matters`
           )
         } else if (acceptCriteria.has(e.key)) {
-          // Accepted only once the market on the site says what the
-          // manifest says (letters and digits compared; other criteria are
-          // checked by the shape check below or can't be edited).
+          // Accepted only once the market on the site says what the manifest
+          // says: question, description, fixed answers and topics compared
+          // here (letters and digits), close time and answer mode by the
+          // verification below, which runs again after accepting.
           const live = await readFresh(r.contractId ?? reservedId)
           const squash = (s: string) =>
             s.normalize('NFKC').toLowerCase().replace(/[^a-z0-9]+/g, '')
@@ -1170,6 +1186,19 @@ export async function runApply(
               issues.push('the API returned no description to compare')
             else if (squash(live.textDescription) !== squash(e.description))
               issues.push("its description on the site doesn't match the manifest's")
+            if (criteria.answers) {
+              const labels = (xs: string[]) => xs.map(squash).sort().join('|')
+              const onSite = (live.answers ?? []).filter((a) => !a.isOther).map((a) => a.text)
+              if (labels(onSite) !== labels(criteria.answers))
+                issues.push("its answers on the site don't match the manifest's")
+            }
+            const wanted = e.topics.filter((slug) => topics.found.has(slug))
+            if (live.groupSlugs === undefined)
+              issues.push('the API returned no topics to compare')
+            else {
+              const missing = wanted.filter((slug) => !live.groupSlugs!.includes(slug))
+              if (missing.length) issues.push(`it's missing the topics ${missing.join(', ')}`)
+            }
           }
           if (issues.length)
             throw new StopRun(
@@ -1180,6 +1209,9 @@ export async function runApply(
           )
           r.criteria = criteria
           r.criteriaHash = hash
+          // Verify again, whatever the record said: the close time or answer
+          // mode may have changed with the criteria.
+          if (r.status === 'verified') r.status = 'created-unlisted'
           touch(r)
           save()
         } else {

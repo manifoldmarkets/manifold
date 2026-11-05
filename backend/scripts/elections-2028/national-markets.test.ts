@@ -584,8 +584,17 @@ test('apply-time duplicates: same question blocks; siblings and race markets nev
     ['2028-ec-popular-split', 'Will the 2028 popular vote winner lose the electoral college?'],
     ['2028-popular-vote', 'Which party wins the 2028 popular vote?'],
     ['2028-balance-of-power', 'Who controls the presidency, Senate and House after 2028?'],
+    // A party's name isn't a party market (re-review, 5 Nov 2026).
+    ['2028-dem-nominee', 'Who will be the 2028 Democratic Party presidential nominee?'],
+    ['2028-dem-nominee', "Who will be the Democratic Party's 2028 presidential nominee?"],
+    ['2028-dem-electoral-votes', 'How many electoral votes will the Democratic Party win in 2028?'],
   ])
     assert.ok(blocks(q(key), theirs), `${key} vs "${theirs}"`)
+  // A "which party" control question is related to balance of power: listed,
+  // not blocking.
+  const control = 'Which party will control the presidency, Senate and House after the 2028 elections?'
+  assert.ok(!blocks(q(BOP), control))
+  assert.equal(reviewMatches(q(BOP), [row('c', control)]).length, 1)
   // A candidate market for a race we ask about by party is related, not the
   // same question: listed for review, not blocking.
   const kyCandidates = row('ky', 'Who will win the 2027 Kentucky gubernatorial election?')
@@ -670,6 +679,7 @@ function fakeServer() {
         closeTime: p.closeTime,
         createdTime: Date.now(),
         textDescription: p.descriptionMarkdown,
+        groupSlugs: (p.groupIds ?? []).map((g: string) => g.replace(/^g-/, '')),
         addAnswersMode: p.addAnswersMode,
         shouldAnswersSumToOne: p.shouldAnswersSumToOne,
         probability: p.outcomeType === 'BINARY' ? p.initialProb / 100 : undefined,
@@ -758,7 +768,13 @@ async function earlierRun(
   const seed = await resolveSeed(from)
   const reservedId = reservedIdFor(SERIES, from.key)
   await server.api.createMarket(
-    buildPayload({ entry: from, seed, groupIds: [], reservedId, quiet: true })
+    buildPayload({
+      entry: from,
+      seed,
+      groupIds: from.topics.map((slug) => `g-${slug}`),
+      reservedId,
+      quiet: true,
+    })
   )
   server.log.length = 0
   fs.writeFileSync(
@@ -872,6 +888,76 @@ test('apply: a market from an earlier run is not adopted blind after a missed re
   assert.match(run.state.entries[KY].error, /already existed when this run tried to create it/)
   assert.equal(server.markets.get(id)!.visibility, 'unlisted')
   assert.ok(!server.log.some((l) => l.startsWith('publish')))
+  // Its criteria are forgotten, so the suggested recovery goes through the
+  // check on the site: without --accept-criteria it stops again.
+  assert.equal(run.state.entries[KY].criteriaHash, undefined)
+  const setCreating = () => {
+    const s = JSON.parse(fs.readFileSync(statePath, 'utf8'))
+    s.entries[KY].status = 'creating'
+    fs.writeFileSync(statePath, JSON.stringify(s))
+  }
+  setCreating()
+  const blind = await applyWith(server, [ky], statePath)
+  assert.equal(blind.code, 1)
+  assert.equal(server.markets.get(id)!.visibility, 'unlisted')
+  const checked = await applyWith(server, [ky], statePath, { accept: [KY] })
+  assert.equal(checked.code, 0)
+  assert.equal(checked.state.entries[KY].status, 'published')
+  assert.deepEqual(server.log, [`publish ${id}`])
+})
+
+test('apply: --accept-criteria re-verifies and checks answers and topics on the site', async () => {
+  // A verified record whose close time changed in the manifest: accepting
+  // the edited description isn't enough, the close time on the site differs.
+  {
+    const server = fakeServer()
+    const statePath = tempState()
+    const old = entry(KY)
+    const id = await earlierRun(server, statePath, old, { status: 'verified', visibility: 'unlisted' })
+    const edited: Entry = {
+      ...old,
+      description: old.description + ' Edited.',
+      closeTime: '2027-11-20T05:00:00.000Z',
+    }
+    server.markets.get(id)!.textDescription = edited.description
+    const run = await applyWith(server, [edited], statePath, { accept: [KY] })
+    assert.equal(run.code, 1)
+    assert.match(run.state.entries[KY].error, /market shape off: closeTime/)
+    assert.equal(server.markets.get(id)!.visibility, 'unlisted')
+  }
+  // Fixed answers renamed in the manifest but not on the site.
+  {
+    const server = fakeServer()
+    const statePath = tempState()
+    const old = entry(BOP) as MultiEntry
+    const id = await earlierRun(server, statePath, old, { status: 'created-unlisted', visibility: 'unlisted' })
+    const edited: MultiEntry = {
+      ...old,
+      answers: [...old.answers!.slice(0, 7), 'R President, D Senate, R House (split Congress)'],
+    }
+    const run = await applyWith(server, [edited], statePath, { accept: [BOP] })
+    assert.equal(run.code, 1)
+    assert.equal(run.state.entries[BOP].status, 'created-unlisted')
+    assert.equal(server.markets.get(id)!.visibility, 'unlisted')
+  }
+  // A topic missing on the site.
+  {
+    const server = fakeServer()
+    const statePath = tempState()
+    const old = entry(KY)
+    const id = await earlierRun(server, statePath, old, { status: 'created-unlisted', visibility: 'unlisted' })
+    const edited: Entry = { ...old, description: old.description + ' Edited.' }
+    const m = server.markets.get(id)!
+    m.textDescription = edited.description
+    m.groupSlugs = m.groupSlugs!.slice(1)
+    const run = await applyWith(server, [edited], statePath, { accept: [KY] })
+    assert.equal(run.code, 1)
+    assert.equal(m.visibility, 'unlisted')
+    m.groupSlugs = old.topics
+    const fixed = await applyWith(server, [edited], statePath, { accept: [KY] })
+    assert.equal(fixed.code, 0)
+    assert.equal(m.visibility, 'public')
+  }
 })
 
 test('apply: a resumed market keeps the visibility it was created with', async () => {

@@ -42,6 +42,7 @@ export type MarketRow = SourceMarket & {
   createdTime?: number
   // Full-market reads only (paragraphs separated by blank lines).
   textDescription?: string
+  groupSlugs?: string[]
   mechanism?: string
   addAnswersMode?: string
   shouldAnswersSumToOne?: boolean
@@ -78,6 +79,7 @@ export function toMarketRow(m: any): MarketRow {
     createdTime: m.createdTime === undefined ? undefined : Number(m.createdTime),
     textDescription:
       typeof m.textDescription === 'string' ? m.textDescription : undefined,
+    groupSlugs: Array.isArray(m.groupSlugs) ? m.groupSlugs.map(String) : undefined,
     mechanism: m.mechanism,
     addAnswersMode: m.addAnswersMode,
     shouldAnswersSumToOne: m.shouldAnswersSumToOne,

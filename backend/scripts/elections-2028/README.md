@@ -145,14 +145,18 @@ the mentioned user. No description mentions anyone (a test enforces it).
   market created under different criteria than the manifest's now is never
   verified or published: the run stops and names what changed. Edit the
   unlisted market on the site to match, then re-run with
-  `--accept-criteria <key>` (exact keys, comma-separated); the run checks the
-  market's question and description on the site against the manifest before
-  accepting. Or delete the market and its record. Already-published markets
-  only get a warning.
+  `--accept-criteria <key>` (exact keys, comma-separated). Before accepting,
+  the run compares the market on the site with the manifest: question,
+  description, fixed answers and topics; then it verifies the market again
+  (opening odds, close time, answer mode) before publishing. Or delete the
+  market and its record. Already-published markets only get a warning.
 - A market found at its reserved id that this run didn't create (the read
-  before creating missed it) is not adopted blind: the run stops, since the
-  criteria it was made with aren't known. A resumed market keeps the
-  visibility it was created with, so an unlisted one always gets published.
+  before creating missed it) is not adopted blind: the run stops and forgets
+  the criteria it saved for that attempt, so publishing it goes through
+  `--accept-criteria` and its check on the site. A market at a reserved id
+  with no record at all (a lost or new state file) also stops the run. A
+  resumed market keeps the visibility it was created with, so an unlisted one
+  always gets published.
 - When the budget or balance runs out, the run creates nothing more but
   still verifies and publishes markets earlier runs created.
 - Before every create, the run checks @ManifoldPolitics' open public markets
