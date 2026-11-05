@@ -2,7 +2,7 @@
   "kind": "races",
   "manifestVersion": "2026-11-05.1",
   "series": "us-2032-general-v1",
-  "generatedAt": "2026-11-05T03:54:04.140Z",
+  "generatedAt": "2026-11-05T03:59:19.760Z",
   "review": {
     "approved": false,
     "reviewedBy": null,
@@ -10461,7 +10461,7 @@
       "shapeRationale": "Generic ballot-party multi (Democratic Party / Republican Party, plus the server's \"Other\"), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one, and only @ManifoldPolitics can add an answer (a third party or a named independent), which takes its share out of \"Other\".",
       "payload": {
         "question": "Which party will win Maine's 1st District (ME-1) in the 2032 presidential election?",
-        "descriptionMarkdown": "Resolves to the party of the presidential ticket that gets the electoral vote of Maine's 1st congressional district (ME-1) in the November 2, 2032 election. N/A if Maine no longer awards an electoral vote by district.\n\nOnly the party matters: a ticket on the Democratic or Republican line counts as that party even if also listed on other parties' lines. Any other ticket resolves to Other, or to its own answer if one has been added.\n\nResolves on the electors Maine certifies, or earlier once the AP has called the district and nothing could change it. Faithless electors don't change it.",
+        "descriptionMarkdown": "Resolves to the party of the presidential ticket that gets the electoral vote of Maine's 1st congressional district (ME-1) in the November 2, 2032 election. N/A if Maine no longer awards an electoral vote by district, or has no 1st district.\n\nOnly the party matters: a ticket on the Democratic or Republican line counts as that party even if also listed on other parties' lines. Any other ticket resolves to Other, or to its own answer if one has been added.\n\nResolves on the electors Maine certifies, or earlier once the AP has called the district and nothing could change it. Faithless electors don't change it.",
         "outcomeType": "MULTIPLE_CHOICE",
         "answers": [
           "Democratic Party",
@@ -10570,7 +10570,7 @@
       "shapeRationale": "Generic ballot-party multi (Democratic Party / Republican Party, plus the server's \"Other\"), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one, and only @ManifoldPolitics can add an answer (a third party or a named independent), which takes its share out of \"Other\".",
       "payload": {
         "question": "Which party will win Maine's 2nd District (ME-2) in the 2032 presidential election?",
-        "descriptionMarkdown": "Resolves to the party of the presidential ticket that gets the electoral vote of Maine's 2nd congressional district (ME-2) in the November 2, 2032 election. N/A if Maine no longer awards an electoral vote by district.\n\nOnly the party matters: a ticket on the Democratic or Republican line counts as that party even if also listed on other parties' lines. Any other ticket resolves to Other, or to its own answer if one has been added.\n\nResolves on the electors Maine certifies, or earlier once the AP has called the district and nothing could change it. Faithless electors don't change it.",
+        "descriptionMarkdown": "Resolves to the party of the presidential ticket that gets the electoral vote of Maine's 2nd congressional district (ME-2) in the November 2, 2032 election. N/A if Maine no longer awards an electoral vote by district, or has no 2nd district.\n\nOnly the party matters: a ticket on the Democratic or Republican line counts as that party even if also listed on other parties' lines. Any other ticket resolves to Other, or to its own answer if one has been added.\n\nResolves on the electors Maine certifies, or earlier once the AP has called the district and nothing could change it. Faithless electors don't change it.",
         "outcomeType": "MULTIPLE_CHOICE",
         "answers": [
           "Democratic Party",
@@ -10679,7 +10679,7 @@
       "shapeRationale": "Generic ballot-party multi (Democratic Party / Republican Party, plus the server's \"Other\"), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one, and only @ManifoldPolitics can add an answer (a third party or a named independent), which takes its share out of \"Other\".",
       "payload": {
         "question": "Which party will win Nebraska's 1st District (NE-1) in the 2032 presidential election?",
-        "descriptionMarkdown": "Resolves to the party of the presidential ticket that gets the electoral vote of Nebraska's 1st congressional district (NE-1) in the November 2, 2032 election. N/A if Nebraska no longer awards an electoral vote by district.\n\nOnly the party matters: a ticket on the Democratic or Republican line counts as that party even if also listed on other parties' lines. Any other ticket resolves to Other, or to its own answer if one has been added.\n\nResolves on the electors Nebraska certifies, or earlier once the AP has called the district and nothing could change it. Faithless electors don't change it.",
+        "descriptionMarkdown": "Resolves to the party of the presidential ticket that gets the electoral vote of Nebraska's 1st congressional district (NE-1) in the November 2, 2032 election. N/A if Nebraska no longer awards an electoral vote by district, or has no 1st district.\n\nOnly the party matters: a ticket on the Democratic or Republican line counts as that party even if also listed on other parties' lines. Any other ticket resolves to Other, or to its own answer if one has been added.\n\nResolves on the electors Nebraska certifies, or earlier once the AP has called the district and nothing could change it. Faithless electors don't change it.",
         "outcomeType": "MULTIPLE_CHOICE",
         "answers": [
           "Democratic Party",
@@ -10788,7 +10788,7 @@
       "shapeRationale": "Generic ballot-party multi (Democratic Party / Republican Party, plus the server's \"Other\"), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one, and only @ManifoldPolitics can add an answer (a third party or a named independent), which takes its share out of \"Other\".",
       "payload": {
         "question": "Which party will win Nebraska's 2nd District (NE-2) in the 2032 presidential election?",
-        "descriptionMarkdown": "Resolves to the party of the presidential ticket that gets the electoral vote of Nebraska's 2nd congressional district (NE-2) in the November 2, 2032 election. N/A if Nebraska no longer awards an electoral vote by district.\n\nOnly the party matters: a ticket on the Democratic or Republican line counts as that party even if also listed on other parties' lines. Any other ticket resolves to Other, or to its own answer if one has been added.\n\nResolves on the electors Nebraska certifies, or earlier once the AP has called the district and nothing could change it. Faithless electors don't change it.",
+        "descriptionMarkdown": "Resolves to the party of the presidential ticket that gets the electoral vote of Nebraska's 2nd congressional district (NE-2) in the November 2, 2032 election. N/A if Nebraska no longer awards an electoral vote by district, or has no 2nd district.\n\nOnly the party matters: a ticket on the Democratic or Republican line counts as that party even if also listed on other parties' lines. Any other ticket resolves to Other, or to its own answer if one has been added.\n\nResolves on the electors Nebraska certifies, or earlier once the AP has called the district and nothing could change it. Faithless electors don't change it.",
         "outcomeType": "MULTIPLE_CHOICE",
         "answers": [
           "Democratic Party",
@@ -10897,7 +10897,7 @@
       "shapeRationale": "Generic ballot-party multi (Democratic Party / Republican Party, plus the server's \"Other\"), opened years ahead with no candidates named. Party outcomes survive nominee changes and map directly to seat and elector totals; answers sum to one, and only @ManifoldPolitics can add an answer (a third party or a named independent), which takes its share out of \"Other\".",
       "payload": {
         "question": "Which party will win Nebraska's 3rd District (NE-3) in the 2032 presidential election?",
-        "descriptionMarkdown": "Resolves to the party of the presidential ticket that gets the electoral vote of Nebraska's 3rd congressional district (NE-3) in the November 2, 2032 election. N/A if Nebraska no longer awards an electoral vote by district.\n\nOnly the party matters: a ticket on the Democratic or Republican line counts as that party even if also listed on other parties' lines. Any other ticket resolves to Other, or to its own answer if one has been added.\n\nResolves on the electors Nebraska certifies, or earlier once the AP has called the district and nothing could change it. Faithless electors don't change it.",
+        "descriptionMarkdown": "Resolves to the party of the presidential ticket that gets the electoral vote of Nebraska's 3rd congressional district (NE-3) in the November 2, 2032 election. N/A if Nebraska no longer awards an electoral vote by district, or has no 3rd district.\n\nOnly the party matters: a ticket on the Democratic or Republican line counts as that party even if also listed on other parties' lines. Any other ticket resolves to Other, or to its own answer if one has been added.\n\nResolves on the electors Nebraska certifies, or earlier once the AP has called the district and nothing could change it. Faithless electors don't change it.",
         "outcomeType": "MULTIPLE_CHOICE",
         "answers": [
           "Democratic Party",

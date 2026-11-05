@@ -40,12 +40,11 @@ election markets, not here.
 
 **Reapportionment.** House 2028 is fixed by the 2020 apportionment. The 2032
 and 2036 district markets (ME-1/2, NE-1/2/3) need a recheck once the 2030
-census apportionment counts are out (due by December 31, 2030). A new
-district, say a Nebraska 4th, needs a new market. A district that disappears
-while its state keeps awarding votes by district (Nebraska down to two seats)
-has nothing to follow and would be N/A, but the wording only says "N/A if
-<state> no longer awards an electoral vote by district", so add "or has no
-<n>th district" before launch if a loss looks possible. Same recheck if any
+census apportionment counts are out (due by December 31, 2030). A district
+that disappears is covered: every district market is "N/A if <state> no
+longer awards an electoral vote by district, or has no <n>th district" (all
+15, 2028 included for consistency, though 2028's districts are fixed). A new
+district, say a Nebraska 4th, still needs a new market. Same recheck if any
 state adopts or drops district allocation before 2032.
 
 Creator: `@ManifoldPolitics`. Every market: `cpmm-multi-2` (the default),
@@ -165,7 +164,9 @@ per-answer price: Ṁ100 at 1,000, Ṁ1,000 at 10,000, Ṁ10,000 at 100,000.
   new system and is N/A if it has none. Maine's and Nebraska's state markets
   cover their two statewide electoral votes. A district market (ME-1/2,
   NE-1/2/3) follows the district's electoral vote and is N/A if the state no
-  longer awards one by district. State and district markets resolve on the
+  longer awards one by district or no longer has that district ("N/A if
+  Nebraska no longer awards an electoral vote by district, or has no 2nd
+  district."). State and district markets resolve on the
   electors the state certifies, or an earlier AP call nothing could change;
   faithless electors don't change the result. If a state's certified
   electors are split between tickets, its market resolves to each party in

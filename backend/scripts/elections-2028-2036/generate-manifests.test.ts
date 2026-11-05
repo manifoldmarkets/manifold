@@ -655,15 +655,15 @@ test('descriptions are short plain paragraphs: the election and date, the party 
           e.raceKey
         )
       } else if (e.identity.district !== undefined) {
-        // A district market follows the district's electoral vote.
+        // A district market follows the district's electoral vote; N/A if
+        // the state stops awarding votes by district or the district is gone.
         const n = e.identity.district
+        const nth = n === 1 ? '1st' : n === 2 ? '2nd' : '3rd'
         assert.equal(
           paras[0],
-          `Resolves to the party of the presidential ticket that gets the electoral vote of ${stateName}'s ${
-            n === 1 ? '1st' : n === 2 ? '2nd' : '3rd'
-          } congressional district (${state}-${n}) in the ${longDate(
+          `Resolves to the party of the presidential ticket that gets the electoral vote of ${stateName}'s ${nth} congressional district (${state}-${n}) in the ${longDate(
             cfg.electionDate
-          )} election. N/A if ${stateName} no longer awards an electoral vote by district.`,
+          )} election. N/A if ${stateName} no longer awards an electoral vote by district, or has no ${nth} district.`,
           e.raceKey
         )
         assert.equal(
@@ -738,6 +738,44 @@ test('descriptions are short plain paragraphs: the election and date, the party 
   assert.ok(mean < 650, `mean description length ${mean}`)
 })
 
+test('every ME/NE district market is N/A if its district no longer exists (reapportionment)', () => {
+  // A seat lost in the 2030 reapportionment (say Nebraska down to two) must
+  // not leave a district market with nothing to follow.
+  const districts = allEntries.filter(
+    (e) =>
+      e.identity.office === 'president' &&
+      e.identity.district !== undefined &&
+      e.proposition !== 'popular-vote-party'
+  )
+  assert.deepEqual(
+    districts.map((e) => e.raceKey).sort(),
+    [2028, 2032, 2036]
+      .flatMap((y) =>
+        ['ME-01', 'ME-02', 'NE-01', 'NE-02', 'NE-03'].map(
+          (d) => `${y}-president-${d}-general`
+        )
+      )
+      .sort()
+  )
+  for (const e of districts) {
+    const { stateName, district } = e.identity
+    const nth = ['1st', '2nd', '3rd'][district! - 1]
+    assert.ok(
+      e.payload!.descriptionMarkdown.includes(
+        `N/A if ${stateName} no longer awards an electoral vote by district, or has no ${nth} district.`
+      ),
+      e.raceKey
+    )
+  }
+  // 2032: Nebraska's 2nd, word for word.
+  assert.equal(
+    allEntries
+      .find((e) => e.raceKey === '2032-president-NE-02-general')!
+      .payload!.descriptionMarkdown.split('\n\n')[0],
+    "Resolves to the party of the presidential ticket that gets the electoral vote of Nebraska's 2nd congressional district (NE-2) in the November 2, 2032 election. N/A if Nebraska no longer awards an electoral vote by district, or has no 2nd district."
+  )
+})
+
 test('no description mentions anyone: an @mention notifies that user even on an unlisted market', () => {
   // createNewContractNotification sends tagged_user notifications to every
   // user mentioned in the description, whatever the market's visibility.
@@ -765,7 +803,7 @@ test('the exact text for one market of each kind', () => {
   assert.equal(
     desc('2028-president-NE-02-general'),
     [
-      "Resolves to the party of the presidential ticket that gets the electoral vote of Nebraska's 2nd congressional district (NE-2) in the November 7, 2028 election. N/A if Nebraska no longer awards an electoral vote by district.",
+      "Resolves to the party of the presidential ticket that gets the electoral vote of Nebraska's 2nd congressional district (NE-2) in the November 7, 2028 election. N/A if Nebraska no longer awards an electoral vote by district, or has no 2nd district.",
       TICKET,
       "Resolves on the electors Nebraska certifies, or earlier once the AP has called the district and nothing could change it. Faithless electors don't change it.",
     ].join('\n\n')

@@ -249,11 +249,12 @@ function stateDescription(race: Race, cfg: CycleConfig) {
   const { stateName, state } = race
   const date = longDate(cfg.electionDate)
   if (race.district !== undefined) {
-    const where = `${stateName}'s ${ORDINAL(
-      race.district
-    )} congressional district (${state}-${race.district})`
+    const nth = ORDINAL(race.district)
+    const where = `${stateName}'s ${nth} congressional district (${state}-${race.district})`
+    // N/A also when the district itself is gone (a seat lost in
+    // reapportionment) while the state keeps awarding votes by district.
     return [
-      `Resolves to the party of the presidential ticket that gets the electoral vote of ${where} in the ${date} election. N/A if ${stateName} no longer awards an electoral vote by district.`,
+      `Resolves to the party of the presidential ticket that gets the electoral vote of ${where} in the ${date} election. N/A if ${stateName} no longer awards an electoral vote by district, or has no ${nth} district.`,
       TICKET_PARTY_RULE(state),
       `Resolves on the electors ${stateName} certifies, or earlier once the AP has called the district and nothing could change it. Faithless electors don't change it.`,
     ].join('\n\n')
