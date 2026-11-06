@@ -5,7 +5,6 @@ import Link from 'next/link'
 import {
   createContext,
   ReactNode,
-  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -17,6 +16,7 @@ import { Answer } from 'common/answer'
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
 import { Contract, isMultiCpmm } from 'common/contract'
 import { getContracts } from 'common/supabase/contracts'
+import { useLiveContractWithStatus } from 'web/hooks/use-contract'
 import { Button } from 'web/components/buttons/button'
 import { formatOdds } from 'web/components/usa-map/election-display'
 import { placeHexLabels } from 'web/components/usa-map/map-geometry'
@@ -186,7 +186,7 @@ export function ElectionMap(props: {
                 handleClick={(key) => select(key)}
                 onMouseEnter={setHovered}
                 onMouseLeave={() => setHovered(undefined)}
-                targetState={selected}
+                targetState={selected?.split('-')[0]}
                 hoveredState={hovered}
                 CustomStateComponent={FillState}
               />
@@ -219,7 +219,7 @@ export function ElectionMap(props: {
         {selected ? (
           <PlacePanel
             place={selected.split('-')[0]}
-            focus={selected.includes('-') ? selected : undefined}
+            focusRow={focusRow(shown, selected)}
             races={races}
             primaries={primaries}
             more={more}
@@ -231,6 +231,13 @@ export function ElectionMap(props: {
       </div>
     </div>
   )
+}
+
+// The panel row a picked district stands for: a House district in the
+// House view, Maine's or Nebraska's electoral districts elsewhere.
+function focusRow(view: MapView, selected: string) {
+  if (!selected.includes('-')) return undefined
+  return view.mode === 'house' ? `H-${selected}` : `P-${selected}`
 }
 
 function placeLabel(place: string) {
@@ -387,8 +394,16 @@ function MapLegend(props: {
       swatch(DEFAULT_STATE_FILL, 'No market'),
     ]
   } else {
+    const called = new Set(
+      Object.values(props.fills).flatMap((f) =>
+        f.kind === 'rating' && f.c ? [f.c] : []
+      )
+    )
     items = [
       ...RATING_ORDER.map((r) => swatch(RATING[r].fill, RATING[r].label)),
+      ...(called.has('D') ? [swatch(DEM_COLOR, 'Called for D')] : []),
+      ...(called.has('R') ? [swatch(REP_COLOR, 'Called for R')] : []),
+      ...(called.has('O') ? [swatch(OTHER_COLOR, 'Called for other')] : []),
       swatch(DEFAULT_STATE_FILL, 'No race'),
     ]
   }
@@ -536,13 +551,13 @@ function ClosestPanel(props: {
 
 function PlacePanel(props: {
   place: string
-  focus: string | undefined
+  focusRow: string | undefined
   races: BoardRace[]
   primaries: PrimaryRow[]
   more: PlacedMarket[]
   onClose: () => void
 }) {
-  const { place, focus, races, primaries, more, onClose } = props
+  const { place, focusRow, races, primaries, more, onClose } = props
   const sections = useMemo(
     () => statePanel(place, races, primaries, more),
     [place, races, primaries, more]
@@ -571,12 +586,15 @@ function PlacePanel(props: {
             {s.title}
           </h4>
           {s.key === 'house' && s.rows.length > 3 ? (
-            <DistrictGrid
-              rows={s.rows}
-              focus={focus ? `H-${focus}` : undefined}
-            />
+            <DistrictGrid key={focusRow} rows={s.rows} focus={focusRow} />
           ) : (
-            s.rows.map((r) => <RaceRow key={r.key} row={r} />)
+            s.rows.map((r) => (
+              <RaceRow
+                key={`${r.key}-${r.key === focusRow}`}
+                row={r}
+                initiallyOpen={r.key === focusRow}
+              />
+            ))
           )}
         </div>
       ))}
@@ -691,8 +709,7 @@ const ANSWERS_SHOWN = 6
 // with a Bet button that trades without leaving the page.
 function RaceMarket(props: { slug: string; creator?: string }) {
   const { slug } = props
-  const { contract, error, refresh } = useContractBySlug(slug)
-  const [answer, setAnswer] = useState<Answer | undefined>()
+  const { contract, error } = useContractBySlug(slug)
   const href = `/${props.creator ?? 'ManifoldPolitics'}/${slug}`
   const open = (
     <Link
@@ -709,6 +726,16 @@ function RaceMarket(props: { slug: string; creator?: string }) {
       </div>
     )
   if (!contract) return <LoadingIndicator className="py-3" size="sm" />
+  return <LiveRaceMarket initial={contract} open={open} />
+}
+
+// The stored copy finds the market; the live one (fetched fresh, then kept
+// current over the websocket) prices it. Bets wait for the live one, as on
+// the race charts: the bet panel prices every answer.
+function LiveRaceMarket(props: { initial: Contract; open: ReactNode }) {
+  const { initial, open } = props
+  const { contract, hasLoaded } = useLiveContractWithStatus(initial)
+  const [answer, setAnswer] = useState<Answer | undefined>()
   if (!isMultiCpmm(contract))
     return (
       <div className="text-ink-700 flex items-center justify-between px-1.5 pb-2 text-sm">
@@ -717,7 +744,7 @@ function RaceMarket(props: { slug: string; creator?: string }) {
       </div>
     )
   const answers = sortBy(
-    contract.answers.filter((a) => a.resolution !== 'CANCEL'),
+    (contract.answers ?? []).filter((a) => a.resolution !== 'CANCEL'),
     (a) => -getAnswerProbability(contract, a.id)
   )
   return (
@@ -736,8 +763,12 @@ function RaceMarket(props: { slug: string; creator?: string }) {
               <Button
                 size="2xs"
                 color="indigo-outline"
+                disabled={!hasLoaded}
                 onClick={() => {
-                  track('election map bet', { slug, answer: a.text })
+                  track('election map bet', {
+                    slug: contract.slug,
+                    answer: a.text,
+                  })
                   setAnswer(a)
                 }}
               >
@@ -757,35 +788,38 @@ function RaceMarket(props: { slug: string; creator?: string }) {
       </div>
       <AnswerBetModal
         contract={contract}
-        answer={answer}
-        onClose={() => {
-          setAnswer(undefined)
-          refresh()
-        }}
+        answer={
+          answer && hasLoaded
+            ? contract.answers.find((x) => x.id === answer.id)
+            : undefined
+        }
+        onClose={() => setAnswer(undefined)}
       />
     </div>
   )
 }
 
-// The full market (the bet panel prices every answer), by slug. `error`
-// when it can't be read or doesn't exist.
+// The market's stored copy, by slug: enough to find it and show it while the
+// live one loads. `error` when it can't be read or doesn't exist.
 function useContractBySlug(slug: string) {
   const [contract, setContract] = useState<Contract | undefined>()
   const [error, setError] = useState(false)
-  const load = useCallback(() => {
+  useEffect(() => {
+    let cancelled = false
+    setContract(undefined)
+    setError(false)
     getContracts(db, [slug], 'slug')
       .then(([c]) => {
+        if (cancelled) return
         if (c) setContract(c)
         else setError(true)
       })
-      .catch(() => setError(true))
+      .catch(() => !cancelled && setError(true))
+    return () => {
+      cancelled = true
+    }
   }, [slug])
-  useEffect(() => {
-    setContract(undefined)
-    setError(false)
-    load()
-  }, [load])
-  return { contract, error, refresh: load }
+  return { contract, error }
 }
 
 function BinaryChance(props: { contract: Contract }) {

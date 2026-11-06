@@ -6,7 +6,7 @@ import type {
   ElectionLeaderboard,
   ElectionLeaderboardKey,
 } from 'common/election-leaderboards'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatWithCommas } from 'common/util/format'
 import { FilterPill } from 'web/components/search/filter-pills'
 import {
   CREATOR_COLUMNS,
@@ -52,6 +52,22 @@ export function ElectionLeaderboards(props: {
     boards.find((b) => b.key === props.defaultKey) ??
     boards[0]
   if (!board) return null
+
+  // Closed, the top traders; on a board nobody has made money on yet, its
+  // top creators.
+  const preview =
+    board.profit.length > 0
+      ? {
+          label: undefined,
+          entries: board.profit,
+          format: (n: number) => formatMoney(n, 'MANA'),
+        }
+      : {
+          label: 'Top creators',
+          entries: board.creator,
+          format: (n: number) =>
+            `${formatWithCommas(n)} ${n === 1 ? 'trader' : 'traders'}`,
+        }
 
   const toggle = () => {
     track('election leaderboard toggle', { open: !open, board: board.key })
@@ -131,7 +147,12 @@ export function ElectionLeaderboards(props: {
           onClick={toggle}
           className="flex flex-wrap items-center gap-x-5 gap-y-2 text-left"
         >
-          {board.profit.slice(0, PREVIEW).map((e, i) => (
+          {preview.label && (
+            <span className="text-ink-600 text-xs font-semibold uppercase tracking-wide">
+              {preview.label}
+            </span>
+          )}
+          {preview.entries.slice(0, PREVIEW).map((e, i) => (
             <span key={e.userId} className="flex items-center gap-2 text-sm">
               <span className="text-ink-500 tabular-nums">{i + 1}</span>
               <UserAvatarAndBadge
@@ -141,7 +162,7 @@ export function ElectionLeaderboards(props: {
                 className="max-w-[10rem]"
               />
               <span className="text-ink-700 tabular-nums">
-                {formatMoney(e.score, 'MANA')}
+                {preview.format(e.score)}
               </span>
             </span>
           ))}
