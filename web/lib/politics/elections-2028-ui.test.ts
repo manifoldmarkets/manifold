@@ -20,6 +20,7 @@ import {
   ELECTION_HUB_TOPICS,
   electionPathForTopic,
   hubTopicSlug,
+  TIMELINE,
   upcomingTimeline,
 } from './elections-2028-config'
 import { ELECTORAL_UNITS } from './ec-model'
@@ -87,7 +88,7 @@ test('each phase orders its sections once, ending with the feed', () => {
     assert.equal(order[order.length - 1], 'feed', phase)
   }
   assert.equal(sectionOrder('nomination')[0], 'accuracy')
-  assert.equal(sectionOrder('primaries')[2], 'primaries')
+  assert.equal(sectionOrder('primaries')[3], 'primaries')
   assert.equal(sectionOrder('results')[1], 'board')
   assert.equal(sectionOrder('midterms2030')[2], 'midterms2030')
   // Data is only loaded where it shows.
@@ -112,6 +113,41 @@ test('each phase orders its sections once, ending with the feed', () => {
       phase
     )
     assert.equal(showsSection(phase, 'map'), phase !== 'midterms2030', phase)
+  }
+})
+
+test('the page reads in the order things happen, like the timeline', () => {
+  const order = sectionOrder('nomination')
+  const at = (k: Parameters<typeof showsSection>[1]) => order.indexOf(k)
+  // The 2027 races, the primaries, the conventions, Election Day, after.
+  const chronological = [
+    'offYear',
+    'primaries',
+    'runningMates',
+    'map',
+    'board',
+    'later',
+  ] as const
+  for (let i = 1; i < chronological.length; i++)
+    assert.ok(
+      at(chronological[i - 1]) < at(chronological[i]),
+      `${chronological[i - 1]} before ${chronological[i]}`
+    )
+  // Every timeline entry points at sections the page has ids for.
+  const ids = new Set([
+    'race',
+    'map',
+    'primaries',
+    'running-mates',
+    'road-to-270',
+    'board',
+    'off-year',
+    'midterms-2030',
+    'later',
+  ])
+  for (const e of TIMELINE) {
+    assert.ok(e.sections.length > 0, e.key)
+    for (const id of e.sections) assert.ok(ids.has(id), `${e.key}: ${id}`)
   }
 })
 

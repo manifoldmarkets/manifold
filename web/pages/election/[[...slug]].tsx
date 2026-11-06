@@ -1,6 +1,7 @@
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { Elections2028Page } from 'web/components/elections-2028/elections-2028-page'
+import { TimelineRail } from 'web/components/elections-2028/timeline-rail'
 import {
   OG_ELECTION_2028_HEIGHT,
   OG_ELECTION_2028_WIDTH,
@@ -67,7 +68,13 @@ export default function Elections(props: Props) {
   return (
     // No Google One Tap: on phones its sign-in sheet covers the page's first
     // screen. Betting still prompts sign-in.
-    <Page trackPageView="us elections page 2028" hideGoogleOneTap>
+    <Page
+      trackPageView="us elections page 2028"
+      hideGoogleOneTap
+      rightSidebar={
+        <TimelineRail now={props.now} primaries={props.primaries} />
+      }
+    >
       <SEO
         title="2028 Presidential Election Odds"
         description="Live prediction market odds for the 2028 US presidential election: who wins, both parties' nominees, running mates, the electoral map, and every election before it."

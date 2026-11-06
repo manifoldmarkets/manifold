@@ -36,7 +36,6 @@ export type SectionKey =
   | 'accuracy' // the 2026 result, one line
   | 'leaderboards' // the leaderboard card, by scope
   | 'map' // the state-by-state map
-  | 'roadAhead' // the timeline
   | 'race' // party bar, face-ended charts, popular vote, balance of power
   | 'movers'
   | 'runningMates'
@@ -54,39 +53,43 @@ export type SectionKey =
   | 'feed'
 
 // Each phase's order. Sections not listed don't render in that phase.
+// After the result line and the leaderboards, the headline race, then the
+// rest in the order things happen, so scrolling the page moves forward in
+// time alongside the timeline rail (timeline-rail.tsx): the 2027 races, the
+// primaries, the conventions (running mates), Election Day (the map, the
+// model, the board), then the cycles after. What's over sinks below what's
+// left; the extras and the feed come last.
 const ORDER: Record<ElectionPhase, SectionKey[]> = {
   nomination: [
     'accuracy',
     'leaderboards',
-    'roadAhead',
     'race',
-    'map',
     'movers',
+    'offYear',
     'primaries',
     'runningMates',
+    'map',
     'roadTo270',
     'board',
-    'trending',
-    'offYear',
-    'swings2026',
     'later',
+    'trending',
     'matrix',
     'unprecedented',
     'polling',
+    'swings2026',
     'feed',
   ],
   primaries: [
     'leaderboards',
-    'roadAhead',
-    'primaries',
-    'map',
     'race',
     'movers',
+    'primaries',
     'runningMates',
+    'map',
     'roadTo270',
     'board',
-    'trending',
     'later',
+    'trending',
     'matrix',
     'unprecedented',
     'polling',
@@ -94,35 +97,33 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
   ],
   conventions: [
     'leaderboards',
-    'roadAhead',
     'race',
-    'map',
+    'movers',
     'runningMates',
+    'map',
     'roadTo270',
     'board',
-    'movers',
-    'primaries',
-    'trending',
     'later',
+    'trending',
     'matrix',
     'unprecedented',
     'polling',
+    'primaries',
     'feed',
   ],
   general: [
     'leaderboards',
-    'roadAhead',
     'race',
+    'movers',
     'map',
     'roadTo270',
     'board',
-    'runningMates',
-    'movers',
+    'later',
     'trending',
     'matrix',
-    'later',
     'unprecedented',
     'polling',
+    'runningMates',
     'feed',
   ],
   results: [
@@ -131,18 +132,16 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'map',
     'race',
     'roadTo270',
-    'roadAhead',
-    'runningMates',
     'later',
     'matrix',
     'polling',
+    'runningMates',
     'feed',
   ],
   midterms2030: [
     'leaderboards',
-    'roadAhead',
-    'midterms2030',
     'offYear',
+    'midterms2030',
     'later',
     'board',
     'race',

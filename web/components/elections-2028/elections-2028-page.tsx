@@ -46,7 +46,6 @@ import { PartyOddsBar } from './party-odds-bar'
 import { PrimariesBoard } from './primaries-board'
 import { RaceBoard } from './race-board'
 import { RaceCard, RangePicker, useRange } from './race-section'
-import { RoadAhead } from './road-ahead'
 import { RoadTo270 } from './road-to-270'
 import { Swings2026 } from './swings-2026'
 
@@ -190,8 +189,6 @@ export function Elections2028Page(props: Elections2028PageProps) {
       </SectionInView>
     ),
 
-    roadAhead: <RoadAhead now={now} primaries={primaries} />,
-
     race: (
       <SectionInView section="2028 race" className="flex flex-col gap-4">
         <SectionHeader
@@ -292,7 +289,10 @@ export function Elections2028Page(props: Elections2028PageProps) {
         section="2028 running mates"
         className="flex flex-col gap-3"
       >
-        <SectionHeader subtitle="Each party's pick for vice president, and who ends up on the winning ticket.">
+        <SectionHeader
+          id="running-mates"
+          subtitle="Each party's pick for vice president, and who ends up on the winning ticket."
+        >
           Running mates
         </SectionHeader>
         <div className="grid gap-4 md:grid-cols-3">
@@ -327,7 +327,10 @@ export function Elections2028Page(props: Elections2028PageProps) {
 
     roadTo270: model && (
       <SectionInView section="road to 270" className="flex flex-col gap-3">
-        <SectionHeader subtitle="Our electoral college model, built from Manifold's state-by-state markets.">
+        <SectionHeader
+          id="road-to-270"
+          subtitle="Our electoral college model, built from Manifold's state-by-state markets."
+        >
           The road to 270
         </SectionHeader>
         <RoadTo270 model={model} partyContract={partyContract} />

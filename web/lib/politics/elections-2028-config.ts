@@ -359,8 +359,10 @@ export type TimelineEntry = {
   // Where the entry sits in the timeline, and when it drops off.
   sortAt: number
   until: number
-  // A section of the page the entry links to.
-  href?: string
+  // The page sections the entry is about (their ids), the first one on the
+  // page wins: the timeline rail links there and lights the entry up while
+  // that section is in view.
+  sections: string[]
 }
 
 export const TIMELINE: TimelineEntry[] = [
@@ -371,7 +373,7 @@ export const TIMELINE: TimelineEntry[] = [
     time: Date.UTC(2027, 10, 2, 11),
     sortAt: Date.UTC(2027, 10, 2, 11),
     until: Date.UTC(2027, 10, 3, 11),
-    href: '#off-year',
+    sections: ['off-year'],
   },
   {
     key: 'early',
@@ -380,7 +382,7 @@ export const TIMELINE: TimelineEntry[] = [
     season: 'Early 2028',
     sortAt: Date.UTC(2028, 0, 15),
     until: Date.UTC(2028, 2, 1),
-    href: '#primaries',
+    sections: ['primaries'],
   },
   {
     key: 'super-tuesday',
@@ -389,7 +391,7 @@ export const TIMELINE: TimelineEntry[] = [
     time: Date.UTC(2028, 2, 7, 12),
     sortAt: Date.UTC(2028, 2, 7, 12),
     until: Date.UTC(2028, 2, 8, 12),
-    href: '#primaries',
+    sections: ['primaries'],
   },
   {
     key: 'last-primaries',
@@ -398,7 +400,7 @@ export const TIMELINE: TimelineEntry[] = [
     season: 'June 2028',
     sortAt: Date.UTC(2028, 5, 15),
     until: Date.UTC(2028, 6, 1),
-    href: '#primaries',
+    sections: ['primaries'],
   },
   {
     key: 'conventions',
@@ -407,7 +409,7 @@ export const TIMELINE: TimelineEntry[] = [
     season: 'Summer 2028',
     sortAt: Date.UTC(2028, 6, 20),
     until: Date.UTC(2028, 8, 1),
-    href: '#race',
+    sections: ['running-mates', 'race'],
   },
   {
     key: 'debates',
@@ -416,6 +418,7 @@ export const TIMELINE: TimelineEntry[] = [
     season: 'Fall 2028',
     sortAt: Date.UTC(2028, 9, 1),
     until: Date.UTC(2028, 10, 1),
+    sections: ['race'],
   },
   {
     key: '2028',
@@ -424,7 +427,7 @@ export const TIMELINE: TimelineEntry[] = [
     time: Date.UTC(2028, 10, 7, 11),
     sortAt: Date.UTC(2028, 10, 7, 11),
     until: Date.UTC(2028, 10, 8, 11),
-    href: '#board',
+    sections: ['map', 'board'],
   },
   {
     key: 'electors',
@@ -433,6 +436,7 @@ export const TIMELINE: TimelineEntry[] = [
     time: Date.UTC(2028, 11, 18, 17),
     sortAt: Date.UTC(2028, 11, 18, 17),
     until: Date.UTC(2028, 11, 19, 17),
+    sections: ['road-to-270', 'board'],
   },
   {
     key: 'inauguration',
@@ -441,6 +445,7 @@ export const TIMELINE: TimelineEntry[] = [
     time: Date.UTC(2029, 0, 20, 17),
     sortAt: Date.UTC(2029, 0, 20, 17),
     until: Date.UTC(2029, 0, 21, 17),
+    sections: ['race'],
   },
   {
     key: '2029',
@@ -449,7 +454,7 @@ export const TIMELINE: TimelineEntry[] = [
     time: Date.UTC(2029, 10, 6, 11),
     sortAt: Date.UTC(2029, 10, 6, 11),
     until: Date.UTC(2029, 10, 7, 11),
-    href: '#off-year',
+    sections: ['off-year'],
   },
   {
     key: '2030',
@@ -458,7 +463,7 @@ export const TIMELINE: TimelineEntry[] = [
     time: Date.UTC(2030, 10, 5, 11),
     sortAt: Date.UTC(2030, 10, 5, 11),
     until: Date.UTC(2030, 10, 6, 11),
-    href: '#midterms-2030',
+    sections: ['midterms-2030', 'later'],
   },
   {
     key: '2032',
@@ -467,6 +472,7 @@ export const TIMELINE: TimelineEntry[] = [
     time: Date.UTC(2032, 10, 2, 11),
     sortAt: Date.UTC(2032, 10, 2, 11),
     until: Date.UTC(2032, 10, 3, 11),
+    sections: ['later'],
   },
 ]
 
