@@ -938,6 +938,10 @@ async function getLeaderboard(
       )
     const rows = await fetchOnce({ groupIds: config.topicIds }).catch((e) => {
       if (!(e instanceof APIError && e.code === 400)) throw e
+      console.log(
+        `election leaderboard ${config.key}: the API rejected groupIds ` +
+          `(${e.message}); showing its first topic only`
+      )
       return fetchOnce({ groupId: config.topicIds[0] })
     })
     return rows
@@ -1165,10 +1169,16 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
     ].filter((c): c is Contract => !!c && isOpenPublicMarket(c, now)),
     (c) => c.id
   )
-  const more2028 = national
-    .filter(([key, r]) => r.cycle === 2028 && !slotted.has(key))
-    .map(([, r]) => byId[r.id])
-    .filter((c): c is Contract => !!c && isOpenPublicMarket(c, now))
+  const more2028 = [
+    // @ManifoldPolitics' own president market, while its chart still draws
+    // the community one.
+    ...(charted.has(OFFICIAL_PRESIDENT_2028)
+      ? []
+      : [byId[OFFICIAL_PRESIDENT_2028]]),
+    ...national
+      .filter(([key, r]) => r.cycle === 2028 && !slotted.has(key))
+      .map(([, r]) => byId[r.id]),
+  ].filter((c): c is Contract => !!c && isOpenPublicMarket(c, now))
   const laterKeys = [
     ...LATER_KEYS,
     ...national

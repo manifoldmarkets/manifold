@@ -138,9 +138,9 @@ export function Elections2028Page(props: Elections2028PageProps) {
   const router = useRouter()
   const [feedTopic, setFeedTopic] = useState<FeedTopic>(FEED_TOPICS[0])
   useEffect(() => {
-    const topic = feedTopicFor(router.query.topic)
-    if (topic) setFeedTopic(topic)
-  }, [router.query.topic])
+    if (!router.isReady) return
+    setFeedTopic(feedTopicFor(router.query.topic) ?? FEED_TOPICS[0])
+  }, [router.isReady, router.query.topic])
   // A topic from ?topic= that isn't one of the usual pills gets its own.
   const feedTopics = FEED_TOPICS.some((t) => t.slug === feedTopic.slug)
     ? FEED_TOPICS

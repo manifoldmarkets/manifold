@@ -223,13 +223,20 @@ export function twoPartyWeekAgo(
 }
 
 // Every market that could fill a board row for `cycle`: its official race
-// markets, plus (2028) the community market of each presidential unit.
+// markets (each state's popular vote included), plus (2028) the community
+// market of each presidential unit.
 export function boardMarketIds(
   cycle: number,
   markets: Record<string, MarketRef>,
   communityUnits: Record<string, string>
 ): string[] {
-  const kinds = ['senate', 'governor', 'house', 'president-unit']
+  const kinds = [
+    'senate',
+    'governor',
+    'house',
+    'president-unit',
+    'president-popular',
+  ]
   return uniq([
     ...Object.values(markets)
       .filter((r) => r.cycle === cycle && kinds.includes(r.kind))

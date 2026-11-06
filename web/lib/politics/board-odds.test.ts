@@ -254,6 +254,25 @@ test('the weekly move is in two-party terms', () => {
   )
 })
 
+test('the 2028 board freezes in at most six batches', () => {
+  // One market per row: each unit's official or community market, each
+  // state's popular vote, and the Senate, governor and House races.
+  const markets = (mapping as unknown as OfficialMarketsFile).markets
+  const rows = Object.values(markets).filter(
+    (r) =>
+      r.cycle === 2028 &&
+      [
+        'president-unit',
+        'president-popular',
+        'senate',
+        'governor',
+        'house',
+      ].includes(r.kind)
+  ).length
+  assert.equal(rows, 588)
+  assert.ok(rows <= 6 * FREEZE_BATCH)
+})
+
 test('the board snapshot covers official race markets and the community units', () => {
   const markets = (mapping as unknown as OfficialMarketsFile).markets
   const ids2028 = boardMarketIds(2028, markets, STATE_MARKETS_2028)
@@ -267,6 +286,7 @@ test('the board snapshot covers official race markets and the community units', 
   assert.deepEqual([...kinds].sort(), [
     'governor',
     'house',
+    'president-popular',
     'president-unit',
     'senate',
   ])
