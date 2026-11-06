@@ -1,12 +1,7 @@
 import clsx from 'clsx'
-import Link from 'next/link'
-import { useRouter } from 'next/router'
-import { createContext, useContext, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { Contract } from 'common/contract'
-import { USAMap } from 'web/components/usa-map/usa-map'
-import { StateProps } from 'web/components/usa-map/presidential-state'
-import { USAState } from 'web/components/usa-map/usa-state'
 import { formatOdds } from 'web/components/usa-map/election-display'
 import {
   DEM_COLOR,
@@ -21,68 +16,16 @@ import {
   ratingOf,
   TOTAL_EV,
 } from 'web/lib/politics/ec-model'
-import type { ElectoralModel, UnitOdds } from 'web/lib/politics/elections-2028'
-
-// A diverging ramp, blue to red through a neutral gray: how sure each unit's
-// market is, not just who leads.
-const RATING: Record<
-  RatingBucket,
-  { fill: string; label: string; ink: 'light' | 'dark' }
-> = {
-  safeD: { fill: '#3b4f94', label: 'Safe D', ink: 'light' },
-  likelyD: { fill: '#5671ba', label: 'Likely D', ink: 'light' },
-  leanD: { fill: '#9fb3dc', label: 'Lean D', ink: 'dark' },
-  tossup: { fill: '#cfcac4', label: 'Toss-up', ink: 'dark' },
-  leanR: { fill: '#e3a5a2', label: 'Lean R', ink: 'dark' },
-  likelyR: { fill: '#c25555', label: 'Likely R', ink: 'light' },
-  safeR: { fill: '#8f2f32', label: 'Safe R', ink: 'light' },
-}
-const ORDER: RatingBucket[] = [
-  'safeD',
-  'likelyD',
-  'leanD',
-  'tossup',
-  'leanR',
-  'likelyR',
-  'safeR',
-]
+import type { ElectoralModel } from 'web/lib/politics/elections-2028'
+import { RATING, RATING_ORDER as ORDER } from './rating-colors'
 
 const UNIT_BY_KEY = Object.fromEntries(ELECTORAL_UNITS.map((u) => [u.key, u]))
-
-// The map's states read the model's odds from context: USAMap renders the
-// component type it's given, which must be stable.
-const UnitOddsContext = createContext<Record<string, UnitOdds>>({})
-
-function ModelState(p: StateProps) {
-  const u = useContext(UnitOddsContext)[p.stateKey]
-  return (
-    <USAState
-      state={p.stateKey}
-      stateData={p.data}
-      fill={u ? RATING[ratingOf(u.pDem)].fill : undefined}
-      onMouseEnterState={() => p.onMouseEnter(p.stateKey)}
-      onMouseLeaveState={p.onMouseLeave}
-      onClickState={() => p.handleClick(p.stateKey)}
-      hovered={p.hoveredState === p.stateKey}
-      selected={p.targetState === p.stateKey}
-    />
-  )
-}
-
-const marketHref = (u: UnitOdds) =>
-  u.slug && u.creatorUsername ? `/${u.creatorUsername}/${u.slug}` : undefined
 
 export function RoadTo270(props: {
   model: ElectoralModel
   partyContract: Contract | null
 }) {
   const { model } = props
-  const router = useRouter()
-  const [hovered, setHovered] = useState<string | undefined>()
-  const byKey = useMemo(
-    () => Object.fromEntries(model.units.map((u) => [u.key, u])),
-    [model.units]
-  )
 
   const buckets = useMemo(() => {
     const evs = Object.fromEntries(ORDER.map((r) => [r, 0])) as Record<
@@ -94,7 +37,6 @@ export function RoadTo270(props: {
     return evs
   }, [model.units])
 
-  const focus = hovered ? byKey[hovered] : undefined
   const demEvsExpected = Math.round(model.meanDemEv)
 
   return (
@@ -106,46 +48,7 @@ export function RoadTo270(props: {
 
       <RatingBar buckets={buckets} />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <div className="bg-canvas-0 border-ink-200 rounded-xl border p-2 sm:p-3">
-          <UnitOddsContext.Provider value={byKey}>
-            <USAMap
-              mapContractsDictionary={{}}
-              handleClick={(key) => {
-                const u = key ? byKey[key] : undefined
-                const href = u && marketHref(u)
-                if (href) router.push(href)
-              }}
-              onMouseEnter={setHovered}
-              onMouseLeave={() => setHovered(undefined)}
-              targetState={undefined}
-              hoveredState={hovered}
-              CustomStateComponent={ModelState}
-            />
-          </UnitOddsContext.Provider>
-          <div className="text-ink-700 flex min-h-[2.5rem] items-center justify-between gap-2 px-1 text-sm">
-            {focus ? (
-              <>
-                <span>
-                  <span className="text-ink-1000 font-semibold">
-                    {UNIT_BY_KEY[focus.key]?.name}
-                  </span>{' '}
-                  · {UNIT_BY_KEY[focus.key]?.ev} electoral votes
-                </span>
-                <span className="tabular-nums">
-                  D {formatOdds(focus.pDem)} · R {formatOdds(1 - focus.pDem)}
-                </span>
-              </>
-            ) : (
-              <span className="text-ink-500">
-                Hover a state for its odds; click to trade it.
-              </span>
-            )}
-          </div>
-          <DistrictChips units={model.units} />
-        </div>
-        <TippingPoints model={model} />
-      </div>
+      <TippingPoints model={model} />
       <p className="text-ink-500 text-xs">
         {model.sims.toLocaleString('en-US')} simulated elections from
         Manifold&apos;s {model.units.filter((u) => u.contractId).length} state
@@ -374,38 +277,6 @@ function RatingBar(props: { buckets: Record<RatingBucket, number> }) {
           </span>
         ))}
       </div>
-    </div>
-  )
-}
-
-// Maine and Nebraska's congressional districts, which the map can't show.
-function DistrictChips(props: { units: UnitOdds[] }) {
-  const districts = props.units.filter((u) => u.key.includes('-'))
-  return (
-    <div className="flex flex-wrap gap-1.5 px-1 pb-1">
-      {districts.map((u) => {
-        const r = RATING[ratingOf(u.pDem)]
-        const href = marketHref(u)
-        const chip = (
-          <span className="border-ink-200 flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs">
-            <span
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ backgroundColor: r.fill }}
-            />
-            <span className="text-ink-900 font-medium">{u.key}</span>
-            <span className="text-ink-600 tabular-nums">
-              D {formatOdds(u.pDem)}
-            </span>
-          </span>
-        )
-        return href ? (
-          <Link key={u.key} href={href} className="hover:opacity-80">
-            {chip}
-          </Link>
-        ) : (
-          <span key={u.key}>{chip}</span>
-        )
-      })}
     </div>
   )
 }

@@ -40,6 +40,7 @@ import { AccuracyBanner } from './accuracy-banner'
 import { BalanceOfPower } from './balance-of-power'
 import { CandidateBars } from './candidate-bars'
 import { ElectionLeaderboards } from './election-leaderboards'
+import { ElectionMap } from './election-map'
 import { MoversStrip } from './movers-strip'
 import { PartyOddsBar } from './party-odds-bar'
 import { PrimariesBoard } from './primaries-board'
@@ -104,8 +105,8 @@ export function Elections2028Page(props: Elections2028PageProps) {
     now,
     phase,
     hubTopic,
-    leaderboard2026,
-    leaderboard,
+    leaderboards,
+    leaderboardDefault,
     partyContract,
     popularVoteContract,
     balanceOfPowerContract,
@@ -165,15 +166,27 @@ export function Elections2028Page(props: Elections2028PageProps) {
   const sections: Record<SectionKey, ReactNode> = {
     accuracy: <AccuracyBanner story={accuracy} />,
 
-    leaderboard2026: leaderboard2026 && (
-      <SectionInView
-        section="2026 midterms leaderboard"
-        className="flex flex-col gap-3"
-      >
-        <SectionHeader subtitle={leaderboard2026.subtitle}>
-          {leaderboard2026.title}
+    leaderboards: leaderboards.length > 0 && (
+      <ElectionLeaderboards
+        boards={leaderboards}
+        defaultKey={leaderboardDefault}
+      />
+    ),
+
+    map: (board2028.length > 0 || primaries.length > 0) && (
+      <SectionInView section="2028 map" className="flex flex-col gap-3">
+        <SectionHeader
+          id="map"
+          subtitle="Every state's races and primaries. Pick a race, then a state for all its markets."
+        >
+          The map
         </SectionHeader>
-        <ElectionLeaderboards board={leaderboard2026} rows={5} />
+        <ElectionMap
+          races={board2028}
+          primaries={primaries}
+          offYear={offYear}
+          defaultMode={phase === 'primaries' ? 'primary' : 'president'}
+        />
       </SectionInView>
     ),
 
@@ -503,15 +516,6 @@ export function Elections2028Page(props: Elections2028PageProps) {
           Polling averages
         </SectionHeader>
         <PollingPerpsRow contracts={pollingPerpContracts} />
-      </SectionInView>
-    ),
-
-    leaderboard: leaderboard && (
-      <SectionInView section="leaderboard" className="flex flex-col gap-3">
-        <SectionHeader id="leaderboard" subtitle={leaderboard.subtitle}>
-          {leaderboard.title}
-        </SectionHeader>
-        <ElectionLeaderboards board={leaderboard} />
       </SectionInView>
     ),
 

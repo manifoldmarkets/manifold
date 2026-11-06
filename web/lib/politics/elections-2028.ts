@@ -1,8 +1,12 @@
 import { keyBy, mean, omit, sortBy, uniq, uniqBy } from 'lodash'
 
-import { APIError } from 'common/api/utils'
 import { getAnswerProbability } from 'common/calculate'
 import { Contract, isMultiCpmm, MultiContract } from 'common/contract'
+import type {
+  ElectionLeaderboard,
+  ElectionLeaderboardKey,
+} from 'common/election-leaderboards'
+import { leaderboardScopes } from 'web/lib/politics/election-leaderboard-scopes'
 import { Group } from 'common/group'
 import { removeUndefinedProps } from 'common/util/object'
 import { getContractFromSlug, getContracts } from 'common/supabase/contracts'
@@ -79,15 +83,11 @@ import {
   BOARD_FREEZE,
   CHART_SERIES,
   COMMUNITY_EQUIVALENTS,
-  cycleLeaderboard,
   EC_MODEL_RHO,
-  ElectionLeaderboardConfig,
   HOUSE_2026_DISTRICTS_SLUG,
   hubTopicSlug,
   LATER_KEYS,
   LIST_SERIES,
-  MIDTERMS_2026_LEADERBOARD,
-  MIDTERMS_2026_LEADERBOARD_UNTIL,
   NATIONAL_2028,
   OFFICIAL_PRESIDENT_2028,
   OFFICIAL_SLOTS,
@@ -212,24 +212,14 @@ export type Mover = {
   weekChange: number
 }
 
-// A leaderboard's two boards: profit, and market creators by traders.
-export type ElectionLeaderboard = {
-  key: string
-  title: string
-  subtitle: string
-  profit: { userId: string; score: number }[]
-  creators: { userId: string; score: number }[]
-}
-
 export type Elections2028PageProps = {
   now: number
   phase: ElectionPhase
   // The topic the page stands in for, which its Follow button follows.
   hubTopic: Group | null
-  // The 2026 midterms' boards (at the top, for a while) and the current
-  // cycle's.
-  leaderboard2026: ElectionLeaderboard | null
-  leaderboard: ElectionLeaderboard | null
+  // The stored leaderboards the page offers, and the one it opens on.
+  leaderboards: ElectionLeaderboard[]
+  leaderboardDefault: ElectionLeaderboardKey
   partyContract: Contract | null
   popularVoteContract: Contract | null
   // The official 2028 balance-of-power market, or (until it exists) the
@@ -919,46 +909,25 @@ const openOnly = (contracts: (Contract | undefined)[], now: number) =>
 // Leaderboards and the hub topic
 // ---------------------------------------------------------------------------
 
-const LEADERBOARD_ROWS = 10
-const LEADERBOARD_TIMEOUT_MS = 8_000
+const LEADERBOARD_TIMEOUT_MS = 5_000
 
-// A leaderboard across its topics, fetched once per revalidation so page
-// views don't each run the query. An API from before `groupIds` rejects it
-// (400): then its first topic alone. Null if it can't be had in time.
-async function getLeaderboard(
-  config: ElectionLeaderboardConfig
-): Promise<ElectionLeaderboard | null> {
-  const board = async (kind: 'profit' | 'creator') => {
-    const params = { kind, token: 'MANA' as const, limit: LEADERBOARD_ROWS }
-    const fetchOnce = (topics: { groupIds: string[] } | { groupId: string }) =>
-      api(
-        'leaderboard',
-        { ...params, ...topics },
-        { signal: AbortSignal.timeout(LEADERBOARD_TIMEOUT_MS) }
-      )
-    const rows = await fetchOnce({ groupIds: config.topicIds }).catch((e) => {
-      if (!(e instanceof APIError && e.code === 400)) throw e
-      console.log(
-        `election leaderboard ${config.key}: the API rejected groupIds ` +
-          `(${e.message}); showing its first topic only`
-      )
-      return fetchOnce({ groupId: config.topicIds[0] })
-    })
-    return rows
-      .filter((r) => Number.isFinite(r.score) && r.score > 0)
-      .map((r) => ({ userId: r.userId, score: Math.round(r.score) }))
-  }
+// The stored leaderboards (the scheduler rebuilds them; reading them is one
+// small query). None if the API can't serve them yet.
+async function getStoredLeaderboards(): Promise<ElectionLeaderboard[]> {
   try {
-    const [profit, creators] = await Promise.all([
-      board('profit'),
-      board('creator'),
-    ])
-    if (profit.length === 0 && creators.length === 0) return null
-    const { key, title, subtitle } = config
-    return { key, title, subtitle, profit, creators }
+    const { boards } = await api(
+      'election-leaderboards',
+      {},
+      { signal: AbortSignal.timeout(LEADERBOARD_TIMEOUT_MS) }
+    )
+    // Top traders are the ones who made money: a thin board otherwise lists
+    // losses too.
+    return boards
+      .map((b) => ({ ...b, profit: b.profit.filter((e) => e.score > 0) }))
+      .filter((b) => b.profit.length > 0 || b.creator.length > 0)
   } catch (e) {
-    console.error(`election leaderboard ${config.key} failed`, e)
-    return null
+    console.error('election leaderboards failed', e)
+    return []
   }
 }
 
@@ -1017,8 +986,7 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
     perps,
     house2026Market,
     hubTopic,
-    leaderboard2026,
-    leaderboard,
+    storedLeaderboards,
   ] = await Promise.all([
     // No catch: without these markets the page is empty, and a failed
     // revalidation keeps serving the last good one. Public only, so a
@@ -1037,14 +1005,9 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
     ),
     getContractFromSlug(db, HOUSE_2026_DISTRICTS_SLUG).catch(() => null),
     getHubTopic(hubTopicSlug(cycle)),
-    showsSection(phase, 'leaderboard2026') &&
-    now < MIDTERMS_2026_LEADERBOARD_UNTIL
-      ? getLeaderboard(MIDTERMS_2026_LEADERBOARD)
-      : Promise.resolve(null),
-    showsSection(phase, 'leaderboard')
-      ? getLeaderboard(cycleLeaderboard(cycle))
-      : Promise.resolve(null),
+    getStoredLeaderboards(),
   ])
+  const scopes = leaderboardScopes(storedLeaderboards, phase, now)
   const byId = keyBy(fetched, (c) => c.id)
   const get = (id: string) => byId[id] ?? null
 
@@ -1207,8 +1170,8 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
     now,
     phase,
     hubTopic,
-    leaderboard2026,
-    leaderboard,
+    leaderboards: scopes.boards,
+    leaderboardDefault: scopes.defaultKey,
     partyContract: slim(partyContract),
     popularVoteContract: slim(slot('popularVote', NATIONAL_2028.popularVote)),
     balanceOfPowerContract: officialBop ? slim(officialBop) : null,

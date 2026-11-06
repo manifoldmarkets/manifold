@@ -33,8 +33,9 @@ export function electionPhase(now: number): ElectionPhase {
 }
 
 export type SectionKey =
-  | 'accuracy' // the 2026 result banner
-  | 'leaderboard2026' // the 2026 midterms' leaderboards (until Feb 2027)
+  | 'accuracy' // the 2026 result, one line
+  | 'leaderboards' // the leaderboard card, by scope
+  | 'map' // the state-by-state map
   | 'roadAhead' // the timeline
   | 'race' // party bar, face-ended charts, popular vote, balance of power
   | 'movers'
@@ -50,16 +51,16 @@ export type SectionKey =
   | 'matrix'
   | 'unprecedented'
   | 'polling'
-  | 'leaderboard' // the cycle's leaderboards
   | 'feed'
 
 // Each phase's order. Sections not listed don't render in that phase.
 const ORDER: Record<ElectionPhase, SectionKey[]> = {
   nomination: [
     'accuracy',
-    'leaderboard2026',
+    'leaderboards',
     'roadAhead',
     'race',
+    'map',
     'movers',
     'primaries',
     'runningMates',
@@ -72,12 +73,13 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'matrix',
     'unprecedented',
     'polling',
-    'leaderboard',
     'feed',
   ],
   primaries: [
+    'leaderboards',
     'roadAhead',
     'primaries',
+    'map',
     'race',
     'movers',
     'runningMates',
@@ -88,12 +90,13 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'matrix',
     'unprecedented',
     'polling',
-    'leaderboard',
     'feed',
   ],
   conventions: [
+    'leaderboards',
     'roadAhead',
     'race',
+    'map',
     'runningMates',
     'roadTo270',
     'board',
@@ -104,12 +107,13 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'matrix',
     'unprecedented',
     'polling',
-    'leaderboard',
     'feed',
   ],
   general: [
+    'leaderboards',
     'roadAhead',
     'race',
+    'map',
     'roadTo270',
     'board',
     'runningMates',
@@ -119,11 +123,12 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'later',
     'unprecedented',
     'polling',
-    'leaderboard',
     'feed',
   ],
   results: [
+    'leaderboards',
     'board',
+    'map',
     'race',
     'roadTo270',
     'roadAhead',
@@ -131,10 +136,10 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'later',
     'matrix',
     'polling',
-    'leaderboard',
     'feed',
   ],
   midterms2030: [
+    'leaderboards',
     'roadAhead',
     'midterms2030',
     'offYear',
@@ -143,7 +148,6 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'race',
     'roadTo270',
     'polling',
-    'leaderboard',
     'feed',
   ],
 }
