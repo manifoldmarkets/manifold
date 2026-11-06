@@ -26,11 +26,14 @@ export function useIsFollowingTopic(groupSlug?: string) {
   useEffect(() => {
     if (isAuthorized === false || !groupSlug) {
       setIsFollowing(false)
-    } else {
-      getUserIsFollowingTopic({ groupSlug }).then((result) => {
-        setIsFollowing(result.isGroupMember)
-      })
+      return
     }
+    // The endpoint needs the user's token: wait until sign-in has settled
+    // (asking while it loads got signed-out visitors a 401).
+    if (!isAuthorized) return
+    getUserIsFollowingTopic({ groupSlug })
+      .then((result) => setIsFollowing(result.isGroupMember))
+      .catch((e) => console.error('Could not load topic follow state', e))
   }, [groupSlug, isAuthorized])
   return { isFollowing, setIsFollowing }
 }

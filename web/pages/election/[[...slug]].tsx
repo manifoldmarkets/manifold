@@ -1,82 +1,92 @@
-import { getElectionsPageProps, MidtermsPageProps } from 'web/lib/politics/home'
-import { formatOgAsOf, getElectionOgProps } from 'web/lib/politics/election-og'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { USElectionsPage } from 'web/components/elections-page'
+import { Elections2028Page } from 'web/components/elections-2028/elections-2028-page'
+import { TimelineRail } from 'web/components/elections-2028/timeline-rail'
 import {
-  OG_ELECTION_HEIGHT,
-  OG_ELECTION_WIDTH,
-} from 'web/components/og/og-election'
+  OG_ELECTION_2028_HEIGHT,
+  OG_ELECTION_2028_WIDTH,
+  OgElection2028Props,
+} from 'web/components/og/og-election-2028'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
+import { getElection2028OgProps } from 'web/lib/politics/election-2028-og'
+import { formatOgAsOf } from 'web/lib/politics/election-og'
+import {
+  Elections2028PageProps,
+  getElections2028PageProps,
+} from 'web/lib/politics/elections-2028'
 
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
-const revalidate = 60
+
+// The charts' history caches by the hour upstream; two minutes keeps the
+// model, movers and market cards fresh without refetching it all every minute.
+const revalidate = 120
+
+type Props = Elections2028PageProps & { og: OgElection2028Props }
 
 export async function getStaticProps(context: {
   params?: { slug?: string[] }
 }) {
-  // This is an optional catch-all route, so before this guard every URL under
-  // /election/... rendered this same page at HTTP 200 with no canonical tag —
-  // an unbounded duplicate-content surface for crawlers. Collapse them onto
-  // the canonical URL. A permanent redirect rather than a 404 so any inbound
-  // links keep their equity. (/election/needle is a real file-system route and
-  // takes precedence over this catch-all, so it is unaffected.)
+  // This is an optional catch-all route, so every URL under /election/...
+  // would otherwise render this page at HTTP 200 with no canonical tag.
+  // Collapse them onto the canonical URL (permanently, to keep inbound
+  // links' equity). /election/needle is a real route and takes precedence.
   const slug = context.params?.slug
   if (slug && slug.length > 0) {
     return { redirect: { destination: '/election', permanent: true } }
   }
 
-  const electionsPageProps = await getElectionsPageProps()
+  const props = await getElections2028PageProps()
   return {
     props: {
-      ...electionsPageProps,
-      // When the share card's odds were read (this revalidation).
-      ogAsOf: formatOgAsOf(Date.now()),
+      ...props,
+      og: getElection2028OgProps(props, formatOgAsOf(props.now)),
     },
     revalidate,
   }
 }
 
-export default function Elections(
-  props: MidtermsPageProps & { ogAsOf: string }
-) {
+export default function Elections(props: Props) {
   useSaveCampaign()
-
-  const ogProps = getElectionOgProps({
-    houseControlContract: props.houseControlContract,
-    senateControlContract: props.senateControlContract,
-    asOf: props.ogAsOf,
-  })
+  const { og } = props
   const imageAlt =
-    ogProps.houseRep && ogProps.senateRep
-      ? `2026 midterms live odds: House control Democrats ${
-          100 - Number(ogProps.houseRep)
-        }%, Republicans ${ogProps.houseRep}%. Senate control Democrats ${
-          100 - Number(ogProps.senateRep)
-        }%, Republicans ${ogProps.senateRep}%.`
-      : '2026 midterms live odds on Manifold'
+    og.dem && og.rep
+      ? `2028 presidential election odds on Manifold: Democrats ${
+          og.dem
+        }%, Republicans ${og.rep}%.${
+          og.demName && og.demPct
+            ? ` Democratic nominee: ${og.demName} ${og.demPct}%.`
+            : ''
+        }${
+          og.repName && og.repPct
+            ? ` Republican nominee: ${og.repName} ${og.repPct}%.`
+            : ''
+        }`
+      : '2028 presidential election odds on Manifold'
 
   return (
-    // No Google One Tap here: on phones its sign-in sheet covered the map
-    // legend on first load, which is most of the launch audience's first
-    // impression. Betting still prompts sign-in.
-    <Page trackPageView="us midterms page 2026" hideGoogleOneTap>
-      {/* The share card quotes the same live control markets the page shows,
-          plus when it read them, and refreshes with `revalidate`, so it
-          can't drift from what's on the page. 1200x630 for X's
-          summary_large_image. */}
+    // No Google One Tap: on phones its sign-in sheet covers the page's first
+    // screen. Betting still prompts sign-in.
+    <Page
+      trackPageView="us elections page 2028"
+      hideGoogleOneTap
+      rightSidebar={
+        <TimelineRail now={props.now} primaries={props.primaries} />
+      }
+    >
       <SEO
-        title="2026 Midterm Election Odds"
-        description="Live prediction market odds for the 2026 US midterms: Senate and House control, every state race, plus Trump approval and the generic ballot."
+        title="2028 Presidential Election Odds"
+        description="Live prediction market odds for the 2028 US presidential election: who wins, both parties' nominees, running mates, the electoral map, and every election before it."
         url="/election"
-        ogProps={{ props: ogProps, endpoint: 'election' }}
-        imageSize={{ width: OG_ELECTION_WIDTH, height: OG_ELECTION_HEIGHT }}
+        ogProps={{ props: og, endpoint: 'election-2028' }}
+        imageSize={{
+          width: OG_ELECTION_2028_WIDTH,
+          height: OG_ELECTION_2028_HEIGHT,
+        }}
         imageAlt={imageAlt}
       />
-
-      <USElectionsPage {...props} />
+      <Elections2028Page {...props} />
     </Page>
   )
 }

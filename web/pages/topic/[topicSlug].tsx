@@ -25,6 +25,7 @@ import { ActivityLog } from 'web/components/activity-log'
 import { removeEmojis } from 'common/util/string'
 import { sportsPathForTopic } from 'common/sports-schedule'
 import { formatWithCommas } from 'common/util/format'
+import { electionPathForTopic } from 'web/lib/politics/elections-2028-config'
 
 export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
   const { topicSlug } = ctx.params
@@ -32,6 +33,15 @@ export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
 
   if (!topic) {
     return { notFound: true }
+  }
+
+  // The US elections topics live on /election.
+  const electionPath = electionPathForTopic(topic.slug)
+  if (electionPath) {
+    return {
+      redirect: { destination: electionPath, permanent: false },
+      revalidate: 3600,
+    }
   }
 
   // Sports, and every topic under it, live on the sports pages.
