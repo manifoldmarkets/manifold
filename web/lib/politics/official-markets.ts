@@ -216,11 +216,21 @@ type SlotMarket = {
 const usable = <C extends SlotMarket>(c: C | null | undefined): c is C =>
   !!c && c.visibility === 'public' && c.deleted !== true
 
-// The official market takes a slot once it exists (public) and has at least
-// as many traders as the community market there; until then the community
-// market keeps it (its history and depth are what the charts need). Either
-// alone takes it; neither leaves the slot to its fallback.
+// The official market takes its slot as soon as it's public, so the page
+// sends its traders there; the community market fills the slot until then.
+// Neither leaves the slot to its fallback.
 export function pickSlot<C extends SlotMarket>(
+  official: C | null | undefined,
+  community: C | null | undefined
+): C | undefined {
+  if (usable(official)) return official
+  return usable(community) ? community : undefined
+}
+
+// The line charts draw years of history, which a new official market
+// doesn't have: one takes a chart once it has at least as many traders as
+// the community market there.
+export function pickChartSlot<C extends SlotMarket>(
   official: C | null | undefined,
   community: C | null | undefined
 ): C | undefined {
@@ -231,17 +241,16 @@ export function pickSlot<C extends SlotMarket>(
     : community
 }
 
-// Which official markets the page loads: 2028's (not the popular vote, which
-// has a community slot), the national ones, each primary through its own
-// year while the primaries show (Minnesota's 2027 Senate special has one),
-// and 2030's once that section shows.
+// Which official markets the page loads: all of 2028's, the national ones,
+// each primary through its own year while the primaries show (Minnesota's
+// 2027 Senate special has one), and 2030's once that section shows.
 export function pageLoads(
   ref: Pick<MarketRef, 'cycle' | 'kind'>,
   show: { primaries: boolean; midterms2030: boolean; year: number }
 ) {
   if (ref.kind.endsWith('-primary'))
     return show.primaries && ref.cycle >= show.year
-  if (ref.cycle === 2028) return ref.kind !== 'president-popular'
+  if (ref.cycle === 2028) return true
   if (ref.kind === 'national' || ref.kind === 'president-national') return true
   return ref.cycle === 2030 && show.midterms2030
 }

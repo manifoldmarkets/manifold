@@ -34,6 +34,7 @@ import { track } from 'web/lib/service/analytics'
 
 const OFFICE_LABEL: Record<BoardOffice, string> = {
   P: 'President',
+  V: 'Popular vote',
   S: 'Senate',
   G: 'Governor',
   H: 'House',
@@ -84,7 +85,7 @@ export function RaceBoard(props: {
   const { races, mode, cycle, trackingName } = props
   const offices = useMemo(
     () =>
-      (['P', 'S', 'G', 'H'] as BoardOffice[]).filter((o) =>
+      (['P', 'V', 'S', 'G', 'H'] as BoardOffice[]).filter((o) =>
         races.some((r) => r.o === o)
       ),
     [races]
@@ -135,7 +136,7 @@ export function RaceBoard(props: {
         ) : (
           <h3 className="text-ink-1000 text-base font-semibold">
             {OFFICE_LABEL[current]}
-            {current === 'P' ? ' by state' : ''}
+            {current === 'P' || current === 'V' ? ' by state' : ''}
           </h3>
         )}
         <ChoicesToggleGroup

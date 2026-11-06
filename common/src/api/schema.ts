@@ -556,6 +556,9 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         groupId: z.string().optional(),
+        // Several topics at once (instead of groupId): markets in any of
+        // them, each counted once.
+        groupIds: z.array(z.string()).min(1).max(20).optional(),
         limit: z.coerce.number().min(1).max(100).default(50),
         token: z.enum(['MANA', 'CASH']).default('MANA'),
         kind: z.enum(['creator', 'profit', 'loss', 'volume', 'referral']),

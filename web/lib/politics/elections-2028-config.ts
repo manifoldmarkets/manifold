@@ -300,6 +300,127 @@ export const PRIMARY_MARKETS_2028 = [
 export const PRESIDENTIAL_2028_TOPIC_SLUG =
   '2028-us-presidential-election-6tdsp26zly'
 
+// The US elections topics /election stands in for, like /sports for the
+// sports topics: /topic/<slug> sends visitors here
+// (pages/topic/[topicSlug].tsx) with the market feed set to that topic.
+// A cycle's topics also make up its leaderboard (`id`).
+export const ELECTION_HUB_TOPICS: {
+  slug: string
+  id: string
+  label: string
+  cycle: number
+}[] = [
+  {
+    slug: '2028-us-elections',
+    id: 'e5e38ea8-fdbc-4f79-9ab1-c28259c7c0aa',
+    label: '2028 elections',
+    cycle: 2028,
+  },
+  {
+    slug: PRESIDENTIAL_2028_TOPIC_SLUG,
+    id: 'aa5ce4dd-faf2-47a3-85a2-030f9579c65a',
+    label: '2028 President',
+    cycle: 2028,
+  },
+  {
+    slug: '2028-us-presidential-election',
+    id: 'c83fd20c-226d-4b9e-ad21-b116412d4009',
+    label: '2028 presidential election',
+    cycle: 2028,
+  },
+  {
+    slug: '2028-presidential-primaries',
+    id: 'e2388efe-5f86-49df-8856-1aae41119521',
+    label: '2028 primaries',
+    cycle: 2028,
+  },
+  {
+    slug: '2028-democratic-presidential-primar',
+    id: '46b8f3ab-33f6-4bd3-8950-2d2189c8c549',
+    label: '2028 Democratic primaries',
+    cycle: 2028,
+  },
+  {
+    slug: '2028-us-congressional-elections',
+    id: 'd9f0a472-9532-4110-b8fd-30c9d0a02b40',
+    label: '2028 Congress',
+    cycle: 2028,
+  },
+  {
+    slug: '2027-us-elections',
+    id: 'dfc26949-e897-4f2b-97d9-0690fabe150c',
+    label: '2027 elections',
+    cycle: 2027,
+  },
+  {
+    slug: '2030-us-elections',
+    id: '90752af0-0369-420b-ae24-422c1f7345d8',
+    label: '2030 elections',
+    cycle: 2030,
+  },
+  {
+    slug: '2030-us-congressional-elections',
+    id: '5187a143-2c12-458f-baac-96ca258c629c',
+    label: '2030 Congress',
+    cycle: 2030,
+  },
+]
+
+// /election for a hub topic, with the feed set to it; undefined for any
+// other topic.
+export function electionPathForTopic(slug: string): string | undefined {
+  return ELECTION_HUB_TOPICS.some((t) => t.slug === slug)
+    ? `/election?topic=${encodeURIComponent(slug)}`
+    : undefined
+}
+
+// The topic the page's Follow button follows: the one every official
+// market of the cycle the page leads with is in.
+export const hubTopicSlug = (cycle: 2028 | 2030) => `${cycle}-us-elections`
+
+// Leaderboards: profit and market creators across a set of topics (a
+// market in several counts once).
+export type ElectionLeaderboardConfig = {
+  key: string
+  title: string
+  subtitle: string
+  // The first is the fallback for an API that predates `groupIds`, so the
+  // one with the most markets.
+  topicIds: string[]
+}
+
+// The 2026 midterms, at the top of the page until the new Congress has
+// settled in.
+export const MIDTERMS_2026_LEADERBOARD: ElectionLeaderboardConfig = {
+  key: '2026',
+  title: 'The 2026 midterms leaderboard',
+  subtitle:
+    'Who made the most on the 2026 elections, and whose markets drew the most traders.',
+  topicIds: [
+    '1f785ecd-2cbc-4a04-8c20-0459dc31e4ad', // 2026-us-congressional-elections
+    '2e9fc841-389f-4e11-99bb-c26ca54ecac2', // 2026-midterms
+    'e7e420ef-b0a8-43c3-8188-33ef0fefa0d7', // 2026-us-election
+    '32dcce0c-40c6-4fdd-8850-3b8b4459b5cd', // 2026-ballot-measures
+    '6a58fc57-106f-4a97-bf29-c40b4f91f3c6', // 26-midterm-contest
+  ],
+}
+export const MIDTERMS_2026_LEADERBOARD_UNTIL = Date.UTC(2027, 1, 1)
+
+// A cycle's leaderboard: its hub topics, the busiest first.
+export function cycleLeaderboard(
+  cycle: 2028 | 2030
+): ElectionLeaderboardConfig {
+  const topics = ELECTION_HUB_TOPICS.filter((t) => t.cycle === cycle)
+  const first =
+    topics.find((t) => t.slug === PRESIDENTIAL_2028_TOPIC_SLUG) ?? topics[0]
+  return {
+    key: String(cycle),
+    title: `${cycle} leaderboard`,
+    subtitle: `The top traders on the ${cycle} races so far, and whose markets drew the most traders.`,
+    topicIds: [first, ...topics.filter((t) => t !== first)].map((t) => t.id),
+  }
+}
+
 // Polling averages that still matter after the midterms.
 export const POLLING_PERPS_2028 = [
   'trump-approval-rating',

@@ -14,13 +14,21 @@ import {
   sectionOrder,
   showsSection,
 } from './election-phase'
-import { upcomingTimeline } from './elections-2028-config'
+import {
+  cycleLeaderboard,
+  ELECTION_HUB_TOPICS,
+  electionPathForTopic,
+  hubTopicSlug,
+  MIDTERMS_2026_LEADERBOARD,
+  upcomingTimeline,
+} from './elections-2028-config'
 import { ELECTORAL_UNITS } from './ec-model'
 import {
   classifyNational,
   classifyPipeline,
   OfficialMarketsFile,
   pageLoads,
+  pickChartSlot,
   pickSlot,
   placeIn,
 } from './official-markets'
@@ -87,6 +95,21 @@ test('each phase orders its sections once, ending with the feed', () => {
   assert.ok(showsSection('nomination', 'primaries'))
   assert.ok(!showsSection('general', 'primaries'))
   assert.ok(!showsSection('results', 'swings2026'))
+  // The 2026 midterms' leaderboard leads, right under the 2026 banner; each
+  // phase ends with its cycle's leaderboard, then the feed.
+  assert.equal(sectionOrder('nomination')[1], 'leaderboard2026')
+  assert.ok(!showsSection('primaries', 'leaderboard2026'))
+  for (const phase of [
+    'nomination',
+    'primaries',
+    'conventions',
+    'general',
+    'results',
+    'midterms2030',
+  ] as const) {
+    const order = sectionOrder(phase)
+    assert.equal(order[order.length - 2], 'leaderboard', phase)
+  }
 })
 
 test('the timeline drops what is over and keeps seasons undated', () => {
@@ -221,36 +244,85 @@ test('grouping by rating, state and moves', () => {
 
 // ------------------------------------------------------------------ slots
 
-test('a slot switches to the official market once it has caught up', () => {
-  type M = {
-    id: string
-    visibility: string
-    uniqueBettorCount: number
-    deleted?: boolean
-  }
-  const official: M = { id: 'o', visibility: 'public', uniqueBettorCount: 10 }
-  const community: M = { id: 'c', visibility: 'public', uniqueBettorCount: 25 }
-  assert.equal(pickSlot(official, community)?.id, 'c')
-  assert.equal(
-    pickSlot({ ...official, uniqueBettorCount: 25 }, community)?.id,
-    'o'
-  )
-  assert.equal(
-    pickSlot({ ...official, uniqueBettorCount: 40 }, community)?.id,
-    'o'
-  )
+type SlotM = {
+  id: string
+  visibility: string
+  uniqueBettorCount: number
+  deleted?: boolean
+}
+const officialM: SlotM = { id: 'o', visibility: 'public', uniqueBettorCount: 0 }
+const communityM: SlotM = {
+  id: 'c',
+  visibility: 'public',
+  uniqueBettorCount: 25,
+}
+
+test('a slot takes the official market as soon as it is public', () => {
+  assert.equal(pickSlot(officialM, communityM)?.id, 'o')
   // Still unlisted while being created, or deleted: not yet.
   assert.equal(
-    pickSlot(
-      { ...official, visibility: 'unlisted', uniqueBettorCount: 99 },
-      community
+    pickSlot({ ...officialM, visibility: 'unlisted' }, communityM)?.id,
+    'c'
+  )
+  assert.equal(pickSlot({ ...officialM, deleted: true }, communityM)?.id, 'c')
+  assert.equal(pickSlot(officialM, undefined)?.id, 'o')
+  assert.equal(pickSlot(undefined, communityM)?.id, 'c')
+  assert.equal(pickSlot({ ...communityM, deleted: true }, undefined), undefined)
+  assert.equal(pickSlot(undefined, undefined), undefined)
+})
+
+test('a line chart keeps the community market until the official one catches up', () => {
+  assert.equal(pickChartSlot(officialM, communityM)?.id, 'c')
+  assert.equal(
+    pickChartSlot({ ...officialM, uniqueBettorCount: 25 }, communityM)?.id,
+    'o'
+  )
+  assert.equal(
+    pickChartSlot(
+      { ...officialM, visibility: 'unlisted', uniqueBettorCount: 99 },
+      communityM
     )?.id,
     'c'
   )
-  assert.equal(pickSlot({ ...official, deleted: true }, community)?.id, 'c')
-  assert.equal(pickSlot(official, undefined)?.id, 'o')
-  assert.equal(pickSlot(undefined, community)?.id, 'c')
-  assert.equal(pickSlot(undefined, undefined), undefined)
+  assert.equal(pickChartSlot(officialM, undefined)?.id, 'o')
+  assert.equal(pickChartSlot(undefined, communityM)?.id, 'c')
+  assert.equal(pickChartSlot(undefined, undefined), undefined)
+})
+
+// ------------------------------------------------------------ hub topics
+
+test('the US elections topics send visitors to /election', () => {
+  assert.equal(
+    electionPathForTopic('2028-us-elections'),
+    '/election?topic=2028-us-elections'
+  )
+  assert.equal(electionPathForTopic('2026-midterms'), undefined)
+  assert.equal(electionPathForTopic('us-politics'), undefined)
+  // Each topic once; the Follow button's topic is among them.
+  const slugs = ELECTION_HUB_TOPICS.map((t) => t.slug)
+  assert.equal(new Set(slugs).size, slugs.length)
+  assert.ok(slugs.includes(hubTopicSlug(2028)))
+  assert.ok(slugs.includes(hubTopicSlug(2030)))
+})
+
+test('leaderboards cover their cycle, the busiest topic first', () => {
+  const b2028 = cycleLeaderboard(2028)
+  const ids2028 = ELECTION_HUB_TOPICS.filter((t) => t.cycle === 2028).map(
+    (t) => t.id
+  )
+  assert.deepEqual([...b2028.topicIds].sort(), [...ids2028].sort())
+  assert.equal(
+    b2028.topicIds[0],
+    ELECTION_HUB_TOPICS.find(
+      (t) => t.slug === '2028-us-presidential-election-6tdsp26zly'
+    )?.id
+  )
+  const b2030 = cycleLeaderboard(2030)
+  assert.equal(b2030.topicIds.length, 2)
+  assert.equal(b2030.title, '2030 leaderboard')
+  // The API takes at most 20 topics per board.
+  for (const b of [b2028, b2030, MIDTERMS_2026_LEADERBOARD])
+    assert.ok(b.topicIds.length >= 1 && b.topicIds.length <= 20, b.key)
 })
 
 // ------------------------------------------------------------------ mapping
@@ -517,7 +589,7 @@ test('the page loads each primary through its own year, 2027 included', () => {
   assert.equal(pageLoads(iowa, show(2029)), false)
   assert.equal(
     pageLoads({ cycle: 2028, kind: 'president-popular' }, show(2027)),
-    false
+    true
   )
   assert.equal(pageLoads({ cycle: 2028, kind: 'senate' }, show(2027)), true)
   assert.equal(pageLoads({ cycle: 2030, kind: 'senate' }, show(2029)), false)

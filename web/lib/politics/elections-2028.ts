@@ -1,7 +1,10 @@
 import { keyBy, mean, omit, sortBy, uniq, uniqBy } from 'lodash'
 
+import { APIError } from 'common/api/utils'
 import { getAnswerProbability } from 'common/calculate'
 import { Contract, isMultiCpmm, MultiContract } from 'common/contract'
+import { Group } from 'common/group'
+import { removeUndefinedProps } from 'common/util/object'
 import { getContractFromSlug, getContracts } from 'common/supabase/contracts'
 import { REPLAY_COMPARISONS } from 'web/components/election-2026/replay-comparisons'
 import type { ReplaySnapshot } from 'web/components/election-2026/replay-model'
@@ -32,6 +35,7 @@ import {
   MarketRef,
   OfficialMarketsFile,
   pageLoads,
+  pickChartSlot,
   pickSlot,
   president2024Winner,
   SENATE_2028_HOLDER,
@@ -63,6 +67,7 @@ import {
   UNPRECEDENTED_POLITICS_SLUGS,
 } from 'web/lib/politics/unprecedented-politics'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+import { getGroupFromSlug } from 'web/lib/supabase/group'
 import { MIDTERMS_2026 } from 'web/public/data/elections-data'
 import snapshot from 'web/public/data/election-2026-replay.json'
 import swingsFile from 'web/public/data/election-2026-swings.json'
@@ -74,10 +79,15 @@ import {
   BOARD_FREEZE,
   CHART_SERIES,
   COMMUNITY_EQUIVALENTS,
+  cycleLeaderboard,
   EC_MODEL_RHO,
+  ElectionLeaderboardConfig,
   HOUSE_2026_DISTRICTS_SLUG,
+  hubTopicSlug,
   LATER_KEYS,
   LIST_SERIES,
+  MIDTERMS_2026_LEADERBOARD,
+  MIDTERMS_2026_LEADERBOARD_UNTIL,
   NATIONAL_2028,
   OFFICIAL_PRESIDENT_2028,
   OFFICIAL_SLOTS,
@@ -202,9 +212,24 @@ export type Mover = {
   weekChange: number
 }
 
+// A leaderboard's two boards: profit, and market creators by traders.
+export type ElectionLeaderboard = {
+  key: string
+  title: string
+  subtitle: string
+  profit: { userId: string; score: number }[]
+  creators: { userId: string; score: number }[]
+}
+
 export type Elections2028PageProps = {
   now: number
   phase: ElectionPhase
+  // The topic the page stands in for, which its Follow button follows.
+  hubTopic: Group | null
+  // The 2026 midterms' boards (at the top, for a while) and the current
+  // cycle's.
+  leaderboard2026: ElectionLeaderboard | null
+  leaderboard: ElectionLeaderboard | null
   partyContract: Contract | null
   popularVoteContract: Contract | null
   // The official 2028 balance-of-power market, or (until it exists) the
@@ -659,6 +684,17 @@ async function raceBoard(
         unitContract(unit.key, byId),
       ])
     }
+    // Each state's popular vote, where its official market is up.
+    for (const [, ref] of officialEntries(
+      (r) => r.cycle === 2028 && r.kind === 'president-popular'
+    )) {
+      const contract = byId[ref.id]
+      if (!contract || !ref.state) continue
+      seats.push([
+        { o: 'V', st: ref.state, holder: president2024Winner(ref.state) },
+        contract,
+      ])
+    }
   }
   for (const [, ref] of officialEntries(
     (r) =>
@@ -879,6 +915,62 @@ const slimOrNull = (c: Contract | null) => (c ? slimCard(c) : null)
 const openOnly = (contracts: (Contract | undefined)[], now: number) =>
   contracts.filter((c): c is Contract => !!c && isOpenPublicMarket(c, now))
 
+// ---------------------------------------------------------------------------
+// Leaderboards and the hub topic
+// ---------------------------------------------------------------------------
+
+const LEADERBOARD_ROWS = 10
+const LEADERBOARD_TIMEOUT_MS = 8_000
+
+// A leaderboard across its topics, fetched once per revalidation so page
+// views don't each run the query. An API from before `groupIds` rejects it
+// (400): then its first topic alone. Null if it can't be had in time.
+async function getLeaderboard(
+  config: ElectionLeaderboardConfig
+): Promise<ElectionLeaderboard | null> {
+  const board = async (kind: 'profit' | 'creator') => {
+    const params = { kind, token: 'MANA' as const, limit: LEADERBOARD_ROWS }
+    const fetchOnce = (topics: { groupIds: string[] } | { groupId: string }) =>
+      api(
+        'leaderboard',
+        { ...params, ...topics },
+        { signal: AbortSignal.timeout(LEADERBOARD_TIMEOUT_MS) }
+      )
+    const rows = await fetchOnce({ groupIds: config.topicIds }).catch((e) => {
+      if (!(e instanceof APIError && e.code === 400)) throw e
+      return fetchOnce({ groupId: config.topicIds[0] })
+    })
+    return rows
+      .filter((r) => Number.isFinite(r.score) && r.score > 0)
+      .map((r) => ({ userId: r.userId, score: Math.round(r.score) }))
+  }
+  try {
+    const [profit, creators] = await Promise.all([
+      board('profit'),
+      board('creator'),
+    ])
+    if (profit.length === 0 && creators.length === 0) return null
+    const { key, title, subtitle } = config
+    return { key, title, subtitle, profit, creators }
+  } catch (e) {
+    console.error(`election leaderboard ${config.key} failed`, e)
+    return null
+  }
+}
+
+async function getHubTopic(slug: string): Promise<Group | null> {
+  try {
+    const topic = await getGroupFromSlug(slug)
+    // Only what the Follow menu reads; the rest (its about text) is weight.
+    return topic
+      ? removeUndefinedProps(omit(topic, 'about', 'bannerUrl') as Group)
+      : null
+  } catch (e) {
+    console.error(`election hub topic ${slug} failed`, e)
+    return null
+  }
+}
+
 export async function getElections2028PageProps(): Promise<Elections2028PageProps> {
   const now = Date.now()
   const phase = electionPhase(now)
@@ -913,41 +1005,62 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
     ...officialIds,
   ])
 
-  const [fetched, scores, unprecedentedFound, perps, house2026Market] =
-    await Promise.all([
-      // No catch: without these markets the page is empty, and a failed
-      // revalidation keeps serving the last good one. Public only, so a
-      // market mid-creation (unlisted) isn't shown early.
-      getContracts(db, ids, 'id', true),
-      getScores(db),
-      Promise.all(
-        UNPRECEDENTED_POLITICS_SLUGS.map((slug) =>
-          getContractFromSlug(db, slug).catch(() => null)
-        )
-      ),
-      Promise.all(
-        POLLING_PERPS_2028.map((slug) =>
-          getContractFromSlug(db, slug).catch(() => null)
-        )
-      ),
-      getContractFromSlug(db, HOUSE_2026_DISTRICTS_SLUG).catch(() => null),
-    ])
+  const cycle = phase === 'midterms2030' ? 2030 : 2028
+  const [
+    fetched,
+    scores,
+    unprecedentedFound,
+    perps,
+    house2026Market,
+    hubTopic,
+    leaderboard2026,
+    leaderboard,
+  ] = await Promise.all([
+    // No catch: without these markets the page is empty, and a failed
+    // revalidation keeps serving the last good one. Public only, so a
+    // market mid-creation (unlisted) isn't shown early.
+    getContracts(db, ids, 'id', true),
+    getScores(db),
+    Promise.all(
+      UNPRECEDENTED_POLITICS_SLUGS.map((slug) =>
+        getContractFromSlug(db, slug).catch(() => null)
+      )
+    ),
+    Promise.all(
+      POLLING_PERPS_2028.map((slug) =>
+        getContractFromSlug(db, slug).catch(() => null)
+      )
+    ),
+    getContractFromSlug(db, HOUSE_2026_DISTRICTS_SLUG).catch(() => null),
+    getHubTopic(hubTopicSlug(cycle)),
+    showsSection(phase, 'leaderboard2026') &&
+    now < MIDTERMS_2026_LEADERBOARD_UNTIL
+      ? getLeaderboard(MIDTERMS_2026_LEADERBOARD)
+      : Promise.resolve(null),
+    showsSection(phase, 'leaderboard')
+      ? getLeaderboard(cycleLeaderboard(cycle))
+      : Promise.resolve(null),
+  ])
   const byId = keyBy(fetched, (c) => c.id)
   const get = (id: string) => byId[id] ?? null
 
-  // Each slot: the official market once it has as many traders as the
-  // community one there.
+  // Each slot: the official market once it's public, else the community one.
   const slot = (key: keyof typeof OFFICIAL_SLOTS, community: string) =>
     pickSlot(byId[officialId(OFFICIAL_SLOTS[key]) ?? ''], byId[community]) ??
     null
   const partyContract = slot('party', NATIONAL_2028.party)
+  // The line charts keep the community market's history until the official
+  // one has caught up on traders (an official market a chart doesn't use
+  // still shows, under More on 2028).
+  const chartSlot = (key: 'demNominee' | 'gopNominee', community: string) =>
+    pickChartSlot(byId[officialId(OFFICIAL_SLOTS[key]) ?? ''], byId[community])
   const chartContracts: Record<RaceChartKey, Contract | undefined> = {
-    president: pickSlot(
+    president: pickChartSlot(
       byId[OFFICIAL_PRESIDENT_2028],
       byId[NATIONAL_2028.president]
     ),
-    demNominee: slot('demNominee', NATIONAL_2028.demNominee) ?? undefined,
-    gopNominee: slot('gopNominee', NATIONAL_2028.gopNominee) ?? undefined,
+    demNominee: chartSlot('demNominee', NATIONAL_2028.demNominee),
+    gopNominee: chartSlot('gopNominee', NATIONAL_2028.gopNominee),
   }
   const officialBop = byId[officialId(OFFICIAL_SLOTS.balanceOfPower) ?? '']
 
@@ -1023,8 +1136,18 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
   // Official national markets placed by cycle, as the scripts add them: the
   // off-year races (2027, 2029), 2028 markets with no slot of their own, and
   // the later cycles in LATER_KEYS order (then anything else).
+  // Placed: the slots' official markets, except a nominee market its chart
+  // doesn't draw yet, which goes under More on 2028 instead.
+  const charted = new Set(
+    Object.values(chartContracts).flatMap((c) => (c ? [c.id] : []))
+  )
   const slotted = new Set<string>([
-    ...Object.values(OFFICIAL_SLOTS),
+    ...Object.values(OFFICIAL_SLOTS).filter(
+      (key) =>
+        (key !== OFFICIAL_SLOTS.demNominee &&
+          key !== OFFICIAL_SLOTS.gopNominee) ||
+        charted.has(officialId(key) ?? '')
+    ),
     ...LATER_KEYS,
   ])
   const national = officialEntries((r) => r.kind === 'national')
@@ -1055,8 +1178,11 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
   const later = uniqBy(
     [
       ...laterKeys.map((key) => slotFor(key, byId)),
-      // Community-only later markets until the official ones exist.
-      ...[...AFTER_2028[2030], ...AFTER_2028[2032]].map((id) => byId[id]),
+      // Community-only later markets (an official market's community
+      // equivalent comes in through slotFor, only while it's missing).
+      ...[...AFTER_2028[2030], ...AFTER_2028[2032]]
+        .filter((id) => !Object.values(COMMUNITY_EQUIVALENTS).includes(id))
+        .map((id) => byId[id]),
     ].filter((c): c is Contract => !!c && isOpenPublicMarket(c, now)),
     (c) => c.id
   )
@@ -1070,6 +1196,9 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
   return {
     now,
     phase,
+    hubTopic,
+    leaderboard2026,
+    leaderboard,
     partyContract: slim(partyContract),
     popularVoteContract: slim(slot('popularVote', NATIONAL_2028.popularVote)),
     balanceOfPowerContract: officialBop ? slim(officialBop) : null,

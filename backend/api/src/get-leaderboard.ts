@@ -15,6 +15,7 @@ import { assertUnreachable } from 'common/util/types'
 
 export const getLeaderboard: APIHandler<'leaderboard'> = async ({
   groupId,
+  groupIds,
   limit: limitValue,
   token,
   kind,
@@ -41,21 +42,24 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
     }))
   }
 
+  // One topic, or several (groupIds): a market in any of them counts once.
+  const inGroups = groupIds?.length
+    ? `select contract_id from group_contracts where group_id = any($<groupIds>)`
+    : groupId
+    ? `select contract_id from group_contracts where group_id = $<groupId>`
+    : undefined
   const whereInGroup =
-    groupId &&
+    inGroups &&
     (token === 'MANA'
-      ? where(
-          `c.id in (select contract_id from group_contracts where group_id = $<groupId>)`,
-          { groupId }
-        )
+      ? where(`c.id in (${inGroups})`, { groupId, groupIds })
       : token === 'CASH'
-      ? where(
-          `c.data->>'siblingContractId' in (select contract_id from group_contracts where group_id = $<groupId>)`,
-          { groupId }
-        )
+      ? where(`c.data->>'siblingContractId' in (${inGroups})`, {
+          groupId,
+          groupIds,
+        })
       : assertUnreachable(token))
 
-  if ((kind == 'profit' || kind == 'loss') && !groupId) {
+  if ((kind == 'profit' || kind == 'loss') && !inGroups) {
     const query = renderSql(
       from('user_portfolio_history_latest uph'),
       join('users u on u.id = uph.user_id'),

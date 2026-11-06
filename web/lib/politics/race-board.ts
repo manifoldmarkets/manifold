@@ -8,7 +8,9 @@ import { sortBy } from 'lodash'
 import { ratingOf } from './ec-model'
 import { placeName } from './official-markets'
 
-export type BoardOffice = 'P' | 'S' | 'G' | 'H'
+// President (a unit's electoral votes), a state's popular vote for
+// president, Senate, governor, House.
+export type BoardOffice = 'P' | 'V' | 'S' | 'G' | 'H'
 
 // Wire format, short keys: up to ~600 rows ship in the page props.
 export type BoardRace = {

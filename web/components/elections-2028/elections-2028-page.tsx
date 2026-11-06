@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import { Fragment, ReactNode, useState } from 'react'
+import { useRouter } from 'next/router'
+import { Fragment, ReactNode, useEffect, useState } from 'react'
 
 import { ENV_CONFIG } from 'common/envs/constants'
 import { referralQuery } from 'common/util/share'
@@ -8,6 +9,8 @@ import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { BackButton } from 'web/components/contract/back-button'
 import { Search } from 'web/components/search'
 import { FilterPill } from 'web/components/search/filter-pills'
+// Follow or block a topic; the sports hubs' menu, which fits any topic.
+import { SportTopicMenu } from 'web/components/sports/sport-topic-menu'
 import {
   ConditionalMatrix,
   LiveConditionOdds,
@@ -27,6 +30,7 @@ import {
 import type { Elections2028PageProps } from 'web/lib/politics/elections-2028'
 import {
   BOARD_FREEZE,
+  ELECTION_HUB_TOPICS,
   PRESIDENTIAL_2028_TOPIC_SLUG,
 } from 'web/lib/politics/elections-2028-config'
 import { SectionKey, sectionOrder } from 'web/lib/politics/election-phase'
@@ -35,6 +39,7 @@ import { buildShareUrl } from 'web/lib/util/share-url'
 import { AccuracyBanner } from './accuracy-banner'
 import { BalanceOfPower } from './balance-of-power'
 import { CandidateBars } from './candidate-bars'
+import { ElectionLeaderboards } from './election-leaderboards'
 import { MoversStrip } from './movers-strip'
 import { PartyOddsBar } from './party-odds-bar'
 import { PrimariesBoard } from './primaries-board'
@@ -58,6 +63,17 @@ const FEED_TOPICS = [
   { slug: 'us-senate', label: 'Senate' },
   { slug: 'donald-trump', label: 'Trump' },
 ]
+type FeedTopic = (typeof FEED_TOPICS)[number]
+
+// The feed's topic from ?topic= (a hub topic's page sends visitors here
+// with it), else its default.
+function feedTopicFor(slug: unknown): FeedTopic | undefined {
+  if (typeof slug !== 'string') return undefined
+  return (
+    FEED_TOPICS.find((t) => t.slug === slug) ??
+    ELECTION_HUB_TOPICS.find((t) => t.slug === slug)
+  )
+}
 
 function SectionHeader(props: {
   children: ReactNode
@@ -87,6 +103,9 @@ export function Elections2028Page(props: Elections2028PageProps) {
   const {
     now,
     phase,
+    hubTopic,
+    leaderboard2026,
+    leaderboard,
     partyContract,
     popularVoteContract,
     balanceOfPowerContract,
@@ -116,7 +135,16 @@ export function Elections2028Page(props: Elections2028PageProps) {
     trendingContracts,
   } = props
   const [range, setRange] = useRange()
-  const [feedTopic, setFeedTopic] = useState(FEED_TOPICS[0])
+  const router = useRouter()
+  const [feedTopic, setFeedTopic] = useState<FeedTopic>(FEED_TOPICS[0])
+  useEffect(() => {
+    const topic = feedTopicFor(router.query.topic)
+    if (topic) setFeedTopic(topic)
+  }, [router.query.topic])
+  // A topic from ?topic= that isn't one of the usual pills gets its own.
+  const feedTopics = FEED_TOPICS.some((t) => t.slug === feedTopic.slug)
+    ? FEED_TOPICS
+    : [feedTopic, ...FEED_TOPICS]
   const user = useUser()
   useSaveReferral(user)
 
@@ -136,6 +164,18 @@ export function Elections2028Page(props: Elections2028PageProps) {
   // (election-phase.ts). A section whose markets didn't load renders nothing.
   const sections: Record<SectionKey, ReactNode> = {
     accuracy: <AccuracyBanner story={accuracy} />,
+
+    leaderboard2026: leaderboard2026 && (
+      <SectionInView
+        section="2026 midterms leaderboard"
+        className="flex flex-col gap-3"
+      >
+        <SectionHeader subtitle={leaderboard2026.subtitle}>
+          {leaderboard2026.title}
+        </SectionHeader>
+        <ElectionLeaderboards board={leaderboard2026} rows={5} />
+      </SectionInView>
+    ),
 
     roadAhead: <RoadAhead now={now} primaries={primaries} />,
 
@@ -466,6 +506,15 @@ export function Elections2028Page(props: Elections2028PageProps) {
       </SectionInView>
     ),
 
+    leaderboard: leaderboard && (
+      <SectionInView section="leaderboard" className="flex flex-col gap-3">
+        <SectionHeader id="leaderboard" subtitle={leaderboard.subtitle}>
+          {leaderboard.title}
+        </SectionHeader>
+        <ElectionLeaderboards board={leaderboard} />
+      </SectionInView>
+    ),
+
     feed: (
       <SectionInView section="feed" className="flex flex-col gap-3">
         <SectionHeader>More election markets</SectionHeader>
@@ -478,7 +527,7 @@ export function Elections2028Page(props: Elections2028PageProps) {
           useUrlParams={false}
           defaultSort="most-popular"
           defaultFilter="open"
-          extraFilterPills={FEED_TOPICS.map((t) => (
+          extraFilterPills={feedTopics.map((t) => (
             <FilterPill
               key={t.slug}
               selected={t.slug === feedTopic.slug}
@@ -514,16 +563,19 @@ export function Elections2028Page(props: Elections2028PageProps) {
               : 'Live odds on 2028 and every race on the way there'}
           </div>
         </div>
-        <CopyLinkOrShareButton
-          url={shareUrl}
-          eventTrackingName="share elections page"
-          tooltip="Share this page"
-          color="gray-outline"
-          size="sm"
-          className="ml-auto shrink-0 gap-1.5"
-        >
-          Share
-        </CopyLinkOrShareButton>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          {hubTopic && <SportTopicMenu topic={hubTopic} />}
+          <CopyLinkOrShareButton
+            url={shareUrl}
+            eventTrackingName="share elections page"
+            tooltip="Share this page"
+            color="gray-outline"
+            size="sm"
+            className="shrink-0 gap-1.5"
+          >
+            Share
+          </CopyLinkOrShareButton>
+        </div>
       </div>
 
       {sectionOrder(phase).map((key) =>

@@ -723,7 +723,7 @@ export function Search(props: SearchProps) {
                 <Link
                   href="/election"
                   onClick={() =>
-                    track('select search topic', { topic: 'midterms-2026' })
+                    track('select search topic', { topic: 'elections' })
                   }
                   className={clsx(
                     'shrink-0 self-center whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium',
@@ -732,7 +732,7 @@ export function Search(props: SearchProps) {
                     'transition-all hover:brightness-105'
                   )}
                 >
-                  Midterms
+                  Elections
                 </Link>
                 <Link
                   href="/perps"

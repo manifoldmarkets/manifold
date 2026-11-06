@@ -34,6 +34,7 @@ export function electionPhase(now: number): ElectionPhase {
 
 export type SectionKey =
   | 'accuracy' // the 2026 result banner
+  | 'leaderboard2026' // the 2026 midterms' leaderboards (until Feb 2027)
   | 'roadAhead' // the timeline
   | 'race' // party bar, face-ended charts, popular vote, balance of power
   | 'movers'
@@ -49,12 +50,14 @@ export type SectionKey =
   | 'matrix'
   | 'unprecedented'
   | 'polling'
+  | 'leaderboard' // the cycle's leaderboards
   | 'feed'
 
 // Each phase's order. Sections not listed don't render in that phase.
 const ORDER: Record<ElectionPhase, SectionKey[]> = {
   nomination: [
     'accuracy',
+    'leaderboard2026',
     'roadAhead',
     'race',
     'movers',
@@ -69,6 +72,7 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'matrix',
     'unprecedented',
     'polling',
+    'leaderboard',
     'feed',
   ],
   primaries: [
@@ -84,6 +88,7 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'matrix',
     'unprecedented',
     'polling',
+    'leaderboard',
     'feed',
   ],
   conventions: [
@@ -99,6 +104,7 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'matrix',
     'unprecedented',
     'polling',
+    'leaderboard',
     'feed',
   ],
   general: [
@@ -113,6 +119,7 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'later',
     'unprecedented',
     'polling',
+    'leaderboard',
     'feed',
   ],
   results: [
@@ -124,6 +131,7 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'later',
     'matrix',
     'polling',
+    'leaderboard',
     'feed',
   ],
   midterms2030: [
@@ -135,6 +143,7 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'race',
     'roadTo270',
     'polling',
+    'leaderboard',
     'feed',
   ],
 }
