@@ -47,7 +47,11 @@ export function TimelineRail(props: { now: number; primaries: PrimaryRow[] }) {
       <ol className="flex flex-col">
         {upcoming.map((e, i) => {
           const target = targets[e.key]
-          const active = !!target && target === inView
+          // Several entries can share a section; only the first lights.
+          const active =
+            !!target &&
+            target === inView &&
+            upcoming.find((x) => targets[x.key] === target)?.key === e.key
           return (
             <li key={e.key} className="relative flex gap-3 pb-4">
               {i < upcoming.length - 1 && (

@@ -46,6 +46,15 @@ const STRENGTH = {
   R: ['#e0aaa5', '#c87570', '#9d3336'],
 } as const
 
+const mixWithWhite = (hex: string, t: number) => {
+  const n = parseInt(hex.slice(1), 16)
+  const channel = (shift: number) =>
+    Math.round(((n >> shift) & 255) * (1 - t) + 255 * t)
+  return `#${((1 << 24) + (channel(16) << 16) + (channel(8) << 8) + channel(0))
+    .toString(16)
+    .slice(1)}`
+}
+
 // A place's color: the 2026 map's blue–red gradient for party odds (called
 // races at full strength), the leader's color in a presidential primary.
 export function fillColor(fill: Fill | undefined): string | undefined {
@@ -57,7 +66,13 @@ export function fillColor(fill: Fill | undefined): string | undefined {
       return partyProbsToColor(p, 1 - p)
     }
     case 'leader':
-      return fill.color
+      // Paler while the leader is far from sure: most early leads are.
+      return fill.won || fill.p === undefined
+        ? fill.color
+        : mixWithWhite(
+            fill.color,
+            fill.p >= 0.5 ? 0 : fill.p >= 0.3 ? 0.3 : 0.55
+          )
     case 'strength': {
       const p = fill.won ? 1 : fill.p ?? 0
       return STRENGTH[fill.party][p >= 0.9 ? 2 : p >= 0.6 ? 1 : 0]

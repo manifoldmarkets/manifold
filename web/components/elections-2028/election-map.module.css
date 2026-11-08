@@ -151,6 +151,9 @@
   background: rgb(var(--color-ink-100));
   box-shadow: inset 0 0 0 1px var(--line);
 }
+.paleSwatch {
+  background: linear-gradient(90deg, #eb6834 50%, #f6b99f 50%);
+}
 .tipSwatch {
   border: 2px dashed var(--tip);
 }

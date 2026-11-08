@@ -665,14 +665,12 @@ export function ElectionMap(props: {
               mode={mode}
               onChange={(m) => update({ mode: m })}
             />
-            {(mode !== 'primary' || style === 'cartogram') && (
-              <MapViewToggle
-                view={style}
-                measures={false}
-                house={mode === 'house'}
-                onChange={changeStyle}
-              />
-            )}
+            <MapViewToggle
+              view={style}
+              measures={false}
+              house={mode === 'house'}
+              onChange={changeStyle}
+            />
             <div className={styles.searchSlot}>
               <button
                 className={clsx(
@@ -1303,8 +1301,14 @@ function MapLegend(props: {
               {s.label}
             </span>
           ))}
+          {view.office === 'P' && (
+            <span>
+              <i className={own.paleSwatch} />
+              Paler: leads with under 30%
+            </span>
+          )}
           <span>
-            <i className={styles.noRaceSwatch} />
+            <i className={own.noRaceSwatch} />
             No market yet
           </span>
         </div>

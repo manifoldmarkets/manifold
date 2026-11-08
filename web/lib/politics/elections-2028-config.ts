@@ -436,7 +436,7 @@ export const TIMELINE: TimelineEntry[] = [
     time: Date.UTC(2028, 11, 18, 17),
     sortAt: Date.UTC(2028, 11, 18, 17),
     until: Date.UTC(2028, 11, 19, 17),
-    sections: ['map', 'board'],
+    sections: ['board'],
   },
   {
     key: 'inauguration',
