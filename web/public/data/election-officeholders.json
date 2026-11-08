@@ -1,0 +1,2836 @@
+{
+ "asOf": "2026-11-08",
+ "sources": [
+  "https://unitedstates.github.io/congress-legislators/legislators-current.json",
+  "https://www.nga.org/governors/ (election-incumbents.ts roster)",
+  "Resolved 2026 Manifold markets, named from election-candidates-2026.json"
+ ],
+ "senate": {
+  "WA": [
+   {
+    "name": "Maria Cantwell",
+    "party": "D",
+    "next": 2030
+   },
+   {
+    "name": "Patty Murray",
+    "party": "D",
+    "next": 2028
+   }
+  ],
+  "MN": [
+   {
+    "name": "Amy Klobuchar",
+    "party": "D",
+    "next": 2030
+   },
+   {
+    "name": "Tina Smith",
+    "party": "D",
+    "next": 2032,
+    "elected": {
+     "name": "Peggy Flanagan",
+     "party": "D"
+    }
+   }
+  ],
+  "VT": [
+   {
+    "name": "Bernard Sanders",
+    "party": "I",
+    "next": 2030
+   },
+   {
+    "name": "Peter Welch",
+    "party": "D",
+    "next": 2028
+   }
+  ],
+  "RI": [
+   {
+    "name": "Sheldon Whitehouse",
+    "party": "D",
+    "next": 2030
+   },
+   {
+    "name": "Jack Reed",
+    "party": "D",
+    "next": 2032
+   }
+  ],
+  "WY": [
+   {
+    "name": "John Barrasso",
+    "party": "R",
+    "next": 2030
+   },
+   {
+    "name": "Cynthia M. Lummis",
+    "party": "R",
+    "next": 2032,
+    "elected": {
+     "name": "Harriet Hageman",
+     "party": "R"
+    }
+   }
+  ],
+  "MS": [
+   {
+    "name": "Roger F. Wicker",
+    "party": "R",
+    "next": 2030
+   },
+   {
+    "name": "Cindy Hyde-Smith",
+    "party": "R",
+    "next": 2032
+   }
+  ],
+  "ME": [
+   {
+    "name": "Susan M. Collins",
+    "party": "R",
+    "next": 2032
+   },
+   {
+    "name": "Angus S. King, Jr.",
+    "party": "I",
+    "next": 2030
+   }
+  ],
+  "TX": [
+   {
+    "name": "John Cornyn",
+    "party": "R",
+    "next": 2032,
+    "elected": {
+     "name": "James Talarico",
+     "party": "D"
+    }
+   },
+   {
+    "name": "Ted Cruz",
+    "party": "R",
+    "next": 2030
+   }
+  ],
+  "IL": [
+   {
+    "name": "Richard J. Durbin",
+    "party": "D",
+    "next": 2032,
+    "elected": {
+     "name": "Juliana Stratton",
+     "party": "D"
+    }
+   },
+   {
+    "name": "Tammy Duckworth",
+    "party": "D",
+    "next": 2028
+   }
+  ],
+  "KY": [
+   {
+    "name": "Mitch McConnell",
+    "party": "R",
+    "next": 2032,
+    "elected": {
+     "name": "Andy Barr",
+     "party": "R"
+    }
+   },
+   {
+    "name": "Rand Paul",
+    "party": "R",
+    "next": 2028
+   }
+  ],
+  "OR": [
+   {
+    "name": "Jeff Merkley",
+    "party": "D",
+    "next": 2032
+   },
+   {
+    "name": "Ron Wyden",
+    "party": "D",
+    "next": 2028
+   }
+  ],
+  "ID": [
+   {
+    "name": "James E. Risch",
+    "party": "R",
+    "next": 2032
+   },
+   {
+    "name": "Mike Crapo",
+    "party": "R",
+    "next": 2028
+   }
+  ],
+  "NH": [
+   {
+    "name": "Jeanne Shaheen",
+    "party": "D",
+    "next": 2032,
+    "elected": {
+     "name": "Chris Pappas",
+     "party": "D"
+    }
+   },
+   {
+    "name": "Margaret Wood Hassan",
+    "party": "D",
+    "next": 2028
+   }
+  ],
+  "VA": [
+   {
+    "name": "Mark R. Warner",
+    "party": "D",
+    "next": 2032
+   },
+   {
+    "name": "Tim Kaine",
+    "party": "D",
+    "next": 2030
+   }
+  ],
+  "NY": [
+   {
+    "name": "Kirsten E. Gillibrand",
+    "party": "D",
+    "next": 2030
+   },
+   {
+    "name": "Charles E. Schumer",
+    "party": "D",
+    "next": 2028
+   }
+  ],
+  "DE": [
+   {
+    "name": "Christopher A. Coons",
+    "party": "D",
+    "next": 2032
+   },
+   {
+    "name": "Lisa Blunt Rochester",
+    "party": "D",
+    "next": 2030
+   }
+  ],
+  "WI": [
+   {
+    "name": "Tammy Baldwin",
+    "party": "D",
+    "next": 2030
+   },
+   {
+    "name": "Ron Johnson",
+    "party": "R",
+    "next": 2028
+   }
+  ],
+  "CO": [
+   {
+    "name": "Michael F. Bennet",
+    "party": "D",
+    "next": 2028
+   },
+   {
+    "name": "John W. Hickenlooper",
+    "party": "D",
+    "next": 2032
+   }
+  ],
+  "TN": [
+   {
+    "name": "Marsha Blackburn",
+    "party": "R",
+    "next": 2030
+   },
+   {
+    "name": "Bill Hagerty",
+    "party": "R",
+    "next": 2032
+   }
+  ],
+  "CT": [
+   {
+    "name": "Richard Blumenthal",
+    "party": "D",
+    "next": 2028
+   },
+   {
+    "name": "Christopher Murphy",
+    "party": "D",
+    "next": 2030
+   }
+  ],
+  "AR": [
+   {
+    "name": "John Boozman",
+    "party": "R",
+    "next": 2028
+   },
+   {
+    "name": "Tom Cotton",
+    "party": "R",
+    "next": 2032
+   }
+  ],
+  "WV": [
+   {
+    "name": "Shelley Moore Capito",
+    "party": "R",
+    "next": 2032
+   },
+   {
+    "name": "James C. Justice",
+    "party": "R",
+    "next": 2030
+   }
+  ],
+  "LA": [
+   {
+    "name": "Bill Cassidy",
+    "party": "R",
+    "next": 2032,
+    "elected": {
+     "name": "Julia Letlow",
+     "party": "R"
+    }
+   },
+   {
+    "name": "John Kennedy",
+    "party": "R",
+    "next": 2028
+   }
+  ],
+  "IA": [
+   {
+    "name": "Chuck Grassley",
+    "party": "R",
+    "next": 2028
+   },
+   {
+    "name": "Joni Ernst",
+    "party": "R",
+    "next": 2032,
+    "elected": {
+     "name": "Josh Turek",
+     "party": "D"
+    }
+   }
+  ],
+  "NM": [
+   {
+    "name": "Martin Heinrich",
+    "party": "D",
+    "next": 2030
+   },
+   {
+    "name": "Ben Ray Luján",
+    "party": "D",
+    "next": 2032
+   }
+  ],
+  "HI": [
+   {
+    "name": "Mazie K. Hirono",
+    "party": "D",
+    "next": 2030
+   },
+   {
+    "name": "Brian Schatz",
+    "party": "D",
+    "next": 2028
+   }
+  ],
+  "ND": [
+   {
+    "name": "John Hoeven",
+    "party": "R",
+    "next": 2028
+   },
+   {
+    "name": "Kevin Cramer",
+    "party": "R",
+    "next": 2030
+   }
+  ],
+  "OK": [
+   {
+    "name": "James Lankford",
+    "party": "R",
+    "next": 2028
+   },
+   {
+    "name": "Alan Armstrong",
+    "party": "R",
+    "next": 2032,
+    "elected": {
+     "name": "Kevin Hern",
+     "party": "R"
+    }
+   }
+  ],
+  "UT": [
+   {
+    "name": "Mike Lee",
+    "party": "R",
+    "next": 2028
+   },
+   {
+    "name": "John R. Curtis",
+    "party": "R",
+    "next": 2030
+   }
+  ],
+  "MA": [
+   {
+    "name": "Edward J. Markey",
+    "party": "D",
+    "next": 2032
+   },
+   {
+    "name": "Elizabeth Warren",
+    "party": "D",
+    "next": 2030
+   }
+  ],
+  "KS": [
+   {
+    "name": "Jerry Moran",
+    "party": "R",
+    "next": 2028
+   },
+   {
+    "name": "Roger Marshall",
+    "party": "R",
+    "next": 2032,
+    "elected": {
+     "name": "Adam Hamilton",
+     "party": "D"
+    }
+   }
+  ],
+  "AK": [
+   {
+    "name": "Lisa Murkowski",
+    "party": "R",
+    "next": 2028
+   },
+   {
+    "name": "Dan Sullivan",
+    "party": "R",
+    "next": 2032
+   }
+  ],
+  "MI": [
+   {
+    "name": "Gary C. Peters",
+    "party": "D",
+    "next": 2032,
+    "elected": {
+     "name": "Abdul El-Sayed",
+     "party": "D"
+    }
+   },
+   {
+    "name": "Elissa Slotkin",
+    "party": "D",
+    "next": 2030
+   }
+  ],
+  "CA": [
+   {
+    "name": "Adam B. Schiff",
+    "party": "D",
+    "next": 2030
+   },
+   {
+    "name": "Alex Padilla",
+    "party": "D",
+    "next": 2028
+   }
+  ],
+  "SC": [
+   {
+    "name": "Tim Scott",
+    "party": "R",
+    "next": 2028
+   },
+   {
+    "name": "Darline Graham",
+    "party": "R",
+    "next": 2032,
+    "elected": {
+     "name": "Annie Andrews",
+     "party": "D"
+    }
+   }
+  ],
+  "SD": [
+   {
+    "name": "John Thune",
+    "party": "R",
+    "next": 2028
+   },
+   {
+    "name": "Mike Rounds",
+    "party": "R",
+    "next": 2032
+   }
+  ],
+  "MD": [
+   {
+    "name": "Chris Van Hollen",
+    "party": "D",
+    "next": 2028
+   },
+   {
+    "name": "Angela D. Alsobrooks",
+    "party": "D",
+    "next": 2030
+   }
+  ],
+  "IN": [
+   {
+    "name": "Todd Young",
+    "party": "R",
+    "next": 2028
+   },
+   {
+    "name": "Jim Banks",
+    "party": "R",
+    "next": 2030
+   }
+  ],
+  "MT": [
+   {
+    "name": "Steve Daines",
+    "party": "R",
+    "next": 2032,
+    "elected": {
+     "name": "Kurt Alme",
+     "party": "R"
+    }
+   },
+   {
+    "name": "Tim Sheehy",
+    "party": "R",
+    "next": 2030
+   }
+  ],
+  "NE": [
+   {
+    "name": "Deb Fischer",
+    "party": "R",
+    "next": 2030
+   },
+   {
+    "name": "Pete Ricketts",
+    "party": "R",
+    "next": 2032
+   }
+  ],
+  "NJ": [
+   {
+    "name": "Cory A. Booker",
+    "party": "D",
+    "next": 2032
+   },
+   {
+    "name": "Andy Kim",
+    "party": "D",
+    "next": 2030
+   }
+  ],
+  "AZ": [
+   {
+    "name": "Ruben Gallego",
+    "party": "D",
+    "next": 2030
+   },
+   {
+    "name": "Mark Kelly",
+    "party": "D",
+    "next": 2028
+   }
+  ],
+  "NC": [
+   {
+    "name": "Thom Tillis",
+    "party": "R",
+    "next": 2032,
+    "elected": {
+     "name": "Roy Cooper",
+     "party": "D"
+    }
+   },
+   {
+    "name": "Ted Budd",
+    "party": "R",
+    "next": 2028
+   }
+  ],
+  "NV": [
+   {
+    "name": "Catherine Cortez Masto",
+    "party": "D",
+    "next": 2028
+   },
+   {
+    "name": "Jacky Rosen",
+    "party": "D",
+    "next": 2030
+   }
+  ],
+  "FL": [
+   {
+    "name": "Rick Scott",
+    "party": "R",
+    "next": 2030
+   },
+   {
+    "name": "Ashley Moody",
+    "party": "R",
+    "next": 2028
+   }
+  ],
+  "MO": [
+   {
+    "name": "Josh Hawley",
+    "party": "R",
+    "next": 2030
+   },
+   {
+    "name": "Eric Schmitt",
+    "party": "R",
+    "next": 2028
+   }
+  ],
+  "AL": [
+   {
+    "name": "Tommy Tuberville",
+    "party": "R",
+    "next": 2032,
+    "elected": {
+     "name": "Barry Moore",
+     "party": "R"
+    }
+   },
+   {
+    "name": "Katie Boyd Britt",
+    "party": "R",
+    "next": 2028
+   }
+  ],
+  "GA": [
+   {
+    "name": "Jon Ossoff",
+    "party": "D",
+    "next": 2032
+   },
+   {
+    "name": "Raphael G. Warnock",
+    "party": "D",
+    "next": 2028
+   }
+  ],
+  "PA": [
+   {
+    "name": "John Fetterman",
+    "party": "D",
+    "next": 2028
+   },
+   {
+    "name": "David McCormick",
+    "party": "R",
+    "next": 2030
+   }
+  ],
+  "OH": [
+   {
+    "name": "Bernie Moreno",
+    "party": "R",
+    "next": 2030
+   },
+   {
+    "name": "Jon Husted",
+    "party": "R",
+    "next": 2028,
+    "elected": {
+     "name": "Sherrod Brown",
+     "party": "D"
+    }
+   }
+  ]
+ },
+ "governor": {
+  "AL": {
+   "name": "Kay Ivey",
+   "party": "R",
+   "elected": {
+    "name": "Tommy Tuberville",
+    "party": "R"
+   }
+  },
+  "AK": {
+   "name": "Mike Dunleavy",
+   "party": "R",
+   "elected": {
+    "name": "Jonathan Kreiss-Tomkins",
+    "party": "D"
+   }
+  },
+  "AZ": {
+   "name": "Katie Hobbs",
+   "party": "D"
+  },
+  "AR": {
+   "name": "Sarah Huckabee Sanders",
+   "party": "R"
+  },
+  "CA": {
+   "name": "Gavin Newsom",
+   "party": "D",
+   "elected": {
+    "name": "Xavier Becerra",
+    "party": "D"
+   }
+  },
+  "CO": {
+   "name": "Jared Polis",
+   "party": "D",
+   "elected": {
+    "name": "Phil Weiser",
+    "party": "D"
+   }
+  },
+  "CT": {
+   "name": "Ned Lamont",
+   "party": "D"
+  },
+  "DE": {
+   "name": "Matt Meyer",
+   "party": "D"
+  },
+  "FL": {
+   "name": "Ron DeSantis",
+   "party": "R",
+   "elected": {
+    "name": "Byron Donalds",
+    "party": "R"
+   }
+  },
+  "GA": {
+   "name": "Brian Kemp",
+   "party": "R",
+   "elected": {
+    "name": "Keisha Lance Bottoms",
+    "party": "D"
+   }
+  },
+  "HI": {
+   "name": "Josh Green",
+   "party": "D"
+  },
+  "ID": {
+   "name": "Brad Little",
+   "party": "R"
+  },
+  "IL": {
+   "name": "JB Pritzker",
+   "party": "D"
+  },
+  "IN": {
+   "name": "Mike Braun",
+   "party": "R"
+  },
+  "IA": {
+   "name": "Kim Reynolds",
+   "party": "R",
+   "elected": {
+    "name": "Rob Sand",
+    "party": "D"
+   }
+  },
+  "KS": {
+   "name": "Laura Kelly",
+   "party": "D",
+   "elected": {
+    "name": "Cindy Holscher",
+    "party": "D"
+   }
+  },
+  "KY": {
+   "name": "Andy Beshear",
+   "party": "D"
+  },
+  "LA": {
+   "name": "Jeff Landry",
+   "party": "R"
+  },
+  "ME": {
+   "name": "Janet Mills",
+   "party": "D",
+   "elected": {
+    "name": "Hannah Pingree",
+    "party": "D"
+   }
+  },
+  "MD": {
+   "name": "Wes Moore",
+   "party": "D"
+  },
+  "MA": {
+   "name": "Maura Healey",
+   "party": "D"
+  },
+  "MI": {
+   "name": "Gretchen Whitmer",
+   "party": "D",
+   "elected": {
+    "name": "Jocelyn Benson",
+    "party": "D"
+   }
+  },
+  "MN": {
+   "name": "Tim Walz",
+   "party": "D",
+   "elected": {
+    "name": "Lisa Demuth",
+    "party": "R"
+   }
+  },
+  "MS": {
+   "name": "Tate Reeves",
+   "party": "R"
+  },
+  "MO": {
+   "name": "Mike Kehoe",
+   "party": "R"
+  },
+  "MT": {
+   "name": "Greg Gianforte",
+   "party": "R"
+  },
+  "NE": {
+   "name": "Jim Pillen",
+   "party": "R"
+  },
+  "NV": {
+   "name": "Joe Lombardo",
+   "party": "R",
+   "elected": {
+    "name": "Aaron Ford",
+    "party": "D"
+   }
+  },
+  "NH": {
+   "name": "Kelly Ayotte",
+   "party": "R"
+  },
+  "NJ": {
+   "name": "Mikie Sherrill",
+   "party": "D"
+  },
+  "NM": {
+   "name": "Michelle Lujan Grisham",
+   "party": "D",
+   "elected": {
+    "name": "Deb Haaland",
+    "party": "D"
+   }
+  },
+  "NY": {
+   "name": "Kathy Hochul",
+   "party": "D"
+  },
+  "NC": {
+   "name": "Josh Stein",
+   "party": "D"
+  },
+  "ND": {
+   "name": "Kelly Armstrong",
+   "party": "R"
+  },
+  "OH": {
+   "name": "Mike DeWine",
+   "party": "R",
+   "elected": {
+    "name": "Amy Acton",
+    "party": "D"
+   }
+  },
+  "OK": {
+   "name": "Kevin Stitt",
+   "party": "R",
+   "elected": {
+    "name": "Mike Mazzei",
+    "party": "R"
+   }
+  },
+  "OR": {
+   "name": "Tina Kotek",
+   "party": "D"
+  },
+  "PA": {
+   "name": "Josh Shapiro",
+   "party": "D"
+  },
+  "RI": {
+   "name": "Dan McKee",
+   "party": "D",
+   "elected": {
+    "name": "Helena Foulkes",
+    "party": "D"
+   }
+  },
+  "SC": {
+   "name": "Henry McMaster",
+   "party": "R",
+   "elected": {
+    "name": "Alan Wilson",
+    "party": "R"
+   }
+  },
+  "SD": {
+   "name": "Larry Rhoden",
+   "party": "R"
+  },
+  "TN": {
+   "name": "Bill Lee",
+   "party": "R",
+   "elected": {
+    "name": "Marsha Blackburn",
+    "party": "R"
+   }
+  },
+  "TX": {
+   "name": "Greg Abbott",
+   "party": "R",
+   "elected": {
+    "name": "Gina Hinojosa",
+    "party": "D"
+   }
+  },
+  "UT": {
+   "name": "Spencer Cox",
+   "party": "R"
+  },
+  "VT": {
+   "name": "Phil Scott",
+   "party": "R"
+  },
+  "VA": {
+   "name": "Abigail Spanberger",
+   "party": "D"
+  },
+  "WA": {
+   "name": "Bob Ferguson",
+   "party": "D"
+  },
+  "WV": {
+   "name": "Patrick Morrisey",
+   "party": "R"
+  },
+  "WI": {
+   "name": "Tony Evers",
+   "party": "D",
+   "elected": {
+    "name": "David Crowley",
+    "party": "D"
+   }
+  },
+  "WY": {
+   "name": "Mark Gordon",
+   "party": "R",
+   "elected": {
+    "name": "Eric Barlow",
+    "party": "R"
+   }
+  }
+ },
+ "house": {
+  "AL-4": {
+   "name": "Robert B. Aderholt",
+   "party": "R"
+  },
+  "FL-12": {
+   "name": "Gus M. Bilirakis",
+   "party": "R"
+  },
+  "GA-2": {
+   "name": "Sanford D. Bishop, Jr.",
+   "party": "D"
+  },
+  "FL-16": {
+   "name": "Vern Buchanan",
+   "party": "R"
+  },
+  "CA-41": {
+   "name": "Ken Calvert",
+   "party": "R",
+   "elected": {
+    "name": "Linda Sánchez",
+    "party": "D"
+   }
+  },
+  "IN-7": {
+   "name": "André Carson",
+   "party": "D"
+  },
+  "TX-31": {
+   "name": "John R. Carter",
+   "party": "R"
+  },
+  "FL-14": {
+   "name": "Kathy Castor",
+   "party": "D"
+  },
+  "CA-28": {
+   "name": "Judy Chu",
+   "party": "D"
+  },
+  "NY-9": {
+   "name": "Yvette D. Clarke",
+   "party": "D"
+  },
+  "MO-5": {
+   "name": "Emanuel Cleaver",
+   "party": "D"
+  },
+  "SC-6": {
+   "name": "James E. Clyburn",
+   "party": "D"
+  },
+  "TN-9": {
+   "name": "Steve Cohen",
+   "party": "D"
+  },
+  "OK-4": {
+   "name": "Tom Cole",
+   "party": "R"
+  },
+  "CA-21": {
+   "name": "Jim Costa",
+   "party": "D"
+  },
+  "CT-2": {
+   "name": "Joe Courtney",
+   "party": "D"
+  },
+  "AR-1": {
+   "name": "Eric A. \"Rick\" Crawford",
+   "party": "R"
+  },
+  "TX-28": {
+   "name": "Henry Cuellar",
+   "party": "D"
+  },
+  "IL-7": {
+   "name": "Danny K. Davis",
+   "party": "D"
+  },
+  "CO-1": {
+   "name": "Diana DeGette",
+   "party": "D"
+  },
+  "CT-3": {
+   "name": "Rosa L. DeLauro",
+   "party": "D"
+  },
+  "TN-4": {
+   "name": "Scott DesJarlais",
+   "party": "R"
+  },
+  "FL-26": {
+   "name": "Mario Diaz-Balart",
+   "party": "R"
+  },
+  "TX-37": {
+   "name": "Lloyd Doggett",
+   "party": "D"
+  },
+  "TN-3": {
+   "name": "Charles J. \"Chuck\" Fleischmann",
+   "party": "R"
+  },
+  "NC-5": {
+   "name": "Virginia Foxx",
+   "party": "R"
+  },
+  "CA-8": {
+   "name": "John Garamendi",
+   "party": "D"
+  },
+  "AZ-9": {
+   "name": "Paul A. Gosar",
+   "party": "R"
+  },
+  "MO-6": {
+   "name": "Sam Graves",
+   "party": "R"
+  },
+  "TX-9": {
+   "name": "Al Green",
+   "party": "D"
+  },
+  "VA-9": {
+   "name": "H. Morgan Griffith",
+   "party": "R"
+  },
+  "KY-2": {
+   "name": "Brett Guthrie",
+   "party": "R"
+  },
+  "MD-1": {
+   "name": "Andy Harris",
+   "party": "R"
+  },
+  "CT-4": {
+   "name": "James A. Himes",
+   "party": "D"
+  },
+  "MD-5": {
+   "name": "Steny H. Hoyer",
+   "party": "D"
+  },
+  "MI-4": {
+   "name": "Bill Huizenga",
+   "party": "R",
+   "elected": {
+    "name": "Sean McCann",
+    "party": "D"
+   }
+  },
+  "GA-4": {
+   "name": "Henry C. \"Hank\" Johnson, Jr.",
+   "party": "D"
+  },
+  "OH-4": {
+   "name": "Jim Jordan",
+   "party": "R"
+  },
+  "OH-9": {
+   "name": "Marcy Kaptur",
+   "party": "D"
+  },
+  "MA-9": {
+   "name": "William R. Keating",
+   "party": "D"
+  },
+  "PA-16": {
+   "name": "Mike Kelly",
+   "party": "R"
+  },
+  "WA-2": {
+   "name": "Rick Larsen",
+   "party": "D"
+  },
+  "CT-1": {
+   "name": "John B. Larson",
+   "party": "D"
+  },
+  "OH-5": {
+   "name": "Robert E. Latta",
+   "party": "R"
+  },
+  "CA-18": {
+   "name": "Zoe Lofgren",
+   "party": "D"
+  },
+  "OK-3": {
+   "name": "Frank D. Lucas",
+   "party": "R"
+  },
+  "MA-8": {
+   "name": "Stephen F. Lynch",
+   "party": "D"
+  },
+  "CA-7": {
+   "name": "Doris O. Matsui",
+   "party": "D"
+  },
+  "TX-10": {
+   "name": "Michael T. McCaul",
+   "party": "R"
+  },
+  "CA-5": {
+   "name": "Tom McClintock",
+   "party": "R"
+  },
+  "MN-4": {
+   "name": "Betty McCollum",
+   "party": "D"
+  },
+  "MA-2": {
+   "name": "James P. McGovern",
+   "party": "D"
+  },
+  "NY-5": {
+   "name": "Gregory W. Meeks",
+   "party": "D"
+  },
+  "WI-4": {
+   "name": "Gwen Moore",
+   "party": "D"
+  },
+  "NY-12": {
+   "name": "Jerrold Nadler",
+   "party": "D"
+  },
+  "MA-1": {
+   "name": "Richard E. Neal",
+   "party": "D"
+  },
+  "DC-0": {
+   "name": "Eleanor Holmes Norton",
+   "party": "D"
+  },
+  "NJ-6": {
+   "name": "Frank Pallone, Jr.",
+   "party": "D"
+  },
+  "CA-11": {
+   "name": "Nancy Pelosi",
+   "party": "D"
+  },
+  "ME-1": {
+   "name": "Chellie Pingree",
+   "party": "D"
+  },
+  "IL-5": {
+   "name": "Mike Quigley",
+   "party": "D"
+  },
+  "KY-5": {
+   "name": "Harold Rogers",
+   "party": "R"
+  },
+  "AL-3": {
+   "name": "Mike Rogers",
+   "party": "R"
+  },
+  "LA-1": {
+   "name": "Steve Scalise",
+   "party": "R"
+  },
+  "IL-9": {
+   "name": "Janice D. Schakowsky",
+   "party": "D"
+  },
+  "AZ-1": {
+   "name": "David Schweikert",
+   "party": "R",
+   "elected": {
+    "name": "Amish Shah",
+    "party": "D"
+   }
+  },
+  "GA-8": {
+   "name": "Austin Scott",
+   "party": "R"
+  },
+  "VA-3": {
+   "name": "Robert C. \"Bobby\" Scott",
+   "party": "D"
+  },
+  "AL-7": {
+   "name": "Terri A. Sewell",
+   "party": "D"
+  },
+  "CA-32": {
+   "name": "Brad Sherman",
+   "party": "D"
+  },
+  "ID-2": {
+   "name": "Michael K. Simpson",
+   "party": "R"
+  },
+  "WA-9": {
+   "name": "Adam Smith",
+   "party": "D"
+  },
+  "NE-3": {
+   "name": "Adrian Smith",
+   "party": "R"
+  },
+  "NJ-4": {
+   "name": "Christopher H. Smith",
+   "party": "R"
+  },
+  "CA-38": {
+   "name": "Linda T. Sánchez",
+   "party": "D"
+  },
+  "MS-2": {
+   "name": "Bennie G. Thompson",
+   "party": "D"
+  },
+  "CA-4": {
+   "name": "Mike Thompson",
+   "party": "D"
+  },
+  "PA-15": {
+   "name": "Glenn Thompson",
+   "party": "R"
+  },
+  "NY-20": {
+   "name": "Paul Tonko",
+   "party": "D"
+  },
+  "OH-10": {
+   "name": "Michael R. Turner",
+   "party": "R"
+  },
+  "NY-7": {
+   "name": "Nydia M. Velázquez",
+   "party": "D"
+  },
+  "MI-5": {
+   "name": "Tim Walberg",
+   "party": "R"
+  },
+  "FL-25": {
+   "name": "Debbie Wasserman Schultz",
+   "party": "D"
+  },
+  "CA-43": {
+   "name": "Maxine Waters",
+   "party": "D"
+  },
+  "FL-11": {
+   "name": "Daniel Webster",
+   "party": "R"
+  },
+  "SC-2": {
+   "name": "Joe Wilson",
+   "party": "R"
+  },
+  "FL-24": {
+   "name": "Frederica S. Wilson",
+   "party": "D"
+  },
+  "VA-1": {
+   "name": "Robert J. Wittman",
+   "party": "R",
+   "elected": {
+    "name": "Shannon Taylor",
+    "party": "D"
+   }
+  },
+  "AR-3": {
+   "name": "Steve Womack",
+   "party": "R"
+  },
+  "NV-2": {
+   "name": "Mark E. Amodei",
+   "party": "R"
+  },
+  "OR-1": {
+   "name": "Suzanne Bonamici",
+   "party": "D"
+  },
+  "WA-1": {
+   "name": "Suzan K. DelBene",
+   "party": "D"
+  },
+  "KY-4": {
+   "name": "Thomas Massie",
+   "party": "R"
+  },
+  "IL-11": {
+   "name": "Bill Foster",
+   "party": "D"
+  },
+  "NV-1": {
+   "name": "Dina Titus",
+   "party": "D"
+  },
+  "CA-2": {
+   "name": "Jared Huffman",
+   "party": "D"
+  },
+  "CA-6": {
+   "name": "Ami Bera",
+   "party": "D"
+  },
+  "CA-26": {
+   "name": "Julia Brownley",
+   "party": "D"
+  },
+  "CA-25": {
+   "name": "Raul Ruiz",
+   "party": "D"
+  },
+  "CA-39": {
+   "name": "Mark Takano",
+   "party": "D"
+  },
+  "CA-52": {
+   "name": "Juan Vargas",
+   "party": "D"
+  },
+  "CA-50": {
+   "name": "Scott H. Peters",
+   "party": "D"
+  },
+  "FL-22": {
+   "name": "Lois Frankel",
+   "party": "D"
+  },
+  "KY-6": {
+   "name": "Andy Barr",
+   "party": "R"
+  },
+  "MO-2": {
+   "name": "Ann Wagner",
+   "party": "R"
+  },
+  "NC-9": {
+   "name": "Richard Hudson",
+   "party": "R"
+  },
+  "NY-6": {
+   "name": "Grace Meng",
+   "party": "D"
+  },
+  "NY-8": {
+   "name": "Hakeem S. Jeffries",
+   "party": "D"
+  },
+  "OH-3": {
+   "name": "Joyce Beatty",
+   "party": "D"
+  },
+  "OH-14": {
+   "name": "David P. Joyce",
+   "party": "R"
+  },
+  "PA-10": {
+   "name": "Scott Perry",
+   "party": "R",
+   "elected": {
+    "name": "Janelle Stelson",
+    "party": "D"
+   }
+  },
+  "TX-14": {
+   "name": "Randy K. Weber, Sr.",
+   "party": "R"
+  },
+  "TX-20": {
+   "name": "Joaquin Castro",
+   "party": "D"
+  },
+  "TX-25": {
+   "name": "Roger Williams",
+   "party": "R"
+  },
+  "TX-33": {
+   "name": "Marc A. Veasey",
+   "party": "D"
+  },
+  "WI-2": {
+   "name": "Mark Pocan",
+   "party": "D"
+  },
+  "IL-2": {
+   "name": "Robin L. Kelly",
+   "party": "D"
+  },
+  "MO-8": {
+   "name": "Jason Smith",
+   "party": "R"
+  },
+  "MA-5": {
+   "name": "Katherine M. Clark",
+   "party": "D"
+  },
+  "NJ-1": {
+   "name": "Donald Norcross",
+   "party": "D"
+  },
+  "NC-12": {
+   "name": "Alma S. Adams",
+   "party": "D"
+  },
+  "AL-6": {
+   "name": "Gary J. Palmer",
+   "party": "R"
+  },
+  "AR-2": {
+   "name": "J. French Hill",
+   "party": "R"
+  },
+  "AR-4": {
+   "name": "Bruce Westerman",
+   "party": "R"
+  },
+  "CA-10": {
+   "name": "Mark DeSaulnier",
+   "party": "D"
+  },
+  "CA-33": {
+   "name": "Pete Aguilar",
+   "party": "D"
+  },
+  "CA-36": {
+   "name": "Ted Lieu",
+   "party": "D"
+  },
+  "CA-35": {
+   "name": "Norma J. Torres",
+   "party": "D"
+  },
+  "GA-1": {
+   "name": "Earl L. \"Buddy\" Carter",
+   "party": "R"
+  },
+  "GA-11": {
+   "name": "Barry Loudermilk",
+   "party": "R"
+  },
+  "GA-12": {
+   "name": "Rick W. Allen",
+   "party": "R"
+  },
+  "IL-12": {
+   "name": "Mike Bost",
+   "party": "R"
+  },
+  "MA-6": {
+   "name": "Seth Moulton",
+   "party": "D"
+  },
+  "MI-2": {
+   "name": "John R. Moolenaar",
+   "party": "R"
+  },
+  "MI-6": {
+   "name": "Debbie Dingell",
+   "party": "D"
+  },
+  "MN-6": {
+   "name": "Tom Emmer",
+   "party": "R"
+  },
+  "NC-7": {
+   "name": "David Rouzer",
+   "party": "R"
+  },
+  "NJ-12": {
+   "name": "Bonnie Watson Coleman",
+   "party": "D"
+  },
+  "NY-21": {
+   "name": "Elise M. Stefanik",
+   "party": "R"
+  },
+  "PA-2": {
+   "name": "Brendan F. Boyle",
+   "party": "D"
+  },
+  "TX-36": {
+   "name": "Brian Babin",
+   "party": "R"
+  },
+  "VA-8": {
+   "name": "Donald S. Beyer, Jr.",
+   "party": "D"
+  },
+  "VI-0": {
+   "name": "Stacey E. Plaskett",
+   "party": "D"
+  },
+  "WA-4": {
+   "name": "Dan Newhouse",
+   "party": "R"
+  },
+  "WI-6": {
+   "name": "Glenn Grothman",
+   "party": "R"
+  },
+  "AS-0": {
+   "name": "Aumua Amata Coleman Radewagen",
+   "party": "R"
+  },
+  "MS-1": {
+   "name": "Trent Kelly",
+   "party": "R"
+  },
+  "IL-16": {
+   "name": "Darin LaHood",
+   "party": "R"
+  },
+  "OH-8": {
+   "name": "Warren Davidson",
+   "party": "R"
+  },
+  "KY-1": {
+   "name": "James Comer",
+   "party": "R"
+  },
+  "PA-3": {
+   "name": "Dwight Evans",
+   "party": "D"
+  },
+  "IL-10": {
+   "name": "Bradley Scott Schneider",
+   "party": "D"
+  },
+  "AZ-5": {
+   "name": "Andy Biggs",
+   "party": "R"
+  },
+  "CA-17": {
+   "name": "Ro Khanna",
+   "party": "D"
+  },
+  "CA-19": {
+   "name": "Jimmy Panetta",
+   "party": "D"
+  },
+  "CA-24": {
+   "name": "Salud O. Carbajal",
+   "party": "D"
+  },
+  "CA-44": {
+   "name": "Nanette Diaz Barragán",
+   "party": "D"
+  },
+  "CA-46": {
+   "name": "J. Luis Correa",
+   "party": "D"
+  },
+  "FL-2": {
+   "name": "Neal P. Dunn",
+   "party": "R"
+  },
+  "FL-5": {
+   "name": "John H. Rutherford",
+   "party": "R"
+  },
+  "FL-9": {
+   "name": "Darren Soto",
+   "party": "D"
+  },
+  "FL-21": {
+   "name": "Brian J. Mast",
+   "party": "R"
+  },
+  "IL-8": {
+   "name": "Raja Krishnamoorthi",
+   "party": "D"
+  },
+  "LA-3": {
+   "name": "Clay Higgins",
+   "party": "R"
+  },
+  "LA-4": {
+   "name": "Mike Johnson",
+   "party": "R"
+  },
+  "MD-8": {
+   "name": "Jamie Raskin",
+   "party": "D"
+  },
+  "MI-1": {
+   "name": "Jack Bergman",
+   "party": "R"
+  },
+  "NE-2": {
+   "name": "Don Bacon",
+   "party": "R",
+   "elected": {
+    "name": "Denise Powell",
+    "party": "D"
+   }
+  },
+  "NJ-5": {
+   "name": "Josh Gottheimer",
+   "party": "D"
+  },
+  "NY-13": {
+   "name": "Adriano Espaillat",
+   "party": "D"
+  },
+  "PA-1": {
+   "name": "Brian K. Fitzpatrick",
+   "party": "R",
+   "elected": {
+    "name": "Bob Harvie",
+    "party": "D"
+   }
+  },
+  "PA-11": {
+   "name": "Lloyd Smucker",
+   "party": "R"
+  },
+  "TN-8": {
+   "name": "David Kustoff",
+   "party": "R"
+  },
+  "TX-34": {
+   "name": "Vicente Gonzalez",
+   "party": "D"
+  },
+  "TX-19": {
+   "name": "Jodey C. Arrington",
+   "party": "R"
+  },
+  "WA-7": {
+   "name": "Pramila Jayapal",
+   "party": "D"
+  },
+  "KS-4": {
+   "name": "Ron Estes",
+   "party": "R"
+  },
+  "SC-5": {
+   "name": "Ralph Norman",
+   "party": "R"
+  },
+  "CA-34": {
+   "name": "Jimmy Gomez",
+   "party": "D"
+  },
+  "TX-27": {
+   "name": "Michael Cloud",
+   "party": "R"
+  },
+  "OH-12": {
+   "name": "Troy Balderson",
+   "party": "R"
+  },
+  "OK-1": {
+   "name": "Kevin Hern",
+   "party": "R"
+  },
+  "NY-25": {
+   "name": "Joseph D. Morelle",
+   "party": "D"
+  },
+  "PA-5": {
+   "name": "Mary Gay Scanlon",
+   "party": "D"
+  },
+  "HI-1": {
+   "name": "Ed Case",
+   "party": "D"
+  },
+  "NV-4": {
+   "name": "Steven Horsford",
+   "party": "D"
+  },
+  "AZ-4": {
+   "name": "Greg Stanton",
+   "party": "D"
+  },
+  "CA-9": {
+   "name": "Josh Harder",
+   "party": "D"
+  },
+  "CA-49": {
+   "name": "Mike Levin",
+   "party": "D"
+  },
+  "CO-2": {
+   "name": "Joe Neguse",
+   "party": "D"
+  },
+  "CO-6": {
+   "name": "Jason Crow",
+   "party": "D"
+  },
+  "CT-5": {
+   "name": "Jahana Hayes",
+   "party": "D"
+  },
+  "FL-17": {
+   "name": "W. Gregory Steube",
+   "party": "R"
+  },
+  "GA-6": {
+   "name": "Lucy McBath",
+   "party": "D"
+  },
+  "ID-1": {
+   "name": "Russ Fulcher",
+   "party": "R"
+  },
+  "IL-4": {
+   "name": "Jesús G. \"Chuy\" García",
+   "party": "D"
+  },
+  "IL-6": {
+   "name": "Sean Casten",
+   "party": "D"
+  },
+  "IL-14": {
+   "name": "Lauren Underwood",
+   "party": "D"
+  },
+  "IN-4": {
+   "name": "James R. Baird",
+   "party": "R"
+  },
+  "KS-3": {
+   "name": "Sharice Davids",
+   "party": "D"
+  },
+  "MA-3": {
+   "name": "Lori Trahan",
+   "party": "D"
+  },
+  "MA-7": {
+   "name": "Ayanna Pressley",
+   "party": "D"
+  },
+  "MI-11": {
+   "name": "Haley M. Stevens",
+   "party": "D"
+  },
+  "MI-12": {
+   "name": "Rashida Tlaib",
+   "party": "D"
+  },
+  "MN-2": {
+   "name": "Angie Craig",
+   "party": "D"
+  },
+  "MN-5": {
+   "name": "Ilhan Omar",
+   "party": "D"
+  },
+  "MN-8": {
+   "name": "Pete Stauber",
+   "party": "R"
+  },
+  "MS-3": {
+   "name": "Michael Guest",
+   "party": "R"
+  },
+  "NH-1": {
+   "name": "Chris Pappas",
+   "party": "D",
+   "elected": {
+    "name": "Stefany Shaheen",
+    "party": "D"
+   }
+  },
+  "NJ-2": {
+   "name": "Jefferson Van Drew",
+   "party": "R"
+  },
+  "NV-3": {
+   "name": "Susie Lee",
+   "party": "D"
+  },
+  "NY-14": {
+   "name": "Alexandria Ocasio-Cortez",
+   "party": "D"
+  },
+  "PA-4": {
+   "name": "Madeleine Dean",
+   "party": "D"
+  },
+  "PA-6": {
+   "name": "Chrissy Houlahan",
+   "party": "D"
+  },
+  "PA-9": {
+   "name": "Daniel Meuser",
+   "party": "R"
+  },
+  "PA-13": {
+   "name": "John Joyce",
+   "party": "R"
+  },
+  "PA-14": {
+   "name": "Guy Reschenthaler",
+   "party": "R"
+  },
+  "SC-4": {
+   "name": "William R. Timmons IV",
+   "party": "R"
+  },
+  "SD-0": {
+   "name": "Dusty Johnson",
+   "party": "R"
+  },
+  "TN-2": {
+   "name": "Tim Burchett",
+   "party": "R"
+  },
+  "TN-6": {
+   "name": "John W. Rose",
+   "party": "R"
+  },
+  "TX-2": {
+   "name": "Dan Crenshaw",
+   "party": "R"
+  },
+  "TX-5": {
+   "name": "Lance Gooden",
+   "party": "R"
+  },
+  "TX-7": {
+   "name": "Lizzie Fletcher",
+   "party": "D"
+  },
+  "TX-16": {
+   "name": "Veronica Escobar",
+   "party": "D"
+  },
+  "TX-21": {
+   "name": "Chip Roy",
+   "party": "R"
+  },
+  "TX-29": {
+   "name": "Sylvia R. Garcia",
+   "party": "D"
+  },
+  "VA-6": {
+   "name": "Ben Cline",
+   "party": "R"
+  },
+  "WA-8": {
+   "name": "Kim Schrier",
+   "party": "D"
+  },
+  "WI-1": {
+   "name": "Bryan Steil",
+   "party": "R",
+   "elected": {
+    "name": "Mitchell Berman",
+    "party": "D"
+   }
+  },
+  "WV-1": {
+   "name": "Carol D. Miller",
+   "party": "R"
+  },
+  "ME-2": {
+   "name": "Jared F. Golden",
+   "party": "D",
+   "elected": {
+    "name": "Paul LePage",
+    "party": "R"
+   }
+  },
+  "NC-3": {
+   "name": "Gregory F. Murphy",
+   "party": "R"
+  },
+  "MD-7": {
+   "name": "Kweisi Mfume",
+   "party": "D"
+  },
+  "WI-7": {
+   "name": "Thomas P. Tiffany",
+   "party": "R"
+  },
+  "CA-48": {
+   "name": "Darrell Issa",
+   "party": "R"
+  },
+  "TX-17": {
+   "name": "Pete Sessions",
+   "party": "R"
+  },
+  "CA-22": {
+   "name": "David G. Valadao",
+   "party": "R",
+   "elected": {
+    "name": "Randy Villegas",
+    "party": "D"
+   }
+  },
+  "AL-1": {
+   "name": "Barry Moore",
+   "party": "R"
+  },
+  "CA-23": {
+   "name": "Jay Obernolte",
+   "party": "R"
+  },
+  "CA-40": {
+   "name": "Young Kim",
+   "party": "R"
+  },
+  "CA-51": {
+   "name": "Sara Jacobs",
+   "party": "D"
+  },
+  "CO-4": {
+   "name": "Lauren Boebert",
+   "party": "R"
+  },
+  "FL-3": {
+   "name": "Kat Cammack",
+   "party": "R"
+  },
+  "FL-18": {
+   "name": "Scott Franklin",
+   "party": "R"
+  },
+  "FL-19": {
+   "name": "Byron Donalds",
+   "party": "R"
+  },
+  "FL-28": {
+   "name": "Carlos A. Gimenez",
+   "party": "R"
+  },
+  "FL-27": {
+   "name": "Maria Elvira Salazar",
+   "party": "R"
+  },
+  "GA-5": {
+   "name": "Nikema Williams",
+   "party": "D"
+  },
+  "GA-9": {
+   "name": "Andrew S. Clyde",
+   "party": "R"
+  },
+  "IA-2": {
+   "name": "Ashley Hinson",
+   "party": "R"
+  },
+  "IA-1": {
+   "name": "Mariannette Miller-Meeks",
+   "party": "R",
+   "elected": {
+    "name": "Christina Bohannan",
+    "party": "D"
+   }
+  },
+  "IA-4": {
+   "name": "Randy Feenstra",
+   "party": "R"
+  },
+  "IL-15": {
+   "name": "Mary E. Miller",
+   "party": "R"
+  },
+  "IN-1": {
+   "name": "Frank J. Mrvan",
+   "party": "D"
+  },
+  "IN-5": {
+   "name": "Victoria Spartz",
+   "party": "R"
+  },
+  "KS-1": {
+   "name": "Tracey Mann",
+   "party": "R"
+  },
+  "MA-4": {
+   "name": "Jake Auchincloss",
+   "party": "D"
+  },
+  "MI-9": {
+   "name": "Lisa C. McClain",
+   "party": "R"
+  },
+  "MN-7": {
+   "name": "Michelle Fischbach",
+   "party": "R"
+  },
+  "NC-2": {
+   "name": "Deborah K. Ross",
+   "party": "D"
+  },
+  "NM-3": {
+   "name": "Teresa Leger Fernandez",
+   "party": "D"
+  },
+  "NY-2": {
+   "name": "Andrew R. Garbarino",
+   "party": "R"
+  },
+  "NY-11": {
+   "name": "Nicole Malliotakis",
+   "party": "R"
+  },
+  "NY-15": {
+   "name": "Ritchie Torres",
+   "party": "D"
+  },
+  "OK-5": {
+   "name": "Stephanie I. Bice",
+   "party": "R"
+  },
+  "OR-2": {
+   "name": "Cliff Bentz",
+   "party": "R"
+  },
+  "SC-1": {
+   "name": "Nancy Mace",
+   "party": "R"
+  },
+  "TN-1": {
+   "name": "Diana Harshbarger",
+   "party": "R"
+  },
+  "TX-4": {
+   "name": "Pat Fallon",
+   "party": "R"
+  },
+  "TX-11": {
+   "name": "August Pfluger",
+   "party": "R"
+  },
+  "TX-13": {
+   "name": "Ronny Jackson",
+   "party": "R"
+  },
+  "TX-22": {
+   "name": "Troy E. Nehls",
+   "party": "R"
+  },
+  "TX-24": {
+   "name": "Beth Van Duyne",
+   "party": "R"
+  },
+  "UT-1": {
+   "name": "Blake D. Moore",
+   "party": "R"
+  },
+  "UT-4": {
+   "name": "Burgess Owens",
+   "party": "R"
+  },
+  "WA-10": {
+   "name": "Marilyn Strickland",
+   "party": "D"
+  },
+  "WI-5": {
+   "name": "Scott Fitzgerald",
+   "party": "R"
+  },
+  "NY-24": {
+   "name": "Claudia Tenney",
+   "party": "R"
+  },
+  "LA-5": {
+   "name": "Julia Letlow",
+   "party": "R"
+  },
+  "LA-2": {
+   "name": "Troy A. Carter",
+   "party": "D"
+  },
+  "NM-1": {
+   "name": "Melanie A. Stansbury",
+   "party": "D"
+  },
+  "TX-6": {
+   "name": "Jake Ellzey",
+   "party": "R"
+  },
+  "OH-11": {
+   "name": "Shontel M. Brown",
+   "party": "D"
+  },
+  "OH-15": {
+   "name": "Mike Carey",
+   "party": "R"
+  },
+  "NE-1": {
+   "name": "Mike Flood",
+   "party": "R"
+  },
+  "MN-1": {
+   "name": "Brad Finstad",
+   "party": "R"
+  },
+  "NY-18": {
+   "name": "Patrick Ryan",
+   "party": "D"
+  },
+  "IN-2": {
+   "name": "Rudy Yakym III",
+   "party": "R"
+  },
+  "MT-1": {
+   "name": "Ryan K. Zinke",
+   "party": "R",
+   "elected": {
+    "name": "Sam Forstag",
+    "party": "D"
+   }
+  },
+  "AL-5": {
+   "name": "Dale W. Strong",
+   "party": "R"
+  },
+  "AZ-2": {
+   "name": "Elijah Crane",
+   "party": "R"
+  },
+  "AZ-6": {
+   "name": "Juan Ciscomani",
+   "party": "R",
+   "elected": {
+    "name": "JoAnna Mendoza",
+    "party": "D"
+   }
+  },
+  "CA-3": {
+   "name": "Kevin Kiley",
+   "party": "I",
+   "elected": {
+    "name": "Ami Bera",
+    "party": "D"
+   }
+  },
+  "CA-15": {
+   "name": "Kevin Mullin",
+   "party": "D"
+  },
+  "CA-37": {
+   "name": "Sydney Kamlager-Dove",
+   "party": "D"
+  },
+  "CA-42": {
+   "name": "Robert Garcia",
+   "party": "D"
+  },
+  "CO-7": {
+   "name": "Brittany Pettersen",
+   "party": "D"
+  },
+  "FL-4": {
+   "name": "Aaron Bean",
+   "party": "R"
+  },
+  "FL-7": {
+   "name": "Cory Mills",
+   "party": "R"
+  },
+  "FL-10": {
+   "name": "Maxwell Frost",
+   "party": "D"
+  },
+  "FL-13": {
+   "name": "Anna Paulina Luna",
+   "party": "R"
+  },
+  "FL-15": {
+   "name": "Laurel M. Lee",
+   "party": "R"
+  },
+  "FL-23": {
+   "name": "Jared Moskowitz",
+   "party": "D",
+   "elected": {
+    "name": "Lois Frankel",
+    "party": "D"
+   }
+  },
+  "GA-7": {
+   "name": "Richard McCormick",
+   "party": "R"
+  },
+  "GA-10": {
+   "name": "Mike Collins",
+   "party": "R"
+  },
+  "GU-0": {
+   "name": "James C. Moylan",
+   "party": "R"
+  },
+  "HI-2": {
+   "name": "Jill N. Tokuda",
+   "party": "D"
+  },
+  "IA-3": {
+   "name": "Zachary Nunn",
+   "party": "R",
+   "elected": {
+    "name": "Sarah Trone Garriott",
+    "party": "D"
+   }
+  },
+  "IL-1": {
+   "name": "Jonathan L. Jackson",
+   "party": "D"
+  },
+  "IL-3": {
+   "name": "Delia C. Ramirez",
+   "party": "D"
+  },
+  "IL-13": {
+   "name": "Nikki Budzinski",
+   "party": "D"
+  },
+  "IL-17": {
+   "name": "Eric Sorensen",
+   "party": "D"
+  },
+  "IN-9": {
+   "name": "Erin Houchin",
+   "party": "R"
+  },
+  "KY-3": {
+   "name": "Morgan McGarvey",
+   "party": "D"
+  },
+  "MD-4": {
+   "name": "Glenn Ivey",
+   "party": "D"
+  },
+  "MI-3": {
+   "name": "Hillary J. Scholten",
+   "party": "D"
+  },
+  "MI-10": {
+   "name": "John James",
+   "party": "R",
+   "elected": {
+    "name": "Christina Hines",
+    "party": "D"
+   }
+  },
+  "MI-13": {
+   "name": "Shri Thanedar",
+   "party": "D"
+  },
+  "MO-4": {
+   "name": "Mark Alford",
+   "party": "R"
+  },
+  "MO-7": {
+   "name": "Eric Burlison",
+   "party": "R"
+  },
+  "MS-4": {
+   "name": "Mike Ezell",
+   "party": "R"
+  },
+  "NC-1": {
+   "name": "Donald G. Davis",
+   "party": "D"
+  },
+  "NC-4": {
+   "name": "Valerie P. Foushee",
+   "party": "D"
+  },
+  "NC-11": {
+   "name": "Chuck Edwards",
+   "party": "R"
+  },
+  "NJ-7": {
+   "name": "Thomas H. Kean, Jr.",
+   "party": "R",
+   "elected": {
+    "name": "Rebecca Bennett",
+    "party": "D"
+   }
+  },
+  "NJ-8": {
+   "name": "Robert Menendez",
+   "party": "D"
+  },
+  "NM-2": {
+   "name": "Gabe Vasquez",
+   "party": "D"
+  },
+  "NY-1": {
+   "name": "Nick LaLota",
+   "party": "R"
+  },
+  "NY-10": {
+   "name": "Daniel S. Goldman",
+   "party": "D"
+  },
+  "NY-17": {
+   "name": "Michael Lawler",
+   "party": "R",
+   "elected": {
+    "name": "Cait Conley",
+    "party": "D"
+   }
+  },
+  "NY-23": {
+   "name": "Nicholas A. Langworthy",
+   "party": "R"
+  },
+  "OH-1": {
+   "name": "Greg Landsman",
+   "party": "D"
+  },
+  "OH-7": {
+   "name": "Max L. Miller",
+   "party": "R"
+  },
+  "OH-13": {
+   "name": "Emilia Strong Sykes",
+   "party": "D"
+  },
+  "OK-2": {
+   "name": "Josh Brecheen",
+   "party": "R"
+  },
+  "OR-4": {
+   "name": "Val T. Hoyle",
+   "party": "D"
+  },
+  "OR-6": {
+   "name": "Andrea Salinas",
+   "party": "D"
+  },
+  "PA-12": {
+   "name": "Summer L. Lee",
+   "party": "D"
+  },
+  "PA-17": {
+   "name": "Christopher R. Deluzio",
+   "party": "D"
+  },
+  "RI-2": {
+   "name": "Seth Magaziner",
+   "party": "D"
+  },
+  "SC-7": {
+   "name": "Russell Fry",
+   "party": "R"
+  },
+  "TN-5": {
+   "name": "Andrew Ogles",
+   "party": "R"
+  },
+  "TX-1": {
+   "name": "Nathaniel Moran",
+   "party": "R"
+  },
+  "TX-3": {
+   "name": "Keith Self",
+   "party": "R"
+  },
+  "TX-8": {
+   "name": "Morgan Luttrell",
+   "party": "R"
+  },
+  "TX-15": {
+   "name": "Monica De La Cruz",
+   "party": "R",
+   "elected": {
+    "name": "Bobby Pulido",
+    "party": "D"
+   }
+  },
+  "TX-30": {
+   "name": "Jasmine Crockett",
+   "party": "D"
+  },
+  "TX-35": {
+   "name": "Greg Casar",
+   "party": "D"
+  },
+  "TX-38": {
+   "name": "Wesley Hunt",
+   "party": "R"
+  },
+  "VA-2": {
+   "name": "Jennifer A. Kiggans",
+   "party": "R",
+   "elected": {
+    "name": "Elaine Luria",
+    "party": "D"
+   }
+  },
+  "VT-0": {
+   "name": "Becca Balint",
+   "party": "D"
+  },
+  "WA-3": {
+   "name": "Marie Gluesenkamp Perez",
+   "party": "D"
+  },
+  "WI-3": {
+   "name": "Derrick Van Orden",
+   "party": "R",
+   "elected": {
+    "name": "Rebecca Cooke",
+    "party": "D"
+   }
+  },
+  "WY-0": {
+   "name": "Harriet M. Hageman",
+   "party": "R"
+  },
+  "VA-4": {
+   "name": "Jennifer L. McClellan",
+   "party": "D"
+  },
+  "RI-1": {
+   "name": "Gabe Amo",
+   "party": "D"
+  },
+  "UT-2": {
+   "name": "Celeste Maloy",
+   "party": "R"
+  },
+  "NY-3": {
+   "name": "Thomas R. Suozzi",
+   "party": "D"
+  },
+  "NY-26": {
+   "name": "Timothy M. Kennedy",
+   "party": "D"
+  },
+  "CA-20": {
+   "name": "Vince Fong",
+   "party": "R"
+  },
+  "OH-6": {
+   "name": "Michael A. Rulli",
+   "party": "R"
+  },
+  "NJ-10": {
+   "name": "LaMonica McIver",
+   "party": "D"
+  },
+  "WI-8": {
+   "name": "Tony Wied",
+   "party": "R"
+  },
+  "LA-6": {
+   "name": "Cleo Fields",
+   "party": "D"
+  },
+  "IN-3": {
+   "name": "Marlin A. Stutzman",
+   "party": "R"
+  },
+  "CA-31": {
+   "name": "Gilbert Ray Cisneros, Jr.",
+   "party": "D"
+  },
+  "AK-0": {
+   "name": "Nicholas J. Begich III",
+   "party": "R"
+  },
+  "AL-2": {
+   "name": "Shomari Figures",
+   "party": "D"
+  },
+  "AZ-3": {
+   "name": "Yassamin Ansari",
+   "party": "D"
+  },
+  "AZ-8": {
+   "name": "Abraham J. Hamadeh",
+   "party": "R"
+  },
+  "CA-12": {
+   "name": "Lateefah Simon",
+   "party": "D"
+  },
+  "CA-13": {
+   "name": "Adam Gray",
+   "party": "D"
+  },
+  "CA-16": {
+   "name": "Sam T. Liccardo",
+   "party": "D"
+  },
+  "CA-27": {
+   "name": "George Whitesides",
+   "party": "D"
+  },
+  "CA-29": {
+   "name": "Luz M. Rivas",
+   "party": "D"
+  },
+  "CA-30": {
+   "name": "Laura Friedman",
+   "party": "D"
+  },
+  "CA-45": {
+   "name": "Derek Tran",
+   "party": "D"
+  },
+  "CA-47": {
+   "name": "Dave Min",
+   "party": "D"
+  },
+  "CO-3": {
+   "name": "Jeff Hurd",
+   "party": "R"
+  },
+  "CO-5": {
+   "name": "Jeff Crank",
+   "party": "R"
+  },
+  "CO-8": {
+   "name": "Gabe Evans",
+   "party": "R",
+   "elected": {
+    "name": "Manny Rutinel",
+    "party": "D"
+   }
+  },
+  "DE-0": {
+   "name": "Sarah McBride",
+   "party": "D"
+  },
+  "FL-8": {
+   "name": "Mike Haridopolos",
+   "party": "R"
+  },
+  "GA-3": {
+   "name": "Brian Jack",
+   "party": "R"
+  },
+  "IN-6": {
+   "name": "Jefferson Shreve",
+   "party": "R"
+  },
+  "IN-8": {
+   "name": "Mark B. Messmer",
+   "party": "R"
+  },
+  "KS-2": {
+   "name": "Derek Schmidt",
+   "party": "R"
+  },
+  "MD-2": {
+   "name": "Johnny Olszewski, Jr.",
+   "party": "D"
+  },
+  "MD-3": {
+   "name": "Sarah Elfreth",
+   "party": "D"
+  },
+  "MD-6": {
+   "name": "April McClain Delaney",
+   "party": "D"
+  },
+  "MI-7": {
+   "name": "Tom Barrett",
+   "party": "R",
+   "elected": {
+    "name": "William Lawrence",
+    "party": "D"
+   }
+  },
+  "MI-8": {
+   "name": "Kristen McDonald Rivet",
+   "party": "D"
+  },
+  "MN-3": {
+   "name": "Kelly Morrison",
+   "party": "D"
+  },
+  "MO-1": {
+   "name": "Wesley Bell",
+   "party": "D"
+  },
+  "MO-3": {
+   "name": "Robert F. Onder, Jr.",
+   "party": "R"
+  },
+  "MP-0": {
+   "name": "Kimberlyn King-Hinds",
+   "party": "R"
+  },
+  "MT-2": {
+   "name": "Troy Downing",
+   "party": "R"
+  },
+  "NC-6": {
+   "name": "Addison P. McDowell",
+   "party": "R"
+  },
+  "NC-8": {
+   "name": "Mark Harris",
+   "party": "R"
+  },
+  "NC-10": {
+   "name": "Pat Harrigan",
+   "party": "R"
+  },
+  "NC-13": {
+   "name": "Brad Knott",
+   "party": "R"
+  },
+  "NC-14": {
+   "name": "Tim Moore",
+   "party": "R"
+  },
+  "ND-0": {
+   "name": "Julie Fedorchak",
+   "party": "R"
+  },
+  "NH-2": {
+   "name": "Maggie Goodlander",
+   "party": "D"
+  },
+  "NJ-3": {
+   "name": "Herbert C. Conaway, Jr.",
+   "party": "D"
+  },
+  "NJ-9": {
+   "name": "Nellie Pou",
+   "party": "D"
+  },
+  "NY-4": {
+   "name": "Laura Gillen",
+   "party": "D"
+  },
+  "NY-16": {
+   "name": "George Latimer",
+   "party": "D"
+  },
+  "NY-19": {
+   "name": "Josh Riley",
+   "party": "D"
+  },
+  "NY-22": {
+   "name": "John W. Mannion",
+   "party": "D"
+  },
+  "OH-2": {
+   "name": "David J. Taylor",
+   "party": "R"
+  },
+  "OR-3": {
+   "name": "Maxine Dexter",
+   "party": "D"
+  },
+  "OR-5": {
+   "name": "Janelle S. Bynum",
+   "party": "D"
+  },
+  "PA-7": {
+   "name": "Ryan Mackenzie",
+   "party": "R",
+   "elected": {
+    "name": "Bob Brooks",
+    "party": "D"
+   }
+  },
+  "PA-8": {
+   "name": "Robert P. Bresnahan, Jr.",
+   "party": "R",
+   "elected": {
+    "name": "Paige Cognetti",
+    "party": "D"
+   }
+  },
+  "PR-0": {
+   "name": "Pablo José Hernández",
+   "party": "D"
+  },
+  "SC-3": {
+   "name": "Sheri Biggs",
+   "party": "R"
+  },
+  "TX-12": {
+   "name": "Craig A. Goldman",
+   "party": "R"
+  },
+  "TX-26": {
+   "name": "Brandon Gill",
+   "party": "R"
+  },
+  "TX-32": {
+   "name": "Julie Johnson",
+   "party": "D"
+  },
+  "UT-3": {
+   "name": "Mike Kennedy",
+   "party": "R"
+  },
+  "VA-5": {
+   "name": "John J. McGuire III",
+   "party": "R"
+  },
+  "VA-7": {
+   "name": "Eugene Simon Vindman",
+   "party": "D"
+  },
+  "VA-10": {
+   "name": "Suhas Subramanyam",
+   "party": "D"
+  },
+  "WA-5": {
+   "name": "Michael Baumgartner",
+   "party": "R"
+  },
+  "WA-6": {
+   "name": "Emily Randall",
+   "party": "D"
+  },
+  "WV-2": {
+   "name": "Riley M. Moore",
+   "party": "R"
+  },
+  "FL-1": {
+   "name": "Jimmy Patronis",
+   "party": "R"
+  },
+  "FL-6": {
+   "name": "Randy Fine",
+   "party": "R"
+  },
+  "VA-11": {
+   "name": "James R. Walkinshaw",
+   "party": "D"
+  },
+  "AZ-7": {
+   "name": "Adelita S. Grijalva",
+   "party": "D"
+  },
+  "TN-7": {
+   "name": "Matt Van Epps",
+   "party": "R"
+  },
+  "TX-18": {
+   "name": "Christian D. Menefee",
+   "party": "D"
+  },
+  "GA-14": {
+   "name": "Clay Fuller",
+   "party": "R"
+  },
+  "NJ-11": {
+   "name": "Analilia Mejia",
+   "party": "D"
+  },
+  "CA-1": {
+   "name": "James Gallagher",
+   "party": "R"
+  },
+  "GA-13": {
+   "name": "Everton Blair Jr.",
+   "party": "D"
+  },
+  "CA-14": {
+   "name": "Aisha Wahab",
+   "party": "D"
+  }
+ },
+ "vacant": [
+  "FL-20",
+  "TX-23"
+ ],
+ "pending": [
+  "Senate AK",
+  "Senate MS",
+  "House AZ-2",
+  "House CA-40"
+ ]
+}
