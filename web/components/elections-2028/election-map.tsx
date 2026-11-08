@@ -414,7 +414,12 @@ export function ElectionMap(props: {
   }
   const choose = (id: string, element: HTMLElement | SVGElement | null) => {
     track('election map place', { place: id, mode })
-    selectionOrigin.current = element
+    // Focus returns here on close: the control that opened the card, else
+    // the place's own shape.
+    selectionOrigin.current =
+      element ??
+      svgRef.current?.querySelector<SVGElement>(`[data-race-id="${id}"]`) ??
+      null
     setSelected(id)
     setRoving(id)
     setSearchOpen(false)
@@ -723,9 +728,9 @@ export function ElectionMap(props: {
             partyContract={props.partyContract ?? null}
             tips={tips}
             onPreview={(key) => setPreview(key ? `tip:${key}` : undefined)}
-            onPick={(key) => {
+            onPick={(key, element) => {
               track('election map tipping point', { place: key })
-              choose(key, null)
+              choose(key, element)
             }}
           />
         )}
@@ -1037,7 +1042,10 @@ export function ElectionMap(props: {
                 aria-pressed={selected === k}
                 onClick={(e) => choose(k, e.currentTarget)}
                 onPointerEnter={(e) => {
-                  if (e.pointerType === 'mouse') setPreview(`tip:${k}`)
+                  // Only a chip whose place is also drawn (DC) has an
+                  // outline to show; the rest would dim the whole map.
+                  if (e.pointerType === 'mouse' && shapeById.has(k))
+                    setPreview(`tip:${k}`)
                 }}
                 onPointerLeave={() => setPreview(undefined)}
               >
@@ -1078,7 +1086,7 @@ export function ElectionMap(props: {
             pinned={!!selected}
             pointer={mapPointer}
             onClose={closeDetails}
-            dockKey={`${selected}:${mode}:${shapes.length > 0}`}
+            dockKey={`${selected}:${mode}:${style}:${shapes.length > 0}`}
             anchor={() =>
               selected
                 ? svgRef.current
@@ -1231,7 +1239,7 @@ function PresidentNotes(props: {
   partyContract: Contract | null
   tips: { key: string; p: number }[]
   onPreview: (key: string | undefined) => void
-  onPick: (key: string) => void
+  onPick: (key: string, element: HTMLElement) => void
 }) {
   const { model, tips, onPreview, onPick } = props
   const demEv = Math.round(model.meanDemEv)
@@ -1262,7 +1270,7 @@ function PresidentNotes(props: {
             <button
               key={t.key}
               type="button"
-              onClick={() => onPick(t.key)}
+              onClick={(e) => onPick(t.key, e.currentTarget)}
               onPointerEnter={(e) => {
                 if (e.pointerType === 'mouse') onPreview(t.key)
               }}

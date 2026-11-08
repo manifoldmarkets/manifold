@@ -42,6 +42,8 @@ export const MODE_OFFICE: Record<
 // red). Every other leader is gray, and the legend and labels name them.
 export const LEADER_COLORS = ['#eb6834', '#1baf7a', '#6250d6']
 export const OTHER_LEADER_COLOR = '#8a8a8a'
+// A contest whose market names no leader yet (Other leads).
+export const NO_LEADER_COLOR = '#c8c8c8'
 
 // One place's color on the map, and the words for it.
 export type Fill =
@@ -71,7 +73,7 @@ const cellFill = (
       kind: 'leader',
       ...base,
       name: cell.l ?? 'No leader yet',
-      color: (cell.l && colors[cell.l]) ?? OTHER_LEADER_COLOR,
+      color: cell.l ? colors[cell.l] ?? OTHER_LEADER_COLOR : NO_LEADER_COLOR,
     }
   return { kind: 'strength', party, ...base }
 }
@@ -99,14 +101,26 @@ export function leaderColors(
 // one every party shares (top-two, top-four). A state's regular contest wins
 // over a special one.
 function primaryCells(view: MapView, primaries: PrimaryRow[]) {
-  const out: Record<string, { row: PrimaryRow; cell: PrimaryCell }> = {}
+  const out: Record<
+    string,
+    { row: PrimaryRow; cell: PrimaryCell; key: string }
+  > = {}
   for (const row of primaries) {
     if (row.o !== view.office) continue
-    const cell = row[view.party] ?? row.A
-    if (cell && (!out[row.st] || !row.sp)) out[row.st] = { row, cell }
+    const own = row[view.party]
+    const cell = own ?? row.A
+    if (cell && (!out[row.st] || !row.sp))
+      out[row.st] = { row, cell, key: `${row.k}-${own ? view.party : 'A'}` }
   }
   return out
 }
+
+// The card row (statePanel's key) for the primary a place is colored by.
+export const primaryRowKey = (
+  view: MapView,
+  primaries: PrimaryRow[],
+  st: string
+) => primaryCells(view, primaries)[st]?.key
 
 // The race a place shows in a view, by its key: states (and DC) by postal
 // code, electoral and House districts by districtKey. A state's regular
@@ -362,7 +376,7 @@ function primaryTracker(view: MapView, primaries: PrimaryRow[]): Tracker {
     const colors = leaderColors(primaries, view.party)
     const byLeader = new Map<string, string[]>()
     for (const [st, { cell }] of cells) {
-      const name = cell.l && colors[cell.l] ? cell.l : ''
+      const name = !cell.l ? '-' : colors[cell.l] ? cell.l : ''
       byLeader.set(name, [...(byLeader.get(name) ?? []), st])
     }
     const named = Object.keys(colors).flatMap((name) => {
@@ -381,6 +395,7 @@ function primaryTracker(view: MapView, primaries: PrimaryRow[]): Tracker {
         : []
     })
     const rest = byLeader.get('') ?? []
+    const none = byLeader.get('-') ?? []
     return {
       unit,
       middle,
@@ -395,6 +410,18 @@ function primaryTracker(view: MapView, primaries: PrimaryRow[]): Tracker {
                 tone: 'leader' as const,
                 color: OTHER_LEADER_COLOR,
                 places: rest,
+              },
+            ]
+          : []),
+        ...(none.length
+          ? [
+              {
+                key: 'leader:none',
+                label: 'No leader yet',
+                count: none.length,
+                tone: 'leader' as const,
+                color: NO_LEADER_COLOR,
+                places: none,
               },
             ]
           : []),
@@ -651,7 +678,13 @@ const pct = (p: number) =>
 export function describeFill(fill: Fill): string {
   if (fill.kind === 'rating') {
     if (fill.c) return fill.c === 'O' ? 'Called: other' : `Called for ${fill.c}`
-    return fill.p >= 0.5 ? `D ${pct(fill.p)}` : `R ${pct(1 - fill.p)}`
+    // Who leads as shown, as everywhere else: 50.3% is even.
+    const party = leaderOf(fill)
+    return party === 'D'
+      ? `D ${pct(fill.p)}`
+      : party === 'R'
+      ? `R ${pct(1 - fill.p)}`
+      : 'Even'
   }
   if (!fill.name) return 'No leader yet'
   if (fill.won) return `Won: ${fill.name}`

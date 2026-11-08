@@ -24,6 +24,7 @@ import {
   PanelRow,
   PanelSection,
   placeTitle,
+  primaryRowKey,
   ratingLabel,
   Summary,
   viewRaces,
@@ -204,15 +205,13 @@ export function PinnedPlace(props: {
 }) {
   const { place, view, sections, primaries, tipping } = props
   const st = place.split('-')[0]
-  const focusKey = useMemo(() => {
-    if (view.mode !== 'primary') return focusRowKey(view, place)
-    const rows = sortBy(
-      primaries.filter((r) => r.o === view.office && r.st === st),
-      (r) => (r.sp ? 1 : 0)
-    )
-    const row = rows.find((r) => r[view.party]) ?? rows.find((r) => r.A)
-    return row ? `${row.k}-${row[view.party] ? view.party : 'A'}` : undefined
-  }, [view, place, primaries, st])
+  const focusKey = useMemo(
+    () =>
+      view.mode === 'primary'
+        ? primaryRowKey(view, primaries, st)
+        : focusRowKey(view, place),
+    [view, place, primaries, st]
+  )
   const all = sections.flatMap((s) => s.rows)
   // A state with only a special Senate race (Tennessee) opens that.
   const focus =
@@ -313,14 +312,8 @@ function summaryText(summary: Summary) {
 
 function SummaryText(props: { summary: Summary }) {
   const { summary } = props
-  const tone =
-    summary.kind === 'party'
-      ? summary.c === 'D' || (!summary.c && summary.p > 0.5)
-        ? 'dem'
-        : summary.c === 'R' || (!summary.c && summary.p < 0.5)
-        ? 'rep'
-        : undefined
-      : undefined
+  const party = summary.kind === 'party' ? leaderOf(summary) : undefined
+  const tone = party === 'D' ? 'dem' : party === 'R' ? 'rep' : undefined
   return (
     <span className={styles.quote} data-tone={tone}>
       {summaryText(summary)}

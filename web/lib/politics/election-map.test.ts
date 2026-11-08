@@ -10,10 +10,12 @@ import {
   LEADER_COLORS,
   MapView,
   mapFills,
+  NO_LEADER_COLOR,
   mapTracker,
   matchesPlace,
   OTHER_LEADER_COLOR,
   placeTitle,
+  primaryRowKey,
   SENATE_NOT_UP_2028,
   statePanel,
   tippingPlaces,
@@ -361,6 +363,8 @@ test('fills read as odds, leaders and calls', () => {
   assert.equal(describeFill({ kind: 'rating', p: 0.64 }), 'D 64%')
   assert.equal(describeFill({ kind: 'rating', p: 0.2 }), 'R 80%')
   assert.equal(describeFill({ kind: 'rating', p: 0.999 }), 'D >99%')
+  // As shown, 50.3% is even, here as on the hover card.
+  assert.equal(describeFill({ kind: 'rating', p: 0.503 }), 'Even')
   assert.equal(describeFill({ kind: 'rating', p: 0.7, c: 'R' }), 'Called for R')
   assert.equal(
     describeFill({ kind: 'open', name: 'Padilla', p: 0.8 }),
@@ -371,4 +375,46 @@ test('fills read as odds, leaders and calls', () => {
     'Won: Padilla'
   )
   assert.equal(describeFill({ kind: 'open' }), 'No leader yet')
+})
+
+test('a contest with no leader is its own group, not "someone else"', () => {
+  const rows: PrimaryRow[] = [
+    ...primaries,
+    { k: 'P-OH-2028', o: 'P', st: 'OH', D: { s: 'oh-d' } },
+  ]
+  const fills = mapFills(view({ mode: 'primary' }), races, rows)
+  assert.equal(fills.OH.kind === 'leader' && fills.OH.color, NO_LEADER_COLOR)
+  const t = mapTracker(view({ mode: 'primary' }), races, rows)
+  assert.deepEqual(t.segments[t.segments.length - 1], {
+    key: 'leader:none',
+    label: 'No leader yet',
+    count: 1,
+    tone: 'leader',
+    color: NO_LEADER_COLOR,
+    places: ['OH'],
+  })
+})
+
+test("a clicked primary opens the market behind the state's color", () => {
+  const d = view({ mode: 'primary', office: 'S', party: 'D' })
+  assert.equal(primaryRowKey(d, primaries, 'PA'), 'S-PA-2028-D')
+  assert.equal(primaryRowKey(d, primaries, 'CA'), 'S-CA-2028-A')
+  assert.equal(primaryRowKey(d, primaries, 'MN'), 'S-MN-sp-2027-D')
+  assert.equal(
+    primaryRowKey({ ...d, party: 'R' }, primaries, 'MN'),
+    undefined
+  )
+  // A regular top-two contest outranks a special with a party cell, on the
+  // map and in the card alike.
+  const both: PrimaryRow[] = [
+    { k: 'S-XX-sp', o: 'S', st: 'WA', sp: 1, D: cell('Sp', 0.5) },
+    { k: 'S-XX', o: 'S', st: 'WA', A: cell('Reg', 0.5) },
+  ]
+  assert.equal(primaryRowKey(d, both, 'WA'), 'S-XX-A')
+  assert.equal(mapFills(d, races, both).WA.kind, 'open')
+  // Its keys are the panel's.
+  const panelKeys = statePanel('PA', races, primaries)
+    .flatMap((s) => s.rows)
+    .map((r) => r.key)
+  assert.ok(panelKeys.includes('S-PA-2028-D'))
 })

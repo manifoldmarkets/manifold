@@ -5,7 +5,8 @@
 .layout {
   --tip: #d98e04;
 }
-:global(.dark) .layout {
+:global(.dark) .layout,
+:global(.dark) .tipping {
   --tip: #f2b53a;
 }
 
@@ -181,7 +182,9 @@
   color: var(--muted);
   font-size: 12px;
 }
+/* The card is portaled out of .layout, so it sets its own --tip. */
 .tipping {
+  --tip: #d98e04;
   width: fit-content;
   padding: 1px 8px;
   border: 1.5px dashed var(--tip);
