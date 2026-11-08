@@ -88,6 +88,60 @@ export const sideTotal = (buckets: Bucket[], side: 'D' | 'R') =>
     (b) => b.p
   )
 
+// --------------------------------------------------- the other nominee
+
+// An electoral-vote bucket's range, inclusive ("Under 200" is 0–199, "360 or
+// more" runs to `total`). Undefined for anything that isn't a count range.
+export function bucketRange(
+  text: string,
+  total: number
+): [number, number] | undefined {
+  const t = text.trim()
+  const under = t.match(/^(?:under|fewer than|less than)\s+(\d+)$/i)
+  if (under) return [0, Number(under[1]) - 1]
+  const range = t.match(/^(\d+)\s*(?:–|-|to)\s*(\d+)$/)
+  if (range) return [Number(range[1]), Number(range[2])]
+  const open = t.match(/^(\d+)\s*(?:or more|\+)$/i)
+  if (open) return [Number(open[1]), total]
+  return undefined
+}
+
+// The same buckets from the other nominee's side: if every elector votes for
+// one of the two, the other gets `total` minus each count, so "Under 200"
+// for the Democrat is "339 or more" for the Republican. Each keeps its
+// answer and chance; sides are read against `threshold` on the new scale.
+// Undefined unless every bucket is a count range.
+export function otherNominee(
+  buckets: Bucket[],
+  total: number,
+  threshold: number
+): Bucket[] | undefined {
+  const flipped = buckets.map((b) => {
+    const range = bucketRange(b.text, total)
+    if (!range) return undefined
+    const lo = total - range[1]
+    const hi = total - range[0]
+    const label = hi >= total ? `${lo}+` : lo <= 0 ? `<${hi + 1}` : `${lo}–${hi}`
+    const text =
+      hi >= total
+        ? `${lo} or more`
+        : lo <= 0
+        ? `Under ${hi + 1}`
+        : `${lo}–${hi}`
+    return {
+      ...b,
+      label,
+      text,
+      at: (lo + hi) / 2,
+      // The other nominee's side: past the line is theirs (red for the
+      // Republican).
+      side: (lo >= threshold ? 'R' : 'D') as 'D' | 'R',
+    }
+  })
+  if (flipped.some((b) => !b)) return undefined
+  return sortBy(flipped as Bucket[], (b) => b.at)
+}
+
 // ---------------------------------------------------------- balance of power
 
 const COMBO = /^([DR]) President, ([DR]) Senate, ([DR]) House/

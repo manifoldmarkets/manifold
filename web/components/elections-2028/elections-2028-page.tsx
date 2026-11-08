@@ -40,6 +40,7 @@ import {
 import {
   MARKET_LABELS,
   More2028Place,
+  otherNominee,
   placeMore2028,
   sideTotal,
 } from 'web/lib/politics/election-glance'
@@ -61,7 +62,7 @@ import { ElectionMap } from './election-map'
 import { FutureCycles } from './future-cycles'
 import { LiveContracts } from './live-contracts'
 import { MarketRows, OddsItem, OddsRows } from './odds-rows'
-import { OddsStrip } from './odds-strip'
+import { OddsStrip, StripFlip } from './odds-strip'
 import { OffYearMap } from './off-year-map'
 import { PartyOddsBar } from './party-odds-bar'
 import { PrimariesOverview } from './primaries-overview'
@@ -149,6 +150,27 @@ function ChartRange(props: {
       <RangePicker value={props.value} onChange={props.onChange} />
     </div>
   )
+}
+
+// The electoral-vote market asks about the Democratic nominee; from the
+// Republican's side each range is 538 minus the Democrat's (if every elector
+// votes for one of the two). The Democrat's 230–269 becomes the
+// Republican's 269–308, which holds a 269–269 tie, so their line is at 269.
+const REPUBLICAN_ELECTORAL_VOTES: StripFlip = {
+  toggle: ['Democrat', 'Republican'],
+  title: "The Republican nominee's electoral votes",
+  thresholdLabel: '269+',
+  buckets: (b) => otherNominee(b, 538, 269),
+  summary: (b) => (
+    <>
+      269 or more (a win, or a 269–269 tie):{' '}
+      <b className="text-ink-1000">{formatOdds(sideTotal(b, 'R'))}</b>
+    </>
+  ),
+  footnote:
+    "538 minus the Democratic nominee's, from the same market, assuming every elector votes for one of the two.",
+  note: (shown, answer) =>
+    `The Republican nominee with ${shown.text} electoral votes is the Democratic nominee with ${answer.text}: this bets on that answer.`,
 }
 
 // The tipping-point market's likeliest states, one line each.
@@ -386,6 +408,7 @@ export function Elections2028Page(props: Elections2028PageProps) {
                         </b>
                       </>
                     )}
+                    flip={REPUBLICAN_ELECTORAL_VOTES}
                   />
                 </div>
               )}

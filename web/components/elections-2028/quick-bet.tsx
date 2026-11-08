@@ -51,6 +51,10 @@ export type BetTarget = {
   answerId?: string
   answerText?: string
   party?: 'D' | 'R'
+  // A line above the bet panel, where what was clicked reads differently
+  // from the market's answer (the Republican's electoral votes, read from
+  // the Democrat's market).
+  note?: string
   // A yes/no market's side, where the click stood for one (a ballot
   // measure's No). From `party`, a race's yes/no market reads YES as the
   // Republican winning (as getPartyProbs does), so D opens on NO.
@@ -243,6 +247,11 @@ function LiveBet(props: {
   if (answer)
     return (
       <div className="flex flex-col gap-2">
+        {target.note && (
+          <p className="text-ink-700 bg-canvas-50 rounded-md px-3 py-2 text-sm">
+            {target.note}
+          </p>
+        )}
         <AnswerCpmmBetPanel
           answer={answer}
           contract={multi as CPMMMultiContract}
