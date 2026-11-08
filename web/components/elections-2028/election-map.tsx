@@ -1,145 +1,248 @@
-import { ChevronDownIcon, XIcon } from '@heroicons/react/solid'
+import { SearchIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { sortBy } from 'lodash'
-import Link from 'next/link'
+import { sortBy, uniq } from 'lodash'
 import {
-  createContext,
-  ReactNode,
-  useContext,
+  CSSProperties,
   useEffect,
+  useId,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
-import { Answer } from 'common/answer'
-import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
-import { Contract, isMultiCpmm } from 'common/contract'
-import { getContracts } from 'common/supabase/contracts'
-import { useLiveContractWithStatus } from 'web/hooks/use-contract'
-import { Button } from 'web/components/buttons/button'
-import { formatOdds } from 'web/components/usa-map/election-display'
-import { placeHexLabels } from 'web/components/usa-map/map-geometry'
-import { StateProps } from 'web/components/usa-map/presidential-state'
-import { DEM_COLOR, REP_COLOR } from 'web/components/usa-map/state-election-map'
-import { USAMap } from 'web/components/usa-map/usa-map'
-import { DEFAULT_STATE_FILL, USAState } from 'web/components/usa-map/usa-state'
-import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { db } from 'web/lib/supabase/db'
-import { ratingOf } from 'web/lib/politics/ec-model'
+import { Contract } from 'common/contract'
+import {
+  Atlas,
+  CALLOUTS,
+  calloutY,
+  districtShapes,
+  hexLayout,
+  hexShapes,
+  HIT_RADIUS_PX,
+  LABEL_AT,
+  Shape,
+  stateShapes,
+  tileShapes,
+  TINY_STATES,
+  UNLABELLED,
+} from 'web/components/usa-map/atlas-shapes'
+import {
+  formatOdds,
+  labelInk,
+  LIGHT_LABEL,
+  plural,
+} from 'web/components/usa-map/election-display'
+import styles from 'web/components/usa-map/election-explorer.module.css'
+import { FilterResults } from 'web/components/usa-map/filter-results'
+import { Point } from 'web/components/usa-map/map-camera'
+import {
+  firstShape,
+  isDirection,
+  nextShape,
+  placeHexLabels,
+  unionBounds,
+} from 'web/components/usa-map/map-geometry'
+import {
+  MapView as MapStyle,
+  MapViewToggle,
+} from 'web/components/usa-map/map-view-toggle'
+import { RaceDetailsPanel } from 'web/components/usa-map/race-details-panel'
+import { getPartyProbs } from 'web/components/usa-map/state-election-map'
+import { useMapCamera } from 'web/components/usa-map/use-map-camera'
+import { useLiveContract } from 'web/hooks/use-contract'
+import { ELECTORAL_UNITS } from 'web/lib/politics/ec-model'
 import {
   availableModes,
-  closestPlaces,
   describeFill,
-  districtKey,
   Fill,
-  leaderColors,
   MapMode,
   MapView,
   mapFills,
-  OTHER_LEADER_COLOR,
-  PanelRow,
-  panelTitle,
+  MAP_VIEW_EVENT,
+  mapTracker,
+  matchesPlace,
   PlacedMarket,
+  placeTitle,
   statePanel,
-  Summary,
+  tippingPlaces,
 } from 'web/lib/politics/election-map'
+import type { ElectoralModel } from 'web/lib/politics/elections-2028'
 import { TERRITORIES } from 'web/lib/politics/official-markets'
 import { PrimaryRow } from 'web/lib/politics/primaries'
 import { BoardRace } from 'web/lib/politics/race-board'
 import { track } from 'web/lib/service/analytics'
-import hexFile from 'web/public/data/election-house-hex.json'
-import { AnswerBetModal } from './answer-bet-modal'
-import { RATING, RATING_ORDER } from './rating-colors'
+import own from './election-map.module.css'
+import { fillColor, HoverFacts, PinnedPlace } from './map-place-card'
+import { MapTracker, segmentColor } from './map-tracker'
 
-// The state-by-state map: President (electoral or popular vote), Senate,
-// Governor, House (a district cartogram) and the primaries, on one map. The
-// President view keeps the plain rating map; any state opens a panel with
-// every market the page has for it, each one tradable in place.
+// The 2028 map, on the 2026 explorer's parts: the atlas's states and House
+// districts (or the tile and hex cartograms), its zoom, and its card, which
+// follows the pointer on hover and pins on a click. President (Maine and
+// Nebraska by district, with a statewide badge), Senate, Governor, House
+// and the primaries. Above the map, a tracker counts every electoral vote
+// or seat by how sure our markets are; the President view outlines the
+// likeliest tipping points. A clicked place lists every market the page has
+// for its state, each tradable in place.
 
-const MODE_LABEL: Record<MapMode, string> = {
-  president: 'President',
-  senate: 'Senate',
-  governor: 'Governor',
-  house: 'House',
-  primary: 'Primaries',
-}
+const MODES: { mode: MapMode; label: string }[] = [
+  { mode: 'president', label: 'President' },
+  { mode: 'senate', label: 'Senate' },
+  { mode: 'governor', label: 'Governor' },
+  { mode: 'house', label: 'House' },
+  { mode: 'primary', label: 'Primaries' },
+]
 
-// Top-two and top-four primaries: one market for every party.
-const OPEN_PRIMARY_COLOR = '#a99fbd'
-const OTHER_COLOR = '#8a8a8a'
+// Maine and Nebraska give each congressional district an electoral vote;
+// the President map draws their districts, and a badge for the two
+// statewide votes.
+const SPLIT_STATES = ['ME', 'NE']
+const BADGE = { width: 30, height: 18 }
+const EV_BY_KEY = Object.fromEntries(ELECTORAL_UNITS.map((u) => [u.key, u.ev]))
 
-// A party's Senate or governor primary, shaded by how sure its leader is,
-// on the rating ramp's party side.
-const STRENGTH = {
-  D: [RATING.leanD.fill, RATING.likelyD.fill, RATING.safeD.fill],
-  R: [RATING.leanR.fill, RATING.likelyR.fill, RATING.safeR.fill],
-} as const
-
-function fillColor(fill: Fill | undefined): string {
-  if (!fill) return DEFAULT_STATE_FILL
-  switch (fill.kind) {
-    case 'rating':
-      if (fill.c)
-        return fill.c === 'D'
-          ? DEM_COLOR
-          : fill.c === 'R'
-          ? REP_COLOR
-          : OTHER_COLOR
-      return RATING[ratingOf(fill.p)].fill
-    case 'leader':
-      return fill.color
-    case 'strength': {
-      const p = fill.won ? 1 : fill.p ?? 0
-      return STRENGTH[fill.party][p >= 0.9 ? 2 : p >= 0.6 ? 1 : 0]
-    }
-    case 'open':
-      return OPEN_PRIMARY_COLOR
+const badgeShape = (state: Shape): Shape => {
+  const x = state.center.x - BADGE.width / 2
+  const y = state.center.y - BADGE.height / 2
+  return {
+    id: state.id,
+    rect: { x, y, ...BADGE, rx: 4 },
+    bounds: { x0: x, y0: y, x1: x + BADGE.width, y1: y + BADGE.height },
+    center: state.center,
   }
 }
 
-type HexFile = {
-  size: number
-  width: number
-  height: number
-  hexes: { state: string; district: number; x: number; y: number }[]
+// Maine's and Nebraska's districts as small tiles along the bottom of their
+// state's tile.
+function districtTiles(atlas: Atlas, tiles: Shape[]): Shape[] {
+  return SPLIT_STATES.flatMap((st) => {
+    const rect = tiles.find((t) => t.id === st)?.rect
+    if (!rect) return []
+    const districts = sortBy(
+      atlas.districts.filter((d) => d.state === st).map((d) => d.district)
+    )
+    const pad = 5
+    const gap = 3
+    const h = 16
+    const w =
+      (rect.width - pad * 2 - gap * (districts.length - 1)) / districts.length
+    const y = rect.y + rect.height - pad - h
+    return districts.map((d, i) => {
+      const x = rect.x + pad + i * (w + gap)
+      return {
+        id: `${st}-${d}`,
+        rect: { x, y, width: w, height: h, rx: 3 },
+        bounds: { x0: x, y0: y, x1: x + w, y1: y + h },
+        center: { x: x + w / 2, y: y + h / 2 },
+      }
+    })
+  })
 }
-const HEX = hexFile as HexFile
 
-const DEFAULT_VIEW: MapView = {
-  mode: 'president',
-  president: 'ev',
-  office: 'P',
-  party: 'D',
+function mapShapes(atlas: Atlas, style: MapStyle, mode: MapMode): Shape[] {
+  if (mode === 'house')
+    return style === 'map' ? districtShapes(atlas) : hexShapes(atlas)
+  if (style === 'cartogram') {
+    const tiles = tileShapes(atlas)
+    return mode === 'president'
+      ? [...tiles, ...districtTiles(atlas, tiles)]
+      : tiles
+  }
+  const states = stateShapes(atlas)
+  if (mode !== 'president') return states
+  return [
+    ...states.filter((s) => !SPLIT_STATES.includes(s.id)),
+    ...districtShapes(atlas).filter((s) =>
+      SPLIT_STATES.includes(s.id.split('-')[0])
+    ),
+    ...states.filter((s) => SPLIT_STATES.includes(s.id)).map(badgeShape),
+  ]
 }
+
+function Outline(props: { shape: Shape; className: string }) {
+  const { shape, className } = props
+  return shape.rect ? (
+    <rect {...shape.rect} className={className} />
+  ) : (
+    <path d={shape.d} className={className} />
+  )
+}
+
+const DEFAULT_VIEW: MapView = { mode: 'president', office: 'P', party: 'D' }
 
 export function ElectionMap(props: {
   races: BoardRace[]
   primaries: PrimaryRow[]
   offYear: Contract[]
   defaultMode: MapMode
+  model?: ElectoralModel | null
+  partyContract?: Contract | null
 }) {
-  const { races, primaries } = props
+  const { races, primaries, model } = props
   const modes = useMemo(
     () => availableModes(races, primaries),
     [races, primaries]
   )
-  const [saved, setView] = usePersistentInMemoryState<MapView | undefined>(
+  const [saved, setSaved] = usePersistentInMemoryState<MapView | undefined>(
     undefined,
-    'election-map-view'
+    'election-map-view-2'
   )
   const start = modes.includes(props.defaultMode) ? props.defaultMode : modes[0]
-  const view: MapView = saved ?? { ...DEFAULT_VIEW, mode: start ?? 'president' }
-  const mode = modes.includes(view.mode) ? view.mode : start
-  const shown = { ...view, mode: mode ?? view.mode }
-  const [selected, setSelected] = useState<string | undefined>()
-  const [hovered, setHovered] = useState<string | undefined>()
+  const view: MapView = useMemo(() => {
+    const v = saved ?? { ...DEFAULT_VIEW, mode: start ?? 'president' }
+    return modes.includes(v.mode) ? v : { ...v, mode: start ?? 'president' }
+  }, [saved, modes, start])
+  const mode = view.mode
+  const [style, setStyle] = usePersistentInMemoryState<MapStyle>(
+    'map',
+    'election-map-style'
+  )
+  const [selected, setSelected] = useState<string>()
+  const [hovered, setHovered] = useState<string>()
+  const [roving, setRoving] = useState<string>()
+  const [focused, setFocused] = useState<string>()
+  const [groups, setGroups] = useState<string[]>([])
+  const [preview, setPreview] = useState<string>()
+  const [query, setQuery] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
+  const searchRef = useRef<HTMLInputElement>(null)
+  const mapPointer = useRef<Point>()
+  const selectionOrigin = useRef<HTMLElement | SVGElement | null>(null)
+  const explorerRef = useRef<HTMLElement>(null)
+  const headerRef = useRef<HTMLElement>(null)
+  const closeRef = useRef<HTMLButtonElement>(null)
+  const [atlas, setAtlas] = useState<Atlas>()
+  const [mapError, setMapError] = useState(false)
+  const [attempt, setAttempt] = useState(0)
+  const {
+    svgRef,
+    camera,
+    dragged,
+    pixelsPerUnit,
+    viewBox,
+    resetView,
+    zoom: zoomMap,
+    fit,
+  } = useMapCamera(!!atlas)
+  const uid = useId().replace(/:/g, '')
+  const keyHintId = `map-keys-${uid}`
 
+  const president = mode === 'president'
   const fills = useMemo(
-    () => mapFills(shown, races, primaries),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [shown.mode, shown.president, shown.office, shown.party, races, primaries]
+    () => mapFills(view, races, primaries),
+    [view, races, primaries]
+  )
+  const tracker = useMemo(
+    () => mapTracker(view, races, primaries),
+    [view, races, primaries]
+  )
+  const tips = useMemo(
+    () => (model ? tippingPlaces(model.tippingPoints) : []),
+    [model]
+  )
+  const tipChance = useMemo(
+    () =>
+      Object.fromEntries((model?.tippingPoints ?? []).map((t) => [t.key, t.p])),
+    [model]
   )
   const more = useMemo<PlacedMarket[]>(
     () =>
@@ -150,684 +253,1100 @@ export function ElectionMap(props: {
       })),
     [props.offYear]
   )
+  const shapes = useMemo(
+    () => (atlas ? mapShapes(atlas, style, mode) : []),
+    [atlas, style, mode]
+  )
+  const shapeById = useMemo(
+    () => new Map(shapes.map((s) => [s.id, s])),
+    [shapes]
+  )
+  // Places the map can't draw: territories and Democrats Abroad in the
+  // primaries, DC in the tile grid (and as a chip where it gets no label).
+  const chips = useMemo(
+    () =>
+      sortBy(
+        Object.keys(fills).filter(
+          (k) =>
+            !shapeById.has(k) || (k === 'DC' && !(president && style === 'map'))
+        ),
+        (k) => (k in TERRITORIES ? 1 : 0),
+        (k) => k
+      ),
+    [fills, shapeById, president, style]
+  )
+  const groupPlaces = useMemo(
+    () =>
+      new Set(
+        tracker.segments
+          .filter((s) => groups.includes(s.key))
+          .flatMap((s) => s.places)
+      ),
+    [tracker, groups]
+  )
+  const previewPlaces = useMemo(() => {
+    if (!preview) return new Set<string>()
+    if (preview.startsWith('tip:')) return new Set([preview.slice(4)])
+    return new Set(
+      tracker.segments.find((s) => s.key === preview)?.places ?? []
+    )
+  }, [tracker, preview])
+  const searching = query.trim().length > 0
+  const searchHits = useMemo(
+    () =>
+      searching
+        ? uniq([...shapes.map((s) => s.id), ...chips]).filter((id) =>
+            matchesPlace(id, query)
+          )
+        : [],
+    [searching, shapes, chips, query]
+  )
+  const narrowed = groups.length > 0 || searching
+  const lit = (id: string) =>
+    (groups.length === 0 || groupPlaces.has(id)) &&
+    (!searching || searchHits.includes(id))
+  const listed = useMemo(() => {
+    const ids =
+      groups.length > 0
+        ? tracker.segments
+            .filter((s) => groups.includes(s.key))
+            .flatMap((s) => s.places)
+        : searchHits
+    return searching ? ids.filter((id) => searchHits.includes(id)) : ids
+  }, [groups, tracker, searchHits, searching])
 
-  if (!mode) return null
+  const isSelectable = (id: string) =>
+    !!fills[id] || (mode !== 'house' && mode !== 'primary' && shapeById.has(id))
+  const navigable = shapes.filter((s) => isSelectable(s.id) && lit(s.id))
+  const tabStop =
+    roving && navigable.some((s) => s.id === roving)
+      ? roving
+      : selected && navigable.some((s) => s.id === selected)
+      ? selected
+      : firstShape(navigable)
+
+  useEffect(() => {
+    const abort = new AbortController()
+    setMapError(false)
+    fetch('/data/election-atlas.json', { signal: abort.signal })
+      .then((r) => {
+        if (!r.ok) throw new Error('Map unavailable')
+        return r.json()
+      })
+      .then(setAtlas)
+      .catch((e) => {
+        if (e.name !== 'AbortError') setMapError(true)
+      })
+    return () => abort.abort()
+  }, [attempt])
+  useEffect(() => {
+    if (searchOpen) searchRef.current?.focus()
+  }, [searchOpen])
+  // Another section can switch the view (the primaries tables' link).
+  useEffect(() => {
+    const listen = (e: Event) => {
+      const patch = (e as CustomEvent<Partial<MapView>>).detail
+      if (patch?.mode && modes.includes(patch.mode)) update(patch)
+    }
+    window.addEventListener(MAP_VIEW_EVENT, listen)
+    return () => window.removeEventListener(MAP_VIEW_EVENT, listen)
+  })
+  useEffect(() => {
+    if (selected) return
+    const clear = () => setHovered(undefined)
+    window.addEventListener('scroll', clear, true)
+    return () => window.removeEventListener('scroll', clear, true)
+  }, [selected])
+  useEffect(() => {
+    if (!selected) return
+    const escape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !document.querySelector('[role="dialog"]')) {
+        setSelected(undefined)
+        selectionOrigin.current?.focus({ preventScroll: true })
+      }
+    }
+    window.addEventListener('keydown', escape)
+    return () => window.removeEventListener('keydown', escape)
+  }, [selected])
+  // A search frames what it finds.
+  const hitKey = searchHits.join(',')
+  useEffect(() => {
+    if (!shapes.length) return
+    if (!hitKey) {
+      resetView()
+      return
+    }
+    const bounds = unionBounds(
+      hitKey.split(',').map((id) => shapeById.get(id)?.bounds)
+    )
+    if (bounds) fit(bounds, mode === 'house' ? 5 : 3)
+  }, [hitKey, shapes])
 
   const update = (patch: Partial<MapView>) => {
-    track('election map view', { ...shown, ...patch })
-    setView({ ...shown, ...patch })
+    const next = { ...view, ...patch }
+    track('election map view', next)
+    setSaved(next)
+    setSelected(undefined)
+    setHovered(undefined)
+    setGroups([])
+    setPreview(undefined)
+    setRoving(undefined)
+    if (patch.mode && patch.mode !== mode) resetView()
   }
-  const select = (place: string | undefined) => {
-    if (place) track('election map place', { place, mode })
-    setSelected(place === selected ? undefined : place)
+  const changeStyle = (next: MapStyle) => {
+    if (next === style) return
+    track('election map style', { style: next, mode })
+    setStyle(next)
+    setHovered(undefined)
+    resetView()
+  }
+  const focusMap = () => {
+    if (
+      window.innerWidth <= 850 &&
+      (explorerRef.current?.getBoundingClientRect().top ?? 0) > 8
+    )
+      explorerRef.current?.scrollIntoView({
+        block: 'start',
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth',
+      })
+  }
+  const choose = (id: string, element: HTMLElement | SVGElement | null) => {
+    track('election map place', { place: id, mode })
+    selectionOrigin.current = element
+    setSelected(id)
+    setRoving(id)
+    setSearchOpen(false)
+    focusMap()
+  }
+  const closeDetails = () => {
+    setSelected(undefined)
+    selectionOrigin.current?.focus({ preventScroll: true })
+  }
+  const zoom = (factor: number) => {
+    setHovered(undefined)
+    zoomMap(factor)
+    focusMap()
+  }
+  const moveFocus = (from: string, key: string) => {
+    const origin = shapeById.get(from)?.center
+    if (!origin || !isDirection(key)) return
+    const next = nextShape(origin, navigable, key)
+    if (!next) return
+    setRoving(next)
+    svgRef.current
+      ?.querySelector<SVGElement>(`[data-race-id="${next}"]`)
+      ?.focus({ preventScroll: true })
   }
 
-  // The hovered place's line, else the selected one's.
-  const focus = hovered ?? selected
-  const focusState = focus?.split('-')[0]
+  const isStatewide = (id: string) => president && SPLIT_STATES.includes(id)
+  const titleOf = (id: string) => placeTitle(id, isStatewide(id))
+  const ariaLabel = (id: string) => {
+    const fill = fills[id]
+    return `${titleOf(id)}: ${
+      fill ? describeFill(fill) : `no ${mode === 'primary' ? 'market' : 'race'}`
+    }`
+  }
+  const shapeProps = (id: string) => {
+    const fill = fills[id]
+    const selectable = isSelectable(id)
+    const dimmed = narrowed && !lit(id) && !previewPlaces.has(id)
+    const previewDimmed =
+      !narrowed && previewPlaces.size > 0 && !previewPlaces.has(id)
+    return {
+      fill: fillColor(fill),
+      className: clsx(styles.shape, !fill && styles.noRace),
+      opacity: dimmed ? 0.15 : previewDimmed ? 0.35 : 1,
+      role: selectable ? 'button' : undefined,
+      tabIndex: selectable && id === tabStop ? 0 : -1,
+      'aria-label': ariaLabel(id),
+      'aria-describedby': selectable ? keyHintId : undefined,
+      'aria-pressed': selectable ? selected === id : undefined,
+      'data-race-id': selectable ? id : undefined,
+      onClick: (e: React.MouseEvent<SVGElement>) => {
+        if (selectable && !dragged.current) choose(id, e.currentTarget)
+      },
+      onFocus: (e: React.FocusEvent<SVGElement>) => {
+        setRoving(id)
+        if (e.currentTarget.matches(':focus-visible')) setFocused(id)
+      },
+      onBlur: () => setFocused(undefined),
+      onKeyDown: (e: React.KeyboardEvent<SVGElement>) => {
+        if (selectable && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault()
+          choose(id, e.currentTarget)
+        } else if (isDirection(e.key)) {
+          e.preventDefault()
+          moveFocus(id, e.key)
+        }
+      },
+    }
+  }
+  const trackHover = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (e.pointerType !== 'mouse' || window.innerWidth <= 850) return
+    mapPointer.current = { x: e.clientX, y: e.clientY }
+    if (e.buttons) {
+      if (dragged.current) setHovered(undefined)
+      return
+    }
+    const id =
+      (e.target as Element)
+        .closest('[data-race-id]')
+        ?.getAttribute('data-race-id') ?? undefined
+    if (id !== hovered) setHovered(id)
+  }
+  // Callouts and touch targets pick small states; in the House they frame
+  // the state's districts.
+  const tapState = (state: string) => {
+    if (mode === 'house') {
+      const bounds = unionBounds(
+        shapes.filter((s) => s.id.startsWith(`${state}-`)).map((s) => s.bounds)
+      )
+      if (bounds) fit(bounds, 5)
+      return
+    }
+    choose(state, null)
+  }
+  const tinyStates = president ? [...TINY_STATES, 'DC'] : TINY_STATES
+  const callouts = president ? [...CALLOUTS, 'DC'] : CALLOUTS
+  const handleTap = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (dragged.current || (e.pointerType === 'mouse' && e.button !== 0)) return
+    const target = (e.target as Element).closest('[data-tap]')
+    if (!target) return
+    const states = (target.getAttribute('data-tap') ?? '').split(' ')
+    if (states.length === 1) return tapState(states[0])
+    const under = document
+      .elementsFromPoint(e.clientX, e.clientY)
+      .find((el) => el.hasAttribute('data-race-id'))
+      ?.getAttribute('data-race-id')
+    if (under && states.includes(under)) return choose(under, null)
+    const matrix = (
+      target.closest('g') as SVGGraphicsElement | null
+    )?.getScreenCTM()
+    if (!matrix) return
+    const point = new DOMPoint(e.clientX, e.clientY).matrixTransform(
+      matrix.inverse()
+    )
+    const nearest = states
+      .map((state) => {
+        const center = shapeById.get(state)?.center
+        return {
+          state,
+          distance: center
+            ? Math.hypot(center.x - point.x, center.y - point.y)
+            : Infinity,
+        }
+      })
+      .sort((a, b) => a.distance - b.distance)[0]
+    const nearestPx = nearest.distance * pixelsPerUnit * camera.k
+    if (under && nearestPx > 12) return choose(under, null)
+    if (Number.isFinite(nearest.distance)) tapState(nearest.state)
+  }
 
-  return (
-    <div className="flex flex-col gap-3">
-      <MapControls view={shown} modes={modes} update={update} />
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <div className="bg-canvas-0 border-ink-200 flex flex-col gap-2 rounded-xl border p-2 sm:p-3">
-          {mode === 'house' ? (
-            <HouseHexMap
-              fills={fills}
-              selectedState={selected?.split('-')[0]}
-              hovered={hovered}
-              onHover={setHovered}
-              onSelect={select}
-            />
-          ) : (
-            <FillsContext.Provider value={fills}>
-              <USAMap
-                mapContractsDictionary={{}}
-                handleClick={(key) => select(key)}
-                onMouseEnter={setHovered}
-                onMouseLeave={() => setHovered(undefined)}
-                targetState={selected?.split('-')[0]}
-                hoveredState={hovered}
-                CustomStateComponent={FillState}
-              />
-            </FillsContext.Provider>
-          )}
-          <PlaceChips
-            view={shown}
-            fills={fills}
-            selected={selected}
-            onSelect={select}
-          />
-          <div className="text-ink-700 flex min-h-[2.25rem] flex-wrap items-center justify-between gap-x-3 px-1 text-sm">
-            {focus && focusState ? (
-              <>
-                <span className="text-ink-1000 font-semibold">
-                  {placeLabel(focus)}
-                </span>
-                <span className="tabular-nums">
-                  {fills[focus] ? describeFill(fills[focus]) : 'No race'}
-                </span>
-              </>
-            ) : (
-              <span className="text-ink-500">
-                Tap a state for all its races and primaries.
-              </span>
-            )}
-          </div>
-          <MapLegend view={shown} fills={fills} primaries={primaries} />
-        </div>
-        {selected ? (
-          <PlacePanel
-            place={selected.split('-')[0]}
-            focusRow={focusRow(shown, selected)}
-            races={races}
-            primaries={primaries}
-            more={more}
-            onClose={() => setSelected(undefined)}
-          />
-        ) : (
-          <ClosestPanel view={shown} fills={fills} onSelect={select} />
-        )}
-      </div>
+  const labelStyle = (id: string) => {
+    const color = fillColor(fills[id])
+    const ink = color ? labelInk(color) : undefined
+    return ink
+      ? ({
+          '--label-ink': ink,
+          '--label-halo': ink === LIGHT_LABEL ? '#1e293b80' : '#ffffffa0',
+        } as CSSProperties)
+      : undefined
+  }
+  const hexLabels = useMemo(() => {
+    if (!atlas) return []
+    const hex = atlas.hex
+    const { s, tx, ty } = hexLayout(hex)
+    const count = (state: string) =>
+      hex.hexes.filter((h) => h.state === state).length
+    const states = atlas.states
+      .map((st) => st.state)
+      .filter((state) => state !== 'DC')
+      .sort((a, b) => count(b) - count(a))
+    return placeHexLabels(states, hex.hexes, hex.size).map((l) => ({
+      ...l,
+      x: tx + l.x * s,
+      y: ty + l.y * s,
+    }))
+  }, [atlas])
+  const hitRadius = HIT_RADIUS_PX / (pixelsPerUnit * camera.k)
+  const zoomedIn = camera.k >= 2
+  const zoomControls = (className: string) => (
+    <div
+      className={clsx(styles.zoomControls, className)}
+      role="group"
+      aria-label="Map zoom controls"
+    >
+      <button
+        aria-label="Zoom in"
+        disabled={camera.k >= 6}
+        onClick={() => zoom(1.5)}
+      >
+        +
+      </button>
+      <button
+        aria-label="Zoom out"
+        disabled={camera.k <= 1}
+        onClick={() => zoom(1 / 1.5)}
+      >
+        −
+      </button>
+      <button
+        aria-label="Reset map view"
+        title="Reset view"
+        onClick={resetView}
+      >
+        ↺
+      </button>
     </div>
   )
-}
-
-// The panel row a picked district stands for: a House district in the
-// House view, Maine's or Nebraska's electoral districts elsewhere.
-function focusRow(view: MapView, selected: string) {
-  if (!selected.includes('-')) return undefined
-  return view.mode === 'house' ? `H-${selected}` : `P-${selected}`
-}
-
-function placeLabel(place: string) {
-  const [st, d] = place.split('-')
-  if (d === undefined) return panelTitle(st)
-  const n = Number(d)
-  return n === 0 ? `${st} at-large` : `${st}-${n}`
-}
-
-function MapControls(props: {
-  view: MapView
-  modes: MapMode[]
-  update: (patch: Partial<MapView>) => void
-}) {
-  const { view, modes, update } = props
-  return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-      <ChoicesToggleGroup
-        currentChoice={view.mode}
-        choicesMap={Object.fromEntries(modes.map((m) => [MODE_LABEL[m], m]))}
-        setChoice={(m) => update({ mode: m as MapMode })}
-        color="gray"
-        ariaLabel="Map"
-        toggleClassName="!px-3 !py-1 text-sm"
-      />
-      {view.mode === 'president' && (
-        <ChoicesToggleGroup
-          currentChoice={view.president}
-          choicesMap={{ 'Electoral votes': 'ev', 'Popular vote': 'popular' }}
-          setChoice={(p) => update({ president: p as MapView['president'] })}
-          color="gray"
-          ariaLabel="President map"
-          toggleClassName="!px-2.5 !py-1 text-xs"
+  const overlay = (ids: Iterable<string | undefined>, className: string) =>
+    [...ids].map((id) => {
+      const shape = id ? shapeById.get(id) : undefined
+      return shape ? (
+        <Outline
+          key={`${className}-${id}`}
+          shape={shape}
+          className={className}
         />
-      )}
-      {view.mode === 'primary' && (
-        <div className="flex flex-wrap gap-2">
-          <ChoicesToggleGroup
-            currentChoice={view.office}
-            choicesMap={{ President: 'P', Senate: 'S', Governor: 'G' }}
-            setChoice={(o) => update({ office: o as MapView['office'] })}
-            color="gray"
-            ariaLabel="Primary for"
-            toggleClassName="!px-2.5 !py-1 text-xs"
+      ) : null
+    })
+
+  const detailId = selected ?? hovered
+  const detailEyebrow = (id: string) => {
+    if (mode === 'primary')
+      return `${view.party === 'D' ? 'Democratic' : 'Republican'} ${
+        view.office === 'P'
+          ? 'presidential'
+          : view.office === 'S'
+          ? 'Senate'
+          : 'governor'
+      } primary`
+    if (president) {
+      const ev = EV_BY_KEY[id]
+      return ev ? `President · ${plural(ev, 'electoral vote')}` : 'President'
+    }
+    return `${MODES.find((m) => m.mode === mode)?.label} · 2028`
+  }
+  const selectedSections = useMemo(
+    () =>
+      selected
+        ? statePanel(selected.split('-')[0], races, primaries, more)
+        : [],
+    [selected, races, primaries, more]
+  )
+
+  if (modes.length === 0) return null
+
+  return (
+    <div className={clsx(styles.layout, own.layout)}>
+      <section
+        ref={explorerRef}
+        className={styles.explorer}
+        aria-label="2028 election map"
+      >
+        <header ref={headerRef} className={styles.header}>
+          <MapTracker
+            tracker={tracker}
+            party={view.party}
+            selection={groups}
+            preview={preview?.startsWith('tip:') ? undefined : preview}
+            onSelect={(next) => {
+              track('election map tracker', { mode, groups: next })
+              setGroups(next)
+              setSelected(undefined)
+            }}
+            onPreview={setPreview}
           />
-          <ChoicesToggleGroup
-            currentChoice={view.party}
-            choicesMap={{ Democratic: 'D', Republican: 'R' }}
-            setChoice={(p) => update({ party: p as MapView['party'] })}
-            color="gray"
-            ariaLabel="Party"
-            toggleClassName="!px-2.5 !py-1 text-xs"
+          <div className={styles.toolbar}>
+            <ModeTabs
+              modes={modes}
+              mode={mode}
+              onChange={(m) => update({ mode: m })}
+            />
+            {(mode !== 'primary' || style === 'cartogram') && (
+              <MapViewToggle
+                view={style}
+                measures={false}
+                house={mode === 'house'}
+                onChange={changeStyle}
+              />
+            )}
+            <div className={styles.searchSlot}>
+              <button
+                className={clsx(
+                  styles.searchToggle,
+                  (searchOpen || query) && styles.activeTool
+                )}
+                aria-label="Find a state or district"
+                aria-expanded={searchOpen}
+                onClick={() => setSearchOpen(!searchOpen)}
+              >
+                <SearchIcon aria-hidden />
+              </button>
+              <label className={styles.search} data-open={searchOpen}>
+                <SearchIcon aria-hidden />
+                <input
+                  ref={searchRef}
+                  aria-label="Find a state or district"
+                  placeholder={
+                    mode === 'house' ? 'State or TX-15' : 'Find a state'
+                  }
+                  value={query}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') setSearchOpen(false)
+                    if (e.key === 'Enter' && searchHits.length === 1)
+                      choose(searchHits[0], null)
+                  }}
+                  onChange={(e) => {
+                    setQuery(e.target.value)
+                    setSelected(undefined)
+                  }}
+                />
+                {query && (
+                  <button
+                    aria-label="Clear search"
+                    onClick={() => setQuery('')}
+                  >
+                    ×
+                  </button>
+                )}
+              </label>
+            </div>
+            {zoomControls(styles.toolbarZoom)}
+          </div>
+        </header>
+
+        {mode === 'primary' && <PrimaryControls view={view} update={update} />}
+        {president && model && (
+          <PresidentNotes
+            model={model}
+            partyContract={props.partyContract ?? null}
+            tips={tips}
+            onPreview={(key) => setPreview(key ? `tip:${key}` : undefined)}
+            onPick={(key) => {
+              track('election map tipping point', { place: key })
+              choose(key, null)
+            }}
           />
+        )}
+        {mode === 'senate' && (
+          <p className={own.note}>
+            Includes the 65 seats not up in 2028: 38 Democratic (with the
+            independents who caucus with them) and 27 Republican.
+          </p>
+        )}
+
+        <span className="sr-only" role="status">
+          {narrowed ? plural(listed.length, 'place') : ''}
+        </span>
+        {narrowed && (
+          <FilterResults
+            summary={
+              <strong className={styles.filterCount}>
+                {plural(listed.length, 'place')}
+              </strong>
+            }
+            clearLabel={groups.length && searching ? 'Clear all' : 'Clear'}
+            onClear={() => {
+              setGroups([])
+              setQuery('')
+            }}
+            label="Places in the selection"
+            resetKey={`${mode}:${groups.join('+')}:${query}`}
+            items={listed.map((id) => (
+              <button key={id} onClick={(e) => choose(id, e.currentTarget)}>
+                <span>{titleOf(id)}</span>
+                <span className={styles.quote}>
+                  {fills[id] ? describeFill(fills[id]) : '—'}
+                </span>
+              </button>
+            ))}
+            empty={<span>Nothing matches. Try a state name or TX-15.</span>}
+          />
+        )}
+
+        <div className={styles.stage}>
+          {!atlas ? (
+            <div className={styles.mapLoading} role="status">
+              {mapError ? (
+                <>
+                  The map couldn’t load.{' '}
+                  <button onClick={() => setAttempt((a) => a + 1)}>
+                    Try again
+                  </button>
+                </>
+              ) : (
+                'Loading the map…'
+              )}
+            </div>
+          ) : (
+            <svg
+              ref={svgRef}
+              viewBox={viewBox}
+              aria-label={`${MODES.find((m) => m.mode === mode)?.label} ${
+                style === 'map' ? 'map' : 'cartogram'
+              }`}
+              className={styles.map}
+              data-mode={mode === 'house' ? 'house' : 'state'}
+              data-view={style}
+              data-zoomed={camera.k > 1}
+              data-narrowed={narrowed}
+              style={
+                {
+                  touchAction: camera.k > 1 ? 'none' : 'pan-y',
+                  '--zoom': camera.k,
+                } as CSSProperties
+              }
+              onWheel={() => setHovered(undefined)}
+              onPointerEnter={trackHover}
+              onPointerMove={trackHover}
+              onPointerUp={handleTap}
+              onPointerLeave={() => {
+                mapPointer.current = undefined
+                setHovered(undefined)
+              }}
+            >
+              <g
+                transform={`translate(${camera.x} ${camera.y}) scale(${camera.k})`}
+              >
+                {shapes.map((shape) => {
+                  const shapeAttrs = shapeProps(shape.id)
+                  return shape.rect ? (
+                    <rect
+                      key={shape.id}
+                      {...shape.rect}
+                      {...shapeAttrs}
+                      className={clsx(
+                        shapeAttrs.className,
+                        isStatewide(shape.id) && style === 'map' && own.badge
+                      )}
+                    />
+                  ) : (
+                    <path key={shape.id} d={shape.d} {...shapeAttrs} />
+                  )
+                })}
+                {style === 'map' &&
+                  (mode === 'house' || president) &&
+                  atlas.states
+                    .filter(
+                      (s) => mode === 'house' || SPLIT_STATES.includes(s.state)
+                    )
+                    .map((s) => (
+                      <path
+                        key={s.state}
+                        d={s.path}
+                        className={styles.stateOutline}
+                      />
+                    ))}
+                <g className={styles.overlays} aria-hidden>
+                  {president &&
+                    overlay(
+                      tips.map((t) => t.key),
+                      own.tipOutline
+                    )}
+                  {overlay(narrowed ? listed : [], styles.matchOutline)}
+                  {overlay(previewPlaces, styles.previewOutline)}
+                  {overlay([selected], styles.selectedHalo)}
+                  {overlay([selected], styles.selectedOutline)}
+                  {overlay([focused], styles.focusHalo)}
+                  {overlay([focused], styles.focusOutline)}
+                </g>
+                {style === 'map' && (
+                  <g aria-hidden>
+                    {atlas.states
+                      .filter(
+                        (s) =>
+                          !(zoomedIn ? ['DC'] : UNLABELLED).includes(s.state) &&
+                          !(president && SPLIT_STATES.includes(s.state))
+                      )
+                      .map((s) => {
+                        const at = LABEL_AT[s.state] ?? {
+                          x: s.center[0],
+                          y: s.center[1],
+                        }
+                        return (
+                          <text
+                            key={s.state}
+                            x={at.x}
+                            y={at.y}
+                            dy="0.35em"
+                            className={styles.stateLabel}
+                            style={
+                              mode === 'house' ? undefined : labelStyle(s.state)
+                            }
+                          >
+                            {s.state}
+                          </text>
+                        )
+                      })}
+                    {president &&
+                      SPLIT_STATES.map((st) => {
+                        const badge = shapeById.get(st)
+                        return badge ? (
+                          <text
+                            key={st}
+                            x={badge.center.x}
+                            y={badge.center.y}
+                            dy="0.35em"
+                            className={clsx(styles.stateLabel, own.badgeLabel)}
+                            style={labelStyle(st)}
+                          >
+                            {st}
+                          </text>
+                        ) : null
+                      })}
+                    {!zoomedIn &&
+                      callouts.map((state, i) => {
+                        const s = atlas.states.find((s) => s.state === state)
+                        if (!s) return null
+                        return (
+                          <g
+                            key={state}
+                            className={styles.callout}
+                            data-tap={state}
+                          >
+                            <path
+                              d={`M${s.center[0]} ${s.center[1]}L916 ${
+                                calloutY(i) - 4
+                              }`}
+                              className={styles.labelLine}
+                            />
+                            <rect
+                              x="914"
+                              y={calloutY(i) - 20}
+                              width="46"
+                              height="29"
+                              className={styles.calloutTarget}
+                            />
+                            {mode !== 'house' && fills[state] && (
+                              <rect
+                                x="916"
+                                y={calloutY(i) - 14}
+                                width="9"
+                                height="9"
+                                rx="2"
+                                fill={fillColor(fills[state])}
+                                className={own.calloutSwatch}
+                              />
+                            )}
+                            <text
+                              x={mode !== 'house' && fills[state] ? 929 : 930}
+                              y={calloutY(i)}
+                              className={styles.calloutLabel}
+                            >
+                              {state}
+                            </text>
+                          </g>
+                        )
+                      })}
+                  </g>
+                )}
+                {style === 'map' && mode !== 'house' && (
+                  <g className={styles.hitAreas} aria-hidden>
+                    {tinyStates.map((state) => {
+                      const center = shapeById.get(state)?.center
+                      return center ? (
+                        <circle
+                          key={state}
+                          cx={center.x}
+                          cy={center.y}
+                          r={hitRadius}
+                          data-tap={tinyStates.join(' ')}
+                        />
+                      ) : null
+                    })}
+                  </g>
+                )}
+                {style === 'cartogram' && mode === 'house' && (
+                  <g aria-hidden>
+                    {hexLabels.map((l) => (
+                      <text
+                        key={l.state}
+                        x={l.x}
+                        y={l.y}
+                        textAnchor={l.anchor}
+                        className={styles.hexLabel}
+                      >
+                        {l.state}
+                      </text>
+                    ))}
+                  </g>
+                )}
+                {style === 'cartogram' && mode !== 'house' && (
+                  <g aria-hidden>
+                    {shapes
+                      .filter((s) => !s.id.includes('-'))
+                      .map((shape) => {
+                        const split =
+                          president && SPLIT_STATES.includes(shape.id)
+                        const ev = president ? EV_BY_KEY[shape.id] : undefined
+                        return (
+                          <text
+                            key={shape.id}
+                            x={shape.center.x}
+                            y={shape.center.y - (split ? 12 : ev ? 6 : 0)}
+                            dy="0.35em"
+                            className={styles.tileLabel}
+                            style={labelStyle(shape.id)}
+                          >
+                            {shape.id}
+                            {ev && !split && (
+                              <tspan
+                                x={shape.center.x}
+                                dy="1.25em"
+                                className={own.tileEv}
+                              >
+                                {ev}
+                              </tspan>
+                            )}
+                          </text>
+                        )
+                      })}
+                  </g>
+                )}
+              </g>
+            </svg>
+          )}
+          <span id={keyHintId} className="sr-only">
+            Arrow keys move between places. Enter opens their markets.
+          </span>
+          {atlas && zoomControls(styles.stageZoom)}
         </div>
-      )}
+
+        {chips.length > 0 && (
+          <div className={own.chips}>
+            {chips.map((k) => (
+              <button
+                key={k}
+                type="button"
+                aria-pressed={selected === k}
+                onClick={(e) => choose(k, e.currentTarget)}
+                onPointerEnter={(e) => {
+                  if (e.pointerType === 'mouse') setPreview(`tip:${k}`)
+                }}
+                onPointerLeave={() => setPreview(undefined)}
+              >
+                <i
+                  style={{ backgroundColor: fillColor(fills[k]) }}
+                  aria-hidden
+                />
+                <span>{k in TERRITORIES ? TERRITORIES[k] : titleOf(k)}</span>
+                <span className={own.chipValue}>{describeFill(fills[k])}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <MapLegend
+          view={view}
+          tracker={tracker}
+          tipping={president && tips.length > 0}
+          fills={fills}
+        />
+        <p className={styles.hint}>
+          {style === 'cartogram'
+            ? mode === 'house'
+              ? 'Every House district at equal size. '
+              : 'Every state at equal size. '
+            : ''}
+          Hover for the odds; click{' '}
+          {mode === 'house' ? 'a district' : 'a state'} for its markets and to
+          bet. Scroll or pinch to zoom; drag to move.
+        </p>
+
+        {detailId && (
+          <RaceDetailsPanel
+            title={titleOf(detailId)}
+            eyebrow={detailEyebrow(detailId)}
+            label={`${titleOf(detailId)} markets`}
+            closeRef={closeRef}
+            pinned={!!selected}
+            pointer={mapPointer}
+            onClose={closeDetails}
+            dockKey={`${selected}:${mode}:${shapes.length > 0}`}
+            anchor={() =>
+              selected
+                ? svgRef.current
+                    ?.querySelector(`[data-race-id="${selected}"]`)
+                    ?.getBoundingClientRect()
+                : undefined
+            }
+            topInset={() =>
+              headerRef.current?.getBoundingClientRect().bottom ?? 0
+            }
+          >
+            {selected ? (
+              <PinnedPlace
+                place={selected}
+                view={view}
+                sections={selectedSections}
+                primaries={primaries}
+                tipping={president ? tipChance[selected] : undefined}
+              />
+            ) : (
+              <HoverFacts
+                place={detailId}
+                view={view}
+                fill={fills[detailId]}
+                races={races}
+                tipping={president ? tipChance[detailId] : undefined}
+              />
+            )}
+          </RaceDetailsPanel>
+        )}
+      </section>
     </div>
   )
 }
 
-// USAMap renders the component type it's given, which must be stable; the
-// fills come through context.
-const FillsContext = createContext<Record<string, Fill>>({})
-
-function FillState(p: StateProps) {
-  const fill = useContext(FillsContext)[p.stateKey]
+function ModeTabs(props: {
+  modes: MapMode[]
+  mode: MapMode
+  onChange: (mode: MapMode) => void
+}) {
+  const { modes, mode, onChange } = props
+  const shown = MODES.filter((m) => modes.includes(m.mode))
   return (
-    <USAState
-      state={p.stateKey}
-      stateData={p.data}
-      fill={fillColor(fill)}
-      onMouseEnterState={() => p.onMouseEnter(p.stateKey)}
-      onMouseLeaveState={p.onMouseLeave}
-      onClickState={() => p.handleClick(p.stateKey)}
-      hovered={p.hoveredState === p.stateKey}
-      selected={p.targetState === p.stateKey}
-    />
+    <>
+      <label className={styles.mobileMode}>
+        <select
+          aria-label="Map"
+          value={mode}
+          onChange={(e) => onChange(e.target.value as MapMode)}
+          className={own.modeSelect}
+        >
+          {shown.map((m) => (
+            <option key={m.mode} value={m.mode}>
+              {m.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className={styles.tabs} role="tablist" aria-label="Map">
+        {shown.map((m, index) => (
+          <button
+            key={m.mode}
+            role="tab"
+            aria-selected={mode === m.mode}
+            tabIndex={mode === m.mode ? 0 : -1}
+            className={own.tab}
+            onClick={() => onChange(m.mode)}
+            onKeyDown={(e) => {
+              if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
+              e.preventDefault()
+              const next =
+                (index + (e.key === 'ArrowRight' ? 1 : shown.length - 1)) %
+                shown.length
+              onChange(shown[next].mode)
+              e.currentTarget
+                .closest('[role="tablist"]')
+                ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+                [next]?.focus()
+            }}
+          >
+            <span className={styles.steadyLabel} data-text={m.label}>
+              {m.label}
+            </span>
+          </button>
+        ))}
+      </div>
+    </>
   )
 }
 
-// Places the state map can't show: Maine's and Nebraska's electoral
-// districts, and the territories and Democrats Abroad in the presidential
-// primaries.
-function PlaceChips(props: {
-  view: MapView
-  fills: Record<string, Fill>
-  selected: string | undefined
-  onSelect: (place: string) => void
+function Segmented<T extends string>(props: {
+  label: string
+  value: T
+  options: { value: T; label: string }[]
+  onChange: (value: T) => void
 }) {
-  const { view, fills, selected, onSelect } = props
-  const keys =
-    view.mode === 'president' && view.president === 'ev'
-      ? Object.keys(fills).filter((k) => k.includes('-'))
-      : view.mode === 'primary'
-      ? Object.keys(fills).filter((k) => k in TERRITORIES)
-      : []
-  if (keys.length === 0) return null
+  const { label, value, options, onChange } = props
   return (
-    <div className="flex flex-wrap gap-1.5 px-1">
-      {sortBy(keys).map((k) => (
+    <div className={styles.viewToggle} role="group" aria-label={label}>
+      {options.map((o) => (
         <button
-          key={k}
-          type="button"
-          onClick={() => onSelect(k)}
-          className={clsx(
-            'border-ink-200 hover:bg-canvas-50 flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs',
-            selected === k && 'ring-primary-500 ring-2'
-          )}
+          key={o.value}
+          aria-pressed={value === o.value}
+          onClick={() => onChange(o.value)}
         >
-          <span
-            className="h-2.5 w-2.5 rounded-full"
-            style={{ backgroundColor: fillColor(fills[k]) }}
-          />
-          <span className="text-ink-900 font-medium">
-            {k in TERRITORIES ? TERRITORIES[k] : k}
-          </span>
-          <span className="text-ink-600 tabular-nums">
-            {describeFill(fills[k])}
+          <span className={styles.steadyLabel} data-text={o.label}>
+            {o.label}
           </span>
         </button>
       ))}
     </div>
+  )
+}
+
+function PrimaryControls(props: {
+  view: MapView
+  update: (patch: Partial<MapView>) => void
+}) {
+  const { view, update } = props
+  return (
+    <div className={own.subControls}>
+      <Segmented
+        label="Primaries for"
+        value={view.office}
+        options={[
+          { value: 'P', label: 'President' },
+          { value: 'S', label: 'Senate' },
+          { value: 'G', label: 'Governor' },
+        ]}
+        onChange={(office) => update({ office })}
+      />
+      <Segmented
+        label="Party"
+        value={view.party}
+        options={[
+          { value: 'D', label: 'Democratic' },
+          { value: 'R', label: 'Republican' },
+        ]}
+        onChange={(party) => update({ party })}
+      />
+    </div>
+  )
+}
+
+// Under the President tracker: the electoral college model (simulated from
+// the state markets) next to the national market, and the places most
+// likely to tip the election, outlined on the map.
+function PresidentNotes(props: {
+  model: ElectoralModel
+  partyContract: Contract | null
+  tips: { key: string; p: number }[]
+  onPreview: (key: string | undefined) => void
+  onPick: (key: string) => void
+}) {
+  const { model, tips, onPreview, onPick } = props
+  const demEv = Math.round(model.meanDemEv)
+  return (
+    <div className={own.notes}>
+      <p className={own.model}>
+        <span className={own.modelLabel}>Electoral college model</span>
+        <span>
+          <b data-tone="dem">Democrats {formatOdds(model.pDem)}</b>
+          {' · '}
+          <b data-tone="rep">Republicans {formatOdds(model.pRep)}</b>
+          {model.pTie >= 0.005 && <> · 269–269 tie {formatOdds(model.pTie)}</>}
+        </span>
+        <span className={own.muted}>
+          Expected electoral votes: D {demEv}, R {538 - demEv}.
+          {props.partyContract && (
+            <NationalMarket
+              contract={props.partyContract}
+              modelDem={model.pDem}
+            />
+          )}
+        </span>
+      </p>
+      {tips.length > 0 && (
+        <div className={own.tips}>
+          <span className={own.modelLabel}>Tipping points</span>
+          {tips.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => onPick(t.key)}
+              onPointerEnter={(e) => {
+                if (e.pointerType === 'mouse') onPreview(t.key)
+              }}
+              onPointerLeave={() => onPreview(undefined)}
+              onFocus={() => onPreview(t.key)}
+              onBlur={() => onPreview(undefined)}
+            >
+              {t.key}
+              <span>{formatOdds(t.p)}</span>
+            </button>
+          ))}
+          <span className={own.muted}>
+            How often each puts the winner over 270, in{' '}
+            {model.sims.toLocaleString('en-US')} simulations.
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function NationalMarket(props: { contract: Contract; modelDem: number }) {
+  const contract = useLiveContract(props.contract)
+  const national = getPartyProbs(contract)
+  if (!national) return null
+  return (
+    <>
+      {' '}
+      The national market says Democrats {formatOdds(national.dem)}
+      {Math.abs(national.dem - props.modelDem) >= 0.05
+        ? ': a gap traders can close from either side.'
+        : '.'}
+    </>
   )
 }
 
 function MapLegend(props: {
   view: MapView
+  tracker: ReturnType<typeof mapTracker>
+  tipping: boolean
   fills: Record<string, Fill>
-  primaries: PrimaryRow[]
 }) {
-  const { view, primaries } = props
-  const swatch = (color: string, label: string) => (
-    <span key={label} className="flex items-center gap-1">
-      <span
-        className="h-2.5 w-2.5 rounded-sm"
-        style={{ backgroundColor: color }}
-      />
-      {label}
-    </span>
-  )
-  let items: ReactNode[]
-  if (view.mode === 'primary' && view.office === 'P') {
-    const colors = leaderColors(primaries, view.party)
-    items = [
-      ...Object.entries(colors).map(([name, color]) => swatch(color, name)),
-      swatch(OTHER_LEADER_COLOR, 'Someone else leads'),
-    ]
-  } else if (view.mode === 'primary') {
-    const party = view.party
-    items = [
-      swatch(STRENGTH[party][0], 'Leader under 60%'),
-      swatch(STRENGTH[party][1], '60–90%'),
-      swatch(STRENGTH[party][2], '90%+'),
-      swatch(OPEN_PRIMARY_COLOR, 'Top-two or top-four primary'),
-      swatch(DEFAULT_STATE_FILL, 'No market'),
-    ]
-  } else {
-    const called = new Set(
-      Object.values(props.fills).flatMap((f) =>
-        f.kind === 'rating' && f.c ? [f.c] : []
-      )
-    )
-    items = [
-      ...RATING_ORDER.map((r) => swatch(RATING[r].fill, RATING[r].label)),
-      ...(called.has('D') ? [swatch(DEM_COLOR, 'Called for D')] : []),
-      ...(called.has('R') ? [swatch(REP_COLOR, 'Called for R')] : []),
-      ...(called.has('O') ? [swatch(OTHER_COLOR, 'Called for other')] : []),
-      swatch(DEFAULT_STATE_FILL, 'No race'),
-    ]
-  }
-  return (
-    <div className="text-ink-600 flex flex-wrap gap-x-3 gap-y-1 px-1 text-xs">
-      {items}
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// House cartogram
-// ---------------------------------------------------------------------------
-
-const hexPath = (x: number, y: number, r: number) =>
-  Array.from({ length: 6 }, (_, i) => {
-    const angle = (Math.PI / 3) * i - Math.PI / 2
-    return `${i ? 'L' : 'M'}${(x + Math.cos(angle) * r).toFixed(1)},${(
-      y +
-      Math.sin(angle) * r
-    ).toFixed(1)}`
-  }).join(' ') + 'Z'
-
-const HEX_W = 960
-const HEX_SCALE = Math.min(920 / HEX.width, 560 / HEX.height)
-const HEX_TX = (HEX_W - HEX.width * HEX_SCALE) / 2
-const HEX_TY = 24
-const HEX_H = Math.ceil(HEX.height * HEX_SCALE + HEX_TY * 2)
-const HEX_R = HEX.size * 0.92 * HEX_SCALE
-
-function HouseHexMap(props: {
-  fills: Record<string, Fill>
-  selectedState: string | undefined
-  hovered: string | undefined
-  onHover: (key: string | undefined) => void
-  onSelect: (key: string) => void
-}) {
-  const { fills, selectedState, hovered, onHover, onSelect } = props
-  const labels = useMemo(() => {
-    const count = (st: string) => HEX.hexes.filter((h) => h.state === st).length
-    // Larger delegations keep the spot above their hexes; small ones move.
-    const states = sortBy(
-      [...new Set(HEX.hexes.map((h) => h.state))],
-      (st) => -count(st)
-    )
-    return placeHexLabels(states, HEX.hexes, HEX.size).map((l) => ({
-      ...l,
-      x: HEX_TX + l.x * HEX_SCALE,
-      y: HEX_TY + l.y * HEX_SCALE,
-    }))
-  }, [])
-  return (
-    <svg
-      viewBox={`0 0 ${HEX_W} ${HEX_H}`}
-      className="h-auto w-full"
-      role="img"
-      aria-label="House districts, one hexagon each, colored by our odds"
-      onPointerLeave={() => onHover(undefined)}
-    >
-      {HEX.hexes.map((h) => {
-        const key = districtKey(h.state, h.district)
-        const x = HEX_TX + h.x * HEX_SCALE
-        const y = HEX_TY + h.y * HEX_SCALE
-        const inState = h.state === selectedState
-        return (
-          <path
-            key={key}
-            d={hexPath(x, y, HEX_R)}
-            fill={fillColor(fills[key])}
-            className={clsx(
-              'cursor-pointer',
-              inState || hovered === key ? 'stroke-ink-1000' : 'stroke-canvas-0'
-            )}
-            strokeWidth={inState || hovered === key ? 2 : 1}
-            onPointerEnter={() => onHover(key)}
-            onClick={() => onSelect(key)}
-          />
-        )
-      })}
-      {labels.map((l) => (
-        <text
-          key={l.state}
-          x={l.x}
-          y={l.y}
-          textAnchor={l.anchor}
-          dominantBaseline="middle"
-          className="fill-ink-900 pointer-events-none text-[13px] font-semibold"
-        >
-          {l.state}
-        </text>
-      ))}
-    </svg>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// The panel
-// ---------------------------------------------------------------------------
-
-const panelClass =
-  'bg-canvas-0 border-ink-200 flex max-h-[44rem] flex-col gap-3 overflow-y-auto rounded-xl border p-3 sm:p-4'
-
-// Before a place is picked: the closest contests in the view.
-function ClosestPanel(props: {
-  view: MapView
-  fills: Record<string, Fill>
-  onSelect: (place: string) => void
-}) {
-  const { view, fills, onSelect } = props
-  const closest = closestPlaces(fills, 8)
-  return (
-    <div className={panelClass}>
-      <div className="flex flex-col gap-0.5">
-        <h3 className="text-ink-1000 text-base font-semibold">
-          {view.mode === 'primary' ? 'Most open contests' : 'Closest races'}
-        </h3>
-        <p className="text-ink-600 text-sm">
-          Pick one, or any state on the map, for all its markets.
-        </p>
-      </div>
-      <div className="flex flex-col gap-1">
-        {closest.map((k) => (
-          <button
-            key={k}
-            type="button"
-            onClick={() => onSelect(k)}
-            className="hover:bg-canvas-50 flex items-center justify-between gap-3 rounded-md px-2 py-1.5 text-left text-sm"
-          >
-            <span className="flex items-center gap-2">
-              <span
-                className="h-3 w-3 shrink-0 rounded-sm"
-                style={{ backgroundColor: fillColor(fills[k]) }}
-              />
-              <span className="text-ink-1000 font-medium">{placeLabel(k)}</span>
-            </span>
-            <span className="text-ink-700 tabular-nums">
-              {describeFill(fills[k])}
-            </span>
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function PlacePanel(props: {
-  place: string
-  focusRow: string | undefined
-  races: BoardRace[]
-  primaries: PrimaryRow[]
-  more: PlacedMarket[]
-  onClose: () => void
-}) {
-  const { place, focusRow, races, primaries, more, onClose } = props
-  const sections = useMemo(
-    () => statePanel(place, races, primaries, more),
-    [place, races, primaries, more]
-  )
-  return (
-    <div className={panelClass} aria-label={`${panelTitle(place)} markets`}>
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="text-ink-1000 text-lg font-semibold">
-          {panelTitle(place)}
-        </h3>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close"
-          className="text-ink-500 hover:text-ink-800 rounded p-1"
-        >
-          <XIcon className="h-5 w-5" />
-        </button>
-      </div>
-      {sections.length === 0 && (
-        <p className="text-ink-600 text-sm">No markets here yet.</p>
-      )}
-      {sections.map((s) => (
-        <div key={s.key} className="flex flex-col gap-1">
-          <h4 className="text-ink-600 text-xs font-semibold uppercase tracking-wide">
-            {s.title}
-          </h4>
-          {s.key === 'house' && s.rows.length > 3 ? (
-            <DistrictGrid key={focusRow} rows={s.rows} focus={focusRow} />
-          ) : (
-            s.rows.map((r) => (
-              <RaceRow
-                key={`${r.key}-${r.key === focusRow}`}
-                row={r}
-                initiallyOpen={r.key === focusRow}
-              />
-            ))
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function summaryText(summary: Summary) {
-  if (summary.kind === 'party')
-    return describeFill({ kind: 'rating', p: summary.p, c: summary.c })
-  if (summary.kind === 'leader')
-    return describeFill({
-      kind: 'open',
-      name: summary.name,
-      p: summary.p,
-      won: summary.won,
-    })
-  return ''
-}
-
-function summaryColor(summary: Summary) {
-  return summary.kind === 'party'
-    ? fillColor({ kind: 'rating', p: summary.p, c: summary.c })
-    : undefined
-}
-
-function RaceRow(props: { row: PanelRow; initiallyOpen?: boolean }) {
-  const { row } = props
-  const [open, setOpen] = useState(!!props.initiallyOpen)
-  const color = summaryColor(row.summary)
-  return (
-    <div className="border-ink-100 border-b last:border-b-0">
-      <button
-        type="button"
-        aria-expanded={open}
-        onClick={() => {
-          if (!open) track('election map race open', { slug: row.slug })
-          setOpen(!open)
-        }}
-        className="hover:bg-canvas-50 flex w-full items-center justify-between gap-3 rounded-md px-1.5 py-2 text-left text-sm"
-      >
-        <span className="text-ink-1000 flex min-w-0 items-center gap-2">
-          {color && (
-            <span
-              className="h-2.5 w-2.5 shrink-0 rounded-sm"
-              style={{ backgroundColor: color }}
-            />
-          )}
-          <span className="min-w-0">{row.label}</span>
-        </span>
-        <span className="text-ink-700 flex shrink-0 items-center gap-1 tabular-nums">
-          {summaryText(row.summary)}
-          <ChevronDownIcon
-            className={clsx(
-              'text-ink-400 h-4 w-4 transition-transform',
-              open && 'rotate-180'
-            )}
-          />
-        </span>
-      </button>
-      {open && <RaceMarket slug={row.slug} creator={row.creator} />}
-    </div>
-  )
-}
-
-// A big state's House districts as a grid of chips; one opens at a time.
-function DistrictGrid(props: { rows: PanelRow[]; focus: string | undefined }) {
-  const [open, setOpen] = useState<string | undefined>(props.focus)
-  const current = props.rows.find((r) => r.key === open)
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-1">
-        {props.rows.map((r) => (
-          <button
-            key={r.key}
-            type="button"
-            aria-pressed={r.key === open}
-            onClick={() => setOpen(r.key === open ? undefined : r.key)}
-            className={clsx(
-              'border-ink-200 hover:bg-canvas-50 flex items-center justify-between gap-1 rounded-md border px-1.5 py-1 text-xs',
-              r.key === open && 'ring-primary-500 ring-2'
-            )}
-          >
-            <span className="text-ink-900 flex items-center gap-1 font-medium">
-              <span
-                className="h-2 w-2 rounded-sm"
-                style={{ backgroundColor: summaryColor(r.summary) }}
-              />
-              {r.label.replace(' district', '')}
-            </span>
-            <span className="text-ink-600 tabular-nums">
-              {summaryText(r.summary)}
-            </span>
-          </button>
-        ))}
-      </div>
-      {current && (
-        <div className="border-ink-100 rounded-md border px-1.5">
-          <div className="text-ink-1000 pt-2 text-sm font-medium">
-            {current.label}
-          </div>
-          <RaceMarket slug={current.slug} creator={current.creator} />
-        </div>
-      )}
-    </div>
-  )
-}
-
-const ANSWERS_SHOWN = 6
-
-// A race's market, loaded when its row opens: its likeliest answers, each
-// with a Bet button that trades without leaving the page.
-function RaceMarket(props: { slug: string; creator?: string }) {
-  const { slug } = props
-  const { contract, error } = useContractBySlug(slug)
-  const href = `/${props.creator ?? 'ManifoldPolitics'}/${slug}`
-  const open = (
-    <Link
-      href={href}
-      className="text-primary-700 text-xs font-medium hover:underline"
-    >
-      Open the market →
-    </Link>
-  )
-  if (error)
+  const { view, tracker, tipping, fills } = props
+  if (view.mode === 'primary')
     return (
-      <div className="text-ink-600 px-1.5 pb-2 text-sm">
-        Couldn&apos;t load it. {open}
-      </div>
-    )
-  if (!contract) return <LoadingIndicator className="py-3" size="sm" />
-  return <LiveRaceMarket initial={contract} open={open} />
-}
-
-// The stored copy finds the market; the live one (fetched fresh, then kept
-// current over the websocket) prices it. Bets wait for the live one, as on
-// the race charts: the bet panel prices every answer.
-function LiveRaceMarket(props: { initial: Contract; open: ReactNode }) {
-  const { initial, open } = props
-  const { contract, hasLoaded } = useLiveContractWithStatus(initial)
-  const [answer, setAnswer] = useState<Answer | undefined>()
-  if (!isMultiCpmm(contract))
-    return (
-      <div className="text-ink-700 flex items-center justify-between px-1.5 pb-2 text-sm">
-        <BinaryChance contract={contract} />
-        {open}
-      </div>
-    )
-  const answers = sortBy(
-    (contract.answers ?? []).filter((a) => a.resolution !== 'CANCEL'),
-    (a) => -getAnswerProbability(contract, a.id)
-  )
-  return (
-    <div className="flex flex-col gap-1 px-1.5 pb-2">
-      {answers.slice(0, ANSWERS_SHOWN).map((a) => (
-        <div
-          key={a.id}
-          className="flex items-center justify-between gap-2 text-sm"
-        >
-          <span className="text-ink-900 min-w-0 truncate">{a.text}</span>
-          <span className="flex shrink-0 items-center gap-2">
-            <span className="text-ink-700 tabular-nums">
-              {formatOdds(getAnswerProbability(contract, a.id))}
+      <div className={styles.legend}>
+        <div className={styles.legendKeys}>
+          {tracker.segments.map((s) => (
+            <span key={s.key}>
+              <i style={{ background: segmentColor(s, view.party) }} />
+              {s.label}
             </span>
-            {!contract.isResolved && (
-              <Button
-                size="2xs"
-                color="indigo-outline"
-                disabled={!hasLoaded}
-                onClick={() => {
-                  track('election map bet', {
-                    slug: contract.slug,
-                    answer: a.text,
-                  })
-                  setAnswer(a)
-                }}
-              >
-                Bet
-              </Button>
-            )}
+          ))}
+          <span>
+            <i className={styles.noRaceSwatch} />
+            No market yet
           </span>
         </div>
-      ))}
-      <div className="flex justify-between pt-1">
-        <span className="text-ink-500 text-xs">
-          {answers.length > ANSWERS_SHOWN
-            ? `${answers.length - ANSWERS_SHOWN} more on the market`
-            : ''}
-        </span>
-        {open}
       </div>
-      <AnswerBetModal
-        contract={contract}
-        answer={
-          answer && hasLoaded
-            ? contract.answers.find((x) => x.id === answer.id)
-            : undefined
-        }
-        onClose={() => setAnswer(undefined)}
-      />
-    </div>
-  )
-}
-
-// The market's stored copy, by slug: enough to find it and show it while the
-// live one loads. `error` when it can't be read or doesn't exist.
-function useContractBySlug(slug: string) {
-  const [contract, setContract] = useState<Contract | undefined>()
-  const [error, setError] = useState(false)
-  useEffect(() => {
-    let cancelled = false
-    setContract(undefined)
-    setError(false)
-    getContracts(db, [slug], 'slug')
-      .then(([c]) => {
-        if (cancelled) return
-        if (c) setContract(c)
-        else setError(true)
-      })
-      .catch(() => !cancelled && setError(true))
-    return () => {
-      cancelled = true
-    }
-  }, [slug])
-  return { contract, error }
-}
-
-function BinaryChance(props: { contract: Contract }) {
-  const { contract } = props
-  if (contract.outcomeType !== 'BINARY') return <span />
+    )
+  const called = Object.values(fills).some((f) => f.kind === 'rating' && f.c)
   return (
-    <span className="tabular-nums">
-      {formatOdds(getDisplayProbability(contract))} chance
-    </span>
+    <div className={styles.legend}>
+      <div className={styles.ramp}>
+        <div>
+          <span>Republican</span>
+          <span>50 / 50</span>
+          <span>Democratic</span>
+        </div>
+        <div className={styles.gradient} />
+      </div>
+      <div className={styles.legendKeys}>
+        {view.mode !== 'house' && (
+          <span>
+            <i className={own.noRaceSwatch} />
+            No race in 2028
+          </span>
+        )}
+        {tipping && (
+          <span>
+            <i className={own.tipSwatch} />
+            Likeliest tipping points
+          </span>
+        )}
+        {view.mode === 'president' && (
+          <span>
+            <i className={own.badgeSwatch} />
+            Maine and Nebraska: badge = statewide votes
+          </span>
+        )}
+        {called && (
+          <span>
+            <i style={{ background: '#4a5fa8' }} />
+            Darkest: called
+          </span>
+        )}
+      </div>
+    </div>
   )
 }

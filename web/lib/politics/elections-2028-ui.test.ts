@@ -88,7 +88,7 @@ test('each phase orders its sections once, ending with the feed', () => {
     assert.equal(order[order.length - 1], 'feed', phase)
   }
   assert.equal(sectionOrder('nomination')[0], 'accuracy')
-  assert.equal(sectionOrder('primaries')[3], 'primaries')
+  assert.equal(sectionOrder('primaries')[4], 'primaries')
   assert.equal(sectionOrder('results')[1], 'board')
   assert.equal(sectionOrder('midterms2030')[2], 'midterms2030')
   // Data is only loaded where it shows.
@@ -119,12 +119,13 @@ test('each phase orders its sections once, ending with the feed', () => {
 test('the page reads in the order things happen, like the timeline', () => {
   const order = sectionOrder('nomination')
   const at = (k: Parameters<typeof showsSection>[1]) => order.indexOf(k)
-  // The 2027 races, the primaries, the conventions, Election Day, after.
+  // The headline race and the map first, then the 2027 races, the
+  // primaries, the conventions, Election Day, after.
+  assert.equal(at('map'), at('race') + 1)
   const chronological = [
     'offYear',
     'primaries',
     'runningMates',
-    'map',
     'board',
     'later',
   ] as const
@@ -139,7 +140,6 @@ test('the page reads in the order things happen, like the timeline', () => {
     'map',
     'primaries',
     'running-mates',
-    'road-to-270',
     'board',
     'off-year',
     'midterms-2030',

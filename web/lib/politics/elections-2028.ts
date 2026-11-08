@@ -154,8 +154,6 @@ export type ElectoralModel = {
   pRep: number
   pTie: number
   meanDemEv: number
-  // P(Democrat wins >= k EVs is in bucket), as [bucketStart, p] in 10-EV bins.
-  histogram: [number, number][]
   tippingPoints: { key: string; p: number }[]
   units: UnitOdds[]
   sims: number
@@ -815,19 +813,11 @@ function getElectoralModel(units: UnitOdds[]): ElectoralModel {
     Object.fromEntries(units.map((u) => [u.key, u.pDem])),
     { sims: 20000, rho: EC_MODEL_RHO, seed: 2028 }
   )
-  const histogram: [number, number][] = []
-  for (let start = 0; start <= 530; start += 10) {
-    let p = 0
-    for (let k = start; k < start + 10 && k < result.distribution.length; k++)
-      p += result.distribution[k]
-    histogram.push([start, p])
-  }
   return {
     pDem: result.pDem,
     pRep: result.pRep,
     pTie: result.pTie,
     meanDemEv: result.meanDemEv,
-    histogram,
     tippingPoints: result.tippingPoints.slice(0, 8),
     units,
     sims: result.sims,

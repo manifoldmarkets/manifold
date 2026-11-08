@@ -1,24 +1,28 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import hexFile from 'web/public/data/election-house-hex.json'
 import {
   availableModes,
-  closestPlaces,
   describeFill,
+  focusRowKey,
   leaderColors,
+  leaderOf,
   LEADER_COLORS,
   MapView,
   mapFills,
+  mapTracker,
+  matchesPlace,
   OTHER_LEADER_COLOR,
+  placeTitle,
+  SENATE_NOT_UP_2028,
   statePanel,
+  tippingPlaces,
 } from './election-map'
 import { PrimaryRow } from './primaries'
 import { BoardRace } from './race-board'
 
 const view = (patch: Partial<MapView>): MapView => ({
   mode: 'president',
-  president: 'ev',
   office: 'P',
   party: 'D',
   ...patch,
@@ -26,6 +30,9 @@ const view = (patch: Partial<MapView>): MapView => ({
 
 const races: BoardRace[] = [
   { o: 'P', st: 'PA', p: 0.55, s: 'pa-ev', ev: 19 },
+  { o: 'P', st: 'TX', p: 0.2, s: 'tx-ev', ev: 40 },
+  { o: 'P', st: 'CA', p: 0.97, s: 'ca-ev', ev: 54 },
+  { o: 'P', st: 'GA', p: 0.502, s: 'ga-ev', ev: 16 },
   { o: 'P', st: 'ME', p: 0.8, s: 'me-ev', ev: 2 },
   { o: 'P', st: 'ME', d: 2, p: 0.3, s: 'me2-ev', ev: 1 },
   { o: 'V', st: 'PA', p: 0.58, s: 'pa-pv' },
@@ -36,7 +43,7 @@ const races: BoardRace[] = [
   { o: 'H', st: 'PA', d: 12, p: 0.9, s: 'pa-12' },
   { o: 'H', st: 'AK', d: 0, p: 0.2, s: 'ak-al' },
   // A row reading only its prior has no market to list.
-  { o: 'P', st: 'WY', p: 0.02 },
+  { o: 'P', st: 'WY', p: 0.02, ev: 3 },
 ]
 
 const cell = (l: string, p: number, s = `${l}-mkt`) => ({ s, l, p })
@@ -75,10 +82,10 @@ test('the President view colors states and Maine/Nebraska districts', () => {
   const ev = mapFills(view({}), races, primaries)
   assert.deepEqual(ev.PA, { kind: 'rating', p: 0.55 })
   assert.deepEqual(ev['ME-2'], { kind: 'rating', p: 0.3 })
+  assert.equal(ev.ME?.kind, 'rating')
   assert.equal(ev.WY?.kind, 'rating')
-  const pv = mapFills(view({ president: 'popular' }), races, primaries)
-  assert.deepEqual(Object.keys(pv), ['PA'])
-  assert.equal(pv.PA.kind === 'rating' && pv.PA.p, 0.58)
+  // The state popular-vote markets aren't map colors.
+  assert.ok(Object.values(ev).every((f) => f.kind === 'rating' && f.p !== 0.58))
 })
 
 test('Senate, governor and House views', () => {
@@ -151,6 +158,123 @@ test('modes appear only with something to show', () => {
   )
 })
 
+test('a race leads by the odds readers see: 50.2% is even', () => {
+  assert.equal(leaderOf({ p: 0.55 }), 'D')
+  assert.equal(leaderOf({ p: 0.45 }), 'R')
+  assert.equal(leaderOf({ p: 0.502 }), undefined)
+  assert.equal(leaderOf({ p: 0.3, c: 'D' }), 'D')
+  assert.equal(leaderOf({ p: 0.9, c: 'O' }), undefined)
+})
+
+test('the President tracker counts electoral votes by rating, to 270', () => {
+  const t = mapTracker(view({}), races, primaries)
+  assert.equal(t.threshold, 270)
+  // CA 54 + PA 19 + ME 2 lead D; TX 40 + ME-2 1 + WY 3 lead R; GA is even.
+  assert.equal(t.dem, 75)
+  assert.equal(t.rep, 44)
+  assert.deepEqual(
+    t.segments.map((s) => [s.key, s.count, s.places]),
+    [
+      ['safeD', 54, ['CA']],
+      ['likelyD', 2, ['ME']],
+      ['tossup', 35, ['PA', 'GA']],
+      ['leanR', 1, ['ME-2']],
+      ['likelyR', 40, ['TX']],
+      ['safeR', 3, ['WY']],
+    ]
+  )
+  // Every electoral vote on the board is in a segment.
+  assert.equal(
+    t.segments.reduce((n, s) => n + s.count, 0),
+    54 + 19 + 40 + 16 + 2 + 1 + 3
+  )
+})
+
+test('the Senate tracker adds the seats not up in 2028, to 100', () => {
+  const t = mapTracker(view({ mode: 'senate' }), races, primaries)
+  assert.equal(SENATE_NOT_UP_2028.D + SENATE_NOT_UP_2028.R, 65)
+  assert.equal(t.threshold, 50)
+  // PA called for D; TN's special leans hard R.
+  assert.equal(t.dem, SENATE_NOT_UP_2028.D + 1)
+  assert.equal(t.rep, SENATE_NOT_UP_2028.R + 1)
+  assert.deepEqual(
+    t.segments.map((s) => s.key),
+    ['notUpD', 'wonD', 'safeR', 'notUpR']
+  )
+  assert.deepEqual(t.segments[0].places, [])
+})
+
+test('House and governor trackers', () => {
+  const house = mapTracker(view({ mode: 'house' }), races, primaries)
+  assert.equal(house.threshold, 218)
+  assert.equal(house.dem, 1)
+  assert.equal(house.rep, 2)
+  assert.equal(house.middle, '218 for a majority · 3 seats')
+  const gov = mapTracker(view({ mode: 'governor' }), races, primaries)
+  assert.equal(gov.threshold, undefined)
+  assert.equal(gov.middle, '1 governorships up in 2028')
+})
+
+test('primary trackers count contests by leader or by how sure', () => {
+  const p = mapTracker(view({ mode: 'primary' }), races, primaries)
+  assert.equal(p.dem, undefined)
+  assert.deepEqual(
+    p.segments.map((s) => [s.label, s.count, s.color]),
+    [
+      ['Newsom leads', 3, LEADER_COLORS[0]],
+      ['Buttigieg leads', 1, LEADER_COLORS[1]],
+      ['Shapiro leads', 1, LEADER_COLORS[2]],
+      ['Someone else leads', 1, OTHER_LEADER_COLOR],
+    ]
+  )
+  const s = mapTracker(
+    view({ mode: 'primary', office: 'S' }),
+    races,
+    primaries
+  )
+  assert.deepEqual(
+    s.segments.map((x) => [x.key, x.places]),
+    [
+      ['strength2', ['PA']],
+      ['strength1', ['MN']],
+      ['open', ['CA']],
+    ]
+  )
+})
+
+test('tipping points: the likeliest few, above a floor', () => {
+  const tips = [
+    { key: 'PA', p: 0.22 },
+    { key: 'MI', p: 0.15 },
+    { key: 'WI', p: 0.1 },
+    { key: 'NE-2', p: 0.02 },
+  ]
+  assert.deepEqual(
+    tippingPlaces(tips).map((t) => t.key),
+    ['PA', 'MI', 'WI']
+  )
+  assert.deepEqual(
+    tippingPlaces(tips, 2).map((t) => t.key),
+    ['PA', 'MI']
+  )
+})
+
+test('search finds states, names and districts', () => {
+  assert.ok(matchesPlace('PA', 'pa'))
+  assert.ok(matchesPlace('PA', 'penn'))
+  assert.ok(matchesPlace('PA-1', 'Pennsylvania'))
+  assert.ok(matchesPlace('TX-15', 'TX-15'))
+  assert.ok(matchesPlace('TX-15', 'tx 15'))
+  assert.ok(!matchesPlace('TX-1', 'TX-15'))
+  assert.ok(matchesPlace('AK-0', 'ak-al'))
+  assert.ok(matchesPlace('PR', 'puerto'))
+  // "Virginia" also names West Virginia; a code is exact.
+  assert.ok(matchesPlace('WV', 'virginia'))
+  assert.ok(!matchesPlace('WV', 'va'))
+  assert.ok(matchesPlace('OH', 'pa, oh'))
+  assert.ok(!matchesPlace('PA', 'p'))
+})
+
 test("a state's panel lists every market it has, by office", () => {
   const pa = statePanel('PA', races, primaries, [
     {
@@ -183,8 +307,11 @@ test("a state's panel lists every market it has, by office", () => {
   )
   const me = statePanel('ME', races, [])
   assert.deepEqual(
-    me[0].rows.map((r) => r.label),
-    ['Electoral votes (2)', '2nd district (1 EV)']
+    me[0].rows.map((r) => [r.key, r.label]),
+    [
+      ['P-ME', 'Statewide (2)'],
+      ['P-ME-2', '2nd district (1 EV)'],
+    ]
   )
   // A prior-only row has no market, so nothing to list.
   assert.deepEqual(statePanel('WY', races, []), [])
@@ -193,11 +320,41 @@ test("a state's panel lists every market it has, by office", () => {
     ['Democratic Senate primary (2027 special)']
   )
   assert.deepEqual(
-    statePanel('CA', races, primaries)[0].rows.map((r) => r.label),
+    statePanel('CA', races, primaries)
+      .find((s) => s.key === 'primaries')
+      ?.rows.map((r) => r.label),
     ['Senate primary, all parties']
   )
-  assert.equal(statePanel('AK', races, [])[0].rows[0].label, 'At-large')
-  assert.equal(statePanel('TN', races, [])[0].rows[0].label, 'Special election')
+  assert.equal(
+    statePanel('AK', races, [])[0].rows[0].label,
+    'At-large'
+  )
+  assert.equal(
+    statePanel('TN', races, [])[0].rows[0].label,
+    'Special election'
+  )
+})
+
+test('a clicked place opens the race behind its color', () => {
+  assert.equal(focusRowKey(view({}), 'PA'), 'P-PA')
+  assert.equal(focusRowKey(view({}), 'ME-2'), 'P-ME-2')
+  assert.equal(focusRowKey(view({ mode: 'senate' }), 'PA'), 'S-PA')
+  assert.equal(focusRowKey(view({ mode: 'house' }), 'PA-12'), 'H-PA-12')
+  assert.equal(focusRowKey(view({ mode: 'house' }), 'AK-0'), 'H-AK-0')
+  // Its keys are the panel's.
+  const rows = statePanel('PA', races, primaries).flatMap((s) => s.rows)
+  assert.ok(rows.some((r) => r.key === 'H-PA-12'))
+  assert.ok(rows.some((r) => r.key === 'S-PA'))
+})
+
+test('places are named for people', () => {
+  assert.equal(placeTitle('PA'), 'Pennsylvania')
+  assert.equal(placeTitle('PA-1'), "Pennsylvania's 1st district")
+  assert.equal(placeTitle('NY-12'), "New York's 12th district")
+  assert.equal(placeTitle('AK-0'), 'Alaska at-large')
+  assert.equal(placeTitle('ME', true), 'Maine statewide')
+  assert.equal(placeTitle('PR'), 'Puerto Rico')
+  assert.equal(placeTitle('DA'), 'Democrats Abroad')
 })
 
 test('fills read as odds, leaders and calls', () => {
@@ -214,21 +371,4 @@ test('fills read as odds, leaders and calls', () => {
     'Won: Padilla'
   )
   assert.equal(describeFill({ kind: 'open' }), 'No leader yet')
-})
-
-test('the closest contests come first; called races are over', () => {
-  const fills = mapFills(view({ mode: 'senate' }), races, primaries)
-  assert.deepEqual(closestPlaces(fills), ['TN'])
-  const ev = mapFills(view({}), races, primaries)
-  assert.deepEqual(closestPlaces(ev, 2), ['PA', 'ME-2'])
-})
-
-test('the House cartogram has every district once', () => {
-  const hexes = (hexFile as { hexes: { state: string; district: number }[] })
-    .hexes
-  assert.equal(hexes.length, 435)
-  const keys = new Set(hexes.map((h) => `${h.state}-${h.district}`))
-  assert.equal(keys.size, 435)
-  // At-large districts are 0, as on the race board.
-  assert.ok(keys.has('AK-0') && keys.has('WY-0'))
 })

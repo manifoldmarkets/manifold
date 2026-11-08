@@ -1,8 +1,10 @@
 import clsx from 'clsx'
 import Link from 'next/link'
+import { useState } from 'react'
 
 import { formatOdds } from 'web/components/usa-map/election-display'
 import { DEM_COLOR, REP_COLOR } from 'web/components/usa-map/state-election-map'
+import { MAP_VIEW_EVENT } from 'web/lib/politics/election-map'
 import { placeName } from 'web/lib/politics/official-markets'
 import {
   EARLY_STATES,
@@ -13,7 +15,11 @@ import {
 
 // State by state, who leads (or won) each party's primary, early states
 // first. Presidential primaries in one table, Senate and governor primaries
-// in another once their markets exist. Every cell links to its market.
+// in another once their markets exist. Every cell links to its market. Each
+// table starts with five rows and opens five more at a time; the map's
+// Primaries view has every state at once.
+
+const STEP = 5
 
 const cellUrl = (cell: PrimaryCell) =>
   `/${cell.u ?? 'ManifoldPolitics'}/${cell.s}`
@@ -37,6 +43,19 @@ export function PrimariesBoard(props: { rows: PrimaryRow[] }) {
           showOffice
         />
       )}
+      <a
+        href="#map"
+        className="text-primary-700 w-fit text-sm font-medium hover:underline"
+        onClick={() => {
+          window.dispatchEvent(
+            new CustomEvent(MAP_VIEW_EVENT, {
+              detail: { mode: 'primary', office: 'P' },
+            })
+          )
+        }}
+      >
+        Every state on the map →
+      </a>
     </div>
   )
 }
@@ -47,6 +66,9 @@ function PrimaryTable(props: {
   showOffice: boolean
 }) {
   const { caption, rows, showOffice } = props
+  const [shown, setShown] = useState(STEP)
+  const visible = rows.slice(0, shown)
+  const left = rows.length - shown
   return (
     <div className="bg-canvas-0 border-ink-200 overflow-hidden rounded-xl border">
       <table className="w-full table-fixed border-collapse text-sm">
@@ -67,10 +89,12 @@ function PrimaryTable(props: {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, i) => {
+          {visible.map((row, i) => {
             const early = row.o === 'P' && EARLY_STATES.includes(row.st)
             const lastEarly =
-              early && !EARLY_STATES.includes(rows[i + 1]?.st ?? '')
+              early &&
+              i < visible.length - 1 &&
+              !EARLY_STATES.includes(rows[i + 1]?.st ?? '')
             return (
               <tr
                 key={row.k}
@@ -116,6 +140,33 @@ function PrimaryTable(props: {
           })}
         </tbody>
       </table>
+      {rows.length > STEP && (
+        <div className="border-ink-200 flex items-center justify-between gap-3 border-t px-3 py-2 text-sm sm:px-4">
+          <span className="text-ink-600">
+            {Math.min(shown, rows.length)} of {rows.length}
+          </span>
+          <span className="flex gap-4">
+            {shown > STEP && (
+              <button
+                type="button"
+                className="text-ink-600 hover:text-ink-900"
+                onClick={() => setShown(STEP)}
+              >
+                Show fewer
+              </button>
+            )}
+            {left > 0 && (
+              <button
+                type="button"
+                className="text-primary-700 font-medium hover:underline"
+                onClick={() => setShown(shown + STEP)}
+              >
+                Show {Math.min(STEP, left)} more
+              </button>
+            )}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

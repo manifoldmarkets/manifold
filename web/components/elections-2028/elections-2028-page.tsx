@@ -46,7 +46,6 @@ import { PartyOddsBar } from './party-odds-bar'
 import { PrimariesBoard } from './primaries-board'
 import { RaceBoard } from './race-board'
 import { RaceCard, RangePicker, useRange } from './race-section'
-import { RoadTo270 } from './road-to-270'
 import { Swings2026 } from './swings-2026'
 
 // /election from the 2026 midterms to the 2030 ones: the 2028 race, every
@@ -176,7 +175,7 @@ export function Elections2028Page(props: Elections2028PageProps) {
       <SectionInView section="2028 map" className="flex flex-col gap-3">
         <SectionHeader
           id="map"
-          subtitle="Every state's races and primaries. Pick a race, then a state for all its markets."
+          subtitle="Every race by our odds, and the road to 270. Hover a state for its odds; click it for every market there."
         >
           The map
         </SectionHeader>
@@ -185,6 +184,8 @@ export function Elections2028Page(props: Elections2028PageProps) {
           primaries={primaries}
           offYear={offYear}
           defaultMode={phase === 'primaries' ? 'primary' : 'president'}
+          model={model}
+          partyContract={partyContract}
         />
       </SectionInView>
     ),
@@ -322,18 +323,6 @@ export function Elections2028Page(props: Elections2028PageProps) {
             />
           )}
         </div>
-      </SectionInView>
-    ),
-
-    roadTo270: model && (
-      <SectionInView section="road to 270" className="flex flex-col gap-3">
-        <SectionHeader
-          id="road-to-270"
-          subtitle="Our electoral college model, built from Manifold's state-by-state markets."
-        >
-          The road to 270
-        </SectionHeader>
-        <RoadTo270 model={model} partyContract={partyContract} />
       </SectionInView>
     ),
 
