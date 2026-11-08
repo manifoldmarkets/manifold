@@ -66,7 +66,7 @@ import { OffYearMap } from './off-year-map'
 import { PartyOddsBar } from './party-odds-bar'
 import { PrimariesOverview } from './primaries-overview'
 import { RaceBoard } from './race-board'
-import { RaceCard, RangePicker, useRange } from './race-section'
+import { RaceCard, RangeKey, RangePicker, useRange } from './race-section'
 import { Swings2026 } from './swings-2026'
 
 // /election from the 2026 midterms to the 2030 ones: the 2028 race, every
@@ -131,6 +131,22 @@ function SectionHeader(props: {
         )}
       </div>
       {props.action}
+    </div>
+  )
+}
+
+// The charts' time range, above each row of charts: one setting for all.
+function ChartRange(props: {
+  value: RangeKey
+  onChange: (value: RangeKey) => void
+  className?: string
+}) {
+  return (
+    <div
+      className={clsx('flex items-center justify-end gap-2', props.className)}
+    >
+      <span className="text-ink-500 text-xs">Chart range</span>
+      <RangePicker value={props.value} onChange={props.onChange} />
     </div>
   )
 }
@@ -243,7 +259,6 @@ export function Elections2028Page(props: Elections2028PageProps) {
               ? 'Who won the White House, and the odds that got them there.'
               : 'Who wins the White House, and who gets nominated.'
           }
-          action={<RangePicker value={range} onChange={setRange} />}
         />
         {partyContract && (
           <div className="bg-canvas-0 border-ink-200 rounded-xl border px-4 py-3">
@@ -254,8 +269,20 @@ export function Elections2028Page(props: Elections2028PageProps) {
             />
           </div>
         )}
+        {/* One range for every chart, offered above each row of them. */}
         {president && (
-          <RaceCard chart={president} now={now} range={range} variant="hero" />
+          <div className="flex flex-col gap-2">
+            <ChartRange value={range} onChange={setRange} />
+            <RaceCard
+              chart={president}
+              now={now}
+              range={range}
+              variant="hero"
+            />
+          </div>
+        )}
+        {nominees.length > 0 && (
+          <ChartRange value={range} onChange={setRange} className="-mb-2" />
         )}
         {nominees.length > 0 && (
           <div className="grid gap-4 md:grid-cols-2">

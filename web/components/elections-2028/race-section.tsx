@@ -20,6 +20,8 @@ import { buildChartSeries, ChartSeries } from './race-series'
 const DAY = 24 * 60 * 60 * 1000
 
 export const RANGES = {
+  '1D': DAY,
+  '7D': 7 * DAY,
   '1M': 30 * DAY,
   '3M': 91 * DAY,
   '6M': 182 * DAY,

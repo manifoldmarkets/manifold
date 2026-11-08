@@ -11,10 +11,12 @@ export type TimePoint = [time: number, prob: number]
 const HOUR = 60 * 60 * 1000
 const DAY = 24 * HOUR
 
-// Bucket width by how long ago a point is: recent moves stay sharp, years-old
-// history costs a few points a month.
+// Bucket width by how long ago a point is: recent moves stay sharp (hourly
+// for the last day, so the 1D range draws a real line), years-old history
+// costs a few points a month.
 export function bucketWidth(age: number): number {
-  if (age <= 7 * DAY) return 6 * HOUR
+  if (age <= DAY) return HOUR
+  if (age <= 7 * DAY) return 3 * HOUR
   if (age <= 45 * DAY) return DAY
   if (age <= 200 * DAY) return 3 * DAY
   if (age <= 800 * DAY) return 7 * DAY

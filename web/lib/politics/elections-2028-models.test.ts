@@ -86,13 +86,17 @@ test('Other and joke answers are not candidates', () => {
 
 test('history thinning keeps the first and last points and bucket medians', () => {
   const now = 1_000 * DAY
-  // A point every hour for the last 3 days: 6-hour buckets keep ~1 in 6.
+  // A point every hour for the last 3 days: the last day keeps them hourly
+  // (the 1D range), the two days before keep ~1 in 3 (3-hour buckets).
   const pts: TimePoint[] = []
   for (let h = 72; h >= 0; h--) pts.push([now - h * 3600_000, h / 100])
   const thin = thinHistory(pts, now)
   assert.deepEqual(thin[0], pts[0])
   assert.deepEqual(thin[thin.length - 1], pts[pts.length - 1])
-  assert.ok(thin.length < pts.length / 3, `${thin.length} points`)
+  const lastDay = thin.filter(([t]) => t > now - DAY).length
+  const before = thin.filter(([t]) => t <= now - DAY).length
+  assert.ok(lastDay >= 22, `${lastDay} points in the last day`)
+  assert.ok(before <= 48 / 3 + 2, `${before} points before it`)
   // Sorted, no duplicates.
   for (let i = 1; i < thin.length; i++) assert.ok(thin[i][0] > thin[i - 1][0])
   // A bucket's value is the median of its trades, so a one-trade spike
@@ -124,6 +128,9 @@ test('history thinning keeps the first and last points and bucket medians', () =
 
 test('bucket widths widen with age', () => {
   assert.ok(bucketWidth(DAY) < bucketWidth(30 * DAY))
+  // The 1D range needs hourly points; the 7D range a few a day.
+  assert.equal(bucketWidth(DAY / 2), 60 * 60 * 1000)
+  assert.ok(bucketWidth(3 * DAY) <= 3 * 60 * 60 * 1000)
   assert.ok(bucketWidth(30 * DAY) < bucketWidth(100 * DAY))
   assert.ok(bucketWidth(100 * DAY) < bucketWidth(1000 * DAY))
 })

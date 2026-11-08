@@ -57,6 +57,7 @@ const DAY = 24 * 60 * 60 * 1000
 
 function formatTick(t: number, span: number) {
   const d = new Date(t)
+  if (span <= 2 * DAY) return d.toLocaleTimeString('en-US', { hour: 'numeric' })
   if (span <= 120 * DAY)
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   if (span <= 3 * 365 * DAY)
@@ -70,7 +71,11 @@ function formatHoverDate(t: number, span: number) {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
-    ...(span <= 10 * DAY ? { hour: 'numeric' } : {}),
+    ...(span <= 2 * DAY
+      ? { hour: 'numeric', minute: '2-digit' }
+      : span <= 10 * DAY
+      ? { hour: 'numeric' }
+      : {}),
   })
 }
 
