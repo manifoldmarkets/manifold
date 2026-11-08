@@ -115,8 +115,10 @@ export const flipped = (race: BoardRace) =>
 // A market resolved as a whole names its winning answer in `resolution` and
 // leaves every answer's pool (so its price) as it was, so prices can't be
 // trusted for the call: a race resolved Democratic at D 80 / R 19 is still
-// D. A yes/no market's YES is the party `yesParty` says. Undefined while
-// open, and for a cancelled market or one resolved to a mix (MKT).
+// D. A yes/no market's YES is the party `yesParty` says; without it a yes/no
+// market isn't called (a "Will the Democrat win" framing would flip a
+// guess). Undefined while open, and for a cancelled market or one resolved
+// to a mix (MKT).
 export function resolvedParty(
   market: {
     isResolved?: boolean
@@ -125,12 +127,13 @@ export function resolvedParty(
     answers?: { id: string; text: string; resolution?: string }[]
   },
   partyOfAnswer: (text: string) => 'D' | 'R' | 'O',
-  yesParty: 'D' | 'R' = 'R'
+  yesParty?: 'D' | 'R'
 ): 'D' | 'R' | 'O' | undefined {
   const { isResolved, resolution } = market
   if (!isResolved || !resolution || resolution === 'CANCEL') return undefined
   if (resolution === 'MKT') return undefined
   if (market.outcomeType === 'BINARY') {
+    if (!yesParty) return undefined
     if (resolution === 'YES') return yesParty
     if (resolution === 'NO') return yesParty === 'D' ? 'R' : 'D'
     return undefined

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { useIsPageVisible } from './use-page-visible'
 
@@ -15,6 +15,8 @@ export function useFreshPageProps<P extends object>(
   intervalMs: number
 ): P {
   const [props, setProps] = useState(initial)
+  // When the props in hand were fetched (the page load, at first).
+  const fetchedAt = useRef(Date.now())
   useEffect(() => setProps(initial), [initial])
   const visible = useIsPageVisible()
   useEffect(() => {
@@ -29,11 +31,16 @@ export function useFreshPageProps<P extends object>(
         const r = await fetch(`/_next/data/${buildId}${dataPath}.json`)
         if (!r.ok) return
         const json = (await r.json()) as { pageProps?: P }
-        if (!cancelled && json.pageProps) setProps(json.pageProps)
+        if (!cancelled && json.pageProps) {
+          fetchedAt.current = Date.now()
+          setProps(json.pageProps)
+        }
       } catch {
         // Offline or a new deploy: keep what we have.
       }
     }
+    // A tab coming back after a while starts from fresh props.
+    if (Date.now() - fetchedAt.current >= intervalMs) refresh()
     const timer = setInterval(refresh, intervalMs)
     return () => {
       cancelled = true

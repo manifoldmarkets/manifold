@@ -9,6 +9,7 @@ import {
   contractPath,
   CPMMMultiContract,
   isMultiCpmm,
+  tradingAllowed,
 } from 'common/contract'
 import { BetDialog } from 'web/components/bet/bet-dialog'
 import { TradeModal, TradeTicket } from 'web/components/bet/trade-ticket'
@@ -91,7 +92,7 @@ export function QuickBet(props: {
     <TradeModal
       open
       setOpen={(open) => !open && onClose()}
-      title={target.contract?.question ?? 'Place a bet'}
+      title={target.contract?.question ?? 'this market'}
     >
       {target.contract ? (
         <MultiBet
@@ -146,6 +147,26 @@ function YesNoBet(props: {
   trackingName: string
 }) {
   const contract = useLiveContract(props.initial)
+  // BetDialog doesn't check: a market closed since the page was built says
+  // so, as the trade ticket does for an answer.
+  if (!tradingAllowed(contract))
+    return (
+      <TradeModal
+        open
+        setOpen={(open) => !open && props.onClose()}
+        title={contract.question}
+      >
+        <div className="flex flex-col gap-3 py-2">
+          <h2 className="text-ink-1000 pr-7 text-lg font-semibold leading-snug">
+            {contract.question}
+          </h2>
+          <p className="text-ink-600 text-sm">
+            Trading has closed on this market.
+          </p>
+          <MarketLink href={contractPath(contract)} />
+        </div>
+      </TradeModal>
+    )
   return (
     <BetDialog
       contract={contract as BinaryContract}
