@@ -39,6 +39,8 @@ export function Swings2026(props: { swings: Swing2026[] }) {
                     creator: s.creatorUsername,
                     party:
                       s.side === 'D' || s.side === 'R' ? s.side : undefined,
+                    outcome:
+                      s.side === 'YES' || s.side === 'NO' ? s.side : undefined,
                   })
                 }
                 className={clsx(

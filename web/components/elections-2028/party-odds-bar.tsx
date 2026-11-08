@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
 
 import { Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
@@ -17,8 +16,7 @@ import {
   REP_COLOR,
   REP_DARK_HEX,
 } from 'web/components/usa-map/state-election-map'
-import { track } from 'web/lib/service/analytics'
-import { AnswerBetModal } from './answer-bet-modal'
+import { useQuickBet } from './quick-bet'
 
 const DEM_LOGO = '/politics-party/democrat_symbol.png'
 const REP_LOGO = '/politics-party/republican_symbol.png'
@@ -35,7 +33,7 @@ export function PartyOddsBar(props: {
 }) {
   const { label, trackingName, size = 'lg' } = props
   const contract = useLiveContract(props.contract)
-  const [betAnswer, setBetAnswer] = useState<Answer | undefined>()
+  const { open, dialog } = useQuickBet(trackingName)
   const probs = getPartyProbs(contract)
   if (!probs || !isMultiCpmm(contract)) return null
   const { dem, rep, other } = probs
@@ -45,10 +43,8 @@ export function PartyOddsBar(props: {
     (a) => !isDemocraticAnswer(a.text) && !isRepublicanAnswer(a.text)
   )
   const total = dem + rep + other || 1
-  const bet = (answer: Answer | undefined, party: string) => {
-    if (!answer) return
-    track('bet intent', { location: trackingName, party })
-    setBetAnswer(answer)
+  const bet = (answer: Answer | undefined) => {
+    if (answer) open({ contract, answerId: answer.id })
   }
   const big = size === 'lg'
 
@@ -90,7 +86,7 @@ export function PartyOddsBar(props: {
           {big && otherAnswer && (
             <button
               type="button"
-              onClick={() => bet(otherAnswer, 'O')}
+              onClick={() => bet(otherAnswer)}
               className="text-ink-500 hover:text-ink-800 text-xs hover:underline"
             >
               Other {formatOdds(getAnswerProbability(contract, otherAnswer.id))}
@@ -110,7 +106,7 @@ export function PartyOddsBar(props: {
           name="Democrats"
           prob={dem}
           big={big}
-          onBet={demAnswer ? () => bet(demAnswer, 'D') : undefined}
+          onBet={demAnswer ? () => bet(demAnswer) : undefined}
         />
         {big && (
           <PartyBetButton
@@ -118,7 +114,7 @@ export function PartyOddsBar(props: {
             fullLabel="Bet Democrats"
             color={DEM_DARK_HEX}
             disabled={!demAnswer}
-            onClick={() => bet(demAnswer, 'D')}
+            onClick={() => bet(demAnswer)}
             className="hidden sm:block"
           />
         )}
@@ -129,7 +125,7 @@ export function PartyOddsBar(props: {
             fullLabel="Bet Republicans"
             color={REP_DARK_HEX}
             disabled={!repAnswer}
-            onClick={() => bet(repAnswer, 'R')}
+            onClick={() => bet(repAnswer)}
             className="hidden sm:block"
           />
         )}
@@ -139,7 +135,7 @@ export function PartyOddsBar(props: {
           prob={rep}
           big={big}
           right
-          onBet={repAnswer ? () => bet(repAnswer, 'R') : undefined}
+          onBet={repAnswer ? () => bet(repAnswer) : undefined}
         />
       </div>
       {big && (
@@ -148,21 +144,17 @@ export function PartyOddsBar(props: {
             label="Bet Democrats"
             color={DEM_DARK_HEX}
             disabled={!demAnswer}
-            onClick={() => bet(demAnswer, 'D')}
+            onClick={() => bet(demAnswer)}
           />
           <PartyBetButton
             label="Bet Republicans"
             color={REP_DARK_HEX}
             disabled={!repAnswer}
-            onClick={() => bet(repAnswer, 'R')}
+            onClick={() => bet(repAnswer)}
           />
         </div>
       )}
-      <AnswerBetModal
-        contract={contract}
-        answer={betAnswer}
-        onClose={() => setBetAnswer(undefined)}
-      />
+      {dialog}
     </div>
   )
 }
@@ -202,7 +194,7 @@ function PartyFigure(props: {
         height={big ? 28 : 20}
         className={clsx('object-contain', big ? 'h-7 w-7' : 'h-5 w-5')}
       />
-      <div className="flex flex-col leading-none">
+      <span className="flex flex-col leading-none">
         <span
           className={clsx(
             'text-ink-1000 font-semibold tabular-nums',
@@ -214,7 +206,7 @@ function PartyFigure(props: {
         <span className="text-ink-600 mt-0.5 hidden text-xs sm:block">
           {name}
         </span>
-      </div>
+      </span>
     </Tag>
   )
 }

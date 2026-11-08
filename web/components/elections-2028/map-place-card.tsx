@@ -482,8 +482,9 @@ function LiveRaceMarket(props: { initial: Contract; open: ReactNode }) {
 }
 
 // The market's stored copy, by slug: enough to find it and show it while the
-// live one loads. `error` when it can't be read or doesn't exist.
-function useContractBySlug(slug: string) {
+// live one loads. `error` when it can't be read or doesn't exist. Also the
+// page's bet dialog (quick-bet.tsx) for markets it knows only by slug.
+export function useContractBySlug(slug: string) {
   const [contract, setContract] = useState<Contract | undefined>()
   const [error, setError] = useState(false)
   useEffect(() => {

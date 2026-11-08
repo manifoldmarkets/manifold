@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { sortBy } from 'lodash'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
 import {
@@ -11,7 +11,6 @@ import {
   CPMMMultiContract,
   isMultiCpmm,
 } from 'common/contract'
-import { getContracts } from 'common/supabase/contracts'
 import { AnswerCpmmBetPanel } from 'web/components/answers/answer-bet-panel'
 import { BuyPanel } from 'web/components/bet/bet-panel'
 import {
@@ -28,7 +27,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useLiveContractWithStatus } from 'web/hooks/use-contract'
 import { lookupCandidate } from 'web/lib/politics/candidates'
 import { track } from 'web/lib/service/analytics'
-import { db } from 'web/lib/supabase/db'
+import { useContractBySlug } from './map-place-card'
 
 // Betting from anywhere on /election without leaving it. A click on a face,
 // a line, a cell or a chip opens this dialog on what was clicked: a yes/no
@@ -52,7 +51,15 @@ export type BetTarget = {
   answerId?: string
   answerText?: string
   party?: 'D' | 'R'
+  // A yes/no market's side, where the click stood for one (a ballot
+  // measure's No). From `party`, a race's yes/no market reads YES as the
+  // Republican winning (as getPartyProbs does), so D opens on NO.
+  outcome?: 'YES' | 'NO'
 }
+
+// Give up waiting for the live market after this long and offer the market
+// page instead of a spinner (a market unlisted since the page was built).
+const LOAD_TIMEOUT_MS = 10_000
 
 const PICKER_ANSWERS = 10
 
@@ -66,6 +73,7 @@ export function QuickBet(props: {
     <Modal
       open={target !== undefined}
       setOpen={(open) => !open && onClose()}
+      ariaLabel="Place a bet"
       className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}
     >
       {target &&
@@ -93,14 +101,17 @@ export function QuickBet(props: {
 // Opens a target and remembers it: the state and the dialog for a section.
 export function useQuickBet(trackingName: string) {
   const [target, setTarget] = useState<BetTarget>()
-  const open = (t: BetTarget) => {
-    track('bet intent', {
-      location: trackingName,
-      contractId: t.contract?.id,
-      slug: t.slug ?? t.contract?.slug,
-    })
-    setTarget(t)
-  }
+  const open = useCallback(
+    (t: BetTarget) => {
+      track('bet intent', {
+        location: trackingName,
+        contractId: t.contract?.id,
+        slug: t.slug ?? t.contract?.slug,
+      })
+      setTarget(t)
+    },
+    [trackingName]
+  )
   const dialog = (
     <QuickBet
       target={target}
@@ -118,21 +129,7 @@ function SlugBet(props: {
   trackingName: string
 }) {
   const { slug, target } = props
-  const [contract, setContract] = useState<Contract>()
-  const [error, setError] = useState(false)
-  useEffect(() => {
-    let cancelled = false
-    getContracts(db, [slug], 'slug')
-      .then(([c]) => {
-        if (cancelled) return
-        if (c) setContract(c)
-        else setError(true)
-      })
-      .catch(() => !cancelled && setError(true))
-    return () => {
-      cancelled = true
-    }
-  }, [slug])
+  const { contract, error } = useContractBySlug(slug)
   if (error)
     return (
       <div className="flex flex-col gap-3 py-2">
@@ -155,15 +152,32 @@ function LiveBet(props: {
   // The answer being bet on; undefined while picking.
   const [picked, setPicked] = useState<string | undefined>(target.answerId)
   const [choosing, setChoosing] = useState(false)
+  const [timedOut, setTimedOut] = useState(false)
+  useEffect(() => {
+    if (hasLoaded) return
+    const timer = setTimeout(() => setTimedOut(true), LOAD_TIMEOUT_MS)
+    return () => clearTimeout(timer)
+  }, [hasLoaded])
   const href = contractPath(contract)
 
-  if (!hasLoaded) return <LoadingIndicator className="py-8" />
+  if (!hasLoaded)
+    return timedOut ? (
+      <div className="flex flex-col gap-3 py-2">
+        <h2 className="text-ink-1000 font-semibold">{contract.question}</h2>
+        <p className="text-ink-700 text-sm">
+          Couldn&apos;t load this market here.
+        </p>
+        <MarketLink href={href} />
+      </div>
+    ) : (
+      <LoadingIndicator className="py-8" />
+    )
   const closed =
     contract.isResolved || (contract.closeTime ?? Infinity) < Date.now()
   if (closed)
     return (
       <div className="flex flex-col gap-3 py-2">
-        <p className="text-ink-1000 font-semibold">{contract.question}</p>
+        <h2 className="text-ink-1000 font-semibold">{contract.question}</h2>
         <p className="text-ink-700 text-sm">This market is closed.</p>
         <MarketLink href={href} />
       </div>
@@ -176,15 +190,17 @@ function LiveBet(props: {
           contract={contract as BinaryContract}
           location={trackingName}
           inModal
-          initialOutcome="YES"
+          initialOutcome={
+            target.outcome ?? (target.party === 'D' ? 'NO' : 'YES')
+          }
           alwaysShowOutcomeSwitcher
           onBuySuccess={() => setTimeout(onClose, 500)}
           className="!px-0"
         >
           <div className="mb-4 flex flex-col gap-2">
-            <span className="text-ink-1000 text-lg font-semibold leading-snug">
+            <h2 className="text-ink-1000 text-lg font-semibold leading-snug">
               {contract.question}
-            </span>
+            </h2>
             <span className="text-ink-600 text-sm">
               {formatOdds(getDisplayProbability(contract as BinaryContract))}{' '}
               chance
@@ -198,7 +214,7 @@ function LiveBet(props: {
   if (!isMultiCpmm(contract))
     return (
       <div className="flex flex-col gap-3 py-2">
-        <p className="text-ink-1000 font-semibold">{contract.question}</p>
+        <h2 className="text-ink-1000 font-semibold">{contract.question}</h2>
         <MarketLink href={href} />
       </div>
     )
@@ -254,9 +270,9 @@ function LiveBet(props: {
   const ranked = sortBy(open, (a) => -getAnswerProbability(multi, a.id))
   return (
     <div className="flex flex-col gap-3">
-      <span className="text-ink-1000 text-lg font-semibold leading-snug">
+      <h2 className="text-ink-1000 text-lg font-semibold leading-snug">
         {multi.question}
-      </span>
+      </h2>
       <ul className="flex flex-col">
         {ranked.slice(0, PICKER_ANSWERS).map((a) => (
           <li key={a.id} className="border-ink-200 border-b last:border-b-0">

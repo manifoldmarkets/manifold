@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { useState } from 'react'
 import { sortBy } from 'lodash'
 
 import { getAnswerProbability } from 'common/calculate'
@@ -12,8 +11,7 @@ import {
   isCandidateAnswer,
   lookupCandidate,
 } from 'web/lib/politics/candidates'
-import { track } from 'web/lib/service/analytics'
-import { AnswerBetModal } from './answer-bet-modal'
+import { useQuickBet } from './quick-bet'
 import { CandidateAvatar, PhotoCredits } from './candidate-avatar'
 import { OTHER_PARTY_COLOR } from './race-series'
 
@@ -29,7 +27,7 @@ export function CandidateBars(props: {
 }) {
   const { title, subtitle, party, rows = 5, trackingName } = props
   const contract = useLiveContract(props.contract)
-  const [betId, setBetId] = useState<string | undefined>()
+  const { open, dialog } = useQuickBet(trackingName)
   if (!isMultiCpmm(contract)) return null
   const ranked = sortBy(
     contract.answers.filter((a) => isCandidateAnswer(a.text) && !a.resolution),
@@ -39,7 +37,6 @@ export function CandidateBars(props: {
     ...ranked.map((a) => getAnswerProbability(contract, a.id)),
     0.01
   )
-  const betAnswer = contract.answers.find((a) => a.id === betId)
 
   return (
     <div className="bg-canvas-0 border-ink-200 flex flex-col gap-3 rounded-xl border p-4">
@@ -71,10 +68,8 @@ export function CandidateBars(props: {
               <button
                 type="button"
                 className="hover:bg-canvas-50 -mx-1 flex w-[calc(100%+0.5rem)] items-center gap-2.5 rounded-lg px-1 py-0.5 text-left"
-                onClick={() => {
-                  track('bet intent', { location: trackingName })
-                  setBetId(a.id)
-                }}
+                aria-haspopup="dialog"
+                onClick={() => open({ contract, answerId: a.id })}
                 aria-label={`Bet on ${candidate.name}, ${formatOdds(p)}`}
               >
                 <CandidateAvatar candidate={candidate} size={30} party={who} />
@@ -101,11 +96,7 @@ export function CandidateBars(props: {
         })}
       </ol>
       <PhotoCredits candidates={ranked.map((a) => lookupCandidate(a.text))} />
-      <AnswerBetModal
-        contract={contract}
-        answer={betAnswer}
-        onClose={() => setBetId(undefined)}
-      />
+      {dialog}
     </div>
   )
 }
