@@ -2,18 +2,18 @@ import { ChevronDownIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { sortBy } from 'lodash'
 import Link from 'next/link'
-import { ReactNode, useEffect, useMemo, useState } from 'react'
+import { ReactNode, useMemo, useState } from 'react'
 
 import { Answer } from 'common/answer'
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
 import { Contract, isMultiCpmm } from 'common/contract'
-import { getContracts } from 'common/supabase/contracts'
 import { Button } from 'web/components/buttons/button'
 import { formatOdds, plural } from 'web/components/usa-map/election-display'
 import styles from 'web/components/usa-map/election-explorer.module.css'
 import { partyProbsToColor } from 'web/components/usa-map/state-election-map'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useLiveContractWithStatus } from 'web/hooks/use-contract'
+import { useContractBySlug } from 'web/hooks/use-contract-by-slug'
 import {
   describeFill,
   Fill,
@@ -31,7 +31,6 @@ import {
 } from 'web/lib/politics/election-map'
 import { PrimaryRow } from 'web/lib/politics/primaries'
 import { BoardRace } from 'web/lib/politics/race-board'
-import { db } from 'web/lib/supabase/db'
 import { track } from 'web/lib/service/analytics'
 import { AnswerBetModal } from './answer-bet-modal'
 import own from './election-map.module.css'
@@ -479,30 +478,6 @@ function LiveRaceMarket(props: { initial: Contract; open: ReactNode }) {
       />
     </div>
   )
-}
-
-// The market's stored copy, by slug: enough to find it and show it while the
-// live one loads. `error` when it can't be read or doesn't exist. Also the
-// page's bet dialog (quick-bet.tsx) for markets it knows only by slug.
-export function useContractBySlug(slug: string) {
-  const [contract, setContract] = useState<Contract | undefined>()
-  const [error, setError] = useState(false)
-  useEffect(() => {
-    let cancelled = false
-    setContract(undefined)
-    setError(false)
-    getContracts(db, [slug], 'slug')
-      .then(([c]) => {
-        if (cancelled) return
-        if (c) setContract(c)
-        else setError(true)
-      })
-      .catch(() => !cancelled && setError(true))
-    return () => {
-      cancelled = true
-    }
-  }, [slug])
-  return { contract, error }
 }
 
 function BinaryChance(props: { contract: Contract }) {

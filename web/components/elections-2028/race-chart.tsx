@@ -58,6 +58,14 @@ const DAY = 24 * 60 * 60 * 1000
 function formatTick(t: number, span: number) {
   const d = new Date(t)
   if (span <= 2 * DAY) return d.toLocaleTimeString('en-US', { hour: 'numeric' })
+  // A short range on a wide chart can tick twice a day: the hour tells the
+  // noon tick from the midnight one.
+  if (span <= 10 * DAY && (d.getHours() !== 0 || d.getMinutes() !== 0))
+    return d.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+    })
   if (span <= 120 * DAY)
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   if (span <= 3 * 365 * DAY)

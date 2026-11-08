@@ -25,9 +25,9 @@ import {
 } from 'web/components/usa-map/state-election-map'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useLiveContractWithStatus } from 'web/hooks/use-contract'
+import { useContractBySlug } from 'web/hooks/use-contract-by-slug'
 import { lookupCandidate } from 'web/lib/politics/candidates'
 import { track } from 'web/lib/service/analytics'
-import { useContractBySlug } from './map-place-card'
 
 // Betting from anywhere on /election without leaving it. A click on a face,
 // a line, a cell or a chip opens this dialog on what was clicked: a yes/no
