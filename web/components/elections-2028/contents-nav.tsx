@@ -130,9 +130,10 @@ function jump(ev: React.MouseEvent, e: ContentsEntry) {
 // passed a line near the top (a third of the screen, at most 160px, so a
 // short section that a jump lands on is the one lit). Above the first
 // heading, the first; at the bottom of the page, the last, whose heading a
-// short last section never lifts that high. On iOS phones the page scrolls inside
-// .page-scroll-container, not the window (layout/page.tsx), and scroll
-// events don't bubble, so the listener captures them on the document.
+// short last section never lifts that high. On iOS phones the page scrolls
+// inside .page-scroll-container, not the window (layout/page.tsx), and
+// scroll events don't bubble, so the listener captures them on the
+// document.
 function useSectionInView(ids: string[]) {
   const [current, setCurrent] = useState<string | undefined>()
   useEffect(() => {
