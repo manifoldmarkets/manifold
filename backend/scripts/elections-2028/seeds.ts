@@ -590,7 +590,9 @@ export const HOUSE_SEAT_BUCKETS: Bucket[] = [
 // the House's is 217.5.
 export const SEAT_LINE = { senate: 50, house: 217.5 } as const
 
-// Seats ~ Normal(μ, σ) with μ placed so P(past the line) = pDem.
+// Seats ~ Normal(μ, σ) with μ placed so P(past the line) = pDem. Counted
+// in whole seats (51 or more plus half of 50) and floored at 1% an answer,
+// the majority comes out within a point of pDem (90% → 89.5%).
 export const seatMean = (
   chamber: keyof typeof SEAT_LINE,
   pDem: number,

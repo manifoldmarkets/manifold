@@ -310,11 +310,11 @@ const seatsDescription = (chamber: Chamber, year: BopCycle) =>
   chamber === 'senate'
     ? desc(
         `Resolves to the range containing the number of senators in the Democratic caucus when the ${CONGRESS[year]} Congress convenes in January ${CONVENES[year]}, after the ${electionDay(year)} elections: Democrats, and independents who caucus with them. Every seat counts, not only those up in ${year}.`,
-        'A seat still undecided then (a recount or runoff) counts for the party that wins it. A seat vacant for any other reason counts for the party of the senator who last held it.'
+        'A seat still undecided then (a recount or runoff) counts with the caucus its winner joins. A seat vacant for any other reason counts with the caucus of the senator who last held it.'
       )
     : desc(
-        `Resolves to the range containing the number of House seats Democrats win in the ${electionDay(year)} elections, per certified results, runoffs included. Independents count with the party they caucus with when the ${CONGRESS[year]} Congress convenes in January ${CONVENES[year]}.`,
-        'A seat still undecided then (a recount or runoff) counts once it is decided.'
+        `Resolves to the range containing the number of seats in the ${CONGRESS[year]} Congress that Democrats win in the ${electionDay(year)} elections, per certified results, runoffs included. Independents count with the party they caucus with when that Congress convenes in January ${CONVENES[year]}. Special elections for the rest of a term in the outgoing Congress don't count.`,
+        'A seat still undecided then (a recount or runoff) counts once it is decided, with the caucus its winner joins.'
       )
 
 const seatCount = (

@@ -1,3 +1,4 @@
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { Contract } from 'common/contract'
 import { formatOdds } from 'web/components/usa-map/election-display'
 import {
@@ -9,10 +10,10 @@ import { OddsStrip, StripFlip } from './odds-strip'
 
 // How many seats each party holds after an election, one strip per chamber
 // (the "How many Senate seats will Democrats hold" and "How many House seats
-// will Democrats win" markets). Both count the Democrats'; one toggle, shared
-// by the two strips, reads them from the Republicans' side instead (100 or
-// 435 minus each range). A 50–50 Senate is neither party's: grey, with the
-// line at 51.
+// will Democrats win" markets). Both count the Democrats'; one toggle, on the
+// first strip, reads both from the Republicans' side instead (100 or 435
+// minus each range). A 50–50 Senate is neither party's: grey, with the line
+// at 51.
 
 export function SeatStrips(props: {
   senate?: Contract
@@ -20,8 +21,12 @@ export function SeatStrips(props: {
   year: number
 }) {
   const { senate, house, year } = props
+  // One reading for both strips; the toggle sits on the first of them.
+  const [flipped, setFlipped] = usePersistentInMemoryState(
+    false,
+    `election-seat-strips-flip-${year}`
+  )
   if (!senate && !house) return null
-  const flipKey = `seats-${year}`
   return (
     <div className="bg-canvas-0 border-ink-200 flex flex-col gap-5 rounded-xl border p-4">
       {senate && (
@@ -33,7 +38,8 @@ export function SeatStrips(props: {
           thresholdLabel="51+"
           summary={(b) => <SenateSummary buckets={b} />}
           flip={senateFlip(year)}
-          flipKey={flipKey}
+          flipped={flipped}
+          onFlip={setFlipped}
         />
       )}
       {house && (
@@ -44,7 +50,8 @@ export function SeatStrips(props: {
           thresholdLabel="218+"
           summary={(b) => <HouseSummary buckets={b} />}
           flip={houseFlip(year)}
-          flipKey={flipKey}
+          flipped={flipped}
+          onFlip={senate ? undefined : setFlipped}
         />
       )}
     </div>
@@ -89,20 +96,20 @@ const TOGGLE: [string, string] = ['Democrats', 'Republicans']
 
 const senateFlip = (year: number): StripFlip => ({
   toggle: TOGGLE,
-  toggleLabel: 'Whose Senate seats',
+  toggleLabel: 'Whose seats',
   title: `Republican Senate seats after ${year}`,
   thresholdLabel: '51+',
   buckets: (b) => otherNominee(b, 100, 51, 50),
   summary: (b) => <SenateSummary buckets={b} />,
   footnote:
-    '100 minus the Democrats’ (with the independents who caucus with them), from the same market.',
+    '100 minus the Democrats’ (with the independents who caucus with them), from the same market, assuming every senator caucuses with one of the two parties.',
   note: (shown, answer) =>
     `Republicans holding ${shown.text} seats is the same outcome as Democrats holding ${answer.text}, so this bets on that answer.`,
 })
 
 const houseFlip = (year: number): StripFlip => ({
   toggle: TOGGLE,
-  toggleLabel: 'Whose House seats',
+  toggleLabel: 'Whose seats',
   title: `Republican House seats won in ${year}`,
   thresholdLabel: '218+',
   buckets: (b) => otherNominee(b, 435, 218),

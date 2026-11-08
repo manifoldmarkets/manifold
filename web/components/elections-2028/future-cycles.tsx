@@ -242,7 +242,7 @@ function Cycles(props: {
               House then. Click a cell to bet on who controls Washington after
               that election.
               {seatRows.length > 0 &&
-                ' Seats: the middle of the range the market expects, for the party it puts in the majority.'}
+                ' Seats: the middle of the range the market expects, for the party it puts in the majority (Republicans’ as the total minus the Democrats’).'}
             </p>
           )}
         </div>
