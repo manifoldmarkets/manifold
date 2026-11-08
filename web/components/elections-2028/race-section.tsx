@@ -2,15 +2,15 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 
-import { contractPath, MultiContract } from 'common/contract'
+import { contractPath, CPMMMultiContract, MultiContract } from 'common/contract'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { TradeDialog } from 'web/components/bet/trade-ticket'
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { formatOdds } from 'web/components/usa-map/election-display'
 import { useLiveContractWithStatus } from 'web/hooks/use-contract'
 import type { RaceChart as RaceChartData } from 'web/lib/politics/elections-2028'
 import { CHART_SERIES } from 'web/lib/politics/elections-2028-config'
 import { track } from 'web/lib/service/analytics'
-import { AnswerBetModal } from './answer-bet-modal'
 import { PhotoCredits } from './candidate-avatar'
 import { RaceChart } from './race-chart'
 import styles from './race-chart.module.css'
@@ -159,11 +159,18 @@ export function RaceCard(props: {
         candidates={series.slice(0, hero ? 8 : 5).map((s) => s.candidate)}
         className="mt-2"
       />
-      <AnswerBetModal
-        contract={contract}
-        answer={betAnswer}
-        onClose={() => setBetId(undefined)}
-      />
+      {betAnswer && (
+        <TradeDialog
+          contract={contract as CPMMMultiContract}
+          multiProps={{ answers: contract.answers, answerToBuy: betAnswer }}
+          open
+          setOpen={(open) => !open && setBetId(undefined)}
+          title={betAnswer.text}
+          question={contract.question}
+          initialOutcome="YES"
+          trackingLocation={`election 2028 ${chart.key} chart`}
+        />
+      )}
     </div>
   )
 }
