@@ -70,7 +70,7 @@ function OffYear(props: { contracts: Contract[]; world: Contract[] }) {
       const y = yearIn(c.question)
       return y ? [y] : []
     }),
-  ]).sort()
+  ]).sort((a, b) => a - b)
   const [picked, setPicked] = useState<number>()
   const year =
     picked !== undefined && years.includes(picked) ? picked : years[0]
