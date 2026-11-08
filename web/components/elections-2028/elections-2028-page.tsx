@@ -149,7 +149,7 @@ function tippingRows(contract: Contract): OddsItem[] {
       key: a.id,
       label: a.text,
       p,
-      href: contractPath(contract),
+      bet: { contract, answerId: a.id },
     }))
 }
 

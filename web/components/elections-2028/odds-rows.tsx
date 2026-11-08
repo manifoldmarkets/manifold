@@ -1,21 +1,16 @@
 import clsx from 'clsx'
-import Link from 'next/link'
 
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
-import {
-  BinaryContract,
-  Contract,
-  contractPath,
-  isMultiCpmm,
-} from 'common/contract'
+import { BinaryContract, Contract, isMultiCpmm } from 'common/contract'
 import { formatOdds } from 'web/components/usa-map/election-display'
 import { leadingAnswer } from 'web/lib/politics/election-glance'
-import { track } from 'web/lib/service/analytics'
 import { LiveContracts } from './live-contracts'
+import { BetTarget, useQuickBet } from './quick-bet'
 
 // Markets that don't need a picture of their own, one line each: what it
 // asks, the pick (for a market with several answers), a thin bar and the
-// chance. Each line opens its market. Two columns from tablet width.
+// chance. Clicking a line bets on what it shows, without leaving the page.
+// Two columns from tablet width.
 
 export type OddsItem = {
   key: string
@@ -23,9 +18,9 @@ export type OddsItem = {
   // The answer the chance is for, where the market has several.
   pick?: string
   // Absent for a market with no single chance to show (a numeric market,
-  // a poll): the line just opens it.
+  // a poll).
   p?: number
-  href: string
+  bet: BetTarget
 }
 
 export function OddsRows(props: {
@@ -35,58 +30,69 @@ export function OddsRows(props: {
   className?: string
 }) {
   const { items, trackingName, columns = 2, className } = props
+  const { open, dialog } = useQuickBet(trackingName)
   if (items.length === 0) return null
   return (
-    <ul
-      className={clsx(
-        'grid gap-x-8',
-        columns === 2 && 'md:grid-cols-2',
-        className
-      )}
-    >
-      {items.map((item) => (
-        <li key={item.key} className="border-ink-200 border-b last:border-b-0">
-          <Link
-            href={item.href}
-            onClick={() => track('click election odds row', { trackingName })}
-            className="hover:bg-canvas-50 group -mx-2 grid grid-cols-[1fr_4.5rem_2.75rem] items-center gap-3 rounded-md px-2 py-2 sm:grid-cols-[1fr_6rem_2.75rem]"
+    <>
+      <ul
+        className={clsx(
+          'grid gap-x-8',
+          columns === 2 && 'md:grid-cols-2',
+          className
+        )}
+      >
+        {items.map((item) => (
+          <li
+            key={item.key}
+            className="border-ink-200 border-b last:border-b-0"
           >
-            <span className="flex min-w-0 flex-col">
-              <span className="text-ink-900 line-clamp-2 text-sm leading-snug group-hover:underline">
-                {item.label}
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              aria-label={`Bet: ${item.label}${
+                item.pick ? `, ${item.pick}` : ''
+              }${item.p !== undefined ? `, ${formatOdds(item.p)}` : ''}`}
+              onClick={() => open(item.bet)}
+              className="hover:bg-canvas-50 group -mx-2 grid w-[calc(100%+1rem)] grid-cols-[1fr_4.5rem_2.75rem] items-center gap-3 rounded-md px-2 py-2 text-left sm:grid-cols-[1fr_6rem_2.75rem]"
+            >
+              <span className="flex min-w-0 flex-col">
+                <span className="text-ink-900 line-clamp-2 text-sm leading-snug">
+                  {item.label}
+                </span>
+                {item.pick && (
+                  <span className="text-ink-600 truncate text-xs">
+                    {item.pick}
+                  </span>
+                )}
               </span>
-              {item.pick && (
-                <span className="text-ink-600 truncate text-xs">
-                  {item.pick}
+              {item.p !== undefined ? (
+                <>
+                  <span
+                    className="bg-ink-200 h-1.5 overflow-hidden rounded-full"
+                    aria-hidden
+                  >
+                    <span
+                      className="bg-primary-500 block h-full rounded-full"
+                      style={{
+                        width: `${Math.max(0, Math.min(1, item.p)) * 100}%`,
+                      }}
+                    />
+                  </span>
+                  <span className="text-ink-1000 text-right text-sm font-semibold tabular-nums">
+                    {formatOdds(item.p)}
+                  </span>
+                </>
+              ) : (
+                <span className="text-primary-700 col-span-2 text-right text-sm font-medium">
+                  Bet
                 </span>
               )}
-            </span>
-            {item.p !== undefined ? (
-              <>
-                <span
-                  className="bg-ink-200 h-1.5 overflow-hidden rounded-full"
-                  aria-hidden
-                >
-                  <span
-                    className="bg-primary-500 block h-full rounded-full"
-                    style={{
-                      width: `${Math.max(0, Math.min(1, item.p)) * 100}%`,
-                    }}
-                  />
-                </span>
-                <span className="text-ink-1000 text-right text-sm font-semibold tabular-nums">
-                  {formatOdds(item.p)}
-                </span>
-              </>
-            ) : (
-              <span className="text-primary-700 col-span-2 text-right text-sm font-medium">
-                Open →
-              </span>
-            )}
-          </Link>
-        </li>
-      ))}
-    </ul>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {dialog}
+    </>
   )
 }
 
@@ -108,13 +114,13 @@ export function MarketRows(props: {
 }
 
 // A market as one line: a yes/no market's chance, or the leading named
-// answer of a market with several; any other market as a line that opens it.
+// answer of a market with several (a click bets on that answer); any other
+// market as a line whose click opens its bet dialog.
 export function oddsItem(
   contract: Contract,
   label = contract.question
 ): OddsItem {
-  const href = contractPath(contract)
-  const plain = { key: contract.id, label, href }
+  const plain = { key: contract.id, label, bet: { contract } }
   if (contract.outcomeType === 'BINARY') {
     const p = getDisplayProbability(contract as BinaryContract)
     return Number.isFinite(p) ? { ...plain, p } : plain
@@ -128,7 +134,14 @@ export function oddsItem(
         p: getAnswerProbability(multi, a.id),
       }))
     )
-    return lead ? { ...plain, pick: lead.text, p: lead.p } : plain
+    return lead
+      ? {
+          ...plain,
+          pick: lead.text,
+          p: lead.p,
+          bet: { contract, answerId: lead.id },
+        }
+      : plain
   }
   return plain
 }

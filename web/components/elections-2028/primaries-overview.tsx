@@ -1,8 +1,7 @@
-import Link from 'next/link'
 import { sortBy } from 'lodash'
 
 import { getAnswerProbability } from 'common/calculate'
-import { Contract, contractPath, isMultiCpmm } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { formatOdds } from 'web/components/usa-map/election-display'
 import { isCandidateAnswer, lookupCandidate } from 'web/lib/politics/candidates'
 import { runningField } from 'web/lib/politics/election-glance'
@@ -18,17 +17,16 @@ import { track } from 'web/lib/service/analytics'
 import { CandidateAvatar, PhotoCredits } from './candidate-avatar'
 import { LiveContracts } from './live-contracts'
 import { OddsRows, oddsItems } from './odds-rows'
+import { BetTarget, useQuickBet } from './quick-bet'
 
 // The primaries as two pictures: who's likely to run (each party's field,
 // faces with each one's chance of running), and the four early contests side
 // by side with each party's leader there, then the calendar after them. The
 // other states, and the Senate and governor primaries, are on the map's
-// Primaries view, which the link at the bottom opens.
+// Primaries view, which the link at the bottom opens. Every face and name
+// opens a bet on that person, here on the page.
 
 const FIELD = 8
-
-const cellUrl = (cell: PrimaryCell) =>
-  `/${cell.u ?? 'ManifoldPolitics'}/${cell.s}`
 
 const dayOf = (key: string) => {
   const e = TIMELINE.find((x) => x.key === key)
@@ -71,6 +69,7 @@ function Primaries(props: { rows: PrimaryRow[]; fields: Contract[] }) {
   const last = dayOf('last-primaries')
   const rest = rows.filter((r) => r.o === 'P').length - early.length
   const downBallot = rows.some((r) => r.o !== 'P')
+  const { open, dialog } = useQuickBet('election 2028 primaries')
 
   return (
     <div className="flex flex-col gap-4">
@@ -81,7 +80,7 @@ function Primaries(props: { rows: PrimaryRow[]; fields: Contract[] }) {
               Who&apos;s running
             </h3>
             <span className="text-ink-500 text-xs">
-              Each one&apos;s chance of running. Each name is its own market.
+              Each one&apos;s chance of running. Click a face to bet.
             </span>
           </div>
           {runFields.map((c) => (
@@ -89,6 +88,7 @@ function Primaries(props: { rows: PrimaryRow[]; fields: Contract[] }) {
               key={c.id}
               contract={c}
               party={runningField(c.question) as 'D' | 'R'}
+              onBet={open}
             />
           ))}
         </div>
@@ -101,7 +101,8 @@ function Primaries(props: { rows: PrimaryRow[]; fields: Contract[] }) {
               The early states
             </h3>
             <span className="text-ink-500 text-xs">
-              Who leads each party&apos;s contest, in the order they vote
+              Who leads each party&apos;s contest, in the order they vote. Click
+              a name to bet.
             </span>
           </div>
           <ol className="grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-4">
@@ -115,8 +116,8 @@ function Primaries(props: { rows: PrimaryRow[]; fields: Contract[] }) {
                     {placeName(row.st)}
                   </span>
                 </span>
-                {row.D && <EarlyLeader cell={row.D} party="D" />}
-                {row.R && <EarlyLeader cell={row.R} party="R" />}
+                {row.D && <EarlyLeader cell={row.D} party="D" onBet={open} />}
+                {row.R && <EarlyLeader cell={row.R} party="R" onBet={open} />}
               </li>
             ))}
           </ol>
@@ -174,6 +175,7 @@ function Primaries(props: { rows: PrimaryRow[]; fields: Contract[] }) {
           ),
         ]}
       />
+      {dialog}
     </div>
   )
 }
@@ -187,29 +189,33 @@ function topAnswers(c: Contract) {
   ).slice(0, FIELD)
 }
 
-function Field(props: { contract: Contract; party: 'D' | 'R' }) {
-  const { contract, party } = props
+function Field(props: {
+  contract: Contract
+  party: 'D' | 'R'
+  onBet: (target: BetTarget) => void
+}) {
+  const { contract, party, onBet } = props
   if (!isMultiCpmm(contract)) return null
   const answers = topAnswers(contract)
   return (
     <div className="flex flex-col gap-1.5">
-      <Link
-        href={contractPath(contract)}
-        className="text-ink-600 hover:text-primary-700 w-fit text-xs font-semibold uppercase tracking-wide hover:underline"
-      >
+      <span className="text-ink-600 text-xs font-semibold uppercase tracking-wide">
         {party === 'D' ? 'Democrats' : 'Republicans'}
-      </Link>
+      </span>
       <ul className="-mx-1 flex gap-1 overflow-x-auto pb-1 [scrollbar-width:thin]">
         {answers.map((a) => {
           const candidate = lookupCandidate(a.text)
           const p = getAnswerProbability(contract, a.id)
           return (
             <li key={a.id} className="shrink-0">
-              <Link
-                href={contractPath(contract)}
-                onClick={() => track('click election running field', { party })}
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                onClick={() => onBet({ contract, answerId: a.id })}
                 className="hover:bg-canvas-50 flex w-[4.5rem] flex-col items-center gap-1 rounded-lg px-1 py-1 text-center"
-                aria-label={`${candidate.name}: ${formatOdds(p)} to run`}
+                aria-label={`Bet on ${candidate.name} running: ${formatOdds(
+                  p
+                )}`}
               >
                 <CandidateAvatar
                   candidate={candidate}
@@ -222,7 +228,7 @@ function Field(props: { contract: Contract; party: 'D' | 'R' }) {
                 <span className="text-ink-1000 text-sm font-semibold tabular-nums leading-none">
                   {formatOdds(p)}
                 </span>
-              </Link>
+              </button>
             </li>
           )
         })}
@@ -231,15 +237,26 @@ function Field(props: { contract: Contract; party: 'D' | 'R' }) {
   )
 }
 
-function EarlyLeader(props: { cell: PrimaryCell; party: 'D' | 'R' }) {
-  const { cell, party } = props
+function EarlyLeader(props: {
+  cell: PrimaryCell
+  party: 'D' | 'R'
+  onBet: (target: BetTarget) => void
+}) {
+  const { cell, party, onBet } = props
   if (!cell.l) return null
   const candidate = lookupCandidate(cell.l)
   return (
-    <Link
-      href={cellUrl(cell)}
-      onClick={() => track('click election early state', { party })}
-      className="hover:bg-canvas-50 -mx-1 flex items-center gap-2 rounded-md px-1 py-0.5"
+    <button
+      type="button"
+      aria-haspopup="dialog"
+      aria-label={`Bet on ${candidate.name}${
+        cell.p !== undefined ? `, ${formatOdds(cell.p)}` : ''
+      }`}
+      disabled={!!cell.won}
+      onClick={() =>
+        onBet({ slug: cell.s, creator: cell.u, answerText: cell.l })
+      }
+      className="hover:bg-canvas-50 -mx-1 flex items-center gap-2 rounded-md px-1 py-0.5 text-left disabled:hover:bg-transparent"
     >
       <CandidateAvatar candidate={candidate} size={28} party={party} />
       <span className="flex min-w-0 flex-col leading-tight">
@@ -256,6 +273,6 @@ function EarlyLeader(props: { cell: PrimaryCell; party: 'D' | 'R' }) {
             : 'GOP'}
         </span>
       </span>
-    </Link>
+    </button>
   )
 }

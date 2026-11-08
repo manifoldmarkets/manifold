@@ -26,7 +26,7 @@ const REP_LOGO = '/politics-party/republican_symbol.png'
 // The presidency by party: one line with each party's chance at its end of
 // a split bar, and a bet button beside each. Numbers are ink; the party logos
 // and bar segments carry the colour. `sm` drops the bet buttons (a secondary
-// market with its own link).
+// market with its own link), but its numbers still bet on their party.
 export function PartyOddsBar(props: {
   contract: Contract
   label: string
@@ -105,7 +105,13 @@ export function PartyOddsBar(props: {
         </span>
       </div>
       <div className="flex items-center gap-2 sm:gap-3">
-        <PartyFigure logo={DEM_LOGO} name="Democrats" prob={dem} big={big} />
+        <PartyFigure
+          logo={DEM_LOGO}
+          name="Democrats"
+          prob={dem}
+          big={big}
+          onBet={demAnswer ? () => bet(demAnswer, 'D') : undefined}
+        />
         {big && (
           <PartyBetButton
             label="Bet"
@@ -133,6 +139,7 @@ export function PartyOddsBar(props: {
           prob={rep}
           big={big}
           right
+          onBet={repAnswer ? () => bet(repAnswer, 'R') : undefined}
         />
       </div>
       {big && (
@@ -160,19 +167,32 @@ export function PartyOddsBar(props: {
   )
 }
 
+// A party's logo and chance; a button that bets on the party where the
+// market has its answer.
 function PartyFigure(props: {
   logo: string
   name: string
   prob: number
   big: boolean
   right?: boolean
+  onBet?: () => void
 }) {
-  const { logo, name, prob, big, right } = props
+  const { logo, name, prob, big, right, onBet } = props
+  const Tag = onBet ? 'button' : 'div'
   return (
-    <div
+    <Tag
+      {...(onBet
+        ? {
+            type: 'button' as const,
+            onClick: onBet,
+            'aria-haspopup': 'dialog' as const,
+            'aria-label': `Bet on ${name}: ${formatOdds(prob)}`,
+          }
+        : {})}
       className={clsx(
-        'flex shrink-0 items-center gap-1.5',
-        right && 'flex-row-reverse text-right'
+        'flex shrink-0 items-center gap-1.5 rounded-md',
+        right && 'flex-row-reverse text-right',
+        onBet && 'hover:bg-canvas-50 -m-1 p-1'
       )}
     >
       <Image
@@ -195,7 +215,7 @@ function PartyFigure(props: {
           {name}
         </span>
       </div>
-    </div>
+    </Tag>
   )
 }
 

@@ -6,10 +6,12 @@ import { Contract, contractPath, isMultiCpmm } from 'common/contract'
 import { formatOdds } from 'web/components/usa-map/election-display'
 import { DEM_COLOR, REP_COLOR } from 'web/components/usa-map/state-election-map'
 import { useLiveContract } from 'web/hooks/use-contract'
+import { useQuickBet } from './quick-bet'
 
 // The official balance-of-power market: who holds the presidency, Senate and
 // House after an election, as its eight D/R combinations, most likely first.
 // Each office is a pip in its party's colour; the label says it in words.
+// Clicking a combination bets on it without leaving the page.
 
 const COMBO = /^([DR]) President, ([DR]) Senate, ([DR]) House/
 
@@ -21,6 +23,7 @@ export function BalanceOfPower(props: {
   rows?: number
 }) {
   const contract = useLiveContract(props.contract)
+  const { open, dialog } = useQuickBet('election balance of power')
   if (!isMultiCpmm(contract)) return null
   const answers = sortBy(
     contract.answers
@@ -39,9 +42,9 @@ export function BalanceOfPower(props: {
         <h3 className="text-ink-1000 text-base font-semibold">{props.title}</h3>
         <Link
           href={contractPath(contract)}
-          className="text-primary-700 hover:text-primary-800 shrink-0 text-sm font-medium hover:underline"
+          className="text-ink-500 hover:text-primary-700 shrink-0 text-xs hover:underline"
         >
-          Bet →
+          Market →
         </Link>
       </div>
       <div className="text-ink-600 flex gap-3 text-xs" aria-hidden>
@@ -66,10 +69,12 @@ export function BalanceOfPower(props: {
             .join(', ')
           return (
             <li key={a.id}>
-              <Link
-                href={contractPath(contract)}
-                className="hover:bg-canvas-50 -mx-1 flex items-center gap-3 rounded px-1 py-0.5"
-                aria-label={`${words}: ${formatOdds(p)}`}
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                onClick={() => open({ contract, answerId: a.id })}
+                className="hover:bg-canvas-50 -mx-1 flex w-[calc(100%+0.5rem)] items-center gap-3 rounded px-1 py-0.5 text-left"
+                aria-label={`Bet on ${words}: ${formatOdds(p)}`}
               >
                 <span className="flex shrink-0 gap-3" aria-hidden>
                   {parties.map((x, i) => (
@@ -94,11 +99,12 @@ export function BalanceOfPower(props: {
                 <span className="text-ink-1000 w-10 shrink-0 text-right text-sm font-semibold tabular-nums">
                   {formatOdds(p)}
                 </span>
-              </Link>
+              </button>
             </li>
           )
         })}
       </ul>
+      {dialog}
     </div>
   )
 }

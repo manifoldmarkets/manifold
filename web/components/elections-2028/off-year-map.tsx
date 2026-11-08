@@ -1,13 +1,14 @@
 import clsx from 'clsx'
-import Link from 'next/link'
 import { groupBy, sortBy, uniq } from 'lodash'
 import { useEffect, useState } from 'react'
 
-import { Contract, contractPath } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { Atlas, loadAtlas } from 'web/components/usa-map/atlas-shapes'
 import { formatOdds, labelInk } from 'web/components/usa-map/election-display'
 import {
   getPartyProbs,
+  isDemocraticAnswer,
+  isRepublicanAnswer,
   partyProbsToColor,
 } from 'web/components/usa-map/state-election-map'
 import { offYearRace, yearIn } from 'web/lib/politics/election-glance'
@@ -16,12 +17,13 @@ import { placeName } from 'web/lib/politics/official-markets'
 import { track } from 'web/lib/service/analytics'
 import { LiveContracts } from './live-contracts'
 import { MarketRows, OddsRows, oddsItems } from './odds-rows'
+import { BetTarget, useQuickBet } from './quick-bet'
 
 // The odd-year elections as a map: one tile per state, the states voting
 // that year in their leading party's colour (by the state's top race:
 // governor, then a U.S. Senate seat, then the legislature), next to a line
 // per state with each of its races. Pointing at a state or its line marks
-// both. Races that aren't one state's (the Speaker vote, a mayor, House
+// both; clicking a race (or a state's tile) bets on it, here on the page. Races that aren't one state's (the Speaker vote, a mayor, House
 // specials) and elections abroad follow as one line each.
 
 type Race = {
@@ -36,6 +38,18 @@ type Race = {
 
 const CELL = 30
 const GAP = 3
+
+// A race's bet: on the party it shows leading (the dialog switches to the
+// other side or answer).
+function raceBet(race: Race): BetTarget {
+  const demLeads = race.dem >= race.rep
+  const answer = isMultiCpmm(race.contract)
+    ? race.contract.answers.find((a) =>
+        demLeads ? isDemocraticAnswer(a.text) : isRepublicanAnswer(a.text)
+      )
+    : undefined
+  return { contract: race.contract, answerId: answer?.id }
+}
 
 const electionDay = (cycle: number) =>
   TIMELINE.find((e) => e.key === String(cycle))?.time
@@ -89,6 +103,7 @@ function OffYear(props: { contracts: Contract[]; world: Contract[] }) {
     const y = yearIn(c.question)
     return !y || y === year
   })
+  const { open, dialog } = useQuickBet('election off-year')
   const pick = (y: number) => {
     track('election off-year year', { year: y })
     setPicked(y)
@@ -165,6 +180,7 @@ function OffYear(props: { contracts: Contract[]; world: Contract[] }) {
             }}
             hovered={hovered}
             onHover={setHovered}
+            onPick={(st) => byState[st] && open(raceBet(lead(st)))}
           />
           <ul className="flex flex-col">
             {states.map((st) => (
@@ -182,7 +198,11 @@ function OffYear(props: { contracts: Contract[]; world: Contract[] }) {
                 </span>
                 <span className="flex flex-wrap gap-1.5">
                   {sortBy(byState[st], (r) => r.rank).map((r) => (
-                    <RaceChip key={r.contract.id} race={r} />
+                    <RaceChip
+                      key={r.contract.id}
+                      race={r}
+                      onBet={() => open(raceBet(r))}
+                    />
                   ))}
                 </span>
               </li>
@@ -206,24 +226,24 @@ function OffYear(props: { contracts: Contract[]; world: Contract[] }) {
           <MarketRows contracts={world} trackingName="election world" />
         </div>
       )}
+      {dialog}
     </div>
   )
 }
 
-function RaceChip(props: { race: Race }) {
-  const { race } = props
+function RaceChip(props: { race: Race; onBet: () => void }) {
+  const { race, onBet } = props
   const demLeads = race.dem >= race.rep
   const color = partyProbsToColor(race.dem, race.rep)
   return (
-    <Link
-      href={contractPath(race.contract)}
-      onClick={() =>
-        track('click election off-year race', {
-          state: race.state,
-          office: race.office,
-        })
-      }
-      className="border-ink-200 hover:border-ink-400 bg-canvas-0 inline-flex items-center gap-1.5 rounded-md border py-0.5 pl-1 pr-2 text-xs"
+    <button
+      type="button"
+      aria-haspopup="dialog"
+      aria-label={`Bet: ${placeName(race.state)} ${race.office}, ${
+        demLeads ? 'Democrats' : 'Republicans'
+      } ${formatOdds(demLeads ? race.dem : race.rep)}`}
+      onClick={onBet}
+      className="border-ink-200 hover:border-ink-400 hover:bg-canvas-50 bg-canvas-0 inline-flex items-center gap-1.5 rounded-md border py-0.5 pl-1 pr-2 text-xs"
     >
       <span
         className="h-3 w-3 shrink-0 rounded-sm"
@@ -234,7 +254,7 @@ function RaceChip(props: { race: Race }) {
       <span className="text-ink-1000 font-semibold tabular-nums">
         {demLeads ? 'D' : 'R'} {formatOdds(demLeads ? race.dem : race.rep)}
       </span>
-    </Link>
+    </button>
   )
 }
 
@@ -244,8 +264,11 @@ function TileMap(props: {
   colorOf: (state: string) => string | undefined
   hovered: string | undefined
   onHover: (state: string | undefined) => void
+  // A voting state's tile opens a bet on its top race (the state's line
+  // has the same as buttons, for keyboards).
+  onPick: (state: string) => void
 }) {
-  const { atlas, colorOf, hovered, onHover } = props
+  const { atlas, colorOf, hovered, onHover, onPick } = props
   if (atlas === null) return null
   if (!atlas)
     return (
@@ -274,6 +297,8 @@ function TileMap(props: {
             key={t.state}
             onPointerEnter={() => color && onHover(t.state)}
             onPointerLeave={() => color && onHover(undefined)}
+            onClick={() => color && onPick(t.state)}
+            className={clsx(color && 'cursor-pointer')}
           >
             <rect
               x={x}

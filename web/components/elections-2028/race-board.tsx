@@ -1,6 +1,5 @@
 import clsx from 'clsx'
-import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { createContext, useContext, useMemo, useState } from 'react'
 
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { formatOdds } from 'web/components/usa-map/election-display'
@@ -20,10 +19,10 @@ import {
   raceId,
   raceLabel,
   raceName,
-  raceUrl,
   ResultColumn,
 } from 'web/lib/politics/race-board'
 import { track } from 'web/lib/service/analytics'
+import { BetTarget, useQuickBet } from './quick-bet'
 
 // Every race of an office on one board, NYT-style: five columns by how our
 // markets rate each race (same thresholds as the electoral college model),
@@ -69,6 +68,15 @@ function leaderOf(race: BoardRace) {
     : { party: 'R' as const, text: `R ${formatOdds(1 - p)}` }
 }
 
+// Betting from the board: each race opens the page's bet dialog on the party
+// it shows leading, without leaving the page.
+const BoardBet = createContext<(target: BetTarget) => void>(() => undefined)
+const raceBet = (race: BoardRace): BetTarget => ({
+  slug: race.s,
+  creator: race.u,
+  party: leaderOf(race).party === 'R' ? 'R' : 'D',
+})
+
 function weekText(w: number | undefined) {
   if (w === undefined || Math.abs(w) < 0.01) return undefined
   const pts = Math.round(Math.abs(w) * 100)
@@ -107,6 +115,7 @@ export function RaceBoard(props: {
     () => groupRaces(shown, groupBy, mode),
     [shown, groupBy, mode]
   )
+  const { open, dialog } = useQuickBet(trackingName)
   if (!current) return null
   const weight = current === 'P' ? 'ev' : 'races'
   const totals = columnTotals(shown, mode)
@@ -117,157 +126,161 @@ export function RaceBoard(props: {
   const anyCalled = called.D + called.R + called.O > 0
 
   return (
-    <div className="bg-canvas-0 border-ink-200 flex flex-col gap-3 rounded-xl border p-3 sm:p-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        {offices.length > 1 ? (
+    <BoardBet.Provider value={open}>
+      <div className="bg-canvas-0 border-ink-200 flex flex-col gap-3 rounded-xl border p-3 sm:p-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          {offices.length > 1 ? (
+            <ChoicesToggleGroup
+              currentChoice={current}
+              choicesMap={Object.fromEntries(
+                offices.map((o) => [OFFICE_LABEL[o], o])
+              )}
+              setChoice={(o) => {
+                track(`${trackingName} office`, { office: o })
+                setOffice(o as BoardOffice)
+              }}
+              color="gray"
+              ariaLabel="Office"
+              toggleClassName="!px-3 !py-1 text-sm"
+            />
+          ) : (
+            <h3 className="text-ink-1000 text-base font-semibold">
+              {OFFICE_LABEL[current]}
+              {current === 'P' || current === 'V' ? ' by state' : ''}
+            </h3>
+          )}
           <ChoicesToggleGroup
-            currentChoice={current}
-            choicesMap={Object.fromEntries(
-              offices.map((o) => [OFFICE_LABEL[o], o])
-            )}
-            setChoice={(o) => {
-              track(`${trackingName} office`, { office: o })
-              setOffice(o as BoardOffice)
+            currentChoice={groupBy}
+            choicesMap={{
+              [mode === 'results' ? 'Result' : 'Rating']: 'rating',
+              State: 'state',
+              'Biggest moves': 'moves',
+            }}
+            setChoice={(g) => {
+              track(`${trackingName} group`, { by: g })
+              setGroupBy(g as BoardGroupBy)
             }}
             color="gray"
-            ariaLabel="Office"
-            toggleClassName="!px-3 !py-1 text-sm"
+            ariaLabel="Group races by"
+            toggleClassName="!px-2.5 !py-1 text-xs"
           />
-        ) : (
-          <h3 className="text-ink-1000 text-base font-semibold">
-            {OFFICE_LABEL[current]}
-            {current === 'P' || current === 'V' ? ' by state' : ''}
-          </h3>
-        )}
-        <ChoicesToggleGroup
-          currentChoice={groupBy}
-          choicesMap={{
-            [mode === 'results' ? 'Result' : 'Rating']: 'rating',
-            State: 'state',
-            'Biggest moves': 'moves',
-          }}
-          setChoice={(g) => {
-            track(`${trackingName} group`, { by: g })
-            setGroupBy(g as BoardGroupBy)
-          }}
-          color="gray"
-          ariaLabel="Group races by"
-          toggleClassName="!px-2.5 !py-1 text-xs"
-        />
-      </div>
-
-      {anyCalled && (
-        <div className="text-ink-700 text-sm">
-          Called so far: <CalledCount party="D" n={called.D} weight={weight} />
-          {' · '}
-          <CalledCount party="R" n={called.R} weight={weight} />
-          {called.O > 0 && (
-            <>
-              {' · '}
-              <CalledCount party="O" n={called.O} weight={weight} />
-            </>
-          )}
         </div>
-      )}
 
-      {groupBy === 'rating' ? (
-        <div
-          className={clsx(
-            'grid gap-3',
-            mode !== 'results'
-              ? 'lg:grid-cols-5'
-              : groups.length === 4
-              ? 'lg:grid-cols-4'
-              : 'lg:grid-cols-3'
-          )}
-        >
-          {groups.map((g) => {
-            const rating = BOARD_COLUMNS.find((c) => c.key === g.key)
-            const t = totals[g.key] ?? { races: 0, ev: 0 }
-            // Long easy-win columns list as chips. By result, the won
-            // columns go to chips together (any of them long), so a view
-            // doesn't mix rows and chips for the same kind of column.
-            const compact =
-              mode === 'results'
-                ? g.key !== 'uncalled' && wonAsChips
-                : (g.key === 'solidD' || g.key === 'solidR') &&
-                  g.races.length > COLUMN_ROWS
-            const count =
-              current === 'P'
-                ? `${t.races} · ${t.ev} EV`
-                : `${t.races} ${t.races === 1 ? 'race' : 'races'}`
-            return (
+        {anyCalled && (
+          <div className="text-ink-700 text-sm">
+            Called so far:{' '}
+            <CalledCount party="D" n={called.D} weight={weight} />
+            {' · '}
+            <CalledCount party="R" n={called.R} weight={weight} />
+            {called.O > 0 && (
+              <>
+                {' · '}
+                <CalledCount party="O" n={called.O} weight={weight} />
+              </>
+            )}
+          </div>
+        )}
+
+        {groupBy === 'rating' ? (
+          <div
+            className={clsx(
+              'grid gap-3',
+              mode !== 'results'
+                ? 'lg:grid-cols-5'
+                : groups.length === 4
+                ? 'lg:grid-cols-4'
+                : 'lg:grid-cols-3'
+            )}
+          >
+            {groups.map((g) => {
+              const rating = BOARD_COLUMNS.find((c) => c.key === g.key)
+              const t = totals[g.key] ?? { races: 0, ev: 0 }
+              // Long easy-win columns list as chips. By result, the won
+              // columns go to chips together (any of them long), so a view
+              // doesn't mix rows and chips for the same kind of column.
+              const compact =
+                mode === 'results'
+                  ? g.key !== 'uncalled' && wonAsChips
+                  : (g.key === 'solidD' || g.key === 'solidR') &&
+                    g.races.length > COLUMN_ROWS
+              const count =
+                current === 'P'
+                  ? `${t.races} · ${t.ev} EV`
+                  : `${t.races} ${t.races === 1 ? 'race' : 'races'}`
+              return (
+                <section key={g.key} aria-label={g.label} className="min-w-0">
+                  <header
+                    className="border-t-4 pb-2 pt-1.5"
+                    style={{
+                      borderColor: rating
+                        ? COLUMN_ACCENT[rating.key]
+                        : RESULT_ACCENT[g.key as ResultColumn],
+                    }}
+                  >
+                    <div className="text-ink-1000 text-sm font-semibold leading-tight">
+                      {g.label}
+                    </div>
+                    <div className="text-ink-600 text-xs tabular-nums">
+                      {rating ? `${rating.range} · ${count}` : count}
+                    </div>
+                  </header>
+                  {g.races.length === 0 ? (
+                    <div className="text-ink-500 text-xs">None</div>
+                  ) : compact ? (
+                    <div className="flex flex-wrap gap-1">
+                      {g.races.map((r) => (
+                        <RaceChip key={raceId(r)} race={r} />
+                      ))}
+                    </div>
+                  ) : (
+                    <ColumnRows
+                      key={`${current}-${g.key}`}
+                      races={g.races}
+                      trackingName={trackingName}
+                    />
+                  )}
+                </section>
+              )
+            })}
+          </div>
+        ) : (
+          <div
+            className={clsx(
+              'grid gap-3',
+              groupBy === 'state' && 'sm:grid-cols-2 lg:grid-cols-3'
+            )}
+          >
+            {groups.map((g) => (
               <section key={g.key} aria-label={g.label} className="min-w-0">
-                <header
-                  className="border-t-4 pb-2 pt-1.5"
-                  style={{
-                    borderColor: rating
-                      ? COLUMN_ACCENT[rating.key]
-                      : RESULT_ACCENT[g.key as ResultColumn],
-                  }}
-                >
-                  <div className="text-ink-1000 text-sm font-semibold leading-tight">
+                {groupBy === 'state' && (
+                  <h4 className="text-ink-900 mb-1 text-sm font-semibold">
                     {g.label}
-                  </div>
-                  <div className="text-ink-600 text-xs tabular-nums">
-                    {rating ? `${rating.range} · ${count}` : count}
-                  </div>
-                </header>
+                  </h4>
+                )}
                 {g.races.length === 0 ? (
-                  <div className="text-ink-500 text-xs">None</div>
-                ) : compact ? (
-                  <div className="flex flex-wrap gap-1">
-                    {g.races.map((r) => (
-                      <RaceChip key={raceId(r)} race={r} />
-                    ))}
+                  <div className="text-ink-500 text-sm">
+                    No race moved a point or more this week.
                   </div>
                 ) : (
-                  <ColumnRows
-                    key={`${current}-${g.key}`}
-                    races={g.races}
-                    trackingName={trackingName}
-                  />
+                  <ul className="flex flex-col gap-1">
+                    {g.races.map((r) => (
+                      <RaceRow
+                        key={raceId(r)}
+                        race={r}
+                        showWeek={groupBy === 'moves'}
+                      />
+                    ))}
+                  </ul>
                 )}
               </section>
-            )
-          })}
-        </div>
-      ) : (
-        <div
-          className={clsx(
-            'grid gap-3',
-            groupBy === 'state' && 'sm:grid-cols-2 lg:grid-cols-3'
-          )}
-        >
-          {groups.map((g) => (
-            <section key={g.key} aria-label={g.label} className="min-w-0">
-              {groupBy === 'state' && (
-                <h4 className="text-ink-900 mb-1 text-sm font-semibold">
-                  {g.label}
-                </h4>
-              )}
-              {g.races.length === 0 ? (
-                <div className="text-ink-500 text-sm">
-                  No race moved a point or more this week.
-                </div>
-              ) : (
-                <ul className="flex flex-col gap-1">
-                  {g.races.map((r) => (
-                    <RaceRow
-                      key={raceId(r)}
-                      race={r}
-                      showWeek={groupBy === 'moves'}
-                    />
-                  ))}
-                </ul>
-              )}
-            </section>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
 
-      <BoardLegend mode={mode} freezeTime={props.freezeTime} />
-    </div>
+        <BoardLegend mode={mode} freezeTime={props.freezeTime} />
+      </div>
+      {dialog}
+    </BoardBet.Provider>
   )
 }
 
@@ -340,7 +353,7 @@ const calledClass = (race: BoardRace) =>
 
 function RaceRow(props: { race: BoardRace; showWeek?: boolean }) {
   const { race, showWeek } = props
-  const url = raceUrl(race)
+  const bet = useContext(BoardBet)
   const leader = leaderOf(race)
   const week = weekText(race.w)
   const called = calledStyle(race)
@@ -351,7 +364,7 @@ function RaceRow(props: { race: BoardRace; showWeek?: boolean }) {
         'flex min-h-[2rem] items-center gap-2 rounded-md px-2 py-1 text-sm',
         !called && 'bg-canvas-50 hover:bg-canvas-100',
         calledClass(race),
-        url && 'cursor-pointer'
+        race.s && 'cursor-pointer'
       )}
       style={called}
       title={`${name}${race.c ? `: called for ${leader.text}` : ''}`}
@@ -384,14 +397,16 @@ function RaceRow(props: { race: BoardRace; showWeek?: boolean }) {
   )
   return (
     <li>
-      {url ? (
-        <Link
-          href={url}
-          className="block"
-          aria-label={`${name}: ${leader.text}`}
+      {race.s ? (
+        <button
+          type="button"
+          aria-haspopup="dialog"
+          onClick={() => bet(raceBet(race))}
+          className="block w-full text-left"
+          aria-label={`Bet: ${name}, ${leader.text}`}
         >
           {body}
-        </Link>
+        </button>
       ) : (
         body
       )}
@@ -402,7 +417,7 @@ function RaceRow(props: { race: BoardRace; showWeek?: boolean }) {
 // The easy wins, compact: just the label, as a chip.
 function RaceChip(props: { race: BoardRace }) {
   const { race } = props
-  const url = raceUrl(race)
+  const bet = useContext(BoardBet)
   const leader = leaderOf(race)
   const called = calledStyle(race)
   const chip = (
@@ -419,10 +434,15 @@ function RaceChip(props: { race: BoardRace }) {
       {race.sp ? '*' : ''}
     </span>
   )
-  return url ? (
-    <Link href={url} aria-label={`${raceName(race)}: ${leader.text}`}>
+  return race.s ? (
+    <button
+      type="button"
+      aria-haspopup="dialog"
+      onClick={() => bet(raceBet(race))}
+      aria-label={`Bet: ${raceName(race)}, ${leader.text}`}
+    >
       {chip}
-    </Link>
+    </button>
   ) : (
     chip
   )

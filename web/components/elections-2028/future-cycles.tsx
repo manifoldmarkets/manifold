@@ -1,9 +1,8 @@
 import clsx from 'clsx'
-import Link from 'next/link'
 import { sortBy } from 'lodash'
 
 import { getAnswerProbability } from 'common/calculate'
-import { Contract, contractPath, isMultiCpmm } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { formatOdds, labelInk } from 'web/components/usa-map/election-display'
 import { partyProbsToColor } from 'web/components/usa-map/state-election-map'
 import {
@@ -13,9 +12,9 @@ import {
   isBalanceOfPower,
   MARKET_LABELS,
 } from 'web/lib/politics/election-glance'
-import { track } from 'web/lib/service/analytics'
 import { LiveContracts } from './live-contracts'
 import { OddsRows, oddsItems } from './odds-rows'
+import { useQuickBet } from './quick-bet'
 
 // The cycles after 2028 as one grid: a column per election, a row per
 // office, each cell the party our markets favour to hold it after that
@@ -81,6 +80,7 @@ function Cycles(props: {
   )
   const gridIds = new Set(cycles.map((x) => x.c.id))
   const rest = contracts.filter((c) => !gridIds.has(c.id))
+  const { open, dialog } = useQuickBet('election later')
 
   return (
     <div className="flex flex-col gap-4">
@@ -96,17 +96,14 @@ function Cycles(props: {
                 <th className="w-20 sm:w-24" />
                 {cycles.map(({ c, cycle }) => (
                   <th key={c.id} scope="col" className="text-left font-normal">
-                    <Link
-                      href={contractPath(c)}
-                      className="hover:text-primary-700 flex flex-col hover:underline"
-                    >
+                    <span className="flex flex-col">
                       <span className="text-ink-1000 font-semibold">
                         {cycle}
                       </span>
                       <span className="text-ink-500 text-xs">
                         {cycle % 4 === 0 ? 'Presidential' : 'Midterms'}
                       </span>
-                    </Link>
+                    </span>
                   </th>
                 ))}
               </tr>
@@ -126,16 +123,12 @@ function Cycles(props: {
                     const demLeads = dem >= 0.5
                     return (
                       <td key={c.id} className="p-0">
-                        <Link
-                          href={contractPath(c)}
-                          onClick={() =>
-                            track('click election later cell', {
-                              cycle,
-                              office: office.key,
-                            })
-                          }
+                        <button
+                          type="button"
+                          aria-haspopup="dialog"
+                          onClick={() => open({ contract: c })}
                           className={clsx(
-                            'flex h-10 items-center justify-center rounded-md text-xs font-semibold tabular-nums hover:brightness-95 sm:text-sm',
+                            'flex h-10 w-full items-center justify-center rounded-md text-xs font-semibold tabular-nums hover:brightness-95 sm:text-sm',
                             offBallot(office.key, cycle) && 'opacity-60'
                           )}
                           style={{
@@ -155,7 +148,7 @@ function Cycles(props: {
                           {offBallot(office.key, cycle) && (
                             <span aria-hidden>*</span>
                           )}
-                        </Link>
+                        </button>
                       </td>
                     )
                   })}
@@ -166,7 +159,8 @@ function Cycles(props: {
           {cycles.some(({ cycle }) => cycle % 4 !== 0) && (
             <p className="text-ink-500 mt-1 text-xs">
               * Not on the ballot in a midterm year: the party holding the White
-              House then.
+              House then. Click a cell to bet on who controls Washington after
+              that election.
             </p>
           )}
         </div>
@@ -177,6 +171,7 @@ function Cycles(props: {
           trackingName="election later"
         />
       )}
+      {dialog}
     </div>
   )
 }

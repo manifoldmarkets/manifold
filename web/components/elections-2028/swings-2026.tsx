@@ -1,32 +1,64 @@
-import Link from 'next/link'
+import clsx from 'clsx'
 
 import { formatOdds } from 'web/components/usa-map/election-display'
 import { DEM_COLOR, REP_COLOR } from 'web/components/usa-map/state-election-map'
 import type { Swing2026 } from 'web/lib/politics/swings-2026'
-import { track } from 'web/lib/service/analytics'
+import { useQuickBet } from './quick-bet'
 
 // 2026's biggest swings, from a week out to the result: the two chamber
 // races first, then the races whose winner moved furthest. One line each,
 // with a sparkline of the winner's chance through the final week; two
-// columns from tablet width.
+// columns from tablet width. A race still open bets from its line, here on
+// the page; a resolved one is just its line (the replay tells the story).
 export function Swings2026(props: { swings: Swing2026[] }) {
+  const { open, dialog } = useQuickBet('election 2026 swings')
   const ordered = [
     ...props.swings.filter((s) => s.office === 'control'),
     ...props.swings.filter((s) => s.office !== 'control'),
   ]
   return (
-    <ul className="grid gap-x-8 md:grid-cols-2">
-      {ordered.map((s) => (
-        <li
-          key={s.contractId}
-          className="border-ink-200 border-b last:border-b-0"
-        >
-          <SwingRow swing={s} />
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="grid gap-x-8 md:grid-cols-2">
+        {ordered.map((s) => (
+          <li
+            key={s.contractId}
+            className="border-ink-200 border-b last:border-b-0"
+          >
+            {s.resolved ? (
+              <div className={ROW}>
+                <SwingRow swing={s} />
+              </div>
+            ) : (
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                aria-label={`Bet: ${s.label}`}
+                onClick={() =>
+                  open({
+                    slug: s.slug,
+                    creator: s.creatorUsername,
+                    party:
+                      s.side === 'D' || s.side === 'R' ? s.side : undefined,
+                  })
+                }
+                className={clsx(
+                  ROW,
+                  'hover:bg-canvas-50 w-[calc(100%+1rem)] text-left'
+                )}
+              >
+                <SwingRow swing={s} />
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+      {dialog}
+    </>
   )
 }
+
+const ROW =
+  '-mx-2 grid grid-cols-[1fr_5rem_3.25rem] items-center gap-3 rounded-md px-2 py-2 sm:grid-cols-[1fr_7rem_3.25rem]'
 
 const sideColor = (s: Swing2026) =>
   s.side === 'D' ? DEM_COLOR : s.side === 'R' ? REP_COLOR : '#6b7280'
@@ -35,13 +67,9 @@ function SwingRow(props: { swing: Swing2026 }) {
   const { swing: s } = props
   const pts = Math.round((s.to - s.from) * 100)
   return (
-    <Link
-      href={`/${s.creatorUsername}/${s.slug}`}
-      onClick={() => track('click election 2026 swing', { race: s.label })}
-      className="hover:bg-canvas-50 group -mx-2 grid grid-cols-[1fr_5rem_3.25rem] items-center gap-3 rounded-md px-2 py-2 sm:grid-cols-[1fr_7rem_3.25rem]"
-    >
+    <>
       <span className="flex min-w-0 flex-col">
-        <span className="text-ink-1000 truncate text-sm font-medium group-hover:underline">
+        <span className="text-ink-1000 truncate text-sm font-medium">
           {s.label}
         </span>
         <span className="text-ink-600 truncate text-xs tabular-nums">
@@ -55,7 +83,7 @@ function SwingRow(props: { swing: Swing2026 }) {
         {Math.abs(pts)}
         <span className="text-ink-600 ml-0.5 text-xs font-normal">pts</span>
       </span>
-    </Link>
+    </>
   )
 }
 

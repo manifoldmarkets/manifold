@@ -15,12 +15,14 @@ import {
 import { useLiveContract } from 'web/hooks/use-contract'
 import { Bucket, orderedBuckets } from 'web/lib/politics/election-glance'
 import { OddsRows, oddsItem } from './odds-rows'
+import { useQuickBet } from './quick-bet'
 
 // A market over ordered ranges (electoral votes, the popular-vote margin)
 // as one strip: a cell per range in scale order, shaded by its chance in
 // the colour of the side it falls on, with a line where one side becomes
 // the other (270 electoral votes, an even vote). Reads at a glance where the
-// mass of the bets sits and how much of it is past the line.
+// mass of the bets sits and how much of it is past the line. Clicking a
+// cell bets on that range.
 
 // From the party's light tone to its dark one, as the map shades a state.
 const shade = (side: 'D' | 'R', t: number) => {
@@ -45,6 +47,7 @@ export function OddsStrip(props: {
 }) {
   const { title, threshold, thresholdLabel, summary } = props
   const contract = useLiveContract(props.contract)
+  const { open, dialog } = useQuickBet('election odds strip')
   const buckets = isMultiCpmm(contract)
     ? orderedBuckets(
         contract.answers.map((a) => ({
@@ -85,10 +88,8 @@ export function OddsStrip(props: {
       <div className="text-ink-700 text-sm">{summary(buckets)}</div>
       <div
         className="relative flex gap-0.5 pt-4"
-        role="img"
-        aria-label={`${title}: ${buckets
-          .map((b) => `${b.text} ${formatOdds(b.p)}`)
-          .join(', ')}`}
+        role="group"
+        aria-label={title}
       >
         {buckets.map((b, i) => {
           const fill = shade(b.side, b.p / top)
@@ -108,12 +109,16 @@ export function OddsStrip(props: {
                   <span className="bg-ink-900 mt-0.5 w-0.5 flex-1 rounded-full" />
                 </span>
               )}
-              <span
-                className="flex h-9 items-center justify-center rounded-sm text-xs font-semibold tabular-nums"
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                aria-label={`Bet on ${b.text}: ${formatOdds(b.p)}`}
+                onClick={() => open({ contract, answerId: b.id })}
+                className="flex h-9 items-center justify-center rounded-sm text-xs font-semibold tabular-nums transition-[filter] hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1"
                 style={{ backgroundColor: fill, color: labelInk(fill) }}
               >
                 {formatOdds(b.p)}
-              </span>
+              </button>
               <span className="text-ink-600 truncate text-center text-[11px] tabular-nums">
                 {b.label}
               </span>
@@ -121,6 +126,7 @@ export function OddsStrip(props: {
           )
         })}
       </div>
+      {dialog}
     </div>
   )
 }
