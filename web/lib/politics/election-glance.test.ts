@@ -1,0 +1,319 @@
+// node:test suite for /election's compact market readings and its contents.
+// From web/:
+//   TS_NODE_COMPILER_OPTIONS='{"module":"commonjs","moduleResolution":"node"}' \
+//     node --no-experimental-strip-types -r ts-node/register/transpile-only \
+//     -r tsconfig-paths/register --test lib/politics/election-glance.test.ts
+
+import { test } from 'node:test'
+import * as assert from 'node:assert/strict'
+
+import type { Contract } from 'common/contract'
+import {
+  ContentsInput,
+  hasSection,
+  pageContents,
+  sectionWhen,
+} from './election-contents'
+import {
+  bucketAt,
+  bucketLabel,
+  controlOdds,
+  isBalanceOfPower,
+  leadingAnswer,
+  offYearRace,
+  orderedBuckets,
+  placeMore2028,
+  sideTotal,
+} from './election-glance'
+import { sectionOrder } from './election-phase'
+
+const at = (y: number, m: number, d: number, h = 12) => Date.UTC(y, m - 1, d, h)
+const answers = (pairs: [string, number][]) =>
+  pairs.map(([text, p], i) => ({ id: `a${i}`, text, p }))
+const close = (a: number, b: number) =>
+  assert.ok(Math.abs(a - b) < 1e-9, `${a} ≈ ${b}`)
+
+// ------------------------------------------------------------------ buckets
+
+test('buckets read in scale order, Democrats positive', () => {
+  assert.equal(bucketAt('Under 200'), 199.5)
+  assert.equal(bucketAt('230–269'), 249.5)
+  assert.equal(bucketAt('230-269'), 249.5)
+  assert.equal(bucketAt('360 or more'), 360.5)
+  assert.equal(bucketAt('R+6 or more'), -6.5)
+  assert.equal(bucketAt('R+0 to R+3'), -1.5)
+  assert.equal(bucketAt('D+0 to D+3'), 1.5)
+  assert.equal(bucketAt('D+9 or more'), 9.5)
+  assert.equal(bucketAt('Other'), undefined)
+  assert.equal(bucketAt('Jon Ossoff'), undefined)
+  assert.equal(bucketLabel('Under 200'), '<200')
+  assert.equal(bucketLabel('360 or more'), '360+')
+  assert.equal(bucketLabel('R+3 to R+6'), 'R+3–6')
+  assert.equal(bucketLabel('D+9 or more'), 'D+9+')
+  assert.equal(bucketLabel('230–269'), '230–269')
+})
+
+test('the electoral-vote market splits at 270', () => {
+  const b = orderedBuckets(
+    answers([
+      ['230–269', 0.194],
+      ['270–299', 0.194],
+      ['300–329', 0.189],
+      ['360 or more', 0.145],
+      ['330–359', 0.144],
+      ['200–229', 0.08],
+      ['Under 200', 0.054],
+    ]),
+    270
+  )!
+  assert.deepEqual(
+    b.map((x) => x.label),
+    ['<200', '200–229', '230–269', '270–299', '300–329', '330–359', '360+']
+  )
+  assert.deepEqual(
+    b.map((x) => x.side),
+    ['R', 'R', 'R', 'D', 'D', 'D', 'D']
+  )
+  close(sideTotal(b, 'D'), 0.672)
+})
+
+test('the margin market splits at an even vote; Other is dropped', () => {
+  const b = orderedBuckets(
+    answers([
+      ['D+3 to D+6', 0.249],
+      ['R+0 to R+3', 0.073],
+      ['R+6 or more', 0.01],
+      ['D+0 to D+3', 0.168],
+      ['Other', 0.02],
+    ]),
+    0
+  )!
+  assert.deepEqual(
+    b.map((x) => x.text),
+    ['R+6 or more', 'R+0 to R+3', 'D+0 to D+3', 'D+3 to D+6']
+  )
+  assert.deepEqual(
+    b.map((x) => x.side),
+    ['R', 'R', 'D', 'D']
+  )
+})
+
+test("a market that isn't all ranges isn't a strip", () => {
+  assert.equal(
+    orderedBuckets(
+      answers([
+        ['230–269', 0.5],
+        ['Kamala Harris', 0.5],
+      ]),
+      270
+    ),
+    undefined
+  )
+  assert.equal(orderedBuckets(answers([['230–269', 1]]), 270), undefined)
+})
+
+// ---------------------------------------------------------- balance of power
+
+const BOP = answers([
+  ['D President, D Senate, D House (Democratic trifecta)', 0.344],
+  ['R President, R Senate, R House (Republican trifecta)', 0.244],
+  ['D President, D Senate, R House', 0.093],
+  ['R President, D Senate, R House', 0.076],
+  ['D President, R Senate, D House', 0.075],
+  ['D President, R Senate, R House', 0.056],
+  ['R President, D Senate, D House', 0.056],
+  ['R President, R Senate, D House', 0.056],
+])
+
+test("each office's Democratic chance sums the combinations", () => {
+  const odds = controlOdds(BOP)!
+  close(odds.president, 0.344 + 0.093 + 0.075 + 0.056)
+  close(odds.senate, 0.344 + 0.093 + 0.076 + 0.056)
+  close(odds.house, 0.344 + 0.075 + 0.056 + 0.056)
+  assert.ok(isBalanceOfPower(BOP))
+  // Normalized over what was read, so a drift off 100% doesn't skew it.
+  const half = controlOdds(
+    answers([
+      ['D President, D Senate, D House', 0.3],
+      ['R President, R Senate, R House', 0.3],
+      ['Other', 0.4],
+    ])
+  )!
+  close(half.president, 0.5)
+  assert.equal(controlOdds(answers([['Yes', 1]])), undefined)
+  assert.ok(!isBalanceOfPower(answers([['Democratic Party', 0.6]])))
+})
+
+// ------------------------------------------------------------- off-year
+
+test('off-year races read state, office and year from the question', () => {
+  assert.deepEqual(
+    offYearRace('Which party will win the 2027 Kentucky governor election?'),
+    { state: 'KY', office: 'Governor', rank: 0, cycle: 2027 }
+  )
+  assert.deepEqual(
+    offYearRace('Which Party will win the 2027 Kentucky Gubernatorial Election?'),
+    { state: 'KY', office: 'Governor', rank: 0, cycle: 2027 }
+  )
+  assert.equal(
+    offYearRace(
+      'Which party will control the Virginia House of Delegates after the 2029 election?'
+    )?.office,
+    'House of Delegates'
+  )
+  assert.equal(
+    offYearRace(
+      'Which party will control the New Jersey General Assembly after the 2027 election?'
+    )?.office,
+    'Assembly'
+  )
+  assert.equal(
+    offYearRace(
+      'Which party will control the Louisiana Senate after the 2027 election?'
+    )?.office,
+    'Senate'
+  )
+  assert.deepEqual(
+    offYearRace(
+      'Which party will win the 2027 U.S. Senate special election in Minnesota?'
+    ),
+    { state: 'MN', office: 'U.S. Senate special', rank: 1, cycle: 2027 }
+  )
+  // Not one state's race in an odd year.
+  assert.equal(
+    offYearRace('Who will win the January 2027 Speaker of the House election?'),
+    undefined
+  )
+  assert.equal(
+    offYearRace('Who will win the 2027 Chicago mayoral election?'),
+    undefined
+  )
+  assert.equal(
+    offYearRace('Which party will win the 2028 Kentucky Senate election?'),
+    undefined
+  )
+})
+
+test('the leading answer skips Other', () => {
+  assert.equal(
+    leadingAnswer(
+      answers([
+        ['Other', 0.5],
+        ['Alexandria Ocasio-Cortez', 0.079],
+        ['Marco Rubio', 0.077],
+      ])
+    )?.text,
+    'Alexandria Ocasio-Cortez'
+  )
+  assert.equal(leadingAnswer(answers([['Other', 1]])), undefined)
+})
+
+test('2028 markets without a slot go where they belong', () => {
+  assert.equal(placeMore2028('2028-dem-contested-convention'), 'conventions')
+  assert.equal(placeMore2028('2028-vp-winner'), 'conventions')
+  assert.equal(placeMore2028('2028-dem-electoral-votes'), 'electoralVotes')
+  assert.equal(placeMore2028('2028-popular-vote-margin'), 'margin')
+  assert.equal(placeMore2028('2028-tipping-point'), 'tippingPoint')
+  assert.equal(placeMore2028('2028-npvic-in-effect'), 'facts')
+  // A market a script adds later still shows.
+  assert.equal(placeMore2028('2028-something-new'), 'facts')
+  assert.equal(placeMore2028(undefined), 'facts')
+})
+
+// ------------------------------------------------------------- contents
+
+const c = (id: string) => ({ id }) as unknown as Contract
+
+const input = (over: Partial<ContentsInput> = {}): ContentsInput => ({
+  now: at(2026, 11, 8),
+  phase: 'nomination',
+  accuracy: { beatRealMoney: true, chambers: [] },
+  leaderboards: [],
+  partyContract: null,
+  charts: [],
+  board2028: [],
+  primaries: [],
+  primaryContracts: [],
+  balanceOfPowerContract: null,
+  congressContract: null,
+  popularVoteContract: null,
+  more2028: [],
+  marketKeys: {},
+  demVpContract: null,
+  gopVpContract: null,
+  ticketContract: null,
+  offYear: [],
+  before2028World: [],
+  later: [],
+  board2030: [],
+  balanceOfPower2030: null,
+  presidencyMatrixRows: [],
+  pollingPerpContracts: [],
+  unprecedentedContracts: [],
+  trendingContracts: [],
+  swings: [],
+  ...over,
+})
+
+test('the contents lists only what the page shows, in page order', () => {
+  const empty = pageContents(input())
+  assert.deepEqual(
+    empty.map((e) => e.key),
+    ['feed']
+  )
+  const full = pageContents(
+    input({
+      partyContract: c('party'),
+      board2028: [{} as ContentsInput['board2028'][number]],
+      popularVoteContract: c('pv'),
+      offYear: [c('ky')],
+      later: [c('2030')],
+      unprecedentedContracts: [c('u')],
+    })
+  )
+  assert.deepEqual(
+    full.map((e) => e.key),
+    ['race', 'map', 'national', 'offYear', 'later', 'unprecedented', 'feed']
+  )
+  // Ordered as the page is.
+  const order = sectionOrder('nomination')
+  for (let i = 1; i < full.length; i++)
+    assert.ok(order.indexOf(full[i - 1].key) < order.indexOf(full[i].key))
+  assert.deepEqual(
+    full.map((e) => e.id),
+    ['race', 'map', 'national', 'off-year', 'later', 'unprecedented', 'feed']
+  )
+})
+
+test('a convention market brings the conventions chapter, not the national one', () => {
+  const p = input({
+    more2028: [c('conv')],
+    marketKeys: { conv: '2028-dem-contested-convention' },
+  })
+  assert.ok(hasSection(p, 'runningMates'))
+  assert.ok(!hasSection(p, 'national'))
+  const q = input({
+    more2028: [c('ev')],
+    marketKeys: { ev: '2028-dem-electoral-votes' },
+  })
+  assert.ok(hasSection(q, 'national'))
+  assert.ok(!hasSection(q, 'runningMates'))
+})
+
+test('dated sections count down, and the off-year date moves to 2029', () => {
+  const now = at(2026, 11, 8)
+  assert.equal(sectionWhen('map', now, 'nomination'), 'Nov 7, 2028 · 730 days')
+  assert.equal(
+    sectionWhen('offYear', now, 'nomination'),
+    'Nov 2, 2027 · 359 days'
+  )
+  assert.match(
+    sectionWhen('offYear', at(2028, 1, 10), 'primaries')!,
+    /^Nov 6, 2029 · /
+  )
+  assert.equal(sectionWhen('primaries', now, 'nomination'), 'January–June 2028')
+  assert.equal(sectionWhen('primaries', at(2028, 2, 1), 'primaries'), 'Under way')
+  assert.equal(sectionWhen('race', now, 'nomination'), undefined)
+  // Past dates lose the count.
+  assert.equal(sectionWhen('board', at(2028, 12, 1), 'results'), 'Nov 7, 2028')
+})

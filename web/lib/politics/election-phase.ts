@@ -35,45 +35,44 @@ export function electionPhase(now: number): ElectionPhase {
 export type SectionKey =
   | 'accuracy' // the 2026 result, one line
   | 'leaderboards' // the leaderboard card, by scope
+  | 'race' // party bar and the face-ended charts
   | 'map' // the map, its tracker and the electoral college model
-  | 'race' // party bar, face-ended charts, popular vote, balance of power
-  | 'movers'
-  | 'runningMates'
-  | 'board' // the 2028 race board
+  | 'national' // balance of power, popular vote, electoral-vote and margin strips
+  | 'offYear' // 2027 and 2029 races, and elections abroad
   | 'primaries'
+  | 'runningMates' // the conventions: running mates, contested conventions
+  | 'board' // the 2028 race board
+  | 'later' // 2030 to 2036, by office
+  | 'midterms2030' // the 2030 board and balance of power
+  | 'matrix'
+  | 'polling'
+  | 'unprecedented'
   | 'trending'
   | 'swings2026'
-  | 'offYear' // 2027 and 2029 races
-  | 'midterms2030' // the 2030 board and balance of power
-  | 'later' // 2030 and 2032 national markets
-  | 'matrix'
-  | 'unprecedented'
-  | 'polling'
   | 'feed'
 
 // Each phase's order. Sections not listed don't render in that phase.
 // After the result line and the leaderboards, the answers people come for
-// first: the headline race, then the map (who's ahead where, the road to
-// 270). Then the rest in the order things happen: the 2027 races, the
-// primaries, the conventions (running mates), Election Day (the board),
-// the cycles after. What's over sinks below what's left; the extras and the
-// feed come last.
+// first: the headline race, the map, and Congress and the popular vote.
+// Then the rest in the order things happen: the 2027 races, the primaries,
+// the conventions, the cycles after. What's over sinks below what's left;
+// the extras and the feed come last. Until the general election the map's
+// tracker lists each rating's states, so the race board waits for the fall.
 const ORDER: Record<ElectionPhase, SectionKey[]> = {
   nomination: [
     'accuracy',
     'leaderboards',
     'race',
     'map',
-    'movers',
+    'national',
     'offYear',
     'primaries',
     'runningMates',
-    'board',
     'later',
-    'trending',
     'matrix',
-    'unprecedented',
     'polling',
+    'unprecedented',
+    'trending',
     'swings2026',
     'feed',
   ],
@@ -81,29 +80,27 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'leaderboards',
     'race',
     'map',
-    'movers',
+    'national',
     'primaries',
     'runningMates',
-    'board',
     'later',
-    'trending',
     'matrix',
-    'unprecedented',
     'polling',
+    'unprecedented',
+    'trending',
     'feed',
   ],
   conventions: [
     'leaderboards',
     'race',
     'map',
-    'movers',
+    'national',
     'runningMates',
-    'board',
     'later',
-    'trending',
     'matrix',
-    'unprecedented',
     'polling',
+    'unprecedented',
+    'trending',
     'primaries',
     'feed',
   ],
@@ -111,13 +108,13 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'leaderboards',
     'race',
     'map',
-    'movers',
+    'national',
     'board',
     'later',
-    'trending',
     'matrix',
-    'unprecedented',
     'polling',
+    'unprecedented',
+    'trending',
     'runningMates',
     'feed',
   ],
@@ -126,6 +123,7 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'board',
     'map',
     'race',
+    'national',
     'later',
     'matrix',
     'polling',

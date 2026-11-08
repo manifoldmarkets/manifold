@@ -21,7 +21,6 @@ import {
   electionPathForTopic,
   hubTopicSlug,
   TIMELINE,
-  upcomingTimeline,
 } from './elections-2028-config'
 import { ELECTORAL_UNITS } from './ec-model'
 import {
@@ -116,17 +115,18 @@ test('each phase orders its sections once, ending with the feed', () => {
   }
 })
 
-test('the page reads in the order things happen, like the timeline', () => {
+test('the page answers first, then runs in the order things happen', () => {
   const order = sectionOrder('nomination')
   const at = (k: Parameters<typeof showsSection>[1]) => order.indexOf(k)
-  // The headline race and the map first, then the 2027 races, the
-  // primaries, the conventions, Election Day, after.
+  // The headline race, the map, then Congress and the popular vote; then
+  // the 2027 races, the primaries, the conventions, after.
   assert.equal(at('map'), at('race') + 1)
+  assert.equal(at('national'), at('map') + 1)
   const chronological = [
+    'national',
     'offYear',
     'primaries',
     'runningMates',
-    'board',
     'later',
   ] as const
   for (let i = 1; i < chronological.length; i++)
@@ -134,37 +134,27 @@ test('the page reads in the order things happen, like the timeline', () => {
       at(chronological[i - 1]) < at(chronological[i]),
       `${chronological[i - 1]} before ${chronological[i]}`
     )
-  // Every timeline entry points at sections the page has ids for.
-  const ids = new Set([
-    'race',
-    'map',
-    'primaries',
-    'running-mates',
-    'board',
-    'off-year',
-    'midterms-2030',
-    'later',
-  ])
-  for (const e of TIMELINE) {
-    assert.ok(e.sections.length > 0, e.key)
-    for (const id of e.sections) assert.ok(ids.has(id), `${e.key}: ${id}`)
-  }
+  // Until the general election the map's tracker lists each rating's
+  // states; the race board waits for the fall.
+  for (const phase of ['nomination', 'primaries', 'conventions'] as const)
+    assert.ok(!showsSection(phase, 'board'), phase)
+  for (const phase of ['general', 'results', 'midterms2030'] as const)
+    assert.ok(showsSection(phase, 'board'), phase)
 })
 
-test('the timeline drops what is over and keeps seasons undated', () => {
-  const now = upcomingTimeline(at(2026, 11, 6))
-  assert.equal(now[0].key, '2027')
-  assert.deepEqual(
-    now.slice(0, 4).map((e) => e.key),
-    ['2027', 'early', 'super-tuesday', 'last-primaries']
-  )
-  const early = now.find((e) => e.key === 'early')!
+test('the calendar keeps seasons undated and fixed days in order', () => {
+  const early = TIMELINE.find((e) => e.key === 'early')!
   assert.equal(early.time, undefined)
   assert.equal(early.season, 'Early 2028')
-  const march = upcomingTimeline(at(2028, 3, 2))
-  assert.equal(march[0].key, 'super-tuesday')
-  assert.ok(!march.some((e) => e.key === 'early'))
-  assert.equal(upcomingTimeline(at(2029, 1, 22))[0].key, '2029')
+  for (const e of TIMELINE) {
+    assert.ok(e.until > e.sortAt, e.key)
+    if (e.time) assert.equal(e.sortAt, e.time, e.key)
+  }
+  const fixed = TIMELINE.filter((e) => e.time).map((e) => e.time as number)
+  assert.deepEqual(
+    fixed,
+    [...fixed].sort((a, b) => a - b)
+  )
 })
 
 // ------------------------------------------------------------------ board

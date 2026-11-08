@@ -343,12 +343,13 @@ export const POLLING_PERPS_2028 = [
   'jd-vance-favorability-votehub-avg',
 ]
 
-// The calendar on the road ahead. Election days are set by law (the Tuesday
-// after the first Monday in November); the electoral college meets on the
-// first Monday after the second Wednesday in December. Super Tuesday is the
-// first Tuesday in March under most of those states' laws. Dates the parties
-// haven't set yet (the early contests, the conventions, the debates) show as
-// a season and drop off once it's over (`until`), with no day count.
+// The calendar on the road ahead, for the dates in /election's headings and
+// contents. Election days are set by law (the Tuesday after the first Monday
+// in November); the electoral college meets on the first Monday after the
+// second Wednesday in December. Super Tuesday is the first Tuesday in March
+// under most of those states' laws. Dates the parties haven't set yet (the
+// early contests, the conventions, the debates) show as a season, with no
+// day count; `until` is when an entry is over.
 export type TimelineEntry = {
   key: string
   label: string
@@ -356,13 +357,9 @@ export type TimelineEntry = {
   // A fixed date (with a day count), or a season shown as text.
   time?: number
   season?: string
-  // Where the entry sits in the timeline, and when it drops off.
+  // Where the entry sits in the calendar, and when it's over.
   sortAt: number
   until: number
-  // The page sections the entry is about (their ids), the first one on the
-  // page wins: the timeline rail links there and lights the entry up while
-  // that section is in view.
-  sections: string[]
 }
 
 export const TIMELINE: TimelineEntry[] = [
@@ -373,7 +370,6 @@ export const TIMELINE: TimelineEntry[] = [
     time: Date.UTC(2027, 10, 2, 11),
     sortAt: Date.UTC(2027, 10, 2, 11),
     until: Date.UTC(2027, 10, 3, 11),
-    sections: ['off-year'],
   },
   {
     key: 'early',
@@ -382,7 +378,6 @@ export const TIMELINE: TimelineEntry[] = [
     season: 'Early 2028',
     sortAt: Date.UTC(2028, 0, 15),
     until: Date.UTC(2028, 2, 1),
-    sections: ['primaries'],
   },
   {
     key: 'super-tuesday',
@@ -391,7 +386,6 @@ export const TIMELINE: TimelineEntry[] = [
     time: Date.UTC(2028, 2, 7, 12),
     sortAt: Date.UTC(2028, 2, 7, 12),
     until: Date.UTC(2028, 2, 8, 12),
-    sections: ['primaries'],
   },
   {
     key: 'last-primaries',
@@ -400,7 +394,6 @@ export const TIMELINE: TimelineEntry[] = [
     season: 'June 2028',
     sortAt: Date.UTC(2028, 5, 15),
     until: Date.UTC(2028, 6, 1),
-    sections: ['primaries'],
   },
   {
     key: 'conventions',
@@ -409,7 +402,6 @@ export const TIMELINE: TimelineEntry[] = [
     season: 'Summer 2028',
     sortAt: Date.UTC(2028, 6, 20),
     until: Date.UTC(2028, 8, 1),
-    sections: ['running-mates', 'race'],
   },
   {
     key: 'debates',
@@ -418,7 +410,6 @@ export const TIMELINE: TimelineEntry[] = [
     season: 'Fall 2028',
     sortAt: Date.UTC(2028, 9, 1),
     until: Date.UTC(2028, 10, 1),
-    sections: ['race'],
   },
   {
     key: '2028',
@@ -427,7 +418,6 @@ export const TIMELINE: TimelineEntry[] = [
     time: Date.UTC(2028, 10, 7, 11),
     sortAt: Date.UTC(2028, 10, 7, 11),
     until: Date.UTC(2028, 10, 8, 11),
-    sections: ['map', 'board'],
   },
   {
     key: 'electors',
@@ -436,7 +426,6 @@ export const TIMELINE: TimelineEntry[] = [
     time: Date.UTC(2028, 11, 18, 17),
     sortAt: Date.UTC(2028, 11, 18, 17),
     until: Date.UTC(2028, 11, 19, 17),
-    sections: ['board'],
   },
   {
     key: 'inauguration',
@@ -445,7 +434,6 @@ export const TIMELINE: TimelineEntry[] = [
     time: Date.UTC(2029, 0, 20, 17),
     sortAt: Date.UTC(2029, 0, 20, 17),
     until: Date.UTC(2029, 0, 21, 17),
-    sections: ['race'],
   },
   {
     key: '2029',
@@ -454,7 +442,6 @@ export const TIMELINE: TimelineEntry[] = [
     time: Date.UTC(2029, 10, 6, 11),
     sortAt: Date.UTC(2029, 10, 6, 11),
     until: Date.UTC(2029, 10, 7, 11),
-    sections: ['off-year'],
   },
   {
     key: '2030',
@@ -463,7 +450,6 @@ export const TIMELINE: TimelineEntry[] = [
     time: Date.UTC(2030, 10, 5, 11),
     sortAt: Date.UTC(2030, 10, 5, 11),
     until: Date.UTC(2030, 10, 6, 11),
-    sections: ['midterms-2030', 'later'],
   },
   {
     key: '2032',
@@ -472,10 +458,5 @@ export const TIMELINE: TimelineEntry[] = [
     time: Date.UTC(2032, 10, 2, 11),
     sortAt: Date.UTC(2032, 10, 2, 11),
     until: Date.UTC(2032, 10, 3, 11),
-    sections: ['later'],
   },
 ]
-
-// What the timeline shows: everything not yet over, in order.
-export const upcomingTimeline = (now: number) =>
-  TIMELINE.filter((e) => e.until > now).sort((a, b) => a.sortAt - b.sortAt)

@@ -1,8 +1,11 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { Fragment, ReactNode, useEffect, useState } from 'react'
+import { groupBy, sortBy } from 'lodash'
+import { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
 
+import { getAnswerProbability } from 'common/calculate'
+import { Contract, contractPath, isMultiCpmm } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { referralQuery } from 'common/util/share'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
@@ -16,9 +19,9 @@ import {
   LiveConditionOdds,
 } from 'web/components/us-elections/conditional-matrix'
 import interactions from 'web/components/us-elections/election-interactions.module.css'
-import { MarketSpotlightGrid } from 'web/components/us-elections/market-spotlight'
 import { PollingPerpsRow } from 'web/components/us-elections/polling-perps-row'
 import { SectionInView } from 'web/components/us-elections/section-in-view'
+import { formatOdds } from 'web/components/usa-map/election-display'
 import { getPartyProbs } from 'web/components/usa-map/state-election-map'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
@@ -27,23 +30,40 @@ import {
   PRESIDENT_2028_COLUMNS,
   withConditionProbs,
 } from 'web/lib/politics/conditional-matrix'
+import {
+  hasSection,
+  pageContents,
+  SECTION_IDS,
+  sectionTitle,
+  sectionWhen,
+} from 'web/lib/politics/election-contents'
+import {
+  MARKET_LABELS,
+  More2028Place,
+  placeMore2028,
+  sideTotal,
+} from 'web/lib/politics/election-glance'
+import { SectionKey, sectionOrder } from 'web/lib/politics/election-phase'
 import type { Elections2028PageProps } from 'web/lib/politics/elections-2028'
 import {
   BOARD_FREEZE,
   ELECTION_HUB_TOPICS,
   PRESIDENTIAL_2028_TOPIC_SLUG,
 } from 'web/lib/politics/elections-2028-config'
-import { SectionKey, sectionOrder } from 'web/lib/politics/election-phase'
 import { track } from 'web/lib/service/analytics'
 import { buildShareUrl } from 'web/lib/util/share-url'
-import { AccuracyBanner } from './accuracy-banner'
+import { AccuracyBanner, REPLAY_LINK } from './accuracy-banner'
 import { BalanceOfPower } from './balance-of-power'
 import { CandidateBars } from './candidate-bars'
+import { ContentsStrip } from './contents-nav'
 import { ElectionLeaderboards } from './election-leaderboards'
 import { ElectionMap } from './election-map'
-import { MoversStrip } from './movers-strip'
+import { FutureCycles } from './future-cycles'
+import { OddsItem, OddsRows, oddsItems } from './odds-rows'
+import { OddsStrip } from './odds-strip'
+import { OffYearMap } from './off-year-map'
 import { PartyOddsBar } from './party-odds-bar'
-import { PrimariesBoard } from './primaries-board'
+import { PrimariesOverview } from './primaries-overview'
 import { RaceBoard } from './race-board'
 import { RaceCard, RangePicker, useRange } from './race-section'
 import { Swings2026 } from './swings-2026'
@@ -53,7 +73,11 @@ import { Swings2026 } from './swings-2026'
 // calendar (election-phase.ts), so the page needs no edits as it moves from
 // the nomination race to primaries, conventions, the general, results and
 // the 2030 midterms. Sections render only when their markets loaded, so a
-// missing market drops a card, never the page.
+// missing market drops a card, never the page; the contents (the right
+// margin, a strip on phones) lists the same sections from the same checks
+// (election-contents.ts). Every section is a picture of its markets (a map,
+// strips, faces, a grid), not a wall of market cards; what doesn't need one
+// is a line each.
 
 const FEED_TOPICS = [
   { slug: PRESIDENTIAL_2028_TOPIC_SLUG, label: '2028 President' },
@@ -74,20 +98,32 @@ function feedTopicFor(slug: unknown): FeedTopic | undefined {
   )
 }
 
+const CARD = 'bg-canvas-0 border-ink-200 rounded-xl border p-4'
+
+// A section's heading: its date first where the calendar sets one, then the
+// title (the contents' anchor) and a line on what's in it.
 function SectionHeader(props: {
-  children: ReactNode
+  section: SectionKey
+  now: number
+  phase: Elections2028PageProps['phase']
   subtitle?: ReactNode
   action?: ReactNode
-  id?: string
 }) {
+  const { section, now, phase } = props
+  const when = sectionWhen(section, now, phase)
   return (
     <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
       <div className="flex flex-col gap-0.5">
+        {when && (
+          <span className="text-primary-700 text-xs font-semibold uppercase tracking-wide">
+            {when}
+          </span>
+        )}
         <h2
-          id={props.id}
-          className="text-ink-1000 text-xl font-semibold sm:text-2xl"
+          id={SECTION_IDS[section]}
+          className="text-ink-1000 scroll-mt-16 text-xl font-semibold sm:text-2xl lg:scroll-mt-4"
         >
-          {props.children}
+          {sectionTitle(section, phase)}
         </h2>
         {props.subtitle && (
           <div className="text-ink-600 text-sm">{props.subtitle}</div>
@@ -96,6 +132,24 @@ function SectionHeader(props: {
       {props.action}
     </div>
   )
+}
+
+// The tipping-point market's likeliest states, one line each.
+function tippingRows(contract: Contract): OddsItem[] {
+  if (!isMultiCpmm(contract)) return []
+  return sortBy(
+    contract.answers
+      .filter((a) => !/^other\b/i.test(a.text.trim()))
+      .map((a) => ({ a, p: getAnswerProbability(contract, a.id) })),
+    (x) => -x.p
+  )
+    .slice(0, 6)
+    .map(({ a, p }) => ({
+      key: a.id,
+      label: a.text,
+      p,
+      href: contractPath(contract),
+    }))
 }
 
 export function Elections2028Page(props: Elections2028PageProps) {
@@ -110,7 +164,6 @@ export function Elections2028Page(props: Elections2028PageProps) {
     balanceOfPowerContract,
     congressContract,
     charts,
-    movers,
     demVpContract,
     gopVpContract,
     ticketContract,
@@ -128,6 +181,7 @@ export function Elections2028Page(props: Elections2028PageProps) {
     offYear,
     before2028World,
     later,
+    marketKeys,
     presidencyMatrixRows,
     unprecedentedContracts,
     pollingPerpContracts,
@@ -159,52 +213,39 @@ export function Elections2028Page(props: Elections2028PageProps) {
   const nominees = charts.filter((c) => c.key !== 'president')
   const results = phase === 'results' || phase === 'midterms2030'
 
-  // Every section, once; the phase decides which show and in what order
-  // (election-phase.ts). A section whose markets didn't load renders nothing.
-  const sections: Record<SectionKey, ReactNode> = {
-    accuracy: <AccuracyBanner story={accuracy} />,
+  const contents = useMemo(() => pageContents(props), [props])
+  // The 2028 markets with no slot of their own, by where they're drawn.
+  const placed = groupBy(more2028, (c) =>
+    placeMore2028(marketKeys[c.id])
+  ) as Partial<Record<More2028Place, Contract[]>>
+  const labelOf = (c: { id: string }) => MARKET_LABELS[marketKeys[c.id] ?? '']
+  const head = (section: SectionKey) => ({ section, now, phase })
 
-    leaderboards: leaderboards.length > 0 && (
+  // Every section, once; the phase decides which show and in what order
+  // (election-phase.ts), and hasSection whether it has anything to show.
+  const sections: Record<SectionKey, () => ReactNode> = {
+    accuracy: () => <AccuracyBanner story={accuracy} />,
+
+    leaderboards: () => (
       <ElectionLeaderboards
         boards={leaderboards}
         defaultKey={leaderboardDefault}
       />
     ),
 
-    map: (board2028.length > 0 || primaries.length > 0) && (
-      <SectionInView section="2028 map" className="flex flex-col gap-3">
-        <SectionHeader
-          id="map"
-          subtitle="Every race by our odds, and the road to 270. Hover a state for its odds; click it for every market there."
-        >
-          The map
-        </SectionHeader>
-        <ElectionMap
-          races={board2028}
-          primaries={primaries}
-          offYear={offYear}
-          defaultMode={phase === 'primaries' ? 'primary' : 'president'}
-          model={model}
-          partyContract={partyContract}
-        />
-      </SectionInView>
-    ),
-
-    race: (
+    race: () => (
       <SectionInView section="2028 race" className="flex flex-col gap-4">
         <SectionHeader
-          id="race"
+          {...head('race')}
           subtitle={
             results
               ? 'Who won the White House, and the odds that got them there.'
               : 'Who wins the White House, and who gets nominated.'
           }
           action={<RangePicker value={range} onChange={setRange} />}
-        >
-          {results ? 'The 2028 presidential race' : 'The race for 2028'}
-        </SectionHeader>
+        />
         {partyContract && (
-          <div className="bg-canvas-0 border-ink-200 rounded-xl border p-4">
+          <div className="bg-canvas-0 border-ink-200 rounded-xl border px-4 py-3">
             <PartyOddsBar
               contract={partyContract}
               label="Which party wins the presidency"
@@ -228,10 +269,39 @@ export function Elections2028Page(props: Elections2028PageProps) {
             ))}
           </div>
         )}
-        {(popularVoteContract ||
-          balanceOfPowerContract ||
-          congressContract) && (
-          <div className="grid gap-4 md:grid-cols-2">
+      </SectionInView>
+    ),
+
+    map: () => (
+      <SectionInView section="2028 map" className="flex flex-col gap-3">
+        <SectionHeader
+          {...head('map')}
+          subtitle="Every race by our odds, and the road to 270. Hover a state for its odds; click it for every market there."
+        />
+        <ElectionMap
+          races={board2028}
+          primaries={primaries}
+          offYear={offYear}
+          defaultMode={phase === 'primaries' ? 'primary' : 'president'}
+          model={model}
+          partyContract={partyContract}
+        />
+      </SectionInView>
+    ),
+
+    national: () => {
+      const margin = placed.margin?.[0]
+      const electoralVotes = placed.electoralVotes?.[0]
+      const tipping = placed.tippingPoint?.[0]
+      const facts = oddsItems(placed.facts ?? [], labelOf)
+      const tippingItems = tipping ? tippingRows(tipping) : []
+      return (
+        <SectionInView section="2028 national" className="flex flex-col gap-4">
+          <SectionHeader
+            {...head('national')}
+            subtitle="Who controls Washington after 2028, the popular vote, and how big the win is."
+          />
+          <div className="grid items-start gap-4 md:grid-cols-2">
             {balanceOfPowerContract && (
               <BalanceOfPower
                 contract={balanceOfPowerContract}
@@ -239,18 +309,56 @@ export function Elections2028Page(props: Elections2028PageProps) {
               />
             )}
             <div className="flex flex-col gap-4">
-              {popularVoteContract && (
-                <div className="bg-canvas-0 border-ink-200 rounded-xl border p-4">
-                  <PartyOddsBar
-                    contract={popularVoteContract}
-                    label="Who wins the popular vote"
-                    trackingName="election 2028 popular vote"
-                    size="sm"
+              {(popularVoteContract || margin) && (
+                <div className={clsx(CARD, 'flex flex-col gap-4')}>
+                  {popularVoteContract && (
+                    <PartyOddsBar
+                      contract={popularVoteContract}
+                      label="Who wins the popular vote"
+                      trackingName="election 2028 popular vote"
+                      size="sm"
+                    />
+                  )}
+                  {margin && (
+                    <OddsStrip
+                      contract={margin}
+                      title="By how much"
+                      threshold={0}
+                      thresholdLabel="Even"
+                      summary={(b) => {
+                        const top = b.reduce((x, y) => (y.p > x.p ? y : x))
+                        return (
+                          <>
+                            Most likely{' '}
+                            <b className="text-ink-1000">{top.text}</b> (
+                            {formatOdds(top.p)})
+                          </>
+                        )
+                      }}
+                    />
+                  )}
+                </div>
+              )}
+              {electoralVotes && (
+                <div className={CARD}>
+                  <OddsStrip
+                    contract={electoralVotes}
+                    title="The Democratic nominee's electoral votes"
+                    threshold={270}
+                    thresholdLabel="270"
+                    summary={(b) => (
+                      <>
+                        270 or more:{' '}
+                        <b className="text-ink-1000">
+                          {formatOdds(sideTotal(b, 'D'))}
+                        </b>
+                      </>
+                    )}
                   />
                 </div>
               )}
               {congressContract && (
-                <div className="bg-canvas-0 border-ink-200 rounded-xl border p-4">
+                <div className={CARD}>
                   <PartyOddsBar
                     contract={congressContract}
                     label="Who controls Congress after 2028"
@@ -261,41 +369,60 @@ export function Elections2028Page(props: Elections2028PageProps) {
               )}
             </div>
           </div>
-        )}
-        {more2028.length > 0 && (
-          <>
-            <h3 className="text-ink-900 mt-1 text-base font-semibold">
-              More on 2028
-            </h3>
-            <MarketSpotlightGrid
-              contracts={more2028}
-              trackingPostfix="election 2028 more"
-            />
-          </>
-        )}
-      </SectionInView>
-    ),
+          {(tippingItems.length > 0 || facts.length > 0) && (
+            <div
+              className={clsx(
+                'grid items-start gap-4',
+                tippingItems.length > 0 && facts.length > 0 && 'md:grid-cols-2'
+              )}
+            >
+              {tipping && tippingItems.length > 0 && (
+                <div className={clsx(CARD, 'flex flex-col gap-1')}>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <h3 className="text-ink-1000 text-sm font-semibold">
+                      The tipping-point state
+                    </h3>
+                    <Link
+                      href={contractPath(tipping)}
+                      className="text-ink-500 hover:text-primary-700 shrink-0 text-xs hover:underline"
+                    >
+                      Market →
+                    </Link>
+                  </div>
+                  <OddsRows
+                    items={tippingItems}
+                    columns={1}
+                    trackingName="election 2028 tipping point"
+                  />
+                </div>
+              )}
+              {facts.length > 0 && (
+                <div className={clsx(CARD, 'flex flex-col gap-1')}>
+                  <h3 className="text-ink-1000 text-sm font-semibold">
+                    Also on 2028
+                  </h3>
+                  <OddsRows
+                    items={facts}
+                    columns={1}
+                    trackingName="election 2028 facts"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </SectionInView>
+      )
+    },
 
-    movers: movers.length > 0 && (
-      <SectionInView section="2028 movers" className="flex flex-col gap-3">
-        <SectionHeader subtitle="The biggest moves in the 2028 races over the last seven days.">
-          Biggest movers this week
-        </SectionHeader>
-        <MoversStrip movers={movers} charts={charts} />
-      </SectionInView>
-    ),
-
-    runningMates: (demVpContract || gopVpContract || ticketContract) && (
+    runningMates: () => (
       <SectionInView
         section="2028 running mates"
         className="flex flex-col gap-3"
       >
         <SectionHeader
-          id="running-mates"
-          subtitle="Each party's pick for vice president, and who ends up on the winning ticket."
-        >
-          Running mates
-        </SectionHeader>
+          {...head('runningMates')}
+          subtitle="Each party's pick for vice president, who ends up on the winning ticket, and whether a convention goes past its first ballot."
+        />
         <div className="grid gap-4 md:grid-cols-3">
           {demVpContract && (
             <CandidateBars
@@ -323,13 +450,21 @@ export function Elections2028Page(props: Elections2028PageProps) {
             />
           )}
         </div>
+        {placed.conventions && (
+          <div className={CARD}>
+            <OddsRows
+              items={oddsItems(placed.conventions, labelOf)}
+              trackingName="election 2028 conventions"
+            />
+          </div>
+        )}
       </SectionInView>
     ),
 
-    board: board2028.length > 0 && (
+    board: () => (
       <SectionInView section="race board 2028" className="flex flex-col gap-3">
         <SectionHeader
-          id="board"
+          {...head('board')}
           subtitle={
             board2028Mode === 'results'
               ? 'Every 2028 race for president, Senate, governor and House, by who won it.'
@@ -337,9 +472,7 @@ export function Elections2028Page(props: Elections2028PageProps) {
               ? 'Every 2028 race as the results come in, in the columns our markets put them in before the polls opened.'
               : 'Every 2028 race for president, Senate, governor and House, by how our markets rate it.'
           }
-        >
-          {board2028Mode === 'live' ? 'Every race' : '2028 results'}
-        </SectionHeader>
+        />
         <RaceBoard
           races={board2028}
           mode={board2028Mode}
@@ -350,39 +483,35 @@ export function Elections2028Page(props: Elections2028PageProps) {
       </SectionInView>
     ),
 
-    primaries: (primaries.length > 0 || primaryContracts.length > 0) && (
+    primaries: () => (
       <SectionInView section="2028 primaries" className="flex flex-col gap-3">
         <SectionHeader
-          id="primaries"
-          subtitle="Who leads each party's contest in every state, the early states first."
-        >
-          The primaries
-        </SectionHeader>
-        {primaries.length > 0 && <PrimariesBoard rows={primaries} />}
-        {primaryContracts.length > 0 && (
-          <MarketSpotlightGrid
-            contracts={primaryContracts}
-            trackingPostfix="election 2028 primaries"
-          />
-        )}
-      </SectionInView>
-    ),
-
-    trending: trendingContracts.length > 0 && (
-      <SectionInView section="2028 trending" className="flex flex-col gap-3">
-        <SectionHeader subtitle="The 2028 markets traders are most active in right now.">
-          Trending
-        </SectionHeader>
-        <MarketSpotlightGrid
-          contracts={trendingContracts}
-          trackingPostfix="election 2028 trending"
+          {...head('primaries')}
+          subtitle="Who runs, and who leads each party's contest in the early states."
         />
+        <PrimariesOverview rows={primaries} fields={primaryContracts} />
       </SectionInView>
     ),
 
-    swings2026: swings.length > 0 && (
+    trending: () => (
+      <SectionInView section="2028 trending" className="flex flex-col gap-3">
+        <SectionHeader
+          {...head('trending')}
+          subtitle="The 2028 markets traders are most active in right now."
+        />
+        <div className={CARD}>
+          <OddsRows
+            items={oddsItems(trendingContracts)}
+            trackingName="election 2028 trending"
+          />
+        </div>
+      </SectionInView>
+    ),
+
+    swings2026: () => (
       <SectionInView section="2026 swings" className="flex flex-col gap-3">
         <SectionHeader
+          {...head('swings2026')}
           subtitle="The races Manifold's odds moved most on, from a week out to the result."
           action={
             <Link
@@ -390,55 +519,35 @@ export function Elections2028Page(props: Elections2028PageProps) {
               className="text-primary-700 hover:text-primary-800 shrink-0 whitespace-nowrap text-sm font-medium hover:underline"
               onClick={() => track('click election 2026 replay from swings')}
             >
-              Replay election night →
+              {REPLAY_LINK} →
             </Link>
           }
-        >
-          2026&apos;s biggest swings
-        </SectionHeader>
-        <Swings2026 swings={swings} />
+        />
+        <div className={CARD}>
+          <Swings2026 swings={swings} />
+        </div>
       </SectionInView>
     ),
 
-    offYear: (offYear.length > 0 || before2028World.length > 0) && (
+    offYear: () => (
       <SectionInView
         section="off-year elections"
         className="flex flex-col gap-3"
       >
         <SectionHeader
-          id="off-year"
-          subtitle="Governors and legislatures in the odd years, the Speaker votes, and major elections abroad."
-        >
-          Off-year elections
-        </SectionHeader>
-        {offYear.length > 0 && (
-          <MarketSpotlightGrid
-            contracts={offYear}
-            trackingPostfix="election off-year us"
-          />
-        )}
-        {before2028World.length > 0 && (
-          <>
-            <h3 className="text-ink-900 mt-1 text-base font-semibold">
-              Around the world
-            </h3>
-            <MarketSpotlightGrid
-              contracts={before2028World}
-              trackingPostfix="election before 2028 world"
-            />
-          </>
-        )}
+          {...head('offYear')}
+          subtitle="Governors and legislatures in the odd years, the Speaker vote, and major elections abroad."
+        />
+        <OffYearMap contracts={offYear} world={before2028World} />
       </SectionInView>
     ),
 
-    midterms2030: (board2030.length > 0 || balanceOfPower2030) && (
+    midterms2030: () => (
       <SectionInView section="2030 midterms" className="flex flex-col gap-3">
         <SectionHeader
-          id="midterms-2030"
+          {...head('midterms2030')}
           subtitle="Who controls Washington after the midterms, and every Senate and governor race."
-        >
-          The 2030 midterms
-        </SectionHeader>
+        />
         {balanceOfPower2030 && (
           <BalanceOfPower
             contract={balanceOfPower2030}
@@ -457,29 +566,27 @@ export function Elections2028Page(props: Elections2028PageProps) {
       </SectionInView>
     ),
 
-    later: later.length > 0 && (
+    later: () => (
       <SectionInView section="later cycles" className="flex flex-col gap-3">
         <SectionHeader
-          id="later"
-          subtitle="Control of Washington after each election, and the 2032 and 2036 presidential races."
-        >
-          {phase === 'midterms2030' ? '2032 and beyond' : '2030 and beyond'}
-        </SectionHeader>
-        <MarketSpotlightGrid
-          contracts={later}
-          trackingPostfix="election later"
+          {...head('later')}
+          subtitle="Which party holds the White House, Senate and House after each election, and the 2032 race."
         />
+        <div className={CARD}>
+          <FutureCycles contracts={later} marketKeys={marketKeys} />
+        </div>
       </SectionInView>
     ),
 
-    matrix: presidencyMatrixRows.length > 0 && (
+    matrix: () => (
       <SectionInView
         section="conditional matrix 2028"
         className="flex flex-col gap-3"
       >
-        <SectionHeader subtitle="The same questions, asked under a Democratic and a Republican president. Click a chance to bet on it.">
-          What the 2028 winner would change
-        </SectionHeader>
+        <SectionHeader
+          {...head('matrix')}
+          subtitle="The same questions, asked under a Democratic and a Republican president. Click a chance to bet on it."
+        />
         <PresidencyMatrix
           rows={presidencyMatrixRows}
           partyContract={partyContract}
@@ -487,33 +594,37 @@ export function Elections2028Page(props: Elections2028PageProps) {
       </SectionInView>
     ),
 
-    unprecedented: unprecedentedContracts.length > 0 && (
+    unprecedented: () => (
       <SectionInView
         section="unprecedented politics"
         className="flex flex-col gap-3"
       >
-        <SectionHeader subtitle="Things that have never happened in American politics, with the market's live odds that they do.">
-          Unprecedented politics
-        </SectionHeader>
-        <MarketSpotlightGrid
-          contracts={unprecedentedContracts}
-          trackingPostfix="election unprecedented"
+        <SectionHeader
+          {...head('unprecedented')}
+          subtitle="Things that have never happened in American politics, with the market's live odds that they do."
         />
+        <div className={CARD}>
+          <OddsRows
+            items={oddsItems(unprecedentedContracts)}
+            trackingName="election unprecedented"
+          />
+        </div>
       </SectionInView>
     ),
 
-    polling: pollingPerpContracts.length > 0 && (
+    polling: () => (
       <SectionInView section="polling" className="flex flex-col gap-3">
-        <SectionHeader subtitle="VoteHub's live polling averages. Bet on whether they go higher or lower.">
-          Polling averages
-        </SectionHeader>
+        <SectionHeader
+          {...head('polling')}
+          subtitle="VoteHub's live polling averages. Bet on whether they go higher or lower."
+        />
         <PollingPerpsRow contracts={pollingPerpContracts} />
       </SectionInView>
     ),
 
-    feed: (
+    feed: () => (
       <SectionInView section="feed" className="flex flex-col gap-3">
-        <SectionHeader>More election markets</SectionHeader>
+        <SectionHeader {...head('feed')} />
         <Search
           key={feedTopic.slug}
           persistPrefix="election-2028-page-markets"
@@ -539,6 +650,9 @@ export function Elections2028Page(props: Elections2028PageProps) {
       </SectionInView>
     ),
   }
+  const order = sectionOrder(phase).filter((key) => hasSection(props, key))
+  // On phones the contents strip sits under the 2026 line, or the header.
+  const stripAfter = order[0] === 'accuracy' ? 'accuracy' : undefined
 
   return (
     <div
@@ -574,9 +688,13 @@ export function Elections2028Page(props: Elections2028PageProps) {
         </div>
       </div>
 
-      {sectionOrder(phase).map((key) =>
-        sections[key] ? <Fragment key={key}>{sections[key]}</Fragment> : null
-      )}
+      {stripAfter === undefined && <ContentsStrip entries={contents} />}
+      {order.map((key) => (
+        <Fragment key={key}>
+          {sections[key]()}
+          {key === stripAfter && <ContentsStrip entries={contents} />}
+        </Fragment>
+      ))}
     </div>
   )
 }

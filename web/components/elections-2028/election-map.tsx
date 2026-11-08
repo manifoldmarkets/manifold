@@ -21,6 +21,7 @@ import {
   hexShapes,
   HIT_RADIUS_PX,
   LABEL_AT,
+  loadAtlas,
   Shape,
   stateShapes,
   tileShapes,
@@ -326,23 +327,19 @@ export function ElectionMap(props: {
       : firstShape(navigable)
 
   useEffect(() => {
-    const abort = new AbortController()
+    let live = true
     setMapError(false)
-    fetch('/data/election-atlas.json', { signal: abort.signal })
-      .then((r) => {
-        if (!r.ok) throw new Error('Map unavailable')
-        return r.json()
-      })
-      .then(setAtlas)
-      .catch((e) => {
-        if (e.name !== 'AbortError') setMapError(true)
-      })
-    return () => abort.abort()
+    loadAtlas()
+      .then((a) => live && setAtlas(a))
+      .catch(() => live && setMapError(true))
+    return () => {
+      live = false
+    }
   }, [attempt])
   useEffect(() => {
     if (searchOpen) searchRef.current?.focus()
   }, [searchOpen])
-  // Another section can switch the view (the primaries tables' link).
+  // Another section can switch the view (the primaries section's link).
   useEffect(() => {
     const listen = (e: Event) => {
       const patch = (e as CustomEvent<Partial<MapView>>).detail

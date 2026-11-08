@@ -1,7 +1,7 @@
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { Elections2028Page } from 'web/components/elections-2028/elections-2028-page'
-import { TimelineRail } from 'web/components/elections-2028/timeline-rail'
+import { ContentsRail } from 'web/components/elections-2028/contents-nav'
 import {
   OG_ELECTION_2028_HEIGHT,
   OG_ELECTION_2028_WIDTH,
@@ -9,6 +9,7 @@ import {
 } from 'web/components/og/og-election-2028'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { getElection2028OgProps } from 'web/lib/politics/election-2028-og'
+import { pageContents } from 'web/lib/politics/election-contents'
 import { formatOgAsOf } from 'web/lib/politics/election-og'
 import {
   Elections2028PageProps,
@@ -71,9 +72,7 @@ export default function Elections(props: Props) {
     <Page
       trackPageView="us elections page 2028"
       hideGoogleOneTap
-      rightSidebar={
-        <TimelineRail now={props.now} primaries={props.primaries} />
-      }
+      rightSidebar={<ContentsRail entries={pageContents(props)} />}
     >
       <SEO
         title="2028 Presidential Election Odds"

@@ -22,7 +22,7 @@ export type MapView = {
 }
 
 // A window event that switches the map's view from elsewhere on the page
-// (the primaries tables' "Every state on the map"): detail is a partial
+// (the primaries section's link to the other contests): detail is a partial
 // MapView.
 export const MAP_VIEW_EVENT = 'election-map:view'
 

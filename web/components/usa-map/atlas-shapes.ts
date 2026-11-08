@@ -45,6 +45,22 @@ export const LABEL_AT: Record<string, Point> = {
 export const TINY_STATES = ['RI', 'DE', 'CT', 'NJ', 'VT', 'NH', 'MA', 'MD']
 export const HIT_RADIUS_PX = 22
 
+// The atlas, fetched once per page however many maps draw from it (it's
+// over a megabyte). A failed fetch is forgotten so the next call retries.
+let atlasRequest: Promise<Atlas> | undefined
+export function loadAtlas(): Promise<Atlas> {
+  atlasRequest ??= fetch('/data/election-atlas.json')
+    .then((r) => {
+      if (!r.ok) throw new Error('Map unavailable')
+      return r.json() as Promise<Atlas>
+    })
+    .catch((e) => {
+      atlasRequest = undefined
+      throw e
+    })
+  return atlasRequest
+}
+
 export const districtId = (state: string, district: number) =>
   `${state}-${district}`
 

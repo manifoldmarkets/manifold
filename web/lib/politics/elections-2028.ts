@@ -75,7 +75,7 @@ import { getGroupFromSlug } from 'web/lib/supabase/group'
 import { MIDTERMS_2026 } from 'web/public/data/elections-data'
 import snapshot from 'web/public/data/election-2026-replay.json'
 import swingsFile from 'web/public/data/election-2026-swings.json'
-import { isCandidateAnswer, lookupCandidate } from './candidates'
+import { isCandidateAnswer } from './candidates'
 import type { Swing2026, Swings2026File } from './swings-2026'
 import {
   AFTER_2028,
@@ -202,14 +202,6 @@ export function accuracyStory(scores: ChamberScore[]): AccuracyStory {
   return { beatRealMoney, chambers }
 }
 
-export type Mover = {
-  chart: RaceChartKey
-  answerId: string
-  text: string
-  prob: number
-  weekChange: number
-}
-
 export type Elections2028PageProps = {
   now: number
   phase: ElectionPhase
@@ -225,7 +217,6 @@ export type Elections2028PageProps = {
   balanceOfPowerContract: Contract | null
   congressContract: Contract | null
   charts: RaceChart[]
-  movers: Mover[]
   demVpContract: Contract | null
   gopVpContract: Contract | null
   ticketContract: Contract | null
@@ -248,6 +239,9 @@ export type Elections2028PageProps = {
   offYear: Contract[]
   before2028World: Contract[]
   later: Contract[]
+  // The official (or slot) key of each keyed market above, by contract id,
+  // so the page can draw each one in its place ("2028-tipping-point").
+  marketKeys: Record<string, string>
   presidencyMatrixRows: ConditionalMatrixRow[]
   unprecedentedContracts: Contract[]
   pollingPerpContracts: Contract[]
@@ -1029,27 +1023,6 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
     )
   ).filter((c): c is RaceChart => !!c)
 
-  // The week's biggest moves across the three races, one entry per person
-  // (their biggest).
-  const movers = uniqBy(
-    sortBy(
-      charts.flatMap((chart) =>
-        chart.series
-          .filter((s) => Math.abs(s.weekChange) >= 0.01)
-          .map((s) => ({
-            chart: chart.key,
-            answerId: s.answerId,
-            text: s.text,
-            prob: s.prob,
-            weekChange: s.weekChange,
-          }))
-      ),
-      (m) => -Math.abs(m.weekChange)
-    ),
-    // One card per person, however each market spells them.
-    (m) => lookupCandidate(m.text).key
-  ).slice(0, 6)
-
   let model: ElectoralModel | null = null
   try {
     // Only when every unit has a market or a documented prior: a missing,
@@ -1150,6 +1123,22 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
     (c) => c.id
   )
 
+  // Each keyed market's key, for the ones the page places by key.
+  const keyOf: Record<string, string> = {}
+  for (const [key, r] of national) keyOf[r.id] = key
+  for (const key of [
+    ...laterKeys,
+    ...national.filter(([, r]) => r.cycle % 2 === 1).map(([key]) => key),
+  ]) {
+    const c = slotFor(key, byId)
+    if (c && !keyOf[c.id]) keyOf[c.id] = key
+  }
+  const marketKeys = Object.fromEntries(
+    [...more2028, ...offYear, ...later].flatMap((c) =>
+      keyOf[c.id] ? [[c.id, keyOf[c.id]]] : []
+    )
+  )
+
   const shown = new Set<string>([
     ...ids,
     ...unprecedentedContracts.map((c) => c.id),
@@ -1167,7 +1156,6 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
     balanceOfPowerContract: officialBop ? slim(officialBop) : null,
     congressContract: officialBop ? null : slim(get(NATIONAL_2028.congress)),
     charts,
-    movers,
     demVpContract: slim(slot('demVp', NATIONAL_2028.demVp)),
     gopVpContract: slim(slot('gopVp', NATIONAL_2028.gopVp)),
     ticketContract: slimOrNull(get(NATIONAL_2028.ticket)),
@@ -1195,6 +1183,7 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
       now
     ).map(slimCard),
     later: later.map(slimCard),
+    marketKeys,
     presidencyMatrixRows,
     unprecedentedContracts: unprecedentedContracts.map(slimCard),
     pollingPerpContracts: perps
