@@ -86,14 +86,14 @@ function Cycles(props: {
     <div className="flex flex-col gap-4">
       {cycles.length > 0 && (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[20rem] border-separate border-spacing-1 text-sm">
+          <table className="w-full min-w-[20rem] table-fixed border-separate border-spacing-1 text-sm">
             <caption className="sr-only">
               Each party&apos;s chance of holding each office after each
               election
             </caption>
             <thead>
               <tr>
-                <th className="w-24" />
+                <th className="w-20 sm:w-24" />
                 {cycles.map(({ c, cycle }) => (
                   <th key={c.id} scope="col" className="text-left font-normal">
                     <Link

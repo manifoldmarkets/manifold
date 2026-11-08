@@ -549,7 +549,9 @@ export function Elections2028Page(props: Elections2028PageProps) {
           {...head('offYear')}
           subtitle="Governors and legislatures in the odd years, the Speaker vote, and major elections abroad."
         />
-        <OffYearMap contracts={offYear} world={before2028World} />
+        <div className={CARD}>
+          <OffYearMap contracts={offYear} world={before2028World} />
+        </div>
       </SectionInView>
     ),
 

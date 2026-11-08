@@ -127,9 +127,10 @@ function jump(ev: React.MouseEvent, e: ContentsEntry) {
 }
 
 // The section being read: of the given ids, the last whose heading has
-// passed the top third of the screen (the first, above the first heading;
-// the last, at the bottom of the page, where a short last section's heading
-// never gets that high). On iOS phones the page scrolls inside
+// passed a line near the top (a third of the screen, at most 160px, so a
+// short section that a jump lands on is the one lit). Above the first
+// heading, the first; at the bottom of the page, the last, whose heading a
+// short last section never lifts that high. On iOS phones the page scrolls inside
 // .page-scroll-container, not the window (layout/page.tsx), and scroll
 // events don't bubble, so the listener captures them on the document.
 function useSectionInView(ids: string[]) {
@@ -151,7 +152,7 @@ function useSectionInView(ids: string[]) {
           .find((id) => document.getElementById(id))
         if (last) return setCurrent(last)
       }
-      const line = window.innerHeight / 3
+      const line = Math.min(window.innerHeight / 3, 160)
       let best: { id: string; top: number } | undefined
       for (const id of ids) {
         const el = document.getElementById(id)

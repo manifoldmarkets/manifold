@@ -86,7 +86,7 @@ export function PartyOddsBar(props: {
         <span className="text-ink-600 text-xs font-semibold uppercase tracking-wide">
           {label}
         </span>
-        <span className="flex items-baseline gap-3">
+        <span className="flex shrink-0 items-baseline gap-3 whitespace-nowrap">
           {big && otherAnswer && (
             <button
               type="button"
