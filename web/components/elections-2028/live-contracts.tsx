@@ -7,6 +7,9 @@ import { useLiveContract } from 'web/hooks/use-contract'
 // (a tile map, a grid, a list of lines): one useLiveContract per market, as
 // the market cards had, batched into one fetch, each kept current by its own
 // updates. Renders `children` with the live copies, in the given order.
+// Keep a market in one list at a time: two lists would subscribe twice.
+// Pass a list's live copies down to plain OddsRows rather than wrapping
+// them again.
 export function LiveContracts(props: {
   contracts: Contract[]
   children: (live: Contract[]) => ReactNode
