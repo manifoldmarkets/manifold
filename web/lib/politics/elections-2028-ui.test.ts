@@ -204,13 +204,14 @@ test('a resolved race is called by its recorded resolution, not its prices', () 
     ),
     'R'
   )
-  // Yes/no: YES is the Republican unless the market says otherwise.
+  // Yes/no: called only with the market's recorded YES side.
   const binary = (resolution: string) => ({
     isResolved: true,
     resolution,
     outcomeType: 'BINARY',
   })
-  assert.equal(resolvedParty(binary('YES'), party), 'R')
+  assert.equal(resolvedParty(binary('YES'), party), undefined)
+  assert.equal(resolvedParty(binary('YES'), party, 'R'), 'R')
   assert.equal(resolvedParty(binary('YES'), party, 'D'), 'D')
   assert.equal(resolvedParty(binary('NO'), party, 'D'), 'R')
   // Open, cancelled or resolved to a mix: no call from the resolution.

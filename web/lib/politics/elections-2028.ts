@@ -502,15 +502,15 @@ const round3 = (x: number) => Math.round(x * 1000) / 1000
 const readParty = (c: Contract) => getPartyProbs(c)
 
 // The party a resolved race market went to, by its recorded resolution
-// (resolvedParty): a yes/no market's YES side as the 2026 audit records it,
-// else the Republican (as getPartyProbs reads them).
+// (resolvedParty): a yes/no market only where the audit records its YES
+// side (every 2028 race market is multiple choice today).
 const resolvedRace = (contract: Contract) => {
   const audit = sourceAudit(contract.slug)
   return resolvedParty(
     contract as Parameters<typeof resolvedParty>[0],
     (text) =>
       isDemocraticAnswer(text) ? 'D' : isRepublicanAnswer(text) ? 'R' : 'O',
-    audit?.kind === 'party-binary' && audit.binaryYes ? audit.binaryYes : 'R'
+    audit?.kind === 'party-binary' ? audit.binaryYes : undefined
   )
 }
 
