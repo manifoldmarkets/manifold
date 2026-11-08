@@ -7,7 +7,8 @@
 //     gives each senator's class.
 //   - Governors as seated: the 2026 map's NGA roster (election-incumbents.ts).
 //   - 2026 winners: each 2026 Senate and governor market and the competitive
-//     House districts' market, by resolution, named from the audited 2026
+//     House districts' market, by resolution (a yes/no market's YES side as
+//     the 2026 source audit records it), named from the audited 2026
 //     candidate list (election-candidates-2026.json). Safe House seats aren't
 //     named until the dataset seats the new Congress.
 // Rerun it after January 3, 2027 (and as 2026 races resolve):
@@ -22,6 +23,7 @@ import { join } from 'path'
 import candidates from 'web/public/data/election-candidates-2026.json'
 import { governors2026 } from 'web/public/data/governors-data'
 import { senate2026 } from 'web/public/data/senate-state-data'
+import { sourceAudit } from 'web/components/usa-map/audited-sources'
 import { getIncumbentGroups } from 'web/components/usa-map/election-incumbents'
 import { ELECTORAL_UNITS } from 'web/lib/politics/ec-model'
 import { HOUSE_2026_DISTRICTS_SLUG } from 'web/lib/politics/elections-2028-config'
@@ -43,7 +45,13 @@ const API = 'https://api.manifold.markets/v0'
 const OUT = join(__dirname, '../public/data/election-officeholders.json')
 
 type Legislator = {
-  name: { official_full?: string; first: string; last: string }
+  name: {
+    official_full?: string
+    first: string
+    last: string
+    nickname?: string
+    suffix?: string
+  }
   terms: {
     type: 'sen' | 'rep'
     state: string
@@ -66,15 +74,21 @@ async function getJson<T>(url: string): Promise<T | undefined> {
   return r.ok ? ((await r.json()) as T) : undefined
 }
 
-// How a 2026 market resolved: the winning party, and the answer's text where
-// it names a person. Undefined while unresolved.
-function resolved(m: ApiMarket | undefined) {
+// How a 2026 market resolved: the winning party, and the answer's text (a
+// person's name, where it gives one). Undefined while unresolved, and for a
+// yes/no market whose YES side the 2026 audit doesn't record (Maine's Senate
+// market asks whether the Democrat wins; Florida's whether the Republican
+// does).
+function resolved(m: ApiMarket | undefined, slug: string) {
   if (!m?.isResolved) return undefined
   if (m.outcomeType === 'BINARY') {
-    // The 2026 binary Senate markets ask whether the Republican wins.
-    if (m.resolution === 'YES') return { party: 'R' as OfficeParty }
-    if (m.resolution === 'NO') return { party: 'D' as OfficeParty }
-    return undefined
+    const audit = sourceAudit(slug)
+    const yes = audit?.kind === 'party-binary' ? audit.binaryYes : undefined
+    if (!yes || (m.resolution !== 'YES' && m.resolution !== 'NO'))
+      return undefined
+    const party: OfficeParty =
+      m.resolution === 'YES' ? yes : yes === 'D' ? 'R' : 'D'
+    return { party }
   }
   const won =
     m.answers?.find((a) => a.resolution === 'YES') ??
@@ -88,7 +102,30 @@ function resolved(m: ApiMarket | undefined) {
     : /independent|\(I\)/i.test(t)
     ? 'I'
     : undefined
-  return { party, text: party ? undefined : t }
+  return { party, text: t.replace(/\s*\((?:D|R|I)\)\s*$/, '').trim() }
+}
+
+// A member's name as people say it: the dataset's formal name without middle
+// initials or commas, with their nickname for a first name ("Bernard
+// Sanders" → "Bernie Sanders", "Nicholas J. Begich III" → "Nick Begich III",
+// "Eleanor Holmes Norton" kept). Where the formal name doesn't end in their
+// last name, or quotes a nickname, first (or nickname) and last name.
+function spokenName(n: Legislator['name']): string {
+  const full = (n.official_full ?? '').replace(/,/g, '')
+  const tail = [n.last, n.suffix].filter(Boolean).join(' ')
+  if (full && !full.includes('"') && full.endsWith(tail)) {
+    const plain = full
+      .split(' ')
+      .filter(
+        (word, i, words) =>
+          i === 0 || i === words.length - 1 || !/^[A-Z]\.$/.test(word)
+      )
+      .join(' ')
+    return n.nickname && plain.startsWith(`${n.first} `)
+      ? `${n.nickname}${plain.slice(n.first.length)}`
+      : plain
+  }
+  return [n.nickname ?? n.first, n.last, n.suffix].filter(Boolean).join(' ')
 }
 
 const elected = (holder: Holder, winner: Holder | undefined) =>
@@ -99,7 +136,7 @@ async function main() {
   const legislators = await getJson<Legislator[]>(LEGISLATORS)
   if (!legislators) throw new Error(`Couldn't read ${LEGISLATORS}`)
   const current = legislators.map((l) => ({
-    name: l.name.official_full ?? `${l.name.first} ${l.name.last}`,
+    name: spokenName(l.name),
     term: l.terms[l.terms.length - 1],
   }))
 
@@ -120,7 +157,10 @@ async function main() {
     const seat =
       seats.find((s) => s.next === 2032) ?? seats.find((s) => s.next === 2028)
     if (!seat) continue
-    const result = resolved(await getJson<ApiMarket>(`${API}/slug/${slug}`))
+    const result = resolved(
+      await getJson<ApiMarket>(`${API}/slug/${slug}`),
+      slug
+    )
     const list = (candidates.senate as Record<string, CandidateList>)[state]
     const winner = result && list ? nameWinner(list, result) : undefined
     if (!winner) pending.push(`Senate ${state}`)
@@ -139,7 +179,10 @@ async function main() {
   for (const { state, slug } of governors2026) {
     const seat = governor[state]
     if (!seat) continue
-    const result = resolved(await getJson<ApiMarket>(`${API}/slug/${slug}`))
+    const result = resolved(
+      await getJson<ApiMarket>(`${API}/slug/${slug}`),
+      slug
+    )
     const list = (candidates.governor as Record<string, CandidateList>)[state]
     const winner = result && list ? nameWinner(list, result) : undefined
     if (!winner) pending.push(`Governor ${state}`)
@@ -158,6 +201,7 @@ async function main() {
   const codeByName = Object.fromEntries(
     ELECTORAL_UNITS.filter((u) => u.key === u.state).map((u) => [u.name, u.key])
   )
+  const vacantElected: Record<string, Holder> = {}
   const districts = await getJson<ApiMarket>(
     `${API}/slug/${HOUSE_2026_DISTRICTS_SLUG}`
   )
@@ -170,7 +214,6 @@ async function main() {
     if (!m || !code) continue
     const key = `${code}-${m[2] === 'at-large' ? 0 : Number(m[2])}`
     const seat = house[key]
-    if (!seat) continue
     if (a.resolution !== 'YES' && a.resolution !== 'NO') {
       pending.push(`House ${key}`)
       continue
@@ -180,12 +223,24 @@ async function main() {
     const list = (candidates.house as Record<string, CandidateList>)[key]
     const winner = list ? nameWinner(list, { party }) : undefined
     if (!winner) pending.push(`House ${key}`)
+    if (!seat) {
+      if (winner) vacantElected[key] = winner
+      continue
+    }
     const next = elected(seat, winner)
     if (next) seat.elected = next
   }
 
-  // Districts with no member right now: on the 2026 ballot, not seated.
-  const vacant = Object.keys(candidates.house).filter((key) => !house[key])
+  // Districts with no member right now (on the 2026 ballot, not seated), and
+  // who takes each in January where that's named.
+  const vacant = Object.fromEntries(
+    Object.keys(candidates.house)
+      .filter((key) => !house[key])
+      .map((key) => [
+        key,
+        vacantElected[key] ? { elected: vacantElected[key] } : {},
+      ])
+  )
 
   const file: OfficeholdersFile = {
     asOf: new Date().toISOString().slice(0, 10),
@@ -211,8 +266,8 @@ async function main() {
     `Wrote ${OUT}: ${count(senate)} Senate states, ${count(
       governor
     )} governors, ${count(house)} House seats (vacant: ${
-      vacant.join(', ') || 'none'
-    }); ${newly} new in January; pending: ${pending.join(', ') || 'none'}`
+      Object.keys(vacant).join(', ') || 'none'
+    }); ${newly} newly elected; pending: ${pending.join(', ') || 'none'}`
   )
 }
 

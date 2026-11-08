@@ -3,6 +3,7 @@ import { ReactNode } from 'react'
 import officeholdersFile from 'web/public/data/election-officeholders.json'
 import { MapView } from 'web/lib/politics/election-map'
 import {
+  delegateOf,
   governorOf,
   holderText,
   houseDelegation,
@@ -18,8 +19,8 @@ const OFFICEHOLDERS = officeholdersFile as OfficeholdersFile
 // Who holds the offices behind a place on the map, for its card: both
 // senators (with when each seat is next up, so the ones not on the 2028
 // ballot are there too), the governor, the House member or, for a whole
-// state on the President map, its delegation. A 2026 winner who takes the
-// seat in January follows the holder.
+// state on the President map, its delegation (DC and the territories: their
+// delegate). A 2026 winner who takes the seat follows the holder.
 
 type Office = 'senate' | 'governor' | 'house' | 'delegation'
 
@@ -70,9 +71,21 @@ export function InOffice(props: {
     }
     if (office === 'house') {
       const r = representativeOf(OFFICEHOLDERS, place)
+      const vacant = OFFICEHOLDERS.vacant[place]
       if (r) lines.push(['Representative', <SeatText key="rep" seat={r} />])
-      else if (OFFICEHOLDERS.vacant.includes(place))
-        lines.push(['Representative', <span key="rep">Vacant</span>])
+      else if (vacant)
+        lines.push([
+          'Representative',
+          <span key="rep" className="text-right">
+            Vacant
+            {vacant.elected && (
+              <span className={own.muted}>
+                {' '}
+                → {holderText(vacant.elected)}, elected 2026
+              </span>
+            )}
+          </span>,
+        ])
     }
     if (office === 'delegation' && !compact) {
       const d = houseDelegation(OFFICEHOLDERS, st)
@@ -87,6 +100,12 @@ export function InOffice(props: {
         ])
     }
   }
+  // DC and the territories have a delegate in the House and no senators.
+  if (!place.includes('-') && !OFFICEHOLDERS.senate[st]) {
+    const delegate = delegateOf(OFFICEHOLDERS, st)
+    if (delegate)
+      lines.push(['Delegate', <SeatText key="delegate" seat={delegate} />])
+  }
   if (lines.length === 0) return null
   return (
     <div className={own.others} aria-label="In office">
@@ -96,6 +115,15 @@ export function InOffice(props: {
           {value}
         </span>
       ))}
+      {!compact && (
+        <span className={own.muted}>
+          In office as of{' '}
+          {new Date(`${OFFICEHOLDERS.asOf}T12:00:00Z`).toLocaleDateString(
+            'en-US',
+            { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }
+          )}
+        </span>
+      )}
     </div>
   )
 }
@@ -107,7 +135,10 @@ function SeatText(props: { seat: Seat; note?: string }) {
       {holderText(seat)}
       {note && <span className={own.muted}> · {note}</span>}
       {seat.elected && (
-        <span className={own.muted}> → {holderText(seat.elected)} in Jan.</span>
+        <span className={own.muted}>
+          {' '}
+          → {holderText(seat.elected)}, elected 2026
+        </span>
       )}
     </span>
   )

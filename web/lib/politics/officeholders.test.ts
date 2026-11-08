@@ -15,6 +15,7 @@ import {
   nextSenateElection,
   OfficeholdersFile,
   partyOf,
+  delegateOf,
   representativeOf,
   samePerson,
   senatorsOf,
@@ -82,12 +83,27 @@ test('the data has every senator, governor and House seat', () => {
   const voting = Object.keys(file.house).filter((k) =>
     STATES.includes(k.split('-')[0])
   )
-  assert.equal(voting.length + file.vacant.length, 435)
-  for (const k of file.vacant) assert.ok(!file.house[k], k)
+  const vacant = Object.keys(file.vacant)
+  assert.equal(voting.length + vacant.length, 435)
+  for (const k of vacant) assert.ok(!file.house[k], k)
   assert.ok(representativeOf(file, 'DC-0'))
   // Every party letter is one we draw.
   for (const s of [...senators, ...Object.values(file.house)])
     assert.ok(['D', 'R', 'I'].includes(s.party), s.name)
+})
+
+test('a yes/no 2026 market reads its YES side from the audit, not a guess', () => {
+  // Maine's Senate market asks whether the Democrat wins (YES = D) and
+  // resolved YES; Minnesota's governor market asks the same, and resolved
+  // YES. Neither seat may show a Republican taking it.
+  const me = file.senate.ME.find((s) => s.next === 2032)!
+  assert.equal(me.elected?.party ?? me.party, 'D')
+  const mn = file.governor.MN
+  assert.equal(mn.elected?.party ?? mn.party, 'D')
+  // Names are spoken ones: nickname or first, last, suffix.
+  const vt = file.senate.VT.map((s) => s.name)
+  assert.ok(vt.includes('Bernie Sanders'), vt.join(', '))
+  assert.ok(!Object.values(file.house).some((s) => /"/.test(s.name)))
 })
 
 test('lookups: senators by when they are next up, a delegation by party', () => {
@@ -97,4 +113,6 @@ test('lookups: senators by when they are next up, a delegation by party', () => 
   assert.equal(d.D + d.R + d.I, d.total)
   assert.ok(d.total >= 17)
   assert.equal(houseDelegation(file, 'WY').total, 1)
+  assert.ok(delegateOf(file, 'DC'))
+  assert.ok(delegateOf(file, 'PR'))
 })

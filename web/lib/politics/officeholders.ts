@@ -7,8 +7,9 @@
 
 export type OfficeParty = 'D' | 'R' | 'I'
 export type Holder = { name: string; party: OfficeParty }
-// A seat as held now; `elected` is a 2026 winner who isn't the holder and
-// takes the seat in January 2027.
+// A seat as held now; `elected` is the 2026 winner where that's someone else
+// (they take the seat in January 2027, or December 2026 for Alaska's
+// governor).
 export type Seat = Holder & { elected?: Holder }
 // A Senate seat also says when it's next on the ballot.
 export type SenateSeat = Seat & { next: number }
@@ -19,8 +20,9 @@ export type OfficeholdersFile = {
   senate: Record<string, SenateSeat[]>
   governor: Record<string, Seat>
   house: Record<string, Seat>
-  // House seats with no member right now (a death or resignation).
-  vacant: string[]
+  // House seats with no member right now (a death or resignation), with
+  // their 2026 winner where one is named.
+  vacant: Record<string, { elected?: Holder }>
   // Seats whose 2026 winner couldn't be named yet (unresolved, or a
   // same-party race the market can't tell apart).
   pending: string[]
@@ -92,3 +94,7 @@ export function houseDelegation(file: OfficeholdersFile, state: string) {
 
 // "Josh Shapiro (D)"
 export const holderText = (h: Holder) => `${h.name} (${h.party})`
+
+// DC's and the territories' delegate ('DC-0').
+export const delegateOf = (file: OfficeholdersFile, place: string) =>
+  file.house[`${place}-0`]

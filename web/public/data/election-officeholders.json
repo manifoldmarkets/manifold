@@ -36,7 +36,7 @@
   ],
   "VT": [
    {
-    "name": "Bernard Sanders",
+    "name": "Bernie Sanders",
     "party": "I",
     "next": 2030
    },
@@ -65,7 +65,7 @@
     "next": 2030
    },
    {
-    "name": "Cynthia M. Lummis",
+    "name": "Cynthia Lummis",
     "party": "R",
     "next": 2032,
     "elected": {
@@ -76,7 +76,7 @@
   ],
   "MS": [
    {
-    "name": "Roger F. Wicker",
+    "name": "Roger Wicker",
     "party": "R",
     "next": 2030
    },
@@ -88,12 +88,16 @@
   ],
   "ME": [
    {
-    "name": "Susan M. Collins",
+    "name": "Susan Collins",
     "party": "R",
-    "next": 2032
+    "next": 2032,
+    "elected": {
+     "name": "Troy Jackson",
+     "party": "D"
+    }
    },
    {
-    "name": "Angus S. King, Jr.",
+    "name": "Angus King Jr.",
     "party": "I",
     "next": 2030
    }
@@ -116,7 +120,7 @@
   ],
   "IL": [
    {
-    "name": "Richard J. Durbin",
+    "name": "Richard Durbin",
     "party": "D",
     "next": 2032,
     "elected": {
@@ -160,7 +164,7 @@
   ],
   "ID": [
    {
-    "name": "James E. Risch",
+    "name": "James Risch",
     "party": "R",
     "next": 2032
    },
@@ -181,14 +185,14 @@
     }
    },
    {
-    "name": "Margaret Wood Hassan",
+    "name": "Maggie Wood Hassan",
     "party": "D",
     "next": 2028
    }
   ],
   "VA": [
    {
-    "name": "Mark R. Warner",
+    "name": "Mark Warner",
     "party": "D",
     "next": 2032
    },
@@ -200,19 +204,19 @@
   ],
   "NY": [
    {
-    "name": "Kirsten E. Gillibrand",
+    "name": "Kirsten Gillibrand",
     "party": "D",
     "next": 2030
    },
    {
-    "name": "Charles E. Schumer",
+    "name": "Chuck Schumer",
     "party": "D",
     "next": 2028
    }
   ],
   "DE": [
    {
-    "name": "Christopher A. Coons",
+    "name": "Christopher Coons",
     "party": "D",
     "next": 2032
    },
@@ -236,12 +240,12 @@
   ],
   "CO": [
    {
-    "name": "Michael F. Bennet",
+    "name": "Michael Bennet",
     "party": "D",
     "next": 2028
    },
    {
-    "name": "John W. Hickenlooper",
+    "name": "John Hickenlooper",
     "party": "D",
     "next": 2032
    }
@@ -289,7 +293,7 @@
     "next": 2032
    },
    {
-    "name": "James C. Justice",
+    "name": "Jim Justice II",
     "party": "R",
     "next": 2030
    }
@@ -340,7 +344,7 @@
   ],
   "HI": [
    {
-    "name": "Mazie K. Hirono",
+    "name": "Mazie Hirono",
     "party": "D",
     "next": 2030
    },
@@ -385,14 +389,14 @@
     "next": 2028
    },
    {
-    "name": "John R. Curtis",
+    "name": "John Curtis",
     "party": "R",
     "next": 2030
    }
   ],
   "MA": [
    {
-    "name": "Edward J. Markey",
+    "name": "Ed Markey",
     "party": "D",
     "next": 2032
    },
@@ -432,7 +436,7 @@
   ],
   "MI": [
    {
-    "name": "Gary C. Peters",
+    "name": "Gary Peters",
     "party": "D",
     "next": 2032,
     "elected": {
@@ -448,7 +452,7 @@
   ],
   "CA": [
    {
-    "name": "Adam B. Schiff",
+    "name": "Adam Schiff",
     "party": "D",
     "next": 2030
    },
@@ -465,7 +469,7 @@
     "next": 2028
    },
    {
-    "name": "Darline Graham",
+    "name": "Darline Graham Nordone",
     "party": "R",
     "next": 2032,
     "elected": {
@@ -493,7 +497,7 @@
     "next": 2028
    },
    {
-    "name": "Angela D. Alsobrooks",
+    "name": "Angela Alsobrooks",
     "party": "D",
     "next": 2030
    }
@@ -540,7 +544,7 @@
   ],
   "NJ": [
    {
-    "name": "Cory A. Booker",
+    "name": "Cory Booker",
     "party": "D",
     "next": 2032
    },
@@ -637,7 +641,7 @@
     "next": 2032
    },
    {
-    "name": "Raphael G. Warnock",
+    "name": "Raphael Warnock",
     "party": "D",
     "next": 2028
    }
@@ -804,8 +808,8 @@
    "name": "Tim Walz",
    "party": "D",
    "elected": {
-    "name": "Lisa Demuth",
-    "party": "R"
+    "name": "Amy Klobuchar",
+    "party": "D"
    }
   },
   "MS": {
@@ -959,15 +963,15 @@
  },
  "house": {
   "AL-4": {
-   "name": "Robert B. Aderholt",
+   "name": "Robert Aderholt",
    "party": "R"
   },
   "FL-12": {
-   "name": "Gus M. Bilirakis",
+   "name": "Gus Bilirakis",
    "party": "R"
   },
   "GA-2": {
-   "name": "Sanford D. Bishop, Jr.",
+   "name": "Sanford Bishop Jr.",
    "party": "D"
   },
   "FL-16": {
@@ -987,7 +991,7 @@
    "party": "D"
   },
   "TX-31": {
-   "name": "John R. Carter",
+   "name": "John Carter",
    "party": "R"
   },
   "FL-14": {
@@ -999,15 +1003,15 @@
    "party": "D"
   },
   "NY-9": {
-   "name": "Yvette D. Clarke",
+   "name": "Yvette Clarke",
    "party": "D"
   },
   "MO-5": {
-   "name": "Emanuel Cleaver",
+   "name": "Emanuel Cleaver II",
    "party": "D"
   },
   "SC-6": {
-   "name": "James E. Clyburn",
+   "name": "Jim Clyburn",
    "party": "D"
   },
   "TN-9": {
@@ -1027,7 +1031,7 @@
    "party": "D"
   },
   "AR-1": {
-   "name": "Eric A. \"Rick\" Crawford",
+   "name": "Rick Crawford",
    "party": "R"
   },
   "TX-28": {
@@ -1035,7 +1039,7 @@
    "party": "D"
   },
   "IL-7": {
-   "name": "Danny K. Davis",
+   "name": "Danny Davis",
    "party": "D"
   },
   "CO-1": {
@@ -1043,7 +1047,7 @@
    "party": "D"
   },
   "CT-3": {
-   "name": "Rosa L. DeLauro",
+   "name": "Rosa DeLauro",
    "party": "D"
   },
   "TN-4": {
@@ -1059,7 +1063,7 @@
    "party": "D"
   },
   "TN-3": {
-   "name": "Charles J. \"Chuck\" Fleischmann",
+   "name": "Chuck Fleischmann",
    "party": "R"
   },
   "NC-5": {
@@ -1071,7 +1075,7 @@
    "party": "D"
   },
   "AZ-9": {
-   "name": "Paul A. Gosar",
+   "name": "Paul Gosar",
    "party": "R"
   },
   "MO-6": {
@@ -1095,11 +1099,11 @@
    "party": "R"
   },
   "CT-4": {
-   "name": "James A. Himes",
+   "name": "Jim Himes",
    "party": "D"
   },
   "MD-5": {
-   "name": "Steny H. Hoyer",
+   "name": "Steny Hoyer",
    "party": "D"
   },
   "MI-4": {
@@ -1111,7 +1115,7 @@
    }
   },
   "GA-4": {
-   "name": "Henry C. \"Hank\" Johnson, Jr.",
+   "name": "Hank Johnson Jr.",
    "party": "D"
   },
   "OH-4": {
@@ -1123,7 +1127,7 @@
    "party": "D"
   },
   "MA-9": {
-   "name": "William R. Keating",
+   "name": "William Keating",
    "party": "D"
   },
   "PA-16": {
@@ -1135,11 +1139,11 @@
    "party": "D"
   },
   "CT-1": {
-   "name": "John B. Larson",
+   "name": "John Larson",
    "party": "D"
   },
   "OH-5": {
-   "name": "Robert E. Latta",
+   "name": "Robert Latta",
    "party": "R"
   },
   "CA-18": {
@@ -1147,19 +1151,19 @@
    "party": "D"
   },
   "OK-3": {
-   "name": "Frank D. Lucas",
+   "name": "Frank Lucas",
    "party": "R"
   },
   "MA-8": {
-   "name": "Stephen F. Lynch",
+   "name": "Stephen Lynch",
    "party": "D"
   },
   "CA-7": {
-   "name": "Doris O. Matsui",
+   "name": "Doris Matsui",
    "party": "D"
   },
   "TX-10": {
-   "name": "Michael T. McCaul",
+   "name": "Michael McCaul",
    "party": "R"
   },
   "CA-5": {
@@ -1171,11 +1175,11 @@
    "party": "D"
   },
   "MA-2": {
-   "name": "James P. McGovern",
+   "name": "Jim McGovern",
    "party": "D"
   },
   "NY-5": {
-   "name": "Gregory W. Meeks",
+   "name": "Gregory Meeks",
    "party": "D"
   },
   "WI-4": {
@@ -1187,7 +1191,7 @@
    "party": "D"
   },
   "MA-1": {
-   "name": "Richard E. Neal",
+   "name": "Richard Neal",
    "party": "D"
   },
   "DC-0": {
@@ -1195,7 +1199,7 @@
    "party": "D"
   },
   "NJ-6": {
-   "name": "Frank Pallone, Jr.",
+   "name": "Frank Pallone Jr.",
    "party": "D"
   },
   "CA-11": {
@@ -1211,7 +1215,7 @@
    "party": "D"
   },
   "KY-5": {
-   "name": "Harold Rogers",
+   "name": "Hal Rogers",
    "party": "R"
   },
   "AL-3": {
@@ -1223,7 +1227,7 @@
    "party": "R"
   },
   "IL-9": {
-   "name": "Janice D. Schakowsky",
+   "name": "Jan Schakowsky",
    "party": "D"
   },
   "AZ-1": {
@@ -1239,11 +1243,11 @@
    "party": "R"
   },
   "VA-3": {
-   "name": "Robert C. \"Bobby\" Scott",
+   "name": "Bobby Scott",
    "party": "D"
   },
   "AL-7": {
-   "name": "Terri A. Sewell",
+   "name": "Terri Sewell",
    "party": "D"
   },
   "CA-32": {
@@ -1251,7 +1255,7 @@
    "party": "D"
   },
   "ID-2": {
-   "name": "Michael K. Simpson",
+   "name": "Mike Simpson",
    "party": "R"
   },
   "WA-9": {
@@ -1263,15 +1267,15 @@
    "party": "R"
   },
   "NJ-4": {
-   "name": "Christopher H. Smith",
+   "name": "Chris Smith",
    "party": "R"
   },
   "CA-38": {
-   "name": "Linda T. Sánchez",
+   "name": "Linda Sánchez",
    "party": "D"
   },
   "MS-2": {
-   "name": "Bennie G. Thompson",
+   "name": "Bennie Thompson",
    "party": "D"
   },
   "CA-4": {
@@ -1287,11 +1291,11 @@
    "party": "D"
   },
   "OH-10": {
-   "name": "Michael R. Turner",
+   "name": "Michael Turner",
    "party": "R"
   },
   "NY-7": {
-   "name": "Nydia M. Velázquez",
+   "name": "Nydia Velázquez",
    "party": "D"
   },
   "MI-5": {
@@ -1315,11 +1319,11 @@
    "party": "R"
   },
   "FL-24": {
-   "name": "Frederica S. Wilson",
+   "name": "Frederica Wilson",
    "party": "D"
   },
   "VA-1": {
-   "name": "Robert J. Wittman",
+   "name": "Robert Wittman",
    "party": "R",
    "elected": {
     "name": "Shannon Taylor",
@@ -1331,7 +1335,7 @@
    "party": "R"
   },
   "NV-2": {
-   "name": "Mark E. Amodei",
+   "name": "Mark Amodei",
    "party": "R"
   },
   "OR-1": {
@@ -1339,7 +1343,7 @@
    "party": "D"
   },
   "WA-1": {
-   "name": "Suzan K. DelBene",
+   "name": "Suzan DelBene",
    "party": "D"
   },
   "KY-4": {
@@ -1379,7 +1383,7 @@
    "party": "D"
   },
   "CA-50": {
-   "name": "Scott H. Peters",
+   "name": "Scott Peters",
    "party": "D"
   },
   "FL-22": {
@@ -1403,7 +1407,7 @@
    "party": "D"
   },
   "NY-8": {
-   "name": "Hakeem S. Jeffries",
+   "name": "Hakeem Jeffries",
    "party": "D"
   },
   "OH-3": {
@@ -1411,7 +1415,7 @@
    "party": "D"
   },
   "OH-14": {
-   "name": "David P. Joyce",
+   "name": "David Joyce",
    "party": "R"
   },
   "PA-10": {
@@ -1423,7 +1427,7 @@
    }
   },
   "TX-14": {
-   "name": "Randy K. Weber, Sr.",
+   "name": "Randy Weber Sr.",
    "party": "R"
   },
   "TX-20": {
@@ -1435,7 +1439,7 @@
    "party": "R"
   },
   "TX-33": {
-   "name": "Marc A. Veasey",
+   "name": "Marc Veasey",
    "party": "D"
   },
   "WI-2": {
@@ -1443,7 +1447,7 @@
    "party": "D"
   },
   "IL-2": {
-   "name": "Robin L. Kelly",
+   "name": "Robin Kelly",
    "party": "D"
   },
   "MO-8": {
@@ -1451,7 +1455,7 @@
    "party": "R"
   },
   "MA-5": {
-   "name": "Katherine M. Clark",
+   "name": "Katherine Clark",
    "party": "D"
   },
   "NJ-1": {
@@ -1459,11 +1463,11 @@
    "party": "D"
   },
   "NC-12": {
-   "name": "Alma S. Adams",
+   "name": "Alma Adams",
    "party": "D"
   },
   "AL-6": {
-   "name": "Gary J. Palmer",
+   "name": "Gary Palmer",
    "party": "R"
   },
   "AR-2": {
@@ -1487,11 +1491,11 @@
    "party": "D"
   },
   "CA-35": {
-   "name": "Norma J. Torres",
+   "name": "Norma Torres",
    "party": "D"
   },
   "GA-1": {
-   "name": "Earl L. \"Buddy\" Carter",
+   "name": "Buddy Carter",
    "party": "R"
   },
   "GA-11": {
@@ -1499,7 +1503,7 @@
    "party": "R"
   },
   "GA-12": {
-   "name": "Rick W. Allen",
+   "name": "Rick Allen",
    "party": "R"
   },
   "IL-12": {
@@ -1511,7 +1515,7 @@
    "party": "D"
   },
   "MI-2": {
-   "name": "John R. Moolenaar",
+   "name": "John Moolenaar",
    "party": "R"
   },
   "MI-6": {
@@ -1531,11 +1535,11 @@
    "party": "D"
   },
   "NY-21": {
-   "name": "Elise M. Stefanik",
+   "name": "Elise Stefanik",
    "party": "R"
   },
   "PA-2": {
-   "name": "Brendan F. Boyle",
+   "name": "Brendan Boyle",
    "party": "D"
   },
   "TX-36": {
@@ -1543,11 +1547,11 @@
    "party": "R"
   },
   "VA-8": {
-   "name": "Donald S. Beyer, Jr.",
+   "name": "Donald Beyer Jr.",
    "party": "D"
   },
   "VI-0": {
-   "name": "Stacey E. Plaskett",
+   "name": "Stacey Plaskett",
    "party": "D"
   },
   "WA-4": {
@@ -1583,7 +1587,7 @@
    "party": "D"
   },
   "IL-10": {
-   "name": "Bradley Scott Schneider",
+   "name": "Brad Scott Schneider",
    "party": "D"
   },
   "AZ-5": {
@@ -1599,7 +1603,7 @@
    "party": "D"
   },
   "CA-24": {
-   "name": "Salud O. Carbajal",
+   "name": "Salud Carbajal",
    "party": "D"
   },
   "CA-44": {
@@ -1611,11 +1615,11 @@
    "party": "D"
   },
   "FL-2": {
-   "name": "Neal P. Dunn",
+   "name": "Neal Dunn",
    "party": "R"
   },
   "FL-5": {
-   "name": "John H. Rutherford",
+   "name": "John Rutherford",
    "party": "R"
   },
   "FL-9": {
@@ -1623,7 +1627,7 @@
    "party": "D"
   },
   "FL-21": {
-   "name": "Brian J. Mast",
+   "name": "Brian Mast",
    "party": "R"
   },
   "IL-8": {
@@ -1663,7 +1667,7 @@
    "party": "D"
   },
   "PA-1": {
-   "name": "Brian K. Fitzpatrick",
+   "name": "Brian Fitzpatrick",
    "party": "R",
    "elected": {
     "name": "Bob Harvie",
@@ -1683,7 +1687,7 @@
    "party": "D"
   },
   "TX-19": {
-   "name": "Jodey C. Arrington",
+   "name": "Jodey Arrington",
    "party": "R"
   },
   "WA-7": {
@@ -1715,7 +1719,7 @@
    "party": "R"
   },
   "NY-25": {
-   "name": "Joseph D. Morelle",
+   "name": "Joseph Morelle",
    "party": "D"
   },
   "PA-5": {
@@ -1767,7 +1771,7 @@
    "party": "R"
   },
   "IL-4": {
-   "name": "Jesús G. \"Chuy\" García",
+   "name": "Chuy García",
    "party": "D"
   },
   "IL-6": {
@@ -1779,7 +1783,7 @@
    "party": "D"
   },
   "IN-4": {
-   "name": "James R. Baird",
+   "name": "James Baird",
    "party": "R"
   },
   "KS-3": {
@@ -1795,7 +1799,7 @@
    "party": "D"
   },
   "MI-11": {
-   "name": "Haley M. Stevens",
+   "name": "Haley Stevens",
    "party": "D"
   },
   "MI-12": {
@@ -1859,7 +1863,7 @@
    "party": "R"
   },
   "SC-4": {
-   "name": "William R. Timmons IV",
+   "name": "William Timmons",
    "party": "R"
   },
   "SD-0": {
@@ -1871,7 +1875,7 @@
    "party": "R"
   },
   "TN-6": {
-   "name": "John W. Rose",
+   "name": "John Rose",
    "party": "R"
   },
   "TX-2": {
@@ -1895,7 +1899,7 @@
    "party": "R"
   },
   "TX-29": {
-   "name": "Sylvia R. Garcia",
+   "name": "Sylvia Garcia",
    "party": "D"
   },
   "VA-6": {
@@ -1915,11 +1919,11 @@
    }
   },
   "WV-1": {
-   "name": "Carol D. Miller",
+   "name": "Carol Miller",
    "party": "R"
   },
   "ME-2": {
-   "name": "Jared F. Golden",
+   "name": "Jared Golden",
    "party": "D",
    "elected": {
     "name": "Paul LePage",
@@ -1927,7 +1931,7 @@
    }
   },
   "NC-3": {
-   "name": "Gregory F. Murphy",
+   "name": "Gregory Murphy",
    "party": "R"
   },
   "MD-7": {
@@ -1935,7 +1939,7 @@
    "party": "D"
   },
   "WI-7": {
-   "name": "Thomas P. Tiffany",
+   "name": "Thomas Tiffany",
    "party": "R"
   },
   "CA-48": {
@@ -1947,7 +1951,7 @@
    "party": "R"
   },
   "CA-22": {
-   "name": "David G. Valadao",
+   "name": "David Valadao",
    "party": "R",
    "elected": {
     "name": "Randy Villegas",
@@ -1987,7 +1991,7 @@
    "party": "R"
   },
   "FL-28": {
-   "name": "Carlos A. Gimenez",
+   "name": "Carlos Gimenez",
    "party": "R"
   },
   "FL-27": {
@@ -1999,7 +2003,7 @@
    "party": "D"
   },
   "GA-9": {
-   "name": "Andrew S. Clyde",
+   "name": "Andrew Clyde",
    "party": "R"
   },
   "IA-2": {
@@ -2019,11 +2023,11 @@
    "party": "R"
   },
   "IL-15": {
-   "name": "Mary E. Miller",
+   "name": "Mary Miller",
    "party": "R"
   },
   "IN-1": {
-   "name": "Frank J. Mrvan",
+   "name": "Frank Mrvan",
    "party": "D"
   },
   "IN-5": {
@@ -2039,7 +2043,7 @@
    "party": "D"
   },
   "MI-9": {
-   "name": "Lisa C. McClain",
+   "name": "Lisa McClain",
    "party": "R"
   },
   "MN-7": {
@@ -2047,7 +2051,7 @@
    "party": "R"
   },
   "NC-2": {
-   "name": "Deborah K. Ross",
+   "name": "Deborah Ross",
    "party": "D"
   },
   "NM-3": {
@@ -2055,7 +2059,7 @@
    "party": "D"
   },
   "NY-2": {
-   "name": "Andrew R. Garbarino",
+   "name": "Andrew Garbarino",
    "party": "R"
   },
   "NY-11": {
@@ -2067,7 +2071,7 @@
    "party": "D"
   },
   "OK-5": {
-   "name": "Stephanie I. Bice",
+   "name": "Stephanie Bice",
    "party": "R"
   },
   "OR-2": {
@@ -2087,7 +2091,7 @@
    "party": "R"
   },
   "TX-11": {
-   "name": "August Pfluger",
+   "name": "August Pfluger II",
    "party": "R"
   },
   "TX-13": {
@@ -2095,7 +2099,7 @@
    "party": "R"
   },
   "TX-22": {
-   "name": "Troy E. Nehls",
+   "name": "Troy Nehls",
    "party": "R"
   },
   "TX-24": {
@@ -2103,7 +2107,7 @@
    "party": "R"
   },
   "UT-1": {
-   "name": "Blake D. Moore",
+   "name": "Blake Moore",
    "party": "R"
   },
   "UT-4": {
@@ -2127,11 +2131,11 @@
    "party": "R"
   },
   "LA-2": {
-   "name": "Troy A. Carter",
+   "name": "Troy Carter",
    "party": "D"
   },
   "NM-1": {
-   "name": "Melanie A. Stansbury",
+   "name": "Melanie Stansbury",
    "party": "D"
   },
   "TX-6": {
@@ -2139,7 +2143,7 @@
    "party": "R"
   },
   "OH-11": {
-   "name": "Shontel M. Brown",
+   "name": "Shontel Brown",
    "party": "D"
   },
   "OH-15": {
@@ -2159,11 +2163,11 @@
    "party": "D"
   },
   "IN-2": {
-   "name": "Rudy Yakym III",
+   "name": "Rudy Yakym",
    "party": "R"
   },
   "MT-1": {
-   "name": "Ryan K. Zinke",
+   "name": "Ryan Zinke",
    "party": "R",
    "elected": {
     "name": "Sam Forstag",
@@ -2171,7 +2175,7 @@
    }
   },
   "AL-5": {
-   "name": "Dale W. Strong",
+   "name": "Dale Strong",
    "party": "R"
   },
   "AZ-2": {
@@ -2227,7 +2231,7 @@
    "party": "R"
   },
   "FL-15": {
-   "name": "Laurel M. Lee",
+   "name": "Laurel Lee",
    "party": "R"
   },
   "FL-23": {
@@ -2243,15 +2247,15 @@
    "party": "R"
   },
   "GA-10": {
-   "name": "Mike Collins",
+   "name": "Mike Collins Jr.",
    "party": "R"
   },
   "GU-0": {
-   "name": "James C. Moylan",
+   "name": "James Moylan",
    "party": "R"
   },
   "HI-2": {
-   "name": "Jill N. Tokuda",
+   "name": "Jill Tokuda",
    "party": "D"
   },
   "IA-3": {
@@ -2263,11 +2267,11 @@
    }
   },
   "IL-1": {
-   "name": "Jonathan L. Jackson",
+   "name": "Jonathan Jackson",
    "party": "D"
   },
   "IL-3": {
-   "name": "Delia C. Ramirez",
+   "name": "Delia Ramirez",
    "party": "D"
   },
   "IL-13": {
@@ -2291,7 +2295,7 @@
    "party": "D"
   },
   "MI-3": {
-   "name": "Hillary J. Scholten",
+   "name": "Hillary Scholten",
    "party": "D"
   },
   "MI-10": {
@@ -2319,11 +2323,11 @@
    "party": "R"
   },
   "NC-1": {
-   "name": "Donald G. Davis",
+   "name": "Donald Davis",
    "party": "D"
   },
   "NC-4": {
-   "name": "Valerie P. Foushee",
+   "name": "Valerie Foushee",
    "party": "D"
   },
   "NC-11": {
@@ -2331,7 +2335,7 @@
    "party": "R"
   },
   "NJ-7": {
-   "name": "Thomas H. Kean, Jr.",
+   "name": "Thomas Kean Jr.",
    "party": "R",
    "elected": {
     "name": "Rebecca Bennett",
@@ -2339,7 +2343,7 @@
    }
   },
   "NJ-8": {
-   "name": "Robert Menendez",
+   "name": "Robert Menendez Jr.",
    "party": "D"
   },
   "NM-2": {
@@ -2351,7 +2355,7 @@
    "party": "R"
   },
   "NY-10": {
-   "name": "Daniel S. Goldman",
+   "name": "Daniel Goldman",
    "party": "D"
   },
   "NY-17": {
@@ -2363,7 +2367,7 @@
    }
   },
   "NY-23": {
-   "name": "Nicholas A. Langworthy",
+   "name": "Nicholas Langworthy",
    "party": "R"
   },
   "OH-1": {
@@ -2371,7 +2375,7 @@
    "party": "D"
   },
   "OH-7": {
-   "name": "Max L. Miller",
+   "name": "Max Miller",
    "party": "R"
   },
   "OH-13": {
@@ -2383,7 +2387,7 @@
    "party": "R"
   },
   "OR-4": {
-   "name": "Val T. Hoyle",
+   "name": "Val Hoyle",
    "party": "D"
   },
   "OR-6": {
@@ -2391,11 +2395,11 @@
    "party": "D"
   },
   "PA-12": {
-   "name": "Summer L. Lee",
+   "name": "Summer Lee",
    "party": "D"
   },
   "PA-17": {
-   "name": "Christopher R. Deluzio",
+   "name": "Christopher Deluzio",
    "party": "D"
   },
   "RI-2": {
@@ -2407,7 +2411,7 @@
    "party": "R"
   },
   "TN-5": {
-   "name": "Andrew Ogles",
+   "name": "Andrew Ogles IV",
    "party": "R"
   },
   "TX-1": {
@@ -2443,7 +2447,7 @@
    "party": "R"
   },
   "VA-2": {
-   "name": "Jennifer A. Kiggans",
+   "name": "Jennifer Kiggans",
    "party": "R",
    "elected": {
     "name": "Elaine Luria",
@@ -2467,11 +2471,11 @@
    }
   },
   "WY-0": {
-   "name": "Harriet M. Hageman",
+   "name": "Harriet Hageman",
    "party": "R"
   },
   "VA-4": {
-   "name": "Jennifer L. McClellan",
+   "name": "Jennifer McClellan",
    "party": "D"
   },
   "RI-1": {
@@ -2483,11 +2487,11 @@
    "party": "R"
   },
   "NY-3": {
-   "name": "Thomas R. Suozzi",
+   "name": "Thomas Suozzi",
    "party": "D"
   },
   "NY-26": {
-   "name": "Timothy M. Kennedy",
+   "name": "Timothy Kennedy",
    "party": "D"
   },
   "CA-20": {
@@ -2495,7 +2499,7 @@
    "party": "R"
   },
   "OH-6": {
-   "name": "Michael A. Rulli",
+   "name": "Michael Rulli",
    "party": "R"
   },
   "NJ-10": {
@@ -2511,15 +2515,15 @@
    "party": "D"
   },
   "IN-3": {
-   "name": "Marlin A. Stutzman",
+   "name": "Marlin Stutzman",
    "party": "R"
   },
   "CA-31": {
-   "name": "Gilbert Ray Cisneros, Jr.",
+   "name": "Gilbert Cisneros",
    "party": "D"
   },
   "AK-0": {
-   "name": "Nicholas J. Begich III",
+   "name": "Nicholas Begich III",
    "party": "R"
   },
   "AL-2": {
@@ -2531,7 +2535,7 @@
    "party": "D"
   },
   "AZ-8": {
-   "name": "Abraham J. Hamadeh",
+   "name": "Abraham Hamadeh",
    "party": "R"
   },
   "CA-12": {
@@ -2543,7 +2547,7 @@
    "party": "D"
   },
   "CA-16": {
-   "name": "Sam T. Liccardo",
+   "name": "Sam Liccardo",
    "party": "D"
   },
   "CA-27": {
@@ -2551,7 +2555,7 @@
    "party": "D"
   },
   "CA-29": {
-   "name": "Luz M. Rivas",
+   "name": "Luz Rivas",
    "party": "D"
   },
   "CA-30": {
@@ -2599,7 +2603,7 @@
    "party": "R"
   },
   "IN-8": {
-   "name": "Mark B. Messmer",
+   "name": "Mark Messmer",
    "party": "R"
   },
   "KS-2": {
@@ -2607,7 +2611,7 @@
    "party": "R"
   },
   "MD-2": {
-   "name": "Johnny Olszewski, Jr.",
+   "name": "Johnny Olszewski Jr.",
    "party": "D"
   },
   "MD-3": {
@@ -2639,7 +2643,7 @@
    "party": "D"
   },
   "MO-3": {
-   "name": "Robert F. Onder, Jr.",
+   "name": "Robert Onder Jr.",
    "party": "R"
   },
   "MP-0": {
@@ -2651,7 +2655,7 @@
    "party": "R"
   },
   "NC-6": {
-   "name": "Addison P. McDowell",
+   "name": "Addison McDowell",
    "party": "R"
   },
   "NC-8": {
@@ -2679,7 +2683,7 @@
    "party": "D"
   },
   "NJ-3": {
-   "name": "Herbert C. Conaway, Jr.",
+   "name": "Herbert Conaway Jr.",
    "party": "D"
   },
   "NJ-9": {
@@ -2699,11 +2703,11 @@
    "party": "D"
   },
   "NY-22": {
-   "name": "John W. Mannion",
+   "name": "John Mannion",
    "party": "D"
   },
   "OH-2": {
-   "name": "David J. Taylor",
+   "name": "David Taylor",
    "party": "R"
   },
   "OR-3": {
@@ -2711,7 +2715,7 @@
    "party": "D"
   },
   "OR-5": {
-   "name": "Janelle S. Bynum",
+   "name": "Janelle Bynum",
    "party": "D"
   },
   "PA-7": {
@@ -2723,7 +2727,7 @@
    }
   },
   "PA-8": {
-   "name": "Robert P. Bresnahan, Jr.",
+   "name": "Robert Bresnahan Jr.",
    "party": "R",
    "elected": {
     "name": "Paige Cognetti",
@@ -2731,7 +2735,7 @@
    }
   },
   "PR-0": {
-   "name": "Pablo José Hernández",
+   "name": "Pablo José Hernández Rivera",
    "party": "D"
   },
   "SC-3": {
@@ -2739,7 +2743,7 @@
    "party": "R"
   },
   "TX-12": {
-   "name": "Craig A. Goldman",
+   "name": "Craig Goldman",
    "party": "R"
   },
   "TX-26": {
@@ -2755,7 +2759,7 @@
    "party": "R"
   },
   "VA-5": {
-   "name": "John J. McGuire III",
+   "name": "John McGuire III",
    "party": "R"
   },
   "VA-7": {
@@ -2775,11 +2779,11 @@
    "party": "D"
   },
   "WV-2": {
-   "name": "Riley M. Moore",
+   "name": "Riley Moore",
    "party": "R"
   },
   "FL-1": {
-   "name": "Jimmy Patronis",
+   "name": "Jimmy Patronis Jr.",
    "party": "R"
   },
   "FL-6": {
@@ -2787,11 +2791,11 @@
    "party": "R"
   },
   "VA-11": {
-   "name": "James R. Walkinshaw",
+   "name": "James Walkinshaw",
    "party": "D"
   },
   "AZ-7": {
-   "name": "Adelita S. Grijalva",
+   "name": "Adelita Grijalva",
    "party": "D"
   },
   "TN-7": {
@@ -2799,7 +2803,7 @@
    "party": "R"
   },
   "TX-18": {
-   "name": "Christian D. Menefee",
+   "name": "Christian Menefee",
    "party": "D"
   },
   "GA-14": {
@@ -2823,10 +2827,10 @@
    "party": "D"
   }
  },
- "vacant": [
-  "FL-20",
-  "TX-23"
- ],
+ "vacant": {
+  "FL-20": {},
+  "TX-23": {}
+ },
  "pending": [
   "Senate AK",
   "Senate MS",
