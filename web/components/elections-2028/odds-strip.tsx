@@ -1,7 +1,9 @@
+import clsx from 'clsx'
 import Link from 'next/link'
 import { maxBy } from 'lodash'
 import { ReactNode } from 'react'
 
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { getAnswerProbability } from 'common/calculate'
 import { Contract, contractPath, isMultiCpmm } from 'common/contract'
 import { formatOdds, labelInk } from 'web/components/usa-map/election-display'
@@ -38,16 +40,36 @@ const shade = (side: 'D' | 'R', t: number) => {
   return `#${ch(a.r, b.r)}${ch(a.g, b.g)}${ch(a.b, b.b)}`
 }
 
+// Another reading of the same buckets, behind a toggle: the electoral-vote
+// market asks about the Democratic nominee, and `buckets` turns its ranges
+// into the Republican nominee's.
+export type StripFlip = {
+  toggle: [string, string]
+  title: string
+  thresholdLabel: string
+  summary: (buckets: Bucket[]) => ReactNode
+  buckets: (buckets: Bucket[]) => Bucket[] | undefined
+  // A footnote under the flipped strip, and a line in the bet dialog
+  // saying which of the market's answers a cell is.
+  footnote: string
+  note: (shown: Bucket, answer: Bucket) => string
+}
+
 export function OddsStrip(props: {
   contract: Contract
   title: string
   threshold: number
   thresholdLabel: string
   summary: (buckets: Bucket[]) => ReactNode
+  flip?: StripFlip
 }) {
-  const { title, threshold, thresholdLabel, summary } = props
+  const { threshold, flip } = props
   const contract = useLiveContract(props.contract)
   const { open, dialog } = useQuickBet('election odds strip')
+  const [flipped, setFlipped] = usePersistentInMemoryState(
+    false,
+    `election-odds-strip-flip-${props.contract.id}`
+  )
   const buckets = isMultiCpmm(contract)
     ? orderedBuckets(
         contract.answers.map((a) => ({
@@ -63,7 +85,7 @@ export function OddsStrip(props: {
   if (!buckets)
     return (
       <div className="flex flex-col gap-1">
-        <h3 className="text-ink-1000 text-sm font-semibold">{title}</h3>
+        <h3 className="text-ink-1000 text-sm font-semibold">{props.title}</h3>
         <OddsRows
           items={[oddsItem(contract)]}
           columns={1}
@@ -71,13 +93,42 @@ export function OddsStrip(props: {
         />
       </div>
     )
-  const top = maxBy(buckets, (b) => b.p)?.p || 1
-  const cross = buckets.findIndex((b) => b.side === 'D')
+  const other = flip && flipped ? flip.buckets(buckets) : undefined
+  const view = other && flip ? flip : props
+  const shown = other ?? buckets
+  const { title, thresholdLabel, summary } = view
+  const top = maxBy(shown, (b) => b.p)?.p || 1
+  // The line goes where one side's ranges give way to the other's.
+  const cross = shown.findIndex((b) => b.side !== shown[0].side)
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-ink-1000 text-sm font-semibold">{title}</h3>
+        {flip && (
+          <span
+            role="group"
+            aria-label="Whose electoral votes"
+            className="bg-canvas-50 ml-auto flex shrink-0 rounded-md p-0.5 text-xs"
+          >
+            {flip.toggle.map((label, i) => (
+              <button
+                key={label}
+                type="button"
+                aria-pressed={flipped === (i === 1)}
+                onClick={() => setFlipped(i === 1)}
+                className={clsx(
+                  'rounded px-2 py-0.5',
+                  flipped === (i === 1)
+                    ? 'bg-canvas-0 text-ink-1000 font-semibold shadow-sm'
+                    : 'text-ink-600 hover:text-ink-900'
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </span>
+        )}
         <Link
           href={contractPath(contract)}
           className="text-ink-500 hover:text-primary-700 shrink-0 text-xs hover:underline"
@@ -85,13 +136,13 @@ export function OddsStrip(props: {
           Market →
         </Link>
       </div>
-      <div className="text-ink-700 text-sm">{summary(buckets)}</div>
+      <div className="text-ink-700 text-sm">{summary(shown)}</div>
       <div
         className="relative flex gap-0.5 pt-4"
         role="group"
         aria-label={title}
       >
-        {buckets.map((b, i) => {
+        {shown.map((b, i) => {
           const fill = shade(b.side, b.p / top)
           return (
             <div
@@ -113,7 +164,17 @@ export function OddsStrip(props: {
                 type="button"
                 aria-haspopup="dialog"
                 aria-label={`Bet on ${b.text}: ${formatOdds(b.p)}`}
-                onClick={() => open({ contract, answerId: b.id })}
+                onClick={() => {
+                  const answer = buckets.find((x) => x.id === b.id)
+                  open({
+                    contract,
+                    answerId: b.id,
+                    note:
+                      other && flip && answer
+                        ? flip.note(b, answer)
+                        : undefined,
+                  })
+                }}
                 className="flex h-9 items-center justify-center rounded-sm text-xs font-semibold tabular-nums transition-[filter] hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1"
                 style={{ backgroundColor: fill, color: labelInk(fill) }}
               >
@@ -126,6 +187,7 @@ export function OddsStrip(props: {
           )
         })}
       </div>
+      {other && flip && <p className="text-ink-500 text-xs">{flip.footnote}</p>}
       {dialog}
     </div>
   )

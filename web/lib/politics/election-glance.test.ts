@@ -22,6 +22,7 @@ import {
   leadingAnswer,
   offYearRace,
   orderedBuckets,
+  otherNominee,
   placeMore2028,
   runningField,
   sideTotal,
@@ -77,6 +78,39 @@ test('the electoral-vote market splits at 270', () => {
     ['R', 'R', 'R', 'D', 'D', 'D', 'D']
   )
   close(sideTotal(b, 'D'), 0.672)
+})
+
+test("the Republican's electoral votes: 538 minus the Democrat's, the line at 269", () => {
+  const dem = orderedBuckets(
+    answers([
+      ['230–269', 0.194],
+      ['270–299', 0.194],
+      ['300–329', 0.189],
+      ['360 or more', 0.145],
+      ['330–359', 0.144],
+      ['200–229', 0.08],
+      ['Under 200', 0.054],
+    ]),
+    270
+  )!
+  const rep = otherNominee(dem, 538, 269)!
+  assert.deepEqual(
+    rep.map((x) => x.label),
+    ['<179', '179–208', '209–238', '239–268', '269–308', '309–338', '339+']
+  )
+  assert.deepEqual(
+    rep.map((x) => x.side),
+    ['D', 'D', 'D', 'D', 'R', 'R', 'R']
+  )
+  // Each range keeps its answer and chance: 339+ is the Democrat's Under 200.
+  assert.equal(rep[6].id, dem[0].id)
+  assert.equal(rep[6].p, 0.054)
+  // 269 or more (a win or a tie) is the Democrat at 269 or fewer.
+  close(sideTotal(rep, 'R'), 0.054 + 0.08 + 0.194)
+  close(sideTotal(rep, 'R') + sideTotal(dem, 'D'), 1)
+  // A market it can't read as counts isn't flipped.
+  const margin = orderedBuckets(answers([['D+0 to D+3', 0.5], ['R+0 to R+3', 0.5]]), 0)!
+  assert.equal(otherNominee(margin, 538, 269), undefined)
 })
 
 test('the margin market splits at an even vote; Other is dropped', () => {
