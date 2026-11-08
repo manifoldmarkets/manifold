@@ -18,6 +18,10 @@
 .badgeLabel {
   font-size: calc(11px / var(--zoom, 1));
 }
+.mapEv {
+  font-size: calc(var(--label-size) * 0.8 / var(--zoom, 1));
+  font-weight: 500;
+}
 .tileEv {
   font-size: calc(13px / var(--zoom, 1));
   font-weight: 500;

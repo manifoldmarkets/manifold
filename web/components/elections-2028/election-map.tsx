@@ -864,11 +864,21 @@ export function ElectionMap(props: {
                           x: s.center[0],
                           y: s.center[1],
                         }
+                        // The President map gives each state that has room
+                        // its electoral votes under its name.
+                        const b = shapeById.get(s.state)?.bounds
+                        const ev =
+                          president &&
+                          b &&
+                          b.x1 - b.x0 >= 40 &&
+                          b.y1 - b.y0 >= 28
+                            ? EV_BY_KEY[s.state]
+                            : undefined
                         return (
                           <text
                             key={s.state}
                             x={at.x}
-                            y={at.y}
+                            y={ev ? at.y - 6 : at.y}
                             dy="0.35em"
                             className={styles.stateLabel}
                             style={
@@ -876,6 +886,11 @@ export function ElectionMap(props: {
                             }
                           >
                             {s.state}
+                            {ev && (
+                              <tspan x={at.x} dy="1.2em" className={own.mapEv}>
+                                {ev}
+                              </tspan>
+                            )}
                           </text>
                         )
                       })}
