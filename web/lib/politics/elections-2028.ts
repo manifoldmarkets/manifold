@@ -102,6 +102,7 @@ import {
   PRIMARY_MARKETS_2028,
   RACE_CHARTS,
   RaceChartKey,
+  SECTION_2030_KEYS,
   STATE_MARKETS_2028,
   UNIT_PRIORS_2028,
 } from './elections-2028-config'
@@ -237,6 +238,8 @@ export type Elections2028PageProps = {
   board2030: BoardRace[]
   board2030Mode: BoardMode
   balanceOfPower2030: Contract | null
+  // From 2029: the 2030 seat counts (Democratic seats in each chamber).
+  seats2030: { senate: Contract | null; house: Contract | null }
   primaries: PrimaryRow[]
   primaryContracts: Contract[]
   // Official 2028 markets with no slot of their own (tipping point, margins,
@@ -1136,7 +1139,7 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
     ...national
       .filter(([key, r]) => r.cycle >= 2030 && !LATER_KEYS.includes(key))
       .map(([key]) => key),
-  ].filter((key) => !(wants2030 && key === '2030-balance-of-power'))
+  ].filter((key) => !(wants2030 && SECTION_2030_KEYS.includes(key)))
   const later = uniqBy(
     [
       ...laterKeys.map((key) => slotFor(key, byId)),
@@ -1195,6 +1198,14 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
     balanceOfPower2030: wants2030
       ? slim(slotFor('2030-balance-of-power', byId) ?? null)
       : null,
+    seats2030: {
+      senate: wants2030
+        ? slim(slotFor('2030-dem-senate-seats', byId) ?? null)
+        : null,
+      house: wants2030
+        ? slim(slotFor('2030-dem-house-seats', byId) ?? null)
+        : null,
+    },
     primaries: wantsPrimaries ? primaryRows(byId) : [],
     primaryContracts: openOnly(
       PRIMARY_MARKETS_2028.filter(

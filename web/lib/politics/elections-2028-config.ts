@@ -81,6 +81,14 @@ export const LATER_KEYS = [
   '2036-balance-of-power',
 ]
 
+// The 2030 markets the 2030 midterms section draws once it shows (from the
+// 2029 inauguration); the later cycles' grid leaves them out then.
+export const SECTION_2030_KEYS = [
+  '2030-balance-of-power',
+  '2030-dem-senate-seats',
+  '2030-dem-house-seats',
+]
+
 // When each cycle's race board freezes its columns: the first polls opening
 // on Election Day (6am ET).
 export const BOARD_FREEZE: Record<number, number> = {

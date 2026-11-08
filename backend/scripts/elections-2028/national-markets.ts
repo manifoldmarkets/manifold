@@ -28,9 +28,12 @@ import {
   flattenedSeeds,
   MARGIN_BUCKETS,
   marginBucketSeeds,
+  HOUSE_SEAT_BUCKETS,
   normalizeName,
   partyShares,
   reservedIdFor,
+  seatBucketSeeds,
+  SENATE_SEAT_BUCKETS,
   SourceAnswer,
   threePartySeeds,
   twoPartySeeds,
@@ -236,11 +239,17 @@ const BOP_ANSWERS = [
   'R President, D Senate, R House',
 ]
 
+// The Congress each cycle elects, and the year it convenes.
+const CONGRESS: Record<BopCycle, string> = { 2028: '121st', 2030: '122nd', 2032: '123rd', 2034: '124th', 2036: '125th' }
+const CONVENES: Record<BopCycle, string> = { 2028: '2029', 2030: '2031', 2032: '2033', 2034: '2035', 2036: '2037' }
+const electionDay = (year: BopCycle) =>
+  `November ${ELECTION_DAYS[year].slice(-2).replace(/^0/, '')}, ${year}`
+
 const bopDescription = (year: BopCycle) => {
-  const congress = { 2028: '121st', 2030: '122nd', 2032: '123rd', 2034: '124th', 2036: '125th' }[year]
-  const convenes = { 2028: '2029', 2030: '2031', 2032: '2033', 2034: '2035', 2036: '2037' }[year]
+  const congress = CONGRESS[year]
+  const convenes = CONVENES[year]
   const midterm = year === 2030 || year === 2034
-  const day = `November ${ELECTION_DAYS[year].slice(-2).replace(/^0/, '')}, ${year}`
+  const day = electionDay(year)
   // Congress organizes on January 3, before the inauguration. In a
   // presidential year a 50–50 Senate follows the incoming Vice President, as
   // it did on January 20, 2001, when control passed from Gore's party to
@@ -288,6 +297,75 @@ const bopNote = (pDem: string, midterm: boolean) =>
       ? ' between the chambers; -0.2 and -0.3 between the presidency and each chamber, the midterm penalty'
       : ''
   }).`
+
+// How many seats the Democrats hold in each chamber after each election
+// (Tod, 9 Nov 2026: "add markets on how many senate seats and how many house
+// seats are won … for future years too"). Fixed ranges (SENATE_SEAT_BUCKETS,
+// HOUSE_SEAT_BUCKETS), no Other: independents count with the party they
+// caucus with. The Senate counts every seat, not only those up that year,
+// since that's what decides control.
+type Chamber = 'senate' | 'house'
+
+const seatsDescription = (chamber: Chamber, year: BopCycle) =>
+  chamber === 'senate'
+    ? desc(
+        `Resolves to the range containing the number of senators in the Democratic caucus when the ${CONGRESS[year]} Congress convenes in January ${CONVENES[year]}, after the ${electionDay(year)} elections: Democrats, and independents who caucus with them. Every seat counts, not only those up in ${year}.`,
+        'A seat still undecided then (a recount or runoff) counts for the party that wins it. A seat vacant for any other reason counts for the party of the senator who last held it.'
+      )
+    : desc(
+        `Resolves to the range containing the number of House seats Democrats win in the ${electionDay(year)} elections, per certified results, runoffs included. Independents count with the party they caucus with when the ${CONGRESS[year]} Congress convenes in January ${CONVENES[year]}.`,
+        'A seat still undecided then (a recount or runoff) counts once it is decided.'
+      )
+
+const seatCount = (
+  chamber: Chamber,
+  year: BopCycle,
+  closeTime: string,
+  seed: { pDem: number; sigma: number; note: string },
+  topic: string
+): MultiEntry => ({
+  key: `${year}-dem-${chamber}-seats`,
+  cycle: year,
+  phase: 'general',
+  outcome: 'MULTIPLE_CHOICE',
+  addAnswersMode: 'DISABLED',
+  answers: (chamber === 'senate' ? SENATE_SEAT_BUCKETS : HOUSE_SEAT_BUCKETS).map(
+    (b) => b.label
+  ),
+  question:
+    chamber === 'senate'
+      ? `How many Senate seats will Democrats hold after the ${year} elections?`
+      : `How many House seats will Democrats win in the ${year} elections?`,
+  description: seatsDescription(chamber, year),
+  topics: [
+    'us-politics',
+    'elections',
+    chamber === 'senate' ? 'us-senate' : 'house-of-representatives',
+    topic,
+  ],
+  // The 2028 pair sits beside the balance of power on /election; later
+  // cycles' stay small until they're near.
+  liquidityTier: year === 2028 ? 10000 : 1000,
+  closeTime,
+  seed: {
+    kind: 'static-fixed',
+    pcts: seatBucketSeeds(chamber, seed.pDem, seed.sigma),
+    note: seed.note,
+  },
+})
+
+// Opening odds: Normal(σ seats) placed so a Democratic majority (half a
+// 50–50 Senate) has the chance given.
+const seatNote = (pDem: number, sigma: number, basis: string) =>
+  `Prior: Normal(σ ${sigma} seats) with a Democratic majority at ${Math.round(
+    pDem * 100
+  )}%: ${basis}`
+const seatSeed = (pDem: number, sigma: number, basis: string) => ({
+  pDem,
+  sigma,
+  note: seatNote(pDem, sigma, basis),
+})
+const EVEN_SEATS = 'no market to read yet, so even.'
 
 // ---------------------------------------------------------------------------
 // The manifest
@@ -777,6 +855,8 @@ export const ENTRIES: Entry[] = [
     },
   },
   balanceOfPower(2028, AFTER_2028, [45.3, 13.3, 5.1, 12.5, 4.1, 7.5, 3.1, 9.1], bopNote('67/74/60%', false), '2028-us-elections'),
+  seatCount('senate', 2028, AFTER_2028, seatSeed(0.9, 5, 'the community 2028 Senate markets on 9 Nov 2026 (92c0nPtNuE 90%; SUTs1ggYgoddnFyALjjV, YES = Republicans, 10%). Democrats hold 54–56 seats after 2026 and 16 of the 34 regular seats up in 2028.'), '2028-us-elections'),
+  seatCount('house', 2028, AFTER_2028, seatSeed(0.8, 15, 'centred near 230; Democrats won 237 seats in 2026 and are favored for the presidency in 2028 (the community trifecta markets read 49–68%).'), '2028-us-elections'),
   {
     key: '2028-dem-contested-convention',
     cycle: 2028,
@@ -1046,9 +1126,13 @@ export const ENTRIES: Entry[] = [
 
   // ----------------------------------------------------------------- 2030
   balanceOfPower(2030, '2030-11-06T12:00:00Z', [18.2, 8.8, 28.9, 12.4, 7.6, 14.4, 4.8, 4.9], bopNote('67/50/45%', true), 'us-midterm-elections'),
+  seatCount('senate', 2030, '2030-11-06T12:00:00Z', seatSeed(0.5, 6, 'the community 2030 Senate market (06GTQ5wGTbIbtEIEfIXh, 50/50).'), 'us-midterm-elections'),
+  seatCount('house', 2030, '2030-11-06T12:00:00Z', seatSeed(0.45, 20, 'the balance-of-power House input.'), 'us-midterm-elections'),
 
   // ----------------------------------------------------------------- 2032
   balanceOfPower(2032, '2032-11-03T12:00:00Z', [27.8, 27.8, 7.4, 7.4, 7.4, 7.4, 7.4, 7.4], bopNote('50/50/50%', false), '2032-us-presidential-election'),
+  seatCount('senate', 2032, '2032-11-03T12:00:00Z', seatSeed(0.5, 7, EVEN_SEATS), '2032-us-presidential-election'),
+  seatCount('house', 2032, '2032-11-03T12:00:00Z', seatSeed(0.5, 25, EVEN_SEATS), '2032-us-presidential-election'),
   {
     key: '2032-dem-nominee',
     cycle: 2032,
@@ -1129,9 +1213,13 @@ export const ENTRIES: Entry[] = [
 
   // ----------------------------------------------------------------- 2034
   balanceOfPower(2034, '2034-11-08T12:00:00Z', [13.6, 13.6, 21.7, 8.2, 6.5, 21.7, 8.2, 6.5], bopNote('50/50/50%', true), 'us-midterm-elections'),
+  seatCount('senate', 2034, '2034-11-08T12:00:00Z', seatSeed(0.5, 7, EVEN_SEATS), 'us-midterm-elections'),
+  seatCount('house', 2034, '2034-11-08T12:00:00Z', seatSeed(0.5, 25, EVEN_SEATS), 'us-midterm-elections'),
 
   // ----------------------------------------------------------------- 2036
   balanceOfPower(2036, '2036-11-05T12:00:00Z', [27.8, 27.8, 7.4, 7.4, 7.4, 7.4, 7.4, 7.4], bopNote('50/50/50%', false), '2036-us-presidential-election'),
+  seatCount('senate', 2036, '2036-11-05T12:00:00Z', seatSeed(0.5, 7, EVEN_SEATS), '2036-us-presidential-election'),
+  seatCount('house', 2036, '2036-11-05T12:00:00Z', seatSeed(0.5, 25, EVEN_SEATS), '2036-us-presidential-election'),
 ]
 
 // ---------------------------------------------------------------------------

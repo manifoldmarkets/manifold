@@ -3,13 +3,13 @@
 The headline markets the 2028+ elections page needs, owned by
 @ManifoldPolitics: nominees and running mates, the popular vote, electoral
 votes, the tipping point, a balance-of-power market (presidency, Senate and
-House, all eight combinations) for every cycle through 2036, a 2028
-presidential primary for each party in every state, DC and territory (and
-Democrats Abroad), each party's 2028 Senate and governor primaries, the
-Speaker vote of January 2029, the popular-vote compact, and the off-year
-races of 2027 and 2029. 201 markets, Ṁ473,300 at the answer counts of
-6 Nov 2026 (online dry run). A market's
-cost is the larger of its tier and its answers × the tier's per-answer
+House, all eight combinations) and Senate and House seat counts for every
+cycle through 2036, a 2028 presidential primary for each party in every
+state, DC and territory (and Democrats Abroad), each party's 2028 Senate and
+governor primaries, the Speaker vote of January 2029, the popular-vote
+compact, and the off-year races of 2027 and 2029. 211 markets, about
+Ṁ501,300: Ṁ473,300 at the answer counts of 6 Nov 2026 (online dry run),
+plus Ṁ28,000 for the seat counts added 9 Nov. A market's cost is the larger of its tier and its answers × the tier's per-answer
 price (Ṁ100 at the Ṁ1,000 tier, Ṁ1,000 at Ṁ10,000), "Other" included: the
 2028 nominee markets cost Ṁ13k and Ṁ11k with that day's 12 and 10 people at
 ≥ 1%. Run `--online` for the exact figures before an apply.
@@ -21,7 +21,9 @@ conventions, and the first four states' primaries), the 2032 winner, and
 the five balance-of-power markets, and whether the popular-vote compact
 is in effect for 2028: 27 markets. The rest (off-year races, the 2032
 nominees, the other state and territory primaries, the Senate and governor
-primaries, the Speaker) stay at Ṁ1,000.
+primaries, the Speaker) stay at Ṁ1,000. The seat counts added on 9 Nov
+follow the same split (proposed, for Tod to confirm): Ṁ10,000 for 2028's
+pair, Ṁ1,000 for later cycles'.
 
 Balance of power (Tod, 5 Nov 2026: "do balance of power markets instead [of
 control of Congress], mimicking" JonasVollmer's 2026 market): eight fixed
@@ -32,6 +34,24 @@ copula on P(Democrat) for the three offices (2028: 67% / 74.4% / 60%, from
 the community party and Senate markets and the House prior), correlation 0.6
 in presidential years; in midterms the presidency pulls against Congress
 (-0.2 Senate, -0.3 House) while the chambers move together (0.6).
+
+Seat counts (Tod, 9 Nov 2026: "add markets on how many senate seats and
+how many house seats are won … for future years too"): for each cycle
+2028–2036, "How many Senate seats will Democrats hold after the <year>
+elections?" and "How many House seats will Democrats win in the <year>
+elections?". Fixed ranges, no Other (independents count with the party they
+caucus with). The Senate counts every seat, not only those up that year,
+and keeps 50 as its own answer, since a 50–50 Senate goes to the Vice
+President's party: Under 44, 44–46, 47–49, 50, 51–53, 54–56, 57–59, 60–62,
+63 or more. The House ranges are symmetric about the 218-seat majority, so
+435 minus any range is another range: Under 193, 193–202, 203–212, 213–217,
+218–222, 223–232, 233–242, 243 or more. Opening odds are a normal
+distribution placed so a Democratic majority (half a 50–50 Senate) has the
+chance in the entry's note: 2028 Senate 90% (the community markets on 9 Nov;
+Democrats hold 54–56 seats after 2026), 2028 House 80% (Democrats won 237
+seats in 2026), 2030 50% and 45%, later cycles even. The 2028 pair is at
+Ṁ10,000 (it sits beside the balance of power on /election); later cycles at
+Ṁ1,000.
 
 ## Answers
 
@@ -52,7 +72,7 @@ winner market (`t9s0m8tf2v`), so there is no new one.
 ## Scope
 
 Together with the pipeline (1,032 race markets, Ṁ2,202,000), this is
-1,233 markets, about Ṁ2.68M at 6 Nov 2026 answer counts. They cover the regular federal and
+1,243 markets, about Ṁ2.70M at 6 Nov 2026 answer counts. They cover the regular federal and
 governor elections of 2027–2036, not every US election:
 
 - **In:** the 2027 Kentucky, Mississippi and Louisiana governor races,
@@ -65,7 +85,8 @@ governor elections of 2027–2036, not every US election:
   Senate and governor primaries (Tennessee's 2028 Senate special included); presidential markets by state
   (electoral votes and popular vote) and by Maine/Nebraska district for 2028,
   2032 and 2036; Senate and governor races every cycle 2028–2036; House races
-  in 2028; balance of power every cycle; the 2032 nominees and winner.
+  in 2028; balance of power and Senate and House seat counts every cycle; the
+  2032 nominees and winner.
 - **Not yet:** 39 Senate and governor primaries with no credible candidate
   yet (the API won't open a market whose only answer is Other), House races
   after 2028, special elections not yet scheduled, off-year races after 2029,

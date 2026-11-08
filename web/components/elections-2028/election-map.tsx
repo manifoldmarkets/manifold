@@ -170,6 +170,14 @@ function Outline(props: { shape: Shape; className: string }) {
 
 const DEFAULT_VIEW: MapView = { mode: 'president', office: 'P', party: 'D' }
 
+// "Lean D", "Lean D and Toss-up", "Safe D, Likely D and Lean D".
+const joinLabels = (labels: string[]) =>
+  labels.length === 0
+    ? undefined
+    : labels.length === 1
+    ? labels[0]
+    : `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`
+
 export function ElectionMap(props: {
   races: BoardRace[]
   primaries: PrimaryRow[]
@@ -315,6 +323,17 @@ export function ElectionMap(props: {
         : searchHits
     return searching ? ids.filter((id) => searchHits.includes(id)) : ids
   }, [groups, tracker, searchHits, searching])
+  // The list's heading: the groups picked on the bar ("Lean D", "Lean D
+  // and Toss-up"), else the count a search found.
+  const groupTitle = useMemo(
+    () =>
+      joinLabels(
+        tracker.segments
+          .filter((s) => groups.includes(s.key))
+          .map((s) => s.label)
+      ),
+    [tracker, groups]
+  )
 
   const isSelectable = (id: string) =>
     !!fills[id] || (mode !== 'house' && mode !== 'primary' && shapeById.has(id))
@@ -739,13 +758,24 @@ export function ElectionMap(props: {
         )}
 
         <span className="sr-only" role="status">
-          {narrowed ? plural(listed.length, 'place') : ''}
+          {narrowed
+            ? `${groupTitle ? `${groupTitle}: ` : ''}${plural(
+                listed.length,
+                'place'
+              )}`
+            : ''}
         </span>
         {narrowed && (
           <FilterResults
             summary={
               <strong className={styles.filterCount}>
-                {plural(listed.length, 'place')}
+                {groupTitle ?? plural(listed.length, 'place')}
+                {groupTitle && searching && (
+                  <span className="text-ink-500 font-normal">
+                    {' '}
+                    · {plural(listed.length, 'match', 'matches')}
+                  </span>
+                )}
               </strong>
             }
             clearLabel={groups.length && searching ? 'Clear all' : 'Clear'}

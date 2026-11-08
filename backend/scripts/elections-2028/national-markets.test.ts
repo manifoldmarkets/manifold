@@ -16,12 +16,15 @@ import {
   fitWithOther,
   flattenedSeeds,
   floorAndNormalize,
+  HOUSE_SEAT_BUCKETS,
   isNonCandidate,
   marginBucketSeeds,
   normCdf,
   normInv,
   partyShares,
   reservedIdFor,
+  seatBucketSeeds,
+  SENATE_SEAT_BUCKETS,
   SourceAnswer,
   threePartySeeds,
   twoPartySeeds,
@@ -362,11 +365,11 @@ test('reserved ids are deterministic, valid and unique', () => {
 test('the manifest covers the planned markets and validates', () => {
   assert.deepEqual(validateEntries(ENTRIES, NOW), [])
   // 25 national markets (a balance-of-power market for every cycle through
-  // 2036), a primary for each party in every state and DC, the territories'
+  // 2036), Senate and House seat counts for each of those five cycles, a primary for each party in every state and DC, the territories'
   // and Democrats Abroad's contests, the 6 Nov 2026 additions (compact,
   // Speaker, 2027 legislatures, 2029 races, Minnesota's 2027 Senate special),
   // and each party's Senate and governor primaries.
-  assert.equal(ENTRIES.length, 25 + 102 + 11 + 12 + DOWNBALLOT_MARKETS)
+  assert.equal(ENTRIES.length, 25 + 10 + 102 + 11 + 12 + DOWNBALLOT_MARKETS)
   const keys = ENTRIES.map((e) => e.key)
   for (const k of [
     '2028-dem-nominee',
@@ -399,6 +402,10 @@ test('the manifest covers the planned markets and validates', () => {
     '2032-balance-of-power',
     '2034-balance-of-power',
     '2036-balance-of-power',
+    ...[2028, 2030, 2032, 2034, 2036].flatMap((y) => [
+      `${y}-dem-senate-seats`,
+      `${y}-dem-house-seats`,
+    ]),
   ])
     assert.ok(keys.includes(k), k)
   // No 2028 winner market: @ManifoldPolitics already owns one.
@@ -1127,11 +1134,13 @@ test('liquidity: Ṁ10k for 2028 presidential, winner and control-of-Congress ma
     '2028-balance-of-power', '2030-balance-of-power', '2032-balance-of-power',
     '2034-balance-of-power', '2036-balance-of-power',
     '2032-winner',
+    '2028-dem-senate-seats', '2028-dem-house-seats',
   ])
     assert.equal(tier(k), 10000, k)
   for (const k of [
     '2028-dem-ohio', '2028-gop-wyoming', '2027-governor-kentucky', '2027-virginia-house',
     '2032-dem-nominee', '2032-gop-nominee',
+    '2030-dem-senate-seats', '2036-dem-house-seats',
   ])
     assert.equal(tier(k), 1000, k)
 })
@@ -1154,6 +1163,64 @@ test('balance of power: eight fixed answers per cycle, consistent with the input
   near(ddd + drr + ddr + drd, 67, 0.2)
   near(ddd + ddr + rdd + rdr, 74.4, 0.2)
   near(ddd + drd + rdd + rrd, 60, 0.2)
+})
+
+test('seat buckets cover every count once, and the House reads the same from either side', () => {
+  for (const [buckets, total] of [
+    [SENATE_SEAT_BUCKETS, 100],
+    [HOUSE_SEAT_BUCKETS, 435],
+  ] as const) {
+    for (let n = 0; n <= total; n++)
+      assert.equal(buckets.filter((b) => n > b.lo && n < b.hi).length, 1, `${n}`)
+  }
+  // 435 minus a House range is another House range.
+  const ranges = HOUSE_SEAT_BUCKETS.map((b) => [
+    Math.max(0, Math.ceil(b.lo)),
+    Math.min(435, Math.floor(b.hi)),
+  ])
+  for (const [lo, hi] of ranges)
+    assert.ok(
+      ranges.some(([l, h]) => l === 435 - hi && h === 435 - lo),
+      `${lo}-${hi}`
+    )
+  // The Senate's 50 stands alone: a 50–50 Senate is the Vice President's call.
+  assert.ok(SENATE_SEAT_BUCKETS.some((b) => b.label === '50' && b.lo === 49.5 && b.hi === 50.5))
+})
+
+test('seat counts: fixed answers per cycle, a majority at the chance given', () => {
+  for (const y of [2028, 2030, 2032, 2034, 2036]) {
+    for (const chamber of ['senate', 'house'] as const) {
+      const e = ENTRIES.find((x) => x.key === `${y}-dem-${chamber}-seats`) as MultiEntry
+      assert.equal(e.addAnswersMode, 'DISABLED')
+      const buckets = chamber === 'senate' ? SENATE_SEAT_BUCKETS : HOUSE_SEAT_BUCKETS
+      assert.deepEqual(e.answers, buckets.map((b) => b.label))
+      if (e.seed.kind !== 'static-fixed') assert.fail('seed')
+      assert.equal(e.seed.pcts.length, buckets.length)
+      near(sum(e.seed.pcts), 100, 1e-9)
+      assert.ok(e.seed.pcts.every((p) => p >= 1))
+      // Closes with the cycle's balance-of-power market.
+      const bop = ENTRIES.find((x) => x.key === `${y}-balance-of-power`)!
+      assert.equal(e.closeTime, bop.closeTime)
+      assert.ok(e.question.includes(` ${y} `), e.question)
+      assert.match(e.description, /caucus/)
+    }
+  }
+  // Each seed's majority chance, counting half of a 50–50 Senate.
+  const majority = (chamber: 'senate' | 'house', pcts: number[]) =>
+    chamber === 'senate'
+      ? sum(pcts.slice(4)) + pcts[3] / 2
+      : sum(pcts.slice(4))
+  for (const [chamber, pDem, sigma] of [
+    ['senate', 0.9, 5],
+    ['senate', 0.5, 7],
+    ['house', 0.8, 15],
+    ['house', 0.45, 20],
+  ] as const)
+    near(majority(chamber, seatBucketSeeds(chamber, pDem, sigma)), pDem * 100, 1.5)
+  // The Senate counts every seat, not only those up that year.
+  const senate = ENTRIES.find((x) => x.key === '2028-dem-senate-seats')!
+  assert.match(senate.description, /Every seat counts/)
+  assert.doesNotMatch(senate.description, /electoral/i)
 })
 
 const clone = (e: Entry): Entry => JSON.parse(JSON.stringify(e))

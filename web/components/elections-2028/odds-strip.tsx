@@ -26,12 +26,18 @@ import { useQuickBet } from './quick-bet'
 // mass of the bets sits and how much of it is past the line. Clicking a
 // cell bets on that range.
 
+// A count that is neither side's (a 50–50 Senate): grey.
+const TIE_LIGHT_HEX = '#e4e4e7'
+const TIE_DARK_HEX = '#71717a'
+
 // From the party's light tone to its dark one, as the map shades a state.
-const shade = (side: 'D' | 'R', t: number) => {
+const shade = (side: Bucket['side'], t: number) => {
   const [a, b] =
     side === 'D'
       ? [hexToRgb(DEM_LIGHT_HEX), hexToRgb(DEM_DARK_HEX)]
-      : [hexToRgb(REP_LIGHT_HEX), hexToRgb(REP_DARK_HEX)]
+      : side === 'R'
+      ? [hexToRgb(REP_LIGHT_HEX), hexToRgb(REP_DARK_HEX)]
+      : [hexToRgb(TIE_LIGHT_HEX), hexToRgb(TIE_DARK_HEX)]
   const k = Math.max(0, Math.min(1, t))
   const ch = (x: number, y: number) =>
     Math.round(x + (y - x) * k)
@@ -41,10 +47,12 @@ const shade = (side: 'D' | 'R', t: number) => {
 }
 
 // Another reading of the same buckets, behind a toggle: the electoral-vote
-// market asks about the Democratic nominee, and `buckets` turns its ranges
-// into the Republican nominee's.
+// and seat markets count the Democrats', and `buckets` turns their ranges
+// into the Republicans'.
 export type StripFlip = {
   toggle: [string, string]
+  // The toggle's accessible name ("Whose electoral votes").
+  toggleLabel: string
   title: string
   thresholdLabel: string
   summary: (buckets: Bucket[]) => ReactNode
@@ -59,16 +67,20 @@ export function OddsStrip(props: {
   contract: Contract
   title: string
   threshold: number
+  // A count on neither side (50 Senate seats), drawn grey.
+  tie?: number
   thresholdLabel: string
   summary: (buckets: Bucket[]) => ReactNode
   flip?: StripFlip
+  // Strips sharing a key flip together (a chamber's two seat strips).
+  flipKey?: string
 }) {
-  const { threshold, flip } = props
+  const { threshold, tie, flip } = props
   const contract = useLiveContract(props.contract)
   const { open, dialog } = useQuickBet('election odds strip')
   const [flipped, setFlipped] = usePersistentInMemoryState(
     false,
-    `election-odds-strip-flip-${props.contract.id}`
+    `election-odds-strip-flip-${props.flipKey ?? props.contract.id}`
   )
   const buckets = isMultiCpmm(contract)
     ? orderedBuckets(
@@ -77,7 +89,8 @@ export function OddsStrip(props: {
           text: a.text,
           p: getAnswerProbability(contract, a.id),
         })),
-        threshold
+        threshold,
+        tie
       )
     : undefined
   // A market whose answers stop reading as ranges is still on the page, as
@@ -101,8 +114,9 @@ export function OddsStrip(props: {
   const shown = other ?? buckets
   const { title, thresholdLabel, summary } = view
   const top = maxBy(shown, (b) => b.p)?.p || 1
-  // The line goes where one side's ranges give way to the other's.
-  const cross = shown.findIndex((b) => b.side !== shown[0].side)
+  // The line goes where the far side's ranges start (past a tie, if any).
+  const far = shown[shown.length - 1].side
+  const cross = shown.findIndex((b) => b.side === far)
 
   return (
     <div className="flex flex-col gap-2">
@@ -111,7 +125,7 @@ export function OddsStrip(props: {
         {flip && otherReading && (
           <span
             role="group"
-            aria-label="Whose electoral votes"
+            aria-label={flip.toggleLabel}
             className="bg-canvas-50 ml-auto flex shrink-0 rounded-md p-0.5 text-xs"
           >
             {flip.toggle.map((label, i) => (

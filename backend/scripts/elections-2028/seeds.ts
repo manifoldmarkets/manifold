@@ -554,3 +554,59 @@ export function marginBucketSeeds(pDem: number, sigma = 4.5): number[] {
     normalBucketProbs(marginMean(pDem, sigma), sigma, MARGIN_BUCKETS)
   )
 }
+
+// Seats the Democrats hold after an election. Integer counts, so the edges
+// sit on half seats. The Senate's 50 stands alone: a 50–50 Senate goes to
+// the Vice President's party, so it's neither side's majority. Wide enough
+// for any cycle through 2036 (Democrats held 54–56 after 2026), in nine
+// ranges so the page's strip fits a phone.
+export const SENATE_SEAT_BUCKETS: Bucket[] = [
+  { label: 'Under 44', lo: -Infinity, hi: 43.5 },
+  { label: '44–46', lo: 43.5, hi: 46.5 },
+  { label: '47–49', lo: 46.5, hi: 49.5 },
+  { label: '50', lo: 49.5, hi: 50.5 },
+  { label: '51–53', lo: 50.5, hi: 53.5 },
+  { label: '54–56', lo: 53.5, hi: 56.5 },
+  { label: '57–59', lo: 56.5, hi: 59.5 },
+  { label: '60–62', lo: 59.5, hi: 62.5 },
+  { label: '63 or more', lo: 62.5, hi: Infinity },
+]
+
+// House seats, symmetric about the 218-seat majority: 435 minus each range
+// is another range, so the market reads the same from the Republican side.
+export const HOUSE_SEAT_BUCKETS: Bucket[] = [
+  { label: 'Under 193', lo: -Infinity, hi: 192.5 },
+  { label: '193–202', lo: 192.5, hi: 202.5 },
+  { label: '203–212', lo: 202.5, hi: 212.5 },
+  { label: '213–217', lo: 212.5, hi: 217.5 },
+  { label: '218–222', lo: 217.5, hi: 222.5 },
+  { label: '223–232', lo: 222.5, hi: 232.5 },
+  { label: '233–242', lo: 232.5, hi: 242.5 },
+  { label: '243 or more', lo: 242.5, hi: Infinity },
+]
+
+// Where a chamber's majority starts on the seat scale: half of the Senate's
+// 50 counts toward control, so its line is 50 (49.5–50.5 is the tie), and
+// the House's is 217.5.
+export const SEAT_LINE = { senate: 50, house: 217.5 } as const
+
+// Seats ~ Normal(μ, σ) with μ placed so P(past the line) = pDem.
+export const seatMean = (
+  chamber: keyof typeof SEAT_LINE,
+  pDem: number,
+  sigma: number
+) => SEAT_LINE[chamber] + sigma * normInv(pDem)
+
+export function seatBucketSeeds(
+  chamber: keyof typeof SEAT_LINE,
+  pDem: number,
+  sigma: number
+): number[] {
+  return floorAndNormalize(
+    normalBucketProbs(
+      seatMean(chamber, pDem, sigma),
+      sigma,
+      chamber === 'senate' ? SENATE_SEAT_BUCKETS : HOUSE_SEAT_BUCKETS
+    )
+  )
+}

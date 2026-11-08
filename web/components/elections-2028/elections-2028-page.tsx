@@ -68,6 +68,7 @@ import { PartyOddsBar } from './party-odds-bar'
 import { PrimariesOverview } from './primaries-overview'
 import { RaceBoard } from './race-board'
 import { RaceCard, RangeKey, RangePicker, useRange } from './race-section'
+import { SeatStrips } from './seat-strips'
 import { Swings2026 } from './swings-2026'
 
 // /election from the 2026 midterms to the 2030 ones: the 2028 race, every
@@ -158,6 +159,7 @@ function ChartRange(props: {
 // Republican's 269–308, which holds a 269–269 tie, so their line is at 269.
 const REPUBLICAN_ELECTORAL_VOTES: StripFlip = {
   toggle: ['Democrat', 'Republican'],
+  toggleLabel: 'Whose electoral votes',
   title: "The Republican nominee's electoral votes",
   thresholdLabel: '269+',
   buckets: (b) => otherNominee(b, 538, 269),
@@ -214,6 +216,7 @@ export function Elections2028Page(props: Elections2028PageProps) {
     board2030,
     board2030Mode,
     balanceOfPower2030,
+    seats2030,
     primaries,
     primaryContracts,
     more2028,
@@ -343,24 +346,36 @@ export function Elections2028Page(props: Elections2028PageProps) {
       const margin = placed.margin?.[0]
       const electoralVotes = placed.electoralVotes?.[0]
       const tipping = placed.tippingPoint?.[0]
+      const senateSeats = placed.senateSeats?.[0]
+      const houseSeats = placed.houseSeats?.[0]
+      const congress = balanceOfPowerContract || senateSeats || houseSeats
       const facts = placed.facts ?? []
       return (
         <SectionInView section="2028 national" className="flex flex-col gap-4">
           <SectionHeader
             {...head('national')}
-            subtitle="Who controls Washington after 2028, the popular vote, and how big the win is."
+            subtitle="Who controls Washington after 2028, by how many seats, the popular vote, and how big the win is."
           />
           <div
             className={clsx(
               'grid items-start gap-4',
-              balanceOfPowerContract && 'md:grid-cols-2'
+              congress && 'md:grid-cols-2'
             )}
           >
-            {balanceOfPowerContract && (
-              <BalanceOfPower
-                contract={balanceOfPowerContract}
-                title="Who controls Washington after 2028"
-              />
+            {congress && (
+              <div className="flex flex-col gap-4">
+                {balanceOfPowerContract && (
+                  <BalanceOfPower
+                    contract={balanceOfPowerContract}
+                    title="Who controls Washington after 2028"
+                  />
+                )}
+                <SeatStrips
+                  senate={senateSeats}
+                  house={houseSeats}
+                  year={2028}
+                />
+              </div>
             )}
             <div className="flex flex-col gap-4">
               {(popularVoteContract || margin) && (
@@ -617,6 +632,11 @@ export function Elections2028Page(props: Elections2028PageProps) {
             title="Who controls Washington after 2030"
           />
         )}
+        <SeatStrips
+          senate={seats2030.senate ?? undefined}
+          house={seats2030.house ?? undefined}
+          year={2030}
+        />
         {board2030.length > 0 && (
           <RaceBoard
             races={board2030}

@@ -113,6 +113,82 @@ test("the Republican's electoral votes: 538 minus the Democrat's, the line at 26
   assert.equal(otherNominee(margin, 538, 269), undefined)
 })
 
+// The seat-count markets' answers, as the national script makes them.
+const SENATE = answers([
+  ['Under 44', 0.01],
+  ['44–46', 0.019],
+  ['47–49', 0.059],
+  ['50', 0.035],
+  ['51–53', 0.161],
+  ['54–56', 0.226],
+  ['57–59', 0.223],
+  ['60–62', 0.156],
+  ['63 or more', 0.111],
+])
+
+test('Senate seats: 50 is a tie, on neither side; the line at 51', () => {
+  assert.equal(bucketAt('50'), 50)
+  assert.equal(bucketLabel('50'), '50')
+  const dem = orderedBuckets(SENATE, 51, 50)!
+  assert.deepEqual(
+    dem.map((x) => x.label),
+    ['<44', '44–46', '47–49', '50', '51–53', '54–56', '57–59', '60–62', '63+']
+  )
+  assert.deepEqual(
+    dem.map((x) => x.side),
+    ['R', 'R', 'R', 'tie', 'D', 'D', 'D', 'D', 'D']
+  )
+  close(sideTotal(dem, 'D'), 0.161 + 0.226 + 0.223 + 0.156 + 0.111)
+  close(sideTotal(dem, 'tie'), 0.035)
+  // From the Republican side: 100 minus each range, 50 still the tie.
+  const rep = otherNominee(dem, 100, 51, 50)!
+  assert.deepEqual(
+    rep.map((x) => x.label),
+    ['<38', '38–40', '41–43', '44–46', '47–49', '50', '51–53', '54–56', '57+']
+  )
+  assert.deepEqual(
+    rep.map((x) => x.side),
+    ['D', 'D', 'D', 'D', 'D', 'tie', 'R', 'R', 'R']
+  )
+  assert.equal(rep[5].id, dem[3].id)
+  // Republicans at 51 or more is Democrats at 49 or fewer.
+  close(sideTotal(rep, 'R'), 0.01 + 0.019 + 0.059)
+  close(sideTotal(rep, 'R') + sideTotal(rep, 'tie') + sideTotal(dem, 'D'), 1)
+})
+
+test('House seats read the same from either side', () => {
+  const dem = orderedBuckets(
+    answers([
+      ['Under 193', 0.01],
+      ['193–202', 0.027],
+      ['203–212', 0.087],
+      ['213–217', 0.08],
+      ['218–222', 0.105],
+      ['223–232', 0.256],
+      ['233–242', 0.231],
+      ['243 or more', 0.204],
+    ]),
+    218
+  )!
+  assert.deepEqual(
+    dem.map((x) => x.side),
+    ['R', 'R', 'R', 'R', 'D', 'D', 'D', 'D']
+  )
+  const rep = otherNominee(dem, 435, 218)!
+  // The ranges are symmetric about 217.5, so the labels come back the same.
+  assert.deepEqual(
+    rep.map((x) => x.label),
+    dem.map((x) => x.label)
+  )
+  assert.deepEqual(
+    rep.map((x) => x.side),
+    ['D', 'D', 'D', 'D', 'R', 'R', 'R', 'R']
+  )
+  // Republicans' 218–222 is the Democrats' 213–217.
+  assert.equal(rep[4].id, dem[3].id)
+  close(sideTotal(rep, 'R') + sideTotal(dem, 'D'), 1)
+})
+
 test('the margin market splits at an even vote; Other is dropped', () => {
   const b = orderedBuckets(
     answers([
@@ -279,6 +355,8 @@ test('2028 markets without a slot go where they belong', () => {
   assert.equal(placeMore2028('2028-dem-electoral-votes'), 'electoralVotes')
   assert.equal(placeMore2028('2028-popular-vote-margin'), 'margin')
   assert.equal(placeMore2028('2028-tipping-point'), 'tippingPoint')
+  assert.equal(placeMore2028('2028-dem-senate-seats'), 'senateSeats')
+  assert.equal(placeMore2028('2028-dem-house-seats'), 'houseSeats')
   assert.equal(placeMore2028('2028-npvic-in-effect'), 'facts')
   // A market a script adds later still shows.
   assert.equal(placeMore2028('2028-something-new'), 'facts')
@@ -312,12 +390,22 @@ const input = (over: Partial<ContentsInput> = {}): ContentsInput => ({
   later: [],
   board2030: [],
   balanceOfPower2030: null,
+  seats2030: { senate: null, house: null },
   presidencyMatrixRows: [],
   pollingPerpContracts: [],
   unprecedentedContracts: [],
   trendingContracts: [],
   swings: [],
   ...over,
+})
+
+test('the 2030 section shows with only its seat counts', () => {
+  const p = input({ phase: 'midterms2030', now: at(2029, 6, 1) })
+  assert.equal(hasSection(p, 'midterms2030'), false)
+  assert.equal(
+    hasSection({ ...p, seats2030: { senate: c('s'), house: null } }, 'midterms2030'),
+    true
+  )
 })
 
 test('the contents lists only what the page shows, in page order', () => {

@@ -32,6 +32,7 @@ export type ContentsInput = Pick<
   | 'later'
   | 'board2030'
   | 'balanceOfPower2030'
+  | 'seats2030'
   | 'presidencyMatrixRows'
   | 'pollingPerpContracts'
   | 'unprecedentedContracts'
@@ -79,7 +80,12 @@ export function hasSection(p: ContentsInput, key: SectionKey): boolean {
     case 'later':
       return p.later.length > 0
     case 'midterms2030':
-      return p.board2030.length > 0 || !!p.balanceOfPower2030
+      return (
+        p.board2030.length > 0 ||
+        !!p.balanceOfPower2030 ||
+        !!p.seats2030.senate ||
+        !!p.seats2030.house
+      )
     case 'matrix':
       return p.presidencyMatrixRows.length > 0
     case 'polling':

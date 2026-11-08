@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-11-05T23:02:12.674Z",
-  "sources": {"national":"us-national-2028-v1 (201)","pipeline":"us-2028-general-v1, us-2030-general-v1, us-2032-general-v1, us-2034-general-v1, us-2036-general-v1 @ b4b6f62d4"},
+  "generatedAt": "2026-11-08T23:34:59.108Z",
+  "sources": {"national":"us-national-2028-v1 (211)","pipeline":"us-2028-general-v1, us-2030-general-v1, us-2032-general-v1, us-2034-general-v1, us-2036-general-v1 @ e09799f29"},
   "markets": {
     "2027-governor-kentucky": {"id":"l1bkkEia2Q","cycle":2027,"kind":"national","q":"Which party will win the 2027 Kentucky governor election?"},
     "2027-governor-louisiana": {"id":"5Q6kCZwcop","cycle":2027,"kind":"national","q":"Which party will win the 2027 Louisiana governor election?"},
@@ -33,6 +33,7 @@
     "2028-dem-georgia": {"id":"8ABkQFcFAU","cycle":2028,"kind":"presidential-primary","state":"GA","party":"D"},
     "2028-dem-guam": {"id":"Kxze7A6tfO","cycle":2028,"kind":"presidential-primary","state":"GU","party":"D"},
     "2028-dem-hawaii": {"id":"MqkVf5wx4a","cycle":2028,"kind":"presidential-primary","state":"HI","party":"D"},
+    "2028-dem-house-seats": {"id":"JtuqAHrjhQ","cycle":2028,"kind":"national","q":"How many House seats will Democrats win in the 2028 elections?"},
     "2028-dem-idaho": {"id":"LbIG56MR7k","cycle":2028,"kind":"presidential-primary","state":"ID","party":"D"},
     "2028-dem-illinois": {"id":"Dm7wnr89mi","cycle":2028,"kind":"presidential-primary","state":"IL","party":"D"},
     "2028-dem-indiana": {"id":"8aFA2PXA0T","cycle":2028,"kind":"presidential-primary","state":"IN","party":"D"},
@@ -64,6 +65,7 @@
     "2028-dem-pennsylvania": {"id":"FBfFXBLVyS","cycle":2028,"kind":"presidential-primary","state":"PA","party":"D"},
     "2028-dem-puerto-rico": {"id":"PJmNSVhgRu","cycle":2028,"kind":"presidential-primary","state":"PR","party":"D"},
     "2028-dem-rhode-island": {"id":"uIV37XlprU","cycle":2028,"kind":"presidential-primary","state":"RI","party":"D"},
+    "2028-dem-senate-seats": {"id":"29W1pCFAyZ","cycle":2028,"kind":"national","q":"How many Senate seats will Democrats hold after the 2028 elections?"},
     "2028-dem-south-carolina": {"id":"TsgLGKjFqi","cycle":2028,"kind":"presidential-primary","state":"SC","party":"D"},
     "2028-dem-south-dakota": {"id":"2NVa2NxqUZ","cycle":2028,"kind":"presidential-primary","state":"SD","party":"D"},
     "2028-dem-tennessee": {"id":"MUudsvQGOY","cycle":2028,"kind":"presidential-primary","state":"TN","party":"D"},
@@ -786,13 +788,21 @@
     "2029-governor-virginia": {"id":"4FZoeYLQWn","cycle":2029,"kind":"national","q":"Which party will win the 2029 Virginia governor election?"},
     "2029-virginia-house": {"id":"PTfmjanTdQ","cycle":2029,"kind":"national","q":"Which party will control the Virginia House of Delegates after the 2029 election?"},
     "2030-balance-of-power": {"id":"F0VMa7OYRt","cycle":2030,"kind":"national","q":"Balance of power: who will control the presidency, Senate and House after the 2030 US elections?"},
+    "2030-dem-house-seats": {"id":"U6rg71Z8rM","cycle":2030,"kind":"national","q":"How many House seats will Democrats win in the 2030 elections?"},
+    "2030-dem-senate-seats": {"id":"1I1oLnzdas","cycle":2030,"kind":"national","q":"How many Senate seats will Democrats hold after the 2030 elections?"},
     "2032-balance-of-power": {"id":"k9utDfI0Wo","cycle":2032,"kind":"national","q":"Balance of power: who will control the presidency, Senate and House after the 2032 US elections?"},
+    "2032-dem-house-seats": {"id":"Dotr8nrhAo","cycle":2032,"kind":"national","q":"How many House seats will Democrats win in the 2032 elections?"},
     "2032-dem-nominee": {"id":"NlxlLEvPGw","cycle":2032,"kind":"national","q":"Who will be the 2032 Democratic presidential nominee?"},
+    "2032-dem-senate-seats": {"id":"OQzcuQqjPG","cycle":2032,"kind":"national","q":"How many Senate seats will Democrats hold after the 2032 elections?"},
     "2032-gop-nominee": {"id":"m6CmrdOXfB","cycle":2032,"kind":"national","q":"Who will be the 2032 Republican presidential nominee?"},
     "2032-president-US-general": {"id":"NCyEypuCgC","cycle":2032,"kind":"president-national","state":"US","pDem":0.5},
     "2032-winner": {"id":"ZKosxAHEyY","cycle":2032,"kind":"national","q":"Who will win the 2032 US presidential election?"},
     "2034-balance-of-power": {"id":"KlbO5CHg7S","cycle":2034,"kind":"national","q":"Balance of power: who will control the presidency, Senate and House after the 2034 US elections?"},
+    "2034-dem-house-seats": {"id":"4U4yxakPo8","cycle":2034,"kind":"national","q":"How many House seats will Democrats win in the 2034 elections?"},
+    "2034-dem-senate-seats": {"id":"XPWqHo9Qcj","cycle":2034,"kind":"national","q":"How many Senate seats will Democrats hold after the 2034 elections?"},
     "2036-balance-of-power": {"id":"fmvWGnixL4","cycle":2036,"kind":"national","q":"Balance of power: who will control the presidency, Senate and House after the 2036 US elections?"},
+    "2036-dem-house-seats": {"id":"ka2xFIduNb","cycle":2036,"kind":"national","q":"How many House seats will Democrats win in the 2036 elections?"},
+    "2036-dem-senate-seats": {"id":"4Cuu3ILFZZ","cycle":2036,"kind":"national","q":"How many Senate seats will Democrats hold after the 2036 elections?"},
     "2036-president-US-general": {"id":"z89QsEnnZE","cycle":2036,"kind":"president-national","state":"US","pDem":0.5}
   }
 }
