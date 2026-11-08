@@ -504,11 +504,22 @@ export function createJobs(jobSet: SchedulerJobSet) {
       createUpcomingSportsMarkets
     ),
     // The Odds API sports (NFL, college football, MLB, NBA, WNBA, EPL, MLS):
-    // create the coming two weeks' game markets daily
+    // create the coming two weeks' game markets, twice a day. Lines for a
+    // day's games are often posted only that morning, so one failed morning
+    // call used to cost a day's slate (EPL and the NBA on 31 Oct and 7 Nov
+    // 2026: a 502 and a 429 at the top of the hour, when every customer's
+    // cron hits the provider). Hence off the hour, a midday run that retries
+    // a failed morning and picks up late lines, and an alert only when the
+    // midday run fails too.
     createJob(
       'sports-odds-create',
-      '0 0 6 * * *', // daily at 6:00 AM LA
-      createOddsSportsMarkets
+      '0 7 6 * * *', // daily at 6:07 AM LA
+      () => createOddsSportsMarkets({ lastRunOfDay: false })
+    ),
+    createJob(
+      'sports-odds-create-midday',
+      '0 7 12 * * *', // daily at 12:07 PM LA
+      () => createOddsSportsMarkets({ lastRunOfDay: true })
     ),
     // ...and while a game is on, ask for its sport's scores as often as
     // /admin/sports says (live scores, and finals once a game is due to end),
