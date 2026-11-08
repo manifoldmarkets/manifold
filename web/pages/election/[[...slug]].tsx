@@ -7,6 +7,7 @@ import {
   OG_ELECTION_2028_WIDTH,
   OgElection2028Props,
 } from 'web/components/og/og-election-2028'
+import { useFreshPageProps } from 'web/hooks/use-fresh-page-props'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { getElection2028OgProps } from 'web/lib/politics/election-2028-og'
 import { pageContents } from 'web/lib/politics/election-contents'
@@ -48,7 +49,14 @@ export async function getStaticProps(context: {
   }
 }
 
-export default function Elections(props: Props) {
+// The map, the race board and the model are drawn from these props; an open
+// tab refetches them on the ISR cadence so odds and calls move.
+export default function Elections(initialProps: Props) {
+  const props = useFreshPageProps(initialProps, '/election', revalidate * 1000)
+  return <ElectionsPage {...props} />
+}
+
+function ElectionsPage(props: Props) {
   useSaveCampaign()
   const { og } = props
   const imageAlt =

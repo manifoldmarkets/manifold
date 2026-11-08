@@ -111,6 +111,36 @@ export const flipped = (race: BoardRace) =>
   !!race.c && !!race.h && race.c !== 'O' && race.c !== race.h
 
 // Called from the market: resolved to a party, or a party at 99% or more.
+// The party a resolved race market went to, from the resolution it records.
+// A market resolved as a whole names its winning answer in `resolution` and
+// leaves every answer's pool (so its price) as it was, so prices can't be
+// trusted for the call: a race resolved Democratic at D 80 / R 19 is still
+// D. A yes/no market's YES is the party `yesParty` says. Undefined while
+// open, and for a cancelled market or one resolved to a mix (MKT).
+export function resolvedParty(
+  market: {
+    isResolved?: boolean
+    resolution?: string
+    outcomeType: string
+    answers?: { id: string; text: string; resolution?: string }[]
+  },
+  partyOfAnswer: (text: string) => 'D' | 'R' | 'O',
+  yesParty: 'D' | 'R' = 'R'
+): 'D' | 'R' | 'O' | undefined {
+  const { isResolved, resolution } = market
+  if (!isResolved || !resolution || resolution === 'CANCEL') return undefined
+  if (resolution === 'MKT') return undefined
+  if (market.outcomeType === 'BINARY') {
+    if (resolution === 'YES') return yesParty
+    if (resolution === 'NO') return yesParty === 'D' ? 'R' : 'D'
+    return undefined
+  }
+  const won =
+    market.answers?.find((a) => a.resolution === 'YES') ??
+    market.answers?.find((a) => a.id === resolution)
+  return won ? partyOfAnswer(won.text) : undefined
+}
+
 export function calledFrom(probs: {
   dem: number
   rep: number

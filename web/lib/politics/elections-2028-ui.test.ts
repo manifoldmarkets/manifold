@@ -52,6 +52,7 @@ import {
   raceLabel,
   raceName,
   raceUrl,
+  resolvedParty,
 } from './race-board'
 
 const at = (y: number, m: number, d: number, h = 12) => Date.UTC(y, m - 1, d, h)
@@ -168,6 +169,55 @@ test('the calendar keeps seasons undated and fixed days in order', () => {
 })
 
 // ------------------------------------------------------------------ board
+
+test('a resolved race is called by its recorded resolution, not its prices', () => {
+  const party = (t: string) =>
+    /democrat/i.test(t) ? 'D' : /republican/i.test(t) ? 'R' : 'O'
+  const answers = [
+    { id: 'd', text: 'Democratic Party' },
+    { id: 'r', text: 'Republican Party' },
+    { id: 'o', text: 'Other' },
+  ]
+  // Resolved as a whole to the Democrat: the answers keep their pools (D 80,
+  // R 19), and no answer carries its own resolution.
+  const whole = {
+    isResolved: true,
+    resolution: 'd',
+    outcomeType: 'MULTIPLE_CHOICE',
+    answers,
+  }
+  assert.equal(resolvedParty(whole, party), 'D')
+  assert.equal(
+    calledFrom({ dem: 0.8, rep: 0.19, other: 0.01, resolved: 'D' }),
+    'D'
+  )
+  // Per-answer resolutions read too.
+  assert.equal(
+    resolvedParty(
+      {
+        isResolved: true,
+        resolution: 'CHOOSE_ONE',
+        outcomeType: 'MULTIPLE_CHOICE',
+        answers: [{ ...answers[1], resolution: 'YES' }, answers[0]],
+      },
+      party
+    ),
+    'R'
+  )
+  // Yes/no: YES is the Republican unless the market says otherwise.
+  const binary = (resolution: string) => ({
+    isResolved: true,
+    resolution,
+    outcomeType: 'BINARY',
+  })
+  assert.equal(resolvedParty(binary('YES'), party), 'R')
+  assert.equal(resolvedParty(binary('YES'), party, 'D'), 'D')
+  assert.equal(resolvedParty(binary('NO'), party, 'D'), 'R')
+  // Open, cancelled or resolved to a mix: no call from the resolution.
+  assert.equal(resolvedParty({ ...whole, isResolved: false }, party), undefined)
+  assert.equal(resolvedParty({ ...whole, resolution: 'CANCEL' }, party), undefined)
+  assert.equal(resolvedParty({ ...whole, resolution: 'MKT' }, party), undefined)
+})
 
 const race = (over: Partial<BoardRace>): BoardRace => ({
   o: 'S',

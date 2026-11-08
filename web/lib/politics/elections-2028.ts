@@ -17,7 +17,12 @@ import {
   chamberScores,
   chamberWinner,
 } from 'web/components/election-2026/replay-scorecard'
-import { getPartyProbs } from 'web/components/usa-map/state-election-map'
+import { sourceAudit } from 'web/components/usa-map/audited-sources'
+import {
+  getPartyProbs,
+  isDemocraticAnswer,
+  isRepublicanAnswer,
+} from 'web/components/usa-map/state-election-map'
 import { api } from 'web/lib/api/api'
 import { isOpenPublicMarket } from 'web/lib/politics/election-curation'
 import freezeFile from 'web/public/data/election-board-freeze.json'
@@ -57,6 +62,7 @@ import {
   BoardOffice,
   BoardRace,
   calledFrom,
+  resolvedParty,
 } from './race-board'
 import {
   buildConditionalMatrixRows,
@@ -468,13 +474,12 @@ function unitContract(
   )
 }
 
-// The Democrat's two-party chance in each electoral unit, from its market, or
-// the unit's prior when it has none.
+// The Democrat's two-party chance in each electoral unit, from its market (a
+// resolved one's result: 1 or 0), or the unit's prior when it has none.
 function getUnitOdds(byId: Record<string, Contract>, now: number): UnitOdds[] {
   return ELECTORAL_UNITS.map((unit) => {
     const contract = unitContract(unit.key, byId)
-    const odds =
-      contract && !contract.isResolved ? partyOdds(contract, now) : undefined
+    const odds = contract ? partyOdds(contract, now) : undefined
     if (odds) {
       return {
         key: unit.key,
@@ -496,13 +501,29 @@ const round3 = (x: number) => Math.round(x * 1000) / 1000
 
 const readParty = (c: Contract) => getPartyProbs(c)
 
-// A party market's Democratic two-party chance, its weekly move (also
-// two-party), and whether it's called. `allowPriceCall`: a party at 99%+
-// counts as called (election night on); otherwise only a resolved market is.
+// The party a resolved race market went to, by its recorded resolution
+// (resolvedParty): a yes/no market's YES side as the 2026 audit records it,
+// else the Republican (as getPartyProbs reads them).
+const resolvedRace = (contract: Contract) => {
+  const audit = sourceAudit(contract.slug)
+  return resolvedParty(
+    contract as Parameters<typeof resolvedParty>[0],
+    (text) =>
+      isDemocraticAnswer(text) ? 'D' : isRepublicanAnswer(text) ? 'R' : 'O',
+    audit?.kind === 'party-binary' && audit.binaryYes ? audit.binaryYes : 'R'
+  )
+}
+
+// A party market's Democratic two-party chance (a resolved one's result, 1
+// or 0), its weekly move (also two-party), and whether it's called: a
+// resolved market by its recorded resolution, and with `allowPriceCall`
+// (election night on) a party at 99%+.
 function partyOdds(contract: Contract, now: number, allowPriceCall = false) {
   const probs = getPartyProbs(contract)
   if (!probs) return undefined
-  const p = twoPartyShare(contract, readParty)
+  const won = resolvedRace(contract)
+  const p =
+    won === 'D' ? 1 : won === 'R' ? 0 : twoPartyShare(contract, readParty)
   if (p === undefined) return undefined
   const weekAgo = contract.isResolved
     ? undefined
@@ -513,7 +534,12 @@ function partyOdds(contract: Contract, now: number, allowPriceCall = false) {
     w: weekAgo === undefined ? undefined : p - weekAgo,
     c:
       resolved || allowPriceCall
-        ? calledFrom({ dem: probs.dem, rep: probs.rep, other: probs.other })
+        ? calledFrom({
+            dem: probs.dem,
+            rep: probs.rep,
+            other: probs.other,
+            resolved: won,
+          })
         : undefined,
   }
 }

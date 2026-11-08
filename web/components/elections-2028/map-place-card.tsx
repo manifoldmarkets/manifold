@@ -6,7 +6,8 @@ import { ReactNode, useMemo, useState } from 'react'
 
 import { Answer } from 'common/answer'
 import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
-import { Contract, isMultiCpmm } from 'common/contract'
+import { Contract, CPMMMultiContract, isMultiCpmm } from 'common/contract'
+import { TradeDialog } from 'web/components/bet/trade-ticket'
 import { Button } from 'web/components/buttons/button'
 import { formatOdds, plural } from 'web/components/usa-map/election-display'
 import styles from 'web/components/usa-map/election-explorer.module.css'
@@ -32,7 +33,6 @@ import {
 import { PrimaryRow } from 'web/lib/politics/primaries'
 import { BoardRace } from 'web/lib/politics/race-board'
 import { track } from 'web/lib/service/analytics'
-import { AnswerBetModal } from './answer-bet-modal'
 import own from './election-map.module.css'
 import { TONE_COLOR } from './map-tracker'
 
@@ -467,15 +467,22 @@ function LiveRaceMarket(props: { initial: Contract; open: ReactNode }) {
         </span>
         {open}
       </div>
-      <AnswerBetModal
-        contract={contract}
-        answer={
-          answer && hasLoaded
-            ? contract.answers.find((x) => x.id === answer.id)
-            : undefined
-        }
-        onClose={() => setAnswer(undefined)}
-      />
+      {answer && hasLoaded && (
+        <TradeDialog
+          contract={contract as CPMMMultiContract}
+          multiProps={{
+            answers: contract.answers,
+            answerToBuy:
+              contract.answers.find((x) => x.id === answer.id) ?? answer,
+          }}
+          open
+          setOpen={(open) => !open && setAnswer(undefined)}
+          title={answer.text}
+          question={contract.question}
+          initialOutcome="YES"
+          trackingLocation="election 2028 map"
+        />
+      )}
     </div>
   )
 }

@@ -1,9 +1,8 @@
-import clsx from 'clsx'
 import Link from 'next/link'
 import { sortBy } from 'lodash'
 import { useCallback, useEffect, useState } from 'react'
 
-import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
+import { getAnswerProbability } from 'common/calculate'
 import {
   BinaryContract,
   Contract,
@@ -11,34 +10,34 @@ import {
   CPMMMultiContract,
   isMultiCpmm,
 } from 'common/contract'
-import { AnswerCpmmBetPanel } from 'web/components/answers/answer-bet-panel'
-import { BuyPanel } from 'web/components/bet/bet-panel'
-import {
-  Modal,
-  MODAL_CLASS,
-  SCROLLABLE_MODAL_CLASS,
-} from 'web/components/layout/modal'
+import { BetDialog } from 'web/components/bet/bet-dialog'
+import { TradeModal, TradeTicket } from 'web/components/bet/trade-ticket'
 import { formatOdds } from 'web/components/usa-map/election-display'
 import {
   isDemocraticAnswer,
   isRepublicanAnswer,
 } from 'web/components/usa-map/state-election-map'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { useLiveContractWithStatus } from 'web/hooks/use-contract'
+import {
+  useLiveContract,
+  useLiveContractWithStatus,
+} from 'web/hooks/use-contract'
 import { useContractBySlug } from 'web/hooks/use-contract-by-slug'
 import { lookupCandidate } from 'web/lib/politics/candidates'
 import { track } from 'web/lib/service/analytics'
 
-// Betting from anywhere on /election without leaving it. A click on a face,
-// a line, a cell or a chip opens this dialog on what was clicked: a yes/no
-// market's bet panel, or the bet panel for one answer of a multiple choice
-// market (with a way to pick another), or, where the click stood for the
-// whole market (a grid cell that sums several answers), its answers to
-// pick from. The market page is one explicit link at the bottom.
+// Betting from anywhere on /election without leaving it, with the site's own
+// bet modals: a click on a face, a line, a cell or a chip opens the trade
+// ticket for what was clicked (TradeModal + TradeTicket, as the 2026 map and
+// versus markets use), or BetDialog for a yes/no market (as the conditional
+// matrix does). What's added here is only getting there: loading a market
+// the page knows by slug, finding the clicked answer (by id, name or party),
+// and, where a click stood for the whole market (a grid cell that sums
+// several answers), its answers to pick from.
 //
-// The page's copy of a market can be trimmed or minutes old, so the dialog
-// prices from the live market and waits for it to load: a multiple choice
-// bet preview prices every answer.
+// The page's copy of a multiple choice market can be trimmed or minutes old,
+// so its ticket waits for the live market: the bet preview prices every
+// answer.
 
 export type BetTarget = {
   // The page's copy of the market, or its slug where the page has only that
@@ -51,9 +50,9 @@ export type BetTarget = {
   answerId?: string
   answerText?: string
   party?: 'D' | 'R'
-  // A line above the bet panel, where what was clicked reads differently
-  // from the market's answer (the Republican's electoral votes, read from
-  // the Democrat's market).
+  // A line above the ticket, where what was clicked reads differently from
+  // the market's answer (the Republican's electoral votes, read from the
+  // Democrat's market).
   note?: string
   // A yes/no market's side, where the click stood for one (a ballot
   // measure's No). From `party`, a race's yes/no market reads YES as the
@@ -64,7 +63,6 @@ export type BetTarget = {
 // Give up waiting for the live market after this long and offer the market
 // page instead of a spinner (a market unlisted since the page was built).
 const LOAD_TIMEOUT_MS = 10_000
-
 const PICKER_ANSWERS = 10
 
 export function QuickBet(props: {
@@ -73,32 +71,45 @@ export function QuickBet(props: {
   trackingName: string
 }) {
   const { target, onClose, trackingName } = props
+  // A market known only by slug turns out to be yes/no once it loads.
+  const [binary, setBinary] = useState<Contract>()
+  useEffect(() => setBinary(undefined), [target])
+  if (!target) return null
+  const yesNo =
+    binary ??
+    (target.contract?.outcomeType === 'BINARY' ? target.contract : undefined)
+  if (yesNo)
+    return (
+      <YesNoBet
+        initial={yesNo}
+        outcome={target.outcome ?? (target.party === 'D' ? 'NO' : 'YES')}
+        onClose={onClose}
+        trackingName={trackingName}
+      />
+    )
   return (
-    <Modal
-      open={target !== undefined}
+    <TradeModal
+      open
       setOpen={(open) => !open && onClose()}
-      ariaLabel="Place a bet"
-      className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}
+      title={target.contract?.question ?? 'Place a bet'}
     >
-      {target &&
-        (target.contract ? (
-          <LiveBet
-            key={`${target.contract.id}-${target.answerId ?? ''}`}
-            initial={target.contract}
-            target={target}
-            onClose={onClose}
-            trackingName={trackingName}
-          />
-        ) : target.slug ? (
-          <SlugBet
-            key={`${target.slug}-${target.answerText ?? target.party ?? ''}`}
-            slug={target.slug}
-            target={target}
-            onClose={onClose}
-            trackingName={trackingName}
-          />
-        ) : null)}
-    </Modal>
+      {target.contract ? (
+        <MultiBet
+          initial={target.contract}
+          target={target}
+          onClose={onClose}
+          trackingName={trackingName}
+        />
+      ) : target.slug ? (
+        <SlugBet
+          slug={target.slug}
+          target={target}
+          onClose={onClose}
+          onYesNo={setBinary}
+          trackingName={trackingName}
+        />
+      ) : null}
+    </TradeModal>
   )
 }
 
@@ -126,14 +137,38 @@ export function useQuickBet(trackingName: string) {
   return { open, dialog }
 }
 
+// A yes/no market: the site's BetDialog on the live market, as the matrix
+// opens it.
+function YesNoBet(props: {
+  initial: Contract
+  outcome: 'YES' | 'NO'
+  onClose: () => void
+  trackingName: string
+}) {
+  const contract = useLiveContract(props.initial)
+  return (
+    <BetDialog
+      contract={contract as BinaryContract}
+      open
+      setOpen={(open) => !open && props.onClose()}
+      initialOutcome={props.outcome}
+      trackingLocation={props.trackingName}
+    />
+  )
+}
+
 function SlugBet(props: {
   slug: string
   target: BetTarget
   onClose: () => void
+  onYesNo: (contract: Contract) => void
   trackingName: string
 }) {
-  const { slug, target } = props
+  const { slug, target, onYesNo } = props
   const { contract, error } = useContractBySlug(slug)
+  useEffect(() => {
+    if (contract?.outcomeType === 'BINARY') onYesNo(contract)
+  }, [contract, onYesNo])
   if (error)
     return (
       <div className="flex flex-col gap-3 py-2">
@@ -141,11 +176,12 @@ function SlugBet(props: {
         <MarketLink href={`/${target.creator ?? 'ManifoldPolitics'}/${slug}`} />
       </div>
     )
-  if (!contract) return <LoadingIndicator className="py-8" />
-  return <LiveBet {...props} initial={contract} />
+  if (!contract || contract.outcomeType === 'BINARY')
+    return <LoadingIndicator className="py-8" />
+  return <MultiBet {...props} initial={contract} />
 }
 
-function LiveBet(props: {
+function MultiBet(props: {
   initial: Contract
   target: BetTarget
   onClose: () => void
@@ -176,44 +212,6 @@ function LiveBet(props: {
     ) : (
       <LoadingIndicator className="py-8" />
     )
-  const closed =
-    contract.isResolved || (contract.closeTime ?? Infinity) < Date.now()
-  if (closed)
-    return (
-      <div className="flex flex-col gap-3 py-2">
-        <h2 className="text-ink-1000 font-semibold">{contract.question}</h2>
-        <p className="text-ink-700 text-sm">This market is closed.</p>
-        <MarketLink href={href} />
-      </div>
-    )
-
-  if (contract.outcomeType === 'BINARY')
-    return (
-      <div className="flex flex-col gap-2">
-        <BuyPanel
-          contract={contract as BinaryContract}
-          location={trackingName}
-          inModal
-          initialOutcome={
-            target.outcome ?? (target.party === 'D' ? 'NO' : 'YES')
-          }
-          alwaysShowOutcomeSwitcher
-          onBuySuccess={() => setTimeout(onClose, 500)}
-          className="!px-0"
-        >
-          <div className="mb-4 flex flex-col gap-2">
-            <h2 className="text-ink-1000 text-lg font-semibold leading-snug">
-              {contract.question}
-            </h2>
-            <span className="text-ink-600 text-sm">
-              {formatOdds(getDisplayProbability(contract as BinaryContract))}{' '}
-              chance
-            </span>
-          </div>
-        </BuyPanel>
-        <MarketLink href={href} />
-      </div>
-    )
 
   if (!isMultiCpmm(contract))
     return (
@@ -223,7 +221,7 @@ function LiveBet(props: {
       </div>
     )
 
-  const multi = contract
+  const multi = contract as CPMMMultiContract
   const open = multi.answers.filter((a) => a.resolution === undefined)
   // From a slug the page knows the answer's text, not its id: the same
   // text, else the same person however the market spells them.
@@ -246,40 +244,40 @@ function LiveBet(props: {
 
   if (answer)
     return (
-      <div className="flex flex-col gap-2">
-        {target.note && (
-          <p className="text-ink-700 bg-canvas-50 rounded-md px-3 py-2 text-sm">
-            {target.note}
-          </p>
-        )}
-        <AnswerCpmmBetPanel
-          answer={answer}
-          contract={multi as CPMMMultiContract}
-          outcome="YES"
-          closePanel={onClose}
-          alwaysShowOutcomeSwitcher
-        />
-        <div className="flex items-center justify-between gap-3">
-          {open.length > 1 ? (
+      <TradeTicket
+        key={answer.id}
+        contract={multi}
+        multiProps={{ answers: multi.answers, answerToBuy: answer }}
+        trackingLocation={trackingName}
+        onBuySuccess={() => setTimeout(onClose, 500)}
+        initialOutcome="YES"
+        title={answer.text}
+        question={multi.question}
+        above={
+          target.note && (
+            <p className="text-ink-700 bg-canvas-50 mb-1 rounded-md px-3 py-2 text-sm">
+              {target.note}
+            </p>
+          )
+        }
+        below={
+          open.length > 1 && (
             <button
               type="button"
               onClick={() => setChoosing(true)}
-              className="text-primary-700 text-sm font-medium hover:underline"
+              className="text-primary-700 w-fit text-sm font-medium hover:underline"
             >
               Bet on another answer
             </button>
-          ) : (
-            <span />
-          )}
-          <MarketLink href={href} />
-        </div>
-      </div>
+          )
+        }
+      />
     )
 
   const ranked = sortBy(open, (a) => -getAnswerProbability(multi, a.id))
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-ink-1000 text-lg font-semibold leading-snug">
+      <h2 className="text-ink-1000 pr-7 text-lg font-semibold leading-snug">
         {multi.question}
       </h2>
       <ul className="flex flex-col">

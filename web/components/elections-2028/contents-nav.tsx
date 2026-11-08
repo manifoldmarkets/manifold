@@ -123,7 +123,9 @@ function jump(ev: React.MouseEvent, e: ContentsEntry) {
   ev.preventDefault()
   track('election contents jump', { section: e.key })
   el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  history.replaceState(null, '', `#${e.id}`)
+  // Keep Next's router state (history.state): replacing it with null breaks
+  // Back after leaving the page.
+  history.replaceState(history.state, '', `#${e.id}`)
 }
 
 // The section being read: of the given ids, the last whose heading has
