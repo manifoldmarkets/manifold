@@ -108,7 +108,7 @@ export function InOffice(props: {
   }
   if (lines.length === 0) return null
   return (
-    <div className={own.others} aria-label="In office">
+    <section className={own.others} aria-label="In office">
       {lines.map(([label, value], i) => (
         <span key={i}>
           <span className={own.muted}>{label}</span>
@@ -124,7 +124,7 @@ export function InOffice(props: {
           )}
         </span>
       )}
-    </div>
+    </section>
   )
 }
 

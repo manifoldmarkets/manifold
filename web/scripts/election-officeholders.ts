@@ -114,16 +114,19 @@ function spokenName(n: Legislator['name']): string {
   const full = (n.official_full ?? '').replace(/,/g, '')
   const tail = [n.last, n.suffix].filter(Boolean).join(' ')
   if (full && !full.includes('"') && full.endsWith(tail)) {
-    const plain = full
-      .split(' ')
-      .filter(
-        (word, i, words) =>
-          i === 0 || i === words.length - 1 || !/^[A-Z]\.$/.test(word)
-      )
-      .join(' ')
-    return n.nickname && plain.startsWith(`${n.first} `)
-      ? `${n.nickname}${plain.slice(n.first.length)}`
-      : plain
+    // Drop initials, a leading one too ("H. Morgan Griffith" → "Morgan
+    // Griffith"), keeping at least a first and last name.
+    const words = full.split(' ')
+    const plain = words.filter(
+      (word, i) =>
+        i === words.length - 1 ||
+        !/^[A-Z]\.$/.test(word) ||
+        (i === 0 && words.length <= 2)
+    )
+    // A nickname is the name they go by ("Bernie", "Lou").
+    return n.nickname && plain.length > 1
+      ? [n.nickname, ...plain.slice(1)].join(' ')
+      : plain.join(' ')
   }
   return [n.nickname ?? n.first, n.last, n.suffix].filter(Boolean).join(' ')
 }
