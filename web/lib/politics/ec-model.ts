@@ -211,6 +211,12 @@ export function simulateElectoralCollege(
     const raw = probs[u.key]
     if (!Number.isFinite(raw))
       throw new Error(`No probability for electoral unit ${u.key}`)
+    // A called unit (exactly 1 or 0) goes the same way in every simulation;
+    // the floor only keeps a live market from reading as certain.
+    if (raw >= 1 || raw <= 0) {
+      unitProbs[u.key] = raw >= 1 ? 1 : 0
+      return raw >= 1 ? Infinity : -Infinity
+    }
     const p = Math.min(1 - PROB_FLOOR, Math.max(PROB_FLOOR, raw))
     unitProbs[u.key] = p
     return inverseNormalCdf(p)

@@ -263,6 +263,10 @@ function MultiBet(props: {
       )
     : undefined
 
+  // The target's note explains the answer it pointed at ("Republican 339+ is
+  // the Democrat's Under 200"); once another answer is picked, it's wrong.
+  const note = picked === target.answerId ? target.note : undefined
+
   if (answer)
     return (
       <TradeTicket
@@ -275,9 +279,9 @@ function MultiBet(props: {
         title={answer.text}
         question={multi.question}
         above={
-          target.note && (
+          note && (
             <p className="text-ink-700 bg-canvas-50 mb-1 rounded-md px-3 py-2 text-sm">
-              {target.note}
+              {note}
             </p>
           )
         }

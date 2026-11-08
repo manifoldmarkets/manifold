@@ -2,7 +2,10 @@
 
 import { sortBy } from 'lodash'
 
+import { getAnswerProbability } from 'common/calculate'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { placeName, TERRITORIES } from './official-markets'
+import { resolvedAnswerId } from './race-board'
 
 // One market's leader, short keys for the page props.
 export type PrimaryCell = {
@@ -45,6 +48,49 @@ export function pickLeader(
     (a) => -a.prob
   )[0]
   return top ? { text: top.text, prob: top.prob, won: false } : undefined
+}
+
+const MANIFOLD_POLITICS = 'ManifoldPolitics'
+
+// One primary market's cell: its leader, or its winner once resolved. The
+// winner is the answer the resolution names: a whole-market resolution
+// leaves every price where it was, so the pre-resolution favorite can still
+// lead on price.
+export function leaderCell(
+  contract: Contract | undefined
+): PrimaryCell | undefined {
+  if (
+    !contract ||
+    contract.outcomeType !== 'MULTIPLE_CHOICE' ||
+    !isMultiCpmm(contract)
+  )
+    return undefined
+  const winner = resolvedAnswerId(contract)
+  const settled = contract.isResolved && contract.resolution !== 'CANCEL'
+  const leader = pickLeader(
+    contract.answers.map((a) => {
+      const prob = winner
+        ? a.id === winner
+          ? 1
+          : 0
+        : getAnswerProbability(contract, a.id)
+      return {
+        text: a.text.trim(),
+        prob,
+        isOther: a.isOther,
+        won: winner ? a.id === winner : settled && prob >= 0.999,
+      }
+    })
+  )
+  const cell: PrimaryCell = { s: contract.slug }
+  if (contract.creatorUsername !== MANIFOLD_POLITICS)
+    cell.u = contract.creatorUsername
+  if (leader) {
+    cell.l = leader.text
+    cell.p = Math.round(leader.prob * 1000) / 1000
+    if (leader.won) cell.won = 1
+  }
+  return cell
 }
 
 // The first four contests, in their traditional order.

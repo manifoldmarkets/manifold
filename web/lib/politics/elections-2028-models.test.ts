@@ -203,12 +203,34 @@ const all = (p: number) =>
   Object.fromEntries(ELECTORAL_UNITS.map((u) => [u.key, p]))
 
 test('a near-certainty everywhere gives the Democrat nearly every vote', () => {
-  // Chances are floored at 0.5% / 99.5% (markets never reach 0 or 100), so a
-  // "sure thing" can still very occasionally slip.
-  const r = simulateElectoralCollege(all(1), { sims: 5000 })
+  // Live chances are floored at 0.5% / 99.5% (markets never reach 0 or
+  // 100), so a "sure thing" can still very occasionally slip.
+  const r = simulateElectoralCollege(all(0.9999), { sims: 5000 })
   assert.ok(r.pDem > 0.99, `${r.pDem}`)
   assert.ok(r.meanDemEv > TOTAL_EV - 10, `${r.meanDemEv}`)
   assert.equal(r.unitProbs.CA, 0.995)
+})
+
+test('called units never flip: a settled 270-268 map is a certain win', () => {
+  // Exactly 1 or 0 is a called race (partyOdds sets it from the resolution).
+  const probs = all(0)
+  let dem = 0
+  for (const u of ELECTORAL_UNITS) {
+    if (dem + u.ev > 270) continue
+    probs[u.key] = 1
+    dem += u.ev
+  }
+  assert.equal(dem, 270)
+  const r = simulateElectoralCollege(probs, { sims: 5000 })
+  assert.equal(r.pDem, 1)
+  assert.equal(r.pTie, 0)
+  assert.equal(r.meanDemEv, 270)
+  assert.equal(r.unitProbs[ELECTORAL_UNITS[0].key], probs[ELECTORAL_UNITS[0].key])
+  // Called units mixed with live ones: the called ones still never move.
+  const mixed = { ...all(0.5), CA: 1, TX: 0 }
+  const m = simulateElectoralCollege(mixed, { sims: 5000 })
+  const ca = ELECTORAL_UNITS.find((u) => u.key === 'CA')!.ev
+  assert.ok(m.distribution.slice(0, ca).every((p) => p === 0))
 })
 
 test('each unit keeps its market chance in the simulation', () => {

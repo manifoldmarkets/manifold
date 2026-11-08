@@ -50,12 +50,7 @@ import {
   SENATE_2028_HOLDER,
   SENATE_2028_SPECIAL_HOLDER,
 } from './official-markets'
-import {
-  orderPrimaryRows,
-  pickLeader,
-  PrimaryCell,
-  PrimaryRow,
-} from './primaries'
+import { leaderCell, orderPrimaryRows, PrimaryRow } from './primaries'
 import {
   BoardMode,
   boardMode,
@@ -762,31 +757,6 @@ async function raceBoard(
 // ---------------------------------------------------------------------------
 // Primaries
 // ---------------------------------------------------------------------------
-
-function leaderCell(contract: Contract | undefined): PrimaryCell | undefined {
-  if (!contract || !isMulti(contract)) return undefined
-  const won = contract.isResolved && contract.resolution !== 'CANCEL'
-  const leader = pickLeader(
-    contract.answers.map((a) => {
-      const prob = getAnswerProbability(contract, a.id)
-      return {
-        text: a.text.trim(),
-        prob,
-        isOther: a.isOther,
-        won: won && prob >= 0.999,
-      }
-    })
-  )
-  const cell: PrimaryCell = { s: contract.slug }
-  if (contract.creatorUsername !== MANIFOLD_POLITICS)
-    cell.u = contract.creatorUsername
-  if (leader) {
-    cell.l = leader.text
-    cell.p = round3(leader.prob)
-    if (leader.won) cell.won = 1
-  }
-  return cell
-}
 
 function primaryRows(byId: Record<string, Contract>): PrimaryRow[] {
   const rows = new Map<string, PrimaryRow>()

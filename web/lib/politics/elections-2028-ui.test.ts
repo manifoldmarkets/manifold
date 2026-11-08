@@ -32,7 +32,9 @@ import {
   pickSlot,
   placeIn,
 } from './official-markets'
+import type { Contract } from 'common/contract'
 import {
+  leaderCell,
   orderPrimaryRows,
   pickLeader,
   primaryOffice,
@@ -169,6 +171,43 @@ test('the calendar keeps seasons undated and fixed days in order', () => {
 })
 
 // ------------------------------------------------------------------ board
+
+test('a resolved primary shows its recorded winner, not its old favorite', () => {
+  // Pools priced Alice 80 / Bob 19 / Other 1 (YES pool (1-p)·100, NO p·100).
+  const answer = (id: string, text: string, p: number, isOther = false) => ({
+    id,
+    text,
+    poolYes: (1 - p) * 100,
+    poolNo: p * 100,
+    prob: p,
+    isOther,
+  })
+  const market = (over: object) =>
+    ({
+      slug: 'who-wins-iowa',
+      creatorUsername: 'ManifoldPolitics',
+      outcomeType: 'MULTIPLE_CHOICE',
+      mechanism: 'cpmm-multi-1',
+      answers: [
+        answer('a', 'Alice', 0.8),
+        answer('b', 'Bob', 0.19),
+        answer('o', 'Other', 0.01, true),
+      ],
+      ...over,
+    }) as unknown as Contract
+  // Open: the favorite leads.
+  assert.deepEqual(leaderCell(market({})), { s: 'who-wins-iowa', l: 'Alice', p: 0.8 })
+  // Resolved as a whole to Bob: the pools didn't move, Bob won.
+  assert.deepEqual(
+    leaderCell(market({ isResolved: true, resolution: 'b' })),
+    { s: 'who-wins-iowa', l: 'Bob', p: 1, won: 1 }
+  )
+  // Cancelled: no winner; the last prices stand.
+  assert.equal(
+    leaderCell(market({ isResolved: true, resolution: 'CANCEL' }))?.won,
+    undefined
+  )
+})
 
 test('a resolved race is called by its recorded resolution, not its prices', () => {
   const party = (t: string) =>
