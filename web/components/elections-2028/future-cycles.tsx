@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import Link from 'next/link'
 import { sortBy } from 'lodash'
 
@@ -13,6 +14,7 @@ import {
   MARKET_LABELS,
 } from 'web/lib/politics/election-glance'
 import { track } from 'web/lib/service/analytics'
+import { LiveContracts } from './live-contracts'
 import { OddsRows, oddsItems } from './odds-rows'
 
 // The cycles after 2028 as one grid: a column per election, a row per
@@ -45,6 +47,24 @@ const cycleOf = (c: Contract, key: string | undefined) =>
   )
 
 export function FutureCycles(props: {
+  contracts: Contract[]
+  marketKeys: Record<string, string>
+}) {
+  return (
+    <LiveContracts contracts={props.contracts}>
+      {(contracts) => (
+        <Cycles contracts={contracts} marketKeys={props.marketKeys} />
+      )}
+    </LiveContracts>
+  )
+}
+
+// In a midterm year the White House isn't on the ballot: its cell is the
+// party the last presidential winner's term leaves holding it.
+const offBallot = (office: keyof ControlOdds, cycle: number) =>
+  office === 'president' && cycle % 4 !== 0
+
+function Cycles(props: {
   contracts: Contract[]
   marketKeys: Record<string, string>
 }) {
@@ -114,17 +134,27 @@ export function FutureCycles(props: {
                               office: office.key,
                             })
                           }
-                          className="flex h-10 items-center justify-center rounded-md text-xs font-semibold tabular-nums hover:brightness-95 sm:text-sm"
+                          className={clsx(
+                            'flex h-10 items-center justify-center rounded-md text-xs font-semibold tabular-nums hover:brightness-95 sm:text-sm',
+                            offBallot(office.key, cycle) && 'opacity-60'
+                          )}
                           style={{
                             backgroundColor: fill,
                             color: labelInk(fill),
                           }}
-                          aria-label={`${office.label} after ${cycle}: ${
+                          aria-label={`${office.label} after ${cycle}${
+                            offBallot(office.key, cycle)
+                              ? ' (not on the ballot)'
+                              : ''
+                          }: ${
                             demLeads ? 'Democrats' : 'Republicans'
                           } ${formatOdds(demLeads ? dem : 1 - dem)}`}
                         >
                           {demLeads ? 'D' : 'R'}{' '}
                           {formatOdds(demLeads ? dem : 1 - dem)}
+                          {offBallot(office.key, cycle) && (
+                            <span aria-hidden>*</span>
+                          )}
                         </Link>
                       </td>
                     )
@@ -133,6 +163,12 @@ export function FutureCycles(props: {
               ))}
             </tbody>
           </table>
+          {cycles.some(({ cycle }) => cycle % 4 !== 0) && (
+            <p className="text-ink-500 mt-1 text-xs">
+              * Not on the ballot in a midterm year: the party holding the White
+              House then.
+            </p>
+          )}
         </div>
       )}
       {rest.length > 0 && (

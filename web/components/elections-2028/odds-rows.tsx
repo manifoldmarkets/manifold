@@ -11,6 +11,7 @@ import {
 import { formatOdds } from 'web/components/usa-map/election-display'
 import { leadingAnswer } from 'web/lib/politics/election-glance'
 import { track } from 'web/lib/service/analytics'
+import { LiveContracts } from './live-contracts'
 
 // Markets that don't need a picture of their own, one line each: what it
 // asks, the pick (for a market with several answers), a thin bar and the
@@ -21,7 +22,9 @@ export type OddsItem = {
   label: string
   // The answer the chance is for, where the market has several.
   pick?: string
-  p: number
+  // Absent for a market with no single chance to show (a numeric market,
+  // a poll): the line just opens it.
+  p?: number
   href: string
 }
 
@@ -58,18 +61,28 @@ export function OddsRows(props: {
                 </span>
               )}
             </span>
-            <span
-              className="bg-ink-200 h-1.5 overflow-hidden rounded-full"
-              aria-hidden
-            >
-              <span
-                className="bg-primary-500 block h-full rounded-full"
-                style={{ width: `${Math.max(0, Math.min(1, item.p)) * 100}%` }}
-              />
-            </span>
-            <span className="text-ink-1000 text-right text-sm font-semibold tabular-nums">
-              {formatOdds(item.p)}
-            </span>
+            {item.p !== undefined ? (
+              <>
+                <span
+                  className="bg-ink-200 h-1.5 overflow-hidden rounded-full"
+                  aria-hidden
+                >
+                  <span
+                    className="bg-primary-500 block h-full rounded-full"
+                    style={{
+                      width: `${Math.max(0, Math.min(1, item.p)) * 100}%`,
+                    }}
+                  />
+                </span>
+                <span className="text-ink-1000 text-right text-sm font-semibold tabular-nums">
+                  {formatOdds(item.p)}
+                </span>
+              </>
+            ) : (
+              <span className="text-primary-700 col-span-2 text-right text-sm font-medium">
+                Open →
+              </span>
+            )}
           </Link>
         </li>
       ))}
@@ -77,17 +90,34 @@ export function OddsRows(props: {
   )
 }
 
+// Markets as lines, kept live.
+export function MarketRows(props: {
+  contracts: Contract[]
+  labelOf?: (c: Contract) => string | undefined
+  trackingName: string
+  columns?: 1 | 2
+  className?: string
+}) {
+  const { contracts, labelOf, ...rest } = props
+  if (contracts.length === 0) return null
+  return (
+    <LiveContracts contracts={contracts}>
+      {(live) => <OddsRows items={oddsItems(live, labelOf)} {...rest} />}
+    </LiveContracts>
+  )
+}
+
 // A market as one line: a yes/no market's chance, or the leading named
-// answer of a market with several. Undefined for a market with nothing to
-// show (no named answer).
+// answer of a market with several; any other market as a line that opens it.
 export function oddsItem(
   contract: Contract,
   label = contract.question
-): OddsItem | undefined {
+): OddsItem {
   const href = contractPath(contract)
+  const plain = { key: contract.id, label, href }
   if (contract.outcomeType === 'BINARY') {
     const p = getDisplayProbability(contract as BinaryContract)
-    return Number.isFinite(p) ? { key: contract.id, label, p, href } : undefined
+    return Number.isFinite(p) ? { ...plain, p } : plain
   }
   if (isMultiCpmm(contract)) {
     const multi = contract
@@ -98,17 +128,12 @@ export function oddsItem(
         p: getAnswerProbability(multi, a.id),
       }))
     )
-    if (!lead) return undefined
-    return { key: contract.id, label, pick: lead.text, p: lead.p, href }
+    return lead ? { ...plain, pick: lead.text, p: lead.p } : plain
   }
-  return undefined
+  return plain
 }
 
 export const oddsItems = (
   contracts: Contract[],
   labelOf: (c: Contract) => string | undefined = () => undefined
-) =>
-  contracts.flatMap((c) => {
-    const item = oddsItem(c, labelOf(c) ?? c.question)
-    return item ? [item] : []
-  })
+) => contracts.map((c) => oddsItem(c, labelOf(c) ?? c.question))

@@ -162,6 +162,21 @@ export function leadingAnswer(answers: AnswerOdds[]): AnswerOdds | undefined {
   return sortBy(named, (a) => -a.p)[0]
 }
 
+// A "who will run for the nomination" market, by party, for the primaries'
+// field of faces. Undefined for anything else (a state's primary, say).
+export function runningField(question: string): 'D' | 'R' | undefined {
+  if (!/\bwill run\b/i.test(question)) return undefined
+  if (/\bdemocratic\b/i.test(question)) return 'D'
+  if (/\brepublican\b/i.test(question)) return 'R'
+  return undefined
+}
+
+// The year a question names, if any ("the January 2027 Speaker vote").
+export const yearIn = (question: string): number | undefined => {
+  const y = question.match(/\b(20\d\d)\b/)
+  return y ? Number(y[1]) : undefined
+}
+
 // ---------------------------------------------------------------- labels
 
 // Short names for the official markets that render as one line.

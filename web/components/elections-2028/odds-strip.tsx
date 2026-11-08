@@ -7,11 +7,14 @@ import { Contract, contractPath, isMultiCpmm } from 'common/contract'
 import { formatOdds, labelInk } from 'web/components/usa-map/election-display'
 import {
   DEM_DARK_HEX,
+  DEM_LIGHT_HEX,
   hexToRgb,
   REP_DARK_HEX,
+  REP_LIGHT_HEX,
 } from 'web/components/usa-map/state-election-map'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { Bucket, orderedBuckets } from 'web/lib/politics/election-glance'
+import { OddsRows, oddsItem } from './odds-rows'
 
 // A market over ordered ranges (electoral votes, the popular-vote margin)
 // as one strip: a cell per range in scale order, shaded by its chance in
@@ -19,13 +22,18 @@ import { Bucket, orderedBuckets } from 'web/lib/politics/election-glance'
 // the other (270 electoral votes, an even vote). Reads at a glance where the
 // mass of the bets sits and how much of it is past the line.
 
-const mix = (hex: string, t: number) => {
-  const c = hexToRgb(hex)
-  const ch = (v: number) =>
-    Math.round(255 + (v - 255) * Math.max(0, Math.min(1, t)))
+// From the party's light tone to its dark one, as the map shades a state.
+const shade = (side: 'D' | 'R', t: number) => {
+  const [a, b] =
+    side === 'D'
+      ? [hexToRgb(DEM_LIGHT_HEX), hexToRgb(DEM_DARK_HEX)]
+      : [hexToRgb(REP_LIGHT_HEX), hexToRgb(REP_DARK_HEX)]
+  const k = Math.max(0, Math.min(1, t))
+  const ch = (x: number, y: number) =>
+    Math.round(x + (y - x) * k)
       .toString(16)
       .padStart(2, '0')
-  return `#${ch(c.r)}${ch(c.g)}${ch(c.b)}`
+  return `#${ch(a.r, b.r)}${ch(a.g, b.g)}${ch(a.b, b.b)}`
 }
 
 export function OddsStrip(props: {
@@ -37,16 +45,29 @@ export function OddsStrip(props: {
 }) {
   const { title, threshold, thresholdLabel, summary } = props
   const contract = useLiveContract(props.contract)
-  if (!isMultiCpmm(contract)) return null
-  const buckets = orderedBuckets(
-    contract.answers.map((a) => ({
-      id: a.id,
-      text: a.text,
-      p: getAnswerProbability(contract, a.id),
-    })),
-    threshold
-  )
-  if (!buckets) return null
+  const buckets = isMultiCpmm(contract)
+    ? orderedBuckets(
+        contract.answers.map((a) => ({
+          id: a.id,
+          text: a.text,
+          p: getAnswerProbability(contract, a.id),
+        })),
+        threshold
+      )
+    : undefined
+  // A market whose answers stop reading as ranges is still on the page, as
+  // a line.
+  if (!buckets)
+    return (
+      <div className="flex flex-col gap-1">
+        <h3 className="text-ink-1000 text-sm font-semibold">{title}</h3>
+        <OddsRows
+          items={[oddsItem(contract)]}
+          columns={1}
+          trackingName="election odds strip fallback"
+        />
+      </div>
+    )
   const top = maxBy(buckets, (b) => b.p)?.p || 1
   const cross = buckets.findIndex((b) => b.side === 'D')
 
@@ -70,10 +91,7 @@ export function OddsStrip(props: {
           .join(', ')}`}
       >
         {buckets.map((b, i) => {
-          const fill = mix(
-            b.side === 'D' ? DEM_DARK_HEX : REP_DARK_HEX,
-            0.12 + 0.88 * (b.p / top)
-          )
+          const fill = shade(b.side, b.p / top)
           return (
             <div
               key={b.id}

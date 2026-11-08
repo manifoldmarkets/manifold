@@ -5,6 +5,7 @@ import { getAnswerProbability } from 'common/calculate'
 import { Contract, contractPath, isMultiCpmm } from 'common/contract'
 import { formatOdds } from 'web/components/usa-map/election-display'
 import { isCandidateAnswer, lookupCandidate } from 'web/lib/politics/candidates'
+import { runningField } from 'web/lib/politics/election-glance'
 import { MAP_VIEW_EVENT } from 'web/lib/politics/election-map'
 import { TIMELINE } from 'web/lib/politics/elections-2028-config'
 import { placeName } from 'web/lib/politics/official-markets'
@@ -15,6 +16,7 @@ import {
 } from 'web/lib/politics/primaries'
 import { track } from 'web/lib/service/analytics'
 import { CandidateAvatar, PhotoCredits } from './candidate-avatar'
+import { LiveContracts } from './live-contracts'
 import { OddsRows, oddsItems } from './odds-rows'
 
 // The primaries as two pictures: who's likely to run (each party's field,
@@ -27,13 +29,6 @@ const FIELD = 8
 
 const cellUrl = (cell: PrimaryCell) =>
   `/${cell.u ?? 'ManifoldPolitics'}/${cell.s}`
-
-const partyOf = (c: Contract): 'D' | 'R' | undefined =>
-  /democrat/i.test(c.question)
-    ? 'D'
-    : /republican/i.test(c.question)
-    ? 'R'
-    : undefined
 
 const dayOf = (key: string) => {
   const e = TIMELINE.find((x) => x.key === key)
@@ -52,6 +47,14 @@ export function PrimariesOverview(props: {
   rows: PrimaryRow[]
   fields: Contract[]
 }) {
+  return (
+    <LiveContracts contracts={props.fields}>
+      {(fields) => <Primaries rows={props.rows} fields={fields} />}
+    </LiveContracts>
+  )
+}
+
+function Primaries(props: { rows: PrimaryRow[]; fields: Contract[] }) {
   const { rows, fields } = props
   const early = EARLY_STATES.flatMap((st) => {
     const row = rows.find((r) => r.o === 'P' && r.st === st && !r.y)
@@ -59,10 +62,9 @@ export function PrimariesOverview(props: {
   })
   // "Who will run for the Democratic presidential nomination?"; anything
   // else among the primary markets is a line each below.
-  const isField = (c: Contract) =>
-    /run/i.test(c.question) && !!partyOf(c) && isMultiCpmm(c)
+  const isField = (c: Contract) => !!runningField(c.question) && isMultiCpmm(c)
   const runFields = sortBy(fields.filter(isField), (c) =>
-    partyOf(c) === 'D' ? 0 : 1
+    runningField(c.question) === 'D' ? 0 : 1
   )
   const otherMarkets = fields.filter((c) => !isField(c))
   const superTuesday = dayOf('super-tuesday')
@@ -83,7 +85,11 @@ export function PrimariesOverview(props: {
             </span>
           </div>
           {runFields.map((c) => (
-            <Field key={c.id} contract={c} party={partyOf(c) as 'D' | 'R'} />
+            <Field
+              key={c.id}
+              contract={c}
+              party={runningField(c.question) as 'D' | 'R'}
+            />
           ))}
         </div>
       )}

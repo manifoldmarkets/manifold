@@ -21,7 +21,7 @@ export async function getStaticPaths() {
 }
 
 // The charts' history caches by the hour upstream; two minutes keeps the
-// model, movers and market cards fresh without refetching it all every minute.
+// model and the market lines fresh without refetching it all every minute.
 const revalidate = 120
 
 type Props = Elections2028PageProps & { og: OgElection2028Props }

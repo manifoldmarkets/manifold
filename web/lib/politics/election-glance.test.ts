@@ -23,7 +23,9 @@ import {
   offYearRace,
   orderedBuckets,
   placeMore2028,
+  runningField,
   sideTotal,
+  yearIn,
 } from './election-glance'
 import { sectionOrder } from './election-phase'
 
@@ -206,6 +208,35 @@ test('the leading answer skips Other', () => {
     'Alexandria Ocasio-Cortez'
   )
   assert.equal(leadingAnswer(answers([['Other', 1]])), undefined)
+})
+
+test("the primaries' field markets are the who-will-run ones", () => {
+  assert.equal(
+    runningField(
+      'Who will run for the Democratic presidential nomination in 2028?'
+    ),
+    'D'
+  )
+  assert.equal(
+    runningField(
+      'Who will run for the Republican presidential nomination in 2028?'
+    ),
+    'R'
+  )
+  assert.equal(
+    runningField('Who will win the 2028 Iowa Republican presidential caucuses?'),
+    undefined
+  )
+  // "run" inside another word isn't the field.
+  assert.equal(
+    runningField('Who will be the Democratic frontrunner in 2028?'),
+    undefined
+  )
+  assert.equal(
+    yearIn('Who will win the January 2027 Speaker of the House election?'),
+    2027
+  )
+  assert.equal(yearIn('Will a House seat flip?'), undefined)
 })
 
 test('2028 markets without a slot go where they belong', () => {

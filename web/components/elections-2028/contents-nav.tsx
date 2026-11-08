@@ -127,12 +127,30 @@ function jump(ev: React.MouseEvent, e: ContentsEntry) {
 }
 
 // The section being read: of the given ids, the last whose heading has
-// passed the top third of the screen (the first, above the first heading).
+// passed the top third of the screen (the first, above the first heading;
+// the last, at the bottom of the page, where a short last section's heading
+// never gets that high). On iOS phones the page scrolls inside
+// .page-scroll-container, not the window (layout/page.tsx), and scroll
+// events don't bubble, so the listener captures them on the document.
 function useSectionInView(ids: string[]) {
   const [current, setCurrent] = useState<string | undefined>()
   useEffect(() => {
     if (ids.length === 0) return
     const update = () => {
+      const box = document.querySelector<HTMLElement>('.page-scroll-container')
+      const scroller =
+        box && box.scrollHeight > box.clientHeight
+          ? box
+          : document.scrollingElement ?? document.documentElement
+      if (
+        scroller.scrollTop > 0 &&
+        scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2
+      ) {
+        const last = [...ids]
+          .reverse()
+          .find((id) => document.getElementById(id))
+        if (last) return setCurrent(last)
+      }
       const line = window.innerHeight / 3
       let best: { id: string; top: number } | undefined
       for (const id of ids) {
@@ -149,11 +167,14 @@ function useSectionInView(ids: string[]) {
       frame = requestAnimationFrame(update)
     }
     update()
-    window.addEventListener('scroll', onScroll, { passive: true })
+    document.addEventListener('scroll', onScroll, {
+      capture: true,
+      passive: true,
+    })
     window.addEventListener('resize', onScroll)
     return () => {
       cancelAnimationFrame(frame)
-      window.removeEventListener('scroll', onScroll)
+      document.removeEventListener('scroll', onScroll, { capture: true })
       window.removeEventListener('resize', onScroll)
     }
   }, [ids])

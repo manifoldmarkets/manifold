@@ -59,7 +59,8 @@ import { ContentsStrip } from './contents-nav'
 import { ElectionLeaderboards } from './election-leaderboards'
 import { ElectionMap } from './election-map'
 import { FutureCycles } from './future-cycles'
-import { OddsItem, OddsRows, oddsItems } from './odds-rows'
+import { LiveContracts } from './live-contracts'
+import { MarketRows, OddsItem, OddsRows } from './odds-rows'
 import { OddsStrip } from './odds-strip'
 import { OffYearMap } from './off-year-map'
 import { PartyOddsBar } from './party-odds-bar'
@@ -293,15 +294,19 @@ export function Elections2028Page(props: Elections2028PageProps) {
       const margin = placed.margin?.[0]
       const electoralVotes = placed.electoralVotes?.[0]
       const tipping = placed.tippingPoint?.[0]
-      const facts = oddsItems(placed.facts ?? [], labelOf)
-      const tippingItems = tipping ? tippingRows(tipping) : []
+      const facts = placed.facts ?? []
       return (
         <SectionInView section="2028 national" className="flex flex-col gap-4">
           <SectionHeader
             {...head('national')}
             subtitle="Who controls Washington after 2028, the popular vote, and how big the win is."
           />
-          <div className="grid items-start gap-4 md:grid-cols-2">
+          <div
+            className={clsx(
+              'grid items-start gap-4',
+              balanceOfPowerContract && 'md:grid-cols-2'
+            )}
+          >
             {balanceOfPowerContract && (
               <BalanceOfPower
                 contract={balanceOfPowerContract}
@@ -369,14 +374,14 @@ export function Elections2028Page(props: Elections2028PageProps) {
               )}
             </div>
           </div>
-          {(tippingItems.length > 0 || facts.length > 0) && (
+          {(tipping || facts.length > 0) && (
             <div
               className={clsx(
                 'grid items-start gap-4',
-                tippingItems.length > 0 && facts.length > 0 && 'md:grid-cols-2'
+                tipping && facts.length > 0 && 'md:grid-cols-2'
               )}
             >
-              {tipping && tippingItems.length > 0 && (
+              {tipping && (
                 <div className={clsx(CARD, 'flex flex-col gap-1')}>
                   <div className="flex items-baseline justify-between gap-2">
                     <h3 className="text-ink-1000 text-sm font-semibold">
@@ -389,11 +394,15 @@ export function Elections2028Page(props: Elections2028PageProps) {
                       Market →
                     </Link>
                   </div>
-                  <OddsRows
-                    items={tippingItems}
-                    columns={1}
-                    trackingName="election 2028 tipping point"
-                  />
+                  <LiveContracts contracts={[tipping]}>
+                    {([live]) => (
+                      <OddsRows
+                        items={tippingRows(live)}
+                        columns={1}
+                        trackingName="election 2028 tipping point"
+                      />
+                    )}
+                  </LiveContracts>
                 </div>
               )}
               {facts.length > 0 && (
@@ -401,8 +410,9 @@ export function Elections2028Page(props: Elections2028PageProps) {
                   <h3 className="text-ink-1000 text-sm font-semibold">
                     Also on 2028
                   </h3>
-                  <OddsRows
-                    items={facts}
+                  <MarketRows
+                    contracts={facts}
+                    labelOf={labelOf}
                     columns={1}
                     trackingName="election 2028 facts"
                   />
@@ -452,8 +462,9 @@ export function Elections2028Page(props: Elections2028PageProps) {
         </div>
         {placed.conventions && (
           <div className={CARD}>
-            <OddsRows
-              items={oddsItems(placed.conventions, labelOf)}
+            <MarketRows
+              contracts={placed.conventions}
+              labelOf={labelOf}
               trackingName="election 2028 conventions"
             />
           </div>
@@ -500,8 +511,8 @@ export function Elections2028Page(props: Elections2028PageProps) {
           subtitle="The 2028 markets traders are most active in right now."
         />
         <div className={CARD}>
-          <OddsRows
-            items={oddsItems(trendingContracts)}
+          <MarketRows
+            contracts={trendingContracts}
             trackingName="election 2028 trending"
           />
         </div>
@@ -604,8 +615,8 @@ export function Elections2028Page(props: Elections2028PageProps) {
           subtitle="Things that have never happened in American politics, with the market's live odds that they do."
         />
         <div className={CARD}>
-          <OddsRows
-            items={oddsItems(unprecedentedContracts)}
+          <MarketRows
+            contracts={unprecedentedContracts}
             trackingName="election unprecedented"
           />
         </div>

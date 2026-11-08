@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { groupBy, sortBy, uniq } from 'lodash'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Contract, contractPath } from 'common/contract'
 import { Atlas, loadAtlas } from 'web/components/usa-map/atlas-shapes'
@@ -10,11 +10,12 @@ import {
   getPartyProbs,
   partyProbsToColor,
 } from 'web/components/usa-map/state-election-map'
-import { offYearRace } from 'web/lib/politics/election-glance'
+import { offYearRace, yearIn } from 'web/lib/politics/election-glance'
 import { TIMELINE } from 'web/lib/politics/elections-2028-config'
 import { placeName } from 'web/lib/politics/official-markets'
 import { track } from 'web/lib/service/analytics'
-import { OddsRows, oddsItems } from './odds-rows'
+import { LiveContracts } from './live-contracts'
+import { MarketRows, OddsRows, oddsItems } from './odds-rows'
 
 // The odd-year elections as a map: one tile per state, the states voting
 // that year in their leading party's colour (by the state's top race:
@@ -43,20 +44,33 @@ export function OffYearMap(props: {
   contracts: Contract[]
   world: Contract[]
 }) {
+  return (
+    <LiveContracts contracts={props.contracts}>
+      {(contracts) => <OffYear contracts={contracts} world={props.world} />}
+    </LiveContracts>
+  )
+}
+
+function OffYear(props: { contracts: Contract[]; world: Contract[] }) {
   const { contracts, world } = props
-  const { races, also } = useMemo(() => {
-    const races: Race[] = []
-    const also: Contract[] = []
-    for (const contract of contracts) {
-      const race = offYearRace(contract.question)
-      const probs = getPartyProbs(contract)
-      if (race && probs && probs.dem + probs.rep > 0)
-        races.push({ contract, ...race, dem: probs.dem, rep: probs.rep })
-      else also.push(contract)
-    }
-    return { races, also }
-  }, [contracts])
-  const years = uniq(races.map((r) => r.cycle)).sort()
+  const races: Race[] = []
+  const also: Contract[] = []
+  for (const contract of contracts) {
+    const race = offYearRace(contract.question)
+    const probs = getPartyProbs(contract)
+    if (race && probs && probs.dem + probs.rep > 0)
+      races.push({ contract, ...race, dem: probs.dem, rep: probs.rep })
+    else also.push(contract)
+  }
+  // Every year something's on the ballot, the Speaker vote's included, so
+  // no market is left without a tab.
+  const years = uniq([
+    ...races.map((r) => r.cycle),
+    ...also.flatMap((c) => {
+      const y = yearIn(c.question)
+      return y ? [y] : []
+    }),
+  ]).sort()
   const [picked, setPicked] = useState<number>()
   const year =
     picked !== undefined && years.includes(picked) ? picked : years[0]
@@ -72,9 +86,13 @@ export function OffYearMap(props: {
   // The year's other races (the Speaker vote and a mayor in 2027), and any
   // that name no year.
   const alsoThisYear = also.filter((c) => {
-    const y = c.question.match(/\b(20\d\d)\b/)?.[1]
-    return !y || Number(y) === year
+    const y = yearIn(c.question)
+    return !y || y === year
   })
+  const pick = (y: number) => {
+    track('election off-year year', { year: y })
+    setPicked(y)
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -91,9 +109,23 @@ export function OffYearMap(props: {
                 key={y}
                 role="tab"
                 aria-selected={y === year}
-                onClick={() => {
-                  track('election off-year year', { year: y })
-                  setPicked(y)
+                tabIndex={y === year ? 0 : -1}
+                onClick={() => pick(y)}
+                onKeyDown={(e) => {
+                  const i = years.indexOf(y)
+                  const next =
+                    e.key === 'ArrowRight'
+                      ? years[(i + 1) % years.length]
+                      : e.key === 'ArrowLeft'
+                      ? years[(i - 1 + years.length) % years.length]
+                      : undefined
+                  if (next === undefined) return
+                  e.preventDefault()
+                  pick(next)
+                  const tabs = e.currentTarget.parentElement?.children
+                  ;(
+                    tabs?.[years.indexOf(next)] as HTMLElement | undefined
+                  )?.focus()
                 }}
                 className={clsx(
                   'rounded-md px-3 py-1 text-sm',
@@ -119,7 +151,12 @@ export function OffYearMap(props: {
       )}
 
       {states.length > 0 && (
-        <div className="grid items-start gap-4 md:grid-cols-[minmax(0,320px)_1fr] md:gap-6">
+        <div
+          className={clsx(
+            'grid items-start gap-4 md:gap-6',
+            atlas !== null && 'md:grid-cols-[minmax(0,320px)_1fr]'
+          )}
+        >
           <TileMap
             atlas={atlas}
             colorOf={(st) => {
@@ -166,7 +203,7 @@ export function OffYearMap(props: {
           <h3 className="text-ink-900 text-sm font-semibold">
             Around the world
           </h3>
-          <OddsRows items={oddsItems(world)} trackingName="election world" />
+          <MarketRows contracts={world} trackingName="election world" />
         </div>
       )}
     </div>
@@ -202,12 +239,14 @@ function RaceChip(props: { race: Race }) {
 }
 
 function TileMap(props: {
-  atlas: Atlas['tiles'] | undefined
+  // Undefined while loading; null if the atlas failed (the lines still work).
+  atlas: Atlas['tiles'] | undefined | null
   colorOf: (state: string) => string | undefined
   hovered: string | undefined
   onHover: (state: string | undefined) => void
 }) {
   const { atlas, colorOf, hovered, onHover } = props
+  if (atlas === null) return null
   if (!atlas)
     return (
       <div
@@ -267,12 +306,12 @@ function TileMap(props: {
 }
 
 function useAtlasTiles() {
-  const [tiles, setTiles] = useState<Atlas['tiles']>()
+  const [tiles, setTiles] = useState<Atlas['tiles'] | null>()
   useEffect(() => {
     let live = true
     loadAtlas()
       .then((a) => live && setTiles(a.tiles.filter((t) => t.state !== 'DC')))
-      .catch(() => undefined)
+      .catch(() => live && setTiles(null))
     return () => {
       live = false
     }

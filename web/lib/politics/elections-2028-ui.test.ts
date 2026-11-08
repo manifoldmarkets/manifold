@@ -140,6 +140,16 @@ test('the page answers first, then runs in the order things happen', () => {
     assert.ok(!showsSection(phase, 'board'), phase)
   for (const phase of ['general', 'results', 'midterms2030'] as const)
     assert.ok(showsSection(phase, 'board'), phase)
+  // The 2029 races stay on the page through 2028.
+  for (const phase of [
+    'nomination',
+    'primaries',
+    'conventions',
+    'general',
+    'results',
+    'midterms2030',
+  ] as const)
+    assert.ok(showsSection(phase, 'offYear'), phase)
 })
 
 test('the calendar keeps seasons undated and fixed days in order', () => {
