@@ -170,7 +170,7 @@ const REPUBLICAN_ELECTORAL_VOTES: StripFlip = {
   footnote:
     "538 minus the Democratic nominee's, from the same market, assuming every elector votes for one of the two.",
   note: (shown, answer) =>
-    `The Republican nominee with ${shown.text} electoral votes is the Democratic nominee with ${answer.text}: this bets on that answer.`,
+    `Republican nominee ${shown.text} is the same outcome as the Democratic nominee winning ${answer.text} electoral votes, so this bets on that answer.`,
 }
 
 // The tipping-point market's likeliest states, one line each.
@@ -399,7 +399,7 @@ export function Elections2028Page(props: Elections2028PageProps) {
                     contract={electoralVotes}
                     title="The Democratic nominee's electoral votes"
                     threshold={270}
-                    thresholdLabel="270"
+                    thresholdLabel="270+"
                     summary={(b) => (
                       <>
                         270 or more:{' '}

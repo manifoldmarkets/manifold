@@ -93,7 +93,10 @@ export function OddsStrip(props: {
         />
       </div>
     )
-  const other = flip && flipped ? flip.buckets(buckets) : undefined
+  // The other reading, if the answers still read as counts; no toggle
+  // otherwise.
+  const otherReading = flip ? flip.buckets(buckets) : undefined
+  const other = flipped ? otherReading : undefined
   const view = other && flip ? flip : props
   const shown = other ?? buckets
   const { title, thresholdLabel, summary } = view
@@ -105,7 +108,7 @@ export function OddsStrip(props: {
     <div className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-ink-1000 text-sm font-semibold">{title}</h3>
-        {flip && (
+        {flip && otherReading && (
           <span
             role="group"
             aria-label="Whose electoral votes"
