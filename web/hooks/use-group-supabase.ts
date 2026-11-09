@@ -18,12 +18,17 @@ import { useIsAuthorized } from './use-user'
 import { useAsyncData } from 'web/hooks/use-async-data'
 import { isAdminId, isModId } from 'common/envs/constants'
 
+// Whether the signed-in user follows a topic. The read is retried a few
+// times; if it still fails, `loadFailed` says so (isFollowing stays
+// undefined: unknown, not false) and `reload` asks once more.
 export function useIsFollowingTopic(groupSlug?: string) {
   const [isFollowing, setIsFollowing] = usePersistentInMemoryState<
     boolean | undefined
   >(undefined, 'is-member-' + groupSlug)
+  const [loadFailed, setLoadFailed] = useState(false)
   const isAuthorized = useIsAuthorized()
   useEffect(() => {
+    setLoadFailed(false)
     if (isAuthorized === false || !groupSlug) {
       setIsFollowing(false)
       return
@@ -31,12 +36,48 @@ export function useIsFollowingTopic(groupSlug?: string) {
     // The endpoint needs the user's token: wait until sign-in has settled
     // (asking while it loads got signed-out visitors a 401).
     if (!isAuthorized) return
-    getUserIsFollowingTopic({ groupSlug })
-      .then((result) => setIsFollowing(result.isGroupMember))
-      .catch((e) => console.error('Could not load topic follow state', e))
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const attempt = (n: number) => {
+      getUserIsFollowingTopic({ groupSlug })
+        .then((result) => {
+          if (!cancelled) setIsFollowing(result.isGroupMember)
+        })
+        .catch((e) => {
+          if (cancelled) return
+          if (n < FOLLOW_STATE_RETRIES.length) {
+            timer = setTimeout(() => attempt(n + 1), FOLLOW_STATE_RETRIES[n])
+            return
+          }
+          console.error('Could not load topic follow state', e)
+          setLoadFailed(true)
+        })
+    }
+    attempt(0)
+    return () => {
+      cancelled = true
+      if (timer) clearTimeout(timer)
+    }
   }, [groupSlug, isAuthorized])
-  return { isFollowing, setIsFollowing }
+  // Asks again (after a failed load): the membership, or undefined if the
+  // read still fails.
+  const reload = async () => {
+    if (!groupSlug) return undefined
+    try {
+      const { isGroupMember } = await getUserIsFollowingTopic({ groupSlug })
+      setIsFollowing(isGroupMember)
+      setLoadFailed(false)
+      return isGroupMember
+    } catch (e) {
+      console.error('Could not load topic follow state', e)
+      return undefined
+    }
+  }
+  return { isFollowing, setIsFollowing, loadFailed, reload }
 }
+
+// Waits before each retry of the follow-state read, in ms.
+const FOLLOW_STATE_RETRIES = [1500, 5000]
 
 export function useMemberGroupIdsOnLoad(
   userId: string | undefined | null
