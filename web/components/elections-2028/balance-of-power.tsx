@@ -6,6 +6,7 @@ import { Contract, contractPath, isMultiCpmm } from 'common/contract'
 import { formatOdds } from 'web/components/usa-map/election-display'
 import { DEM_COLOR, REP_COLOR } from 'web/components/usa-map/state-election-map'
 import { useLiveContract } from 'web/hooks/use-contract'
+import { settledOrPrice } from 'web/lib/politics/race-board'
 import { useQuickBet } from './quick-bet'
 
 // The official balance-of-power market: who holds the presidency, Senate and
@@ -30,7 +31,10 @@ export function BalanceOfPower(props: {
       .map((a) => ({
         a,
         m: a.text.match(COMBO),
-        p: getAnswerProbability(contract, a.id),
+        // A resolved market by its result, not its last prices.
+        p: settledOrPrice(contract, a.id, (id) =>
+          getAnswerProbability(contract, id)
+        ),
       }))
       .filter((x) => x.m),
     (x) => -x.p

@@ -5,7 +5,7 @@ import { sortBy } from 'lodash'
 import { getAnswerProbability } from 'common/calculate'
 import { Contract, isMultiCpmm } from 'common/contract'
 import { placeName, TERRITORIES } from './official-markets'
-import { recordedShares, resolvedAnswerId } from './race-board'
+import { resolvedAnswerId, settledOrPrice } from './race-board'
 
 // One market's leader, short keys for the page props.
 export type PrimaryCell = {
@@ -67,17 +67,12 @@ export function leaderCell(
   )
     return undefined
   const winner = resolvedAnswerId(contract)
-  const shares = recordedShares(contract)
   const leader = pickLeader(
     contract.answers.map((a) => ({
       text: a.text.trim(),
-      prob: winner
-        ? a.id === winner
-          ? 1
-          : 0
-        : shares
-        ? (shares[a.id] ?? 0) / 100
-        : getAnswerProbability(contract, a.id),
+      prob: settledOrPrice(contract, a.id, (id) =>
+        getAnswerProbability(contract, id)
+      ),
       isOther: a.isOther,
       won: !!winner && a.id === winner,
     }))

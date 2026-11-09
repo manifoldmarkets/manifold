@@ -14,6 +14,7 @@ import {
   orderedBuckets,
   seatGlance,
 } from 'web/lib/politics/election-glance'
+import { settledOrPrice } from 'web/lib/politics/race-board'
 import { LiveContracts } from './live-contracts'
 import { OddsRows, oddsItems } from './odds-rows'
 import { useQuickBet } from './quick-bet'
@@ -32,12 +33,13 @@ const OFFICES: { key: keyof ControlOdds; label: string }[] = [
   { key: 'house', label: 'House' },
 ]
 
+// A resolved market reads by its result, not its last prices.
 const answersOf = (c: Contract): AnswerOdds[] =>
   isMultiCpmm(c)
     ? c.answers.map((a) => ({
         id: a.id,
         text: a.text,
-        p: getAnswerProbability(c, a.id),
+        p: settledOrPrice(c, a.id, (id) => getAnswerProbability(c, id)),
       }))
     : []
 

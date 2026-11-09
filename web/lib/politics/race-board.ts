@@ -166,6 +166,27 @@ export function resolvedAnswerId(market: {
   return market.answers?.find((a) => a.id === resolution)?.id
 }
 
+// An answer's chance as the page shows it: what a resolved market paid it
+// (1 for the winner, 0 for the rest, or its recorded share of a split),
+// else its price. Resolving leaves the prices where they were, so a
+// resolved market read by price shows the odds before the result.
+export function settledOrPrice(
+  market: {
+    isResolved?: boolean
+    resolution?: string
+    resolutions?: { [answerId: string]: number }
+    answers?: { id: string; resolution?: string }[]
+  },
+  answerId: string,
+  price: (answerId: string) => number
+): number {
+  const winner = resolvedAnswerId(market)
+  if (winner) return answerId === winner ? 1 : 0
+  const shares = recordedShares(market)
+  if (shares) return (shares[answerId] ?? 0) / 100
+  return price(answerId)
+}
+
 // A split resolution's recorded shares, in percent by answer id: what a
 // market resolved CHOOSE_MULTIPLE or MKT pays each answer (its prices stay
 // where they were). Undefined for anything else.

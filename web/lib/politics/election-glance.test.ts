@@ -29,6 +29,7 @@ import {
   yearIn,
 } from './election-glance'
 import { sectionOrder } from './election-phase'
+import { settledOrPrice } from './race-board'
 
 const at = (y: number, m: number, d: number, h = 12) => Date.UTC(y, m - 1, d, h)
 const answers = (pairs: [string, number][]) =>
@@ -154,6 +155,27 @@ test('Senate seats: 50 is a tie, on neither side; the line at 51', () => {
   // Republicans at 51 or more is Democrats at 49 or fewer.
   close(sideTotal(rep, 'R'), 0.01 + 0.019 + 0.059)
   close(sideTotal(rep, 'R') + sideTotal(rep, 'tie') + sideTotal(dem, 'D'), 1)
+})
+
+test('a resolved seat count reads by its result, not its last prices', () => {
+  // Resolved to "Under 44"; the prices still say 54–56 at 80%.
+  const market = {
+    isResolved: true,
+    resolution: 'a0',
+    answers: SENATE.map((a) => ({ id: a.id })),
+  }
+  const price = (id: string) => (id === 'a5' ? 0.8 : 0.025)
+  const read = SENATE.map((a) => ({
+    ...a,
+    p: settledOrPrice(market, a.id, price),
+  }))
+  const b = orderedBuckets(read, 51, 50)!
+  close(sideTotal(b, 'D'), 0)
+  close(sideTotal(b, 'R'), 1)
+  // A split by its recorded shares; an open market by price.
+  const split = { ...market, resolution: 'CHOOSE_MULTIPLE', resolutions: { a4: 60, a5: 40 } }
+  close(settledOrPrice(split, 'a5', price), 0.4)
+  close(settledOrPrice({ ...market, isResolved: false }, 'a5', price), 0.8)
 })
 
 test('House seats read the same from either side', () => {

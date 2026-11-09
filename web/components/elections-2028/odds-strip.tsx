@@ -16,6 +16,7 @@ import {
 } from 'web/components/usa-map/state-election-map'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { Bucket, orderedBuckets } from 'web/lib/politics/election-glance'
+import { settledOrPrice } from 'web/lib/politics/race-board'
 import { OddsRows, oddsItem } from './odds-rows'
 import { useQuickBet } from './quick-bet'
 
@@ -92,7 +93,11 @@ export function OddsStrip(props: {
         contract.answers.map((a) => ({
           id: a.id,
           text: a.text,
-          p: getAnswerProbability(contract, a.id),
+          // A resolved market by its result (a seat count resolved
+          // "Under 44" is 100% there), not its last prices.
+          p: settledOrPrice(contract, a.id, (id) =>
+            getAnswerProbability(contract, id)
+          ),
         })),
         threshold,
         tie
