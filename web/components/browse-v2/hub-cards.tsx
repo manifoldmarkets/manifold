@@ -20,15 +20,15 @@ type Hub = {
   icon: React.ComponentType<{ className?: string }>
 }
 
-// The hub pages. The Midterms and Perps pills were among the most-clicked
-// items in the old topic row, and the Perps pill was the main way into
-// /perps, so the hubs get their own large targets.
+// The hub pages. The Midterms (now Elections) and Perps pills were among
+// the most-clicked items in the old topic row, and the Perps pill was the
+// main way into /perps, so the hubs get their own large targets.
 const HUBS: Hub[] = [
   {
     key: 'election',
     href: '/election',
-    title: 'Midterms',
-    subtitle: 'Election odds',
+    title: 'Elections',
+    subtitle: '2028 odds',
     subtitleClassName: '[@container(min-width:72px)]:block',
     icon: LibraryIcon,
   },

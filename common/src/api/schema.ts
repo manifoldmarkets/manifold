@@ -74,6 +74,7 @@ import {
   SportsSubtopic,
 } from 'common/sports-schedule'
 import { SportsLeaderboards } from 'common/sports-leaderboards'
+import { ElectionLeaderboards } from 'common/election-leaderboards'
 import { CompetitionSwitchState } from 'common/sports-calendar'
 import { ScorePollingPanel } from 'common/sports-score-polling'
 import { Row } from 'common/supabase/utils'
@@ -5257,6 +5258,17 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as SportsLeaderboards,
+  },
+  // The /election page's leaderboards (common/election-leaderboards), one
+  // per election scope. The scheduler rebuilds them; a board not built yet
+  // is left out.
+  'election-leaderboards': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=300, stale-while-revalidate=600',
+    props: z.object({}).strict(),
+    returns: {} as ElectionLeaderboards,
   },
 
   // Link a market to the market it's about (common/market-links), replacing

@@ -18,7 +18,7 @@ import { RaceDetailsPanel } from './race-details-panel'
 import { LinkedMarketsBadge, RaceLinkedMarkets } from './race-linked-markets'
 import { linkedRaceParent } from './race-linked-markets-model'
 import { useMapCamera } from './use-map-camera'
-import { Bounds, Point } from './map-camera'
+import { Point } from './map-camera'
 import { BallotMeasureCard } from './ballot-measure-card'
 import {
   BALLOT_MEASURES,
@@ -35,10 +35,23 @@ import {
 import { DATA } from './usa-map-data'
 import {
   Atlas,
+  CALLOUTS,
+  calloutY,
+  districtShapes,
+  hexLayout,
+  hexShapes,
+  HIT_RADIUS_PX,
+  LABEL_AT,
+  Shape,
+  stateShapes,
+  tileShapes,
+  TINY_STATES,
+  UNLABELLED,
+} from './atlas-shapes'
+import {
   balanceSegments,
   BarGroup,
   buildRaces,
-  districtId,
   ElectionMode,
   leadingParty,
   matchesRaceQuery,
@@ -72,7 +85,6 @@ import {
   firstShape,
   isDirection,
   nextShape,
-  pathBounds,
   placeHexLabels,
   unionBounds,
 } from './map-geometry'
@@ -119,93 +131,12 @@ type Props = {
 
 export type ExplorerFocus = { mode: ExplorerMode; race: string; key: number }
 
-// Small northeastern states are labelled from a column to their right; their
-// map labels would overlap (VT/NH) or not fit.
-const CALLOUTS = ['VT', 'NH', 'MA', 'RI', 'CT', 'NJ', 'DE', 'MD']
-const calloutY = (i: number) => 191 + i * 29
-const UNLABELLED = ['DC', ...CALLOUTS]
-// Where the centroid sits on a border or in the sea.
-const LABEL_AT: Record<string, Point> = {
-  FL: { x: 785, y: 496 },
-  LA: { x: 578, y: 449 },
-}
-// States too small to tap on a phone get an invisible 44px target.
-const TINY_STATES = ['RI', 'DE', 'CT', 'NJ', 'VT', 'NH', 'MA', 'MD']
-const HIT_RADIUS_PX = 22
-
-type Shape = {
-  id: string
-  d?: string
-  rect?: { x: number; y: number; width: number; height: number; rx: number }
-  bounds: Bounds
-  center: Point
-}
-
-const hexPath = (x: number, y: number, r: number) =>
-  Array.from({ length: 6 }, (_, i) => {
-    const angle = (Math.PI / 3) * i - Math.PI / 2
-    return `${i ? 'L' : 'M'}${x + Math.cos(angle) * r},${
-      y + Math.sin(angle) * r
-    }`
-  }).join(' ') + 'Z'
-
-const hexLayout = (hex: Atlas['hex']) => {
-  const s = Math.min(900 / hex.width, 530 / hex.height)
-  return { s, tx: (960 - hex.width * s) / 2, ty: 35 }
-}
-
 // Every selectable shape in map coordinates, for drawing, outlines, zooming
 // and keyboard movement.
 function mapShapes(atlas: Atlas, view: MapView, mode: ExplorerMode): Shape[] {
-  if (view === 'map') {
-    const source =
-      mode === 'house'
-        ? atlas.districts.map((d) => ({
-            id: districtId(d.state, d.district),
-            path: d.path,
-            center: d.center,
-          }))
-        : atlas.states.map((s) => ({
-            id: s.state,
-            path: s.path,
-            center: s.center,
-          }))
-    return source.map(({ id, path, center }) => {
-      const bounds = pathBounds(path) ?? {
-        x0: center[0],
-        y0: center[1],
-        x1: center[0],
-        y1: center[1],
-      }
-      return { id, d: path, bounds, center: { x: center[0], y: center[1] } }
-    })
-  }
-  if (mode === 'house') {
-    const { s, tx, ty } = hexLayout(atlas.hex)
-    const r = atlas.hex.size * 0.92 * s
-    return atlas.hex.hexes.map((h) => {
-      const x = tx + h.x * s
-      const y = ty + h.y * s
-      return {
-        id: districtId(h.state, h.district),
-        d: hexPath(x, y, r),
-        bounds: { x0: x - r, y0: y - r, x1: x + r, y1: y + r },
-        center: { x, y },
-      }
-    })
-  }
-  return atlas.tiles
-    .filter((t) => t.state !== 'DC')
-    .map((t) => {
-      const x = 76 + t.col * 73
-      const y = 20 + t.row * 70
-      return {
-        id: t.state,
-        rect: { x, y, width: 65, height: 62, rx: 6 },
-        bounds: { x0: x, y0: y, x1: x + 65, y1: y + 62 },
-        center: { x: x + 32.5, y: y + 31 },
-      }
-    })
+  if (view === 'map')
+    return mode === 'house' ? districtShapes(atlas) : stateShapes(atlas)
+  return mode === 'house' ? hexShapes(atlas) : tileShapes(atlas)
 }
 
 function Outline(props: { shape: Shape; className: string }) {
