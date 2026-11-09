@@ -52,10 +52,11 @@ export function pickLeader(
 
 const MANIFOLD_POLITICS = 'ManifoldPolitics'
 
-// One primary market's cell: its leader, or its winner once resolved. The
-// winner is the answer the resolution names: a whole-market resolution
-// leaves every price where it was, so the pre-resolution favorite can still
-// lead on price.
+// One primary market's cell: its leader, or its winner once resolved. A
+// winner comes only from the recorded resolution (resolvedAnswerId), never
+// from prices: a whole-market resolution leaves every price where it was,
+// so the pre-resolution favorite can still lead on price. A split (MKT)
+// reads by its recorded shares and has no winner.
 export function leaderCell(
   contract: Contract | undefined
 ): PrimaryCell | undefined {
@@ -66,21 +67,23 @@ export function leaderCell(
   )
     return undefined
   const winner = resolvedAnswerId(contract)
-  const settled = contract.isResolved && contract.resolution !== 'CANCEL'
+  const shares =
+    contract.isResolved && contract.resolution === 'MKT'
+      ? contract.resolutions
+      : undefined
   const leader = pickLeader(
-    contract.answers.map((a) => {
-      const prob = winner
+    contract.answers.map((a) => ({
+      text: a.text.trim(),
+      prob: winner
         ? a.id === winner
           ? 1
           : 0
-        : getAnswerProbability(contract, a.id)
-      return {
-        text: a.text.trim(),
-        prob,
-        isOther: a.isOther,
-        won: winner ? a.id === winner : settled && prob >= 0.999,
-      }
-    })
+        : shares
+        ? (shares[a.id] ?? 0) / 100
+        : getAnswerProbability(contract, a.id),
+      isOther: a.isOther,
+      won: !!winner && a.id === winner,
+    }))
   )
   const cell: PrimaryCell = { s: contract.slug }
   if (contract.creatorUsername !== MANIFOLD_POLITICS)

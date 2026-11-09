@@ -249,10 +249,9 @@ function MultiBet(props: {
   const byText = (text: string) =>
     open.find((a) => a.text === text) ??
     open.find((a) => lookupCandidate(a.text).key === lookupCandidate(text).key)
-  const answer = choosing
-    ? undefined
-    : picked
-    ? open.find((a) => a.id === picked)
+  // The answer the target points at: by id, else by text, else by party.
+  const targetAnswer = target.answerId
+    ? open.find((a) => a.id === target.answerId)
     : target.answerText
     ? byText(target.answerText)
     : target.party
@@ -262,10 +261,16 @@ function MultiBet(props: {
           : isRepublicanAnswer(a.text)
       )
     : undefined
+  const answer = choosing
+    ? undefined
+    : picked
+    ? open.find((a) => a.id === picked)
+    : targetAnswer
 
   // The target's note explains the answer it pointed at ("Republican 339+ is
-  // the Democrat's Under 200"); once another answer is picked, it's wrong.
-  const note = picked === target.answerId ? target.note : undefined
+  // the Democrat's Under 200"); on any other answer it's wrong.
+  const note =
+    answer && answer.id === targetAnswer?.id ? target.note : undefined
 
   if (answer)
     return (

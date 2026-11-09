@@ -207,6 +207,35 @@ test('a resolved primary shows its recorded winner, not its old favorite', () =>
     leaderCell(market({ isResolved: true, resolution: 'CANCEL' }))?.won,
     undefined
   )
+  // A split reads by its recorded shares, with no winner, however lopsided
+  // the last prices were.
+  const lopsided = (over: object) =>
+    market({
+      answers: [
+        answer('a', 'Alice', 0.9995),
+        answer('b', 'Bob', 0.0004),
+        answer('o', 'Other', 0.0001, true),
+      ],
+      ...over,
+    })
+  assert.deepEqual(
+    leaderCell(
+      lopsided({ isResolved: true, resolution: 'MKT', resolutions: { a: 50, b: 50 } })
+    ),
+    { s: 'who-wins-iowa', l: 'Alice', p: 0.5 }
+  )
+  // One answer resolved YES wins, even under MKT and against a high price.
+  const perAnswer = lopsided({ isResolved: true, resolution: 'MKT' }) as unknown as {
+    answers: { id: string; resolution?: string }[]
+  }
+  perAnswer.answers[0].resolution = 'CANCEL'
+  perAnswer.answers[1].resolution = 'YES'
+  assert.deepEqual(leaderCell(perAnswer as unknown as Contract), {
+    s: 'who-wins-iowa',
+    l: 'Bob',
+    p: 1,
+    won: 1,
+  })
 })
 
 test('a resolved race is called by its recorded resolution, not its prices', () => {

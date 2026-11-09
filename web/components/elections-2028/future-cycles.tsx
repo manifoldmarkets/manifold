@@ -236,13 +236,15 @@ function Cycles(props: {
               ))}
             </tbody>
           </table>
-          {cycles.some(({ cycle }) => cycle % 4 !== 0) && (
+          {(cycles.some(({ cycle }) => cycle % 4 !== 0) ||
+            seatRows.length > 0) && (
             <p className="text-ink-500 mt-1 text-xs">
-              * Not on the ballot in a midterm year: the party holding the White
-              House then. Click a cell to bet on who controls Washington after
-              that election.
+              {cycles.some(({ cycle }) => cycle % 4 !== 0) &&
+                '* Not on the ballot in a midterm year: the party holding the White House then. '}
+              Click a cell to bet on who controls Washington after that
+              election.
               {seatRows.length > 0 &&
-                ' Seats: the middle of the range the market expects, for the party it puts in the majority (Republicans’ as the total minus the Democrats’).'}
+                ' Seats: the middle of the range the market expects, for the party it puts in the majority. The markets count Democratic seats; Republican seats are the rest, assuming every seat goes to one of the two parties.'}
             </p>
           )}
         </div>

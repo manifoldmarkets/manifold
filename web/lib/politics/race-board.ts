@@ -144,21 +144,20 @@ export function resolvedParty(
 }
 
 // The answer a resolved multiple-choice market went to, by its recorded
-// resolution (an answer resolved YES, or the answer id a whole-market
-// resolution names), not by its prices. Undefined while open, and for a
-// cancelled market or one resolved to a mix (MKT).
+// resolution (the one answer resolved YES, or the answer id a whole-market
+// resolution names), never by its prices. Undefined while open, and for a
+// cancelled market or a split (MKT) with no single YES answer.
 export function resolvedAnswerId(market: {
   isResolved?: boolean
   resolution?: string
   answers?: { id: string; resolution?: string }[]
 }): string | undefined {
   const { isResolved, resolution } = market
-  if (!isResolved || !resolution) return undefined
-  if (resolution === 'CANCEL' || resolution === 'MKT') return undefined
-  return (
-    market.answers?.find((a) => a.resolution === 'YES') ??
-    market.answers?.find((a) => a.id === resolution)
-  )?.id
+  if (!isResolved || !resolution || resolution === 'CANCEL') return undefined
+  const yes = market.answers?.filter((a) => a.resolution === 'YES') ?? []
+  if (yes.length === 1) return yes[0].id
+  if (resolution === 'MKT') return undefined
+  return market.answers?.find((a) => a.id === resolution)?.id
 }
 
 export function calledFrom(probs: {
