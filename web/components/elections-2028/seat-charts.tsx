@@ -234,6 +234,7 @@ function Chart(props: {
   const moved = (b: Bar) =>
     b.dayAgo !== undefined && Math.abs(b.p - b.dayAgo) >= 0.005
   const anyMoved = bars.some(moved)
+  const longLabels = bars.some((b) => b.label.length > 5)
   const party = PARTY_NAME[view]
   const seatsWord = chamber.key === 'senate' ? 'holding' : 'winning'
 
@@ -311,8 +312,13 @@ function Chart(props: {
                 {side !== 'tie' && (
                   <>
                     {' '}
-                    <span className="hidden sm:inline">{outcomeOf(side)}</span>
-                    <span className="sm:hidden">{side} majority</span>
+                    {/* A region of a few bars only fits the short name. */}
+                    <span className={clsx('hidden', n >= 4 && 'sm:inline')}>
+                      {outcomeOf(side)}
+                    </span>
+                    <span className={clsx(n >= 4 && 'sm:hidden')}>
+                      {side} majority
+                    </span>
                   </>
                 )}
               </div>
@@ -398,7 +404,9 @@ function Chart(props: {
               key={b.id}
               aria-hidden
               className={clsx(
-                'min-w-0 flex-1 truncate pt-1 text-center text-[10px] tabular-nums sm:text-xs',
+                'min-w-0 flex-1 truncate pt-1 text-center text-[10px] tabular-nums',
+                // House ranges ("193–202") need the small size to fit.
+                !longLabels && 'sm:text-xs',
                 b.id === shown.id
                   ? 'text-ink-900 font-semibold'
                   : 'text-ink-600'
