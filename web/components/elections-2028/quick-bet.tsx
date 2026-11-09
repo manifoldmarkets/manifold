@@ -304,6 +304,22 @@ function MultiBet(props: {
       />
     )
 
+  // A closed or resolved market has nothing to pick (a whole-market
+  // resolution leaves every answer unresolved, at its old price): it says
+  // so, as the trade ticket does for an answer.
+  if (!tradingAllowed(multi))
+    return (
+      <div className="flex flex-col gap-3 py-2">
+        <h2 className="text-ink-1000 pr-7 text-lg font-semibold leading-snug">
+          {multi.question}
+        </h2>
+        <p className="text-ink-600 text-sm">
+          Trading has closed on this market.
+        </p>
+        <MarketLink href={href} />
+      </div>
+    )
+
   const ranked = sortBy(open, (a) => -getAnswerProbability(multi, a.id))
   return (
     <div className="flex flex-col gap-3">
