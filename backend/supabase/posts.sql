@@ -6,6 +6,7 @@ create table if not exists
     contract_id text,
     created_time timestamp with time zone default now() not null,
     id bigint primary key generated always as identity not null,
+    social_post_id text,
     user_avatar_url text not null,
     user_id text not null,
     user_name text not null,
@@ -50,3 +51,9 @@ create index posts_user_created_time on public.posts using btree (user_id, creat
 drop index if exists posts_contract_created_time;
 
 create index posts_contract_created_time on public.posts using btree (contract_id, created_time desc);
+
+drop index if exists posts_social_post_id;
+
+create index posts_social_post_id on public.posts using btree (social_post_id)
+where
+  (social_post_id is not null);

@@ -112,14 +112,20 @@ export const post: APIHandler<'post'> = onlyUsersWhoCanPerformAction(
   }
 )
 
+// Repost cards render the comment in full, so comments embedding markets or
+// several iframes are not reposted.
+export const hasNaughtyEmbeds = (content: JSONContent | undefined) =>
+  (content?.content?.filter((c) => c.type === 'iframe').length ?? 0) > 1 ||
+  !!content?.content?.find((c) => c.type === 'gridCardsComponent') ||
+  !!content?.content?.find(
+    (c) =>
+      c.type === 'iframe' &&
+      typeof c.attrs?.src === 'string' &&
+      c.attrs.src.includes('manifold.markets')
+  )
+
 const checkForNaughtyEmbeds = (content: JSONContent) => {
-  if (
-    (content.content?.filter((c) => c.type === 'iframe').length ?? 0) > 1 ||
-    !!content.content?.find((c) => c.type === 'gridCardsComponent') ||
-    !!content.content?.find(
-      (c) => c.type === 'iframe' && c.attrs?.src.includes('manifold.markets')
-    )
-  ) {
+  if (hasNaughtyEmbeds(content)) {
     throw new APIError(
       400,
       'Reposting comments with embedded markets or multiple iframes is not allowed.'

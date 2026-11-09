@@ -6,6 +6,7 @@ import { ChatAlt2Icon } from '@heroicons/react/outline'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract, contractPath } from 'common/contract'
+import { SocialRichContent } from 'common/social-rich-content'
 import { richTextToString } from 'common/util/parse'
 import { Button, SizeType } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
@@ -50,6 +51,7 @@ export const RepostModal = (props: {
   bet?: Bet
   comment?: ContractComment
   initialText?: string
+  initialRichContent?: SocialRichContent | null
   onPosted?: () => void
   open: boolean
   setOpen: (open: boolean) => void
@@ -88,6 +90,7 @@ export const RepostModal = (props: {
             initialMarkets={playContract ? [playContract] : []}
             quote={quote}
             initialText={props.initialText}
+            initialRichContent={props.initialRichContent}
             source={
               post
                 ? { postId: post.id }

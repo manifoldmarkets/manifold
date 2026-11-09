@@ -161,6 +161,129 @@ function mentionIds(
   return [...ids]
 }
 
+const isMentionNode = (node: JSONContent) =>
+  (node.type === 'mention' || node.type === 'contract-mention') &&
+  typeof node.attrs?.id === 'string' &&
+  typeof node.attrs?.label === 'string'
+
+const isHttpUrl = (value: unknown): value is string =>
+  typeof value === 'string' && /^https?:\/\//i.test(value)
+
+// Where an embedded video, link preview or tweet points, so the Yap keeps it.
+const embedUrl = (node: JSONContent): string | undefined => {
+  const attrs = node.attrs ?? {}
+  if (node.type === 'iframe' && isHttpUrl(attrs.src)) return attrs.src
+  if (node.type === 'linkPreview' && isHttpUrl(attrs.url)) return attrs.url
+  if (node.type === 'tiptapTweet' && typeof attrs.tweetId === 'string') {
+    // Stored with a leading 't' so the id is not parsed as a number.
+    const id = attrs.tweetId.replace(/^t/, '')
+    if (/^\d+$/.test(id)) return `https://twitter.com/i/status/${id}`
+  }
+  return undefined
+}
+
+// Yap links visible URLs only, so a link on other words keeps its address.
+const withLinkTarget = (node: JSONContent) => {
+  const href = node.marks?.find((mark) => mark.type === 'link')?.attrs?.href
+  return isHttpUrl(href) && href !== node.text
+    ? `${node.text} (${href})`
+    : node.text
+}
+
+// Seed a Yap draft from a market comment draft. Paragraphs, line breaks and
+// mentions carry over; other formatting is flattened to its text, links and
+// embeds keep their address as a visible URL, and images are dropped. Returns
+// null when the result is not valid Yap content.
+export function commentToSocialRichContent(
+  comment: JSONContent
+): SocialRichContent | null {
+  const inline = (node: JSONContent): JSONContent[] =>
+    node.type === 'text'
+      ? node.text
+        ? [{ type: 'text', text: withLinkTarget(node) }]
+        : []
+      : node.type === 'hardBreak'
+      ? [{ type: 'hardBreak' }]
+      : isMentionNode(node)
+      ? [
+          {
+            type: node.type,
+            attrs: { id: node.attrs!.id, label: node.attrs!.label },
+          },
+        ]
+      : (node.content ?? []).flatMap(inline)
+  const blocks = (node: JSONContent): JSONContent[] => {
+    if (node.type === 'paragraph' || node.type === 'heading')
+      return [{ type: 'paragraph', content: inline(node) }]
+    const url = embedUrl(node)
+    if (url)
+      return [{ type: 'paragraph', content: [{ type: 'text', text: url }] }]
+    return (node.content ?? []).flatMap((child) =>
+      inlineTypes.has(child.type ?? '')
+        ? [{ type: 'paragraph', content: inline(child) }]
+        : blocks(child)
+    )
+  }
+  const content = blocks(comment)
+  if (!content.some((p) => p.content?.length)) return null
+  const parsed = socialRichContentSchema.safeParse({ type: 'doc', content })
+  return parsed.success ? parsed.data : null
+}
+
+// Visible HTTP(S) URLs, without trailing sentence punctuation. Yap renders
+// these as links at display time; comments need explicit link marks.
+const URL_PATTERN = /https?:\/\/[^\s<>"']*[^\s<>"'.,;:!?)\]]/gi
+
+const linkify = (text: string): JSONContent[] => {
+  const nodes: JSONContent[] = []
+  let last = 0
+  const pattern = new RegExp(URL_PATTERN)
+  let match: RegExpExecArray | null
+  while ((match = pattern.exec(text))) {
+    const start = match.index
+    if (start > last)
+      nodes.push({ type: 'text', text: text.slice(last, start) })
+    nodes.push({
+      type: 'text',
+      text: match[0],
+      marks: [{ type: 'link', attrs: { href: match[0] } }],
+    })
+    last = start + match[0].length
+  }
+  if (last < text.length) nodes.push({ type: 'text', text: text.slice(last) })
+  return nodes
+}
+
+// The market comment posted alongside a Yap. Yap nodes are a subset of the
+// comment editor's, so the document carries over; URLs gain link marks and
+// attached images follow the text.
+export function socialPostToCommentContent(post: {
+  text: string
+  richContent?: SocialRichContent | null
+  imageUrls?: string[]
+}): JSONContent {
+  const visit = (node: JSONContent): JSONContent[] =>
+    node.type === 'text'
+      ? linkify(node.text ?? '')
+      : [
+          {
+            ...node,
+            ...(node.content ? { content: node.content.flatMap(visit) } : {}),
+          },
+        ]
+  const doc = post.richContent ?? textToSocialRichContent(post.text)
+  return {
+    type: 'doc',
+    content: [
+      ...(doc.content ?? []).flatMap(visit),
+      ...(post.imageUrls ?? []).map((src) => ({
+        type: 'image',
+        attrs: { src },
+      })),
+    ],
+  }
+}
+
 export const getSocialMentionIds = (doc?: SocialRichContent | null) =>
   mentionIds(doc, 'mention')
 export const getSocialMarketMentionIds = (doc?: SocialRichContent | null) =>

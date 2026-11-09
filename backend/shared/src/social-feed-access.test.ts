@@ -1,3 +1,6 @@
+// The API handlers import comment creation, which needs the real shared utils.
+jest.mock('api/create-comment', () => ({}))
+jest.mock('api/edit-comment', () => ({}))
 jest.mock('./utils', () => ({ LOCAL_ONLY: true, log: { warn: jest.fn() } }))
 jest.mock('./supabase/init', () => ({ createSupabaseDirectClient: jest.fn() }))
 jest.mock('./social-posts', () => ({

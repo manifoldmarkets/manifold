@@ -1,3 +1,6 @@
+// The API handlers import comment creation, which needs the real shared utils.
+jest.mock('api/create-comment', () => ({}))
+jest.mock('api/edit-comment', () => ({}))
 jest.mock('./utils', () => ({ LOCAL_ONLY: true, log: { warn: jest.fn() } }))
 jest.mock('./supabase/init', () => ({ createSupabaseDirectClient: jest.fn() }))
 jest.mock('api/helpers/rate-limit', () => ({
@@ -63,6 +66,7 @@ const row: SocialRow = {
   source_bet_id: null,
   deleted_by: null,
   removed_by_moderator: false,
+  market_comment_id: null,
 }
 const actor = { id: 'author' } as User
 const auth = { uid: 'author' } as AuthedUser
