@@ -250,6 +250,18 @@ export const ALL_VOTEHUB_FEED_SPECS: readonly VoteHubFeedSpec[] = [
 export const getVoteHubFeedSpec = (feedId: string) =>
   ALL_VOTEHUB_FEED_SPECS.find((spec) => spec.feedId === feedId)
 
+/**
+ * A non-2xx VoteHub response, with the status kept so a caller can tell "no
+ * such series" (404 — the expected state of a feed awaiting its source) from
+ * an outage (5xx, which is never expected) without parsing the message.
+ */
+export class VoteHubHttpError extends Error {
+  constructor(what: string, readonly status: number, statusText: string) {
+    super(`VoteHub ${what} request failed: ${status} ${statusText}`)
+    this.name = 'VoteHubHttpError'
+  }
+}
+
 const voteHubFetch = async (url: string, what: string) => {
   const response = await fetch(url, {
     headers: {
@@ -262,9 +274,7 @@ const voteHubFetch = async (url: string, what: string) => {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   })
   if (!response.ok)
-    throw new Error(
-      `VoteHub ${what} request failed: ${response.status} ${response.statusText}`
-    )
+    throw new VoteHubHttpError(what, response.status, response.statusText)
   return response.json() as Promise<unknown>
 }
 

@@ -1,3 +1,5 @@
+import { uniq } from 'lodash'
+
 import { getApiUrl } from 'common/api/utils'
 import { ENV, ENV_CONFIG } from 'common/envs/constants'
 import { getPerpFeedTicker } from 'common/perps/ticker'
@@ -121,10 +123,14 @@ if (require.main === module)
     const feedArg = process.argv
       .find((arg) => arg.startsWith('--feed='))
       ?.slice('--feed='.length)
-    const feedIds = (feedArg ?? '')
-      .split(',')
-      .map((id) => id.trim())
-      .filter(Boolean)
+    // Deduplicated: a repeated id would pass every check, create its market,
+    // and then fail the second POST on the open-market check — after a write.
+    const feedIds = uniq(
+      (feedArg ?? '')
+        .split(',')
+        .map((id) => id.trim())
+        .filter(Boolean)
+    )
     if (feedIds.length === 0)
       throw new Error(
         `pass --feed=<feedId>[,<feedId>]; VoteHub feeds: ${VOTEHUB_FEED_SPECS.map(
@@ -323,8 +329,20 @@ if (require.main === module)
       headers,
       signal: AbortSignal.timeout(10_000),
     })
-    if (!me.ok || (await me.json()).id !== callerId)
+    if (!me.ok) throw new Error(`GET me failed: HTTP ${me.status}`)
+    const caller: { id?: string; balance?: number } = await me.json()
+    if (caller.id !== callerId)
       throw new Error('API key does not belong to the official creator')
+    // Every market's backing comes out of this one balance, so check the
+    // total up front: otherwise the first market is created and the second
+    // fails, leaving half a pair live.
+    const balance = Number(caller.balance)
+    if (!Number.isFinite(balance) || balance < backing)
+      throw new Error(
+        `Insufficient backing: the official creator has M${
+          Number.isFinite(balance) ? Math.floor(balance) : '?'
+        } and the ${plans.length} market(s) need M${backing} in total`
+      )
 
     for (const plan of plans) {
       const response = await fetch(getApiUrl('create-perp'), {
