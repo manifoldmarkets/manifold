@@ -6,13 +6,13 @@ import { Contract, isMultiCpmm } from 'common/contract'
 import { Atlas, loadAtlas } from 'web/components/usa-map/atlas-shapes'
 import { formatOdds, labelInk } from 'web/components/usa-map/election-display'
 import {
-  getPartyProbs,
   isDemocraticAnswer,
   isRepublicanAnswer,
   partyProbsToColor,
 } from 'web/components/usa-map/state-election-map'
 import { offYearRace, yearIn } from 'web/lib/politics/election-glance'
 import { TIMELINE } from 'web/lib/politics/elections-2028-config'
+import { settledPartyProbs } from 'web/lib/politics/settlement'
 import { placeName } from 'web/lib/politics/official-markets'
 import { track } from 'web/lib/service/analytics'
 import { LiveContracts } from './live-contracts'
@@ -71,7 +71,7 @@ function OffYear(props: { contracts: Contract[]; world: Contract[] }) {
   const also: Contract[] = []
   for (const contract of contracts) {
     const race = offYearRace(contract.question)
-    const probs = getPartyProbs(contract)
+    const probs = settledPartyProbs(contract)
     if (race && probs && probs.dem + probs.rep > 0)
       races.push({ contract, ...race, dem: probs.dem, rep: probs.rep })
     else also.push(contract)

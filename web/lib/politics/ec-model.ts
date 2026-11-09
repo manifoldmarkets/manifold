@@ -251,16 +251,20 @@ export function simulateElectoralCollege(
       continue
     }
     // Strongest units for the winner first; the one that crosses the line
-    // is the tipping point.
+    // is the tipping point. Called units (infinite margins) tie with each
+    // other, so where the winner's called units alone reach the line, which
+    // of them crosses it is only their order: that simulation has no
+    // tipping point, and once a side has 270 called votes none does.
     const demWon = demEv >= needed
-    order.sort((i, j) =>
-      demWon ? margins[j] - margins[i] : margins[i] - margins[j]
-    )
+    order.sort((i, j) => {
+      const d = demWon ? margins[j] - margins[i] : margins[i] - margins[j]
+      return Number.isNaN(d) ? 0 : d
+    })
     let running = 0
     for (const i of order) {
       running += units[i].ev
       if (running >= needed) {
-        tipping[i]++
+        if (Number.isFinite(margins[i])) tipping[i]++
         break
       }
     }

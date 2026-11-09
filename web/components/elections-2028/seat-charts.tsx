@@ -23,7 +23,7 @@ import {
   otherNominee,
   sideTotal,
 } from 'web/lib/politics/election-glance'
-import { settledOrPrice } from 'web/lib/politics/race-board'
+import { settledOrPrice } from 'web/lib/politics/settlement'
 import { dayAgoProbs } from 'web/lib/politics/senate-seats'
 import { track } from 'web/lib/service/analytics'
 import { useQuickBet } from './quick-bet'

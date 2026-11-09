@@ -22,7 +22,6 @@ import interactions from 'web/components/us-elections/election-interactions.modu
 import { PollingPerpsRow } from 'web/components/us-elections/polling-perps-row'
 import { SectionInView } from 'web/components/us-elections/section-in-view'
 import { formatOdds } from 'web/components/usa-map/election-display'
-import { getPartyProbs } from 'web/components/usa-map/state-election-map'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
 import {
@@ -46,6 +45,7 @@ import {
 } from 'web/lib/politics/election-glance'
 import { SectionKey, sectionOrder } from 'web/lib/politics/election-phase'
 import type { Elections2028PageProps } from 'web/lib/politics/elections-2028'
+import { settledPartyProbs } from 'web/lib/politics/settlement'
 import {
   BOARD_FREEZE,
   ELECTION_HUB_TOPICS,
@@ -217,6 +217,7 @@ export function Elections2028Page(props: Elections2028PageProps) {
     board2030Mode,
     balanceOfPower2030,
     seats2030,
+    national2028,
     primaries,
     primaryContracts,
     more2028,
@@ -343,11 +344,7 @@ export function Elections2028Page(props: Elections2028PageProps) {
     ),
 
     national: () => {
-      const margin = placed.margin?.[0]
-      const electoralVotes = placed.electoralVotes?.[0]
-      const tipping = placed.tippingPoint?.[0]
-      const senateSeats = placed.senateSeats?.[0]
-      const houseSeats = placed.houseSeats?.[0]
+      const { margin, electoralVotes, tippingPoint: tipping } = national2028
       const facts = placed.facts ?? []
       return (
         <SectionInView section="2028 national" className="flex flex-col gap-4">
@@ -429,7 +426,11 @@ export function Elections2028Page(props: Elections2028PageProps) {
               )}
             </div>
           </div>
-          <SeatCharts senate={senateSeats} house={houseSeats} year={2028} />
+          <SeatCharts
+            senate={national2028.senateSeats ?? undefined}
+            house={national2028.houseSeats ?? undefined}
+            year={2028}
+          />
           {(tipping || facts.length > 0) && (
             <div
               className={clsx(
@@ -781,7 +782,7 @@ function PresidencyMatrix(props: {
   partyContract: Elections2028PageProps['partyContract']
 }) {
   return (
-    <LiveConditionOdds contract={props.partyContract} read={getPartyProbs}>
+    <LiveConditionOdds contract={props.partyContract} read={settledPartyProbs}>
       {(odds) => (
         <ConditionalMatrix
           caption="Chances by 2028 presidential winner"

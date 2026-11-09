@@ -1,4 +1,4 @@
-import { keyBy, mean, omit, sortBy, uniq, uniqBy } from 'lodash'
+import { keyBy, mapValues, omit, sortBy, uniq, uniqBy } from 'lodash'
 
 import { getAnswerProbability } from 'common/calculate'
 import { Contract, isMultiCpmm, MultiContract } from 'common/contract'
@@ -57,8 +57,8 @@ import {
   BoardOffice,
   BoardRace,
   calledFrom,
-  resolvedParty,
 } from './race-board'
+import { resolvedParty } from './settlement'
 import {
   buildConditionalMatrixRows,
   conditionalMatrixIds,
@@ -90,6 +90,7 @@ import {
   LATER_KEYS,
   LIST_SERIES,
   NATIONAL_2028,
+  NATIONAL_RESULT_KEYS_2028,
   OFFICIAL_PRESIDENT_2028,
   OFFICIAL_SLOTS,
   POLLING_PERPS_2028,
@@ -235,6 +236,8 @@ export type Elections2028PageProps = {
   balanceOfPower2030: Contract | null
   // From 2029: the 2030 seat counts (Democratic seats in each chamber).
   seats2030: { senate: Contract | null; house: Contract | null }
+  // The 2028 national result displays, open or not (NATIONAL_RESULT_KEYS_2028).
+  national2028: Record<keyof typeof NATIONAL_RESULT_KEYS_2028, Contract | null>
   primaries: PrimaryRow[]
   primaryContracts: Contract[]
   // Official 2028 markets with no slot of their own (tipping point, margins,
@@ -1078,6 +1081,7 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
         charted.has(officialId(key) ?? '')
     ),
     ...LATER_KEYS,
+    ...Object.values(NATIONAL_RESULT_KEYS_2028),
   ])
   const national = officialEntries((r) => r.kind === 'national')
   const offYearOfficial = national
@@ -1168,6 +1172,10 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
     balanceOfPower2030: wants2030
       ? slim(slotFor('2030-balance-of-power', byId) ?? null)
       : null,
+    national2028: mapValues(NATIONAL_RESULT_KEYS_2028, (key) => {
+      const c = byId[officialId(key) ?? '']
+      return c && c.visibility === 'public' && !c.deleted ? slim(c) : null
+    }),
     seats2030: {
       senate: wants2030
         ? slim(slotFor('2030-dem-senate-seats', byId) ?? null)
@@ -1199,14 +1207,3 @@ export async function getElections2028PageProps(): Promise<Elections2028PageProp
     trendingContracts: trendingContracts.map(slimCard),
   }
 }
-
-// Exported for the OG card and tests: the Democrat's and Republican's chances
-// from the party market, two-party normalized for display.
-export function partySplit(contract: Contract | null) {
-  const probs = getPartyProbs(contract)
-  if (!probs) return undefined
-  return { dem: probs.dem, rep: probs.rep, other: probs.other }
-}
-
-export const averageEdge = (scores: ChamberScore[]) =>
-  scores.length ? Math.round(mean(scores.map((s) => s.averagePoints))) : 0

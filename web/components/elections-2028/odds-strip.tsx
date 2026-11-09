@@ -16,7 +16,7 @@ import {
 } from 'web/components/usa-map/state-election-map'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { Bucket, orderedBuckets } from 'web/lib/politics/election-glance'
-import { settledOrPrice } from 'web/lib/politics/race-board'
+import { settledOrPrice } from 'web/lib/politics/settlement'
 import { OddsRows, oddsItem } from './odds-rows'
 import { useQuickBet } from './quick-bet'
 

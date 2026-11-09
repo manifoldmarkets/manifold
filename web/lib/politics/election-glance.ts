@@ -181,7 +181,8 @@ export function seatGlance(
     buckets.find((b) => (below += b.p) >= all / 2) ??
     buckets[buckets.length - 1]
   const dem = (sideTotal(buckets, 'D') + sideTotal(buckets, 'tie') / 2) / all
-  if (middle.side !== 'R') return { side: middle.side, label: middle.label, dem }
+  if (middle.side !== 'R')
+    return { side: middle.side, label: middle.label, dem }
   const theirs = otherNominee(buckets, total, threshold, tie)?.find(
     (b) => b.id === middle.id
   )
@@ -306,17 +307,11 @@ export const MARKET_LABELS: Record<string, string> = {
 }
 
 // Where /election places the 2028 official markets that have no slot of
-// their own: the conventions chapter, the national picture's strips and
-// tipping-point bars, or a line among its facts. Anything a script adds
-// later lands among the facts, so a new market never drops off the page.
-export type More2028Place =
-  | 'conventions'
-  | 'electoralVotes'
-  | 'margin'
-  | 'tippingPoint'
-  | 'senateSeats'
-  | 'houseSeats'
-  | 'facts'
+// their own: the conventions chapter, or a line among the national
+// picture's facts (its strips, seat charts and tipping-point bars have
+// slots: NATIONAL_RESULT_KEYS_2028). Anything a script adds later lands
+// among the facts, so a new market never drops off the page.
+export type More2028Place = 'conventions' | 'facts'
 
 export function placeMore2028(key: string | undefined): More2028Place {
   switch (key) {
@@ -324,16 +319,6 @@ export function placeMore2028(key: string | undefined): More2028Place {
     case '2028-gop-contested-convention':
     case '2028-vp-winner':
       return 'conventions'
-    case '2028-dem-electoral-votes':
-      return 'electoralVotes'
-    case '2028-popular-vote-margin':
-      return 'margin'
-    case '2028-tipping-point':
-      return 'tippingPoint'
-    case '2028-dem-senate-seats':
-      return 'senateSeats'
-    case '2028-dem-house-seats':
-      return 'houseSeats'
     default:
       return 'facts'
   }

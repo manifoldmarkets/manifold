@@ -49,7 +49,6 @@ import {
   MapViewToggle,
 } from 'web/components/usa-map/map-view-toggle'
 import { RaceDetailsPanel } from 'web/components/usa-map/race-details-panel'
-import { getPartyProbs } from 'web/components/usa-map/state-election-map'
 import { useMapCamera } from 'web/components/usa-map/use-map-camera'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { ELECTORAL_UNITS } from 'web/lib/politics/ec-model'
@@ -73,6 +72,7 @@ import type { ElectoralModel } from 'web/lib/politics/elections-2028'
 import { TERRITORIES } from 'web/lib/politics/official-markets'
 import { PrimaryRow } from 'web/lib/politics/primaries'
 import { BoardRace } from 'web/lib/politics/race-board'
+import { settledPartyProbs } from 'web/lib/politics/settlement'
 import { track } from 'web/lib/service/analytics'
 import own from './election-map.module.css'
 import { fillColor, HoverFacts, PinnedPlace } from './map-place-card'
@@ -1323,7 +1323,7 @@ function PresidentNotes(props: {
 
 function NationalMarket(props: { contract: Contract; modelDem: number }) {
   const contract = useLiveContract(props.contract)
-  const national = getPartyProbs(contract)
+  const national = settledPartyProbs(contract)
   if (!national) return null
   return (
     <>

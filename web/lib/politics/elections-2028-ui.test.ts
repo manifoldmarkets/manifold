@@ -54,8 +54,9 @@ import {
   raceLabel,
   raceName,
   raceUrl,
-  resolvedParty,
 } from './race-board'
+import { resolvedParty, settledOrPrice, settledPartyProbs } from './settlement'
+import { getPartyProbs } from 'web/components/usa-map/state-election-map'
 
 const at = (y: number, m: number, d: number, h = 12) => Date.UTC(y, m - 1, d, h)
 
@@ -194,14 +195,20 @@ test('a resolved primary shows its recorded winner, not its old favorite', () =>
         answer('o', 'Other', 0.01, true),
       ],
       ...over,
-    }) as unknown as Contract
+    } as unknown as Contract)
   // Open: the favorite leads.
-  assert.deepEqual(leaderCell(market({})), { s: 'who-wins-iowa', l: 'Alice', p: 0.8 })
+  assert.deepEqual(leaderCell(market({})), {
+    s: 'who-wins-iowa',
+    l: 'Alice',
+    p: 0.8,
+  })
   // Resolved as a whole to Bob: the pools didn't move, Bob won.
-  assert.deepEqual(
-    leaderCell(market({ isResolved: true, resolution: 'b' })),
-    { s: 'who-wins-iowa', l: 'Bob', p: 1, won: 1 }
-  )
+  assert.deepEqual(leaderCell(market({ isResolved: true, resolution: 'b' })), {
+    s: 'who-wins-iowa',
+    l: 'Bob',
+    p: 1,
+    won: 1,
+  })
   // Cancelled: no winner; the last prices stand.
   assert.equal(
     leaderCell(market({ isResolved: true, resolution: 'CANCEL' }))?.won,
@@ -220,7 +227,11 @@ test('a resolved primary shows its recorded winner, not its old favorite', () =>
     })
   assert.deepEqual(
     leaderCell(
-      lopsided({ isResolved: true, resolution: 'MKT', resolutions: { a: 50, b: 50 } })
+      lopsided({
+        isResolved: true,
+        resolution: 'MKT',
+        resolutions: { a: 50, b: 50 },
+      })
     ),
     { s: 'who-wins-iowa', l: 'Alice', p: 0.5 }
   )
@@ -247,7 +258,10 @@ test('a resolved primary shows its recorded winner, not its old favorite', () =>
     1
   )
   // One answer resolved YES wins, even under MKT and against a high price.
-  const perAnswer = lopsided({ isResolved: true, resolution: 'MKT' }) as unknown as {
+  const perAnswer = lopsided({
+    isResolved: true,
+    resolution: 'MKT',
+  }) as unknown as {
     answers: { id: string; resolution?: string }[]
   }
   perAnswer.answers[0].resolution = 'CANCEL'
@@ -258,6 +272,81 @@ test('a resolved primary shows its recorded winner, not its old favorite', () =>
     p: 1,
     won: 1,
   })
+})
+
+test('party odds read a recorded result, not the pools it left', () => {
+  // Pools priced D 80 / R 19 / Other 1; the whole market resolved to D,
+  // which records the result on the contract and leaves the pools.
+  const answer = (id: string, text: string, p: number) => ({
+    id,
+    text,
+    poolYes: (1 - p) * 100,
+    poolNo: p * 100,
+    prob: p,
+  })
+  const market = (over: object) =>
+    ({
+      slug: 'who-wins-the-2028-test-race',
+      outcomeType: 'MULTIPLE_CHOICE',
+      mechanism: 'cpmm-multi-1',
+      shouldAnswersSumToOne: true,
+      answers: [
+        answer('d', 'Democratic Party', 0.8),
+        answer('r', 'Republican Party', 0.19),
+        answer('o', 'Other', 0.01),
+      ],
+      ...over,
+    } as unknown as Contract)
+  const open = market({})
+  const won = market({
+    isResolved: true,
+    resolution: 'd',
+    resolutions: { d: 100 },
+  })
+  const near = (x: number | undefined, y: number) =>
+    assert.ok(x !== undefined && Math.abs(x - y) < 1e-6, `${x} ≈ ${y}`)
+  near(settledPartyProbs(open)?.dem, 0.8)
+  near(getPartyProbs(won)?.dem, 0.8) // the pools, before the result
+  assert.deepEqual(settledPartyProbs(won), { dem: 1, rep: 0, other: 0 })
+  // A split (CHOOSE_MULTIPLE) pays its recorded shares.
+  const split = market({
+    isResolved: true,
+    resolution: 'CHOOSE_MULTIPLE',
+    resolutions: { d: 60, r: 40 },
+  })
+  near(settledPartyProbs(split)?.dem, 0.6)
+  near(settledPartyProbs(split)?.rep, 0.4)
+  // Cancelled: no reading at all.
+  assert.equal(
+    settledPartyProbs(market({ isResolved: true, resolution: 'CANCEL' })),
+    undefined
+  )
+})
+
+test('an answer resolved on its own pays what its resolution says', () => {
+  // Independent answers (the winning ticket) settle one by one: a YES
+  // winner stays at 1 even while the market is open, and once the market
+  // closes out the others keep their own results.
+  const price = () => 0.42
+  const ticket = {
+    isResolved: false,
+    answers: [
+      { id: 'p', resolution: 'YES' },
+      { id: 'v', resolution: 'YES' },
+      { id: 'x', resolution: 'NO' },
+      { id: 'm', resolution: 'MKT', resolutionProbability: 0.3 },
+      { id: 'u' },
+    ],
+  }
+  assert.equal(settledOrPrice(ticket, 'p', price), 1)
+  assert.equal(settledOrPrice(ticket, 'x', price), 0)
+  assert.equal(settledOrPrice(ticket, 'm', price), 0.3)
+  assert.equal(settledOrPrice(ticket, 'u', price), 0.42)
+  // Two YES winners, market resolved: each still reads its own 1, and the
+  // MKT answer isn't zeroed by a single-winner reading.
+  const done = { ...ticket, isResolved: true, resolution: 'MKT' }
+  assert.equal(settledOrPrice(done, 'v', price), 1)
+  assert.equal(settledOrPrice(done, 'm', price), 0.3)
 })
 
 test('a resolved race is called by its recorded resolution, not its prices', () => {
@@ -323,7 +412,10 @@ test('a resolved race is called by its recorded resolution, not its prices', () 
   )
   // Open, cancelled or resolved to a mix: no call from the resolution.
   assert.equal(resolvedParty({ ...whole, isResolved: false }, party), undefined)
-  assert.equal(resolvedParty({ ...whole, resolution: 'CANCEL' }, party), undefined)
+  assert.equal(
+    resolvedParty({ ...whole, resolution: 'CANCEL' }, party),
+    undefined
+  )
   assert.equal(resolvedParty({ ...whole, resolution: 'MKT' }, party), undefined)
 })
 

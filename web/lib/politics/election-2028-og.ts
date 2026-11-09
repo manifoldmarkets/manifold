@@ -1,8 +1,8 @@
 import type { OgElection2028Props } from 'web/components/og/og-election-2028'
-import { getPartyProbs } from 'web/components/usa-map/state-election-map'
 import { lookupCandidate } from './candidates'
 import { PHOTO_CREDITS } from './photo-credits'
 import type { Elections2028PageProps } from './elections-2028'
+import { settledPartyProbs } from './settlement'
 
 const pct = (p: number) =>
   Number.isFinite(p)
@@ -15,7 +15,7 @@ export function getElection2028OgProps(
   props: Pick<Elections2028PageProps, 'partyContract' | 'charts'>,
   asOf: string
 ): OgElection2028Props {
-  const party = getPartyProbs(props.partyContract)
+  const party = settledPartyProbs(props.partyContract)
   const leader = (key: 'demNominee' | 'gopNominee') => {
     const top = props.charts.find((c) => c.key === key)?.series[0]
     if (!top) return {}

@@ -32,6 +32,7 @@ import {
 } from 'web/lib/politics/election-map'
 import { PrimaryRow } from 'web/lib/politics/primaries'
 import { BoardRace } from 'web/lib/politics/race-board'
+import { settledOrPrice } from 'web/lib/politics/settlement'
 import { track } from 'web/lib/service/analytics'
 import own from './election-map.module.css'
 import { TONE_COLOR } from './map-tracker'
@@ -429,19 +430,20 @@ function LiveRaceMarket(props: { initial: Contract; open: ReactNode }) {
         {open}
       </div>
     )
+  const prob = (id: string) =>
+    settledOrPrice(contract, id, (x) => getAnswerProbability(contract, x))
   const answers = sortBy(
     (contract.answers ?? []).filter((a) => a.resolution !== 'CANCEL'),
-    (a) => -getAnswerProbability(contract, a.id)
+    (a) => -prob(a.id)
   )
   return (
     <div className={own.answers}>
       {answers.slice(0, ANSWERS_SHOWN).map((a) => (
         <div key={a.id} className={own.answer}>
           <span className={own.answerText}>{a.text}</span>
-          <span className={own.answerProb}>
-            {formatOdds(getAnswerProbability(contract, a.id))}
-          </span>
-          {!contract.isResolved && (
+          <span className={own.answerProb}>{formatOdds(prob(a.id))}</span>
+          {/* An answer resolved on its own takes no more bets. */}
+          {!contract.isResolved && !a.resolution && (
             <Button
               size="2xs"
               color="indigo-outline"

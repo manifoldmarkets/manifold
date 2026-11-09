@@ -14,7 +14,7 @@ import {
   orderedBuckets,
   seatGlance,
 } from 'web/lib/politics/election-glance'
-import { settledOrPrice } from 'web/lib/politics/race-board'
+import { settledOrPrice } from 'web/lib/politics/settlement'
 import { LiveContracts } from './live-contracts'
 import { OddsRows, oddsItems } from './odds-rows'
 import { useQuickBet } from './quick-bet'

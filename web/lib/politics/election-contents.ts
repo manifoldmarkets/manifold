@@ -33,6 +33,7 @@ export type ContentsInput = Pick<
   | 'board2030'
   | 'balanceOfPower2030'
   | 'seats2030'
+  | 'national2028'
   | 'presidencyMatrixRows'
   | 'pollingPerpContracts'
   | 'unprecedentedContracts'
@@ -60,6 +61,7 @@ export function hasSection(p: ContentsInput, key: SectionKey): boolean {
         !!p.balanceOfPowerContract ||
         !!p.congressContract ||
         !!p.popularVoteContract ||
+        Object.values(p.national2028).some((c) => !!c) ||
         p.more2028.some(
           (c) => placeMore2028(p.marketKeys[c.id]) !== 'conventions'
         )

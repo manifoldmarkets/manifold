@@ -81,6 +81,18 @@ export const LATER_KEYS = [
   '2036-balance-of-power',
 ]
 
+// The 2028 national picture's result displays: the margin and electoral-vote
+// strips, the seat charts and the tipping-point bars. Each has its own slot,
+// kept after its market closes (the results phase reads the counts there),
+// where the page's other 2028 markets show only while open.
+export const NATIONAL_RESULT_KEYS_2028 = {
+  margin: '2028-popular-vote-margin',
+  electoralVotes: '2028-dem-electoral-votes',
+  tippingPoint: '2028-tipping-point',
+  senateSeats: '2028-dem-senate-seats',
+  houseSeats: '2028-dem-house-seats',
+} as const
+
 // The 2030 markets the 2030 midterms section draws once it shows (from the
 // 2029 inauguration); the later cycles' grid leaves them out then.
 export const SECTION_2030_KEYS = [

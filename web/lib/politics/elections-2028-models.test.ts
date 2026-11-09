@@ -225,12 +225,50 @@ test('called units never flip: a settled 270-268 map is a certain win', () => {
   assert.equal(r.pDem, 1)
   assert.equal(r.pTie, 0)
   assert.equal(r.meanDemEv, 270)
-  assert.equal(r.unitProbs[ELECTORAL_UNITS[0].key], probs[ELECTORAL_UNITS[0].key])
+  assert.equal(
+    r.unitProbs[ELECTORAL_UNITS[0].key],
+    probs[ELECTORAL_UNITS[0].key]
+  )
   // Called units mixed with live ones: the called ones still never move.
   const mixed = { ...all(0.5), CA: 1, TX: 0 }
   const m = simulateElectoralCollege(mixed, { sims: 5000 })
   const ca = ELECTORAL_UNITS.find((u) => u.key === 'CA')!.ev
   assert.ok(m.distribution.slice(0, ca).every((p) => p === 0))
+})
+
+test('a called majority has no tipping point, in any unit order', () => {
+  // Every unit called, 303 D / 235 R: which called state "crosses" 270 is
+  // only the order the units come in, so there is no tipping point to show.
+  const probs = all(0)
+  let dem = 0
+  for (const u of ELECTORAL_UNITS) {
+    if (dem + u.ev > 303) continue
+    probs[u.key] = 1
+    dem += u.ev
+  }
+  assert.equal(dem, 303)
+  const forward = simulateElectoralCollege(probs, { sims: 2000 })
+  const reversed = simulateElectoralCollege(
+    probs,
+    { sims: 2000 },
+    [...ELECTORAL_UNITS].reverse()
+  )
+  for (const r of [forward, reversed]) {
+    assert.equal(r.pDem, 1)
+    assert.equal(r.meanDemEv, 303)
+    assert.deepEqual(r.tippingPoints, [])
+  }
+  // Called units short of 270 still leave the live ones to tip it.
+  const short = { ...all(0.5) }
+  let held = 0
+  for (const u of ELECTORAL_UNITS) {
+    if (held + u.ev > 200) continue
+    short[u.key] = 1
+    held += u.ev
+  }
+  const live = simulateElectoralCollege(short, { sims: 4000 })
+  assert.ok(live.tippingPoints.length > 0)
+  assert.ok(live.tippingPoints.every((t) => short[t.key] !== 1))
 })
 
 test('each unit keeps its market chance in the simulation', () => {

@@ -6,7 +6,7 @@ import { Contract, contractPath, isMultiCpmm } from 'common/contract'
 import { formatOdds } from 'web/components/usa-map/election-display'
 import { DEM_COLOR, REP_COLOR } from 'web/components/usa-map/state-election-map'
 import { useLiveContract } from 'web/hooks/use-contract'
-import { settledOrPrice } from 'web/lib/politics/race-board'
+import { settledOrPrice } from 'web/lib/politics/settlement'
 import { useQuickBet } from './quick-bet'
 
 // The official balance-of-power market: who holds the presidency, Senate and

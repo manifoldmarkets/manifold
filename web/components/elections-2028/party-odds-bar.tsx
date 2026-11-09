@@ -10,12 +10,12 @@ import { formatOdds } from 'web/components/usa-map/election-display'
 import {
   DEM_COLOR,
   DEM_DARK_HEX,
-  getPartyProbs,
   isDemocraticAnswer,
   isRepublicanAnswer,
   REP_COLOR,
   REP_DARK_HEX,
 } from 'web/components/usa-map/state-election-map'
+import { settledPartyProbs } from 'web/lib/politics/settlement'
 import { useQuickBet } from './quick-bet'
 
 const DEM_LOGO = '/politics-party/democrat_symbol.png'
@@ -34,7 +34,7 @@ export function PartyOddsBar(props: {
   const { label, trackingName, size = 'lg' } = props
   const contract = useLiveContract(props.contract)
   const { open, dialog } = useQuickBet(trackingName)
-  const probs = getPartyProbs(contract)
+  const probs = settledPartyProbs(contract)
   if (!probs || !isMultiCpmm(contract)) return null
   const { dem, rep, other } = probs
   const demAnswer = contract.answers.find((a) => isDemocraticAnswer(a.text))

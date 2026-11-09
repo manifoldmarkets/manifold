@@ -29,7 +29,7 @@ import {
   yearIn,
 } from './election-glance'
 import { sectionOrder } from './election-phase'
-import { settledOrPrice } from './race-board'
+import { settledOrPrice } from './settlement'
 
 const at = (y: number, m: number, d: number, h = 12) => Date.UTC(y, m - 1, d, h)
 const answers = (pairs: [string, number][]) =>
@@ -110,7 +110,13 @@ test("the Republican's electoral votes: 538 minus the Democrat's, the line at 26
   close(sideTotal(rep, 'R'), 0.054 + 0.08 + 0.194)
   close(sideTotal(rep, 'R') + sideTotal(dem, 'D'), 1)
   // A market it can't read as counts isn't flipped.
-  const margin = orderedBuckets(answers([['D+0 to D+3', 0.5], ['R+0 to R+3', 0.5]]), 0)!
+  const margin = orderedBuckets(
+    answers([
+      ['D+0 to D+3', 0.5],
+      ['R+0 to R+3', 0.5],
+    ]),
+    0
+  )!
   assert.equal(otherNominee(margin, 538, 269), undefined)
 })
 
@@ -173,7 +179,11 @@ test('a resolved seat count reads by its result, not its last prices', () => {
   close(sideTotal(b, 'D'), 0)
   close(sideTotal(b, 'R'), 1)
   // A split by its recorded shares; an open market by price.
-  const split = { ...market, resolution: 'CHOOSE_MULTIPLE', resolutions: { a4: 60, a5: 40 } }
+  const split = {
+    ...market,
+    resolution: 'CHOOSE_MULTIPLE',
+    resolutions: { a4: 60, a5: 40 },
+  }
   close(settledOrPrice(split, 'a5', price), 0.4)
   close(settledOrPrice({ ...market, isResolved: false }, 'a5', price), 0.8)
 })
@@ -286,7 +296,9 @@ test('off-year races read state, office and year from the question', () => {
     { state: 'KY', office: 'Governor', rank: 0, cycle: 2027 }
   )
   assert.deepEqual(
-    offYearRace('Which Party will win the 2027 Kentucky Gubernatorial Election?'),
+    offYearRace(
+      'Which Party will win the 2027 Kentucky Gubernatorial Election?'
+    ),
     { state: 'KY', office: 'Governor', rank: 0, cycle: 2027 }
   )
   assert.equal(
@@ -356,7 +368,9 @@ test("the primaries' field markets are the who-will-run ones", () => {
     'R'
   )
   assert.equal(
-    runningField('Who will win the 2028 Iowa Republican presidential caucuses?'),
+    runningField(
+      'Who will win the 2028 Iowa Republican presidential caucuses?'
+    ),
     undefined
   )
   // "run" inside another word isn't the field.
@@ -374,11 +388,6 @@ test("the primaries' field markets are the who-will-run ones", () => {
 test('2028 markets without a slot go where they belong', () => {
   assert.equal(placeMore2028('2028-dem-contested-convention'), 'conventions')
   assert.equal(placeMore2028('2028-vp-winner'), 'conventions')
-  assert.equal(placeMore2028('2028-dem-electoral-votes'), 'electoralVotes')
-  assert.equal(placeMore2028('2028-popular-vote-margin'), 'margin')
-  assert.equal(placeMore2028('2028-tipping-point'), 'tippingPoint')
-  assert.equal(placeMore2028('2028-dem-senate-seats'), 'senateSeats')
-  assert.equal(placeMore2028('2028-dem-house-seats'), 'houseSeats')
   assert.equal(placeMore2028('2028-npvic-in-effect'), 'facts')
   // A market a script adds later still shows.
   assert.equal(placeMore2028('2028-something-new'), 'facts')
@@ -387,7 +396,7 @@ test('2028 markets without a slot go where they belong', () => {
 
 // ------------------------------------------------------------- contents
 
-const c = (id: string) => ({ id }) as unknown as Contract
+const c = (id: string) => ({ id } as unknown as Contract)
 
 const input = (over: Partial<ContentsInput> = {}): ContentsInput => ({
   now: at(2026, 11, 8),
@@ -413,6 +422,13 @@ const input = (over: Partial<ContentsInput> = {}): ContentsInput => ({
   board2030: [],
   balanceOfPower2030: null,
   seats2030: { senate: null, house: null },
+  national2028: {
+    margin: null,
+    electoralVotes: null,
+    tippingPoint: null,
+    senateSeats: null,
+    houseSeats: null,
+  },
   presidencyMatrixRows: [],
   pollingPerpContracts: [],
   unprecedentedContracts: [],
@@ -425,9 +441,21 @@ test('the 2030 section shows with only its seat counts', () => {
   const p = input({ phase: 'midterms2030', now: at(2029, 6, 1) })
   assert.equal(hasSection(p, 'midterms2030'), false)
   assert.equal(
-    hasSection({ ...p, seats2030: { senate: c('s'), house: null } }, 'midterms2030'),
+    hasSection(
+      { ...p, seats2030: { senate: c('s'), house: null } },
+      'midterms2030'
+    ),
     true
   )
+})
+
+test('the national section keeps a 2028 result display after its market closes', () => {
+  // The loader keeps these slots whether or not the market is open, so the
+  // results phase still has its seat count.
+  const p = input({ phase: 'results', now: at(2028, 11, 20) })
+  assert.equal(hasSection(p, 'national'), false)
+  const seats = { ...p.national2028, senateSeats: c('s') }
+  assert.equal(hasSection({ ...p, national2028: seats }, 'national'), true)
 })
 
 test('the contents lists only what the page shows, in page order', () => {
@@ -487,7 +515,10 @@ test('dated sections count down, and the off-year date moves to 2029', () => {
     /^Nov 6, 2029 · /
   )
   assert.equal(sectionWhen('primaries', now, 'nomination'), 'January–June 2028')
-  assert.equal(sectionWhen('primaries', at(2028, 2, 1), 'primaries'), 'Under way')
+  assert.equal(
+    sectionWhen('primaries', at(2028, 2, 1), 'primaries'),
+    'Under way'
+  )
   assert.equal(sectionWhen('race', now, 'nomination'), undefined)
   // Past dates lose the count.
   assert.equal(sectionWhen('board', at(2028, 12, 1), 'results'), 'Nov 7, 2028')

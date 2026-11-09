@@ -5,7 +5,7 @@ import { sortBy } from 'lodash'
 import { getAnswerProbability } from 'common/calculate'
 import { Contract, isMultiCpmm } from 'common/contract'
 import { placeName, TERRITORIES } from './official-markets'
-import { resolvedAnswerId, settledOrPrice } from './race-board'
+import { resolvedAnswerId, settledOrPrice } from './settlement'
 
 // One market's leader, short keys for the page props.
 export type PrimaryCell = {

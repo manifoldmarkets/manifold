@@ -21,8 +21,6 @@ export const PHASE_STARTS = {
   midterms2030: Date.UTC(2029, 0, 20, 17),
 } as const
 
-export const ELECTION_DAY_2028_FREEZE = PHASE_STARTS.results
-
 export function electionPhase(now: number): ElectionPhase {
   if (now >= PHASE_STARTS.midterms2030) return 'midterms2030'
   if (now >= PHASE_STARTS.results) return 'results'
