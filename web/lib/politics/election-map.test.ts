@@ -229,11 +229,7 @@ test('primary trackers count contests by leader or by how sure', () => {
       ['Someone else leads', 1, OTHER_LEADER_COLOR],
     ]
   )
-  const s = mapTracker(
-    view({ mode: 'primary', office: 'S' }),
-    races,
-    primaries
-  )
+  const s = mapTracker(view({ mode: 'primary', office: 'S' }), races, primaries)
   assert.deepEqual(
     s.segments.map((x) => [x.key, x.places]),
     [
@@ -327,14 +323,8 @@ test("a state's panel lists every market it has, by office", () => {
       ?.rows.map((r) => r.label),
     ['Senate primary, all parties']
   )
-  assert.equal(
-    statePanel('AK', races, [])[0].rows[0].label,
-    'At-large'
-  )
-  assert.equal(
-    statePanel('TN', races, [])[0].rows[0].label,
-    'Special election'
-  )
+  assert.equal(statePanel('AK', races, [])[0].rows[0].label, 'At-large')
+  assert.equal(statePanel('TN', races, [])[0].rows[0].label, 'Special election')
 })
 
 test('a clicked place opens the race behind its color', () => {
@@ -400,10 +390,7 @@ test("a clicked primary opens the market behind the state's color", () => {
   assert.equal(primaryRowKey(d, primaries, 'PA'), 'S-PA-2028-D')
   assert.equal(primaryRowKey(d, primaries, 'CA'), 'S-CA-2028-A')
   assert.equal(primaryRowKey(d, primaries, 'MN'), 'S-MN-sp-2027-D')
-  assert.equal(
-    primaryRowKey({ ...d, party: 'R' }, primaries, 'MN'),
-    undefined
-  )
+  assert.equal(primaryRowKey({ ...d, party: 'R' }, primaries, 'MN'), undefined)
   // A regular top-two contest outranks a special with a party cell, on the
   // map and in the card alike.
   const both: PrimaryRow[] = [

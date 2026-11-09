@@ -150,10 +150,17 @@ export function mapFills(
     const colors =
       view.office === 'P' ? leaderColors(primaries, view.party) : {}
     return Object.fromEntries(
-      Object.entries(primaryCells(view, primaries)).map(([st, { row, cell }]) => [
-        st,
-        cellFill(cell, view.office, row[view.party] ? view.party : undefined, colors),
-      ])
+      Object.entries(primaryCells(view, primaries)).map(
+        ([st, { row, cell }]) => [
+          st,
+          cellFill(
+            cell,
+            view.office,
+            row[view.party] ? view.party : undefined,
+            colors
+          ),
+        ]
+      )
     )
   }
   return Object.fromEntries(
@@ -331,7 +338,9 @@ export function mapTracker(
   if (view.mode === 'senate') {
     const held = (party: Party): TrackerSegment => ({
       key: `notUp${party}`,
-      label: `${party === 'D' ? 'Democratic caucus' : 'Republican'} seats not up in 2028`,
+      label: `${
+        party === 'D' ? 'Democratic caucus' : 'Republican'
+      } seats not up in 2028`,
       count: SENATE_NOT_UP_2028[party],
       tone: party === 'D' ? 'notUpD' : 'notUpR',
       places: [],
@@ -652,7 +661,9 @@ export function placeTitle(place: string, statewide = false) {
 // ("TX-15", "tx 15", "AK-AL"). Commas separate searches.
 export function matchesPlace(place: string, query: string) {
   const [st, d] = place.split('-')
-  const name = (st in TERRITORIES ? TERRITORIES[st] : placeName(st)).toLowerCase()
+  const name = (
+    st in TERRITORIES ? TERRITORIES[st] : placeName(st)
+  ).toLowerCase()
   return query
     .split(',')
     .map((t) => t.trim().toLowerCase().replace(/[–—‑]/g, '-'))
