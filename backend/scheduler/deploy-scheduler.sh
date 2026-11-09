@@ -67,12 +67,6 @@ else
 fi
 
 yarn build
-if [ "${INSTANCE_EXISTS}" = true ]; then
-  gcloud compute ssh ${SERVICE_NAME} \
-       --project ${GCLOUD_PROJECT} \
-       --zone ${ZONE} \
-       --command 'sudo docker image prune -af'
-       fi
 
 if [ -z "${MANIFOLD_CLOUD_BUILD}" ]; then
     if ! command -v docker &> /dev/null
@@ -100,34 +94,82 @@ fi
 
 echo "Current time: $(date "+%Y-%m-%d %I:%M:%S %p")"
 
-COMMON_ARGS=(
-  --project ${GCLOUD_PROJECT}
-  --zone ${ZONE}
-  --container-image ${IMAGE_URL}
-  --container-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT},SCHEDULER_JOBS=${TARGET}
+# The VM boots stock Container-Optimized OS and runs
+# backend/deploy/cos-container-startup.sh as its startup script, which reads
+# the image + env from the metadata keys below and does the `docker run`
+# (and prunes unused images, which this script used to do over SSH). This
+# replaces `create-with-container` / `update-container`: the GCE container
+# startup agent behind them is deprecated and shut down for new VMs as of
+# 2026-07-31.
+#   https://cloud.google.com/compute/docs/deprecations/container-startup-agent-on-compute
+#   https://cloud.google.com/compute/docs/containers/migrate-containers
+#   https://cloud.google.com/compute/docs/instances/startup-scripts/linux
+STARTUP_SCRIPT="$(dirname "$0")/../deploy/cos-container-startup.sh"
+# Container env, one KEY=VALUE per line. It goes through a file because
+# gcloud's --metadata flag splits values on commas; --metadata-from-file
+# does not.
+ENV_FILE=$(mktemp)
+printf '%s\n' \
+    "NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV}" \
+    "GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT}" \
+    "SCHEDULER_JOBS=${TARGET}" > "${ENV_FILE}"
+
+METADATA_ARGS=(
+  --metadata container-image=${IMAGE_URL},container-name=${SERVICE_NAME},google-logging-enabled=true
+  --metadata-from-file startup-script=${STARTUP_SCRIPT},container-env=${ENV_FILE}
 )
 
 # If you augment the instance, be sure to increase --max-old-space-size in the Dockerfile
 if [ "${INSTANCE_EXISTS}" = false ]; then
 #    If you just deleted the instance you don't need this line
 #    gcloud compute addresses create ${SERVICE_NAME} --project ${GCLOUD_PROJECT} --region ${REGION}
-    if [ "${TARGET}" = "perps" ]; then
-        # No reserved address: the perps instance is egress-only (reach its
-        # status page via the ephemeral IP or the GCP console).
-        gcloud compute instances create-with-container ${SERVICE_NAME} \
-               "${COMMON_ARGS[@]}" \
-               --machine-type ${MACHINE_TYPE} \
-               --scopes default,cloud-platform \
-               --tags http-server
-    else
-        gcloud compute instances create-with-container ${SERVICE_NAME} \
-               "${COMMON_ARGS[@]}" \
-               --address ${IP_ADDRESS_NAME} \
-               --machine-type ${MACHINE_TYPE} \
-               --scopes default,cloud-platform \
-               --tags http-server
+    ADDRESS_ARGS=()
+    if [ "${TARGET}" != "perps" ]; then
+        # No reserved address for perps: that instance is egress-only (reach
+        # its status page via the ephemeral IP or the GCP console).
+        ADDRESS_ARGS=(--address ${IP_ADDRESS_NAME})
     fi
+    #   https://cloud.google.com/sdk/gcloud/reference/compute/instances/create
+    gcloud compute instances create ${SERVICE_NAME} \
+           --project ${GCLOUD_PROJECT} \
+           --zone ${ZONE} \
+           --image-project "cos-cloud" \
+           --image-family "cos-121-lts" \
+           --machine-type ${MACHINE_TYPE} \
+           --scopes default,cloud-platform \
+           --tags http-server \
+           "${ADDRESS_ARGS[@]}" \
+           "${METADATA_ARGS[@]}"
 else
-    gcloud compute instances update-container ${SERVICE_NAME} \
-           "${COMMON_ARGS[@]}"
+    # One-time migration for VMs made with create-with-container: the old
+    # agent (konlet-startup.service) still runs on every boot and would start
+    # a second copy of the scheduler next to ours if its metadata key stayed.
+    # Removing the key turns it into a no-op.
+    #   https://cloud.google.com/compute/docs/containers/migrate-containers#identify-vms
+    if gcloud compute instances describe ${SERVICE_NAME} \
+         --project ${GCLOUD_PROJECT} --zone ${ZONE} \
+         --format="value(metadata.items.filter(\"key='gce-container-declaration'\").extract(key))" \
+         | grep -q gce-container-declaration; then
+        echo "Removing legacy gce-container-declaration metadata from ${SERVICE_NAME}"
+        gcloud compute instances remove-metadata ${SERVICE_NAME} \
+               --project ${GCLOUD_PROJECT} \
+               --zone ${ZONE} \
+               --keys gce-container-declaration
+    fi
+
+    # Point the VM at the new image, then restart it so the startup script
+    # runs again (the scheduler is down for about a minute, as with
+    # update-container). To redeploy without a reboot, SSH in and run
+    # `sudo google_metadata_script_runner startup` instead of stop/start.
+    #   https://cloud.google.com/sdk/gcloud/reference/compute/instances/add-metadata
+    gcloud compute instances add-metadata ${SERVICE_NAME} \
+           --project ${GCLOUD_PROJECT} \
+           --zone ${ZONE} \
+           "${METADATA_ARGS[@]}"
+    gcloud compute instances stop ${SERVICE_NAME} --project ${GCLOUD_PROJECT} --zone ${ZONE}
+    gcloud compute instances start ${SERVICE_NAME} --project ${GCLOUD_PROJECT} --zone ${ZONE}
 fi
+rm -f "${ENV_FILE}"
+
+echo "Deploy finished: $(date "+%Y-%m-%d %I:%M:%S %p"). The VM pulls and starts the container on boot; follow along with:"
+echo "  gcloud compute instances tail-serial-port-output ${SERVICE_NAME} --project ${GCLOUD_PROJECT} --zone ${ZONE}"
