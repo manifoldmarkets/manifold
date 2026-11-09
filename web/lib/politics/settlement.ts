@@ -148,9 +148,10 @@ export function settledPartyProbs(contract: Contract | null) {
   return probs
 }
 
-// A multiple-choice market's named answers (Other left out) by what they
-// pay or cost, highest first, at most `n`: a resolved market's winner leads
-// at 1 however its pools stood, and the answers it paid nothing drop off.
+// A multiple-choice market's answers by what they pay or cost, highest
+// first, at most `n`. Open, the named ones (Other is a bucket, not a pick);
+// resolved, whatever it paid, Other included: the winner leads at 1 however
+// its pools stood, and the answers it paid nothing drop off.
 export function rankedAnswers<
   A extends {
     id: string
@@ -171,7 +172,7 @@ export function rankedAnswers<
   const settled = market.isResolved && market.resolution !== 'CANCEL'
   const answers: A[] = market.answers
   return answers
-    .filter((a) => !/^other\b/i.test(a.text.trim()))
+    .filter((a) => settled || !/^other\b/i.test(a.text.trim()))
     .map((a) => ({ answer: a, p: settledOrPrice(market, a.id, price) }))
     .filter((x) => !(settled && x.p <= 0))
     .sort((x, y) => y.p - x.p)

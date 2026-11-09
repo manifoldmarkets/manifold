@@ -4,7 +4,7 @@ import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
 import { BinaryContract, Contract, isMultiCpmm } from 'common/contract'
 import { formatOdds } from 'web/components/usa-map/election-display'
 import { leadingAnswer } from 'web/lib/politics/election-glance'
-import { settledOrPrice } from 'web/lib/politics/settlement'
+import { rankedAnswers } from 'web/lib/politics/settlement'
 import { LiveContracts } from './live-contracts'
 import { BetTarget, useQuickBet } from './quick-bet'
 
@@ -134,13 +134,20 @@ export function oddsItem(
   }
   if (isMultiCpmm(contract)) {
     const multi = contract
-    const lead = leadingAnswer(
-      multi.answers.map((a) => ({
-        id: a.id,
-        text: a.text,
-        p: settledOrPrice(multi, a.id, (id) => getAnswerProbability(multi, id)),
-      }))
-    )
+    // Resolved: what it paid most, Other included. Open: the leading pick.
+    const settled = multi.isResolved && multi.resolution !== 'CANCEL'
+    const top = settled
+      ? rankedAnswers(multi, (id) => getAnswerProbability(multi, id), 1)[0]
+      : undefined
+    const lead = top
+      ? { id: top.answer.id, text: top.answer.text, p: top.p }
+      : leadingAnswer(
+          multi.answers.map((a) => ({
+            id: a.id,
+            text: a.text,
+            p: getAnswerProbability(multi, a.id),
+          }))
+        )
     return lead
       ? {
           ...plain,

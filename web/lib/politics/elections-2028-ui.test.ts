@@ -362,6 +362,17 @@ test('ranked answers put a resolved winner first, from anywhere in the list', ()
     rankedAnswers(resolved, price, 6).map((x) => [x.answer.id, x.p]),
     [['NH', 1]]
   )
+  // Resolved to Other: Other leads (open, it's left out as a bucket).
+  const toOther = {
+    ...market,
+    isResolved: true,
+    resolution: 'o',
+    resolutions: { o: 100 },
+  }
+  assert.deepEqual(
+    rankedAnswers(toOther, price, 6).map((x) => [x.answer.id, x.p]),
+    [['o', 1]]
+  )
   // Cancelled: back to the prices.
   const cancelled = { ...market, isResolved: true, resolution: 'CANCEL' }
   assert.equal(rankedAnswers(cancelled, price, 6)[0].answer.id, 'PA')

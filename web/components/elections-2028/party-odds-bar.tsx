@@ -38,7 +38,9 @@ export function PartyOddsBar(props: {
   const { dem, rep, other } = probs
   const demAnswer = contract.answers.find((a) => isDemocraticAnswer(a.text))
   const repAnswer = contract.answers.find((a) => isRepublicanAnswer(a.text))
-  const otherAnswer = contract.answers.find(
+  // "Other" is every answer that isn't a major party. One such answer bets
+  // on it; with several, the label is their total, so it opens the picker.
+  const otherAnswers = contract.answers.filter(
     (a) => !isDemocraticAnswer(a.text) && !isRepublicanAnswer(a.text)
   )
   const total = dem + rep + other || 1
@@ -82,10 +84,14 @@ export function PartyOddsBar(props: {
           {label}
         </span>
         <span className="flex shrink-0 items-baseline gap-3 whitespace-nowrap">
-          {big && otherAnswer && (
+          {big && otherAnswers.length > 0 && (
             <button
               type="button"
-              onClick={() => bet(otherAnswer)}
+              onClick={() =>
+                otherAnswers.length === 1
+                  ? bet(otherAnswers[0])
+                  : open({ contract })
+              }
               className="text-ink-500 hover:text-ink-800 text-xs hover:underline"
             >
               Other {formatOdds(other)}
