@@ -117,8 +117,8 @@ export const flipped = (race: BoardRace) =>
 // trusted for the call: a race resolved Democratic at D 80 / R 19 is still
 // D. A yes/no market's YES is the party `yesParty` says; without it a yes/no
 // market isn't called (a "Will the Democrat win" framing would flip a
-// guess). Undefined while open, and for a cancelled market or one resolved
-// to a mix (MKT).
+// guess). Undefined while open, for a cancelled market, and for a split
+// with no single winner (a yes/no market resolved to a probability).
 export function resolvedParty(
   market: {
     isResolved?: boolean
@@ -131,9 +131,8 @@ export function resolvedParty(
 ): 'D' | 'R' | 'O' | undefined {
   const { isResolved, resolution } = market
   if (!isResolved || !resolution || resolution === 'CANCEL') return undefined
-  if (resolution === 'MKT') return undefined
   if (market.outcomeType === 'BINARY') {
-    if (!yesParty) return undefined
+    if (!yesParty || resolution === 'MKT') return undefined
     if (resolution === 'YES') return yesParty
     if (resolution === 'NO') return yesParty === 'D' ? 'R' : 'D'
     return undefined
@@ -144,20 +143,42 @@ export function resolvedParty(
 }
 
 // The answer a resolved multiple-choice market went to, by its recorded
-// resolution (the one answer resolved YES, or the answer id a whole-market
-// resolution names), never by its prices. Undefined while open, and for a
-// cancelled market or a split (MKT) with no single YES answer.
+// resolution, never by its prices: the one answer resolved YES, the answer
+// id a whole-market resolution names, or the one answer a split
+// (CHOOSE_MULTIPLE or MKT, shares in `resolutions`) gives 100%. Undefined
+// while open, for a cancelled market, and for a split with no single
+// winner.
 export function resolvedAnswerId(market: {
   isResolved?: boolean
   resolution?: string
+  resolutions?: { [answerId: string]: number }
   answers?: { id: string; resolution?: string }[]
 }): string | undefined {
   const { isResolved, resolution } = market
   if (!isResolved || !resolution || resolution === 'CANCEL') return undefined
   const yes = market.answers?.filter((a) => a.resolution === 'YES') ?? []
   if (yes.length === 1) return yes[0].id
-  if (resolution === 'MKT') return undefined
+  const shares = recordedShares(market)
+  if (shares) {
+    const whole = Object.keys(shares).filter((id) => shares[id] >= 100)
+    return whole.length === 1 ? whole[0] : undefined
+  }
   return market.answers?.find((a) => a.id === resolution)?.id
+}
+
+// A split resolution's recorded shares, in percent by answer id: what a
+// market resolved CHOOSE_MULTIPLE or MKT pays each answer (its prices stay
+// where they were). Undefined for anything else.
+export function recordedShares(market: {
+  isResolved?: boolean
+  resolution?: string
+  resolutions?: { [answerId: string]: number }
+}): { [answerId: string]: number } | undefined {
+  const { isResolved, resolution, resolutions } = market
+  if (!isResolved || !resolution || resolution === 'CANCEL') return undefined
+  return resolutions && Object.keys(resolutions).length > 0
+    ? resolutions
+    : undefined
 }
 
 export function calledFrom(probs: {

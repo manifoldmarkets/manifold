@@ -224,6 +224,28 @@ test('a resolved primary shows its recorded winner, not its old favorite', () =>
     ),
     { s: 'who-wins-iowa', l: 'Alice', p: 0.5 }
   )
+  // The backend stores a whole-market split as CHOOSE_MULTIPLE.
+  assert.deepEqual(
+    leaderCell(
+      lopsided({
+        isResolved: true,
+        resolution: 'CHOOSE_MULTIPLE',
+        resolutions: { a: 20, b: 80 },
+      })
+    ),
+    { s: 'who-wins-iowa', l: 'Bob', p: 0.8 }
+  )
+  // A split that gives one answer everything has a winner.
+  assert.equal(
+    leaderCell(
+      lopsided({
+        isResolved: true,
+        resolution: 'CHOOSE_MULTIPLE',
+        resolutions: { b: 100 },
+      })
+    )?.won,
+    1
+  )
   // One answer resolved YES wins, even under MKT and against a high price.
   const perAnswer = lopsided({ isResolved: true, resolution: 'MKT' }) as unknown as {
     answers: { id: string; resolution?: string }[]
@@ -282,6 +304,23 @@ test('a resolved race is called by its recorded resolution, not its prices', () 
   assert.equal(resolvedParty(binary('YES'), party, 'R'), 'R')
   assert.equal(resolvedParty(binary('YES'), party, 'D'), 'D')
   assert.equal(resolvedParty(binary('NO'), party, 'D'), 'R')
+  // An independent market resolved answer by answer (MKT overall): the YES
+  // answer, not a cancelled one at a stale high price.
+  assert.equal(
+    resolvedParty(
+      {
+        isResolved: true,
+        resolution: 'MKT',
+        outcomeType: 'MULTIPLE_CHOICE',
+        answers: [
+          { ...answers[0], resolution: 'CANCEL' },
+          { ...answers[1], resolution: 'YES' },
+        ],
+      },
+      party
+    ),
+    'R'
+  )
   // Open, cancelled or resolved to a mix: no call from the resolution.
   assert.equal(resolvedParty({ ...whole, isResolved: false }, party), undefined)
   assert.equal(resolvedParty({ ...whole, resolution: 'CANCEL' }, party), undefined)

@@ -5,7 +5,7 @@ import { sortBy } from 'lodash'
 import { getAnswerProbability } from 'common/calculate'
 import { Contract, isMultiCpmm } from 'common/contract'
 import { placeName, TERRITORIES } from './official-markets'
-import { resolvedAnswerId } from './race-board'
+import { recordedShares, resolvedAnswerId } from './race-board'
 
 // One market's leader, short keys for the page props.
 export type PrimaryCell = {
@@ -55,8 +55,8 @@ const MANIFOLD_POLITICS = 'ManifoldPolitics'
 // One primary market's cell: its leader, or its winner once resolved. A
 // winner comes only from the recorded resolution (resolvedAnswerId), never
 // from prices: a whole-market resolution leaves every price where it was,
-// so the pre-resolution favorite can still lead on price. A split (MKT)
-// reads by its recorded shares and has no winner.
+// so the pre-resolution favorite can still lead on price. A split
+// (CHOOSE_MULTIPLE or MKT) reads by its recorded shares.
 export function leaderCell(
   contract: Contract | undefined
 ): PrimaryCell | undefined {
@@ -67,10 +67,7 @@ export function leaderCell(
   )
     return undefined
   const winner = resolvedAnswerId(contract)
-  const shares =
-    contract.isResolved && contract.resolution === 'MKT'
-      ? contract.resolutions
-      : undefined
+  const shares = recordedShares(contract)
   const leader = pickLeader(
     contract.answers.map((a) => ({
       text: a.text.trim(),
