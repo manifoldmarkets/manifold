@@ -3,7 +3,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 import { Answer } from 'common/answer'
-import { getAnswerProbability } from 'common/calculate'
 import { Contract, contractPath, isMultiCpmm } from 'common/contract'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { formatOdds } from 'web/components/usa-map/election-display'
@@ -89,7 +88,7 @@ export function PartyOddsBar(props: {
               onClick={() => bet(otherAnswer)}
               className="text-ink-500 hover:text-ink-800 text-xs hover:underline"
             >
-              Other {formatOdds(getAnswerProbability(contract, otherAnswer.id))}
+              Other {formatOdds(other)}
             </button>
           )}
           <Link

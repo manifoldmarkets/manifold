@@ -64,10 +64,18 @@ export function SportTopicMenu(props: { topic: Group }) {
   }
   // The follow helpers toast their own failures and resolve whether it went
   // through: a failure leaves the button as it was. If the follow state never
-  // loaded, it's asked for first: following a topic twice is an error.
+  // loaded, it's asked for first (following a topic twice is an error):
+  // already following, nothing to do; still unknown, say so and stop.
   const follow = () =>
     run(async () => {
-      if (isFollowing === undefined && user && (await reload())) return
+      if (isFollowing === undefined && user) {
+        const following = await reload()
+        if (following === undefined) {
+          toast.error(`Couldn't check whether you follow ${name}. Try again.`)
+          return
+        }
+        if (following) return
+      }
       if (await internalFollowTopic(user, topic)) setIsFollowing(true)
     })
   const unfollow = () =>

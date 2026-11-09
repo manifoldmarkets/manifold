@@ -4,6 +4,7 @@ import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
 import { BinaryContract, Contract, isMultiCpmm } from 'common/contract'
 import { formatOdds } from 'web/components/usa-map/election-display'
 import { leadingAnswer } from 'web/lib/politics/election-glance'
+import { settledOrPrice } from 'web/lib/politics/settlement'
 import { LiveContracts } from './live-contracts'
 import { BetTarget, useQuickBet } from './quick-bet'
 
@@ -115,14 +116,20 @@ export function MarketRows(props: {
 
 // A market as one line: a yes/no market's chance, or the leading named
 // answer of a market with several (a click bets on that answer); any other
-// market as a line whose click opens its bet dialog.
+// market as a line whose click opens its bet dialog. A market that resolves
+// while the page is open shows its result, not its last price.
 export function oddsItem(
   contract: Contract,
   label = contract.question
 ): OddsItem {
   const plain = { key: contract.id, label, bet: { contract } }
   if (contract.outcomeType === 'BINARY') {
-    const p = getDisplayProbability(contract as BinaryContract)
+    const p =
+      contract.resolution === 'YES'
+        ? 1
+        : contract.resolution === 'NO'
+        ? 0
+        : getDisplayProbability(contract as BinaryContract)
     return Number.isFinite(p) ? { ...plain, p } : plain
   }
   if (isMultiCpmm(contract)) {
@@ -131,7 +138,7 @@ export function oddsItem(
       multi.answers.map((a) => ({
         id: a.id,
         text: a.text,
-        p: getAnswerProbability(multi, a.id),
+        p: settledOrPrice(multi, a.id, (id) => getAnswerProbability(multi, id)),
       }))
     )
     return lead

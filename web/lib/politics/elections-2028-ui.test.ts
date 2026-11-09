@@ -55,7 +55,12 @@ import {
   raceName,
   raceUrl,
 } from './race-board'
-import { resolvedParty, settledOrPrice, settledPartyProbs } from './settlement'
+import {
+  rankedAnswers,
+  resolvedParty,
+  settledOrPrice,
+  settledPartyProbs,
+} from './settlement'
 import { getPartyProbs } from 'web/components/usa-map/state-election-map'
 
 const at = (y: number, m: number, d: number, h = 12) => Date.UTC(y, m - 1, d, h)
@@ -321,6 +326,45 @@ test('party odds read a recorded result, not the pools it left', () => {
     settledPartyProbs(market({ isResolved: true, resolution: 'CANCEL' })),
     undefined
   )
+})
+
+test('ranked answers put a resolved winner first, from anywhere in the list', () => {
+  // Tipping point priced PA 70 / WI 20 / then five more ahead of NH; it
+  // resolves to NH, which was seventh: NH leads at 1, the rest drop off.
+  const states = ['PA', 'WI', 'MI', 'GA', 'AZ', 'NV', 'NH']
+  const prices: Record<string, number> = {
+    PA: 0.7,
+    WI: 0.2,
+    MI: 0.04,
+    GA: 0.03,
+    AZ: 0.02,
+    NV: 0.006,
+    NH: 0.004,
+  }
+  const market = {
+    answers: [
+      ...states.map((s) => ({ id: s, text: s })),
+      { id: 'o', text: 'Other' },
+    ],
+  }
+  const price = (id: string) => prices[id] ?? 0
+  assert.deepEqual(
+    rankedAnswers(market, price, 6).map((x) => x.answer.id),
+    ['PA', 'WI', 'MI', 'GA', 'AZ', 'NV']
+  )
+  const resolved = {
+    ...market,
+    isResolved: true,
+    resolution: 'NH',
+    resolutions: { NH: 100 },
+  }
+  assert.deepEqual(
+    rankedAnswers(resolved, price, 6).map((x) => [x.answer.id, x.p]),
+    [['NH', 1]]
+  )
+  // Cancelled: back to the prices.
+  const cancelled = { ...market, isResolved: true, resolution: 'CANCEL' }
+  assert.equal(rankedAnswers(cancelled, price, 6)[0].answer.id, 'PA')
 })
 
 test('an answer resolved on its own pays what its resolution says', () => {

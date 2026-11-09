@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { groupBy, sortBy } from 'lodash'
+import { groupBy } from 'lodash'
 import { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
 
 import { getAnswerProbability } from 'common/calculate'
@@ -45,7 +45,7 @@ import {
 } from 'web/lib/politics/election-glance'
 import { SectionKey, sectionOrder } from 'web/lib/politics/election-phase'
 import type { Elections2028PageProps } from 'web/lib/politics/elections-2028'
-import { settledPartyProbs } from 'web/lib/politics/settlement'
+import { rankedAnswers, settledPartyProbs } from 'web/lib/politics/settlement'
 import {
   BOARD_FREEZE,
   ELECTION_HUB_TOPICS,
@@ -175,22 +175,20 @@ const REPUBLICAN_ELECTORAL_VOTES: StripFlip = {
     `Republican nominee ${shown.text} is the same outcome as the Democratic nominee winning ${answer.text} electoral votes, so this bets on that answer.`,
 }
 
-// The tipping-point market's likeliest states, one line each.
+// The tipping-point market's likeliest states, one line each; once it
+// resolves, the state it went to.
 function tippingRows(contract: Contract): OddsItem[] {
   if (!isMultiCpmm(contract)) return []
-  return sortBy(
-    contract.answers
-      .filter((a) => !/^other\b/i.test(a.text.trim()))
-      .map((a) => ({ a, p: getAnswerProbability(contract, a.id) })),
-    (x) => -x.p
-  )
-    .slice(0, 6)
-    .map(({ a, p }) => ({
-      key: a.id,
-      label: a.text,
-      p,
-      bet: { contract, answerId: a.id },
-    }))
+  return rankedAnswers(
+    contract,
+    (id) => getAnswerProbability(contract, id),
+    6
+  ).map(({ answer: a, p }) => ({
+    key: a.id,
+    label: a.text,
+    p,
+    bet: { contract, answerId: a.id },
+  }))
 }
 
 export function Elections2028Page(props: Elections2028PageProps) {

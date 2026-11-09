@@ -147,3 +147,33 @@ export function settledPartyProbs(contract: Contract | null) {
   if (contract.resolution === 'NO') return { dem: 1, rep: 0, other: 0 }
   return probs
 }
+
+// A multiple-choice market's named answers (Other left out) by what they
+// pay or cost, highest first, at most `n`: a resolved market's winner leads
+// at 1 however its pools stood, and the answers it paid nothing drop off.
+export function rankedAnswers<
+  A extends {
+    id: string
+    text: string
+    resolution?: string
+    resolutionProbability?: number
+  }
+>(
+  market: {
+    isResolved?: boolean
+    resolution?: string
+    resolutions?: { [answerId: string]: number }
+    answers: A[]
+  },
+  price: (answerId: string) => number,
+  n: number
+): { answer: A; p: number }[] {
+  const settled = market.isResolved && market.resolution !== 'CANCEL'
+  const answers: A[] = market.answers
+  return answers
+    .filter((a) => !/^other\b/i.test(a.text.trim()))
+    .map((a) => ({ answer: a, p: settledOrPrice(market, a.id, price) }))
+    .filter((x) => !(settled && x.p <= 0))
+    .sort((x, y) => y.p - x.p)
+    .slice(0, n)
+}
