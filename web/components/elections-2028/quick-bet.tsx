@@ -305,8 +305,8 @@ function MultiBet(props: {
     )
 
   // A closed or resolved market has nothing to pick (a whole-market
-  // resolution leaves every answer unresolved, at its old price): it says
-  // so, as the trade ticket does for an answer.
+  // resolution leaves every answer unresolved, at its old price), so it
+  // says trading has closed, as the trade ticket and yes/no dialog do.
   if (!tradingAllowed(multi))
     return (
       <div className="flex flex-col gap-3 py-2">
