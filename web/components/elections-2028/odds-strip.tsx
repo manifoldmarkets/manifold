@@ -73,21 +73,14 @@ export function OddsStrip(props: {
   thresholdLabel: string
   summary: (buckets: Bucket[]) => ReactNode
   flip?: StripFlip
-  // Strips that flip together (the two seat strips) take the reading from
-  // their parent: `flipped`, and `onFlip` on the one that shows the toggle.
-  flipped?: boolean
-  onFlip?: (flipped: boolean) => void
 }) {
   const { threshold, tie, flip } = props
   const contract = useLiveContract(props.contract)
   const { open, dialog } = useQuickBet('election odds strip')
-  const [ownFlip, setOwnFlip] = usePersistentInMemoryState(
+  const [flipped, setFlipped] = usePersistentInMemoryState(
     false,
     `election-odds-strip-flip-${props.contract.id}`
   )
-  const controlled = props.flipped !== undefined
-  const flipped = controlled ? !!props.flipped : ownFlip
-  const setFlipped = controlled ? props.onFlip : setOwnFlip
   const buckets = isMultiCpmm(contract)
     ? orderedBuckets(
         contract.answers.map((a) => ({
@@ -132,7 +125,7 @@ export function OddsStrip(props: {
     <div className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-ink-1000 text-sm font-semibold">{title}</h3>
-        {flip && otherReading && setFlipped && (
+        {flip && otherReading && (
           <span
             role="group"
             aria-label={flip.toggleLabel}

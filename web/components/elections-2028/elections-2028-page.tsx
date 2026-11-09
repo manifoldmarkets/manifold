@@ -68,7 +68,7 @@ import { PartyOddsBar } from './party-odds-bar'
 import { PrimariesOverview } from './primaries-overview'
 import { RaceBoard } from './race-board'
 import { RaceCard, RangeKey, RangePicker, useRange } from './race-section'
-import { SeatStrips } from './seat-strips'
+import { SeatCharts } from './seat-charts'
 import { Swings2026 } from './swings-2026'
 
 // /election from the 2026 midterms to the 2030 ones: the 2028 race, every
@@ -348,7 +348,6 @@ export function Elections2028Page(props: Elections2028PageProps) {
       const tipping = placed.tippingPoint?.[0]
       const senateSeats = placed.senateSeats?.[0]
       const houseSeats = placed.houseSeats?.[0]
-      const congress = balanceOfPowerContract || senateSeats || houseSeats
       const facts = placed.facts ?? []
       return (
         <SectionInView section="2028 national" className="flex flex-col gap-4">
@@ -359,23 +358,14 @@ export function Elections2028Page(props: Elections2028PageProps) {
           <div
             className={clsx(
               'grid items-start gap-4',
-              congress && 'md:grid-cols-2'
+              balanceOfPowerContract && 'md:grid-cols-2'
             )}
           >
-            {congress && (
-              <div className="flex flex-col gap-4">
-                {balanceOfPowerContract && (
-                  <BalanceOfPower
-                    contract={balanceOfPowerContract}
-                    title="Who controls Washington after 2028"
-                  />
-                )}
-                <SeatStrips
-                  senate={senateSeats}
-                  house={houseSeats}
-                  year={2028}
-                />
-              </div>
+            {balanceOfPowerContract && (
+              <BalanceOfPower
+                contract={balanceOfPowerContract}
+                title="Who controls Washington after 2028"
+              />
             )}
             <div className="flex flex-col gap-4">
               {(popularVoteContract || margin) && (
@@ -439,6 +429,7 @@ export function Elections2028Page(props: Elections2028PageProps) {
               )}
             </div>
           </div>
+          <SeatCharts senate={senateSeats} house={houseSeats} year={2028} />
           {(tipping || facts.length > 0) && (
             <div
               className={clsx(
@@ -632,7 +623,7 @@ export function Elections2028Page(props: Elections2028PageProps) {
             title="Who controls Washington after 2030"
           />
         )}
-        <SeatStrips
+        <SeatCharts
           senate={seats2030.senate ?? undefined}
           house={seats2030.house ?? undefined}
           year={2030}
