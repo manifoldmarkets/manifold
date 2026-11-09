@@ -29,7 +29,7 @@
     "test:common": "yarn --cwd=common test",
     "test:shared": "yarn --cwd=backend/shared test",
     "test:browse": "node --test backend/scripts/tests/browse-rollout-client.test.cjs backend/scripts/tests/browse-hooks.test.cjs backend/scripts/tests/browse-report.test.cjs",
-    "test:close-time": "TS_NODE_PROJECT=web/tsconfig.json TS_NODE_COMPILER_OPTIONS='{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' node -r ts-node/register/transpile-only -r tsconfig-paths/register --test web/lib/validation/contract-validation.test.ts",
+    "test:close-time": "node --require ./scripts/register-web-tests.cjs --test web/lib/validation/contract-validation.test.ts",
     "test:all": "yarn test:common && yarn test:shared && yarn test:browse && yarn test:close-time",
     "test": "yarn test:all",
     "verify": "yarn build:ci && yarn typecheck && yarn lint && yarn format:check && yarn test",
