@@ -51,7 +51,14 @@ export const updateTrumpApproval = async () => {
     // `unchanged` is the ordinary outcome most hours and is deliberately
     // silent: the source moves roughly once every couple of days, so logging
     // every no-op would bury the hours that matter.
-    if (result.status === 'published' || result.status === 'unchanged') return
+    // `inactive` (a registry lifecycle on the feed) would also be silence,
+    // not a failure — the Trump feed is live, but the publisher is shared.
+    if (
+      result.status === 'published' ||
+      result.status === 'unchanged' ||
+      result.status === 'inactive'
+    )
+      return
     await reportFailure(pg, today, result.reason)
   } catch (err) {
     await reportFailure(pg, today, `${err}`)

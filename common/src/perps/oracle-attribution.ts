@@ -137,6 +137,20 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
     licence: 'CC BY 4.0',
     licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
   },
+  // The 2028 generic ballot, Democratic and Republican shares: the same
+  // VoteHub API, the same CC BY 4.0 statement, the same credit.
+  'votehub-generic-ballot-2028-dem': {
+    source: 'VoteHub',
+    url: 'https://votehub.com',
+    licence: 'CC BY 4.0',
+    licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
+  },
+  'votehub-generic-ballot-2028-rep': {
+    source: 'VoteHub',
+    url: 'https://votehub.com',
+    licence: 'CC BY 4.0',
+    licenceUrl: 'https://creativecommons.org/licenses/by/4.0/',
+  },
   // ⚠️ TERMS NOT YET READ DIRECTLY (2026-09-02). The feed was written in a
   // build environment whose egress policy blocks alternative.me, so the
   // section of https://alternative.me/crypto/fear-and-greed-index/ that
