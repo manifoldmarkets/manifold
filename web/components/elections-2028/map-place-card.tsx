@@ -34,11 +34,13 @@ import { PrimaryRow } from 'web/lib/politics/primaries'
 import { BoardRace } from 'web/lib/politics/race-board'
 import { track } from 'web/lib/service/analytics'
 import own from './election-map.module.css'
+import { InOffice } from './in-office'
 import { TONE_COLOR } from './map-tracker'
 
 // What the map's card says about a place: a few lines on hover, and once a
 // place is clicked, its race's market with Bet buttons and every other
-// market the page has for the state.
+// market the page has for the state. Both say who holds the offices there
+// (in-office.tsx).
 
 const OPEN_PRIMARY_COLOR = TONE_COLOR.open
 const STRENGTH = {
@@ -168,10 +170,15 @@ export function HoverFacts(props: {
   const { place, view, fill, races, tipping } = props
   const st = place.split('-')[0]
   if (view.mode === 'primary')
-    return fill ? (
-      <span className={styles.quote}>{describeFill(fill)}</span>
-    ) : (
-      <span className={styles.note}>No market for this primary yet.</span>
+    return (
+      <>
+        {fill ? (
+          <span className={styles.quote}>{describeFill(fill)}</span>
+        ) : (
+          <span className={styles.note}>No market for this primary yet.</span>
+        )}
+        <InOffice place={place} view={view} compact />
+      </>
     )
   const race = viewRaces(view.mode, races)[place]
   return (
@@ -189,6 +196,7 @@ export function HoverFacts(props: {
         </span>
       )}
       {!place.includes('-') && <OtherRaces st={st} view={view} races={races} />}
+      <InOffice place={place} view={view} compact />
     </>
   )
 }
@@ -244,6 +252,7 @@ export function PinnedPlace(props: {
             : `No ${OFFICE_WORD[view.mode]} race here in 2028.`}
         </p>
       )}
+      <InOffice place={place} view={view} />
       {restCount > 0 && (
         <MoreInState
           // A new place starts closed (open when it has no race here).
