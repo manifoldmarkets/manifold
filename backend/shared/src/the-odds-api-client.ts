@@ -74,18 +74,21 @@ function retryAfterMs(res: Response | undefined): number | undefined {
 }
 
 /**
- * One call, with every response's quota headers recorded, retried per
- * `retryDelaysMs` on a 429, a 5xx or a dropped connection. Throws on the
- * first failure that isn't retryable, or on the last one.
+ * One call, parsed, with every response's quota headers recorded, retried
+ * per `retryDelaysMs` on a 429, a 5xx, a dropped connection or a body that
+ * didn't arrive whole. Throws on the first failure that isn't retryable, or
+ * on the last one.
  */
-async function fetchWithRetry(
+async function fetchWithRetry<T>(
   url: URL,
   endpoint: '/odds' | '/scores',
   sportKey: string,
   retryDelaysMs: number[]
-): Promise<Response> {
+): Promise<T> {
   for (let attempt = 1; ; attempt++) {
     let res: Response | undefined
+    // The HTTP status, when that is what failed (a body failure has none).
+    let status: number | undefined
     let failure: string
     try {
       res = await fetch(url.toString(), {
@@ -93,13 +96,17 @@ async function fetchWithRetry(
       })
       warnOnLowQuota(res)
       void recordOddsApiUsage(sportKey, res.headers)
-      if (res.ok) return res
+      // The body streams in after the headers, under the same timeout: a
+      // connection dropped or stalled while it's delivered rejects here and
+      // is retried like a dropped request.
+      if (res.ok) return (await res.json()) as T
+      status = res.status
       failure = `${res.status} ${res.statusText}`
     } catch (e) {
       failure = e instanceof Error ? e.message : String(e)
     }
     const delay = retryDelaysMs[attempt - 1]
-    if (delay === undefined || (res && !isRetryable(res.status))) {
+    if (delay === undefined || (status !== undefined && !isRetryable(status))) {
       throw new Error(
         `Odds API ${endpoint} error for ${sportKey}: ${failure}` +
           (attempt > 1 ? ` (after ${attempt} attempts)` : '')
@@ -144,13 +151,12 @@ export async function getUpcomingOdds(
     iso(now + daysAhead * 24 * 60 * 60 * 1000)
   )
 
-  const res = await fetchWithRetry(
+  return fetchWithRetry<OddsApiEvent[]>(
     url,
     '/odds',
     sportKey,
     opts.retryDelaysMs ?? ODDS_RETRY_DELAYS_MS
   )
-  return res.json()
 }
 
 /**
@@ -172,11 +178,10 @@ export async function getScores(
     )
   }
 
-  const res = await fetchWithRetry(
+  return fetchWithRetry<OddsApiScore[]>(
     url,
     '/scores',
     sportKey,
     opts.retryDelaysMs ?? SCORES_RETRY_DELAYS_MS
   )
-  return res.json()
 }

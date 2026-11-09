@@ -26,6 +26,17 @@ const failed = (status: number, statusText: string, retryAfter?: string) => {
   if (retryAfter) h.set('retry-after', retryAfter)
   return { ok: false, status, statusText, headers: h } as Response
 }
+// A 200 whose body never arrived whole: the connection dropped, or the 15s
+// timeout hit, while the JSON was still downloading.
+const bodyDropped = {
+  ok: true,
+  status: 200,
+  statusText: 'OK',
+  headers,
+  json: async () => {
+    throw new Error('terminated')
+  },
+} as unknown as Response
 
 // Retries wait with setTimeout. Make the waits instant and keep what they
 // would have been.
@@ -119,6 +130,33 @@ describe('retries', () => {
       )
     await expect(getScores('soccer_epl')).resolves.toEqual([])
     expect(global.fetch).toHaveBeenCalledTimes(3)
+    expect(waits).toEqual(SCORES_RETRY_DELAYS_MS)
+  })
+
+  it('retries when the connection drops while the body is downloading, not just before the headers', async () => {
+    // A 200 is no guarantee the JSON arrives: the body streams in after the
+    // headers, and a drop there used to reject outside the retry loop.
+    jest.mocked(global.fetch).mockResolvedValueOnce(bodyDropped)
+    await expect(getUpcomingOdds('basketball_nba')).resolves.toEqual([])
+    expect(global.fetch).toHaveBeenCalledTimes(2)
+    expect(waits).toEqual([ODDS_RETRY_DELAYS_MS[0]])
+    // The 200's quota headers still count.
+    expect(recordOddsApiUsage).toHaveBeenCalledTimes(2)
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '/odds for basketball_nba failed (terminated); retry 1 of 3 in 3s'
+      )
+    )
+  })
+
+  it('gives up on a body that never arrives whole, on the scores schedule too', async () => {
+    jest.mocked(global.fetch).mockResolvedValue(bodyDropped)
+    await expect(getScores('soccer_epl')).rejects.toThrow(
+      'Odds API /scores error for soccer_epl: terminated (after 3 attempts)'
+    )
+    expect(global.fetch).toHaveBeenCalledTimes(
+      SCORES_RETRY_DELAYS_MS.length + 1
+    )
     expect(waits).toEqual(SCORES_RETRY_DELAYS_MS)
   })
 
