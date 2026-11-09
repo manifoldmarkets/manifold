@@ -65,6 +65,7 @@ import {
   matchesPlace,
   PlacedMarket,
   placeTitle,
+  SENATE_NOT_UP_2028,
   statePanel,
   tippingPlaces,
 } from 'web/lib/politics/election-map'
@@ -752,8 +753,9 @@ export function ElectionMap(props: {
         )}
         {mode === 'senate' && (
           <p className={own.note}>
-            Includes the 65 seats not up in 2028: 38 Democratic (with the
-            independents who caucus with them) and 27 Republican.
+            Includes the {SENATE_NOT_UP_2028.D + SENATE_NOT_UP_2028.R} seats not
+            up in 2028: {SENATE_NOT_UP_2028.D} Democratic (with the independents
+            who caucus with them) and {SENATE_NOT_UP_2028.R} Republican.
           </p>
         )}
 

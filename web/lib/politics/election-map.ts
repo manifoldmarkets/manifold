@@ -189,13 +189,14 @@ export function availableModes(
 //   up in a 2028 special, so it's a race on the map: 19 D, 13 R. Minnesota's
 //   (Klobuchar's) special is in 2027; it counts for its holder (D) until
 //   then.
-// - Class 2, elected in 2026, from the resolved race markets: 19 D (CO, DE,
-//   GA, IL, IA, KS, ME, MA, MI, MN, NH, NJ, NM, NC, OR, RI, SC, TX, VA), 14 R
-//   (AL, AK, AR, ID, KY, LA, MS, MT, NE, OK, SD, TN, WV, WY; Alaska and
-//   Mississippi hadn't resolved and count for the Republican incumbent).
+// - Class 2, elected in 2026, from the resolved race markets: 21 D (AK, CO,
+//   DE, GA, IL, IA, KS, ME, MA, MI, MN, MS, NH, NJ, NM, NC, OR, RI, SC, TX,
+//   VA), 12 R (AL, AR, ID, KY, LA, MT, NE, OK, SD, TN, WV, WY). Alaska and
+//   Mississippi hadn't resolved on 9 Nov 2026; they count as Democratic
+//   wins (Tod, 9 Nov: "most definitely going to be democrat won").
 // Ohio's and Florida's 2026 specials were for Class 3 seats, up again in
 // 2028. Class 3 (34 seats) and Tennessee's special make the 35 races.
-export const SENATE_NOT_UP_2028 = { D: 38, R: 27 }
+export const SENATE_NOT_UP_2028 = { D: 40, R: 25 }
 export const HOUSE_MAJORITY = 218
 
 export type TrackerTone =
