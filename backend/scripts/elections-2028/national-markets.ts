@@ -19,7 +19,6 @@ import { MAX_ANSWER_LENGTH, MAX_ANSWERS } from 'common/answer'
 import { liquidityTiers } from 'common/tier'
 import { getAnte } from 'common/economy'
 import {
-  binaryPartySeeds,
   CandidateSeeds,
   candidateSeeds,
   derivedVpSeeds,
@@ -36,7 +35,6 @@ import {
   SENATE_SEAT_BUCKETS,
   SourceAnswer,
   threePartySeeds,
-  twoPartySeeds,
 } from './seeds'
 
 export const SERIES = 'us-national-2028-v1'
@@ -70,8 +68,6 @@ export const SOURCES = {
   gopVp2028: '91q35jtpyz', // Breakthrough
   party2028: '8p6sy5snq9', // Ernie, "Which political party wins the US presidency in 2028?"
   popularVote2028: '9pyRSU5A6n', // AmmonLam
-  senateRep2028: 'SUTs1ggYgoddnFyALjjV', // AndrewG binary, YES = Republicans
-  senate2030: '06GTQ5wGTbIbtEIEfIXh', // PaperBoy, Republicans/Democrats
   demNominee2032: 'IpRZ6zS9hQ', // DylanSlagh
   winner2032: '2lbO8ztHRtqA7QHDTwsR', // Unown
 } as const
@@ -91,8 +87,6 @@ export type SeedSpec =
       minProb: number
       maxAnswers: number
     }
-  | { kind: 'source-binary-party'; sourceId: string; yesParty: typeof DEM | typeof REP }
-  | { kind: 'source-two-party'; sourceId: string }
   | { kind: 'source-three-party'; sourceId: string; otherPct: number }
   | { kind: 'ev-buckets'; partySourceId: string; sigma: number }
   | { kind: 'margin-buckets'; popularVoteSourceId: string; sigma: number }
@@ -1252,8 +1246,6 @@ export type ResolvedSeed =
 export function seedSourceIds(seed: SeedSpec): string[] {
   switch (seed.kind) {
     case 'source-candidates':
-    case 'source-binary-party':
-    case 'source-two-party':
     case 'source-three-party':
       return [seed.sourceId]
     case 'derived-vp':
@@ -1283,15 +1275,13 @@ const fromCandidates = (s: CandidateSeeds, basis: string): ResolvedSeed => ({
 async function readOpen(
   read: SourceReader,
   id: string,
-  kind: 'multi' | 'binary'
+  kind: 'multi'
 ): Promise<SourceMarket> {
   const m = await read(id)
   if (!m) throw new Error(`Seed source ${id} not found`)
   if (m.isResolved) throw new Error(`Seed source ${id} is resolved`)
   if (kind === 'multi' && !m.answers?.length)
     throw new Error(`Seed source ${id} has no answers`)
-  if (kind === 'binary' && !Number.isFinite(m.probability))
-    throw new Error(`Seed source ${id} has no probability`)
   return m
 }
 
@@ -1351,28 +1341,6 @@ export async function resolveSeed(
         derivedVpSeeds(d.answers!, r.answers!, party, seed),
         `derived: VP nominee markets ${seed.demVpSourceId}/${seed.repVpSourceId} × party ${seed.partySourceId} (D ${(party.dem * 100).toFixed(1)}%, R ${(party.rep * 100).toFixed(1)}%)`
       )
-    }
-    case 'source-binary-party': {
-      const m = await readOpen(need(), seed.sourceId, 'binary')
-      const { dem, rep } = binaryPartySeeds(m.probability!, seed.yesParty)
-      return {
-        outcome: 'MULTIPLE_CHOICE',
-        answers: [DEM, REP],
-        answerProbs: [dem, rep],
-        basis: `from binary ${seed.sourceId} (YES = ${seed.yesParty} at ${(
-          m.probability! * 100
-        ).toFixed(1)}%${traders(m)})`,
-      }
-    }
-    case 'source-two-party': {
-      const m = await readOpen(need(), seed.sourceId, 'multi')
-      const { dem, rep } = twoPartySeeds(partyShares(m.answers!))
-      return {
-        outcome: 'MULTIPLE_CHOICE',
-        answers: [DEM, REP],
-        answerProbs: [dem, rep],
-        basis: `copied from ${seed.sourceId} (${m.question}${traders(m)})`,
-      }
     }
     case 'source-three-party': {
       const m = await readOpen(need(), seed.sourceId, 'multi')
@@ -1445,9 +1413,14 @@ const hasOther = (entry: Entry) =>
   entry.outcome === 'MULTIPLE_CHOICE' && entry.addAnswersMode !== 'DISABLED'
 
 // Static checks on the manifest (no network). Returns error messages.
+// The manifest's shape. With `now`, also that every entry closes after it:
+// the check for entries about to be created. A run checks the whole manifest
+// without a date (a race that has closed since is history, not an error) and
+// each entry it would create against the clock (closedEntries, and runApply
+// before every create).
 export function validateEntries(
   entries: Entry[],
-  now: number,
+  now?: number,
   series = SERIES
 ): string[] {
   const errors: string[] = []
@@ -1494,7 +1467,7 @@ export function validateEntries(
     const day = Date.parse(`${ELECTION_DAYS[e.cycle]}T00:00:00Z`)
     if (!Number.isFinite(close)) at('bad closeTime')
     else {
-      if (close <= now) at('closeTime is in the past')
+      if (now !== undefined && close <= now) at('closeTime is in the past')
       if ((e.phase === 'general' || e.phase === 'offyear') && close <= day + 86_400_000)
         at('election market must close after election day (UTC)')
       if ((e.phase === 'nomination' || e.phase === 'primary') && close >= day)
@@ -1540,6 +1513,37 @@ export function validateEntries(
     }
   }
   return errors
+}
+
+// Entries that have closed by `now`: too late to create.
+export const closedEntries = (entries: Entry[], now: number) =>
+  entries.filter((e) => !(Date.parse(e.closeTime) > now))
+
+// Re-labels a recorded seed after the manifest renamed fixed answers, keeping
+// the opening odds it recorded, so the opening-price check still holds the
+// market to them. Only an unambiguous in-place rename passes: the seed
+// labels the earlier answers in order, the count is the same, and every
+// unchanged answer is where it was. Returns the seed (unchanged when its
+// labels already match), or why it can't be matched.
+export function relabelSeed(
+  seed: ResolvedSeed,
+  before: string[] | undefined,
+  after: string[] | undefined
+): ResolvedSeed | string {
+  if (seed.outcome !== 'MULTIPLE_CHOICE' || !after) return seed
+  const same = (xs: string[], ys: string[]) =>
+    xs.length === ys.length && xs.every((x, i) => x.trim() === ys[i].trim())
+  if (same(seed.answers, after)) return seed
+  if (!before || !same(seed.answers, before))
+    return "the recorded opening odds aren't labelled with the earlier answers, so a renamed answer can't be matched to its odds"
+  if (before.length !== after.length)
+    return `answers were added or removed (${before.length} → ${after.length}), not renamed`
+  for (const [i, text] of after.entries()) {
+    const was = before.findIndex((b) => b.trim() === text.trim())
+    if (was !== -1 && was !== i)
+      return `"${text}" moved (answer ${was + 1} → ${i + 1}), so which answer was renamed is ambiguous`
+  }
+  return { ...seed, answers: [...after] }
 }
 
 // Checks resolved opening odds the way the API does (getAnswerProbsError),

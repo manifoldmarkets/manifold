@@ -71,8 +71,8 @@ winner market (`t9s0m8tf2v`), so there is no new one.
 
 ## Scope
 
-Together with the pipeline (1,032 race markets, Ṁ2,202,000), this is
-1,243 markets, about Ṁ2.70M at 6 Nov 2026 answer counts. They cover the regular federal and
+Together with the pipeline (591 race markets after the 6 Nov 2026 holds,
+Ṁ1,761,000), this is 802 markets, about Ṁ2.26M at 6 Nov 2026 answer counts. They cover the regular federal and
 governor elections of 2027–2036, not every US election:
 
 - **In:** the 2027 Kentucky, Mississippi and Louisiana governor races,
@@ -177,8 +177,14 @@ the mentioned user. No description mentions anyone (a test enforces it).
   `--accept-criteria <key>` (exact keys, comma-separated). Before accepting,
   the run compares the market on the site with the manifest: question,
   description, fixed answers and topics; then it verifies the market again
-  (opening odds, close time, answer mode) before publishing. Or delete the
-  market and its record. Already-published markets only get a warning.
+  (opening odds, close time, answer mode) before publishing. A fixed answer
+  renamed in place keeps the opening odds recorded for it, so the check
+  still holds the market to them; a reorder or an added or removed answer
+  stops the run instead. Or delete the market and its record.
+  Already-published markets only get a warning.
+- The manifest is checked as a whole without a date, so races that have
+  closed since don't block a run. An entry that closed before it was created
+  is skipped (`--apply` exits 1 and names it; the dry runs list it).
 - A market found at its reserved id that this run didn't create (the read
   before creating missed it) is not adopted blind: the run stops and forgets
   the criteria it saved for that attempt, so publishing it goes through
@@ -249,9 +255,9 @@ read at run time, or from documented static priors:
    ```powershell
    npx ts-node --transpile-only elections-2028/create-national-markets.ts --apply `
      --env prod --creator-username ManifoldPolitics `
-     --state C:\Users\User\elections-national-prod\state.prod.json --max-mana 500000
+     --state C:\Users\User\elections-national-prod\state.prod.json --max-mana 510000
    ```
-   About 201 markets × (create, read back, publish) at `--pace-ms 400`:
+   About 211 markets × (create, read back, publish) at `--pace-ms 400`:
    roughly 15–25 minutes. Avoid 07:45–08:15 UTC (the API restarts daily at
    08:00).
 5. Afterwards, wire the new markets into the elections page config (slugs

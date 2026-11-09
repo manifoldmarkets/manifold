@@ -390,30 +390,6 @@ export function flattenedSeeds(
   return toCandidateSeeds(kept)
 }
 
-// Two-answer party market (Democratic Party, Republican Party) from a binary
-// whose YES is one of the parties.
-export function binaryPartySeeds(
-  yesProb: number,
-  yesParty: 'Democratic Party' | 'Republican Party'
-): { dem: number; rep: number } {
-  if (!Number.isFinite(yesProb)) throw new Error('binaryPartySeeds: bad prob')
-  const yes = clampPct(round1(yesProb * 100))
-  const no = round1(100 - yes)
-  return yesParty === 'Republican Party'
-    ? { dem: no, rep: yes }
-    : { dem: yes, rep: no }
-}
-
-// Two-answer party market from a party multi's Democratic and Republican
-// shares (anything else is dropped and the two are renormalized).
-export function twoPartySeeds(shares: PartyShares): {
-  dem: number
-  rep: number
-} {
-  const [dem, rep] = floorAndNormalize([shares.dem, shares.rep])
-  return { dem, rep }
-}
-
 // Three-answer party market (D / R / another party or independent) with the
 // third answer at otherPct and D and R splitting the rest in their ratio.
 export function threePartySeeds(

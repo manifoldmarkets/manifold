@@ -61,6 +61,8 @@ import {
   seedSourceIds,
   SourceMarket,
   validateEntries,
+  closedEntries,
+  relabelSeed,
 } from './national-markets'
 import {
   Api,
@@ -1029,6 +1031,7 @@ export async function runApply(
     )
   }
   const skippedDuplicates: string[] = []
+  const closedSkips: string[] = []
   // Once the budget or balance runs out, nothing more is created, but
   // markets earlier runs created still get verified and published.
   let creationsStopped = false
@@ -1106,6 +1109,12 @@ export async function runApply(
         )
           stop(r, `state says ${r.status} but ${reservedId} does not exist`)
         if (creationsStopped) continue
+        // Too late to create: a market past its close takes no bets.
+        if (closedEntries([e], Date.now()).length) {
+          closedSkips.push(e.key)
+          console.warn(`${e.key}: SKIPPED, it closed ${e.closeTime} before it was created`)
+          continue
+        }
         // Skips this entry (not the run) when the creator already has an
         // open market asking the same; later runs check again.
         const dupes = await duplicatesOf(e)
@@ -1223,6 +1232,15 @@ export async function runApply(
             throw new StopRun(
               `${e.key}: --accept-criteria, but ${issues.join('; ')}. Edit ${r.url} to match first.`
             )
+          // A renamed answer keeps the opening odds recorded for it.
+          if (r.seed) {
+            const seed = relabelSeed(r.seed, r.criteria?.answers, criteria.answers)
+            if (typeof seed === 'string')
+              throw new StopRun(
+                `${e.key}: --accept-criteria: ${seed}. Fix the manifest's answers, or delete the market and this key's state record.`
+              )
+            r.seed = seed
+          }
           console.log(
             `${e.key}: --accept-criteria: ${r.url} matches the manifest; recording its criteria (changed: ${changed})`
           )
@@ -1300,6 +1318,10 @@ export async function runApply(
       .map(([k, v]) => `${k} ${v}`)
       .join(', ')}`
   )
+  if (closedSkips.length) {
+    console.warn(`Not created, closed already: ${closedSkips.join(', ')}`)
+    process.exitCode = 1
+  }
   if (skippedDuplicates.length) {
     console.warn(
       `Skipped as duplicates of existing markets: ${skippedDuplicates.join(', ')} (see above)`
@@ -1316,7 +1338,9 @@ async function main() {
     console.log(fs.readFileSync(__filename, 'utf8').split('\n\nimport')[0])
     return
   }
-  const errors = validateEntries(ENTRIES, Date.now())
+  // The whole manifest's shape, without a date: entries that have closed
+  // since are history, and --only picks the work.
+  const errors = validateEntries(ENTRIES)
   if (errors.length) {
     console.error('Manifest errors:\n  ' + errors.join('\n  '))
     process.exit(1)
@@ -1324,6 +1348,15 @@ async function main() {
   const only = typeof args.only === 'string' ? new RegExp(args.only) : undefined
   const entries = ENTRIES.filter((e) => !only || only.test(e.key))
   if (entries.length === 0) throw new Error('--only matched no entries')
+  // The selected entries against the clock: --apply skips any not yet
+  // created (it checks each before creating); the dry runs say so here.
+  const closed = closedEntries(entries, Date.now())
+  if (closed.length && !args.apply)
+    console.warn(
+      `${closed.length} selected entries have closed; --apply creates none not created yet: ${closed
+        .map((e) => e.key)
+        .join(', ')}`
+    )
   const outDir = typeof args.out === 'string' ? path.resolve(args.out) : DEFAULT_OUT
   if (args.apply) return apply(entries, args)
   if (args.online)

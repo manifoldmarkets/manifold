@@ -8,7 +8,6 @@ import * as assert from 'node:assert/strict'
 import { randomStringRegex } from 'common/util/random'
 import { getAnswerProbsError } from 'common/new-contract'
 import {
-  binaryPartySeeds,
   candidateSeeds,
   canonicalCandidate,
   derivedVpSeeds,
@@ -27,7 +26,6 @@ import {
   SENATE_SEAT_BUCKETS,
   SourceAnswer,
   threePartySeeds,
-  twoPartySeeds,
 } from './seeds'
 import * as fs from 'fs'
 import * as os from 'os'
@@ -52,6 +50,8 @@ import {
   PRIMARY_STATES,
   TERRITORY_CONTESTS,
   validateEntries,
+  closedEntries,
+  relabelSeed,
 } from './national-markets'
 import { buildPhotoIndex, parsePhotoRegistry, photoPathFor } from './photos'
 import { DOWNBALLOT_2028 } from './primaries-2028'
@@ -228,21 +228,6 @@ test('party helpers', () => {
   ])
   near(shares.dem, 0.666, 1e-9)
   near(shares.other, 0.0095, 1e-9)
-  assert.deepEqual(binaryPartySeeds(0.332, 'Republican Party'), {
-    dem: 66.8,
-    rep: 33.2,
-  })
-  assert.deepEqual(binaryPartySeeds(0.7, 'Democratic Party'), {
-    dem: 70,
-    rep: 30,
-  })
-  const two = twoPartySeeds(
-    partyShares([
-      { text: 'Republicans', probability: 0.501 },
-      { text: 'Democrats', probability: 0.499 },
-    ])
-  )
-  assert.equal(two.dem + two.rep, 100)
   assert.deepEqual(
     threePartySeeds(
       partyShares([
@@ -1072,6 +1057,101 @@ test('apply: --accept-criteria re-verifies and checks answers and topics on the 
   }
 })
 
+test('apply: --accept-criteria takes an answer renamed on the site with its odds', async () => {
+  // An untraded unlisted market whose answer was renamed in the manifest and
+  // on the site, prices unchanged: accepted, it verifies against the odds it
+  // opened at (relabelled) and publishes.
+  const renamed = (old: MultiEntry, from: string, to: string): MultiEntry => ({
+    ...old,
+    answers: old.answers!.map((a) => (a === from ? to : a)),
+  })
+  const FROM = 'R President, D Senate, R House'
+  const TO = 'R President / D Senate / R House'
+  {
+    const server = fakeServer()
+    const statePath = tempState()
+    const old = entry(BOP) as MultiEntry
+    const id = await earlierRun(server, statePath, old, { status: 'created-unlisted', visibility: 'unlisted' })
+    const live = server.markets.get(id)!
+    const before = live.answers!.find((a) => a.text === FROM)!.probability
+    live.answers!.find((a) => a.text === FROM)!.text = TO
+    const run = await applyWith(server, [renamed(old, FROM, TO)], statePath, { accept: [BOP] })
+    assert.equal(run.code, 0)
+    assert.equal(run.state.entries[BOP].status, 'published')
+    assert.equal(live.visibility, 'public')
+    const seed = run.state.entries[BOP].seed
+    const i = seed.answers.indexOf(TO)
+    assert.ok(i >= 0)
+    assert.ok(Math.abs(seed.answerProbs[i] / 100 - before!) < 0.015)
+    assert.ok(!seed.answers.includes(FROM))
+  }
+  // The renamed answer's price on the site moved off its opening odds: the
+  // relabelled seed still holds it to them, so it stops before publishing.
+  {
+    const server = fakeServer()
+    const statePath = tempState()
+    const old = entry(BOP) as MultiEntry
+    const id = await earlierRun(server, statePath, old, { status: 'created-unlisted', visibility: 'unlisted' })
+    const live = server.markets.get(id)!
+    const a = live.answers!.find((x) => x.text === FROM)!
+    a.text = TO
+    a.probability = a.probability! + 0.1
+    const run = await applyWith(server, [renamed(old, FROM, TO)], statePath, { accept: [BOP] })
+    assert.equal(run.code, 1)
+    assert.match(run.state.entries[BOP].error, /opening prices off/)
+    assert.equal(live.visibility, 'unlisted')
+  }
+})
+
+test('relabelSeed takes only an unambiguous in-place rename', () => {
+  const seed = {
+    outcome: 'MULTIPLE_CHOICE' as const,
+    answers: ['A', 'B', 'C'],
+    answerProbs: [50, 30, 20],
+    basis: 'test',
+  }
+  // Nothing renamed: the same seed.
+  assert.equal(relabelSeed(seed, ['A', 'B', 'C'], ['A', 'B', 'C']), seed)
+  // B renamed in place: B's odds go with its new label.
+  assert.deepEqual(relabelSeed(seed, ['A', 'B', 'C'], ['A', 'Bee', 'C']), {
+    ...seed,
+    answers: ['A', 'Bee', 'C'],
+  })
+  // A reorder, an added answer, or a seed that doesn't match the earlier
+  // answers can't be matched to its odds.
+  assert.match(String(relabelSeed(seed, ['A', 'B', 'C'], ['B', 'A', 'C'])), /moved/)
+  assert.match(String(relabelSeed(seed, ['A', 'B', 'C'], ['A', 'B', 'C', 'D'])), /added or removed/)
+  assert.match(String(relabelSeed(seed, ['X', 'B', 'C'], ['A', 'Bee', 'C'])), /aren't labelled/)
+  // A yes/no seed has no labels.
+  const binary = { outcome: 'BINARY' as const, initialProb: 40, basis: 'test' }
+  assert.equal(relabelSeed(binary, undefined, undefined), binary)
+})
+
+test('closed races are history: the manifest checks without a date, the work against it', () => {
+  // A year on (2027 races closed), the whole manifest with a date fails,
+  // but its shape is fine and a 2028 addition is still open to create.
+  const at = Date.UTC(2027, 10, 4)
+  assert.ok(validateEntries(ENTRIES, at).some((m) => /past/.test(m)))
+  assert.deepEqual(validateEntries(ENTRIES), [])
+  const seats = ENTRIES.filter((e) => e.key === '2028-dem-senate-seats')
+  assert.equal(seats.length, 1)
+  assert.deepEqual(closedEntries(seats, at), [])
+  assert.ok(closedEntries(ENTRIES, at).length > 0)
+  assert.ok(closedEntries(ENTRIES, at).every((e) => e.cycle === 2027))
+})
+
+test('apply: an entry that closed before it was created is skipped, not created', async () => {
+  const server = fakeServer()
+  const statePath = tempState()
+  const late: Entry = { ...entry(KY), closeTime: '2020-01-01T00:00:00.000Z' }
+  const run = await applyWith(server, [late, entry(SPLIT)], statePath)
+  assert.equal(run.code, 1)
+  assert.equal(run.state.entries[KY].status, 'planned')
+  assert.ok(!server.markets.has(reservedIdFor(SERIES, KY)))
+  // The rest of the run goes on.
+  assert.equal(run.state.entries[SPLIT].status, 'published')
+})
+
 test('apply: a resumed market keeps the visibility it was created with', async () => {
   const server = fakeServer()
   const statePath = tempState()
@@ -1310,18 +1390,6 @@ const FIXTURES: Record<string, SourceMarket> = {
   [SOURCES.popularVote2028]: market([
     { text: 'The Democratic Party', probability: 0.755 },
     { text: 'The Republican Party', probability: 0.245 },
-  ]),
-  [SOURCES.senateRep2028]: {
-    id: SOURCES.senateRep2028,
-    question: 'Will Republicans win the Senate in the 2028 elections?',
-    outcomeType: 'BINARY',
-    isResolved: false,
-    probability: 0.3324,
-    uniqueBettorCount: 20,
-  },
-  [SOURCES.senate2030]: market([
-    { text: 'Republicans', probability: 0.501 },
-    { text: 'Democrats', probability: 0.499 },
   ]),
   [SOURCES.demNominee2032]: market([
     { text: 'Other', probability: 0.591, isOther: true },
