@@ -131,7 +131,7 @@ export function sectionTitle(key: SectionKey, phase: ElectionPhase): string {
     case 'accuracy':
       return '2026 result'
     case 'leaderboards':
-      return 'Top traders'
+      return 'Leaderboards'
     case 'race':
       return results ? 'The 2028 presidential race' : 'The race for 2028'
     case 'map':
@@ -242,10 +242,10 @@ export type ContentsEntry = {
 }
 
 // The sections the contents lists: the page's, in its order, minus the
-// one-line 2026 result and the leaderboard card above the first heading.
+// one-line 2026 result above the first heading.
 export function pageContents(p: ContentsInput): ContentsEntry[] {
   return sectionOrder(p.phase)
-    .filter((key) => key !== 'accuracy' && key !== 'leaderboards')
+    .filter((key) => key !== 'accuracy')
     .filter((key) => hasSection(p, key))
     .map((key) => ({
       key,

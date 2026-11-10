@@ -63,6 +63,8 @@ export function LeaderboardPanel(props: {
   /** Above the entries, like the viewer's own place. */
   header?: React.ReactNode
   footer?: React.ReactNode
+  // Whole names where the card has room (Leaderboard's shortNames).
+  shortNames?: boolean
 }) {
   const {
     title,
@@ -90,6 +92,7 @@ export function LeaderboardPanel(props: {
             entries={entries}
             columns={columns}
             highlightUserId={highlightUserId}
+            shortNames={props.shortNames}
           />
         ) : (
           <div className="text-ink-400 py-8 text-center text-sm">

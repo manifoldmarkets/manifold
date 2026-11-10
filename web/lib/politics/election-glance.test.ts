@@ -23,6 +23,7 @@ import {
   offYearRace,
   orderedBuckets,
   otherNominee,
+  winnerBuckets,
   placeMore2028,
   runningField,
   sideTotal,
@@ -118,6 +119,69 @@ test("the Republican's electoral votes: 538 minus the Democrat's, the line at 26
     0
   )!
   assert.equal(otherNominee(margin, 538, 269), undefined)
+})
+
+test("electoral votes from the winner's side: Democrat landslide to Republican landslide", () => {
+  const dem = orderedBuckets(
+    answers([
+      ['230–269', 0.194],
+      ['270–299', 0.194],
+      ['300–329', 0.189],
+      ['360 or more', 0.145],
+      ['330–359', 0.144],
+      ['200–229', 0.08],
+      ['Under 200', 0.054],
+    ]),
+    270
+  )!
+  const w = winnerBuckets(dem, 538, 270)!
+  // The Democrat's counts from the most, then the Republican's from the
+  // closest: the Democrat's 230–269 is the Republican's 269–308 (a tie in).
+  assert.deepEqual(
+    w.map((x) => x.label),
+    ['360+', '330–359', '300–329', '270–299', '269–308', '309–338', '339+']
+  )
+  assert.deepEqual(
+    w.map((x) => x.text),
+    [
+      '360 or more',
+      '330–359',
+      '300–329',
+      '270–299',
+      '269–308',
+      '309–338',
+      '339 or more',
+    ]
+  )
+  assert.deepEqual(
+    w.map((x) => x.side),
+    ['D', 'D', 'D', 'D', 'R', 'R', 'R']
+  )
+  // Each keeps its answer and chance: the Republican's 339+ is the
+  // Democrat's Under 200.
+  assert.equal(w[6].id, dem[0].id)
+  assert.equal(w[6].p, 0.054)
+  close(sideTotal(w, 'D'), sideTotal(dem, 'D'))
+  close(sideTotal(w, 'D') + sideTotal(w, 'R'), 1)
+  // A range across the line has no winner's side.
+  const across = orderedBuckets(
+    answers([
+      ['Under 260', 0.5],
+      ['260–289', 0.3],
+      ['290 or more', 0.2],
+    ]),
+    270
+  )!
+  assert.equal(winnerBuckets(across, 538, 270), undefined)
+  // Nor does a market that isn't counts.
+  const margin = orderedBuckets(
+    answers([
+      ['D+0 to D+3', 0.5],
+      ['R+0 to R+3', 0.5],
+    ]),
+    0
+  )!
+  assert.equal(winnerBuckets(margin, 538, 270), undefined)
 })
 
 // The seat-count markets' answers, as the national script makes them.
@@ -486,6 +550,19 @@ test('the contents lists only what the page shows, in page order', () => {
     full.map((e) => e.id),
     ['race', 'map', 'national', 'off-year', 'later', 'unprecedented', 'feed']
   )
+  // The leaderboards are a section of their own, last before the feed.
+  const boards = pageContents(
+    input({
+      leaderboards: [{ key: '2026' } as ContentsInput['leaderboards'][number]],
+      swings: [{} as ContentsInput['swings'][number]],
+    })
+  )
+  assert.deepEqual(
+    boards.map((e) => e.key),
+    ['swings2026', 'leaderboards', 'feed']
+  )
+  assert.equal(boards[1].label, 'Leaderboards')
+  assert.equal(boards[1].id, 'leaderboards')
 })
 
 test('a convention market brings the conventions chapter, not the national one', () => {

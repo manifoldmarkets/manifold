@@ -130,26 +130,9 @@ export function otherNominee(
     if (!range) return undefined
     const lo = total - range[1]
     const hi = total - range[0]
-    const label =
-      lo === hi
-        ? `${lo}`
-        : hi >= total
-        ? `${lo}+`
-        : lo <= 0
-        ? `<${hi + 1}`
-        : `${lo}–${hi}`
-    const text =
-      lo === hi
-        ? `${lo}`
-        : hi >= total
-        ? `${lo} or more`
-        : lo <= 0
-        ? `Under ${hi + 1}`
-        : `${lo}–${hi}`
     return {
       ...b,
-      label,
-      text,
+      ...countRangeWords(lo, hi, total),
       at: (lo + hi) / 2,
       // The other side's: past the line is theirs (red for the
       // Republican).
@@ -162,6 +145,50 @@ export function otherNominee(
   })
   if (flipped.some((b) => !b)) return undefined
   return sortBy(flipped as Bucket[], (b) => b.at)
+}
+
+// An inclusive count range in a strip's short label and the market's words:
+// 0–199 is "<200" ("Under 200"), 339–538 of 538 is "339+" ("339 or more").
+function countRangeWords(lo: number, hi: number, total: number) {
+  if (lo === hi) return { label: `${lo}`, text: `${lo}` }
+  if (hi >= total) return { label: `${lo}+`, text: `${lo} or more` }
+  if (lo <= 0) return { label: `<${hi + 1}`, text: `Under ${hi + 1}` }
+  return { label: `${lo}–${hi}`, text: `${lo}–${hi}` }
+}
+
+// An electoral-vote market (it counts the Democrat's) from the winner's
+// side, as the page draws who-wins charts, Democrats on the left like the
+// party bars: the Democrat's ranges at `threshold` or more as they are, from
+// the landslide in; then the rest as the Republican's (`total` minus each),
+// from the closest out to their landslide. "230–269" for the Democrat is
+// "269–308" for the Republican, a 269–269 tie included. Each keeps its
+// answer and chance. Undefined unless every bucket is a count range wholly
+// on one side of the threshold.
+export function winnerBuckets(
+  dem: Bucket[],
+  total: number,
+  threshold: number
+): Bucket[] | undefined {
+  const out: Bucket[] = []
+  for (const b of sortBy(dem, (x) => -x.at)) {
+    const range = bucketRange(b.text, total)
+    if (!range) return undefined
+    const [lo, hi] = range
+    if (lo >= threshold) {
+      out.push({ ...b, side: 'D' })
+      continue
+    }
+    if (hi >= threshold) return undefined
+    const rlo = total - hi
+    const rhi = total - lo
+    out.push({
+      ...b,
+      ...countRangeWords(rlo, rhi, total),
+      at: (rlo + rhi) / 2,
+      side: 'R',
+    })
+  }
+  return out
 }
 
 // A seat-count market at a glance: the range holding the middle outcome,

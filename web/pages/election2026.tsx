@@ -1,3 +1,7 @@
+import type {
+  ElectionLeaderboard,
+  ElectionLeaderboardKey,
+} from 'common/election-leaderboards'
 import { ElectionReplay } from 'web/components/election-2026/election-replay'
 import { REPLAY_COMPARISONS } from 'web/components/election-2026/replay-comparisons'
 import type { ReplaySnapshot } from 'web/components/election-2026/replay-model'
@@ -9,22 +13,35 @@ import {
   replayStory,
   signedPoints,
 } from 'web/components/election-2026/replay-scorecard'
+import { ElectionLeaderboards } from 'web/components/elections-2028/election-leaderboards'
+import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import {
   OG_ELECTION_HEIGHT,
   OG_ELECTION_WIDTH,
 } from 'web/components/og/og-election'
 import { SEO } from 'web/components/SEO'
+import { recap2026Scopes } from 'web/lib/politics/election-leaderboard-scopes'
 import { ElectionMapProps, getElectionMapProps } from 'web/lib/politics/home'
+import { getStoredLeaderboards } from 'web/lib/politics/stored-leaderboards'
 import snapshot from 'web/public/data/election-2026-replay.json'
 
-type Props = ElectionMapProps & { scores: ChamberScore[]; latestAt: number }
+type Props = ElectionMapProps & {
+  scores: ChamberScore[]
+  latestAt: number
+  leaderboards: ElectionLeaderboard[]
+  leaderboardDefault: ElectionLeaderboardKey
+}
 
 // The scores come from the same snapshot and comparisons the page plays, and
 // each chamber's live resolution, so the headline, cards and share card
 // update the moment a control market resolves.
 export async function getStaticProps() {
-  const mapProps = await getElectionMapProps()
+  const [mapProps, storedBoards] = await Promise.all([
+    getElectionMapProps(),
+    getStoredLeaderboards(),
+  ])
+  const { boards, defaultKey } = recap2026Scopes(storedBoards)
   const scores = chamberScores(
     snapshot as unknown as ReplaySnapshot,
     REPLAY_COMPARISONS,
@@ -35,7 +52,13 @@ export async function getStaticProps() {
   )
   // The replay's Latest stop is these markets, as read now.
   return {
-    props: { ...mapProps, scores, latestAt: Date.now() },
+    props: {
+      ...mapProps,
+      scores,
+      latestAt: Date.now(),
+      leaderboards: boards,
+      leaderboardDefault: defaultKey,
+    },
     revalidate: 300,
   }
 }
@@ -82,7 +105,35 @@ export default function Election2026(props: Props) {
             : 'Manifold vs real-money prediction markets on the 2026 midterms'
         }
       />
-      <ElectionReplay {...props} />
+      <ElectionReplay
+        {...props}
+        footer={
+          props.leaderboards.length > 0 && (
+            <section
+              className="mt-4 flex flex-col gap-3"
+              aria-labelledby="leaderboards"
+            >
+              <Col className="gap-1">
+                <h2
+                  id="leaderboards"
+                  className="text-primary-700 text-xl font-semibold sm:text-2xl"
+                >
+                  Leaderboards
+                </h2>
+                <p className="text-ink-600 text-sm">
+                  Who made the most on the 2026 election markets, and whose
+                  markets drew the most traders.
+                </p>
+              </Col>
+              <ElectionLeaderboards
+                boards={props.leaderboards}
+                defaultKey={props.leaderboardDefault}
+                page="election2026"
+              />
+            </section>
+          )
+        }
+      />
     </Page>
   )
 }

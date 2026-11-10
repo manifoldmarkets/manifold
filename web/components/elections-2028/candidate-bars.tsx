@@ -6,6 +6,7 @@ import { getAnswerProbability } from 'common/calculate'
 import { Contract, contractPath, isMultiCpmm } from 'common/contract'
 import { formatOdds } from 'web/components/usa-map/election-display'
 import { DEM_COLOR, REP_COLOR } from 'web/components/usa-map/state-election-map'
+import { FitText } from 'web/components/widgets/fit-text'
 import { useLiveContract } from 'web/hooks/use-contract'
 import {
   CandidateParty,
@@ -79,9 +80,21 @@ export function CandidateBars(props: {
             <>
               <CandidateAvatar candidate={candidate} size={30} party={who} />
               <span className="flex min-w-0 flex-1 flex-col gap-1">
-                <span className="text-ink-900 truncate text-sm font-medium">
+                {/* A long name shrinks a little, then gives way to the
+                    surname. */}
+                <FitText
+                  min={11}
+                  short={
+                    candidate.shortName &&
+                    candidate.shortName !== candidate.name
+                      ? candidate.shortName
+                      : undefined
+                  }
+                  title={candidate.name}
+                  className="text-ink-900 text-sm font-medium"
+                >
                   {candidate.name}
-                </span>
+                </FitText>
                 <span className="bg-canvas-50 h-1.5 w-full overflow-hidden rounded-full">
                   <span
                     className="block h-full rounded-full"

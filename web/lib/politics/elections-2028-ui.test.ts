@@ -15,7 +15,10 @@ import {
   showsSection,
 } from './election-phase'
 import type { ElectionLeaderboard } from 'common/election-leaderboards'
-import { leaderboardScopes } from './election-leaderboard-scopes'
+import {
+  leaderboardScopes,
+  recap2026Scopes,
+} from './election-leaderboard-scopes'
 import {
   ELECTION_HUB_TOPICS,
   electionPathForTopic,
@@ -96,16 +99,17 @@ test('each phase orders its sections once, ending with the feed', () => {
     assert.equal(order[order.length - 1], 'feed', phase)
   }
   assert.equal(sectionOrder('nomination')[0], 'accuracy')
-  assert.equal(sectionOrder('primaries')[4], 'primaries')
-  assert.equal(sectionOrder('results')[1], 'board')
-  assert.equal(sectionOrder('midterms2030')[2], 'midterms2030')
+  assert.equal(sectionOrder('primaries')[3], 'primaries')
+  assert.equal(sectionOrder('results')[0], 'board')
+  assert.equal(sectionOrder('midterms2030')[1], 'midterms2030')
   // Data is only loaded where it shows.
   assert.ok(!showsSection('nomination', 'midterms2030'))
   assert.ok(showsSection('nomination', 'primaries'))
   assert.ok(!showsSection('general', 'primaries'))
   assert.ok(!showsSection('results', 'swings2026'))
-  // The leaderboard card leads every phase (after the one-line 2026 result
-  // while it shows); the map shows wherever the 2028 board does, until 2029.
+  // The leaderboards come last before the feed in every phase (after 2026's
+  // swings while they show); the map shows wherever the 2028 board does,
+  // until 2029.
   for (const phase of [
     'nomination',
     'primaries',
@@ -115,11 +119,13 @@ test('each phase orders its sections once, ending with the feed', () => {
     'midterms2030',
   ] as const) {
     const order = sectionOrder(phase)
-    assert.equal(
-      order.indexOf('leaderboards'),
-      phase === 'nomination' ? 1 : 0,
-      phase
-    )
+    assert.equal(order.indexOf('leaderboards'), order.length - 2, phase)
+    if (order.includes('swings2026'))
+      assert.equal(
+        order.indexOf('leaderboards'),
+        order.indexOf('swings2026') + 1,
+        phase
+      )
     assert.equal(showsSection(phase, 'map'), phase !== 'midterms2030', phase)
   }
 })
@@ -685,6 +691,24 @@ test('the leaderboard opens on 2026 for a while, then on the lead cycle', () => 
     leaderboardScopes([], 'nomination', at(2026, 11, 6)).boards,
     []
   )
+})
+
+test('the 2026 recap offers the midterms, all US elections and US politics', () => {
+  const all = (
+    ['2026', '2028', '2030', 'us-elections', 'us-politics'] as const
+  ).map(board)
+  const recap = recap2026Scopes(all)
+  assert.equal(recap.defaultKey, '2026')
+  assert.deepEqual(
+    recap.boards.map((b) => b.key),
+    ['2026', 'us-elections', 'us-politics']
+  )
+  // Without the 2026 board it opens on the first it has.
+  assert.equal(
+    recap2026Scopes([board('2028'), board('us-politics')]).defaultKey,
+    'us-politics'
+  )
+  assert.deepEqual(recap2026Scopes([]).boards, [])
 })
 
 // ------------------------------------------------------------------ mapping

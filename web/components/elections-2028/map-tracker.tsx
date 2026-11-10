@@ -109,6 +109,16 @@ export function MapTracker(props: {
       ? seatPosition(counts, boxes, threshold)
       : undefined
   const selected = (key: string) => selection.includes(key)
+  // A segment's count, where it fits and the majority line doesn't cut
+  // through it (about 7px a digit, centred in the segment).
+  const countFits = (i: number) => {
+    const box = boxes[i]
+    const count = segments[i].count
+    if (!box || box.w <= (count >= 100 ? 28 : 22)) return false
+    if (thresholdX === undefined) return true
+    const half = String(count).length * 3.5 + 2
+    return Math.abs(thresholdX - (box.x + box.w / 2)) > half
+  }
 
   return (
     <div className={styles.balance}>
@@ -149,7 +159,6 @@ export function MapTracker(props: {
         <div className={styles.balanceBand} aria-hidden>
           {segments.map((segment, i) => {
             const color = segmentColor(segment, party)
-            const w = boxes[i]?.w ?? 0
             return (
               <span
                 key={segment.key}
@@ -166,7 +175,7 @@ export function MapTracker(props: {
                   color: labelInk(color),
                 }}
               >
-                {w > (segment.count >= 100 ? 28 : 22) && segment.count}
+                {countFits(i) && segment.count}
               </span>
             )
           })}
