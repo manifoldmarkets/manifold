@@ -789,11 +789,11 @@ export default function SportsAdminPage() {
           <p className="text-ink-800 mb-1 font-medium">How this works</p>
           <ul className="ml-4 list-disc space-y-1">
             <li>
-              Game markets are created <strong>automatically</strong> by the
-              daily 6&nbsp;AM&nbsp;LA <code>sports-odds-create</code> job, two
-              weeks ahead, for the phases switched on below, owned by{' '}
-              <strong>@ManifoldSports</strong>. Use the Odds API section to{' '}
-              <strong>preview</strong> (dry run) or create on demand.
+              Game markets are created <strong>automatically</strong> by the{' '}
+              <code>sports-odds-create</code> job at 6:07&nbsp;AM and
+              12:07&nbsp;PM&nbsp;LA, two weeks ahead, for the phases switched on
+              below, owned by <strong>@ManifoldSports</strong>. Use the Odds API
+              section to <strong>preview</strong> (dry run) or create on demand.
             </li>
             <li>
               <code>sports-odds-resolve</code> writes live scores as often as

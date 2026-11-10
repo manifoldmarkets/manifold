@@ -63,7 +63,7 @@ import {
   MULTI_CPMM_MECHANISMS_SQL,
 } from 'common/contract'
 import { User } from 'common/user'
-import { HOUR_MS, MINUTE_MS } from 'common/util/time'
+import { HOUR_MS, MINUTE_MS, sleep } from 'common/util/time'
 
 const ROLLING_WINDOW_DAYS = 14
 /** The most the Odds API will look back for completed games. */
@@ -84,6 +84,11 @@ const ATTENTION_AFTER_MS = 3 * HOUR_MS
  * takes and clock drift between us and the provider.
  */
 const MIN_CREATE_LEAD_MS = 5 * MINUTE_MS
+/**
+ * Between one competition's odds call and the next in the scheduled run. The
+ * provider throttles bursts (429), and the run is in no hurry.
+ */
+const COMPETITION_SPACING_MS = 3_000
 
 // ─── Creating markets ─────────────────────────────────────────────────────────
 
@@ -128,6 +133,12 @@ export async function createOddsMarketsForCompetition(
     creator?: User
     eventIds?: string[]
     switches?: CompetitionSwitches
+    /**
+     * The waits before each retry of the odds call, the client's default if
+     * unset. An admin's click passes a short one: a quick answer beats a
+     * minute's wait on a throttled provider.
+     */
+    retryDelaysMs?: number[]
   } = {}
 ): Promise<OddsCreateResult> {
   const phases = calendarEntriesFor(competitionId)
@@ -167,7 +178,9 @@ export async function createOddsMarketsForCompetition(
   // the provider moved earlier; the lead only stops new markets, checked
   // before each game is created and again inside its transaction.
   const picked = opts.eventIds ? new Set(opts.eventIds) : undefined
-  const fetched = await getUpcomingOdds(entry.oddsKey, ROLLING_WINDOW_DAYS)
+  const fetched = await getUpcomingOdds(entry.oddsKey, ROLLING_WINDOW_DAYS, {
+    retryDelaysMs: opts.retryDelaysMs,
+  })
   const now = Date.now()
   const inWindow = (t: number, w: { from: number; to: number }) =>
     t >= w.from && t <= w.to
@@ -400,10 +413,29 @@ async function resyncKickoff(
   return true
 }
 
-/** The daily job. */
+/** What one scheduled run did, by competition. */
+export interface OddsCalendarRun {
+  /** The competitions that ran, with what each created and skipped. */
+  results: Record<string, OddsCreateResult>
+  /**
+   * The competitions whose odds call failed, after the client's retries,
+   * with the error. Nothing was created or re-synced for them this run. The
+   * job decides how loudly to say so: the day's last run is the one that
+   * leaves a day's games without markets.
+   */
+  failed: Record<string, string>
+}
+
+/**
+ * The scheduled job: every competition with a switched-on phase, or open
+ * markets, inside the rolling window, one after another and `spacingMs`
+ * apart (COMPETITION_SPACING_MS unless given).
+ */
 export async function createOddsMarketsForActiveCalendar(
-  pg: SupabaseDirectClient
-): Promise<Record<string, OddsCreateResult>> {
+  pg: SupabaseDirectClient,
+  opts: { spacingMs?: number } = {}
+): Promise<OddsCalendarRun> {
+  const run: OddsCalendarRun = { results: {}, failed: {} }
   // The admin switches are the off switch for spending, so a run that can't
   // read them creates nothing: falling back to the calendar's defaults would
   // create games an admin switched off.
@@ -414,7 +446,7 @@ export async function createOddsMarketsForActiveCalendar(
     log.error(
       `[sports-odds-create] couldn't read the switches, so this run creates nothing: ${e}`
     )
-    return {}
+    return run
   }
   // Feeds with a market the resolver still watches: their games are kept in
   // sync with the provider's kickoffs whether or not the phase is still on.
@@ -455,21 +487,24 @@ export async function createOddsMarketsForActiveCalendar(
       .map((e) => e.competitionId)
   )
   const creator = await sportsCreator()
-  const out: Record<string, OddsCreateResult> = {}
-  for (const competitionId of competitionIds) {
+  const spacingMs = opts.spacingMs ?? COMPETITION_SPACING_MS
+  for (let i = 0; i < competitionIds.length; i++) {
+    const competitionId = competitionIds[i]
+    if (i > 0 && spacingMs > 0) await sleep(spacingMs)
     try {
-      out[competitionId] = await createOddsMarketsForCompetition(
+      run.results[competitionId] = await createOddsMarketsForCompetition(
         pg,
         competitionId,
         { creator, switches }
       )
     } catch (e) {
-      // An exhausted quota or a provider outage stops a whole competition:
-      // an error, so it alerts.
-      log.error(`[sports-odds-create] ${competitionId} didn't run: ${e}`)
+      // An exhausted quota, a throttle that outlasted the retries or a
+      // provider outage stops a whole competition. Reported to the job,
+      // which warns in the morning and alerts after the day's last run.
+      run.failed[competitionId] = e instanceof Error ? e.message : String(e)
     }
   }
-  return out
+  return run
 }
 
 // ─── Live scores and resolution ───────────────────────────────────────────────
