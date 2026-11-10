@@ -357,6 +357,8 @@ export const API = (_apiTypeCheck = {
         replyToCommentId: z.string().optional(),
         replyToAnswerId: z.string().optional(),
         replyToBetId: z.string().optional(),
+        // Mods and admins only
+        isModComment: z.boolean().optional(),
       })
       .strict(),
   },
