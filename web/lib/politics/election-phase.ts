@@ -50,16 +50,16 @@ export type SectionKey =
   | 'feed'
 
 // Each phase's order. Sections not listed don't render in that phase.
-// After the result line and the leaderboards, the answers people come for
-// first: the headline race, the map, and Congress and the popular vote.
-// Then the rest in the order things happen: the 2027 races, the primaries,
-// the conventions, the cycles after. What's over sinks below what's left;
-// the extras and the feed come last. Until the general election the map's
-// tracker lists each rating's states, so the race board waits for the fall.
+// After the result line, the answers people come for first: the headline
+// race, the map, and Congress and the popular vote. Then the rest in the
+// order things happen: the 2027 races, the primaries, the conventions, the
+// cycles after. What's over sinks below what's left; the extras, the
+// leaderboards (after 2026's swings while they show) and the feed come
+// last. Until the general election the map's tracker lists each rating's
+// states, so the race board waits for the fall.
 const ORDER: Record<ElectionPhase, SectionKey[]> = {
   nomination: [
     'accuracy',
-    'leaderboards',
     'race',
     'map',
     'national',
@@ -72,10 +72,10 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'unprecedented',
     'trending',
     'swings2026',
+    'leaderboards',
     'feed',
   ],
   primaries: [
-    'leaderboards',
     'race',
     'map',
     'national',
@@ -87,10 +87,10 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'polling',
     'unprecedented',
     'trending',
+    'leaderboards',
     'feed',
   ],
   conventions: [
-    'leaderboards',
     'race',
     'map',
     'national',
@@ -102,10 +102,10 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'unprecedented',
     'trending',
     'primaries',
+    'leaderboards',
     'feed',
   ],
   general: [
-    'leaderboards',
     'race',
     'map',
     'national',
@@ -117,10 +117,10 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'unprecedented',
     'trending',
     'runningMates',
+    'leaderboards',
     'feed',
   ],
   results: [
-    'leaderboards',
     'board',
     'map',
     'race',
@@ -130,16 +130,17 @@ const ORDER: Record<ElectionPhase, SectionKey[]> = {
     'matrix',
     'polling',
     'runningMates',
+    'leaderboards',
     'feed',
   ],
   midterms2030: [
-    'leaderboards',
     'offYear',
     'midterms2030',
     'later',
     'board',
     'race',
     'polling',
+    'leaderboards',
     'feed',
   ],
 }

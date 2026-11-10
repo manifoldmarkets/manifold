@@ -15,6 +15,7 @@ import {
   seatGlance,
 } from 'web/lib/politics/election-glance'
 import { settledOrPrice } from 'web/lib/politics/settlement'
+import { FitText } from 'web/components/widgets/fit-text'
 import { LiveContracts } from './live-contracts'
 import { OddsRows, oddsItems } from './odds-rows'
 import { useQuickBet } from './quick-bet'
@@ -122,9 +123,13 @@ function Cycles(props: {
                       <span className="text-ink-1000 font-semibold">
                         {cycle}
                       </span>
-                      <span className="text-ink-500 text-xs">
+                      <FitText
+                        min={10}
+                        short={cycle % 4 === 0 ? 'Pres.' : 'Midterm'}
+                        className="text-ink-500 text-xs"
+                      >
                         {cycle % 4 === 0 ? 'Presidential' : 'Midterms'}
-                      </span>
+                      </FitText>
                     </span>
                   </th>
                 ))}

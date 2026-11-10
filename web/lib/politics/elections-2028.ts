@@ -7,6 +7,7 @@ import type {
   ElectionLeaderboardKey,
 } from 'common/election-leaderboards'
 import { leaderboardScopes } from 'web/lib/politics/election-leaderboard-scopes'
+import { getStoredLeaderboards } from 'web/lib/politics/stored-leaderboards'
 import { Group } from 'common/group'
 import { removeUndefinedProps } from 'common/util/object'
 import { getContractFromSlug, getContracts } from 'common/supabase/contracts'
@@ -894,28 +895,6 @@ const openOnly = (contracts: (Contract | undefined)[], now: number) =>
 // ---------------------------------------------------------------------------
 // Leaderboards and the hub topic
 // ---------------------------------------------------------------------------
-
-const LEADERBOARD_TIMEOUT_MS = 5_000
-
-// The stored leaderboards (the scheduler rebuilds them; reading them is one
-// small query). None if the API can't serve them yet.
-async function getStoredLeaderboards(): Promise<ElectionLeaderboard[]> {
-  try {
-    const { boards } = await api(
-      'election-leaderboards',
-      {},
-      { signal: AbortSignal.timeout(LEADERBOARD_TIMEOUT_MS) }
-    )
-    // Top traders are the ones who made money: a thin board otherwise lists
-    // losses too.
-    return boards
-      .map((b) => ({ ...b, profit: b.profit.filter((e) => e.score > 0) }))
-      .filter((b) => b.profit.length > 0 || b.creator.length > 0)
-  } catch (e) {
-    console.error('election leaderboards failed', e)
-    return []
-  }
-}
 
 async function getHubTopic(slug: string): Promise<Group | null> {
   try {

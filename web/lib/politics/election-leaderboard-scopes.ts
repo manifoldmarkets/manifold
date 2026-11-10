@@ -22,3 +22,22 @@ export function leaderboardScopes(
     : shown[0]?.key ?? wanted
   return { boards: shown, defaultKey }
 }
+
+// The 2026 recap page's scopes: the midterms it recaps, then all US
+// elections and US politics; it opens on the midterms.
+const RECAP_2026_KEYS: ElectionLeaderboardKey[] = [
+  '2026',
+  'us-elections',
+  'us-politics',
+]
+
+export function recap2026Scopes(boards: ElectionLeaderboard[]): {
+  boards: ElectionLeaderboard[]
+  defaultKey: ElectionLeaderboardKey
+} {
+  const shown = boards.filter((b) => RECAP_2026_KEYS.includes(b.key))
+  const defaultKey = shown.some((b) => b.key === '2026')
+    ? '2026'
+    : shown[0]?.key ?? '2026'
+  return { boards: shown, defaultKey }
+}

@@ -75,6 +75,8 @@ export function ElectionReplay(
     // When the page read the markets (getStaticProps, every few minutes):
     // the replay's Latest stop.
     latestAt: number
+    // Under everything, whether or not the replay loads (the leaderboards).
+    footer?: ReactNode
   }
 ) {
   const { snapshot: loaded, error, retry } = useReplaySnapshot()
@@ -188,6 +190,7 @@ export function ElectionReplay(
           )}
         </div>
       )}
+      {props.footer}
     </Col>
   )
 }

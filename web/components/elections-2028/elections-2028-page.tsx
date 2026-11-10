@@ -2,7 +2,14 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { groupBy } from 'lodash'
-import { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
+import {
+  Children,
+  Fragment,
+  ReactNode,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 
 import { getAnswerProbability } from 'common/calculate'
 import { Contract, contractPath, isMultiCpmm } from 'common/contract'
@@ -21,7 +28,6 @@ import {
 import interactions from 'web/components/us-elections/election-interactions.module.css'
 import { PollingPerpsRow } from 'web/components/us-elections/polling-perps-row'
 import { SectionInView } from 'web/components/us-elections/section-in-view'
-import { formatOdds } from 'web/components/usa-map/election-display'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
 import {
@@ -39,9 +45,7 @@ import {
 import {
   MARKET_LABELS,
   More2028Place,
-  otherNominee,
   placeMore2028,
-  sideTotal,
 } from 'web/lib/politics/election-glance'
 import { SectionKey, sectionOrder } from 'web/lib/politics/election-phase'
 import type { Elections2028PageProps } from 'web/lib/politics/elections-2028'
@@ -62,7 +66,6 @@ import { ElectionMap } from './election-map'
 import { FutureCycles } from './future-cycles'
 import { LiveContracts } from './live-contracts'
 import { MarketRows, OddsItem, OddsRows } from './odds-rows'
-import { OddsStrip, StripFlip } from './odds-strip'
 import { OffYearMap } from './off-year-map'
 import { PartyOddsBar } from './party-odds-bar'
 import { PrimariesOverview } from './primaries-overview'
@@ -70,6 +73,7 @@ import { RaceBoard } from './race-board'
 import { RaceCard, RangeKey, RangePicker, useRange } from './race-section'
 import { SeatCharts } from './seat-charts'
 import { Swings2026 } from './swings-2026'
+import { ElectoralVotesChart, PopularVoteMarginChart } from './winner-charts'
 
 // /election from the 2026 midterms to the 2030 ones: the 2028 race, every
 // election on the way, and the cycles after. The section order follows the
@@ -153,26 +157,20 @@ function ChartRange(props: {
   )
 }
 
-// The electoral-vote market asks about the Democratic nominee; from the
-// Republican's side each range is 538 minus the Democrat's (if every elector
-// votes for one of the two). The Democrat's 230–269 becomes the
-// Republican's 269–308, which holds a 269–269 tie, so their line is at 269.
-const REPUBLICAN_ELECTORAL_VOTES: StripFlip = {
-  toggle: ['Democrat', 'Republican'],
-  toggleLabel: 'Whose electoral votes',
-  title: "The Republican nominee's electoral votes",
-  thresholdLabel: '269+',
-  buckets: (b) => otherNominee(b, 538, 269),
-  summary: (b) => (
-    <>
-      269 or more (a win, or a 269–269 tie):{' '}
-      <b className="text-ink-1000">{formatOdds(sideTotal(b, 'R'))}</b>
-    </>
-  ),
-  footnote:
-    "538 minus the Democratic nominee's, from the same market, assuming every elector votes for one of the two.",
-  note: (shown, answer) =>
-    `Republican nominee ${shown.text} is the same outcome as the Democratic nominee winning ${answer.text} electoral votes, so this bets on that answer.`,
+// Two cards side by side on wider screens; one alone takes the width.
+function Pair(props: { children: ReactNode }) {
+  const items = Children.toArray(props.children)
+  if (!items.length) return null
+  return (
+    <div
+      className={clsx(
+        'grid items-start gap-4',
+        items.length > 1 && 'md:grid-cols-2'
+      )}
+    >
+      {items}
+    </div>
+  )
 }
 
 // The tipping-point market's likeliest states, one line each; once it
@@ -268,10 +266,20 @@ export function Elections2028Page(props: Elections2028PageProps) {
     accuracy: () => <AccuracyBanner story={accuracy} />,
 
     leaderboards: () => (
-      <ElectionLeaderboards
-        boards={leaderboards}
-        defaultKey={leaderboardDefault}
-      />
+      <SectionInView
+        section="election leaderboards"
+        className="flex flex-col gap-3"
+      >
+        <SectionHeader
+          {...head('leaderboards')}
+          subtitle="Who has made the most on election markets, and whose markets draw the most traders."
+        />
+        <ElectionLeaderboards
+          boards={leaderboards}
+          defaultKey={leaderboardDefault}
+          page="election"
+        />
+      </SectionInView>
     ),
 
     race: () => (
@@ -350,131 +358,89 @@ export function Elections2028Page(props: Elections2028PageProps) {
             {...head('national')}
             subtitle="Who controls Washington after 2028, by how many seats, the popular vote, and how big the win is."
           />
-          <div
-            className={clsx(
-              'grid items-start gap-4',
-              balanceOfPowerContract && 'md:grid-cols-2'
-            )}
-          >
+          {/* Who holds what, and the popular vote. */}
+          <Pair>
             {balanceOfPowerContract && (
               <BalanceOfPower
                 contract={balanceOfPowerContract}
                 title="Who controls Washington after 2028"
               />
             )}
-            <div className="flex flex-col gap-4">
-              {(popularVoteContract || margin) && (
-                <div className={clsx(CARD, 'flex flex-col gap-4')}>
-                  {popularVoteContract && (
-                    <PartyOddsBar
-                      contract={popularVoteContract}
-                      label="Who wins the popular vote"
-                      trackingName="election 2028 popular vote"
-                      size="sm"
-                    />
-                  )}
-                  {margin && (
-                    <OddsStrip
-                      contract={margin}
-                      title="By how much"
-                      threshold={0}
-                      thresholdLabel="Even"
-                      summary={(b) => {
-                        const top = b.reduce((x, y) => (y.p > x.p ? y : x))
-                        return (
-                          <>
-                            Most likely{' '}
-                            <b className="text-ink-1000">{top.text}</b> (
-                            {formatOdds(top.p)})
-                          </>
-                        )
-                      }}
-                    />
-                  )}
-                </div>
-              )}
-              {electoralVotes && (
-                <div className={CARD}>
-                  <OddsStrip
-                    contract={electoralVotes}
-                    title="The Democratic nominee's electoral votes"
-                    threshold={270}
-                    thresholdLabel="270+"
-                    summary={(b) => (
-                      <>
-                        270 or more:{' '}
-                        <b className="text-ink-1000">
-                          {formatOdds(sideTotal(b, 'D'))}
-                        </b>
-                      </>
-                    )}
-                    flip={REPUBLICAN_ELECTORAL_VOTES}
-                  />
-                </div>
-              )}
-              {congressContract && (
-                <div className={CARD}>
+            {(popularVoteContract || margin) && (
+              <div className={clsx(CARD, 'flex flex-col gap-4')}>
+                {popularVoteContract && (
                   <PartyOddsBar
-                    contract={congressContract}
-                    label="Who controls Congress after 2028"
-                    trackingName="election 2028 congress"
+                    contract={popularVoteContract}
+                    label="Who wins the popular vote"
+                    trackingName="election 2028 popular vote"
                     size="sm"
                   />
+                )}
+                {margin && <PopularVoteMarginChart contract={margin} bare />}
+              </div>
+            )}
+          </Pair>
+          {/* The electoral college: by how much, and the state that decides
+              it. */}
+          <Pair>
+            {electoralVotes && (
+              <ElectoralVotesChart contract={electoralVotes} />
+            )}
+            {tipping && (
+              <div className={clsx(CARD, 'flex flex-col gap-1')}>
+                <div className="flex items-baseline justify-between gap-2">
+                  <h3 className="text-ink-1000 text-sm font-semibold">
+                    The tipping-point state
+                  </h3>
+                  <Link
+                    href={contractPath(tipping)}
+                    className="text-ink-500 hover:text-primary-700 shrink-0 text-xs hover:underline"
+                  >
+                    Market →
+                  </Link>
                 </div>
-              )}
-            </div>
-          </div>
+                <LiveContracts contracts={[tipping]}>
+                  {([live]) => (
+                    <OddsRows
+                      items={tippingRows(live)}
+                      columns={1}
+                      trackingName="election 2028 tipping point"
+                    />
+                  )}
+                </LiveContracts>
+              </div>
+            )}
+          </Pair>
           <SeatCharts
             senate={national2028.senateSeats ?? undefined}
             house={national2028.houseSeats ?? undefined}
             year={2028}
           />
-          {(tipping || facts.length > 0) && (
-            <div
-              className={clsx(
-                'grid items-start gap-4',
-                tipping && facts.length > 0 && 'md:grid-cols-2'
-              )}
-            >
-              {tipping && (
-                <div className={clsx(CARD, 'flex flex-col gap-1')}>
-                  <div className="flex items-baseline justify-between gap-2">
-                    <h3 className="text-ink-1000 text-sm font-semibold">
-                      The tipping-point state
-                    </h3>
-                    <Link
-                      href={contractPath(tipping)}
-                      className="text-ink-500 hover:text-primary-700 shrink-0 text-xs hover:underline"
-                    >
-                      Market →
-                    </Link>
-                  </div>
-                  <LiveContracts contracts={[tipping]}>
-                    {([live]) => (
-                      <OddsRows
-                        items={tippingRows(live)}
-                        columns={1}
-                        trackingName="election 2028 tipping point"
-                      />
-                    )}
-                  </LiveContracts>
-                </div>
-              )}
-              {facts.length > 0 && (
-                <div className={clsx(CARD, 'flex flex-col gap-1')}>
-                  <h3 className="text-ink-1000 text-sm font-semibold">
-                    Also on 2028
-                  </h3>
-                  <MarketRows
-                    contracts={facts}
-                    labelOf={labelOf}
-                    columns={1}
-                    trackingName="election 2028 facts"
-                  />
-                </div>
-              )}
-            </div>
-          )}
+          <Pair>
+            {congressContract && (
+              <div className={CARD}>
+                <PartyOddsBar
+                  contract={congressContract}
+                  label="Who controls Congress after 2028"
+                  trackingName="election 2028 congress"
+                  size="sm"
+                />
+              </div>
+            )}
+            {facts.length > 0 && (
+              <div className={clsx(CARD, 'flex flex-col gap-1')}>
+                <h3 className="text-ink-1000 text-sm font-semibold">
+                  Also on 2028
+                </h3>
+                <MarketRows
+                  contracts={facts}
+                  labelOf={labelOf}
+                  columns={1}
+                  trackingName="election 2028 facts"
+                />
+              </div>
+            )}
+          </Pair>
         </SectionInView>
       )
     },

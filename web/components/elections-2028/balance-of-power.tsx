@@ -1,22 +1,35 @@
+import clsx from 'clsx'
 import Link from 'next/link'
 import { sortBy } from 'lodash'
 
 import { getAnswerProbability } from 'common/calculate'
 import { Contract, contractPath, isMultiCpmm } from 'common/contract'
-import { formatOdds } from 'web/components/usa-map/election-display'
+import { formatOdds, labelInk } from 'web/components/usa-map/election-display'
 import { DEM_COLOR, REP_COLOR } from 'web/components/usa-map/state-election-map'
+import { FitText } from 'web/components/widgets/fit-text'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { settledOrPrice } from 'web/lib/politics/settlement'
 import { useQuickBet } from './quick-bet'
 
 // The official balance-of-power market: who holds the presidency, Senate and
 // House after an election, as its eight D/R combinations, most likely first.
-// Each office is a pip in its party's colour; the label says it in words.
-// Clicking a combination bets on it without leaving the page.
+// A column per office, headed by its name; each row's cells say which party
+// holds it, in that party's colour, then the row's chance. Clicking a row
+// bets on it without leaving the page.
 
 const COMBO = /^([DR]) President, ([DR]) Senate, ([DR]) House/
 
 const OFFICES = ['President', 'Senate', 'House'] as const
+
+// The offices' cells, a bar for the chance, the chance; the header row uses
+// the same columns so the office names sit over their cells.
+const COLUMNS =
+  'grid grid-cols-[repeat(3,minmax(0,3.75rem))_minmax(1.5rem,1fr)_2.75rem] items-center gap-x-1.5 sm:grid-cols-[repeat(3,minmax(0,4.75rem))_minmax(2rem,1fr)_3rem] sm:gap-x-2'
+
+const PARTY = {
+  D: { name: 'Democratic', short: 'Dem', color: DEM_COLOR },
+  R: { name: 'Republican', short: 'Rep', color: REP_COLOR },
+}
 
 export function BalanceOfPower(props: {
   contract: Contract
@@ -51,56 +64,57 @@ export function BalanceOfPower(props: {
           Market →
         </Link>
       </div>
-      <div className="text-ink-600 flex gap-3 text-xs" aria-hidden>
+      <div
+        className={clsx(COLUMNS, 'text-ink-600 px-1 text-xs font-medium')}
+        aria-hidden
+      >
         {OFFICES.map((o) => (
-          <span key={o} className="w-3 text-center">
-            {o[0]}
-          </span>
+          <FitText key={o} className="text-center">
+            {o}
+          </FitText>
         ))}
       </div>
-      <ul className="flex flex-col gap-1.5">
+      <ul className="flex flex-col gap-1">
         {answers.map(({ a, m, p }) => {
           const parties = [m![1], m![2], m![3]] as ('D' | 'R')[]
-          // "Democratic trifecta" where the answer names one; otherwise the
-          // combination itself ("D President, R Senate, R House").
-          const label =
-            a.text.match(/\(([^)]+)\)/)?.[1] ?? a.text.replace(/\s*\(.*\)$/, '')
           const words = parties
-            .map(
-              (x, i) =>
-                `${x === 'D' ? 'Democratic' : 'Republican'} ${OFFICES[i]}`
-            )
+            .map((x, i) => `${PARTY[x].name} ${OFFICES[i]}`)
             .join(', ')
+          const trifecta = parties.every((x) => x === parties[0])
+            ? ` (${PARTY[parties[0]].name} trifecta)`
+            : ''
           return (
             <li key={a.id}>
               <button
                 type="button"
                 aria-haspopup="dialog"
                 onClick={() => open({ contract, answerId: a.id })}
-                className="hover:bg-canvas-50 -mx-1 flex w-[calc(100%+0.5rem)] items-center gap-3 rounded px-1 py-0.5 text-left"
-                aria-label={`Bet on ${words}: ${formatOdds(p)}`}
+                className={clsx(
+                  COLUMNS,
+                  'hover:bg-canvas-50 w-full rounded-md px-1 py-1 text-left'
+                )}
+                aria-label={`Bet on ${words}${trifecta}: ${formatOdds(p)}`}
               >
-                <span className="flex shrink-0 gap-3" aria-hidden>
-                  {parties.map((x, i) => (
-                    <span
-                      key={i}
-                      className="inline-block h-3 w-3 rounded-sm"
-                      style={{
-                        backgroundColor: x === 'D' ? DEM_COLOR : REP_COLOR,
-                      }}
-                    />
-                  ))}
-                </span>
-                <span className="text-ink-900 min-w-0 flex-1 truncate text-sm">
-                  {label}
-                </span>
-                <span className="bg-canvas-100 relative hidden h-1.5 w-24 overflow-hidden rounded-full sm:block">
+                {parties.map((x, i) => (
+                  <span
+                    key={i}
+                    aria-hidden
+                    className="flex h-7 items-center justify-center rounded-md text-xs font-semibold sm:text-sm"
+                    style={{
+                      backgroundColor: PARTY[x].color,
+                      color: labelInk(PARTY[x].color),
+                    }}
+                  >
+                    {PARTY[x].short}
+                  </span>
+                ))}
+                <span className="bg-canvas-100 relative h-1.5 overflow-hidden rounded-full">
                   <span
                     className="bg-ink-500 absolute inset-y-0 left-0 rounded-full"
                     style={{ width: `${Math.max(2, (p / top) * 100)}%` }}
                   />
                 </span>
-                <span className="text-ink-1000 w-10 shrink-0 text-right text-sm font-semibold tabular-nums">
+                <span className="text-ink-1000 text-right text-sm font-semibold tabular-nums">
                   {formatOdds(p)}
                 </span>
               </button>
