@@ -9,6 +9,7 @@ import { formatOdds } from 'web/components/usa-map/election-display'
 import { DEM_COLOR, REP_COLOR } from 'web/components/usa-map/state-election-map'
 import { FitText } from 'web/components/widgets/fit-text'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { useIsClient } from 'web/hooks/use-is-client'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { Bucket, sideTotal } from 'web/lib/politics/election-glance'
 import { useQuickBet } from './quick-bet'
@@ -71,13 +72,17 @@ export function BucketChart(props: {
   // Bars rise once the chart scrolls into view.
   const [revealed, setRevealed] = useState(false)
   const { ref } = useIsVisible(() => setRevealed(true), true)
+  const isClient = useIsClient()
 
   const winner = live.isResolved ? bars.find((b) => b.p >= 1) : undefined
   const mostLikely = maxBy(bars, (b) => b.p)
   const shown = bars.find((b) => b.id === activeId) ?? winner ?? mostLikely
   if (!bars.length || !shown) return null
-  const tradable =
-    !live.isResolved && (live.closeTime == null || live.closeTime > Date.now())
+  // Whether the market still takes bets. The close time is read in the
+  // browser only: a cached page can predate the close, and the first render
+  // must match the server's. A click checks it again.
+  const closed = () => live.closeTime != null && live.closeTime <= Date.now()
+  const tradable = !live.isResolved && !(isClient && closed())
 
   const top = Math.max(0.01, ...bars.map((b) => Math.max(b.p, b.dayAgo ?? 0)))
   // The tallest bar stops short of the top, leaving room for its label.
@@ -95,7 +100,7 @@ export function BucketChart(props: {
   const anyMoved = bars.some(moved)
 
   const bet = (b: ChartBar) => {
-    if (!tradable) return
+    if (!tradable || closed()) return
     props.trackBet(b)
     open({ contract: live, answerId: b.id, note: note?.(b) })
   }
