@@ -119,8 +119,8 @@ export const useMultiChoiceDataZoomFetcher = (props: {
   points: MultiPoints
   createdTime: number
   lastBetTime: number
-  // The time of the last bet the server-rendered history in `points` covers.
-  // Undefined if the page was rendered before any bet.
+  // The time of the latest bet among the rows the server-rendered history in
+  // `points` was made from. Undefined if there were none.
   serverLastBetTime: number | undefined
 }) => {
   const { contract, points, createdTime, lastBetTime, viewXScale } = props
@@ -211,7 +211,10 @@ export const useMultiChoiceDataZoomFetcher = (props: {
       const min = viewXScale.invert(minX).valueOf()
       const max = viewXScale.invert(maxX).valueOf()
       const fixedMin = Math.max(min, createdTime) - 1000
-      const fixedMax = Math.min(max, lastBetTime) + 1000
+      // Up to the last bet the page knows of and no further. A window that
+      // reached past it could be answered now and the answer reused later,
+      // when it no longer holds every bet of the window.
+      const fixedMax = Math.min(max, lastBetTime) + 1
       onZoomData(fixedMin, fixedMax)
     } else {
       onZoomData()

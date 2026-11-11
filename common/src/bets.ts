@@ -75,13 +75,19 @@ export const getBetPointsBetween = async (
 //
 // The endpoint and the CDN in front of it both reuse responses, so what comes
 // back can be older than the market's latest bets. It only vouches for the
-// time up to its own last row.
+// time up to its own last row. For a multiple choice market the rows have no
+// hole before that row either: see getSplitBetPoints.
 export const getBetPointsAndLatestBetTime = async (
   contract: MarketContract,
   options: Omit<APIParams<'bet-points'>, 'contractId'>,
   getAnswerProbAtStart?: AnswerProbAtStart
 ) => {
-  const { rows, complete } = await getSplitBetPoints(contract.id, options)
+  const { rows, complete } = await getSplitBetPoints(
+    contract.id,
+    options,
+    // Only multiple choice charts reason from which bets are absent.
+    isMultiCpmm(contract)
+  )
   return {
     points: getPointsFromBetRows(
       contract,
@@ -219,9 +225,22 @@ export const getPointsFromBetRows = (
   return endPoints
 }
 
+// Fetches the bets of a window. A long window is asked for in two parts: the
+// part up to an hour boundary some hours back, which everyone looking at the
+// market in that hour asks for with the same request, and the part since.
+//
+// `chained`: the recent part is asked for once the settled part is in, and
+// starts from the last bet the settled part holds. The two then join on a bet
+// both return, so the rows have no hole between them whatever the age of each
+// response: a settled part that was answered from an old copy just ends
+// earlier, and the recent part makes up the difference.
+//
+// Otherwise the two are asked for at once and join on the hour. That is
+// quicker, and takes it on trust that the settled part runs up to the hour.
 const getSplitBetPoints = async (
   contractId: string,
-  options: Omit<APIParams<'bet-points'>, 'contractId'>
+  options: Omit<APIParams<'bet-points'>, 'contractId'>,
+  chained: boolean
 ) => {
   const { afterTime, beforeTime } = options
   const span = beforeTime - afterTime
@@ -240,24 +259,41 @@ const getSplitBetPoints = async (
     return await fetchBetPoints(contractId, options)
   }
 
-  const [historical, recent] = await Promise.all([
-    fetchBetPoints(contractId, {
-      ...options,
-      beforeTime: splitTime,
-    }),
-    // Both ends of a request are exclusive, so a bet made on the split
-    // itself would be in neither half. The recent half starts a millisecond
-    // early to take it; a bet that lands in both is dropped as a duplicate.
-    fetchBetPoints(contractId, {
-      ...options,
-      afterTime: splitTime - 1,
-    }),
-  ])
-  return {
-    rows: [...historical.rows, ...recent.rows],
-    complete: historical.complete && recent.complete,
+  const settledOptions = { ...options, beforeTime: splitTime }
+  if (!chained) {
+    const [settled, recent] = await Promise.all([
+      fetchBetPoints(contractId, settledOptions),
+      // Both ends of a request are exclusive, so a bet made on the split
+      // itself would be in neither half. The recent half starts a millisecond
+      // early to take it; a bet that lands in both is dropped as a duplicate.
+      fetchBetPoints(contractId, { ...options, afterTime: splitTime - 1 }),
+    ])
+    return joinParts(settled, recent)
   }
+
+  const settled = await fetchBetPoints(contractId, settledOptions)
+  const lastSettledBetTime = maxBy(
+    settled.rows,
+    (r) => r.createdTime
+  )?.createdTime
+  const recent = await fetchBetPoints(contractId, {
+    ...options,
+    // A millisecond before that bet, so that it and any other row of its
+    // millisecond come back again (both ends of a request are exclusive).
+    // With no bet in the settled part, the whole window.
+    afterTime:
+      lastSettledBetTime === undefined
+        ? afterTime
+        : Math.max(afterTime, lastSettledBetTime - 1),
+  })
+  return joinParts(settled, recent)
 }
+
+type FetchedBetPoints = Awaited<ReturnType<typeof fetchBetPoints>>
+const joinParts = (settled: FetchedBetPoints, recent: FetchedBetPoints) => ({
+  rows: [...settled.rows, ...recent.rows],
+  complete: settled.complete && recent.complete,
+})
 
 const fetchBetPoints = async (
   contractId: string,

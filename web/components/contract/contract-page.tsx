@@ -425,7 +425,7 @@ export function ContractPageContent(props: ContractParams) {
                     contract={liveContract}
                     key={liveContract.id} // reset state when switching play vs cash
                     betPoints={betPoints}
-                    serverLastBetTime={props.contract.lastBetTime}
+                    serverLastBetTime={props.pointsLatestBetTime}
                     showResolver={showResolver}
                     showUnresolver={showUnresolver}
                     resolutionRating={

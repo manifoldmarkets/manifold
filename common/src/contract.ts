@@ -666,6 +666,8 @@ export type ContractParams = {
   /** Social preview card props, built before answers are truncated for the page */
   ogCardProps?: OgCardProps
   multiPointsString?: MultiBase64Points
+  /** The time of the latest bet among the rows pointsString / multiPointsString were made from. The points say nothing about the market after it */
+  pointsLatestBetTime?: number
   comments: ContractComment[]
   totalComments: number
   totalPositions: number

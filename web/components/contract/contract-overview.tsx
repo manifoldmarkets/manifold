@@ -98,7 +98,8 @@ export const ContractOverview = memo(
   (props: {
     contract: Contract
     betPoints: HistoryPoint<Partial<Bet>>[] | MultiPoints
-    // The time of the last bet the server-rendered part of betPoints covers.
+    // The time of the latest bet among the rows the server-rendered part of
+    // betPoints was made from.
     serverLastBetTime?: number
     showResolver: boolean
     showUnresolver: boolean
@@ -362,7 +363,8 @@ const HOVER_PREVIEW_DELAY_MS = 150
 
 const ChoiceOverview = (props: {
   points: MultiPoints
-  // The time of the last bet the server-rendered part of `points` covers.
+  // The time of the latest bet among the rows the server-rendered part of
+  // `points` was made from.
   serverLastBetTime: number | undefined
   contract: CPMMMultiContract
   showResolver: boolean
