@@ -2,13 +2,19 @@ import { Answer } from './answer'
 import { getAnswerProbability } from './calculate'
 import { MultiContract } from './contract'
 import {
+  addLivePoints,
   addMultiPoints,
   chooseChartPoints,
+  FetchedMultiPoints,
   getDefaultGraphedAnswerIds,
   getFittedProbDomain,
   getKnownStepValueAt,
   getStepValueAt,
+  getTailToReconcile,
+  getUncoveredAnswerIds,
   getWholeHistoryCoverage,
+  getZoomWindow,
+  latestDefined,
   MAX_DEFAULT_GRAPHED_ANSWERS,
   movedProbability,
   widerHistory,
@@ -726,9 +732,16 @@ describe('withLivePoints', () => {
     ],
     b: [{ x: 160, y: 0.6 }],
   }
+  const stretch = {
+    min: 90,
+    max: 120,
+    data,
+    answerIds: ['a'],
+    latestBetTime: 100,
+  }
 
   it('adds the live points that fall in a stretch that ran up to the last bet', () => {
-    const fetched = { min: 90, max: 120, reachedLastBet: true, data }
+    const fetched = { ...stretch, reachedLastBet: true }
     expect(withLivePoints(fetched, live)).toEqual({
       a: [
         { x: 100, y: 0.4 },
@@ -739,12 +752,12 @@ describe('withLivePoints', () => {
   })
 
   it('adds nothing to a stretch that ended before the last bet', () => {
-    const fetched = { min: 90, max: 120, reachedLastBet: false, data }
+    const fetched = { ...stretch, reachedLastBet: false }
     expect(withLivePoints(fetched, live)).toBe(data)
   })
 
   it('returns the fetched points themselves when nothing live applies', () => {
-    const fetched = { min: 90, max: 120, reachedLastBet: true, data }
+    const fetched = { ...stretch, reachedLastBet: true }
     expect(withLivePoints(fetched, {})).toBe(data)
     expect(withLivePoints(fetched, { a: [{ x: 50, y: 0.1 }] })).toBe(data)
   })
@@ -802,16 +815,13 @@ describe('chooseChartPoints', () => {
     min: number,
     max: number,
     reachedLastBet: boolean
-  ): {
-    min: number
-    max: number
-    reachedLastBet: boolean
-    data: typeof window
-  } => ({
+  ): FetchedMultiPoints => ({
     min,
     max,
     reachedLastBet,
     data: window,
+    answerIds: ['a'],
+    latestBetTime: undefined,
   })
   const base = {
     isZoomed: true,
@@ -906,5 +916,238 @@ describe('chooseChartPoints', () => {
         zoomed: fetched(399, 1001, true),
       })
     ).toBe(wholeHistory)
+  })
+})
+
+describe('getZoomWindow', () => {
+  const base = { createdTime: 1_000_000, leadMs: 1000 }
+
+  it('runs from a little before the left edge to a millisecond past the last bet', () => {
+    expect(
+      getZoomWindow({
+        ...base,
+        view: { min: 5_000_000, max: 9_000_000 },
+        lastBetTime: 8_000_000,
+      })
+    ).toEqual({ min: 4_999_000, max: 8_000_001, reachedLastBet: true })
+  })
+
+  it('stops at the right edge of a view that ends before the last bet', () => {
+    expect(
+      getZoomWindow({
+        ...base,
+        view: { min: 5_000_000, max: 6_000_000 },
+        lastBetTime: 8_000_000,
+      })
+    ).toEqual({ min: 4_999_000, max: 6_000_001, reachedLastBet: false })
+  })
+
+  it('counts a view that ends exactly on the last bet as reaching it', () => {
+    expect(
+      getZoomWindow({
+        ...base,
+        view: { min: 5_000_000, max: 8_000_000 },
+        lastBetTime: 8_000_000,
+      }).reachedLastBet
+    ).toBe(true)
+  })
+
+  it('starts no earlier than a little before the market', () => {
+    expect(
+      getZoomWindow({
+        ...base,
+        view: { min: 0, max: 9_000_000 },
+        lastBetTime: 8_000_000,
+      }).min
+    ).toBe(999_000)
+  })
+
+  it('decides whether it reaches the last bet against the same bet as its end', () => {
+    // A bet lands while the fetch is waiting to be sent. Worked out again
+    // with the new last bet, the window ends past it and says so. Its end must
+    // never come from one moment and the flag from another.
+    for (const lastBetTime of [8_000_000, 8_000_050]) {
+      const w = getZoomWindow({
+        ...base,
+        view: { min: 5_000_000, max: 9_000_000 },
+        lastBetTime,
+      })
+      expect(w.max).toBe(lastBetTime + 1)
+      expect(w.reachedLastBet).toBe(true)
+    }
+  })
+})
+
+describe('getUncoveredAnswerIds', () => {
+  const knownIds = ['a', 'b', 'c', 'd']
+
+  it('is empty when the page was rendered with a line for every answer needed', () => {
+    expect(
+      getUncoveredAnswerIds({
+        neededIds: ['a', 'b'],
+        knownIds,
+        serverIds: ['a', 'b', 'c'],
+        fetchedIds: undefined,
+      })
+    ).toEqual([])
+  })
+
+  it('lists the answers with neither a rendered line nor a place in a fetched history', () => {
+    expect(
+      getUncoveredAnswerIds({
+        neededIds: ['a', 'b', 'c'],
+        knownIds,
+        serverIds: ['a'],
+        fetchedIds: undefined,
+      })
+    ).toEqual(['b', 'c'])
+    expect(
+      getUncoveredAnswerIds({
+        neededIds: ['a', 'b', 'c'],
+        knownIds,
+        serverIds: ['a'],
+        fetchedIds: ['b'],
+      })
+    ).toEqual(['c'])
+  })
+
+  it('does not take one fetched history as covering answers it was not fetched for', () => {
+    // The first fetch went out with the page's shortened answer list. The
+    // user then picks an answer from the full list.
+    expect(
+      getUncoveredAnswerIds({
+        neededIds: ['d'],
+        knownIds,
+        serverIds: [],
+        fetchedIds: ['a', 'b', 'c'],
+      })
+    ).toEqual(['d'])
+  })
+
+  it('counts an answer a fetch covered as covered even if nothing came back for it', () => {
+    // Otherwise an answer nobody has bet on would be fetched for ever.
+    expect(
+      getUncoveredAnswerIds({
+        neededIds: ['c'],
+        knownIds,
+        serverIds: [],
+        fetchedIds: ['a', 'b', 'c'],
+      })
+    ).toEqual([])
+  })
+
+  it('ignores an answer the market does not have', () => {
+    expect(
+      getUncoveredAnswerIds({
+        neededIds: ['gone'],
+        knownIds,
+        serverIds: [],
+        fetchedIds: undefined,
+      })
+    ).toEqual([])
+  })
+})
+
+describe('latestDefined', () => {
+  it('is the latest of the times that are known', () => {
+    expect(latestDefined([undefined, 5, 9, undefined, 7])).toBe(9)
+    expect(latestDefined([0])).toBe(0)
+  })
+
+  it('is undefined when none is known', () => {
+    expect(latestDefined([])).toBeUndefined()
+    expect(latestDefined([undefined, undefined])).toBeUndefined()
+  })
+})
+
+describe('getTailToReconcile', () => {
+  it('is nothing when the chart already holds the last bet the page knows of', () => {
+    expect(
+      getTailToReconcile({
+        completeUntil: 500,
+        lastBetTime: 500,
+        latestPageBetTime: undefined,
+      })
+    ).toBeUndefined()
+    expect(
+      getTailToReconcile({
+        completeUntil: 500,
+        lastBetTime: 400,
+        latestPageBetTime: 500,
+      })
+    ).toBeUndefined()
+  })
+
+  it('runs from the last bet the chart is sure of to the last bet the page knows of', () => {
+    // A bet made between the server render and the page subscribing: only
+    // the page's own feed knows of it.
+    expect(
+      getTailToReconcile({
+        completeUntil: 500,
+        lastBetTime: 500,
+        latestPageBetTime: 800,
+      })
+    ).toEqual({ min: 499, max: 801 })
+    // Live bets since the last reconciliation: the contract knows of them.
+    expect(
+      getTailToReconcile({
+        completeUntil: 500,
+        lastBetTime: 900,
+        latestPageBetTime: 800,
+      })
+    ).toEqual({ min: 499, max: 901 })
+  })
+
+  it('is nothing while there is no complete history to extend', () => {
+    expect(
+      getTailToReconcile({
+        completeUntil: undefined,
+        lastBetTime: 900,
+        latestPageBetTime: 800,
+      })
+    ).toBeUndefined()
+  })
+})
+
+describe('addLivePoints', () => {
+  const run = (count: number) =>
+    Array.from({ length: count }, (_, i) => ({ x: i, y: (i % 7) / 10 }))
+
+  it('adds points like addMultiPoints while lines are short', () => {
+    const live = { a: run(10) }
+    const result = addLivePoints(live, { a: [{ x: 10, y: 0.9 }] }, 100)
+    expect(result.a).toEqual([...run(10), { x: 10, y: 0.9 }])
+    expect(addLivePoints(live, { a: [{ x: 9, y: 0.2 }] }, 100)).toBe(live)
+    expect(addLivePoints(live, {}, 100)).toBe(live)
+  })
+
+  it('keeps a line that outgrows the limit to a bounded length', () => {
+    let live: { [id: string]: { x: number; y: number }[] } = {}
+    let thinnings = 0
+    for (let i = 0; i < 5000; i++) {
+      const lengthBefore = live.a?.length ?? 0
+      live = addLivePoints(live, { a: [{ x: i, y: (i % 7) / 10 }] }, 100)
+      expect(live.a.length).toBeLessThanOrEqual(100)
+      if (live.a.length <= lengthBefore) {
+        // The line was just thinned. Its newest half is as it came.
+        thinnings++
+        expect(live.a.slice(-50)).toEqual(run(i + 1).slice(-50))
+      }
+    }
+    expect(thinnings).toBeGreaterThan(10)
+    // Still in time order.
+    expect(live.a.every((p, i) => i === 0 || live.a[i - 1].x <= p.x)).toBe(true)
+    // The thinned part still spans the levels the line reached.
+    expect(Math.min(...live.a.map((p) => p.y))).toBe(0)
+    expect(Math.max(...live.a.map((p) => p.y))).toBe(0.6)
+  })
+
+  it('thins only the lines that grew', () => {
+    const quiet = run(150)
+    const live = { quiet, busy: run(100) }
+    const result = addLivePoints(live, { busy: [{ x: 100, y: 0.5 }] }, 100)
+    // `quiet` is over the limit but gained nothing: left as it is.
+    expect(result.quiet).toBe(quiet)
+    expect(result.busy.length).toBeLessThanOrEqual(100)
   })
 })

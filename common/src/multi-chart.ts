@@ -1,7 +1,7 @@
 import { orderBy, sortBy } from 'lodash'
 import { Answer } from './answer'
 import { getAnswerProbability } from './calculate'
-import { MultiPoints } from './chart'
+import { maxMinBin, MultiPoints } from './chart'
 import { MultiContract } from './contract'
 
 // Pure helpers for the multiple choice market chart.
@@ -216,6 +216,117 @@ export type FetchedMultiPoints = {
   // Whether it ran up to the market's last bet at the time.
   reachedLastBet: boolean
   data: MultiPoints
+  // The answers the market had when it was asked for. `data` has a line for
+  // each, empty if nothing is known of it, and none for an answer that turned
+  // up later.
+  answerIds: string[]
+  // The time of the latest bet that came back, if any did.
+  latestBetTime: number | undefined
+}
+
+// The stretch to fetch for a zoomed view: from a little before its left edge,
+// or before the market opened, to a millisecond past the earlier of its right
+// edge and the market's last bet. A window that reached past the last bet
+// could be answered now and the answer reused later, when it no longer holds
+// every bet of the window.
+//
+// Everything is read off one snapshot, so whether the window runs up to the
+// last bet is decided against the same last bet as its end.
+export const getZoomWindow = (args: {
+  // What is on screen, in milliseconds.
+  view: { min: number; max: number }
+  createdTime: number
+  lastBetTime: number
+  // How far before the left edge to start.
+  leadMs: number
+}) => {
+  const { view, createdTime, lastBetTime, leadMs } = args
+  return {
+    min: Math.max(view.min, createdTime) - leadMs,
+    max: Math.min(view.max, lastBetTime) + 1,
+    reachedLastBet: view.max >= lastBetTime,
+  }
+}
+
+// The answers the chart needs a whole history for and has none: not rendered
+// with the page, and not among the answers a fetched whole history covers.
+// Only answers the market has now count. One that is not there cannot be
+// fetched, and asking again would not change that.
+export const getUncoveredAnswerIds = (args: {
+  // The answers on the chart, and any being previewed.
+  neededIds: string[]
+  // The market's answers now.
+  knownIds: string[]
+  // The answers the page was rendered with a line for.
+  serverIds: string[]
+  // The answers the fetched whole history covers, if there is one.
+  fetchedIds: string[] | undefined
+}) => {
+  const known = new Set(args.knownIds)
+  const covered = new Set([...args.serverIds, ...(args.fetchedIds ?? [])])
+  return args.neededIds.filter((id) => known.has(id) && !covered.has(id))
+}
+
+// The latest of the times given, leaving out the undefined ones. Undefined if
+// there are none.
+export const latestDefined = (times: (number | undefined)[]) => {
+  let latest: number | undefined
+  for (const t of times)
+    if (t !== undefined && (latest === undefined || t > latest)) latest = t
+  return latest
+}
+
+// The stretch to fetch so that the chart again holds every move up to the
+// last bet the page knows of. Undefined if it already does, or if there is
+// nothing complete to extend yet.
+//
+// `completeUntil` is the last bet the chart's whole history is sure to
+// include: the server render's, a fetched whole history's or an earlier
+// tail's. Bets since then reach the chart over the live feed, which can miss
+// some: it starts after the page was rendered, and a dropped connection only
+// resubscribes. The page's own feed catches up on those, but without the rows
+// that move the other answers.
+export const getTailToReconcile = (args: {
+  completeUntil: number | undefined
+  // The last bet the live contract knows of.
+  lastBetTime: number
+  // The newest bet the page's own feed holds, if any.
+  latestPageBetTime: number | undefined
+}) => {
+  const { completeUntil } = args
+  if (completeUntil === undefined) return undefined
+  const known = Math.max(args.lastBetTime, args.latestPageBetTime ?? -Infinity)
+  if (known <= completeUntil) return undefined
+  // From a millisecond before, so that every row of that last bet's
+  // millisecond comes back (both ends of a request are exclusive).
+  return { min: completeUntil - 1, max: known + 1 }
+}
+
+// Adds points to the live lines and keeps each line to a bounded length. A
+// page left open on a busy market would otherwise keep every move of every
+// answer for as long as it is open.
+//
+// A line that grows past `maxPerLine` keeps its newest half as it is and has
+// the older part thinned to the lowest, highest and middle point of each of a
+// few stretches, the way fetched history is.
+export const addLivePoints = (
+  live: MultiPoints,
+  additions: MultiPoints,
+  maxPerLine: number
+): MultiPoints => {
+  const added = addMultiPoints(live, additions)
+  if (added === live) return live
+  let result = added
+  for (const answerId of Object.keys(additions)) {
+    const line = added[answerId]
+    if (!line || line.length <= maxPerLine) continue
+    const keep = Math.floor(maxPerLine / 2)
+    const older = line.slice(0, line.length - keep)
+    const thinned = maxMinBin(older, Math.max(1, Math.floor(maxPerLine / 8)))
+    if (result === added) result = { ...added }
+    result[answerId] = [...thinned, ...line.slice(line.length - keep)]
+  }
+  return result
 }
 
 // Fetched points, with the bets that have arrived live since added. A stretch

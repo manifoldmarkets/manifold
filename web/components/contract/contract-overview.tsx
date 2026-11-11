@@ -109,6 +109,10 @@ export const ContractOverview = memo(
     serverLastBetTime?: number
     // The answers the page was rendered with chart points for.
     serverPointAnswerIds?: string[]
+    // The time of the newest bet the page's own feed holds, if any.
+    latestPageBetTime?: number
+    // Whether the contract holds every answer of the market yet.
+    hasAllAnswers?: boolean
     showResolver: boolean
     showUnresolver: boolean
     resolutionRating?: ReactNode
@@ -181,6 +185,8 @@ export const ContractOverview = memo(
             points={betPoints as MultiPoints}
             serverLastBetTime={props.serverLastBetTime}
             serverPointAnswerIds={props.serverPointAnswerIds ?? NO_ANSWER_IDS}
+            latestPageBetTime={props.latestPageBetTime}
+            hasAllAnswers={props.hasAllAnswers ?? true}
             showResolver={showResolver}
             showUnresolver={showUnresolver}
             setShowResolver={setShowResolver}
@@ -379,6 +385,10 @@ const ChoiceOverview = (props: {
   serverLastBetTime: number | undefined
   // The answers the page was rendered with chart points for.
   serverPointAnswerIds: string[]
+  // The time of the newest bet the page's own feed holds, if any.
+  latestPageBetTime: number | undefined
+  // Whether the contract holds every answer of the market yet.
+  hasAllAnswers: boolean
   contract: CPMMMultiContract
   showResolver: boolean
   showUnresolver: boolean
@@ -540,8 +550,11 @@ const ChoiceOverview = (props: {
     lastBetTime: contract.lastBetTime ?? contract.createdTime,
     serverLastBetTime: props.serverLastBetTime,
     serverPointAnswerIds: props.serverPointAnswerIds,
+    latestPageBetTime: props.latestPageBetTime,
+    hasAllAnswers: props.hasAllAnswers,
     isZoomed: currentTimePeriod !== 'allTime',
     graphedAnswerIds,
+    previewStore: hoverStore,
   })
   return (
     <>

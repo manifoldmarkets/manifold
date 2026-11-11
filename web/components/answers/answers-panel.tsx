@@ -161,7 +161,7 @@ export const AnswersPanel = memo(function AnswersPanel(props: {
       (answer) =>
         selectedAnswerIds.includes(answer.id) || searchInAny(query, answer.text)
     )
-  }, [sortedAnswers, query])
+  }, [sortedAnswers, query, selectedAnswerIds])
 
   const answersToShow = query
     ? searchedAnswers

@@ -23,7 +23,7 @@ import { base64toPoints } from 'common/edge/og'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { getSportsLeagueLabel } from 'common/sports-league-label'
 import { DAY_MS } from 'common/util/time'
-import { uniqBy } from 'lodash'
+import { maxBy, uniqBy } from 'lodash'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -164,15 +164,16 @@ export function ContractPageContent(props: ContractParams) {
     [multiPointsString]
   )
 
-  const { bets, totalBets, yourNewBets, betPoints } = useBetData({
-    contractId: liveContract.id,
-    outcomeType: liveContract.outcomeType,
-    userId: user?.id,
-    lastBetTime: props.lastBetTime,
-    totalBets: props.totalBets,
-    pointsString: pointsString,
-    multiPointsString: multiPointsString,
-  })
+  const { bets, totalBets, yourNewBets, betPoints, latestNewBetTime } =
+    useBetData({
+      contractId: liveContract.id,
+      outcomeType: liveContract.outcomeType,
+      userId: user?.id,
+      lastBetTime: props.lastBetTime,
+      totalBets: props.totalBets,
+      pointsString: pointsString,
+      multiPointsString: multiPointsString,
+    })
 
   const { isResolved, outcomeType, resolution, closeTime, creatorId } =
     liveContract
@@ -438,6 +439,8 @@ export function ContractPageContent(props: ContractParams) {
                     betPoints={betPoints}
                     serverLastBetTime={props.pointsLatestBetTime}
                     serverPointAnswerIds={serverPointAnswerIds}
+                    latestPageBetTime={latestNewBetTime}
+                    hasAllAnswers={hasAllAnswers}
                     showResolver={showResolver}
                     showUnresolver={showUnresolver}
                     resolutionRating={
@@ -780,10 +783,18 @@ const useBetData = (props: {
     }
   }, [pointsString, serverMultiPoints, newBets.length])
 
+  // The time of the newest bet this feed has brought since the page was
+  // rendered, if it has brought any.
+  const latestNewBetTime = useMemo(
+    () => maxBy(newBets, (bet) => bet.createdTime)?.createdTime,
+    [newBets]
+  )
+
   return {
     bets,
     totalBets,
     yourNewBets,
     betPoints,
+    latestNewBetTime,
   }
 }
