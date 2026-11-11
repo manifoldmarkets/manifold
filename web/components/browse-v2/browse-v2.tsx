@@ -124,13 +124,14 @@ function BrowseV2Inner() {
       ? showHubMarkets
       : !!sessionFilters.showHubMarkets,
   }
-  // The filters as the person set them, a reset included: the hub choice in
-  // them is the one to remember. Filters set for them (a link, a wider
-  // search) go to setSessionFilters and leave the remembered choice alone.
-  const setFilters = (next: BrowseFilters) => {
-    // Written only when it changes, so a tab that never touched the choice
-    // cannot undo what another tab chose.
-    if (!!next.showHubMarkets !== showHubMarkets)
+  // The filters as the person set them: the hub choice in them is the one
+  // to remember. Filters set for them (a link, a wider search) go to
+  // setSessionFilters and carry the hub choice over as it was.
+  const setFilters = (next: BrowseFilters, reset = false) => {
+    // Written when the person changes it, and always when they reset. Not
+    // on any other change: a tab that never touched the choice must not
+    // undo what another tab chose.
+    if (reset || !!next.showHubMarkets !== showHubMarkets)
       setShowHubMarkets(!!next.showHubMarkets)
     setSessionFilters(next)
   }
@@ -192,12 +193,13 @@ function BrowseV2Inner() {
       (x) => li && x.key === Number(li)
     )?.key
     if (status || type || liquidity)
-      setSessionFilters({
+      setSessionFilters((current) => ({
         ...DEFAULT_FILTERS,
+        showHubMarkets: current.showHubMarkets,
         ...(status ? { status } : {}),
         ...(type ? { contractType: type } : {}),
         ...(liquidity ? { liquidity } : {}),
-      })
+      }))
     setUrlReady(true)
   }, [router.isReady])
 
@@ -303,9 +305,9 @@ function BrowseV2Inner() {
     track('browse v2 topic', { topic: next.key })
     setTopicChoice(next)
   }
-  const onFilters = (next: BrowseFilters) => {
+  const onFilters = (next: BrowseFilters, reset?: boolean) => {
     track('browse v2 filters', { ...next })
-    setFilters(next)
+    setFilters(next, reset)
   }
   const onLayout = (next: BrowseLayout) => {
     track('browse v2 layout', { layout: next })
@@ -321,7 +323,7 @@ function BrowseV2Inner() {
   }
   const resetFilters = () => {
     setTopicChoice(ALL_TOPICS)
-    setFilters(DEFAULT_FILTERS)
+    setFilters(DEFAULT_FILTERS, true)
     setInput('')
   }
   const section = `browse-v2 ${searching ? 'search' : lens} ${layout}`
@@ -498,10 +500,11 @@ function BrowseV2Inner() {
                               // Hub markets are never folded out of search
                               // results, so the choice has no part in this.
                               setTopicChoice(ALL_TOPICS)
-                              setSessionFilters({
+                              setSessionFilters((current) => ({
                                 ...DEFAULT_FILTERS,
+                                showHubMarkets: current.showHubMarkets,
                                 status: 'all',
-                              })
+                              }))
                             }
                       }
                     >
