@@ -49,7 +49,8 @@ const remote =
 // figures: the ratio implied by its indicative midpoint of ~$320k total on
 // ~$192k base (~$30k target bonus + ~$98k equity). Rounded to $5k.
 
-// Base ranges verified against each official sourceUrl on 25 Oct 2026. These are
+// Base ranges verified against each official sourceUrl on 25 Oct 2026; all five
+// roles still open and unedited on Upstart's Greenhouse board on 11 Nov. These are
 // specific openings, not an automatically maintained feed. Remove a filled
 // role from this array via PR, following the existing board's removal process.
 // comp is the collapsed-card figure (US estimate); compDetails lists the
