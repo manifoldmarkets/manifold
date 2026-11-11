@@ -92,9 +92,9 @@ export default function JobsPage() {
                       <img
                         src="/upstart-mark.png"
                         alt=""
-                        width={104}
-                        height={92}
-                        className="h-auto w-7"
+                        width={110}
+                        height={77}
+                        className="h-auto w-8"
                       />
                     </div>
                     <div className="min-w-0 flex-1">
