@@ -211,9 +211,12 @@ const getSplitBetPoints = async (
       ...options,
       beforeTime: splitTime,
     }),
+    // Both ends of a request are exclusive, so a bet made on the split
+    // itself would be in neither half. The recent half starts a millisecond
+    // early to take it; a bet that lands in both is dropped as a duplicate.
     fetchBetPoints(contractId, {
       ...options,
-      afterTime: splitTime,
+      afterTime: splitTime - 1,
     }),
   ])
   return {

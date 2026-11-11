@@ -1,8 +1,12 @@
 import { Answer } from './answer'
+import { getAnswerProbability } from './calculate'
 import { MultiContract } from './contract'
 import {
   getDefaultGraphedAnswerIds,
+  getFittedProbDomain,
+  getKnownStepValueAt,
   getStepValueAt,
+  getWholeHistoryCoverage,
   MAX_DEFAULT_GRAPHED_ANSWERS,
 } from './multi-chart'
 
@@ -140,7 +144,97 @@ describe('getDefaultGraphedAnswerIds, resolved markets', () => {
   })
 })
 
+describe('getDefaultGraphedAnswerIds, payouts before probabilities', () => {
+  // Six answers that paid nothing, each at 15% in its pool, and two that
+  // shared the payout 99 to 1 from pools at 9.9% and 0.1%.
+  const unpaid = ['u1', 'u2', 'u3', 'u4', 'u5', 'u6'].map((id, i) =>
+    makeAnswer(id, 0.15, i)
+  )
+  const big = makeAnswer('big', 0.099, 6)
+  const small = makeAnswer('small', 0.001, 7)
+  const answers = [...unpaid, big, small]
+  const contract = {
+    ...makeContract(answers),
+    resolutions: { big: 99, small: 1 },
+  } as unknown as MultiContract
+
+  it('ranks any payout above every answer that paid nothing', () => {
+    expect(getDefaultGraphedAnswerIds(contract, answers)).toEqual([
+      'big',
+      'small',
+      'u1',
+      'u2',
+      'u3',
+      'u4',
+    ])
+  })
+
+  it('lets a paid answer take the place of an unpaid one already drawn', () => {
+    const drawn = unpaid.map((a) => a.id)
+    expect(getDefaultGraphedAnswerIds(contract, answers, drawn)).toEqual([
+      'big',
+      'small',
+      'u1',
+      'u2',
+      'u3',
+      'u4',
+    ])
+  })
+})
+
 describe('getDefaultGraphedAnswerIds, keeping the current lines', () => {
+  it('lets a clear leader in, however closely the drawn answers are bunched', () => {
+    // Six drawn answers level at 10%, and a seventh that has risen to 40%.
+    const level = ['a', 'b', 'c', 'd', 'e', 'f'].map((id, i) =>
+      makeAnswer(id, 0.1, i)
+    )
+    const leader = makeAnswer('leader', 0.4, 6)
+    const list = [...level, leader]
+    expect(
+      getDefaultGraphedAnswerIds(
+        makeContract(list),
+        list,
+        level.map((a) => a.id)
+      )
+    ).toEqual(['leader', 'a', 'b', 'c', 'd', 'e'])
+  })
+
+  it('fills free places with the best of the rest, displacing nothing', () => {
+    const drawn = ['a', 'b', 'c'].map((id, i) => makeAnswer(id, 0.02, i))
+    const risen = ['x', 'y'].map((id, i) => makeAnswer(id, 0.3, i + 3))
+    const rest = ['p', 'q', 'r', 's'].map((id, i) =>
+      makeAnswer(id, 0.021, i + 5)
+    )
+    const list = [...drawn, ...risen, ...rest]
+    // Three drawn, six places: x, y and p take the free ones. Nothing left
+    // outside leads a drawn answer by more than a point.
+    expect(
+      getDefaultGraphedAnswerIds(
+        makeContract(list),
+        list,
+        drawn.map((a) => a.id)
+      )
+    ).toEqual(['x', 'y', 'p', 'a', 'b', 'c'])
+  })
+
+  it('replaces every drawn answer that is clearly outranked, and no other', () => {
+    const drawn = ['a', 'b', 'c', 'd', 'e', 'f'].map((id, i) =>
+      makeAnswer(id, 0.02, i)
+    )
+    const risen = ['x', 'y'].map((id, i) => makeAnswer(id, 0.3, i + 6))
+    const close = makeAnswer('z', 0.025, 8)
+    const list = [...drawn, ...risen, close]
+    // x and y take the places of the two last drawn answers. z leads the rest
+    // by half a point, which is not enough to take a place.
+    expect(
+      getDefaultGraphedAnswerIds(
+        makeContract(list),
+        list,
+        drawn.map((a) => a.id)
+      )
+    ).toEqual(['x', 'y', 'a', 'b', 'c', 'd'])
+  })
+
   const answers = (seventh: number) => [
     makeAnswer('a', 0.4, 0),
     makeAnswer('b', 0.2, 1),
@@ -203,6 +297,111 @@ describe('getDefaultGraphedAnswerIds, keeping the current lines', () => {
   })
 })
 
+describe('getDefaultGraphedAnswerIds, on random markets', () => {
+  let seed = 11
+  const random = () => {
+    seed = (seed * 16807) % 2147483647
+    return seed / 2147483647
+  }
+  const pickSome = <T>(list: T[], chance: number) =>
+    list.filter(() => random() < chance)
+
+  it('keeps its promises whatever the answers, payouts and current lines', () => {
+    for (let trial = 0; trial < 3000; trial++) {
+      const count = Math.floor(random() * 13)
+      // Steps of 0.4 points, so that many answers tie and none sits exactly
+      // one point (the margin) from another.
+      const answers = Array.from({ length: count }, (_, i) =>
+        makeAnswer(`a${i}`, Math.floor(random() * 40) * 0.004, i)
+      )
+      const paid = random() < 0.4 ? pickSome(answers, 0.3) : []
+      const resolutions = Object.fromEntries(
+        paid.map((a) => [a.id, 1 + Math.floor(random() * 3) * 20])
+      )
+      const contract = {
+        ...makeContract(answers),
+        ...(paid.length > 0 ? { resolutions } : {}),
+      } as unknown as MultiContract
+      const candidates = random() < 0.2 ? pickSome(answers, 0.7) : answers
+      // What is drawn now: up to six answers, some of them possibly gone.
+      const current = [
+        ...pickSome(answers, 0.5)
+          .slice(0, 5)
+          .map((a) => a.id),
+        ...(random() < 0.1 ? ['gone'] : []),
+      ]
+
+      const payout = (id: string) => resolutions[id] ?? 0
+      const prob = (id: string) => getAnswerProbability(contract, id)
+      const clearlyOutranks = (a: string, b: string) =>
+        payout(a) > payout(b) ||
+        (payout(a) === payout(b) && prob(a) > prob(b) + 0.01)
+
+      const ids = getDefaultGraphedAnswerIds(contract, candidates, current)
+      const candidateIds = candidates.map((a) => a.id)
+      const left = candidateIds.filter((id) => !ids.includes(id))
+
+      // As many as there are places for, each a candidate, none twice.
+      expect(ids).toHaveLength(
+        Math.min(candidates.length, MAX_DEFAULT_GRAPHED_ANSWERS)
+      )
+      expect(new Set(ids).size).toBe(ids.length)
+      expect(ids.every((id) => candidateIds.includes(id))).toBe(true)
+
+      // Nothing left out clearly outranks anything drawn.
+      for (const out of left)
+        for (const drawn of ids) expect(clearlyOutranks(out, drawn)).toBe(false)
+
+      // And of all the choices that leave nothing clearly better out, it
+      // keeps as many of the lines already drawn as any. Checked against
+      // every possible choice.
+      const beatenBy = candidateIds.map((id) =>
+        candidateIds.reduce(
+          (mask, other, i) =>
+            clearlyOutranks(other, id) ? mask | (1 << i) : mask,
+          0
+        )
+      )
+      const drawnNow = candidateIds.reduce(
+        (mask, id, i) => (current.includes(id) ? mask | (1 << i) : mask),
+        0
+      )
+      const size = (mask: number) => {
+        let count = 0
+        for (let m = mask; m; m &= m - 1) count++
+        return count
+      }
+      let mostKept = -1
+      for (let choice = 0; choice < 1 << candidateIds.length; choice++) {
+        if (size(choice) !== ids.length) continue
+        const leavesNothingBetterOut = beatenBy.every(
+          (beaters, i) => !(choice & (1 << i)) || (beaters & ~choice) === 0
+        )
+        if (leavesNothingBetterOut)
+          mostKept = Math.max(mostKept, size(choice & drawnNow))
+      }
+      expect(ids.filter((id) => current.includes(id))).toHaveLength(mostKept)
+
+      // Asked again with its own answer, it does not move.
+      expect(getDefaultGraphedAnswerIds(contract, candidates, ids)).toEqual(ids)
+
+      // With nothing drawn, it is the top of the ranking: payout, then
+      // probability, then the order the answers were created in.
+      const ranking = [...candidates]
+        .sort(
+          (a, b) =>
+            payout(b.id) - payout(a.id) ||
+            prob(b.id) - prob(a.id) ||
+            a.index - b.index
+        )
+        .map((a) => a.id)
+      expect(getDefaultGraphedAnswerIds(contract, candidates)).toEqual(
+        ranking.slice(0, MAX_DEFAULT_GRAPHED_ANSWERS)
+      )
+    }
+  })
+})
+
 describe('getStepValueAt', () => {
   const points = [
     { x: 10, y: 0.1 },
@@ -243,6 +442,135 @@ describe('getStepValueAt', () => {
       const t = Math.floor(random() * (x + 4)) - 2
       const scanned = line.filter((p) => p.x <= t).pop()?.y
       expect(getStepValueAt(line, t)).toBe(scanned)
+    }
+  })
+})
+
+describe('getKnownStepValueAt', () => {
+  const server = { a: [{ x: 10, y: 0.4 }], b: [{ x: 10, y: 0.6 }] }
+  const fetched = { a: [{ x: 10, y: 0.45 }], b: [] }
+
+  it('reads the first history that covers the time', () => {
+    const histories = [
+      { points: fetched, coveredUntil: 100 },
+      { points: server, coveredUntil: 50 },
+    ]
+    expect(getKnownStepValueAt(histories, 'a', 40)).toBe(0.45)
+    expect(getKnownStepValueAt(histories, 'a', 80)).toBe(0.45)
+  })
+
+  it('falls through to the next history when one has no line for the answer', () => {
+    // A fetch can come back with no row for an answer the server render has.
+    const histories = [
+      { points: fetched, coveredUntil: 100 },
+      { points: server, coveredUntil: 50 },
+    ]
+    expect(getKnownStepValueAt(histories, 'b', 40)).toBe(0.6)
+    // But not past what that history covers.
+    expect(getKnownStepValueAt(histories, 'b', 80)).toBeUndefined()
+  })
+
+  it('never answers for a time no history covers', () => {
+    const histories = [
+      { points: fetched, coveredUntil: 100 },
+      { points: server, coveredUntil: undefined },
+    ]
+    expect(getKnownStepValueAt(histories, 'a', 101)).toBeUndefined()
+    expect(getKnownStepValueAt(histories, 'b', 40)).toBeUndefined()
+    expect(getKnownStepValueAt([], 'a', 40)).toBeUndefined()
+  })
+
+  it('counts the last covered instant as covered', () => {
+    expect(
+      getKnownStepValueAt([{ points: server, coveredUntil: 50 }], 'a', 50)
+    ).toBe(0.4)
+    expect(
+      getKnownStepValueAt([{ points: server, coveredUntil: 50 }], 'a', 51)
+    ).toBeUndefined()
+  })
+})
+
+describe('getWholeHistoryCoverage', () => {
+  const created = 1_000_000
+  const lastBet = 5_000_000
+
+  it('is the last known bet, for a fetch from before the market opened to past that bet', () => {
+    expect(
+      getWholeHistoryCoverage(
+        { min: created - 1000, max: lastBet + 1000 },
+        created,
+        lastBet
+      )
+    ).toBe(lastBet)
+  })
+
+  it('needs both ends, which are exclusive, to clear the market', () => {
+    const coverage = (min: number, max: number) =>
+      getWholeHistoryCoverage({ min, max }, created, lastBet)
+    expect(coverage(created - 1, lastBet + 1)).toBe(lastBet)
+    expect(coverage(created, lastBet + 1)).toBeUndefined()
+    expect(coverage(created - 1, lastBet)).toBeUndefined()
+    expect(coverage(created + 5000, lastBet + 1000)).toBeUndefined()
+    expect(coverage(created - 1000, lastBet - 5000)).toBeUndefined()
+  })
+
+  it('does not vouch for the time after the last known bet', () => {
+    // The fetch asks for a second more than the last known bet and comes back
+    // 100 ms later. Another answer moves 200 ms after that bet: too late for
+    // the response. A window opening 400 ms after it must not read the level
+    // the fetched history shows there, which is already out of date.
+    const fetched = { a: [{ x: lastBet, y: 0.3 }] }
+    const coveredUntil = getWholeHistoryCoverage(
+      { min: created - 1000, max: lastBet + 1000 },
+      created,
+      lastBet
+    )
+    const histories = [{ points: fetched, coveredUntil }]
+    expect(getKnownStepValueAt(histories, 'a', lastBet)).toBe(0.3)
+    expect(getKnownStepValueAt(histories, 'a', lastBet + 400)).toBeUndefined()
+  })
+})
+
+describe('getFittedProbDomain', () => {
+  it('snaps outward to the gridlines', () => {
+    expect(getFittedProbDomain(0.42, 0.58, 20)).toEqual([0.4, 0.6])
+    expect(getFittedProbDomain(0.02, 0.97, 20)).toEqual([0, 1])
+    expect(getFittedProbDomain(0.52, 0.52, 20)).toEqual([0.5, 0.55])
+  })
+
+  it('shows the whole range when there is nothing to fit to', () => {
+    expect(getFittedProbDomain(Infinity, -Infinity, 20)).toEqual([0, 1])
+    expect(getFittedProbDomain(NaN, 0.5, 20)).toEqual([0, 1])
+    expect(getFittedProbDomain(0.5, NaN, 20)).toEqual([0, 1])
+  })
+
+  it('gives a flat line on a gridline an axis with height', () => {
+    const [low, high] = getFittedProbDomain(0.5, 0.5, 20)
+    expect(low).toBeCloseTo(0.45)
+    expect(high).toBeCloseTo(0.55)
+  })
+
+  it('stays within 0 and 1 when it opens a flat line at either end', () => {
+    expect(getFittedProbDomain(0, 0, 20)).toEqual([0, 0.05])
+    expect(getFittedProbDomain(1, 1, 20)).toEqual([0.95, 1])
+  })
+
+  it('always returns a range with height, inside 0 to 1, that holds the lines', () => {
+    let seed = 5
+    const random = () => {
+      seed = (seed * 16807) % 2147483647
+      return seed / 2147483647
+    }
+    for (let trial = 0; trial < 2000; trial++) {
+      const a = Math.floor(random() * 1001) / 1000
+      const b = Math.floor(random() * 1001) / 1000
+      const [min, max] = [Math.min(a, b), Math.max(a, b)]
+      const [low, high] = getFittedProbDomain(min, max, 20)
+      expect(high).toBeGreaterThan(low)
+      expect(low).toBeGreaterThanOrEqual(0)
+      expect(high).toBeLessThanOrEqual(1)
+      expect(low).toBeLessThanOrEqual(min)
+      expect(high).toBeGreaterThanOrEqual(max)
     }
   })
 })

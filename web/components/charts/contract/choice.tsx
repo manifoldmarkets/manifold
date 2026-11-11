@@ -9,6 +9,7 @@ import {
   isBinaryMulti,
   MultiContract,
 } from 'common/contract'
+import { getFittedProbDomain } from 'common/multi-chart'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { buildArray } from 'common/util/array'
 import { formatWithToken, maybePluralize } from 'common/util/format'
@@ -261,20 +262,7 @@ export const ChoiceContractChart = (props: {
       }
     })
 
-    // Nothing to fit to, for instance a past window in which no graphed answer
-    // has a line: show the whole range rather than a broken axis.
-    if (!Number.isFinite(min) || !Number.isFinite(max)) return [0, 1]
-
-    const lowest = Math.floor(min * GRAPH_Y_DIVISOR) / GRAPH_Y_DIVISOR
-    const highest = Math.ceil(max * GRAPH_Y_DIVISOR) / GRAPH_Y_DIVISOR
-    // A flat line on a gridline (an untouched answer at exactly 50%) would
-    // give the axis no height. Open it by a step each way.
-    if (lowest === highest)
-      return [
-        Math.max(0, lowest - 1 / GRAPH_Y_DIVISOR),
-        Math.min(1, highest + 1 / GRAPH_Y_DIVISOR),
-      ]
-    return [lowest, highest]
+    return getFittedProbDomain(min, max, GRAPH_Y_DIVISOR)
   }, [graphedData, zoomY, start, end, now])
 
   const xScale = scaleTime([start, rightmostDate], [0, width])
