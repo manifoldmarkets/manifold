@@ -24,8 +24,12 @@ import { runScript } from './run-script'
 // For a spec registered as AWAITING ITS SOURCE (the 2028 generic-ballot pair)
 // a 404 on its averages is the expected state — VoteHub has not published the
 // key yet — and a fetch that SUCCEEDS is the signal to promote it (see the
-// pending entry in launch-manifest.ts for the steps). Any other failure
-// (5xx, timeout, bad JSON) is reported as an error for every spec alike.
+// pending entry in launch-manifest.ts for the steps). A 404 is ambiguous,
+// though: the series may exist under a key we did not guess, so read the
+// `GET /averages` listing printed above the per-spec lines and check that no
+// similarly named key is present before trusting "still unpublished". Any
+// other failure (5xx, timeout, bad JSON) is reported as an error for every
+// spec alike.
 if (require.main === module)
   runScript(async () => {
     // Guarded like the per-spec fetches below: a failing list endpoint must
@@ -68,7 +72,7 @@ if (require.main === module)
           err.status === 404
         )
           log(
-            `  still unpublished by VoteHub (expected while awaiting): ${err.message}`
+            `  still unpublished by VoteHub under this key (expected while awaiting; check the GET /averages list above for a differently named series): ${err.message}`
           )
         else log.error(`  averages fetch failed: ${err}`)
       }

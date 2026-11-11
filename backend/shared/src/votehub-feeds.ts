@@ -155,9 +155,15 @@ export const GENERIC_BALLOT_2026_SPEC: VoteHubFeedSpec = {
  *   - The average key `generic_ballot_2028` is INFERRED from
  *     `generic_ballot_2026`. It returned 404 on 2026-11-09 and VoteHub listed
  *     no 2028 generic-ballot polls, which is why both feeds are registered
- *     as awaiting their source. Confirm it with list-votehub-averages.ts
- *     before promoting; a different key fails loudly there (HTTP error), not
- *     silently.
+ *     as awaiting their source. While they are awaiting, a 404 is
+ *     AMBIGUOUS: it means either that VoteHub has not published the series
+ *     yet or that they published it under a different key, and
+ *     list-votehub-averages.ts deliberately reports it as "still
+ *     unpublished" rather than as an error. So before promoting, read the
+ *     `GET /averages` listing that script prints first and confirm the key
+ *     is absent (still waiting) rather than present under another name
+ *     (fix the constant). Once the feeds are live, a wrong key is a plain
+ *     HTTP error from the publisher, reported like any other failure.
  *
  * Rules start from the Trump numbers, as the 2026 feed's did. Early in a
  * cycle, generic-ballot polling is far thinner than presidential approval,
