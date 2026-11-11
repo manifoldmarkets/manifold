@@ -59,7 +59,7 @@ function page(options = {}) {
       'common/util/json': json,
       'web/lib/firebase/users': { firebaseLogin: () => new Promise(() => {}) },
       'web/lib/native/is-native': { getIsNative: () => false },
-      'web/lib/service/analytics': { track: () => {} },
+      'web/lib/service/analytics': { track: async () => true },
       'web/lib/util/device-token': { ensureDeviceToken: () => 'device-1' },
       'web/lib/util/local': {
         safeLocalStorage: local,

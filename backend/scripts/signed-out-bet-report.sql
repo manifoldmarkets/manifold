@@ -1,7 +1,18 @@
 -- Parameters: cohort start, exclusive end, as-of, exposure event name,
--- sign-in event name. A device enters by the one exposure it logs with
--- first = true, so only the cohort window and the day after it are scanned,
--- however long the test has been running.
+-- sign-in event name.
+--
+-- A device enters once, by its enrollment: its earliest exposure stored
+-- within an hour of the first press its browser recorded (firstPressTime,
+-- set once and sent on every exposure). A device that comes back days later
+-- still reports that first press, so it cannot enroll again. The exposures
+-- that qualify fall within two hours of each other, so reading two hours
+-- before the window always finds the earliest. That makes the enrollment
+-- the same event in every report, whatever window is asked for. Everything
+-- else is counted from the device's own enrollment, so reports over
+-- adjacent windows add up to the report over both.
+--
+-- Only the cohort window, the two hours before it and the day after it are
+-- scanned, however long the test has been running.
 with
   events as materialized (
     select
@@ -13,31 +24,36 @@ with
     from
       user_events
     where
-      ts >= $1::timestamptz
-      and ts < least($2::timestamptz + interval '1 day', $3::timestamptz)
+      ts >= $1::timestamptz - interval '2 hours'
+      and ts < least(
+        $2::timestamptz + interval '1 day',
+        $3::timestamptz
+      )
       and name in ($4, $5)
       and data ->> 'environment' = 'production'
       and nullif(data ->> 'deviceId', '') is not null
   ),
-  forced_devices as (
-    -- A QA override taints the whole device, not just the forced presses: it
-    -- may already have an ordinary exposure in the other variant.
-    select distinct
-      device_id
-    from
-      events
-    where
-      data ->> 'forced' = 'true'
-  ),
-  first_exposures as (
+  enrollments as (
     select distinct
       on (device_id) *
     from
       events
     where
       name = $4
-      and data ->> 'first' = 'true'
-      and ts < $2::timestamptz
+      -- Stored within an hour of the first press it reports, by either
+      -- clock. A later visit, or a browser whose clock is far out, does not
+      -- enroll. Anyone can write an event, so the value is checked before
+      -- it is cast.
+      and case
+        when jsonb_typeof(data -> 'firstPressTime') = 'number' then abs(
+          extract(
+            epoch
+            from
+              ts
+          ) * 1000 - (data ->> 'firstPressTime')::numeric
+        ) <= 3600000
+        else false
+      end
     order by
       device_id,
       ts,
@@ -49,10 +65,24 @@ with
       e.ts <= $3::timestamptz - interval '1 hour' as mature_hour,
       e.ts <= $3::timestamptz - interval '1 day' as mature_day
     from
-      first_exposures e
-      left join forced_devices f using (device_id)
+      enrollments e
     where
-      f.device_id is null
+      e.ts >= $1::timestamptz
+      and e.ts < $2::timestamptz
+      -- A QA override taints the whole device, not just the forced presses:
+      -- it may already have an ordinary exposure in the other variant. It
+      -- matters from just before the enrollment to the end of the day its
+      -- outcomes are measured over.
+      and not exists (
+        select
+        from
+          events f
+        where
+          f.device_id = e.device_id
+          and f.data ->> 'forced' = 'true'
+          and f.ts >= e.ts - interval '2 hours'
+          and f.ts < e.ts + interval '1 day'
+      )
   ),
   event_outcomes as (
     select
@@ -75,6 +105,7 @@ with
       entrants e
       join events later on later.device_id = e.device_id
       and later.ts >= e.ts
+      and later.ts < e.ts + interval '1 day'
     group by
       e.device_id
   ),

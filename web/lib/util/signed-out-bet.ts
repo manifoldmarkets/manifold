@@ -4,6 +4,7 @@ import {
   NO_SIGNED_OUT_BET_ASSIGNMENT,
   PENDING_BET_KEY,
   PendingBet,
+  readFirstPressTime,
   readPendingBet,
   readSignedOutBetMode,
   SIGNED_OUT_BET_FIRST_PRESS_KEY,
@@ -33,7 +34,9 @@ export type SignedOutBetPress = {
 // Module state lasts for one page load, like the exposure cache in
 // use-ab-test.ts. The pending bet and the "already asked" mark are also kept
 // in sessionStorage, so they last for the tab and survive a reload.
-const exposedDevices = new Set<string>()
+// Exposures sent, or on their way, this page load. Keyed by device, variant
+// and QA override, so a QA override switched on mid-page is logged as well.
+const exposures = new Set<string>()
 let promptedThisPage = false
 // Whatever sessionStorage held; readPendingBet decides whether it is usable.
 let pendingBet: unknown
@@ -81,12 +84,15 @@ const getEnvironment = () => {
     : 'preview'
 }
 
-// True once per device: the exposure the report enters the device by. Later
-// page loads log their exposure too, but not as the first.
-const takeFirstPress = () => {
-  if (safeLocalStorage?.getItem(SIGNED_OUT_BET_FIRST_PRESS_KEY)) return false
-  safeLocalStorage?.setItem(SIGNED_OUT_BET_FIRST_PRESS_KEY, String(Date.now()))
-  return true
+// When this device first pressed: now, unless it has pressed before.
+const getFirstPressTime = () => {
+  const stored = readFirstPressTime(
+    safeJsonParse(safeLocalStorage?.getItem(SIGNED_OUT_BET_FIRST_PRESS_KEY))
+  )
+  if (stored) return stored
+  const now = Date.now()
+  safeLocalStorage?.setItem(SIGNED_OUT_BET_FIRST_PRESS_KEY, String(now))
+  return now
 }
 
 const wasPrompted = () =>
@@ -106,9 +112,9 @@ const setPendingBet = (bet: PendingBet) => {
 }
 
 // The bet to reopen, if there is a fresh one. Taking it forgets it, so a
-// ticket reopens once. The kill switch also stops a bet remembered just
-// before it was thrown.
-export const takePendingBet = () => {
+// ticket reopens once. A bet remembered just before a switch was thrown
+// follows the switch: 'off' drops it, and 'on' reopens it without reporting.
+export const takePendingBet = (): PendingBet | undefined => {
   if (!pendingBetLoaded) {
     pendingBetLoaded = true
     pendingBet = safeJsonParse(safeSessionStorage?.getItem(PENDING_BET_KEY))
@@ -116,7 +122,11 @@ export const takePendingBet = () => {
   const bet = readPendingBet(pendingBet, Date.now())
   pendingBet = undefined
   safeSessionStorage?.removeItem(PENDING_BET_KEY)
-  return getMode() === 'off' ? undefined : bet
+  const mode = getMode()
+  if (!bet || mode === 'off') return undefined
+  if (mode === 'experiment') return bet
+  const { contractId, location, createdTime, outcome } = bet
+  return { contractId, location, createdTime, ...(outcome ? { outcome } : {}) }
 }
 
 // The welcome steps report in, so a reopened bet can wait its turn.
@@ -161,14 +171,21 @@ export function onSignedOutBetPress(press: SignedOutBetPress) {
   })
 
   if (enrolled) {
-    const deviceToken = ensureDeviceToken()
-    if (!exposedDevices.has(deviceToken)) {
-      exposedDevices.add(deviceToken)
+    const exposure = `${ensureDeviceToken()}|${variant}|${forced}`
+    if (!exposures.has(exposure)) {
+      exposures.add(exposure)
+      // Events are stored best-effort. One that was not stored frees its
+      // place, so the next press sends it again.
+      const release = () => exposures.delete(exposure)
       track(SIGNED_OUT_BET_TEST, {
         ...properties(),
         assignmentUnit: 'device',
-        first: takeFirstPress(),
-      })
+        // The report enrolls a device by its earliest exposure stored
+        // within an hour of this.
+        firstPressTime: getFirstPressTime(),
+      }).then((stored) => {
+        if (!stored) release()
+      }, release)
     }
   }
 

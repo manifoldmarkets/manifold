@@ -15,21 +15,25 @@ import * as pgPromise from 'pg-promise'
  * Dates delimit FIRST presses in UTC. The end is exclusive and defaults to
  * now. Start no earlier than the day the test went live.
  *
- * Unit: device token, which is what signup records. A device enters by the
- * one exposure it logs as its first signed-out bet press. Devices that have
- * used the QA override, and preview/local presses, are left out.
+ * Unit: device token, which is what signup records. A device enters once, by
+ * its enrollment: its earliest exposure stored within an hour of its first
+ * signed-out bet press. Devices that used the QA override around then, and
+ * preview/local presses, are left out. Every count is taken from the
+ * device's own enrollment, so reports over adjacent windows add up to the
+ * report over both.
  *
- * Signup counts any new account created on the device within one hour of that
- * first press, whichever button made it. Activation is a non-API buy by that
- * account with a fill within 24 hours of the first press. Each is shown only
- * for devices old enough to have had the full window.
+ * Signup counts any new account created on the device within one hour of the
+ * enrollment, whichever button made it. Activation is a non-API buy by that
+ * account with a fill within 24 hours of it. Each is shown only for devices
+ * old enough to have had the full window.
  *
  * first_surface 'ticket' is a market page, where the variants differ in
  * whether sign-in opens on the press. 'button' is a list row or card, where
  * they differ only in whether the bet reopens after sign-in.
  *
- * user_events is indexed by time only, so the query reads every event in the
- * cohort window plus a day. Keep windows to the test's own run.
+ * user_events is indexed by time only, so the query reads every event from
+ * two hours before the cohort window to a day after it. Keep windows to the
+ * test's own run.
  *
  * This prints counts and rates, NOT a significance or shipping verdict.
  */
@@ -108,19 +112,33 @@ async function report() {
         activation_rate_1d: rate(row.activated_1d, row.mature_day_devices),
       }))
     )
-    const total = (variant: string) =>
+    const devices = (variant: string, surface?: string) =>
       rows
-        .filter((row) => row.variant === variant)
+        .filter(
+          (row) =>
+            row.variant === variant &&
+            (!surface || row.first_surface === surface)
+        )
         .reduce((sum, row) => sum + row.devices, 0)
-    const control = total('control')
-    const treatment = total('treatment')
-    const chiSquare =
-      control + treatment
-        ? (control - treatment) ** 2 / (control + treatment)
-        : null
-    console.log({ control, treatment, sampleRatioChiSquare: chiSquare })
+    // A device enrolls before its variant has changed anything, so the split
+    // should be even on each surface as well as overall. Treatment opens a
+    // window on a ticket press; if that cost it exposures, it would show as
+    // a shortfall on the ticket line.
+    for (const surface of [undefined, 'ticket', 'button']) {
+      const control = devices('control', surface)
+      const treatment = devices('treatment', surface)
+      console.log({
+        firstSurface: surface ?? 'all',
+        control,
+        treatment,
+        sampleRatioChiSquare:
+          control + treatment
+            ? (control - treatment) ** 2 / (control + treatment)
+            : null,
+      })
+    }
     console.log(
-      'Investigate assignment conflicts and a 50/50 sample-ratio chi-square above 3.841 before interpreting lift. A passing check does not prove the experiment valid.'
+      'Investigate assignment conflicts and any 50/50 sample-ratio chi-square above 3.841 before interpreting lift. A passing check does not prove the experiment valid.'
     )
   })
 }

@@ -3,12 +3,12 @@ import {
   Contract,
   CPMMMultiContract,
   isMultiCpmm,
+  tradingAllowed,
 } from 'common/contract'
 import { PendingBet, SIGNED_OUT_BET_RESUME_EVENT } from 'common/signed-out-bet'
 import { useRouter } from 'next/router'
 import { useEffect, useRef } from 'react'
 
-import { isClosed } from 'web/components/contract/contracts-table'
 import { useContract, useLiveContract } from 'web/hooks/use-contract'
 import { track } from 'web/lib/service/analytics'
 import { BetDialog, MultiBetDialog } from './bet-dialog'
@@ -40,10 +40,9 @@ function ResumedTicket(props: {
   const contract = useLiveContract(props.contract)
   const router = useRouter()
   const isMulti = isMultiCpmm(contract)
+  // The markets a row's Bet button opens a ticket for.
   const canTrade =
-    !isClosed(contract) &&
-    !contract.isResolved &&
-    (contract.mechanism === 'cpmm-1' || isMulti)
+    tradingAllowed(contract) && (contract.mechanism === 'cpmm-1' || isMulti)
   // The market's own page already shows a ticket for it. That page is found
   // by slug alone, so a link with an old username still counts.
   const onOwnPage =

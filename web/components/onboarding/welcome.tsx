@@ -156,11 +156,11 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
     if (user) await api('me/update', { shouldShowWelcome: false })
     track('welcome screen: complete')
     setOpen(false)
-    markWelcomeFinished(user?.id)
 
     if (window.location.pathname === '/home' && DEFAULT_FOR_YOU) {
+      // About to reload, so there is nothing to tell this page.
       window.location.reload() // reload to ensure personalized feed
-    }
+    } else markWelcomeFinished(user?.id)
   }
 
   async function increasePage() {

@@ -4,6 +4,7 @@ import {
   getSignedOutBetAssignment,
   getSignedOutBetPressPlan,
   PENDING_BET_TTL_MS,
+  readFirstPressTime,
   readPendingBet,
   readSignedOutBetMode,
   shouldWaitForWelcome,
@@ -212,6 +213,33 @@ describe('pending bet', () => {
       { ...bet, enrolled: true, forced: 1 },
     ]) {
       expect(readPendingBet(value, now)).toBeUndefined()
+    }
+  })
+})
+
+describe('first press time', () => {
+  it('reads a time', () => {
+    expect(readFirstPressTime(1_800_000_000_000)).toBe(1_800_000_000_000)
+    expect(readFirstPressTime(1)).toBe(1)
+  })
+
+  it('rejects anything else, so a new one is recorded', () => {
+    for (const value of [
+      undefined,
+      null,
+      '',
+      '1800000000000',
+      true,
+      [],
+      {},
+      { time: 1_800_000_000_000 },
+      NaN,
+      Infinity,
+      -Infinity,
+      0,
+      -1,
+    ]) {
+      expect(readFirstPressTime(value)).toBeUndefined()
     }
   })
 })

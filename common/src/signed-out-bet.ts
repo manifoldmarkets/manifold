@@ -10,8 +10,7 @@ export const SIGNED_OUT_BET_SIGN_IN_EVENT = 'signed out bet sign-in'
 export const SIGNED_OUT_BET_RESUME_EVENT = 'signed out bet resumed'
 // localStorage: 'control' or 'treatment' pins this browser, for QA.
 export const SIGNED_OUT_BET_FORCE_KEY = `${SIGNED_OUT_BET_TEST}-force`
-// localStorage: when this device first pressed a bet button signed out. Its
-// exposure that time is the one the report enters it by.
+// localStorage: when this device first pressed (see readFirstPressTime).
 export const SIGNED_OUT_BET_FIRST_PRESS_KEY = `${SIGNED_OUT_BET_TEST}-first-press`
 export const PENDING_BET_KEY = 'pending-bet-v1'
 // sessionStorage: sign-in has already been opened from a bet press in this tab.
@@ -89,6 +88,15 @@ export const getSignedOutBetPressPlan = (args: {
     rememberBet: variant === 'treatment' && surface === 'button',
   }
 }
+
+// When this device first pressed a signed-out bet button, by its own clock.
+// It is set once and every exposure carries it. The report enrolls a device
+// by its earliest exposure stored within an hour of it, so however many
+// exposures a device sends, and whenever it comes back, it enters once.
+export const readFirstPressTime = (value: unknown): number | undefined =>
+  typeof value === 'number' && Number.isFinite(value) && value > 0
+    ? value
+    : undefined
 
 export type PendingBet = {
   contractId: string
