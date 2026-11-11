@@ -1,12 +1,6 @@
-import { DAY_MS, HOUR_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
+import { DAY_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
 
 export type ProbChanges = { day: number; week: number; month: number }
-
-// The frequent contract-metrics run (every ~21 minutes) looks up month-ago
-// probabilities only for markets that traded or resolved within this window.
-// Every other market keeps the month change an earlier run stored, and the
-// daily full run recomputes them all.
-export const MONTH_REFRESH_WINDOW_MS = 2 * HOUR_MS
 
 // A probability a month ago and a change over the month are both numbers
 // between -1 and 1, and treating the stored change as the old probability made
@@ -54,13 +48,21 @@ export const computeProbChanges = (args: {
   }
 }
 
-// Whether a market's probability may have moved since `since`: it traded, it
-// resolved, or one of its answers resolved.
-export const tradedOrResolvedSince = (
-  market: { lastBetTime?: number; resolutionTime?: number | null },
-  answers: { resolutionTime?: number | null }[],
-  since: number
+// Whether anything about a market's probability has moved since a run last
+// stored its changes. The frequent contract-metrics run looks month-ago
+// probabilities up only for markets where this is true, and keeps the stored
+// month change everywhere else.
+//
+// The day and week changes are recomputed from bet history on every run, and
+// come out exactly as stored unless the probability moved or a bet crossed the
+// day-ago or week-ago mark. So comparing them catches a trade, a resolution, an
+// undone resolution and an added answer alike, with no timestamp to rely on.
+// The stored probability, where there is one, also catches a market that was
+// resolved for more than a week (day and week both zero) and then unresolved.
+export const movedSinceStored = (
+  stored: { prob?: number; changes: Partial<ProbChanges> | undefined },
+  next: { prob: number; changes: ProbChanges }
 ) =>
-  (market.lastBetTime ?? 0) > since ||
-  (market.resolutionTime ?? 0) > since ||
-  answers.some((a) => (a.resolutionTime ?? 0) > since)
+  stored.changes?.day !== next.changes.day ||
+  stored.changes?.week !== next.changes.week ||
+  (stored.prob !== undefined && stored.prob !== next.prob)

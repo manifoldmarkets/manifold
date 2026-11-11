@@ -1,9 +1,8 @@
 import { DAY_MS, HOUR_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
 import {
   computeProbChanges,
-  MONTH_REFRESH_WINDOW_MS,
   MonthSource,
-  tradedOrResolvedSince,
+  movedSinceStored,
 } from './prob-changes'
 
 // Included in the shared CI suite. To run just these:
@@ -151,35 +150,58 @@ describe('computeProbChanges', () => {
   })
 })
 
-describe('tradedOrResolvedSince', () => {
-  const since = now - MONTH_REFRESH_WINDOW_MS
+describe('movedSinceStored', () => {
+  const changes = { day: 0.05, week: 0.2, month: 0.3 }
 
-  it('is true for a market that traded inside the window', () => {
-    expect(tradedOrResolvedSince({ lastBetTime: since + 1 }, [], since)).toBe(
-      true
-    )
-    expect(tradedOrResolvedSince({ lastBetTime: since }, [], since)).toBe(false)
-    expect(tradedOrResolvedSince({}, [], since)).toBe(false)
+  it('is false when day and week came out exactly as stored', () => {
+    expect(movedSinceStored({ changes }, { prob: 0.7, changes })).toBe(false)
+    expect(
+      movedSinceStored({ prob: 0.7, changes }, { prob: 0.7, changes })
+    ).toBe(false)
+    // The month change is not part of the comparison: it is what gets kept.
+    expect(
+      movedSinceStored(
+        { changes },
+        { prob: 0.7, changes: { ...changes, month: -1 } }
+      )
+    ).toBe(false)
   })
 
-  it('is true for a market or an answer that resolved inside the window', () => {
-    const quiet = { lastBetTime: now - 3 * DAY_MS }
+  it('is true when the day or the week change differs at all', () => {
     expect(
-      tradedOrResolvedSince({ ...quiet, resolutionTime: now }, [], since)
-    ).toBe(true)
-    expect(
-      tradedOrResolvedSince(
-        quiet,
-        [{}, { resolutionTime: null }, { resolutionTime: since + 1 }],
-        since
+      movedSinceStored(
+        { changes },
+        { prob: 0.7, changes: { ...changes, day: 0.06 } }
       )
     ).toBe(true)
     expect(
-      tradedOrResolvedSince(
-        { ...quiet, resolutionTime: since - 1 },
-        [{ resolutionTime: since - 1 }],
-        since
+      movedSinceStored(
+        { changes },
+        { prob: 0.7, changes: { ...changes, week: 0.2 + 1e-12 } }
       )
+    ).toBe(true)
+  })
+
+  it('is true when nothing was stored yet', () => {
+    expect(
+      movedSinceStored({ changes: undefined }, { prob: 0.7, changes })
+    ).toBe(true)
+    expect(
+      movedSinceStored({ changes: { month: 0.3 } }, { prob: 0.7, changes })
+    ).toBe(true)
+  })
+
+  it('is true when a stored probability differs, even with day and week equal', () => {
+    // A binary market resolved for over a week and then unresolved: day and
+    // week are 0 on both sides, the stored probability is still the
+    // resolution's.
+    const flat = { day: 0, week: 0, month: 0.6 }
+    expect(
+      movedSinceStored({ prob: 1, changes: flat }, { prob: 0.7, changes: flat })
+    ).toBe(true)
+    // With no stored probability to compare (an answer), it cannot tell.
+    expect(
+      movedSinceStored({ changes: flat }, { prob: 0.7, changes: flat })
     ).toBe(false)
   })
 })
