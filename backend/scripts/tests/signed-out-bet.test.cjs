@@ -114,6 +114,7 @@ test('control leaves a market page ticket alone', () => {
       contractId: 'c1',
       environment: 'production',
       assignmentUnit: 'device',
+      first: true,
     },
   ])
 })
@@ -178,6 +179,8 @@ test('treatment remembers a row bet and hands it back once', () => {
     location: 'contract table',
     createdTime: START,
     outcome: 'NO',
+    enrolled: true,
+    forced: false,
   })
   clock.now += 60_000
   assert.deepEqual(JSON.parse(JSON.stringify(lib.takePendingBet())), {
@@ -185,6 +188,8 @@ test('treatment remembers a row bet and hands it back once', () => {
     location: 'contract table',
     createdTime: START,
     outcome: 'NO',
+    enrolled: true,
+    forced: false,
   })
   assert.equal(session.getItem(rules.PENDING_BET_KEY), null)
   assert.equal(lib.takePendingBet(), undefined)
@@ -257,8 +262,25 @@ test('the exposure is logged once per page load, with its own object', () => {
       contractId: 'c1',
       environment: 'production',
       assignmentUnit: 'device',
+      first: true,
     },
   ])
+})
+
+test('a device logs one first exposure, however many pages it loads', () => {
+  const local = newStore()
+  const pageOne = fixture({ local })
+  pageOne.lib.onSignedOutBetPress(ticket('c1'))
+  assert.equal(pageOne.events[0].first, true)
+  // A later page load logs its exposure again, but not as the first.
+  const pageTwo = fixture({ local })
+  pageTwo.lib.onSignedOutBetPress(button('c2'))
+  assert.equal(pageTwo.events[0].name, rules.SIGNED_OUT_BET_TEST)
+  assert.equal(pageTwo.events[0].first, false)
+  // Cleared storage is a new device as far as anything can tell.
+  const cleared = fixture()
+  cleared.lib.onSignedOutBetPress(ticket('c3'))
+  assert.equal(cleared.events[0].first, true)
 })
 
 test('preview and localhost presses are labelled so', () => {
@@ -340,6 +362,13 @@ test('a QA override pins the variant and is flagged', () => {
   assert.equal(junk.logins.length, 0)
   assert.equal(junk.events[0].variant, 'control')
   assert.equal(junk.events[0].forced, false)
+
+  // A forced row press says so on the bet it remembers.
+  const row = fixture({ deviceToken: control, force: 'treatment' })
+  row.lib.onSignedOutBetPress(button('c1'))
+  const bet = row.lib.takePendingBet()
+  assert.equal(bet.enrolled, true)
+  assert.equal(bet.forced, true)
 })
 
 test('the kill switch gives everyone the old behaviour and logs nothing', async () => {
@@ -354,6 +383,17 @@ test('the kill switch gives everyone the old behaviour and logs nothing', async 
   assert.deepEqual(events, [])
 })
 
+test('the kill switch also drops a bet remembered just before it', () => {
+  const session = newStore()
+  const before = fixture({ session })
+  before.lib.onSignedOutBetPress(button('c1', 'YES'))
+  assert.notEqual(session.getItem(rules.PENDING_BET_KEY), null)
+  // The next page load runs the build with the switch thrown.
+  const after = fixture({ session, mode: 'off' })
+  assert.equal(after.lib.takePendingBet(), undefined)
+  assert.equal(session.getItem(rules.PENDING_BET_KEY), null)
+})
+
 test('rolled out, everyone gets the new behaviour and nothing is logged', async () => {
   const { lib, events, logins } = fixture({ variant: 'control', mode: 'on' })
   lib.onSignedOutBetPress(ticket())
@@ -362,7 +402,13 @@ test('rolled out, everyone gets the new behaviour and nothing is logged', async 
   assert.equal(logins.length, 2)
   logins[1].resolve({ user: {} })
   await settle()
-  assert.equal(lib.takePendingBet().contractId, 'c2')
+  // Not part of a test any more, so its ticket reopening is not reported.
+  assert.deepEqual(JSON.parse(JSON.stringify(lib.takePendingBet())), {
+    contractId: 'c2',
+    location: 'contract table',
+    createdTime: START,
+    outcome: 'NO',
+  })
   assert.deepEqual(events, [])
 })
 

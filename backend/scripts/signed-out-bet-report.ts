@@ -9,25 +9,27 @@ import * as pgPromise from 'pg-promise'
 /**
  * Read-only, production-only scorecard for the signed-out bet sign-in test
  * (common/src/signed-out-bet.ts). Requires SIGNED_OUT_BET_REPORT_DATABASE_URL
- * (use a read-only reporting replica) and SIGNED_OUT_BET_EXPERIMENT_START (the
- * UTC time the test went live). No default primary access. Run from
+ * (use a read-only reporting replica). No default primary access. Run from
  * backend/scripts:
  *   yarn ts-node signed-out-bet-report.ts YYYY-MM-DD [YYYY-MM-DD]
- * Dates delimit FIRST exposures in UTC. The end is exclusive and defaults to
- * now.
+ * Dates delimit FIRST presses in UTC. The end is exclusive and defaults to
+ * now. Start no earlier than the day the test went live.
  *
- * Unit: device token, which is what signup records. A device enters at its
- * first signed-out bet press. QA-forced devices and preview/local presses are
- * left out.
+ * Unit: device token, which is what signup records. A device enters by the
+ * one exposure it logs as its first signed-out bet press. Devices that have
+ * used the QA override, and preview/local presses, are left out.
  *
  * Signup counts any new account created on the device within one hour of that
- * first press, whichever button made it. Activation is a funded non-API buy
- * by that account within 24 hours of the first press. Each is shown only for
- * devices old enough to have had the full window.
+ * first press, whichever button made it. Activation is a non-API buy by that
+ * account with a fill within 24 hours of the first press. Each is shown only
+ * for devices old enough to have had the full window.
  *
  * first_surface 'ticket' is a market page, where the variants differ in
  * whether sign-in opens on the press. 'button' is a list row or card, where
  * they differ only in whether the bet reopens after sign-in.
+ *
+ * user_events is indexed by time only, so the query reads every event in the
+ * cohort window plus a day. Keep windows to the test's own run.
  *
  * This prints counts and rates, NOT a significance or shipping verdict.
  */
@@ -55,24 +57,19 @@ if (
   )
 }
 
-const launch = new Date(process.env.SIGNED_OUT_BET_EXPERIMENT_START ?? '')
 const connectionString = process.env.SIGNED_OUT_BET_REPORT_DATABASE_URL
-if (
-  !connectionString ||
-  !Number.isFinite(launch.getTime()) ||
-  launch >= until
-) {
-  throw new Error(
-    'Set SIGNED_OUT_BET_REPORT_DATABASE_URL explicitly and SIGNED_OUT_BET_EXPERIMENT_START before the cohort end.'
-  )
+if (!connectionString) {
+  throw new Error('Set SIGNED_OUT_BET_REPORT_DATABASE_URL explicitly.')
 }
 const pgp = pgPromise()
 const database = pgp({
   connectionString,
   max: 1,
   connectionTimeoutMillis: 10000,
-  statement_timeout: 30000,
-  query_timeout: 35000,
+  // A few weeks of user_events read by time alone takes longer than the
+  // browse scorecard's 30 seconds allow.
+  statement_timeout: 120000,
+  query_timeout: 125000,
 })
 const mode = new pgp.txMode.TransactionMode({
   tiLevel: pgp.txMode.isolationLevel.repeatableRead,
@@ -94,7 +91,6 @@ async function report() {
         asOf.toISOString(),
         SIGNED_OUT_BET_TEST,
         SIGNED_OUT_BET_SIGN_IN_EVENT,
-        launch.toISOString(),
       ]
     )
 

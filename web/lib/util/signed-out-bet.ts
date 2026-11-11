@@ -6,6 +6,7 @@ import {
   PendingBet,
   readPendingBet,
   readSignedOutBetMode,
+  SIGNED_OUT_BET_FIRST_PRESS_KEY,
   SIGNED_OUT_BET_FORCE_KEY,
   SIGNED_OUT_BET_PROMPTED_KEY,
   SIGNED_OUT_BET_SIGN_IN_EVENT,
@@ -56,13 +57,16 @@ export const subscribeSignedOutBet = (listener: () => void) => {
 
 export const getSignedOutBetVersion = () => version
 
+const getMode = () =>
+  readSignedOutBetMode(process.env.NEXT_PUBLIC_SIGNED_OUT_BET_SIGNIN)
+
 const getAssignment = (): SignedOutBetAssignment => {
   // The native app signs in on its own screen. Without storage a browser gets
   // a new device token for every event, so it has no stable variant.
   if (getIsNative() || !safeLocalStorage) return NO_SIGNED_OUT_BET_ASSIGNMENT
   return getSignedOutBetAssignment({
     deviceToken: ensureDeviceToken(),
-    mode: readSignedOutBetMode(process.env.NEXT_PUBLIC_SIGNED_OUT_BET_SIGNIN),
+    mode: getMode(),
     forced: safeLocalStorage.getItem(SIGNED_OUT_BET_FORCE_KEY),
   })
 }
@@ -75,6 +79,14 @@ const getEnvironment = () => {
     : ['localhost', '127.0.0.1'].includes(hostname)
     ? 'local'
     : 'preview'
+}
+
+// True once per device: the exposure the report enters the device by. Later
+// page loads log their exposure too, but not as the first.
+const takeFirstPress = () => {
+  if (safeLocalStorage?.getItem(SIGNED_OUT_BET_FIRST_PRESS_KEY)) return false
+  safeLocalStorage?.setItem(SIGNED_OUT_BET_FIRST_PRESS_KEY, String(Date.now()))
+  return true
 }
 
 const wasPrompted = () =>
@@ -94,7 +106,8 @@ const setPendingBet = (bet: PendingBet) => {
 }
 
 // The bet to reopen, if there is a fresh one. Taking it forgets it, so a
-// ticket reopens once.
+// ticket reopens once. The kill switch also stops a bet remembered just
+// before it was thrown.
 export const takePendingBet = () => {
   if (!pendingBetLoaded) {
     pendingBetLoaded = true
@@ -103,7 +116,7 @@ export const takePendingBet = () => {
   const bet = readPendingBet(pendingBet, Date.now())
   pendingBet = undefined
   safeSessionStorage?.removeItem(PENDING_BET_KEY)
-  return bet
+  return getMode() === 'off' ? undefined : bet
 }
 
 // The welcome steps report in, so a reopened bet can wait its turn.
@@ -151,7 +164,11 @@ export function onSignedOutBetPress(press: SignedOutBetPress) {
     const deviceToken = ensureDeviceToken()
     if (!exposedDevices.has(deviceToken)) {
       exposedDevices.add(deviceToken)
-      track(SIGNED_OUT_BET_TEST, { ...properties(), assignmentUnit: 'device' })
+      track(SIGNED_OUT_BET_TEST, {
+        ...properties(),
+        assignmentUnit: 'device',
+        first: takeFirstPress(),
+      })
     }
   }
 
@@ -161,6 +178,7 @@ export function onSignedOutBetPress(press: SignedOutBetPress) {
       location,
       createdTime: Date.now(),
       ...(outcome ? { outcome } : {}),
+      ...(enrolled ? { enrolled, forced } : {}),
     })
 
   if (!plan.promptSignIn) return

@@ -15,7 +15,6 @@ const sql = fs.readFileSync(
   'utf8'
 )
 
-const LAUNCH = '2026-12-01T00:00:00Z'
 const START = '2026-12-02T00:00:00Z'
 const END = '2026-12-09T00:00:00Z'
 const AS_OF = '2026-12-10T00:00:00Z'
@@ -31,7 +30,6 @@ const args = (start = START, end = END, asOf = AS_OF) => [
   asOf,
   rules.SIGNED_OUT_BET_TEST,
   rules.SIGNED_OUT_BET_SIGN_IN_EVENT,
-  LAUNCH,
 ]
 
 async function database() {
@@ -44,19 +42,24 @@ async function database() {
     create table users (id text primary key, created_time timestamptz not null);
     create index users_created_time on users (created_time desc);
     create table private_users (id text primary key, data jsonb not null);
-    create table contract_bets (bet_id text primary key, user_id text not null, created_time timestamptz not null, amount numeric, shares numeric, is_api boolean, is_redemption boolean);
+    create table contract_bets (bet_id text primary key, user_id text not null, created_time timestamptz not null, amount numeric, shares numeric, is_api boolean, is_redemption boolean, data jsonb);
     create index contract_bets_user_id_created_time on contract_bets (user_id, created_time desc);
     create index contract_bets_created_time_only on contract_bets (created_time desc);
   `)
   return db
 }
 
-async function report(db, parameters = args()) {
+async function report(db, parameters = args(), explain = false) {
   await db.exec(
     "begin isolation level repeatable read read only; set local enable_nestloop = off; set local statement_timeout = '30s'"
   )
   try {
-    return (await db.query(sql, parameters)).rows
+    return (
+      await db.query(
+        (explain ? 'explain (analyze, format json) ' : '') + sql,
+        parameters
+      )
+    ).rows
   } finally {
     await db.exec('rollback')
   }
@@ -64,6 +67,8 @@ async function report(db, parameters = args()) {
 
 function seed(db) {
   let bets = 0
+  // A device's first press carries first: true; pass { first: false } for the
+  // exposures its later page loads log.
   const press = (deviceId, ms, variant, surface, extra = {}) =>
     db.query('insert into user_events (ts, name, data) values ($1,$2,$3)', [
       at(ms),
@@ -72,6 +77,7 @@ function seed(db) {
         deviceId,
         variant,
         surface,
+        first: true,
         forced: false,
         environment: 'production',
         assignmentUnit: 'device',
@@ -99,16 +105,34 @@ function seed(db) {
       { initialDeviceToken },
     ])
   }
-  const bet = (userId, ms, fields = {}) =>
-    db.query('insert into contract_bets values ($1,$2,$3,$4,$5,$6,$7)', [
-      `bet-${++bets}`,
-      userId,
-      at(ms),
-      fields.amount ?? 10,
-      fields.shares ?? 20,
-      fields.isApi ?? false,
-      fields.isRedemption ?? false,
-    ])
+  // `fills` lists [amount, ms] pairs. By default the bet fills in full when
+  // it is placed, as a market order does. Pass null for a row with no fill
+  // history at all.
+  const bet = (userId, ms, fields = {}) => {
+    const amount = fields.amount ?? 10
+    const fills =
+      fields.fills === null
+        ? null
+        : (fields.fills ?? [[amount, ms]]).map(([fillAmount, fillMs]) => ({
+            matchedBetId: null,
+            amount: fillAmount,
+            shares: fillAmount * 2,
+            timestamp: T0 + fillMs,
+          }))
+    return db.query(
+      'insert into contract_bets values ($1,$2,$3,$4,$5,$6,$7,$8)',
+      [
+        `bet-${++bets}`,
+        userId,
+        at(ms),
+        amount,
+        fields.shares ?? 20,
+        fields.isApi ?? false,
+        fields.isRedemption ?? false,
+        fills === null ? null : { fills },
+      ]
+    )
+  }
   return { press, signIn, account, bet }
 }
 
@@ -139,7 +163,7 @@ test('counts signups within the hour and bets within the day, per first press', 
     await account('u4', MINUTE, 'c-junk-bets')
     await bet('u4', 2 * MINUTE, { isApi: true })
     await bet('u4', 3 * MINUTE, { isRedemption: true })
-    await bet('u4', 4 * MINUTE, { amount: 0 })
+    await bet('u4', 4 * MINUTE, { amount: 0, fills: [] })
     await bet('u4', 5 * MINUTE, { shares: 0 })
 
     // Treatment, market page: the window opens and completes, bet a bit later.
@@ -164,25 +188,26 @@ test('counts signups within the hour and bets within the day, per first press', 
     await signIn('t-row', 10 * SECOND, 'treatment', 'signed-in')
     await account('u7', 12 * SECOND, 't-row')
     await bet('u7', 3 * MINUTE)
-    await press('t-row', 20 * MINUTE, 'treatment', 'ticket')
+    await press('t-row', 20 * MINUTE, 'treatment', 'ticket', { first: false })
 
     // Control, list row: sign-in opens there in both variants.
     await press('c-row', 0, 'control', 'button')
     await signIn('c-row', 9 * SECOND, 'control', 'not-completed')
 
-    // Never part of the estimate: QA overrides and preview or local presses.
-    await press('qa-forced', 0, 'treatment', 'ticket', { forced: true })
-    await signIn('qa-forced', SECOND, 'treatment', 'signed-in', {
-      forced: true,
-    })
-    await account('u8', 2 * SECOND, 'qa-forced')
+    // Control, list row: the window sat open for two hours before it closed.
+    await press('c-row-slow', 0, 'control', 'button')
+    await signIn('c-row-slow', 2 * HOUR, 'control', 'not-completed')
+
+    // Never part of the estimate: preview or local presses, and no device id.
     await press('preview', 0, 'control', 'ticket', { environment: 'preview' })
     await press('local', 0, 'control', 'ticket', { environment: 'local' })
     await press('', 0, 'control', 'ticket')
 
     // A device that has shown up in both variants is counted where it began.
     await press('t-conflict', 0, 'treatment', 'ticket')
-    await press('t-conflict', 5 * MINUTE, 'control', 'ticket')
+    await press('t-conflict', 5 * MINUTE, 'control', 'ticket', {
+      first: false,
+    })
 
     const rows = byKey(await report(db))
     assert.deepEqual(Object.keys(rows).sort(), [
@@ -196,7 +221,7 @@ test('counts signups within the hour and bets within the day, per first press', 
       first_surface: 'ticket',
       devices: 4,
       mature_hour_devices: 4,
-      sign_in_opened_1h: 0,
+      sign_in_settled_1h: 0,
       sign_in_completed_1h: 0,
       signups_1h: 2,
       mature_day_devices: 4,
@@ -208,7 +233,7 @@ test('counts signups within the hour and bets within the day, per first press', 
       first_surface: 'ticket',
       devices: 4,
       mature_hour_devices: 4,
-      sign_in_opened_1h: 3,
+      sign_in_settled_1h: 3,
       sign_in_completed_1h: 2,
       signups_1h: 2,
       mature_day_devices: 4,
@@ -220,7 +245,7 @@ test('counts signups within the hour and bets within the day, per first press', 
       first_surface: 'button',
       devices: 1,
       mature_hour_devices: 1,
-      sign_in_opened_1h: 1,
+      sign_in_settled_1h: 1,
       sign_in_completed_1h: 1,
       signups_1h: 1,
       mature_day_devices: 1,
@@ -230,15 +255,103 @@ test('counts signups within the hour and bets within the day, per first press', 
     assert.deepEqual(rows['control/button'], {
       variant: 'control',
       first_surface: 'button',
-      devices: 1,
-      mature_hour_devices: 1,
-      sign_in_opened_1h: 1,
+      devices: 2,
+      mature_hour_devices: 2,
+      sign_in_settled_1h: 1,
       sign_in_completed_1h: 0,
       signups_1h: 0,
-      mature_day_devices: 1,
+      mature_day_devices: 2,
       activated_1d: 0,
       assignment_conflicts: 0,
     })
+  } finally {
+    await db.close()
+  }
+})
+
+test('a device that used the QA override is left out whole, in either order', async () => {
+  const db = await database()
+  const { press, signIn, account, bet } = seed(db)
+  try {
+    // Ordinary control press, then QA forces treatment and signs up. The
+    // signup must not land in control.
+    await press('unforced-then-forced', 0, 'control', 'ticket')
+    await press('unforced-then-forced', 2 * MINUTE, 'treatment', 'ticket', {
+      first: false,
+      forced: true,
+    })
+    await account('u1', 3 * MINUTE, 'unforced-then-forced')
+    await bet('u1', 4 * MINUTE)
+
+    // Forced from its very first press.
+    await press('forced-first', 0, 'treatment', 'ticket', { forced: true })
+    await signIn('forced-first', SECOND, 'treatment', 'signed-in', {
+      forced: true,
+    })
+    await account('u2', 2 * SECOND, 'forced-first')
+    await press('forced-first', HOUR, 'control', 'ticket', { first: false })
+
+    // Only its sign-in result carries the flag.
+    await press('forced-sign-in', 0, 'treatment', 'button')
+    await signIn('forced-sign-in', SECOND, 'treatment', 'signed-in', {
+      forced: true,
+    })
+
+    // An ordinary device, so the report is not simply empty.
+    await press('plain', 0, 'control', 'ticket')
+    await account('u3', MINUTE, 'plain')
+
+    const rows = await report(db)
+    assert.equal(rows.length, 1)
+    assert.equal(rows[0].variant, 'control')
+    assert.equal(rows[0].devices, 1)
+    assert.equal(rows[0].signups_1h, 1)
+    assert.equal(rows[0].activated_1d, 0)
+    assert.equal(rows[0].assignment_conflicts, 0)
+  } finally {
+    await db.close()
+  }
+})
+
+test('a resting limit order counts from its first fill, not from when it was placed', async () => {
+  const db = await database()
+  const { press, account, bet } = seed(db)
+  try {
+    // Placed two hours in, first filled two days later.
+    await press('late-fill', 0, 'treatment', 'ticket')
+    await account('u1', MINUTE, 'late-fill')
+    await bet('u1', 2 * HOUR, { fills: [[10, 2 * DAY]] })
+
+    // Placed two hours in, part filled within the day, the rest much later.
+    await press('early-fill', 0, 'treatment', 'ticket')
+    await account('u2', MINUTE, 'early-fill')
+    await bet('u2', 2 * HOUR, {
+      fills: [
+        [4, 20 * HOUR],
+        [6, 3 * DAY],
+      ],
+    })
+
+    // Its only early entry in the fill history moved no money.
+    await press('empty-fill', 0, 'treatment', 'ticket')
+    await account('u3', MINUTE, 'empty-fill')
+    await bet('u3', 2 * HOUR, {
+      fills: [
+        [0, 2 * HOUR],
+        [10, 2 * DAY],
+      ],
+    })
+
+    // A row with no fill history falls back to when it was placed.
+    await press('no-history', 0, 'treatment', 'ticket')
+    await account('u4', MINUTE, 'no-history')
+    await bet('u4', 2 * HOUR, { fills: null })
+
+    const [row] = await report(db)
+    assert.equal(row.devices, 4)
+    assert.equal(row.signups_1h, 4)
+    // early-fill and no-history.
+    assert.equal(row.activated_1d, 2)
   } finally {
     await db.close()
   }
@@ -277,32 +390,110 @@ test('outcomes wait until a device has had the full window', async () => {
   }
 })
 
-test('a later window keeps devices that first pressed before it out', async () => {
+test('a device enters by its first press only, whenever the window is', async () => {
   const db = await database()
-  const { press, account } = seed(db)
+  const { press, signIn, account, bet } = seed(db)
   try {
     // First pressed before the window, pressed again inside it.
     await press('early', -2 * DAY, 'control', 'ticket')
-    await press('early', 0, 'control', 'ticket')
+    await press('early', 0, 'control', 'ticket', { first: false })
     await account('u1', MINUTE, 'early')
     await press('inside', 0, 'control', 'ticket')
+    // Two tabs pressing at the same moment can both log a first exposure.
+    // The device still enters once, by the earlier of the two.
+    await press('two-tabs', 0, 'treatment', 'ticket')
+    await press('two-tabs', SECOND, 'treatment', 'button')
     // Pressed after the window closed.
     await press('after', 6 * DAY, 'control', 'ticket')
-    // Before the test went live: not an exposure at all.
-    await press('prelaunch', -3 * DAY, 'control', 'ticket')
-    await press('prelaunch', 0, 'control', 'ticket')
+    // First pressed in the window's last minutes: its outcomes fall in the
+    // day after the window, which is still read.
+    const lastMinutes = Date.parse(END) - T0 - 10 * MINUTE
+    await press('last-minutes', lastMinutes, 'treatment', 'button')
+    await signIn(
+      'last-minutes',
+      lastMinutes + 5 * SECOND,
+      'treatment',
+      'signed-in'
+    )
+    await account('u2', lastMinutes + 20 * MINUTE, 'last-minutes')
+    await bet('u2', lastMinutes + 5 * HOUR)
 
-    const rows = await report(db)
-    assert.equal(rows.length, 1)
-    // 'inside', plus 'prelaunch', whose first press since launch is inside.
-    assert.equal(rows[0].devices, 2)
-    assert.equal(rows[0].signups_1h, 0)
+    const rows = byKey(await report(db))
+    assert.deepEqual(Object.keys(rows).sort(), [
+      'control/ticket',
+      'treatment/button',
+      'treatment/ticket',
+    ])
+    assert.equal(rows['treatment/ticket'].devices, 1)
+    // 'inside' only: 'early' entered before the window and 'after' after it.
+    assert.equal(rows['control/ticket'].devices, 1)
+    assert.equal(rows['control/ticket'].signups_1h, 0)
+    assert.equal(rows['treatment/button'].devices, 1)
+    assert.equal(rows['treatment/button'].sign_in_completed_1h, 1)
+    assert.equal(rows['treatment/button'].signups_1h, 1)
+    assert.equal(rows['treatment/button'].activated_1d, 1)
 
-    // Reporting from launch day picks 'early' up at its true first press,
+    // A window that starts earlier picks 'early' up at its true first press,
     // where the account made two days later is outside the hour.
-    const fromLaunch = await report(db, args(LAUNCH, END, AS_OF))
-    assert.equal(fromLaunch[0].devices, 3)
-    assert.equal(fromLaunch[0].signups_1h, 0)
+    const earlier = byKey(
+      await report(db, args('2026-12-01T00:00:00Z', END, AS_OF))
+    )
+    assert.equal(earlier['control/ticket'].devices, 2)
+    assert.equal(earlier['control/ticket'].signups_1h, 0)
+  } finally {
+    await db.close()
+  }
+})
+
+test('only the cohort window and the day after it are read', async () => {
+  const db = await database()
+  const { press } = seed(db)
+  try {
+    await db.query(
+      `insert into user_events (ts, name, data)
+      select $1::timestamptz + n * interval '1 minute', $2,
+        jsonb_build_object('deviceId', 'device-' || n, 'variant',
+          case when n % 2 = 0 then 'control' else 'treatment' end,
+          'surface', 'ticket', 'first', true, 'forced', false,
+          'environment', 'production')
+      from generate_series(1, 3000) n`,
+      [START, rules.SIGNED_OUT_BET_TEST]
+    )
+    // Long after the window: must not be scanned, let alone counted.
+    await press('much-later', 20 * DAY, 'control', 'ticket')
+    await db.exec(`insert into user_events (ts, name, data)
+      select '2026-09-01'::timestamptz + n * interval '1 second', 'background', '{}'::jsonb from generate_series(1, 100000) n;
+      analyze;`)
+    const rows = await report(db, args(START, END, '2027-01-15T00:00:00Z'))
+    assert.equal(rows.length, 2)
+    for (const row of rows) assert.equal(row.devices, 1500)
+
+    const explained = await report(
+      db,
+      args(START, END, '2027-01-15T00:00:00Z'),
+      true
+    )
+    let eventScans = 0
+    let rowsRead
+    const check = (node) => {
+      if (node['Node Type'] === 'CTE Scan' && node['CTE Name'] === 'events') {
+        eventScans++
+        assert.ok(
+          node['Actual Loops'] <= 1,
+          'event CTE must not be rescanned per device'
+        )
+      }
+      if (
+        node['Relation Name'] === 'user_events' &&
+        node['Actual Rows'] !== undefined
+      )
+        rowsRead = node['Actual Rows']
+      for (const child of node.Plans ?? []) check(child)
+    }
+    check(explained[0]['QUERY PLAN'][0].Plan)
+    assert.ok(eventScans > 0)
+    // The 3,000 presses in the window; not the later press or the backlog.
+    assert.equal(rowsRead, 3000)
   } finally {
     await db.close()
   }
@@ -361,7 +552,6 @@ test('report CLI validates its arguments and prints the rows with rates', async 
   }
   const env = {
     SIGNED_OUT_BET_REPORT_DATABASE_URL: 'postgres://unused/report',
-    SIGNED_OUT_BET_EXPERIMENT_START: LAUNCH,
   }
 
   try {
@@ -385,18 +575,10 @@ test('report CLI validates its arguments and prints the rows with rates', async 
     ]) {
       assert.throws(() => run(argv, env), /Use two UTC dates/, String(argv))
     }
-    for (const badEnv of [
-      {},
-      { SIGNED_OUT_BET_EXPERIMENT_START: LAUNCH },
-      { SIGNED_OUT_BET_REPORT_DATABASE_URL: 'postgres://unused/report' },
-      { ...env, SIGNED_OUT_BET_EXPERIMENT_START: 'soon' },
-      { ...env, SIGNED_OUT_BET_EXPERIMENT_START: '2026-12-09T00:00:00Z' },
-    ]) {
-      assert.throws(
-        () => run(['2026-12-02', '2026-12-09'], badEnv),
-        /Set SIGNED_OUT_BET_REPORT_DATABASE_URL/
-      )
-    }
+    assert.throws(
+      () => run(['2026-12-02', '2026-12-09'], {}),
+      /Set SIGNED_OUT_BET_REPORT_DATABASE_URL/
+    )
   } finally {
     await db.close()
   }

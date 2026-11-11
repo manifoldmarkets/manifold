@@ -1,6 +1,7 @@
 -- Parameters: cohort start, exclusive end, as-of, exposure event name,
--- sign-in event name, experiment launch. Always scan from launch to find each
--- device's true first exposure, even when reporting a later window.
+-- sign-in event name. A device enters by the one exposure it logs with
+-- first = true, so only the cohort window and the day after it are scanned,
+-- however long the test has been running.
 with
   events as materialized (
     select
@@ -12,13 +13,21 @@ with
     from
       user_events
     where
-      ts >= $6::timestamptz
-      and ts < $3::timestamptz
+      ts >= $1::timestamptz
+      and ts < least($2::timestamptz + interval '1 day', $3::timestamptz)
       and name in ($4, $5)
       and data ->> 'environment' = 'production'
-      -- QA overrides are never part of the estimate.
-      and coalesce(data ->> 'forced', 'false') = 'false'
       and nullif(data ->> 'deviceId', '') is not null
+  ),
+  forced_devices as (
+    -- A QA override taints the whole device, not just the forced presses: it
+    -- may already have an ordinary exposure in the other variant.
+    select distinct
+      device_id
+    from
+      events
+    where
+      data ->> 'forced' = 'true'
   ),
   first_exposures as (
     select distinct
@@ -27,6 +36,8 @@ with
       events
     where
       name = $4
+      and data ->> 'first' = 'true'
+      and ts < $2::timestamptz
     order by
       device_id,
       ts,
@@ -34,22 +45,23 @@ with
   ),
   entrants as materialized (
     select
-      *,
-      ts <= $3::timestamptz - interval '1 hour' as mature_hour,
-      ts <= $3::timestamptz - interval '1 day' as mature_day
+      e.*,
+      e.ts <= $3::timestamptz - interval '1 hour' as mature_hour,
+      e.ts <= $3::timestamptz - interval '1 day' as mature_day
     from
-      first_exposures
+      first_exposures e
+      left join forced_devices f using (device_id)
     where
-      ts >= $1::timestamptz
-      and ts < $2::timestamptz
+      f.device_id is null
   ),
   event_outcomes as (
     select
       e.device_id,
+      -- Logged when the sign-in window's promise settles, not when it opens.
       bool_or(
         later.name = $5
         and later.ts < e.ts + interval '1 hour'
-      ) as sign_in_opened,
+      ) as sign_in_settled,
       bool_or(
         later.name = $5
         and later.ts < e.ts + interval '1 hour'
@@ -124,6 +136,32 @@ with
       and b.shares > 0
       and coalesce(b.is_api, false) = false
       and coalesce(b.is_redemption, false) = false
+      -- A resting limit order keeps its creation time while it fills, so it
+      -- counts from its first fill, not from when it was placed.
+      and coalesce(
+        (
+          select
+            min((fill ->> 'timestamp')::numeric)
+          from
+            jsonb_array_elements(
+              case
+                when jsonb_typeof(b.data -> 'fills') = 'array' then b.data -> 'fills'
+                else '[]'::jsonb
+              end
+            ) fill
+          where
+            (fill ->> 'amount')::numeric > 0
+        ),
+        extract(
+          epoch
+          from
+            b.created_time
+        ) * 1000
+      ) < extract(
+        epoch
+        from
+          a.ts + interval '1 day'
+      ) * 1000
     group by
       a.device_id
   )
@@ -141,8 +179,8 @@ select
   count(*) filter (
     where
       mature_hour
-      and sign_in_opened
-  )::int as sign_in_opened_1h,
+      and sign_in_settled
+  )::int as sign_in_settled_1h,
   count(*) filter (
     where
       mature_hour

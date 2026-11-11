@@ -163,6 +163,19 @@ describe('pending bet', () => {
     })
   })
 
+  it('keeps the test flags only for a press that was part of the test', () => {
+    expect(
+      readPendingBet({ ...bet, enrolled: true, forced: true }, now)
+    ).toEqual({ ...bet, enrolled: true, forced: true })
+    expect(readPendingBet({ ...bet, enrolled: true }, now)).toEqual({
+      ...bet,
+      enrolled: true,
+      forced: false,
+    })
+    expect(readPendingBet({ ...bet, enrolled: false }, now)).toEqual(bet)
+    expect(readPendingBet({ ...bet, forced: true }, now)).toEqual(bet)
+  })
+
   it('expires', () => {
     expect(
       readPendingBet({ ...bet, createdTime: now - PENDING_BET_TTL_MS + 1 }, now)
@@ -195,6 +208,8 @@ describe('pending bet', () => {
       { ...bet, createdTime: Infinity },
       { ...bet, outcome: 'MAYBE' },
       { ...bet, outcome: null },
+      { ...bet, enrolled: 'true' },
+      { ...bet, enrolled: true, forced: 1 },
     ]) {
       expect(readPendingBet(value, now)).toBeUndefined()
     }

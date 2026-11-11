@@ -1,7 +1,6 @@
 import {
   BinaryContract,
   Contract,
-  contractPath,
   CPMMMultiContract,
   isMultiCpmm,
 } from 'common/contract'
@@ -13,6 +12,8 @@ import { isClosed } from 'web/components/contract/contracts-table'
 import { useContract, useLiveContract } from 'web/hooks/use-contract'
 import { track } from 'web/lib/service/analytics'
 import { BetDialog, MultiBetDialog } from './bet-dialog'
+
+const MARKET_PAGE = '/[username]/[contractSlug]'
 
 export function ResumedBetDialog(props: {
   bet: PendingBet
@@ -43,8 +44,11 @@ function ResumedTicket(props: {
     !isClosed(contract) &&
     !contract.isResolved &&
     (contract.mechanism === 'cpmm-1' || isMulti)
-  // The market's own page already shows a ticket for it.
-  const onOwnPage = router.asPath.split(/[?#]/)[0] === contractPath(contract)
+  // The market's own page already shows a ticket for it. That page is found
+  // by slug alone, so a link with an old username still counts.
+  const onOwnPage =
+    router.pathname === MARKET_PAGE &&
+    router.query.contractSlug === contract.slug
   const show = canTrade && !onOwnPage
   // Strict mode runs the effect twice in development; report once.
   const reported = useRef(false)
@@ -54,12 +58,14 @@ function ResumedTicket(props: {
       onDone()
       return
     }
-    if (reported.current) return
+    // Only a press that was part of the test is reported, like its exposure.
+    if (reported.current || !bet.enrolled) return
     reported.current = true
     track(SIGNED_OUT_BET_RESUME_EVENT, {
       contractId: contract.id,
       location: bet.location,
       outcome: bet.outcome,
+      forced: !!bet.forced,
       ms: Date.now() - bet.createdTime,
     })
   }, [show])

@@ -10,6 +10,9 @@ export const SIGNED_OUT_BET_SIGN_IN_EVENT = 'signed out bet sign-in'
 export const SIGNED_OUT_BET_RESUME_EVENT = 'signed out bet resumed'
 // localStorage: 'control' or 'treatment' pins this browser, for QA.
 export const SIGNED_OUT_BET_FORCE_KEY = `${SIGNED_OUT_BET_TEST}-force`
+// localStorage: when this device first pressed a bet button signed out. Its
+// exposure that time is the one the report enters it by.
+export const SIGNED_OUT_BET_FIRST_PRESS_KEY = `${SIGNED_OUT_BET_TEST}-first-press`
 export const PENDING_BET_KEY = 'pending-bet-v1'
 // sessionStorage: sign-in has already been opened from a bet press in this tab.
 export const SIGNED_OUT_BET_PROMPTED_KEY = 'signed-out-bet-prompted-v1'
@@ -26,7 +29,7 @@ export type SignedOutBetSurface = 'ticket' | 'button'
 
 // NEXT_PUBLIC_SIGNED_OUT_BET_SIGNIN. Unset runs the 50/50 test. 'off' is the
 // kill switch: everyone keeps the old behaviour. 'on' gives everyone the new
-// behaviour once the test has been read. Neither logs an exposure.
+// behaviour once the test has been read. Neither logs any of the test's events.
 export type SignedOutBetMode = 'experiment' | 'off' | 'on'
 
 export const readSignedOutBetMode = (configured?: string): SignedOutBetMode =>
@@ -94,7 +97,14 @@ export type PendingBet = {
   location: string
   createdTime: number
   outcome?: 'YES' | 'NO'
+  // The press was part of the test, so reopening its ticket is reported too.
+  // Absent once the behaviour is rolled out to everyone.
+  enrolled?: boolean
+  forced?: boolean
 }
+
+const isOptionalBoolean = (value: unknown) =>
+  value === undefined || typeof value === 'boolean'
 
 export const readPendingBet = (
   value: unknown,
@@ -109,15 +119,23 @@ export const readPendingBet = (
     typeof bet.location !== 'string' ||
     typeof bet.createdTime !== 'number' ||
     !Number.isFinite(bet.createdTime) ||
-    (bet.outcome !== undefined && bet.outcome !== 'YES' && bet.outcome !== 'NO')
+    (bet.outcome !== undefined &&
+      bet.outcome !== 'YES' &&
+      bet.outcome !== 'NO') ||
+    !isOptionalBoolean(bet.enrolled) ||
+    !isOptionalBoolean(bet.forced)
   )
     return undefined
   const age = now - bet.createdTime
   if (!(age >= 0 && age < PENDING_BET_TTL_MS)) return undefined
-  const { contractId, location, createdTime, outcome } = bet
-  return outcome
-    ? { contractId, location, createdTime, outcome }
-    : { contractId, location, createdTime }
+  const { contractId, location, createdTime, outcome, enrolled, forced } = bet
+  return {
+    contractId,
+    location,
+    createdTime,
+    ...(outcome ? { outcome } : {}),
+    ...(enrolled ? { enrolled, forced: !!forced } : {}),
+  }
 }
 
 // The welcome steps only run on pages that mount them (Browse, Home, Feed).
