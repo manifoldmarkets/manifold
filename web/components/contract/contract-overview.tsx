@@ -412,9 +412,11 @@ const ChoiceOverview = (props: {
   // Until the user picks answers, the chart draws the likeliest ones (the
   // likeliest matches while searching), whatever order the list is sorted in.
   // It follows the live market, but an answer already drawn keeps its place
-  // unless it has clearly dropped out, so lines don't swap with every bet.
+  // until another clearly outranks it, so lines don't swap with every bet.
   // A search with no match leaves the chart as it was: the same box is where a
   // new answer is typed, and the chart should not empty while one is.
+  //
+  // What the last render to reach the screen drew by default.
   const previousDefaults = useRef<{ query: string; ids: string[] }>()
   const defaultAnswerIdsToGraph = useMemo(() => {
     const matches = query
@@ -428,10 +430,13 @@ const ChoiceOverview = (props: {
       sameSearch ? previous.ids : undefined
     )
     // The same array while the choice is the same, so the chart can skip work.
-    const stable = sameSearch && isEqual(previous.ids, ids) ? previous.ids : ids
-    previousDefaults.current = { query, ids: stable }
-    return stable
+    return sameSearch && isEqual(previous.ids, ids) ? previous.ids : ids
   }, [contract, query])
+  // Recorded in an effect, not while rendering, so a render that React runs
+  // twice or throws away leaves nothing behind.
+  useEffect(() => {
+    previousDefaults.current = { query, ids: defaultAnswerIdsToGraph }
+  }, [query, defaultAnswerIdsToGraph])
   const graphedAnswerIds = selectedAnswerIds.length
     ? selectedAnswerIds
     : defaultAnswerIdsToGraph
