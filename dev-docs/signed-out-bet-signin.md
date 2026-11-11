@@ -43,19 +43,33 @@ Details that matter:
   remembered just before it still reopens, unreported. Both need a web
   redeploy to take effect.
 - QA: set `localStorage['signed-out-bet-signin-v1-force']` to `control` or
-  `treatment`. Forced presses are logged with `forced: true`, including when
-  the override is set part-way through a page, and the report leaves the
-  device out.
+  `treatment`. A device that has used the override says so on that exposure
+  and on every one after it, and the report leaves the device out. Clearing
+  the override does not bring it back; clearing site data does, as a new
+  device.
 
 ## Events
 
-- `signed-out-bet-signin-v1`: the exposure. Sent on a device's first
-  signed-out bet press of a page load, and again on the next press if it
-  could not be stored. `variant`, `forced`, `surface`, `location`,
-  `contractId`, `environment` (`production`, `preview` or `local`), and
-  `firstPressTime`: when this device first pressed a signed-out bet button,
-  by its own clock. It is kept in `localStorage`, set once and sent on every
-  exposure. The report enrolls the device by it.
+- `signed-out-bet-signin-v1`: the exposure, once per page load for each
+  device, variant and QA override. `variant`, `forced`, `surface`,
+  `location`, `contractId`, `environment` (`production`, `preview` or
+  `local`), and two fields about the device's enrollment:
+
+  - `firstSurface`: where this device first pressed a signed-out bet button.
+  - `sinceFirstPressMs`: how long ago that was when this exposure was sent.
+    It is elapsed time, not a clock reading, so a browser clock that is
+    wrong makes no difference.
+
+  Both come from one record in `localStorage`, written once. If that record
+  cannot be read, or the clock has gone backwards since it was written, the
+  exposure leaves both fields out and the report cannot enroll the device.
+
+- An exposure is kept in `localStorage` until it is known to be stored.
+  `track()` resolves to whether the event was stored. One that was not is
+  sent again after 5 seconds, 30 seconds and 2 minutes, on the next press,
+  as every page loads, and when someone signs in, for up to an hour. A
+  visitor who signs up straight after a press never presses signed-out
+  again, so resending cannot wait for a press.
 - `signed out bet sign-in`: how each sign-in window opened by a bet press
   ended, logged when it settles. `result` is `signed-in` or `not-completed`,
   with Firebase's `code` (for example `auth/popup-closed-by-user`) and `ms`.
@@ -69,34 +83,45 @@ Details that matter:
 ## Reading it
 
 `backend/scripts/signed-out-bet-report.ts` prints, per variant and first
-surface: devices, signups within one hour, and bets within 24 hours, each
-only for devices old enough to have had the full window. It needs
-`SIGNED_OUT_BET_REPORT_DATABASE_URL` (a read-only replica). The query is
-`backend/scripts/signed-out-bet-report.sql`; tests are
+surface: devices, signups within one hour of the first press, and bets
+within 24 hours of it, each only for devices old enough to have had the full
+window. It needs `SIGNED_OUT_BET_REPORT_DATABASE_URL` (a read-only replica).
+The query is `backend/scripts/signed-out-bet-report.sql`; tests are
 `yarn test:signed-out-bet`.
 
 How a device is counted:
 
-- It enters once, by its enrollment: its earliest exposure stored within an
-  hour of its `firstPressTime`. A device that comes back days later still
-  reports the same first press, so it cannot enroll a second time. The
-  exposures that qualify fall within two hours of each other, so the report
-  reads two hours before its window and always finds the earliest. The
-  enrollment is the same event whatever window is asked for.
-- Everything else is counted from the device's own enrollment. Reports over
-  adjacent windows therefore add up to the report over both.
-- Left out, in both variants alike: a device none of whose exposures was
-  stored within an hour of its first press; a browser whose clock is more
-  than an hour out; a device that used the QA override between two hours
-  before its enrollment and a day after it; preview and local presses.
-- Logging out clears the device token, so someone who logs out and presses
-  again enters as a new device. They can only sign in, not sign up, which
-  lowers both variants' rates alike.
+- An exposure sent within an hour of the device's first press can enroll it.
+  The device enrolls by its earliest such exposure, at the moment that
+  exposure says the press happened: its stored time less
+  `sinceFirstPressMs`. So a device enters once however many exposures it
+  sends, an exposure that arrives late still places the device at its
+  press, and a device that comes back days later cannot enter again.
+- Everything else is counted from that moment, not from the edges of what
+  was read: the window the device falls in, its outcomes, the QA exclusion
+  and the conflict flag. Reports over adjacent windows therefore add up to
+  the report over both. The script relies on this: it reads the range one
+  UTC day at a time and adds the days up.
+- Left out, in both variants alike: a device none of whose exposures could
+  be sent within an hour of its first press; a device that has used the QA
+  override; preview and local presses.
 - Signup counts any account created on the device in the hour after the
-  enrollment, whichever button made it.
+  first press, whichever button made it.
 - A bet is a non-API buy by that account with a fill inside the 24 hours. A
   resting limit order counts from its first fill, not from when it was
   placed.
+- Logging out clears the device token, so someone who logs out and presses
+  again enters as a new device. They can only sign in, not sign up, which
+  lowers both variants' rates alike.
+
+What the browser is trusted for. The enrollment rests on one record in the
+visitor's own `localStorage` and on events any client can write. Clearing
+site data makes a new device, as it does for every device-keyed count.
+Deleting that one record by hand while keeping the device token, setting the
+clock back between visits, or writing events by hand can enroll a device
+twice. None of these happens in ordinary use. Ruling them out would take an
+enrollment table on the server with one row per device, which needs a
+migration.
 
 What to look at:
 
@@ -107,6 +132,7 @@ What to look at:
   surface. A device enrolls before its variant has changed anything, so each
   split should be even. Treatment opens a window on a ticket press; if that
   ever cost it exposures, the ticket line would show the shortfall.
-- `user_events` is indexed by time only. The query reads from two hours
-  before the cohort window to a day after it, whatever the age of the test,
-  so keep the window to the test's own run.
+- `user_events` is indexed by time only, so reading a day of it means
+  reading every event of that day, which takes several seconds when nothing
+  is cached. Each of the script's queries reads the hour before its day, the
+  day, and the day after.

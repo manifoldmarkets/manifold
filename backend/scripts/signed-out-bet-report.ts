@@ -13,17 +13,15 @@ import * as pgPromise from 'pg-promise'
  * backend/scripts:
  *   yarn ts-node signed-out-bet-report.ts YYYY-MM-DD [YYYY-MM-DD]
  * Dates delimit FIRST presses in UTC. The end is exclusive and defaults to
- * now. Start no earlier than the day the test went live.
+ * now.
  *
- * Unit: device token, which is what signup records. A device enters once, by
- * its enrollment: its earliest exposure stored within an hour of its first
- * signed-out bet press. Devices that used the QA override around then, and
- * preview/local presses, are left out. Every count is taken from the
- * device's own enrollment, so reports over adjacent windows add up to the
- * report over both.
+ * Unit: device token, which is what signup records. A device enters once, at
+ * the moment of its first signed-out bet press, as told by its earliest
+ * exposure sent within an hour of that press. Devices that have used the QA
+ * override, and preview/local presses, are left out.
  *
  * Signup counts any new account created on the device within one hour of the
- * enrollment, whichever button made it. Activation is a non-API buy by that
+ * first press, whichever button made it. Activation is a non-API buy by that
  * account with a fill within 24 hours of it. Each is shown only for devices
  * old enough to have had the full window.
  *
@@ -31,9 +29,11 @@ import * as pgPromise from 'pg-promise'
  * whether sign-in opens on the press. 'button' is a list row or card, where
  * they differ only in whether the bet reopens after sign-in.
  *
- * user_events is indexed by time only, so the query reads every event from
- * two hours before the cohort window to a day after it. Keep windows to the
- * test's own run.
+ * user_events is indexed by time only, so reading a day of it means reading
+ * every event of that day, which takes several seconds when nothing is
+ * cached. The range is therefore read one UTC day at a time and the days
+ * added up. That is exact, not an approximation: every count is taken from
+ * the device's own first press, so no device can fall into two days.
  *
  * This prints counts and rates, NOT a significance or shipping verdict.
  */
@@ -49,12 +49,13 @@ const parseDate = (value: string | undefined) => {
 }
 const from = parseDate(start)
 const until = end ? parseDate(end) : asOf
+const DAY_MS = 86400000
 if (
   !from ||
   !until ||
   until <= from ||
   until > asOf ||
-  until.getTime() - from.getTime() > 90 * 86400000
+  until.getTime() - from.getTime() > 90 * DAY_MS
 ) {
   throw new Error(
     'Use two UTC dates, increasing, no later than today, at most 90 days apart.'
@@ -70,8 +71,8 @@ const database = pgp({
   connectionString,
   max: 1,
   connectionTimeoutMillis: 10000,
-  // A few weeks of user_events read by time alone takes longer than the
-  // browse scorecard's 30 seconds allow.
+  // Each statement reads two days of user_events by time alone, which can
+  // take longer than the browse scorecard's 30 seconds allow.
   statement_timeout: 120000,
   query_timeout: 125000,
 })
@@ -80,6 +81,21 @@ const mode = new pgp.txMode.TransactionMode({
   readOnly: true,
 })
 
+const COUNTS = [
+  'devices',
+  'mature_hour_devices',
+  'sign_in_settled_1h',
+  'sign_in_completed_1h',
+  'signups_1h',
+  'mature_day_devices',
+  'activated_1d',
+  'assignment_conflicts',
+] as const
+type Row = { variant: string; first_surface: string } & Record<
+  (typeof COUNTS)[number],
+  number
+>
+
 async function report() {
   await database.tx({ mode }, async (pg) => {
     // CTE event sets have no indexes. Hash/merge joins avoid a nested rescan
@@ -87,16 +103,33 @@ async function report() {
     await pg.none(
       "set local enable_nestloop = off; set local lock_timeout = '2s'"
     )
-    const rows = await pg.manyOrNone(
-      readFileSync(join(__dirname, 'signed-out-bet-report.sql'), 'utf8'),
-      [
-        from!.toISOString(),
-        until!.toISOString(),
+    const sql = readFileSync(
+      join(__dirname, 'signed-out-bet-report.sql'),
+      'utf8'
+    )
+    const totals = new Map<string, Row>()
+    for (
+      let day = from!.getTime();
+      day < until!.getTime();
+      day = Math.min(day + DAY_MS, until!.getTime())
+    ) {
+      const dayRows = await pg.manyOrNone<Row>(sql, [
+        new Date(day).toISOString(),
+        new Date(Math.min(day + DAY_MS, until!.getTime())).toISOString(),
         asOf.toISOString(),
         SIGNED_OUT_BET_TEST,
         SIGNED_OUT_BET_SIGN_IN_EVENT,
-      ]
-    )
+      ])
+      for (const row of dayRows) {
+        const key = `${row.variant}/${row.first_surface}`
+        const total = totals.get(key)
+        if (!total) totals.set(key, { ...row })
+        else for (const count of COUNTS) total[count] += row[count]
+      }
+    }
+    const rows = [...totals.entries()]
+      .sort(([a], [b]) => (a < b ? -1 : 1))
+      .map(([, row]) => row)
 
     const rate = (count: number, total: number) =>
       total ? `${((100 * count) / total).toFixed(2)}%` : 'not mature'

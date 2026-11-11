@@ -50,6 +50,8 @@ function fixture(options = {}) {
   const network = { stores: options.stores ?? true, throws: false }
   const events = []
   const logins = []
+  // Retries the module has asked for: { delay, run }.
+  const timers = []
   const lib = load(
     'web/lib/util/signed-out-bet.ts',
     {
@@ -83,9 +85,10 @@ function fixture(options = {}) {
       window: { location: { hostname } },
       process: { env: { NEXT_PUBLIC_SIGNED_OUT_BET_SIGNIN: mode } },
       Date: { now: () => clock.now },
+      setTimeout: (run, delay) => timers.push({ delay, run }),
     }
   )
-  return { lib, events, logins, local, session, clock, network }
+  return { lib, events, logins, local, session, clock, network, timers }
 }
 
 const ticket = (contractId = 'c1', outcome = 'YES') => ({
@@ -120,7 +123,8 @@ test('control leaves a market page ticket alone', () => {
       contractId: 'c1',
       environment: 'production',
       assignmentUnit: 'device',
-      firstPressTime: START,
+      firstSurface: 'ticket',
+      sinceFirstPressMs: 0,
     },
   ])
 })
@@ -268,105 +272,318 @@ test('the exposure is logged once per page load, with its own object', () => {
       contractId: 'c1',
       environment: 'production',
       assignmentUnit: 'device',
-      firstPressTime: START,
+      firstSurface: 'button',
+      sinceFirstPressMs: 0,
     },
   ])
 })
 
-test('every exposure says when the device first pressed', () => {
+const exposuresOf = (f) => named(f.events, rules.SIGNED_OUT_BET_TEST)
+const firstPressOf = (local) =>
+  JSON.parse(local.getItem(rules.SIGNED_OUT_BET_FIRST_PRESS_KEY))
+const unsentOf = (local) =>
+  JSON.parse(local.getItem(rules.SIGNED_OUT_BET_UNSENT_KEY) ?? '[]')
+
+test('every exposure says where the device first pressed and how long ago', async () => {
   const local = newStore()
   const pageOne = fixture({ local })
   pageOne.lib.onSignedOutBetPress(ticket('c1'))
-  assert.equal(pageOne.events[0].firstPressTime, START)
-  assert.equal(
-    local.getItem(rules.SIGNED_OUT_BET_FIRST_PRESS_KEY),
-    String(START)
-  )
-  // A page load a day later logs its own exposure, with the same first
-  // press: that is how the report knows not to enroll the device again.
+  assert.equal(pageOne.events[0].firstSurface, 'ticket')
+  assert.equal(pageOne.events[0].sinceFirstPressMs, 0)
+  assert.deepEqual(firstPressOf(local), { time: START, surface: 'ticket' })
+  await settle()
+
+  // A page load forty minutes on logs its own exposure. It still began on a
+  // market page, forty minutes ago.
   const pageTwo = fixture({ local })
-  pageTwo.clock.now = START + 86_400_000
+  pageTwo.clock.now = START + 40 * 60_000
   pageTwo.lib.onSignedOutBetPress(button('c2'))
   assert.equal(pageTwo.events[0].name, rules.SIGNED_OUT_BET_TEST)
-  assert.equal(pageTwo.events[0].firstPressTime, START)
-  assert.equal(
-    local.getItem(rules.SIGNED_OUT_BET_FIRST_PRESS_KEY),
-    String(START)
-  )
+  assert.equal(pageTwo.events[0].surface, 'button')
+  assert.equal(pageTwo.events[0].firstSurface, 'ticket')
+  assert.equal(pageTwo.events[0].sinceFirstPressMs, 40 * 60_000)
+  assert.deepEqual(firstPressOf(local), { time: START, surface: 'ticket' })
+  await settle()
+
+  // And two days on: that is how the report knows not to enroll it again.
+  const pageThree = fixture({ local })
+  pageThree.clock.now = START + 2 * 86_400_000
+  pageThree.lib.onSignedOutBetPress(button('c3'))
+  assert.equal(pageThree.events[0].sinceFirstPressMs, 2 * 86_400_000)
+
   // Cleared storage is a new device as far as anything can tell.
   const cleared = fixture()
   cleared.clock.now = START + 2 * 86_400_000
-  cleared.lib.onSignedOutBetPress(ticket('c3'))
-  assert.equal(cleared.events[0].firstPressTime, START + 2 * 86_400_000)
+  cleared.lib.onSignedOutBetPress(button('c4'))
+  assert.equal(cleared.events[0].firstSurface, 'button')
+  assert.equal(cleared.events[0].sinceFirstPressMs, 0)
 })
 
-test('an exposure that was not stored is sent again by the next press', async () => {
-  const { lib, events, network, clock } = fixture({ stores: false })
-  const exposures = () => named(events, rules.SIGNED_OUT_BET_TEST)
-  lib.onSignedOutBetPress(ticket('c1'))
-  // Still on its way: a second press does not send a second copy.
-  lib.onSignedOutBetPress(ticket('c1', 'NO'))
-  assert.equal(exposures().length, 1)
-  await settle()
-
-  // It failed, so the same page tries again on the next press, and still
-  // says when the first press was.
-  clock.now += 30_000
-  lib.onSignedOutBetPress(button('c2'))
-  assert.equal(exposures().length, 2)
-  assert.equal(exposures()[1].firstPressTime, START)
-  await settle()
-
-  // Analytics failing outright is the same as not storing.
-  network.throws = true
-  lib.onSignedOutBetPress(button('c3'))
-  assert.equal(exposures().length, 3)
-  await settle()
-
-  // Stored at last: the page stops sending.
-  network.throws = false
-  network.stores = true
-  lib.onSignedOutBetPress(button('c4'))
-  assert.equal(exposures().length, 4)
-  assert.equal(exposures()[3].firstPressTime, START)
-  await settle()
-  lib.onSignedOutBetPress(button('c5'))
-  assert.equal(exposures().length, 4)
-})
-
-test('an exposure lost on one page load is sent by the next', async () => {
+test('a browser clock that is wrong makes no difference to what an exposure says', async () => {
+  // Four hours fast, then corrected between two page loads.
   const local = newStore()
-  const lost = fixture({ local, stores: false })
-  lost.lib.onSignedOutBetPress(ticket('c1'))
+  const fast = fixture({ local })
+  fast.clock.now = START + 4 * 3_600_000
+  fast.lib.onSignedOutBetPress(ticket('c1'))
+  assert.equal(fast.events[0].sinceFirstPressMs, 0)
   await settle()
-  const next = fixture({ local })
-  next.clock.now = START + 60_000
-  next.lib.onSignedOutBetPress(ticket('c2'))
-  assert.equal(next.events[0].name, rules.SIGNED_OUT_BET_TEST)
-  assert.equal(next.events[0].firstPressTime, START)
+  const still = fixture({ local })
+  still.clock.now = START + 4 * 3_600_000 + 10 * 60_000
+  still.lib.onSignedOutBetPress(ticket('c2'))
+  assert.equal(still.events[0].sinceFirstPressMs, 10 * 60_000)
+  await settle()
+
+  // Once the clock reads earlier than the first press did, the device no
+  // longer says anything about its enrollment.
+  const corrected = fixture({ local })
+  corrected.clock.now = START + 20 * 60_000
+  corrected.lib.onSignedOutBetPress(ticket('c3'))
+  assert.equal(corrected.events[0].name, rules.SIGNED_OUT_BET_TEST)
+  assert.equal('sinceFirstPressMs' in corrected.events[0], false)
+  assert.equal('firstSurface' in corrected.events[0], false)
 })
 
-test('an unreadable first press time is replaced, not trusted', () => {
+test('a first-press record that cannot be read is left alone, and the device says nothing', async () => {
   for (const stored of [
     '{not json',
     '"soon"',
-    '{"time":1800000000000}',
+    '1800000000000',
     'null',
-    '0',
-    '-5',
     '',
+    '{"time":"soon","surface":"ticket"}',
+    '{"time":1800000000000}',
+    '{"time":1800000000000,"surface":"page"}',
+    '{"time":0,"surface":"ticket"}',
+    '{"time":1800000000000,"surface":"ticket","qa":"yes"}',
   ]) {
     const local = newStore()
     local.setItem(rules.SIGNED_OUT_BET_FIRST_PRESS_KEY, stored)
-    const { lib, events } = fixture({ local })
-    lib.onSignedOutBetPress(ticket())
-    assert.equal(events[0].firstPressTime, START, stored)
+    const f = fixture({ local, force: 'treatment' })
+    f.lib.onSignedOutBetPress(ticket())
+    assert.equal(f.events[0].name, rules.SIGNED_OUT_BET_TEST, stored)
+    assert.equal('sinceFirstPressMs' in f.events[0], false, stored)
+    assert.equal('firstSurface' in f.events[0], false, stored)
+    // Not replaced by a fresh one, which would let the device start over.
     assert.equal(
       local.getItem(rules.SIGNED_OUT_BET_FIRST_PRESS_KEY),
-      String(START),
+      stored,
       stored
     )
   }
+})
+
+test('an exposure is kept until it is stored', async () => {
+  const f = fixture({ stores: false })
+  f.lib.onSignedOutBetPress(ticket('c1'))
+  assert.equal(exposuresOf(f).length, 1)
+  assert.equal(unsentOf(f.local).length, 1)
+  await settle()
+  // Not stored, so still kept.
+  assert.deepEqual(unsentOf(f.local), [
+    {
+      key: unsentOf(f.local)[0].key,
+      time: START,
+      exposure: {
+        variant: 'treatment',
+        forced: false,
+        location: 'bet panel',
+        surface: 'ticket',
+        contractId: 'c1',
+        environment: 'production',
+      },
+    },
+  ])
+
+  f.network.stores = true
+  f.clock.now += 1000
+  f.lib.flushSignedOutBetExposures()
+  await settle()
+  assert.equal(exposuresOf(f).length, 2)
+  assert.equal(f.local.getItem(rules.SIGNED_OUT_BET_UNSENT_KEY), null)
+  // Nothing more to send.
+  f.lib.flushSignedOutBetExposures()
+  f.lib.onSignedOutBetPress(ticket('c1'))
+  await settle()
+  assert.equal(exposuresOf(f).length, 2)
+})
+
+test('a failed exposure is sent again on a timer, without another press', async () => {
+  const f = fixture({ stores: false })
+  f.lib.onSignedOutBetPress(ticket('c1'))
+  await settle()
+  assert.deepEqual(
+    f.timers.map((t) => t.delay),
+    [5_000]
+  )
+
+  // Five seconds on it fails again, this time outright.
+  f.network.throws = true
+  f.clock.now += 5_000
+  f.timers[0].run()
+  await settle()
+  assert.equal(exposuresOf(f).length, 2)
+  assert.deepEqual(
+    f.timers.map((t) => t.delay),
+    [5_000, 30_000]
+  )
+
+  // Thirty seconds after that it is stored. It still describes the press
+  // that made it, and says how long ago the device first pressed.
+  f.network.throws = false
+  f.network.stores = true
+  f.clock.now += 30_000
+  f.timers[1].run()
+  await settle()
+  const sent = exposuresOf(f)
+  assert.equal(sent.length, 3)
+  assert.equal(sent[2].contractId, 'c1')
+  assert.equal(sent[2].surface, 'ticket')
+  assert.equal(sent[2].firstSurface, 'ticket')
+  assert.equal(sent[2].sinceFirstPressMs, 35_000)
+  assert.equal(f.local.getItem(rules.SIGNED_OUT_BET_UNSENT_KEY), null)
+  assert.equal(f.timers.length, 2)
+})
+
+test('the timer gives up after three tries, and a press or a page load still sends', async () => {
+  const local = newStore()
+  const f = fixture({ local, stores: false })
+  f.lib.onSignedOutBetPress(ticket('c1'))
+  await settle()
+  for (const timer of [0, 1, 2]) {
+    f.timers[timer].run()
+    await settle()
+  }
+  assert.deepEqual(
+    f.timers.map((t) => t.delay),
+    [5_000, 30_000, 120_000]
+  )
+  assert.equal(exposuresOf(f).length, 4)
+
+  // No fourth timer. The next press tries again.
+  f.lib.onSignedOutBetPress(button('c2'))
+  await settle()
+  assert.equal(exposuresOf(f).length, 5)
+  assert.equal(f.timers.length, 3)
+
+  // So does the next page load, before anything is pressed.
+  const next = fixture({ local })
+  next.clock.now = START + 10 * 60_000
+  next.lib.flushSignedOutBetExposures()
+  await settle()
+  assert.equal(exposuresOf(next).length, 1)
+  assert.equal(exposuresOf(next)[0].contractId, 'c1')
+  assert.equal(exposuresOf(next)[0].sinceFirstPressMs, 10 * 60_000)
+  assert.equal(local.getItem(rules.SIGNED_OUT_BET_UNSENT_KEY), null)
+})
+
+test('one exposure is never on its way twice', async () => {
+  const f = fixture()
+  f.lib.onSignedOutBetPress(ticket('c1'))
+  // Still on its way: a second press, and a page asking for a flush, do not
+  // send a second copy.
+  f.lib.onSignedOutBetPress(ticket('c1', 'NO'))
+  f.lib.flushSignedOutBetExposures()
+  f.lib.flushSignedOutBetExposures()
+  assert.equal(exposuresOf(f).length, 1)
+  await settle()
+  f.lib.flushSignedOutBetExposures()
+  await settle()
+  assert.equal(exposuresOf(f).length, 1)
+  assert.equal(f.timers.length, 0)
+})
+
+test('an exposure that has waited an hour is dropped', async () => {
+  const local = newStore()
+  const f = fixture({ local, stores: false })
+  f.lib.onSignedOutBetPress(ticket('c1'))
+  await settle()
+  const later = fixture({ local })
+  later.clock.now = START + 3_600_000 - 1
+  later.network.stores = false
+  later.lib.flushSignedOutBetExposures()
+  await settle()
+  assert.equal(exposuresOf(later).length, 1)
+
+  // An hour after its press it can no longer enroll the device.
+  const tooLate = fixture({ local })
+  tooLate.clock.now = START + 3_600_000
+  tooLate.lib.flushSignedOutBetExposures()
+  await settle()
+  assert.equal(exposuresOf(tooLate).length, 0)
+  assert.equal(local.getItem(rules.SIGNED_OUT_BET_UNSENT_KEY), null)
+})
+
+test('unsent exposures that cannot be read are dropped, not sent', async () => {
+  for (const stored of [
+    '{not json',
+    'null',
+    '{}',
+    '[{"key":"k","time":1800000000000}]',
+    '[{"key":"k","time":1800000000000,"exposure":{"variant":"both"}}]',
+    '[{"key":"","time":1800000000000,"exposure":{"variant":"control","forced":false,"location":"x","surface":"ticket","contractId":"c","environment":"production"}}]',
+  ]) {
+    const local = newStore()
+    local.setItem(rules.SIGNED_OUT_BET_UNSENT_KEY, stored)
+    const f = fixture({ local })
+    f.lib.flushSignedOutBetExposures()
+    await settle()
+    assert.deepEqual(f.events, [], stored)
+    assert.equal(local.getItem(rules.SIGNED_OUT_BET_UNSENT_KEY), null, stored)
+  }
+})
+
+test('the switches drop what was waiting to be sent', async () => {
+  for (const mode of ['off', 'on']) {
+    const local = newStore()
+    const before = fixture({ local, stores: false })
+    before.lib.onSignedOutBetPress(ticket('c1'))
+    await settle()
+    assert.equal(unsentOf(local).length, 1)
+    const after = fixture({ local, mode })
+    after.lib.flushSignedOutBetExposures()
+    await settle()
+    assert.deepEqual(after.events, [], mode)
+    assert.equal(local.getItem(rules.SIGNED_OUT_BET_UNSENT_KEY), null, mode)
+  }
+})
+
+test('QA use is remembered on the device, and said on every exposure after it', async () => {
+  const control = tokenFor('control')
+  const local = newStore()
+  const forced = fixture({ local, deviceToken: control, force: 'treatment' })
+  forced.lib.onSignedOutBetPress(ticket('c1'))
+  assert.equal(forced.events[0].forced, true)
+  assert.deepEqual(firstPressOf(local), {
+    time: START,
+    surface: 'ticket',
+    qa: true,
+  })
+  await settle()
+
+  // The override is cleared. The device is back in its own variant, and
+  // still says it has been used for QA.
+  local.removeItem(rules.SIGNED_OUT_BET_FORCE_KEY)
+  const after = fixture({ local, deviceToken: control })
+  after.clock.now = START + 20 * 60_000
+  after.lib.onSignedOutBetPress(ticket('c2'))
+  assert.equal(after.events[0].variant, 'control')
+  assert.equal(after.events[0].forced, true)
+
+  // Used for QA only after it began: the record learns of it then.
+  const late = newStore()
+  const ordinary = fixture({ local: late, deviceToken: control })
+  ordinary.lib.onSignedOutBetPress(ticket('c1'))
+  assert.equal(ordinary.events[0].forced, false)
+  await settle()
+  late.setItem(rules.SIGNED_OUT_BET_FORCE_KEY, 'control')
+  const qa = fixture({ local: late, deviceToken: control })
+  qa.lib.onSignedOutBetPress(ticket('c2'))
+  assert.equal(qa.events[0].forced, true)
+  assert.deepEqual(firstPressOf(late), {
+    time: START,
+    surface: 'ticket',
+    qa: true,
+  })
 })
 
 test('a QA override switched on mid-page is logged, not hidden by the first exposure', () => {

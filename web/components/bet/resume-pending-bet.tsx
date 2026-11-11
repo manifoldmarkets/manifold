@@ -3,6 +3,7 @@ import { useEffect, useState, useSyncExternalStore } from 'react'
 
 import { useUser } from 'web/hooks/use-user'
 import {
+  flushSignedOutBetExposures,
   getSignedOutBetVersion,
   getWelcomeState,
   subscribeSignedOutBet,
@@ -32,6 +33,12 @@ export function ResumePendingBet() {
   useEffect(() => setSettled(true), [])
 
   const userId = user?.id
+  // An exposure that could not be stored when its button was pressed is sent
+  // from here: as each page loads, and again when someone signs in.
+  useEffect(() => {
+    flushSignedOutBetExposures()
+  }, [userId])
+
   const waiting = shouldWaitForWelcome({
     shouldShowWelcome: user?.shouldShowWelcome,
     ...getWelcomeState(userId),

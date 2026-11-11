@@ -1,19 +1,26 @@
 import {
+  FirstPress,
+  getEnrollmentFields,
   getSignedOutBetAssignment,
   getSignedOutBetPressPlan,
+  MAX_UNSENT_EXPOSURES,
   NO_SIGNED_OUT_BET_ASSIGNMENT,
   PENDING_BET_KEY,
   PendingBet,
-  readFirstPressTime,
+  readFirstPress,
   readPendingBet,
   readSignedOutBetMode,
+  readUnsentExposures,
   SIGNED_OUT_BET_FIRST_PRESS_KEY,
   SIGNED_OUT_BET_FORCE_KEY,
   SIGNED_OUT_BET_PROMPTED_KEY,
   SIGNED_OUT_BET_SIGN_IN_EVENT,
   SIGNED_OUT_BET_TEST,
+  SIGNED_OUT_BET_UNSENT_KEY,
   SignedOutBetAssignment,
+  SignedOutBetEnvironment,
   SignedOutBetSurface,
+  UnsentExposure,
 } from 'common/signed-out-bet'
 import { safeJsonParse } from 'common/util/json'
 
@@ -34,9 +41,15 @@ export type SignedOutBetPress = {
 // Module state lasts for one page load, like the exposure cache in
 // use-ab-test.ts. The pending bet and the "already asked" mark are also kept
 // in sessionStorage, so they last for the tab and survive a reload.
-// Exposures sent, or on their way, this page load. Keyed by device, variant
-// and QA override, so a QA override switched on mid-page is logged as well.
+// Exposures this page load has already made. Keyed by device, variant and QA
+// override, so a QA override switched on mid-page makes one of its own.
 const exposures = new Set<string>()
+// Exposures with a request on its way.
+const sending = new Set<string>()
+// After a failed store: wait this long and try again, without a press.
+const RETRY_DELAYS_MS = [5_000, 30_000, 120_000]
+let retries = 0
+let retryTimer: ReturnType<typeof setTimeout> | undefined
 let promptedThisPage = false
 // Whatever sessionStorage held; readPendingBet decides whether it is usable.
 let pendingBet: unknown
@@ -74,8 +87,7 @@ const getAssignment = (): SignedOutBetAssignment => {
   })
 }
 
-// Preview and localhost presses must never enter the production read.
-const getEnvironment = () => {
+const getEnvironment = (): SignedOutBetEnvironment => {
   const { hostname } = window.location
   return ['manifold.markets', 'www.manifold.markets'].includes(hostname)
     ? 'production'
@@ -84,15 +96,91 @@ const getEnvironment = () => {
     : 'preview'
 }
 
-// When this device first pressed: now, unless it has pressed before.
-const getFirstPressTime = () => {
-  const stored = readFirstPressTime(
+const getFirstPress = () =>
+  readFirstPress(
     safeJsonParse(safeLocalStorage?.getItem(SIGNED_OUT_BET_FIRST_PRESS_KEY))
   )
-  if (stored) return stored
-  const now = Date.now()
-  safeLocalStorage?.setItem(SIGNED_OUT_BET_FIRST_PRESS_KEY, String(now))
-  return now
+
+const setFirstPress = (press: FirstPress) =>
+  safeLocalStorage?.setItem(
+    SIGNED_OUT_BET_FIRST_PRESS_KEY,
+    JSON.stringify(press)
+  )
+
+// Record this device's first press if it has never pressed, and that the QA
+// override has been used here if it has. A record that is there but cannot
+// be read is left as it is. The device then says nothing about when it
+// began and stays out of the test, which is safer than starting it over.
+const noteFirstPress = (surface: SignedOutBetSurface, forced: boolean) => {
+  if (safeLocalStorage?.getItem(SIGNED_OUT_BET_FIRST_PRESS_KEY) == null) {
+    setFirstPress({
+      time: Date.now(),
+      surface,
+      ...(forced ? { qa: true } : {}),
+    })
+    return
+  }
+  const press = getFirstPress()
+  if (press && forced && !press.qa) setFirstPress({ ...press, qa: true })
+}
+
+const getUnsent = () =>
+  readUnsentExposures(
+    safeJsonParse(safeLocalStorage?.getItem(SIGNED_OUT_BET_UNSENT_KEY)),
+    Date.now()
+  )
+
+const setUnsent = (unsent: UnsentExposure[]) => {
+  if (unsent.length)
+    safeLocalStorage?.setItem(
+      SIGNED_OUT_BET_UNSENT_KEY,
+      JSON.stringify(unsent.slice(-MAX_UNSENT_EXPOSURES))
+    )
+  else safeLocalStorage?.removeItem(SIGNED_OUT_BET_UNSENT_KEY)
+}
+
+const scheduleRetry = () => {
+  if (retryTimer !== undefined || retries >= RETRY_DELAYS_MS.length) return
+  retryTimer = setTimeout(() => {
+    retryTimer = undefined
+    flushSignedOutBetExposures()
+  }, RETRY_DELAYS_MS[retries++])
+}
+
+const send = (item: UnsentExposure) => {
+  if (sending.has(item.key)) return
+  sending.add(item.key)
+  const settle = (stored: boolean) => {
+    sending.delete(item.key)
+    if (!stored) return scheduleRetry()
+    retries = 0
+    setUnsent(
+      getUnsent().filter(
+        (other) => other.key !== item.key || other.time !== item.time
+      )
+    )
+  }
+  // track() adds to the object it is given, so each event gets its own.
+  track(SIGNED_OUT_BET_TEST, {
+    ...item.exposure,
+    assignmentUnit: 'device',
+    ...getEnrollmentFields(getFirstPress(), Date.now()),
+  }).then(settle, () => settle(false))
+}
+
+// Send every exposure that is not yet known to be stored. A press calls
+// this, and so does every page as it loads and again when someone signs in:
+// a visitor whose exposure failed and who then signed up will never press
+// signed-out again, and must not drop out of the test for it.
+export function flushSignedOutBetExposures() {
+  if (getIsNative() || !safeLocalStorage) return
+  const stored = safeLocalStorage.getItem(SIGNED_OUT_BET_UNSENT_KEY)
+  if (stored == null) return
+  // Neither switch logs anything, so nothing is left waiting under them.
+  const unsent = getMode() === 'experiment' ? getUnsent() : []
+  // Drops what is unreadable or too old to enroll anyone.
+  if (JSON.stringify(unsent) !== stored) setUnsent(unsent)
+  unsent.forEach(send)
 }
 
 const wasPrompted = () =>
@@ -160,7 +248,6 @@ export function onSignedOutBetPress(press: SignedOutBetPress) {
     surface,
     alreadyPrompted: wasPrompted(),
   })
-  // track() adds to the object it is given, so each event gets its own.
   const properties = () => ({
     variant,
     forced,
@@ -171,22 +258,24 @@ export function onSignedOutBetPress(press: SignedOutBetPress) {
   })
 
   if (enrolled) {
-    const exposure = `${ensureDeviceToken()}|${variant}|${forced}`
-    if (!exposures.has(exposure)) {
-      exposures.add(exposure)
-      // Events are stored best-effort. One that was not stored frees its
-      // place, so the next press sends it again.
-      const release = () => exposures.delete(exposure)
-      track(SIGNED_OUT_BET_TEST, {
-        ...properties(),
-        assignmentUnit: 'device',
-        // The report enrolls a device by its earliest exposure stored
-        // within an hour of this.
-        firstPressTime: getFirstPressTime(),
-      }).then((stored) => {
-        if (!stored) release()
-      }, release)
+    const key = `${ensureDeviceToken()}|${variant}|${forced}`
+    if (!exposures.has(key)) {
+      exposures.add(key)
+      noteFirstPress(surface, forced)
+      setUnsent([
+        ...getUnsent().filter((other) => other.key !== key),
+        {
+          key,
+          time: Date.now(),
+          // A device that has used the QA override says so from then on.
+          exposure: {
+            ...properties(),
+            forced: forced || !!getFirstPress()?.qa,
+          },
+        },
+      ])
     }
+    flushSignedOutBetExposures()
   }
 
   if (plan.rememberBet)

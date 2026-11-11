@@ -67,12 +67,13 @@ async function report(db, parameters = args(), explain = false) {
 
 function seed(db) {
   let bets = 0
-  // An exposure. Like a browser, each device reports one first press time
-  // on all of them: here the time of its earliest press() call, unless a
-  // test says otherwise.
+  // An exposure, stored at `ms`. Like a browser, each device says on every
+  // one where it first pressed and how long ago: here that is its earliest
+  // press() call, unless a test says otherwise.
   const firstPress = new Map()
   const press = (deviceId, ms, variant, surface, extra = {}) => {
-    if (!firstPress.has(deviceId)) firstPress.set(deviceId, T0 + ms)
+    if (!firstPress.has(deviceId)) firstPress.set(deviceId, { ms, surface })
+    const first = firstPress.get(deviceId)
     return db.query(
       'insert into user_events (ts, name, data) values ($1,$2,$3)',
       [
@@ -82,7 +83,8 @@ function seed(db) {
           deviceId,
           variant,
           surface,
-          firstPressTime: firstPress.get(deviceId),
+          firstSurface: first.surface,
+          sinceFirstPressMs: ms - first.ms,
           forced: false,
           environment: 'production',
           assignmentUnit: 'device',
@@ -114,7 +116,7 @@ function seed(db) {
   }
   // `fills` lists [amount, ms] pairs. By default the bet fills in full when
   // it is placed, as a market order does. Pass null for a row with no fill
-  // history at all.
+  // history at all, or `data` to say exactly what the row holds.
   const bet = (userId, ms, fields = {}) => {
     const amount = fields.amount ?? 10
     const fills =
@@ -136,7 +138,7 @@ function seed(db) {
         fields.shares ?? 20,
         fields.isApi ?? false,
         fields.isRedemption ?? false,
-        fills === null ? null : { fills },
+        'data' in fields ? fields.data : fills === null ? null : { fills },
       ]
     )
   }
@@ -320,7 +322,16 @@ test('a device that used the QA override is left out whole, in either order', as
       }
     )
     await press('forced-trace-before', 0, 'treatment', 'button', {
-      firstPressTime: T0 - 31 * MINUTE,
+      sinceFirstPressMs: 31 * MINUTE,
+    })
+
+    // Its forced sign-in result was stored a second before the moment its
+    // only exposure puts the press at: the exposure took longer to arrive.
+    await signIn('forced-just-ahead', 0, 'treatment', 'not-completed', {
+      forced: true,
+    })
+    await press('forced-just-ahead', 2 * SECOND, 'treatment', 'button', {
+      sinceFirstPressMs: SECOND,
     })
 
     // The override came two days after it entered. The day its outcomes are
@@ -351,10 +362,10 @@ test('a resting limit order counts from its first fill, not from when it was pla
   const db = await database()
   const { press, account, bet } = seed(db)
   try {
-    // Placed two hours in, first filled two days later.
+    // Placed two hours in, first filled a day and a half after the press.
     await press('late-fill', 0, 'treatment', 'ticket')
     await account('u1', MINUTE, 'late-fill')
-    await bet('u1', 2 * HOUR, { fills: [[10, 2 * DAY]] })
+    await bet('u1', 2 * HOUR, { fills: [[10, 36 * HOUR]] })
 
     // Placed two hours in, part filled within the day, the rest much later.
     await press('early-fill', 0, 'treatment', 'ticket')
@@ -386,6 +397,71 @@ test('a resting limit order counts from its first fill, not from when it was pla
     assert.equal(row.signups_1h, 4)
     // early-fill and no-history.
     assert.equal(row.activated_1d, 2)
+  } finally {
+    await db.close()
+  }
+})
+
+test('a fill history that is missing, empty or broken neither stops the report nor credits a bet wrongly', async () => {
+  const db = await database()
+  const { press, account, bet } = seed(db)
+  try {
+    const stamp = (ms) => T0 + ms
+    // Each case is its own device and its own report row: the data of its
+    // one bet, placed two hours after the press, and whether that is a bet
+    // within a day of the press.
+    const cases = [
+      ['no-data', null, true],
+      ['no-history', {}, true],
+      ['empty-history', { fills: [] }, true],
+      ['history-is-text', { fills: 'oops' }, true],
+      ['history-is-an-object', { fills: { amount: 10 } }, true],
+      [
+        'text-amount',
+        { fills: [{ amount: 'oops', timestamp: stamp(3 * HOUR) }] },
+        false,
+      ],
+      ['text-time', { fills: [{ amount: 10, timestamp: 'soon' }] }, false],
+      ['no-time', { fills: [{ amount: 10 }] }, false],
+      ['null-fill', { fills: [null] }, false],
+      [
+        'bad-then-good',
+        {
+          fills: [
+            { amount: 'oops', timestamp: stamp(3 * HOUR) },
+            { amount: 5, timestamp: stamp(4 * HOUR) },
+          ],
+        },
+        true,
+      ],
+      [
+        'bad-then-late',
+        {
+          fills: [{ amount: 10 }, { amount: 5, timestamp: stamp(2 * DAY) }],
+        },
+        false,
+      ],
+      // A fill stamped before its own order counts from when the order was
+      // placed.
+      [
+        'backdated',
+        { fills: [{ amount: 10, timestamp: stamp(-5 * HOUR) }] },
+        true,
+      ],
+    ]
+    for (const [name, data] of cases) {
+      await press(name, 0, name, 'ticket')
+      await account(`u-${name}`, MINUTE, name)
+      await bet(`u-${name}`, 2 * HOUR, { data })
+    }
+    const rows = await report(db)
+    assert.equal(rows.length, cases.length)
+    for (const [name, , counts] of cases) {
+      const row = rows.find((r) => r.variant === name)
+      assert.equal(row.devices, 1, name)
+      assert.equal(row.signups_1h, 1, name)
+      assert.equal(row.activated_1d, counts ? 1 : 0, name)
+    }
   } finally {
     await db.close()
   }
@@ -435,7 +511,7 @@ test('a device enters by its first press only, whenever the window is', async ()
     // Its first exposure was lost; the press a minute later is the one that
     // was stored.
     await press('sent-again', MINUTE, 'control', 'ticket', {
-      firstPressTime: T0,
+      sinceFirstPressMs: MINUTE,
     })
     // Two tabs pressed a second either side of the window's start.
     const boundary = Date.parse(START) - T0
@@ -492,62 +568,113 @@ test('a device enters by its first press only, whenever the window is', async ()
   }
 })
 
-test('an exposure enrolls only if it was stored within an hour of the first press', async () => {
+test('an exposure enrolls its device only if it was sent within an hour of the first press', async () => {
   const db = await database()
   const { press } = seed(db)
   try {
     // The first exposure was lost and the visitor came back three days
-    // later: too late to count that press as where the device began.
-    await press('late-copy-only', 0, 'control', 'ticket', {
-      firstPressTime: T0 - 3 * DAY,
+    // later: too late to say that is where the device began.
+    await press('back-days-later', 0, 'control', 'ticket', {
+      sinceFirstPressMs: 3 * DAY,
     })
-    // Browser clocks two hours out, either way.
-    await press('clock-far-ahead', 0, 'control', 'ticket', {
-      firstPressTime: T0 + 2 * HOUR,
+    // An hour and a second after the first press is too late. Exactly an
+    // hour, and 59 minutes, are in time.
+    await press('just-late', 0, 'control', 'button', {
+      sinceFirstPressMs: HOUR + SECOND,
     })
-    await press('clock-far-behind', 0, 'control', 'ticket', {
-      firstPressTime: T0 - 2 * HOUR,
+    await press('on-the-hour', 0, 'treatment', 'ticket', {
+      sinceFirstPressMs: HOUR,
     })
-    // Just inside the hour, either way, and exactly on it.
-    await press('clock-ahead', 0, 'treatment', 'ticket', {
-      firstPressTime: T0 + 59 * MINUTE,
+    await press('just-in-time', 0, 'treatment', 'ticket', {
+      sinceFirstPressMs: 59 * MINUTE,
     })
-    await press('clock-behind', 0, 'treatment', 'ticket', {
-      firstPressTime: T0 - 59 * MINUTE,
+    // A browser whose record could not be read, or whose clock went
+    // backwards, says nothing about its enrollment.
+    await press('says-nothing', 0, 'control', 'button', {
+      sinceFirstPressMs: undefined,
+      firstSurface: undefined,
     })
-    await press('clock-on-the-hour', 0, 'treatment', 'ticket', {
-      firstPressTime: T0 - HOUR,
-    })
-    await press('clock-past-the-hour', 0, 'control', 'button', {
-      firstPressTime: T0 - HOUR - SECOND,
-    })
-    // Anyone can write an event. A press time that is missing or not a
-    // number never enrolls, and never breaks the report.
-    await press('no-press-time', 0, 'control', 'button', {
-      firstPressTime: undefined,
-    })
-    await press('null-press-time', 0, 'control', 'button', {
-      firstPressTime: null,
-    })
-    await press('text-press-time', 0, 'control', 'button', {
-      firstPressTime: 'soon',
-    })
-    await press('digits-press-time', 0, 'control', 'button', {
-      firstPressTime: String(T0),
-    })
+    // Anyone can write an event. An elapsed time that is negative, missing
+    // or not a number never enrolls and never breaks the report. Nor does a
+    // first surface that is not one.
+    for (const [device, fields] of [
+      ['negative', { sinceFirstPressMs: -1 }],
+      ['null-time', { sinceFirstPressMs: null }],
+      ['text-time', { sinceFirstPressMs: 'soon' }],
+      ['digits-time', { sinceFirstPressMs: '0' }],
+      ['huge-time', { sinceFirstPressMs: 1e300 }],
+      ['no-surface', { firstSurface: undefined }],
+      ['odd-surface', { firstSurface: 'page' }],
+    ])
+      await press(device, 0, 'control', 'button', fields)
     // Back within the hour on another page: one device, where it began.
     await press('back-soon', 0, 'treatment', 'ticket')
     await press('back-soon', 40 * MINUTE, 'treatment', 'button')
-    // Back after the hour: still one device, and the later exposure would
-    // not enroll it even if the first had been lost.
-    await press('back-later', 3 * HOUR, 'control', 'button', {
-      firstPressTime: T0,
-    })
 
     const rows = byKey(await report(db))
     assert.deepEqual(Object.keys(rows), ['treatment/ticket'])
-    // The three clocks inside the hour, and 'back-soon'.
-    assert.equal(rows['treatment/ticket'].devices, 4)
+    // 'on-the-hour', 'just-in-time' and 'back-soon'.
+    assert.equal(rows['treatment/ticket'].devices, 3)
+  } finally {
+    await db.close()
+  }
+})
+
+test('a device is placed at its press and counted from there, however late its exposure arrives', async () => {
+  const db = await database()
+  const { press, signIn, account, bet } = seed(db)
+  try {
+    // All of these pressed at noon. This one's exposure could not be stored
+    // until forty seconds later, by which time the account already existed.
+    await press('held-up', 40 * SECOND, 'treatment', 'ticket', {
+      sinceFirstPressMs: 40 * SECOND,
+    })
+    await account('u1', 20 * SECOND, 'held-up')
+    await bet('u1', 30 * MINUTE)
+    // Stored five minutes after the press. The account came 61 minutes
+    // after the press: inside an hour of the stored event, but too late.
+    await press('slow-signup', 5 * MINUTE, 'treatment', 'ticket', {
+      sinceFirstPressMs: 5 * MINUTE,
+    })
+    await account('u2', 61 * MINUTE, 'slow-signup')
+    // Stored fifty minutes after the press. Its bet filled a day and ten
+    // minutes after the press: inside a day of the stored event, too late.
+    await press('slow-bet', 50 * MINUTE, 'treatment', 'ticket', {
+      sinceFirstPressMs: 50 * MINUTE,
+    })
+    await account('u3', 51 * MINUTE, 'slow-bet')
+    await bet('u3', DAY + 10 * MINUTE)
+    // Stored fifty minutes after the press. Its sign-in window closed 65
+    // minutes after the press: inside an hour of the stored event, too late.
+    await press('slow-window', 50 * MINUTE, 'treatment', 'ticket', {
+      sinceFirstPressMs: 50 * MINUTE,
+    })
+    await signIn('slow-window', 65 * MINUTE, 'treatment', 'not-completed')
+    // Its first press, on a market page, could not be stored. What was
+    // stored came from a list row five minutes later, and says where the
+    // device began.
+    await press('began-elsewhere', 5 * MINUTE, 'treatment', 'button', {
+      firstSurface: 'ticket',
+      sinceFirstPressMs: 5 * MINUTE,
+    })
+
+    const rows = await report(db)
+    assert.equal(rows.length, 1)
+    const [row] = rows
+    assert.equal(row.first_surface, 'ticket')
+    assert.equal(row.devices, 5)
+    assert.equal(row.signups_1h, 2)
+    assert.equal(row.activated_1d, 1)
+    assert.equal(row.sign_in_settled_1h, 0)
+
+    // The windows a device must have had are measured from the press too.
+    let [early] = await report(db, args(START, END, at(59 * MINUTE)))
+    assert.equal(early.devices, 5)
+    assert.equal(early.mature_hour_devices, 0)
+    ;[early] = await report(db, args(START, END, at(HOUR)))
+    assert.equal(early.mature_hour_devices, 5)
+    assert.equal(early.signups_1h, 2)
+    assert.equal(early.mature_day_devices, 0)
   } finally {
     await db.close()
   }
@@ -580,10 +707,10 @@ test('reports over adjacent windows add up to the report over both', async () =>
     await press('two-tabs', b - SECOND, 'control', 'button')
     await press('two-tabs', b + SECOND, 'control', 'ticket')
 
-    // Pressed ten minutes before the boundary, which was lost. The press
-    // that was stored came ten minutes after it.
+    // Pressed ten minutes before the boundary, which could not be stored.
+    // What was stored came ten minutes after the boundary, and says so.
     await press('sent-again', b + 10 * MINUTE, 'treatment', 'button', {
-      firstPressTime: T0 + b - 10 * MINUTE,
+      sinceFirstPressMs: 20 * MINUTE,
     })
     await account('u3', b + 12 * MINUTE, 'sent-again')
 
@@ -591,14 +718,25 @@ test('reports over adjacent windows add up to the report over both', async () =>
     await press('back-later', b - 3 * HOUR, 'control', 'button')
     await press('back-later', b + 5 * HOUR, 'control', 'ticket')
 
-    // A browser clock fifty minutes fast: two of its exposures qualify, a
-    // hundred minutes apart and either side of the boundary.
-    await press('fast-clock', b - 90 * MINUTE, 'control', 'ticket', {
-      firstPressTime: T0 + b - 40 * MINUTE,
+    // Pressed thirty seconds before the boundary, stored thirty after it.
+    await press('held-up', b + 30 * SECOND, 'control', 'ticket', {
+      sinceFirstPressMs: MINUTE,
     })
-    await press('fast-clock', b + 10 * MINUTE, 'control', 'button', {
-      firstPressTime: T0 + b - 40 * MINUTE,
+    // Two exposures that can each enroll it, either side of the boundary.
+    await press('two-copies', b - 50 * MINUTE, 'control', 'ticket')
+    await press('two-copies', b + 5 * MINUTE, 'control', 'button')
+    // Two tabs each wrote their own record of the first press, a second
+    // and a half apart and either side of the boundary. The earlier
+    // exposure decides, though the later one says the second day.
+    await press('two-records', b - SECOND, 'control', 'button')
+    await press('two-records', b + SECOND, 'control', 'ticket', {
+      firstSurface: 'ticket',
+      sinceFirstPressMs: SECOND / 2,
     })
+    // Its first exposure is just outside what the second day's report
+    // reads. The one inside still says the device began on the first day.
+    await press('before-the-look-back', b - 61 * MINUTE, 'control', 'ticket')
+    await press('before-the-look-back', b - 2 * MINUTE, 'control', 'ticket')
 
     // QA override a day and a half after it entered: stays in, everywhere.
     await press('forced-later', b - 2 * HOUR, 'control', 'ticket')
@@ -636,7 +774,7 @@ test('reports over adjacent windows add up to the report over both', async () =>
 
     // Never enrolls, in any window.
     await press('late-copy-only', b + 3 * HOUR, 'control', 'ticket', {
-      firstPressTime: T0 + b - 3 * DAY,
+      sinceFirstPressMs: 3 * DAY,
     })
 
     const first = byKey(await report(db, args(FIRST, SECOND_DAY, AS_OF)))
@@ -670,35 +808,31 @@ test('reports over adjacent windows add up to the report over both', async () =>
     }
 
     // And the parts are what they should be, not merely consistent.
-    // first-day, fast-clock, forced-later, soon-conflict, late-conflict.
-    assert.equal(first['control/ticket'].devices, 5)
+    // first-day, held-up, two-copies, before-the-look-back, forced-later,
+    // soon-conflict, late-conflict.
+    assert.equal(first['control/ticket'].devices, 7)
     assert.equal(first['control/ticket'].signups_1h, 1)
     assert.equal(first['control/ticket'].activated_1d, 1)
     assert.equal(first['control/ticket'].assignment_conflicts, 1)
-    // two-tabs, back-later, slow-sign-in.
-    assert.equal(first['control/button'].devices, 3)
+    // two-tabs, two-records, back-later, slow-sign-in.
+    assert.equal(first['control/button'].devices, 4)
     assert.equal(first['control/button'].sign_in_settled_1h, 1)
-    // last-minutes.
-    assert.equal(first['treatment/button'].devices, 1)
+    // last-minutes and sent-again, each with its account.
+    assert.equal(first['treatment/button'].devices, 2)
     assert.equal(first['treatment/button'].sign_in_completed_1h, 1)
-    assert.equal(first['treatment/button'].signups_1h, 1)
+    assert.equal(first['treatment/button'].signups_1h, 2)
     assert.equal(first['treatment/button'].activated_1d, 1)
     assert.equal(first['treatment/ticket'], undefined)
-    // second-day and sent-again; nothing of control began on the second day.
-    assert.deepEqual(Object.keys(second).sort(), [
-      'treatment/button',
-      'treatment/ticket',
-    ])
+    // Only second-day began on the second day.
+    assert.deepEqual(Object.keys(second), ['treatment/ticket'])
     assert.equal(second['treatment/ticket'].devices, 1)
     assert.equal(second['treatment/ticket'].activated_1d, 1)
-    assert.equal(second['treatment/button'].devices, 1)
-    assert.equal(second['treatment/button'].signups_1h, 1)
   } finally {
     await db.close()
   }
 })
 
-test('only the cohort window, two hours before it and the day after it are read', async () => {
+test('only the cohort window, the hour before it and the day after it are read', async () => {
   const db = await database()
   const { press } = seed(db)
   try {
@@ -708,17 +842,17 @@ test('only the cohort window, two hours before it and the day after it are read'
         jsonb_build_object('deviceId', 'device-' || n, 'variant',
           case when n % 2 = 0 then 'control' else 'treatment' end,
           'surface', 'ticket', 'forced', false,
-          'firstPressTime', extract(epoch from $1::timestamptz + n * interval '1 minute') * 1000,
+          'firstSurface', 'ticket', 'sinceFirstPressMs', 0,
           'environment', 'production')
       from generate_series(1, 3000) n`,
       [START, rules.SIGNED_OUT_BET_TEST]
     )
-    // Long after the window, and three hours before it: must not be
+    // Long after the window, and ninety minutes before it: must not be
     // scanned, let alone counted.
     await press('much-later', 20 * DAY, 'control', 'ticket')
     await press(
       'much-earlier',
-      Date.parse(START) - T0 - 3 * HOUR,
+      Date.parse(START) - T0 - 90 * MINUTE,
       'control',
       'ticket'
     )
@@ -777,11 +911,13 @@ test('report CLI validates its arguments and prints the rows with rates', async 
   await press('d4', 0, 'control', 'button')
   await press('d5', 0, 'control', 'button')
   await press('d6', 0, 'treatment', 'button')
+  // Two days on: the range is read a day at a time and added up.
+  await press('d7', 2 * DAY, 'control', 'ticket')
 
   const run = (argv, env) => {
     let finish
     const done = new Promise((resolve) => (finish = resolve))
-    const out = { logs: [], error: undefined, rows: undefined }
+    const out = { logs: [], error: undefined, rows: undefined, windows: [] }
     const pgp = Object.assign(
       () => ({
         tx: (_mode, callback) =>
@@ -789,6 +925,7 @@ test('report CLI validates its arguments and prints the rows with rates', async 
             none: async () => {},
             manyOrNone: (query, parameters) => {
               assert.equal(query, sql)
+              out.windows.push(parameters.slice(0, 2))
               return report(db, parameters)
             },
           }),
@@ -828,10 +965,27 @@ test('report CLI validates its arguments and prints the rows with rates', async 
   try {
     const out = await run(['2026-12-02', '2026-12-09'], env)
     assert.equal(out.error, undefined)
+    // One query for each UTC day of the range, end to end.
+    assert.equal(out.windows.length, 7)
+    assert.equal(out.windows[0][0], '2026-12-02T00:00:00.000Z')
+    assert.equal(out.windows.at(-1)[1], '2026-12-09T00:00:00.000Z')
+    out.windows.forEach(([from, to], i) => {
+      assert.equal(Date.parse(to) - Date.parse(from), DAY)
+      if (i) assert.equal(from, out.windows[i - 1][1])
+    })
     const rows = byKey(out.rows)
+    assert.deepEqual(Object.keys(rows), [
+      'control/button',
+      'control/ticket',
+      'treatment/button',
+      'treatment/ticket',
+    ])
     assert.equal(rows['treatment/ticket'].signup_rate_1h, '100.00%')
     assert.equal(rows['treatment/ticket'].activation_rate_1d, '100.00%')
     assert.equal(rows['control/ticket'].signup_rate_1h, '0.00%')
+    // d2 on the 3rd and d7 on the 5th.
+    assert.equal(rows['control/ticket'].devices, 2)
+    assert.equal(rows['control/ticket'].mature_day_devices, 2)
     // The split is checked overall and for each first surface.
     assert.deepEqual(
       // Made in the script's own context, so compared by value.
@@ -843,15 +997,15 @@ test('report CLI validates its arguments and prints the rows with rates', async 
       [
         {
           firstSurface: 'all',
-          control: 4,
+          control: 5,
           treatment: 2,
-          sampleRatioChiSquare: 4 / 6,
+          sampleRatioChiSquare: 9 / 7,
         },
         {
           firstSurface: 'ticket',
-          control: 1,
+          control: 2,
           treatment: 1,
-          sampleRatioChiSquare: 0,
+          sampleRatioChiSquare: 1 / 3,
         },
         {
           firstSurface: 'button',

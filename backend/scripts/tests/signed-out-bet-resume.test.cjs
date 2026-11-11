@@ -42,6 +42,9 @@ function page(options = {}) {
     done: null,
     // Who was signed in each time the ticket rendered.
     shownTo: [],
+    // What analytics was asked to store, and whether it manages to.
+    events: [],
+    stores: true,
   }
   // Lets a test hold the ticket's dynamic import open. The compiled import is
   // `Promise.resolve().then(() => require(...))`.
@@ -59,7 +62,12 @@ function page(options = {}) {
       'common/util/json': json,
       'web/lib/firebase/users': { firebaseLogin: () => new Promise(() => {}) },
       'web/lib/native/is-native': { getIsNative: () => false },
-      'web/lib/service/analytics': { track: async () => true },
+      'web/lib/service/analytics': {
+        track: async (name, properties) => {
+          state.events.push({ name, ...properties })
+          return state.stores
+        },
+      },
       'web/lib/util/device-token': { ensureDeviceToken: () => 'device-1' },
       'web/lib/util/local': {
         safeLocalStorage: local,
@@ -70,6 +78,8 @@ function page(options = {}) {
       window: { location: { hostname: 'manifold.markets' } },
       process: { env: { NEXT_PUBLIC_SIGNED_OUT_BET_SIGNIN: mode } },
       Date: { now: () => clock.now },
+      // Retry timers are not run here; the host is what sends.
+      setTimeout: () => 0,
     }
   )
   // Stands in for the lazily fetched trade ticket.
@@ -342,6 +352,58 @@ test('strict mode shows one ticket, once', async () => {
   await view.render()
   assert.equal(view.tickets(), 1)
   assert.equal(view.ticket().dataset.ticket, 'c1')
+})
+
+const exposures = (p) =>
+  p.state.events.filter((e) => e.name === rules.SIGNED_OUT_BET_TEST)
+
+test('an exposure that could not be stored is sent by the next page, and again at sign-in, with no press', async () => {
+  // Pressed on one page load, where nothing could be stored.
+  const local = newStore()
+  const session = newStore()
+  const pressed = page({ local, session })
+  pressed.state.stores = false
+  await rowPress(pressed)
+  await flush()
+  assert.equal(exposures(pressed).length, 1)
+  assert.notEqual(local.getItem(rules.SIGNED_OUT_BET_UNSENT_KEY), null)
+
+  // The next page tries as it loads, still signed out. It fails again.
+  const p = page({ local, session, now: START + 20_000 })
+  p.state.stores = false
+  const view = await mount(p)
+  assert.equal(exposures(p).length, 1)
+  assert.notEqual(local.getItem(rules.SIGNED_OUT_BET_UNSENT_KEY), null)
+
+  // The visitor signs up there and never presses signed-out again. Signing
+  // in is enough to send it, and it still counts from the press.
+  p.state.stores = true
+  p.clock.now = START + 45_000
+  p.state.user = { id: 'u1' }
+  await view.render()
+  const sent = exposures(p)
+  assert.equal(sent.length, 2)
+  assert.equal(sent[1].contractId, 'c1')
+  assert.equal(sent[1].surface, 'button')
+  assert.equal(sent[1].firstSurface, 'button')
+  assert.equal(sent[1].sinceFirstPressMs, 45_000)
+  assert.equal(local.getItem(rules.SIGNED_OUT_BET_UNSENT_KEY), null)
+  // The ticket still reopens as before.
+  assert.equal(view.ticket().dataset.ticket, 'c1')
+
+  // Nothing is sent twice by later renders or account changes.
+  await view.render()
+  p.state.user = null
+  await view.render()
+  assert.equal(exposures(p).length, 2)
+})
+
+test('a page with nothing waiting sends nothing', async () => {
+  const p = page()
+  const view = await mount(p, { strict: true })
+  p.state.user = { id: 'u1' }
+  await view.render()
+  assert.deepEqual(p.state.events, [])
 })
 
 test('nothing renders without a remembered bet', async () => {
