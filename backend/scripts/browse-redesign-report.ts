@@ -16,9 +16,9 @@ import * as pgPromise from 'pg-promise'
  * even when launch is after midnight. The end is exclusive, defaulting to
  * now so the launch-day counts are available immediately. Outcomes mature
  * for seven days after each first exposure, regardless of the requested end.
- * The one-day columns mature after a day: nearly every signup and first bet
- * lands within a day of the first visit, so they can be read a week sooner.
- * The main outcome is activated_1d, a funded bet within a day of landing.
+ * The one-day columns mature after a day, so they can be read a week sooner.
+ * They are an earlier look at the same outcomes. Choose the primary metric
+ * before a launch, not from these afterwards.
  *
  * Unit: browser, not person. Keep original assignments, including switchers.
  * A fresh browser can belong to an existing person; account login is reported

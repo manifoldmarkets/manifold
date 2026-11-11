@@ -302,14 +302,17 @@ test('one-day outcomes count only what landed within a day, for browsers a day o
     await enter('late-fill', day(1))
     // Places a limit order the same day that part fills within the day.
     await enter('early-fill', day(1))
+    // Two accounts on one browser: one on day one that never bets, and one
+    // on day three whose bet carries a fill stamped on day one.
+    await enter('two-accounts', day(1))
     // Never signs up.
     await enter('nothing', day(1))
     // Entered less than a day before the as-of.
     await enter('fresh', '2026-11-09T12:00:00Z', 'treatment')
     await db.query(
       `insert into users values
-        ('u-same',$1),('u-late-bet',$1),('u-late-signup',$2),('u-edge',$1),('u-edge-out',$1),('u-late-fill',$1),('u-early-fill',$1),('u-fresh','2026-11-09T12:05:00Z')`,
-      [hour(2), hour(30)]
+        ('u-same',$1),('u-late-bet',$1),('u-late-signup',$2),('u-edge',$1),('u-edge-out',$1),('u-late-fill',$1),('u-early-fill',$1),('u-two-a',$1),('u-two-b',$3),('u-fresh','2026-11-09T12:05:00Z')`,
+      [hour(2), hour(30), hour(60)]
     )
     await db.exec(`
       insert into private_users values
@@ -320,6 +323,8 @@ test('one-day outcomes count only what landed within a day, for browsers a day o
         ('u-edge-out','{"initialDeviceToken":"edge-out"}'),
         ('u-late-fill','{"initialDeviceToken":"late-fill"}'),
         ('u-early-fill','{"initialDeviceToken":"early-fill"}'),
+        ('u-two-a','{"initialDeviceToken":"two-accounts"}'),
+        ('u-two-b','{"initialDeviceToken":"two-accounts"}'),
         ('u-fresh','{"initialDeviceToken":"fresh"}');
     `)
     await db.query(
@@ -343,27 +348,32 @@ test('one-day outcomes count only what landed within a day, for browsers a day o
     await db.query(
       `insert into contract_bets values
         ('b-late-fill','u-late-fill',$1,10,20,false,false,$2),
-        ('b-early-fill','u-early-fill',$1,10,20,false,false,$3)`,
+        ('b-early-fill','u-early-fill',$1,10,20,false,false,$3),
+        ('b-two','u-two-b',$4,10,20,false,false,$5)`,
       [
         hour(4),
         fills([0, hour(4)], [10, hour(52)]),
         fills([4, hour(20)], [6, hour(80)]),
+        hour(61),
+        fills([10, hour(20)]),
       ]
     )
     const rows = await report(db, args(day(1), day(10)))
     const control = rows.find((r) => r.variant === 'control')
-    assert.equal(control.browsers, 8)
-    assert.equal(control.mature_day_browsers, 8)
-    // Everyone but late-signup and nothing signed up within a day.
-    assert.equal(control.signups_1d, 6)
+    assert.equal(control.browsers, 9)
+    assert.equal(control.mature_day_browsers, 9)
+    // Everyone but late-signup and nothing signed up within a day;
+    // two-accounts by its first account.
+    assert.equal(control.signups_1d, 7)
     // same-day and edge bet within a day, and early-fill's order part filled
-    // within it. edge-out's bet is a minute late, and late-fill's order sat
-    // unfilled until day three.
+    // within it. edge-out's bet is a minute late, late-fill's order sat
+    // unfilled until day three, and the only bet on two-accounts was placed
+    // on day three by its second account.
     assert.equal(control.activated_1d, 3)
     // The seven-day columns still count everyone who got there in the week.
-    assert.equal(control.mature_browsers, 8)
-    assert.equal(control.signups_7d, 7)
-    assert.equal(control.activated_7d, 7)
+    assert.equal(control.mature_browsers, 9)
+    assert.equal(control.signups_7d, 8)
+    assert.equal(control.activated_7d, 8)
     const treatment = rows.find((r) => r.variant === 'treatment')
     assert.equal(treatment.browsers, 1)
     assert.equal(treatment.mature_day_browsers, 0)
@@ -514,7 +524,11 @@ test('report groups 84,000 events without rescanning the event CTE per browser',
       select '2026-09-01'::timestamptz + n * interval '1 second','background','{}'::jsonb from generate_series(1,200000) n;
       insert into users select 'user-' || n, '2026-11-02' from generate_series(1,4000) n;
       insert into private_users select 'user-' || n, jsonb_build_object('initialDeviceToken','token-' || n) from generate_series(1,4000) n;
-      insert into contract_bets select 'bet-' || n, 'user-' || n, '2026-11-03', 10, 20, false, false from generate_series(1,4000) n;
+      insert into contract_bets select 'bet-' || n, 'user-' || n, '2026-11-03', 10, 20, false, false,
+        jsonb_build_object('fills', jsonb_build_array(
+          jsonb_build_object('matchedBetId', null, 'amount', 4, 'shares', 8, 'timestamp', extract(epoch from '2026-11-03'::timestamptz) * 1000),
+          jsonb_build_object('matchedBetId', null, 'amount', 6, 'shares', 12, 'timestamp', extract(epoch from '2026-11-04'::timestamptz) * 1000)))
+        from generate_series(1,4000) n;
       analyze;`)
     const start = performance.now()
     const rows = await report(db)
@@ -525,6 +539,11 @@ test('report groups 84,000 events without rescanning the event CTE per browser',
       assert.equal(row.returned_days_1_to_7, 2000)
       assert.equal(row.signups_7d, 2000)
       assert.equal(row.activated_7d, 2000)
+      // Each bet has a fill history to read. They signed up a day after the
+      // first visit and bet a day after that, so nothing lands on day one.
+      assert.equal(row.mature_day_browsers, 2000)
+      assert.equal(row.signups_1d, 0)
+      assert.equal(row.activated_1d, 0)
       assert.equal(row.assignment_conflicts, 0)
     }
     const explained = await report(db, args(), true)

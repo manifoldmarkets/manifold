@@ -35,8 +35,7 @@ with
     select
       *,
       ts <= $3::timestamptz - interval '7 days' as mature,
-      -- Nearly every signup and first bet lands within a day of the first
-      -- visit, so the one-day outcomes can be read a week sooner.
+      -- The one-day outcomes can be read a week before the seven-day ones.
       ts <= $3::timestamptz - interval '1 day' as mature_day
     from
       first_exposures

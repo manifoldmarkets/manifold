@@ -17,6 +17,7 @@ import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { listGroupsBySlug } from 'web/lib/supabase/groups'
+import { safeLocalStorage } from 'web/lib/util/local'
 import { BrowseTopicsProvider, useBrowseTopics } from './browse-topics'
 import { HubCards } from './hub-cards'
 import { isHubMarket, SHOW_HUB_MARKETS_KEY } from './hub-fold'
@@ -116,12 +117,21 @@ function BrowseV2Inner() {
     false,
     SHOW_HUB_MARKETS_KEY
   )
-  const filters: BrowseFilters = { ...sessionFilters, showHubMarkets }
+  const filters: BrowseFilters = {
+    ...sessionFilters,
+    // Without storage the choice stays with the other filters, for the visit.
+    showHubMarkets: safeLocalStorage
+      ? showHubMarkets
+      : !!sessionFilters.showHubMarkets,
+  }
   // The filters as the person set them, a reset included: the hub choice in
   // them is the one to remember. Filters set for them (a link, a wider
   // search) go to setSessionFilters and leave the remembered choice alone.
   const setFilters = (next: BrowseFilters) => {
-    setShowHubMarkets(!!next.showHubMarkets)
+    // Written only when it changes, so a tab that never touched the choice
+    // cannot undo what another tab chose.
+    if (!!next.showHubMarkets !== showHubMarkets)
+      setShowHubMarkets(!!next.showHubMarkets)
     setSessionFilters(next)
   }
   const [input, setInput] = usePersistentInMemoryState('', 'browse-v2-term')

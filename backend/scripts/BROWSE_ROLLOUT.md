@@ -54,13 +54,21 @@ token observed on a browser's exposure/toggle events; trades require funded,
 non-API, non-redemption buy orders.
 
 The one-day columns (`mature_day_browsers`, `signups_1d`, `activated_1d`) use
-browsers at least a day old. Nearly every signup and first bet lands within a
-day of the first visit, so these can be read a week before the seven-day rates.
-`activated_1d` is the outcome to lead with: a signup whose buy order filled
-within a day of the first visit. A resting limit order counts from its first
-fill, not from when it was placed; the seven-day column still counts it from
-placement. A bet with no fill history counts from when it was placed, and one
-whose history holds no usable fill does not count.
+browsers at least a day old, so they can be read a week before the seven-day
+rates. They are an earlier look at the same two outcomes, not a new verdict.
+They were added while the v2 experiment was already running and after it had
+been read, so for v2 they are secondary. To make one of them a primary metric,
+say so before the next launch, as below.
+
+`signups_1d` is a signup within a day of the first visit. `activated_1d` is a
+day-one signup whose buy order filled within that day. A resting limit order
+counts from its first fill, not from when it was placed; the seven-day column
+still counts it from placement. A bet with no fill history counts from when it
+was placed, and one whose history holds no usable fill does not count.
+
+A one-day count can still rise a little on later runs. A signup made on a
+rotated device token is only linked to its browser when that token is next
+seen on Browse, which can be up to seven days after the first visit.
 
 Reported assignment conflicts include changes
 to either cohort or variant. Keep original assignment after manual switching
