@@ -1,6 +1,7 @@
 import clsx from 'clsx'
-import { ReactNode, memo, useEffect, useState } from 'react'
+import { ReactNode, memo, useEffect, useMemo, useRef, useState } from 'react'
 
+import { useEvent } from 'client-common/hooks/use-event'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { Answer, MultiSort, getDefaultSort } from 'common/answer'
 import { DisplayUser } from 'common/api/user-types'
@@ -26,12 +27,14 @@ import {
   tradingAllowed,
 } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
+import { getDefaultGraphedAnswerIds } from 'common/multi-chart'
 import { Period, periodDurations } from 'common/period'
 import { getIsLive } from 'common/sports-info'
 import { NEW_GRAPH_COLOR } from 'common/src/number'
 import { type ChartAnnotation } from 'common/supabase/chart-annotations'
 import { filterDefined } from 'common/util/array'
 import { formatMoney, formatPercent } from 'common/util/format'
+import { searchInAny } from 'common/util/parse'
 import { orderBy } from 'lodash'
 import { FaArrowDown, FaArrowUp, FaChartArea } from 'react-icons/fa'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
@@ -349,6 +352,11 @@ export const BinaryOverview = (props: {
   )
 }
 
+// How long the pointer must rest on an answer that is not on the chart before
+// the chart previews it. Previewing adds a line and can rescale the chart, so
+// it should not happen for every row the pointer crosses.
+const HOVER_PREVIEW_DELAY_MS = 150
+
 const ChoiceOverview = (props: {
   points: MultiPoints
   contract: CPMMMultiContract
@@ -388,9 +396,6 @@ const ChoiceOverview = (props: {
 
   const [hoverAnswerId, setHoverAnswerId] = useState<string>()
   const [selectedAnswerIds, setSelectedAnswerIds] = useState<string[]>([])
-  const [defaultAnswerIdsToGraph, setDefaultAnswerIdsToGraph] = useState<
-    string[]
-  >([])
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
@@ -398,6 +403,38 @@ const ChoiceOverview = (props: {
     '',
     'create-answer-text' + contract.id
   )
+
+  // Until the user picks answers, the chart draws the likeliest ones (the
+  // likeliest matches while searching), whatever order the list is sorted in.
+  // Chosen once per set of answers, so lines don't swap as probabilities move.
+  const defaultAnswerIdsToGraph = useMemo(() => {
+    const matches = query
+      ? contract.answers.filter((a) => searchInAny(query, a.text))
+      : []
+    return getDefaultGraphedAnswerIds(
+      contract,
+      matches.length ? matches : contract.answers
+    )
+  }, [contract.id, contract.answers.length, query])
+  const graphedAnswerIds = selectedAnswerIds.length
+    ? selectedAnswerIds
+    : defaultAnswerIdsToGraph
+
+  // An answer already on the chart is highlighted at once. One that isn't is
+  // previewed only once the pointer rests on its row.
+  const hoverTimer = useRef<ReturnType<typeof setTimeout>>()
+  const onAnswerHover = useEvent((answer: Answer | undefined) => {
+    clearTimeout(hoverTimer.current)
+    if (!answer || graphedAnswerIds.includes(answer.id)) {
+      setHoverAnswerId(answer?.id)
+    } else {
+      hoverTimer.current = setTimeout(
+        () => setHoverAnswerId(answer.id),
+        HOVER_PREVIEW_DELAY_MS
+      )
+    }
+  })
+  useEffect(() => () => clearTimeout(hoverTimer.current), [])
 
   const defaultSort = getDefaultSort(contract)
   const [sort, setSort] = usePersistentInMemoryState<MultiSort>(
@@ -495,7 +532,8 @@ const ChoiceOverview = (props: {
       {isMultiCpmm(contract) && !hideGraph && (
         <SizedContainer
           className={clsx(
-            'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
+            // mt-2 keeps the top axis label clear of the controls above.
+            'mt-2 h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
             showZoomer && 'mb-12'
           )}
         >
@@ -508,11 +546,7 @@ const ChoiceOverview = (props: {
               multiPoints={points}
               contract={contract}
               highlightAnswerId={hoverAnswerId}
-              selectedAnswerIds={
-                selectedAnswerIds.length
-                  ? selectedAnswerIds
-                  : defaultAnswerIdsToGraph
-              }
+              selectedAnswerIds={graphedAnswerIds}
               pointerMode={pointerMode}
               setHoveredAnnotation={setHoveredAnnotation}
               hoveredAnnotation={hoveredAnnotation}
@@ -573,11 +607,10 @@ const ChoiceOverview = (props: {
         <>
           {resolutionRating}
           <AnswersPanel
-            setDefaultAnswerIdsToGraph={setDefaultAnswerIdsToGraph}
             selectedAnswerIds={selectedAnswerIds}
             contract={contract}
             onAnswerCommentClick={onAnswerCommentClick}
-            onAnswerHover={(ans) => setHoverAnswerId(ans?.id)}
+            onAnswerHover={onAnswerHover}
             onAnswerClick={
               hideGraph
                 ? (ans) => {

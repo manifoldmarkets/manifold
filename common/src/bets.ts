@@ -1,10 +1,13 @@
 import { unauthedApi } from 'common/util/api'
 import { APIParams } from 'common/api/schema'
 import { groupBy, minBy, sortBy, uniqBy } from 'lodash'
-import { buildArray } from 'common/util/array'
+import { buildArray, filterDefined } from 'common/util/array'
 import { HOUR_MS } from 'common/util/time'
+import { Answer, answerP } from './answer'
+import { Bet } from './bet'
 import { getInitialAnswerProbability } from './calculate'
-import { isMultiCpmm, MarketContract } from './contract'
+import { getCpmmProbability } from './calculate-cpmm'
+import { isMultiCpmm, MarketContract, MultiContract } from './contract'
 
 export async function getTotalBetCount(contractId: string) {
   const res = (await unauthedApi('bets', {
@@ -51,31 +54,93 @@ export const getBetPoints = async (
   )
 }
 
+// A multiple choice answer's probability at the start of a window, if the
+// caller has earlier history to read it from. See getPointsFromBetRows.
+export type AnswerProbAtStart = (answerId: string) => number | undefined
+
 // gets random bets - 50,000 by default
 export const getBetPointsBetween = async (
   contract: MarketContract,
-  options: Omit<APIParams<'bet-points'>, 'contractId'>
+  options: Omit<APIParams<'bet-points'>, 'contractId'>,
+  getAnswerProbAtStart?: AnswerProbAtStart
 ) => {
   const data = await getSplitBetPoints(contract.id, options)
+  return getPointsFromBetRows(contract, data, options, getAnswerProbAtStart)
+}
 
-  const sorted = sortBy(data, 'createdTime')
+type BetPointRow = Pick<
+  Bet,
+  'createdTime' | 'probBefore' | 'probAfter' | 'answerId'
+>
+
+// Where an answer's line starts when it has no bet in the window. Its
+// probability did not move during the window, so the line is flat at whatever
+// it was when the window opened. Undefined: not known, so draw no line.
+const getStartProbWithoutBets = (
+  contract: MultiContract,
+  answer: Answer,
+  afterTime: number,
+  reachesLastBet: boolean,
+  getAnswerProbAtStart: AnswerProbAtStart | undefined
+) => {
+  // The window runs up to the market's last bet, so nothing has traded on it
+  // since the window opened and it is still where it is now. That is the
+  // pool's probability, not a resolution's: the chart draws the resolution as
+  // its own last point.
+  if (reachesLastBet) {
+    const prob = getCpmmProbability(
+      { YES: answer.poolYes, NO: answer.poolNo },
+      answerP(answer)
+    )
+    if (Number.isFinite(prob)) return prob
+  }
+  // Later bets may have moved it since, so only earlier history can say.
+  const known = getAnswerProbAtStart?.(answer.id)
+  if (known !== undefined && Number.isFinite(known)) return known
+  // The window opened before the answer existed: it starts where the answer
+  // did, if that is on record.
+  if (afterTime <= answer.createdTime)
+    return getInitialAnswerProbability(contract, answer)
+  return undefined
+}
+
+// Turns the bets of a window into chart points: where each line starts, then
+// the probability after each bet. `rows` may be a sample of the window's bets.
+export const getPointsFromBetRows = (
+  contract: MarketContract,
+  rows: BetPointRow[],
+  options: { afterTime: number; beforeTime: number },
+  getAnswerProbAtStart?: AnswerProbAtStart
+) => {
+  const sorted = sortBy(rows, 'createdTime')
 
   const startingProbs = []
   if (isMultiCpmm(contract)) {
     const { answers } = contract
-    const rawPointsByAns = groupBy(data, 'answerId')
+    const rawPointsByAns = groupBy(rows, 'answerId')
+    const reachesLastBet =
+      options.beforeTime > (contract.lastBetTime ?? contract.createdTime)
 
-    const beforePoints = answers.map((ans) => {
-      const earliestBet = minBy(rawPointsByAns[ans.id], (b) => b.createdTime)
-      return {
-        x: Math.max(ans.createdTime, options.afterTime),
-        y:
-          earliestBet?.probBefore ??
-          getInitialAnswerProbability(contract, ans) ??
-          0,
-        answerId: ans.id,
-      }
-    })
+    const beforePoints = filterDefined(
+      answers.map((ans) => {
+        const earliestBet = minBy(rawPointsByAns[ans.id], (b) => b.createdTime)
+        const y = earliestBet
+          ? earliestBet.probBefore
+          : getStartProbWithoutBets(
+              contract,
+              ans,
+              options.afterTime,
+              reachesLastBet,
+              getAnswerProbAtStart
+            )
+        if (y === undefined) return undefined
+        return {
+          x: Math.max(ans.createdTime, options.afterTime),
+          y,
+          answerId: ans.id,
+        }
+      })
+    )
     startingProbs.push(...beforePoints)
   } else {
     if (sorted.length === 0)
@@ -119,7 +184,10 @@ const getSplitBetPoints = async (
 
   // Keep a small recent tail uncached/fresh while making the long history chunk
   // stable within each hour for better cache hit rates.
-  const recentTailStart = Math.max(afterTime, beforeTime - RECENT_BET_POINTS_WINDOW_MS)
+  const recentTailStart = Math.max(
+    afterTime,
+    beforeTime - RECENT_BET_POINTS_WINDOW_MS
+  )
   const splitTime = Math.floor(recentTailStart / HOUR_MS) * HOUR_MS
   if (splitTime <= afterTime || splitTime >= beforeTime) {
     return await fetchBetPoints(contractId, options)

@@ -90,8 +90,6 @@ import {
 } from './answer-components'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
 
-const MAX_DEFAULT_GRAPHED_ANSWERS = 6
-
 // the offset in which the top of answers is visible
 const SCROLL_OFFSET = 100
 // debounce when typing a query to ensure smoother autoscrolling
@@ -109,7 +107,6 @@ export function AnswersPanel(props: {
   onAnswerHover?: (answer: Answer | undefined) => void
   onAnswerClick?: (answer: Answer) => void
   showSetDefaultSort?: boolean
-  setDefaultAnswerIdsToGraph?: (ids: string[]) => void
   defaultAddAnswer?: boolean
   floatingSearchClassName?: string
   className?: string
@@ -127,7 +124,6 @@ export function AnswersPanel(props: {
     query,
     setQuery,
     showSetDefaultSort,
-    setDefaultAnswerIdsToGraph,
     floatingSearchClassName,
     className,
     hideSearch,
@@ -162,13 +158,6 @@ export function AnswersPanel(props: {
     : showAll
     ? sortedAnswers
     : getSortedAnswers(contract, sortedAnswers, sort, selectedAnswerIds)
-
-  useEffect(() => {
-    if (!selectedAnswerIds.length)
-      setDefaultAnswerIdsToGraph?.(
-        answersToShow.map((a) => a.id).slice(0, MAX_DEFAULT_GRAPHED_ANSWERS)
-      )
-  }, [selectedAnswerIds.length, answersToShow.length])
 
   const user = useUser()
   const allMetrics = useAllSavedContractMetrics(contract)

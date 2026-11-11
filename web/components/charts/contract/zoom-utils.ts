@@ -1,10 +1,11 @@
 import { HistoryPoint, maxMinBin, MultiPoints } from 'common/chart'
 import { debounce, maxBy, minBy } from 'lodash'
-import { useEffect, useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ScaleTime } from 'd3-scale'
-import { getBetPointsBetween } from 'common/bets'
+import { AnswerProbAtStart, getBetPointsBetween } from 'common/bets'
 import { getMultiBetPoints } from 'common/contract-params'
 import { CPMMContract, MarketContract, MultiContract } from 'common/contract'
+import { getStepValueAt } from 'common/multi-chart'
 import { buildArray } from 'common/util/array'
 import { useEvent } from 'client-common/hooks/use-event'
 
@@ -84,14 +85,19 @@ export const useDataZoomFetcher = <T>(props: {
 export async function getMultichoicePointsBetween(
   contract: MultiContract,
   min: number,
-  max: number
+  max: number,
+  getAnswerProbAtStart?: AnswerProbAtStart
 ) {
-  const allBetPoints = await getBetPointsBetween(contract, {
-    filterRedemptions: false,
-    includeZeroShareRedemptions: true,
-    beforeTime: max,
-    afterTime: min,
-  })
+  const allBetPoints = await getBetPointsBetween(
+    contract,
+    {
+      filterRedemptions: false,
+      includeZeroShareRedemptions: true,
+      beforeTime: max,
+      afterTime: min,
+    },
+    getAnswerProbAtStart
+  )
   const multiPoints = getMultiBetPoints(allBetPoints, contract)
 
   return multiPoints
@@ -108,6 +114,9 @@ export const useMultiChoiceDataZoomFetcher = (props: {
   const { contract, points, createdTime, lastBetTime, viewXScale } = props
   const [data, setData] = useState(points)
   const [loading, setLoading] = useState(false)
+  // The last fetch that covered the market's whole history. A market with many
+  // answers is rendered without points, so this can be the only full history.
+  const fetchedAllTime = useRef<MultiPoints>({})
 
   const onZoomData = useEvent(
     debounce(async (min?: number, max?: number) => {
@@ -116,7 +125,16 @@ export const useMultiChoiceDataZoomFetcher = (props: {
         const zoomedPoints = await getMultichoicePointsBetween(
           contract,
           min,
-          max
+          max,
+          // For an answer with no bet in a window that ends before the market's
+          // last bet: where the full-history line stood when the window opened.
+          (answerId) =>
+            getStepValueAt(
+              points[answerId]?.length
+                ? points[answerId]
+                : fetchedAllTime.current[answerId],
+              min
+            )
         )
 
         // Combine the original points outside the zoom range with the zoomed points
@@ -139,6 +157,8 @@ export const useMultiChoiceDataZoomFetcher = (props: {
           newData[answerId] = typedZoomedPoints.sort((a, b) => a.x - b.x)
         })
 
+        if (min <= createdTime && max >= lastBetTime)
+          fetchedAllTime.current = newData
         setData(newData)
         setLoading(false)
       } else {
