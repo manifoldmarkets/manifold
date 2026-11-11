@@ -8,6 +8,7 @@ import {
   getStepValueAt,
   getWholeHistoryCoverage,
   MAX_DEFAULT_GRAPHED_ANSWERS,
+  widerHistory,
 } from './multi-chart'
 
 // A cpmm-multi-1 answer (p = 0.5) whose pool gives exactly `prob`.
@@ -492,42 +493,84 @@ describe('getKnownStepValueAt', () => {
 
 describe('getWholeHistoryCoverage', () => {
   const created = 1_000_000
-  const lastBet = 5_000_000
+  const lastRow = 5_000_000
 
-  it('is the last known bet, for a fetch from before the market opened to past that bet', () => {
+  it('is the latest bet that came back, for a fetch from before the market opened', () => {
     expect(
       getWholeHistoryCoverage(
-        { min: created - 1000, max: lastBet + 1000 },
-        created,
-        lastBet
+        { min: created - 1000, latestBetTime: lastRow },
+        created
       )
-    ).toBe(lastBet)
+    ).toBe(lastRow)
   })
 
-  it('needs both ends, which are exclusive, to clear the market', () => {
-    const coverage = (min: number, max: number) =>
-      getWholeHistoryCoverage({ min, max }, created, lastBet)
-    expect(coverage(created - 1, lastBet + 1)).toBe(lastBet)
-    expect(coverage(created, lastBet + 1)).toBeUndefined()
-    expect(coverage(created - 1, lastBet)).toBeUndefined()
-    expect(coverage(created + 5000, lastBet + 1000)).toBeUndefined()
-    expect(coverage(created - 1000, lastBet - 5000)).toBeUndefined()
+  it('is undefined for a fetch that starts once the market is open', () => {
+    // `min` is exclusive, so a fetch from the moment of creation could miss a
+    // bet made in that same millisecond.
+    expect(
+      getWholeHistoryCoverage({ min: created, latestBetTime: lastRow }, created)
+    ).toBeUndefined()
+    expect(
+      getWholeHistoryCoverage(
+        { min: created + 5000, latestBetTime: lastRow },
+        created
+      )
+    ).toBeUndefined()
   })
 
-  it('does not vouch for the time after the last known bet', () => {
-    // The fetch asks for a second more than the last known bet and comes back
-    // 100 ms later. Another answer moves 200 ms after that bet: too late for
-    // the response. A window opening 400 ms after it must not read the level
-    // the fetched history shows there, which is already out of date.
-    const fetched = { a: [{ x: lastBet, y: 0.3 }] }
+  it('is undefined when no bet came back', () => {
+    expect(
+      getWholeHistoryCoverage(
+        { min: created - 1000, latestBetTime: undefined },
+        created
+      )
+    ).toBeUndefined()
+  })
+
+  it('does not vouch for the time after the last bet that came back', () => {
+    // The page knows of a bet 800 ms after `lastRow` and asks for a second
+    // past it. The response is a reused one, made before another answer moved
+    // 200 ms after `lastRow`, so its last row is `lastRow`. A window opening
+    // 400 ms after it must not read the level this history shows there.
+    const reused = { a: [{ x: lastRow, y: 0.3 }] }
     const coveredUntil = getWholeHistoryCoverage(
-      { min: created - 1000, max: lastBet + 1000 },
-      created,
-      lastBet
+      { min: created - 1000, latestBetTime: lastRow },
+      created
     )
-    const histories = [{ points: fetched, coveredUntil }]
-    expect(getKnownStepValueAt(histories, 'a', lastBet)).toBe(0.3)
-    expect(getKnownStepValueAt(histories, 'a', lastBet + 400)).toBeUndefined()
+    const histories = [{ points: reused, coveredUntil }]
+    expect(getKnownStepValueAt(histories, 'a', lastRow)).toBe(0.3)
+    expect(getKnownStepValueAt(histories, 'a', lastRow + 400)).toBeUndefined()
+  })
+})
+
+describe('widerHistory', () => {
+  const upTo = (coveredUntil: number | undefined) => ({
+    points: { a: [{ x: 1, y: 0.5 }] },
+    coveredUntil,
+  })
+
+  it('takes the first history that vouches for anything', () => {
+    const fetched = upTo(100)
+    expect(widerHistory(undefined, fetched)).toBe(fetched)
+  })
+
+  it('keeps nothing when a fetch vouches for nothing', () => {
+    expect(widerHistory(undefined, upTo(undefined))).toBeUndefined()
+  })
+
+  it('replaces what is kept with a fetch that reaches as far or further', () => {
+    const kept = upTo(100)
+    const further = upTo(150)
+    const same = upTo(100)
+    expect(widerHistory(kept, further)).toBe(further)
+    expect(widerHistory(kept, same)).toBe(same)
+  })
+
+  it('keeps what it has over a fetch that reaches less far, or nowhere', () => {
+    // A reused response, older than the one already kept.
+    const kept = upTo(100)
+    expect(widerHistory(kept, upTo(60))).toBe(kept)
+    expect(widerHistory(kept, upTo(undefined))).toBe(kept)
   })
 })
 

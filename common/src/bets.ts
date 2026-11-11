@@ -1,6 +1,6 @@
 import { unauthedApi } from 'common/util/api'
 import { APIParams } from 'common/api/schema'
-import { groupBy, minBy, sortBy, uniqBy } from 'lodash'
+import { groupBy, maxBy, minBy, sortBy, uniqBy } from 'lodash'
 import { buildArray, filterDefined } from 'common/util/array'
 import { HOUR_MS } from 'common/util/time'
 import { Answer, answerP } from './answer'
@@ -66,14 +66,31 @@ export const getBetPointsBetween = async (
   contract: MarketContract,
   options: Omit<APIParams<'bet-points'>, 'contractId'>,
   getAnswerProbAtStart?: AnswerProbAtStart
+) =>
+  (await getBetPointsAndLatestBetTime(contract, options, getAnswerProbAtStart))
+    .points
+
+// The same points, with the time of the latest bet among the rows they were
+// made from (undefined if there were none).
+//
+// The endpoint and the CDN in front of it both reuse responses, so what comes
+// back can be older than the market's latest bets. It only vouches for the
+// time up to its own last row.
+export const getBetPointsAndLatestBetTime = async (
+  contract: MarketContract,
+  options: Omit<APIParams<'bet-points'>, 'contractId'>,
+  getAnswerProbAtStart?: AnswerProbAtStart
 ) => {
   const { rows, complete } = await getSplitBetPoints(contract.id, options)
-  return getPointsFromBetRows(
-    contract,
-    rows,
-    { ...options, complete },
-    getAnswerProbAtStart
-  )
+  return {
+    points: getPointsFromBetRows(
+      contract,
+      rows,
+      { ...options, complete },
+      getAnswerProbAtStart
+    ),
+    latestBetTime: maxBy(rows, (r) => r.createdTime)?.createdTime,
+  }
 }
 
 type BetPointRow = Pick<
@@ -81,12 +98,32 @@ type BetPointRow = Pick<
   'createdTime' | 'probBefore' | 'probAfter' | 'answerId'
 >
 
+// Whether the rows are sure to hold every bet the contract knows of since the
+// window opened. If so, an answer with no row has not moved in that time.
+//
+// They must not be a sample. And they must not be older than the contract:
+// the endpoint and the CDN in front of it reuse responses, so the rows can
+// date from before the market's last bet. If that bet was made after the
+// window opened, it has to be among them. (In a window that ends before it,
+// it cannot be: such a window is a look at the past.)
+const holdsEveryKnownBet = (
+  contract: MarketContract,
+  rows: BetPointRow[],
+  window: { afterTime: number; complete: boolean }
+) => {
+  if (!window.complete) return false
+  const { lastBetTime } = contract
+  // No bet yet, or none since the window opened: nothing to be missing.
+  if (lastBetTime === undefined || lastBetTime <= window.afterTime) return true
+  return rows.some((r) => r.createdTime >= lastBetTime)
+}
+
 // Where an answer's line starts when the window's rows hold no bet on it.
 // Undefined: not known, so the line gets no starting point.
 const getStartProbWithoutBets = (
   contract: MultiContract,
   answer: Answer,
-  window: { afterTime: number; reachesLastBet: boolean; complete: boolean },
+  window: { afterTime: number; holdsEveryKnownBet: boolean },
   getAnswerProbAtStart: AnswerProbAtStart | undefined
 ) => {
   // The window opened before the answer existed, so the line starts where the
@@ -95,12 +132,11 @@ const getStartProbWithoutBets = (
     const opening = getInitialAnswerProbability(contract, answer)
     if (opening !== undefined) return opening
   }
-  // Every bet of the window is in the rows and none is on this answer, and
-  // the window runs up to the market's last bet. So nothing has moved it since
-  // the window opened, and it is still where its pool puts it now. (The pool,
-  // not a resolution: the chart draws an answer's resolution as its own point.)
-  // If the rows are only a sample, a missing bet proves nothing.
-  if (window.complete && window.reachesLastBet) {
+  // Every bet the market has seen since the window opened is in the rows, and
+  // none is on this answer. So nothing has moved it since the window opened,
+  // and it is still where its pool puts it now. (The pool, not a resolution:
+  // the chart draws an answer's resolution as its own point.)
+  if (window.holdsEveryKnownBet) {
     const prob = getCpmmProbability(
       { YES: answer.poolYes, NO: answer.poolNo },
       answerP(answer)
@@ -128,8 +164,7 @@ export const getPointsFromBetRows = (
   if (isMultiCpmm(contract)) {
     const { answers } = contract
     const rawPointsByAns = groupBy(rows, 'answerId')
-    const reachesLastBet =
-      options.beforeTime > (contract.lastBetTime ?? contract.createdTime)
+    const holdsKnownBets = holdsEveryKnownBet(contract, rows, options)
 
     const beforePoints = filterDefined(
       answers.map((ans) => {
@@ -141,8 +176,7 @@ export const getPointsFromBetRows = (
               ans,
               {
                 afterTime: options.afterTime,
-                reachesLastBet,
-                complete: options.complete,
+                holdsEveryKnownBet: holdsKnownBets,
               },
               getAnswerProbAtStart
             )

@@ -1,7 +1,7 @@
 import { Answer } from './answer'
 import { getPointsFromBetRows } from './bets'
 import { BinaryContract, MultiContract } from './contract'
-import { DAY_MS, HOUR_MS } from './util/time'
+import { DAY_MS, HOUR_MS, MINUTE_MS } from './util/time'
 
 const now = Date.parse('2026-11-05T17:30:00Z')
 const marketCreated = now - 400 * DAY_MS
@@ -251,15 +251,107 @@ describe('getPointsFromBetRows, multiple choice', () => {
       const contract = makeContract([other, added], {
         lastBetTime: now - DAY_MS,
       })
+      // The market's last bet, which was not on the added answer.
+      const lastBet = [bet('other', now - DAY_MS, 0.35, 0.3)]
 
       expect(
-        lineOf(getPointsFromBetRows(contract, [], window(true)), 'added')
+        lineOf(getPointsFromBetRows(contract, lastBet, window(true)), 'added')
       ).toEqual([[added.createdTime, 0.2]])
       // With only a sample there is no telling, and no line start.
       expect(
-        lineOf(getPointsFromBetRows(contract, [], window(false)), 'added')
+        lineOf(getPointsFromBetRows(contract, lastBet, window(false)), 'added')
+      ).toEqual([])
+      // Nor with rows that stop short of the market's last bet.
+      expect(
+        lineOf(getPointsFromBetRows(contract, [], window(true)), 'added')
       ).toEqual([])
     })
+  })
+})
+
+describe("getPointsFromBetRows, rows older than the market's last bet", () => {
+  // The endpoint and the CDN in front of it reuse responses. Here the page
+  // knows of a bet ten minutes ago, and the rows were served from before it.
+  const lastBetTime = now - 10 * MINUTE_MS
+  const window = {
+    afterTime: now - HOUR_MS,
+    beforeTime: lastBetTime + 1000,
+    complete: true,
+  }
+  const reused = [bet('busy', now - 30 * MINUTE_MS, 0.45, 0.5)]
+  const busy = makeAnswer('busy', 0.5)
+
+  it('do not place a quiet answer at its current level', () => {
+    // `moved` went from 50% to 90% in that last bet. Rows that lack it must
+    // not be read as "it has been at 90% all hour".
+    const moved = makeAnswer('moved', 0.9)
+    const contract = makeContract([moved, busy], {
+      shouldAnswersSumToOne: false,
+      lastBetTime,
+    })
+    const points = getPointsFromBetRows(contract, reused, window)
+    expect(lineOf(points, 'moved')).toEqual([])
+    expect(lineOf(points, 'busy')).toEqual([
+      [window.afterTime, 0.45],
+      [now - 30 * MINUTE_MS, 0.5],
+    ])
+    // Earlier history, where the caller has it, still places the line.
+    expect(
+      lineOf(
+        getPointsFromBetRows(contract, reused, window, () => 0.5),
+        'moved'
+      )
+    ).toEqual([[window.afterTime, 0.5]])
+  })
+
+  it('place it once the last bet is among them', () => {
+    const quiet = makeAnswer('quiet', 0.3)
+    const contract = makeContract([quiet, busy], {
+      shouldAnswersSumToOne: false,
+      lastBetTime,
+    })
+    const fresh = [...reused, bet('busy', lastBetTime, 0.5, 0.55)]
+    expect(
+      lineOf(getPointsFromBetRows(contract, fresh, window), 'quiet')
+    ).toEqual([[window.afterTime, 0.3]])
+    // Without it, nothing.
+    expect(
+      lineOf(getPointsFromBetRows(contract, reused, window), 'quiet')
+    ).toEqual([])
+  })
+
+  it('place it when the market has not traded since the window opened', () => {
+    // Last bet two hours ago, window of one hour: there is no bet to miss.
+    const quiet = makeAnswer('quiet', 0.3)
+    const contract = makeContract([quiet], { shouldAnswersSumToOne: false })
+    expect(
+      lineOf(
+        getPointsFromBetRows(contract, [], {
+          afterTime: now - HOUR_MS,
+          beforeTime: now,
+          complete: true,
+        }),
+        'quiet'
+      )
+    ).toEqual([[now - HOUR_MS, 0.3]])
+  })
+
+  it('place it in a market that has never traded', () => {
+    const quiet = makeAnswer('quiet', 0.3, {
+      createdTime: marketCreated + DAY_MS,
+    })
+    const other = makeAnswer('other', 0.7, { isOther: true })
+    const contract = makeContract([quiet, other], { lastBetTime: undefined })
+    expect(
+      lineOf(
+        getPointsFromBetRows(contract, [], {
+          afterTime: marketCreated - 1000,
+          beforeTime: now,
+          complete: true,
+        }),
+        'quiet'
+      )
+    ).toEqual([[quiet.createdTime, 0.3]])
   })
 })
 

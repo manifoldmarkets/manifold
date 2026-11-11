@@ -2,12 +2,18 @@ import { HistoryPoint, maxMinBin, MultiPoints } from 'common/chart'
 import { debounce, maxBy, minBy } from 'lodash'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ScaleTime } from 'd3-scale'
-import { AnswerProbAtStart, getBetPointsBetween } from 'common/bets'
+import {
+  AnswerProbAtStart,
+  getBetPointsAndLatestBetTime,
+  getBetPointsBetween,
+} from 'common/bets'
 import { getMultiBetPoints } from 'common/contract-params'
 import { CPMMContract, MarketContract, MultiContract } from 'common/contract'
 import {
+  CoveredMultiPoints,
   getKnownStepValueAt,
   getWholeHistoryCoverage,
+  widerHistory,
 } from 'common/multi-chart'
 import { buildArray } from 'common/util/array'
 import { useEvent } from 'client-common/hooks/use-event'
@@ -91,7 +97,7 @@ export async function getMultichoicePointsBetween(
   max: number,
   getAnswerProbAtStart?: AnswerProbAtStart
 ) {
-  const allBetPoints = await getBetPointsBetween(
+  const { points, latestBetTime } = await getBetPointsAndLatestBetTime(
     contract,
     {
       filterRedemptions: false,
@@ -101,9 +107,9 @@ export async function getMultichoicePointsBetween(
     },
     getAnswerProbAtStart
   )
-  const multiPoints = getMultiBetPoints(allBetPoints, contract)
-
-  return multiPoints
+  // latestBetTime: the last bet in the response, which may be a reused one
+  // from before the market's latest bets.
+  return { multiPoints: getMultiBetPoints(points, contract), latestBetTime }
 }
 
 // only for multichoice contracts
@@ -121,38 +127,36 @@ export const useMultiChoiceDataZoomFetcher = (props: {
   const { serverLastBetTime } = props
   const [data, setData] = useState(points)
   const [loading, setLoading] = useState(false)
-  // The last fetch that covered the market's whole history, and the last bet
-  // it is known to include. A market with many answers is rendered without
+  // The fetch that holds the most of the market's whole history, and the time
+  // of the last bet in it. A market with many answers is rendered without
   // points, so this can be the only full history.
-  const fetchedAllTime = useRef<{ coveredUntil: number; data: MultiPoints }>()
+  const fetchedAllTime = useRef<CoveredMultiPoints>()
 
   const onZoomData = useEvent(
     debounce(async (min?: number, max?: number) => {
       if (min && max) {
         setLoading(true)
-        const zoomedPoints = await getMultichoicePointsBetween(
-          contract,
-          min,
-          max,
-          // For an answer with no bet in a window that ends before the market's
-          // last bet: where a full-history line stood when the window opened.
-          // A history only answers for the time it covers. The fetched one
-          // covers up to the last bet known when it was asked for. The page's
-          // own covers up to the server render: bets that arrive later come
-          // without the redemption rows that move the other answers.
-          (answerId) =>
-            getKnownStepValueAt(
-              [
-                {
-                  points: fetchedAllTime.current?.data ?? {},
-                  coveredUntil: fetchedAllTime.current?.coveredUntil,
-                },
-                { points, coveredUntil: serverLastBetTime },
-              ],
-              answerId,
-              min
-            )
-        )
+        const { multiPoints: zoomedPoints, latestBetTime } =
+          await getMultichoicePointsBetween(
+            contract,
+            min,
+            max,
+            // For an answer with no bet in a window that ends before the market's
+            // last bet: where a full-history line stood when the window opened.
+            // A history only answers for the time it covers. The fetched one
+            // covers up to the last bet that came back with it. The page's own
+            // covers up to the server render: bets that arrive later come
+            // without the redemption rows that move the other answers.
+            (answerId) =>
+              getKnownStepValueAt(
+                [
+                  ...(fetchedAllTime.current ? [fetchedAllTime.current] : []),
+                  { points, coveredUntil: serverLastBetTime },
+                ],
+                answerId,
+                min
+              )
+          )
 
         // Combine the original points outside the zoom range with the zoomed points
         const newData: MultiPoints = {}
@@ -174,14 +178,15 @@ export const useMultiChoiceDataZoomFetcher = (props: {
           newData[answerId] = typedZoomedPoints.sort((a, b) => a.x - b.x)
         })
 
-        // `lastBetTime` is the last bet known when this fetch was sent.
-        const coveredUntil = getWholeHistoryCoverage(
-          { min, max },
-          createdTime,
-          lastBetTime
-        )
-        if (coveredUntil !== undefined)
-          fetchedAllTime.current = { coveredUntil, data: newData }
+        // A fetch from before the market opened holds its whole history up to
+        // the last bet that came back. Keep the one that reaches furthest.
+        fetchedAllTime.current = widerHistory(fetchedAllTime.current, {
+          points: newData,
+          coveredUntil: getWholeHistoryCoverage(
+            { min, latestBetTime },
+            createdTime
+          ),
+        })
         setData(newData)
         setLoading(false)
       } else {

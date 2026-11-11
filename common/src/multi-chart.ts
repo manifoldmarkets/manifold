@@ -112,21 +112,30 @@ export const getKnownStepValueAt = (
   return undefined
 }
 
-// The time up to which a fetch of the bets between `min` and `max` (both ends
-// exclusive) holds the market's whole history: its last bet, as known when the
-// fetch was sent. Undefined unless the fetch runs from before the market opened
-// to past that bet.
+// The time up to which a fetch of a market's bets holds its whole history:
+// the time of the latest bet that came back, if the fetch started before the
+// market opened (`min` is exclusive). Undefined otherwise.
 //
-// However far `max` reaches, nothing after that bet counts: a bet made once
-// the fetch was on its way may have missed the response.
+// Not the end of the window that was asked for, nor the last bet the page
+// knew of when it asked. The endpoint and the CDN in front of it reuse
+// responses, so what comes back can be older than either. A response only
+// vouches for the time up to its own last row.
 export const getWholeHistoryCoverage = (
-  fetched: { min: number; max: number },
-  createdTime: number,
-  lastBetTime: number
+  fetched: { min: number; latestBetTime: number | undefined },
+  createdTime: number
+) => (fetched.min < createdTime ? fetched.latestBetTime : undefined)
+
+// Of the whole history kept so far and one just fetched, the one that vouches
+// for more of the market's life. A fetch that vouches for nothing, or for
+// less than what is kept, changes nothing.
+export const widerHistory = (
+  kept: CoveredMultiPoints | undefined,
+  fetched: CoveredMultiPoints
 ) =>
-  fetched.min < createdTime && fetched.max > lastBetTime
-    ? lastBetTime
-    : undefined
+  fetched.coveredUntil !== undefined &&
+  fetched.coveredUntil >= (kept?.coveredUntil ?? -Infinity)
+    ? fetched
+    : kept
 
 // The probability axis fitted to lines that run from `min` to `max`, snapped
 // outward to gridlines 1 / `gridlinesPerUnit` apart.
