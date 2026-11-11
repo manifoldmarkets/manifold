@@ -159,15 +159,16 @@ export const ChoiceContractChart = (props: {
   const start = contract.createdTime
   const end = getEndDate(contract)
   const answers = useChartAnswers(contract)
-  const stringifiedMultiPoints = JSON.stringify(multiPoints)
-  const rightestPointX = Math.max(
-    ...Object.values(multiPoints).map((p) => last(p)?.x ?? 0),
-    contract.lastBetTime ?? 0
+  const rightestPointX = useMemo(
+    () =>
+      Math.max(
+        ...Object.values(multiPoints).map((p) => last(p)?.x ?? 0),
+        contract.lastBetTime ?? 0
+      ),
+    [multiPoints, contract.lastBetTime]
   )
-  const now = useMemo(
-    () => Date.now(),
-    [stringifiedMultiPoints, rightestPointX]
-  )
+  // The time of the latest change to the data, not of the latest render.
+  const now = useMemo(() => Date.now(), [multiPoints, rightestPointX])
 
   const data = useMemo(() => {
     const ret = {} as Record<
@@ -189,7 +190,9 @@ export const ChoiceContractChart = (props: {
           }
         } else {
           additionalPoints.push({
-            x: end ?? now,
+            // Never to the left of the last bet, whose time is the server's
+            // and can be ahead of this clock.
+            x: end ?? Math.max(now, rightestPointX),
             y: getAnswerProbability(contract, a.id),
           })
         }
@@ -201,12 +204,23 @@ export const ChoiceContractChart = (props: {
     )
 
     return ret
-  }, [answers.length, multiPoints, start, end, now])
+    // `answers` changes with every update to the market, which keeps each
+    // line's last point at the answer's current probability.
+  }, [answers, multiPoints, start, end, now, rightestPointX])
 
   const rightmostDate = getRightmostVisibleDate(end, rightestPointX, now)
   const chosenAnswerIds = buildArray(selectedAnswerIds, highlightAnswerId)
+  const chosenKey = chosenAnswerIds.join(',')
 
-  const graphedData = pick(data, chosenAnswerIds)
+  const graphedData = useMemo(
+    () => pick(data, chosenAnswerIds),
+    [data, chosenKey]
+  )
+
+  // What is on screen, in milliseconds, when the chart can be zoomed.
+  const viewDomain = zoomParams?.viewXScale.domain()
+  const viewMin = viewDomain?.[0]?.getTime()
+  const viewMax = viewDomain?.[1]?.getTime()
 
   const [lowestPoint, highestPoint] = useMemo(() => {
     if (!zoomY) return [0, 1]
@@ -214,10 +228,9 @@ export const ChoiceContractChart = (props: {
     let minX = start
     let maxX = end
 
-    if (zoomParams) {
-      const [minXDate, maxXDate] = zoomParams.viewXScale.domain()
-      minX = minXDate.getTime() - 1
-      maxX = maxXDate.getTime() + 1
+    if (viewMin !== undefined && viewMax !== undefined) {
+      minX = viewMin - 1
+      maxX = viewMax + 1
     }
 
     let min = Infinity
@@ -236,12 +249,9 @@ export const ChoiceContractChart = (props: {
           min = Math.min(min, point.y)
           max = Math.max(max, point.y)
         } else if (point.x < minX) {
-          // If we're at a new timestamp, reset the min/max
+          // Only the last timestamp before the window counts: it is the level
+          // the line enters the window at. Earlier ones are off screen.
           if (point.x !== lastTimestamp) {
-            if (lastTimestamp !== null) {
-              min = Math.min(min, lastTimestampMin)
-              max = Math.max(max, lastTimestampMax)
-            }
             lastTimestamp = point.x
             lastTimestampMin = point.y
             lastTimestampMax = point.y
@@ -263,10 +273,19 @@ export const ChoiceContractChart = (props: {
     })
 
     return getFittedProbDomain(min, max, GRAPH_Y_DIVISOR)
-  }, [graphedData, zoomY, start, end, now])
+  }, [graphedData, zoomY, start, end, viewMin, viewMax])
 
-  const xScale = scaleTime([start, rightmostDate], [0, width])
-  const yScale = scaleLinear([lowestPoint, highestPoint], [height, 0])
+  // The same scale objects from render to render unless something they
+  // depend on changes, so the lines are not rebuilt when only the highlighted
+  // answer does.
+  const xScale = useMemo(
+    () => scaleTime([start, rightmostDate], [0, width]),
+    [start, rightmostDate, width]
+  )
+  const yScale = useMemo(
+    () => scaleLinear([lowestPoint, highestPoint], [height, 0]),
+    [lowestPoint, highestPoint, height]
+  )
 
   return (
     <MultiValueHistoryChart

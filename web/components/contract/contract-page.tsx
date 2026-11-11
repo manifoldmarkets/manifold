@@ -19,11 +19,12 @@ import {
   type PerpContract,
 } from 'common/contract'
 import { shouldHideGraph } from 'common/contract-params'
+import { movedProbability } from 'common/multi-chart'
 import { base64toPoints } from 'common/edge/og'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { getSportsLeagueLabel } from 'common/sports-league-label'
 import { DAY_MS } from 'common/util/time'
-import { mergeWith, uniqBy } from 'lodash'
+import { maxBy, uniqBy } from 'lodash'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -153,15 +154,34 @@ export function ContractPageContent(props: ContractParams) {
     }
   }, [])
 
-  const { bets, totalBets, yourNewBets, betPoints } = useBetData({
-    contractId: liveContract.id,
-    outcomeType: liveContract.outcomeType,
-    userId: user?.id,
-    lastBetTime: props.lastBetTime,
-    totalBets: props.totalBets,
-    pointsString: pointsString,
-    multiPointsString: multiPointsString,
-  })
+  // The answers whose chart line came with the page. A market with many
+  // answers is rendered without chart points: every answer is listed, each
+  // with an empty line.
+  const serverPointAnswerIds = useMemo(
+    () =>
+      Object.keys(multiPointsString ?? {}).filter(
+        (answerId) => multiPointsString?.[answerId]
+      ),
+    [multiPointsString]
+  )
+
+  const { bets, totalBets, yourNewBets, betPoints, latestNewBetTime } =
+    useBetData({
+      contractId: liveContract.id,
+      outcomeType: liveContract.outcomeType,
+      // The multiple choice chart draws the bets made since the page was
+      // rendered by itself, from a feed that also has the rows that move the
+      // other answers. A market of two answers is drawn as a binary one, by
+      // a chart that does not.
+      chartAddsNewBets:
+        liveContract.outcomeType === 'MULTIPLE_CHOICE' &&
+        !isBinaryMulti(liveContract),
+      userId: user?.id,
+      lastBetTime: props.lastBetTime,
+      totalBets: props.totalBets,
+      pointsString: pointsString,
+      multiPointsString: multiPointsString,
+    })
 
   const { isResolved, outcomeType, resolution, closeTime, creatorId } =
     liveContract
@@ -426,6 +446,9 @@ export function ContractPageContent(props: ContractParams) {
                     key={liveContract.id} // reset state when switching play vs cash
                     betPoints={betPoints}
                     serverLastBetTime={props.pointsLatestBetTime}
+                    serverPointAnswerIds={serverPointAnswerIds}
+                    latestPageBetTime={latestNewBetTime}
+                    hasLiveContract={hasLoaded}
                     showResolver={showResolver}
                     showUnresolver={showUnresolver}
                     resolutionRating={
@@ -689,6 +712,9 @@ export function ContractPageContent(props: ContractParams) {
 const useBetData = (props: {
   contractId: string
   outcomeType: Contract['outcomeType'] | undefined
+  // Whether the chart adds the bets made since the page was rendered itself.
+  // If not, they are added to the points here.
+  chartAddsNewBets: boolean
   userId: string | undefined
   lastBetTime: number | undefined
   totalBets: number
@@ -699,6 +725,7 @@ const useBetData = (props: {
     contractId,
     userId,
     outcomeType,
+    chartAddsNewBets,
     lastBetTime,
     pointsString,
     multiPointsString,
@@ -732,21 +759,33 @@ const useBetData = (props: {
   )
   const yourNewBets = newBets.filter((bet) => userId && bet.userId === userId)
 
+  // Decoded once: the server's points never change while the page is open.
+  const serverMultiPoints = useMemo(
+    () =>
+      (multiPointsString
+        ? unserializeBase64Multi(multiPointsString)
+        : {}) as MultiPoints,
+    [multiPointsString]
+  )
   const betPoints = useMemo(() => {
+    if (chartAddsNewBets) return serverMultiPoints
     if (
       outcomeType === 'MULTIPLE_CHOICE' ||
       outcomeType === 'NUMBER' ||
       outcomeType === 'MULTI_NUMERIC' ||
       outcomeType === 'DATE'
     ) {
-      const data = multiPointsString
-        ? unserializeBase64Multi(multiPointsString)
-        : {}
       const newData = getMultiBetPointsFromBets(newBets)
-
-      return mergeWith(data, newData, (array1, array2) =>
-        [...(array1 ?? []), ...(array2 ?? [])].sort((a, b) => a.x - b.x)
-      ) as MultiPoints
+      // Only the answers with new bets get a new array, so a chart line with
+      // nothing new is not rebuilt.
+      const merged: MultiPoints = { ...serverMultiPoints }
+      for (const answerId of Object.keys(newData)) {
+        merged[answerId] = [
+          ...(serverMultiPoints[answerId] ?? []),
+          ...newData[answerId],
+        ].sort((a, b) => a.x - b.x)
+      }
+      return merged
     } else {
       const points = pointsString ? base64toPoints(pointsString) : []
       const newPoints = newBetsWithoutRedemptions.map((bet) => ({
@@ -755,12 +794,23 @@ const useBetData = (props: {
       }))
       return [...points, ...newPoints] as HistoryPoint<Partial<Bet>>[]
     }
-  }, [pointsString, newBets.length])
+  }, [pointsString, serverMultiPoints, newBets.length, chartAddsNewBets])
+
+  // The time of the newest bet this feed has brought since the page was
+  // rendered that moved a probability, if it has brought any. An order that
+  // has not been filled moves nothing, and the chart has no use for it.
+  const latestNewBetTime = useMemo(
+    () =>
+      maxBy(newBets.filter(movedProbability), (bet) => bet.createdTime)
+        ?.createdTime,
+    [newBets]
+  )
 
   return {
     bets,
     totalBets,
     yourNewBets,
     betPoints,
+    latestNewBetTime,
   }
 }
