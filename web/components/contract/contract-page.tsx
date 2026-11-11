@@ -23,7 +23,7 @@ import { base64toPoints } from 'common/edge/og'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { getSportsLeagueLabel } from 'common/sports-league-label'
 import { DAY_MS } from 'common/util/time'
-import { mergeWith, uniqBy } from 'lodash'
+import { uniqBy } from 'lodash'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -152,6 +152,17 @@ export function ContractPageContent(props: ContractParams) {
       precacheAnswers(props.contract.answers)
     }
   }, [])
+
+  // The answers whose chart line came with the page. A market with many
+  // answers is rendered without chart points: every answer is listed, each
+  // with an empty line.
+  const serverPointAnswerIds = useMemo(
+    () =>
+      Object.keys(multiPointsString ?? {}).filter(
+        (answerId) => multiPointsString?.[answerId]
+      ),
+    [multiPointsString]
+  )
 
   const { bets, totalBets, yourNewBets, betPoints } = useBetData({
     contractId: liveContract.id,
@@ -426,6 +437,7 @@ export function ContractPageContent(props: ContractParams) {
                     key={liveContract.id} // reset state when switching play vs cash
                     betPoints={betPoints}
                     serverLastBetTime={props.pointsLatestBetTime}
+                    serverPointAnswerIds={serverPointAnswerIds}
                     showResolver={showResolver}
                     showUnresolver={showUnresolver}
                     resolutionRating={
@@ -732,6 +744,14 @@ const useBetData = (props: {
   )
   const yourNewBets = newBets.filter((bet) => userId && bet.userId === userId)
 
+  // Decoded once: the server's points never change while the page is open.
+  const serverMultiPoints = useMemo(
+    () =>
+      (multiPointsString
+        ? unserializeBase64Multi(multiPointsString)
+        : {}) as MultiPoints,
+    [multiPointsString]
+  )
   const betPoints = useMemo(() => {
     if (
       outcomeType === 'MULTIPLE_CHOICE' ||
@@ -739,14 +759,17 @@ const useBetData = (props: {
       outcomeType === 'MULTI_NUMERIC' ||
       outcomeType === 'DATE'
     ) {
-      const data = multiPointsString
-        ? unserializeBase64Multi(multiPointsString)
-        : {}
       const newData = getMultiBetPointsFromBets(newBets)
-
-      return mergeWith(data, newData, (array1, array2) =>
-        [...(array1 ?? []), ...(array2 ?? [])].sort((a, b) => a.x - b.x)
-      ) as MultiPoints
+      // Only the answers with new bets get a new array, so a chart line with
+      // nothing new is not rebuilt.
+      const merged: MultiPoints = { ...serverMultiPoints }
+      for (const answerId of Object.keys(newData)) {
+        merged[answerId] = [
+          ...(serverMultiPoints[answerId] ?? []),
+          ...newData[answerId],
+        ].sort((a, b) => a.x - b.x)
+      }
+      return merged
     } else {
       const points = pointsString ? base64toPoints(pointsString) : []
       const newPoints = newBetsWithoutRedemptions.map((bet) => ({
@@ -755,7 +778,7 @@ const useBetData = (props: {
       }))
       return [...points, ...newPoints] as HistoryPoint<Partial<Bet>>[]
     }
-  }, [pointsString, newBets.length])
+  }, [pointsString, serverMultiPoints, newBets.length])
 
   return {
     bets,

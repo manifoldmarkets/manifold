@@ -1,4 +1,4 @@
-import { orderBy } from 'lodash'
+import { orderBy, sortBy } from 'lodash'
 import { Answer } from './answer'
 import { getAnswerProbability } from './calculate'
 import { MultiPoints } from './chart'
@@ -156,4 +156,111 @@ export const getFittedProbDomain = (
   if (lowest === highest)
     return [Math.max(0, lowest - step), Math.min(1, highest + step)]
   return [lowest, highest]
+}
+
+// Whether a bet row moved its answer's probability. In a market whose answers
+// sum to one, a trade on one answer moves the others through rows of this
+// kind that carry no shares.
+export const movedProbability = (bet: {
+  answerId?: string
+  probBefore: number
+  probAfter: number
+}) =>
+  bet.answerId !== undefined &&
+  Number.isFinite(bet.probAfter) &&
+  bet.probAfter !== bet.probBefore
+
+const pointKey = (p: { x: number; y: number }) => `${p.x}:${p.y}`
+
+// Adds points to lines, leaving out any point a line already has and keeping
+// each line in time order. Lines that gain nothing keep their array, and with
+// nothing to add at all the same object comes back, so a chart that memoizes
+// on either has nothing to redraw. `lines` must be in time order.
+export const addMultiPoints = (
+  lines: MultiPoints,
+  additions: MultiPoints
+): MultiPoints => {
+  let result = lines
+  for (const answerId of Object.keys(additions)) {
+    const added = additions[answerId]
+    if (added.length === 0) continue
+    const line = lines[answerId] ?? []
+    // A point can only repeat one at or after the earliest addition, and the
+    // line is in time order, so only its tail needs checking. New bets land
+    // at the end of long lines.
+    let earliest = Infinity
+    for (const p of added) earliest = Math.min(earliest, p.x)
+    const seen = new Set<string>()
+    for (let i = line.length - 1; i >= 0 && line[i].x >= earliest; i--)
+      seen.add(pointKey(line[i]))
+    const fresh = added.filter((p) => {
+      const key = pointKey(p)
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    if (fresh.length === 0) continue
+    const merged = [...line, ...fresh]
+    const inOrder = merged.every((p, i) => i === 0 || merged[i - 1].x <= p.x)
+    if (result === lines) result = { ...lines }
+    result[answerId] = inOrder ? merged : sortBy(merged, (p) => p.x)
+  }
+  return result
+}
+
+// Chart points fetched for one stretch of a market's history.
+export type FetchedMultiPoints = {
+  // The stretch that was asked for, in milliseconds.
+  min: number
+  max: number
+  // Whether it ran up to the market's last bet at the time.
+  reachedLastBet: boolean
+  data: MultiPoints
+}
+
+// Fetched points, with the bets that have arrived live since added. A stretch
+// that ended before the market's last bet is a look at the past, and nothing
+// is added to it.
+export const withLivePoints = (
+  fetched: FetchedMultiPoints,
+  live: MultiPoints
+): MultiPoints => {
+  if (!fetched.reachedLastBet) return fetched.data
+  const inStretch: MultiPoints = {}
+  for (const answerId of Object.keys(live)) {
+    const points = live[answerId].filter((p) => p.x >= fetched.min)
+    if (points.length > 0) inStretch[answerId] = points
+  }
+  return addMultiPoints(fetched.data, inStretch)
+}
+
+// Which points a chart draws.
+//
+// With the whole history on screen, the whole history. Zoomed in, the fetched
+// window, if it covers what is on screen: it was fetched for this view, or for
+// a wider one the user has since zoomed further into. Until such a window
+// arrives the coarser whole history stands in, unless there is none to stand
+// in, in which case any fetched window beats nothing.
+export const chooseChartPoints = (args: {
+  isZoomed: boolean
+  // The latest window fetched, if any.
+  zoomed: FetchedMultiPoints | undefined
+  // The whole history, live bets included.
+  wholeHistory: MultiPoints
+  // Whether wholeHistory has a line for every answer the chart draws.
+  hasWholeHistory: boolean
+  live: MultiPoints
+  // What is on screen, in milliseconds. Undefined before the chart is laid out.
+  view: { min: number; max: number } | undefined
+  createdTime: number
+}) => {
+  const { isZoomed, zoomed, wholeHistory, hasWholeHistory, live, view } = args
+  if (!isZoomed || !zoomed) return wholeHistory
+  const coversView =
+    view !== undefined &&
+    zoomed.min <= Math.max(view.min, args.createdTime) &&
+    (zoomed.reachedLastBet || zoomed.max >= view.max)
+  return coversView || !hasWholeHistory
+    ? withLivePoints(zoomed, live)
+    : wholeHistory
 }

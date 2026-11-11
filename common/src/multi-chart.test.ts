@@ -2,13 +2,17 @@ import { Answer } from './answer'
 import { getAnswerProbability } from './calculate'
 import { MultiContract } from './contract'
 import {
+  addMultiPoints,
+  chooseChartPoints,
   getDefaultGraphedAnswerIds,
   getFittedProbDomain,
   getKnownStepValueAt,
   getStepValueAt,
   getWholeHistoryCoverage,
   MAX_DEFAULT_GRAPHED_ANSWERS,
+  movedProbability,
   widerHistory,
+  withLivePoints,
 } from './multi-chart'
 
 // A cpmm-multi-1 answer (p = 0.5) whose pool gives exactly `prob`.
@@ -615,5 +619,292 @@ describe('getFittedProbDomain', () => {
       expect(low).toBeLessThanOrEqual(min)
       expect(high).toBeGreaterThanOrEqual(max)
     }
+  })
+})
+
+describe('addMultiPoints', () => {
+  const lines = {
+    a: [
+      { x: 10, y: 0.1 },
+      { x: 20, y: 0.2 },
+    ],
+    b: [{ x: 10, y: 0.5 }],
+  }
+
+  it('appends new points and leaves the lines it was given alone', () => {
+    const result = addMultiPoints(lines, { a: [{ x: 30, y: 0.3 }] })
+    expect(result.a).toEqual([
+      { x: 10, y: 0.1 },
+      { x: 20, y: 0.2 },
+      { x: 30, y: 0.3 },
+    ])
+    expect(lines.a).toHaveLength(2)
+  })
+
+  it('keeps the array of a line that gained nothing', () => {
+    const result = addMultiPoints(lines, { a: [{ x: 30, y: 0.3 }] })
+    expect(result.b).toBe(lines.b)
+    expect(result).not.toBe(lines)
+  })
+
+  it('returns the same object when there is nothing new', () => {
+    expect(addMultiPoints(lines, {})).toBe(lines)
+    expect(addMultiPoints(lines, { a: [] })).toBe(lines)
+    expect(addMultiPoints(lines, { a: [{ x: 20, y: 0.2 }] })).toBe(lines)
+  })
+
+  it('skips points a line already has, and repeats within the additions', () => {
+    const result = addMultiPoints(lines, {
+      a: [
+        { x: 20, y: 0.2 },
+        { x: 30, y: 0.3 },
+        { x: 30, y: 0.3 },
+      ],
+    })
+    expect(result.a.map((p) => p.x)).toEqual([10, 20, 30])
+  })
+
+  it('keeps two different probabilities at one time, in the order given', () => {
+    const result = addMultiPoints(lines, {
+      a: [
+        { x: 30, y: 0.3 },
+        { x: 30, y: 0.35 },
+      ],
+    })
+    expect(result.a.slice(2)).toEqual([
+      { x: 30, y: 0.3 },
+      { x: 30, y: 0.35 },
+    ])
+  })
+
+  it('puts an earlier point where it belongs', () => {
+    const result = addMultiPoints(lines, { a: [{ x: 15, y: 0.15 }] })
+    expect(result.a.map((p) => p.x)).toEqual([10, 15, 20])
+  })
+
+  it('starts a line for an answer it had none for', () => {
+    const result = addMultiPoints(lines, { c: [{ x: 5, y: 0.9 }] })
+    expect(result.c).toEqual([{ x: 5, y: 0.9 }])
+    expect(Object.keys(result).sort()).toEqual(['a', 'b', 'c'])
+  })
+
+  it('gives the same lines however the additions are split up', () => {
+    let seed = 3
+    const random = () => {
+      seed = (seed * 16807) % 2147483647
+      return seed / 2147483647
+    }
+    for (let trial = 0; trial < 50; trial++) {
+      const points = Array.from({ length: 40 }, () => ({
+        x: Math.floor(random() * 30),
+        y: Math.floor(random() * 4) / 4,
+      }))
+      const allAtOnce = addMultiPoints({}, { a: points })
+      let inPieces = {}
+      for (let i = 0; i < points.length; i += 7)
+        inPieces = addMultiPoints(inPieces, { a: points.slice(i, i + 7) })
+      const key = (p: { x: number; y: number }) => `${p.x}:${p.y}`
+      // Same set of points, each once, in time order.
+      expect(allAtOnce.a.map(key).sort()).toEqual(
+        [...new Set(points.map(key))].sort()
+      )
+      expect((inPieces as typeof allAtOnce).a.map(key).sort()).toEqual(
+        allAtOnce.a.map(key).sort()
+      )
+      for (const line of [allAtOnce.a, (inPieces as typeof allAtOnce).a])
+        expect(line.every((p, i) => i === 0 || line[i - 1].x <= p.x)).toBe(true)
+    }
+  })
+})
+
+describe('withLivePoints', () => {
+  const data = { a: [{ x: 100, y: 0.4 }] }
+  const live = {
+    a: [
+      { x: 50, y: 0.1 },
+      { x: 150, y: 0.5 },
+    ],
+    b: [{ x: 160, y: 0.6 }],
+  }
+
+  it('adds the live points that fall in a stretch that ran up to the last bet', () => {
+    const fetched = { min: 90, max: 120, reachedLastBet: true, data }
+    expect(withLivePoints(fetched, live)).toEqual({
+      a: [
+        { x: 100, y: 0.4 },
+        { x: 150, y: 0.5 },
+      ],
+      b: [{ x: 160, y: 0.6 }],
+    })
+  })
+
+  it('adds nothing to a stretch that ended before the last bet', () => {
+    const fetched = { min: 90, max: 120, reachedLastBet: false, data }
+    expect(withLivePoints(fetched, live)).toBe(data)
+  })
+
+  it('returns the fetched points themselves when nothing live applies', () => {
+    const fetched = { min: 90, max: 120, reachedLastBet: true, data }
+    expect(withLivePoints(fetched, {})).toBe(data)
+    expect(withLivePoints(fetched, { a: [{ x: 50, y: 0.1 }] })).toBe(data)
+  })
+})
+
+describe('addMultiPoints, on long lines', () => {
+  it('finds a repeat anywhere in the part of the line the additions overlap', () => {
+    const line = Array.from({ length: 2000 }, (_, i) => ({ x: i, y: i / 2000 }))
+    const lines = { a: line }
+    // Repeats of points deep in the line, and one new point between them.
+    const result = addMultiPoints(lines, {
+      a: [
+        { x: 500, y: 0.25 },
+        { x: 1200, y: 0.6 },
+        { x: 800, y: 0.99 },
+      ],
+    })
+    expect(result.a).toHaveLength(2001)
+    expect(result.a.filter((p) => p.x === 800)).toEqual([
+      { x: 800, y: 0.4 },
+      { x: 800, y: 0.99 },
+    ])
+    expect(addMultiPoints(lines, { a: [{ x: 1999, y: 1999 / 2000 }] })).toBe(
+      lines
+    )
+  })
+})
+
+describe('movedProbability', () => {
+  it('counts a row that moved an answer, shares or not', () => {
+    expect(
+      movedProbability({ answerId: 'a', probBefore: 0.4, probAfter: 0.5 })
+    ).toBe(true)
+  })
+
+  it('does not count a row that left the probability where it was', () => {
+    expect(
+      movedProbability({ answerId: 'a', probBefore: 0.4, probAfter: 0.4 })
+    ).toBe(false)
+  })
+
+  it('does not count a row with no answer or a broken probability', () => {
+    expect(movedProbability({ probBefore: 0.4, probAfter: 0.5 })).toBe(false)
+    expect(
+      movedProbability({ answerId: 'a', probBefore: 0.4, probAfter: NaN })
+    ).toBe(false)
+  })
+})
+
+describe('chooseChartPoints', () => {
+  const wholeHistory = { a: [{ x: 10, y: 0.1 }] }
+  const window = { a: [{ x: 500, y: 0.5 }] }
+  const live = { a: [{ x: 990, y: 0.9 }] }
+  const fetched = (
+    min: number,
+    max: number,
+    reachedLastBet: boolean
+  ): {
+    min: number
+    max: number
+    reachedLastBet: boolean
+    data: typeof window
+  } => ({
+    min,
+    max,
+    reachedLastBet,
+    data: window,
+  })
+  const base = {
+    isZoomed: true,
+    wholeHistory,
+    hasWholeHistory: true,
+    live,
+    view: { min: 400, max: 1000 },
+    createdTime: 0,
+  }
+
+  it('draws the whole history when the chart is not zoomed', () => {
+    expect(
+      chooseChartPoints({
+        ...base,
+        isZoomed: false,
+        zoomed: fetched(399, 1001, true),
+      })
+    ).toBe(wholeHistory)
+  })
+
+  it('draws the whole history until a window has been fetched', () => {
+    expect(chooseChartPoints({ ...base, zoomed: undefined })).toBe(wholeHistory)
+  })
+
+  it('draws a fetched window that covers the view, with the live bets since', () => {
+    expect(
+      chooseChartPoints({ ...base, zoomed: fetched(399, 900, true) })
+    ).toEqual({
+      a: [
+        { x: 500, y: 0.5 },
+        { x: 990, y: 0.9 },
+      ],
+    })
+  })
+
+  it('adds no live bets to a window that ended before the last bet', () => {
+    expect(
+      chooseChartPoints({
+        ...base,
+        view: { min: 400, max: 800 },
+        zoomed: fetched(399, 801, false),
+      })
+    ).toBe(window)
+  })
+
+  it('falls back to the whole history when the view has moved outside the window', () => {
+    // Panned left of what was fetched.
+    expect(
+      chooseChartPoints({
+        ...base,
+        view: { min: 200, max: 800 },
+        zoomed: fetched(399, 1001, true),
+      })
+    ).toBe(wholeHistory)
+    // Panned right of a window that stopped in the past.
+    expect(
+      chooseChartPoints({
+        ...base,
+        view: { min: 400, max: 900 },
+        zoomed: fetched(399, 801, false),
+      })
+    ).toBe(wholeHistory)
+  })
+
+  it('counts a window that starts at the market as covering a view that starts before it', () => {
+    expect(
+      chooseChartPoints({
+        ...base,
+        createdTime: 300,
+        view: { min: 100, max: 800 },
+        zoomed: fetched(299, 801, false),
+      })
+    ).toBe(window)
+  })
+
+  it('draws any fetched window when there is no whole history to fall back on', () => {
+    expect(
+      chooseChartPoints({
+        ...base,
+        hasWholeHistory: false,
+        view: { min: 200, max: 800 },
+        zoomed: fetched(399, 801, false),
+      })
+    ).toBe(window)
+  })
+
+  it('draws the whole history before the chart is laid out', () => {
+    expect(
+      chooseChartPoints({
+        ...base,
+        view: undefined,
+        zoomed: fetched(399, 1001, true),
+      })
+    ).toBe(wholeHistory)
   })
 })

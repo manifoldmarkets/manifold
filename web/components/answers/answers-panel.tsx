@@ -43,7 +43,7 @@ import { floatingEqual } from 'common/util/math'
 import { searchInAny } from 'common/util/parse'
 import { debounce, groupBy, sumBy } from 'lodash'
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CirclePicker } from 'react-color'
 import toast from 'react-hot-toast'
 import { Button, buttonClass } from 'web/components/buttons/button'
@@ -95,8 +95,14 @@ const SCROLL_OFFSET = 100
 // debounce when typing a query to ensure smoother autoscrolling
 const DEBOUNCE_DELAY = 100
 
+const NO_BETS: LimitBet[] = []
+
 // full resorting, hover, clickiness, search and add
-export function AnswersPanel(props: {
+//
+// Memoized, and it memoizes each row: zooming the chart re-renders its parent
+// many times a second, and a market can have a couple of hundred rows. Pass
+// it callbacks that stay the same from render to render.
+export const AnswersPanel = memo(function AnswersPanel(props: {
   contract: MultiContract
   selectedAnswerIds: string[]
   sort: MultiSort
@@ -132,10 +138,14 @@ export function AnswersPanel(props: {
   const addAnswersMode =
     'addAnswersMode' in contract ? contract.addAnswersMode : 'DISABLED'
 
-  const answers = contract.answers.map((a) => ({
-    ...a,
-    prob: getAnswerProbability(contract, a.id),
-  }))
+  const answers = useMemo(
+    () =>
+      contract.answers.map((a) => ({
+        ...a,
+        prob: getAnswerProbability(contract, a.id),
+      })),
+    [contract]
+  )
   const [showAll, setShowAll] = useState(props.showAll)
 
   const shouldAnswersSumToOne = getShouldAnswersSumToOne(contract)
@@ -174,6 +184,21 @@ export function AnswersPanel(props: {
     {
       enabled: isAdvancedTrader,
     }
+  )
+
+  // The first metric for each answer, and each answer's open orders, worked
+  // out once so that every row gets the same objects from render to render.
+  const metricByAnswerId = useMemo(() => {
+    const byAnswerId: { [answerId: string]: ContractMetric } = {}
+    for (const metric of allMetrics ?? []) {
+      if (metric.answerId && !(metric.answerId in byAnswerId))
+        byAnswerId[metric.answerId] = metric
+    }
+    return byAnswerId
+  }, [allMetrics])
+  const unfilledBetsByAnswerId = useMemo(
+    () => groupBy(unfilledBets ?? [], (bet) => bet.answerId ?? ''),
+    [unfilledBets]
   )
 
   const allResolved = getAllResolved(contract, answers)
@@ -263,34 +288,27 @@ export function AnswersPanel(props: {
         ) : (
           <Col className="mx-[2px] mt-1 gap-2">
             {answersToShow.map((answer) => (
-              <AnswerComponent
-                myMetric={allMetrics?.find((m) => m.answerId === answer.id)}
-                shouldShowPositions={shouldShowPositions}
-                className={
-                  selectedAnswerIds.length &&
-                  !selectedAnswerIds.includes(answer.id) &&
-                  !!onAnswerClick
-                    ? 'opacity-70'
-                    : ''
-                }
+              <AnswerRow
                 key={answer.id}
-                user={user}
                 answer={answer}
                 contract={contract}
-                onCommentClick={
-                  onAnswerCommentClick
-                    ? () => onAnswerCommentClick(answer)
+                user={user}
+                myMetric={metricByAnswerId[answer.id]}
+                shouldShowPositions={shouldShowPositions}
+                dimmed={
+                  selectedAnswerIds.length > 0 &&
+                  !selectedAnswerIds.includes(answer.id) &&
+                  !!onAnswerClick
+                }
+                unfilledBets={
+                  unfilledBets
+                    ? unfilledBetsByAnswerId[answer.id] ?? NO_BETS
                     : undefined
                 }
-                onHover={(hovering) =>
-                  onAnswerHover?.(hovering ? answer : undefined)
-                }
-                onClick={onAnswerClick}
-                unfilledBets={unfilledBets?.filter(
-                  (b) => b.answerId === answer.id
-                )}
-                color={getAnswerColor(answer)}
                 shouldShowLimitOrderChart={isAdvancedTrader}
+                onAnswerCommentClick={onAnswerCommentClick}
+                onAnswerHover={onAnswerHover}
+                onAnswerClick={onAnswerClick}
               />
             ))}
 
@@ -331,7 +349,53 @@ export function AnswersPanel(props: {
       )}
     </Col>
   )
-}
+})
+
+// One row of the answer list. Every prop it takes is the same object from
+// render to render unless that answer's own data changed, so a re-render of
+// the list (a keystroke in the search box, a chart zoom) skips the rows that
+// did not change.
+const AnswerRow = memo(function AnswerRow(props: {
+  answer: Answer
+  contract: MultiContract
+  user: User | undefined | null
+  myMetric: ContractMetric | undefined
+  shouldShowPositions: boolean
+  // Faded: other answers are selected for the chart and this one is not.
+  dimmed: boolean
+  unfilledBets: LimitBet[] | undefined
+  shouldShowLimitOrderChart: boolean
+  onAnswerCommentClick?: (answer: Answer) => void
+  onAnswerHover?: (answer: Answer | undefined) => void
+  onAnswerClick?: (answer: Answer) => void
+}) {
+  const { answer, onAnswerCommentClick, onAnswerHover } = props
+  const onCommentClick = useMemo(
+    () =>
+      onAnswerCommentClick ? () => onAnswerCommentClick(answer) : undefined,
+    [onAnswerCommentClick, answer]
+  )
+  const onHover = useCallback(
+    (hovering: boolean) => onAnswerHover?.(hovering ? answer : undefined),
+    [onAnswerHover, answer]
+  )
+  return (
+    <AnswerComponent
+      myMetric={props.myMetric}
+      shouldShowPositions={props.shouldShowPositions}
+      className={props.dimmed ? 'opacity-70' : ''}
+      user={props.user}
+      answer={answer}
+      contract={props.contract}
+      onCommentClick={onCommentClick}
+      onHover={onHover}
+      onClick={props.onAnswerClick}
+      unfilledBets={props.unfilledBets}
+      color={getAnswerColor(answer)}
+      shouldShowLimitOrderChart={props.shouldShowLimitOrderChart}
+    />
+  )
+})
 
 export const EditAnswerModal = (props: {
   open: boolean
