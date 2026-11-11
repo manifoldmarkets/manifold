@@ -293,9 +293,46 @@ describe('updateContractMetricsCore month change', () => {
     }
   })
 
-  it('recomputes the month change of a market that traded since the last run', async () => {
+  it('frequent runs leave the answers of a sum-to-one market alone too', async () => {
+    const answers: FakeAnswer[] = [
+      { id: 'other', prob: 0.12, probChanges: ZERO },
+      { id: 'a', prob: 0.88, probChanges: ZERO },
+    ]
+    const market: FakeMarket = {
+      id: 'nominee',
+      lastBetTime: start - 10 * DAY_MS,
+      shouldAnswersSumToOne: true,
+      answers,
+    }
+    const db = fakeDb([market], {
+      nomineeother: [
+        { time: start - 40 * DAY_MS, probBefore: 0.2, probAfter: 0.1 },
+        { time: start - 10 * DAY_MS, probBefore: 0.1, probAfter: 0.12 },
+      ],
+      nomineea: [
+        { time: start - 40 * DAY_MS, probBefore: 0.8, probAfter: 0.9 },
+        { time: start - 10 * DAY_MS, probBefore: 0.9, probAfter: 0.88 },
+      ],
+    })
+
+    await db.run(true)
+    expect(answers[0].probChanges.month).toBeCloseTo(0.02, 12)
+    expect(answers[1].probChanges.month).toBeCloseTo(-0.02, 12)
+    const afterFullRun = answers.map((a) => a.probChanges)
+
+    for (let i = 0; i < 3; i++) {
+      await db.frequentRun()
+      expect(answers.map((a) => a.probChanges)).toEqual(afterFullRun)
+      expect(db.monthLookupIds()).toEqual([])
+    }
+  })
+
+  it('a trade moves day and week at the next run, and month at the next full run', async () => {
+    // The month change is a daily figure. Between full runs it stays as of the
+    // last one, whatever happens to the market.
     const quiet = quietBinary()
     const market = quietMulti()
+    const answer = market.answers[0]
     const db = fakeDb([quiet, market], {
       quiet: quietBinaryBets(),
       houseaz1: quietMultiBets(),
@@ -304,26 +341,24 @@ describe('updateContractMetricsCore month change', () => {
 
     clock += 5 * MINUTE_MS
     db.trade('quiet', 0.55)
-    await db.frequentRun()
-
-    expect(db.monthLookupIds()).toEqual(['quiet'])
-    expect(quiet.probChanges?.month).toBeCloseTo(0.55 - 0.4, 12)
-    expect(market.answers[0].probChanges.month).toBeCloseTo(0.2, 12)
-
-    // Then it is quiet again: no more lookups, and the value stands.
-    await db.frequentRun()
-    expect(db.monthLookupIds()).toEqual([])
-    expect(quiet.probChanges?.month).toBeCloseTo(0.55 - 0.4, 12)
-
-    // A trade on an answer does the same for its market.
-    clock += 5 * MINUTE_MS
     db.trade('house', 0.9, 'az1')
-    await db.frequentRun()
-    expect(db.monthLookupIds()).toEqual(['house'])
-    expect(market.answers[0].probChanges.month).toBeCloseTo(0.9 - 0.8, 12)
+    for (let i = 0; i < 2; i++) {
+      await db.frequentRun()
+      expect(db.monthLookupIds()).toEqual([])
+      expect(quiet.probChanges?.day).toBeCloseTo(0.55 - 0.7, 12)
+      expect(quiet.probChanges?.week).toBeCloseTo(0.55 - 0.4, 12)
+      expect(quiet.probChanges?.month).toBeCloseTo(0.7 - 0.4, 12)
+      expect(answer.probChanges.day).toBeCloseTo(0.9 - 1, 12)
+      expect(answer.probChanges.month).toBeCloseTo(1 - 0.8, 12)
+    }
+
+    await db.run(true)
+    expect(db.monthLookupIds()).toEqual(['house', 'quiet'])
+    expect(quiet.probChanges?.month).toBeCloseTo(0.55 - 0.4, 12)
+    expect(answer.probChanges.month).toBeCloseTo(0.9 - 0.8, 12)
   })
 
-  it('recomputes when a market or an answer resolves', async () => {
+  it('a resolution is measured from its value: day and week at once, month at the next full run', async () => {
     const quiet = quietBinary()
     const market = quietMulti()
     market.answers = [
@@ -349,140 +384,33 @@ describe('updateContractMetricsCore month change', () => {
     quiet.resolutionTime = clock
     market.answers[0].resolution = 'YES'
     market.answers[0].resolutionTime = clock
-    await db.frequentRun()
 
-    expect(db.monthLookupIds()).toEqual(['house', 'quiet'])
-    // Measured from the resolution value, not from the pool.
+    await db.frequentRun()
+    expect(db.monthLookupIds()).toEqual([])
+    expect(quiet.probChanges?.day).toBeCloseTo(0 - 0.7, 12)
+    expect(quiet.probChanges?.week).toBeCloseTo(0 - 0.4, 12)
+    expect(quiet.probChanges?.month).toBeCloseTo(0.3, 12)
+    expect(market.answers[0].probChanges.week).toBeCloseTo(1 - 0.3, 12)
+    expect(market.answers[0].probChanges.month).toBeCloseTo(0.5, 12)
+
+    await db.run(true)
     expect(quiet.probChanges?.month).toBeCloseTo(0 - 0.4, 12)
     expect(market.answers[0].probChanges.month).toBeCloseTo(1 - 0.3, 12)
     expect(market.answers[1].probChanges.month).toBeCloseTo(0.25 - 0.15, 12)
   })
 
-  it('recomputes when a resolution is undone', async () => {
-    // 40% a month ago, 70% since three days ago, resolved YES, then unresolved.
-    // Without a refresh the stored 0.6 (100% - 40%) would stand where 0.3
-    // (70% - 40%) is right.
+  it('a market resolved more than a month ago reads zero on any run', async () => {
     const quiet = quietBinary()
-    const market = quietMulti()
-    const answer = market.answers[0]
-    const db = fakeDb([quiet, market], {
-      quiet: quietBinaryBets(),
-      houseaz1: quietMultiBets(),
-    })
     quiet.resolution = 'YES'
-    quiet.resolutionTime = start - MINUTE_MS
-    answer.resolution = 'NO'
-    answer.resolutionTime = start - MINUTE_MS
-    await db.run(true)
-    expect(quiet.probChanges?.month).toBeCloseTo(0.6, 12)
-    expect(answer.probChanges.month).toBeCloseTo(0 - 0.8, 12)
+    quiet.resolutionTime = start - 31 * DAY_MS
+    quiet.probChanges = { day: 0.1, week: 0.2, month: 0.6 }
+    const db = fakeDb([quiet], { quiet: quietBinaryBets() })
 
-    clock += 5 * MINUTE_MS
-    quiet.resolution = undefined
-    quiet.resolutionTime = undefined
-    answer.resolution = undefined
-    answer.resolutionTime = undefined
     await db.frequentRun()
-
-    expect(db.monthLookupIds()).toEqual(['house', 'quiet'])
-    expect(quiet.probChanges?.month).toBeCloseTo(0.3, 12)
-    expect(answer.probChanges.month).toBeCloseTo(0.2, 12)
+    expect(quiet.probChanges).toEqual(ZERO)
   })
 
-  it('recomputes a binary market unresolved after more than a week, from its stored probability', async () => {
-    // Resolved for over a week, so day and week are 0 before and after the
-    // unresolve. The contract still holds the resolution value as its
-    // probability, and that gives the change away.
-    const quiet = quietBinary()
-    const db = fakeDb([quiet], {
-      quiet: [
-        { time: start - 40 * DAY_MS, probBefore: 0.5, probAfter: 0.4 },
-        { time: start - 20 * DAY_MS, probBefore: 0.4, probAfter: 0.7 },
-      ],
-    })
-    quiet.lastBetTime = start - 20 * DAY_MS
-    quiet.resolution = 'YES'
-    quiet.resolutionTime = start - 10 * DAY_MS
-    await db.run(true)
-    expect(quiet.probChanges).toEqual({ day: 0, week: 0, month: 1 - 0.4 })
-    expect(quiet.storedProb).toBe(1)
-
-    quiet.resolution = undefined
-    quiet.resolutionTime = undefined
-    await db.frequentRun()
-
-    expect(db.monthLookupIds()).toEqual(['quiet'])
-    expect(quiet.probChanges?.month).toBeCloseTo(0.7 - 0.4, 12)
-    expect(quiet.storedProb).toBe(0.7)
-  })
-
-  it('an answer unresolved after more than a week waits for the full run', async () => {
-    // The known limit. An answer's row stores its pool probability only, so
-    // with day and week at 0 on both sides nothing shows that it moved.
-    const market = quietMulti()
-    const answer = market.answers[0]
-    const db = fakeDb([market], {
-      houseaz1: [
-        { time: start - 40 * DAY_MS, probBefore: 0.5, probAfter: 0.8 },
-        { time: start - 20 * DAY_MS, probBefore: 0.8, probAfter: 0.9 },
-      ],
-    })
-    answer.prob = 0.9
-    answer.resolution = 'YES'
-    answer.resolutionTime = start - 10 * DAY_MS
-    await db.run(true)
-    expect(answer.probChanges.month).toBeCloseTo(1 - 0.8, 12)
-
-    answer.resolution = undefined
-    answer.resolutionTime = undefined
-    await db.frequentRun()
-    expect(db.monthLookupIds()).toEqual([])
-    expect(answer.probChanges.month).toBeCloseTo(1 - 0.8, 12)
-
-    await db.run(true)
-    expect(answer.probChanges.month).toBeCloseTo(0.9 - 0.8, 12)
-  })
-
-  it('recomputes when an added answer moves the others without a bet', async () => {
-    // Adding an answer to a market whose answers sum to one takes its share
-    // from Other. No bet is recorded and no timestamp moves. Other was at 10%
-    // a month ago and 12% since; the split leaves it at 10%, so its month
-    // change is 0, not the stored +2%.
-    const answers: FakeAnswer[] = [
-      { id: 'other', prob: 0.12, probChanges: ZERO },
-      { id: 'a', prob: 0.88, probChanges: ZERO },
-    ]
-    const market: FakeMarket = {
-      id: 'nominee',
-      lastBetTime: start - 10 * DAY_MS,
-      shouldAnswersSumToOne: true,
-      answers,
-    }
-    const db = fakeDb([market], {
-      nomineeother: [
-        { time: start - 40 * DAY_MS, probBefore: 0.2, probAfter: 0.1 },
-        { time: start - 10 * DAY_MS, probBefore: 0.1, probAfter: 0.12 },
-      ],
-      nomineea: [
-        { time: start - 40 * DAY_MS, probBefore: 0.8, probAfter: 0.9 },
-        { time: start - 10 * DAY_MS, probBefore: 0.9, probAfter: 0.88 },
-      ],
-    })
-    await db.run(true)
-    expect(answers[0].probChanges.month).toBeCloseTo(0.02, 12)
-
-    clock += 5 * MINUTE_MS
-    answers[0].prob = 0.1
-    answers.push({ id: 'new', prob: 0.02, probChanges: ZERO })
-    await db.frequentRun()
-
-    expect(db.monthLookupIds()).toEqual(['nominee'])
-    expect(answers[0].probChanges.month).toBeCloseTo(0, 12)
-    expect(answers[1].probChanges.month).toBeCloseTo(0.88 - 0.9, 12)
-    expect(answers[2].probChanges).toEqual(ZERO)
-  })
-
-  it('a wrong stored month change on a quiet market stays until the full run repairs it', async () => {
+  it('a wrong stored month change stays until the full run repairs it', async () => {
     const quiet = quietBinary()
     const market = quietMulti()
     const answer = market.answers[0]
