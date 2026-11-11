@@ -66,6 +66,7 @@ import { api, APIError } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { isAndroid, isIOS } from 'web/lib/util/device'
+import { onSignedOutBetPress } from 'web/lib/util/signed-out-bet'
 import { showsSideProbability, versusSide, versusSideProb } from 'common/versus'
 import { getBetSharePrice } from 'common/share-bet'
 import { Button } from '../buttons/button'
@@ -168,10 +169,23 @@ export function BuyPanel(
     } else {
       track('bet intent', {
         location,
+        // The side that was selected before this press, if any.
         option: outcome,
+        outcome: choice,
+        contractId: contract.id,
+        signedOut: !user,
         token: contract.token,
         boosted: contract.boosted,
       })
+      // Only once auth has settled on nobody: sign-in must not open at an
+      // account that is still loading.
+      if (user === null)
+        onSignedOutBetPress({
+          contractId: contract.id,
+          location,
+          surface: 'ticket',
+          outcome: choice,
+        })
 
       setOutcome(choice)
       setIsPanelBodyVisible(true)

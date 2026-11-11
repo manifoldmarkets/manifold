@@ -8,10 +8,10 @@ import { BuyPanelBody } from 'web/components/bet/bet-panel'
 import { Button, SizeType } from 'web/components/buttons/button'
 import { useUser } from 'web/hooks/use-user'
 import { useAnswerBetTrackingLocation } from 'web/hooks/use-answer-bet-tracking-location'
-import { track } from 'web/lib/service/analytics'
 import { getAnswerColor } from '../charts/contract/choice'
 import { Row } from '../layout/row'
 import { MOD_ACTION_TEXT_CLASS } from '../moderation/mod-action'
+import { onAnswerBetPress } from './answer-components'
 import {
   AnswerComponent,
   EditAnswerModal,
@@ -123,8 +123,7 @@ const BetButton = (props: {
         style={{ backgroundColor: color }}
         className={'flex w-full items-center justify-between gap-1 text-white'}
         onClick={() => {
-          // TODO: Twomba tracking bet terminology
-          track('bet intent', { location: 'answer panel' })
+          onAnswerBetPress(contract, answer, outcome, user)
           setOutcome(outcome)
         }}
       >
