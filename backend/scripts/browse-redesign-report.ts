@@ -16,6 +16,9 @@ import * as pgPromise from 'pg-promise'
  * even when launch is after midnight. The end is exclusive, defaulting to
  * now so the launch-day counts are available immediately. Outcomes mature
  * for seven days after each first exposure, regardless of the requested end.
+ * The one-day columns mature after a day: nearly every signup and first bet
+ * lands within a day of the first visit, so they can be read a week sooner.
+ * The main outcome is activated_1d, a funded bet within a day of landing.
  *
  * Unit: browser, not person. Keep original assignments, including switchers.
  * A fresh browser can belong to an existing person; account login is reported
@@ -107,11 +110,13 @@ async function report() {
       } UTC`
     )
     console.log(
-      'Seven-day outcomes are shown only for fully matured browsers. Return means Browse/Home return.'
+      'Seven-day and one-day outcomes are shown only for browsers that have had the full window. Return means Browse/Home return.'
     )
     console.table(
       rows.map((row) => ({
         ...row,
+        activation_rate_1d: rate(row.activated_1d, row.mature_day_browsers),
+        signup_rate_1d: rate(row.signups_1d, row.mature_day_browsers),
         signup_rate: rate(row.signups_7d, row.mature_browsers),
         activation_rate: rate(row.activated_7d, row.mature_browsers),
         return_rate: rate(row.returned_days_1_to_7, row.mature_browsers),

@@ -51,7 +51,17 @@ launch; synthetic PostgreSQL tests are not a production performance guarantee.
 
 Seven-day rates use only fully matured browsers. Signup links use the signup
 token observed on a browser's exposure/toggle events; trades require funded,
-non-API, non-redemption buy orders. Reported assignment conflicts include changes
+non-API, non-redemption buy orders.
+
+The one-day columns (`mature_day_browsers`, `signups_1d`, `activated_1d`) use
+browsers at least a day old. Nearly every signup and first bet lands within a
+day of the first visit, so these can be read a week before the seven-day rates.
+`activated_1d` is the outcome to lead with: a signup whose buy order filled
+within a day of the first visit. A resting limit order counts from its first
+fill, not from when it was placed; the seven-day column still counts it from
+placement.
+
+Reported assignment conflicts include changes
 to either cohort or variant. Keep original assignment after manual switching
 (intention to treat). Existing-account discovery is a diagnostic, not a reason to
 remove assigned browsers.

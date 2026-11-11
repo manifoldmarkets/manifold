@@ -19,7 +19,7 @@ import { track } from 'web/lib/service/analytics'
 import { listGroupsBySlug } from 'web/lib/supabase/groups'
 import { BrowseTopicsProvider, useBrowseTopics } from './browse-topics'
 import { HubCards } from './hub-cards'
-import { isHubMarket } from './hub-fold'
+import { isHubMarket, SHOW_HUB_MARKETS_KEY } from './hub-fold'
 import {
   ALL_TOPICS,
   BrowseFilters,
@@ -104,10 +104,19 @@ function BrowseV2Inner() {
     ALL_TOPICS,
     'browse-v2-topic'
   )
-  const [filters, setFilters] = usePersistentInMemoryState<BrowseFilters>(
-    DEFAULT_FILTERS,
-    'browse-v2-filters'
+  const [sessionFilters, setFilters] =
+    usePersistentInMemoryState<BrowseFilters>(
+      DEFAULT_FILTERS,
+      'browse-v2-filters'
+    )
+  // Wanting hub markets in the list is a habit like sort and layout: it was
+  // the filter people changed most, and it used to reset with the page. So
+  // it is remembered on this device, while the other filters still reset.
+  const [showHubMarkets, setShowHubMarkets] = usePersistentLocalState<boolean>(
+    false,
+    SHOW_HUB_MARKETS_KEY
   )
+  const filters: BrowseFilters = { ...sessionFilters, showHubMarkets }
   const [input, setInput] = usePersistentInMemoryState('', 'browse-v2-term')
   const [term, setTerm] = useState(input.trim())
   const [searchCategory, setSearchCategory] = useState<SearchCategory>('all')
@@ -279,6 +288,7 @@ function BrowseV2Inner() {
   }
   const onFilters = (next: BrowseFilters) => {
     track('browse v2 filters', { ...next })
+    setShowHubMarkets(!!next.showHubMarkets)
     setFilters(next)
   }
   const onLayout = (next: BrowseLayout) => {

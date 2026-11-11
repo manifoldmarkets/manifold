@@ -34,7 +34,10 @@ with
   entrants as materialized (
     select
       *,
-      ts <= $3::timestamptz - interval '7 days' as mature
+      ts <= $3::timestamptz - interval '7 days' as mature,
+      -- Nearly every signup and first bet lands within a day of the first
+      -- visit, so the one-day outcomes can be read a week sooner.
+      ts <= $3::timestamptz - interval '1 day' as mature_day
     from
       first_exposures
     where
@@ -122,7 +125,8 @@ with
   signup_outcomes as (
     select
       browser_id,
-      true as signed_up
+      true as signed_up,
+      bool_or(created_time < ts + interval '1 day') as signed_up_day
     from
       signup_accounts
     group by
@@ -131,7 +135,36 @@ with
   trade_outcomes as (
     select
       a.browser_id,
-      true as signed_up_and_traded
+      true as signed_up_and_traded,
+      -- A resting limit order keeps its creation time while it fills, so for
+      -- the one-day outcome it counts from its first fill, not from when it
+      -- was placed. Rows with no fill history fall back to creation time.
+      bool_or(
+        coalesce(
+          (
+            select
+              min((fill ->> 'timestamp')::numeric)
+            from
+              jsonb_array_elements(
+                case
+                  when jsonb_typeof(b.data -> 'fills') = 'array' then b.data -> 'fills'
+                  else '[]'::jsonb
+                end
+              ) fill
+            where
+              (fill ->> 'amount')::numeric > 0
+          ),
+          extract(
+            epoch
+            from
+              b.created_time
+          ) * 1000
+        ) < extract(
+          epoch
+          from
+            a.ts + interval '1 day'
+        ) * 1000
+      ) as traded_day
     from
       signup_accounts a
       join contract_bets b on b.user_id = a.id
@@ -175,6 +208,20 @@ select
       mature
       and signed_up_and_traded
   )::int as activated_7d,
+  count(*) filter (
+    where
+      mature_day
+  )::int as mature_day_browsers,
+  count(*) filter (
+    where
+      mature_day
+      and signed_up_day
+  )::int as signups_1d,
+  count(*) filter (
+    where
+      mature_day
+      and traded_day
+  )::int as activated_1d,
   count(*) filter (
     where
       mature

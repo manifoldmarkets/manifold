@@ -32,7 +32,7 @@ async function database() {
     create table users (id text primary key, created_time timestamptz not null);
     create index users_created_time on users (created_time desc);
     create table private_users (id text primary key, data jsonb not null);
-    create table contract_bets (bet_id text primary key, user_id text not null, created_time timestamptz not null, amount numeric, shares numeric, is_api boolean, is_redemption boolean);
+    create table contract_bets (bet_id text primary key, user_id text not null, created_time timestamptz not null, amount numeric, shares numeric, is_api boolean, is_redemption boolean, data jsonb);
     create index contract_bets_user_id_created_time on contract_bets (user_id, created_time desc);
     create index contract_bets_created_time_only on contract_bets (created_time desc);
   `)
@@ -148,6 +148,10 @@ test('report CLI includes a midday launch date and rejects launch at or after th
     assert.equal(rows[0].signups_7d, 1)
     assert.equal(rows[0].activated_7d, 1)
     assert.equal(rows[0].returned_days_1_to_7, 1)
+    // The account and its bet came an hour and two hours after the visit.
+    assert.equal(rows[0].mature_day_browsers, 1)
+    assert.equal(rows[0].signup_rate_1d, '100.00%')
+    assert.equal(rows[0].activation_rate_1d, '100.00%')
     for (const lateLaunch of [day(6), '2026-11-06T14:00:00Z']) {
       await assert.rejects(
         reportCli(db, '2026-11-05', '2026-11-06', lateLaunch),
@@ -242,6 +246,11 @@ test('report preserves first assignment, UTC windows, maturity, rotating tokens 
       returned_days_1_to_7: 3,
       signups_7d: 3,
       activated_7d: 1,
+      // Every account here was made exactly a day after its first visit,
+      // which is outside the one-day window.
+      mature_day_browsers: 6,
+      signups_1d: 0,
+      activated_1d: 0,
       chose_new_7d: 1,
       chose_classic_7d: 1,
       existing_account_7d: 1,
@@ -251,8 +260,115 @@ test('report preserves first assignment, UTC windows, maturity, rotating tokens 
     assert.equal(treatment.browsers, 1)
     assert.equal(treatment.mature_browsers, 0)
     assert.equal(treatment.returned_days_1_to_7, 0)
+    // Six days old at the as-of: past the one-day window, short of seven.
+    assert.equal(treatment.mature_day_browsers, 1)
     assert.equal(rows.find((r) => r.cohort === 'existing-user').browsers, 1)
     assert.deepEqual(await report(db, args(day(2), day(4))), [])
+  } finally {
+    await db.close()
+  }
+})
+
+test('one-day outcomes count only what landed within a day, for browsers a day old', async () => {
+  const db = await database()
+  try {
+    const enter = (browserId, time, variant = 'control') =>
+      db.query('insert into user_events (ts, name, data) values ($1,$2,$3)', [
+        time,
+        rules.BROWSE_EXPOSURE_EVENT,
+        {
+          experiment: rules.BROWSE_EXPERIMENT,
+          environment: 'production',
+          browserId,
+          deviceId: browserId,
+          cohort: 'new-visitor',
+          variant,
+          mobile: false,
+          signedInAtEnrollment: false,
+        },
+      ])
+    const hour = (n) =>
+      new Date(Date.parse(day(1)) + n * 3600 * 1000).toISOString()
+    // Signs up and bets the same day.
+    await enter('same-day', day(1))
+    // Signs up the same day, first bet two days later.
+    await enter('late-bet', day(1))
+    // Signs up on day two.
+    await enter('late-signup', day(1))
+    // Bets in the last minute of the day, and one at exactly a day.
+    await enter('edge', day(1))
+    await enter('edge-out', day(1))
+    // Places a limit order the same day that first fills two days later.
+    await enter('late-fill', day(1))
+    // Places a limit order the same day that part fills within the day.
+    await enter('early-fill', day(1))
+    // Never signs up.
+    await enter('nothing', day(1))
+    // Entered less than a day before the as-of.
+    await enter('fresh', '2026-11-09T12:00:00Z', 'treatment')
+    await db.query(
+      `insert into users values
+        ('u-same',$1),('u-late-bet',$1),('u-late-signup',$2),('u-edge',$1),('u-edge-out',$1),('u-late-fill',$1),('u-early-fill',$1),('u-fresh','2026-11-09T12:05:00Z')`,
+      [hour(2), hour(30)]
+    )
+    await db.exec(`
+      insert into private_users values
+        ('u-same','{"initialDeviceToken":"same-day"}'),
+        ('u-late-bet','{"initialDeviceToken":"late-bet"}'),
+        ('u-late-signup','{"initialDeviceToken":"late-signup"}'),
+        ('u-edge','{"initialDeviceToken":"edge"}'),
+        ('u-edge-out','{"initialDeviceToken":"edge-out"}'),
+        ('u-late-fill','{"initialDeviceToken":"late-fill"}'),
+        ('u-early-fill','{"initialDeviceToken":"early-fill"}'),
+        ('u-fresh','{"initialDeviceToken":"fresh"}');
+    `)
+    await db.query(
+      `insert into contract_bets values
+        ('b-same','u-same',$1,10,20,false,false),
+        ('b-late','u-late-bet',$2,10,20,false,false),
+        ('b-late-signup','u-late-signup',$3,10,20,false,false),
+        ('b-edge','u-edge',$4,10,20,false,false),
+        ('b-edge-out','u-edge-out',$5,10,20,false,false),
+        ('b-fresh','u-fresh','2026-11-09T12:10:00Z',10,20,false,false)`,
+      [hour(3), hour(50), hour(31), '2026-11-01T23:59:00Z', day(2)]
+    )
+    const fills = (...entries) => ({
+      fills: entries.map(([amount, time]) => ({
+        matchedBetId: null,
+        amount,
+        shares: amount * 2,
+        timestamp: Date.parse(time),
+      })),
+    })
+    await db.query(
+      `insert into contract_bets values
+        ('b-late-fill','u-late-fill',$1,10,20,false,false,$2),
+        ('b-early-fill','u-early-fill',$1,10,20,false,false,$3)`,
+      [
+        hour(4),
+        fills([0, hour(4)], [10, hour(52)]),
+        fills([4, hour(20)], [6, hour(80)]),
+      ]
+    )
+    const rows = await report(db, args(day(1), day(10)))
+    const control = rows.find((r) => r.variant === 'control')
+    assert.equal(control.browsers, 8)
+    assert.equal(control.mature_day_browsers, 8)
+    // Everyone but late-signup and nothing signed up within a day.
+    assert.equal(control.signups_1d, 6)
+    // same-day and edge bet within a day, and early-fill's order part filled
+    // within it. edge-out's bet is a minute late, and late-fill's order sat
+    // unfilled until day three.
+    assert.equal(control.activated_1d, 3)
+    // The seven-day columns still count everyone who got there in the week.
+    assert.equal(control.mature_browsers, 8)
+    assert.equal(control.signups_7d, 7)
+    assert.equal(control.activated_7d, 7)
+    const treatment = rows.find((r) => r.variant === 'treatment')
+    assert.equal(treatment.browsers, 1)
+    assert.equal(treatment.mature_day_browsers, 0)
+    assert.equal(treatment.signups_1d, 0)
+    assert.equal(treatment.activated_1d, 0)
   } finally {
     await db.close()
   }
