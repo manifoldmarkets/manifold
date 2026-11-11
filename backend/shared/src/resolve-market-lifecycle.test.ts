@@ -176,3 +176,30 @@ it('keeps the canonical APIError identity for an already-resolved contract', asy
   expect(observe.mock.calls).toEqual([['started']])
   expect(multi).not.toHaveBeenCalled()
 })
+
+it("runs the caller's check on the transaction's read and writes nothing when it refuses", async () => {
+  const fresh = { ...contract, question: 'read inside the transaction' }
+  jest.mocked(getContractAndMetricsAndLiquidities).mockResolvedValueOnce({
+    contract: fresh,
+    liquidities: [],
+    contractMetrics: [],
+  })
+  const refusal = new Error('another answer was resolved meanwhile')
+  const check = jest.fn(() => {
+    throw refusal
+  })
+  await expect(
+    resolveMarketHelper(
+      contract,
+      user,
+      user,
+      { outcome: 'YES' },
+      undefined,
+      check
+    )
+  ).rejects.toBe(refusal)
+  expect(check).toHaveBeenCalledWith(fresh)
+  expect(multi).not.toHaveBeenCalled()
+  expect(commit).not.toHaveBeenCalled()
+  expect(broadcastUpdatedContract).not.toHaveBeenCalled()
+})

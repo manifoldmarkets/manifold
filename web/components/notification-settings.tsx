@@ -171,6 +171,7 @@ const otherBalances: NotificationSectionData = {
   subscriptionTypes: [
     'loan_income',
     'limit_order_fills',
+    'liquidity_returned',
     'personalized_mana_offer',
   ],
 }

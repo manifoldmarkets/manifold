@@ -4,6 +4,7 @@ import { User } from 'common/user'
 import { useState } from 'react'
 import { FullUser } from 'common/api/user-types'
 import { PrivateUser } from 'common/user'
+import { SUPPORTER_ENTITLEMENT_IDS } from 'common/supporter-config'
 
 type UserUpdate = Partial<User> & { id: string }
 
@@ -47,10 +48,53 @@ export const applyLocalUserUpdate = (update: UserUpdate) => {
   localUpdateListeners.forEach((listener) => listener(update))
 }
 
+const entitlementRefreshes = new Map<
+  string,
+  { generation: number; promise: Promise<FullUser> }
+>()
+
+// Mutation replies and broadcasts can arrive out of order. Treat them as
+// invalidations, and only apply a fresh read after the last observed change.
+// Full-user loads must use this same coordinator: they carry entitlements too.
+// Coalesce overlapping requests, but repeat a read invalidated while in flight.
+export const refreshUserEntitlements = (
+  userId: string,
+  getFullUserById: (id: string) => Promise<FullUser>
+) => {
+  const pending = entitlementRefreshes.get(userId)
+  if (pending) {
+    pending.generation++
+    return pending.promise
+  }
+  const refresh: { generation: number; promise: Promise<FullUser> } = {
+    generation: 0,
+    // Defer the first read until the coordinator is registered, so every
+    // caller joins the same promise, including initial/full-user loads.
+    promise: Promise.resolve()
+      .then(async () => {
+        while (true) {
+          const generation = refresh.generation
+          const user = await getFullUserById(userId)
+          if (generation !== refresh.generation) continue
+          entitlementRefreshes.delete(userId)
+          applyLocalUserUpdate({ id: userId, entitlements: user.entitlements })
+          return user
+        }
+      })
+      .finally(() => {
+        if (entitlementRefreshes.get(userId) === refresh)
+          entitlementRefreshes.delete(userId)
+      }),
+  }
+  entitlementRefreshes.set(userId, refresh)
+  return refresh.promise
+}
+
 export const useWebsocketUser = (
   userId: string | undefined,
   isPageVisible: boolean,
-  getFullUserById: (id: string) => Promise<FullUser>
+  getFullUserById: (id: string) => Promise<FullUser>,
+  pollMembership = false
 ) => {
   const [user, setUser] = useState<User | null | undefined>()
 
@@ -63,10 +107,12 @@ export const useWebsocketUser = (
   useApiSubscription({
     topics: [`user/${userId ?? '_'}`],
     onBroadcast: ({ data }) => {
-      const user = data.user as UserUpdate
-      console.log('ws update', user)
-      recordChange(user)
-      applyUpdate(user)
+      const { entitlements, ...update } = data.user as UserUpdate
+      recordChange(update)
+      applyUpdate(update)
+      if (entitlements !== undefined) {
+        refreshUserEntitlements(update.id, getFullUserById).catch(console.error)
+      }
     },
   })
 
@@ -77,7 +123,7 @@ export const useWebsocketUser = (
     // settles isn't missed.
     const changes = trackUserChanges(id)
     try {
-      const result = await getFullUserById(id)
+      const result = await refreshUserEntitlements(id, getFullUserById)
       // Only the latest fetch counts, so an earlier one landing late can't
       // overwrite it.
       if (fetchId === latestFetch.current)
@@ -90,10 +136,25 @@ export const useWebsocketUser = (
   useEffect(() => {
     if (!isPageVisible) return
 
+    let disposed = false
+    let retry: ReturnType<typeof setTimeout> | undefined
+    const refresh = () => {
+      if (!userId) return
+      refreshUser(userId).catch((error) => {
+        console.error(error)
+        // Recover initial loads even before we know whether to poll a member.
+        if (!disposed) retry = setTimeout(refresh, 60_000)
+      })
+    }
     if (userId) {
-      refreshUser(userId)
+      refresh()
     } else {
       setUser(null)
+    }
+    return () => {
+      disposed = true
+      clearTimeout(retry)
+      latestFetch.current++
     }
   }, [userId, isPageVisible])
 
@@ -107,6 +168,25 @@ export const useWebsocketUser = (
       localUpdateListeners.delete(listener)
     }
   }, [userId])
+
+  const hasMembership = user?.entitlements?.some(
+    (entitlement) =>
+      SUPPORTER_ENTITLEMENT_IDS.some(
+        (id) => id === entitlement.entitlementId
+      ) &&
+      (entitlement.autoRenew ||
+        entitlement.expiresTime === undefined ||
+        entitlement.expiresTime > Date.now())
+  )
+  useEffect(() => {
+    if (!pollMembership || !isPageVisible || !userId || !hasMembership) return
+    // Scheduler changes may not reach the API websocket process. Reconcile
+    // visible members once a minute; hidden tabs refresh on becoming visible.
+    const interval = setInterval(() => {
+      refreshUserEntitlements(userId, getFullUserById).catch(console.error)
+    }, 60_000)
+    return () => clearInterval(interval)
+  }, [pollMembership, isPageVisible, userId, hasMembership])
 
   return user
 }

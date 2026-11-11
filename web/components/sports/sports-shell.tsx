@@ -6,6 +6,8 @@ import {
   AnySportKey,
   CURATED_SPORTS,
   SportInfo,
+  sportPath,
+  SportSelection,
   UpcomingMarketRef,
 } from 'common/sports-schedule'
 import { BackButton } from 'web/components/contract/back-button'
@@ -14,7 +16,8 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
 import { SportsRailData } from 'web/hooks/use-sports-schedule'
-import { SportRail, SportSelection, sportPath } from './sport-rail'
+import { HideBlockedTopics, HidesBlocked } from './blocked-topics'
+import { SportRail } from './sport-rail'
 import { SportsMarketSections } from './sports-market-sections'
 import { UpcomingMarkets } from './upcoming-markets'
 
@@ -26,16 +29,32 @@ import { UpcomingMarkets } from './upcoming-markets'
  */
 export function SportsShell(props: {
   selected: SportSelection
+  /** The open topic's slug, on a topic's page. */
+  selectedTopic?: string
   rail: SportsRailData | undefined
   heading: ReactNode
   /** One line; truncated rather than wrapped. */
   subheading?: ReactNode
+  /** Beside Create, like the Follow button. */
+  actions?: ReactNode
+  /** Leaves blocked topics' markets out of the lists (useBlockedTopicFilter). */
+  hides?: HidesBlocked
   seo: ComponentProps<typeof SEO>
   trackPageView: string
   children: ReactNode
 }) {
-  const { selected, rail, heading, subheading, seo, trackPageView, children } =
-    props
+  const {
+    selected,
+    selectedTopic,
+    rail,
+    heading,
+    subheading,
+    actions,
+    hides,
+    seo,
+    trackPageView,
+    children,
+  } = props
   return (
     <Page trackPageView={trackPageView} className="min-w-0">
       <SEO {...seo} />
@@ -46,24 +65,32 @@ export function SportsShell(props: {
                 visitor came from), or Home when they arrived from off-site.
                 The button only appears once it can tell which, so it gets a
                 fixed slot and the heading never moves. Remount when the sport
-                changes so its history check stays current on Back/Forward.
+                or topic changes so its history check stays current on
+                Back/Forward.
                 On desktop the sidebar covers it, so the slot is hidden too. */}
             <div className="-ml-2.5 h-8 w-10 shrink-0 lg:hidden">
-              <BackButton key={selected} size="xs" homeFallback />
+              <BackButton
+                key={`${selected}/${selectedTopic ?? ''}`}
+                size="xs"
+                homeFallback
+              />
             </div>
             <h1 className="text-ink-1000 min-w-0 truncate text-3xl font-bold tracking-tight sm:text-4xl">
               {heading}
             </h1>
           </Row>
-          <Link
-            href="/create"
-            className="bg-primary-600 hover:bg-primary-700 text-ink-0 flex min-h-[40px] shrink-0 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium"
-          >
-            <PlusIcon className="h-4 w-4" />
-            <span>
-              Create<span className="sr-only sm:not-sr-only"> market</span>
-            </span>
-          </Link>
+          <Row className="shrink-0 items-center gap-2">
+            {actions}
+            <Link
+              href="/create"
+              className="bg-primary-600 hover:bg-primary-700 text-ink-0 flex min-h-[40px] shrink-0 items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium"
+            >
+              <PlusIcon className="h-4 w-4" />
+              <span>
+                Create<span className="sr-only sm:not-sr-only"> market</span>
+              </span>
+            </Link>
+          </Row>
         </Row>
         {/* Always one line, even while a sport is loading. */}
         <p className="text-ink-500 truncate px-1 text-sm">
@@ -78,7 +105,11 @@ export function SportsShell(props: {
           />
         </div>
 
-        {children}
+        {hides ? (
+          <HideBlockedTopics hides={hides}>{children}</HideBlockedTopics>
+        ) : (
+          children
+        )}
 
         <p className="text-ink-400 px-1 pb-2 pt-4 text-[11px]">
           Times are in your local time zone. Official markets are created by
@@ -162,8 +193,10 @@ export function NoGames(props: {
   sport?: SportInfo
   sports: SportInfo[]
   counts: Partial<Record<AnySportKey, number>>
+  /** Games are on, but every one is in a topic the visitor blocked. */
+  allBlocked?: boolean
 }) {
-  const { sport, sports, counts } = props
+  const { sport, sports, counts, allBlocked } = props
   const others = sortBy(
     sports.filter((s) => s.key !== sport?.key && (counts[s.key] ?? 0) > 0),
     (s) => -(counts[s.key] ?? 0)
@@ -171,13 +204,18 @@ export function NoGames(props: {
   return (
     <Col className="border-ink-200 bg-canvas-0 gap-1.5 rounded-lg border px-4 py-4">
       <span className="text-ink-900 text-sm font-semibold">
-        {sport
+        {allBlocked
+          ? sport
+            ? `Every ${sport.label} game coming up is in a topic you blocked`
+            : 'Every game coming up is in a topic you blocked'
+          : sport
           ? `No ${sport.label} games in the next two weeks`
           : 'No games in the next two weeks'}
       </span>
       <span className="text-ink-500 text-xs">
-        Game markets show up here automatically for connected leagues. Other
-        markets are below.
+        {allBlocked
+          ? 'Unblock a topic from its page to see its games. Other markets are below.'
+          : 'Game markets show up here automatically for connected leagues. Other markets are below.'}
       </span>
       {others.length > 0 && (
         <Row className="mt-1 flex-wrap gap-1.5 text-xs">

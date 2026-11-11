@@ -101,7 +101,7 @@ export interface OddsCreateResult {
   }[]
 }
 
-async function sportsCreator(): Promise<User> {
+export async function sportsCreator(): Promise<User> {
   const id = manifoldSportsUserId(isProd())
   const user = await getUser(id)
   if (!user) throw new Error(`@ManifoldSports user ${id} not found`)

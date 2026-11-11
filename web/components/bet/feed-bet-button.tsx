@@ -22,8 +22,19 @@ export function BetButton(props: {
   className?: string
   labels?: { yes: string; no: string }
   questionTitle?: string
+  // Analytics location for the bet. 'feed card' bets count toward the home
+  // feed conversion rate, so callers outside the feed must pass their own.
+  location?: string
 }) {
-  const { contract, labels, user, className, feedReason, questionTitle } = props
+  const {
+    contract,
+    labels,
+    user,
+    className,
+    feedReason,
+    questionTitle,
+    location = 'feed card',
+  } = props
   const { closeTime } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const customYesText = getCustomYesButtonText(user?.entitlements)
@@ -40,7 +51,7 @@ export function BetButton(props: {
       return
     }
     track('bet intent', {
-      location: 'feed card',
+      location,
       outcome,
       token: contract.token,
     })
@@ -96,7 +107,7 @@ export function BetButton(props: {
               onBuySuccess={() =>
                 setTimeout(() => setDialogueThatIsOpen(undefined), 500)
               }
-              location={'feed card'}
+              location={location}
               inModal={true}
               feedReason={feedReason}
             />

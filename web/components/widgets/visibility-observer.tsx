@@ -11,11 +11,15 @@ export function VisibilityObserver(props: {
 
   useEffect(() => {
     if (elem) {
+      let active = true
       const observer = new IntersectionObserver(([entry]) => {
-        onVisibilityUpdated(entry.isIntersecting)
+        if (active) onVisibilityUpdated(entry.isIntersecting)
       }, {})
       observer.observe(elem)
-      return () => observer.unobserve(elem)
+      return () => {
+        active = false
+        observer.disconnect()
+      }
     }
   }, [elem, onVisibilityUpdated])
 
@@ -28,21 +32,53 @@ export function LoadMoreUntilNotVisible(props: {
 }) {
   const { loadMore } = props
   const isVisibleRef = useRef(false)
+  const cycleRef = useRef<{
+    active: boolean
+    loading: boolean
+    timer?: ReturnType<typeof setTimeout>
+  }>({ active: false, loading: false })
+
+  useEffect(() => {
+    // Keep each effect lifetime separate, including StrictMode's setup replay.
+    // A request from an older lifetime must never schedule another page.
+    const cycle: typeof cycleRef.current = { active: true, loading: false }
+    cycleRef.current = cycle
+    return () => {
+      cycle.active = false
+      isVisibleRef.current = false
+      clearTimeout(cycle.timer)
+    }
+  }, [])
+
   const loadMoreIfVisible = useEvent(async () => {
-    if (isVisibleRef.current && loadMore) {
+    const cycle = cycleRef.current
+    if (
+      !cycle.active ||
+      !isVisibleRef.current ||
+      cycle.loading ||
+      cycle.timer !== undefined
+    )
+      return
+    cycle.loading = true
+    try {
       const hasMoreResults = await loadMore()
-      if (hasMoreResults) {
-        setTimeout(() => {
-          if (isVisibleRef.current) {
-            loadMoreIfVisible()
-          }
+      if (cycle.active && isVisibleRef.current && hasMoreResults) {
+        cycle.timer = setTimeout(() => {
+          cycle.timer = undefined
+          if (cycle.active) loadMoreIfVisible()
         }, 500)
       }
+    } finally {
+      cycle.loading = false
     }
   })
 
   const onVisibilityUpdated = useEvent((visible: boolean) => {
     isVisibleRef.current = visible
+    if (!visible) {
+      clearTimeout(cycleRef.current.timer)
+      cycleRef.current.timer = undefined
+    }
     loadMoreIfVisible()
   })
 

@@ -26,8 +26,18 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
   columns: LeaderboardColumn<T>[]
   className?: string
   highlightUserId?: string
+  // Names cut to 10 characters (the default); false keeps them whole up to
+  // the column's width.
+  shortNames?: boolean
 }) {
-  const { title, entries, columns, className, highlightUserId } = props
+  const {
+    title,
+    entries,
+    columns,
+    className,
+    highlightUserId,
+    shortNames = true,
+  } = props
 
   return (
     <div className={clsx('w-full', className)}>
@@ -72,7 +82,7 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
                     <UserAvatarAndBadge
                       className="max-[400px]:max-w-[160px] sm:max-w-[200px] xl:max-w-none"
                       user={{ id: entry.userId, ...entry }}
-                      short
+                      short={shortNames}
                       displayContext="leaderboard"
                     />
                   </td>

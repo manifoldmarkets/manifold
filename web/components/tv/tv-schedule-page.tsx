@@ -17,6 +17,7 @@ import { useUser } from 'web/hooks/use-user'
 import { BsCircleFill } from 'react-icons/bs'
 import { capitalize } from 'lodash'
 import { TRADE_TERM } from 'common/envs/constants'
+import { isTVElectionBoard } from 'common/tv'
 
 export function TVSchedulePage(props: {
   schedule: ScheduleItem[]
@@ -98,6 +99,11 @@ function ScheduleRow(props: { stream: ScheduleItem; contract: Contract }) {
           noLink
         />
         <span className="font-semibold">{stream.title}</span>
+        {isTVElectionBoard(stream.contract_id) && (
+          <span className="bg-primary-100 text-primary-700 rounded px-1.5 text-xs font-medium">
+            Live election map
+          </span>
+        )}
         {happeningNow && <BsCircleFill className=" text-red-500" />}
       </Link>
       <span>{formatTimeRange(stream.start_time, stream.end_time)}</span>

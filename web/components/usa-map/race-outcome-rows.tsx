@@ -26,6 +26,7 @@ import { api } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { complementParty, sourceAudit } from './audited-sources'
+import { useElectionAsOf } from './election-as-of'
 import { formatOdds } from './election-display'
 import type { ElectionMode, Race } from './election-map-model'
 import {
@@ -256,6 +257,9 @@ function OutcomeList(props: {
   extra?: (row: OutcomeRow) => ReactNode
 }) {
   const { rows, raceLabel, canBet, onBet, extra } = props
+  // A rewound race is re-priced for display only: no bets, and no position
+  // badges valued at past odds.
+  const rewound = useElectionAsOf() !== undefined
   const [expanded, setExpanded] = useState(false)
   const { shown, folded } = arrangeOutcomes(rows)
   const visible = expanded ? [...shown, ...folded] : shown
@@ -276,12 +280,12 @@ function OutcomeList(props: {
             <span className={styles.outcomeName}>
               <span>{row.label}</span>
               {row.subtitle && <small>{row.subtitle}</small>}
-              {extra?.(row)}
+              {!rewound && extra?.(row)}
             </span>
             <strong className={styles.outcomeProb}>
               {formatOdds(row.prob)}
             </strong>
-            {canBet(row) ? (
+            {!rewound && canBet(row) ? (
               <Button
                 size="2xs"
                 color="indigo-outline"

@@ -36,6 +36,7 @@ import {
 } from 'common/contract'
 import { ContractMetric, isSummary } from 'common/contract-metric'
 import { isAdminId, isModId } from 'common/envs/constants'
+import { canStaffAddSportsAnswers } from 'common/sports'
 import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { floatingEqual } from 'common/util/math'
@@ -212,7 +213,8 @@ export function AnswersPanel(props: {
       !userHasAnyBan &&
       (addAnswersMode === 'ANYONE' ||
         (addAnswersMode === 'ONLY_CREATOR' &&
-          user.id === contract.creatorId)) &&
+          (user.id === contract.creatorId ||
+            canStaffAddSportsAnswers(contract, user.id)))) &&
       tradingAllowed(contract) &&
       !privateUser?.blockedByUserIds.includes(contract.creatorId) &&
       unresolvedAnswers.length < getMaximumAnswers(shouldAnswersSumToOne)

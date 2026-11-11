@@ -61,6 +61,12 @@ export type webToNativeMessageType =
   // screen" dialog for the streak widget (AppWidgetManager.requestPinAppWidget).
   // No-ops on iOS (no such API) and on web. Payload is empty.
   | 'pinStreakWidget'
+  // A page that owns downward swipes (Predictle's drag-to-reorder cards) asks
+  // the Android app to switch pull-to-refresh off while it is open. Payload:
+  // { enabled: boolean }. The app ties { enabled: false } to the sending page's
+  // address and turns refresh back on once the WebView moves to another page,
+  // so a lost { enabled: true } can't leave it off. Ignored on iOS.
+  | 'setPullToRefresh'
 export const IS_NATIVE_KEY = 'is-native'
 export const PLATFORM_KEY = 'native-platform'
 // localStorage keys behind the web client's useNativeInfo() (written by

@@ -2,6 +2,7 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertEntitlement } from 'common/shop/types'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
+import { broadcastUpdatedUser } from 'shared/websockets/helpers'
 
 export const shopCancelSubscription: APIHandler<
   'shop-cancel-subscription'
@@ -37,6 +38,8 @@ export const shopCancelSubscription: APIHandler<
 
     return { entitlements: allEntitlements.map(convertEntitlement) }
   })
+
+  broadcastUpdatedUser({ id: auth.uid, entitlements: result.entitlements })
 
   return { success: true, entitlements: result.entitlements }
 }

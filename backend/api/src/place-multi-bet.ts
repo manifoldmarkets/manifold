@@ -38,6 +38,16 @@ export const placeMultiBetMain = async (
       `Inside main transaction for ${uid} placing a bet on ${body.contractId}.`
     )
 
+    // Locked before anything is read, as single bets lock it
+    // (lockContractAndGetBetData), so trades on this market run one at a time
+    // across API replicas. Adding an answer relies on it: it runs at READ
+    // COMMITTED and cancels the open orders on Other, and a limit order that
+    // fills nothing only inserts its bet, so without the lock it could rest
+    // on Other at a price set before the split.
+    await pgTrans.any(`select 1 from contracts where id = $1 for update`, [
+      body.contractId,
+    ])
+
     const {
       user,
       contract,

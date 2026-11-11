@@ -1402,7 +1402,7 @@ This approach treats each answer as an independent binary resolution, ensuring t
 
 Rebalances your position in a sum-to-one multi-choice market. This collapses mixed YES/NO positions into an all-YES position and redeems the minimum amount across outcomes. This is purely an accounting operation and does not affect the AMM or incur fees.
 
-Only applicable to `cpmm-multi-1` and `cpmm-multi-2` markets when `shouldAnswersSumToOne` is true. The equivalent operation is done automatically on binary markets.
+Only applicable to `cpmm-multi-1` and `cpmm-multi-2` markets when `shouldAnswersSumToOne` is true. Works on closed markets until they resolve. The equivalent operation is done automatically on binary markets.
 
 [Requires Auth](#authentication).
 

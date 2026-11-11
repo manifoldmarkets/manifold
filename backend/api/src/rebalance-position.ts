@@ -49,9 +49,6 @@ export const rebalancePosition: APIHandler<
     )
   }
   if (contract.isResolved) throw new APIError(403, 'Market is resolved.')
-  if (contract.closeTime && Date.now() > contract.closeTime) {
-    throw new APIError(403, 'Trading is closed.')
-  }
   if (contract.creatorBannedFromBetting && userId === contract.creatorId) {
     throw new APIError(
       403,

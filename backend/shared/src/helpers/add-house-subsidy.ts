@@ -62,6 +62,11 @@ export const addHouseSubsidyToAnswer = async (
   )
 
   await pg.tx(async (tx) => {
+    // Match bets and answer creation: lock the contract before its answer.
+    // Taking these in reverse order can drop this post-bet subsidy on deadlock.
+    await tx.one('select 1 from contracts where id = $1 for update', [
+      contractId,
+    ])
     await insertLiquidity(tx, newLiquidityProvision)
 
     await tx.none(

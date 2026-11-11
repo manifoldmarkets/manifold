@@ -268,6 +268,44 @@ protect the pools when the trader is flat at the funding timestamp.
 | Crypto Fear & Greed            | Mean-reverting sentiment gauge, two-sided       | New daily value is public at ~00:00 UTC; exposure bounded by the 5-minute poll               |
 | OpenRouter open-weight share   | Two-sided index with coherent adoption theses   | Upstream exposes complete UTC days, so hourly writes usually repeat a predictable daily step |
 | OpenRouter Anthropic / CN labs | Two-sided proxies for third-party-routed demand | Same payload and same daily step as the open-weight share                                    |
+| Adjacent MSRY                  | Two-sided macro index, but quiet                | Fills wait for a value computed after the order; 5:30 p.m. ET roll steps are predictable     |
+
+### Adjacent Misery Implied Index
+
+`adjacent-msry` reads Adjacent's realtime one-minute series. Both of its
+gates are met:
+
+1. Adjacent permitted this market in writing on 2026-10-28 (marking,
+   displaying and settling a perpetual on MSRY, plus MSRY charts in the
+   product and in marketing about it). The credit it asks for is in
+   `common/src/perps/oracle-attribution.ts`, and it goes on every chart,
+   market page and methodology or FAQ that shows MSRY. The app renders it on
+   the market page, the /perps chart, embeds and the seven-day charts on
+   cards; the /perps list's row sparklines go without. Add it to any
+   screenshot or chart used in marketing.
+2. The Adjacent organization has realtime API access, and `ADJACENT_API_KEY`
+   (an `ak_` key with read scope for indices) is in Secret Manager for dev
+   and prod. `backend/scripts/probe-adjacent-msry.ts` passed in both on
+   2026-10-29: realtime rows, one for every minute even while the value was
+   flat, with the newest minute served about 2.5 minutes after it began.
+   Rerun it after rotating the key.
+
+Without the secret every poll fails as a provider error, which pages under
+`[oracle-feeds]` once an hour. To launch, deploy `scheduler-perps`, run
+`backfill-adjacent-msry-oracle --dry-run` and then for real, deploy the API,
+and create the market from the admin page. Orders fill about 3 minutes (2.5
+to 4) after they are placed: an order waits for the first minute that starts
+after it, and that minute arrives about 2.5 minutes after it begins. That is
+well inside the 10-minute order lifetime.
+
+Either side may end the permission on written notice. Manifold must then stop
+using new MSRY levels and take Adjacent's name, ticker and credit off the live
+product; winding down open positions is Manifold's call. Disable creation,
+resolve the market at the last level published before the notice, and remove
+the feed. If Adjacent changes the methodology, for example to a five-minute
+TWAP, redo the latency review before keeping the market open: a TWAP keeps
+moving for several prints after its inputs jump, so next-price fills stop
+neutralising the jump.
 
 ### xStocks on-chain sources (ongoing, post-launch)
 

@@ -1,0 +1,82 @@
+/* Series colours for the race charts, as CSS variables so light and dark mode
+   swap in one place. Each sequence is the dataviz reference palette in a
+   validated order (adjacent pairs clear the CVD and normal-vision floors on
+   Manifold's canvas in both modes): the Democratic chart runs it from blue,
+   the Republican chart runs it backwards from red. The party chart uses the
+   site's own party colours. */
+
+.dem {
+  --s0: #2a78d6;
+  --s1: #eb6834;
+  --s2: #1baf7a;
+  --s3: #eda100;
+  --s4: #e87ba4;
+  --s5: #008300;
+}
+
+.gop {
+  --s0: #e34948;
+  --s1: #6250d6;
+  --s2: #008300;
+  --s3: #e87ba4;
+  --s4: #eda100;
+  --s5: #1baf7a;
+}
+
+:global(.dark) .dem {
+  --s0: #3987e5;
+  --s1: #d95926;
+  --s2: #199e70;
+  --s3: #c98500;
+  --s4: #d55181;
+  --s5: #008300;
+}
+
+:global(.dark) .gop {
+  --s0: #e66767;
+  --s1: #9085e9;
+  --s2: #008300;
+  --s3: #d55181;
+  --s4: #c98500;
+  --s5: #199e70;
+}
+
+/* Lines draw in from the left on mount and when the range changes. Paths use
+   pathLength="1", so one dash unit is the whole line. The resting style is
+   fully drawn and visible; the animation only supplies the opening frames
+   (fill-mode backwards), so a line never depends on an animation finishing
+   to be seen. */
+.drawIn {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: draw 1.1s cubic-bezier(0.33, 1, 0.68, 1) backwards;
+}
+
+.fadeIn {
+  animation: fade 0.45s ease-out backwards;
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawIn,
+  .fadeIn {
+    animation: none;
+  }
+}

@@ -150,6 +150,7 @@ import { getMarketContext } from './get-market-context'
 import { getMarketLoanMax } from './get-market-loan-max'
 import { getMarketProb } from './get-market-prob'
 import { getMarketProbs } from './get-market-probs'
+import { getMarketProbsHistory } from './get-market-probs-history'
 import { getMarketsByIds } from './get-markets'
 import { getmaxminprofit2025 } from './get-max-min-profit-2025'
 import { getMe } from './get-me'
@@ -247,6 +248,7 @@ import { adminGetNewUsers } from './admin-get-new-users'
 import { adminSportsFixtures } from './admin-sports-fixtures'
 import { adminSportsCreateMarkets } from './admin-sports-create-markets'
 import { adminSportsCreateOddsMarkets } from './admin-sports-create-odds-markets'
+import { adminSportsCreateF1Markets } from './admin-sports-create-f1-markets'
 import { linkMarket, unlinkMarket } from './link-market'
 import { getMarketLinksHandler } from './get-market-links'
 import {
@@ -259,6 +261,9 @@ import {
 } from './admin-sports-score-polling'
 import { sportsMarkets } from './sports-markets'
 import { sportsSchedule } from './sports-schedule'
+import { sportsIndex } from './sports-index'
+import { sportsLeaderboards } from './sports-leaderboards'
+import { electionLeaderboards } from './election-leaderboards'
 import { adminSportsResolve } from './admin-sports-resolve'
 import { adminSportsCommunityMarket } from './admin-sports-community-market'
 import { adminSportsInitCommunity } from './admin-sports-init-community'
@@ -402,6 +407,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
   'market/:id/prob': getMarketProb,
   'market-probs': getMarketProbs,
+  'market-probs-history': getMarketProbsHistory,
   'answer/:answerId': getSingleAnswer,
   'market/:contractId/answers': getContractAnswers,
   'markets-by-ids': getMarketsByIds,
@@ -654,6 +660,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'admin-sports-fixtures': adminSportsFixtures,
   'admin-sports-create-markets': adminSportsCreateMarkets,
   'admin-sports-create-odds-markets': adminSportsCreateOddsMarkets,
+  'admin-sports-create-f1-markets': adminSportsCreateF1Markets,
   'link-market': linkMarket,
   'unlink-market': unlinkMarket,
   'get-market-links': getMarketLinksHandler,
@@ -663,6 +670,9 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'admin-sports-set-score-polling': adminSportsSetScorePolling,
   'sports-markets': sportsMarkets,
   'sports-schedule': sportsSchedule,
+  'sports-index': sportsIndex,
+  'sports-leaderboards': sportsLeaderboards,
+  'election-leaderboards': electionLeaderboards,
   'admin-sports-resolve': adminSportsResolve,
   'admin-sports-community-market': adminSportsCommunityMarket,
   'admin-sports-init-community': adminSportsInitCommunity,

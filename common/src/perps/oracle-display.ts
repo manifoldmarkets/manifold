@@ -36,6 +36,9 @@ export const ORACLE_TICK_DECORATIONS: Readonly<
   'openrouter-open-weight-share': { suffix: '%' },
   'openrouter-anthropic-share': { suffix: '%' },
   'openrouter-chinese-lab-share': { suffix: '%' },
+  // Unemployment rate plus inflation rate, quoted in percent the way the
+  // official Misery Index is.
+  'adjacent-msry': { suffix: '%' },
 }
 
 // Decimals needed to distinguish axis ticks `step` apart: 0 for steps >= 1,

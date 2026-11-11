@@ -64,6 +64,17 @@ export interface SportsCalendarEntry {
   locked?: string
   /** The Odds API sport key. Competitions without one are created by hand. */
   oddsKey?: string
+  /**
+   * A feed other than The Odds API that the scheduler creates this phase's
+   * markets from: 'bdl-f1' is BALLDONTLIE's F1 API (shared/f1-markets.ts).
+   */
+  provider?: 'bdl-f1'
+  /**
+   * F1: how many rounds the season was announced with. The season title
+   * markets need it to pay out: the provider must list at least this many
+   * weekends (f1CalendarListsEveryRound).
+   */
+  rounds?: number
 }
 
 type CalendarInput = Omit<SportsCalendarEntry, 'oddsKey'>
@@ -227,22 +238,32 @@ const ENTRIES: CalendarInput[] = [
     phase: '2026 Remaining',
     startDate: '2026-08-28',
     endDate: '2026-12-07',
-    // No Odds API key: F1 markets are made by hand.
+    // The sports-f1-create job makes race winner, podium, sprint winner and
+    // pole markets from BALLDONTLIE once this is switched on in
+    // /admin/sports; off until then.
+    provider: 'bdl-f1',
     autoCreate: false,
     autoResolve: true,
     notes:
-      'Remaining races: Zandvoort, Monza, Singapore, Austin, Mexico City, São Paulo, Las Vegas, Abu Dhabi. DECISION NEEDED: one market per race weekend or separate markets per session (qualifying, sprint, race)?',
+      'Remaining races: Zandvoort, Monza, Singapore, Austin, Mexico City, São Paulo, Las Vegas, Abu Dhabi. Race winner, podium, pole and sprint winner per weekend from BALLDONTLIE (shared/f1-markets.ts).',
   },
   {
     sport: 'f1',
     competition: 'F1 World Championship 2027',
     competitionId: 'f1-2027',
     phase: '2027 Season',
-    startDate: '2027-03-07',
-    endDate: '2027-11-28',
+    // Announced 16 Sep 2026: 24 rounds, from Bahrain (12–14 Mar) to Abu
+    // Dhabi (10–12 Dec), 10 of them sprint weekends. The last date must stay
+    // the finale's race day: the title markets check the provider's
+    // calendar against it (f1CalendarReachesEnd).
+    startDate: '2027-03-12',
+    endDate: '2027-12-12',
+    rounds: 24,
+    provider: 'bdl-f1',
     autoCreate: false,
     autoResolve: false,
-    notes: 'Calendar TBC — hold auto-create until full race calendar confirmed',
+    notes:
+      'Bahrain 12–14 Mar to Abu Dhabi 10–12 Dec. Switch on in the winter to open the drivers’ and constructors’ title markets before the first weekend; session markets follow within F1_DAYS_AHEAD of each session.',
   },
 
   // ── Tour de France ───────────────────────────────────────────────────────────
@@ -671,7 +692,7 @@ export function autoCreates(
   entry: SportsCalendarEntry,
   switches: CompetitionSwitches
 ): boolean {
-  if (entry.locked || !entry.oddsKey) return false
+  if (entry.locked || !(entry.oddsKey || entry.provider)) return false
   return (
     switches[calendarPhaseKey(entry)] ??
     (CALENDAR_DEFAULTS_ON && entry.autoCreate)
@@ -688,7 +709,8 @@ export function competitionSwitchError(
     (e) => e.competitionId === competitionId && e.phase === phase
   )
   if (!entry) return `No calendar phase ${competitionId} / ${phase}`
-  if (!entry.oddsKey) return `${entry.competition} has no Odds API sport key`
+  if (!entry.oddsKey && !entry.provider)
+    return `${entry.competition} has no Odds API sport key or other feed`
   if (on && entry.locked) return entry.locked
   return undefined
 }

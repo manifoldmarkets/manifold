@@ -13,6 +13,11 @@ import { MNX_INSTRUMENTS } from './mnx'
 // credit — losing it in a description rewrite is a licence breach, not a
 // cosmetic regression.
 //
+// The seven-day charts on feed, dashboard and activity cards show every
+// perp's `source` too, as plain text without the licence or as-of. Adjacent's
+// terms ask for a credit on every MSRY chart, and the other feeds match it.
+// The /perps watchlist's row sparklines go without.
+//
 // Verification status of each claim below, because asserting a licence we
 // haven't read is its own problem:
 //   - OpenRouter — their dataset terms specify the exact credit line,
@@ -35,6 +40,9 @@ import { MNX_INSTRUMENTS } from './mnx'
 //     gate before a market is created on the feed.
 //   - MNX: public API/methodology reviewed; market links identify the target.
 //     No redistribution licence is claimed.
+//   - Adjacent (Misery Implied Index, MSRY) — used under Adjacent's written
+//     authorization (2026-10-28), which asks for its credit line on every
+//     chart that shows MSRY, not only on the market page. See the entry.
 //   - BTC — we compute the median ourselves from three public tickers, so
 //     nothing is being republished. Credited for transparency, not obligation.
 //   - xStocks (SPYx/QQQx/GLDx/NVDAx) — stronger than BTC's stance: the
@@ -150,6 +158,24 @@ export const ORACLE_ATTRIBUTION: Record<string, OracleAttribution> = {
   'crypto-fear-greed': {
     source: 'Alternative.me Crypto Fear & Greed Index',
     url: 'https://alternative.me/crypto/fear-and-greed-index/',
+  },
+  // Used under Adjacent Markets, Inc.'s written authorization ("MSRY Index
+  // Use Authorization", 2026-10-28): a non-exclusive, revocable licence to
+  // use the name, the MSRY ticker and published MSRY levels to mark, display
+  // and settle a perpetual on Manifold, and to show MSRY charts in the
+  // product and in marketing about it. Without it, Adjacent's methodology
+  // (https://adjacent.markets/static/msry-methodology/methodology, §12) and
+  // its API plans bar using the index in a financial product. It asks for a
+  // source line "substantially as" `Source: Adjacent Misery Implied Index
+  // (MSRY)` on every chart, market page and methodology or FAQ that shows
+  // MSRY. `source` renders exactly that, on the market page and under the
+  // cards' seven-day charts (not under the /perps watchlist's row
+  // sparklines). No `licence` label: this is a letter to Manifold, not a public
+  // licence. Either side may end it on written notice;
+  // perps-launch-runbook.md covers what Manifold does then.
+  'adjacent-msry': {
+    source: 'Adjacent Misery Implied Index (MSRY)',
+    url: 'https://adjacent.markets/indices/msry',
   },
   'btc-usd': {
     source: 'Coinbase, Kraken, Bitstamp & Gemini',

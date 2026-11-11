@@ -15,6 +15,7 @@ import { Txn } from 'common/txn'
 import { filterDefined } from 'common/util/array'
 import { charities } from 'common/charity'
 import { convertTxn } from 'common/supabase/txns'
+import { toPublicTxn } from 'common/public-txn'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { isMultiCpmm } from 'common/contract'
 import { getContractsDirect } from 'shared/supabase/contracts'
@@ -188,7 +189,7 @@ const getTxnBalanceChanges = async (
     categoryFilter
       ? [before, after, userId, categoryFilter]
       : [before, after, userId],
-    convertTxn
+    (row) => toPublicTxn(convertTxn(row))
   )
   const contractIds = filterDefined(
     txns.map((txn) => getContractIdFromTxn(txn))

@@ -1,17 +1,26 @@
-import { groupBy, sortBy } from 'lodash'
+import { groupBy, sortBy, uniq, uniqBy } from 'lodash'
 import { type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { contractColumnsToSelect, log } from 'shared/utils'
 import { getMarketLinksForFeed } from 'shared/supabase/market-links'
+import { getSportsIndex } from 'shared/supabase/sports-index'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { Contract, isMultiCpmm, OutcomeType } from 'common/contract'
 import { Answer } from 'common/answer'
 import { tsToMillis } from 'common/supabase/utils'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
+import { F1_DAYS_AHEAD } from 'common/f1-markets'
+import {
+  buildRaceWeekends,
+  findRaceRelatedMarkets,
+  pickRaceChampionships,
+  RaceContract,
+  raceSessionId,
+  RaceWeekend,
+} from 'common/race-weekends'
 import { teamCodeForLeague } from 'common/sports-team-codes'
 import {
   AnySportKey,
-  buildSportsIndex,
   findRelatedMarkets,
   gameStatus,
   isDrawAnswer,
@@ -24,9 +33,6 @@ import {
   sportForMarket,
   SportsIndex,
   SportsScheduleResponse,
-  SportsTopic,
-  SportsTopicLink,
-  SPORTS_DEFAULT_GROUP_ID,
   splitFlag,
   UpcomingMarketRef,
 } from 'common/sports-schedule'
@@ -46,6 +52,7 @@ const UPCOMING_DAYS = 7
 const MAX_UPCOMING = 300
 // The page loads these through markets-by-ids, which takes 100 ids at most.
 const MAX_UPCOMING_RETURNED = 100
+const MAX_CHAMPIONSHIP_CANDIDATES = 40
 
 const MARKET_OUTCOME_TYPES: OutcomeType[] = [
   'BINARY',
@@ -65,13 +72,43 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   const pg = createSupabaseDirectClient()
   const now = Date.now()
   const horizon = now + daysAhead * DAY_MS
+  // F1 looks further ahead than the games: two weeks of sessions would leave
+  // its page bare.
+  const raceDays = Math.max(daysAhead, F1_DAYS_AHEAD)
+  const raceHorizon = now + raceDays * DAY_MS
 
   const index = await getSportsIndex(pg, now)
-  const [official, weekAll] = await Promise.all([
+  // A topic's page has only the games and markets in it or a topic under it
+  // (none for a topic the index doesn't have).
+  const topicIds = props.topic
+    ? new Set(index.topics.find((t) => t.id === props.topic)?.groupIds ?? [])
+    : undefined
+  const inTopic = (groupIds: readonly string[] | undefined) =>
+    !!topicIds && (groupIds ?? []).some((id) => topicIds.has(id))
+  const shows = (m: { sport: AnySportKey }, groupIds: readonly string[]) =>
+    topicIds ? inTopic(groupIds) : sport === 'all' || m.sport === sport
+  const [
+    { games: official, groupIds: gameGroupIds },
+    weekAll,
+    { weekends: allWeekends, groupIds: raceGroupIds },
+    championships,
+  ] = await Promise.all([
     getOfficialGames(pg, index, daysAhead, now),
     getUpcomingMarkets(pg, index),
+    getRaceWeekends(pg, raceDays, now),
+    sport === 'f1' && !cursor && !topicIds
+      ? getRaceChampionships(pg, index, now)
+      : Promise.resolve([]),
   ])
   const games = official.filter((g) => g.startTime < horizon)
+  // F1 weekends with something still to come before `until`.
+  const onBefore = (until: number) => (w: RaceWeekend) =>
+    w.status !== 'finished' &&
+    w.sessions.some((s) => s.status !== 'finished' && s.startTime < until)
+  // The F1 page's weekends: what the rail counts and props are matched for,
+  // whichever sport is open. /sports keeps to the games' horizon, so a
+  // session weeks out doesn't trail after games still to load.
+  const weekends = allWeekends.filter(onBefore(raceHorizon))
 
   // Sort: live first (biggest games on top), then upcoming by kickoff, then
   // just-finished (most recent first). The id breaks ties so pages of
@@ -91,17 +128,27 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   // Match across all games before applying the selected sport or row limit,
   // so rail counts and the week feed don't change when the user switches tabs.
   const attached = new Set<string>()
-  if (ordered.length > 0) {
+  // The games each attached market hangs under.
+  const attachedTo = new Map<string, string[]>()
+  // The weekends each market hangs under one of the sessions of: it leaves
+  // the week list only where the page shows that weekend.
+  const underWeekends = new Map<string, string[]>()
+  if (ordered.length > 0 || weekends.length > 0) {
     // Markets linked to a game go under it, where their creator put them.
     // A market linked to anything is left out of the team-name
     // matching, so it can't be guessed onto another game.
     const allCandidates = await getRelatedCandidates(pg, index)
+    // An F1 session's markets are parents too: a market linked to one goes
+    // under its session.
+    const sessionMarketIds = weekends.flatMap((w) =>
+      w.sessions.flatMap((s) => s.markets.map((m) => m.id))
+    )
     // Read both views in one snapshot; fall back completely if unavailable.
     const { linked, withParents } = await orWithoutLinks(
       () =>
         getMarketLinksForFeed(
           pg,
-          ordered.map((g) => g.id),
+          [...ordered.map((g) => g.id), ...sessionMarketIds],
           allCandidates.map((c) => c.id),
           {
             closeTimeFrom: now - FINISHED_GRACE_HOURS * HOUR_MS,
@@ -169,17 +216,95 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
         g.related = matches.map(({ id, kind, group }) => ({ id, kind, group }))
       }
       g.relatedCount = matches.length
-      for (const m of matches) attached.add(m.id)
+      for (const m of matches) {
+        attached.add(m.id)
+        attachedTo.set(m.id, [...(attachedTo.get(m.id) ?? []), g.id])
+      }
     })
+
+    // An F1 session: markets linked to one of its markets, then the ones
+    // naming its Grand Prix that no game took (common/race-weekends.ts).
+    const raceMatches = findRaceRelatedMarkets(
+      weekends,
+      candidates.filter((c) => !attached.has(c.id)),
+      MAX_RELATED_PER_GAME
+    )
+    for (const w of weekends) {
+      for (const s of w.sessions) {
+        // A finished session isn't in the feed, so its markets (an open
+        // prop closing later, say) stay in the week list (F4213-05).
+        if (s.status === 'finished') continue
+        const links = uniqBy(
+          s.markets.flatMap((m) => linkedByGame[m.id] ?? []),
+          (l) => l.id
+        ).map((l) => ({
+          id: l.id,
+          kind: 'linked' as const,
+          group: relatedGroupForLink(l.relation),
+        }))
+        const linkedIds = new Set(links.map((l) => l.id))
+        const matches = [
+          ...links,
+          ...(raceMatches.get(raceSessionId(w, s)) ?? []).filter(
+            (m) => !linkedIds.has(m.id) && !attached.has(m.id)
+          ),
+        ].slice(0, MAX_RELATED_PER_GAME)
+        if (props.includeRelated !== false) {
+          s.related = matches.map(({ id, kind, group }) => ({
+            id,
+            kind,
+            group,
+          }))
+        }
+        s.relatedCount = matches.length
+        for (const m of matches)
+          underWeekends.set(m.id, [...(underWeekends.get(m.id) ?? []), w.id])
+      }
+    }
   }
+
+  // A weekend's topics: those of its sessions' markets.
+  const weekendGroupIds = (w: RaceWeekend) =>
+    w.sessions.flatMap((s) =>
+      s.markets.flatMap((m) => raceGroupIds[m.id] ?? [])
+    )
+  // The weekends this page shows: all of F1's on /sports/f1; on /sports,
+  // those within the games' horizon; on a topic's page, those with a market
+  // in the topic.
+  const shownWeekends = cursor
+    ? []
+    : topicIds
+    ? weekends.filter((w) => inTopic(weekendGroupIds(w)))
+    : sport !== 'all' && sport !== 'f1'
+    ? []
+    : sport === 'f1'
+    ? weekends
+    : weekends.filter(onBefore(horizon))
+  const shownWeekendIds = new Set(shownWeekends.map((w) => w.id))
+  // On a topic's page a market under a game leaves the week list only if the
+  // page has that game; elsewhere, whatever game it's under.
+  const topicGameIds = new Set(
+    ordered.filter((g) => inTopic(gameGroupIds[g.id])).map((g) => g.id)
+  )
+  const underAGame = (id: string) =>
+    topicIds
+      ? (attachedTo.get(id) ?? []).some((g) => topicGameIds.has(g))
+      : attached.has(id)
 
   // "This week": everything in the sports topics closing within a week that
   // is not a game row and not already hanging under one. For a sports market
   // the close time is the game time, so this is the schedule of what people
-  // made, with no matching involved.
+  // made, with no matching involved. A market under an F1 session leaves it
+  // like a game's, where the page shows its weekend: /sports doesn't show one
+  // three weeks out, so its markets stay listed there (F4213-11). The
+  // official F1 markets stay in, and the page drops the ones on the sessions
+  // it shows (withoutRaceMarkets).
   const gameIds = new Set(official.map((g) => g.id))
   const upcoming = weekAll.filter(
-    (m) => !gameIds.has(m.id) && !attached.has(m.id)
+    (m) =>
+      !gameIds.has(m.id) &&
+      !underAGame(m.id) &&
+      !(underWeekends.get(m.id) ?? []).some((id) => shownWeekendIds.has(id))
   )
 
   // Rail badges: live and upcoming games per sport, the rows its feed shows.
@@ -190,12 +315,17 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     counts[g.sport] = (counts[g.sport] ?? 0) + 1
     if (g.status === 'live') liveCount++
   }
+  // An F1 session counts like a game: the rail shows how many are on.
+  for (const w of weekends) {
+    const on = w.sessions.filter((s) => s.status !== 'finished').length
+    if (on > 0) counts[w.sport] = (counts[w.sport] ?? 0) + on
+  }
 
   // The feed: every live game on the first page, then upcoming games by
   // kickoff, `limit` at a time. A cursor continues after the last game the
   // client has.
   const feed = ordered.filter(
-    (g) => g.status !== 'finished' && (sport === 'all' || g.sport === sport)
+    (g) => g.status !== 'finished' && shows(g, gameGroupIds[g.id] ?? [])
   )
   const live = cursor ? [] : feed.filter((g) => g.status === 'live')
   const later = feed.filter(
@@ -212,10 +342,12 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     // Only the first page carries the week's other markets.
     upcoming: cursor
       ? []
-      : (sport === 'all'
-          ? upcoming
-          : upcoming.filter((m) => m.sport === sport)
-        ).slice(0, MAX_UPCOMING_RETURNED),
+      : upcoming
+          .filter((m) => shows(m, m.groupIds))
+          .slice(0, MAX_UPCOMING_RETURNED)
+          .map(({ id, closeTime, sport }) => ({ id, closeTime, sport })),
+    raceWeekends: shownWeekends,
+    raceChampionships: championships,
     counts,
     liveCount,
     sports: index.sports,
@@ -260,63 +392,6 @@ function isAfterCursor(
   )
 }
 
-// ─── Sports from the topic tree ───────────────────────────────────────────────
-
-// Mods rearrange topics rarely, and every schedule request needs the tree.
-const SPORTS_INDEX_TTL_MS = 5 * 60 * 1000
-const MAX_TOPIC_DEPTH = 6
-let sportsIndexCache: { at: number; index: SportsIndex } | undefined
-
-async function getSportsIndex(pg: Pg, now: number): Promise<SportsIndex> {
-  if (sportsIndexCache && now - sportsIndexCache.at < SPORTS_INDEX_TTL_MS)
-    return sportsIndexCache.index
-  try {
-    const rows = await pg.manyOrNone<{
-      parent_id: string
-      child_id: string
-      slug: string
-      name: string
-      total_members: number | null
-    }>(
-      `with recursive tree(parent_id, child_id, depth) as (
-         select gg.top_id, gg.bottom_id, 1
-         from group_groups gg
-         join groups g on g.id = gg.bottom_id and g.privacy_status = 'public'
-         where gg.top_id = $1
-         union
-         select gg.top_id, gg.bottom_id, t.depth + 1
-         from tree t
-         join group_groups gg on gg.top_id = t.child_id
-         join groups g on g.id = gg.bottom_id and g.privacy_status = 'public'
-         where t.depth < ${MAX_TOPIC_DEPTH}
-       )
-       select distinct t.parent_id, t.child_id, g.slug, g.name, g.total_members
-       from tree t join groups g on g.id = t.child_id`,
-      [SPORTS_DEFAULT_GROUP_ID]
-    )
-    const topics = new Map<string, SportsTopic>()
-    const links: SportsTopicLink[] = []
-    for (const r of rows) {
-      links.push({ parentId: r.parent_id, childId: r.child_id })
-      topics.set(r.child_id, {
-        id: r.child_id,
-        slug: r.slug,
-        name: r.name,
-        totalMembers: Number(r.total_members ?? 0),
-      })
-    }
-    const index = buildSportsIndex([...topics.values()], links)
-    sportsIndexCache = { at: now, index }
-    return index
-  } catch (e) {
-    // The curated sports alone still make a working page.
-    log.error('[sports-schedule] could not load the sports topics', {
-      error: e instanceof Error ? e.message : String(e),
-    })
-    return sportsIndexCache?.index ?? buildSportsIndex([], [])
-  }
-}
-
 // ─── Official (pipeline-created) games ────────────────────────────────────────
 
 // Filtering and ordering use close_time (indexed, always a real timestamp)
@@ -332,7 +407,11 @@ async function getOfficialGames(
   index: SportsIndex,
   daysAhead: number,
   now: number
-): Promise<ScheduleGame[]> {
+): Promise<{
+  games: ScheduleGame[]
+  /** Each game's topic ids. */
+  groupIds: Record<string, string[]>
+}> {
   const rows = await pg.manyOrNone(
     `select ${contractColumnsToSelect}
      from contracts
@@ -359,7 +438,7 @@ async function getOfficialGames(
     getAnswers(pg, ids),
     getGroupIds(pg, ids),
   ])
-  return contracts
+  const games = contracts
     .map((c) =>
       toOfficialGame(
         c,
@@ -370,6 +449,101 @@ async function getOfficialGames(
       )
     )
     .filter((g): g is ScheduleGame => g !== null)
+  return { games, groupIds: groupIdsByContract }
+}
+
+// F1 weekends: @ManifoldSports markets on a `bdl-f1:` session, which a game
+// row can't show (common/race-weekends.ts). A weekend's earlier sessions stay
+// on its card while later ones are still on, so this looks back four days.
+const RACE_LOOKBACK_HOURS = 96
+const MAX_RACE_MARKETS = 100
+
+async function getRaceWeekends(pg: Pg, daysAhead: number, now: number) {
+  const rows = await pg.manyOrNone(
+    `select ${contractColumnsToSelect}
+     from contracts
+     where data->>'sportsEventId' like 'bdl-f1:%'
+       and creator_id = any($2)
+       and token = 'MANA'
+       and visibility = 'public'
+       and coalesce(deleted, false) = false
+       and resolution is distinct from 'CANCEL'
+       and close_time > now() - interval '${RACE_LOOKBACK_HOURS} hours'
+       and close_time < now() + ($1 || ' days')::interval + interval '1 day'
+     order by close_time asc
+     limit ${MAX_RACE_MARKETS}`,
+    [String(daysAhead), MANIFOLD_SPORTS_USER_IDS]
+  )
+  const full = rows.map((r) => convertContract(r))
+  const contracts = full.map((c) => c as RaceContract)
+  const ids = contracts.map((c) => c.id)
+  const [answers, groupIds] = await Promise.all([
+    getAnswers(pg, ids),
+    getGroupIds(pg, ids),
+  ])
+  const slugs = new Map(full.map((c) => [c.id, c.groupSlugs ?? []]))
+  const weekends = buildRaceWeekends(contracts, answers, now).map((w) => ({
+    ...w,
+    groupSlugs: uniq(
+      w.sessions.flatMap((s) => s.markets.flatMap((m) => slugs.get(m.id) ?? []))
+    ),
+  }))
+  return { weekends, groupIds }
+}
+
+// The F1 page's title markets: our own (a `bdl-f1-title:` market from
+// @ManifoldSports) first, then open multiple choice markets in the sports
+// topics about F1 and a championship. Which ones count, and the pick of
+// each kind, is pickRaceChampionships. The order by repeats the test for
+// ours: Postgres can't read an output column's name inside an expression.
+async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
+  const rows = await pg.manyOrNone<{
+    id: string
+    question: string
+    bettors: number | null
+    volume: number | null
+    official_event_id: string | null
+  }>(
+    `select c.question, c.id,
+            (c.data->>'uniqueBettorCount')::float8 as bettors,
+            (c.data->>'volume')::float8 as volume,
+            case when c.creator_id = any($4)
+                  and c.data->>'sportsEventId' like 'bdl-f1-title:%'
+                 then c.data->>'sportsEventId' end as official_event_id
+     from contracts c
+     where exists (
+         select 1 from group_contracts gc
+         where gc.contract_id = c.id and gc.group_id = any($1)
+       )
+       and c.token = 'MANA'
+       and c.visibility = 'public'
+       and coalesce(c.deleted, false) = false
+       and c.resolution is null
+       and c.close_time > now()
+       and c.outcome_type = 'MULTIPLE_CHOICE'
+       and c.question ~* $2
+       and c.question ~* $3
+     order by (c.creator_id = any($4)
+               and c.data->>'sportsEventId' like 'bdl-f1-title:%') is true desc,
+              bettors desc nulls last
+     limit ${MAX_CHAMPIONSHIP_CANDIDATES}`,
+    [
+      index.allGroupIds,
+      '(champion|\\mwdc\\M|\\mwcc\\M)',
+      '(formula (1|one)|\\mf1\\M)',
+      MANIFOLD_SPORTS_USER_IDS,
+    ]
+  )
+  return pickRaceChampionships(
+    rows.map((r) => ({
+      id: r.id,
+      question: r.question,
+      uniqueBettorCount: Number(r.bettors ?? 0),
+      volume: Number(r.volume ?? 0),
+      officialEventId: r.official_event_id,
+    })),
+    now
+  )
 }
 
 // A game market is multiple choice: home, away, and Draw for soccer. Binary
@@ -445,6 +619,7 @@ function toOfficialGame(
     creatorUsername: c.creatorUsername,
     question: c.question,
     sport: sportForMarket({ sportsLeague: d.sportsLeague, groupIds }, index),
+    groupSlugs: c.groupSlugs ?? [],
     league: d.sportsLeague ?? '',
     sportsEventId,
     startTime,
@@ -559,7 +734,7 @@ async function getRelatedCandidates(
 async function getUpcomingMarkets(
   pg: Pg,
   index: SportsIndex
-): Promise<UpcomingMarketRef[]> {
+): Promise<(UpcomingMarketRef & { groupIds: string[] })[]> {
   const rows = await querySportsMarkets(pg, index, {
     groupIds: index.allGroupIds,
     closeFrom: '0 seconds',
@@ -568,10 +743,13 @@ async function getUpcomingMarkets(
     limit: MAX_UPCOMING,
   })
   return rows
-    .filter(
-      (r): r is RelatedCandidate & { closeTime: number } => r.closeTime != null
-    )
-    .map((r) => ({ id: r.id, closeTime: r.closeTime, sport: r.sport }))
+    .filter((r): r is typeof r & { closeTime: number } => r.closeTime != null)
+    .map((r) => ({
+      id: r.id,
+      closeTime: r.closeTime,
+      sport: r.sport,
+      groupIds: r.groupIds,
+    }))
 }
 
 async function querySportsMarkets(
@@ -585,7 +763,7 @@ async function querySportsMarkets(
     orderBy: 'importance' | 'close'
     limit: number
   }
-): Promise<RelatedCandidate[]> {
+): Promise<(RelatedCandidate & { groupIds: string[] })[]> {
   const order =
     opts.orderBy === 'close' ? 'c.close_time asc' : 'c.importance_score desc'
   const rows = await pg.manyOrNone<{
@@ -643,6 +821,7 @@ async function querySportsMarkets(
         index
       ),
       importanceScore: Number(r.importance_score ?? 0),
+      groupIds: r.group_ids,
     }
   })
 }

@@ -49,6 +49,28 @@ describe('getSportsLeagueLabel', () => {
     ).toBe('WC26')
   })
 
+  it('labels the F1 session and title markets F1', () => {
+    const label = (sportsEventId: string) =>
+      getSportsLeagueLabel({
+        creatorId: sports,
+        sportsEventId,
+        sportsLeague: 'Formula 1',
+      })
+    expect(label('bdl-f1:374:1869')).toBe('F1')
+    expect(label('bdl-f1-title:2027:drivers')).toBe('F1')
+    expect(label('bdl-f1-title:2027:constructors')).toBe('F1')
+    // An id that isn't the pipeline's shape gets no label.
+    expect(label('bdl-f1:374')).toBeUndefined()
+    expect(label('bdl-f1-title:2027:fastest-lap')).toBeUndefined()
+    expect(
+      getSportsLeagueLabel({
+        creatorId: 'someone',
+        sportsEventId: 'bdl-f1:374:1869',
+        sportsLeague: 'Formula 1',
+      })
+    ).toBeUndefined()
+  })
+
   it("doesn't label a market someone else made with sports fields", () => {
     expect(
       getSportsLeagueLabel({

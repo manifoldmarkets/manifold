@@ -49,22 +49,7 @@ export type Race = {
   // seat decided before Election Day, or a candidate-only source.
   basis?: SeatBasis
 }
-export type Atlas = {
-  states: { state: string; name: string; path: string; center: number[] }[]
-  districts: {
-    state: string
-    district: number
-    path: string
-    center: number[]
-  }[]
-  hex: {
-    size: number
-    width: number
-    height: number
-    hexes: { state: string; district: number; x: number; y: number }[]
-  }
-  tiles: { state: string; row: number; col: number }[]
-}
+export type { Atlas } from './atlas-shapes'
 
 export const OTHER_COLOR = '#318b83'
 export const COMPLEMENT_COLOR = '#9e9fbd'

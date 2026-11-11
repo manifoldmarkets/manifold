@@ -76,7 +76,10 @@ import {
   OraclePoint,
   validateBasicOraclePoint,
 } from 'common/perps/oracle'
-import { MNX_SOURCE_CLOCK_ALLOWANCE_MS } from 'common/perps/orders'
+import {
+  PROVIDER_SOURCE_CLOCK_ALLOWANCE_MS,
+  PROVIDER_STAMPED_FEED_IDS,
+} from 'common/perps/orders'
 import { removeUndefinedProps } from 'common/util/object'
 import { randomStringRegex } from 'common/util/random'
 import { UserBan } from 'common/user'
@@ -2596,11 +2599,12 @@ export const settlePerpOrderBacklog = async () => {
         or (c.data->>'isResolved')::boolean is true
         or (c.data->>'solvencyHaltTime' is null
           and o.created_time < to_timestamp((c.data->>'oraclePriceTime')::double precision / 1000)
-          and (c.data->>'oracleFeedId' not like 'mnx-%'
+          and ((c.data->>'oracleFeedId' not like 'mnx-%'
+              and c.data->>'oracleFeedId' <> all($2::text[]))
             or ((c.data->>'oracleSourceTime')::double precision <= (c.data->>'oraclePriceTime')::double precision
               and o.created_time < to_timestamp(((c.data->>'oracleSourceTime')::double precision - $1) / 1000)))))
     limit 100`,
-    [MNX_SOURCE_CLOCK_ALLOWANCE_MS]
+    [PROVIDER_SOURCE_CLOCK_ALLOWANCE_MS, PROVIDER_STAMPED_FEED_IDS]
   )
   for (const { contract_id } of rows) {
     try {

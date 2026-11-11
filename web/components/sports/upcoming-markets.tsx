@@ -8,6 +8,7 @@ import {
 } from 'common/sports-schedule'
 import { Col } from 'web/components/layout/col'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useHidesBlocked } from './blocked-topics'
 import { MarketLoadError, RelatedMarketRow } from './game-related-markets'
 import { groupByDay, SectionHeader } from './schedule-list'
 
@@ -25,6 +26,7 @@ export function UpcomingMarkets(props: {
   sportsByKey: Record<string, SportInfo>
 }) {
   const { refs, sport, showSport, sportsByKey } = props
+  const hides = useHidesBlocked()
   const [showAll, setShowAll] = useState(false)
   const listId = useId()
   const previewLimit = 6
@@ -45,7 +47,7 @@ export function UpcomingMarkets(props: {
 
   const available = refs.flatMap((ref) => {
     const contract = byId.get(ref.id)
-    return contract ? [{ ref, contract }] : []
+    return contract && !hides(contract.groupSlugs) ? [{ ref, contract }] : []
   })
   const days = groupByDay(
     showAll ? available : available.slice(0, previewLimit),

@@ -393,7 +393,7 @@ export function ContractPageContent(props: ContractParams) {
                           contract={liveContract as PerpContract}
                         />
                       ) : getSportsLeagueLabel(liveContract) ? (
-                        <MarketTitleLabel contract={liveContract} />
+                        <MarketTitleLabel contract={liveContract} linkToSport />
                       ) : undefined
                     }
                   />

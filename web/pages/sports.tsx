@@ -2,20 +2,29 @@ import { keyBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo } from 'react'
 import { OG_CARD_HEIGHT, OG_CARD_WIDTH } from 'common/edge/og'
+import { withoutRaceMarkets } from 'common/race-weekends'
 import { SportsOgMarket, sportsOgImageAlt } from 'common/sports-og'
 import {
   AnySportKey,
   CURATED_SPORTS,
   SPORT_KEY_RE,
+  sportPath,
 } from 'common/sports-schedule'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { GameFeed } from 'web/components/sports/schedule-list'
-import { sportPath } from 'web/components/sports/sport-rail'
 import {
   NoGames,
   SportMarkets,
   SportsShell,
 } from 'web/components/sports/sports-shell'
+import {
+  ownTopicSlugs,
+  shownCount,
+  useBlockedTopicFilter,
+  useLoadPastBlocked,
+  useUnblockedSchedule,
+} from 'web/components/sports/blocked-topics'
+import { useSportTopicExtras } from 'web/components/sports/use-sport-topic'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
 import { useSportsSchedule } from 'web/hooks/use-sports-schedule'
@@ -38,6 +47,8 @@ const LEGACY_TAB_TO_SPORT: Record<string, AnySportKey> = {
   nhl: 'nhl',
   mlb: 'mlb',
 }
+
+const ALL = { sport: 'all' } as const
 
 const first = (v: string | string[] | undefined) =>
   (Array.isArray(v) ? v[0] : v)?.toLowerCase()
@@ -78,10 +89,29 @@ export default function SportsPage({
   )
   const sports = rail?.sports ?? CURATED_SPORTS
   const sportsByKey = useMemo(() => keyBy(sports, 'key'), [sports])
+  const topic = useSportTopicExtras(ALL)
+  // Topics the visitor blocked stay out of the feed.
+  const hides = useBlockedTopicFilter(
+    ownTopicSlugs('all', undefined, undefined)
+  )
+  // F1 sessions go in the feed among the games, each on its own day.
+  const { games, weekends } = useUnblockedSchedule(
+    schedule?.games,
+    schedule?.raceWeekends,
+    hides,
+    sportsByKey
+  )
+  const lookingPastBlocked = useLoadPastBlocked({
+    feed: 'all',
+    shown: shownCount(games, weekends),
+    loaded: schedule?.games.length ?? 0,
+    hasMore,
+    loadMore,
+  })
   const markets = (
     <SportMarkets
       sport="all"
-      upcoming={schedule?.upcoming ?? []}
+      upcoming={withoutRaceMarkets(schedule?.upcoming ?? [], weekends)}
       sportsByKey={sportsByKey}
       enabled={ready}
     />
@@ -92,7 +122,11 @@ export default function SportsPage({
       selected="all"
       rail={rail}
       heading="Sports"
-      subheading="Pick a game. Make a call. Trade with the crowd."
+      subheading={
+        topic.notice || 'Pick a game. Make a call. Trade with the crowd.'
+      }
+      actions={topic.follow}
+      hides={hides}
       seo={{
         title: 'Sports',
         description:
@@ -118,14 +152,24 @@ export default function SportsPage({
             content: (
               <div className="pt-3">
                 <GameFeed
-                  games={schedule?.games ?? []}
-                  loading={loading || !schedule}
+                  games={games}
+                  raceWeekends={weekends}
+                  loading={loading || !schedule || lookingPastBlocked}
                   hasMore={hasMore}
                   loadMore={loadMore}
                   showLeague
                   empty={
                     <div className="flex flex-col gap-6">
-                      <NoGames sports={sports} counts={rail?.counts ?? {}} />
+                      <NoGames
+                        sports={sports}
+                        counts={rail?.counts ?? {}}
+                        allBlocked={
+                          shownCount(
+                            schedule?.games ?? [],
+                            schedule?.raceWeekends ?? []
+                          ) > 0
+                        }
+                      />
                       {markets}
                     </div>
                   }
@@ -138,6 +182,7 @@ export default function SportsPage({
             queryString: 'markets',
             content: <div className="pt-3">{markets}</div>,
           },
+          ...topic.tabs,
         ]}
       />
     </SportsShell>

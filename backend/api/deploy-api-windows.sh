@@ -38,8 +38,27 @@ get_deployed_perp_trading_mode() {
         --format="value(instanceTemplate)" 2>/dev/null) || return 1
     template=${template##*/}
     [ -n "${template}" ] || return 1
-    # The container declaration arrives with escaped newlines on some
-    # platforms (observed \\n on Windows gcloud); normalize before parsing.
+    # The container env lives in the template's `container-env` metadata key,
+    # one KEY=VALUE per line (see backend/deploy/cos-container-startup.sh). The
+    # value arrives with escaped newlines on some platforms (observed \\n on
+    # Windows gcloud); normalize before parsing.
+    local mode
+    mode=$(gcloud compute instance-templates describe "${template}" \
+        --project ${GCLOUD_PROJECT} \
+        --format="value(properties.metadata.items.filter(\"key='container-env'\").extract(value))" \
+        2>/dev/null \
+      | sed 's/\\\\n/\n/g; s/\\n/\n/g' \
+      | tr -d '\r' \
+      | grep '^PERP_TRADING_MODE=' | head -1 \
+      | cut -d= -f2- \
+      | tr -d "[:space:]'\"")
+    if [ -n "${mode}" ]; then
+        echo "${mode}"
+        return 0
+    fi
+    # Legacy fallback: templates made before the move off the container
+    # startup agent keep the env in `gce-container-declaration`. Only needed
+    # for the first deploy after the switch; safe to delete afterwards.
     gcloud compute instance-templates describe "${template}" \
         --project ${GCLOUD_PROJECT} \
         --format="value(properties.metadata.items.filter(\"key='gce-container-declaration'\").extract(value))" \
@@ -157,18 +176,41 @@ fi
 TEMPLATE_NAME="${SERVICE_NAME}-${IMAGE_TAG}"
 GROUP_PAGE_URL="https://console.cloud.google.com/compute/instanceGroups/details/${ZONE}/${SERVICE_GROUP}?project=${GCLOUD_PROJECT}"
 
+# The template no longer uses `create-with-container`: the GCE container
+# startup agent behind it is deprecated and shut down for new VMs as of
+# 2026-07-31.
+#   https://cloud.google.com/compute/docs/deprecations/container-startup-agent-on-compute
+#   https://cloud.google.com/compute/docs/containers/migrate-containers
+# Instead the VM boots stock Container-Optimized OS and runs
+# backend/deploy/cos-container-startup.sh as its startup script, which reads
+# the image + env from the metadata keys set below and does the `docker run`.
+#   https://cloud.google.com/compute/docs/instances/startup-scripts/linux
+#   https://cloud.google.com/sdk/gcloud/reference/compute/instance-templates/create
+STARTUP_SCRIPT="../deploy/cos-container-startup.sh"
+# Container env, one KEY=VALUE per line. It goes through a file because
+# gcloud's --metadata flag splits values on commas; --metadata-from-file
+# does not.
+ENV_FILE="dist/container-env"
+printf '%s\n' \
+    "NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV}" \
+    "GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT}" \
+    "REDIS_URL=${REDIS_URL}" \
+    "DISABLE_REDIS_CACHE=${DISABLE_REDIS_CACHE}" \
+    "PERP_TRADING_MODE=${PERP_TRADING_MODE}" > "${ENV_FILE}"
+
 echo "Creating new instance template ${TEMPLATE_NAME} using Docker image https://${IMAGE_URL}..."
-gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
+gcloud compute instance-templates create ${TEMPLATE_NAME} \
        --project ${GCLOUD_PROJECT} \
        --image-project "cos-cloud" \
        --image-family "cos-121-lts" \
-       --container-image ${IMAGE_URL} \
        --machine-type ${MACHINE_TYPE} \
        --boot-disk-size=100GB \
-       --container-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT},REDIS_URL=${REDIS_URL},DISABLE_REDIS_CACHE=${DISABLE_REDIS_CACHE},PERP_TRADING_MODE=${PERP_TRADING_MODE} \
+       --metadata container-image=${IMAGE_URL},container-name=${SERVICE_NAME},google-logging-enabled=true \
+       --metadata-from-file startup-script=${STARTUP_SCRIPT},container-env=${ENV_FILE} \
        --no-user-output-enabled \
        --scopes default,cloud-platform \
        --tags lb-health-check
+rm -f "${ENV_FILE}"
 
 echo "Updating ${SERVICE_GROUP} to ${TEMPLATE_NAME}. See status here: ${GROUP_PAGE_URL}"
 gcloud compute instance-groups managed rolling-action start-update ${SERVICE_GROUP} \

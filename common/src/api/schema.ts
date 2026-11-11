@@ -69,7 +69,14 @@ import {
 import { Repost } from 'common/repost'
 import { ManaSupply } from 'common/stats'
 import { SportsMarket } from 'common/sports'
-import { SPORT_KEY_RE, SportsScheduleResponse } from 'common/sports-schedule'
+import {
+  SPORT_KEY_RE,
+  SportInfo,
+  SportsScheduleResponse,
+  SportsSubtopic,
+} from 'common/sports-schedule'
+import { SportsLeaderboards } from 'common/sports-leaderboards'
+import { ElectionLeaderboards } from 'common/election-leaderboards'
 import { CompetitionSwitchState } from 'common/sports-calendar'
 import { ScorePollingPanel } from 'common/sports-score-polling'
 import { Row } from 'common/supabase/utils'
@@ -118,7 +125,11 @@ import { UserEntitlement, ShopOrder } from 'common/shop/types'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Task, TaskCategory } from 'common/todo'
 import { TopLevelPost } from 'common/top-level-post'
-import { YEAR_MS } from 'common/util/time'
+import {
+  MarketProbsHistory,
+  PROBS_HISTORY_MIN_STEP_MS,
+} from 'common/market-probs-history'
+import { DAY_MS, YEAR_MS } from 'common/util/time'
 import {
   MAX_WATCHED_MARKETS,
   WATCHED_MARKETS_PAGE_SIZE,
@@ -899,6 +910,30 @@ export const API = (_apiTypeCheck = {
         ids: z.array(z.string()).max(100),
       })
       .strict(),
+  },
+  // Each market's probability every `step` ms from `start` to now, rebuilt
+  // from bets: the election map's rewind. `start` sits on the step grid so
+  // viewers share cached responses.
+  'market-probs-history': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=60, stale-while-revalidate=60',
+    returns: {} as MarketProbsHistory,
+    props: z
+      .object({
+        ids: z.array(z.string()).min(1).max(100),
+        start: z.coerce.number().int(),
+        step: z.coerce
+          .number()
+          .int()
+          .gte(PROBS_HISTORY_MIN_STEP_MS)
+          .lte(DAY_MS),
+      })
+      .strict()
+      .refine((p) => p.start % p.step === 0, {
+        message: 'start must be a multiple of step',
+      }),
   },
   'markets-by-ids': {
     method: 'GET',
@@ -5199,9 +5234,52 @@ export const API = (_apiTypeCheck = {
           .max(64)
           .optional(),
         includeRelated: coerceBoolean.optional(),
+        // A topic under Sports (SportsSubtopic.id): only its games and markets.
+        topic: z.string().min(1).max(MAX_ID_LENGTH).optional(),
       })
       .strict(),
     returns: {} as SportsScheduleResponse,
+  },
+  // Every sport on the sports pages and every other topic under Sports, with
+  // the topics behind each. Topic pages use it to send a topic to its page
+  // there.
+  'sports-index': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=300, stale-while-revalidate=600',
+    props: z.object({}).strict(),
+    // `topics` is absent from an API that predates it.
+    returns: {} as { sports: SportInfo[]; topics?: SportsSubtopic[] },
+  },
+  // A sport's leaderboards ('all' for every sport), or with `topic` a topic's
+  // under Sports, and with `userId` where that user stands on them. The
+  // scheduler rebuilds them hourly. Empty boards for a sport or topic it
+  // doesn't know.
+  'sports-leaderboards': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=300, stale-while-revalidate=600',
+    props: z
+      .object({
+        sport: z.string().regex(SPORT_KEY_RE).optional(),
+        topic: z.string().min(1).max(MAX_ID_LENGTH).optional(),
+        userId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
+      })
+      .strict(),
+    returns: {} as SportsLeaderboards,
+  },
+  // The /election page's leaderboards (common/election-leaderboards), one
+  // per election scope. The scheduler rebuilds them; a board not built yet
+  // is left out.
+  'election-leaderboards': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=300, stale-while-revalidate=600',
+    props: z.object({}).strict(),
+    returns: {} as ElectionLeaderboards,
   },
 
   // Link a market to the market it's about (common/market-links), replacing
@@ -5306,6 +5384,32 @@ export const API = (_apiTypeCheck = {
       errors: number
       results: Array<{
         eventId: string
+        question: string
+        status: 'created' | 'skipped' | 'dry-run' | 'error'
+        reason: string | null
+      }>
+    },
+  },
+  // F1 markets from BALLDONTLIE for the next F1_DAYS_AHEAD days' sessions, by
+  // hand, on dev or prod. The daily sports-f1-create job makes them too.
+  'admin-sports-create-f1-markets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionId: z.string(),
+        dryRun: z.boolean().optional(),
+        // `<session id>:<market type>` keys from a dry run. Only these are created.
+        keys: z.array(z.string().max(40)).max(100).optional(),
+      })
+      .strict(),
+    returns: {} as {
+      created: number
+      skipped: number
+      errors: number
+      results: Array<{
+        key: string
         question: string
         status: 'created' | 'skipped' | 'dry-run' | 'error'
         reason: string | null
