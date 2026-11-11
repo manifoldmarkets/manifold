@@ -67,6 +67,7 @@ describe('getPointsFromBetRows, multiple choice', () => {
   const quietHour = {
     afterTime: now - HOUR_MS,
     beforeTime: now - 2 * HOUR_MS + 1000,
+    complete: true,
   }
 
   it('starts an answer with no bet in the window where it is now', () => {
@@ -93,11 +94,29 @@ describe('getPointsFromBetRows, multiple choice', () => {
     ).toEqual([[quietHour.afterTime, 0.8]])
   })
 
+  it('does not read a sample that lacks an answer as proof it did not move', () => {
+    // The endpoint returns a random sample of a crowded window. An answer's
+    // one bet can be missing from it, so its current level says nothing about
+    // where it stood when the window opened.
+    const moved = makeAnswer('moved', 0.9)
+    const contract = makeContract([moved], { shouldAnswersSumToOne: false })
+    const sampled = { ...quietHour, complete: false }
+
+    expect(getPointsFromBetRows(contract, [], sampled)).toEqual([])
+    // Earlier history, where the caller has it, still places the line.
+    expect(
+      lineOf(
+        getPointsFromBetRows(contract, [], sampled, () => 0.5),
+        'moved'
+      )
+    ).toEqual([[quietHour.afterTime, 0.5]])
+  })
+
   it('starts an answer with bets at the probability before its first one', () => {
     const a = makeAnswer('a', 0.6)
     const b = makeAnswer('b', 0.4)
     const contract = makeContract([a, b], { lastBetTime: now - 10 })
-    const window = { afterTime: now - HOUR_MS, beforeTime: now }
+    const window = { afterTime: now - HOUR_MS, beforeTime: now, complete: true }
     const rows = [
       bet('a', now - 20, 0.55, 0.6),
       bet('a', now - 1000, 0.5, 0.55),
@@ -133,6 +152,7 @@ describe('getPointsFromBetRows, multiple choice', () => {
     const window = {
       afterTime: now - 14 * DAY_MS,
       beforeTime: now - 7 * DAY_MS,
+      complete: true,
     }
     const quiet = makeAnswer('quiet', 0.62)
     const contract = makeContract([quiet], { shouldAnswersSumToOne: false })
@@ -194,23 +214,52 @@ describe('getPointsFromBetRows, multiple choice', () => {
     })
   })
 
-  it('covers the whole history the way the server render asks for it', () => {
-    const traded = makeAnswer('traded', 0.7)
-    const untouched = makeAnswer('untouched', 0.3)
-    const contract = makeContract([traded, untouched], {
-      shouldAnswersSumToOne: false,
-      lastBetTime: now - DAY_MS,
+  describe('the whole history, as the server render asks for it', () => {
+    const window = (complete: boolean) => ({
+      afterTime: marketCreated,
+      beforeTime: now - DAY_MS + 1,
+      complete,
     })
-    const window = { afterTime: marketCreated, beforeTime: now - DAY_MS + 1 }
     const rows = [bet('traded', now - DAY_MS, 0.5, 0.7)]
 
-    const points = getPointsFromBetRows(contract, rows, window)
+    it('starts every opening answer at its opening probability', () => {
+      const traded = makeAnswer('traded', 0.7)
+      // Its one bet, from 50% to 90%, is not in the sample.
+      const unsampled = makeAnswer('unsampled', 0.9)
+      const contract = makeContract([traded, unsampled], {
+        shouldAnswersSumToOne: false,
+        lastBetTime: now - DAY_MS,
+      })
 
-    expect(lineOf(points, 'traded')).toEqual([
-      [marketCreated, 0.5],
-      [now - DAY_MS, 0.7],
-    ])
-    expect(lineOf(points, 'untouched')).toEqual([[marketCreated, 0.3]])
+      for (const complete of [true, false]) {
+        const points = getPointsFromBetRows(contract, rows, window(complete))
+        expect(lineOf(points, 'traded')).toEqual([
+          [marketCreated, 0.5],
+          [now - DAY_MS, 0.7],
+        ])
+        // Never the 90% it reached later: the opening probability is on
+        // record, and the chart adds the current level as the last point.
+        expect(lineOf(points, 'unsampled')).toEqual([[marketCreated, 0.5]])
+      }
+    })
+
+    it('starts an added answer nobody has bet on where it is, if every bet is there', () => {
+      const other = makeAnswer('other', 0.3, { isOther: true })
+      const added = makeAnswer('added', 0.2, {
+        createdTime: marketCreated + 100 * DAY_MS,
+      })
+      const contract = makeContract([other, added], {
+        lastBetTime: now - DAY_MS,
+      })
+
+      expect(
+        lineOf(getPointsFromBetRows(contract, [], window(true)), 'added')
+      ).toEqual([[added.createdTime, 0.2]])
+      // With only a sample there is no telling, and no line start.
+      expect(
+        lineOf(getPointsFromBetRows(contract, [], window(false)), 'added')
+      ).toEqual([])
+    })
   })
 })
 
@@ -225,7 +274,7 @@ describe('getPointsFromBetRows, binary', () => {
   } as unknown as BinaryContract
 
   it('starts at the probability before the first bet in the window', () => {
-    const window = { afterTime: now - DAY_MS, beforeTime: now }
+    const window = { afterTime: now - DAY_MS, beforeTime: now, complete: true }
     const rows = [
       { createdTime: now - 10, probBefore: 0.5, probAfter: 0.6 },
       { createdTime: now - HOUR_MS, probBefore: 0.4, probAfter: 0.5 },
@@ -244,12 +293,14 @@ describe('getPointsFromBetRows, binary', () => {
       getPointsFromBetRows(contract, [], {
         afterTime: marketCreated,
         beforeTime: now,
+        complete: true,
       })
     ).toEqual([{ x: marketCreated, y: 0.35, answerId: undefined }])
     expect(
       getPointsFromBetRows(contract, [], {
         afterTime: now - DAY_MS,
         beforeTime: now,
+        complete: true,
       })
     ).toEqual([])
   })

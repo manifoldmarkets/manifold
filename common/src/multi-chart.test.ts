@@ -100,6 +100,109 @@ describe('getDefaultGraphedAnswerIds', () => {
   })
 })
 
+describe('getDefaultGraphedAnswerIds, resolved markets', () => {
+  it('puts the answers a resolved market paid out to first', () => {
+    // A market that resolves to its answers records the payouts on the
+    // contract, not on each answer. The winner here was at 1% in its pool.
+    const answers = [
+      makeAnswer('a', 0.4, 0),
+      makeAnswer('b', 0.2, 1),
+      makeAnswer('c', 0.15, 2),
+      makeAnswer('d', 0.1, 3),
+      makeAnswer('e', 0.08, 4),
+      makeAnswer('f', 0.06, 5),
+      makeAnswer('winner', 0.01, 6),
+    ]
+    const contract = {
+      ...makeContract(answers),
+      resolutions: { winner: 100 },
+    } as unknown as MultiContract
+    const ids = getDefaultGraphedAnswerIds(contract, answers)
+    expect(ids[0]).toBe('winner')
+    expect(ids).toEqual(['winner', 'a', 'b', 'c', 'd', 'e'])
+  })
+
+  it('orders a split payout by share', () => {
+    const answers = [
+      makeAnswer('a', 0.5, 0),
+      makeAnswer('b', 0.3, 1),
+      makeAnswer('c', 0.2, 2),
+    ]
+    const contract = {
+      ...makeContract(answers),
+      resolutions: { c: 70, b: 30 },
+    } as unknown as MultiContract
+    expect(getDefaultGraphedAnswerIds(contract, answers)).toEqual([
+      'c',
+      'b',
+      'a',
+    ])
+  })
+})
+
+describe('getDefaultGraphedAnswerIds, keeping the current lines', () => {
+  const answers = (seventh: number) => [
+    makeAnswer('a', 0.4, 0),
+    makeAnswer('b', 0.2, 1),
+    makeAnswer('c', 0.15, 2),
+    makeAnswer('d', 0.1, 3),
+    makeAnswer('e', 0.08, 4),
+    makeAnswer('f', 0.03, 5),
+    makeAnswer('g', seventh, 6),
+  ]
+  const current = ['a', 'b', 'c', 'd', 'e', 'f']
+
+  it('with nothing drawn yet, takes the likeliest', () => {
+    const list = answers(0.035)
+    expect(getDefaultGraphedAnswerIds(makeContract(list), list)).toEqual([
+      'a',
+      'b',
+      'c',
+      'd',
+      'e',
+      'g',
+    ])
+  })
+
+  it('keeps a drawn answer that another has only just passed', () => {
+    const list = answers(0.035)
+    expect(
+      getDefaultGraphedAnswerIds(makeContract(list), list, current)
+    ).toEqual(current)
+  })
+
+  it('swaps a drawn answer out once another clearly leads it', () => {
+    const list = answers(0.06)
+    expect(
+      getDefaultGraphedAnswerIds(makeContract(list), list, current)
+    ).toEqual(['a', 'b', 'c', 'd', 'e', 'g'])
+  })
+
+  it('drops a drawn answer that is no longer a candidate', () => {
+    const list = answers(0.035)
+    const withoutF = list.filter((a) => a.id !== 'f')
+    expect(
+      getDefaultGraphedAnswerIds(makeContract(list), withoutF, current)
+    ).toEqual(['a', 'b', 'c', 'd', 'e', 'g'])
+  })
+
+  it('never returns more than six, and is stable when fed its own answer', () => {
+    const list = answers(0.035)
+    const contract = makeContract(list)
+    const first = getDefaultGraphedAnswerIds(contract, list, [
+      'a',
+      'b',
+      'c',
+      'd',
+      'e',
+      'f',
+      'g',
+    ])
+    expect(first).toHaveLength(MAX_DEFAULT_GRAPHED_ANSWERS)
+    expect(getDefaultGraphedAnswerIds(contract, list, first)).toEqual(first)
+  })
+})
+
 describe('getStepValueAt', () => {
   const points = [
     { x: 10, y: 0.1 },

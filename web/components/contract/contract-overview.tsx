@@ -35,7 +35,7 @@ import { type ChartAnnotation } from 'common/supabase/chart-annotations'
 import { filterDefined } from 'common/util/array'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
-import { orderBy } from 'lodash'
+import { isEqual, orderBy } from 'lodash'
 import { FaArrowDown, FaArrowUp, FaChartArea } from 'react-icons/fa'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import {
@@ -98,6 +98,8 @@ export const ContractOverview = memo(
   (props: {
     contract: Contract
     betPoints: HistoryPoint<Partial<Bet>>[] | MultiPoints
+    // The time of the last bet the server-rendered part of betPoints covers.
+    serverLastBetTime?: number
     showResolver: boolean
     showUnresolver: boolean
     resolutionRating?: ReactNode
@@ -168,6 +170,7 @@ export const ContractOverview = memo(
           <ChoiceOverview
             contract={contract}
             points={betPoints as MultiPoints}
+            serverLastBetTime={props.serverLastBetTime}
             showResolver={showResolver}
             showUnresolver={showUnresolver}
             setShowResolver={setShowResolver}
@@ -359,6 +362,8 @@ const HOVER_PREVIEW_DELAY_MS = 150
 
 const ChoiceOverview = (props: {
   points: MultiPoints
+  // The time of the last bet the server-rendered part of `points` covers.
+  serverLastBetTime: number | undefined
   contract: CPMMMultiContract
   showResolver: boolean
   showUnresolver: boolean
@@ -406,16 +411,27 @@ const ChoiceOverview = (props: {
 
   // Until the user picks answers, the chart draws the likeliest ones (the
   // likeliest matches while searching), whatever order the list is sorted in.
-  // Chosen once per set of answers, so lines don't swap as probabilities move.
+  // It follows the live market, but an answer already drawn keeps its place
+  // unless it has clearly dropped out, so lines don't swap with every bet.
+  // A search with no match leaves the chart as it was: the same box is where a
+  // new answer is typed, and the chart should not empty while one is.
+  const previousDefaults = useRef<{ query: string; ids: string[] }>()
   const defaultAnswerIdsToGraph = useMemo(() => {
     const matches = query
       ? contract.answers.filter((a) => searchInAny(query, a.text))
       : []
-    return getDefaultGraphedAnswerIds(
+    const previous = previousDefaults.current
+    const sameSearch = previous?.query === query
+    const ids = getDefaultGraphedAnswerIds(
       contract,
-      matches.length ? matches : contract.answers
+      matches.length ? matches : contract.answers,
+      sameSearch ? previous.ids : undefined
     )
-  }, [contract.id, contract.answers.length, query])
+    // The same array while the choice is the same, so the chart can skip work.
+    const stable = sameSearch && isEqual(previous.ids, ids) ? previous.ids : ids
+    previousDefaults.current = { query, ids: stable }
+    return stable
+  }, [contract, query])
   const graphedAnswerIds = selectedAnswerIds.length
     ? selectedAnswerIds
     : defaultAnswerIdsToGraph
@@ -488,6 +504,7 @@ const ChoiceOverview = (props: {
     points: props.points,
     createdTime: contract.createdTime,
     lastBetTime: contract.lastBetTime ?? contract.createdTime,
+    serverLastBetTime: props.serverLastBetTime,
   })
   return (
     <>

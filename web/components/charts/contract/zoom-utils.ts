@@ -110,13 +110,18 @@ export const useMultiChoiceDataZoomFetcher = (props: {
   points: MultiPoints
   createdTime: number
   lastBetTime: number
+  // The time of the last bet the server-rendered history in `points` covers.
+  // Undefined if the page was rendered before any bet.
+  serverLastBetTime: number | undefined
 }) => {
   const { contract, points, createdTime, lastBetTime, viewXScale } = props
+  const { serverLastBetTime } = props
   const [data, setData] = useState(points)
   const [loading, setLoading] = useState(false)
-  // The last fetch that covered the market's whole history. A market with many
-  // answers is rendered without points, so this can be the only full history.
-  const fetchedAllTime = useRef<MultiPoints>({})
+  // The last fetch that covered the market's whole history, and the time it
+  // ran up to. A market with many answers is rendered without points, so this
+  // can be the only full history.
+  const fetchedAllTime = useRef<{ max: number; data: MultiPoints }>()
 
   const onZoomData = useEvent(
     debounce(async (min?: number, max?: number) => {
@@ -127,14 +132,19 @@ export const useMultiChoiceDataZoomFetcher = (props: {
           min,
           max,
           // For an answer with no bet in a window that ends before the market's
-          // last bet: where the full-history line stood when the window opened.
-          (answerId) =>
-            getStepValueAt(
-              points[answerId]?.length
-                ? points[answerId]
-                : fetchedAllTime.current[answerId],
-              min
-            )
+          // last bet: where a full-history line stood when the window opened.
+          // A history only answers for the time it covers. The fetched one
+          // runs up to when it was fetched. The page's own runs up to the
+          // server render: bets that arrive later come without the redemption
+          // rows that move the other answers.
+          (answerId) => {
+            const fetched = fetchedAllTime.current
+            if (fetched && min <= fetched.max)
+              return getStepValueAt(fetched.data[answerId], min)
+            if (serverLastBetTime !== undefined && min <= serverLastBetTime)
+              return getStepValueAt(points[answerId], min)
+            return undefined
+          }
         )
 
         // Combine the original points outside the zoom range with the zoomed points
@@ -158,7 +168,7 @@ export const useMultiChoiceDataZoomFetcher = (props: {
         })
 
         if (min <= createdTime && max >= lastBetTime)
-          fetchedAllTime.current = newData
+          fetchedAllTime.current = { max, data: newData }
         setData(newData)
         setLoading(false)
       } else {

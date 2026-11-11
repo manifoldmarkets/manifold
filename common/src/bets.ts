@@ -20,6 +20,9 @@ export async function getTotalBetCount(contractId: string) {
 
 const RECENT_BET_POINTS_WINDOW_MS = 6 * HOUR_MS
 const SPLIT_QUERY_MIN_SPAN_MS = 6 * HOUR_MS
+// The most bets one bet-points request returns. The endpoint returns a random
+// sample when a window holds more, so a response this long may be missing bets.
+const BET_POINTS_REQUEST_LIMIT = 5000
 
 // gets random bets - 50,000 by default
 export const getBetPoints = async (
@@ -64,8 +67,13 @@ export const getBetPointsBetween = async (
   options: Omit<APIParams<'bet-points'>, 'contractId'>,
   getAnswerProbAtStart?: AnswerProbAtStart
 ) => {
-  const data = await getSplitBetPoints(contract.id, options)
-  return getPointsFromBetRows(contract, data, options, getAnswerProbAtStart)
+  const { rows, complete } = await getSplitBetPoints(contract.id, options)
+  return getPointsFromBetRows(
+    contract,
+    rows,
+    { ...options, complete },
+    getAnswerProbAtStart
+  )
 }
 
 type BetPointRow = Pick<
@@ -73,43 +81,45 @@ type BetPointRow = Pick<
   'createdTime' | 'probBefore' | 'probAfter' | 'answerId'
 >
 
-// Where an answer's line starts when it has no bet in the window. Its
-// probability did not move during the window, so the line is flat at whatever
-// it was when the window opened. Undefined: not known, so draw no line.
+// Where an answer's line starts when the window's rows hold no bet on it.
+// Undefined: not known, so the line gets no starting point.
 const getStartProbWithoutBets = (
   contract: MultiContract,
   answer: Answer,
-  afterTime: number,
-  reachesLastBet: boolean,
+  window: { afterTime: number; reachesLastBet: boolean; complete: boolean },
   getAnswerProbAtStart: AnswerProbAtStart | undefined
 ) => {
-  // The window runs up to the market's last bet, so nothing has traded on it
-  // since the window opened and it is still where it is now. That is the
-  // pool's probability, not a resolution's: the chart draws the resolution as
-  // its own last point.
-  if (reachesLastBet) {
+  // The window opened before the answer existed, so the line starts where the
+  // answer did. That holds whatever the rows contain.
+  if (window.afterTime <= answer.createdTime) {
+    const opening = getInitialAnswerProbability(contract, answer)
+    if (opening !== undefined) return opening
+  }
+  // Every bet of the window is in the rows and none is on this answer, and
+  // the window runs up to the market's last bet. So nothing has moved it since
+  // the window opened, and it is still where its pool puts it now. (The pool,
+  // not a resolution: the chart draws an answer's resolution as its own point.)
+  // If the rows are only a sample, a missing bet proves nothing.
+  if (window.complete && window.reachesLastBet) {
     const prob = getCpmmProbability(
       { YES: answer.poolYes, NO: answer.poolNo },
       answerP(answer)
     )
     if (Number.isFinite(prob)) return prob
   }
-  // Later bets may have moved it since, so only earlier history can say.
+  // Otherwise only earlier history can say, if the caller has it.
   const known = getAnswerProbAtStart?.(answer.id)
   if (known !== undefined && Number.isFinite(known)) return known
-  // The window opened before the answer existed: it starts where the answer
-  // did, if that is on record.
-  if (afterTime <= answer.createdTime)
-    return getInitialAnswerProbability(contract, answer)
   return undefined
 }
 
 // Turns the bets of a window into chart points: where each line starts, then
-// the probability after each bet. `rows` may be a sample of the window's bets.
+// the probability after each bet. `complete` says whether `rows` holds every
+// bet of the window, or may be a sample of them.
 export const getPointsFromBetRows = (
   contract: MarketContract,
   rows: BetPointRow[],
-  options: { afterTime: number; beforeTime: number },
+  options: { afterTime: number; beforeTime: number; complete: boolean },
   getAnswerProbAtStart?: AnswerProbAtStart
 ) => {
   const sorted = sortBy(rows, 'createdTime')
@@ -129,8 +139,11 @@ export const getPointsFromBetRows = (
           : getStartProbWithoutBets(
               contract,
               ans,
-              options.afterTime,
-              reachesLastBet,
+              {
+                afterTime: options.afterTime,
+                reachesLastBet,
+                complete: options.complete,
+              },
               getAnswerProbAtStart
             )
         if (y === undefined) return undefined
@@ -193,7 +206,7 @@ const getSplitBetPoints = async (
     return await fetchBetPoints(contractId, options)
   }
 
-  const [historicalData, recentData] = await Promise.all([
+  const [historical, recent] = await Promise.all([
     fetchBetPoints(contractId, {
       ...options,
       beforeTime: splitTime,
@@ -203,14 +216,22 @@ const getSplitBetPoints = async (
       afterTime: splitTime,
     }),
   ])
-  return [...historicalData, ...recentData]
+  return {
+    rows: [...historical.rows, ...recent.rows],
+    complete: historical.complete && recent.complete,
+  }
 }
 
-const fetchBetPoints = (
+const fetchBetPoints = async (
   contractId: string,
   options: Omit<APIParams<'bet-points'>, 'contractId'>
-) =>
-  unauthedApi('bet-points', {
+) => {
+  const limit = options.limit ?? BET_POINTS_REQUEST_LIMIT
+  const rows = await unauthedApi('bet-points', {
     ...options,
+    limit,
     contractId,
   })
+  // A response as long as the limit may have been cut off by it.
+  return { rows, complete: rows.length < limit }
+}
