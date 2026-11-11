@@ -13,18 +13,24 @@ import { getMultiBetPoints } from 'common/contract-params'
 import { CPMMContract, MarketContract, MultiContract } from 'common/contract'
 import {
   addLivePoints,
-  addMultiPoints,
   chooseChartPoints,
   CoveredMultiPoints,
   FetchedMultiPoints,
   getKnownStepValueAt,
-  getTailToReconcile,
   getUncoveredAnswerIds,
   getWholeHistoryCoverage,
+  getWholeHistoryLines,
+  getWholeHistoryPoints,
   getZoomWindow,
+  hasUndeliveredBet,
+  isBehindLastBet,
+  isOnItsWay,
   latestDefined,
   movedProbability,
+  WholeHistoryLines,
+  WholeHistoryRequest,
   widerHistory,
+  withFurtherLines,
 } from 'common/multi-chart'
 import { buildArray } from 'common/util/array'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
@@ -147,47 +153,56 @@ const ZOOM_FETCH_DELAY_MS = 100
 const FETCH_LEAD_MS = 1000
 // The most live points kept for one answer before the older ones are thinned.
 const MAX_LIVE_POINTS_PER_ANSWER = 1000
+// How long the chart, once on screen, waits for the live contract before it
+// fetches a whole history with the contract the page was rendered with.
+const LIVE_CONTRACT_WAIT_MS = 3000
 
 const NO_POINTS: MultiPoints = {}
-const NOT_LOADING = { zoomed: false, allTime: false }
+const NO_LINES: WholeHistoryLines = {}
 
 // only for multichoice contracts
 //
 // Decides which points the chart draws.
 //
-// With the whole history on screen, that is the history the page was rendered
-// with, and nothing is fetched for it. If an answer on the chart was rendered
-// without a line (a market with many answers has none at all), the whole
-// history is fetched, once per set of answers that lack one. A zoomed window
-// is fetched when the view settles.
+// In the whole-history view, each answer's line is read from one history of
+// the market: the one the page was rendered with, or a whole history fetched
+// since, whichever reaches further. The line is carried on by the live bets
+// made after that history's last bet. Nothing is fetched until one of two
+// things calls for it:
 //
-// Bets that arrive while the page is open are added from the live feed, with
-// the redemption rows that carry the other answers' moves, so no bet causes a
-// fetch. The live feed can miss bets, so the stretch since the last bet the
-// chart is sure of is fetched again at the moments the chart used to fetch
-// everything: when it is first drawn, when the user comes back to the whole
-// history or to the page, and when the page's own feed turns up a bet the
-// live feed did not deliver.
+// - An answer on the chart has no line (a market with many answers is
+//   rendered with none at all).
+// - The page knows of a bet made after the last bet in the history of a line
+//   on the chart. The live feed draws such bets as they arrive, so no bet
+//   causes a fetch. But the feed can miss bets, so the whole history is
+//   fetched again at the moments below, if there has been a bet since:
+//   when the chart is first on screen with the live contract loaded, when the
+//   user comes back to the whole history or to the page, and when the page's
+//   own feed turns up a bet the live feed did not deliver.
+//
+// A zoomed window is fetched when the view settles.
 export const useMultiChoiceDataZoomFetcher = (props: {
   contract: MultiContract
   viewXScale?: ScaleTime<number, number>
-  // The history the page was rendered with, plus the bets that arrived since.
+  // The history the page was rendered with.
   points: MultiPoints
   createdTime: number
-  lastBetTime: number
-  // The time of the latest bet among the rows the server-rendered history in
-  // `points` was made from. Undefined if there were none.
+  // The time of the latest bet among the rows the history in `points` was
+  // made from. Undefined if there were none.
   serverLastBetTime: number | undefined
   // The answers the page was rendered with a chart line for. None for a
   // market with many answers, which is rendered without chart points.
   serverPointAnswerIds: string[]
-  // The time of the newest bet the page's own feed holds, if it holds any.
-  // That feed catches up after a gap, but leaves out the redemption rows.
+  // The time of the newest bet in the page's own feed that moved a
+  // probability, if there is one. That feed catches up after a gap, but
+  // leaves out the redemption rows.
   latestPageBetTime: number | undefined
-  // Whether `contract` holds every answer of the market. A big market's page
-  // starts with only its top answers, and the rest arrive with the live
-  // contract.
-  hasAllAnswers: boolean
+  // Whether `contract` is the live one, loaded since the page opened. Until
+  // then it is the one the page was rendered with: it can be behind on the
+  // last bet, and a big market's has only its top answers.
+  hasLiveContract: boolean
+  // Whether the chart is on screen. The user can hide it.
+  isShown: boolean
   // Whether the chart is zoomed in on part of the market's life.
   isZoomed: boolean
   // The answers the chart is drawing.
@@ -196,87 +211,107 @@ export const useMultiChoiceDataZoomFetcher = (props: {
   // kept outside React state, so it is read here only when it changes.
   previewStore: ValueStore<string | undefined>
 }) => {
-  const { contract, points, createdTime, lastBetTime, viewXScale } = props
+  const { contract, points, createdTime, viewXScale } = props
   const { serverLastBetTime, serverPointAnswerIds, latestPageBetTime } = props
-  const { hasAllAnswers, isZoomed, graphedAnswerIds, previewStore } = props
+  const { hasLiveContract, isShown, isZoomed } = props
+  const { graphedAnswerIds, previewStore } = props
   const isPageVisible = useIsPageVisible()
 
-  // The latest fetch of a zoomed window, and of the whole history.
+  // The latest fetch of a zoomed window.
   const [zoomed, setZoomed] = useState<FetchedMultiPoints>()
-  const [allTime, setAllTime] = useState<FetchedMultiPoints>()
-  // The probability moves since the page opened: from the live feed, and from
-  // fetches of the tail that fill in what the live feed missed.
+  // The whole-history lines that have been fetched.
+  const [fetchedLines, setFetchedLines] = useState(NO_LINES)
+  // The probability moves the live feed has delivered since the page opened.
   const [live, setLive] = useState(NO_POINTS)
-  // The latest bet the live feed has delivered, whether it moved anything.
+  // The latest bet the live feed has delivered that moved a probability.
   const [latestLiveBetTime, setLatestLiveBetTime] = useState<number>()
-  // The latest bet a fetch of the tail has brought.
-  const [tailUntil, setTailUntil] = useState<number>()
-  // An answer that was previewed and has no whole history to draw.
+  // An answer that was previewed and has no whole-history line.
   const [previewedWithoutHistory, setPreviewedWithoutHistory] =
     useState<string>()
-  const [loading, setLoading] = useState(NOT_LOADING)
-  // Each fetch takes the next number of its kind. A response is used only if
-  // no later fetch of that kind has started, so a slow response cannot
-  // overwrite a newer one.
-  const latestRequest = useRef({ zoomed: 0, allTime: 0, tail: 0 })
+  const [hasWaitedForLiveContract, setHasWaitedForLiveContract] =
+    useState(false)
+  const [isLoadingZoomed, setIsLoadingZoomed] = useState(false)
+  const [wholeHistoryRequestCount, setWholeHistoryRequestCount] = useState(0)
+  // Each fetch of a zoomed window takes the next number. A response is used
+  // only if no later one has started, so a slow response cannot overwrite a
+  // newer one. Whole-history responses need no such number: a line is only
+  // replaced by one from a history that reaches at least as far, whatever
+  // order they arrive in.
+  const latestZoomRequest = useRef(0)
+  // The whole-history requests that have not come back.
+  const wholeHistoryRequests = useRef<WholeHistoryRequest[]>([])
+  // Goes up when the market changes, so a response for the last one is dropped.
+  const market = useRef(0)
   // The fetch that holds the most of the market's whole history, and the time
   // of the last bet in it. Read to place quiet answers in past windows.
   const wholeHistory = useRef<CoveredMultiPoints>()
-  // The answers a whole-history fetch that is still on its way will cover.
-  const allTimeOnItsWay = useRef<Set<string>>()
 
   useEffect(() => {
     // A different market: drop what was fetched for the last one.
-    latestRequest.current.zoomed++
-    latestRequest.current.allTime++
-    latestRequest.current.tail++
+    latestZoomRequest.current++
+    market.current++
+    wholeHistoryRequests.current = []
     wholeHistory.current = undefined
-    allTimeOnItsWay.current = undefined
     setZoomed(undefined)
-    setAllTime(undefined)
+    setFetchedLines(NO_LINES)
     setLive(NO_POINTS)
     setLatestLiveBetTime(undefined)
-    setTailUntil(undefined)
     setPreviewedWithoutHistory(undefined)
-    setLoading(NOT_LOADING)
+    setHasWaitedForLiveContract(false)
+    setIsLoadingZoomed(false)
+    setWholeHistoryRequestCount(0)
   }, [contract.id])
 
   // The page's own feed of new bets leaves redemptions out, and in a market
   // whose answers sum to one those are the rows that move the other answers.
-  // This takes every row that moved a probability.
+  // This takes every row that moved a probability, and no others: an order
+  // that has not been filled is a row too, and the chart has no use for it.
   const onNewBets = useEvent((msg: ServerMessage<'broadcast'>) => {
     const bets = (msg.data as { bets?: Bet[] }).bets ?? []
-    const latest = latestDefined(bets.map((bet) => bet.createdTime))
+    const moved = bets.filter(movedProbability)
+    const latest = latestDefined(moved.map((bet) => bet.createdTime))
     if (latest === undefined) return
     setLatestLiveBetTime((known) => latestDefined([known, latest]))
-    const moved = bets.filter(movedProbability)
-    if (moved.length > 0)
-      setLive((prev) =>
-        addLivePoints(
-          prev,
-          getMultiBetPointsFromBets(moved),
-          MAX_LIVE_POINTS_PER_ANSWER
-        )
+    setLive((prev) =>
+      addLivePoints(
+        prev,
+        getMultiBetPointsFromBets(moved),
+        MAX_LIVE_POINTS_PER_ANSWER
       )
+    )
   })
   useApiSubscription({
     topics: [`contract/${contract.id}/new-bet`],
     onBroadcast: onNewBets,
   })
 
-  // The answers on the chart that have no whole history to draw: neither a
-  // line the page was rendered with, nor a place in a fetched whole history.
+  // Each answer's whole-history line: the one the page was rendered with, or
+  // a fetched one that reaches at least as far.
+  const serverLines = useMemo(
+    () =>
+      getWholeHistoryLines({
+        data: points,
+        answerIds: serverPointAnswerIds,
+        latestBetTime: serverLastBetTime,
+      }),
+    [points, serverPointAnswerIds, serverLastBetTime]
+  )
+  const lines = useMemo(
+    () => withFurtherLines(serverLines, fetchedLines),
+    [serverLines, fetchedLines]
+  )
+  const allTimePoints = useMemo(
+    () => getWholeHistoryPoints(lines, live),
+    [lines, live]
+  )
+
+  // The answers on the chart that have no whole-history line.
   const answerIds = useMemo(
     () => contract.answers.map((a) => a.id),
     [contract.answers]
   )
   const getUncovered = (neededIds: string[]) =>
-    getUncoveredAnswerIds({
-      neededIds,
-      knownIds: answerIds,
-      serverIds: serverPointAnswerIds,
-      fetchedIds: allTime?.answerIds,
-    })
+    getUncoveredAnswerIds({ neededIds, knownIds: answerIds, lines })
   const uncoveredKey = useMemo(
     () =>
       getUncovered(
@@ -284,18 +319,12 @@ export const useMultiChoiceDataZoomFetcher = (props: {
           ? graphedAnswerIds
           : [...graphedAnswerIds, previewedWithoutHistory]
       ).join(','),
-    [
-      graphedAnswerIds,
-      previewedWithoutHistory,
-      answerIds,
-      serverPointAnswerIds,
-      allTime,
-    ]
+    [graphedAnswerIds, previewedWithoutHistory, answerIds, lines]
   )
   const hasWholeHistory = uncoveredKey === ''
 
-  // A previewed answer is not among the graphed ones. If it has no whole
-  // history, note it, which is what gets one fetched.
+  // A previewed answer is not among the graphed ones. If it has no line, note
+  // it, which is what gets one fetched.
   const onPreview = useEvent(() => {
     const id = previewStore.get()
     if (id !== undefined && getUncovered([id]).length > 0)
@@ -303,17 +332,15 @@ export const useMultiChoiceDataZoomFetcher = (props: {
   })
   useEffect(() => previewStore.subscribe(onPreview), [previewStore])
 
-  // A fetched whole history ends at the last bet the page knew of when it was
-  // asked for. The page's own points have the bets it has heard of since, and
-  // the live feed has those with the other answers' moves as well.
-  const allTimePoints = useMemo(
-    () =>
-      addMultiPoints(
-        allTime ? addMultiPoints(allTime.data, points) : points,
-        live
-      ),
-    [allTime, points, live]
-  )
+  // The last bet the page knows of: from the contract, from its own feed and
+  // from the live feed. Undefined if it knows of none. Only bets that moved a
+  // probability count in the two feeds, and the contract's last bet time is
+  // not moved on by an order that has not been filled.
+  const knownLastBetTime = latestDefined([
+    contract.lastBetTime,
+    latestPageBetTime,
+    latestLiveBetTime,
+  ])
 
   const fetchPoints = async (window: {
     min: number
@@ -328,9 +355,8 @@ export const useMultiChoiceDataZoomFetcher = (props: {
       // For an answer with no bet in a window that ends before the market's
       // last bet: where a full-history line stood when the window opened.
       // A history only answers for the time it covers. A fetched one covers
-      // up to the last bet that came back with it. The page's own covers up
-      // to the server render: the bets it has gained since come without the
-      // redemption rows that move the other answers.
+      // up to the last bet that came back with it, and the page's own up to
+      // the last bet the server made it from.
       (answerId) =>
         getKnownStepValueAt(
           [
@@ -365,74 +391,129 @@ export const useMultiChoiceDataZoomFetcher = (props: {
     }
   }
 
-  const fetchWindow = useEvent(
-    async (
-      window: { min: number; max: number; reachedLastBet: boolean },
-      kind: 'zoomed' | 'allTime'
-    ) => {
-      const request = ++latestRequest.current[kind]
-      const isLatest = () => request === latestRequest.current[kind]
-      setLoading((l) => ({ ...l, [kind]: true }))
-      if (kind === 'allTime')
-        allTimeOnItsWay.current = new Set(contract.answers.map((a) => a.id))
+  const fetchZoomed = useEvent(
+    async (window: { min: number; max: number; reachedLastBet: boolean }) => {
+      const request = ++latestZoomRequest.current
+      const isLatest = () => request === latestZoomRequest.current
+      setIsLoadingZoomed(true)
       try {
         const fetched = await fetchPoints(window)
-        if (!isLatest()) return
-        if (kind === 'allTime') setAllTime(fetched)
-        else setZoomed(fetched)
+        if (isLatest()) setZoomed(fetched)
       } catch (e) {
         // Leave what is on screen. The next zoom, or a reload, tries again.
         console.error('Failed to load chart points', e)
       } finally {
-        if (isLatest()) {
-          setLoading((l) => ({ ...l, [kind]: false }))
-          if (kind === 'allTime') allTimeOnItsWay.current = undefined
+        if (isLatest()) setIsLoadingZoomed(false)
+      }
+    }
+  )
+
+  // Fetches the market's whole history up to the last bet the page knows of,
+  // unless a request that will do is on its way.
+  const fetchWholeHistory = useEvent(
+    async (wanted: { answerIds: string[]; upTo?: number }) => {
+      if (isOnItsWay(wholeHistoryRequests.current, wanted)) return
+      const request: WholeHistoryRequest = {
+        answerIds,
+        max: (knownLastBetTime ?? createdTime) + 1,
+      }
+      const requestMarket = market.current
+      const isSameMarket = () => requestMarket === market.current
+      wholeHistoryRequests.current = [...wholeHistoryRequests.current, request]
+      setWholeHistoryRequestCount(wholeHistoryRequests.current.length)
+      try {
+        const fetched = await fetchPoints({
+          min: createdTime - FETCH_LEAD_MS,
+          max: request.max,
+          reachedLastBet: true,
+        })
+        if (isSameMarket())
+          setFetchedLines((kept) =>
+            withFurtherLines(kept, getWholeHistoryLines(fetched))
+          )
+      } catch (e) {
+        // Leave what is on screen. The next time one is called for tries again.
+        console.error('Failed to load chart points', e)
+      } finally {
+        if (isSameMarket()) {
+          wholeHistoryRequests.current = wholeHistoryRequests.current.filter(
+            (r) => r !== request
+          )
+          setWholeHistoryRequestCount(wholeHistoryRequests.current.length)
         }
       }
     }
   )
 
   const view = getViewWindow(viewXScale)
-  const isLaidOut = !!view
   const viewMin = view?.[0]
   const viewMax = view?.[1]
+  // The whole-history view is what the user is looking at.
+  const isWatchingWholeHistory = !!view && isShown && !isZoomed && isPageVisible
 
-  // The whole history, for the answers on the chart that have none. Asked for
-  // again only when that set of answers changes, and not while a fetch that
-  // will cover them is on its way: on a large market one can take a while, and
-  // the chart's answers can change several times in the meantime.
-  //
-  // It waits for the market's full answer list. A fetch only yields lines for
-  // the answers the contract had when it was made, so one made with the
-  // page's shortened list would have to be made again.
+  // A whole history is fetched with the live contract: it has the market's
+  // last bet, and every answer, which a fetch needs to make a line for each.
+  // If the live contract has not loaded a while after the chart came on
+  // screen, the fetch goes ahead with the contract there is, and is made
+  // again for what that one lacked once the live one loads.
   useEffect(() => {
-    if (!isLaidOut || isZoomed || uncoveredKey === '' || !hasAllAnswers) return
-    const onItsWay = allTimeOnItsWay.current
-    if (onItsWay && uncoveredKey.split(',').every((id) => onItsWay.has(id)))
+    if (!isWatchingWholeHistory || hasLiveContract || hasWaitedForLiveContract)
       return
-    fetchWindow(
-      {
-        min: createdTime - FETCH_LEAD_MS,
-        max: lastBetTime + 1,
-        reachedLastBet: true,
-      },
-      'allTime'
+    const timer = setTimeout(
+      () => setHasWaitedForLiveContract(true),
+      LIVE_CONTRACT_WAIT_MS
     )
-  }, [isLaidOut, isZoomed, uncoveredKey, hasAllAnswers])
+    return () => clearTimeout(timer)
+  }, [isWatchingWholeHistory, hasLiveContract, hasWaitedForLiveContract])
+  const canFetchWholeHistory =
+    isWatchingWholeHistory && (hasLiveContract || hasWaitedForLiveContract)
 
-  // A zoomed window, once the view settles. A new bet moves lastBetTime, but
+  // An answer on the chart has no line: fetch the whole history. Asked for
+  // again only when the answers without a line change, or the user comes back
+  // to the whole history or to the page.
+  useEffect(() => {
+    if (canFetchWholeHistory && uncoveredKey !== '')
+      fetchWholeHistory({ answerIds: uncoveredKey.split(',') })
+  }, [canFetchWholeHistory, uncoveredKey])
+
+  // A line on the chart is behind the last bet the page knows of: fetch the
+  // whole history again. This is checked at the moments named at the top, and
+  // not when a bet arrives.
+  const refreshIfBehind = useEvent(() => {
+    if (
+      canFetchWholeHistory &&
+      isBehindLastBet({ lines, answerIds: graphedAnswerIds, knownLastBetTime })
+    )
+      fetchWholeHistory({ answerIds: [], upTo: knownLastBetTime })
+  })
+  // On screen with a contract to fetch with, the live contract loading, back
+  // to the whole history, back to the page.
+  useEffect(() => {
+    refreshIfBehind()
+  }, [canFetchWholeHistory, hasLiveContract])
+  // The page's own feed turns up a bet the live feed did not deliver.
+  const isMissingPageBet = hasUndeliveredBet({
+    lines,
+    answerIds: graphedAnswerIds,
+    latestPageBetTime,
+    latestLiveBetTime,
+  })
+  useEffect(() => {
+    if (isMissingPageBet) refreshIfBehind()
+  }, [isMissingPageBet])
+
+  // A zoomed window, once the view settles. A new bet moves the last bet, but
   // its points arrive on the live feed, so it is no reason to fetch again.
   // The window is worked out when the timer fires, from the last bet known
   // then.
   const fetchZoomedView = useEvent((min: number, max: number) =>
-    fetchWindow(
+    fetchZoomed(
       getZoomWindow({
         view: { min, max },
         createdTime,
-        lastBetTime,
+        lastBetTime: knownLastBetTime ?? createdTime,
         leadMs: FETCH_LEAD_MS,
-      }),
-      'zoomed'
+      })
     )
   )
   useEffect(() => {
@@ -443,52 +524,6 @@ export const useMultiChoiceDataZoomFetcher = (props: {
     )
     return () => clearTimeout(timer)
   }, [isZoomed, viewMin, viewMax])
-
-  // The last bet the whole history on the chart is sure to include. Live bets
-  // do not move it on: the feed that brings them can miss some.
-  const completeUntil = latestDefined([
-    serverLastBetTime,
-    allTime?.latestBetTime,
-    tailUntil,
-  ])
-  // The page's own feed holds a bet the live feed never delivered: it was
-  // made before the page subscribed, or while the connection was down.
-  const hasUndeliveredBet =
-    completeUntil !== undefined &&
-    latestPageBetTime !== undefined &&
-    latestPageBetTime > completeUntil &&
-    latestPageBetTime > (latestLiveBetTime ?? -Infinity)
-
-  const fetchTail = useEvent(async () => {
-    const tail = getTailToReconcile({
-      completeUntil,
-      lastBetTime,
-      latestPageBetTime,
-    })
-    if (!tail) return
-    const request = ++latestRequest.current.tail
-    try {
-      const fetched = await fetchPoints({ ...tail, reachedLastBet: true })
-      if (request !== latestRequest.current.tail) return
-      setLive((prev) =>
-        addLivePoints(prev, fetched.data, MAX_LIVE_POINTS_PER_ANSWER)
-      )
-      setTailUntil((known) => latestDefined([known, fetched.latestBetTime]))
-    } catch (e) {
-      console.error('Failed to load recent chart points', e)
-    }
-  })
-  // Not on every bet: the live feed draws those. At the moments listed at the
-  // top, if the page knows of a bet later than the chart is sure of.
-  useEffect(() => {
-    if (isLaidOut && !isZoomed && isPageVisible) fetchTail()
-  }, [
-    isLaidOut,
-    isZoomed,
-    isPageVisible,
-    hasUndeliveredBet,
-    completeUntil === undefined,
-  ])
 
   const data = useMemo(
     () =>
@@ -518,6 +553,10 @@ export const useMultiChoiceDataZoomFetcher = (props: {
 
   return {
     points: data,
-    loading: isZoomed ? loading.zoomed : loading.allTime,
+    // While a whole history is fetched again for lines that are behind, they
+    // stay on screen, so nothing is shown as loading.
+    loading: isZoomed
+      ? isLoadingZoomed
+      : wholeHistoryRequestCount > 0 && !hasWholeHistory,
   }
 }

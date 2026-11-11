@@ -109,10 +109,12 @@ export const ContractOverview = memo(
     serverLastBetTime?: number
     // The answers the page was rendered with chart points for.
     serverPointAnswerIds?: string[]
-    // The time of the newest bet the page's own feed holds, if any.
+    // The time of the newest bet in the page's own feed that moved a
+    // probability, if there is one.
     latestPageBetTime?: number
-    // Whether the contract holds every answer of the market yet.
-    hasAllAnswers?: boolean
+    // Whether the contract is the live one, loaded since the page opened, or
+    // still the one the page was rendered with. Taken as live if not given.
+    hasLiveContract?: boolean
     showResolver: boolean
     showUnresolver: boolean
     resolutionRating?: ReactNode
@@ -186,7 +188,7 @@ export const ContractOverview = memo(
             serverLastBetTime={props.serverLastBetTime}
             serverPointAnswerIds={props.serverPointAnswerIds ?? NO_ANSWER_IDS}
             latestPageBetTime={props.latestPageBetTime}
-            hasAllAnswers={props.hasAllAnswers ?? true}
+            hasLiveContract={props.hasLiveContract ?? true}
             showResolver={showResolver}
             showUnresolver={showUnresolver}
             setShowResolver={setShowResolver}
@@ -380,15 +382,15 @@ const HOVER_PREVIEW_DELAY_MS = 150
 
 const ChoiceOverview = (props: {
   points: MultiPoints
-  // The time of the latest bet among the rows the server-rendered part of
-  // `points` was made from.
+  // The time of the latest bet among the rows `points` was made from.
   serverLastBetTime: number | undefined
   // The answers the page was rendered with chart points for.
   serverPointAnswerIds: string[]
-  // The time of the newest bet the page's own feed holds, if any.
+  // The time of the newest bet in the page's own feed that moved a
+  // probability, if there is one.
   latestPageBetTime: number | undefined
-  // Whether the contract holds every answer of the market yet.
-  hasAllAnswers: boolean
+  // Whether the contract is the live one, loaded since the page opened.
+  hasLiveContract: boolean
   contract: CPMMMultiContract
   showResolver: boolean
   showUnresolver: boolean
@@ -547,11 +549,11 @@ const ChoiceOverview = (props: {
     viewXScale: zoomParams?.viewXScale,
     points: props.points,
     createdTime: contract.createdTime,
-    lastBetTime: contract.lastBetTime ?? contract.createdTime,
     serverLastBetTime: props.serverLastBetTime,
     serverPointAnswerIds: props.serverPointAnswerIds,
     latestPageBetTime: props.latestPageBetTime,
-    hasAllAnswers: props.hasAllAnswers,
+    hasLiveContract: props.hasLiveContract,
+    isShown: !hideGraph,
     isZoomed: currentTimePeriod !== 'allTime',
     graphedAnswerIds,
     previewStore: hoverStore,
