@@ -20,16 +20,20 @@ const useEvent = load('client-common/src/hooks/use-event.ts', {
   },
 })
 const json = load('common/src/util/json.ts', {})
-const persistent = load('web/hooks/use-persistent-local-state.ts', {
-  react: React,
-  'common/util/json': json,
-  'web/lib/util/local': { safeLocalStorage: undefined },
-  'client-common/hooks/use-persistent-in-memory-state': {
-    isFunction: (v) => typeof v === 'function',
-  },
-  'client-common/hooks/use-event': useEvent,
-  'web/hooks/use-is-client': { useIsClient: () => true },
-})
+const persistentWith = (safeLocalStorage) =>
+  load('web/hooks/use-persistent-local-state.ts', {
+    react: React,
+    'common/util/json': json,
+    'web/lib/util/local': { safeLocalStorage },
+    'client-common/hooks/use-persistent-in-memory-state': {
+      isFunction: (v) => typeof v === 'function',
+    },
+    'client-common/hooks/use-event': useEvent,
+    'web/hooks/use-is-client': { useIsClient: () => true },
+  })
+// Storage blocked, unless a test brings a device's own.
+const persistent = persistentWith(undefined)
+const hubFold = load('web/components/browse-v2/hub-fold.ts', {})
 const random = load('common/src/util/random.ts', {})
 const ab = load('common/src/ab-test.ts', { './util/random': random })
 const rules = load('common/src/browse-rollout.ts', { './ab-test': ab })
@@ -279,8 +283,9 @@ function markets(api) {
 }
 
 // Exercise the actual Browse caller and pagination hook, replacing only the
-// surrounding widgets and network boundary.
-function browsePageFixture(query = {}, results = []) {
+// surrounding widgets and network boundary. `local` is the device's
+// localStorage; without it storage is blocked.
+function browsePageFixture(query = {}, results = [], local) {
   const empty = () => null
   const shared = {
     react: React,
@@ -320,7 +325,9 @@ function browsePageFixture(query = {}, results = []) {
       'web/components/widgets/visibility-observer': {
         LoadMoreUntilNotVisible: empty,
       },
-      'web/hooks/use-persistent-local-state': persistent,
+      'web/hooks/use-persistent-local-state': local
+        ? persistentWith(local)
+        : persistent,
       'web/hooks/use-is-mobile': { useIsMobile: () => false },
       'web/hooks/use-user': { useUser: () => null },
       'web/lib/firebase/users': { firebaseLogin: empty },
@@ -335,7 +342,7 @@ function browsePageFixture(query = {}, results = []) {
         }),
       },
       './hub-cards': { HubCards: empty },
-      './hub-fold': { isHubMarket: () => false },
+      './hub-fold': hubFold,
       './lens-bar': {
         ...lenses,
         LensBar: (props) => {
@@ -369,12 +376,160 @@ function browsePageFixture(query = {}, results = []) {
   )
   return {
     calls,
+    defaults: lenses.DEFAULT_FILTERS,
     get controls() {
       return controls
     },
     mount: () => mount(() => React.createElement(BrowseV2), true),
   }
 }
+
+function deviceStorage() {
+  const values = new Map()
+  return {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, String(value)),
+    removeItem: (key) => values.delete(key),
+  }
+}
+// One small house market that belongs in a hub, and one that does not.
+const hubMarket = {
+  id: 'hub',
+  outcomeType: 'BINARY',
+  creatorUsername: 'ManifoldSports',
+  uniqueBettorCount: 3,
+}
+const plainMarket = {
+  id: 'plain',
+  outcomeType: 'BINARY',
+  creatorUsername: 'someone',
+  uniqueBettorCount: 3,
+}
+const marketsShown = () =>
+  [...document.querySelectorAll('[data-market-id]')].map((element) =>
+    element.getAttribute('data-market-id')
+  )
+const press = (label) =>
+  act(async () =>
+    [...document.querySelectorAll('button')]
+      .find((button) => button.textContent.trim() === label)
+      .click()
+  )
+// A page load ends: what was in memory is gone, what is on the device stays.
+const leavePage = async () => {
+  await act(async () => mounted.splice(0).forEach((root) => root.unmount()))
+  document.body.innerHTML = ''
+}
+
+test('the hub-markets choice is remembered on the device, and nothing else is', async () => {
+  const local = deviceStorage()
+  const first = browsePageFixture({}, [hubMarket, plainMarket], local)
+  await first.mount()
+  assert.deepEqual(marketsShown(), ['plain'])
+  assert.equal(first.controls.filters.showHubMarkets, false)
+
+  await press('Show them here')
+  assert.deepEqual(marketsShown(), ['hub', 'plain'])
+  assert.equal(first.controls.filters.showHubMarkets, true)
+  assert.equal(local.getItem(hubFold.SHOW_HUB_MARKETS_KEY), 'true')
+  // A filter for this visit only.
+  await act(async () =>
+    first.controls.onFilters({ ...first.controls.filters, status: 'closed' })
+  )
+  assert.equal(first.calls.at(-1).filter, 'closed')
+  assert.equal(first.controls.filters.showHubMarkets, true)
+  await leavePage()
+
+  const second = browsePageFixture({}, [hubMarket, plainMarket], local)
+  await second.mount()
+  assert.deepEqual(marketsShown(), ['hub', 'plain'])
+  assert.equal(second.controls.filters.showHubMarkets, true)
+  assert.equal(second.controls.filters.status, 'open')
+  assert.equal(second.calls.at(-1).filter, 'open')
+
+  // Turning it off is remembered too.
+  await act(async () =>
+    second.controls.onFilters({
+      ...second.controls.filters,
+      showHubMarkets: false,
+    })
+  )
+  assert.deepEqual(marketsShown(), ['plain'])
+  await leavePage()
+  const third = browsePageFixture({}, [hubMarket, plainMarket], local)
+  await third.mount()
+  assert.deepEqual(marketsShown(), ['plain'])
+})
+
+test('every reset of the filters also forgets the hub-markets choice', async () => {
+  const local = deviceStorage()
+  const remember = () => local.setItem(hubFold.SHOW_HUB_MARKETS_KEY, 'true')
+  const remembered = () => local.getItem(hubFold.SHOW_HUB_MARKETS_KEY)
+
+  // "Reset filters" in the filter panel hands back the defaults.
+  remember()
+  let page = browsePageFixture({}, [hubMarket, plainMarket], local)
+  await page.mount()
+  assert.deepEqual(marketsShown(), ['hub', 'plain'])
+  await act(async () => page.controls.onFilters(page.defaults))
+  assert.deepEqual(marketsShown(), ['plain'])
+  assert.equal(remembered(), 'false')
+  await leavePage()
+
+  // "Clear search and filters" on an empty result.
+  remember()
+  page = browsePageFixture({ f: 'closed' }, [], local)
+  await page.mount()
+  assert.equal(page.controls.filters.status, 'closed')
+  assert.equal(page.controls.filters.showHubMarkets, true)
+  await press('Clear search and filters')
+  assert.equal(page.controls.filters.status, 'open')
+  assert.equal(page.controls.filters.showHubMarkets, false)
+  assert.equal(remembered(), 'false')
+  await leavePage()
+  page = browsePageFixture({}, [hubMarket, plainMarket], local)
+  await page.mount()
+  assert.deepEqual(marketsShown(), ['plain'])
+})
+
+test('filters set by a link or by widening a search leave the hub-markets choice alone', async () => {
+  const local = deviceStorage()
+  local.setItem(hubFold.SHOW_HUB_MARKETS_KEY, 'true')
+
+  // A link that sets a filter.
+  let page = browsePageFixture(
+    { ct: 'BINARY' },
+    [hubMarket, plainMarket],
+    local
+  )
+  await page.mount()
+  assert.equal(page.controls.filters.contractType, 'BINARY')
+  assert.equal(page.controls.filters.showHubMarkets, true)
+  assert.equal(local.getItem(hubFold.SHOW_HUB_MARKETS_KEY), 'true')
+  await leavePage()
+
+  // "Search all markets" on a search with no results.
+  page = browsePageFixture({ q: 'nothing like this', f: 'closed' }, [], local)
+  await page.mount()
+  assert.equal(page.calls.at(-1).filter, 'closed')
+  await press('Search all markets')
+  assert.equal(page.calls.at(-1).filter, 'all')
+  assert.equal(local.getItem(hubFold.SHOW_HUB_MARKETS_KEY), 'true')
+  await leavePage()
+  page = browsePageFixture({}, [hubMarket, plainMarket], local)
+  await page.mount()
+  assert.deepEqual(marketsShown(), ['hub', 'plain'])
+})
+
+test('with storage blocked the hub-markets choice lasts for the page', async () => {
+  const page = browsePageFixture({}, [hubMarket, plainMarket])
+  await page.mount()
+  assert.deepEqual(marketsShown(), ['plain'])
+  await press('Show them here')
+  assert.deepEqual(marketsShown(), ['hub', 'plain'])
+  await act(async () => page.controls.onFilters(page.defaults))
+  assert.deepEqual(marketsShown(), ['plain'])
+})
 
 test('Closing soonest preserves closing-week and substitutes open for all', async () => {
   const f = browsePageFixture({ s: 'close-date', f: 'closing-week' })

@@ -59,7 +59,8 @@ day of the first visit, so these can be read a week before the seven-day rates.
 `activated_1d` is the outcome to lead with: a signup whose buy order filled
 within a day of the first visit. A resting limit order counts from its first
 fill, not from when it was placed; the seven-day column still counts it from
-placement.
+placement. A bet with no fill history counts from when it was placed, and one
+whose history holds no usable fill does not count.
 
 Reported assignment conflicts include changes
 to either cohort or variant. Keep original assignment after manual switching

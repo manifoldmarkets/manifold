@@ -104,7 +104,7 @@ function BrowseV2Inner() {
     ALL_TOPICS,
     'browse-v2-topic'
   )
-  const [sessionFilters, setFilters] =
+  const [sessionFilters, setSessionFilters] =
     usePersistentInMemoryState<BrowseFilters>(
       DEFAULT_FILTERS,
       'browse-v2-filters'
@@ -117,6 +117,13 @@ function BrowseV2Inner() {
     SHOW_HUB_MARKETS_KEY
   )
   const filters: BrowseFilters = { ...sessionFilters, showHubMarkets }
+  // The filters as the person set them, a reset included: the hub choice in
+  // them is the one to remember. Filters set for them (a link, a wider
+  // search) go to setSessionFilters and leave the remembered choice alone.
+  const setFilters = (next: BrowseFilters) => {
+    setShowHubMarkets(!!next.showHubMarkets)
+    setSessionFilters(next)
+  }
   const [input, setInput] = usePersistentInMemoryState('', 'browse-v2-term')
   const [term, setTerm] = useState(input.trim())
   const [searchCategory, setSearchCategory] = useState<SearchCategory>('all')
@@ -175,7 +182,7 @@ function BrowseV2Inner() {
       (x) => li && x.key === Number(li)
     )?.key
     if (status || type || liquidity)
-      setFilters({
+      setSessionFilters({
         ...DEFAULT_FILTERS,
         ...(status ? { status } : {}),
         ...(type ? { contractType: type } : {}),
@@ -288,7 +295,6 @@ function BrowseV2Inner() {
   }
   const onFilters = (next: BrowseFilters) => {
     track('browse v2 filters', { ...next })
-    setShowHubMarkets(!!next.showHubMarkets)
     setFilters(next)
   }
   const onLayout = (next: BrowseLayout) => {
@@ -479,8 +485,13 @@ function BrowseV2Inner() {
                         error
                           ? () => retryMarkets()
                           : () => {
+                              // Hub markets are never folded out of search
+                              // results, so the choice has no part in this.
                               setTopicChoice(ALL_TOPICS)
-                              setFilters({ ...DEFAULT_FILTERS, status: 'all' })
+                              setSessionFilters({
+                                ...DEFAULT_FILTERS,
+                                status: 'all',
+                              })
                             }
                       }
                     >

@@ -137,29 +137,54 @@ with
       a.browser_id,
       true as signed_up_and_traded,
       -- A resting limit order keeps its creation time while it fills, so for
-      -- the one-day outcome it counts from its first fill, not from when it
-      -- was placed. Rows with no fill history fall back to creation time.
+      -- the one-day outcome a bet counts from its first fill that moved
+      -- money, and never from before it was placed. A row with no fill
+      -- history counts from when it was placed. A row whose history holds no
+      -- usable fill does not count. Every value is checked before it is
+      -- cast, so one odd row cannot stop the report.
       bool_or(
-        coalesce(
-          (
-            select
-              min((fill ->> 'timestamp')::numeric)
-            from
-              jsonb_array_elements(
+        case
+          when jsonb_typeof(b.data -> 'fills') = 'array' then case
+            when jsonb_array_length(b.data -> 'fills') = 0 then extract(
+              epoch
+              from
+                b.created_time
+            ) * 1000
+            else (
+              select
                 case
-                  when jsonb_typeof(b.data -> 'fills') = 'array' then b.data -> 'fills'
-                  else '[]'::jsonb
+                  when min(filled.filled_ms) is null then null
+                  else greatest(
+                    min(filled.filled_ms),
+                    extract(
+                      epoch
+                      from
+                        b.created_time
+                    ) * 1000
+                  )
                 end
-              ) fill
-            where
-              (fill ->> 'amount')::numeric > 0
-          ),
-          extract(
+              from
+                (
+                  select
+                    case
+                      when jsonb_typeof(fill -> 'timestamp') = 'number' then (fill ->> 'timestamp')::numeric
+                    end as filled_ms,
+                    case
+                      when jsonb_typeof(fill -> 'amount') = 'number' then (fill ->> 'amount')::numeric
+                    end as amount
+                  from
+                    jsonb_array_elements(b.data -> 'fills') fill
+                ) filled
+              where
+                filled.amount > 0
+            )
+          end
+          else extract(
             epoch
             from
               b.created_time
           ) * 1000
-        ) < extract(
+        end < extract(
           epoch
           from
             a.ts + interval '1 day'
@@ -220,6 +245,7 @@ select
   count(*) filter (
     where
       mature_day
+      and signed_up_day
       and traded_day
   )::int as activated_1d,
   count(*) filter (

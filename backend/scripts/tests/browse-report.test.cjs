@@ -374,6 +374,129 @@ test('one-day outcomes count only what landed within a day, for browsers a day o
   }
 })
 
+test('a fill history that is missing, empty or broken neither stops the report nor credits a bet wrongly', async () => {
+  const db = await database()
+  try {
+    const hour = (n) =>
+      new Date(Date.parse(day(1)) + n * 3600 * 1000).toISOString()
+    const stamp = (n) => Date.parse(hour(n))
+    // Each case is its own browser and its own report row: the hour it
+    // signed up, the hour its one bet was placed, that bet's data, and
+    // whether it is a bet within a day of the first visit.
+    const cases = [
+      ['no-data', 2, 3, null, true],
+      ['no-history', 2, 3, {}, true],
+      ['empty-history', 2, 3, { fills: [] }, true],
+      ['history-is-text', 2, 3, { fills: 'oops' }, true],
+      ['history-is-an-object', 2, 3, { fills: { amount: 10 } }, true],
+      [
+        'text-amount',
+        2,
+        3,
+        { fills: [{ amount: 'oops', timestamp: stamp(5) }] },
+        false,
+      ],
+      [
+        'text-time',
+        2,
+        3,
+        { fills: [{ amount: 10, timestamp: 'soon' }] },
+        false,
+      ],
+      ['no-time', 2, 3, { fills: [{ amount: 10 }] }, false],
+      ['null-fill', 2, 3, { fills: [null] }, false],
+      [
+        'bad-then-good',
+        2,
+        3,
+        {
+          fills: [
+            { amount: 'oops', timestamp: stamp(4) },
+            { amount: 5, timestamp: stamp(6) },
+          ],
+        },
+        true,
+      ],
+      [
+        'bad-then-late',
+        2,
+        3,
+        { fills: [{ amount: 10 }, { amount: 5, timestamp: stamp(40) }] },
+        false,
+      ],
+      // A fill stamped before its own order counts from when the order was
+      // placed: within the day for one, on day two for the other.
+      [
+        'backdated-early-order',
+        2,
+        3,
+        { fills: [{ amount: 10, timestamp: stamp(-5) }] },
+        true,
+      ],
+      [
+        'backdated-late-order',
+        2,
+        30,
+        { fills: [{ amount: 10, timestamp: stamp(10) }] },
+        false,
+      ],
+      // Signed up on day two. A fill stamped on day one cannot make that a
+      // day-one bet.
+      [
+        'backdated-late-signup',
+        30,
+        31,
+        { fills: [{ amount: 10, timestamp: stamp(20) }] },
+        false,
+      ],
+    ]
+    for (const [name, signup, placed, data] of cases) {
+      await db.query(
+        'insert into user_events (ts, name, data) values ($1,$2,$3)',
+        [
+          day(1),
+          rules.BROWSE_EXPOSURE_EVENT,
+          {
+            experiment: rules.BROWSE_EXPERIMENT,
+            environment: 'production',
+            browserId: name,
+            deviceId: name,
+            cohort: 'new-visitor',
+            variant: name,
+            mobile: false,
+            signedInAtEnrollment: false,
+          },
+        ]
+      )
+      await db.query('insert into users values ($1,$2)', [
+        `u-${name}`,
+        hour(signup),
+      ])
+      await db.query('insert into private_users values ($1,$2)', [
+        `u-${name}`,
+        { initialDeviceToken: name },
+      ])
+      await db.query(
+        'insert into contract_bets values ($1,$2,$3,10,20,false,false,$4)',
+        [`b-${name}`, `u-${name}`, hour(placed), data]
+      )
+    }
+    const rows = await report(db, args(day(1), day(10)))
+    assert.equal(rows.length, cases.length)
+    for (const [name, signup, , , counts] of cases) {
+      const row = rows.find((r) => r.variant === name)
+      assert.equal(row.mature_day_browsers, 1, name)
+      assert.equal(row.signups_1d, signup < 24 ? 1 : 0, name)
+      assert.equal(row.activated_1d, counts ? 1 : 0, name)
+      // The seven-day columns do not look at fill history at all.
+      assert.equal(row.signups_7d, 1, name)
+      assert.equal(row.activated_7d, 1, name)
+    }
+  } finally {
+    await db.close()
+  }
+})
+
 test('report groups 84,000 events without rescanning the event CTE per browser', async (t) => {
   const db = await database()
   try {
