@@ -55,7 +55,8 @@ import { XSTOCK_SPECS, fetchXStockUsdPrice } from './xstocks-price'
  *   nothing polls it, nothing probes its staleness, and create-perp refuses
  *   it. Registering early keeps the bounds, cadence and launch settings
  *   reviewed in one place; the flip to live is clearing this field once
- *   `reason` no longer holds.
+ *   `reason` no longer holds, together with the creation flag and the
+ *   launch-manifest move that the manifest check requires.
  * - 'retired': the series ended or every market on it settled. A feed with
  *   no new points is then complete, not stale: nothing polls, probes or
  *   publishes it, and create-perp refuses it. Its oracle_prices history stays

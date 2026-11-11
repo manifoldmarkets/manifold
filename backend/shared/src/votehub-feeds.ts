@@ -230,9 +230,12 @@ export const VANCE_FAVORABILITY_SPEC: VoteHubFeedSpec = {
  * Membership here is not the same as being published: publishVoteHubPoint
  * returns `inactive` without a request for any spec whose registry entry is
  * retired (the 2026 ballot) or awaiting its source (the 2028 pair), and the
- * job logs nothing for it. Keeping those specs listed means promotion and
- * retirement are each ONE change, in oracle-feeds.ts, rather than a list
- * edit that can be forgotten.
+ * job logs nothing for it. Keeping those specs listed means PUBLICATION is
+ * controlled in one place, the registry's lifecycle, rather than by a list
+ * edit that can be forgotten. Promoting or retiring a feed is still a
+ * registry change plus the matching launch-manifest move (creation flag,
+ * pending/launch/retired list); the manifest check fails until both halves
+ * agree. The pending entries in launch-manifest.ts list the full steps.
  */
 export const VOTEHUB_FEED_SPECS: readonly VoteHubFeedSpec[] = [
   GENERIC_BALLOT_2026_SPEC,
