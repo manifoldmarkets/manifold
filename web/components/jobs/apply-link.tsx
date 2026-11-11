@@ -8,11 +8,14 @@ import { track } from 'web/lib/service/analytics'
 
 // The role's application link (an employer tracking URL or a mailto) when it
 // has one; otherwise a mailto to the role's contact with the role in the subject.
+// A contact spelled out to deter scrapers ("dev at mnx.fi") gets no link.
 export const applyHref = (job: Job) =>
   job.applicationUrl ??
-  `mailto:${job.contactEmail}?subject=${encodeURIComponent(
-    `${job.title} via Manifold`
-  )}`
+  (/^[^\s@]+@[^\s@]+$/.test(job.contactEmail)
+    ? `mailto:${job.contactEmail}?subject=${encodeURIComponent(
+        `${job.title} via Manifold`
+      )}`
+    : undefined)
 
 export const isExternalUrl = (href: string) => /^https?:\/\//.test(href)
 

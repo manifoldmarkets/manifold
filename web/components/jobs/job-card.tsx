@@ -20,7 +20,7 @@ export function JobCard(props: { job: Job; employer: JobBoardEmployer }) {
   const [applied, setApplied] = useState(false)
   const detailsId = useId()
   const applyUrl = applyHref(job)
-  const external = isExternalUrl(applyUrl)
+  const external = applyUrl !== undefined && isExternalUrl(applyUrl)
 
   return (
     <article
@@ -62,10 +62,12 @@ export function JobCard(props: { job: Job; employer: JobBoardEmployer }) {
               />
               <dd>{job.location}</dd>
             </div>
-            <div>
-              <dt className="sr-only">Compensation</dt>
-              <dd>{job.comp}</dd>
-            </div>
+            {job.comp && (
+              <div>
+                <dt className="sr-only">Compensation</dt>
+                <dd>{job.comp}</dd>
+              </div>
+            )}
           </dl>
           <div className="border-ink-100 mt-2 flex items-center justify-end border-t pt-4 dark:border-slate-700/60">
             <span className="text-primary-600 group-hover:text-primary-700 flex items-center gap-1.5 text-sm font-semibold dark:text-indigo-300 dark:group-hover:text-indigo-200">
@@ -139,30 +141,30 @@ export function JobCard(props: { job: Job; employer: JobBoardEmployer }) {
           </ul>
         </section>
 
-        {(employer.applyInstructions || !external) && (
+        {(job.applyText || !external) && (
           <p className="text-ink-700 mb-6 select-text text-sm leading-relaxed dark:text-slate-300">
-            {employer.applyInstructions ?? (
-              <>To apply, email {job.contactEmail}.</>
-            )}
+            {job.applyText ?? <>To apply, email {job.contactEmail}.</>}
           </p>
         )}
 
-        <ApplyLink
-          href={applyUrl}
-          employer={employer}
-          job={job}
-          onApply={() => setApplied(true)}
-          className="bg-primary-600 hover:bg-primary-700 focus-visible:ring-primary-500 mb-5 inline-flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-        >
-          {external ? (
-            <>
-              Apply to {employer.name}
-              <ExternalLinkIcon className="h-4 w-4" aria-hidden />
-            </>
-          ) : (
-            <>Apply to {employer.name} by email</>
-          )}
-        </ApplyLink>
+        {applyUrl && (
+          <ApplyLink
+            href={applyUrl}
+            employer={employer}
+            job={job}
+            onApply={() => setApplied(true)}
+            className="bg-primary-600 hover:bg-primary-700 focus-visible:ring-primary-500 mb-5 inline-flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+          >
+            {external ? (
+              <>
+                Apply to {employer.name}
+                <ExternalLinkIcon className="h-4 w-4" aria-hidden />
+              </>
+            ) : (
+              <>Apply to {employer.name} by email</>
+            )}
+          </ApplyLink>
+        )}
 
         {applied && <AppliedNudge employer={employer} className="mb-5" />}
 

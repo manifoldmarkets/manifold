@@ -3,7 +3,8 @@ import { type JobEmployer } from 'common/job-seeker'
 export type Job = {
   title: string
   location: string
-  comp: string
+  // Collapsed-card pay line; leave it out when the employer publishes none.
+  comp?: string
   blurb: string
   intro: string
   whatYoullDo: string[]
@@ -20,6 +21,8 @@ export type Job = {
   // Tracking URL (opens in a new tab) or mailto. Without it the card emails
   // contactEmail with the role in the subject.
   applicationUrl?: string
+  // Shown above the apply button in place of "To apply, email <contactEmail>."
+  applyText?: string
 }
 
 // An employer on the board. Apply links are tracked and, for signed-in users,
@@ -28,9 +31,6 @@ export type Job = {
 export type JobBoardEmployer = {
   id: JobEmployer
   name: string
-  // Shown above the apply button on each of the employer's roles. Without it
-  // the card says "To apply, email <contactEmail>."
-  applyInstructions?: string
 }
 
 export const UPSTART: JobBoardEmployer = { id: 'upstart', name: 'Upstart' }
