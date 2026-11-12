@@ -56,21 +56,25 @@ const remote =
 //
 // On 11 Nov 2026 Upstart consolidated its Applied Scientist postings into three
 // levels under one requisition (1139); those replace the earlier Applied and
-// Staff Applied Scientist listings. Their base ranges were checked on Upstart's
-// Greenhouse board on 12 Nov. The board labels the Senior and Staff ranges
-// "Canada" but prices them in USD, and Staff's matches its earlier US range, so
-// both are shown as US. Senior total comp is the figure Upstart recruiting
-// gave; the others are estimated as above. The Intern and Principal base ranges
-// were verified against their sourceUrls on 25 Oct.
+// Staff Applied Scientist listings. On 12 Nov Upstart corrected their pay
+// ranges so each lists a US range in USD and a Canada range in CAD; all six
+// roles' ranges were re-checked on Upstart's Greenhouse board on 13 Nov. Senior
+// US total comp is the figure Upstart recruiting gave; the other US totals are
+// estimated as above. Canada totals scale the Canada base by the same ratio as
+// the role's US figures.
+//
+// At Upstart's request, "What we're looking for" draws on each posting's
+// preferred qualifications, with "quantitative graduate degree" in place of a
+// PhD because Upstart also hires candidates with master's degrees.
 export const UPSTART_JOBS: Job[] = [
   {
     title: 'Applied Scientist',
     team: 'Machine Learning · 1139',
-    location: 'Remote (US)',
+    location: 'Remote (US/Canada, excl. Quebec)',
     comp: 'US est. total comp ~$235k–$325k',
     compDetails: [
-      'US base: $141,500–$196,000',
-      'US est. total: ~$235k–$325k',
+      'US base: $141,500–$196,000; Canada base: $130,900–$160,000 CAD',
+      'US est. total: ~$235k–$325k; Canada est. total: ~$220k–$265k CAD',
     ],
     blurb:
       'Build and evaluate machine learning models that support lending decisions.',
@@ -81,8 +85,10 @@ export const UPSTART_JOBS: Job[] = [
       'Design experiments and work with engineers to run and refine models in production.',
     ],
     whatWereLookingFor: [
-      'Bachelor’s in a quantitative field or equivalent experience, and 0–2 years in machine learning or applied statistics; a PhD is preferred.',
-      'Python modeling and statistical methods such as hypothesis testing, regression, and predictive modeling.',
+      'A quantitative graduate degree (mathematics, applied mathematics, statistics, physics, econometrics, operations research, computer science, or a related field).',
+      'Knowledge of supervised learning, model evaluation, and feature engineering, with frameworks such as PyTorch, TensorFlow, or scikit-learn.',
+      'Experience working with large datasets in SQL or distributed data processing tools.',
+      'Clear communication of modeling approaches and experiment results to technical and nontechnical audiences.',
     ],
     contactEmail: UPSTART_EMAIL,
     applicationUrl: 'https://grnh.se/uwqm8abw1us',
@@ -96,8 +102,8 @@ export const UPSTART_JOBS: Job[] = [
     location: 'Remote (US/Canada, excl. Quebec)',
     comp: 'US est. total comp ~$300k–$396k',
     compDetails: [
-      'US base: $167,700–$231,800',
-      'US est. total: ~$300k–$396k',
+      'US base: $167,700–$231,800; Canada base: $159,000–$193,000 CAD',
+      'US est. total: ~$300k–$396k; Canada est. total: ~$285k–$330k CAD',
     ],
     blurb:
       'Lead machine learning modeling work from problem framing to production.',
@@ -108,8 +114,10 @@ export const UPSTART_JOBS: Job[] = [
       'Improve existing models through new features and rigorous experiments, and review the team’s methods.',
     ],
     whatWereLookingFor: [
-      'Bachelor’s in a quantitative field or equivalent experience, and 3+ years building and evaluating machine learning models; a PhD is preferred.',
-      'Python machine learning frameworks, experiment design, and experience running models in production.',
+      'A quantitative graduate degree (mathematics, applied mathematics, statistics, physics, econometrics, operations research, computer science, or a related field).',
+      '3+ years building and evaluating machine learning models, with knowledge of advanced methods such as ensemble learning, deep learning, or probabilistic modeling.',
+      'Judgment on tradeoffs among model performance, interpretability, reliability, and computational efficiency.',
+      'Experience with large-scale data processing or distributed machine learning systems, and communicating findings across technical and business teams.',
     ],
     contactEmail: UPSTART_EMAIL,
     applicationUrl: 'https://grnh.se/jucexs1a1us',
@@ -123,8 +131,8 @@ export const UPSTART_JOBS: Job[] = [
     location: 'Remote (US/Canada, excl. Quebec)',
     comp: 'US est. total comp ~$335k–$460k',
     compDetails: [
-      'US base: $199,500–$276,000',
-      'US est. total: ~$335k–$460k',
+      'US base: $199,500–$276,000; Canada base: $177,700–$220,000 CAD',
+      'US est. total: ~$335k–$460k; Canada est. total: ~$295k–$365k CAD',
     ],
     blurb: 'Set the technical direction for high-impact machine learning work.',
     intro:
@@ -134,8 +142,10 @@ export const UPSTART_JOBS: Job[] = [
       'Set best practices for model development and evaluation, and mentor scientists.',
     ],
     whatWereLookingFor: [
-      'Bachelor’s in a quantitative field or equivalent experience, and 4+ years building machine learning models or applying advanced statistics; a PhD is preferred.',
-      'Experience leading the design of production machine learning systems across multiple teams or stakeholders.',
+      'A quantitative graduate degree (mathematics, applied mathematics, statistics, physics, econometrics, operations research, computer science, or a related field).',
+      '4+ years building machine learning models, with knowledge of advanced techniques such as deep learning, ensemble methods, or probabilistic modeling.',
+      'Experience establishing modeling frameworks, evaluation standards, or reusable scientific tools adopted across teams.',
+      'A track record of mentoring scientists, influencing technical direction, and presenting recommendations to senior stakeholders.',
     ],
     contactEmail: UPSTART_EMAIL,
     applicationUrl: 'https://grnh.se/ar1jgwyz1us',
@@ -157,8 +167,9 @@ export const UPSTART_JOBS: Job[] = [
       'Develop models and use data analysis to investigate modeling questions.',
     ],
     whatWereLookingFor: [
-      'Bachelor’s, master’s, or PhD study in a quantitative field, on track to graduate by 2028.',
-      'Python machine learning or statistical modeling, basic SQL, communication, and teamwork.',
+      'Graduate study in a quantitative field (mathematics, statistics, physics, econometrics, computer science, or a related field), on track to graduate by summer 2028.',
+      'Experience with supervised learning, model evaluation, and feature engineering.',
+      'Advanced statistical theory (frequentist, Bayesian, or causal) or econometrics, and strong Python.',
     ],
     contactEmail: UPSTART_EMAIL,
     applicationUrl: 'https://grnh.se/9b5rkxlx1us',
@@ -185,6 +196,7 @@ export const UPSTART_JOBS: Job[] = [
     ],
     whatWereLookingFor: [
       '8+ years in data science or quantitative work influencing product or business strategy.',
+      'Experience with forecasting, spend allocation optimization, marketing incrementality, or attribution.',
       'Experimental design, causal inference, Python or equivalent, and strong stakeholder communication.',
     ],
     contactEmail: UPSTART_EMAIL,
@@ -210,6 +222,7 @@ export const UPSTART_JOBS: Job[] = [
       'Turn measurement into budget recommendations and mentor analysts.',
     ],
     whatWereLookingFor: [
+      'A quantitative graduate degree (statistics, economics, computer science, or a related field).',
       '8+ years in data science or quantitative work, with substantial marketing measurement experience.',
       'Incrementality testing, causal inference, marketing mix modeling, multi-touch attribution, Python, and SQL.',
     ],
