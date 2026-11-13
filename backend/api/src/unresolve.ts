@@ -203,6 +203,16 @@ const PAYOUT_NOT_REVERTED = `
 // answer or market was taken back: one from before that is an earlier
 // resolution's, whether or not this resolution paid anything itself. Any of
 // these failing is a history to sort out by hand.
+//
+// Those times are when a transaction began, not when it acted, so they cannot
+// rule out an unresolve that began before a resolution and reopened the
+// answer after it, leaving that resolution's payouts standing and dated after
+// its own rows. What marks such a history is a payout taken back more than
+// once: the unresolve this replaces took back the batch built latest, taken
+// back before or not, so the first time it took a batch that was not the
+// standing resolution's, it took one that had been taken back already (as two
+// unresolves at once did). With one in the answer or market, nothing is
+// undone here, whatever is standing.
 const getPayoutsToUndo = async (
   pg: SupabaseTransaction,
   contractId: string,
@@ -210,6 +220,27 @@ const getPayoutsToUndo = async (
   answerId: string | undefined,
   recorded: boolean
 ) => {
+  if (!recorded) {
+    const takenBackTwice = await pg.oneOrNone(
+      `select 1
+      from txns u
+      join txns p on p.id = u.data->'data'->>'revertsTxnId'
+      where u.category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
+        and u.to_id = $1
+        and ($2 is null or p.data->'data'->>'answerId' = $2)
+      group by p.id
+      having count(*) > 1
+      limit 1`,
+      [contractId, answerId]
+    )
+    if (takenBackTwice)
+      throw new APIError(
+        403,
+        `A payout of this ${
+          answerId ? 'answer' : 'market'
+        } was taken back more than once, so this resolution can't be unresolved.`
+      )
+  }
   const standing = await pg.map(
     `select *,
       coalesce((data->'data'->>'resolutionTime')::numeric = $2, false) as stamped,

@@ -1120,6 +1120,125 @@ describe('a resolution with no record of its own, undone by an admin', () => {
     expect((await answers())[0].resolution).toBe('YES')
   })
 
+  // A row carries the time its transaction began, not the time it acted. An
+  // unresolve by the code before this that began before a resolution, and
+  // acted after it, took the previous resolution's payout back a second time
+  // and left that resolution's standing, with rows dated before the payout it
+  // left. A later resolution that paid nothing then has one batch standing,
+  // written after every undo on file, and it is not its own. What gives the
+  // history away is the payout taken back twice.
+  it('is refused where a payout was taken back twice, though the one standing is dated after every undo', async () => {
+    const payoutIds = async () =>
+      (
+        await rows(
+          `select id from txns where category = 'CONTRACT_RESOLUTION_PAYOUT'
+          order by created_time, id`
+        )
+      ).map((r) => r.id as string)
+
+    // The first resolution, taken back.
+    expect(await resolve('A', 'YES')).toBe(ANTE)
+    await asFromBefore()
+    expect(await unresolve('A', ADMIN)).toBe(-ANTE)
+    const [first] = await payoutIds()
+    // The second, and the unresolve that reopened the answer after it.
+    expect(await resolve('A', 'YES')).toBe(ANTE)
+    await asFromBefore()
+    const [, second, ...others] = await payoutIds()
+    expect(others).toHaveLength(0)
+    expect(await unresolve('A', ADMIN)).toBe(-ANTE)
+    // As the code before this did it: the first resolution's payout taken
+    // back again, in a transaction that began before the second paid.
+    await rows(
+      `update txns
+      set data = jsonb_set(data, '{data,revertsTxnId}', to_jsonb($1::text)),
+        created_time =
+          (select created_time from txns where id = $2) - interval '1 millisecond'
+      where category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
+        and data->'data'->>'revertsTxnId' = $2`,
+      [first, second]
+    )
+    // The current resolution, as one that paid nothing and kept no record.
+    await resolve('A', 'YES')
+    await rows(
+      `delete from txns
+      where category = 'CONTRACT_RESOLUTION_PAYOUT' and id not in ($1, $2)`,
+      [first, second]
+    )
+    await asFromBefore()
+    // One batch standing, the second resolution's, dated after both undos.
+    expect(
+      await rows(
+        `select p.id,
+          p.created_time > (
+            select max(created_time) from txns
+            where category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
+          ) as after_every_undo
+        from txns p
+        where p.category = 'CONTRACT_RESOLUTION_PAYOUT'
+          and not exists (
+            select 1 from txns u
+            where u.category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
+              and u.data->'data'->>'revertsTxnId' = p.id)`
+      )
+    ).toEqual([{ id: second, after_every_undo: true }])
+
+    // Was let through, taking the second resolution's 100 back from users who
+    // had already paid it back as the first's.
+    await expectRefused(unresolve('A', ADMIN))
+    expect((await answers())[0].resolution).toBe('YES')
+  })
+
+  // The same, with nothing standing: no payout to take back, and still a
+  // history to sort out by hand.
+  it('is refused where a payout was taken back twice and nothing is standing', async () => {
+    expect(await resolve('A', 'YES')).toBe(ANTE)
+    await asFromBefore()
+    expect(await unresolve('A', ADMIN)).toBe(-ANTE)
+    await rows(
+      `insert into txns
+        (id, amount, category, data, from_id, from_type, to_id, to_type, token)
+      select 'again', amount, category, data, from_id, from_type, to_id,
+        to_type, token
+      from txns where category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT' limit 1`
+    )
+    // The current resolution, as one that paid nothing and kept no record.
+    await resolve('A', 'YES')
+    await rows(
+      `delete from txns where category = 'CONTRACT_RESOLUTION_PAYOUT'
+        and not exists (
+          select 1 from txns u
+          where u.category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
+            and u.data->'data'->>'revertsTxnId' = txns.id)`
+    )
+    await asFromBefore()
+
+    await expectRefused(unresolve('A', ADMIN))
+    expect((await answers())[0].resolution).toBe('YES')
+  })
+
+  // Another answer's payout taken back twice says nothing about this one.
+  it("is not refused for a payout of another answer's taken back twice", async () => {
+    expect(await resolve('B', 'YES')).toBe(ANTE)
+    await asFromBefore()
+    expect(await unresolve('B', ADMIN)).toBe(-ANTE)
+    await rows(
+      `insert into txns
+        (id, amount, category, data, from_id, from_type, to_id, to_type, token)
+      select 'again', amount, category, data, from_id, from_type, to_id,
+        to_type, token
+      from txns where category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT' limit 1`
+    )
+    expect(await resolve('A', 'YES')).toBe(ANTE)
+    await asFromBefore()
+
+    expect(await unresolve('A', ADMIN)).toBe(-ANTE)
+    // The other answer's history is still one to sort out by hand.
+    expect(await resolve('B', 'YES')).toBe(ANTE)
+    await asFromBefore()
+    await expectRefused(unresolve('B', ADMIN))
+  })
+
   it('is refused where the standing payouts say nothing of when they were built', async () => {
     expect(await resolve('A', 'YES')).toBe(ANTE)
     await asFromBefore()
