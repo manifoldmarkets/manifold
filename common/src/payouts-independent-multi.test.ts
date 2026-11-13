@@ -352,6 +352,64 @@ describe('cancelling an answer of an independent multiple choice market', () => 
     expect(refunded.adder).toBeCloseTo(50, 9)
   })
 
+  it('returns an older subsidy that reached an answer listed after it, beside older antes', () => {
+    // A and B were funded 25 each by one unrecorded ante. 150 came for the
+    // whole market, and before it drizzled C was listed for 25, its ante
+    // recorded against the whole market too. The 150 went to all three.
+    const answers = [
+      holding(answer('A', 0, T0), 25 + 50),
+      holding(answer('B', 1, T0), 25 + 50),
+      holding(answer('C', 2, T0 + 2 * HOUR), 25 + 50),
+    ]
+    const liquidities = [
+      provision('x', 'creator', 50, T0, { isAnte: true }),
+      provision('w', 'whale', 150, T0 + HOUR),
+      provision('c', 'adder', 25, T0, { isAnte: true }),
+    ]
+    // With the antes first in line for what C holds beyond its shares, they
+    // took the 50 of the subsidy there: 75 and 37.5 back for 50 and 25.
+    const refunded = refundedInAll(answers, liquidities)
+    expect(refunded.creator).toBeCloseTo(50, 9)
+    expect(refunded.adder).toBeCloseTo(25, 9)
+    expect(refunded.whale).toBeCloseTo(150, 9)
+  })
+
+  it('returns older antes of unequal answers and an older subsidy that reached a later one', () => {
+    // 200 funded A and B with 100 each, C was listed for 25 (its ante
+    // recorded against the whole market too), and 225 then went to all three.
+    const answers = [
+      holding(answer('A', 0, T0), 100 + 75),
+      holding(answer('B', 1, T0), 100 + 75),
+      holding(answer('C', 2, T0 + HOUR), 25 + 75),
+    ]
+    const liquidities = [
+      provision('x', 'creator', 200, T0, { isAnte: true }),
+      provision('c', 'adder', 25, T0, { isAnte: true }),
+      provision('w', 'whale', 225, T0 + DAY),
+    ]
+    // With the antes first in line: 222.22 and 27.78 back, and 200 of 225.
+    const refunded = refundedInAll(answers, liquidities)
+    expect(refunded.creator).toBeCloseTo(200, 9)
+    expect(refunded.adder).toBeCloseTo(25, 9)
+    expect(refunded.whale).toBeCloseTo(225, 9)
+  })
+
+  it('returns older antes of unequal answers and an older subsidy beside them', () => {
+    // The antes funded A with 150 and B with 50, and a subsidy of 200 went to
+    // both equally.
+    const answers = [
+      holding(answer('A', 0, T0), 150 + 100),
+      holding(answer('B', 1, T0), 50 + 100),
+    ]
+    const liquidities = [
+      provision('x', 'creator', 200, T0, { isAnte: true }),
+      provision('w', 'whale', 200, T0 + HOUR),
+    ]
+    const refunded = refundedInAll(answers, liquidities)
+    expect(refunded.creator).toBeCloseTo(200, 9)
+    expect(refunded.whale).toBeCloseTo(200, 9)
+  })
+
   it('returns older antes of unequal answers to their providers', () => {
     // The creator's 200 funded A and B, and C was listed for 40 when its ante
     // too was recorded against the whole market.

@@ -257,16 +257,17 @@ export const getIndependentMultiFixedPayouts = (
       // A cancellation refunds what providers put into this answer, where the
       // outcomes above pay out its pool by their weights: its own provisions,
       // its share of each whole-market provision (getCancelRefundShare), and
-      // what it holds beyond those: of the older antes first, whose funding
-      // of the answer is the surer, then of the provisions that went through
-      // the market's pending pool (getFurtherCancelRefund).
+      // what it holds beyond those, to the older provisions that can account
+      // for it (getFurtherCancelRefund). Older antes and older subsidies
+      // share that remainder in proportion to how much more of each the
+      // answer can hold: it can be either's, and giving one of them first
+      // call on it paid that one out of the other's across the market.
       const ownAnteAnswerIds = new Set(
         liquidities.flatMap((l) => (l.isAnte && l.answerId ? [l.answerId] : []))
       )
       const recordedLiquidities: LiquidityProvision[] = []
       const estimatedLiquidities: LiquidityProvision[] = []
-      const furtherAnteLiquidities: LiquidityProvision[] = []
-      const furtherPooledLiquidities: LiquidityProvision[] = []
+      const furtherLiquidities: LiquidityProvision[] = []
       for (const l of wholeMarketLiquidities) {
         const share = getCancelRefundShare(
           l,
@@ -283,11 +284,7 @@ export const getIndependentMultiFixedPayouts = (
             amount: share,
           })
         const further = getFurtherCancelRefund(l, share)
-        if (further > 0)
-          (l.isAnte ? furtherAnteLiquidities : furtherPooledLiquidities).push({
-            ...l,
-            amount: further,
-          })
+        if (further > 0) furtherLiquidities.push({ ...l, amount: further })
       }
       return getIndependentMultiCancelPayouts(
         answer,
@@ -295,7 +292,7 @@ export const getIndependentMultiFixedPayouts = (
         answerLiquidities.concat(recordedLiquidities),
         estimatedLiquidities,
         contractSubsidyPoolShare,
-        [furtherAnteLiquidities, furtherPooledLiquidities]
+        furtherLiquidities
       )
     }
   }
