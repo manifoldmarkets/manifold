@@ -9,6 +9,7 @@ import {
   isBinaryMulti,
   MultiContract,
 } from 'common/contract'
+import { getFittedProbDomain } from 'common/multi-chart'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { buildArray } from 'common/util/array'
 import { formatWithToken, maybePluralize } from 'common/util/format'
@@ -261,10 +262,7 @@ export const ChoiceContractChart = (props: {
       }
     })
 
-    return [
-      Math.floor(min * GRAPH_Y_DIVISOR) / GRAPH_Y_DIVISOR,
-      Math.ceil(max * GRAPH_Y_DIVISOR) / GRAPH_Y_DIVISOR,
-    ]
+    return getFittedProbDomain(min, max, GRAPH_Y_DIVISOR)
   }, [graphedData, zoomY, start, end, now])
 
   const xScale = scaleTime([start, rightmostDate], [0, width])
