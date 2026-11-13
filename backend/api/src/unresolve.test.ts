@@ -85,6 +85,13 @@ const fakeTx = (answers: AnswerRow[]) => {
     ),
     map: jest.fn(async () => []),
     many: jest.fn(async () => []),
+    // The edit the resolution recorded, which unresolving requires.
+    manyOrNone: jest.fn(async (sql: string) =>
+      /from contract_edits/.test(sql)
+        ? [{ id: 1, subsidy_pool: 0, answers: [] }]
+        : []
+    ),
+    none: jest.fn(async () => undefined),
     one: jest.fn(async (sql: string, params: unknown[]) => {
       if (!/update answers/.test(sql)) throw new Error(`unexpected: ${sql}`)
       const rows = matches(sql, params)
@@ -98,7 +105,8 @@ const fakeTx = (answers: AnswerRow[]) => {
 const run = (answers: AnswerRow[], contractId: string, answerId: string) => {
   const tx = fakeTx(answers)
   ;(createSupabaseDirectClient as jest.Mock).mockReturnValue({
-    tx: (fn: (t: typeof tx) => unknown) => fn(tx),
+    tx: (...args: unknown[]) =>
+      (args[args.length - 1] as (t: typeof tx) => unknown)(tx),
   })
   return {
     tx,

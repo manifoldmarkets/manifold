@@ -317,6 +317,20 @@ export const resolveMarketHelper = async (
       updatedContractAttrs
     )
 
+    // The market as this resolution found it, under this resolution's key and
+    // in its transaction, so the record exists exactly when the resolution
+    // does. It holds the pending subsidy the resolution took (the market's
+    // pool and the answers open to share it, each answer's own), which is
+    // what unresolving it puts back. Before anything is paid: it fails if
+    // another resolution holds the key.
+    await recordContractEdit(
+      unresolvedContract,
+      resolver.id,
+      Object.keys(updatedContractAttrs ?? {}),
+      getResolutionEditKey(answerId, resolutionTime),
+      tx
+    )
+
     log('updating contract & processing payouts', { updatedContractAttrs })
     const results = await tx.multi(`
       ${balanceUpdatesQuery}; -- 1
@@ -337,19 +351,6 @@ export const resolveMarketHelper = async (
     if (!answerId && outcome === 'CANCEL') {
       await undoUniqueBettorRewardsIfCancelResolution(tx, resolvedContract)
     }
-
-    // The market as this resolution found it, under this resolution's key and
-    // in its transaction, so the record exists exactly when the resolution
-    // does. It holds the pending subsidy the resolution took (the market's
-    // pool and the answers open to share it, each answer's own), which is
-    // what unresolving it puts back.
-    await recordContractEdit(
-      unresolvedContract,
-      resolver.id,
-      Object.keys(updatedContractAttrs ?? {}),
-      getResolutionEditKey(answerId, resolutionTime),
-      tx
-    )
 
     return {
       resolvedContract,
