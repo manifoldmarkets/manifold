@@ -66,14 +66,17 @@ type ResolutionEdit = {
 // after it committed, so it can be missing, and nothing on an unkeyed edit
 // says which resolution it is: the latest on file can be another answer's,
 // or the same one's from before an earlier unresolve. Unresolving used to
-// restore from whichever was latest. Such a resolution is not undone now:
-// taking its payouts back without knowing what to put back would leave the
-// pending subsidy it paid out with nobody.
+// restore from whichever was latest. Such a resolution is not undone now,
+// except by an admin (null is returned for one): its payouts are taken back
+// and no pending subsidy is put back, because nothing says how much it paid
+// out. What the old rule would have restored is logged, for the admin to
+// make good by hand if it was right (logUnrestoredSubsidy).
 const getResolutionEdit = async (
   pg: SupabaseTransaction,
   contractId: string,
   resolutionTime: number,
-  answerId: string | undefined
+  answerId: string | undefined,
+  userId: string
 ) => {
   const edits = await pg.manyOrNone<ResolutionEdit>(
     `select id,
@@ -86,14 +89,66 @@ const getResolutionEdit = async (
     limit 2`,
     [contractId, getResolutionEditKey(answerId, resolutionTime)]
   )
-  if (edits.length !== 1)
-    throw new APIError(
-      403,
-      `This ${
-        answerId ? 'answer' : 'market'
-      } was resolved before resolutions recorded what they pay out of pending liquidity, so it can't be unresolved.`
-    )
-  return edits[0]
+  if (edits.length === 1) return edits[0]
+  if (edits.length === 0 && isAdminId(userId)) return null
+  throw new APIError(
+    403,
+    `This ${
+      answerId ? 'answer' : 'market'
+    } was resolved before resolutions recorded what they pay out of pending liquidity, so only an admin can unresolve it.`
+  )
+}
+
+// For an admin undoing a resolution with no record of its own: the pending
+// subsidy the latest edit recorded while the market (and the answer) was
+// unresolved holds, which is what unresolving used to put back. It is not
+// put back, as that edit may be another resolution's. It is logged.
+const logUnrestoredSubsidy = async (
+  pg: SupabaseTransaction,
+  contractId: string,
+  resolutionTime: number,
+  answerId: string | undefined,
+  userId: string
+) => {
+  const latest = await pg.oneOrNone<{
+    subsidy_pool: number | null
+    answers: Partial<Answer>[] | null
+  }>(
+    `select (data->>'subsidyPool')::numeric as subsidy_pool,
+      case when jsonb_typeof(data->'answers') = 'array'
+        then data->'answers' end as answers
+    from contract_edits
+    where contract_id = $1
+      and coalesce((data->>'isResolved')::boolean, false) = false
+      and ($2::text is null or exists (
+        select 1 from jsonb_array_elements(
+          case when jsonb_typeof(data->'answers') = 'array'
+            then data->'answers' else '[]'::jsonb end
+        ) a
+        where a->>'id' = $2 and a->>'resolutionTime' is null
+      ))
+    order by id desc
+    limit 1`,
+    [contractId, answerId ?? null]
+  )
+  const answers = (latest?.answers ?? []).filter(
+    (a) => answerId === undefined || a.id === answerId
+  )
+  log.warn(
+    'Admin unresolved a resolution with no record of its own: payouts taken back, no pending subsidy restored',
+    {
+      contractId,
+      answerId,
+      resolutionTime,
+      userId,
+      marketSubsidyInLatestEdit: latest?.subsidy_pool ?? null,
+      answerSubsidyInLatestEdit: answers.flatMap((a) =>
+        a.id && positiveOrZero(a.subsidyPool) > 0
+          ? [{ answerId: a.id, subsidyPool: a.subsidyPool }]
+          : []
+      ),
+    }
+  )
 }
 
 // A payout already taken back by an earlier unresolve.
@@ -121,15 +176,22 @@ const PAYOUT_NOT_REVERTED = `
 // this one's if it was made by code that doesn't stamp them and the edit
 // found is an earlier resolution's: either way what the edit says to put
 // back is not what these payouts paid out.
+//
+// A resolution with no record (an admin's unresolve only) stamped nothing.
+// Its payouts are those standing, which have to be one batch: built at one
+// time, none stamped.
 const getPayoutsToUndo = async (
   pg: SupabaseTransaction,
   contractId: string,
   resolutionTime: number,
-  answerId: string | undefined
+  answerId: string | undefined,
+  recorded: boolean
 ) => {
   const standing = await pg.map(
     `select *,
-      coalesce((data->'data'->>'resolutionTime')::numeric = $2, false) as stamped
+      coalesce((data->'data'->>'resolutionTime')::numeric = $2, false) as stamped,
+      data->'data'->>'resolutionTime' is null as unstamped,
+      data->'data'->>'payoutStartTime' as batch
     from txns
     where category = 'CONTRACT_RESOLUTION_PAYOUT'
       and from_type = 'CONTRACT'
@@ -139,10 +201,17 @@ const getPayoutsToUndo = async (
     [contractId, resolutionTime, answerId],
     (r) => ({
       stamped: r.stamped === true,
+      unstamped: r.unstamped === true,
+      batch: r.batch as string | null,
       txn: convertTxn(r) as ContractOldResolutionPayoutTxn,
     })
   )
-  if (standing.some((payout) => !payout.stamped))
+  const own = recorded
+    ? standing.every((payout) => payout.stamped)
+    : standing.every(
+        (payout) => payout.unstamped && payout.batch === standing[0].batch
+      )
+  if (!own)
     throw new APIError(
       403,
       `Payouts of another resolution of this ${
@@ -388,15 +457,24 @@ const undoResolution = async (
   const contractId = contract.id
 
   // Both refuse before anything is written.
-  const edit = await getResolutionEdit(pg, contractId, resolutionTime, answerId)
+  const edit = await getResolutionEdit(
+    pg,
+    contractId,
+    resolutionTime,
+    answerId,
+    userId
+  )
 
   // mana and cash payouts
   const manaTxns = await getPayoutsToUndo(
     pg,
     contractId,
     resolutionTime,
-    answerId
+    answerId,
+    !!edit
   )
+  if (!edit)
+    await logUnrestoredSubsidy(pg, contractId, resolutionTime, answerId, userId)
 
   // // Get resolution fee txns to revert
   // const feeTxns = await pg.map(
@@ -449,7 +527,7 @@ const undoResolution = async (
   let answerUpdates: (Partial<Answer> & { id: string })[] = []
 
   // As resolveMarketHelper counted them when it split the market's pool.
-  const openAnswerIds = (edit.answers ?? []).flatMap((a) =>
+  const openAnswerIds = (edit?.answers ?? []).flatMap((a) =>
     a.id && !a.resolutionTime ? [a.id] : []
   )
   const marketResolved = !!(contract.isResolved || contract.resolutionTime)
@@ -471,24 +549,28 @@ const undoResolution = async (
   // others have drizzled or resolved meanwhile, the reopened answer takes a
   // different share of it next time than the one it gave back. The total is
   // the same; how it divides between the answers' providers can differ.
-  const marketPoolRestored =
-    answerId === undefined
-      ? positiveOrZero(edit.subsidy_pool)
-      : openAnswerIds.includes(answerId)
-      ? positiveOrZero((edit.subsidy_pool ?? 0) / openAnswerIds.length)
-      : 0
+  //
+  // With no record of the resolution (an admin's unresolve), nothing.
+  const marketPoolRestored = !edit
+    ? 0
+    : answerId === undefined
+    ? positiveOrZero(edit.subsidy_pool)
+    : openAnswerIds.includes(answerId)
+    ? positiveOrZero((edit.subsidy_pool ?? 0) / openAnswerIds.length)
+    : 0
   // The edit has been used: no later resolution can be taken for this one
   // (getResolutionEditKey).
-  await pg.none(
-    `update contract_edits set idempotency_key = $2 where id = $1`,
-    [
-      edit.id,
-      getUndoneResolutionEditKey(
-        getResolutionEditKey(answerId, resolutionTime),
-        edit.id
-      ),
-    ]
-  )
+  if (edit)
+    await pg.none(
+      `update contract_edits set idempotency_key = $2 where id = $1`,
+      [
+        edit.id,
+        getUndoneResolutionEditKey(
+          getResolutionEditKey(answerId, resolutionTime),
+          edit.id
+        ),
+      ]
+    )
   // Added to what the pool holds, not written over it: the resolution left
   // it empty, so anything there now came in since (a house subsidy does not
   // check that the market is open).
@@ -579,7 +661,7 @@ const undoResolution = async (
         order by answer_id, created_time desc
       ),
       -- The answers as the resolution being undone found them, in the edit it
-      -- recorded (getResolutionEdit).
+      -- recorded (getResolutionEdit). No rows without one.
       pre_resolution_answers as (
         select jsonb_array_elements(data->'answers') as answer_data
         from contract_edits
@@ -607,7 +689,7 @@ const undoResolution = async (
         ), 0)
       where answers.contract_id = $1
       returning *`,
-      [contractId, edit.id],
+      [contractId, edit?.id ?? null],
       convertAnswer
     )
     answerUpdates = newAnswers.map((answer) => ({
@@ -633,7 +715,7 @@ const undoResolution = async (
     // out, from the edit that resolution recorded (getResolutionEdit), added
     // to what it holds as for the market's.
     const preResolutionSubsidyPool = positiveOrZero(
-      edit.answers?.find((a) => a.id === answerId)?.subsidyPool
+      edit?.answers?.find((a) => a.id === answerId)?.subsidyPool
     )
     const answer = await pg.one(
       `

@@ -102,6 +102,7 @@ jest.mock('shared/websockets/helpers', () => ({
 import { unresolveMain } from 'api/unresolve'
 import { Answer } from 'common/answer'
 import { CPMMMultiContract, MarketContract } from 'common/contract'
+import { ENV_CONFIG } from 'common/envs/constants'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { convertAnswer } from 'common/supabase/contracts'
 import { User } from 'common/user'
@@ -118,6 +119,7 @@ import {
   getContract,
   getContractAndMetricsAndLiquidities,
   getUser,
+  log,
 } from './utils'
 
 jest.setTimeout(60_000)
@@ -287,12 +289,12 @@ const resolve = async (answerId: string, outcome: 'YES' | 'NO' | 'CANCEL') => {
   return paid - before
 }
 
-const unresolve = async (answerId?: string) => {
+const unresolve = async (answerId?: string, uid = CREATOR) => {
   await tick()
   const before = paid
   await unresolveMain(
     { contractId: 'market', answerId },
-    { uid: CREATOR } as any,
+    { uid } as any,
     {} as any
   )
   return paid - before
@@ -382,6 +384,15 @@ const resolveAt = async (
   }
   return paid - before
 }
+
+// A resolution as one made before this code left it: an edit with no key, and
+// payouts that don't carry their resolution.
+const asFromBefore = async () => {
+  await forgetEditKeys()
+  await rows(`update txns set data = data #- '{data,resolutionTime}'`)
+}
+
+const ADMIN = ENV_CONFIG.adminIds[0]
 
 // Refused, with nothing paid or taken back.
 const expectRefused = async (unresolving: Promise<unknown>) => {
@@ -994,6 +1005,83 @@ describe('liquidity added to the whole market, with the answers it went to', () 
   })
 })
 
+// The market's creator and moderators are refused (above). An admin can still
+// undo one: its payouts come back, and the pending subsidy it paid out is not
+// put back, because nothing says how much that was. What the old rule would
+// have restored goes to the log.
+describe('a resolution with no record of its own, undone by an admin', () => {
+  it("takes back an answer's payouts and puts no pending subsidy back", async () => {
+    await addUnrecordedSubsidy(1000)
+    expect(await resolve('A', 'YES')).toBe(ANTE + 500)
+    await asFromBefore()
+
+    await expectRefused(unresolve('A'))
+    expect(await unresolve('A', ADMIN)).toBe(-(ANTE + 500))
+    expect((await answers())[0].resolution).toBeUndefined()
+    // The 500 its resolution took stays out of the pool.
+    expect(contract.subsidyPool).toBe(500)
+    expect(jest.mocked(log.warn)).toHaveBeenCalledWith(
+      expect.stringContaining('no record of its own'),
+      expect.objectContaining({
+        answerId: 'A',
+        marketSubsidyInLatestEdit: 1000,
+      })
+    )
+    // Undone once: there is nothing standing to take back again.
+    expect(await resolve('A', 'NO')).toBe(ANTE + 250)
+  })
+
+  it("reports an answer's own pending subsidy that is not put back", async () => {
+    await addAnswerSubsidy('B', 400)
+    expect(await resolve('B', 'YES')).toBe(ANTE + 400)
+    await asFromBefore()
+
+    expect(await unresolve('B', ADMIN)).toBe(-(ANTE + 400))
+    expect(await pendingOf('B')).toBe(0)
+    expect(jest.mocked(log.warn)).toHaveBeenCalledWith(
+      expect.stringContaining('no record of its own'),
+      expect.objectContaining({
+        answerSubsidyInLatestEdit: [{ answerId: 'B', subsidyPool: 400 }],
+      })
+    )
+  })
+
+  it('is refused while payouts of more than one batch are standing', async () => {
+    expect(await resolve('A', 'YES')).toBe(ANTE)
+    await asFromBefore()
+    // A payout of an earlier resolution that was never taken back.
+    await rows(
+      `insert into txns
+        (id, amount, category, data, from_id, from_type, to_id, to_type, token)
+      values ('stray', 5, 'CONTRACT_RESOLUTION_PAYOUT', $1, 'market',
+        'CONTRACT', 'creator', 'USER', 'M$')`,
+      [{ data: { answerId: 'A', payoutStartTime: 1 } }]
+    )
+
+    await expectRefused(unresolve('A', ADMIN))
+    expect((await answers())[0].resolution).toBe('YES')
+  })
+
+  it('is refused where the payouts carry a resolution and its record is gone', async () => {
+    expect(await resolve('A', 'YES')).toBe(ANTE)
+    await forgetEditKeys()
+
+    await expectRefused(unresolve('A', ADMIN))
+  })
+
+  it('goes by the record where there is one', async () => {
+    await addUnrecordedSubsidy(1000)
+    expect(await resolve('A', 'YES')).toBe(ANTE + 500)
+
+    expect(await unresolve('A', ADMIN)).toBe(-(ANTE + 500))
+    expect(contract.subsidyPool).toBe(1000)
+    expect(jest.mocked(log.warn)).not.toHaveBeenCalledWith(
+      expect.stringContaining('no record of its own'),
+      expect.anything()
+    )
+  })
+})
+
 describe('taking back the payouts of the resolution being undone', () => {
   const payoutsOf = (amount: number) =>
     `category = 'CONTRACT_RESOLUTION_PAYOUT' and amount = ${amount}`
@@ -1293,6 +1381,21 @@ describe('unresolving a binary market', () => {
       resolutionTime: null,
       subsidyPool: 300,
     })
+  })
+
+  it('is undone by an admin with no record of the resolution, without its pending subsidy', async () => {
+    expect(await resolveMarket('YES')).toBe(400)
+    await asFromBefore()
+
+    await expectRefused(unresolve())
+    expect(await unresolve(undefined, ADMIN)).toBe(-400)
+    expect(contract.isResolved).toBe(false)
+    // Was put back as 300, from the latest edit on file.
+    expect(contract.subsidyPool).toBe(0)
+    expect(jest.mocked(log.warn)).toHaveBeenCalledWith(
+      expect.stringContaining('no record of its own'),
+      expect.objectContaining({ marketSubsidyInLatestEdit: 300 })
+    )
   })
 
   it('keeps a subsidy that came in while the market was resolved', async () => {
