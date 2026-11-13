@@ -11,6 +11,8 @@ import {
   TRUMP_APPROVAL_FEED_ID,
   VANCE_FAVORABILITY_FEED_ID,
   VOTEHUB_GENERIC_BALLOT_2026_FEED_ID,
+  VOTEHUB_GENERIC_BALLOT_2028_DEM_FEED_ID,
+  VOTEHUB_GENERIC_BALLOT_2028_REP_FEED_ID,
 } from './oracle'
 import { log } from './utils'
 
@@ -33,9 +35,12 @@ import { log } from './utils'
 // This module is the ADAPTER only: it fetches and shapes. How a series is
 // read and how the canary windows the polls is the published methodology in
 // common/perps/votehub-average.ts, where a UI can read the same rule the
-// oracle prices against. The three feeds are described by a `VoteHubFeedSpec`
-// each; the Trump spec reproduces the pre-generalisation feed exactly (same
-// feed id, key, choice, constants, and `[trump-approval]` log prefix).
+// oracle prices against. Each feed is described by a `VoteHubFeedSpec`; the
+// Trump spec reproduces the pre-generalisation feed exactly (same feed id,
+// key, choice, constants, and `[trump-approval]` log prefix). Whether a spec
+// is actually published is the registry's call (OracleFeedDef.lifecycle in
+// oracle-feeds.ts): a retired series, or one VoteHub has not started yet, is
+// skipped by publishVoteHubPoint before any request is made.
 //
 // Every request sets a timeout: without one a slow-trickling response never
 // times out (undici's body timeout resets per chunk), the job never finishes,
@@ -67,6 +72,16 @@ export type VoteHubFeedSpec = {
   /** Calendar days are Pacific, like the rest of the scheduler. */
   tz: typeof VOTEHUB_TZ
   rules: VoteHubAverageRules
+  /**
+   * The last day the provider's series is defined — VoteHub's `end_date` on
+   * `GET /averages`, which for a cycle-bound average is election day. Absent
+   * for open-ended series (approval, favorability). Documentation and market
+   * copy (the settlement sentence in create-votehub-perps.ts); the
+   * behavioural switch is the registry's `lifecycle`, set by hand once the
+   * series has gone quiet and the market is settled, because the provider
+   * posts the final value a day after `end_date`.
+   */
+  seriesEndsOn?: string
 }
 
 export type VoteHubPoll = {
@@ -101,35 +116,16 @@ export const TRUMP_APPROVAL_SPEC: VoteHubFeedSpec = {
 /**
  * Democratic share (%) of VoteHub's published 2026 generic-ballot average.
  *
- * ⚠️ KEY AND SHAPE NOT VERIFIED FROM THIS CODEBASE. This spec was written on
- * 2026-09-02 from a build environment whose egress policy blocks
- * polling.votehub.com, so the average key (`generic_ballot_2026`), the answer
- * key (`dem`) and the poll choice (`Dem`) were INFERRED from the pattern the
- * verified Trump feed follows. A reviewer of the introducing PR (#4034,
- * 2026-09-03) with network access reported that the live series at this key
- * matched the expected shape; that is second-hand here, so the operator
- * check below still applies before the first backfill (key `trump_approval`, answer key `approve`,
- * poll choice `Approve` — VoteHub keys the average's answer objects on the
- * lower-cased poll choice) and from the feed-id chosen for this market. Before
- * the backfill is run, confirm all three with
- * `backend/scripts/list-votehub-averages.ts`, which prints `GET /averages`
- * and the answer keys of each spec's latest entry, and correct this constant
- * if they differ. Nothing guesses at runtime: a wrong `averageKey` is an HTTP
- * 404 (fetch throws, job reports failure), a wrong `answerKey` reads as "no
- * usable published average" (nothing publishes), and a wrong
- * `pollAnswerChoice` only blinds the canary (publishes unchecked, with a
- * WARN naming the spec).
+ * RETIRED in the registry (see oracle-feeds.ts): the series is cycle-bound
+ * and ended on election day, 2026-11-03, and its market was settled on
+ * 2026-11-05. The spec stays for the settled market's history, the operator
+ * scripts, and as the verified template for the 2028 pair below — the key
+ * `generic_ballot_2026`, the answer keys `dem`/`rep` and the poll choices
+ * `Dem`/`Rep` were all confirmed against live responses while the feed ran
+ * (2026-09 to 2026-11).
  *
  * The price is the DEMOCRATIC SHARE, never the D-minus-R margin: a margin
  * can be zero or negative, and an oracle price must be strictly positive.
- * If VoteHub only publishes a margin for this average — i.e. the entry has
- * no per-party answer object — this feed must not be launched; do not
- * synthesise a share from a margin.
- *
- * Rules start from the Trump numbers. Generic-ballot polling runs at a
- * comparable density to presidential approval in a midterm year, so the same
- * floor should engage about as rarely; revisit after the first month of
- * cross-check gaps has been observed.
  */
 export const GENERIC_BALLOT_2026_SPEC: VoteHubFeedSpec = {
   feedId: VOTEHUB_GENERIC_BALLOT_2026_FEED_ID,
@@ -141,6 +137,64 @@ export const GENERIC_BALLOT_2026_SPEC: VoteHubFeedSpec = {
   pollAnswerChoice: 'Dem',
   logPrefix: '[votehub]',
   tz: VOTEHUB_TZ,
+  rules: { ...TRUMP_APPROVAL_RULES },
+  seriesEndsOn: '2026-11-03',
+}
+
+/**
+ * The 2028 generic ballot: Democratic and Republican shares of ONE VoteHub
+ * series, `generic_ballot_2028`, as two feeds. The series is read twice per
+ * run (once per spec) — VoteHub caches it for 300s, so that is two requests
+ * per five minutes against the same cached bytes, and not worth a shared
+ * fetch.
+ *
+ * What is verified and what is inferred (2026-11-09, live responses):
+ *   - Answer keys `dem` and `rep`, and poll choices `Dem` and `Rep`, are
+ *     VERIFIED from the 2026 series (`{ rep: { average }, dem: { average } }`
+ *     on every day) and its raw polls (Ipsos 11/02: Dem 52.0, Rep 44.0).
+ *   - The average key `generic_ballot_2028` is INFERRED from
+ *     `generic_ballot_2026`. It returned 404 on 2026-11-09 and VoteHub listed
+ *     no 2028 generic-ballot polls, which is why both feeds are registered
+ *     as awaiting their source. While they are awaiting, a 404 is
+ *     AMBIGUOUS: it means either that VoteHub has not published the series
+ *     yet or that they published it under a different key, and
+ *     list-votehub-averages.ts deliberately reports it as "still
+ *     unpublished" rather than as an error. So before promoting, read the
+ *     `GET /averages` listing that script prints first and confirm the key
+ *     is absent (still waiting) rather than present under another name
+ *     (fix the constant). Once the feeds are live, a wrong key is a plain
+ *     HTTP error from the publisher, reported like any other failure.
+ *
+ * Rules start from the Trump numbers, as the 2026 feed's did. Early in a
+ * cycle, generic-ballot polling is far thinner than presidential approval,
+ * so expect the canary to report "unchecked" often until 2028 — a WARN per
+ * publication, never a refusal — and widen `maxWindowDays` HERE if the floor
+ * fails on most days once the series exists.
+ */
+const GENERIC_BALLOT_2028_SHARED = {
+  averageKey: 'generic_ballot_2028',
+  subject: '2028',
+  pollType: 'generic-ballot',
+  logPrefix: '[votehub]',
+  tz: VOTEHUB_TZ,
+  seriesEndsOn: '2028-11-07',
+} as const
+
+export const GENERIC_BALLOT_2028_DEM_SPEC: VoteHubFeedSpec = {
+  ...GENERIC_BALLOT_2028_SHARED,
+  feedId: VOTEHUB_GENERIC_BALLOT_2028_DEM_FEED_ID,
+  label: '2028 generic ballot (Democratic share)',
+  answerKey: 'dem',
+  pollAnswerChoice: 'Dem',
+  rules: { ...TRUMP_APPROVAL_RULES },
+}
+
+export const GENERIC_BALLOT_2028_REP_SPEC: VoteHubFeedSpec = {
+  ...GENERIC_BALLOT_2028_SHARED,
+  feedId: VOTEHUB_GENERIC_BALLOT_2028_REP_FEED_ID,
+  label: '2028 generic ballot (Republican share)',
+  answerKey: 'rep',
+  pollAnswerChoice: 'Rep',
   rules: { ...TRUMP_APPROVAL_RULES },
 }
 
@@ -175,13 +229,25 @@ export const VANCE_FAVORABILITY_SPEC: VoteHubFeedSpec = {
 }
 
 /**
- * The feeds published by the `update-votehub-averages` job. Trump is NOT in
- * this list: it keeps its own job, name and log prefix, because GCP alert
+ * The feeds the `update-votehub-averages` job iterates. Trump is NOT in this
+ * list: it keeps its own job, name and log prefix, because GCP alert
  * policies are keyed on `[trump-approval]` and `update-trump-approval`.
+ *
+ * Membership here is not the same as being published: publishVoteHubPoint
+ * returns `inactive` without a request for any spec whose registry entry is
+ * retired (the 2026 ballot) or awaiting its source (the 2028 pair), and the
+ * job logs nothing for it. Keeping those specs listed means PUBLICATION is
+ * controlled in one place, the registry's lifecycle, rather than by a list
+ * edit that can be forgotten. Promoting or retiring a feed is still a
+ * registry change plus the matching launch-manifest move (creation flag,
+ * pending/launch/retired list); the manifest check fails until both halves
+ * agree. The pending entries in launch-manifest.ts list the full steps.
  */
 export const VOTEHUB_FEED_SPECS: readonly VoteHubFeedSpec[] = [
   GENERIC_BALLOT_2026_SPEC,
   VANCE_FAVORABILITY_SPEC,
+  GENERIC_BALLOT_2028_DEM_SPEC,
+  GENERIC_BALLOT_2028_REP_SPEC,
 ]
 
 /** Every VoteHub spec, for the scripts and the spec-table test. */
@@ -192,6 +258,18 @@ export const ALL_VOTEHUB_FEED_SPECS: readonly VoteHubFeedSpec[] = [
 
 export const getVoteHubFeedSpec = (feedId: string) =>
   ALL_VOTEHUB_FEED_SPECS.find((spec) => spec.feedId === feedId)
+
+/**
+ * A non-2xx VoteHub response, with the status kept so a caller can tell "no
+ * such series" (404 — the expected state of a feed awaiting its source) from
+ * an outage (5xx, which is never expected) without parsing the message.
+ */
+export class VoteHubHttpError extends Error {
+  constructor(what: string, readonly status: number, statusText: string) {
+    super(`VoteHub ${what} request failed: ${status} ${statusText}`)
+    this.name = 'VoteHubHttpError'
+  }
+}
 
 const voteHubFetch = async (url: string, what: string) => {
   const response = await fetch(url, {
@@ -205,9 +283,7 @@ const voteHubFetch = async (url: string, what: string) => {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   })
   if (!response.ok)
-    throw new Error(
-      `VoteHub ${what} request failed: ${response.status} ${response.statusText}`
-    )
+    throw new VoteHubHttpError(what, response.status, response.statusText)
   return response.json() as Promise<unknown>
 }
 

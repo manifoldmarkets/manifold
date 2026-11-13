@@ -31,7 +31,11 @@ import { slugify } from 'common/util/slugify'
 import { camelCase, first, uniqBy } from 'lodash'
 import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
-import { getMinTradingMarkAgeMs, getOracleFeed } from 'shared/oracle-feeds'
+import {
+  describeOracleFeedLifecycle,
+  getMinTradingMarkAgeMs,
+  getOracleFeed,
+} from 'shared/oracle-feeds'
 import {
   getPerpCreatorAccountMismatch,
   resolvePerpCreatorAccount,
@@ -58,6 +62,15 @@ export const requireOracleFeedForPerpCreation = (oracleFeedId: string) => {
     throw new APIError(
       400,
       `Feed "${oracleFeedId}" is not in the oracle feed registry — add an OracleFeedDef in backend/shared/src/oracle-feeds.ts first.`
+    )
+  // Before the generic flag, so the operator learns WHY: a retired series or
+  // one the provider has not published yet is never a market to create.
+  if (feedDef.lifecycle)
+    throw new APIError(
+      400,
+      `Feed "${oracleFeedId}" is ${describeOracleFeedLifecycle(
+        feedDef.lifecycle
+      )}; no perp market can be created on it.`
     )
   if (!feedDef.marketCreationEnabled)
     throw new APIError(

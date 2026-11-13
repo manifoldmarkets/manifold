@@ -22,6 +22,13 @@ export const NVDAX_USD_FEED_ID = 'nvdax-usd'
 // licence, different answer key — see backend/shared/src/votehub-feeds.ts.
 export const VOTEHUB_GENERIC_BALLOT_2026_FEED_ID = 'votehub-generic-ballot-2026'
 export const VANCE_FAVORABILITY_FEED_ID = 'vance-favorability'
+// The 2028 generic ballot, one feed per major party's share. Both read the
+// same VoteHub series (`generic_ballot_2028`) under different answer keys;
+// the 2026 feed carried the Democratic share only, hence the party suffix.
+export const VOTEHUB_GENERIC_BALLOT_2028_DEM_FEED_ID =
+  'votehub-generic-ballot-2028-dem'
+export const VOTEHUB_GENERIC_BALLOT_2028_REP_FEED_ID =
+  'votehub-generic-ballot-2028-rep'
 export const CRYPTO_FEAR_GREED_FEED_ID = 'crypto-fear-greed'
 // Defined in common because next-price eligibility (common/perps/orders.ts)
 // keys on it: Adjacent's stamp is a production time.
