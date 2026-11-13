@@ -374,6 +374,12 @@ export const computeFills = (
   let cpmmState = { ...state }
   let totalFees = noFees
   const currentBalanceByUserId = { ...balanceByUserId }
+  // What each maker has left counting only the fills that are made. The
+  // working balance above also loses the amount of a fill too small to count,
+  // which is dropped below and costs the maker nothing. That sizes a later
+  // fill of theirs a sliver low, and is left as it is so that no fill changes
+  // here. Whether a maker is out of balance is judged on this one.
+  const unspentByUserId = { ...balanceByUserId }
 
   let i = 0
   // Each fill takes the next resting order or moves the pool up to one, so a bet
@@ -389,6 +395,7 @@ export const computeFills = (
       cpmmState,
       matchedBet,
       currentBalanceByUserId[matchedBet?.userId ?? ''],
+      unspentByUserId[matchedBet?.userId ?? ''],
       freeFees
     )
 
@@ -404,21 +411,18 @@ export const computeFills = (
       // Matched against bet.
       i++
       const { userId } = maker.bet
-      // A fill too small to count is dropped: no shares change hands, and
-      // none of the maker's balance is spent.
-      const counts = !floatingEqual(maker.amount, 0)
       const makerBalance = currentBalanceByUserId[userId]
       if (makerBalance !== undefined) {
-        if (counts) {
+        if (maker.amount > 0) {
           currentBalanceByUserId[userId] = makerBalance - maker.amount
         }
         const adjustedMakerBalance = currentBalanceByUserId[userId]
-        // A fill that stopped at the maker's balance means they are out of
-        // it, whether or not the fill counts and whatever the subtraction
-        // above leaves. A balance that runs out mid-fill seldom lands on
-        // exactly 0: it keeps a sliver like 6e-15 (the fill is worked out from
-        // it as a double), too little to fill any order by an amount that
-        // counts.
+        // A fill that stops at what the maker has left means they are out of
+        // balance, whether or not the fill counts and whatever the
+        // subtraction above leaves. A balance that runs out mid-fill seldom
+        // lands on exactly 0: it keeps a sliver like 6e-15 (the fill is worked
+        // out from it as a double), too little to fill any order by an amount
+        // that counts.
         if (
           fill.stopsAtMakerBalance ||
           (adjustedMakerBalance !== undefined && adjustedMakerBalance <= 0)
@@ -427,8 +431,11 @@ export const computeFills = (
           ordersToCancel.push(maker.bet)
         }
       }
-      if (!counts) continue
+      if (floatingEqual(maker.amount, 0)) continue
 
+      const unspent = unspentByUserId[userId]
+      if (unspent !== undefined)
+        unspentByUserId[userId] = unspent - maker.amount
       takers.push(taker)
       makers.push(maker)
     }
@@ -449,6 +456,8 @@ const computeFill = (
   cpmmState: CpmmState,
   matchedBet: LimitBet | undefined,
   matchedBetUserBalance: number | undefined,
+  // What the maker has left counting only the fills made (see computeFills).
+  matchedBetUserUnspent: number | undefined,
   freeFees?: boolean
 ) => {
   const prob = getCpmmProbability(cpmmState.pool, cpmmState.p)
@@ -545,12 +554,16 @@ const computeFill = (
   const maxTakerShares = amount / (takerPrice + feesOnOneShare)
   const maxMakerShares = amountToFill / makerPrice
   const shares = Math.min(maxTakerShares, maxMakerShares)
-  // Whether it's the maker's balance that stops the fill where it does, and
-  // not the order's size or what the taker has left.
+  // Whether what the maker has left is what stops a fill here, and not the
+  // order's size or what the taker has left.
+  const unspent =
+    matchedBetUserUnspent === undefined
+      ? undefined
+      : Math.max(matchedBetUserUnspent, 0)
   const stopsAtMakerBalance =
-    matchableUserBalance !== undefined &&
-    matchableUserBalance < amountRemaining &&
-    maxMakerShares <= maxTakerShares
+    unspent !== undefined &&
+    unspent < amountRemaining &&
+    unspent / makerPrice <= maxTakerShares
 
   const takerFee = freeFees ? 0 : getTakerFee(shares, takerPrice)
   const fees = getFeesSplit(takerFee)

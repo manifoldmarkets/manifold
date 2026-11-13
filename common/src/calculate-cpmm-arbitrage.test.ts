@@ -1596,6 +1596,37 @@ describe('a maker out of balance in a sum-to-one market', () => {
     expect(sumBy(makers, 'amount')).toBeCloseTo(1.5e-8, 15)
   })
 
+  it('takes no more from a maker in a sale than it did', () => {
+    // Each leg of a sale starts from the makers' starting balances, which is
+    // a fault of its own. This maker has 1e-8 and orders on three answers, and
+    // two legs take 1e-8 each. Sizing the second answer's fills any other way
+    // takes a third, and the API then refuses the sale for overdrawing them.
+    const answers = withPools([
+      [95, 5],
+      [16, 84],
+      [94, 6],
+      [95, 5],
+    ])
+    const { newBetResult, otherBetResults } = calculateCpmmMultiSumsToOneSale(
+      answers,
+      answers[0],
+      50,
+      'YES',
+      undefined,
+      [
+        getLimitBet('b84', answers[1], 'NO', 'maker', 100, 0.84),
+        getLimitBet('b85', answers[1], 'NO', 'maker', 100, 0.85),
+        getLimitBet('c6', answers[2], 'NO', 'maker', 100, 0.06),
+        getLimitBet('d5', answers[3], 'NO', 'maker', 100, 0.05),
+      ],
+      { maker: 1e-8 },
+      noFees
+    )
+    const makers = [newBetResult, ...otherBetResults].flatMap((r) => r.makers)
+    expect(makers.map((m) => m.bet.id).sort()).toEqual(['c6', 'd5'])
+    expect(sumBy(makers, 'amount')).toBeCloseTo(2e-8, 15)
+  })
+
   it('leaves a limit order at a price where only such an order rests', () => {
     // Nothing fills: the pool is at the limit, and the one order across it
     // can't be paid for. The API has to place this order, not refuse it; see

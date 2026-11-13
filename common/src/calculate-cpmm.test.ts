@@ -848,10 +848,10 @@ describe('makers out of balance', () => {
     expect(cancelledIds(larger)).toEqual(['at22'])
   })
 
-  it('takes nothing off a balance for a fill too small to count', () => {
+  it("leaves a maker's next order alone when the taker had too little for the one before", () => {
     // Two orders of one maker's at 19%, and a taker with too little for a fill
-    // of either. The maker's 1.02e-8 is untouched: the 9.4e-9 that would have
-    // gone into the first is not gone when the second is reached.
+    // of either. The maker still has all of their 1.02e-8: the 9.4e-9 that
+    // would have gone into the first is no reason to cancel the second.
     const at19 = { pool: { YES: 81, NO: 19 }, p: 0.5, collectedFees: noFees }
     const resting = [
       order('first', 'YES', 0.19, 100),
@@ -892,6 +892,26 @@ describe('makers out of balance', () => {
     expect(enough.makers.map((m) => m.bet.id)).toEqual(['first'])
     expect(enough.makers[0].amount).toBeCloseTo(1.02e-8, 20)
     expect(cancelledIds(enough)).toEqual(['first', 'second'])
+  })
+
+  it('sizes fills as it always has', () => {
+    // A maker with 1e-8 and NO orders at 84% and 85%, on a pool at 84%. The
+    // 1e-8 comes to 9.999999999999999e-9 of the first, too little to count,
+    // and is dropped. It has always come off the balance the next fill is
+    // sized by all the same, so the second gets nothing. This change is to
+    // which orders are cancelled, not to what is filled: both are, since what
+    // the maker has left is what stops each.
+    const at84 = { pool: { YES: 16, NO: 84 }, p: 0.5, collectedFees: noFees }
+    const fills = computeFills(
+      at84,
+      'YES',
+      10,
+      undefined,
+      [order('at84', 'NO', 0.84, 100), order('at85', 'NO', 0.85, 100)],
+      { maker: 1e-8 }
+    )
+    expect(fills.makers).toEqual([])
+    expect(cancelledIds(fills)).toEqual(['at84', 'at85'])
   })
 
   it('fills what a small balance covers, then cancels the order', () => {
