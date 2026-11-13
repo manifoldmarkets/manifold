@@ -10,9 +10,15 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { contractColumnsToSelect, log } from 'shared/utils'
+import { computeProbChanges, MonthSource, ProbChanges } from './prob-changes'
 import { bulkUpdateAnswers } from './supabase/answers'
 import { bulkUpdateData } from './supabase/utils'
 
+// Day and week changes are recomputed from bet history on every run. The month
+// change is recomputed only by the daily full run (wholeMonth), which is the
+// one run that looks month-ago probabilities up. Every other run leaves each
+// stored month change exactly as it is, so between full runs the month change
+// is as of the last one.
 export async function updateContractMetricsCore(wholeMonth: boolean = false) {
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')
@@ -37,6 +43,7 @@ export async function updateContractMetricsCore(wholeMonth: boolean = false) {
     .filter((c) => isMultiCpmm(c) && c.shouldAnswersSumToOne)
     .map((c) => c.id)
   const answers = results[1].map(convertAnswer)
+  const answersByContractId = groupBy(answers, (a) => a.contractId)
   log(`Loaded ${allContracts.length} contracts.`)
   log(`Loaded ${answers.length} answers.`)
   const chunks = chunk(allContracts, 1000)
@@ -70,6 +77,14 @@ export async function updateContractMetricsCore(wholeMonth: boolean = false) {
         ? getBetProbsAt(pg, monthAgo, contractIds, sumToOneContractIds)
         : Promise.resolve({} as { [key: string]: number }),
     ])
+    // Where one market's or answer's month change comes from on this run.
+    const monthSource = (
+      key: string,
+      storedMonthChange: number | undefined
+    ): MonthSource =>
+      wholeMonth
+        ? { kind: 'loaded', monthAgoProb: monthAgoProbs[key] }
+        : { kind: 'kept', storedMonthChange }
 
     log('Loading volume...')
     const volumeAndCount = await getVolumeAndCountSince(pg, dayAgo, contractIds)
@@ -81,14 +96,7 @@ export async function updateContractMetricsCore(wholeMonth: boolean = false) {
 
     const contractUpdates: ({ id: string } & Partial<Contract>)[] = []
 
-    const answerUpdates: {
-      id: string
-      probChanges: {
-        day: number
-        week: number
-        month: number
-      }
-    }[] = []
+    const answerUpdates: { id: string; probChanges: ProbChanges }[] = []
 
     for (const contract of contracts) {
       let cpmmFields: Partial<CPMM> = {}
@@ -96,24 +104,20 @@ export async function updateContractMetricsCore(wholeMonth: boolean = false) {
         const { id } = contract
         const { poolProb, resProb, resTime } = currentContractProbs[id]
         const prob = resProb ?? poolProb
-        const dayAgoProb = dayAgoProbs[id] ?? poolProb
-        const weekAgoProb = weekAgoProbs[id] ?? poolProb
-        const monthAgoProb =
-          (wholeMonth ? monthAgoProbs[id] : contract.probChanges.month) ??
-          poolProb
         cpmmFields = {
           prob,
-          probChanges: {
-            day: resTime && resTime <= dayAgo ? 0 : prob - dayAgoProb,
-            week: resTime && resTime <= weekAgo ? 0 : prob - weekAgoProb,
-            month: resTime && resTime <= monthAgo ? 0 : prob - monthAgoProb,
-          },
+          probChanges: computeProbChanges({
+            now,
+            prob,
+            poolProb,
+            resolutionTime: resTime,
+            dayAgoProb: dayAgoProbs[id],
+            weekAgoProb: weekAgoProbs[id],
+            month: monthSource(id, contract.probChanges?.month),
+          }),
         }
       } else if (isMultiCpmm(contract)) {
-        const contractAnswers = answers.filter(
-          (a) => a.contractId === contract.id
-        )
-        for (const answer of contractAnswers) {
+        for (const answer of answersByContractId[contract.id] ?? []) {
           const { poolProb, resProb, resTime } =
             contract.shouldAnswersSumToOne && contract.resolutions
               ? {
@@ -124,18 +128,17 @@ export async function updateContractMetricsCore(wholeMonth: boolean = false) {
               : currentAnswerProbs[answer.id]
           const prob = resProb ?? poolProb
           const key = contract.id + answer.id
-          const dayAgoProb = dayAgoProbs[key] ?? poolProb
-          const weekAgoProb = weekAgoProbs[key] ?? poolProb
-          const monthAgoProb =
-            (wholeMonth ? monthAgoProbs[key] : answer.probChanges.month) ??
-            poolProb
 
           const answerCpmmFields = {
-            probChanges: {
-              day: resTime && resTime <= dayAgo ? 0 : prob - dayAgoProb,
-              week: resTime && resTime <= weekAgo ? 0 : prob - weekAgoProb,
-              month: resTime && resTime <= monthAgo ? 0 : prob - monthAgoProb,
-            },
+            probChanges: computeProbChanges({
+              now,
+              prob,
+              poolProb,
+              resolutionTime: resTime,
+              dayAgoProb: dayAgoProbs[key],
+              weekAgoProb: weekAgoProbs[key],
+              month: monthSource(key, answer.probChanges?.month),
+            }),
           }
           if (hasChanges(answer, answerCpmmFields)) {
             answerUpdates.push({
