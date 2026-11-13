@@ -45,7 +45,11 @@ jest.mock('./websockets/helpers', () => ({
 
 import { sumBy } from 'lodash'
 import { Answer } from 'common/answer'
+import { calculateCpmmPurchase } from 'common/calculate-cpmm'
+import { getDefaultMetric } from 'common/calculate-metrics'
 import { CPMMMultiContract, MarketContract } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
+import { noFees } from 'common/fees'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { User } from 'common/user'
 import { updateAnswer } from './supabase/answers'
@@ -98,7 +102,10 @@ const provision = (amount: number, answerId?: string) =>
 
 let contract: CPMMMultiContract
 let liquidities: LiquidityProvision[]
+let contractMetrics: ContractMetric[]
 let paid: number[]
+// What each resolution paid each user.
+let paidTo: Record<string, number>[]
 
 beforeEach(() => {
   jest.clearAllMocks()
@@ -133,7 +140,9 @@ beforeEach(() => {
       provision(LATE_ANTE, `answer-${2 + i}`)
     ),
   ]
+  contractMetrics = []
   paid = []
+  paidTo = []
 
   const multi = jest.fn().mockResolvedValue([[], [], [], []])
   jest.mocked(createSupabaseDirectClient).mockReturnValue({
@@ -151,7 +160,7 @@ beforeEach(() => {
         answers: contract.answers.map((a) => ({ ...a })),
       } as MarketContract,
       liquidities,
-      contractMetrics: [],
+      contractMetrics,
     }))
   jest.mocked(updateAnswer).mockImplementation((async (
     _tx: unknown,
@@ -177,9 +186,46 @@ beforeEach(() => {
     updates: { id: string; balance?: number }[]
   ) => {
     paid.push(sumBy(updates, (u) => u.balance ?? 0))
+    paidTo.push(Object.fromEntries(updates.map((u) => [u.id, u.balance ?? 0])))
     return 'select 1'
   }) as unknown as typeof bulkIncrementBalancesQuery)
 })
+
+// A market buy on an answer, with the production pool math, and the position
+// it leaves.
+const buy = (
+  userId: string,
+  index: number,
+  outcome: 'YES' | 'NO',
+  amount: number
+) => {
+  const answer = contract.answers[index]
+  const { shares, newPool, newP } = calculateCpmmPurchase(
+    {
+      pool: { YES: answer.poolYes, NO: answer.poolNo },
+      p: answer.p,
+      collectedFees: noFees,
+    },
+    amount,
+    outcome,
+    true
+  )
+  contract.answers[index] = {
+    ...answer,
+    poolYes: newPool.YES,
+    poolNo: newPool.NO,
+    p: newP,
+  }
+  contractMetrics.push({
+    ...getDefaultMetric(userId, 'market', answer.id),
+    id: contractMetrics.length,
+    totalShares: { YES: 0, NO: 0, [outcome]: shares },
+    totalAmountInvested: amount,
+    invested: amount,
+    hasShares: true,
+  } as ContractMetric)
+  return shares
+}
 
 const resolve = (index: number, outcome: 'YES' | 'NO' | 'CANCEL') =>
   resolveMarketHelper(contract as MarketContract, creator, creator, {
@@ -232,6 +278,24 @@ it('pays the market out for what was put into it, where it paid Ṁ89,988 more',
     'NO',
     ...Array(LATE_ANSWERS).fill('CANCEL'),
   ])
+})
+
+it('refunds a late answer its traders in full, and the subsidy only as far as it holds any', async () => {
+  const share = PENDING / 13
+  buy('alice', 2, 'YES', 2_000)
+  buy('bob', 2, 'NO', 500)
+
+  await resolve(2, 'CANCEL')
+
+  // What the traders put in backs their own shares, so it neither adds to nor
+  // takes from what the answer holds of the subsidy.
+  expect(paidTo[0].alice).toBeCloseTo(2_000, 9)
+  expect(paidTo[0].bob).toBeCloseTo(500, 9)
+  expect(paidTo[0][CREATOR]).toBeCloseTo(LATE_ANTE + share, 6)
+
+  // The first answers still pay out all they hold when they resolve.
+  await resolve(0, 'YES')
+  expect(paid[1]).toBeCloseTo(DRIZZLED_POOL + (PENDING - share) / 12, 6)
 })
 
 it('refunds the late answers their antes alone once the subsidy has all drizzled', async () => {

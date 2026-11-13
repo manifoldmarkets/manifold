@@ -8,8 +8,16 @@
 // The market below mirrors what the backend does to an independent market
 // (generateAntes, createAnswerCpmmMain, addContractLiquidity, drizzleMarket,
 // drizzleAnswer, resolveMarketHelper, undoResolution) with the production pool
-// and payout functions, and keeps its own ledger of the mana each answer holds.
-// No resolution may pay out more than that ledger says the answer has.
+// and payout functions, and keeps its own ledger of the mana each answer and
+// the market's pending subsidy pool hold. No resolution may pay out more than
+// that ledger says the answer has.
+//
+// Unresolving one answer is part of it (backend/api/src/unresolve.ts): it
+// used to put a resolved market's whole pool back whichever answer was
+// unresolved, though the last answer to resolve had paid it out. The real
+// handler is tested against PostgreSQL in
+// backend/shared/src/unresolve-market-subsidy.test.ts; here its rule is
+// mirrored so the random lifecycles cover it.
 import { sum, sumBy } from 'lodash'
 import { Answer } from './answer'
 import {
@@ -20,6 +28,7 @@ import {
   calculateCpmmPurchase,
   canDeployCpmmMulti2Liquidity,
   getCpmmProbability,
+  getPoolAtProb,
   isDeepenableProb,
 } from './calculate-cpmm'
 import { CPMMMultiContract } from './contract'
@@ -33,7 +42,7 @@ import {
 } from './payouts-fixed'
 
 type Mechanism = 'cpmm-multi-1' | 'cpmm-multi-2'
-type Outcome = 'YES' | 'NO' | 'CANCEL'
+type Outcome = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 type Position = { YES: number; NO: number; invested: number; sold: number }
 
 // The refund as it was before the fix: every whole-market provision at
@@ -58,10 +67,13 @@ const legacyCancelPayouts = (
 type Resolved = {
   payouts: { userId: string; payout: number }[]
   answerSubsidyPool: number
-  contractSubsidyPool: number
   held: number
-  marketResolved: boolean
+  // What the resolution took of the market's pending subsidy, by the ledger.
+  marketShare: number
 }
+
+// What recordContractEdit keeps of the market as a resolution found it.
+type Edit = { subsidyPool: number; openAnswerIds: string[] }
 
 class IndependentMarket {
   answers: Answer[] = []
@@ -72,6 +84,11 @@ class IndependentMarket {
   balances: Record<string, number> = {}
   // Mana each answer holds, counted as it moves, not from pools or shares.
   held: Record<string, number> = {}
+  // Mana the market's pending subsidy pool holds, counted the same way. It
+  // equals subsidyPool unless an unresolve restored more than its resolution
+  // took.
+  marketHeld = 0
+  edits: Edit[] = []
   // Whether the answer is sure to hold at least amount / number of answers of
   // every whole-market provision so far: it was open for each of them, and no
   // answer has been listed or reopened since the first. An answer that joins
@@ -87,7 +104,9 @@ class IndependentMarket {
   // Total by which cancellations of such answers refunded less than before.
   shortChanged = 0
   clock = 1
+  // The refund and the unresolve as they were before the fixes.
   useLegacyCancel = false
+  useLegacyUnresolve = false
 
   constructor(
     readonly mechanism: Mechanism,
@@ -175,6 +194,7 @@ class IndependentMarket {
   addLiquidity(userId: string, amount: number) {
     this.pay(userId, -amount)
     this.subsidyPool += amount
+    this.marketHeld += amount
     this.liquidities.push({
       id: `l${this.liquidities.length}`,
       userId,
@@ -227,9 +247,9 @@ class IndependentMarket {
             a.p = p
             a.prob = getCpmmProbability(pool, p)
             a.subsidyPool += pendingSubsidy
-            this.held[a.id] += amount / answers.length
           }
           this.subsidyPool -= amount
+          this.moveFromMarket(fraction, answers)
         }
       } else {
         const added = addCpmmMultiLiquidityToAnswersIndependently(
@@ -242,9 +262,9 @@ class IndependentMarket {
           a.poolYes = added[a.id].YES
           a.poolNo = added[a.id].NO
           a.prob = getCpmmProbability(added[a.id], 0.5)
-          this.held[a.id] += amount / answers.length
         }
         this.subsidyPool -= amount
+        this.moveFromMarket(fraction, answers)
       }
     }
     for (const a of this.open()) {
@@ -262,6 +282,14 @@ class IndependentMarket {
       a.prob = getCpmmProbability(newPool, newP)
       a.subsidyPool -= own
     }
+  }
+
+  // The ledger's side of a drizzle: that fraction of what the market's pool
+  // really holds, to the answers in equal shares.
+  private moveFromMarket(fraction: number, answers: Answer[]) {
+    const moved = fraction * this.marketHeld
+    for (const a of answers) this.held[a.id] += moved / answers.length
+    this.marketHeld -= moved
   }
 
   private position(userId: string, answerId: string) {
@@ -323,7 +351,13 @@ class IndependentMarket {
     })
   }
 
-  payoutsFor(answerId: string, outcome: Outcome, legacyCancel: boolean) {
+  payoutsFor(
+    answerId: string,
+    outcome: Outcome,
+    legacyCancel: boolean,
+    // For MKT.
+    probability?: number
+  ) {
     const answer = this.answer(answerId)
     return outcome === 'CANCEL' && legacyCancel
       ? legacyCancelPayouts(
@@ -338,25 +372,27 @@ class IndependentMarket {
           this.metrics(),
           this.liquidities,
           undefined,
-          undefined,
+          probability,
           answerId
         )
   }
 
   // resolveMarketHelper for one answer. Returns what it paid out.
-  resolve(answerId: string, outcome: Outcome) {
+  resolve(answerId: string, outcome: Outcome, probability = 0.5) {
     const answer = this.answer(answerId)
     const open = this.open()
     const contractShare = this.subsidyPool / open.length
+    const marketShare = this.marketHeld / open.length
     const { traderPayouts, liquidityPayouts } = this.payoutsFor(
       answerId,
       outcome,
-      this.useLegacyCancel
+      this.useLegacyCancel,
+      probability
     )
     const payouts = [...traderPayouts, ...liquidityPayouts]
     const paid = sumBy(payouts, (p) => p.payout)
 
-    const holds = this.held[answerId] + contractShare
+    const holds = this.held[answerId] + marketShare
     this.overpaid += Math.max(0, paid - holds - 1e-9 * (holds + 1))
     if (
       outcome === 'CANCEL' &&
@@ -376,29 +412,49 @@ class IndependentMarket {
     this.resolved[answerId] = {
       payouts,
       answerSubsidyPool: answer.subsidyPool,
-      contractSubsidyPool: this.subsidyPool,
       held: this.held[answerId],
-      marketResolved,
+      marketShare,
     }
+    // recordContractEdit: the market as this resolution found it.
+    this.edits.push({
+      subsidyPool: this.subsidyPool,
+      openAnswerIds: open.map((a) => a.id),
+    })
     for (const { userId, payout } of payouts) this.pay(userId, payout)
     this.held[answerId] = 0
     this.subsidyPool = marketResolved ? 0 : this.subsidyPool - contractShare
+    this.marketHeld -= marketShare
     answer.subsidyPool = 0
     answer.resolution = outcome
     answer.resolutionTime = this.clock++
     return paid
   }
 
-  // undoResolution for one answer: the payouts come back, the answer's pending
-  // subsidy is restored to what its resolution found, and the market's own
-  // pool only when this resolution had resolved the whole market.
+  // undoResolution for one answer: the payouts come back and the answer's
+  // pending subsidy is restored to what its resolution found. If the market
+  // is resolved, it reopens, and its pool is restored from the latest edit
+  // recorded while it was unresolved, which is the last resolution's: for
+  // whichever answer is unresolved as it was before, and now only for the
+  // answer that edit shows as the one still open, whose resolution took it.
   unresolve(answerId: string) {
     const answer = this.answer(answerId)
     const record = this.resolved[answerId]
     for (const { userId, payout } of record.payouts) this.pay(userId, -payout)
     this.held[answerId] = record.held
     answer.subsidyPool = record.answerSubsidyPool
-    if (record.marketResolved) this.subsidyPool = record.contractSubsidyPool
+    let restored = 0
+    if (this.open().length === 0) {
+      const edit = this.edits[this.edits.length - 1]
+      const isThisResolution =
+        edit.openAnswerIds.length === 1 && edit.openAnswerIds[0] === answerId
+      if (this.useLegacyUnresolve || isThisResolution) {
+        restored = edit.subsidyPool
+        this.subsidyPool = edit.subsidyPool
+      }
+    }
+    // Only what this answer's resolution took of the pool can come back to
+    // it: the rest of what was restored is not there.
+    this.marketHeld += Math.min(restored, record.marketShare)
     answer.resolution = undefined
     answer.resolutionTime = undefined
     delete this.resolved[answerId]
@@ -628,6 +684,61 @@ describe('cancelling an answer that was open for every subsidy', () => {
   })
 })
 
+describe('unresolving an answer of a resolved market', () => {
+  // Resolve A, add a subsidy, resolve B, which pays it out, unresolve A,
+  // resolve A again.
+  const reopened = (mechanism: Mechanism, legacyUnresolve: boolean) => {
+    const market = new IndependentMarket(mechanism, 'creator', 2, 200)
+    market.useLegacyUnresolve = legacyUnresolve
+    market.resolve('a0', 'YES')
+    market.addLiquidity('creator', 1000)
+    expect(market.resolve('a1', 'YES')).toBeCloseTo(1100, 9)
+    market.unresolve('a0')
+    return market
+  }
+
+  it.each(['cpmm-multi-1', 'cpmm-multi-2'] as const)(
+    'put the subsidy the last answer had paid out back in the pool before, on %s',
+    (mechanism) => {
+      for (const outcome of ['YES', 'NO', 'MKT', 'CANCEL'] as const) {
+        const market = reopened(mechanism, true)
+        expect(market.subsidyPool).toBe(1000)
+        // The cancellation is limited to amount / number of answers.
+        const again = outcome === 'CANCEL' ? 600 : 1100
+        expect(market.resolve('a0', outcome)).toBeCloseTo(again, 9)
+        expect(market.minted()).toBeCloseTo(again - 100, 9)
+        expect(market.overpaid).toBeCloseTo(again - 100, 6)
+      }
+    }
+  )
+
+  it.each(['cpmm-multi-1', 'cpmm-multi-2'] as const)(
+    'leaves it out of the pool, on %s',
+    (mechanism) => {
+      for (const outcome of ['YES', 'NO', 'MKT', 'CANCEL'] as const) {
+        const market = reopened(mechanism, false)
+        expect(market.subsidyPool).toBe(0)
+        expect(market.resolve('a0', outcome)).toBeCloseTo(100, 9)
+        expect(market.minted()).toBeCloseTo(0, 9)
+        expect(market.overpaid).toBe(0)
+      }
+    }
+  )
+
+  it('still puts the pool back for the answer whose resolution took it', () => {
+    const market = new IndependentMarket('cpmm-multi-2', 'creator', 2, 200)
+    market.addLiquidity('creator', 1000)
+    market.resolve('a0', 'YES')
+    expect(market.resolve('a1', 'NO')).toBeCloseTo(600, 9)
+    market.unresolve('a1')
+    expect(market.subsidyPool).toBe(500)
+    expect(market.marketHeld).toBe(500)
+    expect(market.resolve('a1', 'YES')).toBeCloseTo(600, 9)
+    expect(market.minted()).toBeCloseTo(0, 9)
+    expect(market.overpaid).toBe(0)
+  })
+})
+
 describe('what an answer holds', () => {
   const answer = (poolYes: number, poolNo: number, subsidyPool = 0) =>
     ({ id: 'a', poolYes, poolNo, subsidyPool } as Answer)
@@ -643,6 +754,60 @@ describe('what an answer holds', () => {
         3
       )
     ).toBe(170 + 7 + 3)
+  })
+
+  // One subsidy is enough for that where the answer opened at custom odds:
+  // the opening threw shares of one side away, the subsidy of the other.
+  it('counts a cpmm-multi-1 answer opened at custom odds short after a subsidy on the other side of 50%', () => {
+    const opening = getPoolAtProb(0.2, 100)
+    expect(opening).toEqual({ YES: 100, NO: 25 })
+    const bought = calculateCpmmPurchase(
+      { pool: opening, p: 0.5, collectedFees: noFees },
+      200,
+      'YES',
+      true
+    )
+    expect(getCpmmProbability(bought.newPool, 0.5)).toBeGreaterThan(0.5)
+    const { newPool } = addCpmmLiquidityFixedP(
+      bought.newPool as { YES: number; NO: number },
+      100
+    )
+    const subsidised = {
+      ...answer(newPool.YES, newPool.NO),
+      contractId: 'c',
+    } as Answer
+    const position = {
+      userId: 'trader',
+      answerId: 'a',
+      totalShares: { YES: bought.shares, NO: 0 },
+      totalAmountInvested: 200,
+      totalAmountSold: 0,
+    } as unknown as ContractMetric
+
+    // It holds its ante of 100, the bet of 200 and the subsidy of 100.
+    expect(
+      getIndependentMultiAnswerBacking(subsidised, [position], 0)
+    ).toBeCloseTo(325, 9)
+    const { traderPayouts, liquidityPayouts } = getPayouts(
+      'CANCEL',
+      {
+        mechanism: 'cpmm-multi-1',
+        shouldAnswersSumToOne: false,
+        answers: [subsidised],
+        subsidyPool: 0,
+      } as unknown as CPMMMultiContract,
+      [position],
+      [
+        { userId: 'own', answerId: 'a', amount: 100 },
+        { userId: 'whole', amount: 100 },
+      ] as LiquidityProvision[],
+      undefined,
+      undefined,
+      'a'
+    )
+    expect(traderPayouts).toEqual([{ userId: 'trader', payout: 200 }])
+    expect(liquidityPayouts[0]).toEqual({ userId: 'own', payout: 100 })
+    expect(liquidityPayouts[1].payout).toBeCloseTo(25, 9)
   })
 
   it('refunds no whole-market liquidity out of a pool that is not a number', () => {
@@ -711,12 +876,13 @@ const mulberry32 = (seed: number) => () => {
 const randomLifecycle = (
   mechanism: Mechanism,
   seed: number,
-  legacy: boolean
+  // Which of the two behaviours to run as they were before the fixes.
+  legacy: { cancel?: boolean; unresolve?: boolean } = {}
 ) => {
   const random = mulberry32(seed)
   const pick = <T>(items: T[]) => items[Math.floor(random() * items.length)]
   const users = ['creator', 'alice', 'bob', 'carol']
-  const outcomes: Outcome[] = ['YES', 'NO', 'CANCEL', 'CANCEL']
+  const outcomes: Outcome[] = ['YES', 'NO', 'MKT', 'CANCEL', 'CANCEL']
 
   const market = new IndependentMarket(
     mechanism,
@@ -724,7 +890,8 @@ const randomLifecycle = (
     1 + Math.floor(random() * 4),
     100 + Math.floor(random() * 5000)
   )
-  market.useLegacyCancel = legacy
+  market.useLegacyCancel = !!legacy.cancel
+  market.useLegacyUnresolve = !!legacy.unresolve
 
   const steps = 20 + Math.floor(random() * 40)
   for (let step = 0; step < steps; step++) {
@@ -755,12 +922,13 @@ const randomLifecycle = (
           1 + random() * 3000
         )
     } else if (roll < 0.93) {
-      if (open.length > 0) market.resolve(pick(open).id, pick(outcomes))
+      if (open.length > 0)
+        market.resolve(pick(open).id, pick(outcomes), random())
     } else if (closed.length > 0) {
       market.unresolve(pick(closed).id)
     }
   }
-  for (const a of market.open()) market.resolve(a.id, pick(outcomes))
+  for (const a of market.open()) market.resolve(a.id, pick(outcomes), random())
   return market
 }
 
@@ -772,7 +940,7 @@ describe('random lifecycles of an independent market', () => {
     'never pay out more than an answer holds, on %s',
     (mechanism) => {
       for (let seed = 1; seed <= SEEDS; seed++) {
-        const market = randomLifecycle(mechanism, seed, false)
+        const market = randomLifecycle(mechanism, seed)
         const moved = sum(Object.values(market.balances).map(Math.abs))
         if (market.overpaid > 0 || market.minted() > 1e-9 * moved + 1e-6)
           throw new Error(
@@ -792,7 +960,7 @@ describe('random lifecycles of an independent market', () => {
   it('refund an answer that holds its share of every subsidy exactly as before, on cpmm-multi-2', () => {
     let refunds = 0
     for (let seed = 1; seed <= SEEDS; seed++) {
-      const market = randomLifecycle('cpmm-multi-2', seed, false)
+      const market = randomLifecycle('cpmm-multi-2', seed)
       if (market.shortChanged > 0)
         throw new Error(`seed ${seed}: changed by ${market.shortChanged}`)
       refunds += market.fullShareRefunds
@@ -801,18 +969,34 @@ describe('random lifecycles of an independent market', () => {
     expect(refunds).toBeGreaterThan(SEEDS / 10)
   })
 
-  // The check has teeth: the refund as it was fails it.
+  // The check has teeth: the refund as it was fails it,
   it.each(['cpmm-multi-1', 'cpmm-multi-2'] as const)(
-    'did pay out more than answers held before, on %s',
+    'did pay out more than answers held with the refund as it was, on %s',
     (mechanism) => {
       let overpaying = 0
       let minting = 0
       for (let seed = 1; seed <= SEEDS; seed++) {
-        const market = randomLifecycle(mechanism, seed, true)
+        const market = randomLifecycle(mechanism, seed, { cancel: true })
         if (market.overpaid > 1) overpaying++
         if (market.minted() > 1) minting++
       }
       expect(overpaying).toBeGreaterThan(SEEDS / 10)
+      expect(minting).toBeGreaterThan(0)
+    }
+  )
+
+  // and so does the unresolve as it was, with the refund fixed.
+  it.each(['cpmm-multi-1', 'cpmm-multi-2'] as const)(
+    'did pay out more than answers held with the unresolve as it was, on %s',
+    (mechanism) => {
+      let overpaying = 0
+      let minting = 0
+      for (let seed = 1; seed <= SEEDS; seed++) {
+        const market = randomLifecycle(mechanism, seed, { unresolve: true })
+        if (market.overpaid > 1) overpaying++
+        if (market.minted() > 1) minting++
+      }
+      expect(overpaying).toBeGreaterThan(0)
       expect(minting).toBeGreaterThan(0)
     }
   )

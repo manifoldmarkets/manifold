@@ -1,3 +1,5 @@
+import { isEqual } from 'lodash'
+
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from 'api/helpers/rate-limit'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
@@ -42,6 +44,10 @@ import {
 } from 'shared/websockets/helpers'
 
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
+
+// How far the database's clock, which stamps a resolution's contract edit, may
+// run behind the API's, which stamps the market's resolutionTime.
+const RESOLUTION_EDIT_CLOCK_SKEW_MS = 10 * 1000
 
 export const unresolve: APIHandler<'unresolve'> = onlyUsersWhoCanPerformAction(
   'resolveMarket',
@@ -299,17 +305,62 @@ const undoResolution = async (
     // attempt that failed after recording its own edit (recordContractEdit
     // writes outside this transaction) has left a later one holding the
     // resolved market, with subsidyPool 0, which this must skip.
-    const preResolutionSubsidyPool = await pg.oneOrNone(
-      `select (data->>'subsidyPool')::numeric as subsidy_pool
+    const preResolution = await pg.oneOrNone<{
+      subsidy_pool: number | null
+      recorded_time: number
+      open_answer_ids: string[] | null
+    }>(
+      `select (data->>'subsidyPool')::numeric as subsidy_pool,
+         (extract(epoch from created_time) * 1000)::float8 as recorded_time,
+         (
+           select coalesce(jsonb_agg(answer_data->>'id'), '[]'::jsonb)
+           from jsonb_array_elements(
+             case when jsonb_typeof(data->'answers') = 'array'
+               then data->'answers' else '[]'::jsonb end
+           ) as answer_data
+           where answer_data->>'resolution' is null
+         ) as open_answer_ids
        from contract_edits
        where contract_id = $1
          and 'subsidyPool' = any(updated_keys)
          and coalesce((data->>'isResolved')::boolean, false) = false
        order by created_time desc
        limit 1`,
-      [contractId],
-      (r) => r?.subsidy_pool as number | null
+      [contractId]
     )
+    // On an independent market, which unresolves one answer at a time, that
+    // edit is the market as its last open answer found it, and its pool is
+    // what that answer's resolution took: all of it. Only undoing that
+    // resolution may put it back. Restoring it when another answer is
+    // unresolved returned to the pool what the last answer's payout, still
+    // standing, had paid out, for the reopened answer to pay out again
+    // (resolve A, add a subsidy, resolve B, unresolve A, resolve A). That
+    // other answer's own share of the pool stays out, as it does when it is
+    // unresolved while the market is still open.
+    //
+    // So the pool comes back only when this answer is the one the edit shows
+    // still open, and the edit is this resolution's, not one from an earlier
+    // resolution of the same answer, since undone: resolutionTime is set
+    // inside the resolving transaction and the edit recorded after it
+    // commits, so an earlier one predates it.
+    const restoresSubsidyPool =
+      answerId === undefined ||
+      (!!preResolution &&
+        isEqual(preResolution.open_answer_ids, [answerId]) &&
+        !!contract.resolutionTime &&
+        preResolution.recorded_time >=
+          contract.resolutionTime - RESOLUTION_EDIT_CLOCK_SKEW_MS)
+    const subsidyPool = restoresSubsidyPool
+      ? preResolution?.subsidy_pool ?? 0
+      : undefined
+    if (!restoresSubsidyPool) {
+      log('Not restoring the market subsidy pool on unresolve', {
+        contractId,
+        answerId,
+        openAnswerIds: preResolution?.open_answer_ids,
+        subsidyPoolBeforeLastResolution: preResolution?.subsidy_pool,
+      })
+    }
 
     const updatedAttrs = removeUndefinedProps({
       isResolved: false,
@@ -323,7 +374,7 @@ const undoResolution = async (
         contract.mechanism === 'cpmm-1'
           ? getCpmmProbability(contract.pool, contract.p)
           : undefined,
-      subsidyPool: preResolutionSubsidyPool ?? 0,
+      subsidyPool,
     })
     await updateContract(pg, contractId, updatedAttrs)
     await recordContractEdit(contract, userId, Object.keys(updatedAttrs))
@@ -339,7 +390,7 @@ const undoResolution = async (
         contract.mechanism === 'cpmm-1'
           ? getCpmmProbability(contract.pool, contract.p)
           : undefined,
-      subsidyPool: preResolutionSubsidyPool ?? 0,
+      ...(subsidyPool !== undefined ? { subsidyPool } : {}),
     }
   }
   if (!answerId) {

@@ -32,19 +32,22 @@ export const getFixedCancelPayouts = (
 }
 
 // The mana an answer of an independent multiple choice market holds for its
-// traders and liquidity providers. Each mana that came in (a bet, an ante, a
-// subsidy) put one YES and one NO share into the pool or a trader's hands, or
-// fewer where an add threw shares of one side away to hold the price
-// (cpmm-multi-1's subsidies and custom starting odds). Each mana that went
-// back out (a sale, a redemption) took one of each with it. So neither the YES
-// nor the NO shares outstanding ever number more than the mana the answer
-// holds, and the larger of the two counts it most closely: exactly, on
-// cpmm-multi-2, which discards nothing. Subsidy still pending is mana too: the
-// answer's own, and its share of the market's.
+// traders and liquidity providers, counted from its shares. Each mana that
+// came in (a bet, an ante, a subsidy) put one YES and one NO share into the
+// pool or a trader's hands, or fewer where an add threw shares of one side
+// away to hold the price (cpmm-multi-1's subsidies and custom starting odds).
+// Each mana that went back out (a sale, a redemption) took one of each with
+// it. So neither the YES nor the NO shares outstanding number more than the
+// mana the answer holds, and the larger of the two counts it most closely:
+// short by the smaller of what the two sides have thrown away, so exactly on
+// an answer that has only ever been cpmm-multi-2, which discards nothing.
+// Subsidy still pending is mana too: the answer's own, and its share of the
+// market's.
 //
 // A YES resolution pays out the YES shares and the pending subsidy, and a NO
 // resolution the NO shares and the pending subsidy, so this is also the most
-// the answer pays out however it resolves.
+// the answer pays out when it resolves YES, NO or to a probability. Like
+// those payouts, it takes the positions' recorded shares as they are.
 export const getIndependentMultiAnswerBacking = (
   answer: Answer,
   answerMetrics: ContractMetric[],
@@ -82,14 +85,20 @@ const CANCEL_BACKING_TOLERANCE = 1e-9
 // while the answers that did receive it paid it out in full as well. So those
 // provisions are refunded only out of what the answer holds beyond its other
 // refunds (getIndependentMultiAnswerBacking), each scaled alike when that
-// falls short. Cancelling an answer then never pays out more than it holds,
-// whatever the provisions record.
+// falls short. They are then never refunded out of mana the answer doesn't
+// hold, whatever the provisions record, and never refunded more than before.
+//
+// The traders' and the answer's own provisions' refunds are what they were:
+// what each put in. (On an answer traded while fees were charged, that
+// already came to more than the answer holds, by the fees that left the
+// market. The whole-market provisions now go without first.)
 //
 // Where no answer was listed or reopened after a subsidy came in, every answer
 // that was open for it holds at least amount / number of answers of it, and
-// refunds that in full as before. (A cpmm-multi-1 answer that subsidies
-// reached on both sides of 50% is counted short by the smaller of what the two
-// sides threw away, and refunds that much less.)
+// refunds that in full as before. The exception is a cpmm-multi-1 answer that
+// has thrown away shares of both sides (subsidies that reached it on both
+// sides of 50%, or custom starting odds and a subsidy on the other side): it
+// is counted short by the smaller of the two, and refunds that much less.
 export const getIndependentMultiCancelPayouts = (
   answer: Answer,
   contractMetrics: ContractMetric[],
