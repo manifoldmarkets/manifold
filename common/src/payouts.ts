@@ -13,6 +13,7 @@ import { ContractMetric } from './contract-metric'
 import { LiquidityProvision } from './liquidity-provision'
 import {
   getFixedCancelPayouts,
+  getIndependentMultiCancelPayouts,
   getIndependentMultiMktPayouts,
   getIndependentMultiYesNoPayouts,
   getMktFixedPayouts,
@@ -55,6 +56,11 @@ export const groupPayoutsByUser = (payouts: Payout[]) => {
 export type PayoutInfo = {
   traderPayouts: Payout[]
   liquidityPayouts: Payout[]
+  // Set when cancelling an answer of an independent multiple choice market
+  // refunded less of the liquidity provided to the whole market than
+  // amount / number of answers, because the answer didn't hold it: by how much
+  // (getIndependentMultiCancelPayouts).
+  withheldLiquidityRefund?: number
 }
 
 export const getPayouts = (
@@ -148,14 +154,12 @@ export const getIndependentMultiFixedPayouts = (
   liquidities: LiquidityProvision[],
   resolutionProbability: number
 ) => {
-  const filteredLiquidities = liquidities
-    .filter((l) => l.answerId === answer.id)
-    // Also include liquidity that is not assigned to an answer, and divide it by the number of answers.
-    .concat(
-      liquidities
-        .filter((l) => !l.answerId)
-        .map((l) => ({ ...l, amount: l.amount / contract.answers.length }))
-    )
+  const answerLiquidities = liquidities.filter((l) => l.answerId === answer.id)
+  // Also include liquidity that is not assigned to an answer, and divide it by the number of answers.
+  const sharedLiquidities = liquidities
+    .filter((l) => !l.answerId)
+    .map((l) => ({ ...l, amount: l.amount / contract.answers.length }))
+  const filteredLiquidities = answerLiquidities.concat(sharedLiquidities)
   // Divide contract's subsidy pool among UNRESOLVED answers only
   const unresolvedAnswers = contract.answers.filter((a) => !a.resolution)
   const numUnresolved = unresolvedAnswers.length || 1 // Avoid division by zero
@@ -180,9 +184,12 @@ export const getIndependentMultiFixedPayouts = (
       )
     default:
     case 'CANCEL':
-      return getFixedCancelPayouts(
-        contractMetrics.filter((metric) => metric.answerId === answer.id),
-        filteredLiquidities
+      return getIndependentMultiCancelPayouts(
+        answer,
+        contractMetrics,
+        answerLiquidities,
+        sharedLiquidities,
+        contractSubsidyPoolShare
       )
   }
 }

@@ -129,6 +129,7 @@ export const resolveMarketHelper = async (
       payouts: basePayouts,
       payoutsWithoutLoans,
       traderPayouts,
+      withheldLiquidityRefund,
     } = getPayoutInfo(
       outcome,
       unresolvedContract,
@@ -139,6 +140,18 @@ export const resolveMarketHelper = async (
       liquidities,
       loanTracking
     )
+    // Expected now and then: an answer listed after a subsidy had drizzled
+    // into the older ones is cancelled. A large amount, or many in a row on
+    // one market, is someone trying to be refunded a subsidy that the other
+    // answers also pay out.
+    if (withheldLiquidityRefund) {
+      log.warn('Cancelled answer held less than its liquidity refunds', {
+        contractId,
+        answerId,
+        resolverId: resolver.id,
+        withheldLiquidityRefund,
+      })
+    }
 
     const payouts = basePayouts.filter((p) => p.payout !== 0)
     // Keep MKT resolution prob for consistency's sake
@@ -403,15 +416,16 @@ export const getPayoutInfo = (
   )
 
   // Calculate payouts using contract metrics instead of bets
-  const { traderPayouts, liquidityPayouts } = getPayouts(
-    outcome,
-    unresolvedContract,
-    contractMetrics,
-    liquidities,
-    resolutionProbs,
-    resolutionProbability,
-    answerId
-  )
+  const { traderPayouts, liquidityPayouts, withheldLiquidityRefund } =
+    getPayouts(
+      outcome,
+      unresolvedContract,
+      contractMetrics,
+      liquidities,
+      resolutionProbs,
+      resolutionProbability,
+      answerId
+    )
 
   const payoutsWithoutLoans = [
     ...liquidityPayouts.map((p) => ({ ...p, deposit: p.payout })),
@@ -439,6 +453,7 @@ export const getPayoutInfo = (
     resolutionProbability,
     payouts,
     traderPayouts,
+    withheldLiquidityRefund,
   }
 }
 

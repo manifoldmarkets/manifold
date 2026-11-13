@@ -31,6 +31,124 @@ export const getFixedCancelPayouts = (
   }
 }
 
+// The mana an answer of an independent multiple choice market holds for its
+// traders and liquidity providers. Each mana that came in (a bet, an ante, a
+// subsidy) put one YES and one NO share into the pool or a trader's hands, or
+// fewer where an add threw shares of one side away to hold the price
+// (cpmm-multi-1's subsidies and custom starting odds). Each mana that went
+// back out (a sale, a redemption) took one of each with it. So neither the YES
+// nor the NO shares outstanding ever number more than the mana the answer
+// holds, and the larger of the two counts it most closely: exactly, on
+// cpmm-multi-2, which discards nothing. Subsidy still pending is mana too: the
+// answer's own, and its share of the market's.
+//
+// A YES resolution pays out the YES shares and the pending subsidy, and a NO
+// resolution the NO shares and the pending subsidy, so this is also the most
+// the answer pays out however it resolves.
+export const getIndependentMultiAnswerBacking = (
+  answer: Answer,
+  answerMetrics: ContractMetric[],
+  contractSubsidyPoolShare: number
+) => {
+  const yesShares =
+    answer.poolYes + sumBy(answerMetrics, (m) => m.totalShares?.YES ?? 0)
+  const noShares =
+    answer.poolNo + sumBy(answerMetrics, (m) => m.totalShares?.NO ?? 0)
+  return (
+    Math.max(yesShares, noShares) +
+    (answer.subsidyPool ?? 0) +
+    (contractSubsidyPoolShare ?? 0)
+  )
+}
+
+// Rounding allowed when comparing what a cancelled answer holds with what it
+// refunds, as a fraction of the amounts compared. Both are sums over every
+// position in the answer, equal on paper whenever every answer was open for
+// every subsidy, so the comparison must not turn on their last few bits.
+const CANCEL_BACKING_TOLERANCE = 1e-9
+
+// A cancelled answer of an independent multiple choice market refunds its
+// traders what they put in and its liquidity providers what they did.
+//
+// Provisions made to the answer itself (its ante, a subsidy for this answer)
+// went into its pool or its pending subsidy in full, and are refunded in full.
+//
+// Liquidity provided to the whole market did not go to its answers in the
+// shares it's refunded in. `sharedLiquidities` carries each such provision at
+// amount / number of answers, but the drizzle and each resolution split the
+// market's subsidy among the answers open at the time: an answer listed after
+// a subsidy drizzled, or one that was resolved while it did, holds little or
+// none of it. Refunding it a full share paid out mana the answer never had,
+// while the answers that did receive it paid it out in full as well. So those
+// provisions are refunded only out of what the answer holds beyond its other
+// refunds (getIndependentMultiAnswerBacking), each scaled alike when that
+// falls short. Cancelling an answer then never pays out more than it holds,
+// whatever the provisions record.
+//
+// Where no answer was listed or reopened after a subsidy came in, every answer
+// that was open for it holds at least amount / number of answers of it, and
+// refunds that in full as before. (A cpmm-multi-1 answer that subsidies
+// reached on both sides of 50% is counted short by the smaller of what the two
+// sides threw away, and refunds that much less.)
+export const getIndependentMultiCancelPayouts = (
+  answer: Answer,
+  contractMetrics: ContractMetric[],
+  answerLiquidities: LiquidityProvision[],
+  sharedLiquidities: LiquidityProvision[],
+  contractSubsidyPoolShare: number
+): PayoutInfo => {
+  const answerMetrics = contractMetrics.filter(
+    (metric) => metric.answerId === answer.id
+  )
+  const { traderPayouts, liquidityPayouts: answerLiquidityPayouts } =
+    getFixedCancelPayouts(answerMetrics, answerLiquidities)
+
+  const backing = getIndependentMultiAnswerBacking(
+    answer,
+    answerMetrics,
+    contractSubsidyPoolShare
+  )
+  const otherRefunds =
+    sumBy(traderPayouts, (p) => p.payout) +
+    sumBy(answerLiquidityPayouts, (p) => p.payout)
+  // What's left for the whole-market provisions.
+  const available = Math.max(backing - otherRefunds, 0)
+  const tolerance =
+    CANCEL_BACKING_TOLERANCE * (Math.abs(backing) + Math.abs(otherRefunds))
+
+  const sharedRefund = sumBy(sharedLiquidities, (l) => l.amount)
+  // Only provisions are scaled down. A withdrawal recorded against the whole
+  // market (a negative amount) is still charged in full.
+  const sharedProvided = sumBy(sharedLiquidities, (l) => Math.max(l.amount, 0))
+  const sharedWithdrawn = sharedRefund - sharedProvided
+
+  let scale = 1
+  if (!Number.isFinite(backing) || !Number.isFinite(otherRefunds)) {
+    // A pool or a position that isn't a number vouches for nothing, and every
+    // comparison with it is false: refund none of these provisions rather
+    // than all of them.
+    scale = 0
+  } else if (sharedRefund > available + tolerance && sharedProvided > 0) {
+    scale = Math.min(
+      1,
+      Math.max(0, (available - sharedWithdrawn) / sharedProvided)
+    )
+  }
+
+  const sharedLiquidityPayouts = sharedLiquidities.map((liquidity) => ({
+    userId: liquidity.userId,
+    payout: liquidity.amount > 0 ? liquidity.amount * scale : liquidity.amount,
+  }))
+
+  return {
+    traderPayouts,
+    liquidityPayouts: answerLiquidityPayouts.concat(sharedLiquidityPayouts),
+    ...(scale < 1
+      ? { withheldLiquidityRefund: sharedProvided * (1 - scale) }
+      : {}),
+  }
+}
+
 export const getStandardFixedPayouts = (
   outcome: string, // Will be 'YES' or 'NO'
   contract: CPMMContract,
