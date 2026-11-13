@@ -25,7 +25,9 @@ jest.mock('shared/record-contract-edit', () => ({
 jest.mock('shared/resolve-market-helpers', () => ({
   checkForNegativeBalancesAndPayouts: jest.fn(),
 }))
-jest.mock('shared/supabase/contracts', () => ({ updateContract: jest.fn() }))
+jest.mock('shared/supabase/contracts', () => ({
+  updateContract: jest.fn(async () => ({})),
+}))
 jest.mock('shared/supabase/users', () => ({
   bulkIncrementBalancesQuery: jest.fn(),
 }))

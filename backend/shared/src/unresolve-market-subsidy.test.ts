@@ -576,6 +576,7 @@ beforeEach(async () => {
       else delete next[key]
     }
     contract = next as unknown as CPMMMultiContract
+    return contract
   }) as unknown as typeof updateContract)
   jest.mocked(insertTxns).mockImplementation((async (
     _pg: unknown,
@@ -941,6 +942,17 @@ describe('liquidity added to the whole market, with the answers it went to', () 
     expect(paid).toBe(4 * ANTE + 1000)
   })
 
+  it('reaches an answer whose pending subsidy was never set', async () => {
+    await rows(
+      `update answers set subsidy_pool = null, total_liquidity = null
+      where id = 'A'`
+    )
+    expect(await addSubsidy(1000)).toEqual(['A', 'B'])
+    expect(await pendingOf('A')).toBe(500)
+    // Was 100: its share of the subsidy lost.
+    expect(await resolve('A', 'YES')).toBe(ANTE + 500)
+  })
+
   it('comes back to the answer that took it when its resolution is undone', async () => {
     await addSubsidy(1000)
     expect(await resolve('A', 'YES')).toBe(ANTE + 500)
@@ -1263,6 +1275,24 @@ describe('unresolving a binary market', () => {
     await expectRefused(unresolve())
     expect(contract.isResolved).toBe(true)
     expect(contract.subsidyPool).toBe(0)
+  })
+
+  // The message is what a page gets: it merges it into the market it holds,
+  // so a field the message leaves out stays as it was, "Resolved YES" and all.
+  it('tells open pages that the resolution is gone, once it has committed', async () => {
+    await resolveMarket('YES')
+    jest.mocked(broadcastUpdatedContract).mockClear()
+    await unresolve()
+
+    const messages = jest.mocked(broadcastUpdatedContract).mock.calls
+    expect(messages).toHaveLength(1)
+    expect(JSON.parse(JSON.stringify(messages[0][1]))).toMatchObject({
+      id: 'market',
+      isResolved: false,
+      resolution: null,
+      resolutionTime: null,
+      subsidyPool: 300,
+    })
   })
 
   it('keeps a subsidy that came in while the market was resolved', async () => {

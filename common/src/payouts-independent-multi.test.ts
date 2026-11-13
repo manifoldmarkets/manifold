@@ -277,14 +277,14 @@ describe('cancelling an answer of an independent multiple choice market', () => 
     })
   })
 
-  it("keeps an older market's unrecorded ante at its old share", () => {
+  it("splits an older market's unrecorded antes among the answers without one of their own", () => {
     // Before antes recorded their answer, they were dated at the market's
     // creation. An answer listed since then has an ante of its own.
     const answers = [
-      answer('A', 0, T0),
-      answer('B', 1, T0),
-      answer('E', 2, T0 + DAY),
-      answer('F', 3, T0 + 3 * DAY),
+      holding(answer('A', 0, T0), 50),
+      holding(answer('B', 1, T0), 50),
+      holding(answer('E', 2, T0 + DAY), 50),
+      holding(answer('F', 3, T0 + 3 * DAY), 50),
     ]
     const liquidities = [
       provision('x1', 'creator', 50, T0, { isAnte: true }),
@@ -292,13 +292,88 @@ describe('cancelling an answer of an independent multiple choice market', () => 
       provision('x3', 'early', 50, T0, { isAnte: true }),
       ante('F', 'adder', T0 + 3 * DAY),
     ]
-    expect(providerPayouts('CANCEL', answers, liquidities, 'E')).toEqual({
-      creator: 12.5,
-      early: 25,
-    })
+    // Were 12.5 and 25, of the 50 it holds: a quarter each, F counted in.
+    const e = providerPayouts('CANCEL', answers, liquidities, 'E')
+    expect(e.creator).toBeCloseTo(50 / 3, 9)
+    expect(e.early).toBeCloseTo(100 / 3, 9)
     expect(providerPayouts('CANCEL', answers, liquidities, 'F')).toEqual({
       adder: 50,
     })
+  })
+
+  // What every provider gets back when each answer is cancelled.
+  const refundedInAll = (
+    answers: Answer[],
+    liquidities: LiquidityProvision[]
+  ) => {
+    const refunded: { [userId: string]: number } = {}
+    for (const a of answers)
+      for (const [userId, payout] of Object.entries(
+        providerPayouts('CANCEL', answers, liquidities, a.id)
+      ))
+        refunded[userId] = (refunded[userId] ?? 0) + payout
+    return refunded
+  }
+
+  it("returns all of an older market's ante when every answer is cancelled", () => {
+    // One unrecorded ante of 200 funded A and B. C was listed since, with its
+    // own.
+    const answers = [
+      holding(answer('A', 0, T0), 100),
+      holding(answer('B', 1, T0), 100),
+      holding(answer('C', 2, T0 + DAY), 50),
+    ]
+    const liquidities = [
+      provision('x', 'creator', 200, T0, { isAnte: true }),
+      ante('C', 'adder', T0 + DAY),
+    ]
+    // Was 200 / 3 from each of A and B: 133.33 of the 200.
+    const refunded = refundedInAll(answers, liquidities)
+    expect(refunded.creator).toBeCloseTo(200, 9)
+    expect(refunded.adder).toBeCloseTo(50, 9)
+  })
+
+  it('returns an older ante and an older subsidy each to its own provider', () => {
+    // The same market, with 900 that drizzled into A and B before C was
+    // listed.
+    const answers = [
+      holding(answer('A', 0, T0), 100 + 450),
+      holding(answer('B', 1, T0), 100 + 450),
+      holding(answer('C', 2, T0 + DAY), 50),
+    ]
+    const liquidities = [
+      provision('x', 'creator', 200, T0, { isAnte: true }),
+      provision('w', 'whale', 900, T0 + HOUR),
+      ante('C', 'adder', T0 + DAY),
+    ]
+    const refunded = refundedInAll(answers, liquidities)
+    expect(refunded.creator).toBeCloseTo(200, 9)
+    expect(refunded.whale).toBeCloseTo(900, 9)
+    expect(refunded.adder).toBeCloseTo(50, 9)
+  })
+
+  it('returns older antes of unequal answers to their providers', () => {
+    // The creator's 200 funded A and B, and C was listed for 40 when its ante
+    // too was recorded against the whole market.
+    const answers = [
+      holding(answer('A', 0, T0), 100),
+      holding(answer('B', 1, T0), 100),
+      holding(answer('C', 2, T0 + DAY), 40),
+    ]
+    const liquidities = [
+      provision('x', 'creator', 200, T0, { isAnte: true }),
+      provision('c', 'adder', 40, T0, { isAnte: true }),
+    ]
+    // Each answer hands back all it holds, split as the antes are.
+    for (const a of answers)
+      expect(
+        sum(
+          Object.values(providerPayouts('CANCEL', answers, liquidities, a.id))
+        )
+      ).toBeCloseTo(a.poolYes, 9)
+    const refunded = refundedInAll(answers, liquidities)
+    expect(refunded.creator).toBeCloseTo(200, 9)
+    expect(refunded.adder).toBeCloseTo(40, 9)
   })
 
   it("pays out no more of an older market's antes than went in", () => {

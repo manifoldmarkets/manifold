@@ -59,10 +59,12 @@ export const addSubsidyToOpenAnswers = async (
   if (answerIds.length === 0) return []
   const share = amount / answerIds.length
   const answers = await pg.map(
+    // Both columns can be null, and null plus a share is still null: the
+    // provision would record an answer that got nothing.
     `update answers
     set
-      subsidy_pool = subsidy_pool + $1,
-      total_liquidity = total_liquidity + $1
+      subsidy_pool = coalesce(subsidy_pool, 0) + $1,
+      total_liquidity = coalesce(total_liquidity, 0) + $1
     where id in ($2:list)
     returning *`,
     [share, answerIds],

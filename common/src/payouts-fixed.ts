@@ -95,8 +95,9 @@ const CANCEL_BACKING_TOLERANCE = 1e-9
 //   each the answer can be holding: more than the estimate, or some of one
 //   it is estimated to hold none of (listed while the pool was still
 //   draining). What the answer holds beyond the estimates is theirs, and
-//   goes back to them in proportion, none getting more than it put in. Left
-//   in a cancelled answer it would be nobody's.
+//   goes back to them: to each group in turn, in proportion within it, none
+//   getting more than it put in. Left in a cancelled answer it would be
+//   nobody's.
 //
 // So a cancellation never refunds mana the answer doesn't hold, whatever the
 // provisions record, and leaves none behind that a provision can account for.
@@ -116,7 +117,7 @@ export const getIndependentMultiCancelPayouts = (
   answerLiquidities: LiquidityProvision[],
   sharedLiquidities: LiquidityProvision[],
   contractSubsidyPoolShare: number,
-  furtherLiquidities: LiquidityProvision[] = []
+  furtherLiquidities: LiquidityProvision[][] = []
 ): PayoutInfo => {
   const answerMetrics = contractMetrics.filter(
     (metric) => metric.answerId === answer.id
@@ -163,22 +164,22 @@ export const getIndependentMultiCancelPayouts = (
 
   // What the answer holds beyond the shares, to the provisions that can have
   // put it there.
-  const beyondShares = counted && scale === 1 ? available - sharedRefund : 0
-  const further = furtherLiquidities.filter(
-    (l) => Number.isFinite(l.amount) && l.amount > 0
-  )
-  const furtherRoom = sumBy(further, (l) => l.amount)
-  const furtherScale =
-    beyondShares > tolerance && furtherRoom > 0
-      ? Math.min(beyondShares, furtherRoom) / furtherRoom
-      : 0
-  const furtherLiquidityPayouts =
-    furtherScale > 0
-      ? further.map((liquidity) => ({
-          userId: liquidity.userId,
-          payout: liquidity.amount * furtherScale,
-        }))
-      : []
+  let beyondShares = counted && scale === 1 ? available - sharedRefund : 0
+  const furtherLiquidityPayouts: { userId: string; payout: number }[] = []
+  for (const group of furtherLiquidities) {
+    const further = group.filter(
+      (l) => Number.isFinite(l.amount) && l.amount > 0
+    )
+    const room = sumBy(further, (l) => l.amount)
+    if (!(beyondShares > tolerance) || !(room > 0)) continue
+    const refunded = Math.min(beyondShares, room)
+    for (const liquidity of further)
+      furtherLiquidityPayouts.push({
+        userId: liquidity.userId,
+        payout: (liquidity.amount * refunded) / room,
+      })
+    beyondShares -= refunded
+  }
 
   return {
     traderPayouts,

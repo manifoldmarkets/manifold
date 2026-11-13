@@ -168,9 +168,11 @@ const UNRECORDED_PROVISION_GRACE_MS = 5 * 1000
 //
 // An older market's unrecorded ante is different: it stands for the funding
 // of its answers at creation and of answers added later, all dated at the
-// market's creation, in amounts it doesn't break down. It keeps the share
-// every provision had before, amount / number of answers, for answers without
-// an ante of their own.
+// market's creation, in amounts it doesn't break down. It is credited in
+// equal shares to the answers without an ante of their own: an answer listed
+// since antes recorded their answer has its own, and none of this. (Its share
+// was amount / number of answers, which fell with every answer listed since
+// and left part of what the older answers hold with nobody.)
 const getCancelRefundShare = (
   l: LiquidityProvision,
   answer: Answer,
@@ -181,10 +183,11 @@ const getCancelRefundShare = (
     return l.answerIds.includes(answer.id) ? l.amount / l.answerIds.length : 0
   // A withdrawal recorded against the whole market is charged as it always
   // was.
-  if (l.isAnte || !(l.amount > 0))
-    return l.isAnte && ownAnteAnswerIds.has(answer.id)
-      ? 0
-      : l.amount / answers.length
+  if (!(l.amount > 0)) return l.amount / answers.length
+  if (l.isAnte) {
+    if (ownAnteAnswerIds.has(answer.id)) return 0
+    return l.amount / answers.filter((a) => !ownAnteAnswerIds.has(a.id)).length
+  }
   const openThen = answers.filter(
     (a) =>
       a.createdTime <= l.createdTime + UNRECORDED_PROVISION_GRACE_MS &&
@@ -196,12 +199,16 @@ const getCancelRefundShare = (
 }
 
 // How much more of a whole-market provision than that share an answer can be
-// holding. Only a provision that went through the market's pending pool can
-// have reached an answer in another amount than its share: any of it, at
-// most. One that records its answers went to them directly, and an ante went
-// into the pools it was for.
+// holding: the rest of it, at most. A provision that went through the
+// market's pending pool can have reached any answer in another amount than
+// its estimated share. An older ante went into the answers it was for in
+// amounts it doesn't record, so one of them can hold more of it than an equal
+// share, and no other answer any. One that records its answers went to them
+// directly: none.
 const getFurtherCancelRefund = (l: LiquidityProvision, share: number) =>
-  l.answerIds || l.isAnte || !(l.amount > 0) ? 0 : l.amount - Math.max(share, 0)
+  l.answerIds || !(l.amount > 0) || (l.isAnte && !(share > 0))
+    ? 0
+    : l.amount - Math.max(share, 0)
 
 export const getIndependentMultiFixedPayouts = (
   answer: Answer,
@@ -250,14 +257,16 @@ export const getIndependentMultiFixedPayouts = (
       // A cancellation refunds what providers put into this answer, where the
       // outcomes above pay out its pool by their weights: its own provisions,
       // its share of each whole-market provision (getCancelRefundShare), and
-      // what it holds beyond those of the provisions that went through the
-      // market's pending pool (getFurtherCancelRefund).
+      // what it holds beyond those: of the older antes first, whose funding
+      // of the answer is the surer, then of the provisions that went through
+      // the market's pending pool (getFurtherCancelRefund).
       const ownAnteAnswerIds = new Set(
         liquidities.flatMap((l) => (l.isAnte && l.answerId ? [l.answerId] : []))
       )
       const recordedLiquidities: LiquidityProvision[] = []
       const estimatedLiquidities: LiquidityProvision[] = []
-      const furtherLiquidities: LiquidityProvision[] = []
+      const furtherAnteLiquidities: LiquidityProvision[] = []
+      const furtherPooledLiquidities: LiquidityProvision[] = []
       for (const l of wholeMarketLiquidities) {
         const share = getCancelRefundShare(
           l,
@@ -265,13 +274,20 @@ export const getIndependentMultiFixedPayouts = (
           contract.answers,
           ownAnteAnswerIds
         )
+        // A provision whose amount isn't a number is refunded nothing, rather
+        // than make every sum it enters not a number.
+        if (!Number.isFinite(share)) continue
         if (share !== 0)
           (l.answerIds ? recordedLiquidities : estimatedLiquidities).push({
             ...l,
             amount: share,
           })
         const further = getFurtherCancelRefund(l, share)
-        if (further > 0) furtherLiquidities.push({ ...l, amount: further })
+        if (further > 0)
+          (l.isAnte ? furtherAnteLiquidities : furtherPooledLiquidities).push({
+            ...l,
+            amount: further,
+          })
       }
       return getIndependentMultiCancelPayouts(
         answer,
@@ -279,7 +295,7 @@ export const getIndependentMultiFixedPayouts = (
         answerLiquidities.concat(recordedLiquidities),
         estimatedLiquidities,
         contractSubsidyPoolShare,
-        furtherLiquidities
+        [furtherAnteLiquidities, furtherPooledLiquidities]
       )
     }
   }

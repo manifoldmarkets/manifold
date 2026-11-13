@@ -453,10 +453,6 @@ const undoResolution = async (
     a.id && !a.resolutionTime ? [a.id] : []
   )
   const marketResolved = !!(contract.isResolved || contract.resolutionTime)
-  // As read when this transaction began; only for telling open pages.
-  const marketPool =
-    'subsidyPool' in contract ? positiveOrZero(contract.subsidyPool) : 0
-
   // What goes back into the market's pending subsidy pool: what the
   // resolution being undone took of it and paid out, now that those payouts
   // have been taken back.
@@ -506,10 +502,17 @@ const undoResolution = async (
       ? { subsidyPool: FieldVal.increment(marketPoolRestored) }
       : {}),
   }
-  const subsidyPoolForPages =
-    marketPoolRestored > 0
-      ? { subsidyPool: marketPool + marketPoolRestored }
-      : {}
+  // What an update left of the fields it wrote, to tell open pages once
+  // this has committed: as updateContract announces them, with null for a
+  // field it removed. A page merges the message into the market it holds, and
+  // would keep a resolution the message only left out.
+  const committed = (update: object, updated: Contract) =>
+    Object.fromEntries(
+      Object.keys(update).map((key) => [
+        key,
+        (updated as unknown as Record<string, unknown>)[key] ?? null,
+      ])
+    ) as Partial<Contract>
 
   if (marketResolved) {
     const updatedAttrs = removeUndefinedProps({
@@ -526,7 +529,9 @@ const undoResolution = async (
           : undefined,
       ...subsidyPoolUpdate,
     })
-    await updateContract(pg, contractId, updatedAttrs, { broadcast: false })
+    const updated = await updateContract(pg, contractId, updatedAttrs, {
+      broadcast: false,
+    })
     await recordContractEdit(
       contract,
       userId,
@@ -534,25 +539,12 @@ const undoResolution = async (
       undefined,
       pg
     )
-    contractWebsocketUpdates = {
-      isResolved: false,
-      resolutionTime: undefined,
-      resolverId: undefined,
-      resolution: undefined,
-      resolutions: undefined,
-      resolutionProbability: undefined,
-      closeTime: Date.now(),
-      prob:
-        contract.mechanism === 'cpmm-1'
-          ? getCpmmProbability(contract.pool, contract.p)
-          : undefined,
-      ...subsidyPoolForPages,
-    }
+    contractWebsocketUpdates = committed(updatedAttrs, updated)
   } else {
-    await updateContract(pg, contractId, subsidyPoolUpdate, {
+    const updated = await updateContract(pg, contractId, subsidyPoolUpdate, {
       broadcast: false,
     })
-    if (marketPoolRestored > 0) contractWebsocketUpdates = subsidyPoolForPages
+    contractWebsocketUpdates = committed(subsidyPoolUpdate, updated)
   }
   if (!answerId) {
     const contractMetrics = await getContractMetricsForContract(
