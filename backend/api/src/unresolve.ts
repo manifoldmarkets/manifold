@@ -213,6 +213,22 @@ const PAYOUT_NOT_REVERTED = `
 // standing resolution's, it took one that had been taken back already (as two
 // unresolves at once did). With one in the answer or market, nothing is
 // undone here, whatever is standing.
+//
+// An unresolve that took nothing back leaves no such mark. The one this
+// replaces did not lock a market it unresolved whole: one that read it
+// resolved, found no payouts, and went on after a later resolution had paid
+// reopened the market with that resolution's payouts standing. So the
+// standing payouts also have to have been built no earlier than the time of
+// the resolution being undone. A resolution sets that time and then builds
+// its payouts, on one clock, so a batch built before it is an earlier
+// resolution's.
+//
+// None of this can prove whose a batch is where clocks disagree. What it
+// does not have to prove: what is taken back is everything standing, with no
+// payout of the answer or market taken back twice, so afterwards nobody
+// holds a payout of it and nobody has paid back more than they were paid.
+// That is what an unresolved answer or market requires, whichever resolution
+// wrote the payouts.
 const getPayoutsToUndo = async (
   pg: SupabaseTransaction,
   contractId: string,
@@ -279,7 +295,8 @@ const getPayoutsToUndo = async (
           payout.batch != null &&
           payout.batch === standing[0].batch &&
           payout.written === standing[0].written &&
-          payout.afterLastUndo
+          payout.afterLastUndo &&
+          builtNoEarlierThan(payout.batch, resolutionTime)
       )
   if (!own)
     throw new APIError(
@@ -289,6 +306,12 @@ const getPayoutsToUndo = async (
       } are still standing, so this one can't be unresolved.`
     )
   return standing.map((payout) => payout.txn)
+}
+
+// Read as text: a value that isn't a number must fail the test, not the query.
+const builtNoEarlierThan = (batch: string | null, time: number) => {
+  const builtAt = Number(batch)
+  return Number.isFinite(builtAt) && builtAt >= time
 }
 
 const positiveOrZero = (amount: number | null | undefined) =>

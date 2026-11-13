@@ -1239,6 +1239,35 @@ describe('a resolution with no record of its own, undone by an admin', () => {
     await expectRefused(unresolve('B', ADMIN))
   })
 
+  // An unresolve that reopened the answer and took nothing back leaves no row
+  // to show for it. What gives the batch away is when it was built: a
+  // resolution sets the answer's time and then builds its payouts.
+  it('is refused where the batch standing was built before the answer was last resolved', async () => {
+    expect(await resolve('A', 'YES')).toBe(ANTE)
+    await asFromBefore()
+    // Reopened with nothing taken back.
+    expect(await unresolve('A', ADMIN)).toBe(-ANTE)
+    await rows(
+      `delete from txns where category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'`
+    )
+    const earlier = (
+      await rows(
+        `select id from txns where category = 'CONTRACT_RESOLUTION_PAYOUT'`
+      )
+    ).map((r) => r.id as string)
+    // The current resolution, as one that paid nothing and kept no record.
+    await resolve('A', 'YES')
+    await rows(
+      `delete from txns
+      where category = 'CONTRACT_RESOLUTION_PAYOUT' and id not in ($1:csv)`,
+      [earlier]
+    )
+    await asFromBefore()
+
+    await expectRefused(unresolve('A', ADMIN))
+    expect((await answers())[0].resolution).toBe('YES')
+  })
+
   it('is refused where the standing payouts say nothing of when they were built', async () => {
     expect(await resolve('A', 'YES')).toBe(ANTE)
     await asFromBefore()
@@ -1623,6 +1652,73 @@ describe('unresolving a binary market', () => {
       expect.stringContaining('no record of its own'),
       expect.objectContaining({ marketSubsidyInLatestEdit: 300 })
     )
+  })
+
+  // The unresolve before this did not lock a market it unresolved whole. One
+  // that read it resolved, found nothing to take back, and went on after a
+  // later resolution had paid reopened the market with that resolution's
+  // payouts standing and no row to show for it. A resolution after that which
+  // paid nothing has one batch standing that is not its own.
+  const reopenedWithAnEarlierBatchStanding = async () => {
+    expect(await resolveMarket('YES')).toBe(400)
+    await asFromBefore()
+    expect(await unresolve(undefined, ADMIN)).toBe(-400)
+    await rows(
+      `delete from txns where category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'`
+    )
+    const earlier = (
+      await rows(
+        `select id from txns where category = 'CONTRACT_RESOLUTION_PAYOUT'`
+      )
+    ).map((r) => r.id as string)
+    // The current resolution, as one that paid nothing and kept no record.
+    await resolveMarket('YES')
+    await rows(
+      `delete from txns
+      where category = 'CONTRACT_RESOLUTION_PAYOUT' and id not in ($1:csv)`,
+      [earlier]
+    )
+    await asFromBefore()
+    return earlier
+  }
+
+  it('is not undone by an admin where the batch standing was built before the market was last resolved', async () => {
+    await reopenedWithAnEarlierBatchStanding()
+
+    // Was let through, taking back what the earlier resolution paid.
+    await expectRefused(unresolve(undefined, ADMIN))
+    expect(contract.isResolved).toBe(true)
+  })
+
+  // Built on a clock ahead of the one that resolved the market last, such a
+  // batch cannot be told from the resolution's own, and is taken back. That
+  // leaves the market as an unresolved one has to be: no payout of it with
+  // anyone, and none paid back twice.
+  it('leaves no payout standing and none taken back twice where it cannot tell whose a batch is', async () => {
+    const earlier = await reopenedWithAnEarlierBatchStanding()
+    await rows(
+      `update txns
+      set data = jsonb_set(data, '{data,payoutStartTime}', to_jsonb($1::numeric))
+      where category = 'CONTRACT_RESOLUTION_PAYOUT'`,
+      [Number(contract.resolutionTime) + 5]
+    )
+
+    await unresolve(undefined, ADMIN)
+    expect(contract.isResolved).toBe(false)
+    const payouts = await rows(
+      `select p.id, p.to_id, p.amount::float8 as amount,
+        (select count(*) from txns u
+          where u.category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
+            and u.data->'data'->>'revertsTxnId' = p.id)::int as taken_back,
+        (select coalesce(sum(u.amount), 0) from txns u
+          where u.category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
+            and u.data->'data'->>'revertsTxnId' = p.id)::float8 as amount_back
+      from txns p where p.category = 'CONTRACT_RESOLUTION_PAYOUT'
+      order by p.id`
+    )
+    expect(payouts.map((p) => p.id)).toEqual([...earlier].sort())
+    for (const p of payouts)
+      expect([p.id, p.taken_back, p.amount_back]).toEqual([p.id, 1, p.amount])
   })
 
   it('keeps a subsidy that came in while the market was resolved', async () => {
