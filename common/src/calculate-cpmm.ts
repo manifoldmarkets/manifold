@@ -410,13 +410,14 @@ export const computeFills = (
           currentBalanceByUserId[userId] = makerBalance - maker.amount
         }
         const adjustedMakerBalance = currentBalanceByUserId[userId]
-        // Less than a fill has to be to count (see below) is none. A balance
-        // that runs out mid-fill is seldom left at exactly 0: the fill is
-        // worked out from it as a double, so a sliver like 6e-15 stays behind,
-        // and filling that at this order's price can leave a smaller one yet.
+        // A fill that stopped at the maker's balance used it up, whatever the
+        // subtraction above leaves. It seldom leaves exactly 0: a balance that
+        // runs out mid-fill keeps a sliver like 6e-15 (the fill is worked out
+        // from it as a double), and filling that sliver at this order's price
+        // can leave a smaller one, with no fill that counts (see below).
         if (
-          adjustedMakerBalance !== undefined &&
-          adjustedMakerBalance < EPSILON
+          fill.stopsAtMakerBalance ||
+          (adjustedMakerBalance !== undefined && adjustedMakerBalance <= 0)
         ) {
           // Now they've insufficient balance. Cancel maker bet.
           ordersToCancel.push(maker.bet)
@@ -516,6 +517,7 @@ const computeFill = (
         timestamp,
         fees,
       },
+      stopsAtMakerBalance: false,
     }
   }
 
@@ -539,6 +541,12 @@ const computeFill = (
   const maxTakerShares = amount / (takerPrice + feesOnOneShare)
   const maxMakerShares = amountToFill / makerPrice
   const shares = Math.min(maxTakerShares, maxMakerShares)
+  // Whether it's the maker's balance that stops the fill where it does, and
+  // not the order's size or what the taker has left.
+  const stopsAtMakerBalance =
+    matchableUserBalance !== undefined &&
+    matchableUserBalance < amountRemaining &&
+    maxMakerShares <= maxTakerShares
 
   const takerFee = freeFees ? 0 : getTakerFee(shares, takerPrice)
   const fees = getFeesSplit(takerFee)
@@ -557,7 +565,7 @@ const computeFill = (
     timestamp,
     fees,
   }
-  return { maker, taker }
+  return { maker, taker, stopsAtMakerBalance }
 }
 
 // Faster version assuming p = 0.5

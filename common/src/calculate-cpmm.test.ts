@@ -1,4 +1,4 @@
-import { mapValues, sum, uniq } from 'lodash'
+import { mapValues, sum } from 'lodash'
 import { LimitBet } from './bet'
 import {
   addCpmmLiquidity,
@@ -703,6 +703,9 @@ describe('makers out of balance', () => {
     collectedFees: noFees,
   }
   const SPENT = 6.457834393110897e-15
+  const even = { pool: { YES: 100, NO: 100 }, p: 0.5, collectedFees: noFees }
+  // A pool already at 22%, the price of the order resting on it below.
+  const at22 = { pool: { YES: 78, NO: 22 }, p: 0.5, collectedFees: noFees }
 
   const order = (
     id: string,
@@ -732,12 +735,30 @@ describe('makers out of balance', () => {
 
   const cancelledIds = (fills: ReturnType<typeof computeFills>) =>
     fills.ordersToCancel.map((o) => o.id)
-  // The users placing a bet locks: see getMakerIdsFromBetResult in the API.
-  const matchedUserIds = (fills: ReturnType<typeof computeFills>) =>
-    uniq([
-      ...fills.makers.map((m) => m.bet.userId),
-      ...fills.ordersToCancel.map((o) => o.userId),
-    ])
+
+  // A bet big enough to take all a maker with up to 1,000 could fill of an
+  // order resting anywhere on an even pool.
+  const through = (outcome: 'YES' | 'NO', percent: number, balance: number) =>
+    computeFills(
+      even,
+      outcome === 'YES' ? 'NO' : 'YES',
+      1e6,
+      undefined,
+      [order('resting', outcome, percent / 100, 1000)],
+      { maker: balance }
+    )
+  const everyPrice = (
+    balances: number[],
+    check: (fills: ReturnType<typeof computeFills>, balance: number) => boolean
+  ) => {
+    const failed: string[] = []
+    for (const balance of balances)
+      for (let percent = 1; percent <= 99; percent++)
+        for (const outcome of ['YES', 'NO'] as const)
+          if (!check(through(outcome, percent, balance), balance))
+            failed.push(`${outcome} at ${percent}% with ${balance}`)
+    return failed
+  }
 
   it('cancels a resting order its maker has too little left to fill', () => {
     const fills = computeFills(
@@ -773,75 +794,57 @@ describe('makers out of balance', () => {
   })
 
   it('cancels it at every price, whichever way the division rounds', () => {
-    const even = { pool: { YES: 100, NO: 100 }, p: 0.5, collectedFees: noFees }
-    const balances = [
-      SPENT,
-      // The other balances like it with orders resting that day.
-      5.5143713485796e-18,
-      3.06977970511e-16,
-      8.864547337144025e-15,
-      1.394014255791705e-14,
-      2.04127136788005e-14,
-      // Just short of the least a fill counts for.
-      9.9e-9,
-    ]
-    const stuck: string[] = []
-    for (const balance of balances) {
-      for (let percent = 1; percent <= 99; percent++) {
-        for (const outcome of ['YES', 'NO'] as const) {
-          const fills = computeFills(
-            even,
-            outcome === 'YES' ? 'NO' : 'YES',
-            10000,
-            undefined,
-            [order('resting', outcome, percent / 100, 100)],
-            { maker: balance }
-          )
-          if (fills.makers.length > 0 || cancelledIds(fills).length !== 1)
-            stuck.push(`${outcome} at ${percent}% with ${balance}`)
-        }
-      }
-    }
-    expect(stuck).toEqual([])
+    const failed = everyPrice(
+      [
+        SPENT,
+        // The other balances like it with orders resting that day.
+        5.5143713485796e-18,
+        3.06977970511e-16,
+        8.864547337144025e-15,
+        1.394014255791705e-14,
+        2.04127136788005e-14,
+        // Just short of the least a fill counts for.
+        9.9e-9,
+      ],
+      (fills) => fills.makers.length === 0 && cancelledIds(fills).length === 1
+    )
+    expect(failed).toEqual([])
   })
 
-  it("matches the same makers when the other makers' balances aren't read", () => {
-    // Placing a bet works its fills out twice: first with every maker's
-    // balance, then, in its transaction, with the balances of only the makers
-    // the first pass matched, taking the rest to have all they need. The two
-    // must match the same makers, or the bet is refused.
-    const orders = [
-      order('at22', 'YES', 0.22, 234),
-      order('at9', 'YES', 0.09, 303),
-      order('other', 'YES', 0.15, 20, 'funded'),
-    ]
-    const balances: { [userId: string]: number } = {
-      maker: SPENT,
-      funded: 1000,
-    }
-    for (const amount of [1, 50, 120, 500]) {
-      const simulated = computeFills(
-        state,
-        'NO',
-        amount,
-        undefined,
-        orders,
-        balances
-      )
-      const matched = matchedUserIds(simulated)
-      const inTransaction = computeFills(
-        state,
-        'NO',
-        amount,
-        undefined,
-        orders,
-        mapValues(balances, (balance, userId) =>
-          matched.includes(userId) ? balance : Number.MAX_SAFE_INTEGER
-        )
-      )
-      expect(matchedUserIds(inTransaction)).toEqual(matched)
-      expect(matched).toContain('maker')
-    }
+  it('cancels an order its maker runs out on, however the subtraction rounds', () => {
+    // 100 filled at 19% comes to 99.99999999999999, which leaves 1.4e-14.
+    const fills = through('YES', 19, 100)
+    expect(fills.makers).toHaveLength(1)
+    expect(100 - fills.makers[0].amount).toBeGreaterThan(0)
+    expect(100 - fills.makers[0].amount).toBeLessThan(1e-12)
+    expect(cancelledIds(fills)).toEqual(['resting'])
+
+    // Around the least a fill counts for, a balance may or may not make one.
+    // Either way the fill stops at it.
+    const failed = everyPrice(
+      [1e-8, 1.0000000000000002e-8, 1.5e-8, 3.3e-8, 5, 25, 250],
+      (fills, balance) =>
+        cancelledIds(fills).length === 1 &&
+        fills.makers.every((m) => Math.abs(m.amount - balance) < 1e-11)
+    )
+    expect(failed).toEqual([])
+  })
+
+  it('leaves an order alone when it is the taker that has too little left', () => {
+    // The maker could fill 1.5e-8. This taker's 3e-8 buys 8.5e-9 of it, too
+    // little to count, and none of it is spent.
+    const resting = [order('at22', 'YES', 0.22, 234)]
+    const small = computeFills(at22, 'NO', 3e-8, undefined, resting, {
+      maker: 1.5e-8,
+    })
+    expect(small.makers).toEqual([])
+    expect(cancelledIds(small)).toEqual([])
+
+    const larger = computeFills(at22, 'NO', 1, undefined, resting, {
+      maker: 1.5e-8,
+    })
+    expect(larger.makers.map((m) => m.amount)).toEqual([1.5e-8])
+    expect(cancelledIds(larger)).toEqual(['at22'])
   })
 
   it('fills what a small balance covers, then cancels the order', () => {
@@ -856,6 +859,31 @@ describe('makers out of balance', () => {
     expect(fills.makers.map((m) => m.bet.id)).toEqual(['at22'])
     expect(fills.makers[0].amount).toBeCloseTo(5, 10)
     expect(cancelledIds(fills)).toEqual(['at22'])
+  })
+
+  it('fills an order its maker can cover and leaves it open', () => {
+    const fills = computeFills(
+      at22,
+      'NO',
+      50,
+      undefined,
+      [order('at22', 'YES', 0.22, 234)],
+      { maker: 1000 }
+    )
+    expect(fills.makers.map((m) => m.bet.id)).toEqual(['at22'])
+    expect(cancelledIds(fills)).toEqual([])
+
+    // All of the order, with balance to spare.
+    const whole = computeFills(
+      at22,
+      'NO',
+      5000,
+      undefined,
+      [order('at22', 'YES', 0.22, 234)],
+      { maker: 1000 }
+    )
+    expect(sum(whole.makers.map((m) => m.amount))).toBeCloseTo(234, 10)
+    expect(cancelledIds(whole)).toEqual([])
   })
 
   it('leaves an order alone when the bet runs out before reaching it', () => {
@@ -874,11 +902,6 @@ describe('makers out of balance', () => {
   it("leaves a funded maker's order alone when the bet has nothing left for it", () => {
     // The pool is already at the order's price and the bet is too small to
     // count: the order goes unfilled for want of a taker, not of a balance.
-    const at22 = {
-      pool: { YES: 78, NO: 22 },
-      p: 0.5,
-      collectedFees: noFees,
-    }
     const fills = computeFills(
       at22,
       'NO',

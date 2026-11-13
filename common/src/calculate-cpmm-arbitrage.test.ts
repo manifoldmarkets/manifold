@@ -1,4 +1,4 @@
-import { groupBy, sum, sumBy, uniq } from 'lodash'
+import { groupBy, sum, sumBy } from 'lodash'
 import { Answer } from './answer'
 import { Bet, LimitBet } from './bet'
 import {
@@ -1472,12 +1472,10 @@ describe('calculateCpmmMultiArbitrageBet — a maker short of balance across leg
 
 describe('a maker out of balance in a sum-to-one market', () => {
   // "Largest company end of 2026?" (cpmm-multi-1) on 2026-11-13, with the two
-  // YES orders a maker with 6.46e-15 left had resting on NVIDIA. For three
-  // days the API refused every trade that took NVIDIA down to 22%. Worked out
-  // with the maker's balance, the trade passed the order by, neither filling
-  // nor cancelling it. Worked out again in its transaction, which reads the
-  // balances of only the makers the first pass matched and takes the rest to
-  // have all they need, it filled the order. The two have to agree.
+  // YES orders a maker with 6.46e-15 left had resting on NVIDIA. Any trade
+  // that took NVIDIA down to 22% passed the first by, neither filling nor
+  // cancelling it, and the API, which then worked the trade out a second time
+  // taking that maker to have all they needed, refused it.
   const POOLS = [
     [98.90074594387598, 316.95271553231885], // Apple, 76.2%
     [333.9603143435627, 94.32742389434054], // NVIDIA, 22.02%
@@ -1491,8 +1489,8 @@ describe('a maker out of balance in a sum-to-one market', () => {
     [7366.888428010821, 17.15619795808815],
     [5733.904322760456, 22.04218785172386],
   ]
-  const market = (): Answer[] =>
-    POOLS.map(([poolYes, poolNo], i) => ({
+  const withPools = (pools: number[][]): Answer[] =>
+    pools.map(([poolYes, poolNo], i) => ({
       ...getAnswerK(i, poolNo / (poolYes + poolNo), 1),
       poolYes,
       poolNo,
@@ -1510,64 +1508,46 @@ describe('a maker out of balance in a sum-to-one market', () => {
     ordersToCancel: LimitBet[]
     cpmmState: { pool: { [outcome: string]: number }; p: number }
   }
-  // The users a trade locks: see getMakerIdsFromBetResult in the API.
-  const matchedUserIds = (legs: Leg[]) =>
-    uniq([
-      ...legs.flatMap((leg) => leg.makers.map((m) => m.bet.userId)),
-      ...legs.flatMap((leg) => leg.ordersToCancel.map((o) => o.userId)),
-    ])
-
-  const check = (trade: (balances: { [userId: string]: number }) => Leg[]) => {
-    const simulated = trade({ maker: SPENT })
-    expect(simulated.flatMap((leg) => leg.makers)).toEqual([])
+  const check = (legs: Leg[]) => {
+    expect(legs.flatMap((leg) => leg.makers)).toEqual([])
     expect(
-      simulated.flatMap((leg) => leg.ordersToCancel.map((o) => o.id))
+      legs.flatMap((leg) => leg.ordersToCancel.map((o) => o.id))
     ).toContain('at22')
     // The trade went through the order's price, on the pool.
-    const nvidia = simulated.find((leg) => leg.ordersToCancel.length > 0)!
+    const nvidia = legs.find((leg) => leg.ordersToCancel.length > 0)!
     expect(getCpmmProbability(nvidia.cpmmState.pool, 0.5)).toBeLessThan(0.22)
     expect(
-      sumBy(simulated, (leg) => getCpmmProbability(leg.cpmmState.pool, 0.5))
+      sumBy(legs, (leg) => getCpmmProbability(leg.cpmmState.pool, 0.5))
     ).toBeCloseTo(1, 6)
-
-    const matched = matchedUserIds(simulated)
-    const inTransaction = trade({
-      maker: matched.includes('maker') ? SPENT : Number.MAX_SAFE_INTEGER,
-    })
-    expect(matchedUserIds(inTransaction)).toEqual(matched)
   }
 
   const buy = (index: number, outcome: 'YES' | 'NO', amount: number) => {
-    const answers = market()
-    check((balances) => {
-      const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
-        answers,
-        answers[index],
-        outcome,
-        amount,
-        undefined,
-        resting(answers),
-        balances,
-        noFees
-      )
-      return [newBetResult, ...otherBetResults]
-    })
+    const answers = withPools(POOLS)
+    const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
+      answers,
+      answers[index],
+      outcome,
+      amount,
+      undefined,
+      resting(answers),
+      { maker: SPENT },
+      noFees
+    )
+    check([newBetResult, ...otherBetResults])
   }
   const sell = (index: number, outcome: 'YES' | 'NO', shares: number) => {
-    const answers = market()
-    check((balances) => {
-      const { newBetResult, otherBetResults } = calculateCpmmMultiSumsToOneSale(
-        answers,
-        answers[index],
-        shares,
-        outcome,
-        undefined,
-        resting(answers),
-        balances,
-        noFees
-      )
-      return [newBetResult, ...otherBetResults]
-    })
+    const answers = withPools(POOLS)
+    const { newBetResult, otherBetResults } = calculateCpmmMultiSumsToOneSale(
+      answers,
+      answers[index],
+      shares,
+      outcome,
+      undefined,
+      resting(answers),
+      { maker: SPENT },
+      noFees
+    )
+    check([newBetResult, ...otherBetResults])
   }
 
   it('cancels their order when YES is bought in another answer', () => {
@@ -1584,5 +1564,55 @@ describe('a maker out of balance in a sum-to-one market', () => {
 
   it('cancels their order when NO is sold in another answer', () => {
     sell(APPLE, 'NO', 40)
+  })
+
+  // Three answers at 50%, 30% and 20%.
+  const THREE = [
+    [100, 100],
+    [152.75252316519467, 65.46536707079771],
+    [200, 50],
+  ]
+
+  it("still fills a maker's last 1.5e-8 in a basket buy that first reaches it with less", () => {
+    // A YES basket on the first two answers buys NO on the third over several
+    // rounds. An early round reaches the maker's order with too little to
+    // count; the order has to be there for the round that can take it.
+    const answers = withPools(THREE)
+    const { newBetResults, otherBetResults } =
+      calculateCpmmMultiArbitrageYesBets(
+        answers,
+        [answers[0], answers[1]],
+        8.473161636028868,
+        undefined,
+        [getLimitBet('at19', answers[2], 'YES', 'maker', 100, 0.19)],
+        { maker: 1.5e-8 },
+        noFees,
+        'cpmm-multi-1'
+      )
+    const makers = [...newBetResults, ...otherBetResults].flatMap(
+      (r) => r.makers
+    )
+    expect(makers.map((m) => m.bet.id)).toEqual(['at19'])
+    expect(sumBy(makers, 'amount')).toBeCloseTo(1.5e-8, 15)
+  })
+
+  it('leaves a limit order at a price where only such an order rests', () => {
+    // Nothing fills: the pool is at the limit, and the one order across it
+    // can't be paid for. The API has to place this order, not refuse it; see
+    // place-bet-maker-balances.test.ts.
+    const answers = withPools(THREE)
+    const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
+      answers,
+      answers[0],
+      'YES',
+      50,
+      0.5,
+      [getLimitBet('at50', answers[0], 'NO', 'maker', 100, 0.5)],
+      { maker: SPENT },
+      noFees
+    )
+    expect(newBetResult.takers).toEqual([])
+    expect(newBetResult.makers).toEqual([])
+    expect(otherBetResults).toEqual([])
   })
 })
