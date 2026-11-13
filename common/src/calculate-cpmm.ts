@@ -417,14 +417,13 @@ export const computeFills = (
           currentBalanceByUserId[userId] = makerBalance - maker.amount
         }
         const adjustedMakerBalance = currentBalanceByUserId[userId]
-        // A fill that stops at what the maker has left means they are out of
-        // balance, whether or not the fill counts and whatever the
-        // subtraction above leaves. A balance that runs out mid-fill seldom
-        // lands on exactly 0: it keeps a sliver like 6e-15 (the fill is worked
-        // out from it as a double), too little to fill any order by an amount
-        // that counts.
+        // They are out of balance too when what they have left stopped this
+        // fill and can't make another of this order that counts, whatever
+        // the subtraction above leaves. A balance that runs out mid-fill
+        // seldom lands on exactly 0: it keeps a sliver like 6e-15 (the fill is
+        // worked out from it as a double).
         if (
-          fill.stopsAtMakerBalance ||
+          fill.makerOutOfBalance ||
           (adjustedMakerBalance !== undefined && adjustedMakerBalance <= 0)
         ) {
           // Now they've insufficient balance. Cancel maker bet.
@@ -530,7 +529,7 @@ const computeFill = (
         timestamp,
         fees,
       },
-      stopsAtMakerBalance: false,
+      makerOutOfBalance: false,
     }
   }
 
@@ -554,16 +553,6 @@ const computeFill = (
   const maxTakerShares = amount / (takerPrice + feesOnOneShare)
   const maxMakerShares = amountToFill / makerPrice
   const shares = Math.min(maxTakerShares, maxMakerShares)
-  // Whether what the maker has left is what stops a fill here, and not the
-  // order's size or what the taker has left.
-  const unspent =
-    matchedBetUserUnspent === undefined
-      ? undefined
-      : Math.max(matchedBetUserUnspent, 0)
-  const stopsAtMakerBalance =
-    unspent !== undefined &&
-    unspent < amountRemaining &&
-    unspent / makerPrice <= maxTakerShares
 
   const takerFee = freeFees ? 0 : getTakerFee(shares, takerPrice)
   const fees = getFeesSplit(takerFee)
@@ -575,6 +564,25 @@ const computeFill = (
     shares,
     timestamp,
   }
+
+  // Whether what the maker has left is what stops the fill here (and not the
+  // order's size or what the taker has left), and after it is too little to
+  // fill any more of the order by an amount that counts.
+  const unspent =
+    matchedBetUserUnspent === undefined
+      ? undefined
+      : Math.max(matchedBetUserUnspent, 0)
+  const stopsAtMakerBalance =
+    unspent !== undefined &&
+    unspent < amountRemaining &&
+    unspent / makerPrice <= maxTakerShares
+  let makerOutOfBalance = false
+  if (stopsAtMakerBalance) {
+    // A fill too small to count is dropped, and nothing is spent on it.
+    const spent = floatingEqual(maker.amount, 0) ? 0 : maker.amount
+    const most = Math.min(amountRemaining - spent, Math.max(unspent - spent, 0))
+    makerOutOfBalance = floatingEqual((most / makerPrice) * makerPrice, 0)
+  }
   const taker = {
     matchedBetId: matchedBet.id,
     amount: shares * takerPrice + takerFee,
@@ -582,7 +590,7 @@ const computeFill = (
     timestamp,
     fees,
   }
-  return { maker, taker, stopsAtMakerBalance }
+  return { maker, taker, makerOutOfBalance }
 }
 
 // Faster version assuming p = 0.5

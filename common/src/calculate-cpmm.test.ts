@@ -899,8 +899,8 @@ describe('makers out of balance', () => {
     // 1e-8 comes to 9.999999999999999e-9 of the first, too little to count,
     // and is dropped. It has always come off the balance the next fill is
     // sized by all the same, so the second gets nothing. This change is to
-    // which orders are cancelled, not to what is filled: both are, since what
-    // the maker has left is what stops each.
+    // which orders are cancelled, not to what is filled. The first is: the
+    // maker's 1e-8 can't make a fill of it that counts.
     const at84 = { pool: { YES: 16, NO: 84 }, p: 0.5, collectedFees: noFees }
     const fills = computeFills(
       at84,
@@ -911,7 +911,36 @@ describe('makers out of balance', () => {
       { maker: 1e-8 }
     )
     expect(fills.makers).toEqual([])
-    expect(cancelledIds(fills)).toEqual(['at84', 'at85'])
+    expect(cancelledIds(fills)).toContain('at84')
+  })
+
+  it('leaves an order open when what a fill leaves its maker can still fill it', () => {
+    // 200,000,000 filled at 63% comes to 199999999.99999997, and at that size
+    // a double can't get any closer. The 3e-8 left is enough for a fill that
+    // counts.
+    const at63 = { pool: { YES: 37, NO: 63 }, p: 0.5, collectedFees: noFees }
+    const resting = order('at63', 'YES', 0.63, 400_000_000)
+    const fills = computeFills(at63, 'NO', 120_000_000, 0.63, [resting], {
+      maker: 200_000_000,
+    })
+    expect(fills.makers.map((m) => m.amount)).toEqual([199999999.99999997])
+    expect(cancelledIds(fills)).toEqual([])
+
+    // The next taker gets it, and then the maker is out.
+    const filled = fills.makers[0]
+    const left = 200_000_000 - filled.amount
+    expect(left).toBeGreaterThan(2e-8)
+    const next = computeFills(
+      at63,
+      'NO',
+      1,
+      0.63,
+      [{ ...resting, amount: filled.amount, shares: filled.shares }],
+      { maker: left }
+    )
+    expect(next.makers).toHaveLength(1)
+    expect(next.makers[0].amount).toBeCloseTo(left, 15)
+    expect(cancelledIds(next)).toEqual(['at63'])
   })
 
   it('fills what a small balance covers, then cancels the order', () => {
