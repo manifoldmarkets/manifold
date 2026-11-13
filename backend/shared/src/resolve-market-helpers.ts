@@ -84,7 +84,6 @@ export const resolveMarketHelper = async (
     payoutsWithoutLoans,
     updatedContractAttrs,
     userUpdates,
-    resolutionTime,
   } = await pg.tx({ mode: SERIAL_MODE }, async (tx) => {
     onTransactionState?.('started')
     const { closeTime, id: contractId } = unresolvedContract
@@ -332,13 +331,25 @@ export const resolveMarketHelper = async (
       await undoUniqueBettorRewardsIfCancelResolution(tx, resolvedContract)
     }
 
+    // The market as this resolution found it, under this resolution's key and
+    // in its transaction, so the record exists exactly when the resolution
+    // does. It holds the pending subsidy the resolution took (the market's
+    // pool and the answers open to share it, each answer's own), which is
+    // what unresolving it puts back.
+    await recordContractEdit(
+      unresolvedContract,
+      resolver.id,
+      Object.keys(updatedContractAttrs ?? {}),
+      getResolutionEditKey(answerId, resolutionTime),
+      tx
+    )
+
     return {
       resolvedContract,
       payoutsWithoutLoans,
       updatedContractAttrs,
       userUpdates,
       updatedContractMetrics,
-      resolutionTime,
     }
   })
 
@@ -351,15 +362,6 @@ export const resolveMarketHelper = async (
     resolution: outcome,
     contractId: resolvedContract.id,
   })
-
-  // The market as this resolution found it, under this resolution's key:
-  // unresolving it restores its pending subsidy from here.
-  await recordContractEdit(
-    unresolvedContract,
-    resolver.id,
-    Object.keys(updatedContractAttrs ?? {}),
-    getResolutionEditKey(answerId, resolutionTime)
-  )
 
   await revalidateStaticProps(contractPath(resolvedContract))
   const userIdToContractMetric = keyBy(

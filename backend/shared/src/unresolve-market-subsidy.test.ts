@@ -1,16 +1,21 @@
-// What unresolving puts back of the pending subsidy a resolution took: the
-// market's pool, and an answer's own.
+// What unresolving puts back of the pending subsidy a resolution took: an
+// independent market's pool, an answer's own, a binary or linked market's.
 //
 // A fully resolved independent market's pool was taken, all of it, by the last
 // answer to resolve. Unresolving used to restore that pool whichever answer
 // was being unresolved: resolve A, add a subsidy, resolve B (which pays the
 // subsidy out), unresolve A, and the subsidy was back in the pool for A to pay
-// out again.
+// out again. And an answer unresolved while the market was still open got
+// none of its share back.
 //
-// And whatever it restored, it read from the latest edit on file, which is
-// the resolution's own only if that edit has been written: it is recorded
-// after the resolution commits. An earlier one holds subsidy that has since
-// moved into the pools.
+// Whatever it restored, it read from the latest edit on file, taking that to
+// be the resolution's own. Resolutions recorded their edit after committing,
+// so it could be missing or late, and the latest one another resolution's,
+// holding subsidy that had since moved into the pools.
+//
+// Now each resolution records the market as it found it in its own
+// transaction, under a key that names it, and unresolving puts back what that
+// record says it took.
 //
 // The real resolveMarketHelper and the real unresolve handler run here, one
 // after the other on the same market. The answers, the payout transactions and
@@ -64,7 +69,10 @@ jest.mock('shared/supabase/users', () => ({
 jest.mock('shared/supabase/utils', () => ({
   bulkInsertQuery: jest.fn(),
   updateDataQuery: jest.fn(),
-  FieldVal: { delete: () => () => 'delete' },
+  FieldVal: {
+    delete: () => () => 'delete',
+    increment: (by: number) => Object.assign(() => 'increment', { by }),
+  },
 }))
 jest.mock('shared/txn/run-txn', () => ({
   txnToRow: (txn: unknown) => txn,
@@ -287,7 +295,9 @@ const addAnswerSubsidy = async (answerId: string, amount: number) => {
   })
 }
 
-// A resolution's edit is recorded after it commits. The last one never was.
+// As if the last resolution's edit had not been recorded. A resolution records
+// it in its own transaction now; before, after committing, where it could be
+// lost.
 const loseLatestEdit = () =>
   rows(
     `delete from contract_edits where id = (
@@ -297,7 +307,7 @@ const loseLatestEdit = () =>
     )`
   )
 
-// Edits as resolutions recorded them before they were keyed,
+// The edits of resolutions made before they were keyed,
 const forgetEditKeys = () =>
   rows(`update contract_edits set idempotency_key = null`)
 
@@ -481,9 +491,12 @@ beforeEach(async () => {
   ) => {
     const next = { ...contract } as Record<string, unknown>
     for (const [key, value] of Object.entries(update)) {
+      if (typeof value !== 'function') next[key] = value
+      // FieldVal.increment(by)
+      else if ('by' in value)
+        next[key] = ((next[key] as number) ?? 0) + (value.by as number)
       // FieldVal.delete()
-      if (typeof value === 'function') delete next[key]
-      else next[key] = value
+      else delete next[key]
     }
     contract = next as unknown as CPMMMultiContract
   }) as unknown as typeof updateContract)
@@ -531,6 +544,40 @@ describe('unresolving an answer that was not the last to resolve', () => {
     }
   )
 
+  // Both answers took half of the pool. Unresolving the first used to put
+  // back the pool as the second found it, which here happens to be the same
+  // amount.
+  it('puts back the share its own resolution took', async () => {
+    addSubsidy(1000)
+    expect(await resolve('A', 'YES')).toBe(ANTE + 500)
+    expect(await resolve('B', 'NO')).toBe(ANTE + 500)
+
+    expect(await unresolve('A')).toBe(-(ANTE + 500))
+    expect(contract.isResolved).toBe(false)
+    expect(contract.subsidyPool).toBe(500)
+
+    expect(await resolve('A', 'NO')).toBe(ANTE + 500)
+    expect(paid).toBe(2 * ANTE + 1000)
+  })
+
+  it('puts back unequal shares, each its own', async () => {
+    await addAnswer('C', 2)
+    addSubsidy(300)
+    expect(await resolve('A', 'YES')).toBe(ANTE + 100)
+    addSubsidy(1000)
+    expect(await resolve('B', 'YES')).toBe(ANTE + 600)
+    expect(await resolve('C', 'YES')).toBe(ANTE + 600)
+
+    // Was 600, the pool as C found it.
+    await unresolve('A')
+    expect(contract.subsidyPool).toBe(100)
+    expect(await resolve('A', 'NO')).toBe(ANTE + 100)
+    await unresolve('B')
+    expect(contract.subsidyPool).toBe(600)
+    expect(await resolve('B', 'NO')).toBe(ANTE + 600)
+    expect(paid).toBe(3 * ANTE + 1300)
+  })
+
   it('does not restore it for any of several earlier answers', async () => {
     await addAnswer('C', 2)
     await resolve('A', 'NO')
@@ -574,10 +621,9 @@ describe('unresolving the answer whose resolution resolved the market', () => {
     expect(paid).toBe(2 * ANTE + 1000)
   })
 
-  // That resolution's edit is recorded after it commits, and can be lost.
-  // The latest one on file is then from an earlier resolution of the same
-  // answer, since undone, and part of the pool it holds has drizzled into the
-  // answer's pool, which pays it out.
+  // With that resolution's edit missing, the latest on file is from an
+  // earlier resolution of the same answer, since undone, and part of the pool
+  // it holds has drizzled into the answer's pool, which pays it out.
   it('puts nothing back from the edit of an earlier resolution of that answer', async () => {
     addSubsidy(1000)
     expect(await resolve('A', 'YES')).toBe(ANTE + 500)
@@ -622,7 +668,9 @@ describe('unresolving the answer whose resolution resolved the market', () => {
 })
 
 describe('unresolving an answer while the market is still open', () => {
-  it('leaves the market pool as it is, as before', async () => {
+  // It used to get none of it back, and the share stayed out of the pool for
+  // good.
+  it('puts back the share of the pool its resolution took', async () => {
     await addAnswer('C', 2)
     addSubsidy(900)
     expect(await resolve('A', 'YES')).toBe(ANTE + 300)
@@ -630,6 +678,33 @@ describe('unresolving an answer while the market is still open', () => {
 
     expect(await unresolve('A')).toBe(-(ANTE + 300))
     expect(contract.isResolved).toBe(false)
+    expect(contract.subsidyPool).toBe(900)
+
+    expect(await resolve('A', 'NO')).toBe(ANTE + 300)
+    expect(await resolve('B', 'NO')).toBe(ANTE + 300)
+    expect(await resolve('C', 'NO')).toBe(ANTE + 300)
+    expect(paid).toBe(3 * ANTE + 900)
+  })
+
+  it('adds it to what the pool holds by then', async () => {
+    await addAnswer('C', 2)
+    addSubsidy(900)
+    await resolve('A', 'YES')
+    addSubsidy(100)
+    await drizzleInto('B', 200)
+    expect(contract.subsidyPool).toBe(500)
+
+    await unresolve('A')
+    expect(contract.subsidyPool).toBe(800)
+  })
+
+  it('puts nothing back for a resolution from before edits were keyed', async () => {
+    await addAnswer('C', 2)
+    addSubsidy(900)
+    await resolve('A', 'YES')
+    await forgetEditKeys()
+
+    await unresolve('A')
     expect(contract.subsidyPool).toBe(600)
   })
 })
@@ -660,6 +735,32 @@ describe('unresolving an answer that had pending subsidy of its own', () => {
     expect(await pendingOf('B')).toBe(0)
 
     expect(await resolve('B', 'YES')).toBe(ANTE + 400)
+    expect(paid).toBe(2 * ANTE + 400)
+  })
+
+  // Another answer's edit, recorded later, also shows B unresolved, with more
+  // pending than B's resolution found.
+  it("puts back what its own resolution's edit holds, whatever was recorded since", async () => {
+    await addAnswerSubsidy('B', 400)
+    expect(await resolve('A', 'NO')).toBe(ANTE)
+    await rows(
+      `update answers
+      set pool_yes = pool_yes + 150, pool_no = pool_no + 150,
+        subsidy_pool = subsidy_pool - 150
+      where id = 'B'`
+    )
+    expect(await resolve('B', 'YES')).toBe(ANTE + 150 + 250)
+    // A's edit arrives after B's.
+    await rows(
+      `update contract_edits
+      set created_time = now() + interval '1 minute'
+      where idempotency_key like 'resolution:A:%'`
+    )
+
+    await unresolve('B')
+    // Was 400, from A's edit.
+    expect(await pendingOf('B')).toBe(250)
+    expect(await resolve('B', 'YES')).toBe(ANTE + 150 + 250)
     expect(paid).toBe(2 * ANTE + 400)
   })
 

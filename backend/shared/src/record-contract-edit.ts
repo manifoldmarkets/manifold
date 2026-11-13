@@ -1,5 +1,8 @@
 import { Contract } from 'common/contract'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 
 export const recordContractEdit = async (
   contract: Contract,
@@ -7,9 +10,11 @@ export const recordContractEdit = async (
   updatedKeys: string[],
   // Names what the edit records, for a reader that needs this edit and no
   // other (getResolutionEditKey).
-  idempotencyKey?: string
+  idempotencyKey?: string,
+  // A transaction to record it in, where the edit has to exist exactly when
+  // the change it records does.
+  pg: SupabaseDirectClient = createSupabaseDirectClient()
 ) => {
-  const pg = createSupabaseDirectClient()
   await pg.none(
     `insert into contract_edits
             (contract_id, editor_id, data, updated_keys, idempotency_key)

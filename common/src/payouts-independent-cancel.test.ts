@@ -12,12 +12,13 @@
 // the market's pending subsidy pool hold. No resolution may pay out more than
 // that ledger says the answer has.
 //
-// Unresolving one answer is part of it (backend/api/src/unresolve.ts): it
+// Unresolving one answer is part of it (backend/api/src/unresolve.ts). It
 // used to put a resolved market's whole pool back whichever answer was
-// unresolved, though the last answer to resolve had paid it out. The real
-// handler is tested against PostgreSQL in
-// backend/shared/src/unresolve-market-subsidy.test.ts; here its rule is
-// mirrored so the random lifecycles cover it.
+// unresolved, though the last answer to resolve had paid it out, and to put
+// nothing back while the market was open. It now puts back the share that
+// answer's own resolution took. The real handler is tested against PostgreSQL
+// in backend/shared/src/unresolve-market-subsidy.test.ts; here both rules are
+// mirrored so the random lifecycles cover them.
 import { sum, sumBy } from 'lodash'
 import { Answer } from './answer'
 import {
@@ -68,7 +69,9 @@ type Resolved = {
   payouts: { userId: string; payout: number }[]
   answerSubsidyPool: number
   held: number
-  // What the resolution took of the market's pending subsidy, by the ledger.
+  // What the resolution took of the market's pending subsidy: as the market
+  // counted it, and by the ledger.
+  poolShare: number
   marketShare: number
 }
 
@@ -419,6 +422,7 @@ class IndependentMarket {
       payouts,
       answerSubsidyPool: answer.subsidyPool,
       held: this.held[answerId],
+      poolShare: contractShare,
       marketShare,
     }
     const resolutionTime = this.clock++
@@ -440,13 +444,12 @@ class IndependentMarket {
   }
 
   // undoResolution for one answer: the payouts come back and the answer's
-  // pending subsidy is restored to what its resolution found. If the market
-  // is resolved, it reopens, and its pool is restored from the latest edit
-  // recorded while it was unresolved, which is the last resolution's: for
-  // whichever answer is unresolved as it was before, and now only when that
-  // edit is the one this answer's resolution recorded and shows it as the one
-  // still open, whose resolution took the pool. (Every edit is on file here.
-  // The handler's test covers the ones that are lost.)
+  // pending subsidy is restored to what its resolution found. The market's
+  // pool gets back the share that resolution took, as its edit records it.
+  // (Every edit is on file here. The handler's test covers the ones that are
+  // not.) Before, the pool was restored only when the market was resolved,
+  // and then to what the latest edit held, which is the last resolution's,
+  // whichever answer was unresolved.
   unresolve(answerId: string) {
     const answer = this.answer(answerId)
     const record = this.resolved[answerId]
@@ -454,17 +457,12 @@ class IndependentMarket {
     this.held[answerId] = record.held
     answer.subsidyPool = record.answerSubsidyPool
     let restored = 0
-    if (this.open().length === 0) {
-      const edit = this.edits[this.edits.length - 1]
-      const isThisResolution =
-        edit.answerId === answerId &&
-        edit.resolutionTime === answer.resolutionTime &&
-        edit.openAnswerIds.length === 1 &&
-        edit.openAnswerIds[0] === answerId
-      if (this.useLegacyUnresolve || isThisResolution) {
-        restored = edit.subsidyPool
-        this.subsidyPool = edit.subsidyPool
-      }
+    if (!this.useLegacyUnresolve) {
+      restored = record.poolShare
+      this.subsidyPool += restored
+    } else if (this.open().length === 0) {
+      restored = this.edits[this.edits.length - 1].subsidyPool
+      this.subsidyPool = restored
     }
     // Only what this answer's resolution took of the pool can come back to
     // it: the rest of what was restored is not there.
@@ -738,6 +736,36 @@ describe('unresolving an answer of a resolved market', () => {
       }
     }
   )
+
+  // Two answers that each took half the pool. The old rule got this one right
+  // by coincidence: the pool as the last found it is what the first took.
+  it('puts back the share the answer took when it was not the last to resolve', () => {
+    for (const legacyUnresolve of [false, true]) {
+      const market = new IndependentMarket('cpmm-multi-2', 'creator', 2, 200)
+      market.useLegacyUnresolve = legacyUnresolve
+      market.addLiquidity('creator', 1000)
+      expect(market.resolve('a0', 'YES')).toBeCloseTo(600, 9)
+      expect(market.resolve('a1', 'NO')).toBeCloseTo(600, 9)
+      market.unresolve('a0')
+      expect(market.subsidyPool).toBe(500)
+      expect(market.resolve('a0', 'NO')).toBeCloseTo(600, 9)
+      expect(market.minted()).toBeCloseTo(0, 9)
+      expect(market.overpaid).toBe(0)
+    }
+  })
+
+  it('puts back the share an answer took while the market is still open', () => {
+    const market = new IndependentMarket('cpmm-multi-2', 'creator', 3, 300)
+    market.addLiquidity('creator', 900)
+    expect(market.resolve('a0', 'YES')).toBeCloseTo(400, 9)
+    market.unresolve('a0')
+    // Was 600: the share stayed out of the pool for good.
+    expect(market.subsidyPool).toBe(900)
+    expect(market.marketHeld).toBe(900)
+    for (const a of market.answers) market.resolve(a.id, 'CANCEL')
+    expect(market.minted()).toBeCloseTo(0, 9)
+    expect(market.overpaid).toBe(0)
+  })
 
   it('still puts the pool back for the answer whose resolution took it', () => {
     const market = new IndependentMarket('cpmm-multi-2', 'creator', 2, 200)
