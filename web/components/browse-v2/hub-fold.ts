@@ -6,6 +6,8 @@ import { Contract } from 'common/contract'
 // shown at the same position, yet took up a large share of the feed.
 // Popular house markets (20+ traders) stay in the feed.
 const HUB_CREATORS = new Set(['ManifoldSports', 'ManifoldPolitics'])
+// localStorage: this device wants hub markets shown in the list.
+export const SHOW_HUB_MARKETS_KEY = 'browse-v2-show-hub-markets'
 const HUB_MIN_TRADERS = 20
 
 export const isHubMarket = (c: Contract) =>

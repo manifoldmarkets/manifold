@@ -34,7 +34,9 @@ with
   entrants as materialized (
     select
       *,
-      ts <= $3::timestamptz - interval '7 days' as mature
+      ts <= $3::timestamptz - interval '7 days' as mature,
+      -- The one-day outcomes can be read a week before the seven-day ones.
+      ts <= $3::timestamptz - interval '1 day' as mature_day
     from
       first_exposures
     where
@@ -122,7 +124,8 @@ with
   signup_outcomes as (
     select
       browser_id,
-      true as signed_up
+      true as signed_up,
+      bool_or(created_time < ts + interval '1 day') as signed_up_day
     from
       signup_accounts
     group by
@@ -131,7 +134,61 @@ with
   trade_outcomes as (
     select
       a.browser_id,
-      true as signed_up_and_traded
+      true as signed_up_and_traded,
+      -- A resting limit order keeps its creation time while it fills, so for
+      -- the one-day outcome a bet counts from its first fill that moved
+      -- money, and never from before it was placed. A row with no fill
+      -- history counts from when it was placed. A row whose history holds no
+      -- usable fill does not count. Every value is checked before it is
+      -- cast, so one odd row cannot stop the report.
+      bool_or(
+        case
+          when jsonb_typeof(b.data -> 'fills') = 'array' then case
+            when jsonb_array_length(b.data -> 'fills') = 0 then extract(
+              epoch
+              from
+                b.created_time
+            ) * 1000
+            else (
+              select
+                case
+                  when min(filled.filled_ms) is null then null
+                  else greatest(
+                    min(filled.filled_ms),
+                    extract(
+                      epoch
+                      from
+                        b.created_time
+                    ) * 1000
+                  )
+                end
+              from
+                (
+                  select
+                    case
+                      when jsonb_typeof(fill -> 'timestamp') = 'number' then (fill ->> 'timestamp')::numeric
+                    end as filled_ms,
+                    case
+                      when jsonb_typeof(fill -> 'amount') = 'number' then (fill ->> 'amount')::numeric
+                    end as amount
+                  from
+                    jsonb_array_elements(b.data -> 'fills') fill
+                ) filled
+              where
+                filled.amount > 0
+            )
+          end
+          else extract(
+            epoch
+            from
+              b.created_time
+          ) * 1000
+        end < extract(
+          epoch
+          from
+            a.ts + interval '1 day'
+        ) * 1000
+      ) as traded_day
     from
       signup_accounts a
       join contract_bets b on b.user_id = a.id
@@ -175,6 +232,21 @@ select
       mature
       and signed_up_and_traded
   )::int as activated_7d,
+  count(*) filter (
+    where
+      mature_day
+  )::int as mature_day_browsers,
+  count(*) filter (
+    where
+      mature_day
+      and signed_up_day
+  )::int as signups_1d,
+  count(*) filter (
+    where
+      mature_day
+      and signed_up_day
+      and traded_day
+  )::int as activated_1d,
   count(*) filter (
     where
       mature

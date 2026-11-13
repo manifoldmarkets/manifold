@@ -138,7 +138,9 @@ export function LensBar(props: {
   followedTopics: TopicChoice[]
   onTopic: (topic: TopicChoice) => void
   filters: BrowseFilters
-  onFilters: (filters: BrowseFilters) => void
+  // `reset` says the person asked for the defaults, as opposed to arriving
+  // at them one filter at a time.
+  onFilters: (filters: BrowseFilters, reset?: boolean) => void
   layout: BrowseLayout
   onLayout: (layout: BrowseLayout) => void
   onYourTopics: () => void
@@ -437,7 +439,7 @@ function ScrollableFilters(props: { children: ReactNode }) {
 
 function FiltersPopover(props: {
   filters: BrowseFilters
-  onFilters: (filters: BrowseFilters) => void
+  onFilters: (filters: BrowseFilters, reset?: boolean) => void
 }) {
   const { filters, onFilters } = props
   const active =
@@ -491,7 +493,7 @@ function FiltersPopover(props: {
           {active > 0 && (
             <button
               type="button"
-              onClick={() => onFilters(DEFAULT_FILTERS)}
+              onClick={() => onFilters(DEFAULT_FILTERS, true)}
               className="text-primary-700 self-start text-sm font-medium"
             >
               Reset filters

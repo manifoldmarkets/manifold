@@ -17,9 +17,10 @@ import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { listGroupsBySlug } from 'web/lib/supabase/groups'
+import { safeLocalStorage } from 'web/lib/util/local'
 import { BrowseTopicsProvider, useBrowseTopics } from './browse-topics'
 import { HubCards } from './hub-cards'
-import { isHubMarket } from './hub-fold'
+import { isHubMarket, SHOW_HUB_MARKETS_KEY } from './hub-fold'
 import {
   ALL_TOPICS,
   BrowseFilters,
@@ -104,10 +105,36 @@ function BrowseV2Inner() {
     ALL_TOPICS,
     'browse-v2-topic'
   )
-  const [filters, setFilters] = usePersistentInMemoryState<BrowseFilters>(
-    DEFAULT_FILTERS,
-    'browse-v2-filters'
+  const [sessionFilters, setSessionFilters] =
+    usePersistentInMemoryState<BrowseFilters>(
+      DEFAULT_FILTERS,
+      'browse-v2-filters'
+    )
+  // Wanting hub markets in the list is a habit like sort and layout: it was
+  // the filter people changed most, and it used to reset with the page. So
+  // it is remembered on this device, while the other filters still reset.
+  const [showHubMarkets, setShowHubMarkets] = usePersistentLocalState<boolean>(
+    false,
+    SHOW_HUB_MARKETS_KEY
   )
+  const filters: BrowseFilters = {
+    ...sessionFilters,
+    // Without storage the choice stays with the other filters, for the visit.
+    showHubMarkets: safeLocalStorage
+      ? showHubMarkets
+      : !!sessionFilters.showHubMarkets,
+  }
+  // The filters as the person set them: the hub choice in them is the one
+  // to remember. Filters set for them (a link, a wider search) go to
+  // setSessionFilters and carry the hub choice over as it was.
+  const setFilters = (next: BrowseFilters, reset = false) => {
+    // Written when the person changes it, and always when they reset. Not
+    // on any other change: a tab that never touched the choice must not
+    // undo what another tab chose.
+    if (reset || !!next.showHubMarkets !== showHubMarkets)
+      setShowHubMarkets(!!next.showHubMarkets)
+    setSessionFilters(next)
+  }
   const [input, setInput] = usePersistentInMemoryState('', 'browse-v2-term')
   const [term, setTerm] = useState(input.trim())
   const [searchCategory, setSearchCategory] = useState<SearchCategory>('all')
@@ -166,12 +193,13 @@ function BrowseV2Inner() {
       (x) => li && x.key === Number(li)
     )?.key
     if (status || type || liquidity)
-      setFilters({
+      setSessionFilters((current) => ({
         ...DEFAULT_FILTERS,
+        showHubMarkets: current.showHubMarkets,
         ...(status ? { status } : {}),
         ...(type ? { contractType: type } : {}),
         ...(liquidity ? { liquidity } : {}),
-      })
+      }))
     setUrlReady(true)
   }, [router.isReady])
 
@@ -277,9 +305,9 @@ function BrowseV2Inner() {
     track('browse v2 topic', { topic: next.key })
     setTopicChoice(next)
   }
-  const onFilters = (next: BrowseFilters) => {
+  const onFilters = (next: BrowseFilters, reset?: boolean) => {
     track('browse v2 filters', { ...next })
-    setFilters(next)
+    setFilters(next, reset)
   }
   const onLayout = (next: BrowseLayout) => {
     track('browse v2 layout', { layout: next })
@@ -295,7 +323,7 @@ function BrowseV2Inner() {
   }
   const resetFilters = () => {
     setTopicChoice(ALL_TOPICS)
-    setFilters(DEFAULT_FILTERS)
+    setFilters(DEFAULT_FILTERS, true)
     setInput('')
   }
   const section = `browse-v2 ${searching ? 'search' : lens} ${layout}`
@@ -469,8 +497,14 @@ function BrowseV2Inner() {
                         error
                           ? () => retryMarkets()
                           : () => {
+                              // Hub markets are never folded out of search
+                              // results, so the choice has no part in this.
                               setTopicChoice(ALL_TOPICS)
-                              setFilters({ ...DEFAULT_FILTERS, status: 'all' })
+                              setSessionFilters((current) => ({
+                                ...DEFAULT_FILTERS,
+                                showHubMarkets: current.showHubMarkets,
+                                status: 'all',
+                              }))
                             }
                       }
                     >
