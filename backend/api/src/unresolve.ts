@@ -77,11 +77,16 @@ const RESOLUTION_EDIT_COLUMNS = `id,
 // names it (getResolutionEditKey), and that is the edit looked up here.
 //
 // Resolutions made before that recorded theirs unkeyed, after committing, so
-// theirs can be missing. For those, the latest edit recorded while the market
-// (and the answer, if one is being unresolved) was unresolved is taken to be
-// theirs if it is unkeyed and was recorded no earlier than the resolution:
-// resolutionTime was set inside the resolving transaction and the edit
-// recorded once it committed, so an earlier resolution's predates it.
+// theirs can be missing, and nothing on an edit says which resolution it is.
+// For those, the latest edit recorded while the market (and the answer, if
+// one is being unresolved) was unresolved is taken to be theirs if it is
+// unkeyed and was recorded no earlier than the resolution: resolutionTime was
+// set inside the resolving transaction and the edit recorded once it
+// committed, so an earlier resolution's predates it. That is how every
+// restore was read before, with the time check added, and it can still be
+// another resolution's from the seconds before. So it is used only for a
+// resolution too old for its creator to undo: everything anyone but a
+// moderator can unresolve is restored from its own keyed edit, or not at all.
 const getResolutionEdit = async (
   pg: SupabaseTransaction,
   contractId: string,
@@ -98,6 +103,9 @@ const getResolutionEdit = async (
     [contractId, getResolutionEditKey(answerId, resolutionTime)]
   )
   if (keyed) return keyed
+
+  if (resolutionTime >= Date.now() - MINUTES_ALLOWED_TO_UNRESOLVE * MINUTE_MS)
+    return null
 
   const latest = await pg.oneOrNone<ResolutionEdit>(
     `select ${RESOLUTION_EDIT_COLUMNS}
