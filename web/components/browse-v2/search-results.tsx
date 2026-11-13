@@ -7,6 +7,10 @@ import { removeEmojis } from 'common/util/string'
 import Link from 'next/link'
 import { ReactNode } from 'react'
 import { UserResults } from 'web/components/search/user-results'
+import {
+  SportsHubSearchResult,
+  useSportsHubSearch,
+} from 'web/components/sports/sports-hub-search-result'
 import { BrowseTopicPills } from 'web/components/topics/browse-topic-pills'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useReactionsOnContent } from 'web/hooks/use-reactions'
@@ -104,7 +108,15 @@ export function SearchResults(props: {
     (u) => !isUserLikelySpammer(u, !!u.lastBetTime, false)
   )
   const previewUsers = nonSpamUsers.length ? nonSpamUsers : visibleUsers
-  const visibleGroups = groups.items.filter((g) => !topics.isHidden(g.slug))
+  // A search for a sport or a topic with a page on /sports leads with that
+  // page, which stands in for its own topic result.
+  const showsHub = category === 'all' || category === 'topics'
+  const { hub, topicHref } = useSportsHubSearch(term, showsHub)
+  const visibleGroups = groups.items.filter(
+    (g) =>
+      !topics.isHidden(g.slug) &&
+      !(hub && topicHref && topicHref(g) === hub.path)
+  )
   const visiblePosts = posts.items.filter(
     (p) => !isBlocked(privateUser, p.creatorId)
   )
@@ -112,6 +124,7 @@ export function SearchResults(props: {
 
   return (
     <>
+      {hub && <SportsHubSearchResult hub={hub} term={term} />}
       {(all || category === 'users') && (
         <SearchSection
           label="Users"
@@ -167,7 +180,7 @@ export function SearchResults(props: {
               {visibleGroups.slice(0, 4).map((g, i) => (
                 <Link
                   key={g.id}
-                  href={groupPath(g.slug)}
+                  href={topicHref?.(g) ?? groupPath(g.slug)}
                   prefetch={false}
                   title={removeEmojis(g.name)}
                   className={clsx(
@@ -184,6 +197,7 @@ export function SearchResults(props: {
               key={term}
               topics={visibleGroups}
               initialShown={visibleGroups.length}
+              topicHref={topicHref}
             />
           )}
         </SearchSection>

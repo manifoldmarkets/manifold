@@ -14,8 +14,16 @@ export const BrowseTopicPills = (props: {
   className?: string
   clipOnMobile?: boolean
   initialShown?: number
+  /** Where a topic opens instead of its topic page (a sports topic's page). */
+  topicHref?: (topic: LiteGroup) => string | undefined
 }) => {
-  const { topics, className, clipOnMobile = false, initialShown } = props
+  const {
+    topics,
+    className,
+    clipOnMobile = false,
+    initialShown,
+    topicHref,
+  } = props
   const isMobile = useIsMobile()
   const [showMore, setShowMore] = useState<boolean>(false)
   const maxShown =
@@ -29,7 +37,7 @@ export const BrowseTopicPills = (props: {
           <Link
             prefetch={false}
             key={g.slug}
-            href={groupPath(g.slug)}
+            href={topicHref?.(g) ?? groupPath(g.slug)}
             className={clsx(
               'bg-canvas-50 hover:bg-primary-50 text-ink-600 hover:text-primary-700 rounded-md px-2.5 py-1 font-medium transition-colors'
             )}

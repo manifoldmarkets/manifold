@@ -92,6 +92,23 @@ export const sortLikeSql = <T>(
   return keyed.map(({ item }) => item)
 }
 
+/**
+ * Move `pinned` to the top of a page, in their own order. Only the ones the
+ * page already holds move, so a page never gains or repeats a row.
+ */
+export const pinToTop = <T extends { id: string }>(
+  page: T[],
+  pinned: readonly { id: string }[]
+) => {
+  const byId = new Map(page.map((item) => [item.id, item]))
+  const top = pinned.flatMap((p) => {
+    const item = byId.get(p.id)
+    return item ? [item] : []
+  })
+  const topIds = new Set(top.map((item) => item.id))
+  return [...top, ...page.filter((item) => !topIds.has(item.id))]
+}
+
 export const getSearchResultPage = (
   matchesInRelevanceOrder: Contract[],
   pagination: SearchPagination & { sort: string; ordering: SearchSort }

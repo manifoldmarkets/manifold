@@ -3,6 +3,7 @@ import {
   SearchSort,
   getSearchQueryPagination,
   getSearchResultPage,
+  pinToTop,
   sortLikeSql,
 } from './search-pagination'
 
@@ -239,5 +240,29 @@ describe('search pagination when SQL and JS must agree on the order', () => {
     const ties = ['d', 'b', 'a', 'c', 'e'].map((id) => market(id, 1, 0, 0))
     const pages = walkOffsetPages([ties, [...ties].reverse()], pagination)
     expect(pages).toEqual([['a', 'b'], ['c', 'd'], ['e']])
+  })
+})
+
+describe('pinToTop', () => {
+  const ids = (items: { id: string }[]) => items.map((item) => item.id)
+  const page = ['a', 'b', 'c', 'd'].map((id) => market(id, 0))
+
+  it('moves the pinned rows to the top in their own order', () => {
+    expect(ids(pinToTop(page, [{ id: 'd' }, { id: 'b' }]))).toEqual([
+      'd',
+      'b',
+      'a',
+      'c',
+    ])
+  })
+
+  it('never adds a pinned row the page does not hold', () => {
+    expect(ids(pinToTop(page, [{ id: 'z' }, { id: 'c' }]))).toEqual([
+      'c',
+      'a',
+      'b',
+      'd',
+    ])
+    expect(ids(pinToTop(page, []))).toEqual(ids(page))
   })
 })

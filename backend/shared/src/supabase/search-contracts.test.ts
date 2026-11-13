@@ -3,6 +3,7 @@ import {
   basicSearchSQL,
   getForYouTopicRankSql,
   getSemanticSearchContractSQL,
+  getSportsGamesSearchSQL,
   shouldSuppressStaleSeenMarkets,
   staleSeenMarketsSql,
 } from './search-contracts'
@@ -85,6 +86,72 @@ describe('getSemanticSearchContractSQL', () => {
 
     expect(sql).toContain('select 1 from group_contracts gc')
     expect(sql).toContain('science')
+  })
+})
+
+describe('getSportsGamesSearchSQL', () => {
+  const args = {
+    filter: 'all',
+    contractType: 'ALL',
+    limit: 6,
+    offset: 0,
+    sort: 'score',
+    token: 'MANA' as const,
+  }
+
+  it("takes a sport's live and upcoming official games, soonest first", () => {
+    const sql = getSportsGamesSearchSQL({
+      ...args,
+      games: { sportsLeagues: ['NBA'] },
+    })
+
+    expect(sql).toContain('contracts.creator_id = any(')
+    expect(sql).toContain(`contracts.data->>'sportsEventId' is not null`)
+    expect(sql).toContain('contracts.resolution_time is null')
+    expect(sql).toContain('contracts.close_time > now()')
+    expect(sql).toContain(
+      `lower(contracts.data->>'sportsLeague') = any(array['nba'])`
+    )
+    expect(sql).toContain('order by contracts.close_time asc, contracts.id')
+    expect(sql).toContain('limit 6')
+    expect(sql).not.toContain('group_contracts hub')
+  })
+
+  it("takes a topic's games by the topics its page covers", () => {
+    const sql = getSportsGamesSearchSQL({
+      ...args,
+      games: { groupIds: ['super-bowl'] },
+    })
+
+    expect(sql).toContain('from group_contracts hub')
+    expect(sql).toContain('super-bowl')
+    expect(sql).not.toContain('sportsLeague')
+  })
+
+  it("keeps the search's own filters", () => {
+    const sql = getSportsGamesSearchSQL({
+      ...args,
+      games: {},
+      groupIds: ['science'],
+      filter: 'news',
+      hasBets: '1',
+      uid: 'user-id',
+      contractType: 'BINARY',
+      beforeTime: 1_700_000_000_000,
+    })
+
+    expect(sql).toContain('select 1 from group_contracts gc')
+    expect(sql).toContain('science')
+    expect(sql).toContain('recent_movements rm')
+    expect(sql).toContain('user_contract_metrics cm')
+    expect(sql).toContain(`outcome_type = 'BINARY'`)
+    expect(sql).toContain('contracts.created_time < millis_to_ts(')
+  })
+
+  it('defensively renders a positive limit', () => {
+    expect(getSportsGamesSearchSQL({ ...args, limit: 0, games: {} })).toContain(
+      'limit 1'
+    )
   })
 })
 

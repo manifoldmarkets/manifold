@@ -6,6 +6,7 @@ import { getPerpBackingPool } from 'common/perps/amm'
 import { isPerpTickerSearchTerm } from 'common/perps/ticker'
 import { tsToMillis } from 'common/supabase/utils'
 import { answerCostTiers, getTierIndexFromLiquidity } from 'common/tier'
+import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { PrivateUser } from 'common/user'
 import { buildArray, filterDefined } from 'common/util/array'
 import { MINUTE_MS } from 'common/util/time'
@@ -456,6 +457,63 @@ export function getSemanticSearchContractSQL(
     orderBy('se.similarity desc'),
     // sql-builder silently drops a limit of 0 (rendering NO limit clause), so
     // clamp: callers must never pass 0, but if one does, 1 row beats 200.
+    lim(Math.max(limit, 1))
+  )
+}
+
+// Official games are created at most five weeks ahead (F1's sessions; other
+// sports two weeks). The bound keeps the close_time index scan short when a
+// sport has nothing scheduled.
+const SPORTS_GAMES_SEARCH_DAYS = 36
+
+/**
+ * The live and upcoming official games of a sports hub that a search names
+ * (common/sports-search.ts), soonest first: what a keyword can't find, as no
+ * game's title names its league. Run through the same filters as the rest of
+ * the search, so a topic, status, type or token filter still holds.
+ */
+export function getSportsGamesSearchSQL(
+  args: SharedSearchArgs & {
+    /** Which games: by `sportsLeague`, or by topic; neither means every game. */
+    games: { sportsLeagues?: string[]; groupIds?: string[] }
+    /** The search's own topic filter. */
+    groupId?: string
+    groupIds?: string[]
+  }
+) {
+  const { games, limit, filter, uid, hasBets, beforeTime } = args
+  return renderSql(
+    select(contractColumnsToSelectWithPrefix('contracts')),
+    from('contracts'),
+    groupsFilterSql(args),
+    filter === 'news' && newsMovementFilterSql(),
+    hasBets === '1' && uid && userBetsJoinSql,
+    // As for any search with a term: nothing is hidden by default.
+    getSearchContractWhereSQL({ ...args, hideStonks: false, hideLove: false }),
+    where(`contracts.creator_id = any($1)`, [MANIFOLD_SPORTS_USER_IDS]),
+    where(`contracts.data->>'sportsEventId' is not null`),
+    where(`contracts.resolution_time is null`),
+    where(
+      `contracts.close_time > now() and contracts.close_time < now() + interval '${SPORTS_GAMES_SEARCH_DAYS} days'`
+    ),
+    games.sportsLeagues &&
+      where(`lower(contracts.data->>'sportsLeague') = any($1)`, [
+        games.sportsLeagues.map((league) => league.toLowerCase()),
+      ]),
+    games.groupIds &&
+      where(
+        `exists (
+      select 1 from group_contracts hub
+      where hub.contract_id = contracts.id and hub.group_id = any($1)
+    )`,
+        [games.groupIds]
+      ),
+    beforeTime &&
+      where(`contracts.created_time < millis_to_ts($1)`, [beforeTime]),
+    // A game closes a few hours after kickoff, so this is live games first,
+    // then the rest by kickoff. The id makes it a total order.
+    orderBy('contracts.close_time asc, contracts.id'),
+    // sql-builder renders no limit at all for 0.
     lim(Math.max(limit, 1))
   )
 }

@@ -8,14 +8,14 @@ type Result = {
   id: string
   createdTime: number
   importanceScore: number
-  searchMatchType?: 'lexical' | 'semantic'
+  searchMatchType?: 'lexical' | 'semantic' | 'sports-game'
 }
 
 const result = (
   id: string,
   importanceScore: number,
   createdTime: number,
-  searchMatchType?: 'lexical' | 'semantic'
+  searchMatchType?: Result['searchMatchType']
 ): Result => ({ id, importanceScore, createdTime, searchMatchType })
 
 const ids = (results: Result[]) => results.map(({ id }) => id)
@@ -145,6 +145,34 @@ describe('orderCombinedSearchResults', () => {
     expect(ids(ordered)).toEqual(['old-higher-market', 'post', 'old-lexical'])
   })
 
+  it("keeps a sports hub's pinned games on top in the server's order", () => {
+    const tonight = result('tonight', 0.2, 10, 'sports-game')
+    const tomorrow = result('tomorrow', 0.9, 10, 'sports-game')
+    const futures = result('futures', 0.7, 10, 'lexical')
+    const ordered = orderCombinedSearchResults(
+      [tonight, tomorrow, futures, semantic],
+      [post],
+      { sort: 'score' }
+    )
+
+    expect(ids(ordered)).toEqual([
+      'tonight',
+      'tomorrow',
+      'post',
+      'futures',
+      'semantic',
+    ])
+  })
+
+  it('places games like any market under other sorts', () => {
+    const game = result('game', 0.2, 40, 'sports-game')
+    const ordered = orderCombinedSearchResults([lexical, game], [post], {
+      sort: 'newest',
+    })
+
+    expect(ids(ordered)).toEqual(['game', 'post', 'lexical'])
+  })
+
   it('still mixes newest results by creation time', () => {
     const ordered = orderCombinedSearchResults([lexical, semantic], [post], {
       sort: 'newest',
@@ -182,6 +210,14 @@ describe('getPostSearchThreshold', () => {
     const semantic = result('semantic', 1, 20, 'semantic')
 
     expect(getPostSearchThreshold([lexical, semantic], 'score')).toBe(10)
+  })
+
+  it('ignores pinned sports games when finding the lexical floor', () => {
+    const lexical = result('lexical', 10, 10, 'lexical')
+    const game = result('game', 1, 20, 'sports-game')
+
+    expect(getPostSearchThreshold([game, lexical], 'score')).toBe(10)
+    expect(getPostSearchThreshold([game, lexical], 'newest')).toBe(10)
   })
 
   it('has no score threshold when only semantic markets remain', () => {

@@ -81,6 +81,10 @@ import { ContractFilters } from './search/contract-filters'
 import { SearchInput } from './search/search-input'
 import { UserResults } from './search/user-results'
 import { useSweepstakes } from './sweepstakes-provider'
+import {
+  SportsHubSearchResult,
+  useSportsHubSearch,
+} from './sports/sports-hub-search-result'
 import { BrowseTopicPills } from './topics/browse-topic-pills'
 import { Carousel } from './widgets/carousel'
 import { LiveRegion } from './widgets/live-region'
@@ -450,13 +454,27 @@ export function Search(props: SearchProps) {
     }
   }, [visible, refreshOnVisible])
 
-  const showTopics = topics && topics.length > 0 && query && query.length > 0
+  // A search for a sport or a topic with a page on /sports leads with that
+  // page, which stands in for its own topic result.
+  const { hub: sportsHub, topicHref } = useSportsHubSearch(
+    query,
+    showSearchTypes
+  )
+  const shownTopics =
+    sportsHub && topicHref
+      ? topics?.filter((topic) => topicHref(topic) !== sportsHub.path)
+      : topics
+  const showTopics =
+    shownTopics && shownTopics.length > 0 && query && query.length > 0
   const showUsers = users && users.length > 0 && query && query.length > 0
   const searchInputId = `${persistPrefix}-search-input`
   const searchResultsId = `${persistPrefix}-search-results`
   const searchInstructionsId = `${persistPrefix}-search-instructions`
   const totalResults =
-    (contracts?.length ?? 0) + (topics?.length ?? 0) + (users?.length ?? 0)
+    (sportsHub ? 1 : 0) +
+    (contracts?.length ?? 0) +
+    (shownTopics?.length ?? 0) +
+    (users?.length ?? 0)
   const searchAnnouncement =
     query.length === 0
       ? ''
@@ -955,28 +973,36 @@ export function Search(props: SearchProps) {
         )}
         {showSearchTypes && (
           <Col>
+            {sportsHub && (
+              <SportsHubSearchResult
+                hub={sportsHub}
+                term={query}
+                className="mx-2 mb-3 sm:mx-0"
+              />
+            )}
             {showTopics && (
               <>
                 <Row className="text-ink-500 items-center gap-1 text-sm">
                   <hr className="border-ink-300 ml-2 grow sm:ml-0" />
                   <span>
-                    {!query || !topics?.length
+                    {!query || !shownTopics?.length
                       ? ''
-                      : topics.length >= 100
+                      : shownTopics.length >= 100
                       ? '100+'
-                      : `${topics.length}`}{' '}
-                    {!query || !topics?.length ? 'Topics' : 'topics'}
+                      : `${shownTopics.length}`}{' '}
+                    {!query || !shownTopics?.length ? 'Topics' : 'topics'}
                   </span>
                   <hr className="border-ink-300 mr-2 grow sm:mr-0" />
                 </Row>
                 <BrowseTopicPills
                   className={'relative w-full px-2 pb-4'}
-                  topics={topics}
+                  topics={shownTopics}
+                  topicHref={topicHref}
                 />
               </>
             )}
             {showUsers && <UserResults userResults={users} />}
-            {(showTopics || showUsers) && (
+            {(showTopics || showUsers || sportsHub) && (
               <Row className="text-ink-500 items-center gap-1 text-sm">
                 <hr className="border-ink-300 ml-2 grow sm:ml-0" />
                 <span>

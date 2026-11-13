@@ -15,6 +15,7 @@ import { convertContract } from 'common/supabase/contracts'
 import {
   getSearchQueryPagination,
   getSearchResultPage,
+  pinToTop,
   sortLikeSql,
 } from 'shared/helpers/search-pagination'
 import { getGroupIdFromSlug } from 'shared/supabase/groups'
@@ -28,9 +29,16 @@ import {
   getSearchContractSQL,
   getSearchSort,
   getSemanticSearchContractSQL,
+  getSportsGamesSearchSQL,
   SearchTypes,
   shouldSuppressStaleSeenMarkets,
 } from 'shared/supabase/search-contracts'
+import { getSportsIndex } from 'shared/supabase/sports-index'
+import {
+  findSportsHub,
+  sportsHubGames,
+  sportsQueryForms,
+} from 'common/sports-search'
 import {
   EMBEDDING_MODEL,
   generateEmbeddings,
@@ -281,11 +289,22 @@ const search = async (
       )
       .join(';')
 
-    const results = await pg.multi(multiQuery).catch((e) => {
-      // to_tsquery is sensitive to special characters and can throw an error
-      log.error(`Error executing search query for term: ${term}`, e)
-      return Array(searchTypes.length).fill([])
-    })
+    const [results, sportsGames] = await Promise.all([
+      pg.multi(multiQuery).catch((e) => {
+        // to_tsquery is sensitive to special characters and can throw an error
+        log.error(`Error executing search query for term: ${term}`, e)
+        return Array(searchTypes.length).fill([])
+      }),
+      searchSportsGames({
+        ...props,
+        term: cleanTerm,
+        uid: userId,
+        groupId,
+        groupIds,
+        isPrizeMarket,
+        pg,
+      }),
+    ])
 
     type Match = { data: Contract; searchType: SearchTypes }
     // Keyed by type rather than destructured by position: the ticker query
@@ -322,21 +341,34 @@ const search = async (
       (match) => (match.searchType === 'answer' ? 0.5 : 1)
     )
 
-    const lexicalResults = getSearchResultPage(
+    const resultPage = getSearchResultPage(
       [
-        ...tickerMatches, // the market's own handle
-        ...contractsWithStopwords, // most obviously relevant
-        ...contractsOfSimilarRelevance, // next most relevant
-        ...contractDescriptionMatches, // least obviously relevant
-      ].map((c) => c.data),
+        // A sports hub's live and upcoming games, for a search that names
+        // one: no keyword reaches them. First, so every page cuts the same
+        // relevance list.
+        ...sportsGames,
+        ...[
+          ...tickerMatches, // the market's own handle
+          ...contractsWithStopwords, // most obviously relevant
+          ...contractsOfSimilarRelevance, // next most relevant
+          ...contractDescriptionMatches, // least obviously relevant
+        ].map((c) => c.data),
+      ],
       { ...props, sort, ordering }
     )
+    // Ranked by relevance, the games lead their page in kickoff order rather
+    // than scatter by importance; any other sort places them like the rest.
+    const lexicalResults =
+      sort === 'score' ? pinToTop(resultPage, sportsGames) : resultPage
     if (!options.markSearchMatches) return lexicalResults
 
+    const sportsGameIds = new Set(sportsGames.map((c) => c.id))
     const markedLexicalResults: FullMarketSearchResult[] = lexicalResults.map(
       (contract) => ({
         ...contract,
-        searchMatchType: 'lexical',
+        searchMatchType: sportsGameIds.has(contract.id)
+          ? 'sports-game'
+          : 'lexical',
       })
     )
     if (!options.allowSemanticFallback) return markedLexicalResults
@@ -362,6 +394,49 @@ const search = async (
     // matched no keyword, so ordering them by importance would float a weak
     // association above a strong one.
     return [...markedLexicalResults, ...semanticResults]
+  }
+}
+
+// A search for a sports hub shows this many of its games at most, and never
+// more than half a page.
+const SPORTS_GAMES_PER_SEARCH = 6
+
+/**
+ * The live and upcoming games of the sports hub a search names ("nba",
+ * "premier league"; common/sports-search.ts), soonest first, or none. The
+ * topic tree comes from the sports index, which every process caches.
+ */
+const searchSportsGames = async (
+  props: Omit<
+    Parameters<typeof getSportsGamesSearchSQL>[0],
+    'games' | 'limit'
+  > & {
+    term: string
+    limit: number
+    pg: SupabaseDirectClient
+  }
+): Promise<Contract[]> => {
+  const { term, limit, pg } = props
+  const gamesLimit = Math.min(SPORTS_GAMES_PER_SEARCH, Math.floor(limit / 2))
+  // No search, or one too long to be a name: no need for the topic tree.
+  if (gamesLimit < 1 || sportsQueryForms(term).length === 0) return []
+  try {
+    // The curated sports alone if the tree can't be read.
+    const index = await getSportsIndex(pg)
+    const hub = findSportsHub(term, index)
+    const games = hub && sportsHubGames(hub, index)
+    if (!games) return []
+    return await pg.map(
+      getSportsGamesSearchSQL({ ...props, games, limit: gamesLimit }),
+      null,
+      convertContract
+    )
+  } catch (e) {
+    // The games are extra; the search stands without them.
+    log.error('Sports games search failed', {
+      error: e instanceof Error ? e.message : String(e),
+    })
+    return []
   }
 }
 

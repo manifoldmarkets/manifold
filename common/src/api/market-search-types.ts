@@ -7,7 +7,9 @@ export type FullMarketSearchResult = Contract & {
   // on the internal full-search shape lets mixed result UIs preserve
   // lexical/post ranking without promoting the semantic tail. It remains
   // optional so old workers and non-text search routes stay compatible.
-  searchMatchType?: 'lexical' | 'semantic'
+  // 'sports-game': a live or upcoming game of the sports hub the search names
+  // (common/sports-search.ts), which relevance ranking pins to the top.
+  searchMatchType?: 'lexical' | 'semantic' | 'sports-game'
 }
 
 export const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/

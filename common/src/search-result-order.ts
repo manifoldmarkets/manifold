@@ -15,16 +15,22 @@ export const shouldPreserveBackendMarketOrder = (
   isForYou: boolean
 ) => discoveryVariant === 'treatment' && (isForYou || query.trim().length > 0)
 
+// A sports hub's games, pinned above a search's other results by kickoff.
+const isPinned = ({ searchMatchType }: RankableMarketSearchResult) =>
+  searchMatchType === 'sports-game'
+
 export const getPostSearchThreshold = <C extends RankableMarketSearchResult>(
   contracts: readonly C[],
   sort: 'score' | 'newest'
 ): number | undefined => {
-  // Semantic results are similarity-ranked, so their importance scores cannot
-  // define the next lexical/post page boundary.
+  // Semantic results are similarity-ranked and pinned games kickoff-ranked,
+  // so their importance scores cannot define the next lexical/post page
+  // boundary.
   const rankableContracts =
     sort === 'score'
       ? contracts.filter(
-          ({ searchMatchType }) => searchMatchType !== 'semantic'
+          (contract) =>
+            contract.searchMatchType !== 'semantic' && !isPinned(contract)
         )
       : contracts
   const values = rankableContracts
@@ -81,8 +87,10 @@ export const orderCombinedSearchResults = <
     return [...contracts, ...posts]
   }
 
+  // The games a sports search pins stay on top, in the server's order.
+  const pinnedContracts = contracts.filter(isPinned)
   const lexicalContracts = contracts.filter(
-    ({ searchMatchType }) => searchMatchType !== 'semantic'
+    (contract) => contract.searchMatchType !== 'semantic' && !isPinned(contract)
   )
   const semanticContracts = contracts.filter(
     ({ searchMatchType }) => searchMatchType === 'semantic'
@@ -91,5 +99,5 @@ export const orderCombinedSearchResults = <
     (a, b) => b.importanceScore - a.importanceScore
   )
 
-  return [...rankedLexicalResults, ...semanticContracts]
+  return [...pinnedContracts, ...rankedLexicalResults, ...semanticContracts]
 }
