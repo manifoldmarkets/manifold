@@ -404,17 +404,21 @@ export const computeFills = (
       // Matched against bet.
       i++
       const { userId } = maker.bet
+      // A fill too small to count is dropped: no shares change hands, and
+      // none of the maker's balance is spent.
+      const counts = !floatingEqual(maker.amount, 0)
       const makerBalance = currentBalanceByUserId[userId]
       if (makerBalance !== undefined) {
-        if (maker.amount > 0) {
+        if (counts) {
           currentBalanceByUserId[userId] = makerBalance - maker.amount
         }
         const adjustedMakerBalance = currentBalanceByUserId[userId]
-        // A fill that stopped at the maker's balance used it up, whatever the
-        // subtraction above leaves. It seldom leaves exactly 0: a balance that
-        // runs out mid-fill keeps a sliver like 6e-15 (the fill is worked out
-        // from it as a double), and filling that sliver at this order's price
-        // can leave a smaller one, with no fill that counts (see below).
+        // A fill that stopped at the maker's balance means they are out of
+        // it, whether or not the fill counts and whatever the subtraction
+        // above leaves. A balance that runs out mid-fill seldom lands on
+        // exactly 0: it keeps a sliver like 6e-15 (the fill is worked out from
+        // it as a double), too little to fill any order by an amount that
+        // counts.
         if (
           fill.stopsAtMakerBalance ||
           (adjustedMakerBalance !== undefined && adjustedMakerBalance <= 0)
@@ -423,7 +427,7 @@ export const computeFills = (
           ordersToCancel.push(maker.bet)
         }
       }
-      if (floatingEqual(maker.amount, 0)) continue
+      if (!counts) continue
 
       takers.push(taker)
       makers.push(maker)

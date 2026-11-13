@@ -819,12 +819,13 @@ describe('makers out of balance', () => {
     expect(100 - fills.makers[0].amount).toBeLessThan(1e-12)
     expect(cancelledIds(fills)).toEqual(['resting'])
 
-    // Around the least a fill counts for, a balance may or may not make one.
-    // Either way the fill stops at it.
+    // A balance of 1e-8, the least a fill counts for, may or may not make one
+    // at a given price. Either way the fill stops at it.
     const failed = everyPrice(
       [1e-8, 1.0000000000000002e-8, 1.5e-8, 3.3e-8, 5, 25, 250],
       (fills, balance) =>
         cancelledIds(fills).length === 1 &&
+        (fills.makers.length === 1 || balance < 1.1e-8) &&
         fills.makers.every((m) => Math.abs(m.amount - balance) < 1e-11)
     )
     expect(failed).toEqual([])
@@ -845,6 +846,52 @@ describe('makers out of balance', () => {
     })
     expect(larger.makers.map((m) => m.amount)).toEqual([1.5e-8])
     expect(cancelledIds(larger)).toEqual(['at22'])
+  })
+
+  it('takes nothing off a balance for a fill too small to count', () => {
+    // Two orders of one maker's at 19%, and a taker with too little for a fill
+    // of either. The maker's 1.02e-8 is untouched: the 9.4e-9 that would have
+    // gone into the first is not gone when the second is reached.
+    const at19 = { pool: { YES: 81, NO: 19 }, p: 0.5, collectedFees: noFees }
+    const resting = [
+      order('first', 'YES', 0.19, 100),
+      order('second', 'YES', 0.19, 100),
+    ]
+    const small = computeFills(
+      at19,
+      'NO',
+      4.007368421052631e-8,
+      undefined,
+      resting,
+      { maker: 1.02e-8 }
+    )
+    expect(small.makers).toEqual([])
+    expect(cancelledIds(small)).toEqual([])
+
+    // The same from a bet of ordinary size, which gets the pool from 22% to
+    // the orders at 19% with that little left.
+    const ordinary = computeFills(
+      at22,
+      'NO',
+      7.5311577972758075,
+      undefined,
+      resting,
+      { maker: 1.02e-8 }
+    )
+    expect(getCpmmProbability(ordinary.cpmmState.pool, 0.5)).toBeCloseTo(
+      0.19,
+      8
+    )
+    expect(ordinary.makers).toEqual([])
+    expect(cancelledIds(ordinary)).toEqual([])
+
+    // A taker with enough fills the first with all of it, and both orders go.
+    const enough = computeFills(at19, 'NO', 1, undefined, resting, {
+      maker: 1.02e-8,
+    })
+    expect(enough.makers.map((m) => m.bet.id)).toEqual(['first'])
+    expect(enough.makers[0].amount).toBeCloseTo(1.02e-8, 20)
+    expect(cancelledIds(enough)).toEqual(['first', 'second'])
   })
 
   it('fills what a small balance covers, then cancels the order', () => {
