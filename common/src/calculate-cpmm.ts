@@ -410,7 +410,14 @@ export const computeFills = (
           currentBalanceByUserId[userId] = makerBalance - maker.amount
         }
         const adjustedMakerBalance = currentBalanceByUserId[userId]
-        if (adjustedMakerBalance !== undefined && adjustedMakerBalance <= 0) {
+        // Less than a fill has to be to count (see below) is none. A balance
+        // that runs out mid-fill is seldom left at exactly 0: the fill is
+        // worked out from it as a double, so a sliver like 6e-15 stays behind,
+        // and filling that at this order's price can leave a smaller one yet.
+        if (
+          adjustedMakerBalance !== undefined &&
+          adjustedMakerBalance < EPSILON
+        ) {
           // Now they've insufficient balance. Cancel maker bet.
           ordersToCancel.push(maker.bet)
         }

@@ -1,4 +1,4 @@
-import { groupBy, sum, sumBy } from 'lodash'
+import { groupBy, sum, sumBy, uniq } from 'lodash'
 import { Answer } from './answer'
 import { Bet, LimitBet } from './bet'
 import {
@@ -1467,5 +1467,122 @@ describe('calculateCpmmMultiArbitrageBet — a maker short of balance across leg
   it('cpmm-multi-2: a NO buy redeems only the YES the legs bought', () => {
     const answers = multi2()
     check(answers, 'NO', restingNo(answers), 200)
+  })
+})
+
+describe('a maker out of balance in a sum-to-one market', () => {
+  // "Largest company end of 2026?" (cpmm-multi-1) on 2026-11-13, with the two
+  // YES orders a maker with 6.46e-15 left had resting on NVIDIA. For three
+  // days the API refused every trade that took NVIDIA down to 22%. Worked out
+  // with the maker's balance, the trade passed the order by, neither filling
+  // nor cancelling it. Worked out again in its transaction, which reads the
+  // balances of only the makers the first pass matched and takes the rest to
+  // have all they need, it filled the order. The two have to agree.
+  const POOLS = [
+    [98.90074594387598, 316.95271553231885], // Apple, 76.2%
+    [333.9603143435627, 94.32742389434054], // NVIDIA, 22.02%
+    [2002.4384487669918, 15.66290366066713],
+    [7724.6109048255385, 4.052215456471361],
+    [4502.377358405622, 6.960862106285278],
+    [10891.33997554399, 2.872405655238442],
+    [6245.523064829832, 5.00963303013755],
+    [11097.100808281812, 2.8187355684997275],
+    [15421.044729088999, 4.345532841523333],
+    [7366.888428010821, 17.15619795808815],
+    [5733.904322760456, 22.04218785172386],
+  ]
+  const market = (): Answer[] =>
+    POOLS.map(([poolYes, poolNo], i) => ({
+      ...getAnswerK(i, poolNo / (poolYes + poolNo), 1),
+      poolYes,
+      poolNo,
+    }))
+  const APPLE = 0
+  const NVIDIA = 1
+  const SPENT = 6.457834393110897e-15
+  const resting = (answers: Answer[]) => [
+    getLimitBet('at22', answers[NVIDIA], 'YES', 'maker', 234, 0.22),
+    getLimitBet('at9', answers[NVIDIA], 'YES', 'maker', 303, 0.09),
+  ]
+
+  type Leg = {
+    makers: { bet: LimitBet }[]
+    ordersToCancel: LimitBet[]
+    cpmmState: { pool: { [outcome: string]: number }; p: number }
+  }
+  // The users a trade locks: see getMakerIdsFromBetResult in the API.
+  const matchedUserIds = (legs: Leg[]) =>
+    uniq([
+      ...legs.flatMap((leg) => leg.makers.map((m) => m.bet.userId)),
+      ...legs.flatMap((leg) => leg.ordersToCancel.map((o) => o.userId)),
+    ])
+
+  const check = (trade: (balances: { [userId: string]: number }) => Leg[]) => {
+    const simulated = trade({ maker: SPENT })
+    expect(simulated.flatMap((leg) => leg.makers)).toEqual([])
+    expect(
+      simulated.flatMap((leg) => leg.ordersToCancel.map((o) => o.id))
+    ).toContain('at22')
+    // The trade went through the order's price, on the pool.
+    const nvidia = simulated.find((leg) => leg.ordersToCancel.length > 0)!
+    expect(getCpmmProbability(nvidia.cpmmState.pool, 0.5)).toBeLessThan(0.22)
+    expect(
+      sumBy(simulated, (leg) => getCpmmProbability(leg.cpmmState.pool, 0.5))
+    ).toBeCloseTo(1, 6)
+
+    const matched = matchedUserIds(simulated)
+    const inTransaction = trade({
+      maker: matched.includes('maker') ? SPENT : Number.MAX_SAFE_INTEGER,
+    })
+    expect(matchedUserIds(inTransaction)).toEqual(matched)
+  }
+
+  const buy = (index: number, outcome: 'YES' | 'NO', amount: number) => {
+    const answers = market()
+    check((balances) => {
+      const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
+        answers,
+        answers[index],
+        outcome,
+        amount,
+        undefined,
+        resting(answers),
+        balances,
+        noFees
+      )
+      return [newBetResult, ...otherBetResults]
+    })
+  }
+  const sell = (index: number, outcome: 'YES' | 'NO', shares: number) => {
+    const answers = market()
+    check((balances) => {
+      const { newBetResult, otherBetResults } = calculateCpmmMultiSumsToOneSale(
+        answers,
+        answers[index],
+        shares,
+        outcome,
+        undefined,
+        resting(answers),
+        balances,
+        noFees
+      )
+      return [newBetResult, ...otherBetResults]
+    })
+  }
+
+  it('cancels their order when YES is bought in another answer', () => {
+    buy(APPLE, 'YES', 50)
+  })
+
+  it('cancels their order when NO is bought in the answer', () => {
+    buy(NVIDIA, 'NO', 50)
+  })
+
+  it('cancels their order when YES is sold in the answer', () => {
+    sell(NVIDIA, 'YES', 40)
+  })
+
+  it('cancels their order when NO is sold in another answer', () => {
+    sell(APPLE, 'NO', 40)
   })
 })
