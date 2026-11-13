@@ -602,7 +602,11 @@ function BetsTable(props: {
     dayPctChange: (c) =>
       -(metricsByContractId[c.id].from?.day.profitPercent ?? 0),
     costBasis: (c) => -(metricsByContractId[c.id].invested ?? 0),
-    loan: (c) => -(metricsByContractId[c.id].loan ?? 0),
+    loan: (c) =>
+      -(
+        (metricsByContractId[c.id].loan ?? 0) +
+        (metricsByContractId[c.id].marginLoan ?? 0)
+      ),
     dayPriceChange: (c) => -(c.mechanism === 'cpmm-1' ? c.probChanges.day : 0),
     volume24h: (c) => -c.volume24Hours,
     liquidity: (c) => -c.totalLiquidity,
