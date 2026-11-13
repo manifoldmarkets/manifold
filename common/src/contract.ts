@@ -638,7 +638,7 @@ export const convertsToCpmmMulti2 = (contract: Contract) =>
 // instance runs that deploy, then turn it on and deploy again. To roll back,
 // turn it off and deploy. Never go back to code from before this flag once a
 // provision has been recorded.
-export const INDEPENDENT_LIQUIDITY_EARMARK_ENABLED = false
+export const INDEPENDENT_LIQUIDITY_EARMARK_ENABLED = true
 
 export type Visibility = 'public' | 'unlisted'
 export const VISIBILITIES = ['public', 'unlisted'] as const
