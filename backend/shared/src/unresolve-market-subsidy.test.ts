@@ -1024,6 +1024,7 @@ describe('a resolution with no record of its own, undone by an admin', () => {
       expect.stringContaining('no record of its own'),
       expect.objectContaining({
         answerId: 'A',
+        latestEditId: expect.any(Number),
         marketSubsidyInLatestEdit: 1000,
       })
     )
@@ -1060,6 +1061,113 @@ describe('a resolution with no record of its own, undone by an admin', () => {
 
     await expectRefused(unresolve('A', ADMIN))
     expect((await answers())[0].resolution).toBe('YES')
+  })
+
+  // An unresolve by the code before this could take the wrong batch back
+  // and leave an earlier resolution's payout standing. A later resolution on
+  // a clock that read the same millisecond then shares its time with it.
+  it('is refused while a payout built at the same time by another resolution is standing', async () => {
+    expect(await resolve('A', 'YES')).toBe(ANTE)
+    await asFromBefore()
+    const batch = (
+      await rows(
+        `select data->'data'->>'payoutStartTime' as batch from txns
+        where category = 'CONTRACT_RESOLUTION_PAYOUT'`
+      )
+    )[0].batch as string
+    await tick()
+    await rows(
+      `insert into txns
+        (id, amount, category, data, from_id, from_type, to_id, to_type, token)
+      values ('earlier', 100, 'CONTRACT_RESOLUTION_PAYOUT', $1, 'market',
+        'CONTRACT', 'creator', 'USER', 'M$')`,
+      [{ data: { answerId: 'A', payoutStartTime: Number(batch) } }]
+    )
+
+    // Was let through, taking 200 back for a resolution that paid 100.
+    await expectRefused(unresolve('A', ADMIN))
+    expect((await answers())[0].resolution).toBe('YES')
+  })
+
+  // An earlier resolution's payout left standing, as above, and a current
+  // resolution that paid nothing: the one batch standing is not its own.
+  it('is refused where the only payout standing is from before the last unresolve', async () => {
+    expect(await resolve('A', 'YES')).toBe(ANTE)
+    await asFromBefore()
+    expect(await unresolve('A', ADMIN)).toBe(-ANTE)
+    // As the code before this could leave it: the payout not marked as taken
+    // back after all.
+    await rows(
+      `insert into txns
+        (id, amount, category, data, from_id, from_type, to_id, to_type, token, created_time)
+      select 'left-standing', amount, category, data, from_id, from_type, to_id,
+        to_type, token, created_time - interval '1 second'
+      from txns where category = 'CONTRACT_RESOLUTION_PAYOUT' limit 1`
+    )
+    await resolve('A', 'YES')
+    // The current resolution, as one that paid nothing and kept no record.
+    await rows(
+      `delete from txns where category = 'CONTRACT_RESOLUTION_PAYOUT'
+        and id <> 'left-standing'
+        and not exists (
+          select 1 from txns u
+          where u.category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
+            and u.data->'data'->>'revertsTxnId' = txns.id)`
+    )
+    await asFromBefore()
+
+    await expectRefused(unresolve('A', ADMIN))
+    expect((await answers())[0].resolution).toBe('YES')
+  })
+
+  it('is refused where the standing payouts say nothing of when they were built', async () => {
+    expect(await resolve('A', 'YES')).toBe(ANTE)
+    await asFromBefore()
+    await rows(`update txns set data = data #- '{data,payoutStartTime}'`)
+
+    await expectRefused(unresolve('A', ADMIN))
+  })
+
+  it('logs what was not put back once, after an attempt that was rolled back', async () => {
+    await addUnrecordedSubsidy(1000)
+    expect(await resolve('A', 'YES')).toBe(ANTE + 500)
+    await asFromBefore()
+    jest.mocked(log.warn).mockClear()
+    jest.mocked(bulkUpdateContractMetrics).mockImplementationOnce(async () => {
+      throw Object.assign(new Error('deadlock detected'), { code: '40P01' })
+    })
+
+    expect(await unresolve('A', ADMIN)).toBe(-(ANTE + 500))
+    const logged = jest
+      .mocked(log.warn)
+      .mock.calls.filter(([message]) =>
+        String(message).includes('no record of its own')
+      )
+    expect(logged).toHaveLength(1)
+  })
+
+  it('logs nothing when the unresolve does not go through', async () => {
+    expect(await resolve('A', 'YES')).toBe(ANTE)
+    await asFromBefore()
+    jest.mocked(log.warn).mockClear()
+    jest.mocked(bulkUpdateContractMetrics).mockImplementation(async () => {
+      throw Object.assign(new Error('deadlock detected'), { code: '40P01' })
+    })
+
+    const before = paid
+    await expect(unresolve('A', ADMIN)).rejects.toMatchObject({
+      code: '40P01',
+    })
+    jest.mocked(bulkUpdateContractMetrics).mockReset()
+    expect(paid).toBe(before)
+    expect((await answers())[0].resolution).toBe('YES')
+    expect(
+      jest
+        .mocked(log.warn)
+        .mock.calls.filter(([message]) =>
+          String(message).includes('no record of its own')
+        )
+    ).toHaveLength(0)
   })
 
   it('is refused where the payouts carry a resolution and its record is gone', async () => {

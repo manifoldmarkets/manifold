@@ -69,8 +69,9 @@ type ResolutionEdit = {
 // restore from whichever was latest. Such a resolution is not undone now,
 // except by an admin (null is returned for one): its payouts are taken back
 // and no pending subsidy is put back, because nothing says how much it paid
-// out. What the old rule would have restored is logged, for the admin to
-// make good by hand if it was right (logUnrestoredSubsidy).
+// out. The pending subsidy in the latest edit recorded while it was
+// unresolved is logged once the unresolve has committed, as a place to start
+// for an admin making it good by hand (getUnrestoredSubsidyHint).
 const getResolutionEdit = async (
   pg: SupabaseTransaction,
   contractId: string,
@@ -100,26 +101,39 @@ const getResolutionEdit = async (
 }
 
 // For an admin undoing a resolution with no record of its own: the pending
-// subsidy the latest edit recorded while the market (and the answer) was
-// unresolved holds, which is what unresolving used to put back. It is not
-// put back, as that edit may be another resolution's. It is logged.
-const logUnrestoredSubsidy = async (
+// subsidy held by the latest edit recorded while the market (and the answer)
+// was unresolved. It is a hint and no more. Unresolving used to restore from
+// an edit chosen much like this, but that edit can be another resolution's,
+// or a later change's, so nothing is put back from it. Read as text and
+// parsed here: a value that isn't a number must not fail the unresolve.
+type UnrestoredSubsidyHint = {
+  contractId: string
+  answerId: string | undefined
+  resolutionTime: number
+  userId: string
+  latestEditId: number | null
+  marketSubsidyInLatestEdit: number | null
+  answerSubsidyInLatestEdit: { answerId: string; subsidyPool: number }[]
+}
+const getUnrestoredSubsidyHint = async (
   pg: SupabaseTransaction,
   contractId: string,
   resolutionTime: number,
   answerId: string | undefined,
   userId: string
-) => {
+): Promise<UnrestoredSubsidyHint> => {
   const latest = await pg.oneOrNone<{
-    subsidy_pool: number | null
+    id: number
+    subsidy_pool: string | null
     answers: Partial<Answer>[] | null
   }>(
-    `select (data->>'subsidyPool')::numeric as subsidy_pool,
+    `select id,
+      data->>'subsidyPool' as subsidy_pool,
       case when jsonb_typeof(data->'answers') = 'array'
         then data->'answers' end as answers
     from contract_edits
     where contract_id = $1
-      and coalesce((data->>'isResolved')::boolean, false) = false
+      and coalesce(data->>'isResolved', 'false') <> 'true'
       and ($2::text is null or exists (
         select 1 from jsonb_array_elements(
           case when jsonb_typeof(data->'answers') = 'array'
@@ -131,24 +145,25 @@ const logUnrestoredSubsidy = async (
     limit 1`,
     [contractId, answerId ?? null]
   )
-  const answers = (latest?.answers ?? []).filter(
-    (a) => answerId === undefined || a.id === answerId
-  )
-  log.warn(
-    'Admin unresolved a resolution with no record of its own: payouts taken back, no pending subsidy restored',
-    {
-      contractId,
-      answerId,
-      resolutionTime,
-      userId,
-      marketSubsidyInLatestEdit: latest?.subsidy_pool ?? null,
-      answerSubsidyInLatestEdit: answers.flatMap((a) =>
-        a.id && positiveOrZero(a.subsidyPool) > 0
-          ? [{ answerId: a.id, subsidyPool: a.subsidyPool }]
-          : []
-      ),
-    }
-  )
+  const marketSubsidy = Number(latest?.subsidy_pool)
+  return {
+    contractId,
+    answerId,
+    resolutionTime,
+    userId,
+    latestEditId: latest?.id ?? null,
+    marketSubsidyInLatestEdit:
+      latest?.subsidy_pool != null && Number.isFinite(marketSubsidy)
+        ? marketSubsidy
+        : null,
+    answerSubsidyInLatestEdit: (latest?.answers ?? []).flatMap((a) =>
+      a.id &&
+      (answerId === undefined || a.id === answerId) &&
+      positiveOrZero(a.subsidyPool) > 0
+        ? [{ answerId: a.id, subsidyPool: positiveOrZero(a.subsidyPool) }]
+        : []
+    ),
+  }
 }
 
 // A payout already taken back by an earlier unresolve.
@@ -178,8 +193,16 @@ const PAYOUT_NOT_REVERTED = `
 // back is not what these payouts paid out.
 //
 // A resolution with no record (an admin's unresolve only) stamped nothing.
-// Its payouts are those standing, which have to be one batch: built at one
-// time, none stamped.
+// Its payouts are those standing, which have to be one batch: none stamped,
+// all built at one time, and all written by one transaction (rows written
+// together share their created_time, which is the transaction's start). The
+// time they were built at is the resolver's clock, and two resolutions can
+// share it: an earlier one's payouts, left standing by an unresolve that took
+// the wrong batch back, must not be taken for this one's. For the same
+// reason they have to have been written after the last time a payout of the
+// answer or market was taken back: one from before that is an earlier
+// resolution's, whether or not this resolution paid anything itself. Any of
+// these failing is a history to sort out by hand.
 const getPayoutsToUndo = async (
   pg: SupabaseTransaction,
   contractId: string,
@@ -191,7 +214,16 @@ const getPayoutsToUndo = async (
     `select *,
       coalesce((data->'data'->>'resolutionTime')::numeric = $2, false) as stamped,
       data->'data'->>'resolutionTime' is null as unstamped,
-      data->'data'->>'payoutStartTime' as batch
+      data->'data'->>'payoutStartTime' as batch,
+      created_time > coalesce(
+        (select max(u.created_time)
+         from txns u
+         join txns p on p.id = u.data->'data'->>'revertsTxnId'
+         where u.category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
+           and u.to_id = $1
+           and ($3 is null or p.data->'data'->>'answerId' = $3)),
+        '-infinity'
+      ) as after_last_undo
     from txns
     where category = 'CONTRACT_RESOLUTION_PAYOUT'
       and from_type = 'CONTRACT'
@@ -203,13 +235,20 @@ const getPayoutsToUndo = async (
       stamped: r.stamped === true,
       unstamped: r.unstamped === true,
       batch: r.batch as string | null,
+      written: String(r.created_time),
+      afterLastUndo: r.after_last_undo === true,
       txn: convertTxn(r) as ContractOldResolutionPayoutTxn,
     })
   )
   const own = recorded
     ? standing.every((payout) => payout.stamped)
     : standing.every(
-        (payout) => payout.unstamped && payout.batch === standing[0].batch
+        (payout) =>
+          payout.unstamped &&
+          payout.batch != null &&
+          payout.batch === standing[0].batch &&
+          payout.written === standing[0].written &&
+          payout.afterLastUndo
       )
   if (!own)
     throw new APIError(
@@ -247,11 +286,19 @@ export const unresolveMain: APIHandler<'unresolve'> = async (props, auth) => {
   // (Whichever of the two is stopped, that resolution cannot go through: it
   // read the market before this reopened an answer, and fails to serialize on
   // the market's row if it isn't the one stopped. It has to be made again.)
-  const result = await runTransactionWithRetries(
+  const { unrestoredSubsidyHint, ...result } = await runTransactionWithRetries(
     async (tx) => unresolveInTransaction(tx, contractId, answerId, auth.uid),
     3,
     { mode: 'default' }
   )
+
+  // Once, and only now that it has committed: an attempt that was rolled
+  // back took nothing back.
+  if (unrestoredSubsidyHint)
+    log.warn(
+      'Admin unresolved a resolution with no record of its own: payouts taken back, no pending subsidy restored. The latest edit recorded while it was unresolved held this pending subsidy (a hint, not what the resolution paid out)',
+      unrestoredSubsidyHint
+    )
 
   if (result.answerUpdates.length > 0) {
     broadcastUpdatedAnswers(contractId, result.answerUpdates)
@@ -323,6 +370,7 @@ const unresolveInTransaction = async (
     answerUpdates: undoResult.answerUpdates,
     contractWebsocketUpdates: undoResult.contractWebsocketUpdates,
     visibility: contract.visibility,
+    unrestoredSubsidyHint: undoResult.unrestoredSubsidyHint,
   }
 }
 
@@ -473,8 +521,15 @@ const undoResolution = async (
     answerId,
     !!edit
   )
-  if (!edit)
-    await logUnrestoredSubsidy(pg, contractId, resolutionTime, answerId, userId)
+  const unrestoredSubsidyHint = edit
+    ? undefined
+    : await getUnrestoredSubsidyHint(
+        pg,
+        contractId,
+        resolutionTime,
+        answerId,
+        userId
+      )
 
   // // Get resolution fee txns to revert
   // const feeTxns = await pg.map(
@@ -758,7 +813,7 @@ const undoResolution = async (
   }
 
   log('updated contract')
-  return { answerUpdates, contractWebsocketUpdates }
+  return { answerUpdates, contractWebsocketUpdates, unrestoredSubsidyHint }
 }
 
 export function getUndoOldContractPayout(
