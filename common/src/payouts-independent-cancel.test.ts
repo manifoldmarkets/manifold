@@ -19,6 +19,14 @@
 // answer's own resolution took. The real handler is tested against PostgreSQL
 // in backend/shared/src/unresolve-market-subsidy.test.ts; here both rules are
 // mirrored so the random lifecycles cover them.
+//
+// Liquidity added to the whole market now goes to the answers open at that
+// moment, as each one's own pending subsidy, and the provision records them
+// (addSubsidyToOpenAnswers). An answer listed later holds none of it and
+// refunds none of it, and a provider is paid by what they put into each
+// answer. Markets keep the provisions made before that, which record no
+// answers and went through the market's pool: the market below can make
+// either kind.
 import { sum, sumBy } from 'lodash'
 import { Answer } from './answer'
 import {
@@ -40,6 +48,7 @@ import { getPayouts, PayoutInfo } from './payouts'
 import {
   getFixedCancelPayouts,
   getIndependentMultiAnswerBacking,
+  getIndependentMultiCancelPayouts,
 } from './payouts-fixed'
 
 type Mechanism = 'cpmm-multi-1' | 'cpmm-multi-2'
@@ -98,21 +107,20 @@ class IndependentMarket {
   // took.
   marketHeld = 0
   edits: Edit[] = []
-  // Whether the answer is sure to hold at least amount / number of answers of
-  // every whole-market provision so far: it was open for each of them, and no
-  // answer has been listed or reopened since the first. An answer that joins
-  // takes a share of the subsidy still pending, which leaves the others short
-  // of amount / number of answers whenever a third had already resolved with
-  // its own share.
-  holdsFullShares: Record<string, boolean> = {}
-  // Cancellations of such answers that had whole-market liquidity to refund.
-  fullShareRefunds = 0
   resolved: Record<string, Resolved> = {}
+  // When each answer was resolved, and until when if that was undone.
+  resolvedSpans: Record<string, [number, number | undefined][]> = {}
   // Total a resolution paid out beyond what its answer held.
   overpaid = 0
-  // Total by which cancellations of such answers refunded less than before.
-  shortChanged = 0
-  clock = 1
+  // Cancellations in a market whose provisions record no answers, and the
+  // total by which they refunded less whole-market liquidity than the limit
+  // on its own would, with every provision at amount / number of answers.
+  unrecordedRefunds = 0
+  belowLimitAlone = 0
+  unresolvesRefused = 0
+  // Events are a minute apart: an answer listed within seconds of a provision
+  // counts as one it was made for.
+  clock = 1_700_000_000_000
   // The refund and the unresolve as they were before the fixes.
   useLegacyCancel = false
   useLegacyUnresolve = false
@@ -139,6 +147,11 @@ class IndependentMarket {
     } as unknown as CPMMMultiContract
   }
 
+  private tick() {
+    this.clock += 60_000
+    return this.clock
+  }
+
   private insertAnswer(userId: string, amount: number) {
     const id = `a${this.answers.length}`
     this.answers.push({
@@ -147,7 +160,7 @@ class IndependentMarket {
       contractId: 'c',
       userId,
       text: id,
-      createdTime: this.clock++,
+      createdTime: this.tick(),
       poolYes: amount,
       poolNo: amount,
       p: 0.5,
@@ -161,24 +174,14 @@ class IndependentMarket {
       id: `l${this.liquidities.length}`,
       userId,
       contractId: 'c',
-      createdTime: this.clock++,
+      createdTime: this.tick(),
       isAnte: true,
       answerId: id,
       amount,
     })
     this.pay(userId, -amount)
     this.held[id] = amount
-    this.holdsFullShares[id] = true
-    if (this.hasWholeMarketLiquidity()) this.noFullShares()
     return id
-  }
-
-  private hasWholeMarketLiquidity() {
-    return this.liquidities.some((l) => !l.answerId && l.amount > 0)
-  }
-
-  private noFullShares() {
-    for (const a of this.answers) this.holdsFullShares[a.id] = false
   }
 
   private pay(userId: string, amount: number) {
@@ -198,9 +201,31 @@ class IndependentMarket {
     return this.insertAnswer(userId, cost)
   }
 
-  // addContractLiquidity for the whole market: the market's subsidy pool, and
-  // a provision with no answer.
+  // addContractLiquidity for the whole market: to the answers open now, in
+  // equal shares, as each one's own pending subsidy, and a provision that
+  // records them. Refused when no answer is open.
   addLiquidity(userId: string, amount: number) {
+    const open = this.open()
+    if (open.length === 0) return false
+    this.pay(userId, -amount)
+    for (const a of open) {
+      a.subsidyPool += amount / open.length
+      this.held[a.id] += amount / open.length
+    }
+    this.liquidities.push({
+      id: `l${this.liquidities.length}`,
+      userId,
+      contractId: 'c',
+      createdTime: this.tick(),
+      amount,
+      answerIds: open.map((a) => a.id),
+    })
+    return true
+  }
+
+  // The same before provisions recorded their answers: the market's subsidy
+  // pool, and a provision with no answer. Markets hold these from then.
+  addUnrecordedLiquidity(userId: string, amount: number) {
     this.pay(userId, -amount)
     this.subsidyPool += amount
     this.marketHeld += amount
@@ -208,12 +233,9 @@ class IndependentMarket {
       id: `l${this.liquidities.length}`,
       userId,
       contractId: 'c',
-      createdTime: this.clock++,
+      createdTime: this.tick(),
       amount,
     })
-    // An answer resolved now takes none of it, even if it's reopened later.
-    for (const a of this.answers)
-      if (a.resolution) this.holdsFullShares[a.id] = false
   }
 
   // addContractLiquidity for one answer (cpmm-multi-2 only).
@@ -226,7 +248,7 @@ class IndependentMarket {
       id: `l${this.liquidities.length}`,
       userId,
       contractId: 'c',
-      createdTime: this.clock++,
+      createdTime: this.tick(),
       answerId,
       amount,
     })
@@ -405,16 +427,28 @@ class IndependentMarket {
     this.overpaid += Math.max(0, paid - holds - 1e-9 * (holds + 1))
     if (
       outcome === 'CANCEL' &&
-      this.holdsFullShares[answerId] &&
-      this.hasWholeMarketLiquidity()
+      !this.useLegacyCancel &&
+      this.liquidities.some((l) => !l.answerId) &&
+      !this.liquidities.some((l) => l.answerIds)
     ) {
-      const before = sumBy(
-        this.payoutsFor(answerId, outcome, true).liquidityPayouts,
+      const limitAlone = sumBy(
+        getIndependentMultiCancelPayouts(
+          answer,
+          this.metrics(),
+          this.liquidities.filter((l) => l.answerId === answerId),
+          this.liquidities
+            .filter((l) => !l.answerId)
+            .map((l) => ({ ...l, amount: l.amount / this.answers.length })),
+          contractShare
+        ).liquidityPayouts,
         (p) => p.payout
       )
       const now = sumBy(liquidityPayouts, (p) => p.payout)
-      this.fullShareRefunds++
-      this.shortChanged += Math.abs(before - now)
+      this.unrecordedRefunds++
+      this.belowLimitAlone += Math.max(
+        0,
+        limitAlone - now - 1e-9 * (limitAlone + 1)
+      )
     }
 
     const marketResolved = open.length === 1
@@ -425,7 +459,8 @@ class IndependentMarket {
       poolShare: contractShare,
       marketShare,
     }
-    const resolutionTime = this.clock++
+    const resolutionTime = this.tick()
+    ;(this.resolvedSpans[answerId] ??= []).push([resolutionTime, undefined])
     // recordContractEdit: the market as this resolution found it.
     this.edits.push({
       answerId,
@@ -450,7 +485,35 @@ class IndependentMarket {
   // not.) Before, the pool was restored only when the market was resolved,
   // and then to what the latest edit held, which is the last resolution's,
   // whichever answer was unresolved.
-  unresolve(answerId: string) {
+  //
+  // verifyUserCanUnresolve refuses it once a whole-market provision that
+  // records no answers came while the answer was resolved, now or in a
+  // resolution since undone: a cancellation credits such a provision to the
+  // answers open when it was made, and afterwards nothing would say this one
+  // wasn't. `unchecked` is the unresolve from before that check.
+  refusesUnresolve(answerId: string) {
+    const spans = this.resolvedSpans[answerId] ?? []
+    return this.liquidities.some(
+      (l) =>
+        !l.answerId &&
+        !l.answerIds &&
+        spans.some(
+          ([from, until]) =>
+            l.createdTime > from &&
+            (until === undefined || l.createdTime < until)
+        )
+    )
+  }
+
+  unresolve(answerId: string, unchecked = false) {
+    if (
+      !unchecked &&
+      !this.useLegacyUnresolve &&
+      this.refusesUnresolve(answerId)
+    ) {
+      this.unresolvesRefused++
+      return false
+    }
     const answer = this.answer(answerId)
     const record = this.resolved[answerId]
     for (const { userId, payout } of record.payouts) this.pay(userId, -payout)
@@ -470,10 +533,9 @@ class IndependentMarket {
     answer.resolution = undefined
     answer.resolutionTime = undefined
     delete this.resolved[answerId]
-    // Back to take a share of the subsidy still pending, without the share
-    // its resolution took (that stays out of the market's pool), and having
-    // missed whatever drizzled meanwhile.
-    if (this.hasWholeMarketLiquidity()) this.noFullShares()
+    const spans = this.resolvedSpans[answerId]
+    spans[spans.length - 1][1] = this.tick()
+    return true
   }
 
   // Mana users have taken out of the market beyond what they put in.
@@ -491,22 +553,28 @@ const refundOf = (market: IndependentMarket, answerId: string) =>
 describe('cancelling an answer listed after a subsidy drizzled', () => {
   // The report: a market of two answers, a subsidy, a wait for the drizzle,
   // more answers, the first two resolved, the rest cancelled.
-  const exploit = (mechanism: Mechanism, legacy: boolean) => {
+  const exploit = (
+    mechanism: Mechanism,
+    legacyCancel: boolean,
+    recorded = false
+  ) => {
     const market = new IndependentMarket(mechanism, 'creator', 2, 100_000)
-    market.useLegacyCancel = legacy
-    market.addLiquidity('creator', 1_000_000)
+    market.useLegacyCancel = legacyCancel
+    if (recorded) market.addLiquidity('creator', 1_000_000)
+    else market.addUnrecordedLiquidity('creator', 1_000_000)
     for (let i = 0; i < 40; i++) market.drizzle(0.3)
     for (let i = 0; i < 11; i++) market.addAnswer('creator', 10_000)
     market.resolve('a0', 'NO')
     market.resolve('a1', 'NO')
-    for (let i = 2; i < 13; i++) market.resolve(`a${i}`, 'CANCEL')
-    return market
+    const refunds = []
+    for (let i = 2; i < 13; i++) refunds.push(market.resolve(`a${i}`, 'CANCEL'))
+    return { market, refunds }
   }
 
   it.each(['cpmm-multi-1', 'cpmm-multi-2'] as const)(
     'paid the subsidy out twice before, on %s',
     (mechanism) => {
-      const market = exploit(mechanism, true)
+      const { market } = exploit(mechanism, true)
       // 11 of 13 shares of the subsidy, on top of everything put in.
       expect(market.minted()).toBeGreaterThan(846_000)
       expect(market.minted()).toBeLessThanOrEqual((1_000_000 * 11) / 13)
@@ -514,16 +582,37 @@ describe('cancelling an answer listed after a subsidy drizzled', () => {
     }
   )
 
+  // A subsidy from before provisions recorded their answers, as markets hold
+  // them now.
   it.each(['cpmm-multi-1', 'cpmm-multi-2'] as const)(
     'pays out what was put in and no more, on %s',
     (mechanism) => {
-      const market = exploit(mechanism, false)
+      const { market } = exploit(mechanism, false)
       expect(market.overpaid).toBe(0)
       expect(market.minted()).toBeLessThanOrEqual(1e-6)
       // Nothing is lost either: every answer returned what it held.
       expect(market.minted()).toBeCloseTo(0, 4)
     }
   )
+
+  // The same subsidy made now: all of it is the first two answers' from the
+  // start, and the later ones never hold any.
+  it.each(['cpmm-multi-1', 'cpmm-multi-2'] as const)(
+    'pays a subsidy that records its answers out through them alone, on %s',
+    (mechanism) => {
+      const { market, refunds } = exploit(mechanism, false, true)
+      for (const refund of refunds) expect(refund).toBeCloseTo(10_000, 6)
+      expect(market.overpaid).toBe(0)
+      expect(market.minted()).toBeCloseTo(0, 4)
+    }
+  )
+
+  // The refund as it was takes such a provision for one that records no
+  // answers. Every process that pays out has to run the same code.
+  it('is still paid out twice by the refund as it was', () => {
+    const { market } = exploit('cpmm-multi-2', true, true)
+    expect(market.minted()).toBeGreaterThan(846_000)
+  })
 
   // The dev market the report came from, QtdQuOdSUd: the answers were listed
   // while most of the subsidy was still pending, so each cancelled answer held
@@ -532,7 +621,7 @@ describe('cancelling an answer listed after a subsidy drizzled', () => {
     const pending = 893_650.3486181388
     const drizzled = (1_000_000 - pending) / 2
     const market = new IndependentMarket('cpmm-multi-2', 'creator', 2, 100_000)
-    market.addLiquidity('creator', 1_000_000)
+    market.addUnrecordedLiquidity('creator', 1_000_000)
     market.drizzle(1 - pending / 1_000_000)
     expect(market.answers[0].poolYes).toBeCloseTo(50_000 + drizzled, 6)
     for (let i = 0; i < 11; i++) market.addAnswer('creator', 10_000)
@@ -550,17 +639,18 @@ describe('cancelling an answer listed after a subsidy drizzled', () => {
 
   it('refunds a late answer only its own ante once the subsidy has drizzled', () => {
     const market = new IndependentMarket('cpmm-multi-2', 'creator', 2, 200)
-    market.addLiquidity('creator', 9000)
+    market.addUnrecordedLiquidity('creator', 9000)
     market.drizzle(1)
     const late = market.addAnswer('creator', 50)
     expect(refundOf(market, late)).toBeCloseTo(50, 9)
-    // The answers that took the subsidy still refund their share of it.
-    expect(refundOf(market, 'a0')).toBeCloseTo(100 + 9000 / 3, 9)
+    // The two answers that took the subsidy refund all of it between them.
+    // (Was 100 + 9,000 / 3: the third share was refunded to nobody.)
+    expect(refundOf(market, 'a0')).toBeCloseTo(100 + 9000 / 2, 9)
   })
 
   it('refunds a late answer what it did receive of a subsidy', () => {
     const market = new IndependentMarket('cpmm-multi-2', 'creator', 2, 200)
-    market.addLiquidity('creator', 9000)
+    market.addUnrecordedLiquidity('creator', 9000)
     market.drizzle(0.5) // 2,250 to each of the two answers
     const late = market.addAnswer('creator', 50)
     market.drizzle(1) // 1,500 to each of the three
@@ -569,8 +659,8 @@ describe('cancelling an answer listed after a subsidy drizzled', () => {
 
   it('shares what a late answer holds among the whole-market providers alike', () => {
     const market = new IndependentMarket('cpmm-multi-2', 'creator', 2, 200)
-    market.addLiquidity('creator', 6000)
-    market.addLiquidity('backer', 3000)
+    market.addUnrecordedLiquidity('creator', 6000)
+    market.addUnrecordedLiquidity('backer', 3000)
     market.drizzle(0.5)
     const late = market.addAnswer('adder', 50)
     market.drizzle(1)
@@ -592,12 +682,29 @@ describe('cancelling an answer that was resolved while a subsidy drizzled', () =
     (mechanism) => {
       const market = new IndependentMarket(mechanism, 'creator', 2, 200)
       market.resolve('a1', 'NO')
-      market.addLiquidity('creator', 5000)
+      market.addUnrecordedLiquidity('creator', 5000)
       market.drizzle(1) // all of it to a0
-      market.unresolve('a1')
+      // The answer can't be reopened now. One reopened before that check:
+      expect(market.unresolve('a1')).toBe(false)
+      expect(market.unresolve('a1', true)).toBe(true)
       // Was 100 + 5,000 / 2.
       expect(market.resolve('a1', 'CANCEL')).toBeCloseTo(100, 9)
       expect(market.resolve('a0', 'YES')).toBeCloseTo(5100, 9)
+      expect(market.overpaid).toBe(0)
+      expect(market.minted()).toBeCloseTo(0, 6)
+    }
+  )
+
+  it.each(['cpmm-multi-1', 'cpmm-multi-2'] as const)(
+    'reopens and refunds none of a subsidy that records the answers it went to, on %s',
+    (mechanism) => {
+      const market = new IndependentMarket(mechanism, 'creator', 2, 200)
+      market.resolve('a1', 'NO')
+      market.addLiquidity('creator', 5000)
+      market.drizzle(0.5)
+      expect(market.unresolve('a1')).toBe(true)
+      expect(market.resolve('a1', 'CANCEL')).toBeCloseTo(100, 9)
+      expect(market.resolve('a0', 'CANCEL')).toBeCloseTo(5100, 9)
       expect(market.overpaid).toBe(0)
       expect(market.minted()).toBeCloseTo(0, 6)
     }
@@ -610,8 +717,8 @@ describe('cancelling an answer that was open for every subsidy', () => {
     (mechanism) => {
       for (const drizzles of [0, 1, 7, 60]) {
         const market = new IndependentMarket(mechanism, 'creator', 3, 300)
-        market.addLiquidity('creator', 1234.5)
-        market.addLiquidity('backer', 77.7)
+        market.addUnrecordedLiquidity('creator', 1234.5)
+        market.addUnrecordedLiquidity('backer', 77.7)
         for (let i = 0; i < drizzles; i++) market.drizzle(0.3)
         for (const a of market.answers) {
           expect(market.payoutsFor(a.id, 'CANCEL', false)).toEqual(
@@ -625,11 +732,33 @@ describe('cancelling an answer that was open for every subsidy', () => {
     }
   )
 
+  it.each(['cpmm-multi-1', 'cpmm-multi-2'] as const)(
+    'refunds the share a subsidy records for it, drizzled or pending, on %s',
+    (mechanism) => {
+      for (const drizzles of [0, 1, 7, 60]) {
+        const market = new IndependentMarket(mechanism, 'creator', 3, 300)
+        market.addLiquidity('creator', 1234.5)
+        market.addLiquidity('backer', 77.7)
+        for (let i = 0; i < drizzles; i++) market.drizzle(0.3)
+        for (const a of market.answers) {
+          expect(refundOf(market, a.id)).toBeCloseTo(
+            100 + (1234.5 + 77.7) / 3,
+            9
+          )
+        }
+        for (const a of market.answers) market.resolve(a.id, 'CANCEL')
+        expect(market.balances.creator).toBeCloseTo(0, 9)
+        expect(market.balances.backer).toBeCloseTo(0, 9)
+        expect(market.overpaid).toBe(0)
+      }
+    }
+  )
+
   const traded = (mechanism: Mechanism, crossFifty: boolean) => {
     const market = new IndependentMarket(mechanism, 'creator', 2, 200)
     market.buy('alice', 'a0', 'YES', 60)
     market.buy('bob', 'a0', 'NO', 25)
-    market.addLiquidity('creator', 500)
+    market.addUnrecordedLiquidity('creator', 500)
     market.drizzle(0.4) // a0 above 50%
     market.buy('alice', 'a0', 'NO', crossFifty ? 30 : 5) // a partial sale
     market.buy('carol', 'a1', 'NO', 500)
@@ -685,14 +814,47 @@ describe('cancelling an answer that was open for every subsidy', () => {
     expect(market.minted()).toBeLessThanOrEqual(0)
   })
 
-  it('refunds more than its share never, when other answers resolved first', () => {
-    // a1 resolves before the subsidy, so a0 takes all of it but is refunded
-    // amount / 2, as before: the limit only ever lowers a refund.
+  it('refunds all of a subsidy made when it was the only answer open', () => {
+    // a1 resolves before the subsidy, so a0 takes all of it. It was refunded
+    // amount / 2, and the other half to nobody.
     const market = new IndependentMarket('cpmm-multi-2', 'creator', 2, 200)
     market.resolve('a1', 'NO')
-    market.addLiquidity('creator', 1000)
+    market.addUnrecordedLiquidity('creator', 1000)
     market.drizzle(1)
-    expect(refundOf(market, 'a0')).toBeCloseTo(100 + 500, 9)
+    expect(refundOf(market, 'a0')).toBeCloseTo(100 + 1000, 9)
+  })
+})
+
+// The report's other half: 5,000 added to a market of 64 answers when 6 were
+// still open, 833.33 to each, beside 100 of the creator's in each.
+describe('paying an answer out to the providers of its liquidity', () => {
+  const sixOfSixtyFour = (recorded: boolean) => {
+    const market = new IndependentMarket('cpmm-multi-2', 'creator', 64, 6400)
+    for (let i = 6; i < 64; i++) market.resolve(`a${i}`, 'NO')
+    if (recorded) market.addLiquidity('provider', 5000)
+    else market.addUnrecordedLiquidity('provider', 5000)
+    for (let i = 0; i < 60; i++) market.drizzle(0.3)
+    for (let i = 0; i < 6; i++) market.resolve(`a${i}`, 'NO')
+    return market
+  }
+
+  it('paid a provider by amount / number of answers, whichever answers took it', () => {
+    const market = sixOfSixtyFour(false)
+    // 5,000 / 64 = 78.1 beside the creator's 100 in each answer: 43.9% of
+    // pools that are 89.3% the provider's.
+    expect(market.balances.provider).toBeCloseTo(
+      6 * (933 + 1 / 3) * (78.125 / 178.125) - 5000,
+      6
+    )
+    expect(market.balances.provider).toBeLessThan(-2500)
+    expect(market.balances.creator).toBeGreaterThan(2500)
+    expect(market.minted()).toBeCloseTo(0, 6)
+  })
+
+  it('pays a provider by what they put into each answer', () => {
+    const market = sixOfSixtyFour(true)
+    expect(market.balances.provider).toBeCloseTo(0, 6)
+    expect(market.balances.creator).toBeCloseTo(0, 6)
   })
 })
 
@@ -703,9 +865,12 @@ describe('unresolving an answer of a resolved market', () => {
     const market = new IndependentMarket(mechanism, 'creator', 2, 200)
     market.useLegacyUnresolve = legacyUnresolve
     market.resolve('a0', 'YES')
-    market.addLiquidity('creator', 1000)
+    market.addUnrecordedLiquidity('creator', 1000)
     expect(market.resolve('a1', 'YES')).toBeCloseTo(1100, 9)
-    market.unresolve('a0')
+    // Refused now, the subsidy having come while a0 was resolved. As it went
+    // before that check:
+    if (!legacyUnresolve) expect(market.unresolve('a0')).toBe(false)
+    market.unresolve('a0', true)
     return market
   }
 
@@ -715,7 +880,8 @@ describe('unresolving an answer of a resolved market', () => {
       for (const outcome of ['YES', 'NO', 'MKT', 'CANCEL'] as const) {
         const market = reopened(mechanism, true)
         expect(market.subsidyPool).toBe(1000)
-        // The cancellation is limited to amount / number of answers.
+        // The cancellation is limited to the share of the two answers that
+        // look to have been open for it.
         const again = outcome === 'CANCEL' ? 600 : 1100
         expect(market.resolve('a0', outcome)).toBeCloseTo(again, 9)
         expect(market.minted()).toBeCloseTo(again - 100, 9)
@@ -737,13 +903,32 @@ describe('unresolving an answer of a resolved market', () => {
     }
   )
 
+  // The subsidy made now is the last answer's own from the start, and the
+  // first can reopen.
+  it.each(['cpmm-multi-1', 'cpmm-multi-2'] as const)(
+    'has nothing to put back of a subsidy that records the answer it went to, on %s',
+    (mechanism) => {
+      for (const outcome of ['YES', 'NO', 'MKT', 'CANCEL'] as const) {
+        const market = new IndependentMarket(mechanism, 'creator', 2, 200)
+        market.resolve('a0', 'YES')
+        market.addLiquidity('creator', 1000)
+        expect(market.resolve('a1', 'YES')).toBeCloseTo(1100, 9)
+        expect(market.unresolve('a0')).toBe(true)
+        expect(market.subsidyPool).toBe(0)
+        expect(market.resolve('a0', outcome)).toBeCloseTo(100, 9)
+        expect(market.minted()).toBeCloseTo(0, 9)
+        expect(market.overpaid).toBe(0)
+      }
+    }
+  )
+
   // Two answers that each took half the pool. The old rule got this one right
   // by coincidence: the pool as the last found it is what the first took.
   it('puts back the share the answer took when it was not the last to resolve', () => {
     for (const legacyUnresolve of [false, true]) {
       const market = new IndependentMarket('cpmm-multi-2', 'creator', 2, 200)
       market.useLegacyUnresolve = legacyUnresolve
-      market.addLiquidity('creator', 1000)
+      market.addUnrecordedLiquidity('creator', 1000)
       expect(market.resolve('a0', 'YES')).toBeCloseTo(600, 9)
       expect(market.resolve('a1', 'NO')).toBeCloseTo(600, 9)
       market.unresolve('a0')
@@ -756,7 +941,7 @@ describe('unresolving an answer of a resolved market', () => {
 
   it('puts back the share an answer took while the market is still open', () => {
     const market = new IndependentMarket('cpmm-multi-2', 'creator', 3, 300)
-    market.addLiquidity('creator', 900)
+    market.addUnrecordedLiquidity('creator', 900)
     expect(market.resolve('a0', 'YES')).toBeCloseTo(400, 9)
     market.unresolve('a0')
     // Was 600: the share stayed out of the pool for good.
@@ -769,7 +954,7 @@ describe('unresolving an answer of a resolved market', () => {
 
   it('still puts the pool back for the answer whose resolution took it', () => {
     const market = new IndependentMarket('cpmm-multi-2', 'creator', 2, 200)
-    market.addLiquidity('creator', 1000)
+    market.addUnrecordedLiquidity('creator', 1000)
     market.resolve('a0', 'YES')
     expect(market.resolve('a1', 'NO')).toBeCloseTo(600, 9)
     market.unresolve('a1')
@@ -915,11 +1100,28 @@ const mulberry32 = (seed: number) => () => {
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296
 }
 
+type Lifecycle = {
+  // The refund and the unresolve as they were before the fixes.
+  legacyCancel?: boolean
+  legacyUnresolve?: boolean
+  // Whole-market liquidity that records its answers, as it is added now, that
+  // doesn't, as markets hold it from before, or some of each.
+  adds?: 'recorded' | 'unrecorded' | 'mixed'
+  trades?: boolean
+  // Unresolve without the check on liquidity added meanwhile.
+  unchecked?: boolean
+}
+
 const randomLifecycle = (
   mechanism: Mechanism,
   seed: number,
-  // Which of the two behaviours to run as they were before the fixes.
-  legacy: { cancel?: boolean; unresolve?: boolean } = {}
+  {
+    legacyCancel,
+    legacyUnresolve,
+    adds = 'mixed',
+    trades = true,
+    unchecked,
+  }: Lifecycle = {}
 ) => {
   const random = mulberry32(seed)
   const pick = <T>(items: T[]) => items[Math.floor(random() * items.length)]
@@ -932,8 +1134,8 @@ const randomLifecycle = (
     1 + Math.floor(random() * 4),
     100 + Math.floor(random() * 5000)
   )
-  market.useLegacyCancel = !!legacy.cancel
-  market.useLegacyUnresolve = !!legacy.unresolve
+  market.useLegacyCancel = !!legacyCancel
+  market.useLegacyUnresolve = !!legacyUnresolve
 
   const steps = 20 + Math.floor(random() * 40)
   for (let step = 0; step < steps; step++) {
@@ -941,21 +1143,24 @@ const randomLifecycle = (
     const closed = market.answers.filter((a) => a.resolution)
     const roll = random()
     if (roll < 0.14) {
-      if (open.length > 0)
-        market.addLiquidity(pick(users), 10 + random() * 20_000)
+      const userId = pick(users)
+      const amount = 10 + random() * 20_000
+      const recorded =
+        adds === 'recorded' || (adds === 'mixed' && random() < 0.5)
+      if (open.length === 0) continue
+      if (recorded) market.addLiquidity(userId, amount)
+      else market.addUnrecordedLiquidity(userId, amount)
     } else if (roll < 0.34) {
       market.drizzle(random() < 0.2 ? 1 : random() * 0.6)
     } else if (roll < 0.5) {
       if (open.length > 0 && market.answers.length < 30)
         market.addAnswer(pick(users), 1 + random() * 500)
     } else if (roll < 0.75) {
-      if (open.length > 0)
-        market.buy(
-          pick(users),
-          pick(open).id,
-          pick(['YES', 'NO'] as const),
-          1 + random() * 2000
-        )
+      const userId = pick(users)
+      const outcome = pick(['YES', 'NO'] as const)
+      const amount = 1 + random() * 2000
+      if (open.length > 0 && trades)
+        market.buy(userId, pick(open).id, outcome, amount)
     } else if (roll < 0.8) {
       if (open.length > 0 && mechanism === 'cpmm-multi-2')
         market.addAnswerLiquidity(
@@ -967,7 +1172,7 @@ const randomLifecycle = (
       if (open.length > 0)
         market.resolve(pick(open).id, pick(outcomes), random())
     } else if (closed.length > 0) {
-      market.unresolve(pick(closed).id)
+      market.unresolve(pick(closed).id, unchecked)
     }
   }
   for (const a of market.open()) market.resolve(a.id, pick(outcomes), random())
@@ -978,38 +1183,114 @@ describe('random lifecycles of an independent market', () => {
   // CANCEL_FUZZ_SEEDS=50000 for a longer run.
   const SEEDS = Number(process.env.CANCEL_FUZZ_SEEDS) || 400
 
+  const expectNothingCreated = (mechanism: Mechanism, lifecycle: Lifecycle) => {
+    for (let seed = 1; seed <= SEEDS; seed++) {
+      const market = randomLifecycle(mechanism, seed, lifecycle)
+      const moved = sum(Object.values(market.balances).map(Math.abs))
+      if (market.overpaid > 0 || market.minted() > 1e-9 * moved + 1e-6)
+        throw new Error(
+          `${mechanism} seed ${seed}: overpaid ${
+            market.overpaid
+          }, minted ${market.minted()}`
+        )
+    }
+  }
+
   it.each(['cpmm-multi-1', 'cpmm-multi-2'] as const)(
     'never pay out more than an answer holds, on %s',
     (mechanism) => {
+      expectNothingCreated(mechanism, {})
+      expectNothingCreated(mechanism, { adds: 'recorded' })
+      expectNothingCreated(mechanism, { adds: 'unrecorded' })
+    }
+  )
+
+  // The limit on a cancellation is what holds that, not the check on
+  // unresolving, which is there for the split between providers.
+  it.each(['cpmm-multi-1', 'cpmm-multi-2'] as const)(
+    'nor with answers reopened after liquidity that records no answers, on %s',
+    (mechanism) => {
+      expectNothingCreated(mechanism, { unchecked: true })
+      expectNothingCreated(mechanism, { adds: 'unrecorded', unchecked: true })
+    }
+  )
+
+  it.each(['cpmm-multi-1', 'cpmm-multi-2'] as const)(
+    'do refuse some unresolves and allow others, on %s',
+    (mechanism) => {
+      let refused = 0
+      let reopened = 0
       for (let seed = 1; seed <= SEEDS; seed++) {
         const market = randomLifecycle(mechanism, seed)
-        const moved = sum(Object.values(market.balances).map(Math.abs))
-        if (market.overpaid > 0 || market.minted() > 1e-9 * moved + 1e-6)
-          throw new Error(
-            `${mechanism} seed ${seed}: overpaid ${
-              market.overpaid
-            }, minted ${market.minted()}`
-          )
+        refused += market.unresolvesRefused
+        reopened += sumBy(
+          Object.values(market.resolvedSpans),
+          (spans) => spans.length - 1
+        )
       }
+      expect(refused).toBeGreaterThan(SEEDS / 20)
+      expect(reopened).toBeGreaterThan(SEEDS / 2)
     }
   )
 
   // cpmm-multi-2 adds liquidity without discarding shares, so what an answer
-  // holds is counted exactly, and an answer that holds its full share of every
-  // subsidy is refunded exactly what it was before. (cpmm-multi-1 can count
-  // an answer short when subsidies reached it on both sides of 50%; see
-  // above.)
-  it('refund an answer that holds its share of every subsidy exactly as before, on cpmm-multi-2', () => {
-    let refunds = 0
+  // holds is counted exactly. With every provision assigned to answers as it
+  // is made, each answer pays out or refunds exactly what it holds, whatever
+  // the outcomes: nothing is created and nothing is left behind.
+  it('return everything put in when provisions record their answers, on cpmm-multi-2', () => {
     for (let seed = 1; seed <= SEEDS; seed++) {
-      const market = randomLifecycle('cpmm-multi-2', seed)
-      if (market.shortChanged > 0)
-        throw new Error(`seed ${seed}: changed by ${market.shortChanged}`)
-      refunds += market.fullShareRefunds
+      const market = randomLifecycle('cpmm-multi-2', seed, { adds: 'recorded' })
+      const moved = sum(Object.values(market.balances).map(Math.abs))
+      if (Math.abs(market.minted()) > 1e-9 * moved + 1e-6)
+        throw new Error(`seed ${seed}: left ${-market.minted()} behind`)
     }
-    // Enough such cancellations for the check to mean something.
-    expect(refunds).toBeGreaterThan(SEEDS / 10)
   })
+
+  // And each provider gets back what they put in. Without trading there are
+  // no profits or losses to share, so that is exact for every provider,
+  // whatever the outcomes, on either mechanism.
+  const unevenSeeds = (mechanism: Mechanism, adds: Lifecycle['adds']) => {
+    let uneven = 0
+    for (let seed = 1; seed <= SEEDS; seed++) {
+      const market = randomLifecycle(mechanism, seed, { adds, trades: false })
+      const moved = sum(Object.values(market.balances).map(Math.abs))
+      const worst = Math.max(...Object.values(market.balances).map(Math.abs))
+      if (worst > 1e-9 * moved + 1e-6) uneven++
+    }
+    return uneven
+  }
+
+  it.each(['cpmm-multi-1', 'cpmm-multi-2'] as const)(
+    'return each provider what they put in when provisions record their answers, on %s',
+    (mechanism) => {
+      expect(unevenSeeds(mechanism, 'recorded')).toBe(0)
+    }
+  )
+
+  it.each(['cpmm-multi-1', 'cpmm-multi-2'] as const)(
+    'did not with provisions that record no answers, on %s',
+    (mechanism) => {
+      expect(unevenSeeds(mechanism, 'unrecorded')).toBeGreaterThan(SEEDS / 10)
+    }
+  )
+
+  // For the provisions markets hold from before, the share a cancelled answer
+  // may refund is never smaller than it was, so no cancellation refunds less
+  // than the limit on its own would.
+  it.each(['cpmm-multi-1', 'cpmm-multi-2'] as const)(
+    'refund no less of older liquidity than the limit alone, on %s',
+    (mechanism) => {
+      let refunds = 0
+      for (let seed = 1; seed <= SEEDS; seed++) {
+        const market = randomLifecycle(mechanism, seed, { adds: 'unrecorded' })
+        if (market.belowLimitAlone > 0)
+          throw new Error(`seed ${seed}: ${market.belowLimitAlone} less`)
+        refunds += market.unrecordedRefunds
+      }
+      // Enough such cancellations for the check to mean something.
+      expect(refunds).toBeGreaterThan(SEEDS / 2)
+    }
+  )
 
   // The check has teeth: the refund as it was fails it,
   it.each(['cpmm-multi-1', 'cpmm-multi-2'] as const)(
@@ -1018,7 +1299,10 @@ describe('random lifecycles of an independent market', () => {
       let overpaying = 0
       let minting = 0
       for (let seed = 1; seed <= SEEDS; seed++) {
-        const market = randomLifecycle(mechanism, seed, { cancel: true })
+        const market = randomLifecycle(mechanism, seed, {
+          legacyCancel: true,
+          adds: 'unrecorded',
+        })
         if (market.overpaid > 1) overpaying++
         if (market.minted() > 1) minting++
       }
@@ -1034,7 +1318,10 @@ describe('random lifecycles of an independent market', () => {
       let overpaying = 0
       let minting = 0
       for (let seed = 1; seed <= SEEDS; seed++) {
-        const market = randomLifecycle(mechanism, seed, { unresolve: true })
+        const market = randomLifecycle(mechanism, seed, {
+          legacyUnresolve: true,
+          adds: 'unrecorded',
+        })
         if (market.overpaid > 1) overpaying++
         if (market.minted() > 1) minting++
       }

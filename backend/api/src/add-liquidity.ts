@@ -12,7 +12,7 @@ import { convertLiquidity } from 'common/supabase/liquidity'
 import { convertsToCpmmMulti2, isMultiCpmm } from 'common/contract'
 import { FieldVal } from 'shared/supabase/utils'
 import { updateContract } from 'shared/supabase/contracts'
-import { getAnswer } from 'shared/supabase/answers'
+import { addSubsidyToOpenAnswers, getAnswer } from 'shared/supabase/answers'
 import { broadcastUpdatedAnswers } from 'shared/websockets/helpers'
 import { convertAnswer } from 'common/supabase/contracts'
 import { Row } from 'common/supabase/utils'
@@ -58,8 +58,9 @@ export const addContractLiquidity = async (
     }
 
     // isMultiCpmm covers both cpmm-multi-1 and cpmm-multi-2; the subsidy lands in
-    // subsidyPool + an LP-provision row, and the drizzle job injects it into the
-    // pools (losslessly via the V2 float-p add for cpmm-multi-2; see 2b.6).
+    // subsidyPool (on an independent market, its open answers') + an LP-provision
+    // row, and the drizzle job injects it into the pools (losslessly via the V2
+    // float-p add for cpmm-multi-2; see 2b.6).
     // Only markets of neither kind reach this, so the message needn't name cpmm-multi-2.
     if (contract.mechanism !== 'cpmm-1' && !isMultiCpmm(contract))
       throw new APIError(403, 'Only cpmm-1 and cpmm-multi-1 are supported')
@@ -119,16 +120,6 @@ export const addContractLiquidity = async (
 
     const subsidyAmount = (1 - SUBSIDY_FEE) * amount
 
-    const newLiquidityProvision = getNewLiquidityProvision(
-      userId,
-      subsidyAmount,
-      contract,
-      answerId
-    )
-
-    const liquidityRow = await insertLiquidity(tx, newLiquidityProvision)
-    const liquidity = convertLiquidity(liquidityRow)
-
     // Lazy v1 -> v2 conversion: an explicit user addLiquidity is THE conversion trigger for a
     // cpmm-multi-1 market (the scheduler drizzle never converts — it must not flip fill semantics
     // under resting orders; see migration policy). Conversion is lossless in state: a cpmm-multi-1
@@ -155,7 +146,9 @@ export const addContractLiquidity = async (
       if (resolved) throw new APIError(403, 'This market has already resolved')
     }
 
-    let updatedAnswer: Answer | undefined
+    let updatedAnswers: Answer[] = []
+    // The answers a whole-market add on an independent market went to.
+    let answerIds: string[] | undefined
     if (answerId !== undefined) {
       // contract-level totalLiquidity still tracks the whole market's subsidy; the conversion
       // trigger applies just as for a whole-market add. Update the contract row before the
@@ -182,7 +175,26 @@ export const addContractLiquidity = async (
         [subsidyAmount, answerId]
       )
       if (!updated) throw new APIError(403, 'This answer is already resolved')
-      updatedAnswer = convertAnswer(updated)
+      updatedAnswers = [convertAnswer(updated)]
+    } else if (isMultiCpmm(contract) && !contract.shouldAnswersSumToOne) {
+      // An independent market's answers take the subsidy now, in equal shares
+      // among those open, as their own pending subsidy: an answer added later
+      // gets none of it, and a cancelled answer refunds exactly its share.
+      // Contract row first, as above.
+      await updateContract(tx, contractId, {
+        totalLiquidity: FieldVal.increment(subsidyAmount),
+        ...(shouldConvertToV2 ? { mechanism: 'cpmm-multi-2' as const } : {}),
+      })
+      await refuseIfResolved()
+      updatedAnswers = await addSubsidyToOpenAnswers(
+        tx,
+        contractId,
+        subsidyAmount
+      )
+      // Resolving the last open answer resolves the market.
+      if (updatedAnswers.length === 0)
+        throw new APIError(403, 'This market has already resolved')
+      answerIds = updatedAnswers.map((a) => a.id)
     } else {
       await updateContract(tx, contractId, {
         subsidyPool: FieldVal.increment(subsidyAmount),
@@ -192,13 +204,25 @@ export const addContractLiquidity = async (
       await refuseIfResolved()
     }
 
+    const newLiquidityProvision = getNewLiquidityProvision(
+      userId,
+      subsidyAmount,
+      contract,
+      answerId,
+      answerIds
+    )
+
+    const liquidityRow = await insertLiquidity(tx, newLiquidityProvision)
+    const liquidity = convertLiquidity(liquidityRow)
+
     return {
       result: liquidity,
       continue: async () => {
-        // The increment above skips updateAnswer, and with it the broadcast,
-        // so send the answer's new pending subsidy here, once it's committed.
+        // The increments above skip updateAnswer, and with it the broadcast,
+        // so send the answers' new pending subsidy here, once it's committed.
         // Without it, open pages count the subsidy as active until a reload.
-        if (updatedAnswer) broadcastUpdatedAnswers(contractId, [updatedAnswer])
+        if (updatedAnswers.length > 0)
+          broadcastUpdatedAnswers(contractId, updatedAnswers)
         await onCreateLiquidityProvision(liquidity)
       },
     }

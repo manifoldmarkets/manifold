@@ -6,7 +6,10 @@ export const getNewLiquidityProvision = (
   userId: string,
   amount: number,
   contract: CPMMContract | MultiContract,
-  answerId?: string
+  answerId?: string,
+  // The answers a whole-market provision on an independent multiple choice
+  // market was split among.
+  answerIds?: string[]
 ) => {
   let pool: { [outcome: string]: number } | undefined
   if (contract.mechanism === 'cpmm-1') {
@@ -18,6 +21,7 @@ export const getNewLiquidityProvision = (
       userId: userId,
       contractId: contract.id,
       answerId,
+      answerIds,
       amount,
       pool,
       createdTime: Date.now(),

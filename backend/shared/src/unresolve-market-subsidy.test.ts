@@ -26,12 +26,19 @@
 // of the resolution that paid it, no payout is taken back twice, and a
 // resolution is not undone while a payout that isn't its own is standing.
 //
+// Liquidity added to the whole of an independent market now goes to the
+// answers open at that moment, as each one's own pending subsidy, and records
+// them (addSubsidyToOpenAnswers, which runs here as it is). The market's pool
+// only holds what was added before that, by provisions that record no
+// answers. An answer can't be unresolved once one of those came while it was
+// resolved.
+//
 // The real resolveMarketHelper and the real unresolve handler run here, one
 // after the other on the same market. The answers, the payout transactions and
 // the contract edits each resolution records are rows in an in-memory
-// PostgreSQL, read and written by the handlers' own SQL. The contract row,
-// balances and positions are in-memory stand-ins. No live database or network
-// is used.
+// PostgreSQL, read and written by the handlers' own SQL, and so are the
+// liquidity provisions the unresolve check reads. The contract row, balances
+// and positions are in-memory stand-ins. No live database or network is used.
 import { PGlite } from '@electric-sql/pglite'
 import * as pgPromise from 'pg-promise'
 import { sumBy } from 'lodash'
@@ -194,6 +201,27 @@ const answers = async () =>
 const marketNow = async () =>
   ({ ...contract, answers: await answers() } as CPMMMultiContract)
 
+// Resolutions and unresolves a millisecond apart would share a payout time.
+const tick = () => new Promise((resolve) => setTimeout(resolve, 5))
+
+// A provision, for the payouts (getContractAndMetricsAndLiquidities) and as
+// the row unresolve reads.
+const provide = async (
+  provision: Omit<LiquidityProvision, 'id' | 'userId' | 'contractId'>
+) => {
+  const l = {
+    id: `provision-${liquidities.length}`,
+    userId: CREATOR,
+    contractId: 'market',
+    ...provision,
+  }
+  liquidities.push(l)
+  await rows(
+    `insert into contract_liquidity (contract_id, data) values ('market', $1)`,
+    [l]
+  )
+}
+
 const addAnswer = async (id: string, index: number) => {
   await rows(
     `insert into answers
@@ -202,32 +230,39 @@ const addAnswer = async (id: string, index: number) => {
     values ($1, 'market', $2, $1, $3, $4, $4, 0.5, 0.5, $4, 0)`,
     [id, index, CREATOR, ANTE]
   )
-  liquidities.push({
-    id: `ante-${id}`,
-    userId: CREATOR,
-    contractId: 'market',
-    createdTime: 0,
-    isAnte: true,
-    answerId: id,
-    amount: ANTE,
-  })
+  await provide({ createdTime: 0, isAnte: true, answerId: id, amount: ANTE })
 }
 
-// As addContractLiquidity does for the whole market: into the market's pending
-// subsidy pool, with a provision that names no answer.
-const addSubsidy = (amount: number) => {
-  contract.subsidyPool += amount
-  liquidities.push({
-    id: `subsidy-${liquidities.length}`,
-    userId: CREATOR,
-    contractId: 'market',
+// As addContractLiquidity does for the whole of an independent market: to the
+// answers open now, in equal shares, as each one's own pending subsidy, with
+// a provision that records them. The split is the handler's own.
+const addSubsidy = async (amount: number) => {
+  await tick()
+  const { addSubsidyToOpenAnswers } = jest.requireActual<
+    typeof import('./supabase/answers')
+  >('shared/supabase/answers')
+  const taken = await addSubsidyToOpenAnswers(
+    client as unknown as Parameters<typeof addSubsidyToOpenAnswers>[0],
+    'market',
+    amount
+  )
+  await provide({
     createdTime: Date.now(),
     amount,
+    answerIds: taken.map((a) => a.id),
   })
+  return taken.map((a) => a.id)
 }
 
-// Resolutions and unresolves a millisecond apart would share a payout time.
-const tick = () => new Promise((resolve) => setTimeout(resolve, 5))
+// As it did before provisions recorded their answers, and still does for a
+// binary or linked market: into the market's pending subsidy pool, with a
+// provision that names no answer. Independent markets hold such provisions
+// from before.
+const addUnrecordedSubsidy = async (amount: number) => {
+  await tick()
+  contract.subsidyPool += amount
+  await provide({ createdTime: Date.now(), amount })
+}
 
 const resolve = async (answerId: string, outcome: 'YES' | 'NO' | 'CANCEL') => {
   await tick()
@@ -295,14 +330,7 @@ const addAnswerSubsidy = async (answerId: string, amount: number) => {
     `update answers set subsidy_pool = subsidy_pool + $2 where id = $1`,
     [answerId, amount]
   )
-  liquidities.push({
-    id: `subsidy-${liquidities.length}`,
-    userId: CREATOR,
-    contractId: 'market',
-    createdTime: Date.now(),
-    answerId,
-    amount,
-  })
+  await provide({ createdTime: Date.now(), answerId, amount })
 }
 
 // As if the last resolution's edit had not been recorded. A resolution records
@@ -394,9 +422,16 @@ beforeAll(async () => {
       contract_id text, answer_id text, prob_after numeric,
       created_time timestamptz
     );
+    create table contract_liquidity (
+      id serial, contract_id text not null,
+      created_time timestamptz default now() not null, data jsonb not null
+    );
     create function ts_to_millis (ts timestamptz) returns bigint
       language sql immutable as
       $$ select (extract(epoch from ts) * 1000)::bigint $$;
+    create function millis_to_ts (millis bigint) returns timestamptz
+      language sql immutable as
+      $$ select to_timestamp(millis / 1000.0) $$;
   `)
 })
 
@@ -409,6 +444,7 @@ beforeEach(async () => {
   await db.exec(`
     truncate answers; truncate contract_edits; truncate txns;
     truncate audit_events; truncate contract_bets; truncate contracts;
+    truncate contract_liquidity;
     insert into contracts (id) values ('market');
   `)
   contract = {
@@ -551,21 +587,23 @@ beforeEach(async () => {
 
 describe('unresolving an answer that was not the last to resolve', () => {
   // Resolve A, add a subsidy, resolve B, unresolve A: B's resolution paid the
-  // subsidy out, and its payout stands.
+  // subsidy out, and its payout stands. The subsidy went to B, the one answer
+  // open when it was added.
   const untilAIsReopened = async () => {
     expect(await resolve('A', 'YES')).toBe(ANTE)
-    addSubsidy(1000)
+    expect(await addSubsidy(1000)).toEqual(['B'])
+    expect(contract.subsidyPool).toBe(0)
+    expect(await pendingOf('B')).toBe(1000)
     expect(await resolve('B', 'YES')).toBe(ANTE + 1000)
     expect(contract.isResolved).toBe(true)
-    expect(contract.subsidyPool).toBe(0)
 
     expect(await unresolve('A')).toBe(-ANTE)
     expect(contract.isResolved).toBe(false)
   }
 
-  it('leaves the subsidy the last answer paid out, out of the pool', async () => {
+  it('leaves the subsidy the last answer paid out where it went', async () => {
     await untilAIsReopened()
-    // Was 1,000: the pool as B's resolution found it.
+    // Was 1,000 in the market's pool: the pool as B's resolution found it.
     expect(contract.subsidyPool).toBe(0)
     expect(await pendingOf('A')).toBe(0)
   })
@@ -582,11 +620,32 @@ describe('unresolving an answer that was not the last to resolve', () => {
     }
   )
 
+  // The same with a provision from before they recorded their answers: it is
+  // in the market's pool, B's resolution takes all of it, and nothing says
+  // afterwards that A had none of it.
+  it('is refused once liquidity that records no answers came while it was resolved', async () => {
+    expect(await resolve('A', 'YES')).toBe(ANTE)
+    await addUnrecordedSubsidy(1000)
+    expect(await resolve('B', 'YES')).toBe(ANTE + 1000)
+
+    await expect(unresolve('A')).rejects.toMatchObject({ code: 403 })
+    expect(paid).toBe(2 * ANTE + 1000)
+    expect(contract.isResolved).toBe(true)
+    expect((await answers())[0].resolution).toBe('YES')
+  })
+
+  it('is not refused for one that came before it resolved, or to another answer', async () => {
+    await addUnrecordedSubsidy(1000)
+    expect(await resolve('A', 'YES')).toBe(ANTE + 500)
+    await addAnswerSubsidy('B', 40)
+    expect(await unresolve('A')).toBe(-(ANTE + 500))
+  })
+
   // Both answers took half of the pool. Unresolving the first used to put
   // back the pool as the second found it, which here happens to be the same
   // amount.
   it('puts back the share its own resolution took', async () => {
-    addSubsidy(1000)
+    await addUnrecordedSubsidy(1000)
     expect(await resolve('A', 'YES')).toBe(ANTE + 500)
     expect(await resolve('B', 'NO')).toBe(ANTE + 500)
 
@@ -600,27 +659,27 @@ describe('unresolving an answer that was not the last to resolve', () => {
 
   it('puts back unequal shares, each its own', async () => {
     await addAnswer('C', 2)
-    addSubsidy(300)
-    expect(await resolve('A', 'YES')).toBe(ANTE + 100)
-    addSubsidy(1000)
-    expect(await resolve('B', 'YES')).toBe(ANTE + 600)
-    expect(await resolve('C', 'YES')).toBe(ANTE + 600)
+    await addUnrecordedSubsidy(1200)
+    expect(await resolve('A', 'YES')).toBe(ANTE + 400)
+    await drizzleInto('B', 200)
+    expect(await resolve('B', 'YES')).toBe(ANTE + 200 + 300)
+    expect(await resolve('C', 'YES')).toBe(ANTE + 300)
 
-    // Was 600, the pool as C found it.
+    // Was 300, the pool as C found it.
     await unresolve('A')
-    expect(contract.subsidyPool).toBe(100)
-    expect(await resolve('A', 'NO')).toBe(ANTE + 100)
+    expect(contract.subsidyPool).toBe(400)
+    expect(await resolve('A', 'NO')).toBe(ANTE + 400)
     await unresolve('B')
-    expect(contract.subsidyPool).toBe(600)
-    expect(await resolve('B', 'NO')).toBe(ANTE + 600)
-    expect(paid).toBe(3 * ANTE + 1300)
+    expect(contract.subsidyPool).toBe(300)
+    expect(await resolve('B', 'NO')).toBe(ANTE + 200 + 300)
+    expect(paid).toBe(3 * ANTE + 1200)
   })
 
   it('does not restore it for any of several earlier answers', async () => {
     await addAnswer('C', 2)
     await resolve('A', 'NO')
     await resolve('C', 'NO')
-    addSubsidy(1000)
+    expect(await addSubsidy(1000)).toEqual(['B'])
     await resolve('B', 'YES')
 
     await unresolve('A')
@@ -636,7 +695,7 @@ describe('unresolving an answer that was not the last to resolve', () => {
 
 describe('unresolving the answer whose resolution resolved the market', () => {
   it('puts back the pool that resolution took, as before', async () => {
-    addSubsidy(1000)
+    await addUnrecordedSubsidy(1000)
     expect(await resolve('A', 'YES')).toBe(ANTE + 500)
     expect(await resolve('B', 'NO')).toBe(ANTE + 500)
     expect(contract.isResolved).toBe(true)
@@ -650,7 +709,7 @@ describe('unresolving the answer whose resolution resolved the market', () => {
   })
 
   it('puts it back after a cancellation too', async () => {
-    addSubsidy(1000)
+    await addUnrecordedSubsidy(1000)
     await resolve('A', 'YES')
     expect(await resolve('B', 'CANCEL')).toBe(ANTE + 500)
     await unresolve('B')
@@ -663,7 +722,7 @@ describe('unresolving the answer whose resolution resolved the market', () => {
   // earlier resolution of the same answer, since undone, and part of the pool
   // it holds has drizzled into the answer's pool, which pays it out.
   it('does not undo it from the edit of an earlier resolution of that answer', async () => {
-    addSubsidy(1000)
+    await addUnrecordedSubsidy(1000)
     expect(await resolve('A', 'YES')).toBe(ANTE + 500)
     expect(await resolve('B', 'NO')).toBe(ANTE + 500)
     await unresolve('B')
@@ -682,7 +741,7 @@ describe('unresolving the answer whose resolution resolved the market', () => {
   // A resolution made before edits were keyed has only an unkeyed edit,
   // which nothing ties to it.
   it('does not undo a resolution from before edits were keyed', async () => {
-    addSubsidy(1000)
+    await addUnrecordedSubsidy(1000)
     await resolve('A', 'YES')
     await resolve('B', 'NO')
     await forgetEditKeys()
@@ -694,15 +753,12 @@ describe('unresolving the answer whose resolution resolved the market', () => {
     expect(contract.subsidyPool).toBe(0)
   })
 
-  it('keeps a subsidy that came in while the market was resolved', async () => {
-    addSubsidy(1000)
+  // A boost of a market whose answers have all resolved is not taken at all
+  // now (addHouseSubsidy), where it went into the pool for the next unresolve.
+  it('finds no answer to take a subsidy while the market is resolved', async () => {
     await resolve('A', 'YES')
     await resolve('B', 'NO')
-    // addHouseSubsidy does not check that the market is open.
-    addSubsidy(70)
-
-    await unresolve('B')
-    expect(contract.subsidyPool).toBe(570)
+    expect(await addSubsidy(70)).toEqual([])
   })
 })
 
@@ -711,7 +767,7 @@ describe('unresolving an answer while the market is still open', () => {
   // good.
   it('puts back the share of the pool its resolution took', async () => {
     await addAnswer('C', 2)
-    addSubsidy(900)
+    await addUnrecordedSubsidy(900)
     expect(await resolve('A', 'YES')).toBe(ANTE + 300)
     expect(contract.subsidyPool).toBe(600)
 
@@ -727,19 +783,18 @@ describe('unresolving an answer while the market is still open', () => {
 
   it('adds it to what the pool holds by then', async () => {
     await addAnswer('C', 2)
-    addSubsidy(900)
+    await addUnrecordedSubsidy(900)
     await resolve('A', 'YES')
-    addSubsidy(100)
     await drizzleInto('B', 200)
-    expect(contract.subsidyPool).toBe(500)
+    expect(contract.subsidyPool).toBe(400)
 
     await unresolve('A')
-    expect(contract.subsidyPool).toBe(800)
+    expect(contract.subsidyPool).toBe(700)
   })
 
   it('does not undo a resolution from before edits were keyed', async () => {
     await addAnswer('C', 2)
-    addSubsidy(900)
+    await addUnrecordedSubsidy(900)
     await resolve('A', 'YES')
     await forgetEditKeys()
 
@@ -840,6 +895,65 @@ describe('unresolving an answer that had pending subsidy of its own', () => {
   })
 })
 
+describe('liquidity added to the whole market, with the answers it went to', () => {
+  // The report: a subsidy, a wait for some of it to drizzle, more answers
+  // listed, the first answers resolved, the later ones cancelled.
+  it('is paid out once when answers listed later are cancelled', async () => {
+    expect(await addSubsidy(1000)).toEqual(['A', 'B'])
+    expect(await pendingOf('A')).toBe(500)
+    await drizzleOwn('A')
+    await addAnswer('C', 2)
+    await addAnswer('D', 3)
+
+    expect(await resolve('A', 'YES')).toBe(ANTE + 500)
+    expect(await resolve('B', 'NO')).toBe(ANTE + 500)
+    // Were 100 + 1,000 / 4 each.
+    expect(await resolve('C', 'CANCEL')).toBe(ANTE)
+    expect(await resolve('D', 'CANCEL')).toBe(ANTE)
+    expect(paid).toBe(4 * ANTE + 1000)
+  })
+
+  it('comes back to the answer that took it when its resolution is undone', async () => {
+    await addSubsidy(1000)
+    expect(await resolve('A', 'YES')).toBe(ANTE + 500)
+    expect(await pendingOf('A')).toBe(0)
+
+    expect(await unresolve('A')).toBe(-(ANTE + 500))
+    expect(await pendingOf('A')).toBe(500)
+    expect(contract.subsidyPool).toBe(0)
+
+    // A cancellation refunds the share it records for this answer.
+    expect(await resolve('A', 'CANCEL')).toBe(ANTE + 500)
+    expect(await resolve('B', 'CANCEL')).toBe(ANTE + 500)
+    expect(paid).toBe(2 * ANTE + 1000)
+  })
+
+  it('made while an answer was resolved neither reaches it nor keeps it from reopening', async () => {
+    await resolve('A', 'YES')
+    expect(await addSubsidy(1000)).toEqual(['B'])
+
+    expect(await unresolve('A')).toBe(-ANTE)
+    expect(await pendingOf('A')).toBe(0)
+    expect(await resolve('A', 'CANCEL')).toBe(ANTE)
+    expect(await resolve('B', 'CANCEL')).toBe(ANTE + 1000)
+    expect(paid).toBe(2 * ANTE + 1000)
+  })
+
+  it('is shared with what the pool still held from before, each by its own rule', async () => {
+    await addUnrecordedSubsidy(600)
+    await addSubsidy(1000)
+    await addAnswer('C', 2)
+
+    // A: its ante, its 500, and a third of the pool C now shares.
+    expect(await resolve('A', 'YES')).toBe(ANTE + 500 + 200)
+    // C holds its ante and half of what the pool has left: none of the
+    // provision that records A and B.
+    expect(await resolve('C', 'CANCEL')).toBe(ANTE + 200)
+    expect(await resolve('B', 'CANCEL')).toBe(ANTE + 500 + 200)
+    expect(paid).toBe(3 * ANTE + 1600)
+  })
+})
+
 describe('taking back the payouts of the resolution being undone', () => {
   const payoutsOf = (amount: number) =>
     `category = 'CONTRACT_RESOLUTION_PAYOUT' and amount = ${amount}`
@@ -849,7 +963,7 @@ describe('taking back the payouts of the resolution being undone', () => {
   it('takes back its payouts, not an earlier resolution stamped later', async () => {
     expect(await resolve('A', 'YES')).toBe(ANTE)
     expect(await unresolve('A')).toBe(-ANTE)
-    addSubsidy(1000)
+    await addUnrecordedSubsidy(1000)
     expect(await resolve('A', 'YES')).toBe(ANTE + 500)
     await rows(
       `update txns
@@ -922,7 +1036,7 @@ describe('one edit for one resolution', () => {
   // Their edits had the same key, and the first was taken for the second's.
   it('undoes a later resolution in the same millisecond from its own edit', async () => {
     const time = Date.now() + 1000
-    addSubsidy(1000)
+    await addUnrecordedSubsidy(1000)
     expect(await resolveAt('A', 'YES', time)).toBe(ANTE + 500)
     expect(await unresolve('A')).toBe(-(ANTE + 500))
     await drizzleInto('A', 250)
