@@ -81,13 +81,22 @@ describe('extra liquidity on a new multiple choice market', () => {
   it('goes to the answers of an independent market in equal shares', async () => {
     const answers = [answerRow('A', 0), answerRow('B', 1), answerRow('C', 2)]
     const contract = market(false, ['A', 'B', 'C'])
+    ;(contract as CPMMMultiContract).totalLiquidity = 150
+    // The market as the update leaves it.
+    ;(updateContract as jest.Mock).mockResolvedValueOnce({
+      ...contract,
+      totalLiquidity: 450,
+    })
     await generateAntes(fakePg(answers) as any, 'creator', contract, 150, 450)
 
     expect(answers.map((a) => a.subsidy_pool)).toEqual([100, 100, 100])
-    // The market's creation announces its answers with their subsidy.
+    // The market's creation announces its answers with their subsidy, and
+    // the total that subsidy is part of. With the total as it was, pages
+    // showed 150 - 300 of active liquidity.
     expect(
       (contract as CPMMMultiContract).answers.map((a) => a.subsidyPool)
     ).toEqual([100, 100, 100])
+    expect((contract as CPMMMultiContract).totalLiquidity).toBe(450)
     const provisions = insertedProvisions()
     // One ante per answer, then the extra, recorded with its answers.
     expect(provisions.map((lp) => lp.answerId)).toEqual([

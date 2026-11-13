@@ -221,8 +221,17 @@ export const addContractLiquidity = async (
         // The increments above skip updateAnswer, and with it the broadcast,
         // so send the answers' new pending subsidy here, once it's committed.
         // Without it, open pages count the subsidy as active until a reload.
+        // Only what the add changed: a bet or the drizzle can have changed
+        // and announced the rest of the row since it was read here.
         if (updatedAnswers.length > 0)
-          broadcastUpdatedAnswers(contractId, updatedAnswers)
+          broadcastUpdatedAnswers(
+            contractId,
+            updatedAnswers.map(({ id, subsidyPool, totalLiquidity }) => ({
+              id,
+              subsidyPool,
+              totalLiquidity,
+            }))
+          )
         await onCreateLiquidityProvision(liquidity)
       },
     }

@@ -87,7 +87,17 @@ const addHouseSubsidyToOpenAnswers = async (
     { mode: 'default' }
   )
   // Open pages would otherwise count the pending subsidy as active liquidity.
-  if (answers.length > 0) broadcastUpdatedAnswers(contract.id, answers)
+  // Only what this changed: a bet or the drizzle can have changed and
+  // announced the rest of the row since it was read here.
+  if (answers.length > 0)
+    broadcastUpdatedAnswers(
+      contract.id,
+      answers.map(({ id, subsidyPool, totalLiquidity }) => ({
+        id,
+        subsidyPool,
+        totalLiquidity,
+      }))
+    )
 }
 
 export const addHouseSubsidyToAnswer = async (

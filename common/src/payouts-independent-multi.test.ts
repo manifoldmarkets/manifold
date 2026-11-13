@@ -175,10 +175,10 @@ describe('cancelling an answer of an independent multiple choice market', () => 
 
   it('refunds unrecorded liquidity in full to the answers open when it was made', () => {
     const answers = [
-      answer('A', 0, T0),
-      answer('B', 1, T0),
+      holding(answer('A', 0, T0), 40),
+      holding(answer('B', 1, T0), 40),
       // Written with the provision, as a market's first answers can be.
-      answer('C', 2, T0 + HOUR + 2 * SECOND),
+      holding(answer('C', 2, T0 + HOUR + 2 * SECOND), 40),
       // Listed later, with its own funding and none of the provision.
       holding(answer('D', 3, T0 + HOUR + 2 * MINUTE), 50),
     ]
@@ -199,12 +199,81 @@ describe('cancelling an answer of an independent multiple choice market', () => 
         resolution: 'YES' as const,
         resolutionTime: T0 + MINUTE,
       },
-      answer('B', 1, T0),
-      answer('C', 2, T0),
+      holding(answer('B', 1, T0), 60),
+      holding(answer('C', 2, T0), 60),
     ]
     const liquidities = [provision('w', 'whale', 120, T0 + HOUR)]
     expect(providerPayouts('CANCEL', answers, liquidities, 'B')).toEqual({
       whale: 60,
+    })
+  })
+
+  it('refunds a recorded share in full beside an older provision', () => {
+    // The first 9,000 drizzled into A and B. C was listed later, and the
+    // second 9,000 went to all three, 3,000 each.
+    const answers = [
+      holding(answer('A', 0, T0), 50 + 4500 + 3000),
+      holding(answer('B', 1, T0), 50 + 4500 + 3000),
+      holding(answer('C', 2, T0 + DAY), 50 + 3000),
+    ]
+    const liquidities = [
+      ante('A', 'creator', T0),
+      ante('B', 'creator', T0),
+      provision('old', 'first', 9000, T0 + HOUR),
+      ante('C', 'creator', T0 + DAY),
+      provision('new', 'second', 9000, T0 + 2 * DAY, {
+        answerIds: ['A', 'B', 'C'],
+      }),
+    ]
+    // Were 1,500 each in C, where the first provider has nothing.
+    expect(providerPayouts('CANCEL', answers, liquidities, 'C')).toEqual({
+      creator: 50,
+      second: 3000,
+    })
+    expect(providerPayouts('CANCEL', answers, liquidities, 'A')).toEqual({
+      creator: 50,
+      first: 4500,
+      second: 3000,
+    })
+  })
+
+  it('refunds a recorded share in full where the pool counts short', () => {
+    // A cpmm-multi-1 answer that has thrown away shares of both sides counts
+    // less than it holds. What it is known to have been given is not held to
+    // that count, like its own ante.
+    const answers = [holding(answer('A', 0, T0), 50 + 480), answer('B', 1, T0)]
+    const liquidities = [
+      ante('A', 'creator', T0),
+      provision('new', 'second', 1000, T0 + HOUR, { answerIds: ['A', 'B'] }),
+    ]
+    expect(providerPayouts('CANCEL', answers, liquidities, 'A')).toEqual({
+      creator: 50,
+      second: 500,
+    })
+  })
+
+  it('refunds an older subsidy what a later answer holds of it, not an older ante', () => {
+    // A and B were funded by one unrecorded ante. A resolved, 600 came for
+    // the whole market, C was listed, and B resolved YES, taking half of what
+    // was pending. C holds its ante and the other 300.
+    const answers = [
+      { ...answer('A', 0, T0), resolution: 'YES', resolutionTime: T0 + MINUTE },
+      {
+        ...answer('B', 1, T0),
+        resolution: 'YES',
+        resolutionTime: T0 + 3 * HOUR,
+      },
+      holding(answer('C', 2, T0 + 2 * HOUR), 50 + 300),
+    ] as Answer[]
+    const liquidities = [
+      provision('x', 'creator', 200, T0, { isAnte: true }),
+      provision('w', 'whale', 600, T0 + HOUR),
+      ante('C', 'adder', T0 + 2 * HOUR),
+    ]
+    // Was 50 + 600 / 3: 100 of what C holds refunded to nobody.
+    expect(providerPayouts('CANCEL', answers, liquidities, 'C')).toEqual({
+      adder: 50,
+      whale: 300,
     })
   })
 

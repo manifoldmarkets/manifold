@@ -30,15 +30,14 @@
 // answers open at that moment, as each one's own pending subsidy, and records
 // them (addSubsidyToOpenAnswers, which runs here as it is). The market's pool
 // only holds what was added before that, by provisions that record no
-// answers. An answer can't be unresolved once one of those came while it was
-// resolved.
+// answers.
 //
 // The real resolveMarketHelper and the real unresolve handler run here, one
 // after the other on the same market. The answers, the payout transactions and
 // the contract edits each resolution records are rows in an in-memory
-// PostgreSQL, read and written by the handlers' own SQL, and so are the
-// liquidity provisions the unresolve check reads. The contract row, balances
-// and positions are in-memory stand-ins. No live database or network is used.
+// PostgreSQL, read and written by the handlers' own SQL. The contract row,
+// balances and positions are in-memory stand-ins. A transaction that fails
+// is rolled back, the stand-ins with it. No live database or network is used.
 import { PGlite } from '@electric-sql/pglite'
 import * as pgPromise from 'pg-promise'
 import { sumBy } from 'lodash'
@@ -107,12 +106,14 @@ import { LiquidityProvision } from 'common/liquidity-provision'
 import { convertAnswer } from 'common/supabase/contracts'
 import { User } from 'common/user'
 import { resolveMarketHelper } from './resolve-market-helpers'
+import { bulkUpdateContractMetrics } from './helpers/user-contract-metrics'
 import { updateAnswer, updateAnswers } from './supabase/answers'
 import { updateContract } from './supabase/contracts'
 import { createSupabaseDirectClient } from './supabase/init'
 import { bulkIncrementBalancesQuery } from './supabase/users'
 import { bulkInsertQuery, updateDataQuery } from './supabase/utils'
 import { insertTxns, TxnData } from './txn/run-txn'
+import { broadcastUpdatedContract } from './websockets/helpers'
 import {
   getContract,
   getContractAndMetricsAndLiquidities,
@@ -191,8 +192,23 @@ const client = {
     txnsToInsert = []
     return [[], [], [], []]
   },
-  tx: async (...args: unknown[]) =>
-    (args[args.length - 1] as (tx: unknown) => Promise<unknown>)(client),
+  // One transaction: what it wrote is undone if it fails, in the database
+  // and in the stand-ins.
+  tx: async (...args: unknown[]) => {
+    const saved = { contract, paid, txnsToInsert, txnId }
+    await db.exec('begin')
+    try {
+      const result = await (
+        args[args.length - 1] as (tx: unknown) => Promise<unknown>
+      )(client)
+      await db.exec('commit')
+      return result
+    } catch (error) {
+      await db.exec('rollback')
+      ;({ contract, paid, txnsToInsert, txnId } = saved)
+      throw error
+    }
+  },
 }
 
 const answers = async () =>
@@ -204,22 +220,17 @@ const marketNow = async () =>
 // Resolutions and unresolves a millisecond apart would share a payout time.
 const tick = () => new Promise((resolve) => setTimeout(resolve, 5))
 
-// A provision, for the payouts (getContractAndMetricsAndLiquidities) and as
-// the row unresolve reads.
-const provide = async (
+// A provision, as the payouts read them
+// (getContractAndMetricsAndLiquidities).
+const provide = (
   provision: Omit<LiquidityProvision, 'id' | 'userId' | 'contractId'>
 ) => {
-  const l = {
+  liquidities.push({
     id: `provision-${liquidities.length}`,
     userId: CREATOR,
     contractId: 'market',
     ...provision,
-  }
-  liquidities.push(l)
-  await rows(
-    `insert into contract_liquidity (contract_id, data) values ('market', $1)`,
-    [l]
-  )
+  })
 }
 
 const addAnswer = async (id: string, index: number) => {
@@ -422,16 +433,9 @@ beforeAll(async () => {
       contract_id text, answer_id text, prob_after numeric,
       created_time timestamptz
     );
-    create table contract_liquidity (
-      id serial, contract_id text not null,
-      created_time timestamptz default now() not null, data jsonb not null
-    );
     create function ts_to_millis (ts timestamptz) returns bigint
       language sql immutable as
       $$ select (extract(epoch from ts) * 1000)::bigint $$;
-    create function millis_to_ts (millis bigint) returns timestamptz
-      language sql immutable as
-      $$ select to_timestamp(millis / 1000.0) $$;
   `)
 })
 
@@ -444,7 +448,6 @@ beforeEach(async () => {
   await db.exec(`
     truncate answers; truncate contract_edits; truncate txns;
     truncate audit_events; truncate contract_bets; truncate contracts;
-    truncate contract_liquidity;
     insert into contracts (id) values ('market');
   `)
   contract = {
@@ -621,25 +624,21 @@ describe('unresolving an answer that was not the last to resolve', () => {
   )
 
   // The same with a provision from before they recorded their answers: it is
-  // in the market's pool, B's resolution takes all of it, and nothing says
-  // afterwards that A had none of it.
-  it('is refused once liquidity that records no answers came while it was resolved', async () => {
-    expect(await resolve('A', 'YES')).toBe(ANTE)
-    await addUnrecordedSubsidy(1000)
-    expect(await resolve('B', 'YES')).toBe(ANTE + 1000)
+  // in the market's pool, and B's resolution takes all of it. Afterwards
+  // nothing says that A had none of it, but A holds none of it to refund.
+  it.each(['YES', 'NO', 'CANCEL'] as const)(
+    'pays it out for what was put into it with a provision that records no answers too, resolving it %s',
+    async (outcome) => {
+      expect(await resolve('A', 'YES')).toBe(ANTE)
+      await addUnrecordedSubsidy(1000)
+      expect(await resolve('B', 'YES')).toBe(ANTE + 1000)
 
-    await expect(unresolve('A')).rejects.toMatchObject({ code: 403 })
-    expect(paid).toBe(2 * ANTE + 1000)
-    expect(contract.isResolved).toBe(true)
-    expect((await answers())[0].resolution).toBe('YES')
-  })
-
-  it('is not refused for one that came before it resolved, or to another answer', async () => {
-    await addUnrecordedSubsidy(1000)
-    expect(await resolve('A', 'YES')).toBe(ANTE + 500)
-    await addAnswerSubsidy('B', 40)
-    expect(await unresolve('A')).toBe(-(ANTE + 500))
-  })
+      expect(await unresolve('A')).toBe(-ANTE)
+      expect(contract.subsidyPool).toBe(0)
+      expect(await resolve('A', outcome)).toBe(ANTE)
+      expect(paid).toBe(2 * ANTE + 1000)
+    }
+  )
 
   // Both answers took half of the pool. Unresolving the first used to put
   // back the pool as the second found it, which here happens to be the same
@@ -895,6 +894,35 @@ describe('unresolving an answer that had pending subsidy of its own', () => {
   })
 })
 
+describe('cancelling every answer', () => {
+  // A subsidy from before provisions recorded their answers, drizzled into
+  // the two answers there were, and a third listed afterwards.
+  it('returns all of an older subsidy, from the answers that hold it', async () => {
+    await addUnrecordedSubsidy(1000)
+    await drizzleInto('A', 500)
+    await drizzleInto('B', 500)
+    await addAnswer('C', 2)
+
+    // Were 100 + 1,000 / 3 each under the limit alone: 966.67 of 1,300.
+    expect(await resolve('A', 'CANCEL')).toBe(ANTE + 500)
+    expect(await resolve('B', 'CANCEL')).toBe(ANTE + 500)
+    expect(await resolve('C', 'CANCEL')).toBe(ANTE)
+    expect(paid).toBe(3 * ANTE + 1000)
+  })
+
+  it('returns what an answer listed later took of one still pending', async () => {
+    await addUnrecordedSubsidy(900)
+    await addAnswer('C', 2)
+    await drizzleInto('C', 300)
+
+    // A and B share what the pool still holds with it; C holds 300.
+    expect(await resolve('C', 'CANCEL')).toBe(ANTE + 300 + 200)
+    expect(await resolve('A', 'CANCEL')).toBe(ANTE + 200)
+    expect(await resolve('B', 'CANCEL')).toBe(ANTE + 200)
+    expect(paid).toBe(3 * ANTE + 900)
+  })
+})
+
 describe('liquidity added to the whole market, with the answers it went to', () => {
   // The report: a subsidy, a wait for some of it to drizzle, more answers
   // listed, the first answers resolved, the later ones cancelled.
@@ -1065,15 +1093,14 @@ describe('one edit for one resolution', () => {
       [`resolution:A:${time}`]
     )
 
-    const payouts = () =>
-      rows(`select id from txns where category = 'CONTRACT_RESOLUTION_PAYOUT'`)
-    const before = (await payouts()).length
+    const before = paid
     await expect(resolveAt('A', 'YES', time)).rejects.toMatchObject({
       code: 409,
     })
-    // It fails before its one write of balances, payouts and the market, and
-    // its transaction takes the rest with it.
-    expect((await payouts()).length).toBe(before)
+    expect(paid).toBe(before)
+    expect((await answers())[0].resolution).toBeUndefined()
+    // A moment later it goes through.
+    expect(await resolve('A', 'YES')).toBe(ANTE)
   })
 })
 
@@ -1083,8 +1110,44 @@ describe('unresolving while another process is at the same market', () => {
     jest.mocked(updateContract).mockClear()
     await unresolve('A')
     expect(jest.mocked(updateContract).mock.calls).toEqual([
-      [expect.anything(), 'market', { lastUpdatedTime: expect.any(Number) }],
+      [
+        expect.anything(),
+        'market',
+        { lastUpdatedTime: expect.any(Number) },
+        { broadcast: false },
+      ],
     ])
+  })
+
+  // Stopped after it has taken the payouts back, reopened the market and
+  // recorded that: all of it is undone, done once more, and told to open
+  // pages once.
+  it('leaves nothing of an attempt that is stopped part of the way through', async () => {
+    await resolve('A', 'YES')
+    await resolve('B', 'NO')
+    expect(contract.isResolved).toBe(true)
+    jest.mocked(updateContract).mockClear()
+    jest.mocked(broadcastUpdatedContract).mockClear()
+    jest.mocked(bulkUpdateContractMetrics).mockImplementationOnce(async () => {
+      throw Object.assign(new Error('deadlock detected'), { code: '40P01' })
+    })
+
+    expect(await unresolve('B')).toBe(-ANTE)
+    expect(contract.isResolved).toBe(false)
+    expect(
+      await rows(
+        `select id from txns where category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'`
+      )
+    ).toHaveLength(1)
+    // The edit unresolving records of the market it reopened.
+    expect(
+      await rows(`select id from contract_edits where idempotency_key is null`)
+    ).toHaveLength(1)
+    const updates = jest.mocked(updateContract).mock.calls
+    expect(updates).toHaveLength(2)
+    for (const update of updates)
+      expect(update[3]).toEqual({ broadcast: false })
+    expect(jest.mocked(broadcastUpdatedContract)).toHaveBeenCalledTimes(1)
   })
 
   it('tries again when it is the one stopped to break a deadlock', async () => {

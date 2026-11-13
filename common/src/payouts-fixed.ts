@@ -71,40 +71,52 @@ export const getIndependentMultiAnswerBacking = (
 const CANCEL_BACKING_TOLERANCE = 1e-9
 
 // A cancelled answer of an independent multiple choice market refunds its
-// traders what they put in and its liquidity providers what they did.
+// traders what they put in and its liquidity providers what they did, out of
+// what it holds (getIndependentMultiAnswerBacking) and no more.
 //
-// Provisions made to the answer itself (its ante, a subsidy for this answer)
-// went into its pool or its pending subsidy in full, and are refunded in full.
+// Provisions made to the answer itself went into its pool or its pending
+// subsidy in full, and are refunded in full: its ante, a subsidy for this
+// answer, and its share of a whole-market provision that records the answers
+// it was split among (`answerLiquidities` carries all three).
 //
-// Liquidity provided to the whole market did not go to its answers in the
-// shares it's refunded in. `sharedLiquidities` carries each such provision at
-// amount / number of answers, but the drizzle and each resolution split the
-// market's subsidy among the answers open at the time: an answer listed after
-// a subsidy drizzled, or one that was resolved while it did, holds little or
-// none of it. Refunding it a full share paid out mana the answer never had,
-// while the answers that did receive it paid it out in full as well. So those
-// provisions are refunded only out of what the answer holds beyond its other
-// refunds (getIndependentMultiAnswerBacking), each scaled alike when that
-// falls short. They are then never refunded out of mana the answer doesn't
-// hold, whatever the provisions record, and never refunded more than before.
+// A whole-market provision that records no answers went into the market's
+// pending pool, which the drizzle moved into whichever answers were open at
+// each tick. What an answer holds of one can only be estimated, and it is
+// refunded out of what the answer holds beyond the refunds above:
+//
+// - `sharedLiquidities` carries each such provision at its estimated share
+//   (getIndependentMultiFixedPayouts). They are refunded first, each scaled
+//   alike if the answer holds less than they come to. Such a provision used
+//   to be refunded at amount / number of answers by every cancelled answer,
+//   whatever it had received: an answer listed after a subsidy had drizzled
+//   into the others refunded mana it never had, while the others paid the
+//   subsidy out too.
+// - `furtherLiquidities` carries the same provisions at how much more of
+//   each the answer can be holding: more than the estimate, or some of one
+//   it is estimated to hold none of (listed while the pool was still
+//   draining). What the answer holds beyond the estimates is theirs, and
+//   goes back to them in proportion, none getting more than it put in. Left
+//   in a cancelled answer it would be nobody's.
+//
+// So a cancellation never refunds mana the answer doesn't hold, whatever the
+// provisions record, and leaves none behind that a provision can account for.
 //
 // The traders' and the answer's own provisions' refunds are what they were:
 // what each put in. (On an answer traded while fees were charged, that
 // already came to more than the answer holds, by the fees that left the
-// market. The whole-market provisions now go without first.)
+// market. The whole-market provisions go without first.)
 //
-// Where no answer was listed or reopened after a subsidy came in, every answer
-// that was open for it holds at least amount / number of answers of it, and
-// refunds that in full as before. The exception is a cpmm-multi-1 answer that
-// has thrown away shares of both sides (subsidies that reached it on both
-// sides of 50%, or custom starting odds and a subsidy on the other side): it
-// is counted short by the smaller of the two, and refunds that much less.
+// A cpmm-multi-1 answer that has thrown away shares of both sides (subsidies
+// that reached it on both sides of 50%, or custom starting odds and a subsidy
+// on the other side) is counted short by the smaller of the two, and refunds
+// that much less.
 export const getIndependentMultiCancelPayouts = (
   answer: Answer,
   contractMetrics: ContractMetric[],
   answerLiquidities: LiquidityProvision[],
   sharedLiquidities: LiquidityProvision[],
-  contractSubsidyPoolShare: number
+  contractSubsidyPoolShare: number,
+  furtherLiquidities: LiquidityProvision[] = []
 ): PayoutInfo => {
   const answerMetrics = contractMetrics.filter(
     (metric) => metric.answerId === answer.id
@@ -124,6 +136,10 @@ export const getIndependentMultiCancelPayouts = (
   const available = Math.max(backing - otherRefunds, 0)
   const tolerance =
     CANCEL_BACKING_TOLERANCE * (Math.abs(backing) + Math.abs(otherRefunds))
+  // A pool or a position that isn't a number vouches for nothing, and every
+  // comparison with it is false: refund none of these provisions rather than
+  // all of them.
+  const counted = Number.isFinite(backing) && Number.isFinite(otherRefunds)
 
   const sharedRefund = sumBy(sharedLiquidities, (l) => l.amount)
   // Only provisions are scaled down. A withdrawal recorded against the whole
@@ -132,10 +148,7 @@ export const getIndependentMultiCancelPayouts = (
   const sharedWithdrawn = sharedRefund - sharedProvided
 
   let scale = 1
-  if (!Number.isFinite(backing) || !Number.isFinite(otherRefunds)) {
-    // A pool or a position that isn't a number vouches for nothing, and every
-    // comparison with it is false: refund none of these provisions rather
-    // than all of them.
+  if (!counted) {
     scale = 0
   } else if (sharedRefund > available + tolerance && sharedProvided > 0) {
     scale = Math.min(
@@ -143,15 +156,36 @@ export const getIndependentMultiCancelPayouts = (
       Math.max(0, (available - sharedWithdrawn) / sharedProvided)
     )
   }
-
   const sharedLiquidityPayouts = sharedLiquidities.map((liquidity) => ({
     userId: liquidity.userId,
     payout: liquidity.amount > 0 ? liquidity.amount * scale : liquidity.amount,
   }))
 
+  // What the answer holds beyond the shares, to the provisions that can have
+  // put it there.
+  const beyondShares = counted && scale === 1 ? available - sharedRefund : 0
+  const further = furtherLiquidities.filter(
+    (l) => Number.isFinite(l.amount) && l.amount > 0
+  )
+  const furtherRoom = sumBy(further, (l) => l.amount)
+  const furtherScale =
+    beyondShares > tolerance && furtherRoom > 0
+      ? Math.min(beyondShares, furtherRoom) / furtherRoom
+      : 0
+  const furtherLiquidityPayouts =
+    furtherScale > 0
+      ? further.map((liquidity) => ({
+          userId: liquidity.userId,
+          payout: liquidity.amount * furtherScale,
+        }))
+      : []
+
   return {
     traderPayouts,
-    liquidityPayouts: answerLiquidityPayouts.concat(sharedLiquidityPayouts),
+    liquidityPayouts: answerLiquidityPayouts.concat(
+      sharedLiquidityPayouts,
+      furtherLiquidityPayouts
+    ),
     ...(scale < 1
       ? { withheldLiquidityRefund: sharedProvided * (1 - scale) }
       : {}),

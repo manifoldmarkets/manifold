@@ -171,7 +171,13 @@ export const unresolveMain: APIHandler<'unresolve'> = async (props, auth) => {
   // Retried on a deadlock: this locks the market's row before the users it
   // takes payouts back from, where a resolution of another answer of the
   // market pays its users first and writes the market's row last. At the
-  // default isolation level, so the retry is all it adds.
+  // default isolation level, so the retry is all it adds. Everything the
+  // transaction does is in the database, so a failed attempt leaves nothing
+  // behind: open pages are told once it has committed.
+  //
+  // (Whichever of the two is stopped, that resolution cannot go through: it
+  // read the market before this reopened an answer, and fails to serialize on
+  // the market's row if it isn't the one stopped. It has to be made again.)
   const result = await runTransactionWithRetries(
     async (tx) => unresolveInTransaction(tx, contractId, answerId, auth.uid),
     3,
@@ -328,49 +334,6 @@ const verifyUserCanUnresolve = async (
       throw new APIError(400, `Answer ${answerId} is not resolved`)
 
     resolutionTime = answerResolutionTime
-
-    // A cancellation credits a whole-market provision that doesn't record its
-    // answers to the answers open when it was made
-    // (getIndependentMultiFixedPayouts). One made while this answer was
-    // resolved, now or in a resolution since undone, didn't reach it, so the
-    // answer can't reopen. An undone resolution lasted from its payouts until
-    // the unresolve that reverted them.
-    const addedWhileResolved = await pg.oneOrNone(
-      `with resolutions as (
-         select (p.data->'data'->>'payoutStartTime')::bigint as started,
-           min(u.created_time) as undone
-         from txns p
-         left join txns u
-           on u.category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
-           and u.to_id = $1
-           and u.data->'data'->>'revertsTxnId' = p.id
-         where p.from_id = $1
-           and p.category = 'CONTRACT_RESOLUTION_PAYOUT'
-           and p.data->'data'->>'answerId' = $3
-         group by 1
-       )
-       select exists (
-         select 1 from contract_liquidity l
-         where l.contract_id = $1
-           and l.data->>'answerId' is null
-           and l.data->'answerIds' is null
-           and (
-             l.created_time > millis_to_ts($2)
-             or exists (
-               select 1 from resolutions r
-               where l.created_time > millis_to_ts(r.started)
-                 and (r.undone is null or l.created_time < r.undone)
-             )
-           )
-       ) as added`,
-      [contract.id, resolutionTime, answerId],
-      (r) => r?.added === true
-    )
-    if (addedWhileResolved)
-      throw new APIError(
-        403,
-        `Liquidity was added to the whole market after this answer resolved, so it can't be unresolved.`
-      )
   }
 
   if (resolutionTime < TXNS_PR_MERGED_ON)
@@ -563,8 +526,14 @@ const undoResolution = async (
           : undefined,
       ...subsidyPoolUpdate,
     })
-    await updateContract(pg, contractId, updatedAttrs)
-    await recordContractEdit(contract, userId, Object.keys(updatedAttrs))
+    await updateContract(pg, contractId, updatedAttrs, { broadcast: false })
+    await recordContractEdit(
+      contract,
+      userId,
+      Object.keys(updatedAttrs),
+      undefined,
+      pg
+    )
     contractWebsocketUpdates = {
       isResolved: false,
       resolutionTime: undefined,
@@ -580,7 +549,9 @@ const undoResolution = async (
       ...subsidyPoolForPages,
     }
   } else {
-    await updateContract(pg, contractId, subsidyPoolUpdate)
+    await updateContract(pg, contractId, subsidyPoolUpdate, {
+      broadcast: false,
+    })
     if (marketPoolRestored > 0) contractWebsocketUpdates = subsidyPoolForPages
   }
   if (!answerId) {

@@ -72,7 +72,7 @@ export async function generateAntes(
       if (isMultiCpmm(contract) && !contract.shouldAnswersSumToOne) {
         // The answers take it as their own pending subsidy, in equal shares,
         // as a later whole-market add does (addSubsidyToOpenAnswers).
-        await updateContract(tx, contract.id, {
+        const updated = await updateContract(tx, contract.id, {
           totalLiquidity: FieldVal.increment(drizzledAmount),
         })
         const answers = await addSubsidyToOpenAnswers(
@@ -82,9 +82,13 @@ export async function generateAntes(
         )
         if (answers.length === 0)
           throw new APIError(400, 'Multiple choice markets need an answer')
-        // The market's creation announces its answers with their subsidy.
+        // The market's creation announces its answers with their subsidy,
+        // and the total it is part of: pages take the answers' pending subsidy
+        // off the market's total to show what is active.
         const updatedById = keyBy(answers, 'id')
         contract.answers = contract.answers.map((a) => updatedById[a.id] ?? a)
+        if ('totalLiquidity' in updated)
+          contract.totalLiquidity = updated.totalLiquidity
         await insertLiquidity(
           tx,
           getNewLiquidityProvision(

@@ -40,10 +40,15 @@ export function AddLiquidityModal(props: {
   const { contract, isOpen, setOpen, answerId, answerText } = props
 
   const liquidities = useLiquidity(contract.id)
-  // Opened for an answer, its own contributors: those who subsidized it, and
-  // whoever added it.
-  const lps = (liquidities ?? []).filter(
-    (lp) => !answerId || lp.answerId === answerId
+  // Opened for an answer, its own contributors: those who subsidized it,
+  // whoever added it, and those whose liquidity for the whole market was
+  // split among answers including it, at its share.
+  const lps = (liquidities ?? []).flatMap((lp) =>
+    !answerId || lp.answerId === answerId
+      ? [lp]
+      : lp.answerIds?.includes(answerId)
+      ? [{ ...lp, amount: lp.amount / lp.answerIds.length }]
+      : []
   )
 
   const [amount, setAmount] = useState<number | undefined>(0)

@@ -151,24 +151,26 @@ export const getFixedPayouts = (
 // written a moment after its own provision, in the same transaction.
 const UNRECORDED_PROVISION_GRACE_MS = 5 * 1000
 
-// What a cancelled answer may refund of a whole-market provision, before the
-// limit of what the answer holds (getIndependentMultiCancelPayouts).
+// The share of a whole-market provision that went to an answer, which a
+// cancellation refunds (getIndependentMultiCancelPayouts).
 //
 // One that records its answers went to them in equal shares, as each one's
-// own pending subsidy, and to no other answer.
+// own pending subsidy, and to no other answer. That share is known, and is
+// refunded like a provision made to the answer itself.
 //
 // One that doesn't went into the market's pending pool, which the drizzle
 // moved into the answers open at each tick. It is credited in equal shares to
-// the answers open when it was made. An answer that wasn't open then can
-// still hold some of it, if it was listed before the pool had drained, so it
-// keeps the share every answer had before provisions recorded their answers,
-// amount / number of answers: more than it holds of the provision in most
-// cases, and the limit brings the refund down to that.
+// the answers open when it was made. That is an estimate: an answer listed
+// while the pool was still draining took some of it from them, and one
+// reopened later looks as if it had been open all along. The cancellation
+// makes up for it out of what the answer holds beyond these shares
+// (getFurtherCancelRefund).
 //
 // An older market's unrecorded ante is different: it stands for the funding
 // of its answers at creation and of answers added later, all dated at the
-// market's creation, in amounts it doesn't break down. It keeps the old share
-// for answers without an ante of their own.
+// market's creation, in amounts it doesn't break down. It keeps the share
+// every provision had before, amount / number of answers, for answers without
+// an ante of their own.
 const getCancelRefundShare = (
   l: LiquidityProvision,
   answer: Answer,
@@ -177,8 +179,12 @@ const getCancelRefundShare = (
 ) => {
   if (l.answerIds)
     return l.answerIds.includes(answer.id) ? l.amount / l.answerIds.length : 0
-  const oldShare = l.amount / answers.length
-  if (l.isAnte) return ownAnteAnswerIds.has(answer.id) ? 0 : oldShare
+  // A withdrawal recorded against the whole market is charged as it always
+  // was.
+  if (l.isAnte || !(l.amount > 0))
+    return l.isAnte && ownAnteAnswerIds.has(answer.id)
+      ? 0
+      : l.amount / answers.length
   const openThen = answers.filter(
     (a) =>
       a.createdTime <= l.createdTime + UNRECORDED_PROVISION_GRACE_MS &&
@@ -186,8 +192,16 @@ const getCancelRefundShare = (
   )
   return openThen.some((a) => a.id === answer.id)
     ? l.amount / openThen.length
-    : oldShare
+    : 0
 }
+
+// How much more of a whole-market provision than that share an answer can be
+// holding. Only a provision that went through the market's pending pool can
+// have reached an answer in another amount than its share: any of it, at
+// most. One that records its answers went to them directly, and an ante went
+// into the pools it was for.
+const getFurtherCancelRefund = (l: LiquidityProvision, share: number) =>
+  l.answerIds || l.isAnte || !(l.amount > 0) ? 0 : l.amount - Math.max(share, 0)
 
 export const getIndependentMultiFixedPayouts = (
   answer: Answer,
@@ -235,31 +249,37 @@ export const getIndependentMultiFixedPayouts = (
     case 'CANCEL': {
       // A cancellation refunds what providers put into this answer, where the
       // outcomes above pay out its pool by their weights: its own provisions,
-      // and its share of each whole-market provision (getCancelRefundShare),
-      // as far as the answer holds it (getIndependentMultiCancelPayouts).
-      // Unresolving an answer is refused once an unrecorded whole-market
-      // provision came while it was resolved (unresolve.ts), so an answer open
-      // now that was there when one was made was open then.
+      // its share of each whole-market provision (getCancelRefundShare), and
+      // what it holds beyond those of the provisions that went through the
+      // market's pending pool (getFurtherCancelRefund).
       const ownAnteAnswerIds = new Set(
         liquidities.flatMap((l) => (l.isAnte && l.answerId ? [l.answerId] : []))
       )
-      const refundableSharedLiquidities = wholeMarketLiquidities.flatMap(
-        (l) => {
-          const amount = getCancelRefundShare(
-            l,
-            answer,
-            contract.answers,
-            ownAnteAnswerIds
-          )
-          return amount !== 0 ? [{ ...l, amount }] : []
-        }
-      )
+      const recordedLiquidities: LiquidityProvision[] = []
+      const estimatedLiquidities: LiquidityProvision[] = []
+      const furtherLiquidities: LiquidityProvision[] = []
+      for (const l of wholeMarketLiquidities) {
+        const share = getCancelRefundShare(
+          l,
+          answer,
+          contract.answers,
+          ownAnteAnswerIds
+        )
+        if (share !== 0)
+          (l.answerIds ? recordedLiquidities : estimatedLiquidities).push({
+            ...l,
+            amount: share,
+          })
+        const further = getFurtherCancelRefund(l, share)
+        if (further > 0) furtherLiquidities.push({ ...l, amount: further })
+      }
       return getIndependentMultiCancelPayouts(
         answer,
         contractMetrics,
-        answerLiquidities,
-        refundableSharedLiquidities,
-        contractSubsidyPoolShare
+        answerLiquidities.concat(recordedLiquidities),
+        estimatedLiquidities,
+        contractSubsidyPoolShare,
+        furtherLiquidities
       )
     }
   }
