@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { charities } from 'common/charity'
 import { sortBy } from 'lodash'
 import clsx from 'clsx'
+import { useEvent } from 'client-common/hooks/use-event'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -87,22 +88,20 @@ export function SpinningWheel(props: SpinningWheelProps) {
   // Find the winning segment
   const winningSegment = segments.find((s) => s.charityId === winningCharityId)
 
-  // Calculate final rotation to land on winning segment
-  // The pointer is at the top (12 o'clock), so we need to rotate the wheel
-  // so the winning segment's midpoint is at the top
+  // Calculate final rotation to land on winning segment.
+  // Segment angles run clockwise from 12 o'clock, where the pointer sits, and
+  // a positive CSS rotation also turns clockwise. So the point at angle `a`
+  // stops under the pointer after rotating 360 * n - a, for a whole number n.
   const calculateFinalRotation = () => {
     if (!winningSegment) return 0
-    // The pointer is at 0 degrees (top). We want the winning segment's mid to be there.
-    // Since we're rotating clockwise and segments start from the right,
-    // we need to calculate how much to rotate.
-    // Start with 3-5 full rotations for visual effect
-    const fullRotations = 3 + Math.random() * 2
-    const baseRotation = fullRotations * 360
-    // Calculate where the winning segment's midpoint is
-    // We need to rotate so that (90 - midAngle) is at the top
-    // which means rotating by (90 - midAngle) degrees
-    const targetAngle = 90 - winningSegment.midAngle
-    return baseRotation + targetAngle
+    // 3-5 whole turns for visual effect. A fractional turn would shift the
+    // landing spot by a random angle.
+    const fullRotations = 3 + Math.floor(Math.random() * 3)
+    // Stop somewhere in the middle 70% of the slice, clear of its edges
+    const { startAngle, endAngle } = winningSegment
+    const landingAngle =
+      startAngle + (endAngle - startAngle) * (0.15 + Math.random() * 0.7)
+    return fullRotations * 360 - landingAngle
   }
 
   // Start spinning
@@ -113,18 +112,20 @@ export function SpinningWheel(props: SpinningWheelProps) {
     setRotation(finalRotation)
   }
 
-  // Handle spin completion
+  // Handle spin completion. onComplete is a new function on every parent
+  // render; depending on it would restart the timer mid-spin.
+  const handleComplete = useEvent(onComplete)
   useEffect(() => {
     if (!isSpinning) return
 
     const timer = setTimeout(() => {
       setIsSpinning(false)
       setHasCompleted(true)
-      onComplete()
+      handleComplete()
     }, 5000) // Match the CSS animation duration
 
     return () => clearTimeout(timer)
-  }, [isSpinning, onComplete])
+  }, [isSpinning])
 
   // Auto-start if enabled
   useEffect(() => {
