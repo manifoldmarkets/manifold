@@ -28,6 +28,7 @@ import {
   getContractMetricsForContract,
 } from 'shared/helpers/user-contract-metrics'
 import { recordContractEdit } from 'shared/record-contract-edit'
+import { getResolutionEditKey } from 'shared/resolution-edit-key'
 import { checkForNegativeBalancesAndPayouts } from 'shared/resolve-market-helpers'
 import { updateContract } from 'shared/supabase/contracts'
 import {
@@ -46,8 +47,35 @@ import {
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
 
 // How far the database's clock, which stamps a resolution's contract edit, may
-// run behind the API's, which stamps the market's resolutionTime.
+// run behind the API's, which stamps the resolutionTime.
 const RESOLUTION_EDIT_CLOCK_SKEW_MS = 10 * 1000
+
+type ResolutionEdit = {
+  idempotency_key: string | null
+  recorded_time: number
+}
+
+// Whether a contract edit is the one the resolution being undone recorded: the
+// market as that resolution found it, with the pending subsidy it took. Only
+// that edit says what to put back. Any other is an earlier resolution's (this
+// one's own edit, written after it commits, may not be on file yet, or at
+// all), and its subsidy has been paid out or has moved into the pools since:
+// restoring it would count that subsidy twice.
+//
+// Resolutions record their edit under a key that names them
+// (getResolutionEditKey). Edits from before they did have none, and are
+// taken as this resolution's if they were recorded no earlier than it:
+// resolutionTime is set inside the resolving transaction and the edit
+// recorded after it commits, so an earlier resolution's predates it.
+const isEditOfResolution = (
+  edit: ResolutionEdit | null,
+  key: string,
+  resolutionTime: number
+) =>
+  !!edit &&
+  (edit.idempotency_key != null
+    ? edit.idempotency_key === key
+    : edit.recorded_time >= resolutionTime - RESOLUTION_EDIT_CLOCK_SKEW_MS)
 
 export const unresolve: APIHandler<'unresolve'> = onlyUsersWhoCanPerformAction(
   'resolveMarket',
@@ -74,9 +102,20 @@ export const unresolveMain: APIHandler<'unresolve'> = async (props, auth) => {
     if (contract.deleted)
       throw new APIError(403, 'Deleted markets cannot be unresolved')
 
-    await verifyUserCanUnresolve(tx, contract, auth.uid, answerId)
+    const resolutionTime = await verifyUserCanUnresolve(
+      tx,
+      contract,
+      auth.uid,
+      answerId
+    )
 
-    const undoResult = await undoResolution(tx, contract, auth.uid, answerId)
+    const undoResult = await undoResolution(
+      tx,
+      contract,
+      auth.uid,
+      resolutionTime,
+      answerId
+    )
 
     return {
       success: true as const,
@@ -219,15 +258,20 @@ const verifyUserCanUnresolve = async (
 
   if (creatorId !== userId && !isMod)
     throw new APIError(403, `User ${userId} must be a mod to unresolve.`)
+
+  return resolutionTime
 }
 
 const undoResolution = async (
   pg: SupabaseTransaction,
   contract: Contract,
   userId: string,
+  // Of the resolution being undone: the answer's, or the market's.
+  resolutionTime: number,
   answerId?: string
 ) => {
   const contractId = contract.id
+  const editKey = getResolutionEditKey(answerId, resolutionTime)
   // mana and cash payouts
   const maxManaPayoutStartTime = await pg.oneOrNone(
     `select max((data->'data'->'payoutStartTime')::numeric) as max
@@ -298,6 +342,9 @@ const undoResolution = async (
 
   let contractWebsocketUpdates: Partial<Contract> | undefined = undefined
   let answerUpdates: (Partial<Answer> & { id: string })[] = []
+  // Whether the latest edit recorded while the market was unresolved is the
+  // one this resolution recorded, whose pending subsidy can be put back.
+  let restoresSubsidyPool = false
 
   if (contract.isResolved || contract.resolutionTime) {
     // Restore subsidyPool from the contract state before resolution: the
@@ -305,12 +352,14 @@ const undoResolution = async (
     // attempt that failed after recording its own edit (recordContractEdit
     // writes outside this transaction) has left a later one holding the
     // resolved market, with subsidyPool 0, which this must skip.
-    const preResolution = await pg.oneOrNone<{
-      subsidy_pool: number | null
-      recorded_time: number
-      open_answer_ids: string[] | null
-    }>(
+    const preResolution = await pg.oneOrNone<
+      ResolutionEdit & {
+        subsidy_pool: number | null
+        open_answer_ids: string[] | null
+      }
+    >(
       `select (data->>'subsidyPool')::numeric as subsidy_pool,
+         idempotency_key,
          (extract(epoch from created_time) * 1000)::float8 as recorded_time,
          (
            select coalesce(jsonb_agg(answer_data->>'id'), '[]'::jsonb)
@@ -328,37 +377,36 @@ const undoResolution = async (
        limit 1`,
       [contractId]
     )
-    // On an independent market, which unresolves one answer at a time, that
-    // edit is the market as its last open answer found it, and its pool is
-    // what that answer's resolution took: all of it. Only undoing that
-    // resolution may put it back. Restoring it when another answer is
-    // unresolved returned to the pool what the last answer's payout, still
-    // standing, had paid out, for the reopened answer to pay out again
-    // (resolve A, add a subsidy, resolve B, unresolve A, resolve A). That
-    // other answer's own share of the pool stays out, as it does when it is
-    // unresolved while the market is still open.
+    // Its pool is what the resolution that resolved the market took. That is
+    // put back only when this is the resolution being undone
+    // (isEditOfResolution).
     //
-    // So the pool comes back only when this answer is the one the edit shows
-    // still open, and the edit is this resolution's, not one from an earlier
-    // resolution of the same answer, since undone: resolutionTime is set
-    // inside the resolving transaction and the edit recorded after it
-    // commits, so an earlier one predates it.
-    const restoresSubsidyPool =
-      answerId === undefined ||
-      (!!preResolution &&
-        isEqual(preResolution.open_answer_ids, [answerId]) &&
-        !!contract.resolutionTime &&
-        preResolution.recorded_time >=
-          contract.resolutionTime - RESOLUTION_EDIT_CLOCK_SKEW_MS)
+    // On an independent market, which unresolves one answer at a time, it
+    // also has to be the answer that edit shows as the one still open: the
+    // last to resolve, which took the whole pool. Restoring the pool when
+    // another answer is unresolved returned to it what the last answer's
+    // payout, still standing, had paid out, for the reopened answer to pay
+    // out again (resolve A, add a subsidy, resolve B, unresolve A, resolve
+    // A). That other answer's own share of the pool stays out, as it does
+    // when it is unresolved while the market is still open, and the pool is
+    // left as it is.
+    restoresSubsidyPool =
+      isEditOfResolution(preResolution, editKey, resolutionTime) &&
+      (answerId === undefined ||
+        isEqual(preResolution?.open_answer_ids, [answerId]))
     const subsidyPool = restoresSubsidyPool
       ? preResolution?.subsidy_pool ?? 0
+      : answerId === undefined
+      ? 0
       : undefined
     if (!restoresSubsidyPool) {
       log('Not restoring the market subsidy pool on unresolve', {
         contractId,
         answerId,
+        editKey,
+        latestEditKey: preResolution?.idempotency_key,
         openAnswerIds: preResolution?.open_answer_ids,
-        subsidyPoolBeforeLastResolution: preResolution?.subsidy_pool,
+        subsidyPoolInLatestEdit: preResolution?.subsidy_pool,
       })
     }
 
@@ -451,15 +499,16 @@ const undoResolution = async (
           ${poolProb}
         )`
         },
-        subsidy_pool = coalesce(
+        subsidy_pool = case when $2 then coalesce(
           (select (answer_data->>'subsidyPool')::numeric
            from pre_resolution_answers
            where answer_data->>'id' = answers.id),
           0
-        )
+        ) else 0 end
       where answers.contract_id = $1
       returning *`,
-      [contractId],
+      // That edit is the one the market's pool was read from above.
+      [contractId, restoresSubsidyPool],
       convertAnswer
     )
     answerUpdates = newAnswers.map((answer) => ({
@@ -484,8 +533,15 @@ const undoResolution = async (
     // Restore subsidyPool from contract_edits if available: the answer's pool in
     // the latest edit recorded while it was unresolved, which is the snapshot
     // its resolution took. Later edits hold it resolved, with its subsidy paid.
-    const preResolutionSubsidyPool = await pg.oneOrNone(
-      `select (answer_data->>'subsidyPool')::numeric as subsidy_pool
+    // Only if that edit is this resolution's (isEditOfResolution): an earlier
+    // one, recorded when another answer resolved or this one did before, can
+    // hold pending subsidy that has drizzled into its pool since.
+    const answerEdit = await pg.oneOrNone<
+      ResolutionEdit & { subsidy_pool: number | null }
+    >(
+      `select (answer_data->>'subsidyPool')::numeric as subsidy_pool,
+         idempotency_key,
+         (extract(epoch from created_time) * 1000)::float8 as recorded_time
        from contract_edits
        cross join lateral jsonb_array_elements(data->'answers') as answer_data
        where contract_id = $2
@@ -494,9 +550,24 @@ const undoResolution = async (
          and answer_data->>'resolution' is null
        order by created_time desc
        limit 1`,
-      [answerId, contractId],
-      (r) => r?.subsidy_pool as number | null
+      [answerId, contractId]
     )
+    const preResolutionSubsidyPool = isEditOfResolution(
+      answerEdit,
+      editKey,
+      resolutionTime
+    )
+      ? answerEdit?.subsidy_pool
+      : undefined
+    if (answerEdit && preResolutionSubsidyPool === undefined) {
+      log('Not restoring the answer subsidy pool on unresolve', {
+        contractId,
+        answerId,
+        editKey,
+        latestEditKey: answerEdit.idempotency_key,
+        subsidyPoolInLatestEdit: answerEdit.subsidy_pool,
+      })
+    }
     const answer = await pg.one(
       `
       update answers

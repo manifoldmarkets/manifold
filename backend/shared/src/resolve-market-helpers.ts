@@ -27,6 +27,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { groupBy, keyBy, mapValues, sum, sumBy, uniqBy } from 'lodash'
 import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
+import { getResolutionEditKey } from 'shared/resolution-edit-key'
 import { createContractResolvedNotifications } from './create-notification'
 import { bulkUpdateContractMetricsQuery } from './helpers/user-contract-metrics'
 import { updateAnswer, updateAnswers } from './supabase/answers'
@@ -83,6 +84,7 @@ export const resolveMarketHelper = async (
     payoutsWithoutLoans,
     updatedContractAttrs,
     userUpdates,
+    resolutionTime,
   } = await pg.tx({ mode: SERIAL_MODE }, async (tx) => {
     onTransactionState?.('started')
     const { closeTime, id: contractId } = unresolvedContract
@@ -336,6 +338,7 @@ export const resolveMarketHelper = async (
       updatedContractAttrs,
       userUpdates,
       updatedContractMetrics,
+      resolutionTime,
     }
   })
 
@@ -349,10 +352,13 @@ export const resolveMarketHelper = async (
     contractId: resolvedContract.id,
   })
 
+  // The market as this resolution found it, under this resolution's key:
+  // unresolving it restores its pending subsidy from here.
   await recordContractEdit(
     unresolvedContract,
     resolver.id,
-    Object.keys(updatedContractAttrs ?? {})
+    Object.keys(updatedContractAttrs ?? {}),
+    getResolutionEditKey(answerId, resolutionTime)
   )
 
   await revalidateStaticProps(contractPath(resolvedContract))

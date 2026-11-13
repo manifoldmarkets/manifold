@@ -72,8 +72,14 @@ type Resolved = {
   marketShare: number
 }
 
-// What recordContractEdit keeps of the market as a resolution found it.
-type Edit = { subsidyPool: number; openAnswerIds: string[] }
+// What recordContractEdit keeps of the market as a resolution found it, under
+// that resolution's key (the answer and its resolutionTime).
+type Edit = {
+  answerId: string
+  resolutionTime: number
+  subsidyPool: number
+  openAnswerIds: string[]
+}
 
 class IndependentMarket {
   answers: Answer[] = []
@@ -415,8 +421,11 @@ class IndependentMarket {
       held: this.held[answerId],
       marketShare,
     }
+    const resolutionTime = this.clock++
     // recordContractEdit: the market as this resolution found it.
     this.edits.push({
+      answerId,
+      resolutionTime,
       subsidyPool: this.subsidyPool,
       openAnswerIds: open.map((a) => a.id),
     })
@@ -426,7 +435,7 @@ class IndependentMarket {
     this.marketHeld -= marketShare
     answer.subsidyPool = 0
     answer.resolution = outcome
-    answer.resolutionTime = this.clock++
+    answer.resolutionTime = resolutionTime
     return paid
   }
 
@@ -434,8 +443,10 @@ class IndependentMarket {
   // pending subsidy is restored to what its resolution found. If the market
   // is resolved, it reopens, and its pool is restored from the latest edit
   // recorded while it was unresolved, which is the last resolution's: for
-  // whichever answer is unresolved as it was before, and now only for the
-  // answer that edit shows as the one still open, whose resolution took it.
+  // whichever answer is unresolved as it was before, and now only when that
+  // edit is the one this answer's resolution recorded and shows it as the one
+  // still open, whose resolution took the pool. (Every edit is on file here.
+  // The handler's test covers the ones that are lost.)
   unresolve(answerId: string) {
     const answer = this.answer(answerId)
     const record = this.resolved[answerId]
@@ -446,7 +457,10 @@ class IndependentMarket {
     if (this.open().length === 0) {
       const edit = this.edits[this.edits.length - 1]
       const isThisResolution =
-        edit.openAnswerIds.length === 1 && edit.openAnswerIds[0] === answerId
+        edit.answerId === answerId &&
+        edit.resolutionTime === answer.resolutionTime &&
+        edit.openAnswerIds.length === 1 &&
+        edit.openAnswerIds[0] === answerId
       if (this.useLegacyUnresolve || isThisResolution) {
         restored = edit.subsidyPool
         this.subsidyPool = edit.subsidyPool

@@ -1,11 +1,16 @@
-// What unresolving one answer of an independent multiple choice market puts
-// back into the market's pending subsidy pool.
+// What unresolving puts back of the pending subsidy a resolution took: the
+// market's pool, and an answer's own.
 //
-// A fully resolved market's pool was taken, all of it, by the last answer to
-// resolve. Unresolving used to restore that pool whichever answer was being
-// unresolved: resolve A, add a subsidy, resolve B (which pays the subsidy
-// out), unresolve A, and the subsidy was back in the pool for A to pay out
-// again.
+// A fully resolved independent market's pool was taken, all of it, by the last
+// answer to resolve. Unresolving used to restore that pool whichever answer
+// was being unresolved: resolve A, add a subsidy, resolve B (which pays the
+// subsidy out), unresolve A, and the subsidy was back in the pool for A to pay
+// out again.
+//
+// And whatever it restored, it read from the latest edit on file, which is
+// the resolution's own only if that edit has been written: it is recorded
+// after the resolution commits. An earlier one holds subsidy that has since
+// moved into the pools.
 //
 // The real resolveMarketHelper and the real unresolve handler run here, one
 // after the other on the same market. The answers, the payout transactions and
@@ -78,7 +83,7 @@ import { LiquidityProvision } from 'common/liquidity-provision'
 import { convertAnswer } from 'common/supabase/contracts'
 import { User } from 'common/user'
 import { resolveMarketHelper } from './resolve-market-helpers'
-import { updateAnswer } from './supabase/answers'
+import { updateAnswer, updateAnswers } from './supabase/answers'
 import { updateContract } from './supabase/contracts'
 import { createSupabaseDirectClient } from './supabase/init'
 import { bulkIncrementBalancesQuery } from './supabase/users'
@@ -218,7 +223,7 @@ const resolve = async (answerId: string, outcome: 'YES' | 'NO' | 'CANCEL') => {
   return paid - before
 }
 
-const unresolve = async (answerId: string) => {
+const unresolve = async (answerId?: string) => {
   await tick()
   const before = paid
   await unresolveMain(
@@ -228,6 +233,79 @@ const unresolve = async (answerId: string) => {
   )
   return paid - before
 }
+
+// A binary market resolved YES or NO, or a linked one resolved to an answer.
+const resolveMarket = async (outcome: string) => {
+  await tick()
+  const before = paid
+  await resolveMarketHelper(
+    (await marketNow()) as MarketContract,
+    creator,
+    creator,
+    (contract.mechanism as string) === 'cpmm-1'
+      ? { outcome }
+      : { outcome, resolutions: { [outcome]: 100 } }
+  )
+  return paid - before
+}
+
+// The drizzle, as far as these cases need it: mana out of the market's
+// pending pool into an answer's pool,
+const drizzleInto = async (answerId: string, amount: number) => {
+  contract.subsidyPool -= amount
+  await rows(
+    `update answers
+    set pool_yes = pool_yes + $2, pool_no = pool_no + $2 where id = $1`,
+    [answerId, amount]
+  )
+}
+
+// and an answer's own pending subsidy into its pool.
+const drizzleOwn = (answerId: string) =>
+  rows(
+    `update answers
+    set pool_yes = pool_yes + subsidy_pool, pool_no = pool_no + subsidy_pool,
+      subsidy_pool = 0
+    where id = $1`,
+    [answerId]
+  )
+
+// As addContractLiquidity does for one answer: its pending subsidy, with a
+// provision of its own.
+const addAnswerSubsidy = async (answerId: string, amount: number) => {
+  await rows(
+    `update answers set subsidy_pool = subsidy_pool + $2 where id = $1`,
+    [answerId, amount]
+  )
+  liquidities.push({
+    id: `subsidy-${liquidities.length}`,
+    userId: CREATOR,
+    contractId: 'market',
+    createdTime: Date.now(),
+    answerId,
+    amount,
+  })
+}
+
+// A resolution's edit is recorded after it commits. The last one never was.
+const loseLatestEdit = () =>
+  rows(
+    `delete from contract_edits where id = (
+      select id from contract_edits
+      where coalesce((data->>'isResolved')::boolean, false) = false
+      order by created_time desc, id desc limit 1
+    )`
+  )
+
+// Edits as resolutions recorded them before they were keyed,
+const forgetEditKeys = () =>
+  rows(`update contract_edits set idempotency_key = null`)
+
+// and from well before the resolution being undone.
+const ageEdits = () =>
+  rows(
+    `update contract_edits set created_time = created_time - interval '1 hour'`
+  )
 
 const pendingOf = async (answerId: string) =>
   (await answers()).find((a) => a.id === answerId)!.subsidyPool
@@ -346,6 +424,30 @@ beforeEach(async () => {
       ]
     )
   }) as unknown as typeof updateAnswer)
+  jest.mocked(updateAnswers).mockImplementation((async (
+    _pg: unknown,
+    _contractId: string,
+    updates: (Partial<Answer> & { id: string })[]
+  ) => {
+    for (const update of updates)
+      await rows(
+        `update answers set
+          resolution_time = to_timestamp($2::numeric / 1000),
+          resolution_probability = $3,
+          prob = $4,
+          resolver_id = $5,
+          subsidy_pool = $6
+        where id = $1`,
+        [
+          update.id,
+          update.resolutionTime,
+          update.resolutionProbability,
+          update.prob,
+          update.resolverId,
+          update.subsidyPool,
+        ]
+      )
+  }) as unknown as typeof updateAnswers)
   jest.mocked(updateDataQuery).mockImplementation(((
     _table: string,
     _idField: string,
@@ -472,22 +574,46 @@ describe('unresolving the answer whose resolution resolved the market', () => {
     expect(paid).toBe(2 * ANTE + 1000)
   })
 
-  // The edit a resolution records is written after it commits, and can be
-  // lost. The latest one on file is then from an earlier resolution of the
-  // same answer, since undone, whose pool has drizzled into the answers'
-  // pools in the meantime: restoring it would count that subsidy twice.
-  it('puts nothing back when the only edit on file is from an earlier resolution', async () => {
+  // That resolution's edit is recorded after it commits, and can be lost.
+  // The latest one on file is then from an earlier resolution of the same
+  // answer, since undone, and part of the pool it holds has drizzled into the
+  // answer's pool, which pays it out.
+  it('puts nothing back from the edit of an earlier resolution of that answer', async () => {
+    addSubsidy(1000)
+    expect(await resolve('A', 'YES')).toBe(ANTE + 500)
+    expect(await resolve('B', 'NO')).toBe(ANTE + 500)
+    await unresolve('B')
+    expect(contract.subsidyPool).toBe(500)
+    await drizzleInto('B', 300)
+
+    expect(await resolve('B', 'NO')).toBe(ANTE + 300 + 200)
+    await loseLatestEdit()
+    await unresolve('B')
+    // Was 500, from the first resolution's edit, seconds old: 300 of it is in
+    // B's pool.
+    expect(contract.subsidyPool).toBe(0)
+    expect(contract.isResolved).toBe(false)
+
+    expect(await resolve('B', 'NO')).toBe(ANTE + 300)
+    expect(paid).toBeLessThanOrEqual(2 * ANTE + 1000)
+  })
+
+  it('puts the pool back from an edit recorded before edits were keyed', async () => {
     addSubsidy(1000)
     await resolve('A', 'YES')
     await resolve('B', 'NO')
-    const [{ id }] = await rows(
-      `select id from contract_edits order by created_time desc limit 1`
-    )
-    await rows(
-      `update contract_edits
-      set created_time = created_time - interval '1 hour' where id = $1`,
-      [id]
-    )
+    await forgetEditKeys()
+
+    await unresolve('B')
+    expect(contract.subsidyPool).toBe(500)
+  })
+
+  it('puts nothing back from such an edit when it predates the resolution', async () => {
+    addSubsidy(1000)
+    await resolve('A', 'YES')
+    await resolve('B', 'NO')
+    await forgetEditKeys()
+    await ageEdits()
 
     await unresolve('B')
     expect(contract.isResolved).toBe(false)
@@ -505,5 +631,175 @@ describe('unresolving an answer while the market is still open', () => {
     expect(await unresolve('A')).toBe(-(ANTE + 300))
     expect(contract.isResolved).toBe(false)
     expect(contract.subsidyPool).toBe(600)
+  })
+})
+
+describe('unresolving an answer that had pending subsidy of its own', () => {
+  it('puts back what its resolution took, as before', async () => {
+    await addAnswerSubsidy('B', 400)
+    expect(await resolve('B', 'YES')).toBe(ANTE + 400)
+    expect(await pendingOf('B')).toBe(0)
+
+    await unresolve('B')
+    expect(await pendingOf('B')).toBe(400)
+    expect(await resolve('B', 'NO')).toBe(ANTE + 400)
+    expect(paid).toBe(ANTE + 400)
+  })
+
+  // A's resolution recorded B with its subsidy still pending. It has drizzled
+  // into B's pool by the time B resolves, and B's own edit is lost.
+  it("puts nothing back from the edit of another answer's resolution", async () => {
+    await addAnswerSubsidy('B', 400)
+    expect(await resolve('A', 'NO')).toBe(ANTE)
+    await drizzleOwn('B')
+
+    expect(await resolve('B', 'YES')).toBe(ANTE + 400)
+    await loseLatestEdit()
+    await unresolve('B')
+    // Was 400, though B's pool holds it.
+    expect(await pendingOf('B')).toBe(0)
+
+    expect(await resolve('B', 'YES')).toBe(ANTE + 400)
+    expect(paid).toBe(2 * ANTE + 400)
+  })
+
+  it('puts it back from an edit recorded before edits were keyed, unless it predates the resolution', async () => {
+    await addAnswerSubsidy('B', 400)
+    await resolve('B', 'YES')
+    await forgetEditKeys()
+    await unresolve('B')
+    expect(await pendingOf('B')).toBe(400)
+
+    await resolve('B', 'YES')
+    await forgetEditKeys()
+    await ageEdits()
+    await unresolve('B')
+    expect(await pendingOf('B')).toBe(0)
+  })
+})
+
+describe('unresolving a binary market', () => {
+  beforeEach(async () => {
+    await db.exec(`truncate answers`)
+    contract = {
+      id: 'market',
+      slug: 'market',
+      creatorId: CREATOR,
+      creatorUsername: 'creator',
+      visibility: 'public',
+      mechanism: 'cpmm-1',
+      outcomeType: 'BINARY',
+      token: 'MANA',
+      pool: { YES: 100, NO: 100 },
+      p: 0.5,
+      prob: 0.5,
+      subsidyPool: 300,
+      uniqueBettorCount: 0,
+      isResolved: false,
+    } as unknown as CPMMMultiContract
+    liquidities = [
+      {
+        id: 'ante',
+        userId: CREATOR,
+        contractId: 'market',
+        createdTime: 0,
+        amount: 400,
+      },
+    ]
+  })
+
+  it('puts back the pending subsidy its resolution took, as before', async () => {
+    expect(await resolveMarket('YES')).toBe(400)
+    expect(contract.subsidyPool).toBe(0)
+
+    expect(await unresolve()).toBe(-400)
+    expect(contract.isResolved).toBe(false)
+    expect(contract.subsidyPool).toBe(300)
+
+    expect(await resolveMarket('NO')).toBe(400)
+    expect(paid).toBe(400)
+  })
+
+  it('puts nothing back from the edit of an earlier resolution', async () => {
+    await resolveMarket('YES')
+    await unresolve()
+    // The drizzle moves the pending subsidy into the pool.
+    const binary = contract as unknown as {
+      pool: { YES: number; NO: number }
+    }
+    binary.pool = { YES: 400, NO: 400 }
+    contract.subsidyPool = 0
+
+    expect(await resolveMarket('YES')).toBe(400)
+    await loseLatestEdit()
+    await unresolve()
+    // Was 300, from the first resolution's edit, though the pool holds it.
+    expect(contract.subsidyPool).toBe(0)
+
+    expect(await resolveMarket('YES')).toBe(400)
+    expect(paid).toBe(400)
+  })
+
+  it('puts it back from an edit recorded before edits were keyed, unless it predates the resolution', async () => {
+    await resolveMarket('YES')
+    await forgetEditKeys()
+    await unresolve()
+    expect(contract.subsidyPool).toBe(300)
+
+    await resolveMarket('YES')
+    await forgetEditKeys()
+    await ageEdits()
+    await unresolve()
+    expect(contract.subsidyPool).toBe(0)
+  })
+})
+
+describe('unresolving a linked multiple choice market', () => {
+  beforeEach(async () => {
+    contract = {
+      ...contract,
+      shouldAnswersSumToOne: true,
+      subsidyPool: 100,
+    } as CPMMMultiContract
+    await rows(`update answers set subsidy_pool = 50`)
+  })
+
+  it("puts back the market's and the answers' pending subsidy, as before", async () => {
+    // A's YES side, B's NO side, and all the pending subsidy.
+    expect(await resolveMarket('A')).toBe(2 * ANTE + 100 + 2 * 50)
+    expect(contract.subsidyPool).toBe(0)
+    expect(await pendingOf('A')).toBe(0)
+
+    await unresolve()
+    expect(contract.isResolved).toBe(false)
+    expect(contract.subsidyPool).toBe(100)
+    expect(await pendingOf('A')).toBe(50)
+    expect(await pendingOf('B')).toBe(50)
+
+    expect(await resolveMarket('B')).toBe(400)
+    expect(paid).toBe(400)
+  })
+
+  it('puts nothing back from the edit of an earlier resolution', async () => {
+    await resolveMarket('A')
+    await unresolve()
+    // The drizzle moves the pending subsidy into the pools.
+    await drizzleInto('A', 50)
+    await drizzleInto('B', 50)
+    await drizzleOwn('A')
+    await drizzleOwn('B')
+    expect(contract.subsidyPool).toBe(0)
+
+    expect(await resolveMarket('A')).toBe(400)
+    await loseLatestEdit()
+    await unresolve()
+    // Were 100 and 50 each, from the first resolution's edit, though the
+    // pools hold them.
+    expect(contract.subsidyPool).toBe(0)
+    expect(await pendingOf('A')).toBe(0)
+    expect(await pendingOf('B')).toBe(0)
+
+    expect(await resolveMarket('A')).toBe(400)
+    expect(paid).toBe(400)
   })
 })
