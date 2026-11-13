@@ -9,7 +9,11 @@ import { getContract, getUser } from 'shared/utils'
 import { onCreateLiquidityProvision } from './on-update-liquidity-provision'
 import { insertLiquidity } from 'shared/supabase/liquidity'
 import { convertLiquidity } from 'common/supabase/liquidity'
-import { convertsToCpmmMulti2, isMultiCpmm } from 'common/contract'
+import {
+  convertsToCpmmMulti2,
+  INDEPENDENT_LIQUIDITY_EARMARK_ENABLED,
+  isMultiCpmm,
+} from 'common/contract'
 import { FieldVal } from 'shared/supabase/utils'
 import { updateContract } from 'shared/supabase/contracts'
 import { addSubsidyToOpenAnswers, getAnswer } from 'shared/supabase/answers'
@@ -176,7 +180,11 @@ export const addContractLiquidity = async (
       )
       if (!updated) throw new APIError(403, 'This answer is already resolved')
       updatedAnswers = [convertAnswer(updated)]
-    } else if (isMultiCpmm(contract) && !contract.shouldAnswersSumToOne) {
+    } else if (
+      INDEPENDENT_LIQUIDITY_EARMARK_ENABLED &&
+      isMultiCpmm(contract) &&
+      !contract.shouldAnswersSumToOne
+    ) {
       // An independent market's answers take the subsidy now, in equal shares
       // among those open, as their own pending subsidy: an answer added later
       // gets none of it, and a cancelled answer refunds exactly its share.

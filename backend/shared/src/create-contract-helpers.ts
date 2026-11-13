@@ -5,6 +5,7 @@ import {
   BinaryContract,
   Contract,
   CPMMMultiContract,
+  INDEPENDENT_LIQUIDITY_EARMARK_ENABLED,
   isMultiCpmm,
 } from 'common/contract'
 import { APIError } from 'common/api/utils'
@@ -69,7 +70,11 @@ export async function generateAntes(
         token: 'M$',
         fromType: 'USER',
       })
-      if (isMultiCpmm(contract) && !contract.shouldAnswersSumToOne) {
+      if (
+        INDEPENDENT_LIQUIDITY_EARMARK_ENABLED &&
+        isMultiCpmm(contract) &&
+        !contract.shouldAnswersSumToOne
+      ) {
         // The answers take it as their own pending subsidy, in equal shares,
         // as a later whole-market add does (addSubsidyToOpenAnswers).
         const updated = await updateContract(tx, contract.id, {

@@ -6,6 +6,7 @@ jest.mock('shared/websockets/helpers', () => ({
   broadcastUpdatedAnswers: jest.fn(),
 }))
 
+import * as contractFlags from 'common/contract'
 import { Contract, CPMMMultiContract } from 'common/contract'
 import { updateContract } from 'shared/supabase/contracts'
 import { insertLiquidity } from 'shared/supabase/liquidity'
@@ -75,7 +76,21 @@ const market = (shouldAnswersSumToOne: boolean, answerIds: string[]) =>
 const insertedProvisions = () =>
   (insertLiquidity as jest.Mock).mock.calls.map(([, lp]) => lp)
 
-beforeEach(() => jest.clearAllMocks())
+// Whether whole-market liquidity is recorded with its answers. Set for each
+// case, so the cases hold whichever way the constant is committed.
+const flags = contractFlags as {
+  INDEPENDENT_LIQUIDITY_EARMARK_ENABLED: boolean
+}
+const committedEarmark = flags.INDEPENDENT_LIQUIDITY_EARMARK_ENABLED
+const setEarmark = (on: boolean) => {
+  flags.INDEPENDENT_LIQUIDITY_EARMARK_ENABLED = on
+}
+afterAll(() => setEarmark(committedEarmark))
+
+beforeEach(() => {
+  jest.clearAllMocks()
+  setEarmark(true)
+})
 
 describe('extra liquidity on a new multiple choice market', () => {
   it('goes to the answers of an independent market in equal shares', async () => {
@@ -125,6 +140,37 @@ describe('extra liquidity on a new multiple choice market', () => {
 
     expect(answers.map((a) => a.subsidy_pool)).toEqual([0, 0])
     expect(insertedProvisions()[1].answerIds).toBeUndefined()
+    const [, , update] = (updateContract as jest.Mock).mock.calls[0]
+    expect(Object.keys(update).sort()).toEqual([
+      'subsidyPool',
+      'totalLiquidity',
+    ])
+  })
+
+  // The first step of the rollout: nothing an instance of the code before
+  // this cannot read.
+  it("goes to an independent market's pool and names no answers while recording is off", async () => {
+    setEarmark(false)
+    const answers = [answerRow('A', 0), answerRow('B', 1), answerRow('C', 2)]
+    await generateAntes(
+      fakePg(answers) as any,
+      'creator',
+      market(false, ['A', 'B', 'C']),
+      150,
+      450
+    )
+
+    expect(answers.map((a) => a.subsidy_pool)).toEqual([0, 0, 0])
+    const provisions = insertedProvisions()
+    // One ante per answer, as before, then the extra with no answers named.
+    expect(provisions.map((lp) => lp.answerId)).toEqual([
+      'A',
+      'B',
+      'C',
+      undefined,
+    ])
+    expect(provisions[3]).toMatchObject({ amount: 300 })
+    expect(provisions[3].answerIds).toBeUndefined()
     const [, , update] = (updateContract as jest.Mock).mock.calls[0]
     expect(Object.keys(update).sort()).toEqual([
       'subsidyPool',

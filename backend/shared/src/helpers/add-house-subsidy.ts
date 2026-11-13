@@ -1,6 +1,7 @@
 import {
   CPMMContract,
   CPMMMultiContract,
+  INDEPENDENT_LIQUIDITY_EARMARK_ENABLED,
   isMultiCpmm,
   MultiContract,
 } from 'common/contract'
@@ -31,7 +32,11 @@ export const addHouseSubsidy = async (contractId: string, amount: number) => {
     ? HOUSE_LIQUIDITY_PROVIDER_ID
     : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
 
-  if (isMultiCpmm(contract) && !contract.shouldAnswersSumToOne) {
+  if (
+    INDEPENDENT_LIQUIDITY_EARMARK_ENABLED &&
+    isMultiCpmm(contract) &&
+    !contract.shouldAnswersSumToOne
+  ) {
     await addHouseSubsidyToOpenAnswers(contract, providerId, amount)
     return
   }

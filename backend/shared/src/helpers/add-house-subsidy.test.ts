@@ -16,6 +16,7 @@ jest.mock('shared/websockets/helpers', () => ({
 }))
 
 import { DEV_HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
+import * as contractFlags from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateContract } from 'shared/supabase/contracts'
 import { insertLiquidity } from 'shared/supabase/liquidity'
@@ -97,7 +98,21 @@ const insertedProvisions = () =>
 const contractUpdates = () =>
   (updateContract as jest.Mock).mock.calls.map(([, , update]) => update)
 
-beforeEach(() => jest.clearAllMocks())
+// Whether whole-market liquidity is recorded with its answers. Set for each
+// case, so the cases hold whichever way the constant is committed.
+const flags = contractFlags as {
+  INDEPENDENT_LIQUIDITY_EARMARK_ENABLED: boolean
+}
+const committedEarmark = flags.INDEPENDENT_LIQUIDITY_EARMARK_ENABLED
+const setEarmark = (on: boolean) => {
+  flags.INDEPENDENT_LIQUIDITY_EARMARK_ENABLED = on
+}
+afterAll(() => setEarmark(committedEarmark))
+
+beforeEach(() => {
+  jest.clearAllMocks()
+  setEarmark(true)
+})
 
 describe("the house's liquidity for a boost", () => {
   it("goes to an independent market's open answers in equal shares", async () => {
@@ -145,5 +160,31 @@ describe("the house's liquidity for a boost", () => {
       'subsidyPool',
       'totalLiquidity',
     ])
+  })
+
+  // The first step of the rollout: nothing an instance of the code before
+  // this cannot read.
+  it("goes to an independent market's pool and names no answers while recording is off", async () => {
+    setEarmark(false)
+    const answers = [answerRow('A', 0, null), answerRow('B', 1, null)]
+    await run(
+      { mechanism: 'cpmm-multi-1', shouldAnswersSumToOne: false },
+      answers
+    )
+
+    expect(answers.map((a) => a.subsidy_pool)).toEqual([0, 0])
+    expect(insertedProvisions()).toEqual([
+      expect.objectContaining({
+        userId: DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+        amount: 60,
+      }),
+    ])
+    expect(insertedProvisions()[0].answerId).toBeUndefined()
+    expect(insertedProvisions()[0].answerIds).toBeUndefined()
+    expect(Object.keys(contractUpdates()[0]).sort()).toEqual([
+      'subsidyPool',
+      'totalLiquidity',
+    ])
+    expect(broadcastUpdatedAnswers).not.toHaveBeenCalled()
   })
 })

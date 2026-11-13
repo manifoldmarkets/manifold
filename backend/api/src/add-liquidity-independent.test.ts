@@ -26,6 +26,7 @@ jest.mock('./on-update-liquidity-provision', () => ({
   onCreateLiquidityProvision: jest.fn(),
 }))
 
+import * as contractFlags from 'common/contract'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { getContract, getUser } from 'shared/utils'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
@@ -132,8 +133,20 @@ const run = async (contract: Record<string, unknown>, answers: AnswerRow[]) => {
 const contractUpdate = () =>
   (updateContract as jest.Mock).mock.calls.map(([, , update]) => update)
 
+// Whether whole-market liquidity is recorded with its answers. Set for each
+// case, so the cases hold whichever way the constant is committed.
+const flags = contractFlags as {
+  INDEPENDENT_LIQUIDITY_EARMARK_ENABLED: boolean
+}
+const committedEarmark = flags.INDEPENDENT_LIQUIDITY_EARMARK_ENABLED
+const setEarmark = (on: boolean) => {
+  flags.INDEPENDENT_LIQUIDITY_EARMARK_ENABLED = on
+}
+afterAll(() => setEarmark(committedEarmark))
+
 beforeEach(() => {
   jest.clearAllMocks()
+  setEarmark(true)
   ;(getUser as jest.Mock).mockResolvedValue({ id: 'whale', balance: 1000 })
 })
 
@@ -176,5 +189,28 @@ describe('adding liquidity to a whole independent multiple choice market', () =>
     expect(answers.map((a) => a.subsidy_pool)).toEqual([0, 0])
     expect(Object.keys(contractUpdate()[0])).toContain('subsidyPool')
     expect(liquidity.answerIds).toBeUndefined()
+  })
+
+  // The first step of the rollout: nothing an instance of the code before
+  // this cannot read.
+  it("goes to the market's pool and names no answers while recording is off", async () => {
+    setEarmark(false)
+    const answers = [
+      answerRow('A', 0, null),
+      answerRow('B', 1, 'NO'),
+      answerRow('C', 2, null),
+    ]
+    const liquidity = await run({ shouldAnswersSumToOne: false }, answers)
+
+    expect(answers.map((a) => a.subsidy_pool)).toEqual([0, 0, 0])
+    expect(answers.map((a) => a.total_liquidity)).toEqual([50, 50, 50])
+    expect(contractUpdate()).toHaveLength(1)
+    expect(Object.keys(contractUpdate()[0])).toEqual(
+      expect.arrayContaining(['subsidyPool', 'totalLiquidity'])
+    )
+    expect(liquidity).toMatchObject({ amount: 90 })
+    expect(liquidity.answerId).toBeUndefined()
+    expect(liquidity.answerIds).toBeUndefined()
+    expect(broadcastUpdatedAnswers).not.toHaveBeenCalled()
   })
 })
