@@ -15,7 +15,12 @@
 //
 // Now each resolution records the market as it found it in its own
 // transaction, under a key that names it, and unresolving puts back what that
-// record says it took.
+// record says it took, added to what the pools hold. A resolution from before
+// that, with no record of its own, has nothing put back.
+//
+// Which payouts it takes back was a separate guess as well: the latest batch
+// paid, by the time stamped on it. Each payout now carries the resolutionTime
+// of the resolution that paid it, and no payout is taken back twice.
 //
 // The real resolveMarketHelper and the real unresolve handler run here, one
 // after the other on the same market. The answers, the payout transactions and
@@ -29,10 +34,6 @@ import { sumBy } from 'lodash'
 
 jest.mock('api/helpers/endpoint', () => ({
   APIError: jest.requireActual('common/api/utils').APIError,
-}))
-jest.mock('common/envs/constants', () => ({
-  ...jest.requireActual('common/envs/constants'),
-  isModId: (id: string) => id === 'mod',
 }))
 jest.mock('api/helpers/rate-limit', () => ({
   onlyUsersWhoCanPerformAction: (_action: string, handler: unknown) => handler,
@@ -235,12 +236,12 @@ const resolve = async (answerId: string, outcome: 'YES' | 'NO' | 'CANCEL') => {
   return paid - before
 }
 
-const unresolve = async (answerId?: string, uid = CREATOR) => {
+const unresolve = async (answerId?: string) => {
   await tick()
   const before = paid
   await unresolveMain(
     { contractId: 'market', answerId },
-    { uid } as any,
+    { uid: CREATOR } as any,
     {} as any
   )
   return paid - before
@@ -311,33 +312,10 @@ const loseLatestEdit = () =>
     )`
   )
 
-// The edits of resolutions made before they were keyed,
+// The edits of resolutions made before they were keyed: recorded after the
+// resolution committed, with nothing on them to say which resolution's.
 const forgetEditKeys = () =>
   rows(`update contract_edits set idempotency_key = null`)
-
-// and from well before the resolution being undone.
-const ageEdits = () =>
-  rows(
-    `update contract_edits set created_time = created_time - interval '1 hour'`
-  )
-
-// The resolutions so far as they would be an hour on, had they been made
-// before edits were keyed: too old for the creator to undo.
-const MOD = 'mod'
-const HOUR_MS = 60 * 60 * 1000
-const anHourOnUnkeyed = async () => {
-  await forgetEditKeys()
-  await ageEdits()
-  await rows(
-    `update answers set resolution_time = resolution_time - interval '1 hour'
-    where resolution_time is not null`
-  )
-  if (contract.resolutionTime)
-    contract = {
-      ...contract,
-      resolutionTime: contract.resolutionTime - HOUR_MS,
-    } as CPMMMultiContract
-}
 
 const pendingOf = async (answerId: string) =>
   (await answers()).find((a) => a.id === answerId)!.subsidyPool
@@ -359,6 +337,9 @@ beforeAll(async () => {
       image_url text, short_text text, midpoint numeric,
       volume numeric default 0
     );
+    -- Only for the row lock unresolve takes: the contract itself is the
+    -- in-memory stand-in.
+    create table contracts (id text primary key);
     create table contract_edits (
       id serial, contract_id text not null,
       created_time timestamptz default now() not null,
@@ -393,7 +374,8 @@ beforeEach(async () => {
   jest.clearAllMocks()
   await db.exec(`
     truncate answers; truncate contract_edits; truncate txns;
-    truncate audit_events; truncate contract_bets;
+    truncate audit_events; truncate contract_bets; truncate contracts;
+    insert into contracts (id) values ('market');
   `)
   contract = {
     id: 'market',
@@ -667,39 +649,28 @@ describe('unresolving the answer whose resolution resolved the market', () => {
   })
 
   // A resolution made before edits were keyed has only an unkeyed edit,
-  // which nothing ties to it but when it was recorded.
-  it('puts nothing back from an unkeyed edit for a resolution its creator can still undo', async () => {
+  // which nothing ties to it.
+  it('takes back the payouts and puts nothing back for a resolution from before edits were keyed', async () => {
     addSubsidy(1000)
     await resolve('A', 'YES')
     await resolve('B', 'NO')
     await forgetEditKeys()
 
+    expect(await unresolve('B')).toBe(-(ANTE + 500))
+    expect(contract.isResolved).toBe(false)
+    // Was 500, from the latest edit on file, whichever resolution's it was.
+    expect(contract.subsidyPool).toBe(0)
+  })
+
+  it('keeps a subsidy that came in while the market was resolved', async () => {
+    addSubsidy(1000)
+    await resolve('A', 'YES')
+    await resolve('B', 'NO')
+    // addHouseSubsidy does not check that the market is open.
+    addSubsidy(70)
+
     await unresolve('B')
-    expect(contract.isResolved).toBe(false)
-    expect(contract.subsidyPool).toBe(0)
-  })
-
-  it('puts the pool back from one for an older resolution, which a moderator undoes', async () => {
-    addSubsidy(1000)
-    await resolve('A', 'YES')
-    await resolve('B', 'NO')
-    await anHourOnUnkeyed()
-
-    await unresolve('B', MOD)
-    expect(contract.isResolved).toBe(false)
-    expect(contract.subsidyPool).toBe(500)
-  })
-
-  it('puts nothing back from one that predates that resolution', async () => {
-    addSubsidy(1000)
-    await resolve('A', 'YES')
-    await resolve('B', 'NO')
-    await anHourOnUnkeyed()
-    await ageEdits()
-
-    await unresolve('B', MOD)
-    expect(contract.isResolved).toBe(false)
-    expect(contract.subsidyPool).toBe(0)
+    expect(contract.subsidyPool).toBe(570)
   })
 })
 
@@ -738,9 +709,9 @@ describe('unresolving an answer while the market is still open', () => {
     await addAnswer('C', 2)
     addSubsidy(900)
     await resolve('A', 'YES')
-    await anHourOnUnkeyed()
+    await forgetEditKeys()
 
-    await unresolve('A', MOD)
+    expect(await unresolve('A')).toBe(-(ANTE + 300))
     expect(contract.subsidyPool).toBe(600)
   })
 })
@@ -800,26 +771,145 @@ describe('unresolving an answer that had pending subsidy of its own', () => {
     expect(paid).toBe(2 * ANTE + 400)
   })
 
-  it('puts nothing back from an unkeyed edit for a resolution its creator can still undo', async () => {
+  it('puts nothing back for a resolution from before edits were keyed', async () => {
     await addAnswerSubsidy('B', 400)
     await resolve('B', 'YES')
     await forgetEditKeys()
-    await unresolve('B')
+
+    expect(await unresolve('B')).toBe(-(ANTE + 400))
     expect(await pendingOf('B')).toBe(0)
   })
 
-  it('puts it back from one for an older resolution, unless it predates it', async () => {
+  // Resolutions from before edits were keyed, moments apart. A's edit shows B
+  // with its subsidy still pending and was recorded just before B resolved.
+  // B's own is missing. A's edit used to be taken for B's.
+  it("puts nothing back from another answer's unkeyed edit, recorded moments before", async () => {
     await addAnswerSubsidy('B', 400)
-    await resolve('B', 'YES')
-    await anHourOnUnkeyed()
-    await unresolve('B', MOD)
-    expect(await pendingOf('B')).toBe(400)
+    expect(await resolve('A', 'NO')).toBe(ANTE)
+    await drizzleOwn('B')
+    expect(await resolve('B', 'YES')).toBe(ANTE + 400)
+    await loseLatestEdit()
+    await forgetEditKeys()
 
-    await resolve('B', 'YES')
-    await anHourOnUnkeyed()
-    await ageEdits()
-    await unresolve('B', MOD)
+    await unresolve('B')
+    // Was 400, though B's pool holds it.
     expect(await pendingOf('B')).toBe(0)
+    expect(await resolve('B', 'YES')).toBe(ANTE + 400)
+    expect(paid).toBe(2 * ANTE + 400)
+  })
+
+  it('keeps a subsidy that came in for it while it was resolved', async () => {
+    await addAnswerSubsidy('B', 400)
+    expect(await resolve('B', 'YES')).toBe(ANTE + 400)
+    // addHouseSubsidyToAnswer does not check that the answer is open.
+    await addAnswerSubsidy('B', 30)
+
+    await unresolve('B')
+    // Was 400: the 30 written over.
+    expect(await pendingOf('B')).toBe(430)
+  })
+})
+
+describe('taking back the payouts of the resolution being undone', () => {
+  const payoutsOf = (amount: number) =>
+    `category = 'CONTRACT_RESOLUTION_PAYOUT' and amount = ${amount}`
+
+  // The resolver of an earlier resolution, since undone, had its clock ahead
+  // of this one's.
+  it('takes back its payouts, not an earlier resolution stamped later', async () => {
+    expect(await resolve('A', 'YES')).toBe(ANTE)
+    expect(await unresolve('A')).toBe(-ANTE)
+    addSubsidy(1000)
+    expect(await resolve('A', 'YES')).toBe(ANTE + 500)
+    await rows(
+      `update txns
+      set data = jsonb_set(
+        data,
+        '{data,payoutStartTime}',
+        to_jsonb((data->'data'->>'payoutStartTime')::numeric + 600000)
+      )
+      where ${payoutsOf(ANTE)}`
+    )
+
+    // Was -100: the first resolution's payout a second time, while this
+    // one's 600 stood and its share of the pool was put back to pay out again.
+    expect(await unresolve('A')).toBe(-(ANTE + 500))
+    expect(contract.subsidyPool).toBe(1000)
+
+    expect(await resolve('A', 'NO')).toBe(ANTE + 500)
+    expect(await resolve('B', 'NO')).toBe(ANTE + 500)
+    expect(paid).toBe(2 * ANTE + 1000)
+  })
+
+  it('takes back nothing when it paid nothing out', async () => {
+    expect(await resolve('A', 'YES')).toBe(ANTE)
+    expect(await unresolve('A')).toBe(-ANTE)
+    await resolve('A', 'YES')
+    // As if this resolution had written no payouts.
+    await rows(
+      `delete from txns where id = (
+        select id from txns where ${payoutsOf(ANTE)}
+        order by created_time desc, id desc limit 1
+      )`
+    )
+
+    // Was -100: the first resolution's payout, taken back before.
+    expect(await unresolve('A')).toBe(0)
+  })
+
+  it('takes no payout back twice for a resolution from before payouts were stamped either', async () => {
+    const unstamp = () =>
+      rows(`update txns set data = data #- '{data,resolutionTime}'`)
+
+    expect(await resolve('A', 'YES')).toBe(ANTE)
+    await unstamp()
+    await forgetEditKeys()
+    expect(await unresolve('A')).toBe(-ANTE)
+
+    await resolve('A', 'YES')
+    await rows(
+      `delete from txns where id = (
+        select id from txns where ${payoutsOf(ANTE)}
+        order by created_time desc, id desc limit 1
+      )`
+    )
+    await unstamp()
+    await forgetEditKeys()
+    expect(await unresolve('A')).toBe(0)
+  })
+})
+
+describe('unresolving while another process is at the same market', () => {
+  // The lock itself needs two connections to show. This is that it is asked
+  // for, on the market's row, before the market is read.
+  it.each([
+    ['one answer of an independent market', 'B'],
+    ['a whole market', undefined],
+  ])('locks the market before reading it, for %s', async (_, answerId) => {
+    if (answerId) await resolve(answerId, 'YES')
+    else {
+      contract = {
+        ...contract,
+        shouldAnswersSumToOne: true,
+      } as CPMMMultiContract
+      await resolveMarket('A')
+    }
+    const order: string[] = []
+    const oneOrNone = jest.spyOn(client, 'oneOrNone')
+    oneOrNone.mockImplementation(async (sql, params, map) => {
+      if (/from contracts where id = \$1 for update/.test(sql))
+        order.push('lock')
+      const row = (await rows(sql, params))[0] ?? null
+      return map ? map(row) : row
+    })
+    jest.mocked(getContract).mockImplementation(async () => {
+      order.push('read')
+      return marketNow()
+    })
+
+    await unresolve(answerId)
+    oneOrNone.mockRestore()
+    expect(order).toEqual(['lock', 'read'])
   })
 })
 
@@ -885,25 +975,24 @@ describe('unresolving a binary market', () => {
     expect(paid).toBe(400)
   })
 
-  it('puts nothing back from an unkeyed edit for a resolution its creator can still undo', async () => {
+  it('takes back the payouts and puts nothing back for a resolution from before edits were keyed', async () => {
     await resolveMarket('YES')
     await forgetEditKeys()
-    await unresolve()
+
+    expect(await unresolve()).toBe(-400)
     expect(contract.isResolved).toBe(false)
+    // Was 300, from the latest edit on file.
     expect(contract.subsidyPool).toBe(0)
   })
 
-  it('puts it back from one for an older resolution, unless it predates it', async () => {
+  it('keeps a subsidy that came in while the market was resolved', async () => {
     await resolveMarket('YES')
-    await anHourOnUnkeyed()
-    await unresolve(undefined, MOD)
-    expect(contract.subsidyPool).toBe(300)
+    // addHouseSubsidy does not check that the market is open.
+    contract.subsidyPool += 50
 
-    await resolveMarket('YES')
-    await anHourOnUnkeyed()
-    await ageEdits()
-    await unresolve(undefined, MOD)
-    expect(contract.subsidyPool).toBe(0)
+    await unresolve()
+    // Was 300: the 50 written over.
+    expect(contract.subsidyPool).toBe(350)
   })
 })
 
@@ -954,5 +1043,16 @@ describe('unresolving a linked multiple choice market', () => {
 
     expect(await resolveMarket('A')).toBe(400)
     expect(paid).toBe(400)
+  })
+
+  it('takes back the payouts and puts nothing back for a resolution from before edits were keyed', async () => {
+    await resolveMarket('A')
+    await forgetEditKeys()
+
+    expect(await unresolve()).toBe(-400)
+    expect(contract.isResolved).toBe(false)
+    expect(contract.subsidyPool).toBe(0)
+    expect(await pendingOf('A')).toBe(0)
+    expect(await pendingOf('B')).toBe(0)
   })
 })

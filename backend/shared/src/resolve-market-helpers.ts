@@ -303,7 +303,14 @@ export const resolveMarketHelper = async (
         : []
 
     const { balanceUpdatesQuery, insertTxnsQuery, balanceUpdates } =
-      getPayUsersQueries(payouts, contractId, answerId, token, payoutFees)
+      getPayUsersQueries(
+        payouts,
+        contractId,
+        answerId,
+        token,
+        payoutFees,
+        resolutionTime
+      )
     const contractUpdateQuery = updateDataQuery(
       'contracts',
       'id',
@@ -573,7 +580,10 @@ export const getPayUsersQueries = (
   contractId: string,
   answerId: string | undefined,
   token: ContractToken,
-  payoutFees: Payout[]
+  payoutFees: Payout[],
+  // Of the resolution paying out, recorded on each payout so that unresolving
+  // it takes back these payouts and no others.
+  resolutionTime?: number
 ) => {
   const payoutCash = token === 'CASH'
   const payoutToken = token === 'CASH' ? 'CASH' : 'M$'
@@ -616,6 +626,7 @@ export const getPayUsersQueries = (
         deposit: deposit ?? 0,
         payoutStartTime,
         answerId,
+        resolutionTime,
       }),
       description: 'Contract payout for resolution: ' + contractId,
     })
