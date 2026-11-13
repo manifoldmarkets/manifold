@@ -69,4 +69,6 @@ jobs:
 
       - name: Test
         if: ${{ !cancelled() }}
-        run: yarn test
+        run: |
+          npm ci --prefix backend/scripts/tests/runtime --ignore-scripts --no-audit --no-fund
+          yarn test

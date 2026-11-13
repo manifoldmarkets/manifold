@@ -87,19 +87,36 @@ Write-Host "`n=== Step 5: Creating instance template ===" -ForegroundColor Yello
 $TEMPLATE_NAME = "api-$IMAGE_TAG"
 Write-Host "Creating template: $TEMPLATE_NAME"
 
-gcloud compute instance-templates create-with-container $TEMPLATE_NAME `
+# Plain COS + backend/deploy/cos-container-startup.sh instead of
+# create-with-container (the container startup agent is deprecated); see
+# deploy-api.sh for details. The env goes through a file, one KEY=VALUE per
+# line, because --metadata splits values on commas.
+$STARTUP_SCRIPT = "$PSScriptRoot\..\deploy\cos-container-startup.sh"
+$ENV_FILE = (New-TemporaryFile).FullName
+$ENV_LINES = @(
+    "NEXT_PUBLIC_FIREBASE_ENV=DEV",
+    "GOOGLE_CLOUD_PROJECT=dev-mantic-markets",
+    "REDIS_URL=$REDIS_URL",
+    "DISABLE_REDIS_CACHE=$DISABLE_REDIS_CACHE",
+    "PERP_TRADING_MODE=$PERP_TRADING_MODE"
+)
+[IO.File]::WriteAllText($ENV_FILE, ($ENV_LINES -join "`n") + "`n")
+
+gcloud compute instance-templates create $TEMPLATE_NAME `
     --project=dev-mantic-markets `
     --image-project="cos-cloud" `
     --image-family="cos-121-lts" `
-    --container-image=$IMAGE_URL `
     --machine-type=e2-small `
     --boot-disk-size=100GB `
-    --container-env="NEXT_PUBLIC_FIREBASE_ENV=DEV,GOOGLE_CLOUD_PROJECT=dev-mantic-markets,REDIS_URL=$REDIS_URL,DISABLE_REDIS_CACHE=$DISABLE_REDIS_CACHE,PERP_TRADING_MODE=$PERP_TRADING_MODE" `
+    --metadata="container-image=$IMAGE_URL,container-name=api,google-logging-enabled=true" `
+    --metadata-from-file="startup-script=$STARTUP_SCRIPT,container-env=$ENV_FILE" `
     --no-user-output-enabled `
     --scopes="default,cloud-platform" `
     --tags=lb-health-check
+$templateExit = $LASTEXITCODE
+Remove-Item -Force $ENV_FILE
 
-if ($LASTEXITCODE -ne 0) { Write-Host "Template creation failed" -ForegroundColor Red; exit 1 }
+if ($templateExit -ne 0) { Write-Host "Template creation failed" -ForegroundColor Red; exit 1 }
 
 # Step 6: Start rollout
 Write-Host "`n=== Step 6: Starting rollout ===" -ForegroundColor Yellow

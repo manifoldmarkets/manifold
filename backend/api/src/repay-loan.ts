@@ -1,8 +1,6 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
-import {
-  createSupabaseDirectClient,
-  SupabaseTransaction,
-} from 'shared/supabase/init'
+import { SupabaseTransaction } from 'shared/supabase/init'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { getUser, log } from 'shared/utils'
 import {
   calculateLoanWithInterest,
@@ -32,7 +30,6 @@ import { ContractMetric } from 'common/contract-metric'
 
 export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
   const { amount, contractId, answerId } = props
-  const pg = createSupabaseDirectClient()
   const user = await getUser(auth.uid)
   if (!user) {
     throw new APIError(404, `User ${auth.uid} not found`)
@@ -47,20 +44,24 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
   }
 
   const { userUpdates, response } = await betsQueue.enqueueFn(async () => {
-    return pg.tx(async (tx) => {
-      // Lock the user row to serialize loan operations (and bets, which update
-      // the balance before writing metrics) for this user across replicas.
-      // Every loan input is read after this lock, so repayment can't be
-      // computed from state another request is about to change.
-      const locked = await tx.one<{ balance: number }>(
-        'select balance::float as balance from users where id = $1 for update',
-        [user.id]
-      )
-      if (locked.balance < amount) {
-        throw new APIError(400, 'Insufficient balance')
-      }
-      return repayLoanLocked(tx, user.id, amount, contractId, answerId)
-    })
+    return runTransactionWithRetries(
+      async (tx) => {
+        // Lock the user row to serialize loan operations (and bets, which update
+        // the balance before writing metrics) for this user across replicas.
+        // Every loan input is read after this lock, so repayment can't be
+        // computed from state another request is about to change.
+        const locked = await tx.one<{ balance: number }>(
+          'select balance::float as balance from users where id = $1 for update',
+          [user.id]
+        )
+        if (locked.balance < amount) {
+          throw new APIError(400, 'Insufficient balance')
+        }
+        return repayLoanLocked(tx, user.id, amount, contractId, answerId)
+      },
+      3,
+      { mode: 'default', isExpectedError: (error) => error instanceof APIError }
+    )
   }, [auth.uid])
 
   broadcastUserUpdates(userUpdates)

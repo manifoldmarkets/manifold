@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { Contract, contractPath } from 'common/contract'
 import { BetDialog } from 'web/components/bet/bet-dialog'
+import { useElectionAsOf } from './election-as-of'
 import { formatOdds } from './election-display'
 import { electionOdds } from './election-map-model'
 import { useMarketLink } from './market-link'
@@ -30,7 +31,9 @@ export function ControlCard({
   const odds = electionOdds(contract, true)
   const rep = odds && odds.rep > odds.dem
   const noLabel = 'Democratic'
+  const rewound = useElectionAsOf() !== undefined
   const tradable =
+    !rewound &&
     contract?.mechanism === 'cpmm-1' &&
     contract.outcomeType === 'BINARY' &&
     !contract.isResolved &&
@@ -128,25 +131,51 @@ export function ControlCard({
           </div>
         )}
       </div>
-      {outcome &&
-        contract?.mechanism === 'cpmm-1' &&
-        contract.outcomeType === 'BINARY' && (
-          <BetDialog
-            contract={contract}
-            open
-            setOpen={(open) => !open && setOutcome(undefined)}
-            initialOutcome={outcome}
-            trackingLocation="election map control"
-            questionPseudonym={`${label} control`}
-            binaryPseudonym={{
-              YES: { pseudonymName: 'Republican', pseudonymColor: 'sienna' },
-              NO: {
-                pseudonymName: noLabel,
-                pseudonymColor: 'azure',
-              },
-            }}
-          />
-        )}
+      {outcome && (
+        <ControlBetDialog
+          label={label}
+          contract={contract}
+          outcome={outcome}
+          onClose={() => setOutcome(undefined)}
+        />
+      )}
     </>
+  )
+}
+
+// The bet dialog for a control market, with YES as Republican and NO as
+// Democratic. Shared with Manifold TV's control strip.
+export function ControlBetDialog(props: {
+  label: string
+  contract: Contract | null
+  outcome: 'YES' | 'NO'
+  onClose: () => void
+  trackingLocation?: string
+}) {
+  const {
+    label,
+    contract,
+    outcome,
+    onClose,
+    trackingLocation = 'election map control',
+  } = props
+  if (contract?.mechanism !== 'cpmm-1' || contract.outcomeType !== 'BINARY')
+    return null
+  return (
+    <BetDialog
+      contract={contract}
+      open
+      setOpen={(open) => !open && onClose()}
+      initialOutcome={outcome}
+      trackingLocation={trackingLocation}
+      questionPseudonym={`${label} control`}
+      binaryPseudonym={{
+        YES: { pseudonymName: 'Republican', pseudonymColor: 'sienna' },
+        NO: {
+          pseudonymName: 'Democratic',
+          pseudonymColor: 'azure',
+        },
+      }}
+    />
   )
 }

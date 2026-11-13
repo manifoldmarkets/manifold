@@ -230,7 +230,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       contract: lockedContract,
       answers: lockedAnswers,
       unfilledBets: lockedUnfilledBets,
-      unfilledBetUserIds: lockedUnfilledBetUserIds,
+      balanceByUserId: lockedMakerBalances,
     } = await lockContractAndGetBetData(
       pgTrans,
       { ...props, outcome: oppositeOutcome },
@@ -245,11 +245,10 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       )
     user.balance = balanceByUserId[uid]
 
-    for (const userId of lockedUnfilledBetUserIds) {
-      if (!(userId in balanceByUserId)) {
-        // Assume other makers have infinite balance since they are not involved in this bet.
-        balanceByUserId[userId] = Number.MAX_SAFE_INTEGER
-      }
+    // As in placeBetMain: the other makers keep the balances read with their
+    // orders, so the sale is worked out here as it was simulated.
+    for (const [userId, balance] of Object.entries(lockedMakerBalances)) {
+      if (!(userId in balanceByUserId)) balanceByUserId[userId] = balance
     }
 
     const userMetric = contractMetrics.find(

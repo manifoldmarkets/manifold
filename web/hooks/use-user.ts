@@ -27,10 +27,16 @@ export const useIsAuthorized = () => {
   return authUser?.authLoaded || authUser === null ? !!authUser : undefined
 }
 
-export const useWebsocketUser = (userId: string | undefined) => {
+export const useWebsocketUser = (
+  userId: string | undefined,
+  pollMembership = false
+) => {
   const isPageVisible = useIsPageVisible()
-  return useWebsocketUserCommon(userId, isPageVisible, () =>
-    api('user/by-id/:id', { id: userId ?? '_' })
+  return useWebsocketUserCommon(
+    userId,
+    isPageVisible,
+    (id) => api('user/by-id/:id', { id }),
+    pollMembership
   )
 }
 

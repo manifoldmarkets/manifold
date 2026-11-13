@@ -20,6 +20,7 @@ import { ElectionsPageProps } from 'web/public/data/elections-data'
 import { SectionInView } from './us-elections/section-in-view'
 import { PollingPerpsRow } from './us-elections/polling-perps-row'
 import { MarketSpotlightGrid } from './us-elections/market-spotlight'
+import { SenateSeatsChart } from './us-elections/senate-seats-chart'
 import {
   ConditionalMatrix,
   LiveConditionOdds,
@@ -102,8 +103,7 @@ export function USElectionsPage(
     presidency2028PartyContract,
     rawSenateStateContracts,
     rawGovernorStateContracts,
-    rawSenateCandidateContracts,
-    rawGovernorCandidateContracts,
+    linkedMarketCounts,
     balanceOfPowerContract,
     houseControlContract,
     senateControlContract,
@@ -118,6 +118,7 @@ export function USElectionsPage(
     houseMatrixRows = [],
     bothMatrixRows = [],
     presidencyMatrixRows = [],
+    senateSeatsContract,
     hideTitle,
   } = props
 
@@ -197,7 +198,7 @@ export function USElectionsPage(
         </CopyLinkOrShareButton>
       </Row>
 
-      {/* Chamber controls sit above the map's own surface. */}
+      {/* Chamber controls sit below the map's own surface. */}
       <SectionInView section="midterms map" className="gap-3">
         <SectionHeader>2026 Midterms</SectionHeader>
         <LiveElectionMap
@@ -205,12 +206,15 @@ export function USElectionsPage(
           senateControlContract={senateControlContract}
           rawSenateStateContracts={rawSenateStateContracts}
           rawGovernorStateContracts={rawGovernorStateContracts}
-          rawSenateCandidateContracts={rawSenateCandidateContracts}
-          rawGovernorCandidateContracts={rawGovernorCandidateContracts}
+          linkedMarketCounts={linkedMarketCounts}
           houseDistrictsContract={houseDistrictsContract}
           additionalHouseContracts={additionalHouseContracts}
           ballotMeasureContracts={ballotMeasureContracts}
         />
+        {/* The Senate seat count, right under the chamber toplines. */}
+        {senateSeatsContract && (
+          <SenateSeatsChart contract={senateSeatsContract} />
+        )}
       </SectionInView>
 
       {/* Polling averages - the continuously-updating numbers (approval,

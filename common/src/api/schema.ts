@@ -74,6 +74,7 @@ import {
   SportsSubtopic,
 } from 'common/sports-schedule'
 import { SportsLeaderboards } from 'common/sports-leaderboards'
+import { ElectionLeaderboards } from 'common/election-leaderboards'
 import { CompetitionSwitchState } from 'common/sports-calendar'
 import { ScorePollingPanel } from 'common/sports-score-polling'
 import { Row } from 'common/supabase/utils'
@@ -122,7 +123,11 @@ import { UserEntitlement, ShopOrder } from 'common/shop/types'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Task, TaskCategory } from 'common/todo'
 import { TopLevelPost } from 'common/top-level-post'
-import { YEAR_MS } from 'common/util/time'
+import {
+  MarketProbsHistory,
+  PROBS_HISTORY_MIN_STEP_MS,
+} from 'common/market-probs-history'
+import { DAY_MS, YEAR_MS } from 'common/util/time'
 import {
   MAX_WATCHED_MARKETS,
   WATCHED_MARKETS_PAGE_SIZE,
@@ -903,6 +908,30 @@ export const API = (_apiTypeCheck = {
         ids: z.array(z.string()).max(100),
       })
       .strict(),
+  },
+  // Each market's probability every `step` ms from `start` to now, rebuilt
+  // from bets: the election map's rewind. `start` sits on the step grid so
+  // viewers share cached responses.
+  'market-probs-history': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=60, stale-while-revalidate=60',
+    returns: {} as MarketProbsHistory,
+    props: z
+      .object({
+        ids: z.array(z.string()).min(1).max(100),
+        start: z.coerce.number().int(),
+        step: z.coerce
+          .number()
+          .int()
+          .gte(PROBS_HISTORY_MIN_STEP_MS)
+          .lte(DAY_MS),
+      })
+      .strict()
+      .refine((p) => p.start % p.step === 0, {
+        message: 'start must be a multiple of step',
+      }),
   },
   'markets-by-ids': {
     method: 'GET',
@@ -5233,6 +5262,17 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as SportsLeaderboards,
+  },
+  // The /election page's leaderboards (common/election-leaderboards), one
+  // per election scope. The scheduler rebuilds them; a board not built yet
+  // is left out.
+  'election-leaderboards': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=300, stale-while-revalidate=600',
+    props: z.object({}).strict(),
+    returns: {} as ElectionLeaderboards,
   },
 
   // Link a market to the market it's about (common/market-links), replacing

@@ -751,8 +751,13 @@ export async function createF1MarketsForActiveCalendar(
 
 const iso = (t: number) => new Date(t).toISOString().slice(0, 16) + 'Z'
 
-/** An unresolved market this long after it was due to pay out needs a person. */
-const ATTENTION_AFTER_MS = 12 * HOUR_MS
+/**
+ * An unresolved market this long after it was due to pay out needs a person.
+ * The provider posts results about ten minutes after a session, so a market
+ * still waiting by then has a feed problem, and in late 2026 those lasted
+ * days.
+ */
+const ATTENTION_AFTER_MS = 2 * HOUR_MS
 /**
  * A postponed session waits this long past its old time for a new date or
  * a cancellation before its market needs a person.
@@ -873,7 +878,7 @@ function resolveLog(result: F1ResolveResult, alerted: Set<string>) {
         ``,
         `https://${DOMAIN}${contractPath(contract)}`,
         ``,
-        `It won't pay out by itself: resolve it by hand, or fix what's missing and the resolver picks it up. From sports-f1-resolve, once per scheduler process.`,
+        `Resolve it by hand to settle it now. The resolver keeps checking every 15 minutes, so if the provider's data turns up and checks out, it pays by itself. From sports-f1-resolve, once per scheduler process.`,
       ].join('\n')
     ).catch((e) =>
       log.error(

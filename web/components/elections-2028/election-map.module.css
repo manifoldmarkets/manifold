@@ -1,0 +1,379 @@
+/* The 2028 map's additions to the 2026 explorer's styles
+   (usa-map/election-explorer.module.css), which supply the variables used
+   here: --paper, --soft, --line, --muted, --ink, --accent. */
+
+.layout {
+  --tip: #d98e04;
+}
+:global(.dark) .layout,
+:global(.dark) .tipping {
+  --tip: #f2b53a;
+}
+
+/* Maine's and Nebraska's statewide electoral votes, on top of their
+   districts. */
+.badge {
+  stroke: var(--paper);
+  stroke-width: 1.5;
+}
+.badgeLabel {
+  font-size: calc(11px / var(--zoom, 1));
+}
+.mapEv {
+  font-size: calc(var(--label-size) * 0.8 / var(--zoom, 1));
+  font-weight: 500;
+}
+.tileEv {
+  font-size: calc(13px / var(--zoom, 1));
+  font-weight: 500;
+}
+/* The likeliest tipping points, dashed in amber: no party's color. */
+.tipOutline {
+  stroke: var(--tip);
+  stroke-width: 2.5;
+  stroke-dasharray: 5 3;
+}
+.calloutSwatch {
+  stroke: var(--line);
+  stroke-width: 0.5;
+}
+
+.tab {
+  padding: 3px 10px !important;
+  font-size: 13px !important;
+}
+.layout .modeSelect {
+  width: 100%;
+  padding: 7px 12px;
+  background-color: transparent;
+  border: 0;
+  border-radius: inherit;
+  font-size: 13px;
+  color: inherit;
+}
+
+.subControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.note {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* The President view's model line and tipping points. */
+.notes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 13px;
+}
+.model {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+}
+.model b {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.modelLabel {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.muted {
+  color: var(--muted);
+  font-size: 12px;
+}
+.tips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.tips button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border: 1.5px dashed var(--tip);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.tips button span {
+  font-weight: 500;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.tips button:hover,
+.tips button:focus-visible {
+  background: var(--soft);
+}
+
+/* Places the map can't draw: territories, Democrats Abroad, DC. */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.chips button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--ink);
+}
+.chips button:hover,
+.chips button[aria-pressed='true'] {
+  background: var(--soft);
+  border-color: var(--accent);
+}
+.chips i {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+.chipValue {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.noRaceSwatch {
+  background: rgb(var(--color-ink-100));
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.paleSwatch {
+  background: linear-gradient(90deg, #eb6834 50%, #f6b99f 50%);
+}
+.tipSwatch {
+  border: 2px dashed var(--tip);
+}
+.badgeSwatch {
+  width: 16px !important;
+  height: 10px !important;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #9d3336 50%, #4a5fa8 50%);
+}
+
+/* The card: hover lines, then the pinned market and the state's others. */
+.quoteLine {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.quoteLine > span:first-child {
+  font-size: 15px;
+}
+.rating {
+  color: var(--muted);
+  font-size: 12px;
+}
+/* The card is portaled out of .layout, so it sets its own --tip. */
+.tipping {
+  --tip: #d98e04;
+  width: fit-content;
+  padding: 1px 8px;
+  border: 1.5px dashed var(--tip);
+  border-radius: 999px;
+  font-size: 12px;
+}
+.others {
+  display: grid;
+  gap: 3px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+.others > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.others .quoteLine > span:first-child {
+  font-size: 12px;
+}
+.focus {
+  display: grid;
+  gap: 6px;
+}
+.focusHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.focusLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.answers {
+  display: grid;
+  gap: 4px;
+}
+.answer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 8px;
+  border-radius: 7px;
+  background: var(--soft);
+  font-size: 13px;
+}
+.answerText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.answerProb {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.marketFoot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding-top: 2px;
+}
+.marketLink {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.marketLink:hover {
+  text-decoration: underline;
+}
+.more {
+  border-top: 1px solid var(--line);
+  padding-top: 6px;
+  display: grid;
+  gap: 6px;
+}
+.moreToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 30px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: left;
+}
+.moreToggle:hover {
+  color: var(--accent);
+}
+.moreCount {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+.chevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--muted);
+  transition: transform 150ms;
+}
+.chevronOpen {
+  transform: rotate(180deg);
+}
+.moreSection {
+  display: grid;
+  gap: 2px;
+}
+.row {
+  display: grid;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 4px;
+}
+.row:last-child {
+  border-bottom: 0;
+}
+.rowToggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  font-size: 13px;
+  text-align: left;
+}
+.rowToggle:hover {
+  background: var(--soft);
+}
+.rowLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--ink);
+}
+.rowLabel i,
+.districts i {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.rowValue {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.districts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 4px;
+}
+.districts button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.districts button span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.districts button[aria-pressed='true'],
+.districts button:hover {
+  border-color: var(--accent);
+  background: var(--soft);
+}

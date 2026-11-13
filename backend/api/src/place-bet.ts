@@ -164,7 +164,7 @@ export const placeBetMain = async (
       contract: lockedContract,
       answers: lockedAnswers,
       unfilledBets: lockedUnfilledBets,
-      unfilledBetUserIds: lockedUnfilledBetUserIds,
+      balanceByUserId: lockedMakerBalances,
     } = await lockContractAndGetBetData(pgTrans, body, uid)
     // Refetch just user balance and metrics in transaction, since queue only enforces contract and bets not changing.
     const { balanceByUserId, contractMetrics } =
@@ -178,11 +178,12 @@ export const placeBetMain = async (
     if (user.balance < body.amount)
       throw new APIError(403, 'Insufficient balance.')
 
-    for (const userId of lockedUnfilledBetUserIds) {
-      if (!(userId in balanceByUserId)) {
-        // Assume other makers have infinite balance since they are not involved in this bet.
-        balanceByUserId[userId] = Number.MAX_SAFE_INTEGER
-      }
+    // The other makers keep the balances read with their orders above. Taking
+    // them to have all they need, as this did, fills any order the simulation
+    // passed by because its maker was out of balance. The check below then
+    // refuses the bet, and refuses it again every time it is retried.
+    for (const [userId, balance] of Object.entries(lockedMakerBalances)) {
+      if (!(userId in balanceByUserId)) balanceByUserId[userId] = balance
     }
     const newBetResult = calculateBetResult(
       body,
@@ -682,11 +683,7 @@ export const executeNewBetResult = async (
     // if negative balances, make sure the balance is higher than when they started
     for (const userUpdate of userUpdates) {
       const startBalance = balanceByUserId[userUpdate.id]
-      if (
-        userUpdate.balance < -EPSILON &&
-        startBalance !== Number.MAX_SAFE_INTEGER &&
-        userUpdate.balance < startBalance
-      ) {
+      if (userUpdate.balance < -EPSILON && userUpdate.balance < startBalance) {
         // A sale repays the sold share of the position's loan, which can be
         // more than the sale brings in. That's the seller's own shortfall,
         // not a maker's.

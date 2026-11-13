@@ -1,7 +1,9 @@
 import { getContracts } from 'common/supabase/contracts'
+import { isTVElectionBoard } from 'common/tv'
 import { HOUR_MS } from 'common/util/time'
 import { TVPage } from 'web/components/tv/tv-page'
-import { ScheduleItem } from 'web/components/tv/tv-schedule'
+import { getActiveStream, ScheduleItem } from 'web/components/tv/tv-schedule'
+import { getElectionMapProps } from 'web/lib/politics/home'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 
 export async function getStaticPaths() {
@@ -29,14 +31,29 @@ export async function getStaticProps(props: {
   const { data } = await query
   const schedule = (data ?? []) as ScheduleItem[]
 
-  const contractIds = schedule.map((s) => s.contract_id)
+  const contractIds = schedule
+    .map((s) => s.contract_id)
+    .filter((id) => !isTVElectionBoard(id))
   const contracts = await getContracts(db, contractIds)
+
+  // The election board's markets, only when this page will show it.
+  const stream =
+    scheduleId === 'schedule'
+      ? undefined
+      : getActiveStream(schedule, scheduleId)
+  const electionMap = isTVElectionBoard(stream?.contract_id)
+    ? await getElectionMapProps(db).catch((e) => {
+        console.error('TV election map unavailable', e)
+        return null
+      })
+    : null
 
   return {
     props: {
       contracts,
       schedule,
       scheduleId,
+      electionMap,
     },
     revalidate: 60,
   }

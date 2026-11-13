@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import clsx from 'clsx'
 import { Contract, contractPath, isMultiCpmm } from 'common/contract'
-import { formatPercent } from 'common/util/format'
 import { AnswerCpmmBetPanel } from 'web/components/answers/answer-bet-panel'
 import { BetDialog } from 'web/components/bet/bet-dialog'
 import {
@@ -16,6 +15,8 @@ import {
   sideProbability,
   tradeFor,
 } from './ballot-measures-model'
+import { useElectionAsOf } from './election-as-of'
+import { formatOdds } from './election-display'
 import { useMarketLink } from './market-link'
 import styles from './election-explorer.module.css'
 
@@ -40,6 +41,8 @@ export function BallotMeasureCard({
     !!contract?.resolution ||
     !!answer?.resolution ||
     (contract?.closeTime != null && contract.closeTime <= Date.now())
+  // Rewound odds are for display only.
+  const rewound = useElectionAsOf() !== undefined
   const approveIsYes = measure.source?.yesOrientation !== 'reject'
   const pass = { pseudonymName: 'Pass', pseudonymColor: 'green' as const }
   const fail = { pseudonymName: 'Fail', pseudonymColor: 'gray' as const }
@@ -80,16 +83,16 @@ export function BallotMeasureCard({
             {(['pass', 'fail'] as const).map((s) => (
               <button
                 key={s}
-                disabled={closed}
+                disabled={closed || rewound}
                 aria-haspopup="dialog"
                 onClick={() => setSide(s)}
               >
                 <span>{s === 'pass' ? 'Pass' : 'Fail'}</span>
-                <strong>{formatPercent(sideProbability(chance, s))}</strong>
+                <strong>{formatOdds(sideProbability(chance, s))}</strong>
               </button>
             ))}
           </div>
-          {closed && <p className={styles.note}>Trading closed.</p>}
+          {closed && !rewound && <p className={styles.note}>Trading closed.</p>}
         </>
       ) : (
         <p className={styles.note}>
