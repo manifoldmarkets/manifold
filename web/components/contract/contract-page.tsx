@@ -253,7 +253,7 @@ export function ContractPageContent(props: ContractParams) {
             <LogoIcon className="h-8 w-8 stroke-indigo-700 dark:stroke-white" />
             <span className="text-lg font-thin">MANIFOLD</span>
           </Link>
-          <SignUpButton />
+          <SignUpButton location="market page header" />
         </Row>
       )}
       <Row className="w-full items-start justify-center gap-8">
@@ -604,7 +604,12 @@ export function ContractPageContent(props: ContractParams) {
             </Row>
 
             <Row className="my-2 flex-wrap items-center justify-between gap-y-2"></Row>
-            {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
+            {!user && (
+              <SidebarSignUpButton
+                className="mb-4 flex md:hidden"
+                location="market page"
+              />
+            )}
 
             {isResolved && resolution !== 'CANCEL' && (
               <>

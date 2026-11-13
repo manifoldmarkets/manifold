@@ -24,6 +24,8 @@ type EventIds = {
 
 type EventData = Record<string, Json | undefined>
 
+// Resolves true once the event is stored and false if storing it failed.
+// Nothing here retries; a caller that must not lose an event can.
 export async function track(name: string, properties?: EventIds & EventData) {
   const userId = auth.currentUser?.uid
   const deviceId = ensureDeviceToken()
@@ -43,11 +45,13 @@ export async function track(name: string, properties?: EventIds & EventData) {
   )
 
   const { contractId, adId, commentId, ...data } = allProperties
+  let stored = false
   try {
     if (ENV !== 'PROD') {
       console.log(name, userId, allProperties)
     }
     await insertUserEvent(name, data, db, userId, contractId, commentId, adId)
+    stored = true
   } catch (e) {
     console.log('error tracking event:', e)
   }
@@ -74,6 +78,7 @@ export async function track(name: string, properties?: EventIds & EventData) {
       console.log('error tracking event:', e)
     }
   }
+  return stored
 }
 
 // Convenience functions:

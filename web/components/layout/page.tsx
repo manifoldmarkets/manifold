@@ -13,6 +13,7 @@ import { BanBanner } from '../moderation/ban-banner'
 import { UserBan } from 'common/user'
 import { api } from 'web/lib/api/api'
 
+import { ResumePendingBet } from '../bet/resume-pending-bet'
 import { Footer } from '../footer'
 import { FirstStreakModalManager } from '../profile/first-streak-modal'
 export function Page(props: {
@@ -76,6 +77,7 @@ export function Page(props: {
         <GoogleOneTapLogin className="fixed bottom-12 right-4 z-[1000]" />
       )}
       <FirstStreakModalManager />
+      <ResumePendingBet />
       <Col
         className={clsx(
           !hideBottomBar && 'pb-[58px] lg:pb-0', // bottom bar padding

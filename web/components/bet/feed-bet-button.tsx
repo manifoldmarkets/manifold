@@ -7,7 +7,8 @@ import { Modal, MODAL_CLASS } from '../layout/modal'
 import { BuyPanel } from './bet-panel'
 import { track } from 'web/lib/service/analytics'
 import { BinaryContract, StonkContract } from 'common/contract'
-import { User, firebaseLogin } from 'web/lib/firebase/users'
+import { User } from 'web/lib/firebase/users'
+import { onSignedOutBetPress } from 'web/lib/util/signed-out-bet'
 import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
 import {
@@ -47,13 +48,19 @@ export function BetButton(props: {
 
   const handleBetButtonClick = (outcome: 'YES' | 'NO') => {
     if (!user) {
-      firebaseLogin()
+      onSignedOutBetPress({
+        contractId: contract.id,
+        location,
+        surface: 'button',
+        outcome,
+      })
       return
     }
     track('bet intent', {
       location,
       outcome,
       token: contract.token,
+      contractId: contract.id,
     })
     setDialogueThatIsOpen(outcome)
   }

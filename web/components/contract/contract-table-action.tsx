@@ -20,6 +20,7 @@ import {
 } from '../answers/answer-resolve-panel'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
+import { onSignedOutBetPress } from 'web/lib/util/signed-out-bet'
 import { PollPanel } from '../poll/poll-panel'
 import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
@@ -105,9 +106,17 @@ export function BetButton(props: {
             track('bet intent', {
               location: 'contract table',
               token: contract.token,
+              contractId: contract.id,
+              outcome: initialOutcome,
+              signedOut: !user,
             })
             if (!user) {
-              firebaseLogin()
+              onSignedOutBetPress({
+                contractId: contract.id,
+                location: 'contract table',
+                surface: 'button',
+                outcome: initialOutcome,
+              })
               return
             }
             if (contract.mechanism === 'cpmm-1') {
