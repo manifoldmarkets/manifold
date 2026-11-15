@@ -1,4 +1,10 @@
-import { CPMMContract, CPMMMultiContract } from 'common/contract'
+import {
+  CPMMContract,
+  CPMMMultiContract,
+  INDEPENDENT_LIQUIDITY_EARMARK_ENABLED,
+  isMultiCpmm,
+  MultiContract,
+} from 'common/contract'
 import { getContractSupabase, isProd } from 'shared/utils'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -10,6 +16,9 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError } from 'common/api/utils'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
+import { addSubsidyToOpenAnswers } from 'shared/supabase/answers'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
+import { broadcastUpdatedAnswers } from 'shared/websockets/helpers'
 
 export const addHouseSubsidy = async (contractId: string, amount: number) => {
   const pg = createSupabaseDirectClient()
@@ -22,6 +31,15 @@ export const addHouseSubsidy = async (contractId: string, amount: number) => {
   const providerId = isProd()
     ? HOUSE_LIQUIDITY_PROVIDER_ID
     : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+
+  if (
+    INDEPENDENT_LIQUIDITY_EARMARK_ENABLED &&
+    isMultiCpmm(contract) &&
+    !contract.shouldAnswersSumToOne
+  ) {
+    await addHouseSubsidyToOpenAnswers(contract, providerId, amount)
+    return
+  }
 
   const newLiquidityProvision = getNewLiquidityProvision(
     providerId,
@@ -36,6 +54,55 @@ export const addHouseSubsidy = async (contractId: string, amount: number) => {
       totalLiquidity: FieldVal.increment(amount),
     })
   })
+}
+
+// An independent market's open answers take it as their own pending subsidy,
+// in equal shares, as a user's whole-market add does (addSubsidyToOpenAnswers).
+const addHouseSubsidyToOpenAnswers = async (
+  contract: MultiContract,
+  providerId: string,
+  amount: number
+) => {
+  // Retried on a deadlock: this locks the market's row, then its open answers,
+  // as bets do, where the drizzle and resolution lock an answer first.
+  const answers = await runTransactionWithRetries(
+    async (tx) => {
+      await tx.oneOrNone(`select 1 from contracts where id = $1 for update`, [
+        contract.id,
+      ])
+      const answers = await addSubsidyToOpenAnswers(tx, contract.id, amount)
+      // With every answer resolved, nothing would ever pay it out.
+      if (answers.length === 0) return answers
+      await updateContract(tx, contract.id, {
+        totalLiquidity: FieldVal.increment(amount),
+      })
+      await insertLiquidity(
+        tx,
+        getNewLiquidityProvision(
+          providerId,
+          amount,
+          contract,
+          undefined,
+          answers.map((a) => a.id)
+        )
+      )
+      return answers
+    },
+    3,
+    { mode: 'default' }
+  )
+  // Open pages would otherwise count the pending subsidy as active liquidity.
+  // Only what this changed: a bet or the drizzle can have changed and
+  // announced the rest of the row since it was read here.
+  if (answers.length > 0)
+    broadcastUpdatedAnswers(
+      contract.id,
+      answers.map(({ id, subsidyPool, totalLiquidity }) => ({
+        id,
+        subsidyPool,
+        totalLiquidity,
+      }))
+    )
 }
 
 export const addHouseSubsidyToAnswer = async (

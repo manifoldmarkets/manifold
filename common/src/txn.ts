@@ -327,6 +327,11 @@ type ContractOldResolutionPayout = {
     deposit?: number
     payoutStartTime?: number
     answerId?: string
+    // The resolutionTime the resolution that paid this wrote to its answer or
+    // market: which resolution's payout it is. Unresolving takes back the
+    // payouts of the resolution it undoes by this. Payouts from before it was
+    // recorded don't have it.
+    resolutionTime?: number
   }
 }
 
