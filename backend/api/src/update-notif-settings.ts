@@ -1,16 +1,24 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updatePrivateUser } from 'shared/supabase/users'
-import { type APIHandler } from './helpers/endpoint'
+import { APIError, type APIHandler } from './helpers/endpoint'
 import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 import {
+  getDefaultNotificationPreferences,
   getSavedNotificationDestinations,
   notification_preferences,
 } from 'common/user-notification-preferences'
+
+const NOTIFICATION_PREFERENCE_KEYS = new Set(
+  Object.keys(getDefaultNotificationPreferences())
+)
 
 export const updateNotifSettings: APIHandler<'update-notif-settings'> = async (
   { type, medium, enabled },
   auth
 ) => {
+  if (!NOTIFICATION_PREFERENCE_KEYS.has(type)) {
+    throw new APIError(400, 'Invalid notification preference type')
+  }
   const pg = createSupabaseDirectClient()
   if (type === 'opt_out_all' && medium === 'mobile') {
     await updatePrivateUser(pg, auth.uid, {
@@ -36,7 +44,7 @@ export const updateNotifSettings: APIHandler<'update-notif-settings'> = async (
       : previousDestinations.filter((destination) => destination !== medium)
     await tx.none(
       `update private_users
-       set data = jsonb_set(data, '{notificationPreferences, $1:raw}', $2::jsonb)
+       set data = jsonb_set(data, array['notificationPreferences', $1], $2::jsonb)
        where id = $3`,
       [type, JSON.stringify(destinations), auth.uid]
     )
