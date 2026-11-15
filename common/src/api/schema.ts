@@ -82,7 +82,11 @@ import type { ManaPayTxn, Txn } from 'common/txn'
 import { z } from 'zod'
 import { ModReport } from '../mod-report'
 import { PrivateUser, User, UserBan } from '../user'
-import { type FullMarketSearchResult, searchProps } from './market-search-types'
+import {
+  FIRESTORE_DOC_REF_ID_REGEX,
+  type FullMarketSearchResult,
+  searchProps,
+} from './market-search-types'
 import {
   FullMarket,
   closePerpPositionSchema,
@@ -1085,13 +1089,17 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    props: z.object({ contractId: z.string() }).strict(),
+    props: z
+      .object({ contractId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX) })
+      .strict(),
   },
   'market/:contractId/unblock': {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    props: z.object({ contractId: z.string() }).strict(),
+    props: z
+      .object({ contractId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX) })
+      .strict(),
   },
   unresolve: {
     method: 'POST',
@@ -2053,13 +2061,17 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    props: z.object({ id: z.string() }).strict(),
+    props: z
+      .object({ id: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX) })
+      .strict(),
   },
   'user/by-id/:id/unblock': {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    props: z.object({ id: z.string() }).strict(),
+    props: z
+      .object({ id: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX) })
+      .strict(),
   },
   users: {
     method: 'GET',

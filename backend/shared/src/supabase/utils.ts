@@ -246,12 +246,23 @@ export function updateDataQuery<T extends TableName>(
   const sortedExtraOperations = sortBy(extras, (statement) =>
     statement.startsWith('-') ? -1 : 1
   )
+  // Format in a single pass with every value as a parameter (:alias leaves
+  // plain identifiers unquoted, so normal output is unchanged). The FieldVal
+  // fragments are already formatted SQL, so they go in via :raw rather than
+  // being spliced into the template: pg-promise does not re-scan substituted
+  // values, so `$n` text inside a fragment's quoted values stays inert.
   return pgp.as.format(
-    `update ${table} set data = data
-    ${sortedExtraOperations.join('\n')}
-    || $1
-    where ${idField} = '${id}' returning *`,
-    [JSON.stringify(basic)]
+    `update $1:alias set data = data
+    $2:raw
+    || $3
+    where $4:alias = $5 returning *`,
+    [
+      table,
+      sortedExtraOperations.join('\n'),
+      JSON.stringify(basic),
+      idField,
+      id,
+    ]
   )
 }
 
@@ -271,10 +282,20 @@ export async function updateData<T extends TableName>(
  * each returns a function that takes the field name and returns a sql string that updateData can handle
  */
 export const FieldVal = {
-  increment: (n: number) => (fieldName: string) =>
-    `|| jsonb_build_object('${fieldName}', (data->'${fieldName}')::numeric + ${n})`,
+  increment: (n: number) => {
+    // Interpolating NaN/Infinity used to produce invalid SQL and fail the
+    // write; keep failing loudly rather than storing a non-finite number.
+    if (typeof n !== 'number' || !Number.isFinite(n)) {
+      throw new Error(`FieldVal.increment: expected a finite number, got ${n}`)
+    }
+    return (fieldName: string) =>
+      pgp.as.format(`|| jsonb_build_object($1, (data->$1)::numeric + $2)`, [
+        fieldName,
+        n,
+      ])
+  },
 
-  delete: () => (fieldName: string) => `- '${fieldName}'`,
+  delete: () => (fieldName: string) => pgp.as.format(`- $1`, [fieldName]),
 
   arrayConcat: (...values: string[]) => {
     // Untyped query results can sneak undefined past the string[] signature,
@@ -305,8 +326,8 @@ export const FieldVal = {
     }
     return (fieldName: string) => {
       return pgp.as.format(
-        `|| jsonb_build_object($1, coalesce(data->$1,'[]'::jsonb) - '{$2:raw}'::text[])`,
-        [fieldName, values.join(',')]
+        `|| jsonb_build_object($1, coalesce(data->$1,'[]'::jsonb) - $2::text[])`,
+        [fieldName, values]
       )
     }
   },
