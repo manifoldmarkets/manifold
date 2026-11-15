@@ -15,7 +15,26 @@ import { PGlite } from '@electric-sql/pglite'
 import { API } from 'common/api/schema'
 import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
 import { getUser } from 'shared/utils'
-import { FieldVal, updateDataQuery } from './utils'
+import {
+  bulkInsert,
+  bulkUpdate,
+  bulkUpdateData,
+  bulkUpsert,
+  FieldVal,
+  insert,
+  update,
+  updateDataQuery,
+} from './utils'
+import { limit as limitSql, renderSql, select } from './sql-builder'
+import { incrementBalance } from './users'
+import { getContractPrivacyWhereSQLFilter } from './contracts'
+import { getFollowedReposts } from './reposts'
+import {
+  basicSearchSQL,
+  getSemanticSearchContractSQL,
+  privateUserBlocksSql,
+} from './search-contracts'
+import { getBulkUpdateLimitOrdersQueryAndValues } from 'api/helpers/bets'
 import { blockUser, unblockUser } from 'api/block-user'
 import { unblockMarket } from 'api/block-market'
 import { unblockGroup } from 'api/block-group'
@@ -302,5 +321,267 @@ describe('handlers against Postgres', () => {
     expect(
       (await dataOf('me')).notificationPreferences.trending_markets
     ).toEqual(['email', 'browser'])
+  })
+})
+
+// pg-promise variable syntax outside a quoted literal: anything left after
+// rendering would be substituted by a later format.
+const expectNoUnboundPlaceholders = (sql: string) => {
+  expect(structureOf(sql)).not.toMatch(/\$(\d|\{|\(|<|\[|\/)/)
+}
+
+describe('write helpers against Postgres', () => {
+  let db: PGlite
+  const run = async (sql: string) => {
+    expectSingleStatement(sql)
+    const results = await db.exec(sql)
+    return results[results.length - 1]?.rows ?? []
+  }
+  // pg-promise formats values client-side, as in production.
+  const fmt = (sql: string, values?: unknown) =>
+    values === undefined ? sql : pgp.as.format(sql, values)
+  const pg: any = {
+    one: async (sql: string, values?: unknown) => {
+      const rows = await run(fmt(sql, values))
+      if (rows.length !== 1) throw new Error(`expected 1 row: ${sql}`)
+      return rows[0]
+    },
+    many: async (sql: string, values?: unknown) => run(fmt(sql, values)),
+    none: async (sql: string, values?: unknown) => {
+      await run(fmt(sql, values))
+    },
+  }
+  const all = async () =>
+    (
+      await db.query<any>(
+        `select id, k, label, n, at::text as at, data from things order by id, k`
+      )
+    ).rows
+
+  beforeAll(async () => {
+    db = new PGlite()
+  })
+  afterAll(async () => {
+    await db.close()
+  })
+  beforeEach(async () => {
+    await db.exec(`
+      drop table if exists things;
+      create table things (
+        id text not null, k integer not null, label text, n numeric,
+        at timestamptz, data jsonb, primary key (id, k));
+      create table if not exists canary ();
+    `)
+  })
+  afterEach(async () => {
+    expect(
+      ((await db.query(`select to_regclass('canary') as t`)).rows[0] as any).t
+    ).toBe('canary')
+  })
+
+  const row = (id: string, label: string) => ({
+    id,
+    k: 1,
+    label,
+    n: 1.5,
+    at: '2026-01-02T03:04:05.000Z',
+    data: JSON.stringify({ label }),
+  })
+
+  it.each(HOSTILE.concat([`x::jsonb'`, `y::text`]))(
+    'insert, update, bulk update and upsert keep %s as data',
+    async (v) => {
+      await insert(pg, 'things' as any, row(v, v) as any)
+      await bulkInsert(pg, 'things' as any, [row('b', v), row('c', v)] as any)
+      await update(
+        pg,
+        'things' as any,
+        'id' as any,
+        {
+          id: v,
+          label: v,
+          n: 2,
+        } as any
+      )
+      await bulkUpdate(
+        pg,
+        'things' as any,
+        ['id', 'k'] as any,
+        [
+          {
+            id: 'b',
+            k: 1,
+            label: `${v}!`,
+            at: '2026-05-05T00:00:00Z',
+            data: JSON.stringify({ v }),
+          },
+          {
+            id: 'c',
+            k: 1,
+            label: `${v}?`,
+            at: '2026-05-06T00:00:00Z',
+            data: JSON.stringify({ v: `${v}?` }),
+          },
+        ] as any
+      )
+      await bulkUpsert(
+        pg,
+        'things' as any,
+        ['id', 'k'] as any,
+        [row('d', v)] as any
+      )
+      await bulkUpdateData(pg, 'things' as any, [{ id: 'd', label: v } as any])
+
+      const rows = await all()
+      expect(rows.map((r: any) => r.id).sort()).toEqual(
+        [v, 'b', 'c', 'd'].sort()
+      )
+      const byId = Object.fromEntries(rows.map((r: any) => [r.id, r]))
+      expect(byId[v]).toMatchObject({ label: v, data: { label: v } })
+      expect(Number(byId[v].n)).toBe(2)
+      expect(byId['b']).toMatchObject({ label: `${v}!`, data: { v } })
+      expect(byId['c'].label).toBe(`${v}?`)
+      expect(byId['c'].at).toMatch(/^2026-05-06/)
+      expect(byId['d'].data).toEqual({ label: v, id: 'd' })
+    }
+  )
+
+  it('bulk update types columns from the table, not the literals', async () => {
+    await bulkInsert(pg, 'things' as any, [row('a', 'x')] as any)
+    await bulkUpdate(
+      pg,
+      'things' as any,
+      ['id', 'k'] as any,
+      [
+        {
+          id: 'a',
+          k: 1,
+          n: 3,
+          at: '2026-07-08T09:10:11Z',
+          data: JSON.stringify({ nested: { ok: true } }),
+        },
+      ] as any
+    )
+    const [a] = await all()
+    expect(Number(a.n)).toBe(3)
+    expect(a.at).toMatch(/^2026-07-08 09:10:11/)
+    expect(a.data).toEqual({ nested: { ok: true } })
+  })
+
+  it('limit order bulk update keeps values as data', async () => {
+    await db.exec(
+      `create table if not exists contract_bets (bet_id text primary key, data jsonb)`
+    )
+    for (const v of HOSTILE) {
+      await db.query(`insert into contract_bets values ($1, '{}')`, [v])
+    }
+    const { query } = getBulkUpdateLimitOrdersQueryAndValues(
+      HOSTILE.map((v) => ({
+        bet: { id: v } as any,
+        fills: [{ matchedBetId: v } as any],
+        isFilled: false,
+        amount: 1,
+        shares: 2,
+      }))
+    )
+    await run(query)
+    const rows = (await db.query<any>(`select * from contract_bets`)).rows
+    expect(rows).toHaveLength(HOSTILE.length)
+    for (const r of rows) {
+      expect(r.data.fills).toEqual([{ matchedBetId: r.bet_id }])
+    }
+  })
+
+  it('increments balances and rejects non-finite deltas', async () => {
+    await db.exec(`create table if not exists users (id text primary key,
+      balance numeric, cash_balance numeric, spice_balance numeric,
+      total_deposits numeric, total_cash_deposits numeric)`)
+    await db.query(`insert into users values ('u', 10, 0, 0, 5, 0)`)
+    await incrementBalance(
+      pg,
+      'u',
+      { balance: -2.5, totalDeposits: 1 },
+      { broadcast: false }
+    )
+    const [u] = (await db.query<any>(`select * from users`)).rows
+    expect([Number(u.balance), Number(u.total_deposits)]).toEqual([7.5, 6])
+    await expect(
+      incrementBalance(pg, 'u', { balance: Infinity }, { broadcast: false })
+    ).rejects.toThrow()
+  })
+})
+
+describe('sql-builder', () => {
+  it.each([-1, NaN, Infinity, '1; select 1' as any])(
+    'limit rejects %s',
+    (n) => {
+      expect(() => limitSql(n)).toThrow()
+      expect(() => limitSql(10, n)).toThrow()
+    }
+  )
+
+  it('limit renders counts', () => {
+    expect(renderSql(select('1'), limitSql(10, 20))).toContain(
+      'limit 10\noffset 20'
+    )
+  })
+})
+
+describe('rendered SQL is not formatted again', () => {
+  const searchArgs = {
+    term: '',
+    filter: 'open',
+    contractType: 'ALL',
+    limit: 4,
+    offset: 0,
+    sort: 'score',
+    token: 'MANA' as const,
+  }
+  const privateUser = {
+    blockedByUserIds: ['$1'],
+    blockedContractIds: ['$2:raw'],
+    blockedUserIds: ['${constructor}'],
+    blockedGroupSlugs: ['$1^', "it's"],
+  } as any
+
+  it('search builders bind every placeholder they use', () => {
+    expectNoUnboundPlaceholders(
+      basicSearchSQL({ ...searchArgs, privateUser, uid: 'u1' } as any)
+    )
+    expectNoUnboundPlaceholders(
+      getSemanticSearchContractSQL({
+        ...searchArgs,
+        embedding: [0.1, 0.2],
+        privateUser,
+      } as any)
+    )
+  })
+
+  it('reposts keep block-list values literal', async () => {
+    let rendered = ''
+    const fake: any = {
+      map: async (sql: string, values: unknown) => {
+        rendered = pgp.as.format(sql, values)
+        return []
+      },
+    }
+    const blockSql = renderSql(privateUserBlocksSql(privateUser)).replace(
+      /^where /,
+      'and '
+    )
+    await getFollowedReposts('u1', 5, 0, {}, blockSql, fake)
+    expectSingleStatement(rendered)
+    for (const v of ['$1', '$2:raw', '${constructor}', '$1^', "it''s"]) {
+      expect(rendered).toContain(`'${v}'`)
+    }
+  })
+
+  it('privacy filter quotes the user id', () => {
+    const sql = getContractPrivacyWhereSQLFilter(`x' or true or '`, 'c.id')
+    expectSingleStatement(sql)
+    expect(sql).toContain(`creator_id='x'' or true or '''`)
+    expect(getContractPrivacyWhereSQLFilter('abc', 'c.id')).toContain(
+      `select 1 from contract_bets where contract_id = c.id and user_id = 'abc')`
+    )
   })
 })

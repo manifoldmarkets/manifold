@@ -240,7 +240,7 @@ async function fetchPersonalizedFeed(
   ] = await Promise.all([
     pg.map(
       combinedQuery,
-      [],
+      undefined,
       (r) =>
         ({
           contract: convertContract(r),
@@ -249,7 +249,7 @@ async function fetchPersonalizedFeed(
     ),
     pg.map(
       followedQuery,
-      [],
+      undefined,
       (r) =>
         ({
           contract: convertContract(r),

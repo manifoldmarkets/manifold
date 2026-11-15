@@ -39,7 +39,7 @@ export const searchGroups: APIHandler<'search-groups'> = async (
     memberGroupsOnly,
   })
 
-  const groups = await pg.map(searchGroupSQL, null, convertGroup)
+  const groups = await pg.map(searchGroupSQL, undefined, convertGroup)
   return {
     full: type === 'full' ? groups : [],
     lite: type === 'lite' ? (groups as LiteGroup[]) : [],
@@ -81,7 +81,8 @@ function getSearchGroupSQL(props: {
       : !uid
       ? orderBy('importance_score desc')
       : orderBy(
-          `importance_score * (CASE WHEN is_group_member(id, '${uid}') THEN 1 ELSE 0.5 END) desc`
+          `importance_score * (CASE WHEN is_group_member(id, $1) THEN 1 ELSE 0.5 END) desc`,
+          [uid]
         ),
 
     limit(props.limit, props.offset)

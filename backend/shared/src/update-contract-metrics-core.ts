@@ -18,8 +18,8 @@ export async function updateContractMetricsCore(wholeMonth: boolean = false) {
   log('Loading contract data...')
   const timeFrame = wholeMonth ? '32 days' : '8 days'
   const where = `
-  where (c.resolution_time is null and c.last_bet_time > now() - interval '${timeFrame}')
-  or c.resolution_time > now() - interval '${timeFrame}'`
+  where (c.resolution_time is null and c.last_bet_time > now() - interval $1)
+  or c.resolution_time > now() - interval $1`
   const results = await pg.multi(
     `
     select ${contractColumnsToSelect} from contracts c
@@ -30,7 +30,7 @@ export async function updateContractMetricsCore(wholeMonth: boolean = false) {
       ${where}
     );
     `,
-    []
+    [timeFrame]
   )
   const allContracts = results[0].map(convertContract)
   const sumToOneContractIds = allContracts

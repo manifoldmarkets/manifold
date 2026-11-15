@@ -234,7 +234,7 @@ const search = async (
           isPrizeMarket,
           privateUser,
         }),
-        null,
+        undefined,
         convertContract
       )
     } else {
@@ -526,7 +526,7 @@ const semanticFallback = async (
             limit: limit - lexicalResults.length,
             excludeContractIds: lexicalResults.map((c) => c.id),
           }),
-          null,
+          undefined,
           convertContract
         )
       )

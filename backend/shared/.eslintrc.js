@@ -33,6 +33,7 @@ module.exports = {
           },
         ],
         'unused-imports/no-unused-imports': 'warn',
+        'no-restricted-syntax': require('./eslint-sql-quote-rule'),
         'no-constant-condition': 'off',
       },
     },
@@ -40,6 +41,8 @@ module.exports = {
       files: ['**/*.test.ts'],
       // Jest type-checks tests separately; they are excluded from the build.
       parserOptions: { project: null },
+      // Tests seed fixtures with constant SQL.
+      rules: { 'no-restricted-syntax': 'off' },
     },
   ],
   rules: {

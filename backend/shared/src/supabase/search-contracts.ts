@@ -16,7 +16,7 @@ import {
   SearchSortValue,
 } from 'shared/helpers/search-pagination'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
 import {
   from,
   groupBy,
@@ -113,8 +113,8 @@ export const staleSeenMarketsSql = (
       where ucv.user_id = $1
         and ucv.contract_id = contracts.id
         and greatest(ucv.last_card_view_ts, ucv.last_page_view_ts)
-            between ${anchor} - interval '${SEEN_MEMORY_WINDOW}'
-                and ${anchor} - interval '${SEEN_GRACE_PERIOD}'
+            between ${anchor} - interval $3
+                and ${anchor} - interval $4
         and coalesce(contracts.last_comment_time, contracts.created_time)
             <= greatest(ucv.last_card_view_ts, ucv.last_page_view_ts)
         and coalesce(contracts.resolution_time, contracts.created_time)
@@ -144,9 +144,7 @@ export const staleSeenMarketsSql = (
             )
         )
     )`,
-    seenMarketCutoffTime === undefined
-      ? [userId]
-      : [userId, seenMarketCutoffTime]
+    [userId, seenMarketCutoffTime, SEEN_MEMORY_WINDOW, SEEN_GRACE_PERIOD]
   )
 }
 
@@ -625,7 +623,7 @@ function getSearchContractWhereSQL(args: {
       ? `outcome_type = 'MULTIPLE_CHOICE' AND coalesce((contracts.data->>'shouldAnswersSumToOne')::boolean, true) = false`
       : contractType === 'PSEUDO_NUMERIC'
       ? `outcome_type = 'PSEUDO_NUMERIC' OR outcome_type = 'NUMBER' OR outcome_type = 'MULTI_NUMERIC'`
-      : `outcome_type = '${contractType}'`
+      : pgp.as.format(`outcome_type = $1`, [contractType])
 
   const stonkFilter =
     hideStonks && contractType !== 'STONK' ? `outcome_type != 'STONK'` : ''
@@ -648,7 +646,9 @@ function getSearchContractWhereSQL(args: {
       : sort === 'prob-50'
       ? "outcome_type = 'BINARY' AND (contracts.data->>'prob') is not null"
       : ''
-  const creatorFilter = creatorId ? `creator_id = '${creatorId}'` : ''
+  const creatorFilter = creatorId
+    ? pgp.as.format(`creator_id = $1`, [creatorId])
+    : ''
   const visibilitySQL = getContractPrivacyWhereSQLFilter(
     uid,
     'contracts.id',

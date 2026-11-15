@@ -11,7 +11,7 @@ import { Tables } from 'common/supabase/utils'
 import { camelCase, mapValues, sortBy } from 'lodash'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
 import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
-import { SupabaseDirectClient } from 'shared/supabase/init'
+import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
 import { contractColumnsToSelect, log } from 'shared/utils'
 import { broadcastUpdatedContract } from 'shared/websockets/helpers'
 import { DataUpdate, update, updateData } from './utils'
@@ -231,17 +231,21 @@ export const getContractPrivacyWhereSQLFilter = (
   contractIdString: string,
   creatorId?: string
 ) => {
-  const otherVisibilitySQL = `
+  // contractIdString is a column reference supplied by the caller's code.
+  const otherVisibilitySQL = pgp.as.format(
+    `
   OR (visibility = 'unlisted'
     AND (
-     creator_id='${uid}'
-     OR ${isAdminId(uid ?? '_')}
+     creator_id=$1
+     OR $2
      OR exists(
-         select 1 from contract_bets where contract_id = ${contractIdString} and user_id = '${uid}')
+         select 1 from contract_bets where contract_id = $3:raw and user_id = $1)
      OR exists(
-         select 1 from contract_perp_events where contract_id = ${contractIdString} and user_id = '${uid}'
+         select 1 from contract_perp_events where contract_id = $3:raw and user_id = $1
            and event_type in ('open', 'add', 'close'))
-     ))`
+     ))`,
+    [uid, isAdminId(uid ?? '_'), contractIdString]
+  )
   return !!creatorId && !!uid && creatorId === uid
     ? ''
     : `(visibility = 'public' ${uid ? otherVisibilitySQL : ''})`

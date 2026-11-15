@@ -200,12 +200,12 @@ export const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => {
     total_liquidity: answer.totalLiquidity,
     subsidy_pool: answer.subsidyPool,
     created_time: answer.createdTime
-      ? millisToTs(answer.createdTime) + '::timestamptz'
+      ? millisToTs(answer.createdTime)
       : undefined,
     is_other: answer.isOther,
     resolution: answer.resolution,
     resolution_time: answer.resolutionTime
-      ? millisToTs(answer.resolutionTime) + '::timestamptz'
+      ? millisToTs(answer.resolutionTime)
       : undefined,
     resolution_probability: answer.resolutionProbability,
     resolver_id: answer.resolverId,

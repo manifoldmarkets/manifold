@@ -30,8 +30,8 @@ export const searchUsers: APIHandler<'search-users'> = async (props, auth) => {
   })
   const searchAllSQL = getSearchUserSQL({ term: cleanTerm, offset, limit })
   const [followers, all] = await Promise.all([
-    pg.map(searchFollowersSQL, null, convertUser),
-    pg.map(searchAllSQL, null, convertUser),
+    pg.map(searchFollowersSQL, undefined, convertUser),
+    pg.map(searchAllSQL, undefined, convertUser),
   ])
 
   return uniqBy([...followers, ...all], 'id')

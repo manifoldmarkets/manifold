@@ -84,7 +84,17 @@ export function orderBy(clause: string, formatValues?: any) {
   return buildSql({ orderBy })
 }
 
+// limit and offset are written into the SQL text, so only accept counts.
+const assertCount = (name: string, n: number | null | undefined) => {
+  if (n == null) return
+  if (typeof n !== 'number' || !Number.isFinite(n) || n < 0) {
+    throw new Error(`sql-builder: ${name} must be a non-negative number`)
+  }
+}
+
 export function limit(limit: number, offset?: number) {
+  assertCount('limit', limit)
+  assertCount('offset', offset)
   return buildSql({ limit, offset })
 }
 
