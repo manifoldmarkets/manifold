@@ -33,13 +33,44 @@ describe('questionTokens', () => {
       'price',
       'be',
       'above',
+      '$',
       '13800',
       't',
     ])
   })
 
-  it('keeps decimals whole', () => {
-    expect(questionTokens('Above $90.90/lb?')).toEqual(['above', '90.90', 'lb'])
+  it('keeps decimals, signs, comparisons, currency and percent signs', () => {
+    expect(questionTokens('Above $90.90/lb?')).toEqual([
+      'above',
+      '$',
+      '90.90',
+      'lb',
+    ])
+    expect(questionTokens('Will US inflation be >3% or ≤ −2%?')).toEqual([
+      'will',
+      'us',
+      'inflation',
+      'be',
+      '>',
+      '3',
+      '%',
+      'or',
+      '<=',
+      '-2',
+      '%',
+    ])
+  })
+
+  it('keeps a season whole but splits other year-number pairs', () => {
+    expect(questionTokens('2026-27 and 2026/2027 and 2026-11-17')).toEqual([
+      '2026-27',
+      'and',
+      '2026/2027',
+      'and',
+      '2026',
+      '11',
+      '17',
+    ])
   })
 })
 
@@ -91,6 +122,32 @@ describe('templateVariantKind', () => {
         'Who will win the 2030 FIFA World Cup final in extra time?'
       )
     ).toBeUndefined()
+  })
+
+  it('treats different seasons as editions, in either order', () => {
+    const season = (range: string) =>
+      `Will Arsenal win the Premier League title in the ${range} season?`
+    for (const [a, b] of [
+      ['2026-2027', '2027-2028'],
+      ['2026-27', '2027-28'],
+      ['2026/27', '2027/28'],
+    ]) {
+      expect(kind(season(a), season(b))).toBeUndefined()
+      expect(kind(season(b), season(a))).toBeUndefined()
+    }
+  })
+
+  it('treats thresholds that look like years as numeric variants', () => {
+    const eth = (price: string) =>
+      `Will ETH close above $${price} on December 31, 2026?`
+    for (const price of ['1,900', '1,950', '2,050', '2,100'])
+      expect(kind(eth('2,000'), eth(price))).toBe('numeric')
+    expect(
+      kind(
+        'Will the population exceed 2000 people by the end of 2026?',
+        'Will the population exceed 2050 people by the end of 2026?'
+      )
+    ).toBe('numeric')
   })
 
   it('does not relate different templates or short questions', () => {
@@ -269,6 +326,38 @@ describe('collapseNearDuplicateRelatedMarkets', () => {
     ])
   })
 
+  it('keeps opposite comparisons and signs apart, across creators too', () => {
+    const candidates = [
+      market('Will US inflation be <3% at the end of 2027?', 'a'),
+      market('Will US GDP growth be -2% in 2027?', 'b'),
+      market('Will US GDP growth be 2% in 2027?', 'c'),
+    ]
+    expect(
+      questions(
+        collapseNearDuplicateRelatedMarkets(
+          {
+            question: 'Will US inflation be >3% at the end of 2027?',
+            creatorId: 'x',
+          },
+          candidates
+        )
+      )
+    ).toEqual(questions(candidates))
+  })
+
+  it('collapses a threshold ladder whose prices look like years', () => {
+    const eth = (price: string) =>
+      `Will ETH close above $${price} on December 31, 2026?`
+    expect(
+      collapseNearDuplicateRelatedMarkets(
+        { question: eth('2,000'), creatorId: 'crypto' },
+        ['1,900', '1,950', '2,050', '2,100'].map((p) =>
+          market(eth(p), 'crypto')
+        )
+      )
+    ).toEqual([])
+  })
+
   it('drops copies of the source question by other creators', () => {
     expect(
       collapseNearDuplicateRelatedMarkets(
@@ -305,6 +394,32 @@ describe('collapseNearDuplicateRelatedMarkets', () => {
     expect(
       collapseNearDuplicateRelatedMarkets(source, [market('???')])
     ).toEqual([])
+  })
+})
+
+describe('collapse cost', () => {
+  it('stays cheap when a large same-creator pool has no variants', () => {
+    // Worst case for the pairwise checks: 150 questions from one creator that
+    // share most of their wording but differ in three places, so every pair
+    // gets aligned and none collapses. About 35 ms locally.
+    const word = (i: number) => `w${i}`
+    const pool = Array.from({ length: 150 }, (_, i) =>
+      market(
+        `Will the ${word(i * 7)} committee approve the ${word(
+          i * 11 + 3
+        )} plan for the ${word(
+          i * 13 + 5
+        )} region before the end of next year?`,
+        'one'
+      )
+    )
+    const started = Date.now()
+    const kept = collapseNearDuplicateRelatedMarkets(
+      { question: 'Something else entirely', creatorId: 'x' },
+      pool
+    )
+    expect(kept).toHaveLength(150)
+    expect(Date.now() - started).toBeLessThan(1000)
   })
 })
 

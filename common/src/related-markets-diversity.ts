@@ -61,24 +61,78 @@ const MONTHS = new Set([
   'dec',
 ])
 
-const isYear = (token: string) => /^(19|20)\d\d$/.test(token)
+// A season spanning two consecutive years: "2026-27", "2026/2027".
+const isSeason = (token: string) => {
+  const match = /^((?:19|20)\d\d)[-/](\d\d|\d{4})$/.exec(token)
+  if (!match) return false
+  const next = Number(match[1]) + 1
+  return match[2].length === 2
+    ? Number(match[2]) === next % 100
+    : Number(match[2]) === next
+}
+const isYearOrSeason = (token: string) =>
+  /^(19|20)\d\d$/.test(token) || isSeason(token)
 const isNumberLike = (token: string) =>
-  /^\d+(\.\d+)?$/.test(token) ||
+  /^-?\d+(\.\d+)?$/.test(token) ||
+  isYearOrSeason(token) ||
   /^\d+(st|nd|rd|th)$/.test(token) ||
   /^[qh][1-4]$/.test(token) ||
   MONTHS.has(token)
+// A number right after one of these is a threshold, not a year: "$2,000",
+// "above 1950", "> 2030".
+const THRESHOLD_CONTEXT = new Set([
+  '$',
+  '€',
+  '£',
+  '>',
+  '<',
+  '>=',
+  '<=',
+  '=',
+  'above',
+  'below',
+  'over',
+  'under',
+  'exceed',
+  'exceeds',
+  'than',
+  'least',
+  'most',
+  'reach',
+  'reaches',
+  'hit',
+  'hits',
+  'top',
+  'tops',
+  'surpass',
+  'between',
+])
 
-/** Lowercased word and number tokens of a question. Diacritics, possessives,
- * punctuation and thousands separators are dropped so cosmetic differences
- * don't hide a duplicate. */
+/** Lowercased tokens of a question: words, numbers (signed, decimals and
+ * seasons kept whole), comparison operators and currency or percent signs,
+ * which change the question. Diacritics, possessives, other punctuation and
+ * thousands separators are dropped so cosmetic differences don't hide a
+ * duplicate. */
 export const questionTokens = (question: string): string[] =>
-  question
-    .normalize('NFKD')
-    .replace(/\p{M}+/gu, '')
-    .toLowerCase()
-    .replace(/['’]s\b/g, '')
-    .replace(/(\d),(?=\d{3}(?!\d))/g, '$1')
-    .match(/[\p{L}\p{N}]+(?:\.\p{N}+)*/gu) ?? []
+  (
+    question
+      .normalize('NFKD')
+      .replace(/\p{M}+/gu, '')
+      .toLowerCase()
+      .replace(/['’]s\b/g, '')
+      .replace(/(\d),(?=\d{3}(?!\d))/g, '$1')
+      .replace(/[−–—]/g, '-')
+      .replace(/≥/g, '>=')
+      .replace(/≤/g, '<=')
+      .match(
+        /(?:19|20)\d\d[-/]\d{2,4}(?!\d)|[<>]=?|=|[$€£%]|(?<![\p{L}\p{N}.])-\d+(?:\.\d+)*|[\p{L}\p{N}]+(?:\.\p{N}+)*/gu
+      ) ?? []
+  ).flatMap((token) =>
+    // "2026-11" is not a season: keep its parts separate.
+    /^\d{4}[-/]\d+$/.test(token) && !isSeason(token)
+      ? token.split(/[-/]/)
+      : [token]
+  )
 
 /** Same question up to articles, auxiliaries and punctuation. */
 const duplicateKey = (tokens: readonly string[]) =>
@@ -98,16 +152,16 @@ type RawSlot = Slot & { sharedAfter: string[] }
 const differingSlots = (a: readonly string[], b: readonly string[]) => {
   const n = a.length
   const m = b.length
-  // suffix[i][j] = LCS length of a[i..] and b[j..]
-  const suffix = Array.from({ length: n + 1 }, () =>
-    new Array<number>(m + 1).fill(0)
-  )
+  // lcs(i, j) = LCS length of a[i..] and b[j..], in one flat table.
+  const width = m + 1
+  const table = new Int32Array((n + 1) * width)
+  const lcs = (i: number, j: number) => table[i * width + j]
   for (let i = n - 1; i >= 0; i--)
     for (let j = m - 1; j >= 0; j--)
-      suffix[i][j] =
+      table[i * width + j] =
         a[i] === b[j]
-          ? suffix[i + 1][j + 1] + 1
-          : Math.max(suffix[i + 1][j], suffix[i][j + 1])
+          ? lcs(i + 1, j + 1) + 1
+          : Math.max(lcs(i + 1, j), lcs(i, j + 1))
 
   const raw: RawSlot[] = []
   let current: RawSlot | undefined
@@ -129,7 +183,7 @@ const differingSlots = (a: readonly string[], b: readonly string[]) => {
       }
       raw.push(current)
     }
-    if (j >= m || (i < n && suffix[i + 1][j] >= suffix[i][j + 1]))
+    if (j >= m || (i < n && lcs(i + 1, j) >= lcs(i, j + 1)))
       current.a.push(a[i++])
     else current.b.push(b[j++])
   }
@@ -156,7 +210,7 @@ const differingSlots = (a: readonly string[], b: readonly string[]) => {
       previous = slot
     }
   }
-  return { shared: suffix[0][0], slots }
+  return { shared: lcs(0, 0), slots }
 }
 
 const isNumericSlot = ({ a, b }: Slot) => [...a, ...b].every(isNumberLike)
@@ -164,12 +218,15 @@ const isNumericSlot = ({ a, b }: Slot) => [...a, ...b].every(isNumberLike)
 // "2026" vs "2030", or a season "2026-27" vs "2027-28": a different edition or
 // horizon of an event, which is a different market, not a duplicate. A year
 // that completes a date ("December 31, 2026" vs "December 31, 2027") is a
-// checkpoint of the same question instead.
+// checkpoint of the same question instead, and a number after "$" or "above"
+// is a threshold that happens to look like a year.
 const isEditionSlot = ({ a, b, before }: Slot) =>
-  a.some(isYear) &&
-  b.some(isYear) &&
-  [...a, ...b].every((token) => isYear(token) || /^\d\d$/.test(token)) &&
-  !before.some((token) => MONTHS.has(token))
+  a.length === 1 &&
+  b.length === 1 &&
+  isYearOrSeason(a[0]) &&
+  isYearOrSeason(b[0]) &&
+  !before.some((token) => MONTHS.has(token)) &&
+  !THRESHOLD_CONTEXT.has(before[before.length - 1] ?? '')
 
 /** How two questions relate as variants of one template, if they do: they
  * share a long frame and differ in numeric slots only (a threshold, a
@@ -180,19 +237,43 @@ const isEditionSlot = ({ a, b, before }: Slot) =>
 export const templateVariantKind = (
   first: readonly string[],
   second: readonly string[]
+) => variantKind(prepare(first), prepare(second))
+
+/** Per-question data reused across the pairwise comparisons. */
+type PreparedQuestion = {
+  tokens: readonly string[]
+  text: string
+  tokenSet: ReadonlySet<string>
+}
+const prepare = (tokens: readonly string[]): PreparedQuestion => ({
+  tokens,
+  text: tokens.join(' '),
+  tokenSet: new Set(tokens),
+})
+
+const variantKind = (
+  first: PreparedQuestion,
+  second: PreparedQuestion
 ): 'numeric' | 'worded' | undefined => {
   // The alignment breaks ties by position, so fix the argument order to keep
   // the relation symmetric.
-  const [a, b] =
-    first.length < second.length ||
-    (first.length === second.length && first.join(' ') <= second.join(' '))
+  const [x, y] =
+    first.tokens.length < second.tokens.length ||
+    (first.tokens.length === second.tokens.length && first.text <= second.text)
       ? [first, second]
       : [second, first]
+  const a = x.tokens
+  const b = y.tokens
   const longer = Math.max(a.length, b.length)
   if (Math.min(a.length, b.length) < MIN_SHARED_TOKENS) return undefined
   if (Math.abs(a.length - b.length) > MAX_INSERTED_SLOT_TOKENS) return undefined
-  const bTokens = new Set(b)
-  if (a.filter((token) => bTokens.has(token)).length < MIN_SHARED_TOKENS)
+  // Cheap upper bound on the alignment before paying for it.
+  let sharedAtMost = 0
+  for (const token of a) if (y.tokenSet.has(token)) sharedAtMost++
+  if (
+    sharedAtMost < MIN_SHARED_TOKENS ||
+    sharedAtMost / longer < MIN_SHARED_RATIO
+  )
     return undefined
 
   const { shared, slots } = differingSlots(a, b)
@@ -238,12 +319,14 @@ export const collapseNearDuplicateRelatedMarkets = <
   )
 
   // Index -1 stands for the source.
-  const tokensOf = (i: number) => (i < 0 ? sourceTokens : tokens[i])
-  const kindCache = new Map<string, ReturnType<typeof templateVariantKind>>()
+  const preparedSource = prepare(sourceTokens)
+  const prepared = tokens.map(prepare)
+  const preparedOf = (i: number) => (i < 0 ? preparedSource : prepared[i])
+  const kindCache = new Map<string, ReturnType<typeof variantKind>>()
   const kindOf = (i: number, j: number) => {
     const cacheKey = i < j ? `${i}:${j}` : `${j}:${i}`
     if (!kindCache.has(cacheKey))
-      kindCache.set(cacheKey, templateVariantKind(tokensOf(i), tokensOf(j)))
+      kindCache.set(cacheKey, variantKind(preparedOf(i), preparedOf(j)))
     return kindCache.get(cacheKey)
   }
   const creatorGroups = new Map<string, number[]>([[source.creatorId, [-1]]])
@@ -272,11 +355,15 @@ export const collapseNearDuplicateRelatedMarkets = <
     // A copy of a collapsed variant is as redundant as the variant itself.
     seenKeys.add(key)
     const representatives = keptByCreator.get(candidate.creatorId) ?? []
-    const kinds = representatives.map((r) => kindOf(i, r))
-    const isRepeat =
-      kinds.includes('numeric') || (kinds.includes('worded') && isInSeries(i))
-    if (isRepeat) return
-    keptByCreator.set(candidate.creatorId, [...representatives, i])
+    let wordedVariant = false
+    for (const r of representatives) {
+      const kind = kindOf(i, r)
+      if (kind === 'numeric') return
+      if (kind === 'worded') wordedVariant = true
+    }
+    if (wordedVariant && isInSeries(i)) return
+    representatives.push(i)
+    keptByCreator.set(candidate.creatorId, representatives)
     kept.push(candidate)
   })
   return kept

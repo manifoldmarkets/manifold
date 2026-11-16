@@ -1,6 +1,7 @@
 import { Contract } from 'common/contract'
 import { isEligibleRelatedMarket } from 'common/related-markets'
 import {
+  capRelatedMarketsPerCreator,
   diversifyRelatedMarkets,
   RELATED_MARKETS_CANDIDATE_POOL,
   relatedMarketsMaxPerCreator,
@@ -261,7 +262,14 @@ Return a JSON array containing ONLY the IDs of markets to KEEP (those that are d
       )
     }
   }
-  marketsFromEmbeddings = marketsFromEmbeddings.slice(0, limit)
+  // Cap again rather than slice: once the model drops some markets, the
+  // overflow behind them could otherwise put one creator back over the cap
+  // while another creator's accepted markets fall off the end.
+  marketsFromEmbeddings = capRelatedMarketsPerCreator(
+    marketsFromEmbeddings,
+    limit,
+    relatedMarketsMaxPerCreator(limit)
+  )
 
   const marketIds = marketsFromEmbeddings.map((c) => c.id)
   const cacheEntry = {

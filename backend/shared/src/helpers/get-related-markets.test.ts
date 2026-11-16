@@ -286,6 +286,38 @@ describe('candidate selection', () => {
     )
   })
 
+  it('keeps the creator cap after the model drops markets', async () => {
+    const make = (creator: string, count: number) =>
+      Array.from({ length: count }, (_, i) =>
+        binary(
+          `${creator}${i + 1}`,
+          `Unique ${creator}${i + 1} outcome?`,
+          creator
+        )
+      )
+    candidates = [...make('A', 10), ...make('B', 6), ...make('C', 4)]
+    jest
+      .mocked(promptAI)
+      .mockResolvedValue(
+        candidates
+          .map((c) => c.id)
+          .filter((id) => !['B1', 'B2', 'B3', 'B4'].includes(id)) as never
+      )
+    const result = resultIds(await read('Who will win?', 10, 51))
+    expect(result).toEqual([
+      'A1',
+      'A2',
+      'A3',
+      'A4',
+      'C1',
+      'C2',
+      'C3',
+      'C4',
+      'B5',
+      'B6',
+    ])
+  })
+
   it('works when the source market row is missing', async () => {
     sourceRow = null
     expect(resultIds(await read('anything', 2, 0))).toEqual(['a', 'b'])
