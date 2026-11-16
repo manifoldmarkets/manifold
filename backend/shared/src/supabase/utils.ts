@@ -102,7 +102,23 @@ export function bulkUpdateQuery<
   ])
   const formattedValues = values.map((row) =>
     pgp.as.format('($1:csv)', [
-      allColumns.map((col) => row[col as keyof ColumnValues]),
+      allColumns.map((col) => {
+        const val = row[col as keyof ColumnValues]
+        // Writing these values out by hand used to make the query invalid, so
+        // the update failed. Keep failing: pg-promise would otherwise write
+        // undefined as NULL and NaN/Infinity as numeric values.
+        if (val === undefined) {
+          throw new Error(
+            `bulkUpdateQuery: a ${table} row has no value for ${col}`
+          )
+        }
+        if (typeof val === 'number' && !Number.isFinite(val)) {
+          throw new Error(
+            `bulkUpdateQuery: non-finite ${col} (${val}) for ${table}`
+          )
+        }
+        return val
+      }),
     ])
   )
 

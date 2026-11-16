@@ -245,7 +245,7 @@ const search = async (
         isPrizeMarket,
         privateUser,
       })
-      return await pg.map(forYouSql, [term], (r) => convertContract(r))
+      return await pg.map(forYouSql, undefined, (r) => convertContract(r))
     }
   } else if (searchRoute === 'recent' && userId) {
     return await pg.map(

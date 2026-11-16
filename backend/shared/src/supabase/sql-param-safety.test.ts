@@ -19,6 +19,7 @@ import {
   bulkInsert,
   bulkUpdate,
   bulkUpdateData,
+  bulkUpdateQuery,
   bulkUpsert,
   FieldVal,
   insert,
@@ -31,9 +32,11 @@ import { getContractPrivacyWhereSQLFilter } from './contracts'
 import { getFollowedReposts } from './reposts'
 import {
   basicSearchSQL,
+  getForYouSQL,
   getSemanticSearchContractSQL,
   privateUserBlocksSql,
 } from './search-contracts'
+import { userIdsToAverageTopicConversionScores } from 'shared/topic-interests'
 import { getBulkUpdateLimitOrdersQueryAndValues } from 'api/helpers/bets'
 import { blockUser, unblockUser } from 'api/block-user'
 import { unblockMarket } from 'api/block-market'
@@ -544,6 +547,26 @@ describe('rendered SQL is not formatted again', () => {
     blockedGroupSlugs: ['$1^', "it's"],
   } as any
 
+  it('for-you search binds every placeholder it uses', async () => {
+    // Topic scores present, so the for-you query (not the basic fallback)
+    // is built; the score thresholds come from a stub.
+    userIdsToAverageTopicConversionScores['u1'] = { g1: 0.4, g2: 0.6 }
+    jest.mocked(createSupabaseDirectClient).mockReturnValue({
+      one: async (_sql: string, _values: unknown, map: (r: any) => any) =>
+        map({ importance_score: 0.5, freshness_score: 0.5 }),
+    } as any)
+    for (const sort of ['score', 'freshness-score']) {
+      expectNoUnboundPlaceholders(
+        await getForYouSQL({
+          ...searchArgs,
+          sort,
+          privateUser,
+          uid: 'u1',
+        } as any)
+      )
+    }
+  })
+
   it('search builders bind every placeholder they use', () => {
     expectNoUnboundPlaceholders(
       basicSearchSQL({ ...searchArgs, privateUser, uid: 'u1' } as any)
@@ -583,5 +606,41 @@ describe('rendered SQL is not formatted again', () => {
     expect(getContractPrivacyWhereSQLFilter('abc', 'c.id')).toContain(
       `select 1 from contract_bets where contract_id = c.id and user_id = 'abc')`
     )
+  })
+})
+
+describe('bulkUpdateQuery rejects rows it cannot write faithfully', () => {
+  const rows = (second: Record<string, unknown>) => [
+    { id: 'a', prob: 0.5, prob_change_week: 0.1 },
+    { id: 'b', ...second },
+  ]
+
+  it.each([
+    ['a missing column', { prob: 0.4 }],
+    ['an undefined value', { prob: 0.4, prob_change_week: undefined }],
+    ['NaN', { prob: NaN, prob_change_week: 0.2 }],
+    ['Infinity', { prob: 0.4, prob_change_week: Infinity }],
+    ['-Infinity', { prob: -Infinity, prob_change_week: 0.2 }],
+  ])('throws on %s', (_name, second) => {
+    expect(() =>
+      bulkUpdateQuery('answers', ['id'], rows(second) as any)
+    ).toThrow()
+  })
+
+  it('still writes nulls, zeros and negative numbers', () => {
+    const sql = bulkUpdateQuery(
+      'answers',
+      ['id'],
+      rows({ prob: 0, prob_change_week: null }) as any
+    )
+    expect(sql).toContain(`('b',0,null)`)
+    expectSingleStatement(sql)
+    expect(
+      bulkUpdateQuery(
+        'answers',
+        ['id'],
+        rows({ prob: -1, prob_change_week: -0.5 }) as any
+      )
+    ).toContain(`('b',-1,-0.5)`)
   })
 })
