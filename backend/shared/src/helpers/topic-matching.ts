@@ -1,7 +1,10 @@
 import { Contract } from 'common/contract'
 import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
+import { trackPublicEvent } from 'shared/analytics'
+import { updateContract } from 'shared/supabase/contracts'
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { addGroupToContract } from 'shared/update-group-contracts-internal'
+import { FieldVal } from 'shared/supabase/utils'
+import { broadcastUpdatedContract } from 'shared/websockets/helpers'
 
 // Unsupervised tag attachment for API-created markets without groupIds.
 // Differs from get-similar-groups-to-contract.ts (the web-UI suggester):
@@ -81,12 +84,18 @@ export async function getNicheTopicMatchesForContract(
 }
 
 // Tags a market that has no topics with its niche matches; returns the topics
-// added. Matching runs outside the transaction because a cold group_embeddings
-// scan can take seconds. The writes then run in one transaction that first
-// re-checks, holding the market's row lock, that it is still public, not
-// deleted and still without topics, so a market tagged or unlisted meanwhile
-// is left alone and a failure part-way leaves no half-written topic.
-// Pass userId to attribute the additions (e.g. a backfill) to that account.
+// added. Pass userId to attribute the additions (e.g. a backfill) to that
+// account. The matcher's groups exclude TOPIC_IDS_YOU_CANT_FOLLOW, so none of
+// addGroupToContract's unrank/unsubsidize handling applies here.
+//
+// Matching runs before the transaction: a cold group_embeddings scan can take
+// seconds and must not hold the market's row lock. The transaction locks the
+// market first and only then checks eligibility, in a separate statement, so
+// under READ COMMITTED it sees topics committed while it waited for the lock.
+// Links and groupSlugs are written together and roll back together; the
+// broadcast and audit events go out only after commit. (A manual topic insert
+// landing between the check and the insert can still add to the auto tags:
+// the manual path inserts its link before taking the lock.)
 export async function autoTagUntaggedContract(
   pg: SupabaseDirectClient,
   contract: Contract,
@@ -96,7 +105,11 @@ export async function autoTagUntaggedContract(
     return []
   const matches = await getNicheTopicMatchesForContract(pg, contract.id)
   if (matches.length === 0) return []
-  return pg.tx(async (tx) => {
+
+  const written = await pg.tx(async (tx) => {
+    await tx.oneOrNone(`select 1 from contracts where id = $1 for update`, [
+      contract.id,
+    ])
     const eligible = await tx.oneOrNone(
       `select 1 from contracts c
        where c.id = $1
@@ -104,19 +117,47 @@ export async function autoTagUntaggedContract(
          and coalesce((c.data->>'deleted')::boolean, false) = false
          and not exists (
            select 1 from group_contracts gc where gc.contract_id = c.id
-         )
-       for update`,
+         )`,
       [contract.id]
     )
-    if (!eligible) return []
-    for (const match of matches) {
-      await addGroupToContract(
-        tx,
-        contract,
-        { id: match.id, slug: match.slug },
-        userId
-      )
-    }
-    return matches
+    if (!eligible) return null
+    const insertedIds = await tx.map(
+      `insert into group_contracts (contract_id, group_id)
+       select $1, unnest($2::text[])
+       on conflict (contract_id, group_id) do nothing
+       returning group_id`,
+      [contract.id, matches.map((m) => m.id)],
+      (r: { group_id: string }) => r.group_id
+    )
+    const added = matches.filter((m) => insertedIds.includes(m.id))
+    if (added.length === 0) return null
+    const updated = await updateContract(
+      tx,
+      contract.id,
+      {
+        groupSlugs: FieldVal.arrayConcat(...added.map((m) => m.slug)),
+        lastUpdatedTime: Date.now(),
+      },
+      { broadcast: false }
+    )
+    return { updated, added }
   })
+  if (!written) return []
+
+  const { updated, added } = written
+  broadcastUpdatedContract(updated.visibility, {
+    id: updated.id,
+    groupSlugs: updated.groupSlugs,
+    lastUpdatedTime: updated.lastUpdatedTime,
+  })
+  await Promise.all(
+    added.map((m) =>
+      trackPublicEvent(userId ?? contract.creatorId, 'add market to topic', {
+        contractId: contract.id,
+        groupSlug: m.slug,
+        inCreateMarket: !userId,
+      })
+    )
+  )
+  return added
 }
