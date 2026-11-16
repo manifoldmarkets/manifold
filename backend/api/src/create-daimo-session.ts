@@ -147,10 +147,12 @@ export const createDaimoSession: APIHandler<'create-daimo-session'> = async (
       hotWalletAddress,
     })
   } catch (e) {
-    // No session exists, so nothing can complete under the lock we just took.
-    // Release it (as the Stripe path does) or the user is locked out of this
-    // offer, credit card included, for PAYMENT_PENDING_LOCK_MINUTES. Only
-    // clear our own lock id so we never release someone else's.
+    // The user never got a client secret, so they can't pay under the lock we
+    // just took. (A timeout or malformed 200 may still leave a Daimo session
+    // behind, but nothing reaches it without that secret.) Release the lock,
+    // as the Stripe path does, or the user is locked out of this offer, credit
+    // card included, for PAYMENT_PENDING_LOCK_MINUTES. Only clear our own lock
+    // id so we never release someone else's.
     if (offerId && claimedLockId) {
       try {
         await pg.none(
