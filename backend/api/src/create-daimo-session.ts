@@ -11,6 +11,16 @@ import {
 
 const DAIMO_API_URL = 'https://api.daimo.com/v1/sessions'
 
+// Returned as a 503 when Daimo itself can't serve us: our key is rejected
+// (401/403, e.g. "Manifold Markets access expired"), we're rate limited, or
+// Daimo is erroring. Retrying won't help, so the checkout page switches the
+// user to the credit card path instead of saying "try again".
+const CRYPTO_UNAVAILABLE_MESSAGE =
+  'Crypto payments are temporarily unavailable. Please use a credit card instead.'
+
+const isDaimoUnavailableStatus = (status: number) =>
+  status === 401 || status === 403 || status === 429 || status >= 500
+
 // Base USDC on chain 8453
 const BASE_CHAIN_ID = 8453
 const BASE_USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
@@ -80,13 +90,14 @@ export const createDaimoSession: APIHandler<'create-daimo-session'> = async (
   }
 
   const { offerId } = props
+  let claimedLockId: string | null = null
 
   if (offerId) {
     // Atomically: verify the offer is redeemable + claim the cross-method
     // pending lock if no other payment session is already in flight for this
     // offer. Shared with createcheckoutsession so a user can't have one Stripe
     // and one Daimo session running for the same offer simultaneously.
-    const claimed = await pg.oneOrNone<{ id: string }>(
+    const claimed = await pg.oneOrNone<{ payment_pending_session_id: string }>(
       `update personalized_mana_offers
           set payment_pending_session_id = 'pending-' || gen_random_uuid()::text,
               payment_pending_at = now()
@@ -98,7 +109,7 @@ export const createDaimoSession: APIHandler<'create-daimo-session'> = async (
             payment_pending_at is null
             or payment_pending_at < now() - ($3 || ' minutes')::interval
           )
-       returning id`,
+       returning payment_pending_session_id`,
       [offerId, auth.uid, String(PAYMENT_PENDING_LOCK_MINUTES)]
     )
     if (!claimed) {
@@ -125,7 +136,54 @@ export const createDaimoSession: APIHandler<'create-daimo-session'> = async (
       }
       throw new APIError(400, 'Offer not redeemable')
     }
+    claimedLockId = claimed.payment_pending_session_id
   }
+
+  try {
+    return await startDaimoSession({
+      userId: auth.uid,
+      offerId,
+      apiKey,
+      hotWalletAddress,
+    })
+  } catch (e) {
+    // No session exists, so nothing can complete under the lock we just took.
+    // Release it (as the Stripe path does) or the user is locked out of this
+    // offer, credit card included, for PAYMENT_PENDING_LOCK_MINUTES. Only
+    // clear our own lock id so we never release someone else's.
+    if (offerId && claimedLockId) {
+      try {
+        await pg.none(
+          `update personalized_mana_offers
+              set payment_pending_session_id = null,
+                  payment_pending_at = null
+            where id = $1
+              and user_id = $2
+              and payment_pending_session_id = $3`,
+          [offerId, auth.uid, claimedLockId]
+        )
+      } catch (releaseError) {
+        log.error('Failed to release offer lock after Daimo failure', {
+          offerId,
+          userId: auth.uid,
+          error:
+            releaseError instanceof Error
+              ? releaseError.message
+              : String(releaseError),
+        })
+      }
+    }
+    throw e
+  }
+}
+
+const startDaimoSession = async (args: {
+  userId: string
+  offerId: string | undefined
+  apiKey: string
+  hotWalletAddress: string
+}) => {
+  const { userId, offerId, apiKey, hotWalletAddress } = args
 
   const payload: Record<string, unknown> = {
     destination: {
@@ -150,25 +208,33 @@ export const createDaimoSession: APIHandler<'create-daimo-session'> = async (
         },
     metadata: offerId
       ? {
-          userId: auth.uid,
+          userId,
           offerId,
         }
       : {
-          userId: auth.uid,
+          userId,
         },
     refundAddress: hotWalletAddress,
   }
 
-  log('Creating Daimo session for user:', auth.uid)
+  log('Creating Daimo session for user:', userId)
 
-  const response = await fetch(DAIMO_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(payload),
-  })
+  let response: Awaited<ReturnType<typeof fetch>>
+  try {
+    response = await fetch(DAIMO_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(payload),
+    })
+  } catch (e) {
+    log.error('Daimo session request failed to send:', {
+      error: e instanceof Error ? e.message : String(e),
+    })
+    throw new APIError(500, 'Failed to create crypto payment session')
+  }
 
   if (!response.ok) {
     let errorInfo: DaimoErrorResponse | null = null
@@ -186,30 +252,31 @@ export const createDaimoSession: APIHandler<'create-daimo-session'> = async (
       errorParam: errorInfo?.error?.param,
     })
 
-    if (response.status === 401) {
-      throw new APIError(500, 'Crypto payment service authentication failed')
+    if (isDaimoUnavailableStatus(response.status)) {
+      throw new APIError(503, CRYPTO_UNAVAILABLE_MESSAGE)
     }
 
     throw new APIError(500, 'Failed to create crypto payment session')
   }
 
-  const data = (await response.json()) as DaimoSessionResponse
-  log('Daimo session created:', {
-    sessionId: data.session.sessionId,
-    userId: auth.uid,
-  })
-
-  if (!data.session?.sessionId || !data.session?.clientSecret) {
+  const data = (await response.json()) as Partial<DaimoSessionResponse>
+  const session = data.session
+  if (!session?.sessionId || !session?.clientSecret) {
     log.error('Daimo response missing required fields:', data)
     throw new APIError(500, 'Invalid response from crypto payment service')
   }
 
-  track(auth.uid, 'daimo session created', {
-    sessionId: data.session.sessionId,
+  log('Daimo session created:', {
+    sessionId: session.sessionId,
+    userId,
+  })
+
+  track(userId, 'daimo session created', {
+    sessionId: session.sessionId,
   })
 
   return {
-    sessionId: data.session.sessionId,
-    clientSecret: data.session.clientSecret,
+    sessionId: session.sessionId,
+    clientSecret: session.clientSecret,
   }
 }

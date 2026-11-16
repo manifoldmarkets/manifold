@@ -12,6 +12,7 @@ import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useUser } from 'web/hooks/use-user'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useEffect, useRef, useState } from 'react'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { usePersonalizedManaOffers } from 'web/hooks/use-personalized-mana-offers'
 import { PersonalizedOfferCard } from 'web/components/checkout/personalized-offer-card'
 import { HiddenOfferChip } from 'web/components/checkout/hidden-offer-chip'
@@ -40,7 +41,7 @@ import {
   CRYPTO_MANA_PER_DOLLAR,
 } from 'common/economy'
 import { formatMoney } from 'common/util/format'
-import { api } from 'web/lib/api/api'
+import { api, APIError } from 'web/lib/api/api'
 
 const MANA_TIERS_USD = [10, 25, 50, 100, 500, 1000, 2500]
 
@@ -57,7 +58,7 @@ type SessionState =
       offerId: string | null
     }
   | { status: 'completed' }
-  | { status: 'error'; message: string }
+  | { status: 'error'; message: string; cryptoUnavailable?: boolean }
 
 function ManaRewardsTable(props: { isFirstCryptoPurchase: boolean }) {
   const { isFirstCryptoPurchase } = props
@@ -185,6 +186,13 @@ function CheckoutContent() {
     status: 'idle',
   })
   const [creditCardModalOpen, setCreditCardModalOpen] = useState(false)
+  // Set when create-daimo-session returns 503: Daimo rejected our key or is
+  // down, so another click can't work. Kept for the browsing session so the
+  // crypto buttons stay disabled if the user navigates away and back.
+  const [cryptoUnavailable, setCryptoUnavailable] = usePersistentInMemoryState(
+    false,
+    'checkout-crypto-unavailable'
+  )
 
   // Check if user has made a crypto purchase before
   const { data: cryptoStatus } = useAPIGetter('get-crypto-purchase-status', {})
@@ -256,13 +264,26 @@ function CheckoutContent() {
         offerId: offerId ?? null,
       })
     } catch (e: unknown) {
+      console.error('Failed to create Daimo session:', e)
+      // 503 = the crypto provider can't serve us right now (e.g. our Daimo
+      // access expired). Retrying won't help, so send them to credit card.
+      if (e instanceof APIError && e.code === 503) {
+        setCryptoUnavailable(true)
+        setSessionState({
+          status: 'error',
+          message:
+            "Crypto payments aren't working right now. You can still buy mana with a credit card.",
+          cryptoUnavailable: true,
+        })
+        offers.refresh()
+        return
+      }
       // 409 = another payment session is already in flight for this offer.
       // Surface a specific message so the user understands what to do.
       const message =
         e instanceof Error && /already in progress/i.test(e.message)
           ? 'You already have a checkout in progress for this offer. Complete or close it first.'
           : 'Failed to start payment. Please try again.'
-      console.error('Failed to create Daimo session:', e)
       setSessionState({ status: 'error', message })
       // Refresh in case server state changed (e.g. offer just redeemed elsewhere).
       offers.refresh()
@@ -403,15 +424,42 @@ function CheckoutContent() {
               <BanIcon className="h-8 w-8 text-red-600" />
             </div>
             <h2 className="text-ink-900 mb-2 text-lg font-semibold">
-              Payment Error
+              {sessionState.cryptoUnavailable
+                ? 'Crypto payments unavailable'
+                : 'Payment Error'}
             </h2>
             <p className="text-ink-500 mb-4 text-sm">{sessionState.message}</p>
-            <Button
-              color="indigo"
-              onClick={() => setSessionState({ status: 'idle' })}
-            >
-              Try Again
-            </Button>
+            {sessionState.cryptoUnavailable ? (
+              <Row className="flex-wrap justify-center gap-2">
+                <Button
+                  color="indigo"
+                  disabled={!canPay}
+                  onClick={() => {
+                    setSessionState({ status: 'idle' })
+                    // With an offer on screen, go straight to the offer's
+                    // card checkout; otherwise open the standard price grid.
+                    if (showOfferCard) handleOfferStripe()
+                    else setCreditCardModalOpen(true)
+                  }}
+                >
+                  <FaCreditCard className="mr-2 h-4 w-4" />
+                  Buy with credit card
+                </Button>
+                <Button
+                  color="gray-outline"
+                  onClick={() => setSessionState({ status: 'idle' })}
+                >
+                  Back
+                </Button>
+              </Row>
+            ) : (
+              <Button
+                color="indigo"
+                onClick={() => setSessionState({ status: 'idle' })}
+              >
+                Try Again
+              </Button>
+            )}
           </Col>
         ) : (
           <Col className="gap-4 p-6 sm:p-8">
@@ -428,7 +476,7 @@ function CheckoutContent() {
                 priceUsdStripe={offers.priceUsdStripe}
                 priceUsdCrypto={offers.priceUsdCrypto}
                 cryptoLoading={cryptoLoading}
-                cryptoDisabled={!canPay}
+                cryptoDisabled={!canPay || cryptoUnavailable}
                 creditCardDisabled={!canPay}
                 onBuyWithCrypto={() =>
                   handleBuyManaClick(effectiveOfferId ?? undefined)
@@ -517,7 +565,7 @@ function CheckoutContent() {
                     <>
                       <button
                         onClick={() => handleBuyManaClick()}
-                        disabled={cryptoLoading}
+                        disabled={cryptoLoading || cryptoUnavailable}
                         className={clsx(
                           'group relative w-full overflow-hidden rounded-xl border-2 border-transparent',
                           'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]',
@@ -535,6 +583,11 @@ function CheckoutContent() {
                                 className="!text-white"
                               />
                               <span>Loading...</span>
+                            </>
+                          ) : cryptoUnavailable ? (
+                            <>
+                              <CurrencyDollarIcon className="h-6 w-6" />
+                              <span>Crypto temporarily unavailable</span>
                             </>
                           ) : (
                             <>
