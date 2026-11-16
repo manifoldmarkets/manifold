@@ -1,12 +1,18 @@
 import { runScript } from 'run-script'
-import { getNicheTopicMatchesForContract } from 'shared/helpers/topic-matching'
+import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
+import {
+  autoTagUntaggedContract,
+  getNicheTopicMatchesForContract,
+} from 'shared/helpers/topic-matching'
 import { getContractsDirect } from 'shared/supabase/contracts'
-import { addGroupToContract } from 'shared/update-group-contracts-internal'
 
 // Gives topics to a creator's public markets that have none, using the same
 // matcher that tags API-created markets at creation. Markets without topics
 // never reach For You for users with topic interests. Prints the plan; pass
 // --apply to write it. Markets the matcher finds nothing for are left alone.
+// Writes go through autoTagUntaggedContract: one transaction per market that
+// re-checks the market is still public, not deleted and untagged, and records
+// the additions as made by the house account rather than the creator.
 //
 //   npx ts-node backfill-niche-topics.ts --creator=<userId> [--apply]
 
@@ -39,7 +45,13 @@ if (require.main === module) {
     let tags = 0
     const perTopic = new Map<string, number>()
     for (const contract of contracts) {
-      const matches = await getNicheTopicMatchesForContract(pg, contract.id)
+      const matches = apply
+        ? await autoTagUntaggedContract(
+            pg,
+            contract,
+            HOUSE_LIQUIDITY_PROVIDER_ID
+          )
+        : await getNicheTopicMatchesForContract(pg, contract.id)
       const label = contract.question.slice(0, 90)
       if (matches.length === 0) {
         console.log(`none  ${contract.id}  ${label}`)
@@ -54,10 +66,6 @@ if (require.main === module) {
           .map((m) => `${m.slug} (${m.distance.toFixed(3)})`)
           .join(', ')}`
       )
-      if (apply) {
-        for (const m of matches)
-          await addGroupToContract(pg, contract, { id: m.id, slug: m.slug })
-      }
     }
 
     const topTopics = [...perTopic.entries()]

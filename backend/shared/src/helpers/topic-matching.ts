@@ -1,5 +1,7 @@
+import { Contract } from 'common/contract'
 import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 import { SupabaseDirectClient } from 'shared/supabase/init'
+import { addGroupToContract } from 'shared/update-group-contracts-internal'
 
 // Unsupervised tag attachment for API-created markets without groupIds.
 // Differs from get-similar-groups-to-contract.ts (the web-UI suggester):
@@ -76,4 +78,45 @@ export async function getNicheTopicMatchesForContract(
       distance: Number(r.distance),
     })
   )
+}
+
+// Tags a market that has no topics with its niche matches; returns the topics
+// added. Matching runs outside the transaction because a cold group_embeddings
+// scan can take seconds. The writes then run in one transaction that first
+// re-checks, holding the market's row lock, that it is still public, not
+// deleted and still without topics, so a market tagged or unlisted meanwhile
+// is left alone and a failure part-way leaves no half-written topic.
+// Pass userId to attribute the additions (e.g. a backfill) to that account.
+export async function autoTagUntaggedContract(
+  pg: SupabaseDirectClient,
+  contract: Contract,
+  userId?: string
+) {
+  if (contract.outcomeType === 'STONK' || contract.outcomeType === 'POLL')
+    return []
+  const matches = await getNicheTopicMatchesForContract(pg, contract.id)
+  if (matches.length === 0) return []
+  return pg.tx(async (tx) => {
+    const eligible = await tx.oneOrNone(
+      `select 1 from contracts c
+       where c.id = $1
+         and c.visibility = 'public'
+         and coalesce((c.data->>'deleted')::boolean, false) = false
+         and not exists (
+           select 1 from group_contracts gc where gc.contract_id = c.id
+         )
+       for update`,
+      [contract.id]
+    )
+    if (!eligible) return []
+    for (const match of matches) {
+      await addGroupToContract(
+        tx,
+        contract,
+        { id: match.id, slug: match.slug },
+        userId
+      )
+    }
+    return matches
+  })
 }
