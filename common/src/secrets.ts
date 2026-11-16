@@ -63,6 +63,8 @@ export const secrets = (
     // parallel names (e.g. STRIPE_15_OFF_10K_PRICE_ID).
     'STRIPE_20_OFF_5K_PRICE_ID',
     'STRIPE_20_OFF_5K_COUPON_ID',
+    // HMAC key for one-click email unsubscribe links.
+    'UNSUBSCRIBE_SIGNING_KEY',
     // Some typescript voodoo to keep the string literal types while being not readonly.
   ] as const
 ).concat()
@@ -81,6 +83,9 @@ const OPTIONAL_SECRETS: ReadonlySet<string> = new Set<SecretId>([
   // warnings, an hourly error) and nothing else is affected; an MSRY market
   // pauses until the key works.
   'ADJACENT_API_KEY',
+  // Without it, emails link to the notification settings page instead of a
+  // one-click unsubscribe, and /unsubscribe changes nothing.
+  'UNSUBSCRIBE_SIGNING_KEY',
 ])
 
 // gRPC status code for NOT_FOUND.

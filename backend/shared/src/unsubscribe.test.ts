@@ -7,6 +7,11 @@ import { trackPublicEvent } from 'shared/analytics'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updatePrivateUser } from 'shared/supabase/users'
 import { getPrivateUser } from 'shared/utils'
+import {
+  getEmailNotificationDestinations,
+  getUnsubscribeUrl,
+  signUnsubscribe,
+} from 'shared/unsubscribe-links'
 
 jest.mock('shared/utils', () => ({ getPrivateUser: jest.fn() }))
 jest.mock('shared/analytics', () => ({ trackPublicEvent: jest.fn() }))
@@ -18,13 +23,25 @@ jest.mock('shared/supabase/users', () => ({ updatePrivateUser: jest.fn() }))
 const response = {
   status: jest.fn().mockReturnThis(),
   send: jest.fn().mockReturnThis(),
+  set: jest.fn().mockReturnThis(),
 }
+const call = (method: string, query: Request['query']) =>
+  unsubscribe({ method, query } as Request, response as unknown as Response)
+// A signed one-click POST, as from the confirmation page.
 const invoke = (query: Request['query']) =>
-  unsubscribe({ query } as Request, response as unknown as Response)
+  call('POST', {
+    ...query,
+    sig:
+      typeof query.id === 'string' && typeof query.type === 'string'
+        ? signUnsubscribe(query.id, query.type)
+        : undefined,
+  })
+const sent = () => String(response.send.mock.calls[0]?.[0] ?? '')
 
 let user: PrivateUser
 beforeEach(() => {
   jest.clearAllMocks()
+  process.env.UNSUBSCRIBE_SIGNING_KEY = 'test-signing-key'
   // Legacy users lack the new tagged_all_traders preference.
   const notificationPreferences: Partial<notification_preferences> = {
     tagged_user: ['browser', 'email', 'mobile'],
@@ -128,4 +145,94 @@ it('adds the global email opt-out without changing existing opt-outs', async () 
   })
   expect(user.notificationPreferences.opt_out_all).toEqual(['mobile'])
   expect(response.status).not.toHaveBeenCalled()
+})
+
+describe('signed links', () => {
+  const expectNoChange = () => {
+    expect(getPrivateUser).not.toHaveBeenCalled()
+    expect(trackPublicEvent).not.toHaveBeenCalled()
+    expect(updatePrivateUser).not.toHaveBeenCalled()
+  }
+
+  it.each<{ name: string; sig: Request['query']['sig'] }>([
+    { name: 'a missing signature (legacy link)', sig: undefined },
+    { name: 'an empty signature', sig: '' },
+    {
+      name: 'a wrong signature',
+      sig: 'v1.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
+    { name: "another type's signature", sig: 'other-type' },
+    { name: "another user's signature", sig: 'other-user' },
+    { name: 'an array signature', sig: ['x'] },
+  ])('changes nothing for $name', async ({ sig }) => {
+    const signature =
+      sig === 'other-type'
+        ? signUnsubscribe(user.id, 'opt_out_all')
+        : sig === 'other-user'
+        ? signUnsubscribe('someone-else', 'tagged_user')
+        : sig
+    for (const method of ['GET', 'POST']) {
+      jest.clearAllMocks()
+      await call(method, { id: user.id, type: 'tagged_user', sig: signature })
+      expectNoChange()
+      expect(sent()).toContain(
+        '/notifications?tab=settings&amp;section=tagged_user'
+      )
+      expect(sent()).not.toContain(user.email!)
+    }
+  })
+
+  it('only asks for confirmation on GET', async () => {
+    const sig = signUnsubscribe(user.id, 'tagged_user')
+    await call('GET', { id: user.id, type: 'tagged_user', sig })
+    expectNoChange()
+    expect(sent()).toContain('<form method="post"')
+    expect(sent()).toContain(`sig=${sig}`)
+  })
+
+  it('changes nothing when no signing key is configured', async () => {
+    const sig = signUnsubscribe(user.id, 'tagged_user')
+    delete process.env.UNSUBSCRIBE_SIGNING_KEY
+    await call('POST', { id: user.id, type: 'tagged_user', sig })
+    expectNoChange()
+  })
+
+  it('never shows the email address', async () => {
+    for (const type of ['tagged_user', 'opt_out_all']) {
+      jest.clearAllMocks()
+      await invoke({ id: user.id, type })
+      expect(updatePrivateUser).toHaveBeenCalledTimes(1)
+      expect(sent()).not.toContain(user.email!)
+    }
+  })
+
+  it('offers a signed opt-out-all link after a single unsubscribe', async () => {
+    await invoke({ id: user.id, type: 'tagged_user' })
+    expect(sent()).toContain(
+      `sig=${encodeURIComponent(signUnsubscribe(user.id, 'opt_out_all')!)}`
+    )
+  })
+
+  it('builds email links that verify for that user and type only', async () => {
+    const url = new URL(getUnsubscribeUrl(user.id, 'tagged_user'))
+    expect(url.searchParams.get('id')).toBe(user.id)
+    expect(url.searchParams.get('type')).toBe('tagged_user')
+    await call('POST', Object.fromEntries(url.searchParams))
+    expect(updatePrivateUser).toHaveBeenCalledTimes(1)
+
+    const { unsubscribeUrl } = getEmailNotificationDestinations(
+      user,
+      'tagged_user'
+    )
+    expect(new URL(unsubscribeUrl).searchParams.get('sig')).toBe(
+      signUnsubscribe(user.id, 'tagged_user')
+    )
+  })
+
+  it('links to notification settings when no signing key is configured', () => {
+    delete process.env.UNSUBSCRIBE_SIGNING_KEY
+    expect(getUnsubscribeUrl(user.id, 'tagged_user')).toMatch(
+      /\/notifications\?tab=settings&section=tagged_user$/
+    )
+  })
 })
