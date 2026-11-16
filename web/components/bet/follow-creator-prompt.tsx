@@ -165,9 +165,9 @@ type PromptParams = {
 // on the same market can't add a distinct market, so it needn't ask again.
 const ineligibleCreators = new Set<string>()
 const countedCreatorMarkets = new Set<string>()
-// Checks in flight, by user + creator. A fill that lands meanwhile is kept
-// (latest wins) and checked once the current check finishes.
-const pendingCreators = new Map<string, PromptParams | undefined>()
+// Checks in flight, by user + creator. Fills that land meanwhile are kept,
+// one per market, and checked again once the current check finishes.
+const pendingCreators = new Map<string, Map<string, PromptParams>>()
 
 // Straight to localStorage, never via safeLocalStorage, whose setItem clears
 // all of localStorage when a write fails. Unreadable storage returns
@@ -210,14 +210,16 @@ const recordPrompted = (userId: string, creatorId: string) => {
   }
 }
 
-// Makes check-and-record atomic across tabs where the Web Locks API exists.
-async function withPromptLock<T>(userId: string, fn: () => T): Promise<T> {
-  if (typeof navigator !== 'undefined' && navigator.locks) {
-    return navigator.locks.request(`follow-creator-prompt:${userId}`, () =>
-      fn()
-    )
-  }
-  return fn()
+// Runs `fn` under a per-user Web Lock, so the final check, record and show
+// are atomic across tabs. Without the Web Locks API it returns false: no
+// prompt is better than two.
+const withPromptLock = async (userId: string, fn: () => boolean) => {
+  if (typeof navigator === 'undefined' || !navigator.locks) return false
+  const result: unknown = await navigator.locks.request(
+    `follow-creator-prompt:${userId}`,
+    () => fn()
+  )
+  return result === true
 }
 
 // Headless UI portals an open dialog to the body and marks the other body
@@ -254,15 +256,6 @@ const checkAndPrompt = async (params: PromptParams) => {
     return
   }
   if (!(await waitForNoDialog(Date.now() + DIALOG_WAIT_MS))) return
-  if (!isSignedInAs(userId)) return
-  const recorded = await withPromptLock(
-    userId,
-    () =>
-      !hasPrompted(userId, creatorId) &&
-      !isCoolingDown(userId) &&
-      recordPrompted(userId, creatorId)
-  )
-  if (!recorded) return
 
   const tracking: PromptTracking = {
     contractId: contract.id,
@@ -270,25 +263,38 @@ const checkAndPrompt = async (params: PromptParams) => {
     marketsTraded: result.marketsTraded,
     location,
   }
-  track(FOLLOW_CREATOR_PROMPT_SHOWN_EVENT, tracking)
-  toast.custom(
-    (t) => (
-      <FollowCreatorPrompt
-        toastId={t.id}
-        visible={t.visible}
-        userId={userId}
-        creator={{
-          id: creatorId,
-          username: contract.creatorUsername,
-          name: contract.creatorName,
-          avatarUrl: contract.creatorAvatarUrl,
-        }}
-        marketsTraded={result.marketsTraded}
-        tracking={tracking}
-      />
-    ),
-    { id: `follow-creator-prompt-${creatorId}`, duration: PROMPT_DURATION_MS }
-  )
+  // Everything from the last checks to the toast runs synchronously inside
+  // the lock, so nothing can change between checking and showing.
+  await withPromptLock(userId, () => {
+    if (
+      !isSignedInAs(userId) ||
+      isPageBlockedByDialog() ||
+      hasPrompted(userId, creatorId) ||
+      isCoolingDown(userId) ||
+      !recordPrompted(userId, creatorId)
+    )
+      return false
+    track(FOLLOW_CREATOR_PROMPT_SHOWN_EVENT, tracking)
+    toast.custom(
+      (t) => (
+        <FollowCreatorPrompt
+          toastId={t.id}
+          visible={t.visible}
+          userId={userId}
+          creator={{
+            id: creatorId,
+            username: contract.creatorUsername,
+            name: contract.creatorName,
+            avatarUrl: contract.creatorAvatarUrl,
+          }}
+          marketsTraded={result.marketsTraded}
+          tracking={tracking}
+        />
+      ),
+      { id: `follow-creator-prompt-${creatorId}`, duration: PROMPT_DURATION_MS }
+    )
+    return true
+  })
 }
 
 /**
@@ -308,13 +314,14 @@ export const maybePromptToFollowCreator = (params: PromptParams) => {
     countedCreatorMarkets.has(`${creatorKey}:${contract.id}`)
   )
     return
-  if (pendingCreators.has(creatorKey)) {
-    pendingCreators.set(creatorKey, params)
+  const queued = pendingCreators.get(creatorKey)
+  if (queued) {
+    queued.set(contract.id, params)
     return
   }
   if (hasPrompted(userId, creatorId) || isCoolingDown(userId)) return
 
-  pendingCreators.set(creatorKey, undefined)
+  pendingCreators.set(creatorKey, new Map())
   setTimeout(() => {
     checkAndPrompt(params)
       .catch((error) => {
@@ -325,9 +332,11 @@ export const maybePromptToFollowCreator = (params: PromptParams) => {
         )
       })
       .finally(() => {
-        const again = pendingCreators.get(creatorKey)
+        // Markets already counted drop out in the pre-checks; the first new
+        // one starts the next check and the rest queue behind it.
+        const again = [...(pendingCreators.get(creatorKey)?.values() ?? [])]
         pendingCreators.delete(creatorKey)
-        if (again) maybePromptToFollowCreator(again)
+        again.forEach(maybePromptToFollowCreator)
       })
   }, PROMPT_DELAY_MS)
 }

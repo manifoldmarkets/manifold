@@ -7,6 +7,7 @@ const random = load('common/src/util/random.ts', {})
 const abTest = load('common/src/ab-test.ts', { './util/random': random })
 const rules = load('common/src/browse-rollout.ts', { './ab-test': abTest })
 const json = load('common/src/util/json.ts', {})
+const followCreatorPrompt = load('common/src/follow-creator-prompt.ts', {})
 
 function fixture(entries = {}, prefix = 'new-token') {
   const values = new Map(Object.entries(entries))
@@ -15,6 +16,10 @@ function fixture(entries = {}, prefix = 'new-token') {
     setItem: (key, value) => values.set(key, value),
     removeItem: (key) => values.delete(key),
     clear: () => values.clear(),
+    key: (i) => [...values.keys()][i] ?? null,
+    get length() {
+      return values.size
+    },
   }
   let nextToken = 0
   const token = load('web/lib/util/device-token.ts', {
@@ -36,6 +41,7 @@ function logout(store) {
         NATIVE_INFO_LOCAL_KEYS: ['is-native'],
       },
       'common/browse-rollout': rules,
+      'common/follow-creator-prompt': followCreatorPrompt,
       lodash: { uniq: (items) => [...new Set(items)] },
       'web/lib/util/local': {
         safeLocalStorage: store,
@@ -112,9 +118,13 @@ test('blocked local storage does not enroll a new randomized visitor', () => {
 })
 
 test('logout clears account data while preserving the browser assignment and choice', () => {
+  const promptedKey = followCreatorPrompt.followCreatorPromptedKey('u1')
+  const promptedAtKey = followCreatorPrompt.followCreatorPromptedAtKey('u1')
   const { store, token } = fixture({
     CACHED_USER_KEY_V2: 'private account data',
     'is-native': 'true',
+    [promptedKey]: '["creator-1"]',
+    [promptedAtKey]: '1700000000000',
   })
   const history = token.getDeviceHistory()
   const enrollment = rules.enrollBrowseVisitor({
@@ -127,6 +137,9 @@ test('logout clears account data while preserving the browser assignment and cho
   logout(store)
   assert.equal(store.getItem('CACHED_USER_KEY_V2'), null)
   assert.equal(store.getItem('is-native'), 'true')
+  // Creators already suggested to follow stay suggested after logout.
+  assert.equal(store.getItem(promptedKey), '["creator-1"]')
+  assert.equal(store.getItem(promptedAtKey), '1700000000000')
   assert.equal(store.getItem(rules.BROWSE_CHOICE_KEY), '"legacy"')
   assert.equal(
     store.getItem(rules.BROWSE_ENROLLMENT_KEY),

@@ -452,14 +452,19 @@ export const BuyPanelBody = (
       const sharesFilled = updatedBet?.shares ?? submittedBet.shares
       const orderAmount = updatedBet?.orderAmount ?? submittedBet.orderAmount
       // Nothing filled at placement (that case prompts from submitBet), but
-      // the order filled before it expired.
+      // the order filled before it expired. Only for the account that placed
+      // it, and only while that account is still signed in.
       if (
-        user &&
+        user?.id === submittedBet.userId &&
         !(submittedBet.amount > 0) &&
         Number.isFinite(amountFilled) &&
         amountFilled > 0
       ) {
-        maybePromptToFollowCreator({ contract, userId: user.id, location })
+        maybePromptToFollowCreator({
+          contract,
+          userId: submittedBet.userId,
+          location,
+        })
       }
       toast.success(
         `${formatMoney(amountFilled)}/${formatMoney(

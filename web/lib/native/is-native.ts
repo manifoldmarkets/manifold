@@ -49,8 +49,11 @@ export const clearLocalStoragePreservingNativeInfo = () => {
   // explicit layout choice stable through logout, as well as native flags.
   // Also keep the per-account record of creators already suggested to follow
   // (keyed by user id), so signing out and back in doesn't repeat them.
-  const prefixedKeys = Object.keys(localStorage).filter((key) =>
-    key.startsWith(FOLLOW_CREATOR_PROMPT_STORAGE_PREFIX)
+  const prefixedKeys = Array.from({ length: localStorage.length }, (_, i) =>
+    localStorage.key(i)
+  ).filter(
+    (key): key is string =>
+      !!key?.startsWith(FOLLOW_CREATOR_PROMPT_STORAGE_PREFIX)
   )
   const preserved = [
     ...NATIVE_INFO_LOCAL_KEYS,
