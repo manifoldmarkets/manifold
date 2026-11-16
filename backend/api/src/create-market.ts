@@ -160,7 +160,8 @@ export const createMarket: APIHandler<'market'> = onlyUsersWhoCanPerformAction(
 )
 
 // API counterpart to the web UI's getSimilarGroupsToContract suggester,
-// for markets created without groupIds. Off by default — see flag.
+// for markets created without groupIds. On; AUTO_TAG_API_MARKET_CREATIONS is
+// the kill switch.
 async function maybeAutoTagApiMarket(
   pg: SupabaseDirectClient,
   market: Contract,
