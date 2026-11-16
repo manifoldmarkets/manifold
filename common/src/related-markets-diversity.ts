@@ -95,7 +95,7 @@ const THRESHOLD_CONTEXT = new Set([
   'under',
   'exceed',
   'exceeds',
-  'than',
+  'than', // except after "later", "earlier", "sooner": see isThreshold
   'least',
   'most',
   'reach',
@@ -107,32 +107,44 @@ const THRESHOLD_CONTEXT = new Set([
   'surpass',
   'between',
 ])
+const TEMPORAL_COMPARATIVES = new Set(['later', 'earlier', 'sooner'])
+/** Whether a number after these shared tokens is a threshold ("above
+ * $2,000") rather than a point in time ("no later than 2030"). */
+const isThreshold = (before: readonly string[]) => {
+  const last = before[before.length - 1] ?? ''
+  if (last === 'than')
+    return !TEMPORAL_COMPARATIVES.has(before[before.length - 2] ?? '')
+  return THRESHOLD_CONTEXT.has(last)
+}
 
 /** Lowercased tokens of a question: words, numbers (signed, decimals and
  * seasons kept whole), comparison operators and currency or percent signs,
  * which change the question. Diacritics, possessives, other punctuation and
  * thousands separators are dropped so cosmetic differences don't hide a
- * duplicate. */
+ * duplicate. Every spelling of a season ("2026-27", "2026/2027",
+ * "2026 - 2027") becomes "2026-27"; ISO dates and other year ranges are split
+ * into their numbers. */
 export const questionTokens = (question: string): string[] =>
-  (
-    question
-      .normalize('NFKD')
-      .replace(/\p{M}+/gu, '')
-      .toLowerCase()
-      .replace(/['’]s\b/g, '')
-      .replace(/(\d),(?=\d{3}(?!\d))/g, '$1')
-      .replace(/[−–—]/g, '-')
-      .replace(/≥/g, '>=')
-      .replace(/≤/g, '<=')
-      .match(
-        /(?:19|20)\d\d[-/]\d{2,4}(?!\d)|[<>]=?|=|[$€£%]|(?<![\p{L}\p{N}.])-\d+(?:\.\d+)*|[\p{L}\p{N}]+(?:\.\p{N}+)*/gu
-      ) ?? []
-  ).flatMap((token) =>
-    // "2026-11" is not a season: keep its parts separate.
-    /^\d{4}[-/]\d+$/.test(token) && !isSeason(token)
-      ? token.split(/[-/]/)
-      : [token]
-  )
+  question
+    .normalize('NFKD')
+    .replace(/\p{M}+/gu, '')
+    .toLowerCase()
+    .replace(/['’]s\b/g, '')
+    .replace(/(\d),(?=\d{3}(?!\d))/g, '$1')
+    .replace(/[−–—]/g, '-')
+    .replace(/≥/g, '>=')
+    .replace(/≤/g, '<=')
+    .replace(/\b((?:19|20)\d\d)-(\d\d)-(\d\d)\b/g, '$1 $2 $3')
+    .replace(
+      /\b((?:19|20)\d\d)\s*[-/]\s*(\d{4}|\d\d)(?!\d)/g,
+      (_match, first: string, second: string) =>
+        isSeason(`${first}-${second}`)
+          ? `${first}-${String((Number(first) + 1) % 100).padStart(2, '0')}`
+          : `${first} ${second}`
+    )
+    .match(
+      /(?:19|20)\d\d-\d\d(?!\d)|[<>]=?|=|[$€£%]|(?<![\p{L}\p{N}.])-\d+(?:\.\d+)*|[\p{L}\p{N}]+(?:\.\p{N}+)*/gu
+    ) ?? []
 
 /** Same question up to articles, auxiliaries and punctuation. */
 const duplicateKey = (tokens: readonly string[]) =>
@@ -226,7 +238,7 @@ const isEditionSlot = ({ a, b, before }: Slot) =>
   isYearOrSeason(a[0]) &&
   isYearOrSeason(b[0]) &&
   !before.some((token) => MONTHS.has(token)) &&
-  !THRESHOLD_CONTEXT.has(before[before.length - 1] ?? '')
+  !isThreshold(before)
 
 /** How two questions relate as variants of one template, if they do: they
  * share a long frame and differ in numeric slots only (a threshold, a
