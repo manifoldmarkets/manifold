@@ -3,6 +3,9 @@ import {
   FOLLOW_CREATOR_PROMPT_COOLDOWN_MS,
   FOLLOW_CREATOR_PROMPT_EXCLUDED_CREATOR_IDS,
   FOLLOW_CREATOR_PROMPT_MIN_MARKETS,
+  FOLLOW_CREATOR_PROMPT_STORAGE_PREFIX,
+  followCreatorPromptedAtKey,
+  followCreatorPromptedKey,
   isFollowCreatorPromptCoolingDown,
   isFollowCreatorPromptCreatorEligible,
   mayPromptToFollowCreator,
@@ -104,6 +107,24 @@ describe('isFollowCreatorPromptCoolingDown', () => {
 
   it('ignores a timestamp from the future (clock change)', () => {
     expect(isFollowCreatorPromptCoolingDown(now + 60_000, now)).toBe(false)
+  })
+})
+
+describe('storage keys', () => {
+  it('are per user and share the prefix logout preserves', () => {
+    for (const key of [
+      followCreatorPromptedKey('u1'),
+      followCreatorPromptedAtKey('u1'),
+    ]) {
+      expect(key.startsWith(FOLLOW_CREATOR_PROMPT_STORAGE_PREFIX)).toBe(true)
+      expect(key.endsWith('u1')).toBe(true)
+    }
+    expect(followCreatorPromptedKey('u1')).not.toBe(
+      followCreatorPromptedKey('u2')
+    )
+    expect(followCreatorPromptedKey('u1')).not.toBe(
+      followCreatorPromptedAtKey('u1')
+    )
   })
 })
 

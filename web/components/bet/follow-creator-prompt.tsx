@@ -1,6 +1,6 @@
 import { CheckIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
 import { Contract } from 'common/contract'
@@ -10,14 +10,16 @@ import {
   FOLLOW_CREATOR_PROMPT_DISMISS_EVENT,
   FOLLOW_CREATOR_PROMPT_FOLLOW_EVENT,
   FOLLOW_CREATOR_PROMPT_SHOWN_EVENT,
+  followCreatorPromptedAtKey,
+  followCreatorPromptedKey,
   isFollowCreatorPromptCoolingDown,
   mayPromptToFollowCreator,
   parsePromptedCreatorIds,
 } from 'common/follow-creator-prompt'
+import { useUser } from 'web/hooks/use-user'
 import { api, followUser } from 'web/lib/api/api'
 import { auth } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
-import { safeLocalStorage } from 'web/lib/util/local'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -37,23 +39,36 @@ type PromptTracking = {
   location: string
 }
 
+const isSignedInAs = (userId: string) => auth.currentUser?.uid === userId
+
 /**
  * "You've bet on N of X's markets. Follow to hear when they post new ones."
  * Rendered in a toast by `maybePromptToFollowCreator`, so it outlives the
- * trade dialog and never blocks the trade flow.
+ * trade dialog and never blocks the trade flow. It belongs to the account
+ * that traded (`userId`) and closes if that account signs out or switches.
  */
 export function FollowCreatorPrompt(props: {
   toastId: string
   visible: boolean
+  userId: string
   creator: PromptCreator
   marketsTraded: number
   tracking: PromptTracking
 }) {
-  const { toastId, visible, creator, marketsTraded, tracking } = props
+  const { toastId, visible, userId, creator, marketsTraded, tracking } = props
   const [status, setStatus] = useState<'idle' | 'saving' | 'following'>('idle')
+  const user = useUser()
+
+  useEffect(() => {
+    if (user !== undefined && user?.id !== userId) toast.dismiss(toastId)
+  }, [user?.id, userId, toastId])
 
   const follow = async () => {
     if (status !== 'idle') return
+    if (!isSignedInAs(userId)) {
+      toast.dismiss(toastId)
+      return
+    }
     setStatus('saving')
     track(FOLLOW_CREATOR_PROMPT_FOLLOW_EVENT, tracking)
     try {
@@ -68,7 +83,8 @@ export function FollowCreatorPrompt(props: {
   }
 
   const dismiss = () => {
-    if (status === 'idle') track(FOLLOW_CREATOR_PROMPT_DISMISS_EVENT, tracking)
+    if (status === 'idle' && isSignedInAs(userId))
+      track(FOLLOW_CREATOR_PROMPT_DISMISS_EVENT, tracking)
     toast.dismiss(toastId)
   }
 
@@ -126,10 +142,22 @@ export function FollowCreatorPrompt(props: {
 }
 
 // The trade ticket closes itself 3 s after a fill (WAIT_TO_DISMISS in
-// bet-panel.tsx). An open dialog makes the rest of the page inert, so wait
-// for it to close before showing a toast with buttons in it.
+// bet-panel.tsx), so check no sooner than that.
 const PROMPT_DELAY_MS = 3500
 const PROMPT_DURATION_MS = 12000
+// An open dialog makes the rest of the page inert, toast included. Wait this
+// long for it to close; after that, give up without using up the prompt.
+const DIALOG_WAIT_MS = 60_000
+const DIALOG_POLL_MS = 500
+
+type PromptParams = {
+  contract: Pick<
+    Contract,
+    'id' | 'creatorId' | 'creatorUsername' | 'creatorName' | 'creatorAvatarUrl'
+  >
+  userId: string
+  location: string
+}
 
 // Session memory, keyed by user so an account switch starts fresh. Creators
 // the API said not to ask about (already followed, blocked, bots...), and
@@ -137,53 +165,130 @@ const PROMPT_DURATION_MS = 12000
 // on the same market can't add a distinct market, so it needn't ask again.
 const ineligibleCreators = new Set<string>()
 const countedCreatorMarkets = new Set<string>()
-const pendingCreators = new Set<string>()
-// Fallbacks when localStorage is unavailable: at most once per session.
-const promptedThisSession = new Set<string>()
-const lastPromptedAtThisSession = new Map<string, number>()
+// Checks in flight, by user + creator. A fill that lands meanwhile is kept
+// (latest wins) and checked once the current check finishes.
+const pendingCreators = new Map<string, PromptParams | undefined>()
 
-const promptedKey = (userId: string) => `follow-creator-prompted-${userId}`
-const lastPromptedAtKey = (userId: string) =>
-  `follow-creator-prompted-at-${userId}`
+// Straight to localStorage, never via safeLocalStorage, whose setItem clears
+// all of localStorage when a write fails. Unreadable storage returns
+// undefined, and callers then show nothing, so a prompt can't repeat after a
+// reload just because storage was unavailable.
+const readStorage = (key: string): string | null | undefined => {
+  try {
+    return window.localStorage.getItem(key)
+  } catch {
+    return undefined
+  }
+}
 
 const hasPrompted = (userId: string, creatorId: string) => {
-  if (promptedThisSession.has(`${userId}:${creatorId}`)) return true
+  const raw = readStorage(followCreatorPromptedKey(userId))
+  return raw === undefined || parsePromptedCreatorIds(raw).includes(creatorId)
+}
+
+const isCoolingDown = (userId: string) => {
+  const raw = readStorage(followCreatorPromptedAtKey(userId))
+  if (raw === undefined) return true
+  return isFollowCreatorPromptCoolingDown(
+    raw === null ? undefined : Number(raw),
+    Date.now()
+  )
+}
+
+// Records the prompt before it is shown; false (show nothing) unless the
+// write is confirmed.
+const recordPrompted = (userId: string, creatorId: string) => {
   try {
-    return parsePromptedCreatorIds(
-      safeLocalStorage?.getItem(promptedKey(userId))
-    ).includes(creatorId)
+    const storage = window.localStorage
+    const key = followCreatorPromptedKey(userId)
+    const ids = parsePromptedCreatorIds(storage.getItem(key))
+    storage.setItem(key, JSON.stringify(addPromptedCreatorId(ids, creatorId)))
+    storage.setItem(followCreatorPromptedAtKey(userId), String(Date.now()))
+    return parsePromptedCreatorIds(storage.getItem(key)).includes(creatorId)
   } catch {
     return false
   }
 }
 
-const isCoolingDown = (userId: string) => {
-  let lastPromptedAt = lastPromptedAtThisSession.get(userId)
-  try {
-    const stored = Number(safeLocalStorage?.getItem(lastPromptedAtKey(userId)))
-    if (stored > 0 && Number.isFinite(stored))
-      lastPromptedAt = Math.max(lastPromptedAt ?? 0, stored)
-  } catch {
-    // Unreadable storage: rely on the session value.
+// Makes check-and-record atomic across tabs where the Web Locks API exists.
+async function withPromptLock<T>(userId: string, fn: () => T): Promise<T> {
+  if (typeof navigator !== 'undefined' && navigator.locks) {
+    return navigator.locks.request(`follow-creator-prompt:${userId}`, () =>
+      fn()
+    )
   }
-  return isFollowCreatorPromptCoolingDown(lastPromptedAt, Date.now())
+  return fn()
 }
 
-const rememberPrompted = (userId: string, creatorId: string) => {
-  const now = Date.now()
-  promptedThisSession.add(`${userId}:${creatorId}`)
-  lastPromptedAtThisSession.set(userId, now)
-  try {
-    const key = promptedKey(userId)
-    const ids = parsePromptedCreatorIds(safeLocalStorage?.getItem(key))
-    safeLocalStorage?.setItem(
-      key,
-      JSON.stringify(addPromptedCreatorId(ids, creatorId))
-    )
-    safeLocalStorage?.setItem(lastPromptedAtKey(userId), String(now))
-  } catch {
-    // Storage full or blocked: the session values still limit repeats.
+// Headless UI portals an open dialog to the body and marks the other body
+// children (the app root, which holds the toaster) inert. Deeper inert
+// elements, like browse's scrolled-away bars, don't block the toast.
+const isPageBlockedByDialog = () =>
+  !!document.querySelector('[role="dialog"][aria-modal="true"], body > [inert]')
+
+const waitForNoDialog = async (deadline: number) => {
+  while (isPageBlockedByDialog()) {
+    if (Date.now() > deadline) return false
+    await new Promise((resolve) => setTimeout(resolve, DIALOG_POLL_MS))
   }
+  return true
+}
+
+const checkAndPrompt = async (params: PromptParams) => {
+  const { contract, userId, location } = params
+  const creatorId = contract.creatorId
+  const creatorKey = `${userId}:${creatorId}`
+  // The account may change while waiting (sign-out, switch): never let one
+  // account's answer or prompt reach another.
+  if (!isSignedInAs(userId)) return
+  const result = await api('get-follow-creator-prompt', {
+    contractId: contract.id,
+  })
+  if (!isSignedInAs(userId)) return
+  if (!result.eligible) {
+    ineligibleCreators.add(creatorKey)
+    return
+  }
+  if (!result.show) {
+    countedCreatorMarkets.add(`${creatorKey}:${contract.id}`)
+    return
+  }
+  if (!(await waitForNoDialog(Date.now() + DIALOG_WAIT_MS))) return
+  if (!isSignedInAs(userId)) return
+  const recorded = await withPromptLock(
+    userId,
+    () =>
+      !hasPrompted(userId, creatorId) &&
+      !isCoolingDown(userId) &&
+      recordPrompted(userId, creatorId)
+  )
+  if (!recorded) return
+
+  const tracking: PromptTracking = {
+    contractId: contract.id,
+    creatorId,
+    marketsTraded: result.marketsTraded,
+    location,
+  }
+  track(FOLLOW_CREATOR_PROMPT_SHOWN_EVENT, tracking)
+  toast.custom(
+    (t) => (
+      <FollowCreatorPrompt
+        toastId={t.id}
+        visible={t.visible}
+        userId={userId}
+        creator={{
+          id: creatorId,
+          username: contract.creatorUsername,
+          name: contract.creatorName,
+          avatarUrl: contract.creatorAvatarUrl,
+        }}
+        marketsTraded={result.marketsTraded}
+        tracking={tracking}
+      />
+    ),
+    { id: `follow-creator-prompt-${creatorId}`, duration: PROMPT_DURATION_MS }
+  )
 }
 
 /**
@@ -193,85 +298,36 @@ const rememberPrompted = (userId: string, creatorId: string) => {
  * delays the trade flow, asks at most once per creator per browser, and at
  * most once a day.
  */
-export const maybePromptToFollowCreator = (params: {
-  contract: Pick<
-    Contract,
-    'id' | 'creatorId' | 'creatorUsername' | 'creatorName' | 'creatorAvatarUrl'
-  >
-  userId: string
-  location: string
-}) => {
-  const { contract, userId, location } = params
+export const maybePromptToFollowCreator = (params: PromptParams) => {
+  const { contract, userId } = params
   const creatorId = contract.creatorId
   const creatorKey = `${userId}:${creatorId}`
-  const marketKey = `${creatorKey}:${contract.id}`
   if (
     !mayPromptToFollowCreator(userId, creatorId) ||
     ineligibleCreators.has(creatorKey) ||
-    countedCreatorMarkets.has(marketKey) ||
-    pendingCreators.has(creatorKey) ||
-    hasPrompted(userId, creatorId) ||
-    isCoolingDown(userId)
+    countedCreatorMarkets.has(`${creatorKey}:${contract.id}`)
   )
     return
+  if (pendingCreators.has(creatorKey)) {
+    pendingCreators.set(creatorKey, params)
+    return
+  }
+  if (hasPrompted(userId, creatorId) || isCoolingDown(userId)) return
 
-  pendingCreators.add(creatorKey)
-  setTimeout(async () => {
-    try {
-      const result = await api('get-follow-creator-prompt', {
-        contractId: contract.id,
+  pendingCreators.set(creatorKey, undefined)
+  setTimeout(() => {
+    checkAndPrompt(params)
+      .catch((error) => {
+        // Best effort: a failed check just means no prompt this time.
+        console.warn(
+          'follow creator prompt:',
+          error instanceof Error ? error.message : String(error)
+        )
       })
-      if (!result.eligible) {
-        ineligibleCreators.add(creatorKey)
-        return
-      }
-      if (!result.show) {
-        countedCreatorMarkets.add(marketKey)
-        return
-      }
-      // The account may have changed while waiting (sign-out, switch), or
-      // another trade may have shown a prompt in the meantime.
-      if (
-        auth.currentUser?.uid !== userId ||
-        hasPrompted(userId, creatorId) ||
-        isCoolingDown(userId)
-      )
-        return
-
-      rememberPrompted(userId, creatorId)
-      const tracking: PromptTracking = {
-        contractId: contract.id,
-        creatorId,
-        marketsTraded: result.marketsTraded,
-        location,
-      }
-      track(FOLLOW_CREATOR_PROMPT_SHOWN_EVENT, tracking)
-      const toastId = `follow-creator-prompt-${creatorId}`
-      toast.custom(
-        (t) => (
-          <FollowCreatorPrompt
-            toastId={t.id}
-            visible={t.visible}
-            creator={{
-              id: creatorId,
-              username: contract.creatorUsername,
-              name: contract.creatorName,
-              avatarUrl: contract.creatorAvatarUrl,
-            }}
-            marketsTraded={result.marketsTraded}
-            tracking={tracking}
-          />
-        ),
-        { id: toastId, duration: PROMPT_DURATION_MS }
-      )
-    } catch (error) {
-      // Best effort: a failed check just means no prompt this time.
-      console.warn(
-        'follow creator prompt:',
-        error instanceof Error ? error.message : String(error)
-      )
-    } finally {
-      pendingCreators.delete(creatorKey)
-    }
+      .finally(() => {
+        const again = pendingCreators.get(creatorKey)
+        pendingCreators.delete(creatorKey)
+        if (again) maybePromptToFollowCreator(again)
+      })
   }, PROMPT_DELAY_MS)
 }

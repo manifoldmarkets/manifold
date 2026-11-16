@@ -91,6 +91,14 @@ export const meetsFollowCreatorPromptThreshold = (marketsTraded: number) =>
 // can't grow without limit; the oldest entries drop first.
 export const MAX_REMEMBERED_PROMPTED_CREATORS = 500
 
+// localStorage keys, per user. Logout clears localStorage but keeps keys with
+// this prefix (web/lib/native/is-native.ts), so suppression survives sign-out.
+export const FOLLOW_CREATOR_PROMPT_STORAGE_PREFIX = 'follow-creator-prompt:'
+export const followCreatorPromptedKey = (userId: string) =>
+  `${FOLLOW_CREATOR_PROMPT_STORAGE_PREFIX}prompted:${userId}`
+export const followCreatorPromptedAtKey = (userId: string) =>
+  `${FOLLOW_CREATOR_PROMPT_STORAGE_PREFIX}prompted-at:${userId}`
+
 export const parsePromptedCreatorIds = (
   raw: string | null | undefined
 ): string[] => {

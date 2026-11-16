@@ -451,6 +451,16 @@ export const BuyPanelBody = (
       const amountFilled = updatedBet?.amount ?? submittedBet.amount
       const sharesFilled = updatedBet?.shares ?? submittedBet.shares
       const orderAmount = updatedBet?.orderAmount ?? submittedBet.orderAmount
+      // Nothing filled at placement (that case prompts from submitBet), but
+      // the order filled before it expired.
+      if (
+        user &&
+        !(submittedBet.amount > 0) &&
+        Number.isFinite(amountFilled) &&
+        amountFilled > 0
+      ) {
+        maybePromptToFollowCreator({ contract, userId: user.id, location })
+      }
       toast.success(
         `${formatMoney(amountFilled)}/${formatMoney(
           orderAmount
