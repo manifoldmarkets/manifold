@@ -1,7 +1,5 @@
-import * as admin from 'firebase-admin'
-import * as sharp from 'sharp'
 import { JSONContent } from '@tiptap/core'
-import { getUser, log } from 'shared/utils'
+import { getUser } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
@@ -15,7 +13,6 @@ import {
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
-import { randomString } from 'common/util/random'
 import { followContractInternal } from 'api/follow-contract'
 
 export const onCreateMarket = async (
@@ -80,66 +77,4 @@ export const onCreateMarket = async (
       groupIds.map(async (groupId) => upsertGroupEmbedding(pg, groupId))
     )
   }
-
-  // await uploadAndSetCoverImage(pg, question, contract.id, creatorUsername)
-}
-
-// const uploadAndSetCoverImage = async (
-//   pg: SupabaseDirectClient,
-//   question: string,
-//   contractId: string,
-//   creatorUsername: string
-// ) => {
-//   const dalleImage = await generateImage(question)
-//   if (!dalleImage) return
-//   log('generated dalle image: ' + dalleImage)
-
-//   // Upload to firestore bucket. if we succeed, update the url. we do this because openAI deletes images after a month
-//   const coverImageUrl = await uploadImageToStorage(
-//     dalleImage,
-//     `contract-images/${creatorUsername}`
-//   ).catch((err) => {
-//     log.error('Failed to load image', err)
-//     return null
-//   })
-//   if (!coverImageUrl) return
-
-//   await updateContract(pg, contractId, { coverImageUrl })
-// }
-
-export const uploadImageToStorage = async (imgUrl: string, prefix: string) => {
-  const response = await fetch(imgUrl)
-
-  const arrayBuffer = await response.arrayBuffer()
-  const inputBuffer = Buffer.from(arrayBuffer)
-
-  const buffer = await sharp(inputBuffer)
-    .toFormat('jpeg', { quality: 60 })
-    .toBuffer()
-
-  const bucket = admin.storage().bucket()
-  await bucket.makePublic()
-
-  const file = bucket.file(`${prefix}/${randomString()}.jpg`)
-
-  return new Promise<string>((resolve, reject) => {
-    const stream = file.createWriteStream({
-      metadata: {
-        contentType: 'image/jpg',
-        predefinedAcl: 'publicRead',
-      },
-    })
-
-    stream.on('error', (err) => {
-      reject(err)
-    })
-
-    stream.on('finish', () => {
-      log('Image upload completed')
-      const url = file.publicUrl()
-      resolve(url.replace(/%2F/g, '/'))
-    })
-
-    stream.end(buffer)
-  })
 }
