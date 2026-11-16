@@ -10,6 +10,7 @@ import {
   FOLLOW_CREATOR_PROMPT_DISMISS_EVENT,
   FOLLOW_CREATOR_PROMPT_FOLLOW_EVENT,
   FOLLOW_CREATOR_PROMPT_SHOWN_EVENT,
+  isFollowCreatorPromptCoolingDown,
   mayPromptToFollowCreator,
   parsePromptedCreatorIds,
 } from 'common/follow-creator-prompt'
@@ -130,40 +131,58 @@ export function FollowCreatorPrompt(props: {
 const PROMPT_DELAY_MS = 3500
 const PROMPT_DURATION_MS = 12000
 
-// Session memory. Creators the API said never to ask about this session
-// (already followed, blocked, bots...), and (creator, market) pairs already
-// counted below the threshold: another trade on the same market can't add a
-// distinct market, so it needn't ask again.
-const ineligibleCreatorIds = new Set<string>()
+// Session memory, keyed by user so an account switch starts fresh. Creators
+// the API said not to ask about (already followed, blocked, bots...), and
+// (creator, market) pairs already counted below the threshold: another trade
+// on the same market can't add a distinct market, so it needn't ask again.
+const ineligibleCreators = new Set<string>()
 const countedCreatorMarkets = new Set<string>()
-const pendingCreatorIds = new Set<string>()
-// Fallback when localStorage is unavailable: at most once per session.
+const pendingCreators = new Set<string>()
+// Fallbacks when localStorage is unavailable: at most once per session.
 const promptedThisSession = new Set<string>()
+const lastPromptedAtThisSession = new Map<string, number>()
 
-const storageKey = (userId: string) => `follow-creator-prompted-${userId}`
+const promptedKey = (userId: string) => `follow-creator-prompted-${userId}`
+const lastPromptedAtKey = (userId: string) =>
+  `follow-creator-prompted-at-${userId}`
 
 const hasPrompted = (userId: string, creatorId: string) => {
   if (promptedThisSession.has(`${userId}:${creatorId}`)) return true
   try {
     return parsePromptedCreatorIds(
-      safeLocalStorage?.getItem(storageKey(userId))
+      safeLocalStorage?.getItem(promptedKey(userId))
     ).includes(creatorId)
   } catch {
     return false
   }
 }
 
-const rememberPrompted = (userId: string, creatorId: string) => {
-  promptedThisSession.add(`${userId}:${creatorId}`)
+const isCoolingDown = (userId: string) => {
+  let lastPromptedAt = lastPromptedAtThisSession.get(userId)
   try {
-    const key = storageKey(userId)
+    const stored = Number(safeLocalStorage?.getItem(lastPromptedAtKey(userId)))
+    if (stored > 0 && Number.isFinite(stored))
+      lastPromptedAt = Math.max(lastPromptedAt ?? 0, stored)
+  } catch {
+    // Unreadable storage: rely on the session value.
+  }
+  return isFollowCreatorPromptCoolingDown(lastPromptedAt, Date.now())
+}
+
+const rememberPrompted = (userId: string, creatorId: string) => {
+  const now = Date.now()
+  promptedThisSession.add(`${userId}:${creatorId}`)
+  lastPromptedAtThisSession.set(userId, now)
+  try {
+    const key = promptedKey(userId)
     const ids = parsePromptedCreatorIds(safeLocalStorage?.getItem(key))
     safeLocalStorage?.setItem(
       key,
       JSON.stringify(addPromptedCreatorId(ids, creatorId))
     )
+    safeLocalStorage?.setItem(lastPromptedAtKey(userId), String(now))
   } catch {
-    // Storage full or blocked: the session set still limits repeats.
+    // Storage full or blocked: the session values still limit repeats.
   }
 }
 
@@ -171,7 +190,8 @@ const rememberPrompted = (userId: string, creatorId: string) => {
  * Call after a trade on `contract` fills (amount > 0). If the trader has now
  * traded on several of the creator's markets and doesn't follow them, shows a
  * one-time toast offering to follow. Fire-and-forget: never throws, never
- * delays the trade flow, and asks at most once per creator per browser.
+ * delays the trade flow, asks at most once per creator per browser, and at
+ * most once a day.
  */
 export const maybePromptToFollowCreator = (params: {
   contract: Pick<
@@ -183,32 +203,39 @@ export const maybePromptToFollowCreator = (params: {
 }) => {
   const { contract, userId, location } = params
   const creatorId = contract.creatorId
-  const marketKey = `${creatorId}:${contract.id}`
+  const creatorKey = `${userId}:${creatorId}`
+  const marketKey = `${creatorKey}:${contract.id}`
   if (
     !mayPromptToFollowCreator(userId, creatorId) ||
-    ineligibleCreatorIds.has(creatorId) ||
+    ineligibleCreators.has(creatorKey) ||
     countedCreatorMarkets.has(marketKey) ||
-    pendingCreatorIds.has(creatorId) ||
-    hasPrompted(userId, creatorId)
+    pendingCreators.has(creatorKey) ||
+    hasPrompted(userId, creatorId) ||
+    isCoolingDown(userId)
   )
     return
 
-  pendingCreatorIds.add(creatorId)
+  pendingCreators.add(creatorKey)
   setTimeout(async () => {
     try {
       const result = await api('get-follow-creator-prompt', {
         contractId: contract.id,
       })
       if (!result.eligible) {
-        ineligibleCreatorIds.add(creatorId)
+        ineligibleCreators.add(creatorKey)
         return
       }
       if (!result.show) {
         countedCreatorMarkets.add(marketKey)
         return
       }
-      // The account may have changed while waiting (sign-out, switch).
-      if (auth.currentUser?.uid !== userId || hasPrompted(userId, creatorId))
+      // The account may have changed while waiting (sign-out, switch), or
+      // another trade may have shown a prompt in the meantime.
+      if (
+        auth.currentUser?.uid !== userId ||
+        hasPrompted(userId, creatorId) ||
+        isCoolingDown(userId)
+      )
         return
 
       rememberPrompted(userId, creatorId)
@@ -244,7 +271,7 @@ export const maybePromptToFollowCreator = (params: {
         error instanceof Error ? error.message : String(error)
       )
     } finally {
-      pendingCreatorIds.delete(creatorId)
+      pendingCreators.delete(creatorKey)
     }
   }, PROMPT_DELAY_MS)
 }

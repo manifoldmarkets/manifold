@@ -9,6 +9,22 @@
 export const FOLLOW_CREATOR_PROMPT_MIN_MARKETS = 3
 
 /**
+ * Minimum gap between two prompts (for different creators) to one user. Some
+ * traders qualify for dozens of creators at once (prod, Nov 2026: p90 8,
+ * max 92), so without a gap they could see several prompts in one session.
+ */
+export const FOLLOW_CREATOR_PROMPT_COOLDOWN_MS = 24 * 60 * 60 * 1000
+
+export const isFollowCreatorPromptCoolingDown = (
+  lastPromptedAt: number | undefined,
+  now: number
+) =>
+  lastPromptedAt !== undefined &&
+  Number.isFinite(lastPromptedAt) &&
+  now - lastPromptedAt >= 0 &&
+  now - lastPromptedAt < FOLLOW_CREATOR_PROMPT_COOLDOWN_MS
+
+/**
  * Official accounts that post hundreds of markets a month. Followers get an
  * in-app notification per new market, so never suggest following these.
  */

@@ -1,7 +1,9 @@
 import {
   addPromptedCreatorId,
+  FOLLOW_CREATOR_PROMPT_COOLDOWN_MS,
   FOLLOW_CREATOR_PROMPT_EXCLUDED_CREATOR_IDS,
   FOLLOW_CREATOR_PROMPT_MIN_MARKETS,
+  isFollowCreatorPromptCoolingDown,
   isFollowCreatorPromptCreatorEligible,
   mayPromptToFollowCreator,
   meetsFollowCreatorPromptThreshold,
@@ -74,6 +76,34 @@ describe('meetsFollowCreatorPromptThreshold', () => {
   it('rejects non-finite counts', () => {
     expect(meetsFollowCreatorPromptThreshold(NaN)).toBe(false)
     expect(meetsFollowCreatorPromptThreshold(Infinity)).toBe(false)
+  })
+})
+
+describe('isFollowCreatorPromptCoolingDown', () => {
+  const now = 1_800_000_000_000
+  it('is off with no previous prompt', () => {
+    expect(isFollowCreatorPromptCoolingDown(undefined, now)).toBe(false)
+    expect(isFollowCreatorPromptCoolingDown(NaN, now)).toBe(false)
+  })
+
+  it('holds for the cooldown, then releases', () => {
+    expect(isFollowCreatorPromptCoolingDown(now, now)).toBe(true)
+    expect(
+      isFollowCreatorPromptCoolingDown(
+        now - FOLLOW_CREATOR_PROMPT_COOLDOWN_MS + 1,
+        now
+      )
+    ).toBe(true)
+    expect(
+      isFollowCreatorPromptCoolingDown(
+        now - FOLLOW_CREATOR_PROMPT_COOLDOWN_MS,
+        now
+      )
+    ).toBe(false)
+  })
+
+  it('ignores a timestamp from the future (clock change)', () => {
+    expect(isFollowCreatorPromptCoolingDown(now + 60_000, now)).toBe(false)
   })
 })
 
