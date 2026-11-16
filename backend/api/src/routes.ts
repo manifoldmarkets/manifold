@@ -28,6 +28,7 @@ import { getSeenMarketIds } from 'api/get-seen-market-ids'
 import { getTopMarketsYesterday } from 'api/get-top-markets-yesterday'
 import { getGroupsWithTopContracts } from 'api/get-topics-with-markets'
 import { getTotalLoanAmount } from 'api/get-total-loan-amount'
+import { getFollowCreatorPrompt } from 'api/get-follow-creator-prompt'
 import { getTxnSummaryStats } from 'api/get-txn-summary-stats'
 import { getUnifiedFeed } from 'api/get-unified-feed'
 import { getUniqueBetGroupCount } from 'api/get-unique-bet-groups'
@@ -466,6 +467,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'request-loan': requestLoan,
   'repay-loan': repayLoan,
   'get-total-loan-amount': getTotalLoanAmount,
+  'get-follow-creator-prompt': getFollowCreatorPrompt,
   'get-related-markets': getRelatedMarkets,
   'get-related-markets-by-group': getRelatedMarketsByGroup,
   'get-market-context': getMarketContext,

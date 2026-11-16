@@ -78,6 +78,7 @@ import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { SliderColor } from '../widgets/slider'
 import { Tooltip } from '../widgets/tooltip'
+import { maybePromptToFollowCreator } from './follow-creator-prompt'
 import LimitOrderPanel from './limit-order-panel'
 import { MoneyDisplay } from './money-display'
 import {
@@ -697,6 +698,10 @@ export const BuyPanelBody = (
         }, expiresMillisAfter + 100)
       }
       setBetAmount(undefined)
+      // Anything filled at placement is a trade on this creator's market.
+      if (Number.isFinite(bet.amount) && bet.amount > 0) {
+        maybePromptToFollowCreator({ contract, userId: user.id, location })
+      }
     } catch (e) {
       if (e instanceof APIError) {
         const message = e.message.toString()

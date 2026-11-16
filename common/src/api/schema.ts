@@ -45,6 +45,7 @@ import {
   Topic,
 } from 'common/group'
 import { MARKET_LINK_RELATIONS, MarketLinks } from 'common/market-links'
+import type { FollowCreatorPromptResult } from 'common/follow-creator-prompt'
 import {
   JOB_INTERESTS,
   JOB_REGIONS,
@@ -1862,6 +1863,18 @@ export const API = (_apiTypeCheck = {
         limit: z.coerce.number().gte(0).lte(100).default(100),
         before: z.coerce.number().optional(),
         after: z.coerce.number().optional(),
+      })
+      .strict(),
+  },
+  // After a trade: should the trader be asked to follow the market's creator?
+  'get-follow-creator-prompt': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as FollowCreatorPromptResult,
+    props: z
+      .object({
+        contractId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX),
       })
       .strict(),
   },

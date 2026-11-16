@@ -40,6 +40,7 @@ import DropdownMenu from '../widgets/dropdown-menu'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProbabilitySlider } from '../widgets/probability-input'
 import { SliderColor } from '../widgets/slider'
+import { maybePromptToFollowCreator } from './follow-creator-prompt'
 import { MoneyDisplay } from './money-display'
 import { ShareBetModal } from './share-bet'
 
@@ -333,6 +334,11 @@ export default function LimitOrderPanel(props: {
         answerId: multiProps?.answerToBuy.id,
         token: contract.token,
       })
+      // Only the part filled at placement is a trade yet; a resting order
+      // that fills later doesn't prompt.
+      if (Number.isFinite(bet.amount) && bet.amount > 0) {
+        maybePromptToFollowCreator({ contract, userId: user.id, location })
+      }
       setLastBetDetails(fullBet)
       setIsSharing(false)
       setTimeout(() => {
