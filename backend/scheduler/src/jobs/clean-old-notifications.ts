@@ -17,12 +17,15 @@ export async function cleanOldNotifications() {
   // a run since 2026-10-04 because the scheduler was restarting under it.
   // One pass over the (user_id, notification_id) primary key finds the users
   // that matter in a couple of minutes; the delete then runs over ~19 chunks.
+  // The newsletter invitation is never deleted (see below), so it doesn't count
+  // towards the cap.
   const userIds = await pg.map(
     `select user_id
      from user_notifications
+     where notification_id <> $2
      group by user_id
      having count(*) > $1`,
-    [MAX_NOTIFICATIONS_PER_USER],
+    [MAX_NOTIFICATIONS_PER_USER, NEWSLETTER_NOTIFICATION_ID],
     (r) => r.user_id as string
   )
   log(
