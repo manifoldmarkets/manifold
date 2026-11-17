@@ -134,13 +134,37 @@ export const questionTokens = (question: string): string[] =>
     .replace(/[−–—]/g, '-')
     .replace(/≥/g, '>=')
     .replace(/≤/g, '<=')
-    .replace(/\b((?:19|20)\d\d)-(\d\d)-(\d\d)\b/g, '$1 $2 $3')
+    // ISO dates become three numbers; the "_" (dropped below) keeps the
+    // season step from reading "2006-07-17" as the 2006-07 season.
+    .replace(/\b((?:19|20)\d\d)-(\d\d)-(\d\d)\b/g, '$1 _$2 _$3')
     .replace(
-      /\b((?:19|20)\d\d)\s*[-/]\s*(\d{4}|\d\d)(?!\d)/g,
-      (_match, first: string, second: string) =>
-        isSeason(`${first}-${second}`)
-          ? `${first}-${String((Number(first) + 1) % 100).padStart(2, '0')}`
-          : `${first} ${second}`
+      // A year, then another number, apart from a decimal or a percentage.
+      /\b((?:19|20)\d\d)(\s*)([-/]?)(\s*)(\d{4}|\d\d)(?![\d.%])/g,
+      (
+        match: string,
+        first: string,
+        spaceBefore: string,
+        separator: string,
+        spaceAfter: string,
+        second: string
+      ) => {
+        const season = `${first}-${String((Number(first) + 1) % 100).padStart(
+          2,
+          '0'
+        )}`
+        const consecutive = isSeason(`${first}-${second}`)
+        // "2025 26": a season only with a space and a two-digit next year.
+        if (!separator)
+          return spaceBefore && second.length === 2 && consecutive
+            ? season
+            : match
+        // "2025-26", "2025/2026", "2025 - 26". Spacing on one side only
+        // ("2026 -27") reads as a signed number, not a season.
+        if (consecutive && !spaceBefore === !spaceAfter) return season
+        // Leave a spaced minus alone: it may be a sign ("2026 -10").
+        // "2026-11" or "2026-2030" are two numbers.
+        return spaceBefore || spaceAfter ? match : `${first} ${second}`
+      }
     )
     .match(
       /(?:19|20)\d\d-\d\d(?!\d)|[<>]=?|=|[$€£%]|(?<![\p{L}\p{N}.])-\d+(?:\.\d+)*|[\p{L}\p{N}]+(?:\.\p{N}+)*/gu

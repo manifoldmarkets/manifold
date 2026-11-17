@@ -82,6 +82,51 @@ describe('questionTokens', () => {
   })
 })
 
+describe('questionTokens: seasons and signs next to a year', () => {
+  it('reads a space-separated consecutive year pair as a season', () => {
+    for (const spelling of ['2025 26', '2025-26', '2025/2026', '2025 - 26'])
+      expect(questionTokens(`the ${spelling} season`)).toEqual([
+        'the',
+        '2025-26',
+        'season',
+      ])
+  })
+
+  it('does not read other year-number pairs as seasons', () => {
+    expect(questionTokens('the 2025 -26 season')).toEqual([
+      'the',
+      '2025',
+      '-26',
+      'season',
+    ])
+    expect(questionTokens('December 31, 2026 26 markets')).toEqual([
+      'december',
+      '31',
+      '2026',
+      '26',
+      'markets',
+    ])
+    expect(questionTokens('in 2026 1000 people')).toEqual([
+      'in',
+      '2026',
+      '1000',
+      'people',
+    ])
+  })
+
+  it('keeps the sign of a percentage or decimal right after a year', () => {
+    expect(
+      questionTokens('Will the S&P 500 finish 2026 -10% or worse?')
+    ).toContain('-10')
+    expect(
+      questionTokens('Will the S&P 500 finish 2026 -10.5% or worse?')
+    ).toContain('-10.5')
+    expect(
+      questionTokens('Will the S&P 500 finish 2026 -27% or worse?')
+    ).toContain('-27')
+  })
+})
+
 describe('templateVariantKind', () => {
   it('treats a different subject in a shared frame as a worded variant', () => {
     expect(kind(exportBan('gallium'), exportBan('indium'))).toBe('worded')
@@ -144,6 +189,15 @@ describe('templateVariantKind', () => {
       expect(kind(season(a), season(b))).toBeUndefined()
       expect(kind(season(b), season(a))).toBeUndefined()
     }
+  })
+
+  it('treats separator-free seasons as editions too', () => {
+    expect(
+      kind(
+        'Will Arsenal win the Premier League title in the 2025 26 season?',
+        'Will Arsenal win the Premier League title in the 2026 27 season?'
+      )
+    ).toBeUndefined()
   })
 
   it('treats "no later than <year>" as a horizon, not a threshold', () => {
@@ -382,6 +436,38 @@ describe('collapseNearDuplicateRelatedMarkets', () => {
         )
       )
     ).toEqual(['Will Arsenal win the 2026-27 Premier League?'])
+  })
+
+  it('collapses a separator-free season with its hyphenated spelling', () => {
+    expect(
+      questions(
+        collapseNearDuplicateRelatedMarkets(
+          { question: 'unrelated', creatorId: 'x' },
+          [
+            market('Will Arsenal win the 2025 26 Premier League?', 'a'),
+            market('Will Arsenal win the 2025-26 Premier League?', 'b'),
+          ]
+        )
+      )
+    ).toEqual(['Will Arsenal win the 2025 26 Premier League?'])
+  })
+
+  it('keeps a negative percentage apart from the positive one, across creators', () => {
+    const candidates = [
+      market('Will the S&P 500 finish 2026 10% or worse?', 'a'),
+      market('Will the S&P 500 finish 2026 -10.5% or worse?', 'b'),
+    ]
+    expect(
+      questions(
+        collapseNearDuplicateRelatedMarkets(
+          {
+            question: 'Will the S&P 500 finish 2026 -10% or worse?',
+            creatorId: 'x',
+          },
+          candidates
+        )
+      )
+    ).toEqual(questions(candidates))
   })
 
   it('collapses a threshold ladder whose prices look like years', () => {
