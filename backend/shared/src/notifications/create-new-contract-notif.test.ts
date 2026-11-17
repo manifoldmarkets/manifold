@@ -506,6 +506,40 @@ describe('createNewContractNotification', () => {
     ])
   })
 
+  it('emails followers on a retry after a failed count left only a mention', async () => {
+    await addUser('a', { email: 'a@example.com', emailOn: true })
+    await addUser('b')
+    await follow('a')
+    await follow('b')
+    failCount = true
+    const id = await createMarket(nov17(0), { mentioned: ['b'] })
+    expect(await rowsFor('a')).toEqual([])
+    expect(testGlobals.__notifTestEmails).toEqual([])
+    failCount = false
+    const contract = {
+      id,
+      slug: `slug-${id}`,
+      question: `Question ${id}?`,
+      visibility: 'public',
+      creatorId: CREATOR.id,
+      creatorUsername: CREATOR.username,
+    } as Contract
+    await createNewContractNotification(
+      CREATOR,
+      contract,
+      `${id}-on-create`,
+      '',
+      ['b']
+    )
+    expect((await rowsFor('a')).map((r) => r.data.reason)).toEqual([
+      'contract_from_followed_user',
+    ])
+    expect(broadcastsTo('b')).toHaveLength(1)
+    expect(testGlobals.__notifTestEmails).toEqual([
+      { subject: `Mikhail asked Question ${id}?`, to: ['a@example.com'] },
+    ])
+  })
+
   it('respects a follower who turned the in-app notification off', async () => {
     await addUser('a', { browserOn: false })
     await follow('a')

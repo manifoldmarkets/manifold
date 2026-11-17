@@ -224,12 +224,18 @@ export const createNewContractNotification = async (
 
   const inserted = await insertNotificationsIfAbsent(bulkNotifications, pg)
 
-  // If any of this market's own rows was already there, it has been notified
-  // before (a replay): don't email again. A replay used to stop here too,
-  // on the duplicate insert.
-  const marketRows = bulkNotifications.filter((n) => n.id === idempotencyKey)
-  const insertedMarketRows = inserted.filter((n) => n.id === idempotencyKey)
-  if (insertedMarketRows.length < marketRows.length) {
+  // If a follower's row for this market was already there, its followers
+  // have been notified before (a replay): don't email them again. A replay
+  // used to stop here too, on the duplicate insert. Only follower rows count:
+  // a mention row can come from a run that notified no follower (a failed
+  // count). Followers who only get email leave no row, so a replay still
+  // reaches them, as before.
+  const isFollowerRow = (n: Notification) =>
+    n.id === idempotencyKey && n.reason === 'contract_from_followed_user'
+  if (
+    inserted.filter(isFollowerRow).length <
+    bulkNotifications.filter(isFollowerRow).length
+  ) {
     if (bulkEmails.length > 0)
       log.warn(
         `New-question notifications: ${contract.id} was already notified; not emailing again`
