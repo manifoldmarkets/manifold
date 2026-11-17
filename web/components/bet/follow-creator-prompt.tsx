@@ -307,19 +307,23 @@ const checkAndPrompt = async (params: PromptParams) => {
   // Already recorded; show it as soon as the page allows. (A tab closed in
   // the meantime still loses it: the record comes first so that a second
   // device can't show the same prompt.)
-  const answeredAt = Date.now()
-  if (!(await waitForNoDialog(answeredAt + RECORDED_PROMPT_WAIT_MS, userId)))
-    return
-  if (!isSignedInAs(userId)) return
   // After a long wait the answer may be out of date: skip the toast if the
   // user followed the creator meanwhile. If the check fails, show it as
   // answered (following again is harmless). The bet count isn't rechecked:
-  // it was true when the server answered.
-  if (Date.now() - answeredAt > RECHECK_FOLLOW_AFTER_MS) {
+  // it only grows, so it can be low but never too high. A dialog can open
+  // while the follow is checked, so wait again; the toast shows only right
+  // after a wait that found the page clear.
+  const answeredAt = Date.now()
+  const deadline = answeredAt + RECORDED_PROMPT_WAIT_MS
+  for (;;) {
+    if (!(await waitForNoDialog(deadline, userId))) return
+    if (!isSignedInAs(userId)) return
+    if (Date.now() - answeredAt <= RECHECK_FOLLOW_AFTER_MS) break
     const followingNow = await getUserIsFollowing(userId, creatorId).catch(
       () => false
     )
     if (followingNow || !isSignedInAs(userId)) return
+    if (!isPageBlockedByDialog()) break
   }
 
   const tracking: PromptTracking = {
