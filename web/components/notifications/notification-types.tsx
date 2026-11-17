@@ -23,6 +23,7 @@ import {
   MANIFOLD_USER_USERNAME,
 } from 'common/user'
 import { formatMoney, formatMoneyUSD } from 'common/util/format'
+import { OFFER_MAX_DISCOUNT_PCT } from 'common/personalized-mana-offer'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
@@ -2480,6 +2481,14 @@ function PersonalizedManaOfferNotification(props: {
   setHighlighted: (highlighted: boolean) => void
 }) {
   const { notification, highlighted, setHighlighted } = props
+  // The stored text bakes in the discount on offer at send time ("up to 30%
+  // off" while crypto was on). Show today's best discount instead: an offer
+  // stays redeemable until 72h after it's opened, so an old notification
+  // could otherwise promise a price checkout no longer has.
+  const text = (notification.sourceText ?? '').replace(
+    /up to \d+% off/,
+    `up to ${OFFER_MAX_DISCOUNT_PCT}% off`
+  )
   return (
     <NotificationFrame
       notification={notification}
@@ -2496,7 +2505,7 @@ function PersonalizedManaOfferNotification(props: {
         </span>
       }
     >
-      <span>{notification.sourceText}</span>
+      <span>{text}</span>
     </NotificationFrame>
   )
 }
