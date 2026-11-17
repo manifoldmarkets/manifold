@@ -5,7 +5,6 @@ import { groupPath } from './group'
 import { league_user_info } from './leagues'
 import { PAST_BET } from './user'
 import { notification_preference } from './user-notification-preferences'
-import { NEW_QUESTION_NOTIFICATIONS_PER_CREATOR_PER_DAY } from './new-question-notifications'
 
 export type NotificationGroup = {
   notifications: Notification[]
@@ -203,7 +202,7 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   },
   contract_from_followed_user: {
     simple: 'New questions from users you follow',
-    detailed: `New questions from users you follow. If one creates more than ${NEW_QUESTION_NOTIFICATIONS_PER_CREATOR_PER_DAY} questions in a day (Pacific time), you get one notification for the rest of that day's questions.`,
+    detailed: 'New questions from users you follow',
   },
   limit_order_fills: {
     simple: 'Limit order fills, expirations, and cancellations',

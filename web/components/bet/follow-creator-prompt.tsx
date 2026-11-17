@@ -206,8 +206,11 @@ export function FollowCreatorPrompt(props: {
 const PROMPT_DELAY_MS = 3500
 const PROMPT_DURATION_MS = 12000
 // An open dialog makes the rest of the page inert, toast included. Wait this
-// long for it to close; after that, give up.
+// long for it to close before asking the server; after that, give up.
 const DIALOG_WAIT_MS = 60_000
+// Once the server has recorded the prompt, giving up would use up the day's
+// prompt and the creator's 30 days unseen, so wait much longer to show it.
+const RECORDED_PROMPT_WAIT_MS = 30 * 60_000
 const DIALOG_POLL_MS = 500
 
 type PromptParams = {
@@ -296,8 +299,10 @@ const checkAndPrompt = async (params: PromptParams) => {
     return
   }
   const why = result.why
-  // Already recorded; show it as soon as the page allows.
-  if (!(await waitForNoDialog(Date.now() + DIALOG_WAIT_MS))) return
+  // Already recorded; show it as soon as the page allows. (A tab closed in
+  // the meantime still loses it: the record comes first so that a second
+  // device can't show the same prompt.)
+  if (!(await waitForNoDialog(Date.now() + RECORDED_PROMPT_WAIT_MS))) return
   if (!isSignedInAs(userId)) return
 
   const tracking: PromptTracking = {

@@ -56,8 +56,14 @@ export const insertNotificationsIfAbsent = async (
   const byKey = new Map(
     notifications.map((n) => [`${n.userId}\u0000${n.id}`, n] as const)
   )
+  // Insert in key order: two runs inserting the same keys at once (two of a
+  // bulk creator's markets writing the day's digest rows) then wait on each
+  // other's rows in the same order instead of deadlocking.
+  const sorted = [...byKey.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([, n]) => n)
   const inserted: Notification[] = []
-  for (const batch of chunk([...byKey.values()], 25000)) {
+  for (const batch of chunk(sorted, 25000)) {
     const query = bulkInsertQuery(
       'user_notifications',
       batch.map((n) => ({ user_id: n.userId, notification_id: n.id, data: n })),
