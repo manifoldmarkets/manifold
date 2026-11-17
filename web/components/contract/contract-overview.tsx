@@ -23,11 +23,13 @@ import {
   getMainBinaryMCAnswer,
   isBinaryMulti,
   isMultiCpmm,
+  isSportsContract,
   tradingAllowed,
 } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { Period, periodDurations } from 'common/period'
 import { getIsLive } from 'common/sports-info'
+import { gameStartLabel } from 'common/sports-venues'
 import { NEW_GRAPH_COLOR } from 'common/src/number'
 import { type ChartAnnotation } from 'common/supabase/chart-annotations'
 import { filterDefined } from 'common/util/array'
@@ -959,6 +961,9 @@ const BinaryChoiceOverview = (props: {
   const mainAnswer = getMainBinaryMCAnswer(contract)!
   const betPoints = mainAnswer ? props.points[mainAnswer.id] : []
   const leadingAnswer = orderBy(answers, 'prob', 'desc')[0]
+  const gameStart = isSportsContract(contract)
+    ? gameStartLabel(contract)
+    : undefined
   return (
     <>
       {!contract.isResolved && (
@@ -967,11 +972,17 @@ const BinaryChoiceOverview = (props: {
             {leadingAnswer.text}
           </span>
           <span>{formatPercent(leadingAnswer.prob)}</span>
-          {getIsLive(contract) && (
+          {getIsLive(contract) ? (
             <Row className="items-center  gap-2 text-base text-red-500">
               <div className="ml-2 h-2 w-2 animate-pulse rounded-full bg-red-500" />
               Live
             </Row>
+          ) : (
+            gameStart && (
+              <span className="text-ink-500 ml-2 self-center text-base">
+                {gameStart}
+              </span>
+            )
           )}
         </Row>
       )}
