@@ -99,6 +99,7 @@ export type notification_source_types =
   | 'charity_champion'
   | 'merch_order_update'
   | 'personalized_mana_offer'
+  | 'newsletter'
 
 export type love_notification_source_types =
   | 'love_contract'
