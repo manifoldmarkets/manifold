@@ -638,7 +638,12 @@ function NewsletterNotification(props: {
   const isPinned = notification.markedAsRead === false
 
   const unpin = async () => {
-    await api('mark-notification-read', { notificationId: notification.id })
+    try {
+      await api('mark-notification-read', { notificationId: notification.id })
+    } catch (error) {
+      console.error(error)
+      toast.error("Couldn't update this notification. Please try again.")
+    }
   }
 
   return (

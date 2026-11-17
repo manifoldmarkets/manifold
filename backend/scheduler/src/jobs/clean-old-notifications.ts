@@ -1,3 +1,4 @@
+import { NEWSLETTER_NOTIFICATION_ID } from 'common/newsletter'
 import { chunk } from 'lodash'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
@@ -29,6 +30,9 @@ export async function cleanOldNotifications() {
   )
   const chunks = chunk(userIds, USERS_PER_DELETE)
 
+  // The newsletter invitation is never deleted: it stays pinned until the user
+  // dismisses it, and the row is our only record that they were sent it, so
+  // send-newsletter-notification.ts can skip them on a re-run.
   for (const batch of chunks) {
     const query = `
       delete from user_notifications
@@ -45,11 +49,16 @@ export async function cleanOldNotifications() {
                  user_notifications
              where
                  user_id in ($1:list)
+                 and notification_id <> $3
          ) as user_notif_rows
           where
               rn > $2
           )`
-    await pg.none(query, [batch, MAX_NOTIFICATIONS_PER_USER])
+    await pg.none(query, [
+      batch,
+      MAX_NOTIFICATIONS_PER_USER,
+      NEWSLETTER_NOTIFICATION_ID,
+    ])
     log(`Deleted notifications from ${batch.length} users`)
   }
   log(`Finished cleaning old notifications for ${userIds.length} user(s)`)
