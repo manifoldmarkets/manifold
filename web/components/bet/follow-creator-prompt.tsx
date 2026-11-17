@@ -23,6 +23,7 @@ import { useUser } from 'web/hooks/use-user'
 import { api, followUser } from 'web/lib/api/api'
 import { auth } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
+import { getUserIsFollowing } from 'web/lib/supabase/follows'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -211,6 +212,9 @@ const DIALOG_WAIT_MS = 60_000
 // Once the server has recorded the prompt, giving up would use up the day's
 // prompt and the creator's 30 days unseen, so wait much longer to show it.
 const RECORDED_PROMPT_WAIT_MS = 30 * 60_000
+// After waiting longer than this to show it, check the follow again: the user
+// may have followed the creator meanwhile (another tab, or inside the dialog).
+const RECHECK_FOLLOW_AFTER_MS = 5_000
 const DIALOG_POLL_MS = 500
 
 type PromptParams = {
@@ -264,9 +268,10 @@ const writeNextPromptAt = (userId: string, nextPromptAt: number) => {
 const isPageBlockedByDialog = () =>
   !!document.querySelector('[role="dialog"][aria-modal="true"], body > [inert]')
 
-const waitForNoDialog = async (deadline: number) => {
+// Gives up at the deadline, or as soon as the account changes.
+const waitForNoDialog = async (deadline: number, userId: string) => {
   while (isPageBlockedByDialog()) {
-    if (Date.now() > deadline) return false
+    if (Date.now() > deadline || !isSignedInAs(userId)) return false
     await new Promise((resolve) => setTimeout(resolve, DIALOG_POLL_MS))
   }
   return true
@@ -281,7 +286,7 @@ const checkAndPrompt = async (params: PromptParams) => {
   if (!isSignedInAs(userId)) return
   // The API records the prompt when it says to show it, so only ask once the
   // toast could be seen.
-  if (!(await waitForNoDialog(Date.now() + DIALOG_WAIT_MS))) return
+  if (!(await waitForNoDialog(Date.now() + DIALOG_WAIT_MS, userId))) return
   if (!isSignedInAs(userId)) return
   const result = await api('follow-creator-prompt', {
     contractId: contract.id,
@@ -302,8 +307,20 @@ const checkAndPrompt = async (params: PromptParams) => {
   // Already recorded; show it as soon as the page allows. (A tab closed in
   // the meantime still loses it: the record comes first so that a second
   // device can't show the same prompt.)
-  if (!(await waitForNoDialog(Date.now() + RECORDED_PROMPT_WAIT_MS))) return
+  const answeredAt = Date.now()
+  if (!(await waitForNoDialog(answeredAt + RECORDED_PROMPT_WAIT_MS, userId)))
+    return
   if (!isSignedInAs(userId)) return
+  // After a long wait the answer may be out of date: skip the toast if the
+  // user followed the creator meanwhile. If the check fails, show it as
+  // answered (following again is harmless). The bet count isn't rechecked:
+  // it was true when the server answered.
+  if (Date.now() - answeredAt > RECHECK_FOLLOW_AFTER_MS) {
+    const followingNow = await getUserIsFollowing(userId, creatorId).catch(
+      () => false
+    )
+    if (followingNow || !isSignedInAs(userId)) return
+  }
 
   const tracking: PromptTracking = {
     contractId: contract.id,
