@@ -1017,6 +1017,15 @@ export const getShopItemOrRetired = (id: string): ShopItem | undefined =>
 export const getMerchItems = (): ShopItem[] =>
   SHOP_ITEMS.filter((item) => item.category === 'merch')
 
+// Every merch id that could appear on a historical order, retired products
+// included. Catalog paths want getMerchItems; anything filtering shop_orders
+// wants this, or an unshipped order for a discontinued product disappears
+// from the queue the moment the product is retired.
+export const getMerchItemIds = (): string[] =>
+  [...SHOP_ITEMS, ...RETIRED_SHOP_ITEMS]
+    .filter((item) => item.category === 'merch')
+    .map((item) => item.id)
+
 export const isMerchItem = (item: ShopItem): boolean =>
   item.category === 'merch'
 
