@@ -31,7 +31,8 @@ import { log } from 'shared/utils'
 // time for the first NEW_QUESTION_NOTIFICATIONS_PER_CREATOR_PER_DAY markets
 // the creator makes on a Pacific day, then get one digest notification for
 // the rest of that day (common/src/new-question-notifications.ts). Mentioned
-// users get their own notification either way.
+// users get their own notification either way. If that day count fails,
+// nobody is notified, mentioned users included.
 export const createNewContractNotification = async (
   contractCreator: User,
   contract: Contract,
@@ -45,6 +46,7 @@ export const createNewContractNotification = async (
   let mode: NewQuestionNotificationMode = 'skip'
   let digestId: string | null = null
   let digestDay: string | null = null
+  let countFailed = false
   if (notifyFollowers && !NEW_QUESTION_DIGEST_ENABLED) {
     mode = 'individual'
   } else if (notifyFollowers) {
@@ -80,6 +82,7 @@ export const createNewContractNotification = async (
         `New-question notifications: counting ${contractCreator.id}'s markets failed`,
         { error, contractId: contract.id }
       )
+      countFailed = true
       mode = 'skip'
     }
     if (mode === 'skip')
@@ -108,9 +111,10 @@ export const createNewContractNotification = async (
         )
   // Mentioned users, looked up on their own so a follower who already has
   // the digest still hears about the mention. As before this change, only
-  // followers are notified of a mention here.
+  // followers are notified of a mention here. A failed count writes no rows
+  // at all, so a later run for this market isn't taken for a replay below.
   const mentioned =
-    mentionedUserIds.length === 0
+    mentionedUserIds.length === 0 || countFailed
       ? []
       : await pg.map(
           `select private_users.*, users.name from private_users
@@ -224,17 +228,16 @@ export const createNewContractNotification = async (
 
   const inserted = await insertNotificationsIfAbsent(bulkNotifications, pg)
 
-  // If a follower's row for this market was already there, its followers
-  // have been notified before (a replay): don't email them again. A replay
-  // used to stop here too, on the duplicate insert. Only follower rows count:
-  // a mention row can come from a run that notified no follower (a failed
-  // count). Followers who only get email leave no row, so a replay still
-  // reaches them, as before.
-  const isFollowerRow = (n: Notification) =>
-    n.id === idempotencyKey && n.reason === 'contract_from_followed_user'
+  // If any of this market's rows (a follower's or a mention's) was already
+  // there, the market has been notified before (a replay): don't email its
+  // followers again. A replay used to stop here too, on the duplicate insert.
+  // A failed count writes no rows, so a retry after one is not taken for a
+  // replay. A run that leaves no row at all (followers who only get email, no
+  // mentions) still emails again on a replay, as before.
+  const isMarketRow = (n: Notification) => n.id === idempotencyKey
   if (
-    inserted.filter(isFollowerRow).length <
-    bulkNotifications.filter(isFollowerRow).length
+    inserted.filter(isMarketRow).length <
+    bulkNotifications.filter(isMarketRow).length
   ) {
     if (bulkEmails.length > 0)
       log.warn(

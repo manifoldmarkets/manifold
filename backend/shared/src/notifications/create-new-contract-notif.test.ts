@@ -447,17 +447,16 @@ describe('createNewContractNotification', () => {
     ).toBe(true)
   })
 
-  it('notifies no follower when the count fails, but still the mentions', async () => {
+  it('notifies nobody, mentions included, when the count fails', async () => {
     await addUser('a', { email: 'a@example.com', emailOn: true })
     await addUser('b')
     await follow('a')
     await follow('b')
     failCount = true
-    const id = await createMarket(nov17(0), { mentioned: ['b'] })
+    await createMarket(nov17(0), { mentioned: ['b'] })
     expect(await rowsFor('a')).toEqual([])
-    expect((await rowsFor('b')).map((r) => r.notification_id)).toEqual([
-      `${id}-on-create`,
-    ])
+    expect(await rowsFor('b')).toEqual([])
+    expect(broadcastsTo('b')).toEqual([])
     expect(testGlobals.__notifTestEmails).toEqual([])
     expect(testGlobals.__notifTestLogErrors?.length).toBeGreaterThan(0)
   })
@@ -506,7 +505,43 @@ describe('createNewContractNotification', () => {
     ])
   })
 
-  it('emails followers on a retry after a failed count left only a mention', async () => {
+  it('does not email again on a replay that finds only a mention row', async () => {
+    // a gets email only, so a's notification leaves no row; b's mention is
+    // the market's only row.
+    await addUser('a', {
+      email: 'a@example.com',
+      emailOn: true,
+      browserOn: false,
+    })
+    await addUser('b')
+    await follow('a')
+    await follow('b')
+    const id = await createMarket(nov17(0), { mentioned: ['b'] })
+    expect(await rowsFor('a')).toEqual([])
+    expect(await rowsFor('b')).toHaveLength(1)
+    const contract = {
+      id,
+      slug: `slug-${id}`,
+      question: `Question ${id}?`,
+      visibility: 'public',
+      creatorId: CREATOR.id,
+      creatorUsername: CREATOR.username,
+    } as Contract
+    await createNewContractNotification(
+      CREATOR,
+      contract,
+      `${id}-on-create`,
+      '',
+      ['b']
+    )
+    expect(await rowsFor('b')).toHaveLength(1)
+    expect(broadcastsTo('b')).toHaveLength(1)
+    expect(testGlobals.__notifTestEmails).toEqual([
+      { subject: `Mikhail asked Question ${id}?`, to: ['a@example.com'] },
+    ])
+  })
+
+  it('notifies everyone, with email, on a retry after a failed count', async () => {
     await addUser('a', { email: 'a@example.com', emailOn: true })
     await addUser('b')
     await follow('a')
@@ -514,6 +549,7 @@ describe('createNewContractNotification', () => {
     failCount = true
     const id = await createMarket(nov17(0), { mentioned: ['b'] })
     expect(await rowsFor('a')).toEqual([])
+    expect(await rowsFor('b')).toEqual([])
     expect(testGlobals.__notifTestEmails).toEqual([])
     failCount = false
     const contract = {
