@@ -299,6 +299,15 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
+  } else if (sourceType === 'new_questions_digest') {
+    return (
+      <NewQuestionsDigestNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
   } else if (reason === 'contract_from_followed_user') {
     return (
       <NewMarketNotification
@@ -1330,6 +1339,43 @@ function NewMarketNotification(props: {
         />{' '}
         <span>
           asked <PrimaryNotificationLink text={sourceContractTitle} />
+        </span>
+      </div>
+    </NotificationFrame>
+  )
+}
+
+// One per creator per Pacific day, once they've created more questions that
+// day than get their own notification (common/src/new-question-notifications.ts).
+function NewQuestionsDigestNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceId, sourceUserName, sourceUserUsername, sourceTitle } =
+    notification
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'🌟'} />
+      }
+      link={getSourceUrl(notification)}
+    >
+      <div className="line-clamp-3">
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
+        />{' '}
+        <span>
+          asked <PrimaryNotificationLink text={sourceTitle} />. See all their
+          questions.
         </span>
       </div>
     </NotificationFrame>

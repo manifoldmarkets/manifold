@@ -5,6 +5,7 @@ import { groupPath } from './group'
 import { league_user_info } from './leagues'
 import { PAST_BET } from './user'
 import { notification_preference } from './user-notification-preferences'
+import { NEW_QUESTION_NOTIFICATIONS_PER_CREATOR_PER_DAY } from './new-question-notifications'
 
 export type NotificationGroup = {
   notifications: Notification[]
@@ -99,6 +100,9 @@ export type notification_source_types =
   | 'charity_champion'
   | 'merch_order_update'
   | 'personalized_mana_offer'
+  // One per follower per creator per Pacific day, past the daily limit of
+  // new-question notifications (common/src/new-question-notifications.ts).
+  | 'new_questions_digest'
 
 export type love_notification_source_types =
   | 'love_contract'
@@ -199,7 +203,7 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   },
   contract_from_followed_user: {
     simple: 'New questions from users you follow',
-    detailed: 'New questions from users you follow',
+    detailed: `New questions from users you follow. If one creates more than ${NEW_QUESTION_NOTIFICATIONS_PER_CREATOR_PER_DAY} questions in a day (Pacific time), you get one notification for the rest of that day's questions.`,
   },
   limit_order_fills: {
     simple: 'Limit order fills, expirations, and cancellations',

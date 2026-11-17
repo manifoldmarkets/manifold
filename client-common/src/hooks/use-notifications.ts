@@ -203,7 +203,13 @@ export function useGroupedNotifications(
   const groupedNewMarketNotifications = groupSpecificNotifications(
     regularNotifications,
     (n) => n.reason === 'contract_from_followed_user',
-    (n) => new Date(n.createdTime).toDateString() + n.sourceUserUsername
+    // A creator's daily digest (past the per-day limit of new-question
+    // notifications) is its own row, never counted into the header of that
+    // day's individual ones.
+    (n) =>
+      new Date(n.createdTime).toDateString() +
+      n.sourceUserUsername +
+      (n.sourceType === 'new_questions_digest' ? `:digest:${n.id}` : '')
   )
   const groupedMentionNotifications = groupSpecificNotifications(
     regularNotifications,
