@@ -1,20 +1,23 @@
-import { CheckIcon, XIcon } from '@heroicons/react/outline'
+import {
+  CheckIcon,
+  InformationCircleIcon,
+  XIcon,
+} from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
-import toast from 'react-hot-toast'
+import toast, { Toast } from 'react-hot-toast'
 
 import { Contract } from 'common/contract'
-import { TRADED_TERM } from 'common/envs/constants'
 import {
-  addPromptedCreatorId,
   FOLLOW_CREATOR_PROMPT_DISMISS_EVENT,
   FOLLOW_CREATOR_PROMPT_FOLLOW_EVENT,
   FOLLOW_CREATOR_PROMPT_SHOWN_EVENT,
-  followCreatorPromptedAtKey,
-  followCreatorPromptedKey,
-  isFollowCreatorPromptCoolingDown,
+  FOLLOW_CREATOR_PROMPT_WHY_EVENT,
+  FollowCreatorPromptWhy,
+  followCreatorPromptNextAtKey,
+  getFollowCreatorPromptCopy,
   mayPromptToFollowCreator,
-  parsePromptedCreatorIds,
+  parseFollowCreatorPromptNextAt,
 } from 'common/follow-creator-prompt'
 import { useUser } from 'web/hooks/use-user'
 import { api, followUser } from 'web/lib/api/api'
@@ -42,10 +45,12 @@ type PromptTracking = {
 const isSignedInAs = (userId: string) => auth.currentUser?.uid === userId
 
 /**
- * "You've bet on N of X's markets. Follow to hear when they post new ones."
- * Rendered in a toast by `maybePromptToFollowCreator`, so it outlives the
- * trade dialog and never blocks the trade flow. It belongs to the account
- * that traded (`userId`) and closes if that account signs out or switches.
+ * "You've bet on N of X's questions. Follow to get their new-question
+ * notifications." with a "Why am I seeing this?" panel. Rendered in a toast
+ * by `maybePromptToFollowCreator`, so it outlives the trade dialog and never
+ * blocks the trade flow. It belongs to the account that traded (`userId`) and
+ * closes if that account signs out or switches. All copy comes from
+ * getFollowCreatorPromptCopy in common/src/follow-creator-prompt.ts.
  */
 export function FollowCreatorPrompt(props: {
   toastId: string
@@ -53,11 +58,29 @@ export function FollowCreatorPrompt(props: {
   userId: string
   creator: PromptCreator
   marketsTraded: number
+  why: FollowCreatorPromptWhy
   tracking: PromptTracking
+  /** Keeps the toast up until dismissed (while the explanation is open). */
+  keepOpen: () => void
 }) {
-  const { toastId, visible, userId, creator, marketsTraded, tracking } = props
+  const {
+    toastId,
+    visible,
+    userId,
+    creator,
+    marketsTraded,
+    why,
+    tracking,
+    keepOpen,
+  } = props
   const [status, setStatus] = useState<'idle' | 'saving' | 'following'>('idle')
+  const [whyOpen, setWhyOpen] = useState(false)
   const user = useUser()
+  const copy = getFollowCreatorPromptCopy({
+    creatorName: creator.name,
+    marketsTraded,
+    why,
+  })
 
   useEffect(() => {
     if (user !== undefined && user?.id !== userId) toast.dismiss(toastId)
@@ -74,7 +97,7 @@ export function FollowCreatorPrompt(props: {
     try {
       await followUser(creator.id)
       setStatus('following')
-      setTimeout(() => toast.dismiss(toastId), 2000)
+      if (!whyOpen) setTimeout(() => toast.dismiss(toastId), 2000)
     } catch (error) {
       console.error(error instanceof Error ? error.message : String(error))
       setStatus('idle')
@@ -88,56 +111,90 @@ export function FollowCreatorPrompt(props: {
     toast.dismiss(toastId)
   }
 
+  const toggleWhy = () => {
+    if (!whyOpen) {
+      track(FOLLOW_CREATOR_PROMPT_WHY_EVENT, tracking)
+      keepOpen()
+    }
+    setWhyOpen(!whyOpen)
+  }
+
   return (
-    <Row
+    <Col
       role="status"
       className={clsx(
-        'bg-canvas-0 text-ink-1000 ring-ink-1000/10 pointer-events-auto w-full max-w-md items-center gap-3 rounded-lg p-3 shadow-lg ring-1 transition-opacity duration-200',
+        'bg-canvas-0 text-ink-1000 ring-ink-1000/10 pointer-events-auto w-full max-w-md gap-2 rounded-lg p-3 shadow-lg ring-1 transition-opacity duration-200',
         visible ? 'opacity-100' : 'opacity-0'
       )}
     >
-      <Avatar
-        username={creator.username}
-        avatarUrl={creator.avatarUrl}
-        size="sm"
-        className="shrink-0"
-      />
-      <Col className="min-w-0 flex-1 text-sm">
-        <span>
-          You've {TRADED_TERM} on {marketsTraded} of{' '}
-          <span className="font-semibold">{creator.name}</span>'s markets.
-        </span>
-        <span className="text-ink-600">
-          {status === 'following'
-            ? "You'll hear when they post new ones."
-            : 'Follow to hear when they post new ones.'}
-        </span>
-      </Col>
-      {status === 'following' ? (
-        <Row className="text-ink-600 shrink-0 items-center gap-1 text-sm">
-          <CheckIcon className="h-4 w-4" aria-hidden />
-          Following
-        </Row>
-      ) : (
-        <Button
-          size="xs"
-          color="indigo"
+      <Row className="items-center gap-3">
+        <Avatar
+          username={creator.username}
+          avatarUrl={creator.avatarUrl}
+          size="sm"
           className="shrink-0"
-          loading={status === 'saving'}
-          onClick={follow}
-        >
-          Follow
-        </Button>
+        />
+        <Col className="min-w-0 flex-1 text-sm">
+          <span>{copy.summary}</span>
+          <span className="text-ink-600">
+            {status === 'following' ? copy.followed : copy.action}
+          </span>
+        </Col>
+        {status === 'following' ? (
+          <Row className="text-ink-600 shrink-0 items-center gap-1 text-sm">
+            <CheckIcon className="h-4 w-4" aria-hidden />
+            Following
+          </Row>
+        ) : (
+          <Button
+            size="xs"
+            color="indigo"
+            className="shrink-0"
+            loading={status === 'saving'}
+            onClick={follow}
+          >
+            Follow
+          </Button>
+        )}
+        <Col className="-mr-1 shrink-0">
+          <button
+            type="button"
+            aria-label="Dismiss"
+            className="text-ink-400 hover:text-ink-600 rounded p-1"
+            onClick={dismiss}
+          >
+            <XIcon className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            aria-label={copy.whyTitle}
+            aria-expanded={whyOpen}
+            className={clsx(
+              'hover:text-ink-600 rounded p-1',
+              whyOpen ? 'text-primary-600' : 'text-ink-400'
+            )}
+            onClick={toggleWhy}
+          >
+            <InformationCircleIcon className="h-4 w-4" />
+          </button>
+        </Col>
+      </Row>
+      {whyOpen && (
+        <Col className="border-ink-200 text-ink-700 gap-1 border-t pt-2 text-sm">
+          <span className="text-ink-1000 font-semibold">{copy.whyTitle}</span>
+          <span>{copy.whyReason}</span>
+          {copy.whyLead && <span>{copy.whyLead}</span>}
+          {copy.whyBullets.length > 0 && (
+            <ul className="list-disc space-y-1 pl-5">
+              {copy.whyBullets.map((bullet) => (
+                <li key={bullet}>{bullet}</li>
+              ))}
+            </ul>
+          )}
+          <span className="text-ink-500">{copy.whyFooter}</span>
+        </Col>
       )}
-      <button
-        type="button"
-        aria-label="Dismiss"
-        className="text-ink-400 hover:text-ink-600 -mr-1 shrink-0 rounded p-1"
-        onClick={dismiss}
-      >
-        <XIcon className="h-4 w-4" />
-      </button>
-    </Row>
+    </Col>
   )
 }
 
@@ -146,7 +203,7 @@ export function FollowCreatorPrompt(props: {
 const PROMPT_DELAY_MS = 3500
 const PROMPT_DURATION_MS = 12000
 // An open dialog makes the rest of the page inert, toast included. Wait this
-// long for it to close; after that, give up without using up the prompt.
+// long for it to close; after that, give up.
 const DIALOG_WAIT_MS = 60_000
 const DIALOG_POLL_MS = 500
 
@@ -160,66 +217,39 @@ type PromptParams = {
 }
 
 // Session memory, keyed by user so an account switch starts fresh. Creators
-// the API said not to ask about (already followed, blocked, bots...), and
-// (creator, market) pairs already counted below the threshold: another trade
-// on the same market can't add a distinct market, so it needn't ask again.
+// the API said not to ask about (already followed, blocked, bots, prompted in
+// the last 30 days...), and (creator, market) pairs already counted below the
+// threshold: another trade on the same market can't add a distinct market,
+// so it needn't ask again.
 const ineligibleCreators = new Set<string>()
 const countedCreatorMarkets = new Set<string>()
 // Checks in flight, by user + creator. Fills that land meanwhile are kept,
 // one per market, and checked again once the current check finishes.
 const pendingCreators = new Map<string, Map<string, PromptParams>>()
 
-// Straight to localStorage, never via safeLocalStorage, whose setItem clears
-// all of localStorage when a write fails. Unreadable storage returns
-// undefined, and callers then show nothing, so a prompt can't repeat after a
-// reload just because storage was unavailable.
-const readStorage = (key: string): string | null | undefined => {
+// The server enforces the daily gap; this per-browser hint of when it ends
+// only saves requests. Straight to localStorage, never via safeLocalStorage,
+// whose setItem clears all of localStorage when a write fails. Unreadable
+// storage just means asking the server.
+const readNextPromptAt = (userId: string) => {
   try {
-    return window.localStorage.getItem(key)
+    return parseFollowCreatorPromptNextAt(
+      window.localStorage.getItem(followCreatorPromptNextAtKey(userId))
+    )
   } catch {
     return undefined
   }
 }
 
-const hasPrompted = (userId: string, creatorId: string) => {
-  const raw = readStorage(followCreatorPromptedKey(userId))
-  return raw === undefined || parsePromptedCreatorIds(raw).includes(creatorId)
-}
-
-const isCoolingDown = (userId: string) => {
-  const raw = readStorage(followCreatorPromptedAtKey(userId))
-  if (raw === undefined) return true
-  return isFollowCreatorPromptCoolingDown(
-    raw === null ? undefined : Number(raw),
-    Date.now()
-  )
-}
-
-// Records the prompt before it is shown; false (show nothing) unless the
-// write is confirmed.
-const recordPrompted = (userId: string, creatorId: string) => {
+const writeNextPromptAt = (userId: string, nextPromptAt: number) => {
   try {
-    const storage = window.localStorage
-    const key = followCreatorPromptedKey(userId)
-    const ids = parsePromptedCreatorIds(storage.getItem(key))
-    storage.setItem(key, JSON.stringify(addPromptedCreatorId(ids, creatorId)))
-    storage.setItem(followCreatorPromptedAtKey(userId), String(Date.now()))
-    return parsePromptedCreatorIds(storage.getItem(key)).includes(creatorId)
+    window.localStorage.setItem(
+      followCreatorPromptNextAtKey(userId),
+      String(nextPromptAt)
+    )
   } catch {
-    return false
+    // Only a hint.
   }
-}
-
-// Runs `fn` under a per-user Web Lock, so the final check, record and show
-// are atomic across tabs. Without the Web Locks API it returns false: no
-// prompt is better than two.
-const withPromptLock = async (userId: string, fn: () => boolean) => {
-  if (typeof navigator === 'undefined' || !navigator.locks) return false
-  const result: unknown = await navigator.locks.request(
-    `follow-creator-prompt:${userId}`,
-    () => fn()
-  )
-  return result === true
 }
 
 // Headless UI portals an open dialog to the body and marks the other body
@@ -243,19 +273,29 @@ const checkAndPrompt = async (params: PromptParams) => {
   // The account may change while waiting (sign-out, switch): never let one
   // account's answer or prompt reach another.
   if (!isSignedInAs(userId)) return
-  const result = await api('get-follow-creator-prompt', {
+  // The API records the prompt when it says to show it, so only ask once the
+  // toast could be seen.
+  if (!(await waitForNoDialog(Date.now() + DIALOG_WAIT_MS))) return
+  if (!isSignedInAs(userId)) return
+  const result = await api('follow-creator-prompt', {
     contractId: contract.id,
   })
   if (!isSignedInAs(userId)) return
+  if (result.nextPromptAt !== undefined && Number.isFinite(result.nextPromptAt))
+    writeNextPromptAt(userId, result.nextPromptAt)
   if (!result.eligible) {
     ineligibleCreators.add(creatorKey)
     return
   }
-  if (!result.show) {
-    countedCreatorMarkets.add(`${creatorKey}:${contract.id}`)
+  if (!result.show || !result.why) {
+    if (result.nextPromptAt === undefined)
+      countedCreatorMarkets.add(`${creatorKey}:${contract.id}`)
     return
   }
+  const why = result.why
+  // Already recorded; show it as soon as the page allows.
   if (!(await waitForNoDialog(Date.now() + DIALOG_WAIT_MS))) return
+  if (!isSignedInAs(userId)) return
 
   const tracking: PromptTracking = {
     contractId: contract.id,
@@ -263,46 +303,34 @@ const checkAndPrompt = async (params: PromptParams) => {
     marketsTraded: result.marketsTraded,
     location,
   }
-  // Everything from the last checks to the toast runs synchronously inside
-  // the lock, so nothing can change between checking and showing.
-  await withPromptLock(userId, () => {
-    if (
-      !isSignedInAs(userId) ||
-      isPageBlockedByDialog() ||
-      hasPrompted(userId, creatorId) ||
-      isCoolingDown(userId) ||
-      !recordPrompted(userId, creatorId)
-    )
-      return false
-    track(FOLLOW_CREATOR_PROMPT_SHOWN_EVENT, tracking)
-    toast.custom(
-      (t) => (
-        <FollowCreatorPrompt
-          toastId={t.id}
-          visible={t.visible}
-          userId={userId}
-          creator={{
-            id: creatorId,
-            username: contract.creatorUsername,
-            name: contract.creatorName,
-            avatarUrl: contract.creatorAvatarUrl,
-          }}
-          marketsTraded={result.marketsTraded}
-          tracking={tracking}
-        />
-      ),
-      { id: `follow-creator-prompt-${creatorId}`, duration: PROMPT_DURATION_MS }
-    )
-    return true
-  })
+  track(FOLLOW_CREATOR_PROMPT_SHOWN_EVENT, tracking)
+  const toastId = `follow-creator-prompt-${creatorId}`
+  const render = (t: Toast) => (
+    <FollowCreatorPrompt
+      toastId={t.id}
+      visible={t.visible}
+      userId={userId}
+      creator={{
+        id: creatorId,
+        username: contract.creatorUsername,
+        name: contract.creatorName,
+        avatarUrl: contract.creatorAvatarUrl,
+      }}
+      marketsTraded={result.marketsTraded}
+      why={why}
+      tracking={tracking}
+      keepOpen={() => toast.custom(render, { id: toastId, duration: Infinity })}
+    />
+  )
+  toast.custom(render, { id: toastId, duration: PROMPT_DURATION_MS })
 }
 
 /**
  * Call after a trade on `contract` fills (amount > 0). If the trader has now
  * traded on several of the creator's markets and doesn't follow them, shows a
- * one-time toast offering to follow. Fire-and-forget: never throws, never
- * delays the trade flow, asks at most once per creator per browser, and at
- * most once a day.
+ * toast offering to follow. Fire-and-forget: never throws, never delays the
+ * trade flow. The server allows one prompt per account a day, and the same
+ * creator again only after 30 days, across devices.
  */
 export const maybePromptToFollowCreator = (params: PromptParams) => {
   const { contract, userId } = params
@@ -319,7 +347,8 @@ export const maybePromptToFollowCreator = (params: PromptParams) => {
     queued.set(contract.id, params)
     return
   }
-  if (hasPrompted(userId, creatorId) || isCoolingDown(userId)) return
+  const nextPromptAt = readNextPromptAt(userId)
+  if (nextPromptAt !== undefined && Date.now() < nextPromptAt) return
 
   pendingCreators.set(creatorKey, new Map())
   setTimeout(() => {

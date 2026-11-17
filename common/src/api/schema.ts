@@ -1867,8 +1867,10 @@ export const API = (_apiTypeCheck = {
       .strict(),
   },
   // After a trade: should the trader be asked to follow the market's creator?
-  'get-follow-creator-prompt': {
-    method: 'GET',
+  // Records the prompt when it says to show it (once a day per user, once
+  // per creator every 30 days), so it is a POST.
+  'follow-creator-prompt': {
+    method: 'POST',
     visibility: 'undocumented',
     authed: true,
     returns: {} as FollowCreatorPromptResult,

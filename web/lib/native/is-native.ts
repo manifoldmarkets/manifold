@@ -10,7 +10,6 @@ import {
   BROWSE_ENROLLMENT_KEY,
   DEVICE_HISTORY_KEY,
 } from 'common/browse-rollout'
-import { FOLLOW_CREATOR_PROMPT_STORAGE_PREFIX } from 'common/follow-creator-prompt'
 import { uniq } from 'lodash'
 import { safeLocalStorage, safeSessionStorage } from 'web/lib/util/local'
 import { api } from '../api/api'
@@ -47,21 +46,12 @@ export const clearLocalStoragePreservingNativeInfo = () => {
   const { isNative, platform } = getNativeInfo()
   // These describe this browser, not the account. Keep the experiment and
   // explicit layout choice stable through logout, as well as native flags.
-  // Also keep the per-account record of creators already suggested to follow
-  // (keyed by user id), so signing out and back in doesn't repeat them.
-  const prefixedKeys = Array.from({ length: localStorage.length }, (_, i) =>
-    localStorage.key(i)
-  ).filter(
-    (key): key is string =>
-      !!key?.startsWith(FOLLOW_CREATOR_PROMPT_STORAGE_PREFIX)
-  )
   const preserved = [
     ...NATIVE_INFO_LOCAL_KEYS,
     BROWSE_BROWSER_KEY,
     DEVICE_HISTORY_KEY,
     BROWSE_ENROLLMENT_KEY,
     BROWSE_CHOICE_KEY,
-    ...prefixedKeys,
   ].map((key) => [key, safeLocalStorage?.getItem(key) ?? null] as const)
   localStorage.clear()
   if (isNative) setIsNativeOld(true, platform ?? '')
