@@ -62,7 +62,6 @@ jest.mock('../emails', () => ({
   },
 }))
 
-
 jest.setTimeout(60_000)
 
 const pgp = pgPromise()
@@ -477,10 +476,12 @@ describe('createNewContractNotification', () => {
     expect(testGlobals.__notifTestEmails).toEqual([])
   })
 
-  it('does not fail or broadcast again when a market is notified twice', async () => {
-    await addUser('a')
+  it('does not fail, broadcast or email again when a market is notified twice', async () => {
+    await addUser('a', { email: 'a@example.com', emailOn: true })
+    await addUser('b')
     await follow('a')
-    const id = await createMarket(nov17(0))
+    await follow('b')
+    const id = await createMarket(nov17(0), { mentioned: ['b'] })
     const contract = {
       id,
       slug: `slug-${id}`,
@@ -494,10 +495,15 @@ describe('createNewContractNotification', () => {
       contract,
       `${id}-on-create`,
       '',
-      []
+      ['b']
     )
     expect(await rowsFor('a')).toHaveLength(1)
+    expect(await rowsFor('b')).toHaveLength(1)
     expect(broadcastsTo('a')).toHaveLength(1)
+    expect(broadcastsTo('b')).toHaveLength(1)
+    expect(testGlobals.__notifTestEmails).toEqual([
+      { subject: `Mikhail asked Question ${id}?`, to: ['a@example.com'] },
+    ])
   })
 
   it('respects a follower who turned the in-app notification off', async () => {

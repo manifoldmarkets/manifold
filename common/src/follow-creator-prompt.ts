@@ -213,7 +213,8 @@ export type FollowCreatorPromptCopy = {
   /** "Following X:" above the bullets; absent when there are no bullets. */
   whyLead?: string
   whyBullets: string[]
-  whyFooter: string
+  /** Absent once the user follows. */
+  whyFooter?: string
 }
 
 /**
@@ -234,12 +235,15 @@ export const getFollowCreatorPromptCopy = (props: {
   creatorName: string
   marketsTraded: number
   why: FollowCreatorPromptWhy
+  /** The user has just followed from the prompt. */
+  following?: boolean
   digestEnabled?: boolean
 }): FollowCreatorPromptCopy => {
   const {
     creatorName: name,
     marketsTraded,
     why,
+    following = false,
     digestEnabled = NEW_QUESTION_DIGEST_ENABLED,
   } = props
   const { newQuestionNotifications: status, forYouBoost } = why
@@ -272,9 +276,13 @@ export const getFollowCreatorPromptCopy = (props: {
         ? "Following. You'll get their new-question notifications."
         : 'Following.',
     whyTitle: 'Why am I seeing this?',
-    whyReason: `${traded}, and you don't follow ${name}.`,
+    whyReason: following
+      ? `${traded}. You now follow ${name}.`
+      : `${traded}, and you don't follow ${name}.`,
     whyLead: bullets.length > 0 ? `Following ${name}:` : undefined,
     whyBullets: bullets,
-    whyFooter: `We won't suggest following ${name} again for ${FOLLOW_CREATOR_PROMPT_CREATOR_COOLDOWN_DAYS} days.`,
+    whyFooter: following
+      ? undefined
+      : `We won't suggest following ${name} again for ${FOLLOW_CREATOR_PROMPT_CREATOR_COOLDOWN_DAYS} days.`,
   }
 }

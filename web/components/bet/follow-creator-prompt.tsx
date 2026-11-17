@@ -80,6 +80,7 @@ export function FollowCreatorPrompt(props: {
     creatorName: creator.name,
     marketsTraded,
     why,
+    following: status === 'following',
   })
 
   useEffect(() => {
@@ -191,7 +192,9 @@ export function FollowCreatorPrompt(props: {
               ))}
             </ul>
           )}
-          <span className="text-ink-500">{copy.whyFooter}</span>
+          {copy.whyFooter && (
+            <span className="text-ink-500">{copy.whyFooter}</span>
+          )}
         </Col>
       )}
     </Col>

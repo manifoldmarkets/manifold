@@ -222,7 +222,20 @@ export const createNewContractNotification = async (
       bulkNotifications.push(marketNotification(privateUser.id, 'tagged_user'))
   }
 
-  await insertNotificationsIfAbsent(bulkNotifications, pg)
+  const inserted = await insertNotificationsIfAbsent(bulkNotifications, pg)
+
+  // If any of this market's own rows was already there, it has been notified
+  // before (a replay): don't email again. A replay used to stop here too,
+  // on the duplicate insert.
+  const marketRows = bulkNotifications.filter((n) => n.id === idempotencyKey)
+  const insertedMarketRows = inserted.filter((n) => n.id === idempotencyKey)
+  if (insertedMarketRows.length < marketRows.length) {
+    if (bulkEmails.length > 0)
+      log.warn(
+        `New-question notifications: ${contract.id} was already notified; not emailing again`
+      )
+    return
+  }
 
   await sendBulkEmails(
     `${contractCreator.name} asked ${contract.question}`,

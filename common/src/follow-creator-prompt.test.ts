@@ -269,4 +269,27 @@ describe('getFollowCreatorPromptCopy', () => {
       "We won't suggest following James again for 30 days."
     )
   })
+
+  it('stays true after the user follows from the prompt', () => {
+    const before = getFollowCreatorPromptCopy({
+      creatorName: 'Mikhail',
+      marketsTraded: 3,
+      why: { newQuestionNotifications: 'on', forYouBoost: true },
+    })
+    const after = getFollowCreatorPromptCopy({
+      creatorName: 'Mikhail',
+      marketsTraded: 3,
+      why: { newQuestionNotifications: 'on', forYouBoost: true },
+      following: true,
+    })
+    expect(after.whyReason).toBe(
+      "You've bet on 3 of Mikhail's questions. You now follow Mikhail."
+    )
+    expect(after.whyReason).not.toMatch(/don't follow/)
+    expect(after.whyFooter).toBeUndefined()
+    // What following does is the same either way.
+    expect(after.whyLead).toBe(before.whyLead)
+    expect(after.whyBullets).toEqual(before.whyBullets)
+    expect(after.followed).toBe(before.followed)
+  })
 })
