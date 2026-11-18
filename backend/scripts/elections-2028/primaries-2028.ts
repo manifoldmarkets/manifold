@@ -97,7 +97,23 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
       },
       {
         party: 'Republican',
-        candidates: [],
+        // Added 18 Nov 2026. No one has declared, and the field waits on
+        // whether Kelly runs for president. Biggs lost the 2026 governor
+        // race, Lake was the 2024 nominee and Hamadeh holds AZ-8.
+        candidates: [
+          {
+            name: 'Andy Biggs',
+            pct: 15,
+          },
+          {
+            name: 'Kari Lake',
+            pct: 15,
+          },
+          {
+            name: 'Abe Hamadeh',
+            pct: 10,
+          },
+        ],
       },
     ],
     note: 'Seeds from public reporting as of November 2026 (incumbent Mark Kelly, running: unknown)',
@@ -355,7 +371,22 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     markets: [
       {
         party: 'Democratic',
-        candidates: [],
+        // Added 18 Nov 2026. No one has declared for Grassley's seat. These
+        // are the candidates Josh Turek beat in the 2026 Senate primary.
+        candidates: [
+          {
+            name: 'Zach Wahls',
+            pct: 20,
+          },
+          {
+            name: 'Nathan Sage',
+            pct: 12,
+          },
+          {
+            name: 'Jackie Norris',
+            pct: 5,
+          },
+        ],
       },
       {
         party: 'Republican',
@@ -514,7 +545,23 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
       },
       {
         party: 'Republican',
-        candidates: [],
+        // Added 18 Nov 2026. No one has declared. Lombardo lost the 2026
+        // governor race to Aaron Ford, Brown was the 2024 Senate nominee and
+        // Laxalt lost to Cortez Masto in 2022.
+        candidates: [
+          {
+            name: 'Joe Lombardo',
+            pct: 20,
+          },
+          {
+            name: 'Sam Brown',
+            pct: 15,
+          },
+          {
+            name: 'Adam Laxalt',
+            pct: 10,
+          },
+        ],
       },
     ],
     note: 'Seeds from public reporting as of November 2026 (incumbent Catherine Cortez Masto, running: unknown)',
@@ -537,7 +584,23 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
       },
       {
         party: 'Republican',
-        candidates: [],
+        // Added 18 Nov 2026. No one has declared. Chris Sununu passed on the
+        // 2026 race; John E. Sununu lost it to Chris Pappas after beating
+        // Scott Brown in the primary.
+        candidates: [
+          {
+            name: 'Chris Sununu',
+            pct: 15,
+          },
+          {
+            name: 'John E. Sununu',
+            pct: 12,
+          },
+          {
+            name: 'Scott Brown',
+            pct: 8,
+          },
+        ],
       },
     ],
     note: 'Seeds from public reporting as of November 2026 (incumbent Maggie Hassan, running: unknown)',
@@ -582,7 +645,23 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     markets: [
       {
         party: 'Democratic',
-        candidates: [],
+        // Added 18 Nov 2026. No one has declared. Davis (NC-1, held in 2026)
+        // has shown interest; Attorney General Jackson said "Nope" in January
+        // 2026 but is the most-named; Nickel was just elected Wake County DA.
+        candidates: [
+          {
+            name: 'Don Davis',
+            pct: 25,
+          },
+          {
+            name: 'Jeff Jackson',
+            pct: 20,
+          },
+          {
+            name: 'Wiley Nickel',
+            pct: 10,
+          },
+        ],
       },
       {
         party: 'Republican',
@@ -637,7 +716,23 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
       },
       {
         party: 'Republican',
-        candidates: [],
+        // Added 18 Nov 2026. No one has declared. Husted lost this seat to
+        // Brown in the 2026 special, Ramaswamy lost the 2026 governor race
+        // to Amy Acton and LaRose ran in the 2024 Senate primary.
+        candidates: [
+          {
+            name: 'Jon Husted',
+            pct: 20,
+          },
+          {
+            name: 'Vivek Ramaswamy',
+            pct: 15,
+          },
+          {
+            name: 'Frank LaRose',
+            pct: 8,
+          },
+        ],
       },
     ],
     note: 'Seeds from public reporting as of November 2026 (incumbent Sherrod Brown, running: unknown)',
@@ -714,7 +809,28 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
       },
       {
         party: 'Republican',
-        candidates: [],
+        // Added 18 Nov 2026. No one has declared. The names in November 2026
+        // coverage: Meuser (PA-9), Fitzpatrick (lost PA-1 in 2026), Attorney
+        // General Sunday, and Fetterman if he switches parties (he says he
+        // won't).
+        candidates: [
+          {
+            name: 'Dan Meuser',
+            pct: 20,
+          },
+          {
+            name: 'Brian Fitzpatrick',
+            pct: 15,
+          },
+          {
+            name: 'John Fetterman',
+            pct: 10,
+          },
+          {
+            name: 'Dave Sunday',
+            pct: 8,
+          },
+        ],
       },
     ],
     note: 'Seeds from public reporting as of November 2026 (incumbent John Fetterman, running: unknown)',
@@ -774,7 +890,19 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     markets: [
       {
         party: 'Democratic',
-        candidates: [],
+        // Added 18 Nov 2026. Zack Nelson (JerryRigEverything) hinted at a run
+        // against Lee in November 2026, party unconfirmed; Yahne is listed as
+        // a Democratic candidate. Democrats backed an independent in 2022.
+        candidates: [
+          {
+            name: 'Zack Nelson',
+            pct: 20,
+          },
+          {
+            name: 'Jay Yahne',
+            pct: 15,
+          },
+        ],
       },
       {
         party: 'Republican',
@@ -886,7 +1014,24 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
       },
       {
         party: 'Republican',
-        candidates: [],
+        // Added 18 Nov 2026. No one has declared. Tafoya lost the 2026 Senate
+        // race to Peggy Flanagan, Demuth lost the 2026 governor race to
+        // Klobuchar (both named as possible 2027 candidates), and White was
+        // the 2024 Senate nominee.
+        candidates: [
+          {
+            name: 'Michele Tafoya',
+            pct: 25,
+          },
+          {
+            name: 'Lisa Demuth',
+            pct: 20,
+          },
+          {
+            name: 'Royce White',
+            pct: 5,
+          },
+        ],
       },
     ],
     note: 'Seeds from public reporting as of November 2026 (incumbent Amy Klobuchar, running: no)',
@@ -1032,7 +1177,18 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     markets: [
       {
         party: 'Democratic',
-        candidates: [],
+        // Added 18 Nov 2026. No one has declared. Warmington lost to Ayotte
+        // in 2026 and Craig lost to her in 2024.
+        candidates: [
+          {
+            name: 'Cinde Warmington',
+            pct: 25,
+          },
+          {
+            name: 'Joyce Craig',
+            pct: 15,
+          },
+        ],
       },
       {
         party: 'Republican',
@@ -1141,7 +1297,23 @@ export const DOWNBALLOT_2028: DownballotRace[] = [
     markets: [
       {
         party: 'Democratic',
-        candidates: [],
+        // Added 18 Nov 2026. No one has declared. Gray was just elected
+        // lieutenant governor, Janoo lost to Phil Scott by 6.6 points in 2026,
+        // and Pieciak is the state treasurer.
+        candidates: [
+          {
+            name: 'Molly Gray',
+            pct: 25,
+          },
+          {
+            name: 'Amanda Janoo',
+            pct: 20,
+          },
+          {
+            name: 'Mike Pieciak',
+            pct: 10,
+          },
+        ],
       },
       {
         party: 'Republican',

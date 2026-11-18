@@ -59,7 +59,7 @@ seats in 2026), 2030 50% and 45%, later cycles even. The 2028 pair is at
 |---|---|---|
 | fixed (`DISABLED`) | buckets, balance of power, state legislative chambers (2027, 2029) | Nobody; no "Other" |
 | curated (`ONLY_CREATOR`) | nominees, running mates, VP winner, tipping point, 2032 winner; Speaker; party markets (2027 and 2029 governors, Minnesota's 2027 Senate special, 2028 popular vote) | @ManifoldPolitics, with an "Other" answer. Party markets open as Democratic Party / Republican Party / Other; @ManifoldPolitics can add another party or an independent if one becomes competitive |
-| open (`ANYONE`) | the 113 presidential primaries (states, DC, territories, Democrats Abroad) and the 51 Senate and governor primaries | Anyone, with an "Other" answer. They open with the three likeliest candidates (Tod, 5 Nov 2026: "seed it with maybe 2-3 likely people and open answer 'other' option") |
+| open (`ANYONE`) | the 113 presidential primaries (states, DC, territories, Democrats Abroad) and the 62 Senate and governor primaries (11 added 18 Nov 2026) | Anyone, with an "Other" answer. They open with the three likeliest candidates (Tod, 5 Nov 2026: "seed it with maybe 2-3 likely people and open answer 'other' option") |
 
 Balance-of-power and Virginia chamber markets have no "Other": independents
 count with the party they caucus with, so control can't go to anyone else.
@@ -87,8 +87,10 @@ governor elections of 2027–2036, not every US election:
   2032 and 2036; Senate and governor races every cycle 2028–2036; House races
   in 2028; balance of power and Senate and House seat counts every cycle; the
   2032 nominees and winner.
-- **Not yet:** 39 Senate and governor primaries with no credible candidate
-  yet (the API won't open a market whose only answer is Other), House races
+- **Not yet:** 28 Senate and governor primaries, mostly the out-party
+  primary in a safe seat, with no credible candidate yet (the API won't open
+  a market whose only answer is Other; Tod, 18 Nov 2026: create only the
+  popular ones), House races
   after 2028, special elections not yet scheduled, off-year races after 2029,
   2028 ballot measures (certified mid-2028), 2032 and 2036 primaries, and
   legislatures other than those above. These are on the
