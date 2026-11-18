@@ -28,6 +28,9 @@ export function PersonalizedOfferCard(props: {
   manaAmount: number
   priceUsdStripe: number
   priceUsdCrypto: number
+  // False while crypto checkout is switched off: the crypto button is hidden
+  // and the headline discount is the card price's.
+  cryptoAvailable: boolean
   cryptoLoading: boolean
   cryptoDisabled: boolean
   creditCardDisabled: boolean
@@ -48,6 +51,7 @@ export function PersonalizedOfferCard(props: {
     manaAmount,
     priceUsdStripe,
     priceUsdCrypto,
+    cryptoAvailable,
     cryptoLoading,
     cryptoDisabled,
     creditCardDisabled,
@@ -69,6 +73,7 @@ export function PersonalizedOfferCard(props: {
   const stripeSavingsPct = Math.round(
     ((baseUsd - priceUsdStripe) / baseUsd) * 100
   )
+  const bestSavingsPct = cryptoAvailable ? cryptoSavingsPct : stripeSavingsPct
 
   return (
     <div className="animate-offer-card-in bg-canvas-0 relative overflow-hidden rounded-xl border-2 border-orange-400 shadow-lg ring-2 ring-amber-200/60 dark:border-orange-500 dark:ring-amber-800/40">
@@ -86,7 +91,7 @@ export function PersonalizedOfferCard(props: {
           className="flex w-full flex-col items-center gap-0.5 bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2 text-white transition-all hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white/40 disabled:cursor-not-allowed disabled:opacity-70 sm:flex-row sm:justify-between sm:gap-2"
         >
           <Row className="items-center gap-1.5 text-sm font-bold uppercase tracking-wide sm:gap-2 sm:text-base sm:tracking-wider">
-            <span>Up to {cryptoSavingsPct}% off mana</span>
+            <span>Up to {bestSavingsPct}% off mana</span>
           </Row>
           <Row className="items-center gap-1.5 text-sm font-bold uppercase tracking-wide sm:gap-2 sm:text-base sm:tracking-wider">
             {activeCount > 1 && (
@@ -104,7 +109,7 @@ export function PersonalizedOfferCard(props: {
       ) : (
         <div className="flex flex-col items-center gap-0.5 bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-2 text-white sm:flex-row sm:justify-between sm:gap-2">
           <Row className="items-center gap-1.5 text-sm font-bold uppercase tracking-wide sm:gap-2 sm:text-base sm:tracking-wider">
-            <span>Up to {cryptoSavingsPct}% off mana</span>
+            <span>Up to {bestSavingsPct}% off mana</span>
           </Row>
           <Row className="items-center gap-1.5 text-sm font-bold uppercase tracking-wide sm:gap-2 sm:text-base sm:tracking-wider">
             {activeCount > 1 && (
@@ -144,45 +149,47 @@ export function PersonalizedOfferCard(props: {
         </Col>
 
         <Col className="mx-auto mt-1 w-full max-w-sm gap-3">
-          <button
-            onClick={onBuyWithCrypto}
-            disabled={cryptoDisabled || cryptoLoading}
-            className={clsx(
-              'group relative w-full rounded-xl border-2 border-transparent',
-              'flex min-h-[60px] items-center justify-center',
-              'bg-gradient-to-r from-orange-500 to-amber-500',
-              'px-4 py-4 text-base font-semibold text-white shadow-lg sm:px-8 sm:text-lg',
-              'transition-all duration-200 hover:shadow-xl hover:shadow-orange-500/30 hover:brightness-110',
-              'active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50'
-            )}
-          >
-            <span className="pointer-events-none absolute -right-3 -top-3 rotate-6 select-none whitespace-nowrap rounded-full border border-emerald-300 bg-emerald-500 px-2.5 py-1 text-sm font-extrabold uppercase tracking-wide text-white shadow">
-              −{cryptoSavingsPct}%
-            </span>
-            <Row className="items-center justify-center gap-2">
-              {cryptoLoading ? (
-                <>
-                  <LoadingIndicator size="sm" className="!text-white" />
-                  <span>Loading...</span>
-                </>
-              ) : (
-                <>
-                  <CurrencyDollarIcon className="h-6 w-6 shrink-0" />
-                  <span>
-                    Claim with crypto{' '}
-                    <span className="whitespace-nowrap">
-                      <span className="text-xl font-bold line-through opacity-60">
-                        ${baseUsd}
-                      </span>{' '}
-                      <span className="text-xl font-bold">
-                        ${priceUsdCrypto}
+          {cryptoAvailable && (
+            <button
+              onClick={onBuyWithCrypto}
+              disabled={cryptoDisabled || cryptoLoading}
+              className={clsx(
+                'group relative w-full rounded-xl border-2 border-transparent',
+                'flex min-h-[60px] items-center justify-center',
+                'bg-gradient-to-r from-orange-500 to-amber-500',
+                'px-4 py-4 text-base font-semibold text-white shadow-lg sm:px-8 sm:text-lg',
+                'transition-all duration-200 hover:shadow-xl hover:shadow-orange-500/30 hover:brightness-110',
+                'active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50'
+              )}
+            >
+              <span className="pointer-events-none absolute -right-3 -top-3 rotate-6 select-none whitespace-nowrap rounded-full border border-emerald-300 bg-emerald-500 px-2.5 py-1 text-sm font-extrabold uppercase tracking-wide text-white shadow">
+                −{cryptoSavingsPct}%
+              </span>
+              <Row className="items-center justify-center gap-2">
+                {cryptoLoading ? (
+                  <>
+                    <LoadingIndicator size="sm" className="!text-white" />
+                    <span>Loading...</span>
+                  </>
+                ) : (
+                  <>
+                    <CurrencyDollarIcon className="h-6 w-6 shrink-0" />
+                    <span>
+                      Claim with crypto{' '}
+                      <span className="whitespace-nowrap">
+                        <span className="text-xl font-bold line-through opacity-60">
+                          ${baseUsd}
+                        </span>{' '}
+                        <span className="text-xl font-bold">
+                          ${priceUsdCrypto}
+                        </span>
                       </span>
                     </span>
-                  </span>
-                </>
-              )}
-            </Row>
-          </button>
+                  </>
+                )}
+              </Row>
+            </button>
+          )}
 
           <button
             onClick={onBuyWithCreditCard}
@@ -217,6 +224,11 @@ export function PersonalizedOfferCard(props: {
               </span>
             </Row>
           </button>
+          {!cryptoAvailable && (
+            <p className="text-ink-500 text-center text-xs">
+              Crypto payments are temporarily unavailable.
+            </p>
+          )}
         </Col>
 
         <p className="text-ink-500 mt-1 text-center text-xs">
