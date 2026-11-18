@@ -35,7 +35,7 @@ import {
 } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
 import { searchInAny } from 'common/util/parse'
-import { Dictionary, mapValues, sortBy, sum, uniqBy } from 'lodash'
+import { Dictionary, mapValues, partition, sortBy, sum, uniqBy } from 'lodash'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
@@ -80,6 +80,7 @@ type BetSort =
   | 'liquidity'
   | 'priceDiff'
   | 'loan'
+  | 'prob'
 export type BetFilter =
   | 'open'
   | 'sold'
@@ -89,6 +90,11 @@ export type BetFilter =
   | 'limit_bet'
 
 const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
+
+// Only binary markets have a single probability to sort by.
+const getSortProb = (c: MarketContract) =>
+  c.mechanism === 'cpmm-1' && c.outcomeType === 'BINARY' ? c.prob : undefined
+
 export function UserBetsTable(props: { user: User }) {
   const { user } = props
 
@@ -273,6 +279,8 @@ export function UserBetsTable(props: { user: User }) {
     { label: 'Lowest Position', field: 'position', direction: 'asc' },
     { label: 'Highest Profit', field: 'profit', direction: 'desc' },
     { label: 'Lowest Profit', field: 'profit', direction: 'asc' },
+    { label: 'Highest Probability', field: 'prob', direction: 'desc' },
+    { label: 'Lowest Probability', field: 'prob', direction: 'asc' },
     { label: 'Highest 1d Change', field: 'day', direction: 'desc' },
     { label: 'Lowest 1d Change', field: 'day', direction: 'asc' },
     { label: 'Highest 1w Change', field: 'week', direction: 'desc' },
@@ -603,6 +611,7 @@ function BetsTable(props: {
       -(metricsByContractId[c.id].from?.day.profitPercent ?? 0),
     costBasis: (c) => -(metricsByContractId[c.id].invested ?? 0),
     loan: (c) => -(metricsByContractId[c.id].loan ?? 0),
+    prob: (c) => -(getSortProb(c) ?? 0),
     dayPriceChange: (c) => -(c.mechanism === 'cpmm-1' ? c.probChanges.day : 0),
     volume24h: (c) => -c.volume24Hours,
     liquidity: (c) => -c.totalLiquidity,
@@ -634,10 +643,16 @@ function BetsTable(props: {
   }
 
   const sortFunction = SORTS[sortOption.field]
-  const contracts =
+  const sortedContracts =
     sortOption.direction === 'desc'
       ? sortBy(allContracts, sortFunction)
       : sortBy(allContracts, sortFunction).reverse()
+  // Keep markets without a single probability (multiple choice, numeric, etc.)
+  // at the bottom in both directions, so the extremes show up first.
+  const contracts =
+    sortOption.field === 'prob'
+      ? partition(sortedContracts, (c) => getSortProb(c) !== undefined).flat()
+      : sortedContracts
 
   const visibleContracts = contracts.slice(0, displayCount)
 
