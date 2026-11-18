@@ -42,7 +42,7 @@ export const getPerpConfig = (contract: PerpContract) => ({
   maxOraclePriceAgeMs: contract.maxOraclePriceAgeMs,
 })
 
-export type MnxDashboardMarket = {
+export type PerpDashboardMarket = {
   contract: PerpContract
   activeTraders: number
   openInterestLong: number
@@ -51,12 +51,30 @@ export type MnxDashboardMarket = {
   fees24Hours: number
   minOraclePriceAgeMs: number
 }
+export type MnxDashboardMarket = PerpDashboardMarket
+
+type AccountSummary = { id: string; username: string; balance: number }
 
 export type MnxDashboard = {
   asOf: number
-  account: { id: string; username: string; balance: number } | null
-  payer: { id: string; username: string; balance: number }
-  markets: MnxDashboardMarket[]
+  account: AccountSummary | null
+  payer: AccountSummary
+  markets: PerpDashboardMarket[]
+}
+
+export type PerpsDashboardCreator = AccountSummary & {
+  name: string
+  // A registered perp creator account, so its balance may pay its own
+  // markets' backing.
+  canFund: boolean
+}
+
+// Every perp market, whoever created it, for the admin console.
+export type PerpsDashboard = {
+  asOf: number
+  payer: AccountSummary
+  creators: PerpsDashboardCreator[]
+  markets: PerpDashboardMarket[]
 }
 
 export const getEffectiveApiFee = (contract: PerpContract) =>

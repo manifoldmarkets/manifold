@@ -2,10 +2,12 @@ import {
   MNX_CREATOR_USERNAME,
   getMnxCreatorId,
   PERP_CREATOR_ACCOUNT_LABELS,
+  PERP_CREATOR_ACCOUNTS,
   PerpCreatorAccount,
 } from 'common/perps/creator-accounts'
 import { convertUser } from 'common/supabase/users'
 import { User } from 'common/user'
+import { filterDefined } from 'common/util/array'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { getPerpLaunchCreatorId } from './launch-manifest'
 
@@ -13,6 +15,23 @@ type Environment = 'DEV' | 'PROD'
 
 // Kept as re-exports for scripts and preflight consumers.
 export { MNX_CREATOR_IDS, getMnxCreatorId } from 'common/perps/creator-accounts'
+
+export const getPerpCreatorAccountId = (
+  account: PerpCreatorAccount,
+  environment: Environment
+) =>
+  account === 'manifold'
+    ? getPerpLaunchCreatorId(environment)
+    : getMnxCreatorId(environment)
+
+// The user ids a perp can be created under in this environment. Only these
+// accounts may pay a market's backing as its creator.
+export const getPerpCreatorAccountIds = (environment: Environment) =>
+  filterDefined(
+    PERP_CREATOR_ACCOUNTS.map((account) =>
+      getPerpCreatorAccountId(account, environment)
+    )
+  )
 
 export type PerpCreatorAccountResolution =
   | { account: PerpCreatorAccount; user: User; reason?: undefined }
@@ -28,10 +47,7 @@ export const resolvePerpCreatorAccount = async (
   pg: SupabaseDirectClient
 ): Promise<PerpCreatorAccountResolution> => {
   const label = PERP_CREATOR_ACCOUNT_LABELS[account]
-  const id =
-    account === 'manifold'
-      ? getPerpLaunchCreatorId(environment)
-      : getMnxCreatorId(environment)
+  const id = getPerpCreatorAccountId(account, environment)
   if (!id)
     return {
       account,

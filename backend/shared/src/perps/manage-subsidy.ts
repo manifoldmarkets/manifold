@@ -3,7 +3,14 @@ import { APIError } from 'common/api/utils'
 import { ENV } from 'common/envs/constants'
 import { getMnxCreatorId } from 'common/perps/creator-accounts'
 import { getMnxInstrument } from 'common/perps/mnx'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { convertUser } from 'common/supabase/users'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+  SupabaseTransaction,
+} from 'shared/supabase/init'
+import { getContract } from 'shared/utils'
+import { getPerpCreatorAccountIds } from './creator-accounts'
 import { addPerpPoolSubsidy } from './engine'
 import { requirePerpManager } from './management-auth'
 
@@ -19,10 +26,27 @@ export const addManagedPerpSubsidy = async (
       409,
       'The signed-in account changed. Sign back in before retrying.'
     )
-  await requirePerpManager(createSupabaseDirectClient(), managerId)
-  const funderId =
-    body.fundingAccount === 'mnx' ? getMnxCreatorId(ENV) : managerId
+  const pg = createSupabaseDirectClient()
+  await requirePerpManager(pg, managerId)
+  const funderId = await getFunderId(pg, body, managerId)
   if (!funderId) throw new APIError(403, 'The MNX account is not configured.')
+  // Creator funding derives its payer from the market, so it must name the
+  // payer it reviewed.
+  if (body.fundingAccount === 'creator' && body.expectedFunderId === undefined)
+    throw new APIError(
+      400,
+      'Creator funding needs the expected payer. Reload and review again.'
+    )
+  // Receipts are keyed by payer, so a retry charged to a different payer
+  // would not find the first payment and would pay again.
+  if (body.expectedFunderId !== undefined && body.expectedFunderId !== funderId)
+    throw new APIError(
+      409,
+      'The account paying for this market changed since the preview. Check the earlier payment before retrying.'
+    )
+  const spendsMnx =
+    body.fundingAccount === 'mnx' ||
+    (body.fundingAccount === 'creator' && funderId === getMnxCreatorId(ENV))
 
   const result = await addPerpPoolSubsidy(
     body.contractId,
@@ -33,7 +57,18 @@ export const addManagedPerpSubsidy = async (
       idempotencyKey: body.idempotencyKey,
       authorize: async (tx, contract) => {
         await requirePerpManager(tx, managerId, contract)
-        if (body.fundingAccount === 'mnx') {
+        // Backing paid by a creator returns to that creator at settlement,
+        // so its funds may only go to its own markets.
+        if (
+          body.fundingAccount === 'creator' &&
+          (contract.creatorId !== funderId ||
+            !getPerpCreatorAccountIds(ENV).includes(funderId))
+        )
+          throw new APIError(
+            403,
+            "Creator funds can only be added to that perp creator account's own markets."
+          )
+        if (spendsMnx) {
           // Even admins may only spend MNX funds on its own registered feeds.
           if (
             contract.creatorId !== funderId ||
@@ -44,9 +79,38 @@ export const addManagedPerpSubsidy = async (
               'MNX funds can only be added to MNX-owned MNX markets.'
             )
           await requirePerpManager(tx, funderId, contract)
-        }
+        } else if (body.fundingAccount === 'creator')
+          await requireActiveFunder(tx, funderId)
       },
     }
   )
   return { ...result, funderId }
+}
+
+const getFunderId = async (
+  pg: SupabaseDirectClient,
+  body: ValidatedAPIParams<'add-perp-subsidy'>,
+  managerId: string
+) => {
+  if (body.fundingAccount === 'mnx') return getMnxCreatorId(ENV)
+  if (body.fundingAccount !== 'creator') return managerId
+  // Read before the lock to name the payer; authorize re-checks it under the
+  // lock. A market's creator never changes.
+  const contract = await getContract(pg, body.contractId)
+  if (!contract)
+    throw new APIError(404, `Contract ${body.contractId} not found`)
+  return contract.creatorId
+}
+
+const requireActiveFunder = async (tx: SupabaseTransaction, id: string) => {
+  const funder = await tx.oneOrNone(
+    'select * from users where id = $1',
+    [id],
+    convertUser
+  )
+  if (!funder || funder.userDeleted || funder.isBannedFromPosting)
+    throw new APIError(
+      403,
+      'The creator account must be active and unbanned to fund backing.'
+    )
 }
