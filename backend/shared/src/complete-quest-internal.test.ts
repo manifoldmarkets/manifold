@@ -58,8 +58,8 @@ const USER = {
   bonusEligibility: 'verified',
 } as unknown as User
 
-type Paid = { questType: string; createdTime: number; amount: number }
-type PendingTxn = { questType: string; amount: number }
+type PendingTxn = { questType: string; questCount: number; amount: number }
+type Paid = PendingTxn & { createdTime: number }
 type FakeTx = {
   oneOrNone: (sql: string, params: unknown[]) => Promise<unknown>
   pending: PendingTxn[]
@@ -85,7 +85,6 @@ const releaseRowLock = (owner: string) => {
   lockWaiters.splice(0).forEach((resolve) => resolve())
 }
 
-// Every reward the old code paid had questCount 1 (it paid only at count 1).
 const paidSince = (
   questType: unknown,
   periodStart: unknown,
@@ -95,11 +94,21 @@ const paidSince = (
     (p) =>
       p.questType === questType &&
       p.createdTime >= Number(periodStart) &&
-      (questCount === undefined || Number(questCount) === 1)
+      (questCount === undefined || p.questCount === Number(questCount))
   )
+
+const lockNotAvailable = () =>
+  Object.assign(new Error('could not obtain lock on row'), { code: '55P03' })
 
 const query =
   (owner: string | undefined) => async (sql: string, params: unknown[]) => {
+    if (sql.includes('from users') && sql.includes('nowait')) {
+      if (!owner) throw new Error('row lock taken outside a transaction')
+      if (lockOwner !== null && lockOwner !== owner) throw lockNotAvailable()
+      lockOwner = owner
+      events.push(`${owner} locked user`)
+      return { '?column?': 1 }
+    }
     if (sql.includes('for update')) {
       if (!owner) throw new Error('row lock taken outside a transaction')
       await acquireRowLock(owner)
@@ -143,7 +152,7 @@ const fakePg = {
 let txnIds = 0
 const payout = async (
   tx: FakeTx,
-  data: { amount: number; data: { questType: string } }
+  data: { amount: number; data: { questType: string; questCount: number } }
 ) => {
   if (failNextPayout) {
     failNextPayout = false
@@ -151,7 +160,11 @@ const payout = async (
   }
   // As runTxn does.
   if (!(data.amount > 0)) throw new Error('Amount must be positive')
-  tx.pending.push({ questType: data.data.questType, amount: data.amount })
+  tx.pending.push({
+    questType: data.data.questType,
+    questCount: data.data.questCount,
+    amount: data.amount,
+  })
   return { id: `txn${++txnIds}`, ...data }
 }
 
@@ -272,6 +285,7 @@ describe('completeSharingQuest', () => {
   it("doesn't count a reward paid before today", async () => {
     paid.push({
       questType: 'SHARES',
+      questCount: 1,
       createdTime: Date.now() - 2 * 24 * 60 * 60 * 1000,
       amount: 5,
     })
@@ -283,6 +297,7 @@ describe('completeSharingQuest', () => {
   it("doesn't count other quests' rewards", async () => {
     paid.push({
       questType: 'MARKETS_CREATED',
+      questCount: 1,
       createdTime: Date.now(),
       amount: 100,
     })
@@ -333,6 +348,60 @@ describe('completeSharingQuest', () => {
     await within(2000, Promise.all([bet, completeSharingQuest(USER)]))
     expect(paid).toHaveLength(1)
     expect(events).toEqual(['bet locked user', 'tx1 locked user'])
+  })
+
+  // Cash conversion and in-app purchases hold the user row between two queued
+  // txns. A payout that took the queue slot and then waited for the row would
+  // leave their second txn waiting for the slot until the queue failed it.
+  it('lets a payment holding the row between two queued txns finish first', async () => {
+    shares = 1
+    let firstDone!: () => void
+    const betweenTxns = new Promise<void>((resolve) => (firstDone = resolve))
+    const conversion = (async () => {
+      await betsQueue.enqueueFn(() => acquireRowLock('conversion'), [USER.id])
+      firstDone()
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      await betsQueue.enqueueFn(async () => {
+        events.push('conversion second txn')
+      }, [USER.id])
+      releaseRowLock('conversion')
+    })()
+    await betweenTxns
+    await within(3000, Promise.all([conversion, completeSharingQuest(USER)]))
+    expect(paid).toHaveLength(1)
+    expect(events[0]).toBe('conversion second txn')
+  })
+
+  it('gives up with a 503 when the row stays busy, without writing or holding the queue', async () => {
+    shares = 1
+    await acquireRowLock('long payment')
+    await expect(
+      within(5000, completeSharingQuest(USER))
+    ).rejects.toMatchObject({ code: 503 })
+    expect(paid).toEqual([])
+    // The queue slot was released: the user's next queued work runs.
+    await within(
+      500,
+      betsQueue.enqueueFn(async () => undefined, [USER.id])
+    )
+    releaseRowLock('long payment')
+    await completeSharingQuest(USER)
+    expect(paid).toHaveLength(1)
+  })
+
+  // During a deploy, instances still on the old code treat only a reward with
+  // questCount 1 as already paid.
+  it('records questCount 1 when paid at a later count, so old instances see it', async () => {
+    shares = 3
+    await completeSharingQuest(USER)
+    expect(paid).toEqual([expect.objectContaining({ questCount: 1 })])
+    expect(createQuestPayoutNotification).toHaveBeenCalledWith(
+      USER,
+      expect.any(String),
+      5,
+      1,
+      'SHARES'
+    )
   })
 })
 

@@ -56,7 +56,10 @@ export const completeSharingQuest = async (user: User) => {
   if (await wasQuestRewardPaidSince(pg, user.id, questType, startOfDay))
     return { count }
 
-  const resp = await awardQuestBonus(user, questType, count, startOfDay)
+  // Record the quest's required count, not the shares seen, as every reward
+  // before this change did: API instances still running the old code during a
+  // deploy only treat a reward with questCount 1 as already paid.
+  const resp = await awardQuestBonus(user, questType, requiredCount, startOfDay)
   // Another call paid it first.
   if (!resp) return { count }
   if (!resp.txn) {
@@ -68,7 +71,7 @@ export const completeSharingQuest = async (user: User) => {
     user,
     resp.txn.id,
     resp.bonusAmount,
-    count,
+    requiredCount,
     questType
   ).catch((e) =>
     log.error('Failed to create quest payout notification', {
@@ -183,30 +186,82 @@ const wasQuestRewardPaidSince = async (
     [userId, questType, periodStart]
   ))
 
+class QuestPayoutUserBusy extends Error {}
+
+const QUEST_PAYOUT_MAX_ATTEMPTS = 4
+
+// Locks the user row to serialize concurrent quest reward grants for this
+// user, including across API instances (the bets queue is per process).
+// Without it, two concurrent calls can both pass the paid check and both pay.
+// NOWAIT, because this runs inside the user's bets queue slot: some payments
+// (cash conversion, in-app purchases) hold this row between two queued txns,
+// so waiting for it here would leave their second txn waiting for our slot.
+const lockQuestUser = async (tx: SupabaseTransaction, userId: string) => {
+  try {
+    await tx.oneOrNone(
+      `select 1 from users where id = $1 for no key update nowait`,
+      [userId]
+    )
+  } catch (error: unknown) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === '55P03'
+    )
+      throw new QuestPayoutUserBusy()
+    throw error
+  }
+}
+
 // Pays the quest's reward unless one was already paid since periodStart.
 // Returns null if it was, and no txn if the tier multiplier makes it zero.
 const awardQuestBonus = async (
   user: User,
   questType: QuestType,
-  newCount: number,
+  questCount: number,
   periodStart: number
 ) => {
   const pg = createSupabaseDirectClient()
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await payQuestBonusOnce(
+        pg,
+        user,
+        questType,
+        questCount,
+        periodStart
+      )
+    } catch (error) {
+      // Only the NOWAIT lock is retried: it fails before any write.
+      if (!(error instanceof QuestPayoutUserBusy)) throw error
+      if (attempt + 1 === QUEST_PAYOUT_MAX_ATTEMPTS)
+        throw new APIError(503, 'Your account is busy. Please try again.')
+      // The transaction and the queue slot have both been released. Give the
+      // payment holding the row time to finish, with jitter. Three waits total
+      // 0.7 to 1.4 seconds.
+      const delayMs = 100 * 2 ** attempt * (1 + Math.random())
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
+    }
+  }
+}
+
+const payQuestBonusOnce = async (
+  pg: SupabaseDirectClient,
+  user: User,
+  questType: QuestType,
+  questCount: number,
+  periodStart: number
+) =>
   // Take the user's bets queue slot before locking their row, the same order
   // as bets, sales and loans. Locking the row first and then waiting for the
   // slot (as runTxnFromBank inside the transaction did) deadlocks with a bet of
   // the user's that already holds the slot and is waiting for the row, until
   // the queue's 10 second expiry fails the payout with a 503.
-  return await betsQueue.enqueueFn(
+  await betsQueue.enqueueFn(
     () =>
       pg.tx(async (tx) => {
-        // Lock the user row to serialize concurrent quest reward grants for
-        // this user, including across API instances (the queue is per
-        // process). Without it, two concurrent calls can both pass the check
-        // below and both pay.
-        await tx.oneOrNone('select 1 from users where id = $1 for update', [
-          user.id,
-        ])
+        await lockQuestUser(tx, user.id)
         if (await wasQuestRewardPaidSince(tx, user.id, questType, periodStart))
           return null
 
@@ -230,7 +285,7 @@ const awardQuestBonus = async (
 
         const bonusTxnData = {
           questType,
-          questCount: newCount,
+          questCount,
           effectiveTier,
           questMultiplier,
           supporterBonus: questMultiplier > 1,
@@ -252,7 +307,6 @@ const awardQuestBonus = async (
       }),
     [user.id]
   )
-}
 
 export async function getUserShareEventsCount(userId: string, startTs: string) {
   const pg = createSupabaseDirectClient()
