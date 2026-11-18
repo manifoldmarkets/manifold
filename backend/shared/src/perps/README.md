@@ -572,11 +572,17 @@ Feed adapters live next to it:
   accounts). Chain state only — every venue API evaluated came with terms.
 - `votehub-feeds.ts` — VoteHub's published, time-weighted polling averages,
   parameterised by a `VoteHubFeedSpec` (average key, answer key, canary poll
-  query, log prefix, rules). Three feeds: `trump-approval-rating` (via the
-  thin `trump-approval.ts` wrapper, unchanged in behaviour),
-  `votehub-generic-ballot-2026` (Democratic share of the 2026 generic
-  ballot), and `vance-favorability` (JD Vance's Favorable share). Always a
-  share, never a margin, so the price is strictly positive. The
+  query, log prefix, rules, and `seriesEndsOn` for a cycle-bound series).
+  Feeds: `trump-approval-rating` (via the thin `trump-approval.ts` wrapper,
+  unchanged in behaviour), `vance-favorability` (JD Vance's Favorable
+  share), `votehub-generic-ballot-2026` (Democratic share of the 2026 generic
+  ballot — RETIRED: the series ended 2026-11-03 and its market settled
+  2026-11-05), and the 2028 pair `votehub-generic-ballot-2028-dem` /
+  `-rep` (both parties' shares of one `generic_ballot_2028` series — AWAITING
+  SOURCE until VoteHub publishes it; `list-votehub-averages.ts` reports when
+  it does, and the pending entry in `launch-manifest.ts` lists the promotion
+  steps). Always a share, never a margin, so the price is strictly positive.
+  The
   answer-key-parameterised reader and the cross-check canary live in
   `common/src/perps/votehub-average.ts`; the publish-on-change plus 12h
   heartbeat rule every slow feed shares is `common/src/perps/daily-feed-publish.ts`.
@@ -814,8 +820,10 @@ order by
 - `update-trump-approval.ts` polls VoteHub every 5 minutes and publishes
   the Trump average on change plus a 12h heartbeat, under `[trump-approval]`.
 - `update-votehub-averages.ts` does the same for the other VoteHub specs
-  (generic ballot, Vance favorability), every 5 minutes offset two minutes
-  from the Trump job, each spec published independently, under `[votehub]`.
+  (Vance favorability, the generic-ballot feeds), every 5 minutes offset two
+  minutes from the Trump job, each spec published independently, under
+  `[votehub]`. A spec whose registry entry carries a `lifecycle` (retired, or
+  awaiting its source) is skipped silently before any request.
 - `update-fear-greed.ts` polls Alternative.me every 5 minutes and publishes
   on change plus a heartbeat, under `[fear-greed]`. The index itself steps
   once a day around 00:00 UTC.
@@ -836,6 +844,22 @@ Feed-health alerts are `log.error` lines prefixed `[oracle-feeds]` /
 `[update-perps]`, and the publisher jobs page under `[trump-approval]`,
 `[votehub]`, `[fear-greed]` and `[openrouter]` — wire GCP log-based alerting
 to all of those.
+
+**Feed lifecycle.** An `OracleFeedDef` may carry `lifecycle: { phase:
+'retired' | 'awaiting-source', ... }`. Either phase takes the feed out of the
+oracle tick and the daily staleness probe (`update-oracle-feeds`), out of the
+publishers (`publishVoteHubPoint` returns `inactive` before any request), and
+out of `create-perp`; `marketCreationEnabled` must be false and the launch
+manifest check enforces that the feed sits in `PERP_LAUNCH_RETIRED_MARKETS`
+or `PERP_LAUNCH_PENDING_MARKETS` to match. Retire a cycle-bound feed once its
+series has ended and its market is settled — the 2026 generic ballot paged
+the `[oracle-feeds]` dead-man hourly and logged an ERROR every five minutes
+for two days after its settlement because nothing told the scheduler the
+series was finished. Register a feed ahead of its provider as
+`awaiting-source` so its reviewed settings live in the codebase without a
+never-published feed alerting hourly. Its `oracle_prices` history and its
+`common` ticker / attribution / display entries stay, because the settled
+market's page still renders them.
 
 Trading and closes share `getOracleFreshness` from
 `common/src/perps/oracle.ts`. A stale price, missing timestamp, or invalid

@@ -23,8 +23,10 @@ import {
   TRUMP_APPROVAL_FEED_ID,
   VANCE_FAVORABILITY_FEED_ID,
   VOTEHUB_GENERIC_BALLOT_2026_FEED_ID,
+  VOTEHUB_GENERIC_BALLOT_2028_DEM_FEED_ID,
+  VOTEHUB_GENERIC_BALLOT_2028_REP_FEED_ID,
 } from '../oracle'
-import { getOracleFeed } from '../oracle-feeds'
+import { ORACLE_FEEDS, getOracleFeed, isOracleFeedLive } from '../oracle-feeds'
 
 export type PerpLaunchMarketDefinition = {
   feedId: string
@@ -152,38 +154,11 @@ export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
     },
     minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
   },
-  // The other two VoteHub averages: same publisher, same cadence, same
-  // conservative settings as the Trump market. Both are shares, never
-  // margins, so the price is always positive and both directions are
-  // tradeable.
-  {
-    feedId: VOTEHUB_GENERIC_BALLOT_2026_FEED_ID,
-    question: 'Democratic share of 2026 generic ballot (VoteHub avg, %)',
-    requiredTopics: [
-      {
-        name: 'Politics',
-        slugByEnvironment: {
-          DEV: 'politics-default',
-          PROD: 'politics-default',
-        },
-      },
-    ],
-    oracleBehavior: 'scheduled-step',
-    requiresSourceAsOf: false,
-    gameDesign:
-      "Two-sided: the Democratic share of the generic ballot moves with the national environment and has coherent theses on both sides, but VoteHub's time-weighted average is slow and often unchanged between poll releases. The midterm is 2026-11-03; polling of a 2026 generic ballot stops after it and the published average goes quiet, so this market needs a close date or a resolution plan (settle at the last published average) set before then rather than being left to run into a frozen feed.",
-    latencyArbitrageRisk:
-      "The source value is public, so ingestion latency is the whole exposure: the feed is polled every 5 minutes against VoteHub's own max-age=300 cache, which bounds the window in which a move is visible to a trader but not yet to the market. Recommended leverage assumes that bound holds.",
-    recommended: {
-      maxLeverage: 3,
-      annualMaxFundingRate: 1,
-      fundingSensitivity: 1,
-      maxOraclePriceAgeMs: 30 * HOUR_MS,
-      subsidyLong: 5_000,
-      subsidyShort: 5_000,
-    },
-    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
-  },
+  // The other VoteHub average still running: same publisher, same cadence,
+  // same conservative settings as the Trump market. A share, never a margin,
+  // so the price is always positive and both directions are tradeable. (The
+  // 2026 generic-ballot market that launched beside it is in
+  // PERP_LAUNCH_RETIRED_MARKETS; its 2028 successors are pending below.)
   {
     feedId: VANCE_FAVORABILITY_FEED_ID,
     question: 'JD Vance favorability (VoteHub avg, %)',
@@ -507,15 +482,117 @@ export type PerpPendingLaunchMarketDefinition = PerpLaunchMarketDefinition & {
 }
 
 // Reviewed definitions that are NOT yet launchable. The feed stays in the
-// registry with marketCreationEnabled: false — ingestion, backfill scripts and
-// health checks all run, the admin form refuses to create a market, and the
-// preflight fails any market that appears on it. The reviewed settings live
-// here so promotion is a move, not a rewrite: resolve the reason, enable
-// creation in the registry, move the entry into PERP_LAUNCH_MARKETS. The
-// manifest check enforces that a pending feed is creation-disabled, so the
-// two lists cannot silently disagree.
+// registry with marketCreationEnabled: false — the admin form refuses to
+// create a market and the preflight fails any market that appears on it.
+// Ingestion, backfill scripts and health checks run for a pending feed whose
+// source exists; a feed registered ahead of its provider carries
+// `lifecycle: awaiting-source` as well, and then nothing polls or probes it
+// (see OracleFeedDef.lifecycle). The reviewed settings live here so promotion
+// is a move, not a rewrite: resolve the reason, clear the lifecycle and
+// enable creation in the registry, move the entry into PERP_LAUNCH_MARKETS.
+// The manifest check enforces that a pending feed is creation-disabled, so
+// the two lists cannot silently disagree.
+const GENERIC_BALLOT_2028_LAUNCH = {
+  requiredTopics: [
+    {
+      name: 'Politics',
+      slugByEnvironment: {
+        DEV: 'politics-default',
+        PROD: 'politics-default',
+      },
+    },
+  ],
+  oracleBehavior: 'scheduled-step',
+  requiresSourceAsOf: false,
+  latencyArbitrageRisk:
+    "The source value is public, so ingestion latency is the whole exposure: the feed is polled every 5 minutes against VoteHub's own max-age=300 cache, which bounds the window in which a move is visible to a trader but not yet to the market. Recommended leverage assumes that bound holds.",
+  // The 2026 market's reviewed settings, unchanged. (That market was created
+  // at 10x against this 3x recommendation and ran two months without
+  // incident; the recommendation stays conservative for a thin early-cycle
+  // series.)
+  recommended: {
+    maxLeverage: 3,
+    annualMaxFundingRate: 1,
+    fundingSensitivity: 1,
+    maxOraclePriceAgeMs: 30 * HOUR_MS,
+    subsidyLong: 5_000,
+    subsidyShort: 5_000,
+  },
+  minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
+  pendingReason:
+    'VoteHub had not published a `generic_ballot_2028` average as of 2026-11-09 (HTTP 404) and listed no 2028 generic-ballot polls. Promote when backend/scripts/list-votehub-averages.ts shows the key with `dem` and `rep` answer objects: clear the registry lifecycle, enable creation, move both entries into PERP_LAUNCH_MARKETS, deploy API + scheduler-perps, backfill both feeds (backfill-votehub-oracle.ts), then create the markets with create-votehub-perps.ts.',
+} as const satisfies Omit<
+  PerpPendingLaunchMarketDefinition,
+  'feedId' | 'question' | 'gameDesign'
+>
+
 export const PERP_LAUNCH_PENDING_MARKETS: readonly PerpPendingLaunchMarketDefinition[] =
-  []
+  [
+    // The 2028 generic ballot as a PAIR — one market per major party's share
+    // of VoteHub's single `generic_ballot_2028` series — rather than the 2026
+    // design's Democratic share alone, so a trader with a view on either
+    // party's number has a level to trade. The two are not mirror images:
+    // undecided/other moves them independently.
+    {
+      ...GENERIC_BALLOT_2028_LAUNCH,
+      feedId: VOTEHUB_GENERIC_BALLOT_2028_DEM_FEED_ID,
+      question: 'Democratic share of 2028 generic ballot (VoteHub avg, %)',
+      gameDesign:
+        "Two-sided: the Democratic share of the generic ballot moves with the national environment and has coherent theses on both sides, but VoteHub's time-weighted average is slow and often unchanged between poll releases — and early in a cycle the polling is thin, so expect long flat stretches. The series is cycle-bound: election day is 2028-11-07 and the published average stops there, so the market description must carry the 2026 market's settlement rule (settled by hand at the last accepted value after election day; never on the result), and the feed is retired in the registry once that settlement is done.",
+    },
+    {
+      ...GENERIC_BALLOT_2028_LAUNCH,
+      feedId: VOTEHUB_GENERIC_BALLOT_2028_REP_FEED_ID,
+      question: 'Republican share of 2028 generic ballot (VoteHub avg, %)',
+      gameDesign:
+        'The Republican share of the same series, as its own level rather than 100 minus the Democratic one: undecided and third-party respondents mean the two shares move independently (the 2026 series closed at D 52.1 / R 43.3). Same slow, thin-early source, same cycle-bound settlement rule and retirement as the Democratic market.',
+    },
+  ]
+
+export type PerpRetiredLaunchMarketDefinition = PerpLaunchMarketDefinition & {
+  /** What ended it: the series' end, the settlement, where the record is. */
+  retiredReason: string
+}
+
+// Launch markets whose feed has been RETIRED in the registry: the series
+// ended (or every market settled), nothing publishes or probes it any more,
+// and create-perp refuses it. The definition is kept for the record and as
+// the template for the next cycle. The manifest check enforces that a retired
+// feed is lifecycle-retired and creation-disabled, and appears on no other
+// list.
+export const PERP_LAUNCH_RETIRED_MARKETS: readonly PerpRetiredLaunchMarketDefinition[] =
+  [
+    {
+      feedId: VOTEHUB_GENERIC_BALLOT_2026_FEED_ID,
+      question: 'Democratic share of 2026 generic ballot (VoteHub avg, %)',
+      requiredTopics: [
+        {
+          name: 'Politics',
+          slugByEnvironment: {
+            DEV: 'politics-default',
+            PROD: 'politics-default',
+          },
+        },
+      ],
+      oracleBehavior: 'scheduled-step',
+      requiresSourceAsOf: false,
+      gameDesign:
+        "Two-sided: the Democratic share of the generic ballot moves with the national environment and has coherent theses on both sides, but VoteHub's time-weighted average is slow and often unchanged between poll releases. The series was cycle-bound (election day 2026-11-03), which is why the market carried a manual-settlement rule rather than a close date.",
+      latencyArbitrageRisk:
+        "The source value is public, so ingestion latency is the whole exposure: the feed is polled every 5 minutes against VoteHub's own max-age=300 cache, which bounds the window in which a move is visible to a trader but not yet to the market. Recommended leverage assumes that bound holds.",
+      recommended: {
+        maxLeverage: 3,
+        annualMaxFundingRate: 1,
+        fundingSensitivity: 1,
+        maxOraclePriceAgeMs: 30 * HOUR_MS,
+        subsidyLong: 5_000,
+        subsidyShort: 5_000,
+      },
+      minimumHistory: { spanMs: 30 * DAY_MS, points: 30 },
+      retiredReason:
+        "VoteHub's generic_ballot_2026 series ended 2026-11-03 (final value posted 11/04); prod market nScRu5uy6yCu was settled on 2026-11-05 at that value (52.1), per its description. Successors: the 2028 pair in PERP_LAUNCH_PENDING_MARKETS.",
+    },
+  ]
 
 // Residual pool value returns to the market creator at settlement. Restrict
 // the launch set to the environment's official Manifold account so a personal
@@ -676,13 +753,16 @@ export const getPerpLaunchManifestErrors = () => {
   const errors: string[] = []
   const feedIds = ALL_PERP_LAUNCH_MARKETS.map((market) => market.feedId)
   const pendingIds = PERP_LAUNCH_PENDING_MARKETS.map((market) => market.feedId)
+  const retiredIds = PERP_LAUNCH_RETIRED_MARKETS.map((market) => market.feedId)
   if (new Set(feedIds).size !== feedIds.length)
     errors.push('launch manifest has duplicate feed ids')
   if (
-    new Set([...feedIds, ...pendingIds]).size !==
-    feedIds.length + pendingIds.length
+    new Set([...feedIds, ...pendingIds, ...retiredIds]).size !==
+    feedIds.length + pendingIds.length + retiredIds.length
   )
-    errors.push('a feed appears in both the launch and pending manifests')
+    errors.push(
+      'a feed appears in more than one of the launch, pending and retired manifests'
+    )
   for (const environment of ['DEV', 'PROD'] as const) {
     if (!getPerpLaunchCreatorId(environment))
       errors.push(`${environment} has no official launch creator`)
@@ -697,6 +777,10 @@ export const getPerpLaunchManifestErrors = () => {
     }
     if (!feed.marketCreationEnabled)
       errors.push(`${market.feedId} is disabled for market creation`)
+    if (!isOracleFeedLive(feed))
+      errors.push(
+        `${market.feedId} is launchable but its feed is ${feed.lifecycle?.phase}; move it to the pending or retired manifest`
+      )
   }
 
   for (const market of PERP_LAUNCH_PENDING_MARKETS) {
@@ -714,8 +798,52 @@ export const getPerpLaunchManifestErrors = () => {
       errors.push(
         `${market.feedId} is pending but enabled for creation; promote it into ALL_PERP_LAUNCH_MARKETS or disable creation`
       )
+    if (feed.lifecycle?.phase === 'retired')
+      errors.push(
+        `${market.feedId} is pending but its feed is retired; a retired feed never launches`
+      )
     if (PERP_LAUNCH_EXCLUDED_FEED_IDS.includes(market.feedId))
       errors.push(`${market.feedId} is both pending and explicitly excluded`)
+  }
+
+  for (const market of PERP_LAUNCH_RETIRED_MARKETS) {
+    const feed = getOracleFeed(market.feedId)
+    collectDefinitionErrors(market, feed, errors)
+    if (!market.retiredReason.trim())
+      errors.push(`${market.feedId} is retired without a stated reason`)
+    if (!feed) {
+      // The registry entry stays so the settled market's chart, ticker and
+      // credit keep resolving (and so this check can see the lifecycle).
+      errors.push(
+        `${market.feedId} (retired) is absent from the oracle registry`
+      )
+      continue
+    }
+    if (feed.lifecycle?.phase !== 'retired')
+      errors.push(
+        `${market.feedId} is in the retired manifest but its feed is not lifecycle-retired`
+      )
+    if (feed.marketCreationEnabled)
+      errors.push(`${market.feedId} is retired but still enabled for creation`)
+    if (PERP_LAUNCH_EXCLUDED_FEED_IDS.includes(market.feedId))
+      errors.push(`${market.feedId} is both retired and explicitly excluded`)
+  }
+
+  // The converse: a lifecycle in the registry must be reflected in the
+  // manifest, so a feed cannot be quietly retired or parked with its launch
+  // definition still claiming it is live.
+  for (const feed of ORACLE_FEEDS) {
+    if (feed.lifecycle?.phase === 'retired' && !retiredIds.includes(feed.id))
+      errors.push(
+        `${feed.id} is lifecycle-retired in the registry but not in PERP_LAUNCH_RETIRED_MARKETS`
+      )
+    if (
+      feed.lifecycle?.phase === 'awaiting-source' &&
+      !pendingIds.includes(feed.id)
+    )
+      errors.push(
+        `${feed.id} is awaiting its source in the registry but not in PERP_LAUNCH_PENDING_MARKETS`
+      )
   }
 
   for (const feedId of PERP_LAUNCH_EXCLUDED_FEED_IDS) {

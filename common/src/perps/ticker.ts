@@ -29,7 +29,12 @@ export const isValidPerpTicker = (ticker: string) =>
 export const PERP_FEED_TICKERS: Readonly<Record<string, string>> = {
   'btc-usd': 'BTC',
   'trump-approval-rating': 'TRUMP',
+  // Retired feed (series ended with the 2026 midterm; market settled
+  // 2026-11-05). Its settled market page still renders the badge, so it keeps
+  // its name, and the 2028 pair below take party-suffixed tickers instead.
   'votehub-generic-ballot-2026': 'BALLOT',
+  'votehub-generic-ballot-2028-dem': 'DEM28',
+  'votehub-generic-ballot-2028-rep': 'GOP28',
   'vance-favorability': 'VANCE',
   'crypto-fear-greed': 'FEAR',
   'openrouter-open-weight-share': 'OPENW',

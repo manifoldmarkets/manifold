@@ -30,6 +30,8 @@ import {
   TRUMP_APPROVAL_FEED_ID,
   VANCE_FAVORABILITY_FEED_ID,
   VOTEHUB_GENERIC_BALLOT_2026_FEED_ID,
+  VOTEHUB_GENERIC_BALLOT_2028_DEM_FEED_ID,
+  VOTEHUB_GENERIC_BALLOT_2028_REP_FEED_ID,
 } from './oracle'
 import { XSTOCK_SPECS, fetchXStockUsdPrice } from './xstocks-price'
 
@@ -45,9 +47,47 @@ import { XSTOCK_SPECS, fetchXStockUsdPrice } from './xstocks-price'
 //     tighter than the feed's expected cadence (it would freeze between
 //     perfectly normal updates).
 
+/**
+ * Where a feed is in its life when it is not simply live.
+ *
+ * - 'awaiting-source': registered ahead of its provider. The series it reads
+ *   does not exist yet (a VoteHub average for a cycle nobody has polled), so
+ *   nothing polls it, nothing probes its staleness, and create-perp refuses
+ *   it. Registering early keeps the bounds, cadence and launch settings
+ *   reviewed in one place; the flip to live is clearing this field once
+ *   `reason` no longer holds, together with the creation flag and the
+ *   launch-manifest move that the manifest check requires.
+ * - 'retired': the series ended or every market on it settled. A feed with
+ *   no new points is then complete, not stale: nothing polls, probes or
+ *   publishes it, and create-perp refuses it. Its oracle_prices history stays
+ *   for the settled market's chart, as do its ticker, attribution and
+ *   display entries in `common`. `at` is when expectations of new points
+ *   ended (the settlement, or the provider's end date).
+ *
+ * Both phases require `marketCreationEnabled: false`; the launch manifest
+ * check enforces it so the two flags cannot disagree.
+ */
+export type OracleFeedLifecycle =
+  | { phase: 'awaiting-source'; reason: string }
+  | { phase: 'retired'; at: number; reason: string }
+
+/** Live feeds are polled or probed, alerted on, and creatable when enabled. */
+export const isOracleFeedLive = (feed: Pick<OracleFeedDef, 'lifecycle'>) =>
+  feed.lifecycle == null
+
+/** One clause for log lines and API errors. */
+export const describeOracleFeedLifecycle = (lifecycle: OracleFeedLifecycle) =>
+  lifecycle.phase === 'retired'
+    ? `retired since ${new Date(lifecycle.at).toISOString().slice(0, 10)} (${
+        lifecycle.reason
+      })`
+    : `awaiting its source (${lifecycle.reason})`
+
 export type OracleFeedDef = {
   id: string
   description: string
+  /** Absent = live. See OracleFeedLifecycle. */
+  lifecycle?: OracleFeedLifecycle
   /** Whether admins may create new perp markets on this feed. Required so
    * every registry addition makes an explicit product decision. Disabling
    * creation does not stop ingestion, health checks, or updates for existing
@@ -337,13 +377,74 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
   {
     id: VOTEHUB_GENERIC_BALLOT_2026_FEED_ID,
     description:
-      "Democratic share (%) of VoteHub's published 2026 generic-ballot average",
-    marketCreationEnabled: true,
+      "Democratic share (%) of VoteHub's published 2026 generic-ballot average (series ended 2026-11-03; retired)",
+    marketCreationEnabled: false,
+    // RETIRED. VoteHub's `generic_ballot_2026` series is cycle-bound: its
+    // `end_date` is election day, 2026-11-03, and the final 11/03 value was
+    // posted on 11/04. The one market on it (nScRu5uy6yCu) was settled at
+    // that value on 2026-11-05. Until this was marked, the publisher kept
+    // polling the ended series every 5 minutes and, once the last point aged
+    // past 20h, logged an un-throttled ERROR per attempt (288/day) while the
+    // hourly staleness probe paged `[oracle-feeds]` — for a feed with nothing
+    // left to publish. The entry stays so the settled market's chart, ticker
+    // and credit keep resolving, and as the template for the 2028 pair below.
+    lifecycle: {
+      phase: 'retired',
+      at: Date.UTC(2026, 10, 5, 21, 56, 39),
+      reason:
+        'VoteHub series ended 2026-11-03; market nScRu5uy6yCu settled 2026-11-05 at the last accepted value',
+    },
     cadence: 'daily',
     // A major party's generic-ballot share has sat between the high 30s and
     // the mid 50s for as long as the question has been polled; 20-80 leaves
     // room for any real result and still catches a margin (D-R, typically
     // single digits) or a fraction being published in its place.
+    minPrice: 20,
+    maxPrice: 80,
+    staleAfterMs: 26 * HOUR_MS,
+    updatePeriodMs: DAY_MS,
+  },
+  // The 2028 generic ballot as two feeds on ONE VoteHub series: the Democratic
+  // share and the Republican share, so both parties' numbers trade as levels.
+  // Each is a share, never a margin, so each price is strictly positive. Same
+  // publisher, cadence, bounds and dead-man threshold as the 2026 feed.
+  //
+  // AWAITING SOURCE. VoteHub had not published a `generic_ballot_2028`
+  // average as of 2026-11-09 (HTTP 404 — the key is inferred from
+  // `generic_ballot_2026`) and listed no 2028 generic-ballot polls. Nothing
+  // polls or probes these until the lifecycle is cleared. Promotion:
+  // `backend/scripts/list-votehub-averages.ts` reports when the key appears
+  // with `dem`/`rep` answer objects; then clear `lifecycle`, set
+  // marketCreationEnabled, move the launch-manifest entries out of pending,
+  // deploy API + scheduler-perps, backfill both feeds, and create the markets
+  // with `create-votehub-perps.ts`.
+  {
+    id: VOTEHUB_GENERIC_BALLOT_2028_DEM_FEED_ID,
+    description:
+      "Democratic share (%) of VoteHub's published 2028 generic-ballot average",
+    marketCreationEnabled: false,
+    lifecycle: {
+      phase: 'awaiting-source',
+      reason:
+        'VoteHub had not published a generic_ballot_2028 average as of 2026-11-09',
+    },
+    cadence: 'daily',
+    minPrice: 20,
+    maxPrice: 80,
+    staleAfterMs: 26 * HOUR_MS,
+    updatePeriodMs: DAY_MS,
+  },
+  {
+    id: VOTEHUB_GENERIC_BALLOT_2028_REP_FEED_ID,
+    description:
+      "Republican share (%) of VoteHub's published 2028 generic-ballot average",
+    marketCreationEnabled: false,
+    lifecycle: {
+      phase: 'awaiting-source',
+      reason:
+        'VoteHub had not published a generic_ballot_2028 average as of 2026-11-09',
+    },
+    cadence: 'daily',
     minPrice: 20,
     maxPrice: 80,
     staleAfterMs: 26 * HOUR_MS,
