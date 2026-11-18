@@ -14,6 +14,17 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (
 ) => {
   if (props.contentType === 'social_post')
     return reactToSocialPost(props, auth, req)
+  if (
+    props.contentType === 'comment' &&
+    props.commentParentType !== 'post' &&
+    (!props.reactionType || props.reactionType === 'like')
+  ) {
+    const linked = await createSupabaseDirectClient().oneOrNone(
+      'select id from social_posts where market_comment_id=$1',
+      [props.contentId]
+    )
+    if (linked) return reactToSocialPost(props, auth, req)
+  }
   const {
     contentId,
     contentType,

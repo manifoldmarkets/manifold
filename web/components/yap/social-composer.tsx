@@ -7,7 +7,11 @@ import Link from 'next/link'
 import { toast } from 'react-hot-toast'
 import { Contract } from 'common/contract'
 import { isSupporter } from 'common/supporter'
+import { canPostSocially } from 'common/user'
 import {
+  canCommentFromSocialPost,
+  socialCommentFits,
+  SOCIAL_COMMENT_TOO_LONG,
   SocialPost,
   SocialPostSource,
   SocialQuote,
@@ -19,12 +23,16 @@ import {
   socialPostPath,
   isSocialPostEditable,
 } from 'common/social-post'
-import { hasUnavailableSocialMentions } from 'common/social-rich-content'
+import {
+  hasUnavailableSocialMentions,
+  SocialRichContent,
+} from 'common/social-rich-content'
 import { Button } from '../buttons/button'
+import { Checkbox } from '../widgets/checkbox'
 import { SelectMarkets } from '../contract-select-modal'
 import { Modal } from '../layout/modal'
 import { SocialAvatar } from './social-avatar'
-import { useUser } from 'web/hooks/use-user'
+import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { uploadPublicImage } from 'web/lib/firebase/storage'
@@ -37,9 +45,12 @@ import {
 
 export function SocialComposer(props: {
   parentId?: string
+  parentPost?: SocialPost
+  quoteOnly?: boolean
   editing?: SocialPost
   initialMarkets?: Contract[]
   initialText?: string
+  initialRichContent?: SocialRichContent | null
   source?: SocialPostSource
   quote?: SocialQuote
   onPosted: (post: SocialPost) => void
@@ -48,11 +59,12 @@ export function SocialComposer(props: {
 }) {
   const { parentId, editing, source, onPosted, onCancel } = props
   const user = useUser()
+  const privateUser = usePrivateUser()
   const fileInput = useRef<HTMLInputElement>(null)
   const { draft, setField, clear } = useSocialComposerDraft(
     {
       text: editing?.text ?? props.initialText ?? '',
-      richContent: editing?.richContent,
+      richContent: editing ? editing.richContent : props.initialRichContent,
       markets: editing?.markets ?? props.initialMarkets ?? [],
       images: editing?.imageUrls ?? [],
     },
@@ -70,6 +82,19 @@ export function SocialComposer(props: {
   } = draft
   const localImages = draft.localImages
   const [selecting, setSelecting] = useState(false)
+  // Sharing from a market can also comment there, as reposts did before Yap.
+  const commentMarket =
+    !parentId && !editing && source && 'contractId' in source
+      ? markets.find((m) => m.id === source.contractId)
+      : undefined
+  const canAlsoComment =
+    !props.quoteOnly &&
+    !!user &&
+    !!commentMarket &&
+    commentMarket.token === 'MANA' &&
+    !isBlocked(privateUser, commentMarket.creatorId) &&
+    (canPostSocially(user) || commentMarket.creatorId === user.id)
+  const [alsoComment, setAlsoComment] = useState(true)
   const isPostRepost =
     !!(source && 'postId' in source) || editing?.source?.kind === 'post'
   const quote = props.quote ?? editing?.source
@@ -80,13 +105,23 @@ export function SocialComposer(props: {
       : undefined
   const count = [...text.trim()].length
   const editWindowOpen = useSocialEditWindow(editing?.createdTimeMs)
-  const editExpired = !!editing && !editWindowOpen
-  const eligible = !!editing || isSupporter(user?.entitlements)
+  const editExpired = !!editing && !editing.marketCommentId && !editWindowOpen
+  const eligible =
+    !!editing ||
+    (parentId
+      ? !!user &&
+        (canPostSocially(user) ||
+          props.parentPost?.discussionCreatorId === user.id)
+      : isSupporter(user?.entitlements))
   const canSubmit =
     !editExpired &&
     (count <= SOCIAL_POST_MAX_LENGTH ||
       (!!editing && hasUnavailableSocialMentions(richContent))) &&
-    !!(count || markets.length || images.length || isPostRepost)
+    !!(
+      count ||
+      images.length ||
+      (!props.quoteOnly && (markets.length || isPostRepost))
+    )
   function addImages(files: File[]) {
     if (!user || submitting.current || editExpired || !files.length) return
     setField('error', undefined)
@@ -158,6 +193,12 @@ export function SocialComposer(props: {
         marketIds: markets.map((m) => m.id),
         imageUrls,
       })
+      const commentsToo =
+        canAlsoComment &&
+        alsoComment &&
+        canCommentFromSocialPost(content, source)
+      if (commentsToo && !socialCommentFits(content))
+        throw new Error(SOCIAL_COMMENT_TOO_LONG)
       const post = editing
         ? await api('edit-social-post', {
             id: editing.id,
@@ -172,6 +213,7 @@ export function SocialComposer(props: {
                 markets.some((m) => m.id === source.contractId))
                 ? source
                 : undefined,
+            alsoComment: commentsToo || undefined,
           })
       clear()
       toast.success(
@@ -180,6 +222,8 @@ export function SocialComposer(props: {
             ? 'Post updated.'
             : parentId
             ? 'Reply posted.'
+            : commentsToo
+            ? 'Posted to Yap and the market.'
             : 'Posted to Yap.'}{' '}
           <Link
             className="text-primary-700 underline"
@@ -205,7 +249,9 @@ export function SocialComposer(props: {
         <div className="grow text-sm">
           <p className="text-ink-900 font-semibold">Join the conversation</p>
           <p className="text-ink-500">
-            Members can post and reply. All signed-in users can read and like.
+            {parentId
+              ? 'Eligible signed-in users can reply.'
+              : 'Members can publish and re-Yap. Everyone can read.'}
           </p>
         </div>
         {user ? (
@@ -227,6 +273,17 @@ export function SocialComposer(props: {
       <div className="flex items-start gap-3">
         <SocialAvatar user={user} size="sm" />
         <div className="min-w-0 flex-1">
+          {parentId && (
+            <p className="text-ink-500 mb-2 text-xs">
+              Replying{' '}
+              {props.parentPost
+                ? `to @${props.parentPost.author.username}`
+                : 'in this discussion'}
+              {props.parentPost?.marketCommentId
+                ? ' · also visible in the market thread'
+                : ''}
+            </p>
+          )}
           <SocialEditor
             ariaLabel={
               editing
@@ -320,6 +377,21 @@ export function SocialComposer(props: {
                 </div>
               ))}
             </div>
+          )}
+          {canAlsoComment && source && 'contractId' in source && (
+            <Checkbox
+              className="mb-2 text-sm"
+              label={
+                source.commentId
+                  ? 'Also reply in the market’s comments'
+                  : source.betId
+                  ? 'Also reply to this trade on the market'
+                  : 'Also comment on the market'
+              }
+              checked={alsoComment}
+              toggle={setAlsoComment}
+              disabled={saving}
+            />
           )}
           {error && (
             <p role="alert" className="mb-2 text-sm text-red-600">

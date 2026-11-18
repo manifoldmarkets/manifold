@@ -130,22 +130,51 @@ function SocialPostCardContent({
       setBusy(false)
     }
   }
+  const [localVersion, setLocalVersion] = useState(0)
+  const refresh = () => {
+    setLocalVersion((v) => v + 1)
+    onChanged()
+  }
   const changed = () => {
     setEditing(undefined)
     setReplying(false)
-    onChanged()
+    refresh()
   }
-  const own = user?.id === post.author.id
-  const canEdit = useSocialEditWindow(own ? post.createdTimeMs : undefined)
+  const isSourceCard = !!post.canonicalKey?.match(/^(market|bet):/)
+  const own = user?.id === post.author.id && !isSourceCard
+  const withinEditWindow = useSocialEditWindow(
+    own ? post.createdTimeMs : undefined
+  )
+  const canEdit = own && (!!post.marketCommentId || withinEditWindow)
+  async function reYap(remove = false) {
+    if (!user) {
+      await firebaseLogin()
+      return
+    }
+    if (busy) return
+    setBusy(true)
+    setError(undefined)
+    try {
+      await api('repost-social-post', { source: { postId: post.id }, remove })
+      onChanged()
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
   async function beginEdit() {
-    if (loadingEdit || !isSocialPostEditable(post.createdTimeMs)) return
+    if (loadingEdit || !canEdit) return
     setLoadingEdit(true)
     setError(undefined)
     try {
       // Feed content is redacted for display. Fetch the author's editable
       // document so an unrelated edit cannot replace mentions with placeholders.
       const result = await api('get-social-post', { id: post.id })
-      if (!isSocialPostEditable(result.post.createdTimeMs))
+      if (
+        !result.post.marketCommentId &&
+        !isSocialPostEditable(result.post.createdTimeMs)
+      )
         throw new Error('The 30-minute editing window has ended.')
       if (result.post.removed || result.editContent === undefined)
         throw new Error(
@@ -192,6 +221,18 @@ function SocialPostCardContent({
       }
       aria-label={`Post by ${post.author.name}`}
     >
+      {!!post.repostCount && !!post.repostedBy?.length && (
+        <div className="text-ink-500 flex items-center gap-2 px-4 pt-3 text-xs">
+          <BiRepost className="h-4 w-4" />
+          <span>
+            {post.repostedBy[0].name}
+            {post.repostCount > 1
+              ? ` and ${post.repostCount - 1} others`
+              : ''}{' '}
+            re-yapped
+          </span>
+        </div>
+      )}
       <div
         className="hover:bg-canvas-50/50 grid cursor-pointer grid-cols-[2rem_minmax(0,1fr)] gap-x-3 px-4 py-3 transition-colors"
         role="link"
@@ -266,6 +307,24 @@ function SocialPostCardContent({
                 <DropdownMenu
                   closeOnClick
                   items={[
+                    {
+                      name: post.threadMuted
+                        ? 'Unmute discussion'
+                        : post.threadFollowing
+                        ? 'Mute discussion'
+                        : 'Follow discussion',
+                      onClick: async () => {
+                        try {
+                          await api('set-social-thread-subscription', {
+                            id: post.id,
+                            muted: !!post.threadFollowing,
+                          })
+                          onChanged()
+                        } catch (e) {
+                          setError((e as Error).message)
+                        }
+                      },
+                    },
                     ...(canEdit ? [{ name: 'Edit', onClick: beginEdit }] : []),
                     ...(own || mod
                       ? [
@@ -420,14 +479,40 @@ function SocialPostCardContent({
                     {replyCountButton}
                   </div>
                 )}
-                <button
-                  aria-label="Repost to Yap"
-                  title="Repost to Yap"
-                  className="hover:text-primary-700 hover:bg-primary-500/10 rounded-full p-2 transition-colors"
-                  onClick={() => setReposting(true)}
-                >
-                  <BiRepost className="h-5 w-5" />
-                </button>
+                <div className={post.reposted ? 'text-teal-600' : ''}>
+                  <DropdownMenu
+                    closeOnClick
+                    buttonContent={
+                      <span
+                        className="flex items-center gap-1 p-2"
+                        aria-label={
+                          post.reposted
+                            ? 'Re-yapped: share options'
+                            : 'Re-Yap or quote'
+                        }
+                      >
+                        <BiRepost className="h-5 w-5" />
+                        {!!post.repostCount && (
+                          <span className="text-xs">{post.repostCount}</span>
+                        )}
+                      </span>
+                    }
+                    items={
+                      busy
+                        ? []
+                        : [
+                            {
+                              name: post.reposted ? 'Undo re-Yap' : 'Re-Yap',
+                              onClick: () => void reYap(!!post.reposted),
+                            },
+                            {
+                              name: 'Quote',
+                              onClick: () => setReposting(true),
+                            },
+                          ]
+                    }
+                  />
+                </div>
                 <Tooltip
                   text={
                     likeCount > 0 ? (
@@ -483,6 +568,7 @@ function SocialPostCardContent({
       {replying && !post.removed && (
         <SocialComposer
           parentId={post.id}
+          parentPost={post}
           onPosted={changed}
           onCancel={() => setReplying(false)}
           focusOnMount
@@ -493,8 +579,8 @@ function SocialPostCardContent({
           <SocialPostList
             parentId={post.id}
             depth={depth + 1}
-            refreshKey={refreshKey}
-            onChanged={onChanged}
+            refreshKey={refreshKey + localVersion}
+            onChanged={refresh}
           />
         </div>
       ) : (
@@ -504,10 +590,10 @@ function SocialPostCardContent({
               <SocialPostCard
                 key={reply.id}
                 post={reply}
-                onChanged={onChanged}
+                onChanged={refresh}
                 previews={false}
                 depth={depth + 1}
-                refreshKey={refreshKey}
+                refreshKey={refreshKey + localVersion}
                 connectedAbove
                 continueThread={index < post.replyPreviews.length - 1}
               />
@@ -526,9 +612,10 @@ function SocialPostCardContent({
       {reposting && (
         <RepostModal
           post={post}
+          quoteMode
           open={reposting}
           setOpen={setReposting}
-          onPosted={onChanged}
+          onPosted={refresh}
         />
       )}
       <ReportModal
@@ -550,6 +637,8 @@ function SocialPostCardContent({
             {own ? 'Delete this post?' : 'Remove this post?'}
           </h2>
           <p className="text-ink-500 my-3 text-sm">
+            {post.marketCommentId &&
+              'This also removes the same comment from the market. '}
             Existing replies remain visible. Removing a top-level post closes
             the discussion to new replies.
           </p>

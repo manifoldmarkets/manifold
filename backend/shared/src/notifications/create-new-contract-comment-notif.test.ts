@@ -52,6 +52,7 @@ jest.mock('expo-server-sdk', () => ({
 }))
 
 const map = jest.fn()
+const manyOrNone = jest.fn()
 const sourceUser = {
   id: 'creator',
   name: 'Creator',
@@ -68,8 +69,10 @@ const tradersTag = 'eMG8r3PEdRgtGArGGx1VUBGDwY53'
 
 beforeEach(() => {
   jest.clearAllMocks()
+  manyOrNone.mockResolvedValue([])
   jest.mocked(createSupabaseDirectClient).mockReturnValue({
     map,
+    manyOrNone,
   } as unknown as ReturnType<typeof createSupabaseDirectClient>)
   jest.mocked(getUniqueBettorIds).mockResolvedValue(['trader'])
   jest.mocked(getUniqueVoterIds).mockResolvedValue([])
@@ -148,4 +151,49 @@ it('uses the traders preference for email unsubscribe links', async () => {
     'comment',
     undefined
   )
+})
+
+it.each([
+  ['ordinary', undefined, 1],
+  ['following', { user_id: 'trader', muted: false }, 0],
+  ['muted', { user_id: 'trader', muted: true }, 0],
+])(
+  'preserves market follower alerts and avoids duplicate or muted Yap alerts: %s',
+  async (_case, subscription, expected) => {
+    manyOrNone.mockResolvedValue(subscription ? [subscription] : [])
+    const recipient = {
+      id: 'trader',
+      name: 'Trader',
+      blockedUserIds: [],
+      blockedByUserIds: [],
+      blockedContractIds: [],
+      blockedGroupSlugs: [],
+      notificationPreferences: {
+        ...getDefaultNotificationPreferences(),
+        all_comments_on_watched_markets: ['browser'],
+        social_replies: ['browser'],
+      },
+    } as unknown as PrivateUser
+    map.mockResolvedValueOnce(['trader']).mockResolvedValueOnce([recipient])
+    await createCommentOnContractNotification(
+      'comment',
+      sourceUser,
+      'hello',
+      contract,
+      {},
+      [],
+      false
+    )
+    expect(jest.mocked(bulkInsertNotifications).mock.calls[0][0]).toHaveLength(
+      expected as number
+    )
+  }
+)
+
+it('a muted Yap thread still allows an explicit mention', async () => {
+  manyOrNone.mockResolvedValue([{ user_id: 'trader', muted: true }])
+  await notify(['browser'], [], ['trader'])
+  expect(jest.mocked(bulkInsertNotifications).mock.calls[0][0]).toEqual([
+    expect.objectContaining({ reason: 'tagged_user' }),
+  ])
 })

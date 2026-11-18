@@ -12,13 +12,10 @@ import {
   SocialPostSkeleton,
 } from 'web/components/yap/social-post-list'
 import { api } from 'web/lib/api/api'
-import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { Button } from 'web/components/buttons/button'
 
 export default function YapPostPage() {
-  useRedirectIfSignedOut()
-  const isAuthorized = useIsAuthorized()
   const router = useRouter()
   const id =
     typeof router.query.postId === 'string' ? router.query.postId : undefined
@@ -36,7 +33,7 @@ export default function YapPostPage() {
   const [version, setVersion] = useState(0)
   const refresh = () => setVersion((v) => v + 1)
   useEffect(() => {
-    if (!id || !isAuthorized || !user) {
+    if (!id || user === undefined) {
       setDetail(undefined)
       return
     }
@@ -52,7 +49,7 @@ export default function YapPostPage() {
     return () => {
       cancelled = true
     }
-  }, [id, viewerKey, isAuthorized, version])
+  }, [id, viewerKey, user === undefined, version])
   const current =
     detail && detail.post.id === id && detail.viewerKey === viewerKey
       ? detail
@@ -77,7 +74,7 @@ export default function YapPostPage() {
             Yap
           </Link>
         </header>
-        {!isAuthorized || !user ? (
+        {user === undefined ? (
           <SocialPostSkeleton />
         ) : (
           <>
@@ -115,6 +112,7 @@ export default function YapPostPage() {
                   <SocialComposer
                     key={`reply-${id}`}
                     parentId={id}
+                    parentPost={current.post}
                     onPosted={refresh}
                   />
                 ) : (

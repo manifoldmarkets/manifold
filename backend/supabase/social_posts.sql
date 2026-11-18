@@ -14,6 +14,7 @@ create table social_posts (
   source_contract_id text references contracts(id),
   source_comment_id text,
   source_bet_id text,
+  market_comment_id text,
   deleted_time timestamptz,
   deleted_by text references users(id),
   removed_by_moderator boolean not null default false,
@@ -25,6 +26,7 @@ create index social_posts_timeline on social_posts(created_time desc, id desc)
 create index social_posts_replies on social_posts(parent_id, created_time, id);
 create index social_posts_root on social_posts(root_id);
 create index social_posts_author on social_posts(user_id, created_time desc);
+create index social_posts_created_time on social_posts(created_time);
 
 
 alter table social_posts enable row level security;

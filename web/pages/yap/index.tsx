@@ -7,15 +7,12 @@ import {
   SocialPostList,
   SocialPostSkeleton,
 } from 'web/components/yap/social-post-list'
-import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 
 export default function YapPage() {
-  useRedirectIfSignedOut()
   const [version, setVersion] = useState(0)
   const user = useUser()
   const privateUser = usePrivateUser()
-  const isAuthorized = useIsAuthorized()
   // Remount on account/block changes so a previous viewer's pages are never reused.
   const viewerKey = JSON.stringify([
     user?.id,
@@ -46,12 +43,12 @@ export default function YapPage() {
             </button>
           </div>
         </header>
-        {isAuthorized && user && (
+        {user && (
           <div className="border-ink-200 dark:border-ink-300 border-b">
             <SocialComposer onPosted={() => setVersion((v) => v + 1)} />
           </div>
         )}
-        {!isAuthorized || !user ? (
+        {user === undefined ? (
           <SocialPostSkeleton />
         ) : (
           <SocialPostList key={viewerKey} refreshKey={version} />

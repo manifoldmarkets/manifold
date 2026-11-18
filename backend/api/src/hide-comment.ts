@@ -14,7 +14,7 @@ import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 export const hideComment: APIHandler<'hide-comment'> =
   onlyUsersWhoCanPerformAction(
     'hideComment',
-    async ({ commentPath, action = 'hide' }, auth) => {
+    async ({ commentPath, action = 'hide' }, auth, req) => {
       // Comment path is of the form /[username]/[contractId]/comment/[commentId] because firebase
       const [, contractId, , commentId] = commentPath.split('/')
       if (!contractId || !commentId) {
@@ -53,6 +53,8 @@ export const hideComment: APIHandler<'hide-comment'> =
       }
 
       const comment = await getComment(pg, commentId)
+      if (comment.contractId !== contractId)
+        throw new APIError(400, 'Comment does not belong to this market')
 
       if (
         (isAdminId(comment.userId) || isModId(comment.userId)) &&
@@ -62,6 +64,16 @@ export const hideComment: APIHandler<'hide-comment'> =
           403,
           'You cannot hide or delete comments from admins or mods'
         )
+      }
+
+      const linked = await pg.oneOrNone<{ id: string }>(
+        'select id from social_posts where market_comment_id=$1',
+        [commentId]
+      )
+      if (linked && action === 'delete') {
+        const { deleteSocialPost } = await import('./social-posts')
+        await deleteSocialPost({ id: linked.id }, auth, req)
+        return { result: { success: true }, continue: async () => {} }
       }
 
       // Update the comment based on action
@@ -77,11 +89,22 @@ export const hideComment: APIHandler<'hide-comment'> =
         })
       } else {
         const hide = !comment.hidden
-        await updateData(pg, 'contract_comments', 'comment_id', {
-          comment_id: commentId,
-          hidden: hide,
-          hiddenTime: hide ? Date.now() : undefined,
-          hiderId: auth.uid,
+        await pg.tx(async (tx) => {
+          if (linked) {
+            const { lockSocialThread } = await import('shared/social-posts')
+            await lockSocialThread(tx, linked.id)
+          }
+          await updateData(tx, 'contract_comments', 'comment_id', {
+            comment_id: commentId,
+            hidden: hide,
+            hiddenTime: hide ? Date.now() : undefined,
+            hiderId: auth.uid,
+          })
+          if (linked)
+            await tx.none(
+              'update social_posts set hidden_time=case when $2 then clock_timestamp() else null end where id=$1',
+              [linked.id, hide]
+            )
         })
       }
 

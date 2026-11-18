@@ -66,6 +66,15 @@ export const createCommentOnContractNotification = async (
     [sourceContract.id],
     (r) => r.follow_id
   )
+  // Shared thread participants use the Yap notification/mute preference.
+  // Other market followers keep their existing notification behaviour.
+  const threadSubscribers = await pg.manyOrNone<{
+    user_id: string
+    muted: boolean
+  }>(
+    'select sub.user_id,sub.muted from social_thread_subscriptions sub join social_posts s on s.root_id=sub.root_id where s.market_comment_id=$1 and s.parent_id is not null',
+    [sourceId]
+  )
   const isReply = Object.keys(repliedUsersInfo).length > 0
   const buildNotification = (userId: string, reason: NotificationReason) => {
     return removeUndefinedProps({
@@ -148,6 +157,16 @@ export const createCommentOnContractNotification = async (
       userIsBlocked(privateUser, sourceUser.id) ||
       (!followerIds.some((id) => id === userId) &&
         !needNotFollowContractReasons.includes(reason))
+    )
+      return
+
+    const subscriber = threadSubscribers.find((s) => s.user_id === userId)
+    if (
+      subscriber &&
+      (!needNotFollowContractReasons.includes(reason) ||
+        (!subscriber.muted &&
+          getNotificationDestinationsForUser(privateUser, 'social_replies')
+            .sendToBrowser))
     )
       return
 

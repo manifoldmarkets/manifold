@@ -17,8 +17,12 @@ import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { UnifiedFeedCard } from './unified-feed-card'
 import { ActivityCard, ActivityGroup, ActivityItem } from './activity-card'
+import { SocialPost } from 'common/social-post'
+import { SocialPostCard } from '../yap/social-post-card'
 
 type UnifiedFeedData = {
+  socialPosts: SocialPost[]
+  socialCursor?: string | null
   // Personalized feed
   contracts: Contract[]
   comments: CommentWithTotalReplies[]
@@ -40,6 +44,7 @@ type UnifiedFeedData = {
 
 // A feed item can be either a personalized contract card or an activity group
 type FeedItem =
+  | { type: 'social'; post: SocialPost; time: number }
   | {
       type: 'contract'
       contract: Contract
@@ -52,6 +57,7 @@ type FeedItem =
   | { type: 'activity'; group: ActivityGroup; time: number }
 
 const defaultFeedData: UnifiedFeedData = {
+  socialPosts: [],
   contracts: [],
   comments: [],
   bets: [],
@@ -77,7 +83,7 @@ export function UnifiedFeed(props: { className?: string }) {
 
   const [feedData, setFeedData] = usePersistentInMemoryState<UnifiedFeedData>(
     defaultFeedData,
-    `unified-feed-data-v5-${user?.id ?? 'logged-out'}`
+    `unified-feed-data-v6-${user?.id ?? 'logged-out'}`
   )
 
   const [loading, setLoading] = useState(false)
@@ -106,6 +112,8 @@ export function UnifiedFeed(props: { className?: string }) {
         userId: user?.id,
         feedLimit,
         feedOffset: feedData.feedOffset,
+        socialCursor: feedData.socialCursor ?? undefined,
+        includeSocial: feedData.socialCursor === null ? 'false' : 'true',
         activityLimit,
         activityOffset: feedData.activityOffset,
         ignoreContractIds: existingContractIds,
@@ -121,6 +129,8 @@ export function UnifiedFeed(props: { className?: string }) {
       )
 
       setFeedData((prev) => ({
+        socialPosts: uniqBy([...prev.socialPosts, ...data.socialPosts], 'id'),
+        socialCursor: data.nextSocialCursor,
         contracts: uniqBy([...prev.contracts, ...data.contracts], 'id'),
         comments: uniqBy([...prev.comments, ...data.comments], 'id'),
         bets: uniqBy([...prev.bets, ...data.bets], 'id'),
@@ -186,7 +196,37 @@ export function UnifiedFeed(props: { className?: string }) {
   return (
     <Col className={clsx('relative w-full gap-4', className)}>
       {feedItems.map((item) => {
-        if (item.type === 'contract') {
+        if (item.type === 'social') {
+          return (
+            <div
+              key={`social-${item.post.id}`}
+              className="bg-canvas-0 border-ink-200 overflow-hidden rounded-xl border"
+            >
+              <SocialPostCard
+                post={item.post}
+                onChanged={async () => {
+                  const result = await api('get-social-post', {
+                    id: item.post.id,
+                  })
+                  setFeedData((prev) => ({
+                    ...prev,
+                    socialPosts: prev.socialPosts.map((post) =>
+                      post.id === result.post.id
+                        ? {
+                            ...result.post,
+                            feedTimeMs: Math.max(
+                              post.feedTimeMs ?? 0,
+                              result.post.feedTimeMs ?? 0
+                            ),
+                          }
+                        : post
+                    ),
+                  }))
+                }}
+              />
+            </div>
+          )
+        } else if (item.type === 'contract') {
           return (
             <UnifiedFeedCard
               key={`contract-${item.contract.id}`}
@@ -242,6 +282,9 @@ function buildUnifiedFeed(feedData: UnifiedFeedData): FeedItem[] {
   const feedItems: FeedItem[] = []
   const activityFeedItems: FeedItem[] = []
   const seenContractIds = new Set<string>()
+  const sharedCommentIds = new Set(
+    feedData.socialPosts.map((p) => p.marketCommentId).filter(Boolean)
+  )
 
   // Build boosted contract cards first (they appear at top)
   for (const contract of feedData.boostedContracts) {
@@ -263,6 +306,7 @@ function buildUnifiedFeed(feedData: UnifiedFeedData): FeedItem[] {
 
     const repost = feedData.reposts.find((r) => r.contract_id === contract.id)
     const comment = feedData.comments.find((c) => c.contractId === contract.id)
+    if (comment && sharedCommentIds.has(comment.id)) continue
     const bet = feedData.bets.find((b) => b.contractId === contract.id)
     const reason = feedData.idsToReason[contract.id]
 
@@ -317,6 +361,7 @@ function buildUnifiedFeed(feedData: UnifiedFeedData): FeedItem[] {
   }
 
   for (const comment of feedData.activityComments) {
+    if (sharedCommentIds.has(comment.id)) continue
     if (seenContractIds.has(comment.contractId)) continue
     activityItems.push({
       type: 'comment',
@@ -365,10 +410,24 @@ function buildUnifiedFeed(feedData: UnifiedFeedData): FeedItem[] {
 
   // Alternate between feed items and activity items
   const mixedItems: FeedItem[] = []
+  const socialItems: FeedItem[] = orderBy(
+    feedData.socialPosts,
+    (p) => p.feedTimeMs ?? p.createdTimeMs,
+    'desc'
+  ).map((post) => ({
+    type: 'social',
+    post,
+    time: post.feedTimeMs ?? post.createdTimeMs,
+  }))
   const orderedActivityFeedItems = orderBy(activityFeedItems, 'time', 'desc')
-  const maxLen = Math.max(feedItems.length, orderedActivityFeedItems.length)
+  const maxLen = Math.max(
+    feedItems.length,
+    orderedActivityFeedItems.length,
+    socialItems.length
+  )
 
   for (let i = 0; i < maxLen; i++) {
+    if (i < socialItems.length) mixedItems.push(socialItems[i])
     if (i < feedItems.length) {
       mixedItems.push(feedItems[i])
     }

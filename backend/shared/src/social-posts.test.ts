@@ -1,3 +1,4 @@
+jest.mock('./websockets/server', () => ({ broadcast: jest.fn() }))
 jest.mock('./utils', () => ({ getUser: jest.fn(), getPrivateUser: jest.fn() }))
 jest.mock('./supabase/init', () => ({
   createSupabaseDirectClient: jest.fn(() => ({})),
@@ -10,7 +11,6 @@ jest.mock('./supabase/notifications', () => ({
 }))
 import { getPrivateUser, getUser } from './utils'
 import { getActiveSupporterEntitlements } from './supabase/entitlements'
-import { insertNotificationToSupabase } from './supabase/notifications'
 import {
   assertSocialInteraction,
   getSocialViewer,
@@ -174,7 +174,7 @@ test('hydrates cosmetic entitlements for authors, parents, and quoted authors in
   expect(betShare.source?.author?.entitlements).toEqual([
     convertEntitlement(entitlement('bet-author')),
   ])
-  expect(manyOrNone).toHaveBeenCalledTimes(17)
+  expect(manyOrNone).toHaveBeenCalledTimes(21)
   expect(manyOrNone).toHaveBeenCalledWith(
     expect.stringContaining(
       'from user_entitlements e where e.user_id=users.id'
@@ -632,46 +632,53 @@ test('database rate-limit exhaustion returns 429', async () => {
     )
   ).rejects.toMatchObject({ code: 429 })
 })
-test('social notifications suppress self, blocks, and opt-outs and use reply content', async () => {
+test('thread notifications use the actual reply, group by thread and respect recipient preferences', async () => {
   const actor = { id: 'actor', name: 'Actor', username: 'actor' } as User
-  await notifySocial(db({}), { ...post, user_id: 'actor' }, actor, 'like')
-  expect(insertNotificationToSupabase).not.toHaveBeenCalled()
+  const none = jest.fn()
+  const pg = db({
+    oneOrNone: jest.fn(async (_sql, [id]) =>
+      id === 'new-reply'
+        ? { ...post, id, text: 'actual reply' }
+        : { ...post, id: 'root' }
+    ),
+    manyOrNone: jest.fn(async () => [
+      { user_id: 'actor' },
+      { user_id: 'subscriber' },
+    ]),
+    none,
+  })
   jest.mocked(getPrivateUser).mockResolvedValue({
     blockedUserIds: ['actor'],
     blockedByUserIds: [],
   } as never)
-  await notifySocial(db({}), post, actor, 'like')
-  expect(insertNotificationToSupabase).not.toHaveBeenCalled()
+  await notifySocial(pg, post, actor, 'reply', 'new-reply')
+  expect(none).not.toHaveBeenCalled()
   jest.mocked(getPrivateUser).mockResolvedValue({
     blockedUserIds: [],
     blockedByUserIds: [],
     notificationPreferences: { opt_out_all: [], social_replies: [] },
   } as never)
-  await notifySocial(db({}), post, actor, 'reply', 'new-reply')
-  expect(insertNotificationToSupabase).not.toHaveBeenCalled()
+  await notifySocial(pg, post, actor, 'reply', 'new-reply')
+  expect(none).not.toHaveBeenCalled()
   jest.mocked(getPrivateUser).mockResolvedValue({
     blockedUserIds: [],
     blockedByUserIds: [],
     notificationPreferences: { opt_out_all: [], social_replies: ['browser'] },
   } as never)
-  await notifySocial(
-    db({
-      oneOrNone: jest
-        .fn()
-        .mockResolvedValue({ ...post, id: 'new-reply', text: 'actual reply' }),
-    }),
-    post,
-    actor,
-    'reply',
-    'new-reply'
-  )
-  expect(insertNotificationToSupabase).toHaveBeenCalledWith(
+  await notifySocial(pg, post, actor, 'reply', 'new-reply')
+  expect(none).toHaveBeenCalledTimes(1)
+  expect(none.mock.calls[0][1]).toEqual([
+    'subscriber',
+    'social-thread-root',
     expect.objectContaining({
       sourceText: 'actual reply',
       sourceSlug: '/yap/new-reply',
       sourceType: 'social_reply',
     }),
-    expect.anything()
+  ])
+  expect(pg.manyOrNone).toHaveBeenCalledWith(
+    expect.stringContaining('and not muted'),
+    ['root']
   )
 })
 
