@@ -1,17 +1,42 @@
 import { JSONContent } from '@tiptap/core'
+import { isEqual } from 'lodash'
 import { APIError } from 'common/api/utils'
 import { ContractComment } from 'common/comment'
-import { SocialPostSource, isSocialImageUrl } from 'common/social-post'
+import {
+  SOCIAL_POST_MAX_LENGTH,
+  SocialPostSource,
+  isSocialImageUrl,
+} from 'common/social-post'
 import {
   commentToSocialRichContent,
+  socialPostToCommentContent,
   socialRichContentToText,
 } from 'common/social-rich-content'
 import { richTextToString } from 'common/util/parse'
-import type { SocialRow } from './social-posts'
+import {
+  isSocialThreadOpen,
+  lockSocialThread,
+  type SocialRow,
+} from './social-posts'
 import { SupabaseDirectClient, SupabaseTransaction } from './supabase/init'
+import { log, sanitizeJsonContent } from './utils'
 
 type DB = SupabaseDirectClient | SupabaseTransaction
 
+// How many market comments one read may add to a Yap discussion. Reads are
+// public, so the work each one can cause stays small; later reads carry on.
+export const SOCIAL_RECONCILE_BATCH = 100
+
+// Yap's length limit, applied to the copy of a longer market comment.
+const clampToYapLength = (text: string) => {
+  const chars = [...text]
+  return chars.length > SOCIAL_POST_MAX_LENGTH
+    ? chars.slice(0, SOCIAL_POST_MAX_LENGTH - 1).join('') + '…'
+    : text
+}
+
+// The Yap copy of a market comment: what Yap's format can hold of it. The
+// market keeps the document as it was written.
 export function commentToYapContent(content: JSONContent) {
   const richContent = commentToSocialRichContent(content)
   const imageUrls: string[] = []
@@ -26,13 +51,49 @@ export function commentToYapContent(content: JSONContent) {
   }
   visit(content)
   return {
-    text: richContent
-      ? socialRichContentToText(richContent)
-      : richTextToString(content),
+    text: clampToYapLength(
+      richContent
+        ? socialRichContentToText(richContent)
+        : richTextToString(content)
+    ),
     richContent,
     imageUrls: [...new Set(imageUrls)].slice(0, 4),
     marketIds: [] as string[],
   }
+}
+
+// Reduces a comment document to what decides whether two documents read the
+// same: node types, text, marks (a link by its address only) and set attributes.
+const comparableContent = (node: JSONContent): JSONContent => {
+  const attrs = Object.fromEntries(
+    Object.entries(node.attrs ?? {}).filter(([, value]) => value != null)
+  )
+  return {
+    type: node.type,
+    ...(node.text !== undefined ? { text: node.text } : {}),
+    ...(Object.keys(attrs).length ? { attrs } : {}),
+    ...(node.marks?.length
+      ? {
+          marks: node.marks.map((mark) =>
+            mark.type === 'link'
+              ? { type: 'link', attrs: { href: mark.attrs?.href } }
+              : mark
+          ),
+        }
+      : {}),
+    ...(node.content?.length
+      ? { content: node.content.map(comparableContent) }
+      : {}),
+  }
+}
+
+// Whether Yap's editor can hold this comment without loss. A comment that
+// cannot be held is edited on its market, and Yap shows a copy of it.
+export function isCommentYapRepresentable(content: JSONContent) {
+  const roundTrip = sanitizeJsonContent(
+    socialPostToCommentContent(commentToYapContent(content))
+  )
+  return isEqual(comparableContent(content), comparableContent(roundTrip))
 }
 
 // Market rows remain compatible with old clients; the stable association means
@@ -59,11 +120,16 @@ export async function ensureMarketCommentPost(
   const comment = row.data
   if (comment.isModComment)
     throw new APIError(400, 'Mod comments cannot be shared to Yap')
+  // A trade or market row is the parent only if it belongs to this market: a
+  // comment can carry a trade from a sibling market.
   const parent = comment.replyToCommentId
     ? await ensureMarketCommentPost(pg, comment.replyToCommentId)
     : await pg.oneOrNone<SocialRow>(
-        'select * from social_posts where canonical_key=$1',
-        [comment.betId ? `bet:${comment.betId}` : `market:${row.contract_id}`]
+        'select * from social_posts where canonical_key=$1 and source_contract_id=$2',
+        [
+          comment.betId ? `bet:${comment.betId}` : `market:${row.contract_id}`,
+          row.contract_id,
+        ]
       )
   const id = `mc-${commentId}`
   const content = commentToYapContent(comment.content)
@@ -159,7 +225,9 @@ export async function ensureSocialSource(
 }
 
 // Bring older native replies into the same tree on demand, without publishing
-// them as fresh posts or sending historical notifications.
+// them as fresh posts or sending historical notifications. Runs on public
+// reads, so it does a bounded amount of work, takes only comments it can
+// place, and never lets one comment stop the rest or the read.
 export async function reconcileMarketDiscussion(pg: DB, post: SocialRow) {
   if (!post.market_comment_id && !post.canonical_key?.match(/^(market|bet):/))
     return
@@ -169,10 +237,30 @@ export async function reconcileMarketDiscussion(pg: DB, post: SocialRow) {
         [post.market_comment_id]
       )
     : null
+  const unavailable = (alias: string) =>
+    `(coalesce((${alias}.data->>'hidden')::boolean,false) or coalesce((${alias}.data->>'deleted')::boolean,false)
+      or coalesce((${alias}.data->>'isModComment')::boolean,false))`
+  const closed = (alias: string) =>
+    `(${alias}.deleted_time is not null or ${alias}.hidden_time is not null)`
+  // A reply is taken only if it has a place in the tree: its parent is on Yap
+  // in a thread that still takes messages, or its parent can be added. A reply
+  // under a hidden, deleted or mod comment, or under a post that was removed
+  // from Yap, stays on the market only.
   const rows = await pg.manyOrNone<{ comment_id: string }>(
-    `select cc.comment_id from contract_comments cc left join social_posts s on s.market_comment_id=cc.comment_id
-     where s.id is null and not coalesce((cc.data->>'hidden')::boolean,false) and not coalesce((cc.data->>'deleted')::boolean,false)
-     and not coalesce((cc.data->>'isModComment')::boolean,false)
+    `select cc.comment_id from contract_comments cc
+     left join social_posts s on s.market_comment_id=cc.comment_id
+     left join contract_comments parent on parent.comment_id=cc.data->>'replyToCommentId'
+       and parent.contract_id=cc.contract_id
+     left join social_posts parent_post on parent_post.market_comment_id=parent.comment_id
+     left join social_posts parent_root on parent_root.id=parent_post.root_id
+     where s.id is null and not ${unavailable('cc')}
+     and (cc.data->>'replyToCommentId' is null
+       or (parent_post.id is not null and not ${closed(
+         'parent_post'
+       )} and not ${closed('parent_root')})
+       or (parent_post.id is null and parent.comment_id is not null and not ${unavailable(
+         'parent'
+       )}))
      and ${
        comment
          ? "(cc.comment_id=$1 or cc.data->>'replyToCommentId'=$1)"
@@ -180,14 +268,98 @@ export async function reconcileMarketDiscussion(pg: DB, post: SocialRow) {
          ? "cc.contract_id=$1 and cc.data->>'betId'=$2"
          : 'cc.contract_id=$1'
      }
-     order by cc.created_time limit 500`,
+     order by cc.created_time limit ${SOCIAL_RECONCILE_BATCH}`,
     comment
       ? [comment.data.replyToCommentId ?? comment.data.id]
       : post.source_bet_id
       ? [post.source_contract_id, post.source_bet_id]
       : [post.source_contract_id]
   )
-  for (const row of rows) await ensureMarketCommentPost(pg, row.comment_id)
+  for (const row of rows) {
+    // Each comment in its own savepoint: a failure undoes that comment only.
+    await pg
+      .tx((tx) => ensureMarketCommentPost(tx, row.comment_id))
+      .catch((e) =>
+        log.warn(
+          'Skipped a market comment that could not join its Yap discussion',
+          {
+            commentId: row.comment_id,
+            error: e instanceof Error ? e.message : String(e),
+          }
+        )
+      )
+  }
+}
+
+// A comment written on its market joins a discussion that is already on Yap:
+// under the comment it replies to, the trade it replies to, or the market.
+// Returns null when there is no such discussion or it no longer takes
+// messages. The market comment stands on its own either way.
+export async function linkCommentToOpenDiscussion(
+  pg: SupabaseDirectClient,
+  comment: ContractComment,
+  replyToBetId?: string
+) {
+  if (comment.isModComment) return null
+  const parent = comment.replyToCommentId
+    ? await pg.oneOrNone<SocialRow>(
+        `select s.* from social_posts s join contract_comments cc on cc.comment_id=s.market_comment_id
+         where cc.comment_id=$1 and cc.contract_id=$2`,
+        [comment.replyToCommentId, comment.contractId]
+      )
+    : // The trade or market row must belong to the market the comment is on.
+      await pg.oneOrNone<SocialRow>(
+        'select * from social_posts where canonical_key=$1 and source_contract_id=$2',
+        [
+          replyToBetId ? `bet:${replyToBetId}` : `market:${comment.contractId}`,
+          comment.contractId,
+        ]
+      )
+  if (!parent || !(await isSocialThreadOpen(pg, parent))) return null
+  return pg.tx(async (tx) => {
+    const locked = await lockSocialThread(tx, parent.id)
+    if (!(await isSocialThreadOpen(tx, locked))) return null
+    return {
+      parent: locked,
+      row: await ensureMarketCommentPost(tx, comment.id),
+    }
+  })
+}
+
+// Keeps the Yap copy of a market comment in step with an edit made on the
+// market. Call in the edit's transaction, under the thread lock.
+export async function syncSocialPostFromComment(
+  pg: DB,
+  postId: string,
+  content: JSONContent
+) {
+  const copy = commentToYapContent(content)
+  await pg.none(
+    `update social_posts set text=$2, rich_content=$3, image_urls=$4, edited_time=clock_timestamp() where id=$1`,
+    [postId, copy.text, copy.richContent, copy.imageUrls]
+  )
+}
+
+// The row a share points at, if it exists. Never creates one: undoing a share
+// must not put the item on Yap.
+export async function findSocialSource(
+  pg: DB,
+  source: SocialPostSource
+): Promise<SocialRow | null> {
+  if ('postId' in source)
+    return pg.oneOrNone<SocialRow>('select * from social_posts where id=$1', [
+      source.postId,
+    ])
+  if (source.commentId)
+    return pg.oneOrNone<SocialRow>(
+      `select s.* from social_posts s join contract_comments cc on cc.comment_id=s.market_comment_id
+       where cc.comment_id=$1 and cc.contract_id=$2`,
+      [source.commentId, source.contractId]
+    )
+  return pg.oneOrNone<SocialRow>(
+    'select * from social_posts where canonical_key=$1',
+    [source.betId ? `bet:${source.betId}` : `market:${source.contractId}`]
+  )
 }
 
 export async function subscribeToSocialThread(

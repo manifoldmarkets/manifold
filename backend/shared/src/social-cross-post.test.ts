@@ -17,6 +17,7 @@ jest.mock('./supabase/utils', () => ({ updateData: jest.fn() }))
 jest.mock('./analytics', () => ({ trackPublicEvent: jest.fn() }))
 jest.mock('api/helpers/rate-limit', () => ({
   onlyUsersWhoCanPerformAction: (_action: string, handler: unknown) => handler,
+  throwIfBannedFromAction: jest.fn(),
 }))
 jest.mock('./social-posts', () => ({
   socialAuthor: jest.fn(),
@@ -33,6 +34,7 @@ jest.mock('./social-posts', () => ({
 }))
 jest.mock('./social-discussion', () => ({
   ensureMarketCommentPost: jest.fn(async () => ({ id: 'original' })),
+  isCommentYapRepresentable: jest.fn(() => true),
   subscribeToSocialThread: jest.fn(),
 }))
 jest.mock('./new-account-gate', () => ({
@@ -52,11 +54,13 @@ import {
   validateComment,
 } from 'api/create-comment'
 import { editCommentContentInternal } from 'api/edit-comment'
+import { throwIfBannedFromAction } from 'api/helpers/rate-limit'
 import {
   createSocialPost,
   deleteSocialPost,
   editSocialPost,
 } from 'api/social-posts'
+import { isCommentYapRepresentable } from './social-discussion'
 import { createSupabaseDirectClient } from './supabase/init'
 import { getComment } from './supabase/contract-comments'
 import { updateData } from './supabase/utils'
@@ -417,8 +421,22 @@ test('an edit too large for its market comment is rejected', async () => {
   expect(editCommentContentInternal).not.toHaveBeenCalled()
 })
 
+test('a Yap edit of a comment with formatting Yap cannot hold is refused', async () => {
+  pg.one.mockResolvedValue({ ...row, market_comment_id: 'mirror' })
+  jest.mocked(getComment).mockResolvedValue(mirror)
+  jest.mocked(isCommentYapRepresentable).mockReturnValueOnce(false)
+  await expect(edit(row.text)).rejects.toMatchObject({
+    code: 400,
+    message: expect.stringMatching(/Edit it on its market/),
+  })
+  // The market comment keeps the document it has.
+  expect(editCommentContentInternal).not.toHaveBeenCalled()
+})
+
+// Authors cannot delete market comments, so removing their own Yap takes it
+// off Yap only. A moderator's removal takes the comment with it.
 test.each([
-  ['author', 'author', true],
+  ['author', 'author', false],
   ['moderator', 'mod', true],
 ])(
   '%s removal of a Yap (uid %s) deletes its market comment: %s',
@@ -433,18 +451,14 @@ test.each([
       return {} as Awaited<ReturnType<typeof updateData>>
     })
     const { MOD_IDS } = jest.requireActual('common/envs/constants')
-    await deleteSocialPost(
-      { id: 'post' },
-      {
-        uid: uid === 'mod' ? MOD_IDS[0] : uid,
-      } as AuthedUser,
-      req
-    )
+    const actorId = uid === 'mod' ? MOD_IDS[0] : uid
+    await deleteSocialPost({ id: 'post' }, { uid: actorId } as AuthedUser, req)
     expect(jest.mocked(updateData).mock.calls.length > 0).toBe(deletes)
     // Either way the Yap's repost leaves followers' feeds.
     expect(sqlCalls(/delete from posts where social_post_id/)[0][1]).toEqual([
       'post',
     ])
+    const unlinked = sqlCalls(/data - 'socialPostId'/)
     if (deletes) {
       // Same transaction as the Yap removal, so the two cannot diverge.
       expect(deletedInTx).toBe(true)
@@ -452,14 +466,62 @@ test.each([
         comment_id: 'mirror',
         deleted: true,
       })
+      // Under the market's own rule for deleting comments.
+      expect(throwIfBannedFromAction).toHaveBeenCalledWith(
+        pg,
+        actorId,
+        'hideComment'
+      )
+      expect(unlinked).toHaveLength(0)
       expect(trackPublicEvent).toHaveBeenCalledWith(
-        uid === 'mod' ? MOD_IDS[0] : uid,
+        actorId,
         'delete_comment',
         expect.objectContaining({ commentId: 'mirror', socialPostId: 'post' })
       )
-    } else expect(trackPublicEvent).not.toHaveBeenCalled()
+    } else {
+      // The comment stays on its market and stops pointing at the removed Yap.
+      expect(unlinked).toHaveLength(1)
+      expect(unlinked[0][1]).toEqual(['mirror'])
+      expect(throwIfBannedFromAction).not.toHaveBeenCalled()
+      expect(trackPublicEvent).not.toHaveBeenCalled()
+    }
   }
 )
+
+test('a moderator banned from moderating comments cannot remove a shared comment through Yap', async () => {
+  const { MOD_IDS } = jest.requireActual('common/envs/constants')
+  jest
+    .mocked(lockSocialThread)
+    .mockResolvedValue({ ...row, market_comment_id: 'mirror' })
+  jest.mocked(getComment).mockResolvedValue(mirror)
+  jest.mocked(throwIfBannedFromAction).mockRejectedValueOnce(
+    Object.assign(new Error('You are banned from hiding comments'), {
+      code: 403,
+    })
+  )
+  await expect(
+    deleteSocialPost({ id: 'post' }, { uid: MOD_IDS[0] } as AuthedUser, req)
+  ).rejects.toMatchObject({ code: 403 })
+  // Refused before either record is touched.
+  expect(sqlCalls(/update social_posts set text=''/)).toHaveLength(0)
+  expect(updateData).not.toHaveBeenCalled()
+})
+
+test('an admin or moderator removing their own shared post leaves their market comment', async () => {
+  // hide-comment refuses to delete a comment by an admin or moderator, their
+  // own included; removing the Yap is not a way around that.
+  const { MOD_IDS } = jest.requireActual('common/envs/constants')
+  jest.mocked(lockSocialThread).mockResolvedValue({
+    ...row,
+    user_id: MOD_IDS[0],
+    market_comment_id: 'mirror',
+  })
+  jest.mocked(getComment).mockResolvedValue({ ...mirror, userId: MOD_IDS[0] })
+  await deleteSocialPost({ id: 'post' }, { uid: MOD_IDS[0] } as AuthedUser, req)
+  expect(sqlCalls(/update social_posts set text=''/)).toHaveLength(1)
+  expect(updateData).not.toHaveBeenCalled()
+  expect(trackPublicEvent).not.toHaveBeenCalled()
+})
 
 test('a moderator removal leaves market comments by admins and moderators', async () => {
   const { MOD_IDS } = jest.requireActual('common/envs/constants')

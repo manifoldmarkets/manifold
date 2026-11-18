@@ -1,7 +1,8 @@
-import { APIHandler } from './helpers/endpoint'
+import { APIError, APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   ensureSocialSource,
+  findSocialSource,
   subscribeToSocialThread,
 } from 'shared/social-discussion'
 import {
@@ -25,7 +26,12 @@ export const repostSocialPost: APIHandler<'repost-social-post'> =
     const actor = await socialAuthor(auth.uid, !remove)
     const viewer = await getSocialViewer(auth.uid)
     const { row, notify } = await pg.tx(async (tx) => {
-      const original = await ensureSocialSource(tx, source)
+      // Undoing a share looks the item up and never creates it: there is
+      // nothing to undo for an item that was never put on Yap.
+      const original = remove
+        ? await findSocialSource(tx, source)
+        : await ensureSocialSource(tx, source)
+      if (!original) throw new APIError(404, 'You have not re-Yapped this')
       const row = await lockSocialThread(tx, original.id)
       await limitSocialWrite(tx, auth.uid, 'repost', 60)
       if (remove) {

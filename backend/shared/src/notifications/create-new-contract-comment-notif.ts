@@ -160,15 +160,18 @@ export const createCommentOnContractNotification = async (
     )
       return
 
+    // Someone following the comment's Yap thread gets one grouped in-app
+    // alert from Yap, so the market's in-app alert would repeat it. Muting the
+    // thread silences replies on every channel. Explicit tags always arrive,
+    // and email and push keep following the market preference.
     const subscriber = threadSubscribers.find((s) => s.user_id === userId)
-    if (
-      subscriber &&
-      (!needNotFollowContractReasons.includes(reason) ||
-        (!subscriber.muted &&
-          getNotificationDestinationsForUser(privateUser, 'social_replies')
-            .sendToBrowser))
-    )
-      return
+    const isTag = needNotFollowContractReasons.includes(reason)
+    if (subscriber?.muted && !isTag) return
+    const groupedOnYap =
+      !!subscriber &&
+      !isTag &&
+      getNotificationDestinationsForUser(privateUser, 'social_replies')
+        .sendToBrowser
 
     const { sendToBrowser, sendToEmail, sendToMobile, notificationPreference } =
       getNotificationDestinationsForUser(privateUser, reason)
@@ -176,7 +179,11 @@ export const createCommentOnContractNotification = async (
     const receivedNotifications = usersToReceivedNotifications[userId] ?? []
 
     // Browser notifications
-    if (sendToBrowser && !receivedNotifications.includes('browser')) {
+    if (
+      sendToBrowser &&
+      !groupedOnYap &&
+      !receivedNotifications.includes('browser')
+    ) {
       bulkNotifications.push(buildNotification(userId, reason))
       receivedNotifications.push('browser')
     }

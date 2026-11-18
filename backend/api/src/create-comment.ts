@@ -27,9 +27,8 @@ import { broadcastNewComment } from 'shared/websockets/helpers'
 import { APIError, type APIHandler, AuthedUser } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { onCreateCommentOnContract } from './on-create-comment-on-contract'
-import { commentToYapContent } from 'shared/social-discussion'
-import { socialPostDraftSchema } from 'common/social-post'
-import { getComment } from 'shared/supabase/contract-comments'
+import { linkCommentToOpenDiscussion } from 'shared/social-discussion'
+import { notifySocial } from 'shared/social-posts'
 
 // TODO: generate ids in supabase instead
 export const newCommentId = () => Math.random().toString(36).substring(2, 15)
@@ -37,7 +36,7 @@ export const newCommentId = () => Math.random().toString(36).substring(2, 15)
 // Creates a new comment on a contract.
 // Posts and chats are not supported yet.
 export const createComment: APIHandler<'comment'> =
-  onlyUsersWhoCanPerformAction('comment', async (props, auth, req) => {
+  onlyUsersWhoCanPerformAction('comment', async (props, auth) => {
     const {
       contractId,
       content,
@@ -51,57 +50,10 @@ export const createComment: APIHandler<'comment'> =
     if (isModComment && !isModId(auth.uid) && !isAdminId(auth.uid)) {
       throw new APIError(403, 'Only moderators can post mod comments')
     }
-    if (!isModComment && (replyToCommentId || !replyToAnswerId)) {
-      const pg = createSupabaseDirectClient()
-      const parent = replyToCommentId
-        ? await pg.oneOrNone<{ id: string }>(
-            `select s.id from social_posts s join contract_comments cc on cc.comment_id=s.market_comment_id
-         where cc.comment_id=$1 and cc.contract_id=$2`,
-            [replyToCommentId, contractId]
-          )
-        : await pg.oneOrNone<{ id: string }>(
-            'select id from social_posts where canonical_key=$1',
-            [replyToBetId ? `bet:${replyToBetId}` : `market:${contractId}`]
-          )
-      if (parent) {
-        if (isModComment)
-          throw new APIError(
-            400,
-            'Mod comments cannot also be posted to Yap. Post a separate mod comment on the market.'
-          )
-        const { contentJson } = await validateComment(
-          contractId,
-          auth.uid,
-          content,
-          html,
-          markdown
-        )
-        const draft = socialPostDraftSchema.safeParse(
-          commentToYapContent(contentJson)
-        )
-        if (!draft.success)
-          throw new APIError(
-            400,
-            'This shared reply must fit Yap’s text and image limits.'
-          )
-        const { createSocialPost } = await import('./social-posts')
-        const response = await createSocialPost(
-          { parentId: parent.id, content: draft.data },
-          auth,
-          req
-        )
-        const post = 'result' in response ? response.result : response
-        if (!post.marketCommentId)
-          throw new APIError(500, 'Shared reply was not linked to its market')
-        return {
-          result: await getComment(pg, post.marketCommentId),
-          continue: async () => {
-            if ('continue' in response) await response.continue?.()
-          },
-        }
-      }
-    }
-    return createCommentOnContractInternal(contractId, auth, {
+    // A comment written on the market is always the market's own comment, as
+    // written and under the market's rules. Whether it also shows on Yap never
+    // decides whether it is accepted or what is stored.
+    const created = await createCommentOnContractInternal(contractId, auth, {
       content,
       html,
       markdown,
@@ -110,7 +62,38 @@ export const createComment: APIHandler<'comment'> =
       replyToBetId,
       isModComment,
     })
+    return {
+      result: created.result,
+      continue: async () => {
+        // Before the comment's own notifications, so people following the
+        // Yap thread are told once.
+        await joinSocialDiscussion(created.result, replyToBetId)
+        await created.continue()
+      },
+    }
   })
+
+// If the comment's thread, trade or market is already discussed on Yap, the
+// comment joins that discussion as a copy. Best effort: a failure here leaves
+// an ordinary market comment, which a later read of the thread can still add.
+const joinSocialDiscussion = async (
+  comment: ContractComment,
+  replyToBetId: string | undefined
+) => {
+  try {
+    const pg = createSupabaseDirectClient()
+    const joined = await linkCommentToOpenDiscussion(pg, comment, replyToBetId)
+    if (!joined) return
+    const commenter = await getUser(comment.userId, pg)
+    if (commenter)
+      await notifySocial(pg, joined.parent, commenter, 'reply', joined.row.id)
+  } catch (e) {
+    log.error('Failed to add a market comment to its Yap discussion', {
+      e,
+      commentId: comment.id,
+    })
+  }
+}
 
 export const createCommentOnContractInternal = async (
   contractId: string,

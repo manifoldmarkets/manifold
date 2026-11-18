@@ -12,11 +12,11 @@ import {
 } from 'shared/supabase/init'
 import { updateData } from 'shared/supabase/utils'
 import { revalidateStaticProps } from 'shared/utils'
-import { commentToYapContent } from 'shared/social-discussion'
-import { socialPostEditSchema } from 'common/social-post'
+import { syncSocialPostFromComment } from 'shared/social-discussion'
+import { lockSocialThread } from 'shared/social-posts'
 
 export const editComment: APIHandler<'edit-comment'> =
-  onlyUsersWhoCanPerformAction('comment', async (props, auth, req) => {
+  onlyUsersWhoCanPerformAction('comment', async (props, auth) => {
     const { commentId, contractId, content, html, markdown } = props
     const {
       you: editor,
@@ -32,37 +32,34 @@ export const editComment: APIHandler<'edit-comment'> =
     if (editor.id !== comment.userId && !isAdminId(editor.id))
       throw new APIError(403, 'User is not the creator of the comment.')
 
+    // An edit made on the market follows the market's rules and stores the
+    // document as written. If the comment is also on Yap, its copy there is
+    // brought up to date in the same transaction, under the thread lock.
     const linked = await pg.oneOrNone<{ id: string }>(
-      'select id from social_posts where market_comment_id=$1',
+      'select id from social_posts where market_comment_id=$1 and deleted_time is null',
       [commentId]
     )
     if (linked) {
-      const marketIds = await pg.map(
-        'select contract_id from social_post_markets where post_id=$1 order by position',
-        [linked.id],
-        (r) => r.contract_id as string
-      )
-      const draft = socialPostEditSchema.safeParse({
-        ...commentToYapContent(contentJson),
-        marketIds,
-      })
-      if (!draft.success)
-        throw new APIError(
-          400,
-          'This shared comment must fit Yap’s text and image limits.'
+      await pg.tx(async (tx) => {
+        await lockSocialThread(tx, linked.id)
+        await editCommentContentInternal(
+          tx,
+          contract,
+          comment,
+          editor.id,
+          contentJson
         )
-      const { editSocialPost } = await import('./social-posts')
-      await editSocialPost({ id: linked.id, content: draft.data }, auth, req)
-      return { success: true }
+        await syncSocialPostFromComment(tx, linked.id, contentJson)
+      })
+    } else {
+      await editCommentContentInternal(
+        pg,
+        contract,
+        comment,
+        editor.id,
+        contentJson
+      )
     }
-
-    await editCommentContentInternal(
-      pg,
-      contract,
-      comment,
-      editor.id,
-      contentJson
-    )
     await revalidateStaticProps(contractPath(contract))
 
     return { success: true }

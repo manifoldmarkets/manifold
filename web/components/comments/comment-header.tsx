@@ -547,26 +547,6 @@ function DotMenu(props: {
               onClick: () => setEditingComment(true),
               adminAction: comment.userId !== user.id,
             },
-          user?.id === comment.userId &&
-            comment.socialPostId &&
-            !comment.deleted && {
-              name: 'Delete',
-              icon: <TrashIcon className="h-5 w-5" />,
-              onClick: async () => {
-                if (
-                  !window.confirm(
-                    'Delete this comment from both the market and Yap? Replies will remain.'
-                  )
-                )
-                  return
-                try {
-                  await api('delete-social-post', { id: comment.socialPostId! })
-                  updateComment({ deleted: true })
-                } catch (e) {
-                  toast.error((e as Error).message)
-                }
-              },
-            },
           isContractCreator && {
             name: 'Add to chart',
             icon: <PlusCircleIcon className="h-5 w-5 text-green-500" />,

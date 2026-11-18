@@ -5,6 +5,7 @@ import {
   revalidateContractStaticProps,
 } from 'shared/utils'
 import { getComment } from 'shared/supabase/contract-comments'
+import { lockSocialThread } from 'shared/social-posts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateData } from 'shared/supabase/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
@@ -66,11 +67,13 @@ export const hideComment: APIHandler<'hide-comment'> =
         )
       }
 
-      const linked = await pg.oneOrNone<{ id: string }>(
-        'select id from social_posts where market_comment_id=$1',
+      const linked = await pg.oneOrNone<{ id: string; removed: boolean }>(
+        'select id, deleted_time is not null as removed from social_posts where market_comment_id=$1',
         [commentId]
       )
-      if (linked && action === 'delete') {
+      // A comment that is live on Yap is removed from both places together. If
+      // its Yap post is already gone, the comment is deleted here as usual.
+      if (linked && !linked.removed && action === 'delete') {
         const { deleteSocialPost } = await import('./social-posts')
         await deleteSocialPost({ id: linked.id }, auth, req)
         return { result: { success: true }, continue: async () => {} }
@@ -89,21 +92,22 @@ export const hideComment: APIHandler<'hide-comment'> =
         })
       } else {
         const hide = !comment.hidden
+        // A market creator's hide collapses the comment on their market and
+        // goes no further. Only an admin or moderator hides or restores the
+        // comment's post on Yap as well.
+        const onYap = linked && (isAdmin || isMod) ? linked : null
         await pg.tx(async (tx) => {
-          if (linked) {
-            const { lockSocialThread } = await import('shared/social-posts')
-            await lockSocialThread(tx, linked.id)
-          }
+          if (onYap) await lockSocialThread(tx, onYap.id)
           await updateData(tx, 'contract_comments', 'comment_id', {
             comment_id: commentId,
             hidden: hide,
             hiddenTime: hide ? Date.now() : undefined,
             hiderId: auth.uid,
           })
-          if (linked)
+          if (onYap)
             await tx.none(
               'update social_posts set hidden_time=case when $2 then clock_timestamp() else null end where id=$1',
-              [linked.id, hide]
+              [onYap.id, hide]
             )
         })
       }

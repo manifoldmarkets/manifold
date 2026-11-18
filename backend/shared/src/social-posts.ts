@@ -133,18 +133,28 @@ export async function assertSocialInteraction(
       'You cannot interact with this discussion because of a block'
     )
   if (post.market_comment_id || post.canonical_key?.match(/^(market|bet):/)) {
+    // A market creator's hide collapses the comment on that market only. A
+    // moderator's hide also sets hidden_time on the post, checked above.
     const available = await pg.oneOrNone(
       `select c.id from contracts c left join contract_comments cc on cc.comment_id=$2
        where c.id=coalesce(cc.contract_id,$1) and c.visibility='public'
          and not coalesce((c.data->>'deleted')::boolean,false)
          and not(c.creator_id=any($3::text[]))
          and ($2::text is null or cc.comment_id is not null
-           and not coalesce((cc.data->>'hidden')::boolean,false) and not coalesce((cc.data->>'deleted')::boolean,false))`,
+           and not coalesce((cc.data->>'deleted')::boolean,false))`,
       [post.source_contract_id, post.market_comment_id, viewer.blocked]
     )
     if (!available)
       throw new APIError(403, 'This shared discussion is unavailable')
   }
+}
+// Whether a discussion still takes new messages: neither the post nor the
+// root of its thread has been removed from Yap or hidden there.
+export async function isSocialThreadOpen(pg: DB, post: SocialRow) {
+  if (post.deleted_time || post.hidden_time) return false
+  const root =
+    post.root_id === post.id ? post : await getSocialRow(pg, post.root_id)
+  return !root.deleted_time && !root.hidden_time
 }
 export async function validateSocialMarkets(pg: DB, marketIds: string[]) {
   const rows = await pg.manyOrNone<{ id: string }>(
@@ -321,8 +331,12 @@ export async function validateSocialSource(
   if (!marketIds.includes(source.contractId))
     throw new APIError(400, 'Keep the source market attached')
   if (source.commentId) {
-    const comment = await pg.oneOrNone(
-      `select cc.user_id from contract_comments cc
+    const comment = await pg.oneOrNone<{
+      user_id: string
+      is_mod_comment: boolean
+    }>(
+      `select cc.user_id, coalesce((cc.data->>'isModComment')::boolean, false) as is_mod_comment
+      from contract_comments cc
       left join contract_comments parent on parent.comment_id = cc.data->>'replyToCommentId'
       where cc.comment_id = $1 and cc.contract_id = $2
       and coalesce((cc.data->>'hidden')::boolean, false) = false and coalesce((cc.data->>'deleted')::boolean, false) = false
@@ -331,6 +345,9 @@ export async function validateSocialSource(
     )
     if (!comment || viewer.blocked.includes(comment.user_id))
       throw new APIError(400, 'Source comment is unavailable')
+    // Quoting is sharing too: mod comments stay on their market.
+    if (comment.is_mod_comment)
+      throw new APIError(400, 'Mod comments cannot be shared to Yap')
   }
   if (source.betId) {
     const bet = await pg.oneOrNone(
@@ -477,9 +494,11 @@ export async function hydrateSocialPosts(
           [rows.map((r) => r.root_id), viewer.id]
         )
       : Promise.resolve([]),
+    // Hidden on its market does not make a comment unavailable here: only a
+    // moderator's hide reaches Yap, through hidden_time on the post.
     pg.manyOrNone<{ comment_id: string; available: boolean }>(
       `select cc.comment_id,(c.visibility='public' and not coalesce((c.data->>'deleted')::boolean,false)
-       and not coalesce((cc.data->>'hidden')::boolean,false) and not coalesce((cc.data->>'deleted')::boolean,false)) as available
+       and not coalesce((cc.data->>'deleted')::boolean,false)) as available
        from contract_comments cc join contracts c on c.id=cc.contract_id where cc.comment_id=any($1::text[])`,
       [rows.map((r) => r.market_comment_id).filter(Boolean)]
     ),

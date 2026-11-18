@@ -493,7 +493,14 @@ async function fetchSiteActivity(
 
   // Filter and process comments
   const baseCommentData = recentCommentRecords
-    .filter((rc) => !rc.reply_to_data?.hidden && !rc.data.hidden)
+    // Neither a hidden nor a deleted comment, nor a reply to one.
+    .filter(
+      (rc) =>
+        !rc.reply_to_data?.hidden &&
+        !rc.data.hidden &&
+        !rc.reply_to_data?.deleted &&
+        !rc.data.deleted
+    )
     .filter(
       (rc) =>
         !hasContentWithText(rc.data.content, [

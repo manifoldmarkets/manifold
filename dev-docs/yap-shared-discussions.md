@@ -6,8 +6,13 @@ Combined implementation, updated 18 November 2026. No production deployment.
 
 - Re-Yap shares a stable original item. One active share per person; undo does not delete content. Re-sharing can bump it at most once per 24 hours, including undo/re-add cycles.
 - Quote creates a distinct authored post. Unrelated takes that link the same market stay separate.
-- Market comments and their Yap representations have one logical identity. Reply, edit, likes and moderation work consistently from either surface; legacy market rows remain for compatibility.
-- Replies use normal commenting eligibility; publishing and re-Yapping require membership. Public discussions can be read while signed out.
+- A market comment and its Yap post are one message with one set of likes, and replies made on either side appear on both. The market comment is the record: it is written, edited and stored under the market's rules. Yap shows a copy of it, cut to what Yap's format holds (paragraphs, mentions, visible links, up to four images, 2,000 characters).
+- Commenting on a market never depends on Yap. A comment is saved as written first; if its thread, trade or market has a Yap discussion that still takes messages, it then joins that discussion as a copy. Likes made on the market are the market's own reactions, which Yap reads.
+- Editing: the author or an admin, with no time limit, on the market. On Yap the same people can edit a post that has a market comment, unless the comment has formatting Yap cannot hold; that one is edited on its market. Standalone Yaps keep the 30-minute window.
+- Removing: an author who removes their post takes it off Yap only. Their market comment stays, because authors cannot delete market comments, and it is not copied to Yap again. A moderator's removal deletes both, under the market's rules: not a comment by an admin or moderator, and not while banned from moderating comments.
+- Hiding: a market creator's hide collapses the comment on their market and does not reach Yap. An admin's or moderator's hide also hides the post on Yap, and their unhide restores it.
+- Mod comments stay on their market: they cannot be re-Yapped, quoted or copied to Yap.
+- Replies use normal commenting eligibility; publishing and re-Yapping require membership. Public discussions can be read while signed out. A read adds at most 100 of a market's older comments to its discussion, skips any it cannot place, and never fails because of one.
 - Thread participation subscribes the participant; mute/unmute applies to thread notifications. Re-Yap notifications aggregate for the original author.
 - Explore includes native Yap cards. Shared market/comment/trade items have stable identities even when shared without commentary.
 - Ranking counts independent people across comments, Yaps and re-Yaps, excluding market creators and bots. Mirroring and repeated shares cannot multiply the signal.
@@ -30,8 +35,8 @@ Open http://localhost:3000/yap. The local API is http://localhost:8088 and uses 
 
 1. Re-Yap the same post from two accounts: one feed item, original author retained, two shares and one discussion. Undo one share; the original and replies remain. Undo/re-add within 24 hours does not advance its bump time.
 2. Quote the post with your own text: a separate authored post and conversation, linked to the original.
-3. Share a market comment, reply from Yap, then reply from the market. Check placement, shared likes, edits and deletion from either side. Shared comments keep the market's editing permissions; standalone Yaps retain the 30-minute window.
-4. Follow/mute/unmute the thread from the Yap menu. Participants get grouped in-app replies; muted threads suppress reply alerts, while explicit mentions still work. Other market followers retain their existing notifications.
+3. Share a market comment, reply from Yap, then reply from the market. Check placement and shared likes. Edit the comment on the market with bold text and a list: the market keeps the formatting, Yap shows the plain copy, and Yap's Edit sends you back to the market. Remove your own post on Yap: the comment stays on the market. Hide a shared comment as the market's creator: it collapses on the market and stays on Yap. Hide it as a moderator: it goes from both. Standalone Yaps retain the 30-minute edit window.
+4. Follow/mute/unmute the thread from the Yap menu. Participants get one grouped in-app alert for replies instead of the market's in-app alert; email and push still follow their market preferences. Muted threads suppress reply alerts on every channel, while explicit mentions still arrive. Other market followers retain their existing notifications.
 5. Look at Explore for native Yap cards. Open a Yap URL while signed out. Confirm moderator-comment mode and Post to Yap remain mutually exclusive.
 
 The count shows active unique sharers. Re-Yapping does not create a new authored post or silently subscribe the sharer to replies. Quotes remain separate, even when they refer to the same market.
@@ -43,5 +48,7 @@ The count shows active unique sharers. Re-Yapping does not create a new authored
 - `node scripts/yap-regressions.cjs` executes the actual handlers/SQL against temporary tables on DEV and rolls back. Covers migration/like deduplication, unique/reversible shares, cooldown, thread mutes, stable native comment identity, moderation, creator exclusions and distinct-participant ranking. No test notifications are sent.
 - DEV migration applied. Public Yap feed, detail and unified Explore API returned HTTP 200; /yap compiled and returned HTTP 200.
 - No signed-in visual walkthrough has been performed. The flows above are the manual acceptance pass.
+- Review fixes, 19 November (not yet on DEV): the rules under Behaviour for market commenting, editing, removing, hiding, mod comments and bounded reads. `backend/shared/src/social-discussion.test.ts` runs the linking helpers and the two Yap migrations on an in-memory PostgreSQL built from the repository's own migration files, and `market-comment-endpoints.test.ts` covers the market endpoints. `scripts/yap-regressions.cjs` gained the cases the migration must leave alone, and takes `YAP_REGRESSION_DATABASE_URL` to run against a local database instead of DEV.
+- `2026111201_social_discussions.sql` changed after DEV applied it: the reaction block now removes a Yap like only once the same person has a reaction on the comment, and the feed backfill skips posts that have a market comment. There is no schema change, so DEV needs nothing re-run; the file is safe to run again.
 
 Restart with `node scripts/yap-dev.cjs api` and `node scripts/yap-dev.cjs web`. Check schema with `node scripts/yap-dev.cjs check-db`. On another device, fetch and check out `codex/yap-combined-local-20261111`, install dependencies, and provide DEV Firebase credentials as described in `yap-local-test-build.md`.

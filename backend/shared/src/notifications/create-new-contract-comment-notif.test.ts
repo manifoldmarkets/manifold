@@ -197,3 +197,66 @@ it('a muted Yap thread still allows an explicit mention', async () => {
     expect.objectContaining({ reason: 'tagged_user' }),
   ])
 })
+
+// A reply to someone's comment, with the default preferences for replies
+// (in-app, push and email). Following the comment's Yap thread groups the
+// in-app alert there and nothing else; muting it silences the reply.
+it.each([
+  ['is not on Yap', undefined, false, { inApp: 1, push: 1, email: 1 }],
+  ['follows the Yap thread', false, false, { inApp: 0, push: 1, email: 1 }],
+  [
+    'follows it with in-app Yap alerts turned off',
+    false,
+    true,
+    { inApp: 1, push: 1, email: 1 },
+  ],
+  ['muted the Yap thread', true, false, { inApp: 0, push: 0, email: 0 }],
+])(
+  'a reply reaches someone who %s on the right channels',
+  async (_case, muted, yapAlertsOff, expected) => {
+    manyOrNone.mockResolvedValue(
+      muted === undefined ? [] : [{ user_id: 'trader', muted }]
+    )
+    const recipient = {
+      id: 'trader',
+      name: 'Trader',
+      email: 'trader@example.com',
+      pushToken: 'ExponentPushToken[test]',
+      blockedUserIds: [],
+      blockedByUserIds: [],
+      blockedContractIds: [],
+      blockedGroupSlugs: [],
+      notificationPreferences: {
+        ...getDefaultNotificationPreferences(),
+        ...(yapAlertsOff ? { social_replies: [] } : {}),
+      },
+    } as unknown as PrivateUser
+    map.mockResolvedValueOnce(['trader']).mockResolvedValueOnce([recipient])
+    await createCommentOnContractNotification(
+      'comment',
+      sourceUser,
+      'hello',
+      contract,
+      {
+        trader: {
+          repliedToType: 'comment',
+          repliedToAnswerText: undefined,
+          repliedToAnswerId: undefined,
+          bet: undefined,
+        },
+      },
+      [],
+      false
+    )
+    expect(jest.mocked(bulkInsertNotifications).mock.calls[0][0]).toHaveLength(
+      expected.inApp
+    )
+    const expo = jest.mocked(Expo).mock.results[0].value as {
+      sendPushNotificationsAsync: jest.Mock
+    }
+    expect(expo.sendPushNotificationsAsync.mock.calls[0][0]).toHaveLength(
+      expected.push
+    )
+    expect(getNewCommentEmail).toHaveBeenCalledTimes(expected.email)
+  }
+)

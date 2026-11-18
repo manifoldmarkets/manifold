@@ -13,6 +13,7 @@ import {
 import { JSONContent } from '@tiptap/core'
 import {
   ensureMarketCommentPost,
+  isCommentYapRepresentable,
   reconcileMarketDiscussion,
   subscribeToSocialThread,
 } from 'shared/social-discussion'
@@ -25,7 +26,10 @@ import { ContractComment } from 'common/comment'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { User } from 'common/user'
 import { APIHandler, APIError, AuthedUser } from './helpers/endpoint'
-import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
+import {
+  onlyUsersWhoCanPerformAction,
+  throwIfBannedFromAction,
+} from './helpers/rate-limit'
 import {
   createCommentOnContractInternal,
   newCommentId,
@@ -357,12 +361,16 @@ async function syncSocialComment(
 ) {
   if (!row.market_comment_id) return
   if (!row.text && !row.image_urls.length)
-    throw new APIError(
-      400,
-      'Keep text or an image in this shared comment, or delete it from both places.'
-    )
+    throw new APIError(400, 'Keep text or an image in this shared comment.')
   const comment = await getComment(tx, row.market_comment_id).catch(() => null)
   if (!comment || comment.deleted) return
+  // An edit made here replaces the market comment with what Yap's editor
+  // holds. A comment with formatting Yap cannot hold is edited on its market.
+  if (!isCommentYapRepresentable(comment.content))
+    throw new APIError(
+      400,
+      'This comment has formatting Yap cannot keep. Edit it on its market.'
+    )
   const contract = await getContract(tx, comment.contractId)
   if (!contract) return
   const content = {
@@ -464,11 +472,13 @@ export const deleteSocialPost: APIHandler<'delete-social-post'> = async (
         403,
         'Only the author or a moderator can remove this post'
       )
-    if (
-      post.user_id !== auth.uid &&
-      post.market_comment_id &&
-      (isAdminId(post.user_id) || isModId(post.user_id))
-    )
+    // A moderator removing someone else's shared comment also deletes it on
+    // its market, under the market's rules for that: not a comment by an admin
+    // or moderator, and not while banned from moderating comments. An author
+    // removing their own post takes it off Yap only, because authors cannot
+    // delete market comments.
+    const removesComment = !!post.market_comment_id && post.user_id !== auth.uid
+    if (removesComment && (isAdminId(post.user_id) || isModId(post.user_id)))
       throw new APIError(
         403,
         'You cannot remove a shared comment by an admin or moderator'
@@ -479,6 +489,8 @@ export const deleteSocialPost: APIHandler<'delete-social-post'> = async (
         'Undo your re-Yap to remove your share of this item'
       )
     if (post.deleted_time) return undefined
+    if (removesComment)
+      await throwIfBannedFromAction(tx, auth.uid, 'hideComment')
     await tx.none(
       `update social_posts set text='', rich_content=null, image_urls='{}', deleted_time=clock_timestamp(), deleted_by=$2, removed_by_moderator=$3,
       source_contract_id=null, source_comment_id=null, source_bet_id=null, source_post_id=null where id=$1`,
@@ -503,22 +515,35 @@ export const deleteSocialPost: APIHandler<'delete-social-post'> = async (
     await tx.none('update social_reposts set active=false where post_id=$1', [
       id,
     ])
-    // Shared messages have one removal state on both surfaces.
-    return post.market_comment_id
-      ? deleteSocialComment(tx, post.market_comment_id, auth.uid)
+    if (!post.market_comment_id) return null
+    if (removesComment)
+      return deleteSocialComment(tx, post.market_comment_id, auth.uid)
+    // The author's comment stays on its market and no longer points at Yap.
+    // This row keeps its link, so the comment is not copied to Yap again.
+    await tx.none(
+      `update contract_comments set data = data - 'socialPostId' where comment_id = $1`,
+      [post.market_comment_id]
+    )
+    const comment = await getComment(tx, post.market_comment_id).catch(
+      () => null
+    )
+    const contract = comment ? await getContract(tx, comment.contractId) : null
+    return contract
+      ? { contract, commentId: post.market_comment_id, deleted: false }
       : null
   })
   if (removed) {
     await revalidateContractStaticProps(removed.contract).catch((e) =>
       log.error('Failed to revalidate market after Yap removal', { e, id })
     )
-    await trackPublicEvent(auth.uid, 'delete_comment', {
-      contractId: removed.contract.id,
-      commentId: removed.commentId,
-      deleted: true,
-      userId: auth.uid,
-      socialPostId: id,
-    })
+    if (removed.deleted)
+      await trackPublicEvent(auth.uid, 'delete_comment', {
+        contractId: removed.contract.id,
+        commentId: removed.commentId,
+        deleted: true,
+        userId: auth.uid,
+        socialPostId: id,
+      })
   }
   return { success: true }
 }
@@ -534,8 +559,8 @@ async function deleteSocialComment(
   if (
     !comment ||
     comment.deleted ||
-    (comment.userId !== moderatorId &&
-      (isAdminId(comment.userId) || isModId(comment.userId)))
+    isAdminId(comment.userId) ||
+    isModId(comment.userId)
   )
     return null
   await updateData(tx, 'contract_comments', 'comment_id', {
@@ -545,7 +570,7 @@ async function deleteSocialComment(
     deleterId: moderatorId,
   })
   const contract = await getContract(tx, comment.contractId)
-  return contract ? { contract, commentId } : null
+  return contract ? { contract, commentId, deleted: true } : null
 }
 
 export const getSocialPosts: APIHandler<'get-social-posts'> = async (
@@ -574,13 +599,25 @@ export const getSocialPosts: APIHandler<'get-social-posts'> = async (
   return readSocialPosts(pg, viewer, props)
 }
 
+// Reads show whatever is on Yap already. Adding a market's older comments is
+// a convenience for the reader and must never fail the read.
+const reconcileForRead = (pg: SupabaseDirectClient, post: SocialRow) =>
+  pg
+    .tx((tx) => reconcileMarketDiscussion(tx, post))
+    .catch((e) =>
+      log.error('Failed to reconcile a market discussion on read', {
+        e,
+        id: post.id,
+      })
+    )
+
 export async function readSocialPosts(
   pg: SupabaseDirectClient,
   viewer: SocialViewer,
   { parentId, cursor, limit }: ValidatedAPIParams<'get-social-posts'>
 ): Promise<SocialPostPage> {
   const parent = parentId ? await getSocialRow(pg, parentId) : null
-  if (parent) await pg.tx((tx) => reconcileMarketDiscussion(tx, parent))
+  if (parent) await reconcileForRead(pg, parent)
   const [time, id] = cursor?.split('|') ?? []
   const marketThread = parent?.canonical_key?.startsWith('market:')
   const betThread = parent?.canonical_key?.startsWith('bet:')
@@ -608,7 +645,7 @@ export async function readSocialPosts(
       and p.hidden_time is null and root.hidden_time is null
       and not(p.user_id=any($2::text[])) and not(root.user_id=any($2::text[]))
       and (p.market_comment_id is null or (cc.comment_id is not null and c.visibility='public'
-        and not coalesce((c.data->>'deleted')::boolean,false) and not coalesce((cc.data->>'hidden')::boolean,false)))
+        and not coalesce((c.data->>'deleted')::boolean,false)))
       and (p.canonical_key is null or p.canonical_key not like 'market:%' and p.canonical_key not like 'bet:%'
         or c.visibility='public' and not coalesce((c.data->>'deleted')::boolean,false))
     ) select * from candidates
@@ -649,7 +686,7 @@ export const getSocialPost: APIHandler<'get-social-post'> = async (
 ) => {
   const pg = createSupabaseDirectClient()
   const row = await getSocialRow(pg, id)
-  await pg.tx((tx) => reconcileMarketDiscussion(tx, row))
+  await reconcileForRead(pg, row)
   const ancestors = await pg.manyOrNone<SocialRow & { depth: number }>(
     `with recursive ancestors as (
     select p.*, 1 as depth from social_posts p where p.id=$1
@@ -721,8 +758,11 @@ export const getSocialLikers: APIHandler<'get-social-likers'> = async (
   }
 }
 
+// Likes made on Yap. A post that mirrors a market comment keeps its likes in
+// the comment's own reaction rows, so both surfaces count the same people.
+// Likes made on the market stay on the market's reaction path.
 export const reactToSocialPost: APIHandler<'react'> = async (
-  { contentId, contentType, remove, reactionType },
+  { contentId, remove, reactionType },
   auth
 ) => {
   if (reactionType && reactionType !== 'like')
@@ -731,14 +771,7 @@ export const reactToSocialPost: APIHandler<'react'> = async (
   const author = await socialAuthor(auth.uid)
   const viewer = await getSocialViewer(auth.uid)
   const result = await pg.tx(async (tx) => {
-    const linked =
-      contentType === 'comment'
-        ? await tx.oneOrNone<{ id: string }>(
-            'select id from social_posts where market_comment_id=$1',
-            [contentId]
-          )
-        : null
-    const post = await lockSocialThread(tx, linked?.id ?? contentId)
+    const post = await lockSocialThread(tx, contentId)
     const targetId = post.market_comment_id ?? post.id
     const targetType = post.market_comment_id ? 'comment' : 'social_post'
     await limitSocialWrite(tx, auth.uid, 'like', 300)

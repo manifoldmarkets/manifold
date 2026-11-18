@@ -2,7 +2,10 @@
 alter table social_posts add column if not exists canonical_key text;
 alter table social_posts add column if not exists feed_visible boolean not null default true;
 alter table social_posts add column if not exists hidden_time timestamptz;
-update social_posts set feed_visible=false where parent_id is not null;
+-- Replies made before this migration stay out of the feed. A post that has a
+-- market comment is left alone, so running this again after the new API is
+-- live does not hide Yaps that quote a comment and also comment on its market.
+update social_posts set feed_visible=false where parent_id is not null and market_comment_id is null;
 create unique index if not exists social_posts_canonical_key on social_posts(canonical_key) where canonical_key is not null;
 create unique index if not exists social_posts_comment_identity on social_posts(market_comment_id) where market_comment_id is not null;
 
@@ -30,19 +33,43 @@ select distinct root_id,user_id from social_posts where deleted_time is null
 on conflict do nothing;
 
 -- Keep old likes on mirrored comments in the same reaction collection used by
--- the market UI. No duplicate per-user likes are introduced.
+-- the market UI: one reaction per person per comment. A Yap like is removed
+-- only once the same person has a reaction on the comment, so nothing is
+-- dropped without an equivalent. Left alone: a reaction that is not a like,
+-- and a like whose comment row is missing. Safe to run again.
+
+-- Someone who liked on Yap after disliking the comment on its market keeps the
+-- later reaction, as a like made in the app replaces a dislike.
+delete from user_reactions d using user_reactions r, social_posts s
+where d.content_type='comment' and d.reaction_type<>'like'
+  and r.content_type='social_post' and r.reaction_type='like' and r.content_id=s.id
+  and s.market_comment_id=d.content_id and d.user_id=r.user_id
+  and r.created_time>=d.created_time
+  and exists (select 1 from contract_comments cc where cc.comment_id=s.market_comment_id);
+
 insert into user_reactions(content_id,content_type,content_owner_id,user_id,reaction_type,created_time)
 select distinct on (s.market_comment_id,r.user_id)
   s.market_comment_id,'comment',r.content_owner_id,r.user_id,'like',r.created_time
 from user_reactions r join social_posts s on s.id=r.content_id
 where r.content_type='social_post' and r.reaction_type='like' and s.market_comment_id is not null
+and exists (select 1 from contract_comments cc where cc.comment_id=s.market_comment_id)
 and not exists (select 1 from user_reactions existing where existing.content_type='comment'
-  and existing.content_id=s.market_comment_id and existing.user_id=r.user_id and existing.reaction_type='like')
+  and existing.content_id=s.market_comment_id and existing.user_id=r.user_id)
 order by s.market_comment_id,r.user_id,r.created_time;
-delete from user_reactions r using social_posts s
-where r.content_type='social_post' and r.content_id=s.id and s.market_comment_id is not null;
 
-update contract_comments cc set likes=(
-  select count(distinct r.user_id) from user_reactions r
-  where r.content_type='comment' and r.content_id=cc.comment_id and r.reaction_type='like'
-) where exists(select 1 from social_posts s where s.market_comment_id=cc.comment_id);
+delete from user_reactions r using social_posts s
+where r.content_type='social_post' and r.reaction_type='like' and r.content_id=s.id
+  and s.market_comment_id is not null
+  and exists (select 1 from user_reactions kept where kept.content_type='comment'
+    and kept.content_id=s.market_comment_id and kept.user_id=r.user_id);
+
+update contract_comments cc set
+  likes=(
+    select count(distinct r.user_id) from user_reactions r
+    where r.content_type='comment' and r.content_id=cc.comment_id and r.reaction_type='like'
+  ),
+  dislikes=(
+    select count(distinct r.user_id) from user_reactions r
+    where r.content_type='comment' and r.content_id=cc.comment_id and r.reaction_type='dislike'
+  )
+where exists(select 1 from social_posts s where s.market_comment_id=cc.comment_id);

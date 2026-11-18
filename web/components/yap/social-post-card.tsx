@@ -638,7 +638,9 @@ function SocialPostCardContent({
           </h2>
           <p className="text-ink-500 my-3 text-sm">
             {post.marketCommentId &&
-              'This also removes the same comment from the market. '}
+              (own
+                ? 'Your comment stays on its market. '
+                : 'This also removes the same comment from the market. ')}
             Existing replies remain visible. Removing a top-level post closes
             the discussion to new replies.
           </p>
