@@ -109,7 +109,7 @@ const query =
       events.push(`${owner} locked user`)
       return { '?column?': 1 }
     }
-    if (sql.includes('for update')) {
+    if (sql.includes('for update') || sql.includes('for no key update')) {
       if (!owner) throw new Error('row lock taken outside a transaction')
       await acquireRowLock(owner)
       events.push(`${owner} locked user`)
@@ -272,14 +272,14 @@ describe('completeSharingQuest', () => {
     expect(paid).toHaveLength(1)
   })
 
-  it('pays only once a day and skips the queue once paid', async () => {
+  it("pays only once a day and doesn't lock the user once paid", async () => {
     shares = 1
     await completeSharingQuest(USER)
-    jest.mocked(betsQueue.enqueueFn).mockClear()
+    expect(txCount).toBe(1)
     shares = 5
     await completeSharingQuest(USER)
     expect(paid).toHaveLength(1)
-    expect(betsQueue.enqueueFn).not.toHaveBeenCalled()
+    expect(txCount).toBe(1)
   })
 
   it("doesn't count a reward paid before today", async () => {
@@ -347,7 +347,9 @@ describe('completeSharingQuest', () => {
     await started
     await within(2000, Promise.all([bet, completeSharingQuest(USER)]))
     expect(paid).toHaveLength(1)
-    expect(events).toEqual(['bet locked user', 'tx1 locked user'])
+    // The payout didn't wait for the bet's queue slot.
+    expect(events).toEqual(['tx1 locked user', 'bet locked user'])
+    expect(betsQueue.enqueueFn).toHaveBeenCalledTimes(1)
   })
 
   // Cash conversion and in-app purchases hold the user row between two queued
@@ -372,20 +374,17 @@ describe('completeSharingQuest', () => {
     expect(events[0]).toBe('conversion second txn')
   })
 
-  it('gives up with a 503 when the row stays busy, without writing or holding the queue', async () => {
+  it('waits for a row held by a long payment, then pays, without holding the queue', async () => {
     shares = 1
     await acquireRowLock('long payment')
-    await expect(
-      within(5000, completeSharingQuest(USER))
-    ).rejects.toMatchObject({ code: 503 })
-    expect(paid).toEqual([])
-    // The queue slot was released: the user's next queued work runs.
+    setTimeout(() => releaseRowLock('long payment'), 2000)
+    const quest = completeSharingQuest(USER)
+    // The user's other queued work isn't held up meanwhile.
     await within(
       500,
       betsQueue.enqueueFn(async () => undefined, [USER.id])
     )
-    releaseRowLock('long payment')
-    await completeSharingQuest(USER)
+    await within(5000, quest)
     expect(paid).toHaveLength(1)
   })
 
@@ -442,6 +441,22 @@ describe('recordContractInteraction', () => {
 })
 
 describe('completeCalculatedQuestFromTrigger (MARKETS_CREATED, unchanged)', () => {
+  // It still pays only when the count steps to 1, so a payout that gave up
+  // would lose the reward (review of 301a0633a).
+  it('pays the first market of the week while the user row is busy for a while', async () => {
+    // Its own owner name, so a release timer left by an earlier test can't free it.
+    await acquireRowLock('long market payment')
+    setTimeout(() => releaseRowLock('long market payment'), 2000)
+    jest.mocked(getRecentContractIds).mockResolvedValueOnce(['c1'])
+    await within(
+      5000,
+      completeCalculatedQuestFromTrigger(USER, 'MARKETS_CREATED', 'k1', 'c1')
+    )
+    expect(paid).toEqual([
+      expect.objectContaining({ questType: 'MARKETS_CREATED', amount: 100 }),
+    ])
+  })
+
   it('pays when the weekly count reaches 1 and not again at 2', async () => {
     jest.mocked(getRecentContractIds).mockResolvedValueOnce(['c1'])
     await completeCalculatedQuestFromTrigger(
