@@ -59,6 +59,7 @@ export function validateContractForm(
     description,
     answers,
     closeDate,
+    closeHoursMinutes,
     neverCloses,
     totalBounty,
     min,
@@ -92,8 +93,10 @@ export function validateContractForm(
     if (!closeDate) {
       errors.closeDate = 'Please select a close date'
     } else {
-      const closeTime = new Date(closeDate + 'T23:59').getTime()
-      if (closeTime <= Date.now()) {
+      const closeTime = new Date(
+        closeDate + 'T' + (closeHoursMinutes || '23:59')
+      ).getTime()
+      if (!Number.isFinite(closeTime) || closeTime <= Date.now()) {
         errors.closeDate = 'Close date must be in the future'
       }
     }
