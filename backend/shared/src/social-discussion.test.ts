@@ -42,7 +42,7 @@ import {
   reconcileMarketDiscussion,
   syncSocialPostFromComment,
 } from './social-discussion'
-import { SocialRow } from './social-posts'
+import { SocialRow, socialReplyCounts } from './social-posts'
 import { SupabaseDirectClient } from './supabase/init'
 import { log } from './utils'
 
@@ -495,6 +495,27 @@ describe('adding a market to Yap and reading its discussion', () => {
     await pg.tx((tx) => reconcileMarketDiscussion(tx, card))
     expect(await linked()).toBe(total)
   })
+
+  test('a copy made by a read or by someone else does not make the author follow the thread', async () => {
+    await insertComment('old', { user: 'bob' })
+    await insertComment('reply', {
+      user: 'carol',
+      data: { replyToCommentId: 'old' },
+    })
+    const card = await ensureSocialSource(pg, { contractId: 'market' })
+    // A visitor opens the market's discussion, then one comment's thread.
+    await pg.tx((tx) => reconcileMarketDiscussion(tx, card))
+    const old = (await post('mc-old'))!
+    await pg.tx((tx) => reconcileMarketDiscussion(tx, old))
+    // Someone shares another person's comment.
+    await insertComment('shared', { user: 'dave' })
+    await ensureSocialSource(pg, { contractId: 'market', commentId: 'shared' })
+
+    expect(await post('mc-reply')).toBeTruthy()
+    expect(await post('mc-shared')).toBeTruthy()
+    // None of bob, carol or dave chose to get this thread's alerts.
+    expect(await count('social_thread_subscriptions')).toBe(0)
+  })
 })
 
 describe('a comment written on the market', () => {
@@ -558,6 +579,8 @@ describe('a comment written on the market', () => {
       'bet1'
     )
     expect(onTrade!.row.parent_id).toBe(trade.id)
+    // Commenting on the market is not a choice to follow the thread on Yap.
+    expect(await count('social_thread_subscriptions')).toBe(0)
   })
 
   test('a historical comment cannot use a parent from another market', async () => {
@@ -643,6 +666,156 @@ describe('a comment written on the market', () => {
       await findSocialSource(pg, { contractId: 'other', commentId: 'c1' })
     ).toBeNull()
     expect((await findSocialSource(pg, { postId: card.id }))!.id).toBe(card.id)
+  })
+})
+
+describe('the number of replies shown on a post', () => {
+  beforeEach(async () => {
+    await migrate()
+    await db.exec(`
+      create table private_users (id text primary key, data jsonb not null default '{}');
+      insert into private_users (id) select id from users;
+    `)
+  })
+  const counts = async (ids: string[], blocked: string[] = []) =>
+    Object.fromEntries(
+      (await socialReplyCounts(pg, ids, blocked)).map((r) => [
+        r.parent_id,
+        r.count,
+      ])
+    )
+
+  test('counts posts under it, what a card lists from elsewhere, and replies not copied yet, each once', async () => {
+    // Shared before the market had a card, so it is its own thread.
+    await insertComment('b', { user: 'bob' })
+    await ensureSocialSource(pg, { contractId: 'market', commentId: 'b' })
+    const card = await ensureSocialSource(pg, { contractId: 'market' })
+    await insertComment('a')
+    await ensureMarketCommentPost(pg, 'a')
+    await insertComment('c')
+    await insertComment('staff-hidden', { data: { hidden: true } })
+    await insertComment('a1', { user: 'bob', data: { replyToCommentId: 'a' } })
+    await ensureMarketCommentPost(pg, 'a1')
+    await insertComment('a2', {
+      user: 'carol',
+      data: { replyToCommentId: 'a' },
+    })
+    // A reply written on Yap with no market comment.
+    await rows(
+      `insert into social_posts (id, user_id, text, root_id, parent_id, feed_visible)
+       values ('yap-reply', 'dave', 'hi', $1, 'mc-a', false)`,
+      [card.id]
+    )
+    // A trade with its own card: one comment on it copied, one not yet.
+    await rows(
+      `insert into contract_bets (bet_id, contract_id, user_id) values ('bet1', 'market', 'bob')`
+    )
+    const trade = await ensureSocialSource(pg, {
+      contractId: 'market',
+      betId: 'bet1',
+    })
+    await insertComment('t1', { user: 'carol', data: { betId: 'bet1' } })
+    await ensureMarketCommentPost(pg, 't1')
+    await insertComment('t2', { user: 'carol', data: { betId: 'bet1' } })
+    expect((await post('mc-b'))!.parent_id).toBeNull()
+    expect((await post('mc-t1'))!.parent_id).toBe(trade.id)
+
+    expect(
+      await counts([card.id, trade.id, 'mc-a', 'mc-b', 'mc-a1', 'yap-reply'])
+    ).toEqual({
+      // a under it; b and t1 listed from other threads; c and t2 not copied.
+      [card.id]: 5,
+      // t1 under it; t2 not copied.
+      [trade.id]: 2,
+      // a1 and the Yap reply under it; a2 not copied.
+      'mc-a': 3,
+      'mc-b': 0,
+      'mc-a1': 0,
+      'yap-reply': 0,
+    })
+    // Someone who has blocked bob is not shown his posts or the thread of his
+    // trade, so b, t1 and a1 do not count.
+    expect(await counts([card.id, 'mc-a'], ['bob'])).toEqual({
+      [card.id]: 3,
+      'mc-a': 2,
+    })
+  })
+
+  test('reads the posts table through its indexes', async () => {
+    const card = await ensureSocialSource(pg, { contractId: 'market' })
+    await insertComment('a')
+    await ensureMarketCommentPost(pg, 'a')
+    const statements: string[] = []
+    const recording = {
+      ...client,
+      manyOrNone: (sql: string, params?: unknown) => {
+        statements.push(pgp.as.format(sql, params))
+        return client.manyOrNone(sql, params)
+      },
+    } as unknown as SupabaseDirectClient
+    await socialReplyCounts(recording, [card.id, 'mc-a'], [])
+    // These tables are tiny, so price sequential scans out and look at what is
+    // left. Every read of the posts table must be narrowed by an index
+    // condition. A read with only a filter, whether it walks the table or a
+    // whole index, is one read of every post for each post on the page.
+    await db.exec('set enable_seqscan = off')
+    type PlanNode = Record<string, unknown> & { Plans?: PlanNode[] }
+    const raw = (await rows(`explain (format json) ${statements[0]}`))[0][
+      'QUERY PLAN'
+    ]
+    const tree = (typeof raw === 'string' ? JSON.parse(raw) : raw) as {
+      Plan: PlanNode
+    }[]
+    const nodes = (node: PlanNode): PlanNode[] => [
+      node,
+      ...(node.Plans ?? []).flatMap(nodes),
+    ]
+    const reads = nodes(tree[0].Plan).filter(
+      (node) => node['Relation Name'] === 'social_posts'
+    )
+    // The post asked about, its thread, and the posts counted under it.
+    expect(reads.length).toBeGreaterThanOrEqual(4)
+    expect(
+      reads
+        .filter((node) => !node['Index Cond'] && !node['Recheck Cond'])
+        .map((node) => `${node['Node Type']} on ${node['Alias']}`)
+    ).toEqual([])
+  })
+})
+
+describe('the follows written by 2026111201_social_discussions.sql', () => {
+  const follows = async () =>
+    (
+      await rows(
+        `select root_id || '/' || user_id as f from social_thread_subscriptions order by 1`
+      )
+    ).map((row) => row.f as string)
+
+  test('are for people who posted on Yap, and for no one else when it runs again', async () => {
+    await db.exec(migration(MARKET_COMMENT))
+    await rows(
+      `insert into social_posts (id, user_id, text, root_id, parent_id)
+       values ('yap', 'alice', 'yap', 'yap', null), ('yap-reply', 'bob', 'reply', 'yap', 'yap')`
+    )
+    await db.exec(migration(DISCUSSIONS))
+    expect(await follows()).toEqual(['yap/alice', 'yap/bob'])
+
+    // The new API is live: a market card, a comment copied by a read, and a
+    // Yap that also commented on the market.
+    await insertComment('old', { user: 'carol' })
+    const card = await ensureSocialSource(pg, { contractId: 'market' })
+    await pg.tx((tx) => reconcileMarketDiscussion(tx, card))
+    expect(await post('mc-old')).toBeTruthy()
+    await insertComment('c-own', { user: 'dave' })
+    await rows(
+      `insert into social_posts (id, user_id, text, root_id, market_comment_id)
+       values ('own', 'dave', 'own', 'own', 'c-own')`
+    )
+
+    await db.exec(migration(DISCUSSIONS))
+    // dave posted on Yap. carol only commented on the market, and the market's
+    // creator did not put the card there.
+    expect(await follows()).toEqual(['own/dave', 'yap/alice', 'yap/bob'])
   })
 })
 

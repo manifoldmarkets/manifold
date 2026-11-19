@@ -28,8 +28,13 @@ create table if not exists social_thread_subscriptions (
   primary key (root_id, user_id)
 );
 alter table social_thread_subscriptions enable row level security;
+-- People follow the threads they posted in on Yap. A market or trade card and
+-- the copy of a market comment carry a canonical key and were not posted on
+-- Yap by the person they name, so running this again after the new API is
+-- live does not make market commenters, market creators or traders follow.
 insert into social_thread_subscriptions(root_id,user_id)
-select distinct root_id,user_id from social_posts where deleted_time is null
+select distinct root_id,user_id from social_posts
+where deleted_time is null and canonical_key is null
 on conflict do nothing;
 
 -- Older withdrawn Yaps can still be linked from a surviving market comment.

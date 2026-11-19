@@ -216,10 +216,10 @@ export async function ensureMarketCommentPost(
     `update contract_comments set data=data || jsonb_build_object('socialPostId',$2::text) where comment_id=$1`,
     [commentId, result.id]
   )
-  await pg.none(
-    `insert into social_thread_subscriptions(root_id,user_id) values ($1,$2) on conflict do nothing`,
-    [result.root_id, comment.userId]
-  )
+  // The copy does not make its author follow the thread. A copy is made by a
+  // read, by someone else's share, or by the author commenting on the market,
+  // and none of those is a choice to get Yap's alerts. People follow a thread
+  // by posting or replying on Yap, or by choosing Follow.
   return result
 }
 

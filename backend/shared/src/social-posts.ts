@@ -395,6 +395,56 @@ const displayUser = (u: {
   entitlements: (u.entitlements ?? []).map(convertEntitlement),
 })
 
+// How many replies each requested post shows. Counted in three parts, so that
+// each can use an index: posts under it on Yap; for a market or trade card,
+// the top-level comments it lists from wherever they sit on Yap; and native
+// replies not copied to Yap yet. Joining the first two with OR, or matching
+// the third on a value that may be null, reads the whole posts table (or all
+// of a market's comments) once for every post on the page.
+export const socialReplyCounts = (pg: DB, ids: string[], blocked: string[]) => {
+  const shown = `p.hidden_time is null and root.hidden_time is null
+    and (p.deleted_time is null or exists (select 1 from social_posts child where child.parent_id=p.id))
+    and not (p.user_id=any($2::text[]) or root.user_id=any($2::text[]))`
+  // Native comments that will join the thread when it is next read.
+  const pending = (which: string) => `(select count(*) from contract_comments cc
+    join contracts c on c.id=cc.contract_id join private_users pu on pu.id=cc.user_id
+    where ${which}
+    and ${visibleMarketComment('cc')} and not (cc.user_id=any($2::text[]))
+    and c.visibility='public' and not coalesce((c.data->>'deleted')::boolean,false)
+    and not (coalesce(pu.data->'blockedUserIds','[]'::jsonb) ?| array[requested.user_id,thread.user_id,c.creator_id]
+      or coalesce(pu.data->'blockedByUserIds','[]'::jsonb) ?| array[requested.user_id,thread.user_id,c.creator_id])
+    and not exists (select 1 from social_posts copied where copied.market_comment_id=cc.comment_id))`
+  return pg.manyOrNone<{ parent_id: string; count: number }>(
+    `select requested.id as parent_id, (
+      (select count(*) from social_posts p join social_posts root on root.id=p.root_id
+       where p.parent_id=requested.id and ${shown})
+      + (case when requested.canonical_key ~ '^(market|bet):' then
+          (select count(*) from contract_comments cc
+           join social_posts p on p.market_comment_id=cc.comment_id
+           join social_posts root on root.id=p.root_id
+           where cc.contract_id=requested.source_contract_id and cc.data->>'replyToCommentId' is null
+           and (requested.source_bet_id is null or cc.data->>'betId'=requested.source_bet_id)
+           and p.parent_id is distinct from requested.id and ${shown})
+        else 0 end)
+      + (case
+          when requested.deleted_time is not null or requested.hidden_time is not null
+            or thread.deleted_time is not null or thread.hidden_time is not null then 0
+          when requested.market_comment_id is not null then ${pending(
+            `cc.contract_id=coalesce(original.contract_id,requested.source_contract_id)
+             and cc.data->>'replyToCommentId'=requested.market_comment_id`
+          )}
+          when requested.canonical_key ~ '^(market|bet):' then ${pending(
+            `cc.contract_id=requested.source_contract_id and cc.data->>'replyToCommentId' is null
+             and (requested.source_bet_id is null or cc.data->>'betId'=requested.source_bet_id)`
+          )}
+          else 0 end)
+      )::int as count from social_posts requested join social_posts thread on thread.id=requested.root_id
+      left join contract_comments original on original.comment_id=requested.market_comment_id
+      where requested.id=any($1::text[])`,
+    [ids, blocked]
+  )
+}
+
 export async function hydrateSocialPosts(
   pg: DB,
   rows: SocialRow[],
@@ -457,35 +507,7 @@ export async function hydrateSocialPosts(
       where r.reaction_type='like' and p.id=any($1::text[]) group by p.id`,
       [ids, viewer.id ?? null]
     ),
-    pg.manyOrNone<{ parent_id: string; count: number }>(
-      `select requested.id as parent_id, (
-        (select count(*) from social_posts p join social_posts root on root.id=p.root_id
-         where (p.parent_id=requested.id or (requested.canonical_key ~ '^(market|bet):' and exists
-           (select 1 from contract_comments cc where cc.comment_id=p.market_comment_id and cc.contract_id=requested.source_contract_id
-            and cc.data->>'replyToCommentId' is null and (requested.source_bet_id is null or cc.data->>'betId'=requested.source_bet_id))))
-         and p.hidden_time is null and root.hidden_time is null
-         and (p.deleted_time is null or exists (select 1 from social_posts child where child.parent_id=p.id))
-         and not (p.user_id=any($2::text[]) or root.user_id=any($2::text[])))
-        + (select count(*) from contract_comments cc join contracts c on c.id=cc.contract_id
-           join private_users pu on pu.id=cc.user_id
-           where requested.deleted_time is null and requested.hidden_time is null
-           and thread.deleted_time is null and thread.hidden_time is null
-           and (requested.market_comment_id is not null or requested.canonical_key ~ '^(market|bet):')
-           and cc.contract_id=coalesce(original.contract_id,requested.source_contract_id)
-           and (cc.data->>'replyToCommentId') is not distinct from requested.market_comment_id
-           and (requested.market_comment_id is not null or requested.source_bet_id is null or cc.data->>'betId'=requested.source_bet_id)
-           and ${visibleMarketComment(
-             'cc'
-           )} and not (cc.user_id=any($2::text[]))
-           and c.visibility='public' and not coalesce((c.data->>'deleted')::boolean,false)
-           and not (coalesce(pu.data->'blockedUserIds','[]'::jsonb) ?| array[requested.user_id,thread.user_id,c.creator_id]
-             or coalesce(pu.data->'blockedByUserIds','[]'::jsonb) ?| array[requested.user_id,thread.user_id,c.creator_id])
-           and not exists (select 1 from social_posts copied where copied.market_comment_id=cc.comment_id))
-        )::int as count from social_posts requested join social_posts thread on thread.id=requested.root_id
-        left join contract_comments original on original.comment_id=requested.market_comment_id
-        where requested.id=any($1::text[])`,
-      [ids, viewer.blocked]
-    ),
+    socialReplyCounts(pg, ids, viewer.blocked),
     pg.manyOrNone<Row<'contracts'>>(
       `select * from contracts where id = any($1::text[]) and visibility = 'public' and coalesce((data->>'deleted')::boolean,false) = false`,
       [rows.map((r) => r.source_contract_id).filter(Boolean)]

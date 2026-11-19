@@ -90,7 +90,7 @@ function loadDeclarations(file, names, bindings) {
    create temporary table contracts(id text primary key,creator_id text,created_time timestamptz default now(),visibility text default 'public',data jsonb default '{}');
    create temporary table contract_comments(comment_id text primary key,contract_id text,user_id text,created_time timestamptz default now(),data jsonb default '{}',likes int default 0,dislikes int default 0);
    create temporary table contract_bets(bet_id text primary key,contract_id text,user_id text,created_time timestamptz default now());
-   create temporary table social_posts(id text primary key,user_id text,text text default '',rich_content jsonb,image_urls text[] default '{}',parent_id text,root_id text,market_comment_id text,source_contract_id text,source_bet_id text,created_time timestamptz default now(),deleted_time timestamptz);
+   create temporary table social_posts(id text primary key,user_id text references users(id),text text default '',rich_content jsonb,image_urls text[] default '{}',parent_id text,root_id text,market_comment_id text,source_contract_id text,source_bet_id text,created_time timestamptz default now(),deleted_time timestamptz);
    create temporary table social_post_markets(post_id text,contract_id text,position int default 0,primary key(post_id,contract_id));
    create temporary table user_contract_interactions(user_id text,contract_id text,name text,comment_id text,bet_id text);
    create temporary table user_reactions(reaction_id text default md5(random()::text),content_id text,content_type text,content_owner_id text,user_id text,reaction_type text,created_time timestamptz default now());
