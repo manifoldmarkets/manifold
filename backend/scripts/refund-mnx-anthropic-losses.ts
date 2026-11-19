@@ -237,7 +237,8 @@ runScript(async ({ pg }) => {
       // Serialize concurrent runs of this script: the second run waits here,
       // then its lookup (a new statement under READ COMMITTED) sees the
       // first run's committed payment.
-      await tx.none(`select pg_advisory_xact_lock(hashtext($1))`, [GROUP_ID])
+      // (one(), not none(): the select returns a single void row.)
+      await tx.one(`select pg_advisory_xact_lock(hashtext($1))`, [GROUP_ID])
       const existing = await tx.manyOrNone<ExistingPayment>(
         `select to_id, amount, token from txns
           where category = 'MANA_PAYMENT'
