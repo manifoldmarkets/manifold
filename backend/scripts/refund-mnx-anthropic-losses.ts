@@ -39,8 +39,9 @@ import { getUser, isProd } from 'shared/utils'
 // Amount = the full-precision loss rounded up to whole mana, computed before
 // the loss is rounded for display. UsmanKotwal's 101.00001 rounds up to 102.
 //
-// Paid from @Manifold (HOUSE_LIQUIDITY_PROVIDER_ID) as public MANA_PAYMENTs,
-// with the usual "sent you mana" notification. Safe to re-run: an account
+// Paid from @Manifold (HOUSE_LIQUIDITY_PROVIDER_ID) as managrams (public
+// MANA_PAYMENTs, same shape as api/managram.ts) with the message
+// "Anthropic perp refund" and the usual notification. Safe to re-run: an account
 // with exactly one payment in this group, at the expected amount, is
 // skipped. Any other existing payment stops the script for reconciliation.
 //
@@ -51,8 +52,7 @@ import { getUser, isProd } from 'shared/utils'
 const CONTRACT_ID = 'lnccuhNtuCC9'
 const CONTRACT_SLUG = 'anthropic-mnx-valuation-futures-pri'
 const GROUP_ID = 'mnx-anthropic-refund-2026-11-19'
-const MESSAGE =
-  'Refund of the mana you lost on the Anthropic (MNX) market between Oct 29 and Nov 19, during the settlement rule confusion. manifold.markets/MNX/anthropic-mnx-valuation-futures-pri'
+const MESSAGE = 'Anthropic perp refund'
 
 // [username, userId, loss in M$ (display), amount to pay in whole M$]
 // prettier-ignore
