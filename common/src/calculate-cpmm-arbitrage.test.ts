@@ -1469,3 +1469,181 @@ describe('calculateCpmmMultiArbitrageBet — a maker short of balance across leg
     check(answers, 'NO', restingNo(answers), 200)
   })
 })
+
+describe('a maker out of balance in a sum-to-one market', () => {
+  // "Largest company end of 2026?" (cpmm-multi-1) on 2026-11-13, with the two
+  // YES orders a maker with 6.46e-15 left had resting on NVIDIA. Any trade
+  // that took NVIDIA down to 22% passed the first by, neither filling nor
+  // cancelling it, and the API, which then worked the trade out a second time
+  // taking that maker to have all they needed, refused it.
+  const POOLS = [
+    [98.90074594387598, 316.95271553231885], // Apple, 76.2%
+    [333.9603143435627, 94.32742389434054], // NVIDIA, 22.02%
+    [2002.4384487669918, 15.66290366066713],
+    [7724.6109048255385, 4.052215456471361],
+    [4502.377358405622, 6.960862106285278],
+    [10891.33997554399, 2.872405655238442],
+    [6245.523064829832, 5.00963303013755],
+    [11097.100808281812, 2.8187355684997275],
+    [15421.044729088999, 4.345532841523333],
+    [7366.888428010821, 17.15619795808815],
+    [5733.904322760456, 22.04218785172386],
+  ]
+  const withPools = (pools: number[][]): Answer[] =>
+    pools.map(([poolYes, poolNo], i) => ({
+      ...getAnswerK(i, poolNo / (poolYes + poolNo), 1),
+      poolYes,
+      poolNo,
+    }))
+  const APPLE = 0
+  const NVIDIA = 1
+  const SPENT = 6.457834393110897e-15
+  const resting = (answers: Answer[]) => [
+    getLimitBet('at22', answers[NVIDIA], 'YES', 'maker', 234, 0.22),
+    getLimitBet('at9', answers[NVIDIA], 'YES', 'maker', 303, 0.09),
+  ]
+
+  type Leg = {
+    makers: { bet: LimitBet }[]
+    ordersToCancel: LimitBet[]
+    cpmmState: { pool: { [outcome: string]: number }; p: number }
+  }
+  const check = (legs: Leg[]) => {
+    expect(legs.flatMap((leg) => leg.makers)).toEqual([])
+    expect(
+      legs.flatMap((leg) => leg.ordersToCancel.map((o) => o.id))
+    ).toContain('at22')
+    // The trade went through the order's price, on the pool.
+    const nvidia = legs.find((leg) => leg.ordersToCancel.length > 0)!
+    expect(getCpmmProbability(nvidia.cpmmState.pool, 0.5)).toBeLessThan(0.22)
+    expect(
+      sumBy(legs, (leg) => getCpmmProbability(leg.cpmmState.pool, 0.5))
+    ).toBeCloseTo(1, 6)
+  }
+
+  const buy = (index: number, outcome: 'YES' | 'NO', amount: number) => {
+    const answers = withPools(POOLS)
+    const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
+      answers,
+      answers[index],
+      outcome,
+      amount,
+      undefined,
+      resting(answers),
+      { maker: SPENT },
+      noFees
+    )
+    check([newBetResult, ...otherBetResults])
+  }
+  const sell = (index: number, outcome: 'YES' | 'NO', shares: number) => {
+    const answers = withPools(POOLS)
+    const { newBetResult, otherBetResults } = calculateCpmmMultiSumsToOneSale(
+      answers,
+      answers[index],
+      shares,
+      outcome,
+      undefined,
+      resting(answers),
+      { maker: SPENT },
+      noFees
+    )
+    check([newBetResult, ...otherBetResults])
+  }
+
+  it('cancels their order when YES is bought in another answer', () => {
+    buy(APPLE, 'YES', 50)
+  })
+
+  it('cancels their order when NO is bought in the answer', () => {
+    buy(NVIDIA, 'NO', 50)
+  })
+
+  it('cancels their order when YES is sold in the answer', () => {
+    sell(NVIDIA, 'YES', 40)
+  })
+
+  it('cancels their order when NO is sold in another answer', () => {
+    sell(APPLE, 'NO', 40)
+  })
+
+  // Three answers at 50%, 30% and 20%.
+  const THREE = [
+    [100, 100],
+    [152.75252316519467, 65.46536707079771],
+    [200, 50],
+  ]
+
+  it("still fills a maker's last 1.5e-8 in a basket buy that first reaches it with less", () => {
+    // A YES basket on the first two answers buys NO on the third over several
+    // rounds. An early round reaches the maker's order with too little to
+    // count; the order has to be there for the round that can take it.
+    const answers = withPools(THREE)
+    const { newBetResults, otherBetResults } =
+      calculateCpmmMultiArbitrageYesBets(
+        answers,
+        [answers[0], answers[1]],
+        8.473161636028868,
+        undefined,
+        [getLimitBet('at19', answers[2], 'YES', 'maker', 100, 0.19)],
+        { maker: 1.5e-8 },
+        noFees,
+        'cpmm-multi-1'
+      )
+    const makers = [...newBetResults, ...otherBetResults].flatMap(
+      (r) => r.makers
+    )
+    expect(makers.map((m) => m.bet.id)).toEqual(['at19'])
+    expect(sumBy(makers, 'amount')).toBeCloseTo(1.5e-8, 15)
+  })
+
+  it('takes no more from a maker in a sale than it did', () => {
+    // Each leg of a sale starts from the makers' starting balances, which is
+    // a fault of its own. This maker has 1e-8 and orders on three answers, and
+    // two legs take 1e-8 each. Sizing the second answer's fills any other way
+    // takes a third, and the API then refuses the sale for overdrawing them.
+    const answers = withPools([
+      [95, 5],
+      [16, 84],
+      [94, 6],
+      [95, 5],
+    ])
+    const { newBetResult, otherBetResults } = calculateCpmmMultiSumsToOneSale(
+      answers,
+      answers[0],
+      50,
+      'YES',
+      undefined,
+      [
+        getLimitBet('b84', answers[1], 'NO', 'maker', 100, 0.84),
+        getLimitBet('b85', answers[1], 'NO', 'maker', 100, 0.85),
+        getLimitBet('c6', answers[2], 'NO', 'maker', 100, 0.06),
+        getLimitBet('d5', answers[3], 'NO', 'maker', 100, 0.05),
+      ],
+      { maker: 1e-8 },
+      noFees
+    )
+    const makers = [newBetResult, ...otherBetResults].flatMap((r) => r.makers)
+    expect(makers.map((m) => m.bet.id).sort()).toEqual(['c6', 'd5'])
+    expect(sumBy(makers, 'amount')).toBeCloseTo(2e-8, 15)
+  })
+
+  it('leaves a limit order at a price where only such an order rests', () => {
+    // Nothing fills: the pool is at the limit, and the one order across it
+    // can't be paid for. The API has to place this order, not refuse it; see
+    // place-bet-maker-balances.test.ts.
+    const answers = withPools(THREE)
+    const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
+      answers,
+      answers[0],
+      'YES',
+      50,
+      0.5,
+      [getLimitBet('at50', answers[0], 'NO', 'maker', 100, 0.5)],
+      { maker: SPENT },
+      noFees
+    )
+    expect(newBetResult.takers).toEqual([])
+    expect(newBetResult.makers).toEqual([])
+    expect(otherBetResults).toEqual([])
+  })
+})
