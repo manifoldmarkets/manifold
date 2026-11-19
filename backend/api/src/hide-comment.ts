@@ -15,7 +15,7 @@ import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 export const hideComment: APIHandler<'hide-comment'> =
   onlyUsersWhoCanPerformAction(
     'hideComment',
-    async ({ commentPath, action = 'hide' }, auth, req) => {
+    async ({ commentPath, action = 'hide' }, auth) => {
       // Comment path is of the form /[username]/[contractId]/comment/[commentId] because firebase
       const [, contractId, , commentId] = commentPath.split('/')
       if (!contractId || !commentId) {
@@ -53,64 +53,70 @@ export const hideComment: APIHandler<'hide-comment'> =
         }
       }
 
-      const comment = await getComment(pg, commentId)
-      if (comment.contractId !== contractId)
-        throw new APIError(400, 'Comment does not belong to this market')
+      const comment = await pg.tx(async (tx) => {
+        const comment = await getComment(tx, commentId, true)
+        if (comment.contractId !== contractId)
+          throw new APIError(400, 'Comment does not belong to this market')
 
-      if (
-        (isAdminId(comment.userId) || isModId(comment.userId)) &&
-        (action === 'delete' || !comment.hidden)
-      ) {
-        throw new APIError(
-          403,
-          'You cannot hide or delete comments from admins or mods'
-        )
-      }
-
-      const linked = await pg.oneOrNone<{ id: string; removed: boolean }>(
-        'select id, deleted_time is not null as removed from social_posts where market_comment_id=$1',
-        [commentId]
-      )
-      // A comment that is live on Yap is removed from both places together. If
-      // its Yap post is already gone, the comment is deleted here as usual.
-      if (linked && !linked.removed && action === 'delete') {
-        const { deleteSocialPost } = await import('./social-posts')
-        await deleteSocialPost({ id: linked.id }, auth, req)
-        return { result: { success: true }, continue: async () => {} }
-      }
-
-      // Update the comment based on action
-      if (action === 'delete') {
-        if (comment.deleted) {
-          return { result: { success: true }, continue: async () => {} }
+        if (
+          (isAdminId(comment.userId) || isModId(comment.userId)) &&
+          (action === 'delete' || !comment.hidden)
+        ) {
+          throw new APIError(
+            403,
+            'You cannot hide or delete comments from admins or mods'
+          )
         }
-        await updateData(pg, 'contract_comments', 'comment_id', {
-          comment_id: commentId,
-          deleted: true,
-          deletedTime: Date.now(),
-          deleterId: auth.uid,
-        })
-      } else {
-        const hide = !comment.hidden
-        // A market creator's hide collapses the comment on their market and
-        // goes no further. Only an admin or moderator hides or restores the
-        // comment's post on Yap as well.
-        const onYap = linked && (isAdmin || isMod) ? linked : null
-        await pg.tx(async (tx) => {
+
+        const linked = await tx.oneOrNone<{ id: string }>(
+          'select id from social_posts where market_comment_id=$1 and deleted_time is null',
+          [commentId]
+        )
+        if (action === 'delete') {
+          if (comment.deleted) return comment
+          if (linked) {
+            const { withdrawLockedPost } = await import('./social-posts')
+            await withdrawLockedPost(
+              tx,
+              await lockSocialThread(tx, linked.id),
+              auth.uid
+            )
+          }
+          await updateData(tx, 'contract_comments', 'comment_id', {
+            comment_id: commentId,
+            deleted: true,
+            deletedTime: Date.now(),
+            deleterId: auth.uid,
+          })
+        } else {
+          const hide = !comment.hidden
+          // A market creator's hide collapses the comment on their market and
+          // goes no further. Only an admin or moderator hides or restores the
+          // comment's post on Yap as well.
+          const onYap = linked && (isAdmin || isMod) ? linked : null
           if (onYap) await lockSocialThread(tx, onYap.id)
           await updateData(tx, 'contract_comments', 'comment_id', {
             comment_id: commentId,
             hidden: hide,
             hiddenTime: hide ? Date.now() : undefined,
             hiderId: auth.uid,
+            hiddenOnYap:
+              isAdmin || isMod
+                ? hide
+                : comment.hiddenOnYap ??
+                  (!!comment.hidden &&
+                    (!comment.hiderId ||
+                      isAdminId(comment.hiderId) ||
+                      isModId(comment.hiderId))),
           })
           if (onYap)
             await tx.none(
               'update social_posts set hidden_time=case when $2 then clock_timestamp() else null end where id=$1',
               [onYap.id, hide]
             )
-        })
-      }
+        }
+        return comment
+      })
 
       await revalidateContractStaticProps(contract)
       return {

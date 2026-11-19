@@ -12,7 +12,7 @@ import {
   SocialPostSkeleton,
 } from 'web/components/yap/social-post-list'
 import { api } from 'web/lib/api/api'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { Button } from 'web/components/buttons/button'
 
 export default function YapPostPage() {
@@ -20,6 +20,7 @@ export default function YapPostPage() {
   const id =
     typeof router.query.postId === 'string' ? router.query.postId : undefined
   const user = useUser()
+  const isAuthorized = useIsAuthorized()
   const privateUser = usePrivateUser()
   const viewerKey = JSON.stringify([
     user?.id,
@@ -33,7 +34,7 @@ export default function YapPostPage() {
   const [version, setVersion] = useState(0)
   const refresh = () => setVersion((v) => v + 1)
   useEffect(() => {
-    if (!id || user === undefined) {
+    if (!id || isAuthorized === undefined) {
       setDetail(undefined)
       return
     }
@@ -49,7 +50,7 @@ export default function YapPostPage() {
     return () => {
       cancelled = true
     }
-  }, [id, viewerKey, user === undefined, version])
+  }, [id, viewerKey, isAuthorized, version])
   const current =
     detail && detail.post.id === id && detail.viewerKey === viewerKey
       ? detail
@@ -74,7 +75,7 @@ export default function YapPostPage() {
             Yap
           </Link>
         </header>
-        {user === undefined ? (
+        {isAuthorized === undefined ? (
           <SocialPostSkeleton />
         ) : (
           <>

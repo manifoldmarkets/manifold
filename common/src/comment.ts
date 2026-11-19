@@ -27,6 +27,7 @@ export type Comment<T extends AnyCommentType = AnyCommentType> = {
   hidden?: boolean
   hiddenTime?: number
   hiderId?: string
+  hiddenOnYap?: boolean
   pinned?: boolean
   pinnedTime?: number
   pinnerId?: string

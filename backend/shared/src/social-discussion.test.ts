@@ -291,6 +291,35 @@ describe('the Yap copy of a market comment', () => {
       },
       true,
     ],
+    [
+      'Yap image without text',
+      socialPostToCommentContent({ text: '', imageUrls: [image('one')] }),
+      true,
+    ],
+    [
+      'link with custom attributes',
+      {
+        type: 'doc',
+        content: [
+          {
+            type: 'paragraph',
+            content: [
+              {
+                type: 'text',
+                text: 'https://a.test',
+                marks: [
+                  {
+                    type: 'link',
+                    attrs: { href: 'https://a.test', target: '_self' },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      false,
+    ],
     ['bold text', bold, false],
     [
       'a link on other words',
@@ -369,7 +398,9 @@ describe('adding a market to Yap and reading its discussion', () => {
           'select market_comment_id from social_posts where market_comment_id is not null order by 1'
         )
       ).map((r) => r.market_comment_id)
-    ).toEqual(['long', 'plain', 'reply'])
+    ).toEqual(['long', 'plain'])
+    const plain = (await post('mc-plain'))!
+    await pg.tx((tx) => reconcileMarketDiscussion(tx, plain))
     // The market keeps the long comment whole; Yap shows what it can hold.
     const long = (await post('mc-long'))!
     expect([...long.text]).toHaveLength(2000)
@@ -393,6 +424,10 @@ describe('adding a market to Yap and reading its discussion', () => {
       `update social_posts set hidden_time=now() where id='mc-hidden-on-yap'`
     )
     await pg.tx((tx) => reconcileMarketDiscussion(tx, card))
+    for (const id of ['open', 'removed', 'hidden-on-yap']) {
+      const parent = (await post('mc-' + id))!
+      await pg.tx((tx) => reconcileMarketDiscussion(tx, parent))
+    }
     expect(await post('mc-under-open')).toBeTruthy()
     expect(await post('mc-under-removed')).toBeUndefined()
     expect(await post('mc-under-hidden-on-yap')).toBeUndefined()
@@ -427,7 +462,7 @@ describe('adding a market to Yap and reading its discussion', () => {
     const card = await ensureSocialSource(pg, { contractId: 'market' })
     await expect(
       pg.tx((tx) => reconcileMarketDiscussion(tx, card))
-    ).resolves.toBeUndefined()
+    ).resolves.toBeNull()
     expect(await post('mc-first')).toBeTruthy()
     expect(await post('mc-last')).toBeTruthy()
     expect(await post('mc-broken')).toBeUndefined()
@@ -446,11 +481,16 @@ describe('adding a market to Yap and reading its discussion', () => {
     )
     const card = await ensureSocialSource(pg, { contractId: 'market' })
     const linked = () => count('social_posts', 'market_comment_id is not null')
-    await pg.tx((tx) => reconcileMarketDiscussion(tx, card))
+    const boundary = await pg.tx((tx) => reconcileMarketDiscussion(tx, card))
+    expect(boundary?.id).toBe('mc-c' + SOCIAL_RECONCILE_BATCH)
     expect(await linked()).toBe(SOCIAL_RECONCILE_BATCH)
     // Oldest first, so the first page of the thread is complete.
     expect(await post('mc-c1')).toBeTruthy()
-    await pg.tx((tx) => reconcileMarketDiscussion(tx, card))
+    expect(
+      await pg.tx((tx) =>
+        reconcileMarketDiscussion(tx, card, `${boundary!.time}|${boundary!.id}`)
+      )
+    ).toBeNull()
     expect(await linked()).toBe(total)
     await pg.tx((tx) => reconcileMarketDiscussion(tx, card))
     expect(await linked()).toBe(total)
@@ -518,6 +558,17 @@ describe('a comment written on the market', () => {
       'bet1'
     )
     expect(onTrade!.row.parent_id).toBe(trade.id)
+  })
+
+  test('a historical comment cannot use a parent from another market', async () => {
+    await insertComment('foreign-parent', { contract: 'other' })
+    await insertComment('local-child', {
+      data: { replyToCommentId: 'foreign-parent' },
+    })
+    await expect(
+      pg.tx((tx) => ensureMarketCommentPost(tx, 'local-child'))
+    ).rejects.toMatchObject({ code: 404 })
+    expect(await count('social_posts')).toBe(0)
   })
 
   test('never joins a discussion on another market through a trade id', async () => {
@@ -637,6 +688,7 @@ describe('the reaction part of 2026111201_social_discussions.sql', () => {
     // Only the schema allows this one; no version of the API has written it.
     await react('not-a-like', 'social_post', 'bob', 'dislike')
     await react('ghost', 'social_post', 'bob')
+    await react('missing', 'comment', 'bob', 'dislike')
     await react(
       'later-like',
       'social_post',
@@ -664,6 +716,13 @@ describe('the reaction part of 2026111201_social_discussions.sql', () => {
       'bob',
       'dislike',
       '2026-11-02T00:00:00Z'
+    )
+    await react(
+      'c-later-dislike',
+      'comment',
+      'bob',
+      'like',
+      '2026-10-01T00:00:00Z'
     )
     // The market path can leave two like rows for one person.
     await react('c-twice', 'comment', 'dave')
@@ -720,7 +779,9 @@ describe('the reaction part of 2026111201_social_discussions.sql', () => {
     // No comment row to move it to: left where it is, and not copied to an id
     // with no comment.
     expect(after).toContain('social_post/ghost/bob/like')
-    expect(after.filter((r) => r.includes('/missing/'))).toEqual([])
+    expect(after.filter((r) => r.includes('/missing/'))).toEqual([
+      'comment/missing/bob/dislike',
+    ])
     // A like on Yap after a dislike on the market: the like stands, alone.
     expect(after.filter((r) => r.startsWith('comment/c-later-like/'))).toEqual([
       'comment/c-later-like/bob/like',

@@ -189,7 +189,8 @@ export type SocialPostPage = { posts: SocialPost[]; nextCursor: string | null }
 export type SocialPostDetail = {
   post: SocialPost
   ancestors: SocialPost[]
-  // Only included for the author while the uncached live post is editable.
+  // These are returned only to an eligible editor of a live post.
+  editOnMarket?: string
   editContent?: SocialRichContent | null
 }
 export type SocialLikerPage = {

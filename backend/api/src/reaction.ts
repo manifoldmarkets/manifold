@@ -2,7 +2,7 @@ import { reactToSocialPost } from './social-posts'
 import { assertUnreachable } from 'common/util/types'
 import { createLikeNotification } from 'shared/notifications/create-new-like-notif'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { log } from 'shared/utils'
+import { writeCommentReaction } from 'shared/supabase/comment-reactions'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { revalidatePost } from './create-post-comment'
 import { getPost } from 'shared/supabase/posts'
@@ -28,6 +28,14 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (
 
   const pg = createSupabaseDirectClient()
 
+  if (contentType === 'comment' && commentParentType !== 'post') {
+    const inserted = await pg.tx((tx) =>
+      writeCommentReaction(tx, contentId, userId, reactionType, !!remove)
+    )
+    if (inserted && reactionType === 'like')
+      await createLikeNotification(inserted)
+    return { result: { success: true }, continue: async () => {} }
+  }
   const deleteReaction = async (deleteReactionType: string) => {
     await pg.none(
       `delete from user_reactions
@@ -41,21 +49,11 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (
   } else {
     let ownerId: string
     if (contentType === 'comment') {
-      let commentAuthorId: string | undefined
-      if (commentParentType === 'post') {
-        commentAuthorId = await pg.oneOrNone(
-          `select user_id from old_post_comments where comment_id = $1`,
-          [contentId],
-          (r) => r?.user_id
-        )
-      } else {
-        // Default to contract comment if commentParentType is not 'post' or undefined
-        commentAuthorId = await pg.oneOrNone(
-          `select user_id from contract_comments where comment_id = $1`,
-          [contentId],
-          (r) => r?.user_id
-        )
-      }
+      const commentAuthorId = await pg.oneOrNone(
+        `select user_id from old_post_comments where comment_id = $1`,
+        [contentId],
+        (r) => r?.user_id
+      )
       if (!commentAuthorId) {
         throw new APIError(404, 'Failed to find comment')
       }
@@ -121,32 +119,6 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (
         if (post) {
           await revalidatePost(post)
         }
-      }
-      if (contentType === 'comment' && commentParentType !== 'post') {
-        const likeCount = await pg.one(
-          `select count(*) from user_reactions
-           where content_id = $1 and content_type = $2 and reaction_type = $3`,
-          [contentId, contentType, 'like'],
-          (r) => r.count
-        )
-        const dislikeCount = await pg.one(
-          `select count(*) from user_reactions
-           where content_id = $1 and content_type = $2 and reaction_type = $3`,
-          [contentId, contentType, 'dislike'],
-          (r) => r.count
-        )
-
-        log('new like count ' + likeCount)
-        log('new dislike count ' + dislikeCount)
-
-        await pg.none(
-          `update contract_comments set likes = $1 where comment_id = $2`,
-          [likeCount, contentId]
-        )
-        await pg.none(
-          `update contract_comments set dislikes = $1 where comment_id = $2`,
-          [dislikeCount, contentId]
-        )
       }
     },
   }

@@ -32,36 +32,38 @@ insert into social_thread_subscriptions(root_id,user_id)
 select distinct root_id,user_id from social_posts where deleted_time is null
 on conflict do nothing;
 
--- Keep old likes on mirrored comments in the same reaction collection used by
--- the market UI: one reaction per person per comment. A Yap like is removed
--- only once the same person has a reaction on the comment, so nothing is
--- dropped without an equivalent. Left alone: a reaction that is not a like,
--- and a like whose comment row is missing. Safe to run again.
+-- Older withdrawn Yaps can still be linked from a surviving market comment.
+update contract_comments cc set data=cc.data - 'socialPostId' - 'isRepost'
+from social_posts s where s.deleted_time is not null and s.market_comment_id=cc.comment_id
+  and cc.data->>'socialPostId'=s.id;
 
--- Someone who liked on Yap after disliking the comment on its market keeps the
--- later reaction, as a like made in the app replaces a dislike.
-delete from user_reactions d using user_reactions r, social_posts s
-where d.content_type='comment' and d.reaction_type<>'like'
-  and r.content_type='social_post' and r.reaction_type='like' and r.content_id=s.id
-  and s.market_comment_id=d.content_id and d.user_id=r.user_id
-  and r.created_time>=d.created_time
-  and exists (select 1 from contract_comments cc where cc.comment_id=s.market_comment_id);
-
-insert into user_reactions(content_id,content_type,content_owner_id,user_id,reaction_type,created_time)
-select distinct on (s.market_comment_id,r.user_id)
-  s.market_comment_id,'comment',r.content_owner_id,r.user_id,'like',r.created_time
-from user_reactions r join social_posts s on s.id=r.content_id
-where r.content_type='social_post' and r.reaction_type='like' and s.market_comment_id is not null
-and exists (select 1 from contract_comments cc where cc.comment_id=s.market_comment_id)
-and not exists (select 1 from user_reactions existing where existing.content_type='comment'
-  and existing.content_id=s.market_comment_id and existing.user_id=r.user_id)
-order by s.market_comment_id,r.user_id,r.created_time;
-
-delete from user_reactions r using social_posts s
-where r.content_type='social_post' and r.reaction_type='like' and r.content_id=s.id
-  and s.market_comment_id is not null
-  and exists (select 1 from user_reactions kept where kept.content_type='comment'
-    and kept.content_id=s.market_comment_id and kept.user_id=r.user_id);
+-- Run with the old API writers drained. Move a linked Yap like only when
+-- its market comment and author are unambiguous. For each affected voter
+-- retain the latest vote (a tie with a dislike goes to the Yap like).
+-- Move the winning row in place, keeping its reaction ID and timestamp.
+with linked as (
+  select distinct s.id as post_id, cc.comment_id, cc.user_id as owner_id, r.user_id
+  from social_posts s
+  join contract_comments cc on cc.comment_id=s.market_comment_id and cc.user_id=s.user_id
+  join user_reactions r on r.content_type='social_post' and r.content_id=s.id
+    and r.reaction_type='like' and r.content_owner_id=cc.user_id
+  where (s.source_contract_id is null or s.source_contract_id=cc.contract_id)
+    and not exists(select 1 from contract_comments other
+      where other.comment_id=cc.comment_id and other.contract_id<>cc.contract_id)
+), votes as (
+  select l.comment_id, r.user_id, r.reaction_id, r.content_type,
+    row_number() over (partition by l.comment_id,r.user_id order by r.created_time desc,
+      (r.reaction_type='like') desc, (r.content_type='comment') desc, r.reaction_id) as rank
+  from linked l join user_reactions r on r.user_id=l.user_id and
+    ((r.content_type='social_post' and r.content_id=l.post_id and r.content_owner_id=l.owner_id and r.reaction_type='like')
+     or (r.content_type='comment' and r.content_id=l.comment_id and r.reaction_type in ('like','dislike')))
+), discarded as (
+  delete from user_reactions r using votes v
+  where v.rank>1 and r.user_id=v.user_id and r.reaction_id=v.reaction_id
+)
+update user_reactions r set content_type='comment', content_id=v.comment_id
+from votes v where v.rank=1 and v.content_type='social_post'
+  and r.user_id=v.user_id and r.reaction_id=v.reaction_id;
 
 update contract_comments cc set
   likes=(

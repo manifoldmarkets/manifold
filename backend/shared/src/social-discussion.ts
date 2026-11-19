@@ -5,6 +5,7 @@ import { ContractComment } from 'common/comment'
 import {
   SOCIAL_POST_MAX_LENGTH,
   SocialPostSource,
+  socialTimestamp,
   isSocialImageUrl,
 } from 'common/social-post'
 import {
@@ -15,6 +16,10 @@ import {
 import { richTextToString } from 'common/util/parse'
 import {
   isSocialThreadOpen,
+  assertSocialInteraction,
+  visibleMarketComment,
+  getSocialViewer,
+  getSocialRow,
   lockSocialThread,
   type SocialRow,
 } from './social-posts'
@@ -54,6 +59,13 @@ export function commentToYapContent(content: JSONContent) {
     text: clampToYapLength(
       richContent
         ? socialRichContentToText(richContent)
+        : imageUrls.length &&
+          content.content?.every(
+            (node) =>
+              node.type === 'image' ||
+              (node.type === 'paragraph' && !node.content?.length)
+          )
+        ? ''
         : richTextToString(content)
     ),
     richContent,
@@ -63,7 +75,7 @@ export function commentToYapContent(content: JSONContent) {
 }
 
 // Reduces a comment document to what decides whether two documents read the
-// same: node types, text, marks (a link by its address only) and set attributes.
+// same: node types, text, marks and nondefault attributes.
 const comparableContent = (node: JSONContent): JSONContent => {
   const attrs = Object.fromEntries(
     Object.entries(node.attrs ?? {}).filter(([, value]) => value != null)
@@ -76,7 +88,20 @@ const comparableContent = (node: JSONContent): JSONContent => {
       ? {
           marks: node.marks.map((mark) =>
             mark.type === 'link'
-              ? { type: 'link', attrs: { href: mark.attrs?.href } }
+              ? {
+                  type: 'link',
+                  attrs: Object.fromEntries(
+                    Object.entries(mark.attrs ?? {}).filter(
+                      ([key, value]) =>
+                        value != null &&
+                        !(key === 'target' && value === '_blank') &&
+                        !(
+                          key === 'rel' &&
+                          value === 'noopener noreferrer nofollow'
+                        )
+                    )
+                  ),
+                }
               : mark
           ),
         }
@@ -96,46 +121,82 @@ export function isCommentYapRepresentable(content: JSONContent) {
   return isEqual(comparableContent(content), comparableContent(roundTrip))
 }
 
+function marketDiscussionParent(pg: DB, contractId: string, betId?: string) {
+  return pg.oneOrNone<SocialRow>(
+    `select * from social_posts where source_contract_id=$1 and canonical_key in ($2,$3)
+     order by (canonical_key=$2) desc limit 1`,
+    [
+      contractId,
+      betId ? `bet:${betId}` : `market:${contractId}`,
+      `market:${contractId}`,
+    ]
+  )
+}
+
 // Market rows remain compatible with old clients; the stable association means
 // both surfaces write to the same logical message and reaction collection.
 export async function ensureMarketCommentPost(
   pg: DB,
-  commentId: string
+  commentId: string,
+  expectedContractId?: string
 ): Promise<SocialRow> {
+  const row = await pg.oneOrNone<{
+    data: ContractComment
+    contract_id: string
+    created_time: string
+    visible: boolean
+  }>(
+    `select cc.data,cc.contract_id,cc.created_time::text as created_time,(${visibleMarketComment(
+      'cc'
+    )}) as visible from contract_comments cc join contracts c on c.id=cc.contract_id
+     where cc.comment_id=$1 and c.visibility='public' and not coalesce((c.data->>'deleted')::boolean,false)
+       for update of cc`,
+    [commentId]
+  )
+  if (!row || (expectedContractId && row.contract_id !== expectedContractId))
+    throw new APIError(404, 'This comment is unavailable')
+  const comment = row.data
+  if (comment.isModComment)
+    throw new APIError(400, 'Mod comments cannot be shared to Yap')
+  if (!row.visible) throw new APIError(404, 'This comment is unavailable')
   const existing = await pg.oneOrNone<SocialRow>(
     'select * from social_posts where market_comment_id=$1',
     [commentId]
   )
-  if (existing) return existing
-  const row = await pg.oneOrNone<{
-    data: ContractComment
-    contract_id: string
-  }>(
-    `select cc.data,cc.contract_id from contract_comments cc join contracts c on c.id=cc.contract_id
-     where cc.comment_id=$1 and c.visibility='public' and not coalesce((c.data->>'deleted')::boolean,false)
-       and not coalesce((cc.data->>'hidden')::boolean,false) and not coalesce((cc.data->>'deleted')::boolean,false)`,
-    [commentId]
-  )
-  if (!row) throw new APIError(404, 'This comment is unavailable')
-  const comment = row.data
-  if (comment.isModComment)
-    throw new APIError(400, 'Mod comments cannot be shared to Yap')
+  if (existing) {
+    if (
+      existing.user_id !== comment.userId ||
+      (existing.source_contract_id &&
+        existing.source_contract_id !== row.contract_id)
+    )
+      throw new APIError(409, 'This comment is linked to a different source')
+    if (!(await isSocialThreadOpen(pg, existing)))
+      throw new APIError(403, 'This discussion is closed')
+    return existing
+  }
   // A trade or market row is the parent only if it belongs to this market: a
   // comment can carry a trade from a sibling market.
   const parent = comment.replyToCommentId
-    ? await ensureMarketCommentPost(pg, comment.replyToCommentId)
-    : await pg.oneOrNone<SocialRow>(
-        'select * from social_posts where canonical_key=$1 and source_contract_id=$2',
-        [
-          comment.betId ? `bet:${comment.betId}` : `market:${row.contract_id}`,
-          row.contract_id,
-        ]
+    ? await ensureMarketCommentPost(
+        pg,
+        comment.replyToCommentId,
+        row.contract_id
       )
+    : await marketDiscussionParent(pg, row.contract_id, comment.betId)
+  if (parent) {
+    const lockedParent = await lockSocialThread(pg, parent.id)
+    await assertSocialInteraction(
+      pg,
+      lockedParent,
+      await getSocialViewer(comment.userId, pg),
+      true
+    )
+  }
   const id = `mc-${commentId}`
   const content = commentToYapContent(comment.content)
   const result = await pg.one<SocialRow>(
     `insert into social_posts(id,user_id,text,rich_content,image_urls,parent_id,root_id,market_comment_id,source_contract_id,canonical_key,feed_visible,created_time)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,false,millis_to_ts($11))
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,false,$11::timestamptz)
      on conflict (market_comment_id) where market_comment_id is not null do update set market_comment_id=excluded.market_comment_id returning *`,
     [
       id,
@@ -148,7 +209,7 @@ export async function ensureMarketCommentPost(
       commentId,
       row.contract_id,
       `comment:${commentId}`,
-      comment.createdTime,
+      row.created_time,
     ]
   )
   await pg.none(
@@ -181,7 +242,7 @@ export async function ensureSocialSource(
       [source.commentId, source.contractId]
     )
     if (!comment) throw new APIError(404, 'Comment not found on this market')
-    return ensureMarketCommentPost(pg, source.commentId)
+    return ensureMarketCommentPost(pg, source.commentId, source.contractId)
   }
   const market = await pg.oneOrNone<{
     creator_id: string
@@ -228,54 +289,47 @@ export async function ensureSocialSource(
 // them as fresh posts or sending historical notifications. Runs on public
 // reads, so it does a bounded amount of work, takes only comments it can
 // place, and never lets one comment stop the rest or the read.
-export async function reconcileMarketDiscussion(pg: DB, post: SocialRow) {
-  if (!post.market_comment_id && !post.canonical_key?.match(/^(market|bet):/))
-    return
-  const comment = post.market_comment_id
-    ? await pg.oneOrNone<{ data: ContractComment }>(
-        'select data from contract_comments where comment_id=$1',
-        [post.market_comment_id]
-      )
-    : null
-  const unavailable = (alias: string) =>
-    `(coalesce((${alias}.data->>'hidden')::boolean,false) or coalesce((${alias}.data->>'deleted')::boolean,false)
-      or coalesce((${alias}.data->>'isModComment')::boolean,false))`
-  const closed = (alias: string) =>
-    `(${alias}.deleted_time is not null or ${alias}.hidden_time is not null)`
-  // A reply is taken only if it has a place in the tree: its parent is on Yap
-  // in a thread that still takes messages, or its parent can be added. A reply
-  // under a hidden, deleted or mod comment, or under a post that was removed
-  // from Yap, stays on the market only.
-  const rows = await pg.manyOrNone<{ comment_id: string }>(
-    `select cc.comment_id from contract_comments cc
-     left join social_posts s on s.market_comment_id=cc.comment_id
-     left join contract_comments parent on parent.comment_id=cc.data->>'replyToCommentId'
-       and parent.contract_id=cc.contract_id
-     left join social_posts parent_post on parent_post.market_comment_id=parent.comment_id
-     left join social_posts parent_root on parent_root.id=parent_post.root_id
-     where s.id is null and not ${unavailable('cc')}
-     and (cc.data->>'replyToCommentId' is null
-       or (parent_post.id is not null and not ${closed(
-         'parent_post'
-       )} and not ${closed('parent_root')})
-       or (parent_post.id is null and parent.comment_id is not null and not ${unavailable(
-         'parent'
-       )}))
-     and ${
-       comment
-         ? "(cc.comment_id=$1 or cc.data->>'replyToCommentId'=$1)"
-         : post.source_bet_id
-         ? "cc.contract_id=$1 and cc.data->>'betId'=$2"
-         : 'cc.contract_id=$1'
-     }
-     order by cc.created_time limit ${SOCIAL_RECONCILE_BATCH}`,
-    comment
-      ? [comment.data.replyToCommentId ?? comment.data.id]
-      : post.source_bet_id
-      ? [post.source_contract_id, post.source_bet_id]
-      : [post.source_contract_id]
+export async function reconcileMarketDiscussion(
+  pg: DB,
+  post: SocialRow,
+  cursor?: string
+) {
+  if (
+    (!post.market_comment_id && !post.canonical_key?.match(/^(market|bet):/)) ||
+    !(await isSocialThreadOpen(pg, post))
   )
-  for (const row of rows) {
+    return null
+  const [time, id] = cursor?.split('|') ?? []
+  // Scan exactly the native siblings this page can show, in its cursor order.
+  // Its parent is already materialized, so no recursive backfill is needed.
+  const rows = await pg.manyOrNone<{
+    comment_id: string
+    created_time: string
+  }>(
+    `select cc.comment_id,cc.created_time::text as created_time from contract_comments cc
+     where not exists(select 1 from social_posts p where p.market_comment_id=cc.comment_id)
+       and ${visibleMarketComment('cc')}
+       and cc.contract_id=$1 and (cc.data->>'replyToCommentId') is not distinct from $2::text
+       and ($3::text is null or cc.data->>'betId'=$3)
+       and ($4::timestamptz is null or (cc.created_time,'mc-' || cc.comment_id)>($4::timestamptz,$5::text))
+     order by cc.created_time,'mc-' || cc.comment_id limit $6`,
+    [
+      post.market_comment_id
+        ? (
+            await pg.oneOrNone<{ contract_id: string }>(
+              'select contract_id from contract_comments where comment_id=$1',
+              [post.market_comment_id]
+            )
+          )?.contract_id ?? null
+        : post.source_contract_id,
+      post.market_comment_id,
+      post.market_comment_id ? null : post.source_bet_id,
+      time ?? null,
+      id ?? null,
+      SOCIAL_RECONCILE_BATCH + 1,
+    ]
+  )
+  for (const row of rows.slice(0, SOCIAL_RECONCILE_BATCH)) {
     // Each comment in its own savepoint: a failure undoes that comment only.
     await pg
       .tx((tx) => ensureMarketCommentPost(tx, row.comment_id))
@@ -289,6 +343,10 @@ export async function reconcileMarketDiscussion(pg: DB, post: SocialRow) {
         )
       )
   }
+  const last = rows[SOCIAL_RECONCILE_BATCH - 1]
+  return rows.length > SOCIAL_RECONCILE_BATCH
+    ? { time: socialTimestamp(last.created_time), id: `mc-${last.comment_id}` }
+    : null
 }
 
 // A comment written on its market joins a discussion that is already on Yap:
@@ -307,21 +365,25 @@ export async function linkCommentToOpenDiscussion(
          where cc.comment_id=$1 and cc.contract_id=$2`,
         [comment.replyToCommentId, comment.contractId]
       )
-    : // The trade or market row must belong to the market the comment is on.
-      await pg.oneOrNone<SocialRow>(
-        'select * from social_posts where canonical_key=$1 and source_contract_id=$2',
-        [
-          replyToBetId ? `bet:${replyToBetId}` : `market:${comment.contractId}`,
-          comment.contractId,
-        ]
+    : await marketDiscussionParent(
+        pg,
+        comment.contractId,
+        replyToBetId ?? comment.betId
       )
   if (!parent || !(await isSocialThreadOpen(pg, parent))) return null
   return pg.tx(async (tx) => {
-    const locked = await lockSocialThread(tx, parent.id)
-    if (!(await isSocialThreadOpen(tx, locked))) return null
+    const row = await ensureMarketCommentPost(
+      tx,
+      comment.id,
+      comment.contractId
+    )
+    if (!row.parent_id) return null
     return {
-      parent: locked,
-      row: await ensureMarketCommentPost(tx, comment.id),
+      parent:
+        row.parent_id === parent.id
+          ? parent
+          : await getSocialRow(tx, row.parent_id),
+      row,
     }
   })
 }

@@ -27,7 +27,7 @@ import { api } from 'web/lib/api/api'
 import { socialRichContentToText } from 'common/social-rich-content'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { useUser } from 'web/hooks/use-user'
-import { useAdminOrMod } from 'web/hooks/use-admin'
+import { useAdmin, useAdminOrMod } from 'web/hooks/use-admin'
 import { SocialAvatar } from './social-avatar'
 import { SocialUserLink } from './social-user-link'
 import { RelativeTimestamp } from '../relative-timestamp'
@@ -78,6 +78,7 @@ function SocialPostCardContent({
   const router = useRouter()
   const user = useUser()
   const mod = useAdminOrMod()
+  const admin = useAdmin()
   const replyDraft = useReplyDraftContext()?.drafts[post.id]
   const [replying, setReplying] = useState(
     () =>
@@ -92,6 +93,7 @@ function SocialPostCardContent({
   const [reposting, setReposting] = useState(false)
   const [editing, setEditing] = useState<SocialPost>()
   const [loadingEdit, setLoadingEdit] = useState(false)
+  const [editOnMarket, setEditOnMarket] = useState<string>()
   const [deleting, setDeleting] = useState(false)
   const [reporting, setReporting] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -145,7 +147,7 @@ function SocialPostCardContent({
   const withinEditWindow = useSocialEditWindow(
     own ? post.createdTimeMs : undefined
   )
-  const canEdit = own && (!!post.marketCommentId || withinEditWindow)
+  const canEdit = post.marketCommentId ? own || admin : own && withinEditWindow
   async function reYap(remove = false) {
     if (!user) {
       await firebaseLogin()
@@ -166,6 +168,7 @@ function SocialPostCardContent({
   async function beginEdit() {
     if (loadingEdit || !canEdit) return
     setLoadingEdit(true)
+    setEditOnMarket(undefined)
     setError(undefined)
     try {
       // Feed content is redacted for display. Fetch the author's editable
@@ -176,6 +179,10 @@ function SocialPostCardContent({
         !isSocialPostEditable(result.post.createdTimeMs)
       )
         throw new Error('The 30-minute editing window has ended.')
+      if (result.editOnMarket) {
+        setEditOnMarket(result.editOnMarket)
+        return
+      }
       if (result.post.removed || result.editContent === undefined)
         throw new Error(
           'This post is not available to edit. Please refresh and try again.'
@@ -557,6 +564,14 @@ function SocialPostCardContent({
                 </Tooltip>
               </div>
             </>
+          )}
+          {editOnMarket && (
+            <p className="mt-2 text-sm">
+              This comment uses formatting Yap can’t edit.{' '}
+              <Link className="text-primary-700 underline" href={editOnMarket}>
+                Edit on the market
+              </Link>
+            </p>
           )}
           {error && (
             <p role="alert" className="mt-2 text-sm text-red-600">

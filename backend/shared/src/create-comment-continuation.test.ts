@@ -266,13 +266,7 @@ test('a market comment joins an open Yap discussion as a copy, before its own no
     expect.objectContaining({ id: result.id, contractId: 'market' }),
     undefined
   )
-  expect(notifySocial).toHaveBeenCalledWith(
-    pg,
-    parent,
-    creator,
-    'reply',
-    'mc-c1'
-  )
+  expect(notifySocial).not.toHaveBeenCalled()
   expect(
     jest.mocked(linkCommentToOpenDiscussion).mock.invocationCallOrder[0]
   ).toBeLessThan(

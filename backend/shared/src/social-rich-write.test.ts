@@ -76,6 +76,7 @@ const editDeadline = createdTime + SOCIAL_POST_EDIT_WINDOW_MS
 let pg: {
   tx: jest.Mock
   one: jest.Mock
+  oneOrNone: jest.Mock
   none: jest.Mock
   manyOrNone: jest.Mock
 }
@@ -84,6 +85,7 @@ beforeEach(() => {
   jest.clearAllMocks()
   jest.spyOn(Date, 'now').mockReturnValue(createdTime + 60_000)
   pg = {
+    oneOrNone: jest.fn().mockResolvedValue(null),
     tx: jest.fn(async (fn) => fn(pg)),
     one: jest.fn().mockResolvedValue(row),
     none: jest.fn().mockResolvedValue(null),

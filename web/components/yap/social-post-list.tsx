@@ -141,7 +141,7 @@ export function SocialPostList({
           continueThread={depth > 0 && index < page.posts.length - 1}
         />
       ))}
-      {!loading && !error && !page.posts.length && (
+      {!loading && !error && !page.posts.length && !page.nextCursor && (
         <div className="text-ink-500 px-5 py-10 text-center">
           {parentId
             ? 'No replies yet. Start the conversation.'

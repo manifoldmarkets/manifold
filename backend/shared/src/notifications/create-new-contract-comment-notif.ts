@@ -1,3 +1,4 @@
+import { getSocialRow, notifySocial } from 'shared/social-posts'
 import {
   CommentNotificationData,
   Notification,
@@ -71,8 +72,10 @@ export const createCommentOnContractNotification = async (
   const threadSubscribers = await pg.manyOrNone<{
     user_id: string
     muted: boolean
+    reply_id: string
+    parent_id: string
   }>(
-    'select sub.user_id,sub.muted from social_thread_subscriptions sub join social_posts s on s.root_id=sub.root_id where s.market_comment_id=$1 and s.parent_id is not null',
+    'select sub.user_id,sub.muted,s.id as reply_id,s.parent_id from social_thread_subscriptions sub join social_posts s on s.root_id=sub.root_id where s.market_comment_id=$1 and s.parent_id is not null and s.deleted_time is null and s.hidden_time is null',
     [sourceId]
   )
   const isReply = Object.keys(repliedUsersInfo).length > 0
@@ -167,23 +170,13 @@ export const createCommentOnContractNotification = async (
     const subscriber = threadSubscribers.find((s) => s.user_id === userId)
     const isTag = needNotFollowContractReasons.includes(reason)
     if (subscriber?.muted && !isTag) return
-    const groupedOnYap =
-      !!subscriber &&
-      !isTag &&
-      getNotificationDestinationsForUser(privateUser, 'social_replies')
-        .sendToBrowser
-
     const { sendToBrowser, sendToEmail, sendToMobile, notificationPreference } =
       getNotificationDestinationsForUser(privateUser, reason)
 
     const receivedNotifications = usersToReceivedNotifications[userId] ?? []
 
     // Browser notifications
-    if (
-      sendToBrowser &&
-      !groupedOnYap &&
-      !receivedNotifications.includes('browser')
-    ) {
+    if (sendToBrowser && !receivedNotifications.includes('browser')) {
       bulkNotifications.push(buildNotification(userId, reason))
       receivedNotifications.push('browser')
     }
@@ -226,19 +219,6 @@ export const createCommentOnContractNotification = async (
     usersToReceivedNotifications[userId] = receivedNotifications
   }
 
-  log('notifying replies')
-  if (repliedUsersInfo) {
-    await Promise.all(
-      Object.keys(repliedUsersInfo).map(async (userId) =>
-        sendNotificationsIfSettingsPermit(
-          userId,
-          repliedUsersInfo[userId].repliedToType === 'answer'
-            ? 'reply_to_users_answer'
-            : 'reply_to_users_comment'
-        )
-      )
-    )
-  }
   log('notifying tagged users')
   if (taggedUserIds && taggedUserIds.length > 0) {
     await Promise.all(
@@ -252,6 +232,19 @@ export const createCommentOnContractNotification = async (
       sendNotificationsIfSettingsPermit(userId, 'tagged_all_traders')
     )
   )
+  log('notifying replies')
+  if (repliedUsersInfo) {
+    await Promise.all(
+      Object.keys(repliedUsersInfo).map(async (userId) =>
+        sendNotificationsIfSettingsPermit(
+          userId,
+          repliedUsersInfo[userId].repliedToType === 'answer'
+            ? 'reply_to_users_answer'
+            : 'reply_to_users_comment'
+        )
+      )
+    )
+  }
   log('notifying creator')
   await sendNotificationsIfSettingsPermit(
     sourceContract.creatorId,
@@ -275,8 +268,42 @@ export const createCommentOnContractNotification = async (
       )
     )
   )
+  // Keep creator and explicit tag alerts on the market. Suppress other
+  // market in-app alerts only after the grouped Yap notification was stored.
+  const delivered = new Set<string>()
+  const thread = threadSubscribers.find((s) => !s.muted)
+  if (thread) {
+    const keepMarketAlert = new Set(
+      bulkNotifications
+        .filter(
+          (n) =>
+            n.userId === sourceContract.creatorId ||
+            needNotFollowContractReasons.includes(n.reason)
+        )
+        .map((n) => n.userId)
+    )
+    try {
+      await notifySocial(
+        pg,
+        await getSocialRow(pg, thread.parent_id),
+        sourceUser,
+        'reply',
+        thread.reply_id,
+        keepMarketAlert,
+        delivered
+      )
+    } catch (error) {
+      log.error('Failed to group market comment notifications on Yap', {
+        sourceId,
+        error,
+      })
+    }
+  }
   await createPushNotifications(bulkPushNotifications)
-  await bulkInsertNotifications(bulkNotifications, pg)
+  await bulkInsertNotifications(
+    bulkNotifications.filter((n) => !delivered.has(n.userId)),
+    pg
+  )
   await sendBulkEmails(
     `Comment on ${sourceContract.question}`,
     'market-comment-bulk',

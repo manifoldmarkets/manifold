@@ -184,9 +184,13 @@ beforeEach(() => {
   jest
     .mocked(hydrateSocialPosts)
     .mockResolvedValue([{ id: 'post' } as SocialPost])
-  jest.mocked(validateComment).mockResolvedValue({
-    contract: { creatorId: 'creator' },
-  } as Awaited<ReturnType<typeof validateComment>>)
+  jest.mocked(validateComment).mockImplementation(
+    async (_market, _uid, content) =>
+      ({
+        contract: { id: 'market', creatorId: 'creator' },
+        contentJson: content,
+      } as Awaited<ReturnType<typeof validateComment>>)
+  )
   jest.mocked(createCommentOnContractInternal).mockImplementation(async () => {
     commentInTx = inTx
     return {
@@ -406,7 +410,7 @@ test('edits update the market comment inside the locked transaction', async () =
   expect(synced).toBe(true)
   expect(editCommentContentInternal).toHaveBeenCalledWith(
     pg,
-    { id: 'market' },
+    expect.objectContaining({ id: 'market' }),
     mirror,
     'author',
     expect.objectContaining({ type: 'doc' })
@@ -481,7 +485,7 @@ test.each([
     } else {
       // The comment stays on its market and stops pointing at the removed Yap.
       expect(unlinked).toHaveLength(1)
-      expect(unlinked[0][1]).toEqual(['mirror'])
+      expect(unlinked[0][1]).toEqual(['mirror', 'post'])
       expect(throwIfBannedFromAction).not.toHaveBeenCalled()
       expect(trackPublicEvent).not.toHaveBeenCalled()
     }

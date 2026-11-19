@@ -13,6 +13,7 @@ Combined implementation, updated 18 November 2026. No production deployment.
 - Hiding: a market creator's hide collapses the comment on their market and does not reach Yap. An admin's or moderator's hide also hides the post on Yap, and their unhide restores it.
 - Mod comments stay on their market: they cannot be re-Yapped, quoted or copied to Yap.
 - Replies use normal commenting eligibility; publishing and re-Yapping require membership. Public discussions can be read while signed out. A read adds at most 100 of a market's older comments to its discussion, skips any it cannot place, and never fails because of one.
+- A comment shared before its market or trade keeps its original discussion and subscribers. The market and trade cards can list that comment without moving its thread. A trade reply joins the market discussion when the trade has no card of its own.
 - Thread participation subscribes the participant; mute/unmute applies to thread notifications. Re-Yap notifications aggregate for the original author.
 - Explore includes native Yap cards. Shared market/comment/trade items have stable identities even when shared without commentary.
 - Ranking counts independent people across comments, Yaps and re-Yaps, excluding market creators and bots. Mirroring and repeated shares cannot multiply the signal.
@@ -49,6 +50,10 @@ The count shows active unique sharers. Re-Yapping does not create a new authored
 - DEV migration applied. Public Yap feed, detail and unified Explore API returned HTTP 200; /yap compiled and returned HTTP 200.
 - No signed-in visual walkthrough has been performed. The flows above are the manual acceptance pass.
 - Review fixes, 19 November (not yet on DEV): the rules under Behaviour for market commenting, editing, removing, hiding, mod comments and bounded reads. `backend/shared/src/social-discussion.test.ts` runs the linking helpers and the two Yap migrations on an in-memory PostgreSQL built from the repository's own migration files, and `market-comment-endpoints.test.ts` covers the market endpoints. `scripts/yap-regressions.cjs` gained the cases the migration must leave alone, and takes `YAP_REGRESSION_DATABASE_URL` to run against a local database instead of DEV.
-- `2026111201_social_discussions.sql` changed after DEV applied it: the reaction block now removes a Yap like only once the same person has a reaction on the comment, and the feed backfill skips posts that have a market comment. There is no schema change, so DEV needs nothing re-run; the file is safe to run again.
+- The current reaction backfill keeps the latest vote per affected voter, preserves the winning reaction ID and leaves unmatched Yap likes in place. Environments that used an earlier version need their data checked before rollout. Replaying the SQL can reconcile surviving rows. Recovering previously discarded rows requires an earlier snapshot.
 
 Restart with `node scripts/yap-dev.cjs api` and `node scripts/yap-dev.cjs web`. Check schema with `node scripts/yap-dev.cjs check-db`. On another device, fetch and check out `codex/yap-combined-local-20261111`, install dependencies, and provide DEV Firebase credentials as described in `yap-local-test-build.md`.
+
+## Production cutover
+
+Drain old API writers before moving linked reactions. Keep writes paused while applying both Yap migrations in order and switching to the API that writes linked likes and dislikes on the market comment. An old instance can acknowledge an unlike under the old key after the vote has moved. Replaying the migration cannot recover that intent. Rollback across this boundary also requires draining writes and reconciling vote keys first.

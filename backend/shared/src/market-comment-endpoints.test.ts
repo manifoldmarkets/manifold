@@ -41,6 +41,7 @@ jest.mock('api/on-create-comment-on-contract', () => ({
 }))
 jest.mock('api/create-post-comment', () => ({ revalidatePost: jest.fn() }))
 jest.mock('api/social-posts', () => ({
+  withdrawLockedPost: jest.fn(),
   deleteSocialPost: jest.fn(async () => ({ success: true })),
   editSocialPost: jest.fn(),
   reactToSocialPost: jest.fn(),
@@ -52,6 +53,7 @@ import { hideComment } from 'api/hide-comment'
 import { pinComment } from 'api/pin-comment'
 import { addOrRemoveReaction } from 'api/reaction'
 import {
+  withdrawLockedPost,
   deleteSocialPost,
   editSocialPost,
   reactToSocialPost,
@@ -134,7 +136,7 @@ beforeEach(() => {
           ? null
           : linked
         : /select user_id from contract_comments/.test(sql)
-        ? 'commenter'
+        ? { user_id: 'commenter' }
         : null
     ),
     manyOrNone: jest.fn().mockResolvedValue([]),
@@ -187,7 +189,7 @@ test('an edit of a comment that is not on Yap, or was removed from it, is the pl
   linked = { id: 'mc-c1', removed: true }
   await edit('commenter')
   expect(updateData).toHaveBeenCalledTimes(2)
-  expect(pg.tx).not.toHaveBeenCalled()
+  expect(pg.tx).toHaveBeenCalledTimes(2)
   expect(syncSocialPostFromComment).not.toHaveBeenCalled()
 })
 
@@ -239,12 +241,11 @@ test("a moderator's hide and unhide reach the comment's Yap post", async () => {
 test('a moderator deleting a comment that is live on Yap removes both together', async () => {
   linked = { id: 'mc-c1' }
   await hide(MOD, 'delete')
-  expect(deleteSocialPost).toHaveBeenCalledWith(
-    { id: 'mc-c1' },
-    expect.objectContaining({ uid: MOD }),
-    req
-  )
-  expect(updateData).not.toHaveBeenCalled()
+  expect(withdrawLockedPost).toHaveBeenCalledTimes(1)
+  expect(jest.mocked(updateData).mock.calls[0][3]).toMatchObject({
+    deleted: true,
+    comment_id: 'c1',
+  })
 })
 
 test('a comment whose Yap post is already removed is still deleted on the market', async () => {
@@ -302,7 +303,7 @@ test('a like made on the market is the market reaction, whether or not the comme
   const insert = pg.one.mock.calls.find(([sql]) =>
     /insert into user_reactions/.test(sql)
   )
-  expect(insert![1]).toEqual(['c1', 'comment', 'commenter', 'liker', 'like'])
+  expect(insert![1]).toEqual(['c1', 'liker', 'like', 'commenter'])
   // Likes made on Yap still go to Yap's handler.
   await addOrRemoveReaction(
     API.react.props.parse({ contentId: 'post', contentType: 'social_post' }),

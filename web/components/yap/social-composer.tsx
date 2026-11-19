@@ -153,7 +153,11 @@ export function SocialComposer(props: {
   }
   async function submit() {
     if (!canSubmit || !user || submitting.current) return
-    if (editing && !isSocialPostEditable(editing.createdTimeMs)) {
+    if (
+      editing &&
+      !editing.marketCommentId &&
+      !isSocialPostEditable(editing.createdTimeMs)
+    ) {
       setField('error', 'The 30-minute editing window has ended.')
       return
     }
@@ -183,7 +187,11 @@ export function SocialComposer(props: {
         if (result.status === 'rejected') throw result.reason
         return result.value
       })
-      if (editing && !isSocialPostEditable(editing.createdTimeMs))
+      if (
+        editing &&
+        !editing.marketCommentId &&
+        !isSocialPostEditable(editing.createdTimeMs)
+      )
         throw new Error('The 30-minute editing window has ended.')
       const content = (
         editing ? socialPostEditSchema : socialPostDraftSchema

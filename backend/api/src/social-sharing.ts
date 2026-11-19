@@ -41,7 +41,7 @@ export const repostSocialPost: APIHandler<'repost-social-post'> =
         )
         return { row, notify: false }
       }
-      await assertSocialInteraction(tx, row, viewer)
+      await assertSocialInteraction(tx, row, viewer, true)
       const previous = await tx.oneOrNone<{ active: boolean }>(
         'select active from social_reposts where post_id=$1 and user_id=$2',
         [row.id, auth.uid]

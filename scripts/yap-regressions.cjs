@@ -93,7 +93,7 @@ function loadDeclarations(file, names, bindings) {
    create temporary table social_posts(id text primary key,user_id text,text text default '',rich_content jsonb,image_urls text[] default '{}',parent_id text,root_id text,market_comment_id text,source_contract_id text,source_bet_id text,created_time timestamptz default now(),deleted_time timestamptz);
    create temporary table social_post_markets(post_id text,contract_id text,position int default 0,primary key(post_id,contract_id));
    create temporary table user_contract_interactions(user_id text,contract_id text,name text,comment_id text,bet_id text);
-   create temporary table user_reactions(content_id text,content_type text,content_owner_id text,user_id text,reaction_type text,created_time timestamptz default now());
+   create temporary table user_reactions(reaction_id text default md5(random()::text),content_id text,content_type text,content_owner_id text,user_id text,reaction_type text,created_time timestamptz default now());
    create temporary table social_reposts(post_id text references social_posts(id),user_id text references users(id),active boolean default true,created_time timestamptz default now(),bumped_time timestamptz default now(),primary key(post_id,user_id));
    create temporary table social_thread_subscriptions(root_id text references social_posts(id),user_id text references users(id),muted boolean default false,created_time timestamptz default now(),primary key(root_id,user_id));
    insert into users(id,is_bot) values('owner',false),('alice',false),('bob',false),('bot',true),('other-owner',false);
@@ -177,18 +177,25 @@ function loadDeclarations(file, names, bindings) {
     const thread = loadDeclarations(
       'backend/shared/src/social-posts.ts',
       [
+        'visibleMarketComment',
         'getSocialRow',
         'lockSocialThread',
         'assertSocialInteraction',
         'isSocialThreadOpen',
       ],
-      { APIError }
+      {
+        APIError,
+        as: require('pg-promise').as,
+        ENV_CONFIG: { adminIds: [] },
+        MOD_IDS: [],
+      }
     )
     const skipped = []
     const bridge = loadDeclarations(
       'backend/shared/src/social-discussion.ts',
       [
         'SOCIAL_RECONCILE_BATCH',
+        'marketDiscussionParent',
         'ensureMarketCommentPost',
         'ensureSocialSource',
         'findSocialSource',
@@ -198,6 +205,8 @@ function loadDeclarations(file, names, bindings) {
       {
         ...thread,
         APIError,
+        getSocialViewer: async (id) => ({ id, blocked: [] }),
+        socialTimestamp: (time) => time,
         log: { warn: (_message, details) => skipped.push(details.commentId) },
         commentToYapContent: (c) => ({
           text: 'fixture',
@@ -365,6 +374,49 @@ function loadDeclarations(file, names, bindings) {
     await db.query(`insert into social_post_markets(post_id,contract_id) values('original','market'),('original','other');
    insert into social_posts(id,user_id,root_id) values('repeated','alice','repeated'),('self','owner','self');
    insert into social_post_markets(post_id,contract_id) values('repeated','market'),('self','market');`)
+    // Exercise the API's actual cursor. The first 100 native replies are hidden
+    // from this reader, and a newer reply already exists on Yap.
+    await db.query(
+      "insert into contracts(id,creator_id) values('paged','owner')"
+    )
+    const paged = await bridge.ensureSocialSource(pg, { contractId: 'paged' })
+    await db.query(`insert into contract_comments(comment_id,contract_id,user_id,created_time,data)
+      select 'page-' || g,'paged',author,millis_to_ts(1700000000000),
+        jsonb_build_object('userId',author,'contractId','paged','createdTime',1700000000000,'content','{}'::jsonb)
+      from generate_series(100,235) g cross join lateral (select case when g<206 then 'alice' else 'bob' end as author) u`)
+    await bridge.ensureMarketCommentPost(pg, 'page-235')
+    const timestamp = (time) =>
+      typeof time === 'string' ? time : time.toISOString()
+    const { readSocialPosts } = loadDeclarations(
+      'backend/api/src/social-posts.ts',
+      ['readSocialPosts'],
+      {
+        ...thread,
+        reconcileForRead: bridge.reconcileMarketDiscussion,
+        socialTimestamp: timestamp,
+        hydrateSocialPosts: async (_db, rows) => rows,
+      }
+    )
+    let cursor
+    const seenIds = []
+    const cursors = new Set()
+    do {
+      const page = await readSocialPosts(
+        pg,
+        { blocked: ['alice'] },
+        { parentId: paged.id, cursor, limit: 7 }
+      )
+      seenIds.push(...page.posts.map((row) => row.id))
+      cursor = page.nextCursor
+      if (cursor) {
+        assert.ok(!cursors.has(cursor))
+        cursors.add(cursor)
+      }
+    } while (cursor && cursors.size <= 10)
+    assert.deepEqual(
+      seenIds,
+      Array.from({ length: 30 }, (_, i) => `mc-page-${206 + i}`)
+    )
     const legacy = loadDeclarations(
       'backend/api/src/social-posts.ts',
       ['recordSocialRepost'],

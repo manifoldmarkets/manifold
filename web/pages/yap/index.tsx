@@ -7,11 +7,12 @@ import {
   SocialPostList,
   SocialPostSkeleton,
 } from 'web/components/yap/social-post-list'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
 
 export default function YapPage() {
   const [version, setVersion] = useState(0)
   const user = useUser()
+  const isAuthorized = useIsAuthorized()
   const privateUser = usePrivateUser()
   // Remount on account/block changes so a previous viewer's pages are never reused.
   const viewerKey = JSON.stringify([
@@ -43,12 +44,12 @@ export default function YapPage() {
             </button>
           </div>
         </header>
-        {user && (
+        {isAuthorized && user && (
           <div className="border-ink-200 dark:border-ink-300 border-b">
             <SocialComposer onPosted={() => setVersion((v) => v + 1)} />
           </div>
         )}
-        {user === undefined ? (
+        {isAuthorized === undefined ? (
           <SocialPostSkeleton />
         ) : (
           <SocialPostList key={viewerKey} refreshKey={version} />

@@ -1,3 +1,4 @@
+import { writeCommentReaction } from 'shared/supabase/comment-reactions'
 import {
   SocialPostPage,
   socialTimestamp,
@@ -23,6 +24,7 @@ import {
 } from 'shared/new-account-gate'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { ContractComment } from 'common/comment'
+import { contractPath } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { User } from 'common/user'
 import { APIHandler, APIError, AuthedUser } from './helpers/endpoint'
@@ -53,14 +55,10 @@ import { trackPublicEvent } from 'shared/analytics'
 import { notifySocialMentions } from 'shared/social-mentions'
 import { getComment } from 'shared/supabase/contract-comments'
 import { updateData } from 'shared/supabase/utils'
-import {
-  getContract,
-  log,
-  revalidateContractStaticProps,
-  sanitizeJsonContent,
-} from 'shared/utils'
+import { getContract, log, revalidateContractStaticProps } from 'shared/utils'
 import {
   assertSocialInteraction,
+  visibleMarketComment,
   getSocialRow,
   getSocialEditContent,
   getSocialViewer,
@@ -244,7 +242,8 @@ export const createSocialPost: APIHandler<'create-social-post'> =
               content: !!row.text,
               socialPostId: id,
             })
-          if (parent) await notifySocial(pg, parent, author, 'reply', id)
+          if (parent && !marketComment)
+            await notifySocial(pg, parent, author, 'reply', id)
           // The market comment notifies the same tagged users.
           if (marketComment) await marketComment.continue()
           if (!marketComment)
@@ -362,8 +361,17 @@ async function syncSocialComment(
   if (!row.market_comment_id) return
   if (!row.text && !row.image_urls.length)
     throw new APIError(400, 'Keep text or an image in this shared comment.')
-  const comment = await getComment(tx, row.market_comment_id).catch(() => null)
-  if (!comment || comment.deleted) return
+  const comment = await getComment(tx, row.market_comment_id)
+  if (
+    comment.deleted ||
+    comment.isModComment ||
+    comment.userId !== row.user_id ||
+    (!!row.source_contract_id && row.source_contract_id !== comment.contractId)
+  )
+    throw new APIError(409, 'The linked market comment is unavailable')
+  if (editorId !== comment.userId && !isAdminId(editorId))
+    throw new APIError(403, 'Only the comment author or an admin may edit')
+  await throwIfBannedFromAction(tx, editorId, 'comment')
   // An edit made here replaces the market comment with what Yap's editor
   // holds. A comment with formatting Yap cannot hold is edited on its market.
   if (!isCommentYapRepresentable(comment.content))
@@ -371,8 +379,6 @@ async function syncSocialComment(
       400,
       'This comment has formatting Yap cannot keep. Edit it on its market.'
     )
-  const contract = await getContract(tx, comment.contractId)
-  if (!contract) return
   const content = {
     text: row.text,
     richContent: row.rich_content,
@@ -380,14 +386,27 @@ async function syncSocialComment(
   }
   if (!socialCommentFits(content))
     throw new APIError(400, SOCIAL_COMMENT_TOO_LONG)
-  await editCommentContentInternal(
-    tx,
-    contract,
-    comment,
+  const { contract, contentJson } = await validateComment(
+    comment.contractId,
     editorId,
-    sanitizeJsonContent(socialPostToCommentContent(content))
+    socialPostToCommentContent(content),
+    undefined,
+    undefined,
+    tx
   )
+  await editCommentContentInternal(tx, contract, comment, editorId, contentJson)
   return contract
+}
+
+// Linked mutations take the native comment lock before the Yap thread lock,
+// matching market edits, moderation and first-time materialization.
+async function lockPostForCommentChange(tx: SupabaseTransaction, id: string) {
+  await tx.oneOrNone(
+    `select cc.comment_id from contract_comments cc join social_posts p
+    on p.market_comment_id=cc.comment_id where p.id=$1 for update of cc`,
+    [id]
+  )
+  return lockSocialThread(tx, id)
 }
 
 export const editSocialPost: APIHandler<'edit-social-post'> =
@@ -396,7 +415,7 @@ export const editSocialPost: APIHandler<'edit-social-post'> =
     await socialAuthor(auth.uid)
     const viewer = await getSocialViewer(auth.uid)
     const { row, commentContract } = await pg.tx(async (tx) => {
-      const post = await lockSocialThread(tx, id)
+      const post = await lockPostForCommentChange(tx, id)
       if (
         post.user_id !== auth.uid &&
         !(post.market_comment_id && isAdminId(auth.uid))
@@ -465,72 +484,8 @@ export const deleteSocialPost: APIHandler<'delete-social-post'> = async (
   const pg = createSupabaseDirectClient()
   await socialAuthor(auth.uid)
   const removed = await pg.tx(async (tx) => {
-    const post = await lockSocialThread(tx, id)
-    const moderator = isAdminId(auth.uid) || isModId(auth.uid)
-    if (post.user_id !== auth.uid && !moderator)
-      throw new APIError(
-        403,
-        'Only the author or a moderator can remove this post'
-      )
-    // A moderator removing someone else's shared comment also deletes it on
-    // its market, under the market's rules for that: not a comment by an admin
-    // or moderator, and not while banned from moderating comments. An author
-    // removing their own post takes it off Yap only, because authors cannot
-    // delete market comments.
-    const removesComment = !!post.market_comment_id && post.user_id !== auth.uid
-    if (removesComment && (isAdminId(post.user_id) || isModId(post.user_id)))
-      throw new APIError(
-        403,
-        'You cannot remove a shared comment by an admin or moderator'
-      )
-    if (post.canonical_key?.match(/^(market|bet):/) && !moderator)
-      throw new APIError(
-        403,
-        'Undo your re-Yap to remove your share of this item'
-      )
-    if (post.deleted_time) return undefined
-    if (removesComment)
-      await throwIfBannedFromAction(tx, auth.uid, 'hideComment')
-    await tx.none(
-      `update social_posts set text='', rich_content=null, image_urls='{}', deleted_time=clock_timestamp(), deleted_by=$2, removed_by_moderator=$3,
-      source_contract_id=null, source_comment_id=null, source_bet_id=null, source_post_id=null where id=$1`,
-      [id, auth.uid, post.user_id !== auth.uid]
-    )
-    await tx.none('delete from social_post_markets where post_id=$1', [id])
-    await tx.none(
-      "delete from user_reactions where content_type='social_post' and content_id=$1",
-      [id]
-    )
-    await tx.none(
-      `delete from user_notifications
-      where (data->>'sourceId'=$1 or data->>'sourceSlug'='/yap/' || $1)
-      and data->>'sourceType' in ('social_reply','social_post_like','social_repost')`,
-      [id]
-    )
-    await tx.none('delete from user_notifications where notification_id=$1', [
-      `social-mention-${id}`,
-    ])
-    // Deleting a Yap withdraws its repost from followers' feeds.
-    await tx.none('delete from posts where social_post_id=$1', [id])
-    await tx.none('update social_reposts set active=false where post_id=$1', [
-      id,
-    ])
-    if (!post.market_comment_id) return null
-    if (removesComment)
-      return deleteSocialComment(tx, post.market_comment_id, auth.uid)
-    // The author's comment stays on its market and no longer points at Yap.
-    // This row keeps its link, so the comment is not copied to Yap again.
-    await tx.none(
-      `update contract_comments set data = data - 'socialPostId' where comment_id = $1`,
-      [post.market_comment_id]
-    )
-    const comment = await getComment(tx, post.market_comment_id).catch(
-      () => null
-    )
-    const contract = comment ? await getContract(tx, comment.contractId) : null
-    return contract
-      ? { contract, commentId: post.market_comment_id, deleted: false }
-      : null
+    const post = await lockPostForCommentChange(tx, id)
+    return removeLockedPost(tx, post, auth.uid)
   })
   if (removed) {
     await revalidateContractStaticProps(removed.contract).catch((e) =>
@@ -548,17 +503,98 @@ export const deleteSocialPost: APIHandler<'delete-social-post'> = async (
   return { success: true }
 }
 
+async function removeLockedPost(
+  tx: SupabaseTransaction,
+  post: SocialRow,
+  actorId: string
+) {
+  const moderator = isAdminId(actorId) || isModId(actorId)
+  if (post.user_id !== actorId && !moderator)
+    throw new APIError(
+      403,
+      'Only the author or a moderator can remove this post'
+    )
+  // A moderator removing someone else's shared comment also deletes it on
+  // its market, under the market's rules for that: not a comment by an admin
+  // or moderator, and not while banned from moderating comments. An author
+  // removing their own post takes it off Yap only, because authors cannot
+  // delete market comments.
+  const removesComment = !!post.market_comment_id && post.user_id !== actorId
+  if (removesComment && (isAdminId(post.user_id) || isModId(post.user_id)))
+    throw new APIError(
+      403,
+      'You cannot remove a shared comment by an admin or moderator'
+    )
+  if (post.canonical_key?.match(/^(market|bet):/) && !moderator)
+    throw new APIError(
+      403,
+      'Undo your re-Yap to remove your share of this item'
+    )
+  if (post.deleted_time) return undefined
+  if (removesComment) await throwIfBannedFromAction(tx, actorId, 'hideComment')
+  await withdrawLockedPost(tx, post, actorId)
+  if (!post.market_comment_id) return null
+  if (removesComment)
+    return deleteSocialComment(tx, post.market_comment_id, actorId, post)
+  // The author's comment stays on its market and no longer points at Yap.
+  // This row keeps its link, so the comment is not copied to Yap again.
+  await tx.none(
+    `update contract_comments set data = data - 'socialPostId' - 'isRepost' where comment_id = $1 and data->>'socialPostId'=$2`,
+    [post.market_comment_id, post.id]
+  )
+  const comment = await getComment(tx, post.market_comment_id).catch(() => null)
+  const contract = comment ? await getContract(tx, comment.contractId) : null
+  return contract
+    ? { contract, commentId: post.market_comment_id, deleted: false }
+    : null
+}
+
+// The native endpoint has already authorized the market action in this transaction.
+export async function withdrawLockedPost(
+  tx: SupabaseTransaction,
+  post: SocialRow,
+  actorId: string
+) {
+  const id = post.id
+  await tx.none(
+    `update social_posts set text='', rich_content=null, image_urls='{}', deleted_time=clock_timestamp(), deleted_by=$2, removed_by_moderator=$3,
+      source_contract_id=null, source_comment_id=null, source_bet_id=null, source_post_id=null where id=$1`,
+    [id, actorId, post.user_id !== actorId]
+  )
+  await tx.none('delete from social_post_markets where post_id=$1', [id])
+  await tx.none(
+    "delete from user_reactions where content_type='social_post' and content_id=$1",
+    [id]
+  )
+  await tx.none(
+    `delete from user_notifications
+      where (data->>'sourceId'=$1 or data->>'sourceSlug'='/yap/' || $1)
+      and data->>'sourceType' in ('social_reply','social_post_like','social_repost')`,
+    [id]
+  )
+  await tx.none('delete from user_notifications where notification_id=$1', [
+    `social-mention-${id}`,
+  ])
+  // Deleting a Yap withdraws its repost from followers' feeds.
+  await tx.none('delete from posts where social_post_id=$1', [id])
+  await tx.none('update social_reposts set active=false where post_id=$1', [id])
+}
+
 // Deletes a moderated Yap's market comment as hide-comment's delete action
 // would, including its refusal to delete comments by admins and moderators.
 async function deleteSocialComment(
   tx: SupabaseTransaction,
   commentId: string,
-  moderatorId: string
+  moderatorId: string,
+  post: SocialRow
 ) {
   const comment = await getComment(tx, commentId).catch(() => null)
   if (
     !comment ||
     comment.deleted ||
+    comment.userId !== post.user_id ||
+    (!!post.source_contract_id &&
+      post.source_contract_id !== comment.contractId) ||
     isAdminId(comment.userId) ||
     isModId(comment.userId)
   )
@@ -601,15 +637,18 @@ export const getSocialPosts: APIHandler<'get-social-posts'> = async (
 
 // Reads show whatever is on Yap already. Adding a market's older comments is
 // a convenience for the reader and must never fail the read.
-const reconcileForRead = (pg: SupabaseDirectClient, post: SocialRow) =>
-  pg
-    .tx((tx) => reconcileMarketDiscussion(tx, post))
-    .catch((e) =>
-      log.error('Failed to reconcile a market discussion on read', {
-        e,
-        id: post.id,
-      })
-    )
+const reconcileForRead = (
+  pg: SupabaseDirectClient,
+  post: SocialRow,
+  cursor?: string
+) =>
+  reconcileMarketDiscussion(pg, post, cursor).catch((e) => {
+    log.error('Failed to reconcile a market discussion on read', {
+      e,
+      id: post.id,
+    })
+    return null
+  })
 
 export async function readSocialPosts(
   pg: SupabaseDirectClient,
@@ -617,7 +656,7 @@ export async function readSocialPosts(
   { parentId, cursor, limit }: ValidatedAPIParams<'get-social-posts'>
 ): Promise<SocialPostPage> {
   const parent = parentId ? await getSocialRow(pg, parentId) : null
-  if (parent) await reconcileForRead(pg, parent)
+  const scanEnd = parent ? await reconcileForRead(pg, parent, cursor) : null
   const [time, id] = cursor?.split('|') ?? []
   const marketThread = parent?.canonical_key?.startsWith('market:')
   const betThread = parent?.canonical_key?.startsWith('bet:')
@@ -641,6 +680,7 @@ export async function readSocialPosts(
             : 'p.parent_id=$1'
           : '(p.feed_visible or exists(select 1 from social_reposts r where r.post_id=p.id and r.active and not(r.user_id=any($2::text[]))))'
       }
+      and ($6::text is null or cc.contract_id=$6)
       and (p.deleted_time is null or exists(select 1 from social_posts child where child.parent_id=p.id))
       and p.hidden_time is null and root.hidden_time is null
       and not(p.user_id=any($2::text[])) and not(root.user_id=any($2::text[]))
@@ -652,6 +692,7 @@ export async function readSocialPosts(
     where ($3::timestamptz is null or (${
       parentId ? 'created_time' : 'feed_time'
     },id) ${parentId ? '>' : '<'} ($3::timestamptz,$4::text))
+    and ($7::timestamptz is null or (created_time,id)<=($7::timestamptz,$8::text))
     order by ${
       parentId ? 'created_time asc,id asc' : 'feed_time desc,id desc'
     } limit $5`,
@@ -665,6 +706,9 @@ export async function readSocialPosts(
       time ?? null,
       id ?? null,
       limit + 1,
+      betThread ? parent!.source_contract_id : null,
+      scanEnd?.time ?? null,
+      scanEnd?.id ?? null,
     ]
   )
   const page = rows.slice(0, limit)
@@ -676,6 +720,8 @@ export async function readSocialPosts(
         ? `${socialTimestamp(
             parentId ? last.created_time : last.feed_time ?? last.created_time
           )}|${last.id}`
+        : scanEnd
+        ? `${scanEnd.time}|${scanEnd.id}`
         : null,
   }
 }
@@ -697,17 +743,40 @@ export const getSocialPost: APIHandler<'get-social-post'> = async (
   const viewer = await getSocialViewer(auth?.uid)
   const posts = await hydrateSocialPosts(pg, [...ancestors, row], viewer, false)
   const post = posts[posts.length - 1]
+  const detail = { post, ancestors: posts.slice(0, -1) }
+  if (
+    !auth ||
+    post.removed ||
+    row.deleted_time ||
+    (auth.uid !== row.user_id &&
+      !(row.market_comment_id && isAdminId(auth.uid)))
+  )
+    return detail
+  if (row.market_comment_id) {
+    const source = await pg.oneOrNone<{
+      content: ContractComment['content']
+      creatorUsername: string
+      slug: string
+    }>(
+      `select cc.data->'content' as content, c.data->>'creatorUsername' as "creatorUsername", c.slug
+       from contract_comments cc join contracts c on c.id=cc.contract_id where cc.comment_id=$1 and cc.user_id=$2
+       and ($3::text is null or cc.contract_id=$3) and c.visibility='public'
+       and not coalesce((c.data->>'deleted')::boolean,false) and ${visibleMarketComment(
+         'cc'
+       )}`,
+      [row.market_comment_id, row.user_id, row.source_contract_id ?? null]
+    )
+    if (!source) return detail
+    if (!isCommentYapRepresentable(source.content))
+      return {
+        ...detail,
+        editOnMarket: `${contractPath(source)}#${row.market_comment_id}`,
+      }
+  } else if (!isSocialPostEditable(socialTimestampMillis(row.created_time)))
+    return detail
   return {
-    post,
-    ancestors: posts.slice(0, -1),
-    ...(auth?.uid === row.user_id &&
-    !row.deleted_time &&
-    (row.market_comment_id ||
-      isSocialPostEditable(socialTimestampMillis(row.created_time)))
-      ? {
-          editContent: getSocialEditContent(row.rich_content, post.richContent),
-        }
-      : {}),
+    ...detail,
+    editContent: getSocialEditContent(row.rich_content, post.richContent),
   }
 }
 
@@ -729,8 +798,9 @@ export const getSocialLikers: APIHandler<'get-social-likers'> = async (
   >(
     `select u.id,u.name,u.username,coalesce(u.data->>'avatarUrl','') as "avatarUrl", r.created_time,
     (select coalesce(json_agg(e), '[]'::json) from user_entitlements e where e.user_id=u.id) as entitlements
-    from user_reactions r join users u on u.id=r.user_id where r.content_id=$1 and r.content_type=$6 and r.reaction_type='like'
-    and ($2::timestamptz is null or (r.created_time,r.user_id)>($2::timestamptz,$3::text))
+    from (select user_id,max(created_time) as created_time from user_reactions
+      where content_id=$1 and content_type=$6 and reaction_type='like' group by user_id) r
+    join users u on u.id=r.user_id where ($2::timestamptz is null or (r.created_time,r.user_id)>($2::timestamptz,$3::text))
     and not (r.user_id=any($5::text[]))
     order by r.created_time,r.user_id limit $4`,
     [
@@ -771,38 +841,38 @@ export const reactToSocialPost: APIHandler<'react'> = async (
   const author = await socialAuthor(auth.uid)
   const viewer = await getSocialViewer(auth.uid)
   const result = await pg.tx(async (tx) => {
-    const post = await lockSocialThread(tx, contentId)
-    const targetId = post.market_comment_id ?? post.id
-    const targetType = post.market_comment_id ? 'comment' : 'social_post'
+    const post = await lockPostForCommentChange(tx, contentId)
     await limitSocialWrite(tx, auth.uid, 'like', 300)
+    if (post.market_comment_id) {
+      if (remove && post.deleted_time) return null
+      if (!remove) await assertSocialInteraction(tx, post, viewer)
+      const inserted = await writeCommentReaction(
+        tx,
+        post.market_comment_id,
+        auth.uid,
+        'like',
+        !!remove
+      )
+      return inserted ? post : null
+    }
     if (remove) {
       await tx.none(
         "delete from user_reactions where user_id=$1 and content_id=$2 and content_type=$3 and reaction_type='like'",
-        [auth.uid, targetId, targetType]
+        [auth.uid, post.id, 'social_post']
       )
-      if (post.market_comment_id)
-        await tx.none(
-          "update contract_comments set likes=(select count(distinct user_id) from user_reactions where content_id=$1 and content_type='comment' and reaction_type='like') where comment_id=$1",
-          [targetId]
-        )
       return null
     }
     await assertSocialInteraction(tx, post, viewer)
     await tx.none(
       "delete from user_reactions where user_id=$1 and content_id=$2 and content_type=$3 and reaction_type<>'like'",
-      [auth.uid, targetId, targetType]
+      [auth.uid, post.id, 'social_post']
     )
     const inserted = await tx.oneOrNone(
       `insert into user_reactions(content_id,content_type,content_owner_id,user_id,reaction_type)
       select $1,$4,$2,$3,'like' where not exists(select 1 from user_reactions where content_id=$1 and user_id=$3 and content_type=$4 and reaction_type='like')
       on conflict (user_id,content_id) where content_type='social_post' do nothing returning reaction_id`,
-      [targetId, post.user_id, auth.uid, targetType]
+      [post.id, post.user_id, auth.uid, 'social_post']
     )
-    if (post.market_comment_id)
-      await tx.none(
-        "update contract_comments set likes=(select count(distinct user_id) from user_reactions where content_id=$1 and content_type='comment' and reaction_type='like'), dislikes=(select count(*) from user_reactions where content_id=$1 and content_type='comment' and reaction_type='dislike') where comment_id=$1",
-        [targetId]
-      )
     return inserted ? post : null
   })
   return {

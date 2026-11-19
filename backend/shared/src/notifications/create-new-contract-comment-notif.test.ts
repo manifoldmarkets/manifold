@@ -1,3 +1,4 @@
+import { getPrivateUser } from 'shared/utils'
 import { Expo } from 'expo-server-sdk'
 import { Contract } from 'common/contract'
 import { PrivateUser, User } from 'common/user'
@@ -20,6 +21,7 @@ jest.mock('shared/supabase/init', () => ({
 }))
 jest.mock('shared/utils', () => ({
   isProd: () => false,
+  getPrivateUser: jest.fn(),
   log: Object.assign(jest.fn(), { error: jest.fn() }),
 }))
 jest.mock('shared/supabase/contracts', () => ({
@@ -53,6 +55,8 @@ jest.mock('expo-server-sdk', () => ({
 
 const map = jest.fn()
 const manyOrNone = jest.fn()
+const storeGrouped = jest.fn()
+jest.mock('shared/websockets/server', () => ({ broadcast: jest.fn() }))
 const sourceUser = {
   id: 'creator',
   name: 'Creator',
@@ -73,6 +77,13 @@ beforeEach(() => {
   jest.mocked(createSupabaseDirectClient).mockReturnValue({
     map,
     manyOrNone,
+    none: storeGrouped,
+    oneOrNone: async () => ({
+      id: 'root',
+      root_id: 'root',
+      user_id: 'root-author',
+      text: 'reply',
+    }),
   } as unknown as ReturnType<typeof createSupabaseDirectClient>)
   jest.mocked(getUniqueBettorIds).mockResolvedValue(['trader'])
   jest.mocked(getUniqueVoterIds).mockResolvedValue([])
@@ -160,7 +171,11 @@ it.each([
 ])(
   'preserves market follower alerts and avoids duplicate or muted Yap alerts: %s',
   async (_case, subscription, expected) => {
-    manyOrNone.mockResolvedValue(subscription ? [subscription] : [])
+    manyOrNone.mockResolvedValue(
+      subscription
+        ? [{ ...subscription, parent_id: 'parent', reply_id: 'reply' }]
+        : []
+    )
     const recipient = {
       id: 'trader',
       name: 'Trader',
@@ -174,6 +189,7 @@ it.each([
         social_replies: ['browser'],
       },
     } as unknown as PrivateUser
+    jest.mocked(getPrivateUser).mockResolvedValue(recipient)
     map.mockResolvedValueOnce(['trader']).mockResolvedValueOnce([recipient])
     await createCommentOnContractNotification(
       'comment',
@@ -215,7 +231,9 @@ it.each([
   'a reply reaches someone who %s on the right channels',
   async (_case, muted, yapAlertsOff, expected) => {
     manyOrNone.mockResolvedValue(
-      muted === undefined ? [] : [{ user_id: 'trader', muted }]
+      muted === undefined
+        ? []
+        : [{ user_id: 'trader', muted, parent_id: 'parent', reply_id: 'reply' }]
     )
     const recipient = {
       id: 'trader',
@@ -231,6 +249,7 @@ it.each([
         ...(yapAlertsOff ? { social_replies: [] } : {}),
       },
     } as unknown as PrivateUser
+    jest.mocked(getPrivateUser).mockResolvedValue(recipient)
     map.mockResolvedValueOnce(['trader']).mockResolvedValueOnce([recipient])
     await createCommentOnContractNotification(
       'comment',
@@ -248,6 +267,9 @@ it.each([
       [],
       false
     )
+    expect(storeGrouped).toHaveBeenCalledTimes(
+      muted === false && !yapAlertsOff ? 1 : 0
+    )
     expect(jest.mocked(bulkInsertNotifications).mock.calls[0][0]).toHaveLength(
       expected.inApp
     )
@@ -258,5 +280,49 @@ it.each([
       expected.push
     )
     expect(getNewCommentEmail).toHaveBeenCalledTimes(expected.email)
+  }
+)
+
+it.each(['blocked root', 'failed grouped write', 'creator', 'direct tag'])(
+  'preserves the native alert for %s',
+  async (scenario) => {
+    manyOrNone.mockResolvedValue([
+      { user_id: 'reader', muted: false, parent_id: 'root', reply_id: 'reply' },
+    ])
+    const recipient = {
+      id: 'reader',
+      blockedUserIds: scenario === 'blocked root' ? ['root-author'] : [],
+      blockedByUserIds: [],
+      blockedContractIds: [],
+      blockedGroupSlugs: [],
+      notificationPreferences: {
+        ...getDefaultNotificationPreferences(),
+        all_comments_on_watched_markets: ['browser'],
+      },
+    } as unknown as PrivateUser
+    jest.mocked(getPrivateUser).mockResolvedValue(recipient)
+    map.mockResolvedValueOnce(['reader']).mockResolvedValueOnce([recipient])
+    if (scenario === 'failed grouped write')
+      storeGrouped.mockRejectedValueOnce(new Error('local fixture'))
+    await createCommentOnContractNotification(
+      'comment',
+      sourceUser,
+      'hello',
+      {
+        ...contract,
+        creatorId: scenario === 'creator' ? 'reader' : contract.creatorId,
+      },
+      {},
+      scenario === 'direct tag' ? ['reader'] : [],
+      scenario === 'creator'
+    )
+    const alerts = jest.mocked(bulkInsertNotifications).mock.calls[0][0]
+    expect(alerts).toHaveLength(1)
+    expect(alerts[0].userId).toBe('reader')
+    if (scenario === 'creator') expect(alerts[0].markedAsRead).toBe(false)
+    if (scenario === 'direct tag') expect(alerts[0].reason).toBe('tagged_user')
+    expect(storeGrouped).toHaveBeenCalledTimes(
+      scenario === 'failed grouped write' ? 1 : 0
+    )
   }
 )

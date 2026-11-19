@@ -1,3 +1,5 @@
+import { as } from 'pg-promise'
+import { ENV_CONFIG, MOD_IDS } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
 import { groupBy } from 'lodash'
 import { getActiveSupporterEntitlements } from './supabase/entitlements'
@@ -33,7 +35,7 @@ import {
 } from 'common/social-rich-content'
 import { SupabaseDirectClient, SupabaseTransaction } from './supabase/init'
 import { insertNotificationToSupabase } from './supabase/notifications'
-import { getPrivateUser, getUser } from './utils'
+import { getPrivateUser, getUser, log } from './utils'
 
 type DB = SupabaseDirectClient | SupabaseTransaction
 export type SocialRow = Omit<
@@ -46,9 +48,30 @@ export type SocialRow = Omit<
   feed_time?: string
   hidden_time?: string | null
 }
+// Use the same native moderation predicate for copying, quoting and hydration.
+export const visibleMarketComment = (alias: 'cc' | 'parent') => `
+  not coalesce((${alias}.data->>'deleted')::boolean,false)
+  and not coalesce((${alias}.data->>'isModComment')::boolean,false)
+  and not coalesce((${alias}.data->>'hiddenOnYap')::boolean,
+    coalesce((${alias}.data->>'hidden')::boolean,false)
+    and (${alias}.data->>'hiderId' is null or ${alias}.data->>'hiderId'=any(${as.array(
+  [...ENV_CONFIG.adminIds, ...MOD_IDS]
+)}::text[])
+      or ${alias}.data->>'hiderId' is distinct from (select creator_id from contracts where id=${alias}.contract_id)))`
+
+const visibleQuoteComment = (alias: 'cc' | 'parent') => `${visibleMarketComment(
+  alias
+)}
+  and not exists (select 1 from social_posts mirror join social_posts root on root.id=mirror.root_id
+    where mirror.market_comment_id=${alias}.comment_id and
+    (mirror.hidden_time is not null or mirror.deleted_time is not null or root.hidden_time is not null or root.deleted_time is not null))`
+
 export type SocialViewer = { id?: string; blocked: string[] }
-export async function getSocialViewer(id?: string): Promise<SocialViewer> {
-  const user = id ? await getPrivateUser(id) : null
+export async function getSocialViewer(
+  id?: string,
+  pg?: DB
+): Promise<SocialViewer> {
+  const user = id ? await getPrivateUser(id, pg) : null
   return {
     id,
     blocked: [
@@ -141,7 +164,7 @@ export async function assertSocialInteraction(
          and not coalesce((c.data->>'deleted')::boolean,false)
          and not(c.creator_id=any($3::text[]))
          and ($2::text is null or cc.comment_id is not null
-           and not coalesce((cc.data->>'deleted')::boolean,false))`,
+           and ${visibleMarketComment('cc')})`,
       [post.source_contract_id, post.market_comment_id, viewer.blocked]
     )
     if (!available)
@@ -325,7 +348,7 @@ export async function validateSocialSource(
   if (!source) return
   if ('postId' in source) {
     const post = await getSocialRow(pg, source.postId)
-    await assertSocialInteraction(pg, post, viewer)
+    await assertSocialInteraction(pg, post, viewer, true)
     return
   }
   if (!marketIds.includes(source.contractId))
@@ -337,10 +360,9 @@ export async function validateSocialSource(
     }>(
       `select cc.user_id, coalesce((cc.data->>'isModComment')::boolean, false) as is_mod_comment
       from contract_comments cc
-      left join contract_comments parent on parent.comment_id = cc.data->>'replyToCommentId'
+      left join contract_comments parent on parent.comment_id = cc.data->>'replyToCommentId' and parent.contract_id=cc.contract_id
       where cc.comment_id = $1 and cc.contract_id = $2
-      and coalesce((cc.data->>'hidden')::boolean, false) = false and coalesce((cc.data->>'deleted')::boolean, false) = false
-      and coalesce((parent.data->>'hidden')::boolean, false) = false and coalesce((parent.data->>'deleted')::boolean, false) = false`,
+      and ${visibleQuoteComment('cc')} and ${visibleQuoteComment('parent')}`,
       [source.commentId, source.contractId]
     )
     if (!comment || viewer.blocked.includes(comment.user_id))
@@ -436,12 +458,32 @@ export async function hydrateSocialPosts(
       [ids, viewer.id ?? null]
     ),
     pg.manyOrNone<{ parent_id: string; count: number }>(
-      `select requested.id as parent_id, count(*)::int as count from social_posts requested
-      join social_posts p on p.parent_id=requested.id or (requested.canonical_key like 'market:%' and exists
-        (select 1 from contract_comments cc where cc.comment_id=p.market_comment_id and cc.contract_id=requested.source_contract_id and cc.data->>'replyToCommentId' is null))
-      where requested.id = any($1::text[]) and p.hidden_time is null
-      and (p.deleted_time is null or exists (select 1 from social_posts child where child.parent_id=p.id))
-      and not (p.user_id = any($2::text[])) group by requested.id`,
+      `select requested.id as parent_id, (
+        (select count(*) from social_posts p join social_posts root on root.id=p.root_id
+         where (p.parent_id=requested.id or (requested.canonical_key ~ '^(market|bet):' and exists
+           (select 1 from contract_comments cc where cc.comment_id=p.market_comment_id and cc.contract_id=requested.source_contract_id
+            and cc.data->>'replyToCommentId' is null and (requested.source_bet_id is null or cc.data->>'betId'=requested.source_bet_id))))
+         and p.hidden_time is null and root.hidden_time is null
+         and (p.deleted_time is null or exists (select 1 from social_posts child where child.parent_id=p.id))
+         and not (p.user_id=any($2::text[]) or root.user_id=any($2::text[])))
+        + (select count(*) from contract_comments cc join contracts c on c.id=cc.contract_id
+           join private_users pu on pu.id=cc.user_id
+           where requested.deleted_time is null and requested.hidden_time is null
+           and thread.deleted_time is null and thread.hidden_time is null
+           and (requested.market_comment_id is not null or requested.canonical_key ~ '^(market|bet):')
+           and cc.contract_id=coalesce(original.contract_id,requested.source_contract_id)
+           and (cc.data->>'replyToCommentId') is not distinct from requested.market_comment_id
+           and (requested.market_comment_id is not null or requested.source_bet_id is null or cc.data->>'betId'=requested.source_bet_id)
+           and ${visibleMarketComment(
+             'cc'
+           )} and not (cc.user_id=any($2::text[]))
+           and c.visibility='public' and not coalesce((c.data->>'deleted')::boolean,false)
+           and not (coalesce(pu.data->'blockedUserIds','[]'::jsonb) ?| array[requested.user_id,thread.user_id,c.creator_id]
+             or coalesce(pu.data->'blockedByUserIds','[]'::jsonb) ?| array[requested.user_id,thread.user_id,c.creator_id])
+           and not exists (select 1 from social_posts copied where copied.market_comment_id=cc.comment_id))
+        )::int as count from social_posts requested join social_posts thread on thread.id=requested.root_id
+        left join contract_comments original on original.comment_id=requested.market_comment_id
+        where requested.id=any($1::text[])`,
       [ids, viewer.blocked]
     ),
     pg.manyOrNone<Row<'contracts'>>(
@@ -453,9 +495,10 @@ export async function hydrateSocialPosts(
       json_build_object('id', u.id, 'name', u.name, 'username', u.username, 'avatarUrl', coalesce(u.data->>'avatarUrl',''),
         'entitlements', (select coalesce(json_agg(e), '[]'::json) from user_entitlements e where e.user_id=u.id)) as author
       from contract_comments cc join users u on u.id=cc.user_id
-      left join contract_comments parent on parent.comment_id = cc.data->>'replyToCommentId'
-      where cc.comment_id = any($1::text[]) and coalesce((cc.data->>'hidden')::boolean,false) = false and coalesce((cc.data->>'deleted')::boolean,false) = false
-      and coalesce((parent.data->>'hidden')::boolean,false) = false and coalesce((parent.data->>'deleted')::boolean,false) = false`,
+      left join contract_comments parent on parent.comment_id = cc.data->>'replyToCommentId' and parent.contract_id=cc.contract_id
+      where cc.comment_id = any($1::text[]) and ${visibleQuoteComment(
+        'cc'
+      )} and ${visibleQuoteComment('parent')}`,
       [rows.map((r) => r.source_comment_id).filter(Boolean)]
     ),
     pg.manyOrNone(
@@ -498,7 +541,7 @@ export async function hydrateSocialPosts(
     // moderator's hide reaches Yap, through hidden_time on the post.
     pg.manyOrNone<{ comment_id: string; available: boolean }>(
       `select cc.comment_id,(c.visibility='public' and not coalesce((c.data->>'deleted')::boolean,false)
-       and not coalesce((cc.data->>'deleted')::boolean,false)) as available
+       and ${visibleMarketComment('cc')}) as available
        from contract_comments cc join contracts c on c.id=cc.contract_id where cc.comment_id=any($1::text[])`,
       [rows.map((r) => r.market_comment_id).filter(Boolean)]
     ),
@@ -706,7 +749,9 @@ export async function notifySocial(
   post: SocialRow,
   actor: User,
   kind: 'reply' | 'like',
-  replyId?: string
+  replyId?: string,
+  skip = new Set<string>(),
+  delivered = new Set<string>()
 ) {
   if (
     actor.isBot ||
@@ -727,51 +772,60 @@ export async function notifySocial(
         )
       : [{ user_id: post.user_id }]
   for (const { user_id: userId } of subscribers) {
-    if (userId === actor.id) continue
-    const recipient = await getPrivateUser(userId, pg)
-    const reason =
-      kind === 'reply' ? 'social_replies' : 'user_liked_your_content'
-    if (
-      !recipient ||
-      recipient.blockedUserIds.includes(actor.id) ||
-      recipient.blockedByUserIds.includes(actor.id) ||
-      !getNotificationDestinationsForUser(recipient, reason).sendToBrowser
-    )
-      continue
-    if (
-      recipient.blockedUserIds.includes(root.user_id) ||
-      recipient.blockedByUserIds.includes(root.user_id)
-    )
-      continue
-    const notification: Notification = {
-      id:
-        kind === 'like'
-          ? `social-like-${post.id}-${actor.id}`
-          : `social-thread-${post.root_id}`,
-      userId,
-      reason,
-      createdTime: Date.now(),
-      isSeen: false,
-      sourceId: kind === 'reply' ? post.root_id : post.id,
-      sourceType: kind === 'like' ? 'social_post_like' : 'social_reply',
-      sourceUpdateType: 'created',
-      sourceUserName: actor.name,
-      sourceUserUsername: actor.username,
-      sourceUserAvatarUrl: actor.avatarUrl ?? '',
-      data: { sourceUserId: actor.id },
-      sourceText: (reply?.text ?? post.text).slice(0, 200),
-      sourceSlug: socialPostPath(replyId ?? post.id),
-      sourceTitle: kind === 'like' ? 'on Yap' : 'a Yap discussion you follow',
-    }
-    if (kind === 'like') await insertNotificationToSupabase(notification, pg)
-    else {
-      await pg.none(
-        `insert into user_notifications(user_id,notification_id,data) values ($1,$2,$3)
-        on conflict (user_id,notification_id) do update set data=excluded.data`,
-        [userId, notification.id, notification]
+    if (userId === actor.id || skip.has(userId)) continue
+    try {
+      const recipient = await getPrivateUser(userId, pg)
+      const reason =
+        kind === 'reply' ? 'social_replies' : 'user_liked_your_content'
+      if (
+        !recipient ||
+        recipient.blockedUserIds.includes(actor.id) ||
+        recipient.blockedByUserIds.includes(actor.id) ||
+        !getNotificationDestinationsForUser(recipient, reason).sendToBrowser
       )
-      const { broadcast } = await import('./websockets/server')
-      broadcast(`user-notifications/${userId}`, { notification })
+        continue
+      if (
+        recipient.blockedUserIds.includes(root.user_id) ||
+        recipient.blockedByUserIds.includes(root.user_id)
+      )
+        continue
+      const notification: Notification = {
+        id:
+          kind === 'like'
+            ? `social-like-${post.id}-${actor.id}`
+            : `social-thread-${post.root_id}`,
+        userId,
+        reason,
+        createdTime: Date.now(),
+        isSeen: false,
+        sourceId: kind === 'reply' ? post.root_id : post.id,
+        sourceType: kind === 'like' ? 'social_post_like' : 'social_reply',
+        sourceUpdateType: 'created',
+        sourceUserName: actor.name,
+        sourceUserUsername: actor.username,
+        sourceUserAvatarUrl: actor.avatarUrl ?? '',
+        data: { sourceUserId: actor.id },
+        sourceText: (reply?.text ?? post.text).slice(0, 200),
+        sourceSlug: socialPostPath(replyId ?? post.id),
+        sourceTitle: kind === 'like' ? 'on Yap' : 'a Yap discussion you follow',
+      }
+      if (kind === 'like') await insertNotificationToSupabase(notification, pg)
+      else {
+        await pg.none(
+          `insert into user_notifications(user_id,notification_id,data) values ($1,$2,$3)
+        on conflict (user_id,notification_id) do update set data=excluded.data`,
+          [userId, notification.id, notification]
+        )
+        delivered.add(userId)
+        const { broadcast } = await import('./websockets/server')
+        broadcast(`user-notifications/${userId}`, { notification })
+      }
+    } catch (error) {
+      log.error('Failed to deliver a Yap notification', {
+        error,
+        userId,
+        postId: post.id,
+      })
     }
   }
 }

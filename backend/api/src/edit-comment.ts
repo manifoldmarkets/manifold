@@ -25,41 +25,31 @@ export const editComment: APIHandler<'edit-comment'> =
     } = await validateComment(contractId, auth.uid, content, html, markdown)
 
     const pg = createSupabaseDirectClient()
-    const comment = await getComment(pg, commentId)
-    if (comment.contractId !== contractId)
-      throw new APIError(400, 'Comment does not belong to this market')
+    await pg.tx(async (tx) => {
+      const comment = await getComment(tx, commentId, true)
+      if (comment.contractId !== contractId)
+        throw new APIError(400, 'Comment does not belong to this market')
 
-    if (editor.id !== comment.userId && !isAdminId(editor.id))
-      throw new APIError(403, 'User is not the creator of the comment.')
+      if (editor.id !== comment.userId && !isAdminId(editor.id))
+        throw new APIError(403, 'User is not the creator of the comment.')
 
-    // An edit made on the market follows the market's rules and stores the
-    // document as written. If the comment is also on Yap, its copy there is
-    // brought up to date in the same transaction, under the thread lock.
-    const linked = await pg.oneOrNone<{ id: string }>(
-      'select id from social_posts where market_comment_id=$1 and deleted_time is null',
-      [commentId]
-    )
-    if (linked) {
-      await pg.tx(async (tx) => {
-        await lockSocialThread(tx, linked.id)
-        await editCommentContentInternal(
-          tx,
-          contract,
-          comment,
-          editor.id,
-          contentJson
-        )
-        await syncSocialPostFromComment(tx, linked.id, contentJson)
-      })
-    } else {
+      // An edit made on the market follows the market's rules and stores the
+      // document as written. If the comment is also on Yap, its copy there is
+      // brought up to date in the same transaction, under the thread lock.
+      const linked = await tx.oneOrNone<{ id: string }>(
+        'select id from social_posts where market_comment_id=$1 and deleted_time is null',
+        [commentId]
+      )
+      if (linked) await lockSocialThread(tx, linked.id)
       await editCommentContentInternal(
-        pg,
+        tx,
         contract,
         comment,
         editor.id,
         contentJson
       )
-    }
+      if (linked) await syncSocialPostFromComment(tx, linked.id, contentJson)
+    })
     await revalidateStaticProps(contractPath(contract))
 
     return { success: true }

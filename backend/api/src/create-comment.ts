@@ -28,7 +28,6 @@ import { APIError, type APIHandler, AuthedUser } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { onCreateCommentOnContract } from './on-create-comment-on-contract'
 import { linkCommentToOpenDiscussion } from 'shared/social-discussion'
-import { notifySocial } from 'shared/social-posts'
 
 // TODO: generate ids in supabase instead
 export const newCommentId = () => Math.random().toString(36).substring(2, 15)
@@ -82,11 +81,7 @@ const joinSocialDiscussion = async (
 ) => {
   try {
     const pg = createSupabaseDirectClient()
-    const joined = await linkCommentToOpenDiscussion(pg, comment, replyToBetId)
-    if (!joined) return
-    const commenter = await getUser(comment.userId, pg)
-    if (commenter)
-      await notifySocial(pg, joined.parent, commenter, 'reply', joined.row.id)
+    await linkCommentToOpenDiscussion(pg, comment, replyToBetId)
   } catch (e) {
     log.error('Failed to add a market comment to its Yap discussion', {
       e,
