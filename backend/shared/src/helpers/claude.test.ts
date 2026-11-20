@@ -57,7 +57,7 @@ it('collects only answer text, supplies effort and clears its deadline', async (
   expect(Anthropic).toHaveBeenCalledWith({
     apiKey: 'mock-key-not-a-credential',
     timeout: 30_000,
-    maxRetries: 0,
+    maxRetries: 1,
   })
   expect(stream).toHaveBeenCalledWith(
     expect.objectContaining({ output_config: { effort: 'low' } })
