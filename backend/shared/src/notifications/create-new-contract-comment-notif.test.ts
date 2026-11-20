@@ -164,13 +164,16 @@ it('uses the traders preference for email unsubscribe links', async () => {
   )
 })
 
+// Someone who follows the market with comment alerts on. Following the Yap
+// thread moves the in-app alert to Yap's grouped one; muting that thread turns
+// the Yap alert off and leaves the market's alert as it was.
 it.each([
-  ['ordinary', undefined, 1],
-  ['following', { user_id: 'trader', muted: false }, 0],
-  ['muted', { user_id: 'trader', muted: true }, 0],
+  ['ordinary', undefined, 1, 0],
+  ['following', { user_id: 'trader', muted: false }, 0, 1],
+  ['muted', { user_id: 'trader', muted: true }, 1, 0],
 ])(
-  'preserves market follower alerts and avoids duplicate or muted Yap alerts: %s',
-  async (_case, subscription, expected) => {
+  'a market follower is told once, by the market unless Yap tells them: %s',
+  async (_case, subscription, expected, grouped) => {
     manyOrNone.mockResolvedValue(
       subscription
         ? [{ ...subscription, parent_id: 'parent', reply_id: 'reply' }]
@@ -203,6 +206,7 @@ it.each([
     expect(jest.mocked(bulkInsertNotifications).mock.calls[0][0]).toHaveLength(
       expected as number
     )
+    expect(storeGrouped).toHaveBeenCalledTimes(grouped as number)
   }
 )
 
@@ -216,7 +220,8 @@ it('a muted Yap thread still allows an explicit mention', async () => {
 
 // A reply to someone's comment, with the default preferences for replies
 // (in-app, push and email). Following the comment's Yap thread groups the
-// in-app alert there and nothing else; muting it silences the reply.
+// in-app alert there and nothing else. Muting that thread is a Yap setting:
+// the market still sends the reply on every channel, as if they were not on Yap.
 it.each([
   ['is not on Yap', undefined, false, { inApp: 1, push: 1, email: 1 }],
   ['follows the Yap thread', false, false, { inApp: 0, push: 1, email: 1 }],
@@ -226,7 +231,7 @@ it.each([
     true,
     { inApp: 1, push: 1, email: 1 },
   ],
-  ['muted the Yap thread', true, false, { inApp: 0, push: 0, email: 0 }],
+  ['muted the Yap thread', true, false, { inApp: 1, push: 1, email: 1 }],
 ])(
   'a reply reaches someone who %s on the right channels',
   async (_case, muted, yapAlertsOff, expected) => {

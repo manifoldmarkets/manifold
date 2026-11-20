@@ -31,6 +31,7 @@ jest.mock('./supabase/notifications', () => ({
 import { JSONContent } from '@tiptap/core'
 import { FIREBASE_CONFIG } from 'common/envs/constants'
 import { socialPostToCommentContent } from 'common/social-rich-content'
+import { PrivateUser } from 'common/user'
 import {
   SOCIAL_RECONCILE_BATCH,
   commentToYapContent,
@@ -44,7 +45,7 @@ import {
 } from './social-discussion'
 import { SocialRow, socialReplyCounts } from './social-posts'
 import { SupabaseDirectClient } from './supabase/init'
-import { log } from './utils'
+import { getPrivateUser, log } from './utils'
 
 const pgp = pgPromise()
 const MIGRATIONS = join(__dirname, '../../supabase/migrations')
@@ -212,6 +213,8 @@ beforeEach(async () => {
     );
     insert into users (id) values ('owner'), ('alice'), ('bob'), ('carol'), ('dave');
     insert into contracts (id, creator_id) values ('market', 'owner'), ('other', 'owner');
+    create table private_users (id text primary key, data jsonb not null default '{}');
+    insert into private_users (id) select id from users;
   `)
   for (const name of [
     '2026091501_social_posts.sql',
@@ -373,6 +376,8 @@ describe('the Yap copy of a market comment', () => {
 
 describe('adding a market to Yap and reading its discussion', () => {
   beforeEach(migrate)
+  // One test below gives people blocks; the others have none.
+  afterEach(() => jest.mocked(getPrivateUser).mockReset())
 
   test('comments that cannot be placed are left out, and the rest still join', async () => {
     await insertComment('plain')
@@ -494,6 +499,53 @@ describe('adding a market to Yap and reading its discussion', () => {
     expect(await linked()).toBe(total)
     await pg.tx((tx) => reconcileMarketDiscussion(tx, card))
     expect(await linked()).toBe(total)
+  })
+
+  test('comments that can never join do not use up a read', async () => {
+    // The market's creator has blocked bob, so his comments cannot join its
+    // discussion. There are more of them than one read handles, and all are
+    // older than alice's comment.
+    await rows(
+      `update private_users set data='{"blockedByUserIds":["owner"]}' where id='bob'`
+    )
+    jest.mocked(getPrivateUser).mockImplementation(async (id: string) => {
+      const [row] = await rows('select data from private_users where id=$1', [
+        id,
+      ])
+      return {
+        id,
+        blockedUserIds: [],
+        blockedByUserIds: [],
+        ...row?.data,
+      } as PrivateUser
+    })
+    await rows(
+      `insert into contract_comments (contract_id, comment_id, user_id, created_time, data)
+       select 'market', 'b' || g, 'bob', millis_to_ts(1700000000000 + g),
+         jsonb_build_object('id', 'b' || g, 'userId', 'bob', 'contractId', 'market',
+           'createdTime', 1700000000000 + g, 'content', $1::jsonb)
+       from generate_series(1, $2) g`,
+      [JSON.stringify(doc('hello')), SOCIAL_RECONCILE_BATCH + 1]
+    )
+    await insertComment('later', { time: 1_700_000_500_000 })
+    const card = await ensureSocialSource(pg, { contractId: 'market' })
+
+    // The first read reaches alice's comment and leaves nothing to carry on.
+    await expect(
+      pg.tx((tx) => reconcileMarketDiscussion(tx, card))
+    ).resolves.toBeNull()
+    expect(await post('mc-later')).toBeTruthy()
+    expect(await count('social_posts', `user_id='bob'`)).toBe(0)
+    // Nothing was tried and refused.
+    expect(log.warn).not.toHaveBeenCalled()
+
+    // The same for a market that stops being public.
+    const other = await ensureSocialSource(pg, { contractId: 'other' })
+    await insertComment('unlisted', { contract: 'other' })
+    await rows(`update contracts set visibility='unlisted' where id='other'`)
+    await pg.tx((tx) => reconcileMarketDiscussion(tx, other))
+    expect(await post('mc-unlisted')).toBeUndefined()
+    expect(log.warn).not.toHaveBeenCalled()
   })
 
   test('a copy made by a read or by someone else does not make the author follow the thread', async () => {
@@ -670,13 +722,7 @@ describe('a comment written on the market', () => {
 })
 
 describe('the number of replies shown on a post', () => {
-  beforeEach(async () => {
-    await migrate()
-    await db.exec(`
-      create table private_users (id text primary key, data jsonb not null default '{}');
-      insert into private_users (id) select id from users;
-    `)
-  })
+  beforeEach(migrate)
   const counts = async (ids: string[], blocked: string[] = []) =>
     Object.fromEntries(
       (await socialReplyCounts(pg, ids, blocked)).map((r) => [

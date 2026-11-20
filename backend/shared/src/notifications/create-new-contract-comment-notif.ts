@@ -67,8 +67,10 @@ export const createCommentOnContractNotification = async (
     [sourceContract.id],
     (r) => r.follow_id
   )
-  // Shared thread participants use the Yap notification/mute preference.
-  // Other market followers keep their existing notification behaviour.
+  // People following the comment's Yap thread. Those who have not muted it
+  // get Yap's one grouped in-app alert. Muting the thread turns that alert off
+  // and nothing else: the market's alerts are the market's, and a muted
+  // follower gets them as any other follower of the market does.
   const threadSubscribers = await pg.manyOrNone<{
     user_id: string
     muted: boolean
@@ -163,13 +165,6 @@ export const createCommentOnContractNotification = async (
     )
       return
 
-    // Someone following the comment's Yap thread gets one grouped in-app
-    // alert from Yap, so the market's in-app alert would repeat it. Muting the
-    // thread silences replies on every channel. Explicit tags always arrive,
-    // and email and push keep following the market preference.
-    const subscriber = threadSubscribers.find((s) => s.user_id === userId)
-    const isTag = needNotFollowContractReasons.includes(reason)
-    if (subscriber?.muted && !isTag) return
     const { sendToBrowser, sendToEmail, sendToMobile, notificationPreference } =
       getNotificationDestinationsForUser(privateUser, reason)
 
@@ -268,8 +263,11 @@ export const createCommentOnContractNotification = async (
       )
     )
   )
-  // Keep creator and explicit tag alerts on the market. Suppress other
-  // market in-app alerts only after the grouped Yap notification was stored.
+  // Someone who gets the grouped Yap alert would be told twice by the market's
+  // in-app alert, so that one is dropped, and only once the Yap alert is
+  // stored. Creator and explicit tag alerts stay on the market, email and push
+  // always follow the market preference, and a muted thread stores no Yap
+  // alert, so its followers keep everything the market sends.
   const delivered = new Set<string>()
   const thread = threadSubscribers.find((s) => !s.muted)
   if (thread) {

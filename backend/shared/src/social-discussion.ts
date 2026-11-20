@@ -300,18 +300,28 @@ export async function reconcileMarketDiscussion(
   )
     return null
   const [time, id] = cursor?.split('|') ?? []
+  const root =
+    post.root_id === post.id ? post : await getSocialRow(pg, post.root_id)
   // Scan exactly the native siblings this page can show, in its cursor order.
   // Its parent is already materialized, so no recursive backfill is needed.
+  // A comment that can never join is left out here, as the reply count leaves
+  // it out: one on a market that is no longer public, or whose author has a
+  // block with this post's author, the thread's or the market's creator.
+  // Picking those up would spend every read's batch on refusals.
   const rows = await pg.manyOrNone<{
     comment_id: string
     created_time: string
   }>(
     `select cc.comment_id,cc.created_time::text as created_time from contract_comments cc
+     join contracts c on c.id=cc.contract_id left join private_users pu on pu.id=cc.user_id
      where not exists(select 1 from social_posts p where p.market_comment_id=cc.comment_id)
        and ${visibleMarketComment('cc')}
        and cc.contract_id=$1 and (cc.data->>'replyToCommentId') is not distinct from $2::text
        and ($3::text is null or cc.data->>'betId'=$3)
        and ($4::timestamptz is null or (cc.created_time,'mc-' || cc.comment_id)>($4::timestamptz,$5::text))
+       and c.visibility='public' and not coalesce((c.data->>'deleted')::boolean,false)
+       and not (coalesce(pu.data->'blockedUserIds','[]'::jsonb) ?| array[$7,$8,c.creator_id]
+         or coalesce(pu.data->'blockedByUserIds','[]'::jsonb) ?| array[$7,$8,c.creator_id])
      order by cc.created_time,'mc-' || cc.comment_id limit $6`,
     [
       post.market_comment_id
@@ -327,6 +337,8 @@ export async function reconcileMarketDiscussion(
       time ?? null,
       id ?? null,
       SOCIAL_RECONCILE_BATCH + 1,
+      post.user_id,
+      root.user_id,
     ]
   )
   for (const row of rows.slice(0, SOCIAL_RECONCILE_BATCH)) {

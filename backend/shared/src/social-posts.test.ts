@@ -204,6 +204,50 @@ const mentionedMarket = {
   data: { id: 'market', creatorUsername: 'owner', slug: 'real-market' },
 }
 
+test('a quoted comment or trade that cannot be shown leaves a notice and nothing about it', async () => {
+  const base = {
+    ...post,
+    user_id: 'author',
+    created_time: '2026-09-21T00:00:00Z',
+    rich_content: null,
+    parent_id: null,
+    source_contract_id: 'market',
+  }
+  const commentQuote = {
+    ...base,
+    id: 'comment-quote',
+    root_id: 'comment-quote',
+    source_comment_id: 'comment',
+  } as SocialRow
+  const tradeQuote = {
+    ...base,
+    id: 'trade-quote',
+    root_id: 'trade-quote',
+    source_bet_id: 'bet',
+  } as SocialRow
+  // The comment was taken off Yap and the trader is behind a block, so the
+  // queries for them return no row. The market itself is still there.
+  const manyOrNone = jest.fn(async (sql: string) => {
+    if (sql.includes('select id, name, username, data'))
+      return [{ id: 'author', name: 'author', username: 'author', data: {} }]
+    if (sql.includes('select * from social_posts'))
+      return [commentQuote, tradeQuote]
+    if (sql.includes('select * from contracts')) return [mentionedMarket]
+    return []
+  })
+  const posts = await hydrateSocialPosts(
+    db({ manyOrNone }),
+    [commentQuote, tradeQuote],
+    { blocked: [] },
+    false
+  )
+  expect(posts.map((p) => p.removed)).toEqual([null, null])
+  expect(posts.map((p) => p.source)).toEqual([
+    { kind: 'comment', url: '', text: '', unavailable: true },
+    { kind: 'bet', url: '', text: '', unavailable: true },
+  ])
+})
+
 test('rich mention writes canonicalize labels and reject unavailable or blocked identities', async () => {
   const pg = db({
     manyOrNone: jest.fn((sql: string) =>

@@ -542,7 +542,7 @@ export async function hydrateSocialPosts(
       post_id: string
       count: number
       reposted: boolean
-      user: any
+      user: Parameters<typeof displayUser>[0]
     }>(
       `select * from (select r.post_id,
         count(*) over(partition by r.post_id)::int as count,
@@ -691,6 +691,16 @@ export async function hydrateSocialPosts(
               contract.token
             )} on ${bet.data.outcome}. View market`
           : 'View original market',
+      }
+    } else if (row.source_comment_id || row.source_bet_id) {
+      // The quoted comment or trade can no longer be shown here: taken off
+      // Yap, removed, hidden, or behind a block. Say only that, as a quoted
+      // post does, with nothing that tells who wrote it or where it was.
+      source = {
+        kind: row.source_comment_id ? 'comment' : 'bet',
+        url: '',
+        text: '',
+        unavailable: true,
       }
     }
     if (row.source_post_id) {
