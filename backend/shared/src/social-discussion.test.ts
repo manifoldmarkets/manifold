@@ -43,7 +43,12 @@ import {
   reconcileMarketDiscussion,
   syncSocialPostFromComment,
 } from './social-discussion'
-import { SocialRow, socialReplyCounts } from './social-posts'
+import {
+  SocialRow,
+  hydrateSocialPosts,
+  socialReplyCounts,
+  socialReplyMentionAuthors,
+} from './social-posts'
 import { SupabaseDirectClient } from './supabase/init'
 import { getPrivateUser, log } from './utils'
 
@@ -459,38 +464,69 @@ describe('adding a market to Yap and reading its discussion', () => {
     expect(await count('social_posts')).toBe(0)
   })
 
-  test('sharing a comment its author took off Yap says so; other closed threads are said the general way', async () => {
+  test('sharing a comment its author took off Yap says so, to a sharer with no block; other refusals stay general', async () => {
     for (const id of ['mine', 'moderated', 'hidden-on-yap']) {
       await insertComment(id)
       await ensureMarketCommentPost(pg, id)
       await insertComment(`under-${id}`, { data: { replyToCommentId: id } })
     }
     await rows(`update social_posts set deleted_time=now() where id='mc-mine'`)
+    // A moderator's removal deletes the market comment as well.
     await rows(
       `update social_posts set deleted_time=now(), removed_by_moderator=true where id='mc-moderated'`
     )
     await rows(
+      `update contract_comments set data=data || '{"deleted":true}' where comment_id='moderated'`
+    )
+    await rows(
       `update social_posts set hidden_time=now() where id='mc-hidden-on-yap'`
     )
-    const share = (commentId: string) =>
-      pg.tx((tx) => ensureSocialSource(tx, { contractId: 'market', commentId }))
+    const share = (commentId: string, blocked: string[] = []) =>
+      pg.tx((tx) =>
+        ensureSocialSource(
+          tx,
+          { contractId: 'market', commentId },
+          { id: 'dave', blocked }
+        )
+      )
     await expect(share('mine')).rejects.toMatchObject({
       code: 403,
       message: "This comment's author took it off Yap",
     })
-    // A moderator's removal or hide is not explained to the sharer.
-    for (const id of ['moderated', 'hidden-on-yap'])
-      await expect(share(id)).rejects.toMatchObject({
-        code: 403,
-        message: 'This discussion is closed',
-      })
-    // A reply under any of them: it is the thread that is closed, and "this
-    // comment" would name the wrong one.
+    // Not to someone who has a block with the author (alice wrote it).
+    await expect(share('mine', ['alice'])).rejects.toMatchObject({
+      code: 403,
+      message: 'This discussion is closed',
+    })
+    // Nor to a caller that is not a person sharing: a read, or a new comment.
+    await expect(
+      pg.tx((tx) => ensureMarketCommentPost(tx, 'mine', 'market'))
+    ).rejects.toMatchObject({ code: 403, message: 'This discussion is closed' })
+    // A moderator's removal or hide is not explained.
+    await expect(share('moderated')).rejects.toMatchObject({
+      code: 404,
+      message: 'This comment is unavailable',
+    })
+    await expect(share('hidden-on-yap')).rejects.toMatchObject({
+      code: 403,
+      message: 'This discussion is closed',
+    })
+    // A reply under any of them: "this comment" would name the wrong one.
     for (const id of ['mine', 'moderated', 'hidden-on-yap'])
       await expect(share(`under-${id}`)).rejects.toMatchObject({
-        code: 403,
-        message: 'This discussion is closed',
+        message: expect.not.stringContaining('took it off Yap'),
       })
+    // The reason is about a comment on the market named: not about one found
+    // by its id on another market.
+    await expect(
+      pg.tx((tx) =>
+        ensureSocialSource(
+          tx,
+          { contractId: 'other', commentId: 'mine' },
+          { id: 'dave', blocked: [] }
+        )
+      )
+    ).rejects.toMatchObject({ code: 404 })
     expect(await count('social_posts')).toBe(3)
   })
 
@@ -781,6 +817,240 @@ describe('a comment written on the market', () => {
       await findSocialSource(pg, { contractId: 'other', commentId: 'c1' })
     ).toBeNull()
     expect((await findSocialSource(pg, { postId: card.id }))!.id).toBe(card.id)
+  })
+})
+
+describe('whose comment a reply mention names', () => {
+  beforeEach(migrate)
+
+  test('the author of that comment, when it is on the same market', async () => {
+    await insertComment('top', { user: 'bob' })
+    await insertComment('reply', {
+      user: 'carol',
+      data: { replyToCommentId: 'top' },
+    })
+    await insertComment('sibling', {
+      user: 'dave',
+      data: { replyToCommentId: 'top' },
+    })
+    await insertComment('elsewhere', { contract: 'other', user: 'alice' })
+    const found = async (...pairs: [string, string][]) =>
+      (await socialReplyMentionAuthors(pg, pairs))
+        .map((r) => `${r.comment_id} mentions ${r.mention_id}: ${r.user_id}`)
+        .sort()
+    // The comment replied to, and another reply in the thread.
+    expect(await found(['reply', 'top'], ['sibling', 'reply'])).toEqual([
+      'reply mentions top: bob',
+      'sibling mentions reply: carol',
+    ])
+    // A comment on another market, a user's id and an id that is nothing.
+    expect(
+      await found(
+        ['reply', 'elsewhere'],
+        ['reply', 'bob'],
+        ['reply', 'nothing']
+      )
+    ).toEqual([])
+    // Nothing to look up sends no query.
+    expect(await socialReplyMentionAuthors(pg, [])).toEqual([])
+  })
+
+  test('each comment is found by its own id, not by reading its market', async () => {
+    // The two indexes of the real table that this lookup can choose between,
+    // and enough comments for the choice to show: ten on each of 2,000 markets.
+    await db.exec(`
+      create index contract_comments_id on contract_comments (comment_id);
+      create index contract_comments_contract_id_created_time_idx
+        on contract_comments (contract_id, created_time desc);
+      insert into contract_comments (contract_id, comment_id, user_id, created_time, data)
+      select 'm' || (g % 2000), 'c' || g, 'alice', now(), '{}'
+      from generate_series(1, 20000) g;
+      analyze contract_comments;
+    `)
+    const statements: string[] = []
+    const recording = {
+      ...client,
+      manyOrNone: (sql: string, params?: unknown) => {
+        statements.push(pgp.as.format(sql, params))
+        return client.manyOrNone(sql, params)
+      },
+    } as unknown as SupabaseDirectClient
+    // c5 and c2005 are on one market, c6 is on the next.
+    expect(
+      await socialReplyMentionAuthors(recording, [
+        ['c5', 'c2005'],
+        ['c5', 'c6'],
+      ])
+    ).toEqual([{ comment_id: 'c5', mention_id: 'c2005', user_id: 'alice' }])
+    type PlanNode = Record<string, unknown> & { Plans?: PlanNode[] }
+    const raw = (await rows(`explain (format json) ${statements[0]}`))[0][
+      'QUERY PLAN'
+    ]
+    const tree = (typeof raw === 'string' ? JSON.parse(raw) : raw) as {
+      Plan: PlanNode
+    }[]
+    const nodes = (node: PlanNode): PlanNode[] => [
+      node,
+      ...(node.Plans ?? []).flatMap(nodes),
+    ]
+    const reads = nodes(tree[0].Plan).filter(
+      (node) => node['Relation Name'] === 'contract_comments'
+    )
+    // The comment the mention is in, and the comment it names. A read whose
+    // index condition is the market alone goes through every comment on it.
+    expect(reads).toHaveLength(2)
+    expect(
+      reads
+        .map((node) => String(node['Index Cond']))
+        .filter((condition) => !condition.includes('comment_id'))
+    ).toEqual([])
+  })
+})
+
+describe('reading copied comments back from the tables', () => {
+  beforeEach(async () => {
+    await migrate()
+    // What a read needs beyond the tables above: who people are, and what a
+    // market's card shows.
+    await db.exec(`
+      alter table users add column name text, add column username text,
+        add column data jsonb not null default '{}';
+      update users set name = initcap(id), username = id;
+      create table user_entitlements (
+        user_id text not null, entitlement_id text not null,
+        granted_time timestamptz not null default now(), expires_time timestamptz,
+        enabled boolean not null default true, auto_renew boolean not null default false,
+        metadata jsonb, primary key (user_id, entitlement_id)
+      );
+      alter table contract_bets add column data jsonb not null default '{}';
+      update contracts set data = jsonb_build_object(
+        'id', id, 'slug', id, 'creatorUsername', creator_id, 'question', 'Will it?');
+    `)
+    // Alice's comment, Bob's reply to it, and Carol's reply to Bob, written
+    // with the market's Reply button: the mention carries the id of Bob's
+    // COMMENT and the username he had then.
+    await insertComment('top', { user: 'alice' })
+    await insertComment('first', {
+      user: 'bob',
+      data: { replyToCommentId: 'top' },
+    })
+    await insertComment('second', {
+      user: 'carol',
+      data: { replyToCommentId: 'top' },
+      content: {
+        type: 'doc',
+        content: [
+          {
+            type: 'paragraph',
+            content: [
+              { type: 'mention', attrs: { id: 'first', label: 'bob' } },
+              { type: 'text', text: ' agreed' },
+            ],
+          },
+        ],
+      },
+    })
+    for (const id of ['top', 'first', 'second'])
+      await ensureMarketCommentPost(pg, id)
+    // Since then Bob renamed himself, and Dave took the name he left.
+    await rows(`update users set username='bobby' where id='bob'`)
+    await rows(`update users set username='bob' where id='dave'`)
+  })
+  // Rows as the API's database client returns them: timestamps as text.
+  const row = async (id: string) =>
+    (
+      await rows('select to_jsonb(p) as row from social_posts p where id=$1', [
+        id,
+      ])
+    )[0].row as SocialRow
+  const read = async (blocked: string[] = [], reader = pg) =>
+    hydrateSocialPosts(
+      reader,
+      [await row('mc-top'), await row('mc-second')],
+      { blocked },
+      false
+    )
+
+  test('a reply names the author of the comment it replies to, and a comment that starts a thread shows its market', async () => {
+    const [top, second] = await read()
+    expect(top.removed).toBeNull()
+    expect(second.text).toBe('@bobby agreed')
+    expect(second.richContent?.content?.[0].content?.[0]).toEqual({
+      type: 'mention',
+      attrs: { id: 'bob', label: 'bobby' },
+    })
+    expect(top.source?.markets?.map((m) => m.id)).toEqual(['market'])
+    expect(second.source?.markets).toBeUndefined()
+
+    // A reader with a block against Bob is not told his name; one with a
+    // block against the market's creator still reads the comments, without
+    // the creator's market.
+    expect((await read(['bob']))[1].text).toBe('[User unavailable] agreed')
+    const [behindBlock, reply] = await read(['owner'])
+    expect(behindBlock.removed).toBeNull()
+    expect(behindBlock.source?.markets).toBeUndefined()
+    expect(reply.text).toBe('@bobby agreed')
+
+    // The same mention on another market's comment names nobody there.
+    await insertComment('far', {
+      contract: 'other',
+      user: 'carol',
+      content: (
+        await rows(
+          `select data->'content' as c from contract_comments where comment_id='second'`
+        )
+      )[0].c,
+    })
+    await ensureMarketCommentPost(pg, 'far')
+    expect(
+      (
+        await hydrateSocialPosts(
+          pg,
+          [await row('mc-far')],
+          { blocked: [] },
+          false
+        )
+      )[0].text
+    ).toBe('[User unavailable] agreed')
+  })
+
+  test('the users it needs are found by their ids, not by reading the users table', async () => {
+    const statements: string[] = []
+    const recording = {
+      ...client,
+      manyOrNone: (sql: string, params?: unknown) => {
+        statements.push(pgp.as.format(sql, params))
+        return client.manyOrNone(sql, params)
+      },
+    } as unknown as SupabaseDirectClient
+    await read([], recording)
+    const lookup = statements.filter((sql) =>
+      sql.startsWith('select id, name, username, data')
+    )
+    expect(lookup).toHaveLength(1)
+    // The table is tiny, so price sequential scans out and see what is left:
+    // a condition the primary key can serve, or a walk of every user.
+    await db.exec('set enable_seqscan = off')
+    type PlanNode = Record<string, unknown> & { Plans?: PlanNode[] }
+    const raw = (await rows(`explain (format json) ${lookup[0]}`))[0][
+      'QUERY PLAN'
+    ]
+    const tree = (typeof raw === 'string' ? JSON.parse(raw) : raw) as {
+      Plan: PlanNode
+    }[]
+    const nodes = (node: PlanNode): PlanNode[] => [
+      node,
+      ...(node.Plans ?? []).flatMap(nodes),
+    ]
+    const reads = nodes(tree[0].Plan).filter(
+      (node) => node['Relation Name'] === 'users'
+    )
+    expect(reads.length).toBeGreaterThanOrEqual(1)
+    expect(
+      reads
+        .filter((node) => !node['Index Cond'] && !node['Recheck Cond'])
+        .map((node) => `${node['Node Type']} on ${node['Alias']}`)
+    ).toEqual([])
   })
 })
 

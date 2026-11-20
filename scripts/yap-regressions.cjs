@@ -396,6 +396,7 @@ function loadDeclarations(file, names, bindings) {
         reconcileForRead: bridge.reconcileMarketDiscussion,
         socialTimestamp: timestamp,
         hydrateSocialPosts: async (_db, rows) => rows,
+        withoutRepeatedMarket: (posts) => posts,
       }
     )
     let cursor

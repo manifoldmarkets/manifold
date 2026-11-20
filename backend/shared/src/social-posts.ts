@@ -304,9 +304,10 @@ export function getSocialEditContent(
     if (node.type === 'mention' || node.type === 'contract-mention') {
       if (display.type === node.type && display.attrs?.id === node.attrs!.id)
         return display
-      // A market reply's mention, shown under the name it resolved to (see
-      // replyMentionNames). The editor gets that name with the stored id, so
-      // saving puts the stored mention back and mentions no one anew.
+      // A market reply's mention, shown as the author of the comment it names
+      // (see socialReplyMentionAuthors). The editor gets that name with the
+      // stored id, so saving puts the stored mention back and mentions no one
+      // anew.
       if (display.type === node.type && node.type === 'mention')
         return {
           type: node.type,
@@ -453,23 +454,49 @@ export const socialReplyCounts = (pg: DB, ids: string[], blocked: string[]) => {
   )
 }
 
-// The names a market comment mentions. The market's Reply button starts a reply
-// with a mention of the person replied to and stores the id of the COMMENT
-// replied to in it, with that person's username as its label. So in a market
-// comment a mention whose id is no user's is looked up by name.
-const replyMentionNames = (doc: SocialRichContent | null | undefined) => {
-  const names: string[] = []
-  if (doc)
-    mapSocialMentions(
-      doc,
-      (node) => {
-        if (typeof node.attrs?.label === 'string') names.push(node.attrs.label)
-        return node
-      },
-      (node) => node
-    )
-  return names
-}
+// The market's Reply button starts a reply with a mention of the person replied
+// to, and stores the id of the COMMENT replied to in it, not the person's id.
+// For pairs of (a comment, an id one of its mentions carries), this finds whose
+// comment the id names, when that comment is on the same market. The mention's
+// label is never used: a username can change hands, and a label can be forged.
+//
+// In two steps on purpose: the comment's market first, kept apart, then the
+// comment it names. Written as two plain joins, one of the two comments is
+// reached through its market alone, and every comment on that market is read
+// for each pair.
+const replyMentionAuthorsSql = (comments: number, mentions: number) =>
+  `with own as materialized (
+     select pair.comment_id, pair.mention_id, c.contract_id
+     from unnest($${comments}::text[], $${mentions}::text[]) as pair(comment_id, mention_id)
+     join contract_comments c on c.comment_id = pair.comment_id
+   )
+   select own.comment_id, target.comment_id as mention_id, target.user_id
+   from own
+   join contract_comments target on target.comment_id = own.mention_id and target.contract_id = own.contract_id`
+export const socialReplyMentionAuthors = (
+  pg: DB,
+  pairs: (readonly [comment: string, mention: string])[]
+) =>
+  pairs.length
+    ? pg.manyOrNone<{
+        comment_id: string
+        mention_id: string
+        user_id: string
+      }>(replyMentionAuthorsSql(1, 2), [
+        pairs.map(([comment]) => comment),
+        pairs.map(([, mention]) => mention),
+      ])
+    : Promise.resolve([])
+
+// A market comment that starts its own thread carries its market (see
+// hydrateSocialPosts). Listed under the market's or the trade's own card, which
+// names the market already, it does not repeat it.
+export const withoutRepeatedMarket = (posts: SocialPost[]) =>
+  posts.map((post) =>
+    post.source?.markets
+      ? { ...post, source: { ...post.source, markets: undefined } }
+      : post
+  )
 
 export async function hydrateSocialPosts(
   pg: DB,
@@ -489,6 +516,14 @@ export async function hydrateSocialPosts(
   const mentionedMarketIds = [
     ...new Set([...richDocs.values()].flatMap(getSocialMarketMentionIds)),
   ]
+  // In a market comment a mention's id may be the comment it replies to.
+  const replyMentions = rows.flatMap((r) =>
+    r.market_comment_id
+      ? getSocialMentionIds(richDocs.get(r.id)).map(
+          (id) => [r.market_comment_id!, id] as const
+        )
+      : []
+  )
   const [
     users,
     roots,
@@ -503,25 +538,28 @@ export async function hydrateSocialPosts(
     subscriptions,
     linkedComments,
     inlineMarkets,
+    repliedTo,
   ] = await Promise.all([
+    // One list of ids for the primary key. Written as "id = any(...) or id in
+    // (select ...)", the sub-select cannot use an index and every call reads
+    // the whole users table.
     pg.manyOrNone(
       `select id, name, username, data,
       (select coalesce(json_agg(e), '[]'::json) from user_entitlements e where e.user_id=users.id) as entitlements
-      from users where id = any($1::text[]) or id in (select user_id from social_posts where id=any($2::text[]))
-        or username = any($3::text[])`,
+      from users where id = any($1::text[]
+        || array(select user_id from social_posts where id=any($2::text[]))
+        || array(select user_id from (${replyMentionAuthorsSql(
+          3,
+          4
+        )}) replied))`,
       [
         rows.flatMap((r) => [
           r.user_id,
           ...getSocialMentionIds(richDocs.get(r.id)),
         ]),
         rows.map((r) => r.parent_id).filter(Boolean),
-        [
-          ...new Set(
-            rows.flatMap((r) =>
-              r.market_comment_id ? replyMentionNames(richDocs.get(r.id)) : []
-            )
-          ),
-        ],
+        replyMentions.map(([comment]) => comment),
+        replyMentions.map(([, mention]) => mention),
       ]
     ),
     pg.manyOrNone<SocialRow>(
@@ -608,6 +646,7 @@ export async function hydrateSocialPosts(
           [mentionedMarketIds]
         )
       : Promise.resolve([]),
+    socialReplyMentionAuthors(pg, replyMentions),
   ])
   const quotedPosts = await hydrateSocialPosts(
     pg,
@@ -663,12 +702,17 @@ export async function hydrateSocialPosts(
         ? mapSocialMentions(
             richDoc,
             (node) => {
-              // By id; in a market comment, failing that, by the name the
-              // mention carries. An id that is a user's is never second-guessed.
+              // By id. In a market comment, an id that is no user's may be
+              // the comment replied to: then the mention is of its author.
+              const repliedToAuthor = repliedTo.find(
+                (r) =>
+                  r.comment_id === row.market_comment_id &&
+                  r.mention_id === node.attrs!.id
+              )?.user_id
               const user =
                 users.find((user) => user.id === node.attrs!.id) ??
-                (row.market_comment_id
-                  ? users.find((user) => user.username === node.attrs!.label)
+                (repliedToAuthor
+                  ? users.find((user) => user.id === repliedToAuthor)
                   : undefined)
               return user &&
                 !user.data.userDeleted &&
@@ -734,11 +778,14 @@ export async function hydrateSocialPosts(
         // A market comment that starts its own thread on Yap has no market
         // attached and nothing above it that names one, so its market comes
         // with it. Under a market's or a comment's thread the root says it.
+        // Not for a reader who has a block with the market's creator: that
+        // reader is not shown the creator's market card either.
         ...(row.market_comment_id &&
         !row.parent_id &&
         !comment &&
         !bet &&
-        !attached.length
+        !attached.length &&
+        !viewer.blocked.includes(sourceMarket.creator_id ?? '')
           ? { markets: [contract] }
           : {}),
       }

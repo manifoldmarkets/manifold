@@ -22,6 +22,7 @@ import {
   getSocialRow,
   lockSocialThread,
   type SocialRow,
+  type SocialViewer,
 } from './social-posts'
 import { SupabaseDirectClient, SupabaseTransaction } from './supabase/init'
 import { log, sanitizeJsonContent } from './utils'
@@ -139,8 +140,12 @@ export async function ensureMarketCommentPost(
   pg: DB,
   commentId: string,
   expectedContractId?: string,
-  // Set when this is the comment that the one being placed replies to.
-  asParent = false
+  options: {
+    // This is the comment that the one being placed replies to.
+    asParent?: boolean
+    // The person sharing the comment, when someone is.
+    sharer?: SocialViewer
+  } = {}
 ): Promise<SocialRow> {
   const row = await pg.oneOrNone<{
     data: ContractComment
@@ -176,9 +181,14 @@ export async function ensureMarketCommentPost(
       throw new APIError(
         403,
         // The comment is still on its market with a Yap button under it, so
-        // say why this one cannot be shared. Anything else that closes a
-        // thread is said the general way.
-        !asParent && existing.deleted_time && !existing.removed_by_moderator
+        // tell the person sharing it why this one cannot be shared. Only them,
+        // and not if they have a block with its author. Anything else that
+        // closes a thread is said the general way.
+        !options.asParent &&
+        options.sharer &&
+        !options.sharer.blocked.includes(existing.user_id) &&
+        existing.deleted_time &&
+        !existing.removed_by_moderator
           ? "This comment's author took it off Yap"
           : 'This discussion is closed'
       )
@@ -191,7 +201,7 @@ export async function ensureMarketCommentPost(
         pg,
         comment.replyToCommentId,
         row.contract_id,
-        true
+        { asParent: true }
       )
     : await marketDiscussionParent(pg, row.contract_id, comment.betId)
   if (parent) {
@@ -236,7 +246,9 @@ export async function ensureMarketCommentPost(
 
 export async function ensureSocialSource(
   pg: DB,
-  source: SocialPostSource
+  source: SocialPostSource,
+  // The person sharing it, when someone is.
+  sharer?: SocialViewer
 ): Promise<SocialRow> {
   if ('postId' in source) {
     const row = await pg.oneOrNone<SocialRow>(
@@ -253,7 +265,9 @@ export async function ensureSocialSource(
       [source.commentId, source.contractId]
     )
     if (!comment) throw new APIError(404, 'Comment not found on this market')
-    return ensureMarketCommentPost(pg, source.commentId, source.contractId)
+    return ensureMarketCommentPost(pg, source.commentId, source.contractId, {
+      sharer,
+    })
   }
   const market = await pg.oneOrNone<{
     creator_id: string

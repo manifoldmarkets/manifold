@@ -72,6 +72,7 @@ import {
   validateSocialMarkets,
   validateSocialRichContent,
   validateSocialSource,
+  withoutRepeatedMarket,
   writeSocialMarkets,
 } from 'shared/social-posts'
 
@@ -128,7 +129,12 @@ export const createSocialPost: APIHandler<'create-social-post'> =
       const { row, parent, marketComment, repost } = await pg.tx(async (tx) => {
         const sharedComment =
           commentSource?.commentId && !parentId
-            ? await ensureMarketCommentPost(tx, commentSource.commentId)
+            ? await ensureMarketCommentPost(
+                tx,
+                commentSource.commentId,
+                commentSource.contractId,
+                { sharer: viewer }
+              )
             : null
         const parent = parentId
           ? await lockSocialThread(tx, parentId)
@@ -713,8 +719,9 @@ export async function readSocialPosts(
   )
   const page = rows.slice(0, limit)
   const last = page[page.length - 1]
+  const posts = await hydrateSocialPosts(pg, page, viewer)
   return {
-    posts: await hydrateSocialPosts(pg, page, viewer),
+    posts: marketThread || betThread ? withoutRepeatedMarket(posts) : posts,
     nextCursor:
       rows.length > limit
         ? `${socialTimestamp(

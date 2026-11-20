@@ -23,6 +23,7 @@ import {
   notifySocial,
   hydrateSocialPosts,
   getSocialEditContent,
+  withoutRepeatedMarket,
 } from './social-posts'
 import { SupabaseDirectClient } from './supabase/init'
 import { User } from 'common/user'
@@ -361,6 +362,43 @@ test('a market comment that starts its own thread comes with its market, and no 
   expect(quoteSocialPost(posts[0]).markets?.map((m) => m.id)).toEqual([
     'market',
   ])
+  // Listed under the market's own card, the comment does not repeat it. What
+  // a post has attached is left alone.
+  const listed = withoutRepeatedMarket(posts)
+  expect(listed.map((p) => socialPostMarkets(p).map((m) => m.id))).toEqual([
+    [],
+    [],
+    ['market'],
+    ['market'],
+  ])
+  expect(listed[0].source?.kind).toBe('market')
+  expect(listed.slice(1)).toEqual(posts.slice(1))
+
+  // A reader who has a block with the market's creator still reads the
+  // comment, which is someone else's, without the creator's market under it
+  // or in a quote of it.
+  const owned = { ...mentionedMarket, creator_id: 'owner' }
+  const ownedMarket = jest.fn(async (sql: string) =>
+    sql.includes('select * from contracts') ? [owned] : manyOrNone(sql)
+  )
+  const [open, behindBlock] = await Promise.all(
+    [[], ['owner']].map(
+      async (blocked) =>
+        (
+          await hydrateSocialPosts(
+            db({ manyOrNone: ownedMarket }),
+            [root],
+            { blocked },
+            false
+          )
+        )[0]
+    )
+  )
+  expect(socialPostMarkets(open).map((m) => m.id)).toEqual(['market'])
+  expect(behindBlock.removed).toBeNull()
+  expect(behindBlock.source?.markets).toBeUndefined()
+  expect(socialPostMarkets(behindBlock)).toEqual([])
+  expect(quoteSocialPost(behindBlock).markets).toEqual([])
 })
 
 test('rich mention writes canonicalize labels and reject unavailable or blocked identities', async () => {
@@ -461,7 +499,8 @@ const marketReply = (id: string, label: string): SocialRichContent => ({
   ],
 })
 
-test('a market reply names the person it replies to, whom the market stores by comment id', async () => {
+test('a market reply names the author of the comment it replies to, which is what the market stores', async () => {
+  // Bob has since changed his username, and someone else took the old one.
   const copy = {
     ...post,
     id: 'mc-reply',
@@ -472,16 +511,35 @@ test('a market reply names the person it replies to, whom the market stores by c
     rich_content: marketReply('bobs-comment', 'bob'),
     text: '@bob agreed',
   } as SocialRow
-  const reading = (row: SocialRow, bob: Record<string, unknown> = {}) => {
+  const reading = (
+    row: SocialRow,
+    options: { bob?: Record<string, unknown>; onThisMarket?: boolean } = {}
+  ) => {
     const manyOrNone = jest.fn(async (sql: string, _params?: unknown[]) => {
       if (sql.includes('select id, name, username, data'))
         return [
           { id: row.user_id, name: 'Author', username: 'author', data: {} },
-          { id: 'bob-id', name: 'Bob', username: 'bob', data: bob },
+          {
+            id: 'bob-id',
+            name: 'Bob',
+            username: 'bobby',
+            data: options.bob ?? {},
+          },
+          { id: 'squatter', name: 'Not Bob', username: 'bob', data: {} },
         ]
       if (sql.includes('select * from social_posts')) return [row]
       if (sql.includes('as available'))
         return [{ comment_id: 'reply', available: true }]
+      if (sql.includes('as mention_id'))
+        return options.onThisMarket === false
+          ? []
+          : [
+              {
+                comment_id: 'reply',
+                mention_id: 'bobs-comment',
+                user_id: 'bob-id',
+              },
+            ]
       return []
     })
     return { pg: db({ manyOrNone }), manyOrNone }
@@ -489,40 +547,58 @@ test('a market reply names the person it replies to, whom the market stores by c
   const text = async (
     row: SocialRow,
     blocked: string[] = [],
-    bob: Record<string, unknown> = {}
+    options: Parameters<typeof reading>[1] = {}
   ) =>
     (
-      await hydrateSocialPosts(reading(row, bob).pg, [row], { blocked }, false)
+      await hydrateSocialPosts(
+        reading(row, options).pg,
+        [row],
+        { blocked },
+        false
+      )
     )[0].text
-
-  const { pg, manyOrNone } = reading(copy)
-  const [shown] = await hydrateSocialPosts(pg, [copy], { blocked: [] }, false)
-  expect(shown.text).toBe('@bob agreed')
-  expect(shown.richContent?.content?.[0].content?.[0]).toEqual({
-    type: 'mention',
-    attrs: { id: 'bob-id', label: 'bob' },
-  })
-  // The name is looked up, and only for a market comment.
-  const users = (calls: unknown[][]) =>
+  const usersQuery = (calls: unknown[][]) =>
     calls.find(([sql]) =>
       (sql as string).includes('select id, name, username, data')
     )![1] as unknown[]
-  expect(users(manyOrNone.mock.calls)[2]).toEqual(['bob'])
+  // The lookup on its own, not the copy of it inside the users lookup.
+  const authorsQueries = (calls: unknown[][]) =>
+    calls.filter(
+      ([sql]) =>
+        (sql as string).includes('as mention_id') &&
+        !(sql as string).includes('select id, name, username, data')
+    )
+
+  const { pg, manyOrNone } = reading(copy)
+  const [shown] = await hydrateSocialPosts(pg, [copy], { blocked: [] }, false)
+  // Under his name as it is now, and not the person who holds the old one.
+  expect(shown.text).toBe('@bobby agreed')
+  expect(shown.richContent?.content?.[0].content?.[0]).toEqual({
+    type: 'mention',
+    attrs: { id: 'bob-id', label: 'bobby' },
+  })
+  // Asked with the comment and the id its mention carries, in both queries.
+  expect(usersQuery(manyOrNone.mock.calls).slice(2)).toEqual([
+    ['reply'],
+    ['bobs-comment'],
+  ])
+  expect(authorsQueries(manyOrNone.mock.calls).map((call) => call[1])).toEqual([
+    [['reply'], ['bobs-comment']],
+  ])
 
   // Someone the reader has a block with, or a deleted account, stays unnamed.
   expect(await text(copy, ['bob-id'])).toBe('[User unavailable] agreed')
-  expect(await text(copy, [], { userDeleted: true })).toBe(
+  expect(await text(copy, [], { bob: { userDeleted: true } })).toBe(
     '[User unavailable] agreed'
   )
-  // A name nobody has is not shown either.
-  expect(
-    await text({
-      ...copy,
-      rich_content: marketReply('bobs-comment', 'nobody'),
-    } as SocialRow)
-  ).toBe('[User unavailable] agreed')
+  // An id that names no comment on this market is nobody: the label is not
+  // used, although someone has that username.
+  expect(await text(copy, [], { onThisMarket: false })).toBe(
+    '[User unavailable] agreed'
+  )
 
-  // A post written on Yap is held to the ids it stores: a name is not enough.
+  // A post written on Yap is held to the user ids it stores, and no comment
+  // is looked up for it.
   const written = {
     ...copy,
     id: 'yap',
@@ -534,7 +610,8 @@ test('a market reply names the person it replies to, whom the market stores by c
     (await hydrateSocialPosts(onYap.pg, [written], { blocked: [] }, false))[0]
       .text
   ).toBe('[User unavailable] agreed')
-  expect(users(onYap.manyOrNone.mock.calls)[2]).toEqual([])
+  expect(usersQuery(onYap.manyOrNone.mock.calls).slice(2)).toEqual([[], []])
+  expect(authorsQueries(onYap.manyOrNone.mock.calls)).toEqual([])
 })
 
 test('editing a market reply shows the name and saves the mention as the market stored it', async () => {

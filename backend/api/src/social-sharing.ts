@@ -30,7 +30,7 @@ export const repostSocialPost: APIHandler<'repost-social-post'> =
       // nothing to undo for an item that was never put on Yap.
       const original = remove
         ? await findSocialSource(tx, source)
-        : await ensureSocialSource(tx, source)
+        : await ensureSocialSource(tx, source, viewer)
       if (!original) throw new APIError(404, 'You have not re-Yapped this')
       const row = await lockSocialThread(tx, original.id)
       await limitSocialWrite(tx, auth.uid, 'repost', 60)
