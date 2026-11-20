@@ -99,6 +99,53 @@ it('counts an official cancelled BDL event only when opted in, including hidden 
   expect(locks).toEqual(['sports-moneyline:' + candidate.sportsEventId])
 })
 
+it('exempts only the individually selected canceled moneyline and still detects a replacement', async () => {
+  const matching = { ...candidate, sportsMarketType: 'moneyline' }
+  await insert('canceled', matching, { resolution: 'CANCEL' })
+  expect(
+    await findLockedSportsMarket(tx, candidate, 'moneyline', 'bdl:mlb:999')
+  ).toEqual({ id: 'canceled' })
+  expect(
+    await findLockedSportsMarket(
+      tx,
+      candidate,
+      'moneyline',
+      candidate.sportsEventId
+    )
+  ).toBeNull()
+  await insert('replacement', matching)
+  expect(
+    await findLockedSportsMarket(
+      tx,
+      candidate,
+      'moneyline',
+      candidate.sportsEventId
+    )
+  ).toEqual({ id: 'replacement' })
+  await pg.query("update contracts set resolution='YES' where id='replacement'")
+  expect(
+    await findLockedSportsMarket(
+      tx,
+      candidate,
+      'moneyline',
+      candidate.sportsEventId
+    )
+  ).toEqual({ id: 'replacement' })
+  await insert(
+    'canceled-total',
+    { ...matching, sportsMarketType: 'total' },
+    { resolution: 'CANCEL' }
+  )
+  expect(
+    await findLockedSportsMarket(
+      tx,
+      candidate,
+      'total',
+      candidate.sportsEventId
+    )
+  ).toEqual({ id: 'canceled-total' })
+})
+
 it('reserves a BDL type regardless of resolution while distinct event IDs and sibling types stay independent', async () => {
   await insert('other-bdl', {
     ...candidate,
@@ -232,4 +279,22 @@ it('preserves preexisting lookup behavior for football-data and unidentifiable O
   expect(locks).toEqual(['sports-moneyline:fd-123'])
   const incomplete = { ...odds, sportsHomeTeam: undefined }
   expect(await findLockedSportsMarket(tx, incomplete, 'moneyline')).toBeNull()
+})
+
+it('protects an open BDL moneyline when an operator switches back to Odds without changing other legacy lookups', async () => {
+  await insert('bdl-game', { ...candidate, sportsMarketType: 'moneyline' })
+  const latest = { ...odds, sportsEventId: 'odds:baseball_mlb:switched-back' }
+  expect(await findLockedSportsMarket(tx, latest, 'moneyline')).toBeNull()
+  expect(
+    await findLockedSportsMarket(tx, latest, 'moneyline', undefined, true)
+  ).toEqual(expect.objectContaining({ id: 'bdl-game' }))
+  await expect(
+    findLockedSportsMarket(
+      tx,
+      { ...latest, sportsHomeTeam: undefined },
+      'moneyline',
+      undefined,
+      true
+    )
+  ).rejects.toThrow('deduplication')
 })

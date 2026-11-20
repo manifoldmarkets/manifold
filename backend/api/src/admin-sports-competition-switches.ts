@@ -5,9 +5,11 @@ import { uniq } from 'lodash'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { BDL_CREATION_BUDGET_LOCK_SQL } from 'shared/bdl/major-settings'
 import { log } from 'shared/utils'
 import {
   getCompetitionSwitchRows,
+  getCompetitionSwitches,
   setCompetitionSwitch,
 } from 'shared/supabase/sports-competition-switches'
 import {
@@ -73,10 +75,19 @@ export const adminSportsSetCompetitionSwitch: APIHandler<
 > = async (props, auth) => {
   throwErrorIfNotAdmin(auth.uid)
   const { competitionId, phase, on } = props
-  const error = competitionSwitchError(competitionId, phase, on)
-  if (error) throw new APIError(400, error)
-  const pg = createSupabaseDirectClient()
-  await setCompetitionSwitch(pg, { competitionId, phase, on, userId: auth.uid })
+  await createSupabaseDirectClient().tx(async (tx) => {
+    // Two operators enabling different providers must see each other's changes.
+    await tx.one(BDL_CREATION_BUDGET_LOCK_SQL)
+    const switches = await getCompetitionSwitches(tx)
+    const error = competitionSwitchError(competitionId, phase, on, switches)
+    if (error) throw new APIError(400, error)
+    await setCompetitionSwitch(tx, {
+      competitionId,
+      phase,
+      on,
+      userId: auth.uid,
+    })
+  })
   log(
     `[sports] ${auth.uid} switched ${competitionId} / ${phase} ${
       on ? 'on' : 'off'

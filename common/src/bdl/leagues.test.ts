@@ -131,7 +131,11 @@ it('keeps new calendar sport IDs separate from existing Odds API polling and pha
     expect(pollingSettingError('sport:' + id, 60)).toBeDefined()
     expect(SPORTS_CALENDAR.some((entry) => entry.sport === id)).toBe(false)
   }
-  expect(SPORTS_CALENDAR.some((entry) => entry.provider === 'bdl')).toBe(false)
+  expect(
+    SPORTS_CALENDAR.filter((entry) => entry.provider === 'bdl').every(
+      (entry) => entry.autoCreate === false
+    )
+  ).toBe(true)
   expect(SPORT_LEAGUE_LABEL.cbb).toBe('NCAAB')
   expect(SPORT_LEAGUE_LABEL.cbase).toBe('College Baseball')
   expect(SPORT_LEAGUE_LABEL.nba).toBe('NBA')

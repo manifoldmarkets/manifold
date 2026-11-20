@@ -114,7 +114,9 @@ const event: OddsApiEvent = {
 /** Minimal transactional store: inserts are invisible until commit; the
  * advisory lock serializes transactions, not the earlier preview lookup.
  * `onLock` runs as a transaction takes the lock. */
-function database(opts: { onLock?: () => void } = {}) {
+function database(
+  opts: { onLock?: () => void; latestSwitches?: Record<string, boolean> } = {}
+) {
   const contracts: Contract[] = []
   const writes: string[] = []
   const lockTails = new Map<string, Promise<void>>()
@@ -139,7 +141,16 @@ function database(opts: { onLock?: () => void } = {}) {
       const inserted: Contract[] = []
       const tx = {
         oneOrNone,
-        one: async (_query: string, [key]: [string]) => {
+        manyOrNone: pg.manyOrNone,
+        map: async (
+          _query: string,
+          _params: unknown[],
+          convert: (row: unknown) => unknown
+        ) =>
+          Object.entries(opts.latestSwitches ?? {}).map(([phase, enabled]) =>
+            convert({ competition_id: 'nba-regular-2026-27', phase, enabled })
+          ),
+        one: async (query: string, [key]: [string] = [query]) => {
           if (releases.has(key)) return {}
           const previous = lockTails.get(key)
           lockTails.set(
@@ -1634,3 +1645,42 @@ it('backs off across the switch from live polls to a finals check', async () => 
     { finishedDays: 3 },
   ])
 })
+
+it.each(['off', 'dual', 'on'] as const)(
+  'rechecks a legacy game at the BDL cutover before funding when the current Odds state is %s',
+  async (state) => {
+    const competitionId = 'nba-regular-2026-27'
+    const db = database({
+      latestSwitches: {
+        'Regular Season': state !== 'off',
+        'Regular Season (BDL)': state === 'dual',
+      },
+    })
+    jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-21T15:00:00Z'))
+    jest.mocked(getUpcomingOdds).mockResolvedValue([
+      {
+        ...event,
+        sport_key: 'basketball_nba',
+        commence_time: '2026-11-22T00:00:00Z',
+      },
+    ])
+    const result = await createOddsMarketsForCompetition(
+      db.client,
+      competitionId,
+      { creator, switches: { [competitionId + ':Regular Season']: true } }
+    )
+    expect(result.log.filter((event) => event.status === 'error')).toEqual([])
+    if (state === 'on') {
+      expect(result.created).toBe(1)
+      expect(runTxnOutsideBetQueue).toHaveBeenCalledTimes(1)
+    } else {
+      expect(result).toMatchObject({ created: 0, errors: 0, skipped: 1 })
+      expect(result.log[0].reason).toContain(
+        state === 'dual'
+          ? 'BDL creation is enabled'
+          : 'Odds creation was switched off'
+      )
+      expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
+    }
+  }
+)
