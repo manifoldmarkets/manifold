@@ -287,10 +287,8 @@ const handleBetReplyToComment = async (
   // cash market replies to one there. A bet anywhere else would replace the
   // comment's totals with its own market's bets and notify the comment's
   // author.
-  if (
-    comment.contractId !== contract.id &&
-    comment.contractId !== contract.siblingContractId
-  ) {
+  const betMarketIds = filterDefined([contract.id, contract.siblingContractId])
+  if (!betMarketIds.includes(comment.contractId)) {
     log(
       `Bet ${bet.id} on ${contract.id} names comment ${comment.id}, which is on ${comment.contractId}. Not counted as a reply.`
     )

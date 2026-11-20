@@ -13,9 +13,10 @@
 // The real onCreateBets runs here, as place-bet runs it after writing a bet.
 // The comments and bets are rows in an in-memory PostgreSQL, read and written
 // by the handler's own SQL (getCommentSafe, getBetsRepliedToComment,
-// updateData), and each bet is inserted with the statement place-bet uses.
-// Markets and users are in-memory stand-ins, and so is the notification. No
-// live database or network is used.
+// updateData). Each bet is written as place-bet writes it: an order that fills
+// nothing on its own (insertZeroAmountLimitBet), any other with the bulk
+// insert. Markets and users are in-memory stand-ins, and so is the
+// notification. No live database or network is used.
 import { PGlite } from '@electric-sql/pglite'
 
 jest.mock('shared/supabase/init', () => ({
@@ -69,9 +70,13 @@ import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { noFees } from 'common/fees'
+import { convertBet } from 'common/supabase/bets'
 import { User } from 'common/user'
 import { createBetReplyToCommentNotification } from 'shared/create-notification'
-import { bulkInsertBetsQuery } from 'shared/supabase/bets'
+import {
+  bulkInsertBetsQuery,
+  insertZeroAmountLimitBet,
+} from 'shared/supabase/bets'
 import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
 import { getContract } from 'shared/utils'
 
@@ -198,6 +203,8 @@ const client = {
   map: async <T>(sql: string, params: unknown, map: (row: Row) => T) =>
     (await rows(sql, params)).map((row) => map(row)),
 }
+const pg = client as unknown as ReturnType<typeof createSupabaseDirectClient>
+type BetRow = Parameters<typeof convertBet>[0]
 
 // Every comment row, whole: a reply that does not count must leave all of it
 // as it was.
@@ -217,11 +224,18 @@ const totalsOf = async (commentId: string) =>
   ).betReplyAmountsByOutcome
 
 // What place-bet does with a bet: its transaction writes the bet row, then
-// onCreateBets is run with the bets it wrote.
+// onCreateBets is run with the bets it wrote. An order that fills nothing is
+// written on its own and passed on as read back from its row.
 const place = async (bet: Bet) => {
-  await db.exec(bulkInsertBetsQuery([bet]))
+  let written = bet
+  if (bet.amount === 0) {
+    const row = await insertZeroAmountLimitBet(bet, pg)
+    written = convertBet(row as BetRow)
+  } else {
+    await db.exec(bulkInsertBetsQuery([bet]))
+  }
   await onCreateBets({
-    fullBets: [bet],
+    fullBets: [written],
     contract: markets[bet.contractId],
     user: bettor,
     cancelledLimitOrders: [],
@@ -234,7 +248,7 @@ const place = async (bet: Bet) => {
     contractUpdate: undefined,
     answerUpdates: undefined,
   } as unknown as Parameters<typeof onCreateBets>[0])
-  return bet
+  return written
 }
 
 // The comment's author was told once, about this bet on this market.
@@ -365,11 +379,7 @@ beforeEach(async () => {
       replyBet('market-b-cash', 'on-b', 'NO', 15),
     ])
   )
-  jest
-    .mocked(createSupabaseDirectClient)
-    .mockReturnValue(
-      client as unknown as ReturnType<typeof createSupabaseDirectClient>
-    )
+  jest.mocked(createSupabaseDirectClient).mockReturnValue(pg)
   jest
     .mocked(getContract)
     .mockImplementation(async (_pg, contractId) => markets[contractId])
@@ -401,21 +411,22 @@ test('the fixtures: one comment on each mana market, and two earlier bets in rep
 })
 
 describe('a bet that names a comment on another market', () => {
-  test("leaves that comment's totals as they were and tells nobody", async () => {
-    // Before the check this bet's M$5 replaced the 40 and 15 on the comment,
-    // and its author was told of a reply on market A.
-    const before = await stored()
-    await place(replyBet('market-a', 'on-b', 'YES', 5))
-    expect(await stored()).toEqual(before)
-    expect(createBetReplyToCommentNotification).not.toHaveBeenCalled()
-  })
-
-  test('does the same when it is on the cash market beside another market', async () => {
-    const before = await stored()
-    await place(replyBet('market-b-cash', 'on-a', 'NO', 5))
-    expect(await stored()).toEqual(before)
-    expect(createBetReplyToCommentNotification).not.toHaveBeenCalled()
-  })
+  // Before the check the first of these replaced the M$40 and 15 on market
+  // B's comment with its own 5, and the comment's author was told of a reply
+  // on market A.
+  test.each([
+    ['a market with no sibling', 'market-a', 'on-b'],
+    ['a mana market with a cash market beside it', 'market-b', 'on-a'],
+    ['the cash market beside another market', 'market-b-cash', 'on-a'],
+  ])(
+    "on %s, leaves that comment's row as it was and tells nobody",
+    async (_, betMarket, commentId) => {
+      const before = await stored()
+      await place(replyBet(betMarket, commentId, 'YES', 5))
+      expect(await stored()).toEqual(before)
+      expect(createBetReplyToCommentNotification).not.toHaveBeenCalled()
+    }
+  )
 
   test('does the same when it is a limit order that fills nothing', async () => {
     // An order that fills nothing is a bet of M$0. Before the check it set the
@@ -447,6 +458,20 @@ describe('a bet that names a comment on another market', () => {
         [stray.id]
       )
     ).toEqual([{ contract_id: 'market-a', reply_to: 'on-b' }])
+  })
+
+  test("is skipped too when the comment's stored data has no market", async () => {
+    // No such comment exists, and none can be made: a comment is written with
+    // its market. If one were, a market with no sibling has no second id to
+    // compare, and the missing one must not pass for it.
+    await rows(
+      `update contract_comments set data = data - 'contractId'
+      where comment_id = 'on-b'`
+    )
+    const before = await stored()
+    await place(replyBet('market-a', 'on-b', 'YES', 5))
+    expect(await stored()).toEqual(before)
+    expect(createBetReplyToCommentNotification).not.toHaveBeenCalled()
   })
 })
 
