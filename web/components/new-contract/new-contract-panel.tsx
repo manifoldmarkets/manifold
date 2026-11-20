@@ -14,6 +14,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { FaQuestion, FaUsers } from 'react-icons/fa'
 import { compareTwoStrings } from 'string-similarity'
+import { PollsDontCountNotice } from 'web/components/home/polls-dont-count-notice'
 import { useTextEditor } from 'web/components/widgets/editor'
 import { useListGroupsBySlug } from 'web/hooks/use-group-supabase'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -1509,6 +1510,10 @@ export function NewContractPanel(props: {
           onGenerateAnswers={generateAnswers}
           isGeneratingAnswers={isGeneratingAnswers}
         />
+
+        {formState.outcomeType === 'POLL' && (
+          <PollsDontCountNotice className="mx-4" />
+        )}
 
         {/* Visibility Toggle */}
         <Row className="items-center gap-2 px-4">

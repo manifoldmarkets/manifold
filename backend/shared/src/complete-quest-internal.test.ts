@@ -73,6 +73,8 @@ let shareTimes: number[]
 let onShareCount: (() => void) | undefined
 // The user's other questions in the week of the question being counted.
 let otherQuestionsThisWeek: number
+// The last question count query run.
+let questionCountSql: string | undefined
 let scores: Map<string, number>
 let paid: Paid[]
 let events: string[]
@@ -141,8 +143,10 @@ const fakePg = {
         count: shareTimes.filter((t) => t >= start && t < end).length,
       }
     }
-    if (sql.includes('from contracts'))
+    if (sql.includes('from contracts')) {
+      questionCountSql = sql
       return { count: otherQuestionsThisWeek + 1 }
+    }
     throw new Error(`unexpected query: ${sql}`)
   },
   none: async (sql: string) => {
@@ -216,6 +220,7 @@ beforeEach(() => {
   shareTimes = []
   onShareCount = undefined
   otherQuestionsThisWeek = 0
+  questionCountSql = undefined
   scores = new Map()
   paid = []
   events = []
@@ -549,8 +554,31 @@ describe('recordContractInteraction', () => {
 })
 
 describe('completeMarketCreationQuests', () => {
-  const question = (createdTime = Date.now()) => ({ id: 'q1', createdTime })
+  const question = (createdTime = Date.now()) => ({
+    id: 'q1',
+    createdTime,
+    outcomeType: 'BINARY' as const,
+  })
   const thisWeek = () => getQuestWeekStart()
+
+  it("doesn't count a poll, pay for one or change the score", async () => {
+    otherQuestionsThisWeek = 2
+    await expect(
+      completeMarketCreationQuests(USER, {
+        ...question(),
+        outcomeType: 'POLL',
+      })
+    ).resolves.toBeNull()
+    expect(questionCountSql).toBeUndefined()
+    expect(paid).toEqual([])
+    expect(scores.has('marketsCreatedThisWeek')).toBe(false)
+  })
+
+  // The real query runs in the real-PG check; this pins the filter.
+  it("leaves the user's polls out of the week's count", async () => {
+    await completeMarketCreationQuests(USER, question())
+    expect(questionCountSql).toMatch(/outcome_type is distinct from 'POLL'/)
+  })
 
   it('pays the first question of the week once, for this week', async () => {
     await completeMarketCreationQuests(USER, question())

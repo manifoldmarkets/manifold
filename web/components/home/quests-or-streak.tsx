@@ -29,6 +29,7 @@ import { linkClass } from '../widgets/site-link'
 import { StreakProgressBar } from '../profile/streak-progress-bar'
 import { BonusStandingNotice } from 'web/components/upsell/bonus-standing-notice'
 import { AddWidgetPrompt } from 'web/components/home/add-widget-prompt'
+import { PollsDontCountNotice } from 'web/components/home/polls-dont-count-notice'
 
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
 
@@ -183,7 +184,10 @@ export function QuestsModal(props: {
             )}
             info={'Share a question with a friend!'}
           />
-          <Row className={'text-primary-700'}>Weekly</Row>
+          <Col className="gap-2">
+            <Row className={'text-primary-700'}>Weekly</Row>
+            <PollsDontCountNotice />
+          </Col>
           <QuestRow
             emoji={'📈'}
             title={`Create a market this week`}

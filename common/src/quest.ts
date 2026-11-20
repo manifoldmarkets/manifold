@@ -48,8 +48,9 @@ export const QUEST_SCORE_IDS = uniq(
   QUEST_TYPES.map((t) => QUEST_DETAILS[t].scoreId)
 )
 
-// Weekly quests counted from the questions a user created this week. Each pays
-// at most once per week, as soon as the count reaches its requiredCount.
+// Weekly quests counted from the questions a user created this week, not
+// counting polls. Each pays at most once per week, as soon as the count
+// reaches its requiredCount.
 export const MARKET_CREATION_QUESTS: QuestType[] = [
   'MARKETS_CREATED',
   'MARKETS_CREATED_3',

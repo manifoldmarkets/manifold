@@ -81,18 +81,24 @@ export const completeSharingQuest = async (user: User) => {
 // Sunday-night question still counts toward Sunday's week) and pays the weekly
 // creation quests that count has reached. Safe to rerun: each quest pays at
 // most once per week.
+//
+// Polls don't count: they cost much less to create than the quests pay. The
+// quests modal, the create form and the FAQ say so.
 export const completeMarketCreationQuests = async (
   user: User,
-  contract: Pick<Contract, 'id' | 'createdTime'>
+  contract: Pick<Contract, 'id' | 'createdTime' | 'outcomeType'>
 ) => {
+  if (contract.outcomeType === 'POLL') return null
   const pg = createSupabaseDirectClient()
   const weekStart = getQuestWeekStart(new Date(contract.createdTime))
-  // Counts this contract even if the query can't see it yet.
+  // Counts this contract even if the query can't see it yet. outcome_type is
+  // nullable, and `<> 'POLL'` would drop nulls too.
   const { count } = await pg.one<{ count: number }>(
     `select count(*)::int + 1 as count from contracts
     where creator_id = $1
     and created_time >= millis_to_ts($2)
     and created_time < millis_to_ts($3)
+    and outcome_type is distinct from 'POLL'
     and id != $4`,
     [user.id, weekStart, getNextQuestWeekStart(weekStart), contract.id]
   )
@@ -115,7 +121,7 @@ export const completeMarketCreationQuests = async (
 
 // The weekly creation quests a user with `count` questions in the week
 // starting at weekStart has earned but not yet been paid.
-export const getUnpaidMarketCreationQuests = async (
+const getUnpaidMarketCreationQuests = async (
   pg: SupabaseDirectClient,
   userId: string,
   weekStart: number,
@@ -133,7 +139,7 @@ export const getUnpaidMarketCreationQuests = async (
   return reached.filter((questType) => !paid.includes(questType))
 }
 
-export const payMarketCreationQuests = async (
+const payMarketCreationQuests = async (
   user: User,
   weekStart: number,
   count: number
