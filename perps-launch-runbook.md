@@ -267,7 +267,10 @@ the feed is retired. The order:
    Keep its ticker in `common/src/perps/ticker.ts`: the settled page shows it.
 3. Add any successor as a new row with its own MNX market id and feed id.
    Never reuse a retired feed id.
-4. Deploy scheduler-perps, then the API.
+4. Deploy scheduler-perps, then the API, and confirm the web production
+   deployment includes the change (Vercel builds `main` on merge). The new
+   feed's `$` formatting, ticker and MNX source credit are bundled into web,
+   so a market created while web is behind renders without them.
 5. Backfill and create the successor for the owning account. For the
    Anthropic share perpetual (2026-11-20), backed with the M$153,620 residual
    @MNX received when `ANTHROPIC` settled:
@@ -278,7 +281,9 @@ npx ts-node create-mnx-perps.ts --creator=mnx --feed=mnx-ant-mark   --subsidy-pe
 ```
 
 A new listing has less history than the feed preflight's 30-day minimum, so
-expect that check to fail for it until the history accumulates.
+expect that check to fail for it until the history accumulates. Before
+making the market public, open it and check the price shows as dollars with
+the ticker badge and the MNX credit.
 
 ## Why oracle latency is still a launch decision
 

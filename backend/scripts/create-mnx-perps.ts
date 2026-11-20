@@ -40,35 +40,97 @@ import { runScript } from './run-script'
 //   --max-leverage=<n>           market leverage cap (2-100)
 //   --topics=<slug>[,<slug>]     extra topics; the launch topic is always added
 // The overrides require --feed, so they cannot fan out over every missing feed.
-const argValue = (name: string) =>
-  process.argv
-    .find((arg) => arg.startsWith(`--${name}=`))
-    ?.slice(name.length + 3)
-const listArg = (name: string) =>
-  argValue(name)
-    ?.split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-const wholeArg = (name: string, min: number, max: number) => {
-  const raw = argValue(name)
-  if (raw == null) return undefined
-  const value = Number(raw)
-  if (!Number.isSafeInteger(value) || value < min || value > max)
-    throw new Error(`--${name} must be a whole number from ${min} to ${max}`)
-  return value
+//
+// Every argument must be one of these, given once, with a value. A typo stops
+// the run instead of falling back to a default: a misspelt --subsidy-per-side
+// would otherwise create the market at the manifest's backing, and a misspelt
+// --feed would select every missing live feed.
+const CREATE_MNX_OPTIONS = [
+  'creator',
+  'feed',
+  'subsidy-per-side',
+  'max-leverage',
+  'topics',
+] as const
+type CreateMnxOption = (typeof CREATE_MNX_OPTIONS)[number]
+
+export const parseCreateMnxArgs = (argv: readonly string[]) => {
+  let apply = false
+  const values: Partial<Record<CreateMnxOption, string>> = {}
+  for (const arg of argv) {
+    if (arg === '--apply') {
+      if (apply) throw new Error('--apply given twice')
+      apply = true
+      continue
+    }
+    const match = /^--([a-z-]+)=(.*)$/.exec(arg)
+    const name = CREATE_MNX_OPTIONS.find((option) => option === match?.[1])
+    if (!match || !name) throw new Error(`Unknown argument: ${arg}`)
+    if (values[name] != null) throw new Error(`--${name} given twice`)
+    if (!match[2].trim()) throw new Error(`--${name} needs a value`)
+    values[name] = match[2].trim()
+  }
+  const list = (name: CreateMnxOption) => {
+    const items = values[name]?.split(',').map((s) => s.trim())
+    if (items?.some((item) => !item))
+      throw new Error(`--${name} has an empty entry`)
+    if (items && new Set(items).size !== items.length)
+      throw new Error(`--${name} repeats an entry`)
+    return items
+  }
+  const whole = (name: CreateMnxOption, min: number, max: number) => {
+    const raw = values[name]
+    if (raw == null) return undefined
+    const value = Number(raw)
+    if (!/^\d+$/.test(raw) || !Number.isSafeInteger(value))
+      throw new Error(`--${name} must be a whole number`)
+    if (value < min || value > max)
+      throw new Error(`--${name} must be from ${min} to ${max}`)
+    return value
+  }
+  const creatorAccount = (values.creator ??
+    DEFAULT_PERP_CREATOR_ACCOUNT) as PerpCreatorAccount
+  if (!PERP_CREATOR_ACCOUNTS.includes(creatorAccount))
+    throw new Error(
+      `Unknown --creator; expected one of ${PERP_CREATOR_ACCOUNTS.join(', ')}`
+    )
+  const requestedFeeds = list('feed')
+  const subsidyPerSide = whole('subsidy-per-side', 1, 10_000_000)
+  const maxLeverage = whole('max-leverage', 2, 100)
+  const topicSlugs = list('topics') ?? []
+  if (
+    !requestedFeeds &&
+    (subsidyPerSide != null || maxLeverage != null || topicSlugs.length)
+  )
+    throw new Error(
+      '--subsidy-per-side, --max-leverage and --topics require --feed'
+    )
+  for (const feedId of requestedFeeds ?? []) {
+    const spec = MNX_INSTRUMENTS.find((i) => i.feedId === feedId)
+    if (!spec) throw new Error(`Unknown MNX feed: ${feedId}`)
+    if (spec.retired)
+      throw new Error(`${feedId} is retired: ${spec.retired.reason}`)
+  }
+  return {
+    apply,
+    creatorAccount,
+    requestedFeeds,
+    subsidyPerSide,
+    maxLeverage,
+    topicSlugs,
+  }
 }
 
 if (require.main === module)
   runScript(async ({ pg }) => {
-    const apply = process.argv.includes('--apply')
-    const creatorAccount = (process.argv
-      .find((arg) => arg.startsWith('--creator='))
-      ?.slice('--creator='.length) ??
-      DEFAULT_PERP_CREATOR_ACCOUNT) as PerpCreatorAccount
-    if (!PERP_CREATOR_ACCOUNTS.includes(creatorAccount))
-      throw new Error(
-        `Unknown --creator; expected one of ${PERP_CREATOR_ACCOUNTS.join(', ')}`
-      )
+    const {
+      apply,
+      creatorAccount,
+      requestedFeeds,
+      subsidyPerSide,
+      maxLeverage: maxLeverageOverride,
+      topicSlugs,
+    } = parseCreateMnxArgs(process.argv.slice(2))
     if (
       !['DEV', 'PROD'].includes(process.env.NEXT_PUBLIC_FIREBASE_ENV ?? '') ||
       ENV !== getLocalEnv()
@@ -76,25 +138,6 @@ if (require.main === module)
       throw new Error(
         'Set NEXT_PUBLIC_FIREBASE_ENV explicitly to DEV or PROD and select the matching Firebase project'
       )
-    const requestedFeeds = listArg('feed')
-    const subsidyPerSide = wholeArg('subsidy-per-side', 1, 10_000_000)
-    const maxLeverageOverride = wholeArg('max-leverage', 2, 100)
-    const topicSlugs = listArg('topics') ?? []
-    if (
-      !requestedFeeds?.length &&
-      (subsidyPerSide != null ||
-        maxLeverageOverride != null ||
-        topicSlugs.length)
-    )
-      throw new Error(
-        '--subsidy-per-side, --max-leverage and --topics require --feed'
-      )
-    for (const feedId of requestedFeeds ?? []) {
-      const spec = MNX_INSTRUMENTS.find((i) => i.feedId === feedId)
-      if (!spec) throw new Error(`Unknown MNX feed: ${feedId}`)
-      if (spec.retired)
-        throw new Error(`${feedId} is retired: ${spec.retired.reason}`)
-    }
     const candidates = MNX_LIVE_INSTRUMENTS.filter(
       (spec) => !requestedFeeds || requestedFeeds.includes(spec.feedId)
     )
