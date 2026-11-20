@@ -221,6 +221,7 @@ test('post quotes preserve attribution and media without copying nested quotes o
   })
   expect(quoteSocialPost(post)).not.toHaveProperty('source')
   expect(quoteSocialPost({ ...post, removed: 'blocked' })).toMatchObject({
+    url: '',
     text: '',
     author: undefined,
     imageUrls: [],

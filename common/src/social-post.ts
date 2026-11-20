@@ -224,7 +224,8 @@ export const socialTimestampMillis = (timestamp: string) =>
 // discussion rather than expanding an arbitrarily deep chain in the timeline.
 export const quoteSocialPost = (post: SocialPost): SocialQuote => ({
   kind: 'post',
-  url: socialPostPath(post.id),
+  // An original that cannot be shown is not linked to either.
+  url: post.removed ? '' : socialPostPath(post.id),
   text: post.removed ? '' : post.text,
   ...(post.richContent
     ? { richContent: post.removed ? null : post.richContent }

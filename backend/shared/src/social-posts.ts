@@ -407,7 +407,7 @@ export const socialReplyCounts = (pg: DB, ids: string[], blocked: string[]) => {
     and not (p.user_id=any($2::text[]) or root.user_id=any($2::text[]))`
   // Native comments that will join the thread when it is next read.
   const pending = (which: string) => `(select count(*) from contract_comments cc
-    join contracts c on c.id=cc.contract_id join private_users pu on pu.id=cc.user_id
+    join contracts c on c.id=cc.contract_id left join private_users pu on pu.id=cc.user_id
     where ${which}
     and ${visibleMarketComment('cc')} and not (cc.user_id=any($2::text[]))
     and c.visibility='public' and not coalesce((c.data->>'deleted')::boolean,false)
@@ -692,10 +692,14 @@ export async function hydrateSocialPosts(
             )} on ${bet.data.outcome}. View market`
           : 'View original market',
       }
-    } else if (row.source_comment_id || row.source_bet_id) {
+    } else if (
+      (row.source_comment_id || row.source_bet_id) &&
+      !row.canonical_key
+    ) {
       // The quoted comment or trade can no longer be shown here: taken off
       // Yap, removed, hidden, or behind a block. Say only that, as a quoted
-      // post does, with nothing that tells who wrote it or where it was.
+      // post does, with nothing that tells who wrote it or where it was. A
+      // trade's own card names its trade the same way and quotes nothing.
       source = {
         kind: row.source_comment_id ? 'comment' : 'bet',
         url: '',
@@ -706,7 +710,7 @@ export async function hydrateSocialPosts(
     if (row.source_post_id) {
       source = quotesById.get(row.source_post_id) ?? {
         kind: 'post',
-        url: socialPostPath(row.source_post_id),
+        url: '',
         text: '',
         unavailable: true,
       }

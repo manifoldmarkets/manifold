@@ -225,26 +225,44 @@ test('a quoted comment or trade that cannot be shown leaves a notice and nothing
     root_id: 'trade-quote',
     source_bet_id: 'bet',
   } as SocialRow
-  // The comment was taken off Yap and the trader is behind a block, so the
-  // queries for them return no row. The market itself is still there.
+  const yapQuote = {
+    ...base,
+    id: 'yap-quote',
+    root_id: 'yap-quote',
+    source_contract_id: null,
+    source_post_id: 'deleted-yap',
+  } as SocialRow
+  // A trade's own card names its trade the same way, and quotes nothing.
+  const tradeCard = {
+    ...base,
+    id: 'bet-bet',
+    root_id: 'bet-bet',
+    source_bet_id: 'bet',
+    canonical_key: 'bet:bet',
+  } as SocialRow
+  const all = [commentQuote, tradeQuote, yapQuote, tradeCard]
+  // The comment was taken off Yap, the trader is behind a block and the Yap
+  // was deleted, so the queries for them return no row. The market is there.
   const manyOrNone = jest.fn(async (sql: string) => {
     if (sql.includes('select id, name, username, data'))
       return [{ id: 'author', name: 'author', username: 'author', data: {} }]
-    if (sql.includes('select * from social_posts'))
-      return [commentQuote, tradeQuote]
+    if (sql.includes('select * from social_posts')) return all
     if (sql.includes('select * from contracts')) return [mentionedMarket]
     return []
   })
   const posts = await hydrateSocialPosts(
     db({ manyOrNone }),
-    [commentQuote, tradeQuote],
+    all,
     { blocked: [] },
     false
   )
-  expect(posts.map((p) => p.removed)).toEqual([null, null])
+  expect(posts.map((p) => p.removed)).toEqual([null, null, null, null])
+  // No author, no text and no link to what was quoted.
   expect(posts.map((p) => p.source)).toEqual([
     { kind: 'comment', url: '', text: '', unavailable: true },
     { kind: 'bet', url: '', text: '', unavailable: true },
+    { kind: 'post', url: '', text: '', unavailable: true },
+    null,
   ])
 })
 

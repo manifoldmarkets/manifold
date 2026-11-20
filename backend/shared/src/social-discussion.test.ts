@@ -662,6 +662,34 @@ describe('a comment written on the market', () => {
     expect(await post('mc-elsewhere')).toBeUndefined()
   })
 
+  test('a comment on a trade whose card a moderator removed joins the market instead', async () => {
+    const card = await ensureSocialSource(pg, { contractId: 'market' })
+    await rows(
+      `insert into contract_bets (bet_id, contract_id, user_id) values ('bet1', 'market', 'bob')`
+    )
+    const trade = await ensureSocialSource(pg, {
+      contractId: 'market',
+      betId: 'bet1',
+    })
+    // As deleteSocialPost leaves a removed card: it no longer names its market.
+    await rows(
+      `update social_posts set deleted_time=now(), source_contract_id=null, source_bet_id=null where id=$1`,
+      [trade.id]
+    )
+    // A comment written after the removal.
+    const fresh = await linkCommentToOpenDiscussion(
+      pg,
+      await written('fresh', { betId: 'bet1' }),
+      'bet1'
+    )
+    expect(fresh!.row.parent_id).toBe(card.id)
+    // One written earlier, picked up when the market's discussion is read.
+    await insertComment('older', { data: { betId: 'bet1' } })
+    await pg.tx((tx) => reconcileMarketDiscussion(tx, card))
+    expect((await post('mc-older'))!.parent_id).toBe(card.id)
+    expect(log.warn).not.toHaveBeenCalled()
+  })
+
   test('stays a plain market comment when the discussion is closed, or the comment is a mod comment', async () => {
     const card = await ensureSocialSource(pg, { contractId: 'market' })
     expect(

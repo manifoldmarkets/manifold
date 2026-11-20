@@ -87,6 +87,7 @@ function loadDeclarations(file, names, bindings) {
     await db.connect()
     await db.query(`begin; set local statement_timeout='15s'; set local search_path=pg_temp,public;
    create temporary table users(id text primary key,is_bot boolean default false);
+   create temporary table private_users(id text primary key,data jsonb default '{}');
    create temporary table contracts(id text primary key,creator_id text,created_time timestamptz default now(),visibility text default 'public',data jsonb default '{}');
    create temporary table contract_comments(comment_id text primary key,contract_id text,user_id text,created_time timestamptz default now(),data jsonb default '{}',likes int default 0,dislikes int default 0);
    create temporary table contract_bets(bet_id text primary key,contract_id text,user_id text,created_time timestamptz default now());
