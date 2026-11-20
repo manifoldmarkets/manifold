@@ -69,6 +69,8 @@ type FakeTx = {
 }
 
 let shareTimes: number[]
+// Runs while the share count query is in flight, e.g. to move the clock.
+let onShareCount: (() => void) | undefined
 // The user's other questions in the week of the question being counted.
 let otherQuestionsThisWeek: number
 let scores: Map<string, number>
@@ -129,6 +131,7 @@ const setShares = (n: number) => {
 const fakePg = {
   one: async (sql: string, params: unknown[]) => {
     if (sql.includes('user_contract_interactions')) {
+      onShareCount?.()
       // [start, end), as the real query.
       const [, startTs, endTs] = params as [string, string, string?]
       const start = Date.parse(startTs)
@@ -211,6 +214,7 @@ const within = async <T>(ms: number, promise: Promise<T>) => {
 
 beforeEach(() => {
   shareTimes = []
+  onShareCount = undefined
   otherQuestionsThisWeek = 0
   scores = new Map()
   paid = []
@@ -349,6 +353,20 @@ describe('completeSharingQuest', () => {
       jest.useRealTimers()
     }
   }
+
+  it("doesn't overwrite today's score with yesterday's late count", async () => {
+    // Today's first share already paid and set the score to 1.
+    scores.set('sharesToday', 1)
+    await atTime('2026-11-18T07:59:59.900Z', async () => {
+      shareTimes = [Date.parse('2026-11-18T08:00:00.200Z')]
+      // The call took 17 Nov's period; its count query runs after midnight.
+      onShareCount = () =>
+        jest.setSystemTime(Date.parse('2026-11-18T08:00:01.000Z'))
+      await completeSharingQuest(USER)
+    })
+    expect(scores.get('sharesToday')).toBe(1)
+    expect(paid).toEqual([])
+  })
 
   it("doesn't pay yesterday's quest with a share made after midnight", async () => {
     // 17 Nov 23:59:59.900 PST takes 17 Nov's period; the share lands on 18 Nov.

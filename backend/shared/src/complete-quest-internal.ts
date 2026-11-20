@@ -50,7 +50,10 @@ export const completeSharingQuest = async (user: User) => {
     millisToTs(period.periodStart),
     millisToTs(period.periodEnd)
   )
-  await setQuestScoreValue(user.id, scoreId, count, createSupabaseClient())
+  // The score shows today's progress in the quests modal. A call that took
+  // yesterday's period and counted after midnight mustn't overwrite today's.
+  if (getPacificDayPeriod().periodStart === period.periodStart)
+    await setQuestScoreValue(user.id, scoreId, count, createSupabaseClient())
   log('completing quest', { questType, userId: user.id, count, ...period })
   if (count < requiredCount) return { count }
 
@@ -202,8 +205,9 @@ const weekPeriod = (weekStart: number): QuestPeriod => ({
 // transaction that paid it. While API instances on older code still run (a
 // rolling deploy), an older instance can pay a period just after it ended, and
 // this code can't tell that reward from the next period's and may pay the
-// period again. So deploy outside Pacific midnight (23:50 to 00:10), and for
-// the weekly creation quests, outside Monday 00:00 Pacific.
+// period again. So the whole rollout, until no instance on older code is
+// still serving requests, must stay outside 23:50 to 00:10 Pacific, and for
+// the weekly creation quests, away from Monday 00:00 Pacific.
 const PAID_FOR_PERIOD_SQL = `
   created_time >= millis_to_ts($/periodStart/)
   and (
