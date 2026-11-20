@@ -8,15 +8,20 @@
 //
 // A reply now counts only when its comment is on the bet's market or on that
 // market's sibling: comments are kept on the mana market, and a bet on the
-// cash market beside it replies to one there. The bet itself is not refused.
+// cash market beside it replies to one there. The bet itself is not refused,
+// and it keeps the id it was sent with. So the list of a market's bets that
+// reply to comments (getBetsWithFilter with commentRepliesOnly, which the
+// market page asks for) applies the same rule, and no longer returns a bet
+// whose comment is somewhere else.
 //
-// The real onCreateBets runs here, as place-bet runs it after writing a bet.
-// The comments and bets are rows in an in-memory PostgreSQL, read and written
-// by the handler's own SQL (getCommentSafe, getBetsRepliedToComment,
-// updateData). Each bet is written as place-bet writes it: an order that fills
-// nothing on its own (insertZeroAmountLimitBet), any other with the bulk
-// insert. Markets and users are in-memory stand-ins, and so is the
-// notification. No live database or network is used.
+// The real onCreateBets runs here, as place-bet runs it after writing a bet,
+// and the real getBetsWithFilter. The comments and bets are rows in an
+// in-memory PostgreSQL, read and written by the code's own SQL (getCommentSafe,
+// getBetsRepliedToComment, updateData, the bets filter). Each bet is written
+// as place-bet writes it: an order that fills nothing on its own
+// (insertZeroAmountLimitBet), any other with the bulk insert. Markets are rows
+// for the filter and in-memory stand-ins for onCreateBets; users and the
+// notification are stand-ins. No live database or network is used.
 import { PGlite } from '@electric-sql/pglite'
 
 jest.mock('shared/supabase/init', () => ({
@@ -75,6 +80,7 @@ import { User } from 'common/user'
 import { createBetReplyToCommentNotification } from 'shared/create-notification'
 import {
   bulkInsertBetsQuery,
+  getBetsWithFilter,
   insertZeroAmountLimitBet,
 } from 'shared/supabase/bets'
 import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
@@ -350,6 +356,12 @@ beforeAll(async () => {
     create trigger contract_bet_populate before insert or update
       on contract_bets for each row
       execute function contract_bet_populate_cols ();
+    -- The columns of contracts the bets filter reads.
+    create table contracts (
+      id text primary key not null,
+      data jsonb not null,
+      visibility text
+    );
   `)
 })
 
@@ -360,7 +372,14 @@ afterAll(async () => {
 beforeEach(async () => {
   jest.clearAllMocks()
   betCount = 0
-  await db.exec(`truncate contract_comments; truncate contract_bets;`)
+  await db.exec(
+    `truncate contract_comments; truncate contract_bets; truncate contracts;`
+  )
+  for (const m of Object.values(markets))
+    await rows(
+      `insert into contracts (id, data, visibility) values ($1, $2, $3)`,
+      [m.id, m, m.visibility]
+    )
   // Nobody has replied to the comment on market A with a bet. The comment on
   // market B has two such replies, M$40 on YES on its own market and 15 on NO
   // on the cash market beside it, and the totals they left on it.
@@ -509,4 +528,100 @@ test('a bet that names a comment that does not exist still writes nothing and te
   await place(replyBet('market-a', 'no-such-comment', 'YES', 5))
   expect(await stored()).toEqual(before)
   expect(createBetReplyToCommentNotification).not.toHaveBeenCalled()
+})
+
+describe("the list of a market's bets that reply to comments", () => {
+  // The ids of the bets the filter returns, newest first, as the market page
+  // asks for them. The two earlier replies are bet-1, on market B, and bet-2,
+  // on the cash market beside it.
+  const replies = async (contractId?: string | string[]) =>
+    (
+      await getBetsWithFilter(pg, {
+        contractId,
+        commentRepliesOnly: true,
+        limit: 1000,
+      })
+    ).map((bet) => bet.id)
+  const allBets = async (contractId: string) =>
+    (await getBetsWithFilter(pg, { contractId, limit: 1000 })).map(
+      (bet) => bet.id
+    )
+  // Only the bet row is needed here: the list is read from the rows alone.
+  const write = async (bet: Bet) => {
+    await db.exec(bulkInsertBetsQuery([bet]))
+    return bet
+  }
+
+  test("has a market's replies to its own comments, and a cash market's replies to comments on the mana market beside it", async () => {
+    expect(await replies('market-a')).toEqual([])
+    expect(await replies('market-b')).toEqual(['bet-1'])
+    expect(await replies('market-b-cash')).toEqual(['bet-2'])
+
+    const reply = await write(replyBet('market-a', 'on-a', 'YES', 5))
+    expect(await replies('market-a')).toEqual([reply.id])
+  })
+
+  test.each([
+    ['a market with no sibling', 'market-a', 'on-b'],
+    ['a mana market with a cash market beside it', 'market-b', 'on-a'],
+    ['the cash market beside another market', 'market-b-cash', 'on-a'],
+  ])(
+    'leaves out a bet on %s that names a comment elsewhere',
+    async (_, betMarket, commentId) => {
+      // Before, any bet with a comment id was listed for its own market.
+      const before = await replies(betMarket)
+      const stray = await write(replyBet(betMarket, commentId, 'YES', 5))
+
+      expect(await replies(betMarket)).toEqual(before)
+      // Nor is it among the replies on the comment's own market.
+      expect(await replies(['market-a', 'market-b'])).toEqual(['bet-1'])
+      // It is still one of its market's bets.
+      expect(await allBets(betMarket)).toContain(stray.id)
+    }
+  )
+
+  test('leaves out a bet that names a comment that does not exist', async () => {
+    const stray = await write(replyBet('market-a', 'no-such-comment', 'YES', 5))
+
+    expect(await replies('market-a')).toEqual([])
+    expect(await allBets('market-a')).toEqual([stray.id])
+  })
+
+  test('goes by the market the comment row is on, whatever its stored data says', async () => {
+    // The comment on market A, with a market in its data that it is not on.
+    await rows(
+      `update contract_comments
+      set data = data || '{"contractId": "market-b"}'
+      where comment_id = 'on-a'`
+    )
+    const reply = await write(replyBet('market-a', 'on-a', 'YES', 5))
+    await write(replyBet('market-b', 'on-a', 'YES', 5))
+
+    expect(await replies('market-a')).toEqual([reply.id])
+    expect(await replies('market-b')).toEqual(['bet-1'])
+  })
+
+  test('counts by the same rule', async () => {
+    await write(replyBet('market-b', 'on-b', 'YES', 10))
+    await write(replyBet('market-b', 'on-a', 'YES', 5))
+
+    expect(
+      await getBetsWithFilter(pg, {
+        contractId: 'market-b',
+        commentRepliesOnly: true,
+        count: true,
+      })
+    ).toEqual([{ count: 2 }])
+  })
+
+  test('applies it across several markets and across all of them', async () => {
+    const reply = await write(replyBet('market-a', 'on-a', 'YES', 5))
+    await write(replyBet('market-a', 'on-b', 'YES', 5))
+
+    expect(await replies(['market-b', 'market-b-cash'])).toEqual([
+      'bet-2',
+      'bet-1',
+    ])
+    expect(await replies()).toEqual([reply.id, 'bet-2', 'bet-1'])
+  })
 })
