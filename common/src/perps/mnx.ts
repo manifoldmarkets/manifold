@@ -28,7 +28,6 @@ const instruments = [
   ['META', 'Meta', 'equity', 20, 'mnx-meta-mark', 50, 5000],
   ['MINIMAX', 'MiniMax', 'equity', 27, 'mnx-minimax-mark', 2, 1000],
   ['MU', 'Micron', 'equity', 22, 'mnx-mu-mark', 50, 10000],
-  ['SNDK', 'Sandisk', 'equity', 25, 'mnx-sndk-mark', 50, 15000],
   ['SPCX', 'SpaceX', 'equity', 10, 'mnx-spcx-mark', 10, 2500],
   ['TSM', 'TSMC', 'equity', 26, 'mnx-tsm-mark', 20, 5000],
   ['ZAI', 'Z.AI', 'equity', 28, 'mnx-zai-mark', 5, 2000],
@@ -41,6 +40,7 @@ const instruments = [
 // feed id at a different MNX market; a successor gets its own row above.
 const delisted = [
   ['ANTHROPIC', 'Anthropic', 'valuation', 11, 'mnx-anthropic-mark', 100, 20000],
+  ['SNDK', 'Sandisk', 'equity', 25, 'mnx-sndk-mark', 50, 15000],
 ] as const
 
 export type MnxRetirement = { at: number; reason: string }
@@ -50,6 +50,11 @@ const retirements: Record<(typeof delisted)[number][0], MnxRetirement> = {
     at: Date.UTC(2026, 10, 20, 4, 32, 26),
     reason:
       'Anthropic listed on Nasdaq on 2026-11-19 and MNX delisted its pre-IPO valuation future (MNX market 11); prod market lnccuhNtuCC9 settled 2026-11-20 at 1706. Successor: the ANT share perpetual (mnx-ant-mark).',
+  },
+  SNDK: {
+    at: Date.UTC(2026, 10, 20, 4, 42, 39),
+    reason:
+      'MNX delisted its Sandisk perpetual (MNX market 25) on 2026-11-19 at 23:23 UTC, settling at $755.16; prod market Ugs9l2d8Pd0Q settled 2026-11-20 at 754, its last mark. No successor.',
   },
 }
 const getRetirement = (symbol: string): MnxRetirement | undefined =>

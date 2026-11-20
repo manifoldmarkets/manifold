@@ -94,7 +94,7 @@ it('runs every live MNX feed on the shared 2s tick and funding hourly', () => {
     '0 0 * * * *'
   )
   expect(MNX_INSTRUMENTS).toHaveLength(17)
-  expect(MNX_LIVE_INSTRUMENTS).toHaveLength(16)
+  expect(MNX_LIVE_INSTRUMENTS).toHaveLength(15)
   for (const instrument of MNX_LIVE_INSTRUMENTS) {
     expect(
       ORACLE_FEEDS.find((feed) => feed.id === instrument.feedId)

@@ -265,6 +265,7 @@ the feed is retired. The order:
    registry feed, drops it from `MNX_LAUNCH_MARKETS` into
    `PERP_LAUNCH_RETIRED_MARKETS`, and makes the parser stop looking for it.
    Keep its ticker in `common/src/perps/ticker.ts`: the settled page shows it.
+   (SNDK, delisted 2026-11-19 with no successor, needed only steps 1, 2 and 4.)
 3. Add any successor as a new row with its own MNX market id and feed id.
    Never reuse a retired feed id.
 4. Deploy scheduler-perps, then the API, and confirm the web production

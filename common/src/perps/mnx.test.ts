@@ -21,14 +21,14 @@ const contract = {
   maxOraclePriceAgeMs: 5 * MINUTE_MS,
 }
 
-it('defines the agreed 16 live markets plus delisted ones, all with permanent MNX attribution', () => {
+it('defines the agreed live markets plus delisted ones, all with permanent MNX attribution', () => {
   expect(MNX_INSTRUMENTS).toHaveLength(17)
-  expect(MNX_LIVE_INSTRUMENTS).toHaveLength(16)
+  expect(MNX_LIVE_INSTRUMENTS).toHaveLength(15)
   expect(new Set(MNX_INSTRUMENTS.map((i) => i.feedId)).size).toBe(17)
   expect(new Set(MNX_INSTRUMENTS.map((i) => i.marketId)).size).toBe(17)
   expect(MNX_INSTRUMENTS.map((i) => i.symbol)).not.toContain('NVDA')
   expect(MNX_INSTRUMENTS.filter((i) => i.retired).map((i) => i.symbol)).toEqual(
-    ['ANTHROPIC']
+    ['ANTHROPIC', 'SNDK']
   )
   expect(MNX_LIVE_INSTRUMENTS.map((i) => i.symbol)).toContain('ANT')
   for (const spec of MNX_INSTRUMENTS)

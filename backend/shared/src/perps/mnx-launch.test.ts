@@ -20,7 +20,7 @@ it('integrates the launch cohort without breaking the existing manifest', () => 
       (sum, m) => sum + m.recommended.subsidyLong + m.recommended.subsidyShort,
       0
     )
-  ).toBe(800_000)
+  ).toBe(750_000)
   expect(MNX_LAUNCH_MARKETS.every((m) => m.recommended.maxLeverage === 3)).toBe(
     true
   )
@@ -67,7 +67,14 @@ it('registers every live feed on the shared 2s tick with attribution and launch 
 
 it('retires delisted instruments everywhere a live one is launchable', () => {
   const retired = MNX_INSTRUMENTS.filter((i) => i.retired)
-  expect(retired.map((i) => i.feedId)).toEqual(['mnx-anthropic-mark'])
+  expect(retired.map((i) => i.feedId)).toEqual([
+    'mnx-anthropic-mark',
+    'mnx-sndk-mark',
+  ])
+  const settledTickers: Record<string, string> = {
+    'mnx-anthropic-mark': 'ANTH',
+    'mnx-sndk-mark': 'SNDK',
+  }
   for (const spec of retired) {
     const feed = getOracleFeed(spec.feedId)
     expect(feed?.marketCreationEnabled).toBe(false)
@@ -77,7 +84,7 @@ it('retires delisted instruments everywhere a live one is launchable', () => {
       reason: spec.retired?.reason,
     })
     // The settled market still renders its ticker, units and credit.
-    expect(getPerpFeedTicker(spec.feedId)).toBe('ANTH')
+    expect(getPerpFeedTicker(spec.feedId)).toBe(settledTickers[spec.feedId])
     expect(getOracleAttribution(spec.feedId)?.url).toBe(spec.url)
     expect(MNX_LAUNCH_MARKETS.some((m) => m.feedId === spec.feedId)).toBe(false)
     expect(

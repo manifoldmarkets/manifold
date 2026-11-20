@@ -70,6 +70,7 @@ export const PERP_FEED_TICKERS: Readonly<Record<string, string>> = {
   'mnx-meta-mark': 'META',
   'mnx-minimax-mark': 'MINI',
   'mnx-mu-mark': 'MU',
+  // Retired (MNX delisted it 2026-11-19); kept for the settled market page.
   'mnx-sndk-mark': 'SNDK',
   'mnx-spcx-mark': 'SPCX',
   'mnx-tsm-mark': 'TSM',
