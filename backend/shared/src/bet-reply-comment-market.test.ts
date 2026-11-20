@@ -461,9 +461,10 @@ describe('a bet that names a comment on another market', () => {
   })
 
   test("is skipped too when the comment's stored data has no market", async () => {
-    // No such comment exists, and none can be made: a comment is written with
-    // its market. If one were, a market with no sibling has no second id to
-    // compare, and the missing one must not pass for it.
+    // No such comment exists: the API writes a comment's market into its data
+    // as well as its row. The table does not require that, though. Where it is
+    // missing, a market with no sibling has no second id to compare, and the
+    // missing one must not pass for it.
     await rows(
       `update contract_comments set data = data - 'contractId'
       where comment_id = 'on-b'`
