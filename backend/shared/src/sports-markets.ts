@@ -755,7 +755,7 @@ export async function runSportsMarketPostCreate(
   pg: SupabaseDirectClient,
   contract: Contract,
   creator: User,
-  opts: { notifyFollowers?: boolean } = {}
+  opts: { notifyFollowers?: boolean; groupEmbeddingBatch?: Set<string> } = {}
 ): Promise<void> {
   const eventId = contract.id + '-on-create'
 
@@ -790,8 +790,27 @@ export async function runSportsMarketPostCreate(
       [contract.id],
       (r) => r.group_id as string
     )
-    await Promise.all(groupIds.map((gId) => upsertGroupEmbedding(pg, gId)))
+    if (opts.groupEmbeddingBatch) {
+      for (const groupId of groupIds) opts.groupEmbeddingBatch.add(groupId)
+    } else {
+      await Promise.all(groupIds.map((gId) => upsertGroupEmbedding(pg, gId)))
+    }
   }
+}
+
+/** Refresh the distinct public groups touched by one creation run. */
+export async function flushSportsGroupEmbeddings(
+  pg: SupabaseDirectClient,
+  groups: Set<string>
+) {
+  const results = await Promise.allSettled(
+    Array.from(groups, async (id) => {
+      await upsertGroupEmbedding(pg, id)
+      groups.delete(id)
+    })
+  )
+  const failed = results.find((result) => result.status === 'rejected')
+  if (failed?.status === 'rejected') throw failed.reason
 }
 
 export async function createTournamentMarkets(
@@ -1189,8 +1208,13 @@ export async function createSportsContract(
   opts: {
     /** Evaluate the funding decision under the same locks as creation. */
     chooseAnte?: (tx: SupabaseTransaction) => Promise<SportsAnteDecision>
+    groupEmbeddingBatch?: Set<string>
     notifyFollowers?: boolean
+    /** Recheck the legacy creator under the operator lock during a BDL cutover. */
+    checkOddsCutover?: (tx: SupabaseTransaction) => Promise<void>
     deduplicateMoneyline?: boolean
+    /** Explicit admin correction of a canceled BDL game identified by this key. */
+    allowCanceledEventId?: string
     /**
      * The same for any market type: refuse, inside the transaction, a second
      * active market of this type on the event (an F1 session's winner and
@@ -1341,7 +1365,13 @@ export async function createSportsContract(
     throw new Error('BDL creation requires a market type for deduplication')
   const result = await pg.tx(async (tx) => {
     if (dedupeType) {
-      const existing = await findLockedSportsMarket(tx, params, dedupeType)
+      const existing = await findLockedSportsMarket(
+        tx,
+        params,
+        dedupeType,
+        opts.allowCanceledEventId,
+        !!opts.checkOddsCutover
+      )
       if (existing) throw new SportsMarketAlreadyExistsError(existing.id)
     }
     if (opts.minLeadMs != null) {
@@ -1349,6 +1379,7 @@ export async function createSportsContract(
       if (!(start > Date.now() + opts.minLeadMs))
         throw new SportsGameStartedError(params.sportsStartTimestamp ?? '?')
     }
+    if (opts.checkOddsCutover) await opts.checkOddsCutover(tx)
     const decision = await opts.chooseAnte?.(tx)
     if (
       opts.chooseAnte &&
@@ -1393,6 +1424,7 @@ export async function createSportsContract(
   await generateContractEmbeddings(result, pg).catch(() => undefined)
   await runSportsMarketPostCreate(pg, result, creatorUser, {
     notifyFollowers: opts.notifyFollowers ?? false,
+    groupEmbeddingBatch: opts.groupEmbeddingBatch,
   }).catch(() => undefined)
 
   return result

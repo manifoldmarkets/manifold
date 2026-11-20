@@ -27,6 +27,7 @@ import {
 import { getScores, getUpcomingOdds } from 'shared/the-odds-api-client'
 import { manifoldSportsUserId, MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { getCompetitionSwitches } from 'shared/supabase/sports-competition-switches'
+import { BDL_CREATION_BUDGET_LOCK_SQL } from 'shared/bdl/major-settings'
 import { getScorePollingSettings } from 'shared/supabase/sports-score-polling'
 import { LEGACY_OFFICIAL_SUFFIX } from 'common/sports-league-label'
 import {
@@ -64,6 +65,8 @@ import {
 } from 'common/contract'
 import { User } from 'common/user'
 import { HOUR_MS, MINUTE_MS, sleep } from 'common/util/time'
+
+class OddsCutoverHold extends Error {}
 
 const ROLLING_WINDOW_DAYS = 14
 /** The most the Odds API will look back for completed games. */
@@ -305,6 +308,10 @@ export async function createOddsMarketsForCompetition(
           ...sportTagIds(SPORT_ID_TO_SPORT_KEY[entry.sport]),
         ])
       }
+      const atKickoff = calendarEntriesOverlapping(start, start)
+      const competing = atKickoff.filter(
+        (p) => p.provider === 'bdl' && p.sport === entry.sport
+      )
       const contract = await createSportsContract(
         pg,
         creator,
@@ -328,7 +335,29 @@ export async function createOddsMarketsForCompetition(
           sportsMarketType: params.sportsMarketType,
           groupIds,
         },
-        { deduplicateMoneyline: true, minLeadMs: MIN_CREATE_LEAD_MS }
+        {
+          deduplicateMoneyline: true,
+          minLeadMs: MIN_CREATE_LEAD_MS,
+          checkOddsCutover: competing.length
+            ? async (tx) => {
+                await tx.one(BDL_CREATION_BUDGET_LOCK_SQL)
+                const latest = await getCompetitionSwitches(tx)
+                if (competing.some((p) => autoCreates(p, latest)))
+                  throw new OddsCutoverHold(
+                    'BDL creation is enabled for this game'
+                  )
+                if (
+                  atKickoff.some(
+                    (p) =>
+                      p.oddsKey === entry.oddsKey && !autoCreates(p, latest)
+                  )
+                )
+                  throw new OddsCutoverHold(
+                    'Odds creation was switched off before the game was created'
+                  )
+              }
+            : undefined,
+        }
       )
       result.created++
       result.log.push({
@@ -342,7 +371,8 @@ export async function createOddsMarketsForCompetition(
       // or the game kicked off while this one was getting to it.
       const skipped =
         e instanceof SportsMarketAlreadyExistsError ||
-        e instanceof SportsGameStartedError
+        e instanceof SportsGameStartedError ||
+        e instanceof OddsCutoverHold
       if (skipped) result.skipped++
       else result.errors++
       result.log.push({

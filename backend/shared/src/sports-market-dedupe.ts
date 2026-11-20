@@ -64,11 +64,13 @@ type OpenMoneyline = {
 
 /** Call inside the same transaction as the insert and the ante. The Odds pipeline
  * participates in the matchup lock but may still create its distinct event IDs.
- * Only a BDL moneyline checks the open Odds inventory during cutover. */
+ * During a BDL phase, each provider also checks for open games from the other. */
 export async function findLockedSportsMarket(
   tx: Pick<SupabaseTransaction, 'one' | 'oneOrNone' | 'manyOrNone'>,
   candidate: Market,
-  marketType: string
+  marketType: string,
+  allowCanceledEventId?: string,
+  checkOpenBdl = false
 ) {
   const bdl = candidate.sportsProvider === 'bdl'
   const lock = (key: string) =>
@@ -78,7 +80,11 @@ export async function findLockedSportsMarket(
     tx,
     candidate.sportsEventId,
     marketType,
-    bdl
+    bdl &&
+      !(
+        marketType === 'moneyline' &&
+        allowCanceledEventId === candidate.sportsEventId
+      )
   )
   if (exact || marketType !== 'moneyline') return exact
   if (!bdl && providerOf(candidate) !== 'odds') return null
@@ -90,9 +96,9 @@ export async function findLockedSportsMarket(
   const teams = teamPair(candidate.sportsHomeTeam, candidate.sportsAwayTeam)
   const start = Date.parse(candidate.sportsStartTimestamp)
   if (!sport || !teams || !Number.isFinite(start)) {
-    if (bdl)
+    if (bdl || checkOpenBdl)
       throw new Error(
-        'BDL moneyline needs a known sport, two identifiable teams and a kickoff for deduplication'
+        'BDL cutover moneyline needs a known sport, two identifiable teams and a kickoff for deduplication'
       )
     return null
   }
@@ -107,7 +113,7 @@ export async function findLockedSportsMarket(
   ].sort()
   for (const day of lockDays)
     await lock(`sports-moneyline:${sport}:${day}:${teams}`)
-  if (!bdl) return null
+  if (!bdl && !checkOpenBdl) return null
 
   // Read the kickoff recorded on the contract. Its close time can differ, e.g.
   // after a manual change. Normalize both sides in TS using the same team rules.
@@ -120,9 +126,9 @@ export async function findLockedSportsMarket(
         and (c.close_time is null or c.close_time > now())
         and c.data->>'sportsLeague' = $2 and c.data->>'sportsMarketType' = 'moneyline'
         and c.data->>'sportsFixture' is distinct from 'true'
-        and ${sportsProviderSql()} = 'odds'
+        and ${sportsProviderSql()} = $3
       order by c.id`,
-    [MANIFOLD_SPORTS_USER_IDS, SPORT_LEAGUE_LABEL[sport]]
+    [MANIFOLD_SPORTS_USER_IDS, SPORT_LEAGUE_LABEL[sport], bdl ? 'odds' : 'bdl']
   )
   return (
     open.find(
