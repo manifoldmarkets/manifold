@@ -35,6 +35,29 @@ it('rejects missing and incorrect service credentials without broadcasting', asy
   expect(broadcastSportsLiveScore).not.toHaveBeenCalled()
 })
 
+it('strips nested operator-only detail before handing a valid suspended update to public sockets', async () => {
+  process.env.API_SECRET = 'test-secret'
+  const row = {
+    ...score,
+    sportsLiveStatus: 'SUSPENDED' as const,
+    sportsLivePeriod: 2,
+    sportsResumptionTime: 0,
+    sportsAttentionReason: 'private',
+    sportsLiveDetail: {
+      shots: { home: 0, away: 3, checkedBy: 'private' },
+      providerBody: 'private',
+    },
+  }
+  await send({ apiSecret: 'test-secret', contractId: 'game', score: row })
+  expect(broadcastSportsLiveScore).toHaveBeenCalledWith('game', {
+    ...score,
+    sportsLiveStatus: 'SUSPENDED',
+    sportsLivePeriod: 2,
+    sportsResumptionTime: 0,
+    sportsLiveDetail: { shots: { home: 0, away: 3 } },
+  })
+})
+
 it('delivers an authenticated scheduler score to the API switchboard', async () => {
   process.env.API_SECRET = 'test-secret'
   await expect(

@@ -3,20 +3,20 @@ import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { useEvent } from 'client-common/hooks/use-event'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { SPORTS_SCHEDULE_PAGE_SIZE as SCHEDULE_PAGE_SIZE } from 'common/sports-game-feed'
-import {
-  AnySportKey,
-  LIVE_STATUSES,
-  SportsScheduleResponse,
-} from 'common/sports-schedule'
+import { AnySportKey, SportsScheduleResponse } from 'common/sports-schedule'
 import {
   adoptedGames,
   appendPage,
-  feedFromResponse,
   pruneLiveForPage,
-  refreshLimit,
+  refreshLoadedFeed,
   ScheduleFeed,
 } from 'common/sports-schedule-feed'
-import { applySportsLive, LiveGameState } from 'common/sports-schedule-live'
+import {
+  applySportsLive,
+  decodeSportsScoreTick,
+  newerSportsScoreTick,
+  LiveGameState,
+} from 'common/sports-schedule-live'
 import { HOUR_MS } from 'common/util/time'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { api } from 'web/lib/api/api'
@@ -71,43 +71,48 @@ export function useSportsSchedule(
   // dropped rather than mixed in.
   const generation = useRef(0)
 
-  // Re-reads every page loaded so far in one request, so the games and the
-  // cursor come from the same read (see feedFromResponse).
+  const refreshing = useRef(false)
   const refresh = useEvent(async () => {
     if (!enabled) return
     const gen = ++generation.current
+    refreshing.current = true
     setLoading(true)
     try {
-      const response = await api('sports-schedule', {
-        sport,
-        topic,
-        limit: refreshLimit(
-          feedRef.current,
-          SCHEDULE_PAGE_SIZE,
-          MAX_SCHEDULE_LIMIT
-        ),
-      })
-      if (gen !== generation.current) return
-      // HTTP/client caches preserve the server's snapshot time. Request-start
-      // time in the browser says nothing about how fresh that response is.
-      setLive((prev) => pruneLiveForPage(prev, response))
-      setStored({ ...feedFromResponse(response), sport: view })
+      const result = await refreshLoadedFeed(
+        feedRef.current,
+        SCHEDULE_PAGE_SIZE,
+        MAX_SCHEDULE_LIMIT,
+        (limit, cursor) =>
+          api('sports-schedule', { sport, topic, limit, cursor }),
+        () => gen === generation.current
+      )
+      if (!result || gen !== generation.current) return
+      setLive((prev) => result.pages.reduce(pruneLiveForPage, prev))
+      setStored({ ...result.feed, sport: view })
     } catch (e) {
       console.error('Failed to load the sports schedule', e)
     } finally {
-      if (gen === generation.current) setLoading(false)
+      if (gen === generation.current) {
+        refreshing.current = false
+        setLoading(false)
+      }
     }
   })
 
   useEffect(() => {
     if (enabled) refresh()
+    return () => {
+      generation.current++
+      refreshing.current = false
+    }
   }, [view, enabled])
 
   const loadingMore = useRef(false)
   const loadMore = useEvent(async () => {
     const current = feedRef.current
     const cursor = current?.cursor
-    if (!current || !cursor || loadingMore.current) return false
+    if (!current || !cursor || loadingMore.current || refreshing.current)
+      return false
     loadingMore.current = true
     const gen = generation.current
     try {
@@ -174,10 +179,18 @@ export function useSportsSchedule(
       // The poller only broadcasts around kickoff, so the topic is idle until
       // then; subscribing early means the first in-play tick flips the row to
       // live without waiting for a refetch. Community games have no feed.
-      if (g.kickoffKnown) out.push(`contract/${g.id}/sports-live`)
+      if (g.kickoffKnown || g.sportsLeagueKey)
+        out.push(`contract/${g.id}/sports-live`)
     }
     return out
-  }, [games.map((g) => `${g.id}:${g.status}`).join(',')])
+  }, [
+    games
+      .map(
+        (g) =>
+          `${g.id}:${g.status}:${g.kickoffKnown}:${g.sportsLeagueKey ?? ''}`
+      )
+      .join(','),
+  ])
 
   useApiSubscription({
     topics,
@@ -202,37 +215,17 @@ export function useSportsSchedule(
           return { ...prev, [id]: { ...prev[id], probs } }
         })
       } else if (topic.endsWith('/sports-live')) {
-        const status = data.sportsLiveStatus as string | undefined
-        const scoreTime = data.sportsLiveUpdatedTime as number | undefined
-        if (!status || scoreTime == null || !Number.isFinite(scoreTime)) return
-        const liveScore =
-          status && LIVE_STATUSES.has(status)
-            ? {
-                home: (data.sportsHomeScore as number | null) ?? null,
-                away: (data.sportsAwayScore as number | null) ?? null,
-                minute: (data.sportsLiveMinute as string | null) ?? null,
-                status,
-              }
-            : null
-        setLive((prev) =>
-          (prev[id]?.liveScore?.at ?? 0) > scoreTime
+        const tick = decodeSportsScoreTick(data)
+        if (!tick) return
+        setLive((prev) => {
+          const liveScore = newerSportsScoreTick(prev[id]?.liveScore, tick)
+          return liveScore === prev[id]?.liveScore
             ? prev
             : {
                 ...prev,
-                [id]: {
-                  ...prev[id],
-                  liveScore: {
-                    value: liveScore,
-                    at: scoreTime,
-                    status,
-                    scoreUpdatedTime:
-                      typeof data.sportsScoreUpdatedTime === 'number'
-                        ? data.sportsScoreUpdatedTime
-                        : null,
-                  },
-                },
+                [id]: { ...prev[id], liveScore },
               }
-        )
+        })
       }
     },
   })

@@ -3,6 +3,7 @@ import { SPORT_CATEGORIES } from './sports-schedule'
 import { MANIFOLD_SPORTS_USER_IDS } from './sports'
 import {
   getSportsLeagueLabel,
+  sportsLeagueHref,
   LEAGUE_LABEL_ODDS_KEYS,
 } from './sports-league-label'
 
@@ -89,6 +90,47 @@ describe('getSportsLeagueLabel', () => {
         sportsEventId: 'odds:cricket_ipl:abc',
       })
     ).toBeUndefined()
+  })
+
+  it.each(['nba', 'wnba', 'mlb', 'nhl', 'nfl'] as const)(
+    'links %s games by event identity',
+    (league) => {
+      const game = {
+        creatorId: sports,
+        sportsEventId: 'bdl:' + league + ':22',
+        sportsLeagueKey: league,
+        sportsLeague: 'Other',
+      }
+      expect(getSportsLeagueLabel(game)).toBe(league.toUpperCase())
+      expect(sportsLeagueHref(game)).toBe('/sports/' + league)
+      expect(
+        getSportsLeagueLabel({ ...game, sportsProvider: 'odds' })
+      ).toBeUndefined()
+      expect(
+        getSportsLeagueLabel({ ...game, sportsFixture: true })
+      ).toBeUndefined()
+      expect(
+        getSportsLeagueLabel({ ...game, creatorId: 'visitor' })
+      ).toBeUndefined()
+    }
+  )
+
+  it('rejects conflicting league identities and keeps legacy dashboard links', () => {
+    expect(
+      getSportsLeagueLabel({
+        creatorId: sports,
+        sportsEventId: 'bdl:nhl:22',
+        sportsLeagueKey: 'nba',
+      })
+    ).toBeUndefined()
+    for (const sportsEventId of ['fd-537327', 'legacy-1'])
+      expect(
+        sportsLeagueHref({
+          creatorId: sports,
+          sportsLeague: 'FIFA World Cup',
+          sportsEventId,
+        })
+      ).toBe('/sports/world-cup-2026')
   })
 
   it('has a label for every sport key on the calendar', () => {
