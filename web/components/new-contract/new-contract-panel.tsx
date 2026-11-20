@@ -1118,6 +1118,8 @@ export function NewContractPanel(props: {
           currentShouldAnswersSumToOne={formState.shouldAnswersSumToOne}
           onSelectType={handleTypeChange}
         />
+        {/* At the top, so it's on screen before the mobile Create button is */}
+        {formState.outcomeType === 'POLL' && <PollsDontCountNotice />}
         {/* Multiple Choice Settings - Above Preview */}
         {formState.outcomeType === 'MULTIPLE_CHOICE' && (
           <Col className="bg-canvas-0 ring-ink-100 gap-4 rounded-lg p-4 shadow-md ring-1">
@@ -1510,10 +1512,6 @@ export function NewContractPanel(props: {
           onGenerateAnswers={generateAnswers}
           isGeneratingAnswers={isGeneratingAnswers}
         />
-
-        {formState.outcomeType === 'POLL' && (
-          <PollsDontCountNotice className="mx-4" />
-        )}
 
         {/* Visibility Toggle */}
         <Row className="items-center gap-2 px-4">
