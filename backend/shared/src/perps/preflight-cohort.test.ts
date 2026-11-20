@@ -35,11 +35,7 @@ it.each(
       `--phase=${phase}`,
       ...(cohort === 'mnx' ? ['--cohort=mnx'] : []),
       ...(phase === 'rollout'
-        ? [
-            `--public-feed=${
-              cohort === 'mnx' ? 'mnx-openai-mark' : 'btc-usd'
-            }`,
-          ]
+        ? [`--public-feed=${cohort === 'mnx' ? 'mnx-openai-mark' : 'btc-usd'}`]
         : []),
     ]
     let audit!: (pg: SupabaseDirectClient) => Promise<void>
