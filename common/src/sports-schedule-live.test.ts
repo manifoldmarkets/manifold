@@ -1,6 +1,8 @@
 import { ScheduleGame, SportsScheduleResponse } from './sports-schedule'
 import {
   applySportsLive,
+  decodeSportsScoreTick,
+  newerSportsScoreTick,
   LiveGameState,
   pruneSportsLive,
 } from './sports-schedule-live'
@@ -64,6 +66,113 @@ const live: LiveGameState = {
     status: 'IN_PLAY',
   },
 }
+
+it('recovers postponed and final-in-review games via full websocket snapshots and clears stale detail', () => {
+  const score = {
+    sportsHomeScore: 0,
+    sportsAwayScore: 0,
+    sportsLiveStatus: 'SUSPENDED',
+    sportsLiveMinute: null,
+    sportsLiveUpdatedTime: 200,
+    sportsResumptionTime: 400,
+    sportsLiveDetail: { outs: 0, privateData: 'never sent' },
+    sportsAttentionReason: 'secret',
+  }
+  const suspended = decodeSportsScoreTick(score)!
+  const interrupted = applySportsLive(game, { liveScore: suspended })
+  expect(interrupted).toMatchObject({
+    status: 'upcoming',
+    gameState: 'suspended',
+    resumptionTime: 400,
+    scoreboard: { outs: 0 },
+    liveScore: { home: 0, away: 0 },
+  })
+  expect(JSON.stringify(suspended)).not.toContain('secret')
+  expect(JSON.stringify(suspended)).not.toContain('privateData')
+  const final = decodeSportsScoreTick({
+    ...score,
+    sportsLiveUpdatedTime: 300,
+    sportsLiveStatus: 'FINAL',
+    sportsFinalQualifier: 'OT',
+  })
+  const settling = applySportsLive(interrupted, { liveScore: final })
+  expect(settling).toMatchObject({
+    status: 'upcoming',
+    gameState: 'settling',
+    finalQualifier: 'OT',
+    finalScore: { home: 0, away: 0 },
+  })
+  expect(settling.resumptionTime).toBeUndefined()
+  const live = decodeSportsScoreTick({
+    ...score,
+    sportsLiveStatus: 'IN_PROGRESS',
+    sportsLiveUpdatedTime: 350,
+    sportsLiveDetail: null,
+    sportsLivePeriod: 3,
+    sportsLiveClock: '0:00',
+  })
+  const recovered = applySportsLive(settling, { liveScore: live })
+  expect(recovered).toMatchObject({
+    status: 'live',
+    gameState: 'live',
+    period: 3,
+    clock: '0:00',
+    liveScore: { home: 0, away: 0, period: 3, clock: '0:00' },
+    finalScore: null,
+  })
+  expect(recovered.finalQualifier).toBeUndefined()
+  expect(recovered.scoreboard).toBeUndefined()
+  expect(recovered.resumptionTime).toBeUndefined()
+  const scheduled = decodeSportsScoreTick({
+    ...score,
+    sportsLiveStatus: 'scheduled',
+    sportsLiveUpdatedTime: 360,
+    sportsLiveDetail: null,
+  })
+  expect(applySportsLive(recovered, { liveScore: scheduled })).toMatchObject({
+    status: 'upcoming',
+    gameState: 'scheduled',
+    liveScore: null,
+  })
+  expect(newerSportsScoreTick(live, final)).toBe(live)
+  expect(newerSportsScoreTick(live, { ...live!, status: 'SUSPENDED' })).toBe(
+    live
+  )
+  expect(newerSportsScoreTick(final, live)).toBe(live)
+  expect(
+    decodeSportsScoreTick({ ...score, sportsLiveUpdatedTime: NaN })
+  ).toBeUndefined()
+})
+
+it('honors all established terminal and live events without guessing a final score', () => {
+  const old = {
+    sportsHomeScore: 0,
+    sportsAwayScore: 0,
+    sportsLiveMinute: null,
+    sportsLiveUpdatedTime: 300,
+  }
+  for (const status of ['FINISHED', 'AWARDED']) {
+    const updated = applySportsLive(game, {
+      liveScore: decodeSportsScoreTick({ ...old, sportsLiveStatus: status }),
+    })
+    expect(updated.status).toBe('finished')
+    expect(updated.finalScore).toBeNull()
+    expect(updated.liveScore).toBeNull()
+  }
+  const paused = applySportsLive(game, {
+    liveScore: decodeSportsScoreTick({
+      ...old,
+      sportsLiveStatus: 'PAUSED',
+      sportsLiveMinute: 'HT',
+    }),
+  })
+  expect(paused.liveScore).toEqual({
+    home: 0,
+    away: 0,
+    minute: 'HT',
+    status: 'PAUSED',
+  })
+})
 
 it('keeps newer ticks when a refetch returns a cached snapshot', () => {
   const state = pruneSportsLive({ game: live }, snapshot(150))

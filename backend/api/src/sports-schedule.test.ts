@@ -68,6 +68,8 @@ const tree = [
 }))
 type MarketRow = (typeof props)[number] & { sports_league?: string | null }
 let marketRows: MarketRow[] = props
+let resumedRows: { data: Record<string, unknown> }[] = []
+let officialPages: number[] = []
 let officialRows: { data: Record<string, unknown> }[] = official
 let answerRows: Record<string, unknown>[] = []
 // The official games' topics, unless a test sets gameGroups.
@@ -98,6 +100,8 @@ const gameAnswers = (data: Record<string, unknown>) =>
 beforeEach(() => {
   marketRows = props
   officialRows = official
+  officialPages = []
+  resumedRows = []
   answerRows = []
   gameGroups = defaultGameGroups
   linkRows = []
@@ -106,6 +110,12 @@ beforeEach(() => {
   failedLinkRead = undefined
   championshipRows = []
   jest.mocked(createSupabaseDirectClient).mockReturnValue({
+    tx: async (
+      _opts: unknown,
+      work: (
+        tx: ReturnType<typeof createSupabaseDirectClient>
+      ) => Promise<unknown>
+    ) => work(createSupabaseDirectClient()),
     one: async (sql: string, params: [string[], ...unknown[]]) => {
       expect(sql).toContain('with eligible_links')
       expect(sql).toContain('as with_parents')
@@ -117,7 +127,7 @@ beforeEach(() => {
         with_parents: linkedElsewhere.map((l) => l.id),
       }
     },
-    manyOrNone: async (sql: string) => {
+    manyOrNone: async (sql: string, params: unknown[]) => {
       if (linksMissing && sql.includes('market_links'))
         throw new Error('relation "market_links" does not exist')
       if (sql.includes('from market_links l')) {
@@ -128,12 +138,40 @@ beforeEach(() => {
         if (failedLinkRead === 'parents') throw new Error('Link read failed')
         return linkedElsewhere
       }
+      if (sql.includes("where data->>'sportsEventId' is not null")) {
+        const resuming = sql.includes('jsonb_typeof')
+        const rows = (resuming ? resumedRows : officialRows)
+          .map(({ data }) => ({
+            data,
+            id: String(data.id),
+            page_time: resuming
+              ? String(data.sportsResumptionTime)
+              : new Date(Number(data.closeTime)).toISOString(),
+          }))
+          .sort(
+            (a, b) =>
+              a.page_time.localeCompare(b.page_time) ||
+              (a.id < b.id ? -1 : Number(a.id !== b.id))
+          )
+        const size = Number(sql.match(/limit\s+(\d+)/i)?.[1])
+        const start = params[2]
+          ? rows.findIndex(
+              (r) => r.page_time === params[0] && r.id === params[2]
+            ) + 1
+          : 0
+        if (params[2]) expect(start).toBeGreaterThan(0)
+        const batch = rows.slice(start, start + size)
+        if (!resuming) officialPages.push(batch.length)
+        return batch
+      }
       if (sql.includes("where data->>'sportsEventId'")) return officialRows
       if (sql.includes('as bettors')) return championshipRows
       if (sql.includes('from answers'))
         return answerRows.length > 0
           ? answerRows
-          : officialRows.flatMap(({ data }) => gameAnswers(data))
+          : [...officialRows, ...resumedRows].flatMap(({ data }) =>
+              gameAnswers(data)
+            )
       if (sql.includes('select c.id, c.question')) return marketRows
       if (sql.includes('from group_groups')) return tree
       if (sql.includes('from group_contracts')) return gameGroups
@@ -917,4 +955,110 @@ describe('F1 race weekends', () => {
     const later = 'result' in next ? next.result : next
     expect(later.raceWeekends).toEqual([])
   })
+})
+
+it('paginates the full market-backed slate across identical close times', async () => {
+  const base = official[0].data
+  officialRows = Array.from({ length: 425 }, (_, i) => {
+    const id = 'g' + String(i).padStart(4, '0')
+    return {
+      data: {
+        ...base,
+        id,
+        creatorId: MANIFOLD_SPORTS_USER_IDS[0],
+        sportsEventId: 'bdl:nfl:' + (i + 1),
+        sportsLeagueKey: 'nfl',
+        sportsMarketType: 'moneyline',
+        sportsHomeTeamId: '17',
+        sportsAwayTeamId: '9',
+      },
+    }
+  }).reverse()
+  const get = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const response = await get({
+    sport: 'nfl',
+    limit: 400,
+    includeRelated: false,
+  })
+  const page = 'result' in response ? response.result : response
+  expect(page.counts.nfl).toBe(425)
+  expect(page.games[0]).toMatchObject({
+    id: 'g0000',
+    sportsEventId: 'bdl:nfl:1',
+    sportsLeagueKey: 'nfl',
+    home: { answerId: 'g0000-home', entrantId: '17' },
+    away: { answerId: 'g0000-away', entrantId: '9' },
+  })
+  expect(officialPages).toEqual([200, 200, 25])
+  expect(page.games).toHaveLength(400)
+  const next = await get({ sport: 'nfl', limit: 400, cursor: page.nextCursor! })
+  const tail = 'result' in next ? next.result : next
+  expect(tail.counts.nfl).toBe(425)
+  expect(tail.nextCursor).toBeNull()
+  expect([...page.games, ...tail.games].map((game) => game.id)).toEqual(
+    Array.from({ length: 425 }, (_, i) => 'g' + String(i).padStart(4, '0'))
+  )
+})
+
+it('uses the resumption time to order and page an old suspended market', async () => {
+  const resumption = kickoff + 60000
+  const base = official[0].data
+  officialRows = [
+    { data: { ...base, id: 'soon' } },
+    {
+      data: {
+        ...base,
+        id: 'later',
+        sportsStartTimestamp: new Date(resumption + 60000).toISOString(),
+      },
+    },
+  ]
+  resumedRows = [
+    {
+      data: {
+        ...base,
+        id: 'resumed',
+        creatorId: MANIFOLD_SPORTS_USER_IDS[0],
+        sportsProvider: 'bdl',
+        sportsLeagueKey: 'nfl',
+        sportsEventId: 'bdl:nfl:43',
+        sportsMarketType: 'moneyline',
+        sportsLiveStatus: 'SUSPENDED',
+        sportsStartTimestamp: '2020-01-01T00:00:00Z',
+        closeTime: Date.parse('2020-01-02T00:00:00Z'),
+        sportsResumptionTime: resumption,
+      },
+    },
+  ]
+  officialRows.push({
+    data: {
+      ...resumedRows[0].data,
+      id: 'expired',
+      sportsEventId: 'bdl:nfl:44',
+      closeTime: Date.now() - 60000,
+      sportsResumptionTime: Date.now() - 1000,
+    },
+  })
+  const get = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const query = async (cursor?: string) => {
+    const response = await get({ sport: 'nfl', limit: 1, cursor })
+    return 'result' in response ? response.result : response
+  }
+  const first = await query(),
+    second = await query(first.nextCursor!),
+    third = await query(second.nextCursor!)
+  expect(first.counts.nfl).toBe(3)
+  expect(first.games.map((g) => g.id)).toEqual(['soon'])
+  expect(second.games[0]).toMatchObject({
+    id: 'resumed',
+    gameState: 'suspended',
+    resumptionTime: resumption,
+  })
+  expect(second.nextCursor).toBe(String(resumption) + '_resumed')
+  expect(third.games.map((g) => g.id)).toEqual(['later'])
+  expect(third.nextCursor).toBeNull()
 })

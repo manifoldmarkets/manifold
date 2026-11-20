@@ -447,6 +447,8 @@ export type Sports = {
   sportsFixture?: true
   sportsLivePeriod?: number | string
   sportsLiveClock?: string
+  sportsResumptionTime?: number
+  sportsFinalQualifier?: import('./sports-scoreboard').SportsFinalQualifier
   sportsLiveDetail?: Record<string, import('./supabase/schema').Json>
   sportsResultHash?: string
   sportsVerification?: {
