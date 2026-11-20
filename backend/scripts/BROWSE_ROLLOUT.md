@@ -96,12 +96,13 @@ it. The same change links the hubs from the sidebar, which Classic and New
 share, so both arms got those links at the same time.
 
 It also made New's search box send Classic's `search` event, with
-`location: 'browse-v2'`, once for each query the person types: a query
-restored on return or filled by a link is not sent again. Classic's event
-comes from a search box shared by many pages, has no `location` and is sent on
-every blur, empty or not, and `user_events` stores no path. So compare search
-between the arms per browser, counting distinct non-empty queries from any
-page, and only from that deploy on.
+`location: 'browse-v2'`, once for each query the person types. A query
+restored on return or filled by a link is not sent unless the person edits it.
+Classic's event comes from a search box shared by many pages, has no
+`location` and is sent on every blur, empty or not, so it also counts a linked
+query the person only clicked into; `user_events` stores no path. So compare
+search between the arms per browser, counting distinct non-empty queries
+(trimmed, ignoring case) from any page, and only from that deploy on.
 
 ## Regression checks
 
