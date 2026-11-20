@@ -349,8 +349,9 @@ function BrowseV2Inner() {
               type="search"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              // The same event Classic's search box sends, so the two
-              // layouts' searches can be compared.
+              // The event Classic's search box sends, so the two layouts'
+              // searches can be compared. Classic's also fires on an empty
+              // box; compare non-empty queries.
               onBlur={() => {
                 if (input.trim())
                   track('search', { query: input, location: 'browse-v2' })

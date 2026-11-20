@@ -92,9 +92,10 @@ do not pool them into one v2 result. Assignment itself is unchanged.
 One such change made New open on the list on every screen, fold only small
 house sports and race markets (perps stay in the feed), and treat a press of
 the hub-markets chips as a choice even when the tab already showed it. It also
-made New's search box send the same `search` event as Classic's, with
+made New's search box send Classic's `search` event, with
 `location: 'browse-v2'`, so search can be compared between the arms only from
-that deploy on. The same change links the hubs from the sidebar, which Classic
+that deploy on. New sends it only with something typed; Classic's box also
+sends it empty, so compare non-empty queries. The same change links the hubs from the sidebar, which Classic
 and New share, so both arms got those links at the same time.
 
 ## Regression checks
