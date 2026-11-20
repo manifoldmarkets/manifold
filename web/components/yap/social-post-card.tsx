@@ -20,6 +20,7 @@ import {
   SocialPost,
   SocialLikerPage,
   socialPostPath,
+  socialPostMarkets,
   SOCIAL_POST_MAX_MARKETS,
   isSocialPostEditable,
 } from 'common/social-post'
@@ -143,6 +144,7 @@ function SocialPostCardContent({
     refresh()
   }
   const isSourceCard = !!post.canonicalKey?.match(/^(market|bet):/)
+  const markets = socialPostMarkets(post)
   const own = user?.id === post.author.id && !isSourceCard
   const withinEditWindow = useSocialEditWindow(
     own ? post.createdTimeMs : undefined
@@ -234,7 +236,9 @@ function SocialPostCardContent({
           <span>
             {post.repostedBy[0].name}
             {post.repostCount > 1
-              ? ` and ${post.repostCount - 1} others`
+              ? ` and ${post.repostCount - 1} other${
+                  post.repostCount === 2 ? '' : 's'
+                }`
               : ''}{' '}
             re-yapped
           </span>
@@ -410,8 +414,8 @@ function SocialPostCardContent({
               )}
               <SocialLinkPreview text={post.text} />
               {post.source && <SocialQuoteCard quote={post.source} />}
-              <div className={post.markets.length ? 'mt-3 space-y-2' : ''}>
-                {post.markets
+              <div className={markets.length ? 'mt-3 space-y-2' : ''}>
+                {markets
                   .slice(0, allMarkets ? SOCIAL_POST_MAX_MARKETS : 3)
                   .map((market) => (
                     <Link
@@ -453,14 +457,14 @@ function SocialPostCardContent({
                     </Link>
                   ))}
               </div>
-              {post.markets.length > 3 && (
+              {markets.length > 3 && (
                 <button
                   className="text-primary-700 mt-2 text-sm"
                   onClick={() => setAllMarkets(!allMarkets)}
                 >
                   {allMarkets
                     ? 'Show fewer markets'
-                    : `Show all ${post.markets.length} markets`}
+                    : `Show all ${markets.length} markets`}
                 </button>
               )}
               {post.unavailableMarketCount > 0 && (

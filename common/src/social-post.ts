@@ -220,6 +220,16 @@ export const socialTimestamp = (timestamp: string) =>
 export const socialTimestampMillis = (timestamp: string) =>
   Date.parse(socialTimestamp(timestamp).replace(/(\.\d{3})\d+/, '$1'))
 
+// The markets a post shows. A market comment that starts its own thread on Yap
+// has none attached: it shows the market it was written on, which arrives on
+// its source.
+export const socialPostMarkets = (
+  post: Pick<SocialPost, 'markets' | 'source'>
+): Contract[] =>
+  post.markets.length
+    ? post.markets
+    : (post.source?.kind === 'market' && post.source.markets) || []
+
 // Quote one level of content. Reposts of reposts link back to the original
 // discussion rather than expanding an arbitrarily deep chain in the timeline.
 export const quoteSocialPost = (post: SocialPost): SocialQuote => ({
@@ -232,7 +242,7 @@ export const quoteSocialPost = (post: SocialPost): SocialQuote => ({
     : {}),
   author: post.removed ? undefined : post.author,
   imageUrls: post.removed ? [] : post.imageUrls,
-  markets: post.removed ? [] : post.markets,
+  markets: post.removed ? [] : socialPostMarkets(post),
   includesQuote:
     !post.removed && !!post.source && post.source.kind !== 'market',
   unavailable: !!post.removed,

@@ -5,6 +5,7 @@ import {
   socialPostSourceSchema,
   quoteSocialPost,
   SocialPost,
+  socialPostMarkets,
   socialTimestamp,
   socialTimestampMillis,
 } from './social-post'
@@ -228,4 +229,42 @@ test('post quotes preserve attribution and media without copying nested quotes o
     markets: [],
     unavailable: true,
   })
+})
+
+test('a market comment that starts a thread shows the market its source carries, and so does a quote of it', () => {
+  const market = { id: 'market', question: 'Will it snow?' }
+  const comment = {
+    id: 'mc-comment',
+    text: 'Looks likely.',
+    author: { id: 'bob', name: 'Bob', username: 'bob', avatarUrl: '' },
+    markets: [],
+    source: {
+      kind: 'market',
+      url: '/owner/will-it-snow',
+      text: 'View original market',
+      markets: [market],
+    },
+    removed: null,
+  } as unknown as SocialPost
+  expect(socialPostMarkets(comment)).toEqual([market])
+  expect(quoteSocialPost(comment).markets).toEqual([market])
+  // A market's card is not a quote of anything.
+  expect(quoteSocialPost(comment).includesQuote).toBe(false)
+  // What is attached to a post comes first, and nothing else is added to it.
+  const attached = { id: 'other', question: 'Another?' }
+  expect(
+    socialPostMarkets({
+      ...comment,
+      markets: [attached],
+    } as unknown as SocialPost)
+  ).toEqual([attached])
+  // A quoted comment or trade names its market in the quote itself.
+  expect(
+    socialPostMarkets({
+      ...comment,
+      source: { ...comment.source!, kind: 'comment' },
+    } as SocialPost)
+  ).toEqual([])
+  expect(socialPostMarkets({ ...comment, source: null })).toEqual([])
+  expect(quoteSocialPost({ ...comment, removed: 'author' }).markets).toEqual([])
 })

@@ -26,6 +26,7 @@ import {
 } from './social-posts'
 import { SupabaseDirectClient } from './supabase/init'
 import { User } from 'common/user'
+import { quoteSocialPost, socialPostMarkets } from 'common/social-post'
 import { SUPPORTER_TIERS } from 'common/supporter-config'
 import { FIREBASE_CONFIG } from 'common/envs/constants'
 import {
@@ -266,6 +267,102 @@ test('a quoted comment or trade that cannot be shown leaves a notice and nothing
   ])
 })
 
+test('a market comment that starts its own thread comes with its market, and no other post does', async () => {
+  const base = {
+    ...post,
+    user_id: 'author',
+    created_time: '2026-11-20T00:00:00Z',
+    rich_content: null,
+    source_contract_id: 'market',
+  }
+  // Shared on its own: nothing above it on Yap says which market it is about.
+  const root = {
+    ...base,
+    id: 'mc-root',
+    root_id: 'mc-root',
+    parent_id: null,
+    market_comment_id: 'root',
+    canonical_key: 'comment:root',
+  } as SocialRow
+  const reply = {
+    ...base,
+    id: 'mc-reply',
+    root_id: 'mc-root',
+    parent_id: 'mc-root',
+    market_comment_id: 'reply',
+    canonical_key: 'comment:reply',
+  } as SocialRow
+  // Written with the Yap button in the market's comment box: the market is attached.
+  const both = {
+    ...base,
+    id: 'both',
+    root_id: 'both',
+    parent_id: null,
+    market_comment_id: 'both',
+  } as SocialRow
+  const card = {
+    ...base,
+    id: 'market-market',
+    root_id: 'market-market',
+    parent_id: null,
+    canonical_key: 'market:market',
+  } as SocialRow
+  const all = [root, reply, both, card]
+  const manyOrNone = jest.fn(async (sql: string) => {
+    if (sql.includes('select id, name, username, data'))
+      return [{ id: 'author', name: 'author', username: 'author', data: {} }]
+    if (sql.includes('select * from social_posts')) return all
+    if (sql.includes('select * from contracts')) return [mentionedMarket]
+    if (sql.includes('from social_post_markets m'))
+      return ['both', 'market-market'].map((post_id) => ({
+        post_id,
+        market: mentionedMarket,
+      }))
+    if (sql.includes('as available'))
+      return ['root', 'reply', 'both'].map((comment_id) => ({
+        comment_id,
+        available: true,
+      }))
+    return []
+  })
+  const posts = await hydrateSocialPosts(
+    db({ manyOrNone }),
+    all,
+    { blocked: [] },
+    false
+  )
+  expect(posts.map((p) => p.removed)).toEqual([null, null, null, null])
+  expect(posts.map((p) => p.source?.kind)).toEqual([
+    'market',
+    'market',
+    'market',
+    'market',
+  ])
+  expect(posts.map((p) => p.source?.markets?.map((m) => m.id))).toEqual([
+    ['market'],
+    undefined,
+    undefined,
+    undefined,
+  ])
+  // What each card shows: the reply leaves it to the comment above it.
+  expect(posts.map((p) => socialPostMarkets(p).map((m) => m.id))).toEqual([
+    ['market'],
+    [],
+    ['market'],
+    ['market'],
+  ])
+  // Nothing is added to what a post has attached, so an edit attaches nothing.
+  expect(posts.map((p) => p.markets.map((m) => m.id))).toEqual([
+    [],
+    [],
+    ['market'],
+    ['market'],
+  ])
+  expect(quoteSocialPost(posts[0]).markets?.map((m) => m.id)).toEqual([
+    'market',
+  ])
+})
+
 test('rich mention writes canonicalize labels and reject unavailable or blocked identities', async () => {
   const pg = db({
     manyOrNone: jest.fn((sql: string) =>
@@ -347,6 +444,112 @@ test('rich reads redact unavailable market references from both rich and fallbac
   )
   expect(removed.richContent).toBeNull()
   expect(removed.text).toBe('')
+})
+
+// What the market's Reply button writes at the start of a reply: a mention
+// whose id is the comment replied to, labelled with that person's username.
+const marketReply = (id: string, label: string): SocialRichContent => ({
+  type: 'doc',
+  content: [
+    {
+      type: 'paragraph',
+      content: [
+        { type: 'mention', attrs: { id, label } },
+        { type: 'text', text: ' agreed' },
+      ],
+    },
+  ],
+})
+
+test('a market reply names the person it replies to, whom the market stores by comment id', async () => {
+  const copy = {
+    ...post,
+    id: 'mc-reply',
+    root_id: 'mc-reply',
+    parent_id: null,
+    market_comment_id: 'reply',
+    created_time: '2026-11-20 00:00:00+00',
+    rich_content: marketReply('bobs-comment', 'bob'),
+    text: '@bob agreed',
+  } as SocialRow
+  const reading = (row: SocialRow, bob: Record<string, unknown> = {}) => {
+    const manyOrNone = jest.fn(async (sql: string, _params?: unknown[]) => {
+      if (sql.includes('select id, name, username, data'))
+        return [
+          { id: row.user_id, name: 'Author', username: 'author', data: {} },
+          { id: 'bob-id', name: 'Bob', username: 'bob', data: bob },
+        ]
+      if (sql.includes('select * from social_posts')) return [row]
+      if (sql.includes('as available'))
+        return [{ comment_id: 'reply', available: true }]
+      return []
+    })
+    return { pg: db({ manyOrNone }), manyOrNone }
+  }
+  const text = async (
+    row: SocialRow,
+    blocked: string[] = [],
+    bob: Record<string, unknown> = {}
+  ) =>
+    (
+      await hydrateSocialPosts(reading(row, bob).pg, [row], { blocked }, false)
+    )[0].text
+
+  const { pg, manyOrNone } = reading(copy)
+  const [shown] = await hydrateSocialPosts(pg, [copy], { blocked: [] }, false)
+  expect(shown.text).toBe('@bob agreed')
+  expect(shown.richContent?.content?.[0].content?.[0]).toEqual({
+    type: 'mention',
+    attrs: { id: 'bob-id', label: 'bob' },
+  })
+  // The name is looked up, and only for a market comment.
+  const users = (calls: unknown[][]) =>
+    calls.find(([sql]) =>
+      (sql as string).includes('select id, name, username, data')
+    )![1] as unknown[]
+  expect(users(manyOrNone.mock.calls)[2]).toEqual(['bob'])
+
+  // Someone the reader has a block with, or a deleted account, stays unnamed.
+  expect(await text(copy, ['bob-id'])).toBe('[User unavailable] agreed')
+  expect(await text(copy, [], { userDeleted: true })).toBe(
+    '[User unavailable] agreed'
+  )
+  // A name nobody has is not shown either.
+  expect(
+    await text({
+      ...copy,
+      rich_content: marketReply('bobs-comment', 'nobody'),
+    } as SocialRow)
+  ).toBe('[User unavailable] agreed')
+
+  // A post written on Yap is held to the ids it stores: a name is not enough.
+  const written = {
+    ...copy,
+    id: 'yap',
+    root_id: 'yap',
+    market_comment_id: null,
+  } as SocialRow
+  const onYap = reading(written)
+  expect(
+    (await hydrateSocialPosts(onYap.pg, [written], { blocked: [] }, false))[0]
+      .text
+  ).toBe('[User unavailable] agreed')
+  expect(users(onYap.manyOrNone.mock.calls)[2]).toEqual([])
+})
+
+test('editing a market reply shows the name and saves the mention as the market stored it', async () => {
+  const stored = marketReply('bobs-comment', 'bob')
+  // The reader sees the person's current name under their own id.
+  const edit = getSocialEditContent(stored, marketReply('bob-id', 'bobby'))
+  expect(edit?.content?.[0].content?.[0]).toEqual({
+    type: 'mention',
+    attrs: { id: 'bobs-comment', label: 'bobby' },
+  })
+  // No user has the stored id, so the save restores the stored mention.
+  const pg = db({ manyOrNone: jest.fn().mockResolvedValue([]) })
+  expect(
+    await validateSocialRichContent(pg, edit, { blocked: [] }, stored)
+  ).toEqual(stored)
 })
 
 test('editing keeps unavailable reference identities without returning their stored labels', () => {
