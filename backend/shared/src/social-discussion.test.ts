@@ -644,6 +644,135 @@ describe('adding a market to Yap and reading its discussion', () => {
     expect(log.warn).not.toHaveBeenCalled()
   })
 
+  test('looking for comments not yet on Yap does not go through the posts, or the people, for each comment', async () => {
+    // Enough rows for PostgreSQL's choice to show: a market with 2,000
+    // top-level comments and three replies under each, another market whose
+    // 3,000 comments are all on Yap, and 400 people. The comments table has
+    // the repository's index on the comment replied to, which is where
+    // PostgreSQL learns how many comments are top-level.
+    const TOPS = 2000
+    await db.exec(`
+      create index contract_replies on contract_comments using btree
+        (((data ->> 'replyToCommentId'::text)), contract_id, created_time desc);
+      insert into users (id) select 'u' || g from generate_series(1, 400) g;
+      insert into private_users (id) select 'u' || g from generate_series(1, 400) g;
+    `)
+    await rows(
+      `insert into contract_comments (contract_id, comment_id, user_id, created_time, data)
+       select 'market', 'c' || g, 'u' || (g % 400 + 1), millis_to_ts(1700000000000 + g * 1000),
+         jsonb_build_object('id', 'c' || g, 'userId', 'u' || (g % 400 + 1), 'contractId', 'market',
+           'createdTime', 1700000000000 + g * 1000, 'content', $1::jsonb)
+       from generate_series(1, $2) g`,
+      [JSON.stringify(doc('hello')), TOPS]
+    )
+    await rows(
+      `insert into contract_comments (contract_id, comment_id, user_id, created_time, data)
+       select 'market', 'c' || g || 'r' || r, 'u' || ((g + r) % 400 + 1), millis_to_ts(1700000000000 + g * 1000 + r),
+         jsonb_build_object('id', 'c' || g || 'r' || r, 'userId', 'u' || ((g + r) % 400 + 1), 'contractId', 'market',
+           'createdTime', 1700000000000 + g * 1000 + r, 'replyToCommentId', 'c' || g, 'content', $1::jsonb)
+       from generate_series(1, $2) g, generate_series(1, 3) r`,
+      [JSON.stringify(doc('a reply')), TOPS]
+    )
+    await rows(
+      `insert into contract_comments (contract_id, comment_id, user_id, created_time, data)
+       select 'other', 'o' || g, 'alice', millis_to_ts(1690000000000 + g * 1000),
+         jsonb_build_object('id', 'o' || g, 'userId', 'alice', 'contractId', 'other',
+           'createdTime', 1690000000000 + g * 1000, 'content', $1::jsonb)
+       from generate_series(1, 3000) g`,
+      [JSON.stringify(doc('elsewhere'))]
+    )
+    const elsewhere = await ensureSocialSource(pg, { contractId: 'other' })
+    await rows(
+      `insert into social_posts (id, user_id, text, parent_id, root_id, market_comment_id, source_contract_id, canonical_key, feed_visible, created_time)
+       select 'mc-' || comment_id, user_id, 'elsewhere', $1, $1, comment_id, contract_id, 'comment:' || comment_id, false, created_time
+       from contract_comments where contract_id='other'`,
+      [elsewhere.id]
+    )
+    const card = await ensureSocialSource(pg, { contractId: 'market' })
+    const comment = await ensureMarketCommentPost(pg, 'c5')
+    await db.exec('analyze')
+
+    // Take the two statements the scan sends, for a card and for a comment,
+    // without copying what they find.
+    const statements: string[] = []
+    const recording = {
+      ...client,
+      manyOrNone: (sql: string, params?: unknown) => {
+        statements.push(pgp.as.format(sql, params))
+        return client.manyOrNone(sql, params)
+      },
+      tx: async () => undefined,
+    } as unknown as SupabaseDirectClient
+    await reconcileMarketDiscussion(recording, card)
+    await reconcileMarketDiscussion(recording, comment)
+    const scans = statements.filter((statement) =>
+      statement.includes('not exists(select 1 from social_posts p')
+    )
+    expect(scans).toHaveLength(2)
+
+    // Run each and look at what PostgreSQL expected, read and threw away.
+    type PlanNode = Record<string, unknown> & { Plans?: PlanNode[] }
+    const run = async (statement: string) => {
+      const raw = (
+        await rows(`explain (analyze, format json) ${statement}`)
+      )[0]['QUERY PLAN']
+      const tree = (typeof raw === 'string' ? JSON.parse(raw) : raw) as {
+        Plan: PlanNode
+      }[]
+      const nodes = (node: PlanNode): PlanNode[] => [
+        node,
+        ...(node.Plans ?? []).flatMap(nodes),
+      ]
+      const all = nodes(tree[0].Plan)
+      const times = (node: PlanNode, key: string) =>
+        Number(node[key] ?? 0) * Number(node['Actual Loops'] ?? 1)
+      const comments = all.filter(
+        (node) => node['Relation Name'] === 'contract_comments'
+      )
+      expect(comments).toHaveLength(1)
+      return {
+        found: Number(tree[0].Plan['Actual Rows']),
+        // How many comments it planned the rest of the statement for, and how
+        // many there were.
+        expected: Number(comments[0]['Plan Rows']),
+        matched: times(comments[0], 'Actual Rows'),
+        // Comments read and then found not to be ones asked for.
+        unwanted: times(comments[0], 'Rows Removed by Filter'),
+        // Rows of another table held against a comment they do not belong to.
+        mismatched: all.reduce(
+          (sum, node) => sum + times(node, 'Rows Removed by Join Filter'),
+          0
+        ),
+      }
+    }
+
+    // A card: its top-level comments, oldest first, one more than a read
+    // copies.
+    const forCard = await run(scans[0])
+    expect(forCard.found).toBe(SOCIAL_RECONCILE_BATCH + 1)
+    expect(forCard.matched).toBe(TOPS)
+    // PostgreSQL chooses how to look up each comment's copy and author by the
+    // number of comments it expects. Expecting one where there are thousands
+    // is what let it read the whole posts table for each of them: 100 s for
+    // one read on a market ten times this size. Its guess need not be close,
+    // only of the right order.
+    expect(forCard.expected * 50).toBeGreaterThanOrEqual(forCard.matched)
+    // They are found as the comments that reply to nothing, without reading
+    // the 6,000 replies.
+    expect(forCard.unwanted).toBeLessThan(TOPS)
+    // And each one's copy and author are looked up, or those tables are read
+    // once. Going through every post or every person for each comment would
+    // be hundreds of thousands of mismatches here.
+    expect(forCard.mismatched).toBeLessThan(TOPS)
+
+    // A comment: its three replies, found by the comment they reply to, not
+    // by reading the market's 8,000 comments.
+    const forComment = await run(scans[1])
+    expect(forComment.found).toBe(3)
+    expect(forComment.unwanted).toBeLessThan(TOPS)
+    expect(forComment.mismatched).toBeLessThan(TOPS)
+  })
+
   test('a copy made by a read or by someone else does not make the author follow the thread', async () => {
     await insertComment('old', { user: 'bob' })
     await insertComment('reply', {

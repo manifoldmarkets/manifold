@@ -341,6 +341,15 @@ export async function reconcileMarketDiscussion(
   // it out: one on a market that is no longer public, or whose author has a
   // block with this post's author, the thread's or the market's creator.
   // Picking those up would spend every read's batch on refusals.
+  //
+  // A card takes top-level comments and a comment takes its replies. The two
+  // are written out, not as `is not distinct from $2`: with a null PostgreSQL
+  // expects that form to match nothing, plans every join for one comment, and
+  // can then read the whole posts table once for each comment it does find.
+  // A read of a market with 20,000 top-level comments took 100 s that way.
+  const siblings = post.market_comment_id
+    ? "(cc.data->>'replyToCommentId')=$2::text"
+    : "(cc.data->>'replyToCommentId') is null"
   const rows = await pg.manyOrNone<{
     comment_id: string
     created_time: string
@@ -349,7 +358,7 @@ export async function reconcileMarketDiscussion(
      join contracts c on c.id=cc.contract_id left join private_users pu on pu.id=cc.user_id
      where not exists(select 1 from social_posts p where p.market_comment_id=cc.comment_id)
        and ${visibleMarketComment('cc')}
-       and cc.contract_id=$1 and (cc.data->>'replyToCommentId') is not distinct from $2::text
+       and cc.contract_id=$1 and ${siblings}
        and ($3::text is null or cc.data->>'betId'=$3)
        and ($4::timestamptz is null or (cc.created_time,'mc-' || cc.comment_id)>($4::timestamptz,$5::text))
        and c.visibility='public' and not coalesce((c.data->>'deleted')::boolean,false)
