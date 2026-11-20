@@ -9,7 +9,8 @@
   },
   "dependencies": {
     "json2csv": "6.0.0-alpha.2",
-    "lodash": "4.17.21"
+    "lodash": "4.17.21",
+    "yaml": "^2.7.0"
   },
   "devDependencies": {
     "@types/json2csv": "5.0.3",

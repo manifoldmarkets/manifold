@@ -35,6 +35,7 @@ export type SportKey =
   | 'afl'
   | 'nrl'
   | 'handball'
+  | 'esports'
 
 /**
  * A sport on the /sports page: a curated `SportKey`, or the slug of a Sports
