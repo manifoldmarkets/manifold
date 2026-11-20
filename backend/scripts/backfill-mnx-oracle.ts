@@ -30,8 +30,10 @@ export const getPreMarketBackfillBlocker = (
   const earliest = liveMarkets.reduce((a, b) =>
     a.createdTime <= b.createdTime ? a : b
   )
+  if (points.some((p) => !Number.isFinite(p.ts)))
+    return 'a candle has no valid timestamp'
   const latest = Math.max(...points.map((p) => p.ts))
-  if (!Number.isFinite(latest) || latest >= earliest.createdTime)
+  if (latest >= earliest.createdTime)
     return `candle at ${new Date(
       latest
     ).toISOString()} is not older than live market ${
