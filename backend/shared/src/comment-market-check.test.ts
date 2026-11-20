@@ -455,8 +455,8 @@ describe('pin-comment', () => {
 
 describe('edit-comment', () => {
   test("refuses an edit made under another market's name, even by the comment's own author", async () => {
-    // The author's own market would let them comment whatever their account's
-    // age, and the edit would be logged under it.
+    // The market named, not the comment's own, would set the commenting rules
+    // for the edit, and the edit would be logged and revalidated under it.
     await expectRefusedUntouched(() => edit(COMMENTER, 'market-a', 'on-b'))
   })
 
