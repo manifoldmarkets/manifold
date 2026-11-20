@@ -1,0 +1,28 @@
+{
+  "data": [
+    {
+      "id": 201,
+      "game_date": "2026-05-14",
+      "start_time_utc": "2026-05-15T00:00:00Z",
+      "season": 2025,
+      "status_state": "in_progress",
+      "game_state": "LIVE",
+      "postseason": true,
+      "period": 3,
+      "time_remaining": "05:21",
+      "home_team": {
+        "id": 21,
+        "full_name": "Lake City Waves"
+      },
+      "away_team": {
+        "id": 22,
+        "full_name": "Northport Bears"
+      },
+      "home_score": 1,
+      "away_score": 2
+    }
+  ],
+  "meta": {
+    "next_cursor": null
+  }
+}
