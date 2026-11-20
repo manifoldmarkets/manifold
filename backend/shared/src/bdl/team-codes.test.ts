@@ -1,5 +1,22 @@
 import { recordedTeamCode } from 'common/bdl/team-codes'
-import teams from '../../test/fixtures/bdl/nba/teams__recorded-active.json'
+import { readFileSync } from 'fs'
+import { join } from 'path'
+import { z } from 'zod'
+
+const teamFile = join(
+  __dirname,
+  '../../test/fixtures/bdl/nba/teams__recorded-active.json'
+)
+const teams = z
+  .object({
+    data: z.array(
+      z.object({
+        id: z.number().int().positive(),
+        abbreviation: z.string().min(1),
+      })
+    ),
+  })
+  .parse(JSON.parse(readFileSync(teamFile, 'utf8')))
 
 it('maps every active recorded NBA team to its published abbreviation', () => {
   expect(teams.data).toHaveLength(30)
