@@ -139,6 +139,11 @@ function BrowseV2Inner() {
     setSessionFilters(next)
   }
   const [input, setInput] = usePersistentInMemoryState('', 'browse-v2-term')
+  // Whether the person has typed since the box last sent its search event.
+  // The query is kept for the visit and the box is focused on arrival, so
+  // without this a restored or linked query would be sent again on the next
+  // tap, once for every market opened from the results.
+  const typedSinceSearchEvent = useRef(false)
   const [term, setTerm] = useState(input.trim())
   const [searchCategory, setSearchCategory] = useState<SearchCategory>('all')
   useEffect(() => {
@@ -348,13 +353,16 @@ function BrowseV2Inner() {
               ref={searchInputRef}
               type="search"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              // The event Classic's search box sends, so the two layouts'
-              // searches can be compared. Classic's also fires on an empty
-              // box; compare non-empty queries.
+              onChange={(e) => {
+                typedSinceSearchEvent.current = true
+                setInput(e.target.value)
+              }}
+              // The event Classic's search box sends, once for each query
+              // the person types (see BROWSE_ROLLOUT.md on comparing them).
               onBlur={() => {
-                if (input.trim())
-                  track('search', { query: input, location: 'browse-v2' })
+                if (!typedSinceSearchEvent.current || !input.trim()) return
+                typedSinceSearchEvent.current = false
+                track('search', { query: input, location: 'browse-v2' })
               }}
               placeholder="Search markets, users, topics, and posts"
               className="text-ink-1000 placeholder:text-ink-400 min-w-0 flex-1 text-ellipsis border-0 bg-transparent p-0 text-base focus:outline-none focus:ring-0 sm:text-sm [&::-webkit-search-cancel-button]:hidden"

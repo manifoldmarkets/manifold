@@ -791,8 +791,11 @@ test('pressing the hub chip a stale tab already shows as chosen still chooses it
   await press(FOLD, a)
   assert.equal(remembered(), 'false')
 
-  // The same the other way round.
+  // The same the other way round: the second tab still shows "Show in this
+  // list" as chosen, and pressing it is written.
+  assert.equal(tabB.controls.filters.showHubMarkets, true)
   await press(SHOW, b)
+  assert.equal(remembered(), 'true')
   await press(FOLD, b)
   await press(SHOW, a)
   assert.equal(remembered(), 'true')
@@ -860,38 +863,53 @@ test('on a full page load the remembered hub choice comes back after the first r
   )
 })
 
-test('the new search box sends the same search event as Classic, only with something typed', async () => {
+test('the new search box sends the Classic search event once for each query typed, not for a restored or linked one', async () => {
   // React DOM is loaded here before the test window exists, so it sees
-  // neither typing nor focus events. A link's query fills the box the same
-  // way typing does, and the box's own blur handler is called as React would.
-  const blurSearch = () =>
-    act(async () => {
-      const input = document.querySelector('input[type="search"]')
-      const props = Object.keys(input).find((key) =>
-        key.startsWith('__reactProps')
-      )
-      input[props].onBlur()
-    })
-  const empty = browsePageFixture({}, [plainMarket])
-  await empty.mount()
-  await blurSearch()
-  const blank = browsePageFixture({ q: '   ' }, [plainMarket])
+  // neither typing nor focus events: call the box's own handlers instead,
+  // as React would.
+  const box = () => {
+    const input = document.querySelector('input[type="search"]')
+    const key = Object.keys(input).find((k) => k.startsWith('__reactProps'))
+    return { input, props: input[key] }
+  }
+  const type = (value) =>
+    act(async () => box().props.onChange({ target: { value } }))
+  const blur = () => act(async () => box().props.onBlur())
+  const searches = (page) =>
+    page.tracked.filter((event) => event.name === 'search')
+  const sent = (query) => ({ name: 'search', query, location: 'browse-v2' })
+
+  // A linked query fills the box but was not typed: nothing is sent.
+  const linked = browsePageFixture({ q: 'climate' }, [plainMarket])
+  await linked.mount()
+  assert.equal(box().input.value, 'climate')
+  await blur()
+  assert.deepEqual(searches(linked), [])
   await leavePage()
-  await blank.mount()
-  await blurSearch()
-  assert.deepEqual(
-    [...empty.tracked, ...blank.tracked].filter((e) => e.name === 'search'),
-    []
-  )
+
+  const memory = visitMemory()
+  const page = browsePageFixture({}, [plainMarket], undefined, memory)
+  await page.mount()
+  await blur()
+  await type('   ')
+  await blur()
+  assert.deepEqual(searches(page), [])
+  await type('climate')
+  await blur()
+  // Leaving the box again without typing sends nothing more.
+  await blur()
+  assert.deepEqual(searches(page), [sent('climate')])
   await leavePage()
-  const typed = browsePageFixture({ q: 'climate' }, [plainMarket])
-  await typed.mount()
-  assert.equal(document.querySelector('input[type="search"]').value, 'climate')
-  await blurSearch()
-  assert.deepEqual(
-    typed.tracked.filter((e) => e.name === 'search'),
-    [{ name: 'search', query: 'climate', location: 'browse-v2' }]
-  )
+
+  // Back on Browse in the same visit: the query is restored, not resent.
+  const back = browsePageFixture({}, [plainMarket], undefined, memory)
+  await back.mount()
+  assert.equal(box().input.value, 'climate')
+  await blur()
+  assert.deepEqual(searches(back), [])
+  await type('climate change')
+  await blur()
+  assert.deepEqual(searches(back), [sent('climate change')])
 })
 
 // The real sidebar, with every icon and widget a stand-in: which links it
@@ -987,11 +1005,12 @@ test('the sidebar links the three hubs right after Browse, signed in or out, and
     { name: 'Browse', href: '/home', event: '' },
     ...hubs,
   ])
-  for (const links of [signedOut, signedIn])
-    assert.equal(links.filter((link) => link.name === 'Sports').length, 1)
   const phone = await sidebarLinks({ user, isMobile: true })
   assert.deepEqual(phone.slice(0, 3), hubs)
-  assert.equal(phone.filter((link) => link.name === 'Elections').length, 1)
+  // Each hub once in each list, including the lower links on the phone.
+  for (const links of [signedOut, signedIn, phone])
+    for (const hub of hubs)
+      assert.equal(links.filter((link) => link.href === hub.href).length, 1)
   // With three more links, the desktop list scrolls on a short screen rather
   // than pushing "More" (theme, sign out) below it. The phone drawer scrolls
   // as a whole.

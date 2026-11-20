@@ -70,10 +70,10 @@ A one-day count can still rise a little on later runs. A signup made on a
 rotated device token is only linked to its browser when that token is next
 seen on Browse, which can be up to seven days after the first visit.
 
-Reported assignment conflicts include changes
-to either cohort or variant. Keep original assignment after manual switching
-(intention to treat). Existing-account discovery is a diagnostic, not a reason to
-remove assigned browsers.
+Reported assignment conflicts include changes to either cohort or variant.
+Keep original assignment after manual switching (intention to treat).
+Existing-account discovery is a diagnostic, not a reason to remove assigned
+browsers.
 
 Use `new-visitor / signed_in_at_entry=false` for signup and activation comparisons.
 Voluntary adopters are not a randomized control. Preselect a primary metric,
@@ -89,14 +89,19 @@ Changing the New layout while v2 is assigning changes what the treatment arm
 sees. Note the production deploy time and read before and after it separately;
 do not pool them into one v2 result. Assignment itself is unchanged.
 
-One such change made New open on the list on every screen, fold only small
-house sports and race markets (perps stay in the feed), and treat a press of
-the hub-markets chips as a choice even when the tab already showed it. It also
-made New's search box send Classic's `search` event, with
-`location: 'browse-v2'`, so search can be compared between the arms only from
-that deploy on. New sends it only with something typed; Classic's box also
-sends it empty, so compare non-empty queries. The same change links the hubs from the sidebar, which Classic
-and New share, so both arms got those links at the same time.
+One such change (PR #4272) made New open on the list on every screen, fold
+only small house sports and race markets (perps stay in the feed), and treat a
+press of the hub-markets chips as a choice even when the tab already showed
+it. The same change links the hubs from the sidebar, which Classic and New
+share, so both arms got those links at the same time.
+
+It also made New's search box send Classic's `search` event, with
+`location: 'browse-v2'`, once for each query the person types: a query
+restored on return or filled by a link is not sent again. Classic's event
+comes from a search box shared by many pages, has no `location` and is sent on
+every blur, empty or not, and `user_events` stores no path. So compare search
+between the arms per browser, counting distinct non-empty queries from any
+page, and only from that deploy on.
 
 ## Regression checks
 
