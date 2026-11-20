@@ -474,3 +474,29 @@ it.each(['mlb', 'wnba', 'nfl'] as const)(
       ])
   }
 )
+
+it('maps the recorded Celtics at Pistons final with home and visitor identities intact', async () => {
+  const page: Page = JSON.parse(
+    readFileSync(
+      join(__dirname, '../../test/fixtures/bdl/nba/games__recorded-final.json'),
+      'utf8'
+    )
+  )
+  const { client, urls } = localClient(() => page)
+  const games = await fetchMajorGames(client, 'nba', '2026-10-20', '2026-10-20')
+  expect(urls.map((url) => url.pathname)).toEqual(['/nba/v1/games'])
+  expect(games).toHaveLength(1)
+  expect(games[0]).toMatchObject({
+    id: 21717855,
+    slateDate: '2026-10-20',
+    startTime: '2026-10-20T19:00:00.000Z',
+    status: 'final',
+    season: 2026,
+    period: '4',
+    postseason: false,
+    home: { id: 9, name: 'Detroit Pistons' },
+    homeScore: 121,
+    away: { id: 2, name: 'Boston Celtics' },
+    awayScore: 113,
+  })
+})
