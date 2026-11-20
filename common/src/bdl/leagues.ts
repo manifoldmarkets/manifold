@@ -1,8 +1,18 @@
 import { mapValues } from 'lodash'
 
-import { CLOSE_BUFFER_HOURS, SportId } from '../sports-calendar'
+import {
+  CLOSE_BUFFER_HOURS,
+  SPORT_ID_TO_SPORT_KEY,
+  SportId,
+} from '../sports-calendar'
 import { FINALS_FROM_MINUTES } from '../sports-score-polling'
-import type { SportKey } from '../sports-schedule'
+import {
+  BDL_DEFAULT_MAX_LEAD_DAYS,
+  BDL_PER_LEAGUE_RUN_CAP,
+  BDL_TENNIS_CLOSE_HOURS,
+  BDL_ESPORTS_CLOSE_HOURS,
+  BDL_ESPORTS_FINALS_FROM_MINUTES,
+} from './constants'
 
 type Archetype = 'team-2way' | 'team-3way' | 'h2h' | 'field' | 'series'
 type Adapter =
@@ -29,25 +39,43 @@ type OddsQuery =
   | 'tournament_ids'
   | 'event_ids'
 
+// Multi-country events use the venue time zone supplied by the family adapter.
+type TitleDateZone =
+  | 'venue'
+  | 'UTC'
+  | `America/${string}`
+  | `Asia/${string}`
+  | `Europe/${string}`
+type TieRule =
+  | 'review'
+  | 'split-evenly'
+  | 'draw-answer'
+  | 'draw-or-no-contest-answer'
+
 type LeagueDefinition = {
   label: string
   shortLabel?: string
   adapter: Adapter
   archetype: Archetype
-  /** Null until the sport has a calendar integration. BDL's cbb means college baseball. */
-  sportId: SportId | null
-  sportKey: SportKey | 'baseball' | 'esports'
+  sportId: SportId
+  titleDateTz: TitleDateZone
+  maxLeadDays?: number
+  perRunCap?: number
+  closeAtStart?: boolean
+  startSignal?: 'event-start' | 'card-segment-start'
+  safetyCloseBasis?: 'event-start' | 'per-fight-maximum' | 'final-round-end'
+  closeHoursByBestOf?: Readonly<Partial<Record<1 | 3 | 5, number>>>
+  finalsMinutesByBestOf?: Readonly<Partial<Record<1 | 3 | 5, number>>>
   version?: 1 | 2
   oddsVersion?: 1 | 2
   oddsQuery: OddsQuery | null
   /** Documented examples, never a whitelist for incoming vendor strings. */
   expectedVendors?: readonly string[]
   webhooks: boolean
-  /** An independently available scores feed. Verification policy belongs to the resolver. */
-  secondSource?: string | null
   seasonConvention: SeasonConvention | null
   dateFilterTz?: 'US-local' | 'UTC' | 'Asia/Shanghai'
   canEndLevel?: boolean
+  tieRule?: TieRule
 }
 
 const majorBooks = ['caesars', 'draftkings', 'fanatics', 'fanduel']
@@ -58,6 +86,7 @@ const tourBooks = ['draftkings', 'fanduel']
 
 const teamGame = {
   adapter: 'us-majors',
+  titleDateTz: 'America/New_York',
   archetype: 'team-2way',
   oddsQuery: 'game_ids',
   webhooks: true,
@@ -68,9 +97,10 @@ const teamGame = {
 const college = { ...teamGame, adapter: 'college' } as const
 const club = {
   adapter: 'soccer',
+  titleDateTz: 'venue',
+  tieRule: 'draw-answer',
   archetype: 'team-3way',
   sportId: 'soccer',
-  sportKey: 'soccer',
   oddsQuery: 'match_ids',
   expectedVendors: soccerBooks,
   webhooks: true,
@@ -80,26 +110,26 @@ const club = {
 const europeanBasketball = (
   label: string,
   shortLabel: string,
-  secondSource?: string
+  titleDateTz: TitleDateZone
 ): LeagueDefinition => ({
   label,
   shortLabel,
   adapter: 'european-basketball',
   archetype: 'team-2way',
   sportId: 'basketball',
-  sportKey: 'basketball',
   oddsQuery: null,
   webhooks: false,
-  secondSource,
+  titleDateTz,
   seasonConvention: 'start-year',
   dateFilterTz: 'UTC',
   canEndLevel: false,
 })
 const tennis = {
   adapter: 'tennis',
+  closeHoursByBestOf: BDL_TENNIS_CLOSE_HOURS,
+  titleDateTz: 'venue',
   archetype: 'h2h',
   sportId: 'tennis',
-  sportKey: 'tennis',
   oddsQuery: 'match_ids',
   expectedVendors: [...tourBooks, 'caesars'],
   webhooks: true,
@@ -107,18 +137,20 @@ const tennis = {
 } as const
 const golf = {
   adapter: 'golf',
+  safetyCloseBasis: 'final-round-end',
+  titleDateTz: 'venue',
   archetype: 'field',
-  sportId: null,
-  sportKey: 'golf',
+  sportId: 'golf',
   oddsQuery: 'tournament_ids',
   webhooks: false,
   seasonConvention: 'calendar-year',
 } as const
 const esports = {
   adapter: 'esports',
+  closeHoursByBestOf: BDL_ESPORTS_CLOSE_HOURS,
+  finalsMinutesByBestOf: BDL_ESPORTS_FINALS_FROM_MINUTES,
+  titleDateTz: 'UTC',
   archetype: 'series',
-  sportId: null,
-  sportKey: 'esports',
   oddsQuery: null,
   webhooks: false,
   seasonConvention: null,
@@ -130,7 +162,6 @@ const definitions = {
     ...teamGame,
     label: 'NBA',
     sportId: 'nba',
-    sportKey: 'nba',
     oddsVersion: 2,
     expectedVendors: [
       ...usBooks,
@@ -141,41 +172,34 @@ const definitions = {
       'betway',
       'rebet',
     ],
-    secondSource: 'basketball_nba',
     dateFilterTz: 'US-local',
   },
   nfl: {
     ...teamGame,
     label: 'NFL',
     sportId: 'nfl',
-    sportKey: 'nfl',
+    tieRule: 'split-evenly',
     oddsQuery: 'season+week',
     expectedVendors: [...usBooks, ...exchanges],
-    secondSource: 'americanfootball_nfl',
     canEndLevel: true,
   },
   nhl: {
     ...teamGame,
     label: 'NHL',
     sportId: 'nhl',
-    sportKey: 'nhl',
     expectedVendors: [...majorBooks, ...exchanges],
-    secondSource: 'icehockey_nhl',
   },
   wnba: {
     ...teamGame,
     label: 'WNBA',
     sportId: 'wnba',
-    sportKey: 'wnba',
     expectedVendors: usBooks,
-    secondSource: 'basketball_wnba',
     seasonConvention: 'calendar-year',
   },
   mlb: {
     ...teamGame,
     label: 'MLB',
     sportId: 'mlb',
-    sportKey: 'mlb',
     expectedVendors: [
       'betmgm',
       'draftkings',
@@ -183,7 +207,6 @@ const definitions = {
       'fanduel',
       'betrivers',
     ],
-    secondSource: 'baseball_mlb',
     seasonConvention: 'calendar-year',
   },
   ncaaf: {
@@ -191,19 +214,15 @@ const definitions = {
     label: 'College Football',
     shortLabel: 'NCAAF',
     sportId: 'cfb',
-    sportKey: 'ncaaf',
     oddsQuery: 'season+week',
     expectedVendors: usBooks,
-    secondSource: 'americanfootball_ncaaf',
   },
   ncaab: {
     ...college,
     label: "Men's College Basketball",
     shortLabel: 'NCAAB',
     sportId: 'cbb',
-    sportKey: 'ncaab',
     expectedVendors: [...majorBooks, ...exchanges],
-    secondSource: 'basketball_ncaab',
     seasonConvention: 'start-year-minus-one',
   },
   ncaaw: {
@@ -211,54 +230,50 @@ const definitions = {
     label: "Women's College Basketball",
     shortLabel: 'NCAAW',
     sportId: 'wcbb',
-    sportKey: 'wncaab',
     expectedVendors: usBooks,
-    secondSource: 'basketball_wncaab',
     seasonConvention: 'start-year-minus-one',
   },
   cbb: {
     ...college,
     label: 'College Baseball',
     shortLabel: 'CBB',
-    sportId: null,
-    sportKey: 'baseball',
+    sportId: 'cbase',
     webhooks: false,
     seasonConvention: 'spring-year',
     canEndLevel: true,
   },
   epl: {
     ...club,
+    titleDateTz: 'Europe/London',
     label: 'Premier League',
     shortLabel: 'EPL',
     version: 2,
-    secondSource: 'soccer_epl',
   },
-  laliga: { ...club, label: 'La Liga', secondSource: 'soccer_spain_la_liga' },
-  seriea: { ...club, label: 'Serie A', secondSource: 'soccer_italy_serie_a' },
+  laliga: { ...club, titleDateTz: 'Europe/Madrid', label: 'La Liga' },
+  seriea: { ...club, titleDateTz: 'Europe/Rome', label: 'Serie A' },
   bundesliga: {
     ...club,
+    titleDateTz: 'Europe/Berlin',
     label: 'Bundesliga',
-    secondSource: 'soccer_germany_bundesliga',
   },
   ligue1: {
     ...club,
+    titleDateTz: 'Europe/Paris',
     label: 'Ligue 1',
     expectedVendors: majorBooks,
-    secondSource: 'soccer_france_ligue_one',
   },
   ucl: {
     ...club,
     label: 'Champions League',
     shortLabel: 'UCL',
     expectedVendors: [...tourBooks, 'caesars', 'polymarket'],
-    secondSource: 'soccer_uefa_champs_league',
   },
   mls: {
     ...club,
+    titleDateTz: 'America/New_York',
     label: 'Major League Soccer',
     shortLabel: 'MLS',
     expectedVendors: [...tourBooks, ...exchanges],
-    secondSource: 'soccer_usa_mls',
     seasonConvention: 'calendar-year',
   },
   'fifa/worldcup': {
@@ -268,34 +283,42 @@ const definitions = {
     expectedVendors: usBooks,
     seasonConvention: 'calendar-year',
   },
-  euroleague: europeanBasketball(
-    'EuroLeague',
-    'EuroLeague',
-    'basketball_euroleague'
+  euroleague: europeanBasketball('EuroLeague', 'EuroLeague', 'venue'),
+  eurocup: europeanBasketball('EuroCup', 'EuroCup', 'venue'),
+  bcl: europeanBasketball('Basketball Champions League', 'BCL', 'venue'),
+  acb: europeanBasketball('Liga ACB', 'ACB', 'Europe/Madrid'),
+  bsl: europeanBasketball(
+    'Turkish Basketball Super League',
+    'BSL',
+    'Europe/Istanbul'
   ),
-  eurocup: europeanBasketball('EuroCup', 'EuroCup'),
-  bcl: europeanBasketball('Basketball Champions League', 'BCL'),
-  acb: europeanBasketball('Liga ACB', 'ACB'),
-  bsl: europeanBasketball('Turkish Basketball Super League', 'BSL'),
-  gbl: europeanBasketball('Greek Basketball League', 'GBL'),
-  lba: europeanBasketball('Lega Basket Serie A', 'LBA'),
-  bbl: europeanBasketball('Basketball Bundesliga', 'BBL'),
-  lnb: europeanBasketball('LNB Élite', 'LNB'),
-  aba: europeanBasketball('ABA League', 'ABA'),
-  lkl: europeanBasketball('Lithuanian Basketball League', 'LKL'),
-  vtb: europeanBasketball('VTB United League', 'VTB'),
-  bnxt: europeanBasketball('BNXT League', 'BNXT'),
-  israel: europeanBasketball('Israeli Basketball Premier League', 'Israel'),
+  gbl: europeanBasketball('Greek Basketball League', 'GBL', 'Europe/Athens'),
+  lba: europeanBasketball('Lega Basket Serie A', 'LBA', 'Europe/Rome'),
+  bbl: europeanBasketball('Basketball Bundesliga', 'BBL', 'Europe/Berlin'),
+  lnb: europeanBasketball('LNB Élite', 'LNB', 'Europe/Paris'),
+  aba: europeanBasketball('ABA League', 'ABA', 'venue'),
+  lkl: europeanBasketball(
+    'Lithuanian Basketball League',
+    'LKL',
+    'Europe/Vilnius'
+  ),
+  vtb: europeanBasketball('VTB United League', 'VTB', 'venue'),
+  bnxt: europeanBasketball('BNXT League', 'BNXT', 'venue'),
+  israel: europeanBasketball(
+    'Israeli Basketball Premier League',
+    'Israel',
+    'Asia/Jerusalem'
+  ),
   cba: {
     ...teamGame,
     adapter: 'cba',
     label: 'Chinese Basketball Association',
     shortLabel: 'CBA',
     sportId: 'basketball',
-    sportKey: 'basketball',
     oddsQuery: null,
     webhooks: false,
     dateFilterTz: 'Asia/Shanghai',
+    titleDateTz: 'Asia/Shanghai',
   },
   atp: { ...tennis, label: 'ATP Tour', shortLabel: 'ATP' },
   wta: { ...tennis, label: 'WTA Tour', shortLabel: 'WTA' },
@@ -316,9 +339,13 @@ const definitions = {
   },
   mma: {
     label: 'MMA',
-    sportKey: 'mma',
-    sportId: null,
+    sportId: 'mma',
+    titleDateTz: 'venue',
+    canEndLevel: true,
+    tieRule: 'draw-or-no-contest-answer',
     adapter: 'mma',
+    startSignal: 'card-segment-start',
+    safetyCloseBasis: 'per-fight-maximum',
     archetype: 'h2h',
     oddsQuery: 'fight_id',
     expectedVendors: [...tourBooks, 'caesars', 'kalshi'],
@@ -328,8 +355,8 @@ const definitions = {
   f1: {
     label: 'Formula 1',
     shortLabel: 'F1',
-    sportKey: 'f1',
     sportId: 'f1',
+    titleDateTz: 'venue',
     adapter: 'f1',
     archetype: 'field',
     oddsQuery: 'event_ids',
@@ -337,10 +364,20 @@ const definitions = {
     webhooks: false,
     seasonConvention: 'calendar-year',
   },
-  cs: { ...esports, label: 'Counter-Strike 2', shortLabel: 'CS2' },
-  valorant: { ...esports, label: 'Valorant' },
-  lol: { ...esports, label: 'League of Legends', shortLabel: 'LoL' },
-  dota: { ...esports, label: 'Dota 2' },
+  cs: {
+    ...esports,
+    sportId: 'cs2',
+    label: 'Counter-Strike 2',
+    shortLabel: 'CS2',
+  },
+  valorant: { ...esports, sportId: 'valorant', label: 'Valorant' },
+  lol: {
+    ...esports,
+    sportId: 'lol',
+    label: 'League of Legends',
+    shortLabel: 'LoL',
+  },
+  dota: { ...esports, sportId: 'dota2', label: 'Dota 2' },
 } satisfies Record<string, LeagueDefinition>
 
 export type BdlLeagueKey = keyof typeof definitions
@@ -348,7 +385,6 @@ export const BDL_LEAGUE_KEYS = Object.keys(definitions) as BdlLeagueKey[]
 export const isBdlLeagueKey = (value: string): value is BdlLeagueKey =>
   Object.prototype.hasOwnProperty.call(definitions, value)
 
-// Future family integrations supply creation limits and missing timing policy before enabling a league.
 function leagueSettings(league: LeagueDefinition, key: string) {
   const apiBase = `/${key}/v${league.version ?? 1}`
   return {
@@ -361,17 +397,26 @@ function leagueSettings(league: LeagueDefinition, key: string) {
         : `/${key}/v${league.oddsVersion ?? league.version ?? 1}`,
     shortLabel: league.shortLabel ?? league.label,
     expectedVendors: league.expectedVendors ?? [],
-    secondSource: league.secondSource ?? null,
+    sportKey: SPORT_ID_TO_SPORT_KEY[league.sportId],
+    verification: 'bdl-only' as const,
+    tieRule: league.tieRule ?? 'review',
+    threeWay:
+      league.tieRule === 'draw-answer' ||
+      league.tieRule === 'draw-or-no-contest-answer',
     dateFilterTz: league.dateFilterTz ?? null,
     canEndLevel: league.canEndLevel ?? null,
-    closeBufferHours: league.sportId
-      ? CLOSE_BUFFER_HOURS[league.sportId]
-      : null,
-    finalsFromMinutes: league.sportId
-      ? FINALS_FROM_MINUTES[league.sportId]
-      : null,
-    maxLeadDays: null,
-    perRunCap: 0,
+    closeAtStart: league.closeAtStart ?? false,
+    startSignal: league.startSignal ?? 'event-start',
+    safetyCloseBasis: league.safetyCloseBasis ?? 'event-start',
+    closeBufferHours:
+      league.safetyCloseBasis === 'per-fight-maximum'
+        ? null
+        : CLOSE_BUFFER_HOURS[league.sportId],
+    closeHoursByBestOf: league.closeHoursByBestOf ?? null,
+    finalsFromMinutes: FINALS_FROM_MINUTES[league.sportId],
+    finalsMinutesByBestOf: league.finalsMinutesByBestOf ?? null,
+    maxLeadDays: league.maxLeadDays ?? BDL_DEFAULT_MAX_LEAD_DAYS,
+    perRunCap: league.perRunCap ?? BDL_PER_LEAGUE_RUN_CAP,
     defaultAutoCreate: false as const,
   }
 }

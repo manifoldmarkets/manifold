@@ -5,7 +5,6 @@ import {
   BdlClock,
   BdlHttpError,
   BdlParams,
-  BdlRateLimiter,
   bdlRecordingPathParts,
   createBdlClient,
 } from 'shared/balldontlie-client'
@@ -73,18 +72,13 @@ export function createRecorder(options: RecorderOptions) {
   const now = options.clock?.now ?? Date.now
   const denied = new Set<string>()
   let consecutiveServerErrors = 0
-  const limiter = new BdlRateLimiter(rate, options.clock)
   const client = createBdlClient({
     key,
     transport: options.transport,
     clock: options.clock,
-    limiter: {
-      acquire: async () => {
-        await limiter.acquire()
-        await options.acquireSharedSlot?.(rate)
-      },
-      deferUntil: (time) => limiter.deferUntil(time),
-    },
+    role: 'recorder',
+    recorderRate: rate,
+    acquireSharedSlot: options.acquireSharedSlot,
     maxAttempts: 6,
     onAttempt(attempt) {
       summary.calls++

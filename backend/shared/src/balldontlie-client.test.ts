@@ -1,3 +1,4 @@
+import { BDL_LEAGUES, BDL_LEAGUE_KEYS } from 'common/bdl/leagues'
 import { promises as fs } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
@@ -7,7 +8,6 @@ import {
   BdlClock,
   BdlEntitlementError,
   BdlRateLimitError,
-  BdlRateLimiter,
   BdlServerError,
   bdlClock,
   bdlRecordingPathParts,
@@ -34,7 +34,6 @@ function json(body: unknown, status = 200, headers?: Record<string, string>) {
 
 function setup() {
   const clock = fakeClock()
-  const limiter = new BdlRateLimiter(600, clock)
   const transport = jest.fn<
     ReturnType<typeof fetch>,
     Parameters<typeof fetch>
@@ -42,14 +41,14 @@ function setup() {
   const seen: BdlAttempt[] = []
   const client = createBdlClient({
     clock,
-    limiter,
+    role: 'codex',
     key,
     transport,
     onAttempt: (a) => {
       seen.push(a)
     },
   })
-  return { ...client, clock, limiter, transport, seen }
+  return { ...client, clock, transport, seen }
 }
 
 const envNames = [
@@ -147,14 +146,21 @@ it('canonicalizes repeated params and keeps leagues, endpoint versions and curso
   ).toThrow('duplicate parameter')
 })
 
-it('spaces requests across clients and keeps the latest shared cooldown', async () => {
+it('shares the manual rate between concurrent recorder clients and honors its latest cooldown', async () => {
   const clock = fakeClock()
-  const limiter = new BdlRateLimiter(3, clock)
   const shared = {
+    role: 'recorder' as const,
+    recorderRate: 3,
     clock,
-    limiter,
     key,
-    transport: async () => json({ data: [] }),
+    transport: async () =>
+      json(
+        {},
+        200,
+        clock.now() === initial + 40_000
+          ? { 'x-ratelimit-remaining': '0', 'x-ratelimit-reset': '75' }
+          : undefined
+      ),
   }
   const first = createBdlClient(shared)
   const second = createBdlClient(shared)
@@ -166,11 +172,119 @@ it('spaces requests across clients and keeps the latest shared cooldown', async 
   expect(attempts.map((a) => Date.parse(a.request.at) - initial)).toEqual([
     0, 20_000, 40_000,
   ])
-  limiter.deferUntil(clock.now() + 75_000)
-  limiter.deferUntil(clock.now() + 50_000)
   expect(Date.parse((await second.get(endpoint)).request.at) - initial).toBe(
     115_000
   )
+})
+
+it.each([
+  ['scheduler', 200],
+  ['api', 2000],
+  ['dev', 400],
+  ['recorder', 1000],
+  ['codex', 1000],
+] as const)(
+  'enforces the %s budget across clients and league slugs',
+  async (role, interval) => {
+    const options = {
+      key,
+      clock: fakeClock(),
+      role,
+      enabledLeagues: new Set(['nba', 'nfl'] as const),
+      transport: async () => json({}),
+    }
+    const first = createBdlClient(options)
+    const second = createBdlClient(options)
+    const results = [
+      await first.get(endpoint),
+      await second.get('/nfl/v1/games'),
+      await first.get('/nfl/v1/games'),
+    ]
+    expect(results.map((r) => Date.parse(r.request.at) - initial)).toEqual([
+      0,
+      interval,
+      interval * 2,
+    ])
+  }
+)
+
+it('halves the shared rate below 20%, pauses below 5%, and restores the budget after reset', async () => {
+  const clock = fakeClock()
+  const samples = [20, 19, 5, 4, 50, 50]
+  const opts = {
+    role: 'scheduler' as const,
+    clock,
+    key,
+    enabledLeagues: new Set(['nba', 'nfl'] as const),
+    transport: async () =>
+      json({}, 200, {
+        'x-ratelimit-limit': '100',
+        'x-ratelimit-remaining': String(samples.shift()),
+        'x-ratelimit-reset': String(initial / 1000 + 7),
+      }),
+  }
+  const nba = createBdlClient(opts)
+  const nfl = createBdlClient(opts)
+  const times = []
+  for (let i = 0; i < 3; i++) {
+    times.push(Date.parse((await nba.get(endpoint)).request.at) - initial)
+    times.push(
+      Date.parse((await nfl.get('/nfl/v1/games')).request.at) - initial
+    )
+  }
+  expect(times).toEqual([0, 200, 600, 1000, 7000, 7200])
+})
+
+it('uses the actual trial rate for adaptive disk slots and conservatively pauses without a usable reset', async () => {
+  const clock = fakeClock()
+  const external = jest.fn(async (_rate: number) => undefined)
+  const samples = [19, 4, 100]
+  const client = createBdlClient({
+    role: 'recorder',
+    recorderRate: 3,
+    clock,
+    key,
+    acquireSharedSlot: external,
+    transport: async () =>
+      json({}, 200, {
+        'x-ratelimit-limit': '100',
+        'x-ratelimit-remaining': String(samples.shift()),
+        'x-ratelimit-reset': 'invalid',
+      }),
+  })
+  const times = []
+  for (let i = 0; i < 3; i++)
+    times.push(Date.parse((await client.get(endpoint)).request.at) - initial)
+  expect(times).toEqual([0, 40_000, 100_000])
+  expect(external.mock.calls.map(([rate]) => rate)).toEqual([3, 1.5, 3])
+  expect(() => createBdlClient({ role: 'api', recorderRate: 500 })).toThrow(
+    'Only the manual recorder'
+  )
+})
+
+it('makes zero provider requests for disabled service leagues, including on direct and paged reads', async () => {
+  const transport = jest.fn()
+  const client = createBdlClient({ role: 'scheduler', key, transport })
+  for (const slug of BDL_LEAGUE_KEYS) {
+    const path = BDL_LEAGUES[slug].apiBase + '/games'
+    await expect(
+      client.getAll(path, {}, { maxPages: 2, matches: () => true })
+    ).resolves.toEqual([])
+    await expect(client.get(path)).rejects.toThrow('League disabled')
+  }
+  expect(transport).not.toHaveBeenCalled()
+  const selected = createBdlClient({
+    role: 'scheduler',
+    key,
+    transport,
+    clock: fakeClock(),
+    enabledLeagues: new Set(['nba']),
+  })
+  transport.mockResolvedValueOnce(json({ data: [42] }))
+  await expect(
+    selected.getAll(endpoint, {}, { maxPages: 2, matches: () => true })
+  ).resolves.toEqual([42])
+  expect(transport).toHaveBeenCalledTimes(1)
 })
 
 it('honors both server cooldowns and then retries with exponential backoff', async () => {
@@ -326,4 +440,24 @@ it('replays exact requests from both layouts and picks the latest applicable sce
   } finally {
     await fs.rm(dir, { recursive: true, force: true })
   }
+})
+
+it('rechecks the live switch when waiting to retry a provider call', async () => {
+  const clock = fakeClock()
+  const sleep = clock.sleep
+  const enabled = new Set(['nba'] as const)
+  clock.sleep = async (ms) => {
+    enabled.clear()
+    await sleep(ms)
+  }
+  const transport = jest.fn(async () => json({}, 503))
+  const client = createBdlClient({
+    role: 'scheduler',
+    clock,
+    key,
+    enabledLeagues: enabled,
+    transport,
+  })
+  await expect(client.get(endpoint)).rejects.toThrow('League disabled')
+  expect(transport).toHaveBeenCalledTimes(1)
 })

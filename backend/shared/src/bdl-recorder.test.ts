@@ -174,6 +174,8 @@ it('keeps the key out of every recorded file and output line, including provider
       return new Response('{"data":[]}', { status: 200 })
     })
   const args = [
+    '--rate',
+    '60',
     '--key-file',
     keyFile,
     '--spec-dir',

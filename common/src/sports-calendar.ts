@@ -1,3 +1,6 @@
+import { mapValues } from 'lodash'
+
+import { BDL_ESPORTS_CLOSE_HOURS } from './bdl/constants'
 import { additionalFeedCalendar } from './sports-feeds'
 import type { SportKey } from './sports-schedule'
 import { ENV } from './envs/constants'
@@ -9,7 +12,19 @@ import { ENV } from './envs/constants'
 // every process (scheduler, API, admin page) reads the same list with nothing
 // to seed or sync. Status is computed from the dates at run time.
 
+/** Calendar IDs reserved for the BDL pipelines. No calendar phases are enabled by these mappings. */
+export const BDL_ADDITIONAL_SPORTS = {
+  mma: { label: 'MMA', sportKey: 'mma' },
+  golf: { label: 'Golf', sportKey: 'golf' },
+  cs2: { label: 'CS2', sportKey: 'esports' },
+  valorant: { label: 'VALORANT', sportKey: 'esports' },
+  lol: { label: 'LoL', sportKey: 'esports' },
+  dota2: { label: 'Dota 2', sportKey: 'esports' },
+  cbase: { label: 'College Baseball', sportKey: 'other' },
+} as const satisfies Record<string, { label: string; sportKey: SportKey }>
+
 export type SportId =
+  | keyof typeof BDL_ADDITIONAL_SPORTS
   | 'nfl'
   | 'cfb'
   | 'f1'
@@ -68,7 +83,7 @@ export interface SportsCalendarEntry {
    * A feed other than The Odds API that the scheduler creates this phase's
    * markets from: 'bdl-f1' is BALLDONTLIE's F1 API (shared/f1-markets.ts).
    */
-  provider?: 'bdl-f1'
+  provider?: 'bdl-f1' | 'bdl'
   /**
    * F1: how many rounds the season was announced with. The season title
    * markets need it to pay out: the provider must list at least this many
@@ -757,6 +772,7 @@ export const SPORT_LEAGUE_LABEL: Record<SportId, string> = {
   nrl: 'NRL',
   handball: 'Handball',
   tennis: 'Tennis',
+  ...mapValues(BDL_ADDITIONAL_SPORTS, (sport) => sport.label),
 }
 
 /** Which chip on /sports a calendar sport belongs to. */
@@ -779,6 +795,7 @@ export const SPORT_ID_TO_SPORT_KEY: Record<SportId, SportKey> = {
   nrl: 'nrl',
   handball: 'handball',
   tennis: 'tennis',
+  ...mapValues(BDL_ADDITIONAL_SPORTS, (sport) => sport.sportKey),
 }
 
 // Hours after the start before the market closes: the longest realistic game
@@ -802,6 +819,15 @@ export const CLOSE_BUFFER_HOURS: Record<SportId, number> = {
   nrl: 3,
   handball: 3,
   tennis: 6,
+  // BDL adapters use a fight's maximum duration, a tournament's final round,
+  // or the series format. These entries are generic calendar fallbacks.
+  mma: 0,
+  golf: 6,
+  cs2: BDL_ESPORTS_CLOSE_HOURS[5],
+  valorant: BDL_ESPORTS_CLOSE_HOURS[5],
+  lol: BDL_ESPORTS_CLOSE_HOURS[5],
+  dota2: BDL_ESPORTS_CLOSE_HOURS[5],
+  cbase: 4,
 }
 
 // ─── Readiness filters ────────────────────────────────────────────────────────

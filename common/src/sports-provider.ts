@@ -1,6 +1,31 @@
 /** Provider adapters retain stable entrant identities even when the feed changes its listing order. */
 export type SportsProvider = 'odds' | 'bdl' | 'football-data' | 'fixture'
 
+export const SPORTS_PROVIDER_PREFIXES: readonly (readonly [
+  string,
+  SportsProvider
+])[] = [
+  ['odds:', 'odds'],
+  ['bdl-f1:', 'bdl'],
+  ['bdl-f1-title:', 'bdl'],
+  ['bdl:', 'bdl'],
+  ['fd-', 'football-data'],
+  ['fixture:', 'fixture'],
+]
+
+/** Older sports contracts record only the provider-specific event ID. */
+export function providerOf(contract: {
+  sportsProvider?: SportsProvider | null
+  sportsEventId?: string | null
+}): SportsProvider | 'legacy' {
+  if (contract.sportsProvider != null) return contract.sportsProvider
+  const id = contract.sportsEventId
+  return (
+    SPORTS_PROVIDER_PREFIXES.find(([prefix]) => id?.startsWith(prefix))?.[1] ??
+    'legacy'
+  )
+}
+
 const statusStates = [
   'scheduled',
   'in_progress',

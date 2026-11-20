@@ -1,4 +1,11 @@
 import {
+  BDL_QUOTA_PAUSE_FRACTION,
+  BDL_QUOTA_SLOW_FRACTION,
+  BDL_REQUESTS_PER_MINUTE,
+} from 'common/bdl/constants'
+import { BDL_LEAGUES, BdlLeagueKey, isBdlLeagueKey } from 'common/bdl/leagues'
+
+import {
   createBdlFixtureTransport,
   requireBdlLocalOnly,
 } from './balldontlie-fixture'
@@ -30,42 +37,110 @@ export function bdlClock(): BdlClock {
   }
 }
 
-/** A one-token bucket. Queue concurrent callers and space actual starts after slow waits. */
+type BdlRole = keyof typeof BDL_REQUESTS_PER_MINUTE
+type Quota = { limit: number | null; remaining: number | null }
+const MINUTE_MS = 60_000
+
+/** One token at most, shared by all requests in this process role. Applying
+ * the cap to the combined stream also bounds every individual league slug. */
 export class BdlRateLimiter {
   private next = 0
+  private lastAt = -Infinity
+  private lastInterval = 0
+  private slowUntil = 0
+  private lastQuotaRequest = -Infinity
   private tail: Promise<void> = Promise.resolve()
-  private readonly interval: number
-  constructor(ratePerMinute: number, private readonly clock = wallClock) {
-    if (
-      !Number.isFinite(ratePerMinute) ||
-      ratePerMinute <= 0 ||
-      !Number.isSafeInteger(Math.ceil(60_000 / ratePerMinute))
-    )
+
+  constructor(
+    private readonly rate: number,
+    private readonly clock = wallClock
+  ) {
+    this.interval(rate)
+  }
+
+  private interval(rate: number) {
+    const value = Math.ceil(MINUTE_MS / rate)
+    if (!Number.isFinite(rate) || rate <= 0 || !Number.isSafeInteger(value))
       throw new Error('[sports-bdl-client] Invalid request rate')
-    this.interval = Math.ceil(60_000 / ratePerMinute)
+    return value
   }
 
   deferUntil(time: number) {
     if (Number.isFinite(time)) this.next = Math.max(this.next, time)
   }
 
-  acquire() {
+  observeQuota(
+    { remaining, limit }: Quota,
+    reset: number,
+    requestedAt: number
+  ) {
+    if (remaining === null) return
+    const now = this.clock.now()
+    const until = reset > now ? reset : now + MINUTE_MS
+    if (remaining === 0) this.deferUntil(until)
+    if (limit === null || limit <= 0 || remaining > limit) return
+    const fraction = remaining / limit
+    if (requestedAt >= this.lastQuotaRequest) {
+      this.lastQuotaRequest = requestedAt
+      this.slowUntil = fraction < BDL_QUOTA_SLOW_FRACTION ? until : 0
+    }
+    if (fraction < BDL_QUOTA_PAUSE_FRACTION) this.deferUntil(until)
+  }
+
+  acquire(
+    rate = this.rate,
+    externalSlot?: (effectiveRate: number) => Promise<void>
+  ) {
+    const interval = this.interval(rate)
     const ticket = this.tail.then(async () => {
-      while (this.clock.now() < this.next) {
-        // Node timers above 2^31-1 ms overflow to one millisecond.
+      for (;;) {
+        const now = this.clock.now()
+        const slow = now < this.slowUntil
+        const gap = Math.max(interval, this.lastInterval) * (slow ? 2 : 1)
+        const due = Math.max(this.next, this.lastAt + gap)
+        if (now >= due) {
+          if (externalSlot) {
+            await externalSlot(slow ? rate / 2 : rate)
+            // A response could have paused or slowed this key during the external wait.
+            if (
+              this.clock.now() < this.next ||
+              (!slow && this.clock.now() < this.slowUntil)
+            )
+              continue
+          }
+          this.lastAt = this.clock.now()
+          this.lastInterval = interval
+          return
+        }
+        // Recalculate when the quota window resets. Long Node timers overflow.
         await this.clock.sleep(
-          Math.min(this.next - this.clock.now(), 2_147_483_647)
+          Math.min(
+            due - now,
+            slow ? this.slowUntil - now : Infinity,
+            2_147_483_647
+          )
         )
       }
-      this.next = this.clock.now() + this.interval
     })
     this.tail = ticket.catch(() => undefined)
     return ticket
   }
 }
 
-export const BDL_DEFAULT_RATE_PER_MINUTE = 3
-const processLimiter = new BdlRateLimiter(BDL_DEFAULT_RATE_PER_MINUTE)
+const processBudgets = new WeakMap<BdlClock, Map<BdlRole, BdlRateLimiter>>()
+function processBudget(clock: BdlClock, role: BdlRole) {
+  let budgets = processBudgets.get(clock)
+  if (!budgets) {
+    budgets = new Map()
+    processBudgets.set(clock, budgets)
+  }
+  let budget = budgets.get(role)
+  if (!budget) {
+    budget = new BdlRateLimiter(BDL_REQUESTS_PER_MINUTE[role], clock)
+    budgets.set(role, budget)
+  }
+  return budget
+}
 
 export type BdlAttempt = {
   request: { path: string; params: BdlParams; at: string }
@@ -131,7 +206,13 @@ function retryAt(headers: Headers, now: number) {
 export type BdlClientOptions = {
   key?: string
   clock?: BdlClock
-  limiter?: Pick<BdlRateLimiter, 'acquire' | 'deferUntil'>
+  role?: BdlRole
+  /** Current service switches. Manual recorder and fixture queries do not create markets. */
+  enabledLeagues?: ReadonlySet<BdlLeagueKey>
+  /** Explicit recorder CLI rate (including its lower trial rate or approved paid run). */
+  recorderRate?: number
+  /** Additional machine-wide slot for recorder processes sharing one credential. */
+  acquireSharedSlot?: (rate: number) => Promise<void>
   transport?: (url: string, init: RequestInit) => Promise<Response>
   maxAttempts?: number
   onAttempt?: (attempt: BdlAttempt) => void | Promise<void>
@@ -146,11 +227,21 @@ export function createBdlClient(options: BdlClientOptions = {}) {
     throw new Error(
       '[sports-bdl-client] Fake time requires fixtures for BDL requests'
     )
-  const limiter =
-    options.limiter ??
-    (clock === wallClock
-      ? processLimiter
-      : new BdlRateLimiter(BDL_DEFAULT_RATE_PER_MINUTE, clock))
+  const role = options.role ?? (fixture ? 'codex' : 'dev')
+  if (options.recorderRate !== undefined && role !== 'recorder')
+    throw new Error(
+      '[sports-bdl-client] Only the manual recorder can override its role budget'
+    )
+  const rate = options.recorderRate ?? BDL_REQUESTS_PER_MINUTE[role]
+  const limiter = processBudget(clock, role)
+  function leagueIsOn(path: string) {
+    if (role === 'recorder' || role === 'codex') return true
+    const slug = path.slice(1).split(/\/v[1-9]\d*\//, 1)[0]
+    return (
+      isBdlLeagueKey(slug) &&
+      (options.enabledLeagues?.has(slug) ?? BDL_LEAGUES[slug].defaultAutoCreate)
+    )
+  }
   const maxAttempts = options.maxAttempts ?? 3
   if (!Number.isSafeInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 32)
     throw new Error('[sports-bdl-client] Invalid attempt count')
@@ -160,6 +251,8 @@ export function createBdlClient(options: BdlClientOptions = {}) {
     params: BdlParams = {}
   ): Promise<BdlAttempt> => {
     const url = bdlUrl(path, params)
+    if (!leagueIsOn(path))
+      throw new Error('[sports-bdl-client] League disabled')
     const key = fixture ? undefined : options.key
     if (!fixture && !key)
       throw new Error('[sports-bdl-client] A BDL key is required')
@@ -172,8 +265,13 @@ export function createBdlClient(options: BdlClientOptions = {}) {
         '[sports-bdl-client] Credential found in request parameters'
       )
     for (let attemptIndex = 0; ; attemptIndex++) {
-      await limiter.acquire()
-      const request = { path, params, at: new Date(clock.now()).toISOString() }
+      if (!leagueIsOn(path))
+        throw new Error('[sports-bdl-client] League disabled')
+      await limiter.acquire(rate, options.acquireSharedSlot)
+      if (!leagueIsOn(path))
+        throw new Error('[sports-bdl-client] League disabled')
+      const requestedAt = clock.now()
+      const request = { path, params, at: new Date(requestedAt).toISOString() }
       const res = fixture
         ? await fixture(path, params)
         : await (options.transport ?? fetch)(url.toString(), {
@@ -191,8 +289,7 @@ export function createBdlClient(options: BdlClientOptions = {}) {
       }
       const now = clock.now()
       const retryable = res.status === 429 || res.status >= 500
-      if (rateLimit.remaining === 0)
-        limiter.deferUntil(resetAt(res.headers, now))
+      limiter.observeQuota(rateLimit, resetAt(res.headers, now), requestedAt)
       if (retryable) {
         const backoff = Math.min(60_000, 1000 * 2 ** attemptIndex)
         limiter.deferUntil(
@@ -236,6 +333,10 @@ export function createBdlClient(options: BdlClientOptions = {}) {
   ): Promise<T[]> => {
     if (!Number.isSafeInteger(maxPages) || maxPages < 1)
       throw new Error('[sports-bdl-client] Invalid page cap')
+    if (!leagueIsOn(path)) {
+      bdlUrl(path, params)
+      return []
+    }
     const rows: T[] = []
     const cursors = new Set<string>()
     let cursor = params.cursor
