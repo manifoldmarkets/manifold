@@ -1,0 +1,80 @@
+{
+  "data": [
+    {
+      "id": 1000,
+      "game_id": 11,
+      "vendor": "polymarket",
+      "moneyline_home_odds": 180,
+      "moneyline_away_odds": -180,
+      "updated_at": "2026-10-20T15:00:00Z"
+    },
+    {
+      "id": 1001,
+      "game_id": 12,
+      "vendor": "kalshi",
+      "moneyline_home_odds": 150,
+      "moneyline_away_odds": -150,
+      "updated_at": "2026-10-20T15:00:00Z"
+    },
+    {
+      "id": 1002,
+      "game_id": 12,
+      "vendor": "polymarket",
+      "moneyline_home_odds": 140,
+      "moneyline_away_odds": -140,
+      "updated_at": "2026-10-20T15:00:00Z"
+    },
+    {
+      "id": 1003,
+      "game_id": 13,
+      "vendor": "draftkings",
+      "moneyline_home_odds": 134,
+      "moneyline_away_odds": -160,
+      "updated_at": "2026-10-20T15:00:00Z"
+    },
+    {
+      "id": 1004,
+      "game_id": 13,
+      "vendor": "fanduel",
+      "moneyline_home_odds": 136,
+      "moneyline_away_odds": -155,
+      "updated_at": "2026-10-20T15:00:00Z"
+    },
+    {
+      "id": 1005,
+      "game_id": 13,
+      "vendor": "kalshi",
+      "moneyline_home_odds": 143,
+      "moneyline_away_odds": -143,
+      "updated_at": "2026-10-20T15:00:00Z"
+    },
+    {
+      "id": 1006,
+      "game_id": 13,
+      "vendor": "polymarket",
+      "moneyline_home_odds": 149,
+      "moneyline_away_odds": -149,
+      "updated_at": "2026-10-20T15:00:00Z"
+    },
+    {
+      "id": 1007,
+      "game_id": 14,
+      "vendor": "kalshi",
+      "moneyline_home_odds": 145,
+      "moneyline_away_odds": -145,
+      "updated_at": "2026-10-20T15:00:00Z"
+    },
+    {
+      "id": 1008,
+      "game_id": 14,
+      "vendor": "draftkings",
+      "moneyline_home_odds": 130,
+      "moneyline_away_odds": -154,
+      "updated_at": "2026-10-20T15:00:00Z"
+    }
+  ],
+  "meta": {
+    "next_cursor": null,
+    "per_page": 100
+  }
+}
