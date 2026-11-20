@@ -19,6 +19,8 @@ export const editComment: APIHandler<'edit-comment'> =
 
     const pg = createSupabaseDirectClient()
     const comment = await getComment(pg, commentId)
+    if (comment.contractId !== contractId)
+      throw new APIError(400, 'Comment does not belong to this market')
 
     if (editor.id !== comment.userId && !isAdminId(editor.id))
       throw new APIError(403, 'User is not the creator of the comment.')
