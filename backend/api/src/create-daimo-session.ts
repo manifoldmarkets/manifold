@@ -4,6 +4,7 @@ import { getActiveUserBans } from 'api/helpers/rate-limit'
 import { getPrivateUser, getUser, log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { track } from 'shared/analytics'
+import { CRYPTO_PURCHASES_ENABLED } from 'common/economy'
 import {
   OFFER_PRICE_CRYPTO,
   PAYMENT_PENDING_LOCK_MINUTES,
@@ -50,6 +51,16 @@ export const createDaimoSession: APIHandler<'create-daimo-session'> = async (
   props,
   auth
 ) => {
+  // Checked first, so an old page still offering crypto can't claim a
+  // personalized offer's payment lock (which would also block that offer's
+  // card checkout for PAYMENT_PENDING_LOCK_MINUTES).
+  if (!CRYPTO_PURCHASES_ENABLED) {
+    throw new APIError(
+      503,
+      'Crypto payments are temporarily unavailable. Please use a credit card instead.'
+    )
+  }
+
   const pg = createSupabaseDirectClient()
 
   const user = await getUser(auth.uid)

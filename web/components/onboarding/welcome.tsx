@@ -25,6 +25,10 @@ import { api, followTopic, followUser, updateUser } from 'web/lib/api/api'
 import { setCachedReferralInfoForUser } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
+import {
+  markWelcomeFinished,
+  registerWelcome,
+} from 'web/lib/util/signed-out-bet'
 import { unfollowTopic } from 'web/lib/supabase/groups'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
@@ -43,6 +47,9 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
   const [page, setPage] = useState(0)
 
   const shouldShowWelcomeModal = user?.shouldShowWelcome
+
+  // A bet waiting to reopen after sign-in holds off until these steps end.
+  useEffect(() => registerWelcome(), [])
 
   const handleSetPage = (page: number) => {
     if (page === 0) {
@@ -151,8 +158,9 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
     setOpen(false)
 
     if (window.location.pathname === '/home' && DEFAULT_FOR_YOU) {
+      // About to reload, so there is nothing to tell this page.
       window.location.reload() // reload to ensure personalized feed
-    }
+    } else markWelcomeFinished(user?.id)
   }
 
   async function increasePage() {

@@ -90,7 +90,7 @@ export const NON_PREDICTIVE_CONTRACT_TYPES = {
     label: 'Poll',
     value: 'POLL',
     name: 'poll',
-    descriptor: `A multiple choice question that people can vote on. Each person can only vote once.`,
+    descriptor: `A multiple choice question that people can vote on. Each person can only vote once. Polls don't count toward the weekly market creation quests.`,
     example: `Which color should I wear to prom?`,
     visual: (
       <Col className="relative my-auto h-12 w-12 text-orange-300">

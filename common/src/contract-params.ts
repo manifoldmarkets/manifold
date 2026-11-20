@@ -34,7 +34,7 @@ import {
   getSortedAnswers,
   sortAnswers,
 } from './answer'
-import { getBetPointsBetween, getTotalBetCount } from './bets'
+import { getBetPointsAndLatestBetTime, getTotalBetCount } from './bets'
 import { MarketContract } from './contract'
 import { getDashboardsToDisplayOnContract } from './supabase/dashboards'
 import { unauthedApi } from './util/api'
@@ -92,7 +92,7 @@ export async function getContractParams(
   const [
     totalBets,
     lastBetArray,
-    allBetPoints,
+    betPoints,
     comments,
     pinnedComments,
     totalComments,
@@ -123,13 +123,13 @@ export async function getContractParams(
         )
       : ([] as Bet[]),
     hasMechanism && !shouldHideGraph(contract)
-      ? getBetPointsBetween(contract as MarketContract, {
+      ? getBetPointsAndLatestBetTime(contract as MarketContract, {
           filterRedemptions: !includeRedemptions,
           includeZeroShareRedemptions: includeRedemptions,
           beforeTime: (contract.lastBetTime ?? contract.createdTime) + 1,
           afterTime: contract.createdTime,
         })
-      : [],
+      : { points: [], latestBetTime: undefined },
     getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
     getPinnedComments(db, contract.id),
     getNumContractComments(contract.id),
@@ -153,6 +153,7 @@ export async function getContractParams(
   ])
 
   // TODO: getMultiBetPoints breaks NUMBER market time series charts and I think MULTI_NUMERIC as well when they get enough bets
+  const allBetPoints = betPoints.points
   const multiPoints = isMulti ? getMultiBetPoints(allBetPoints, contract) : {}
   const multiPointsString = mapValues(multiPoints, (v) => pointsToBase64(v))
 
@@ -186,6 +187,9 @@ export async function getContractParams(
     pointsString,
     ogCardProps,
     multiPointsString,
+    // What the points are known to hold: the response they were made from can
+    // be older than the contract above.
+    pointsLatestBetTime: betPoints.latestBetTime,
     comments,
     totalComments,
     totalPositions,

@@ -1,4 +1,4 @@
-import { MNX_INSTRUMENTS } from 'common/perps/mnx'
+import { MNX_LIVE_INSTRUMENTS } from 'common/perps/mnx'
 import { ENV } from 'common/envs/constants'
 import { fetchMnxSnapshot } from 'shared/mnx'
 import { getLocalEnv } from 'shared/init-admin'
@@ -25,7 +25,7 @@ if (require.main === module)
     const requested = process.argv
       .find((arg) => arg.startsWith('--feed='))
       ?.slice(7)
-    const specs = MNX_INSTRUMENTS.filter(
+    const specs = MNX_LIVE_INSTRUMENTS.filter(
       (spec) => !requested || spec.feedId === requested
     )
     if (!specs.length) throw new Error('Unknown MNX feed')

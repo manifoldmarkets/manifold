@@ -59,6 +59,7 @@ function loadJob(source: 'fetchLatest' | 'fetchObservation' = 'fetchLatest') {
     'shared/oracle-clock': { databaseOracleClock },
     'shared/oracle-feeds': {
       ORACLE_FEEDS: [feed],
+      isOracleFeedLive: (f: { lifecycle?: unknown }) => f.lifecycle == null,
       validateOraclePoint: () => null,
     },
     'shared/supabase/init': { createSupabaseDirectClient: () => pg },

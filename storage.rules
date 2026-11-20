@@ -2,10 +2,21 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+    // Anyone may fetch an individual object (download URLs are embedded
+    // across the site), but not list the bucket.
     match /{allPaths=**} {
-      allow read;
-      // Don't require auth, as dream uploads can be done by anyone
-      allow write: if request.resource.size <= 10 * 1024 * 1024; // 10MB
+      allow get;
+    }
+
+    // Signed-in users may add new images. Uploads always use a fresh random
+    // filename, so clients never need to replace or delete an existing
+    // object; server-side writes use the Admin SDK, which bypasses these rules.
+    // Limit: 10MB, raster images only.
+    match /user-images/{allPaths=**} {
+      allow create: if request.auth != null
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*')
+        && !request.resource.contentType.matches('image/svg.*');
     }
   }
 }

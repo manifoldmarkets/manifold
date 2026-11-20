@@ -27,6 +27,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { groupBy, keyBy, mapValues, sum, sumBy, uniqBy } from 'lodash'
 import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
+import { getResolutionEditKey } from 'shared/resolution-edit-key'
 import { createContractResolvedNotifications } from './create-notification'
 import { bulkUpdateContractMetricsQuery } from './helpers/user-contract-metrics'
 import { updateAnswer, updateAnswers } from './supabase/answers'
@@ -129,6 +130,7 @@ export const resolveMarketHelper = async (
       payouts: basePayouts,
       payoutsWithoutLoans,
       traderPayouts,
+      withheldLiquidityRefund,
     } = getPayoutInfo(
       outcome,
       unresolvedContract,
@@ -139,6 +141,18 @@ export const resolveMarketHelper = async (
       liquidities,
       loanTracking
     )
+    // Expected now and then: an answer listed after a subsidy had drizzled
+    // into the older ones is cancelled. A large amount, or many in a row on
+    // one market, is someone trying to be refunded a subsidy that the other
+    // answers also pay out.
+    if (withheldLiquidityRefund) {
+      log.warn('Cancelled answer held less than its liquidity refunds', {
+        contractId,
+        answerId,
+        resolverId: resolver.id,
+        withheldLiquidityRefund,
+      })
+    }
 
     const payouts = basePayouts.filter((p) => p.payout !== 0)
     // Keep MKT resolution prob for consistency's sake
@@ -289,11 +303,32 @@ export const resolveMarketHelper = async (
         : []
 
     const { balanceUpdatesQuery, insertTxnsQuery, balanceUpdates } =
-      getPayUsersQueries(payouts, contractId, answerId, token, payoutFees)
+      getPayUsersQueries(
+        payouts,
+        contractId,
+        answerId,
+        token,
+        payoutFees,
+        resolutionTime
+      )
     const contractUpdateQuery = updateDataQuery(
       'contracts',
       'id',
       updatedContractAttrs
+    )
+
+    // The market as this resolution found it, under this resolution's key and
+    // in its transaction, so the record exists exactly when the resolution
+    // does. It holds the pending subsidy the resolution took (the market's
+    // pool and the answers open to share it, each answer's own), which is
+    // what unresolving it puts back. Before anything is paid: it fails if
+    // another resolution holds the key.
+    await recordContractEdit(
+      unresolvedContract,
+      resolver.id,
+      Object.keys(updatedContractAttrs ?? {}),
+      getResolutionEditKey(answerId, resolutionTime),
+      tx
     )
 
     log('updating contract & processing payouts', { updatedContractAttrs })
@@ -335,12 +370,6 @@ export const resolveMarketHelper = async (
     resolution: outcome,
     contractId: resolvedContract.id,
   })
-
-  await recordContractEdit(
-    unresolvedContract,
-    resolver.id,
-    Object.keys(updatedContractAttrs ?? {})
-  )
 
   await revalidateStaticProps(contractPath(resolvedContract))
   const userIdToContractMetric = keyBy(
@@ -403,15 +432,16 @@ export const getPayoutInfo = (
   )
 
   // Calculate payouts using contract metrics instead of bets
-  const { traderPayouts, liquidityPayouts } = getPayouts(
-    outcome,
-    unresolvedContract,
-    contractMetrics,
-    liquidities,
-    resolutionProbs,
-    resolutionProbability,
-    answerId
-  )
+  const { traderPayouts, liquidityPayouts, withheldLiquidityRefund } =
+    getPayouts(
+      outcome,
+      unresolvedContract,
+      contractMetrics,
+      liquidities,
+      resolutionProbs,
+      resolutionProbability,
+      answerId
+    )
 
   const payoutsWithoutLoans = [
     ...liquidityPayouts.map((p) => ({ ...p, deposit: p.payout })),
@@ -439,6 +469,7 @@ export const getPayoutInfo = (
     resolutionProbability,
     payouts,
     traderPayouts,
+    withheldLiquidityRefund,
   }
 }
 
@@ -550,7 +581,10 @@ export const getPayUsersQueries = (
   contractId: string,
   answerId: string | undefined,
   token: ContractToken,
-  payoutFees: Payout[]
+  payoutFees: Payout[],
+  // Of the resolution paying out, recorded on each payout so that unresolving
+  // it takes back these payouts and no others.
+  resolutionTime?: number
 ) => {
   const payoutCash = token === 'CASH'
   const payoutToken = token === 'CASH' ? 'CASH' : 'M$'
@@ -593,6 +627,7 @@ export const getPayUsersQueries = (
         deposit: deposit ?? 0,
         payoutStartTime,
         answerId,
+        resolutionTime,
       }),
       description: 'Contract payout for resolution: ' + contractId,
     })

@@ -17,11 +17,12 @@ jest.mock('./utils', () => ({
 afterEach(() => jest.restoreAllMocks())
 
 const now = 1_800_000_000_000
+// A live valuation future (OpenAI): parsing skips the delisted ANTHROPIC row.
 const spec = MNX_INSTRUMENTS[0]
 const market = (over: Record<string, unknown> = {}) => ({
-  market_id: 11,
-  symbol: 'ANTHROPIC',
-  slug: 'anthropic',
+  market_id: spec.marketId,
+  symbol: spec.symbol,
+  slug: spec.slug,
   type: 'future',
   price_display: 'billion_usd',
   mark_price: 2104,
@@ -97,14 +98,16 @@ it('rejects envelopes, detects duplicates, and isolates unavailable symbols', ()
   expect(
     parseMnxSnapshot([market(), market()], now).feeds[spec.feedId].health.status
   ).toBe('unavailable')
-  const parsed = parseMnxSnapshot([market(), { symbol: 'OPENAI' }], now)
+  const parsed = parseMnxSnapshot([market(), { symbol: 'DEEPSEEK' }], now)
   expect(parsed.feeds[spec.feedId].health.status).toBe('available')
-  expect(parsed.feeds['mnx-openai-mark'].health.status).toBe('unavailable')
+  expect(parsed.feeds['mnx-deepseek-mark'].health.status).toBe('unavailable')
+  // A delisted instrument is not looked for, so its absence is not a fault.
+  expect(parsed.feeds['mnx-anthropic-mark']).toBeUndefined()
 })
 
 it('pins identity and chronology across missing/disabled intervals', () => {
   const frozen = parseMnxSnapshot([market({ oracle_frozen: true })], now)
-  expect(frozen.feeds[spec.feedId].marketId).toBe(11)
+  expect(frozen.feeds[spec.feedId].marketId).toBe(spec.marketId)
   expect(frozen.feeds[spec.feedId].point).toBeUndefined()
   expect(
     parseMnxSnapshot([market({ market_id: 99 })], now, frozen).feeds[
@@ -113,7 +116,7 @@ it('pins identity and chronology across missing/disabled intervals', () => {
   ).toMatch(/identity|instrument/)
   const first = parseMnxSnapshot([market()], now)
   const missing = parseMnxSnapshot([], now + MINUTE_MS, first)
-  expect(missing.feeds[spec.feedId].marketId).toBe(11)
+  expect(missing.feeds[spec.feedId].marketId).toBe(spec.marketId)
   expect(missing.feeds[spec.feedId].point?.ts).toBe(now)
   const changed = parseMnxSnapshot(
     [market({ market_id: 99 })],
@@ -144,7 +147,7 @@ it('pins identity and chronology across missing/disabled intervals', () => {
   expect(older.feeds[spec.feedId].health.status).toBe('available')
   expect(older.feeds[spec.feedId].health.reason).toBeUndefined()
   expect(older.feeds[spec.feedId].point).toEqual(first.feeds[spec.feedId].point)
-  expect(older.feeds[spec.feedId].marketId).toBe(11)
+  expect(older.feeds[spec.feedId].marketId).toBe(spec.marketId)
   const recovered = parseMnxSnapshot([market()], now + MINUTE_MS, missing)
   expect(recovered.feeds[spec.feedId].health.checkedAt).toBe(now + MINUTE_MS)
   expect(recovered.feeds[spec.feedId].point?.ts).toBe(now + MINUTE_MS)
@@ -195,7 +198,7 @@ it('honors Retry-After seconds and HTTP dates and backs off other HTTP failures'
 it('labels completed candles and excludes unfinished/live-overlapping buckets', () => {
   const points = parseMnxCandles(
     {
-      market_id: 11,
+      market_id: spec.marketId,
       interval: '1h',
       candlesticks: [
         { time: now / 1000 - 7200, close: 2100 },
@@ -203,7 +206,7 @@ it('labels completed candles and excludes unfinished/live-overlapping buckets', 
       ],
     },
     spec,
-    11,
+    spec.marketId,
     now
   )
   expect(points).toHaveLength(1)

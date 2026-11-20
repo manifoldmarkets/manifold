@@ -77,7 +77,7 @@ import {
 } from 'shared/update-group-contracts-internal'
 import {
   AUTO_TAG_API_MARKET_CREATIONS,
-  getNicheTopicMatchesForContract,
+  autoTagUntaggedContract,
 } from 'shared/helpers/topic-matching'
 import { htmlToRichText, isProd, log } from 'shared/utils'
 import {
@@ -160,7 +160,8 @@ export const createMarket: APIHandler<'market'> = onlyUsersWhoCanPerformAction(
 )
 
 // API counterpart to the web UI's getSimilarGroupsToContract suggester,
-// for markets created without groupIds. Off by default — see flag.
+// for markets created without groupIds. On; AUTO_TAG_API_MARKET_CREATIONS is
+// the kill switch.
 async function maybeAutoTagApiMarket(
   pg: SupabaseDirectClient,
   market: Contract,
@@ -172,13 +173,7 @@ async function maybeAutoTagApiMarket(
   if (market.outcomeType === 'STONK' || market.outcomeType === 'POLL') return
 
   try {
-    const matches = await getNicheTopicMatchesForContract(pg, market.id)
-    for (const match of matches) {
-      await addGroupToContract(pg, market, {
-        id: match.id,
-        slug: match.slug,
-      })
-    }
+    const matches = await autoTagUntaggedContract(pg, market)
     if (matches.length > 0) {
       log(
         `Auto-tagged API market ${market.id} with: ${matches

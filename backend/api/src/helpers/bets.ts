@@ -261,7 +261,6 @@ export const fetchContractBetDataAndValidate = async (
       bet.balance,
     ])
   )
-  const unfilledBetUserIds = Object.keys(balanceByUserId)
   const balance = user.balance
   if (amount !== undefined && balance < amount)
     throw new APIError(403, 'Insufficient balance.')
@@ -306,7 +305,6 @@ export const fetchContractBetDataAndValidate = async (
     answers,
     unfilledBets,
     balanceByUserId,
-    unfilledBetUserIds,
     contractMetrics,
   }
 }
@@ -368,13 +366,11 @@ export const lockContractAndGetBetData = async (
       bet.balance,
     ])
   )
-  const unfilledBetUserIds = Object.keys(balanceByUserId)
   return {
     contract,
     answers,
     unfilledBets,
     balanceByUserId,
-    unfilledBetUserIds,
   }
 }
 

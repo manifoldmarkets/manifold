@@ -327,6 +327,11 @@ type ContractOldResolutionPayout = {
     deposit?: number
     payoutStartTime?: number
     answerId?: string
+    // The resolutionTime the resolution that paid this wrote to its answer or
+    // market: which resolution's payout it is. Unresolving takes back the
+    // payouts of the resolution it undoes by this. Payouts from before it was
+    // recorded don't have it.
+    resolutionTime?: number
   }
 }
 
@@ -476,6 +481,9 @@ type QuestReward = {
   data: {
     questType: QuestType
     questCount: number
+    // Start (epoch ms) of the day or week this reward pays for. Each quest
+    // pays once per period. Missing on rewards paid before Nov 2026.
+    periodStart?: number
     // See BettingStreakBonus.data for usage of these fields.
     effectiveTier?: string
     questMultiplier?: number
