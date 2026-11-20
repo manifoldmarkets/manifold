@@ -25,7 +25,7 @@ const contract = {
   id: 'mnx',
   slug: 'mnx',
   mechanism: 'perp',
-  oracleFeedId: 'mnx-anthropic-mark',
+  oracleFeedId: 'mnx-openai-mark',
   oraclePriceTime: now,
   oracleSourceTime: now,
   oraclePrice: 2104,

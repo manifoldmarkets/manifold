@@ -5,13 +5,15 @@ import { ALL_PERP_LAUNCH_MARKETS, PERP_LAUNCH_MARKETS } from './launch-manifest'
 import {
   getPerpLaunchManifestErrors,
   MNX_LAUNCH_MARKETS,
+  PERP_LAUNCH_RETIRED_MARKETS,
 } from './launch-manifest'
-import { MNX_INSTRUMENTS } from 'common/perps/mnx'
+import { MNX_INSTRUMENTS, MNX_LIVE_INSTRUMENTS } from 'common/perps/mnx'
+import { getPerpFeedTicker } from 'common/perps/ticker'
 
 it('integrates the launch cohort without breaking the existing manifest', () => {
   expect(getPerpLaunchManifestErrors()).toEqual([])
   expect(MNX_LAUNCH_MARKETS.map((m) => m.feedId)).toEqual(
-    MNX_INSTRUMENTS.map((m) => m.feedId)
+    MNX_LIVE_INSTRUMENTS.map((m) => m.feedId)
   )
   expect(
     MNX_LAUNCH_MARKETS.reduce(
@@ -24,8 +26,8 @@ it('integrates the launch cohort without breaking the existing manifest', () => 
   )
 })
 
-it('registers all sixteen feeds on the shared 2s tick with attribution and launch policy', () => {
-  for (const spec of MNX_INSTRUMENTS) {
+it('registers every live feed on the shared 2s tick with attribution and launch policy', () => {
+  for (const spec of MNX_LIVE_INSTRUMENTS) {
     expect(getOracleFeed(spec.feedId)).toMatchObject({
       cadence: 'fast',
       pollPeriodMs: 2000,
@@ -61,4 +63,48 @@ it('registers all sixteen feeds on the shared 2s tick with attribution and launc
       false
     )
   }
+})
+
+it('retires delisted instruments everywhere a live one is launchable', () => {
+  const retired = MNX_INSTRUMENTS.filter((i) => i.retired)
+  expect(retired.map((i) => i.feedId)).toEqual(['mnx-anthropic-mark'])
+  for (const spec of retired) {
+    const feed = getOracleFeed(spec.feedId)
+    expect(feed?.marketCreationEnabled).toBe(false)
+    expect(feed?.lifecycle).toEqual({
+      phase: 'retired',
+      at: spec.retired?.at,
+      reason: spec.retired?.reason,
+    })
+    // The settled market still renders its ticker, units and credit.
+    expect(getPerpFeedTicker(spec.feedId)).toBe('ANTH')
+    expect(getOracleAttribution(spec.feedId)?.url).toBe(spec.url)
+    expect(MNX_LAUNCH_MARKETS.some((m) => m.feedId === spec.feedId)).toBe(false)
+    expect(
+      PERP_LAUNCH_RETIRED_MARKETS.find((m) => m.feedId === spec.feedId)
+    ).toMatchObject({
+      question: spec.question,
+      retiredReason: spec.retired?.reason,
+    })
+  }
+})
+
+it('lists the Anthropic share perpetual as the live successor', () => {
+  const ant = MNX_LIVE_INSTRUMENTS.find((i) => i.symbol === 'ANT')
+  expect(ant).toMatchObject({
+    marketId: 86,
+    slug: 'ant',
+    type: 'perpetual',
+    priceDisplay: 'usd',
+    feedId: 'mnx-ant-mark',
+    question: 'Anthropic (MNX)',
+    url: 'https://app.mnx.fi/trade/ant',
+  })
+  expect(getPerpFeedTicker('mnx-ant-mark')).toBe('ANT')
+  expect(getOracleFeed('mnx-ant-mark')).toMatchObject({
+    marketCreationEnabled: true,
+    minPrice: 10,
+    maxPrice: 2000,
+  })
+  expect(getOracleFeed('mnx-ant-mark')?.lifecycle).toBeUndefined()
 })

@@ -3,7 +3,7 @@ import { resolve } from 'path'
 import { runInNewContext } from 'vm'
 import { ModuleKind, transpileModule } from 'typescript'
 import { compact } from 'lodash'
-import { MNX_INSTRUMENTS } from 'common/perps/mnx'
+import { MNX_INSTRUMENTS, MNX_LIVE_INSTRUMENTS } from 'common/perps/mnx'
 import { ORACLE_FEEDS } from '../oracle-feeds'
 
 type Job = { name: string; schedule: string }
@@ -85,7 +85,7 @@ it('starts every oracle publisher and funding job only in the perps instance', (
   expect([...main, ...perps].sort()).toEqual(all)
 })
 
-it('runs all sixteen MNX feeds on the shared 2s tick and funding hourly', () => {
+it('runs every live MNX feed on the shared 2s tick and funding hourly', () => {
   const jobs = constructJobs('perps')
   expect(jobs.find((job) => job.name === 'update-oracle-feeds')?.schedule).toBe(
     '*/2 * * * * *'
@@ -93,8 +93,9 @@ it('runs all sixteen MNX feeds on the shared 2s tick and funding hourly', () => 
   expect(jobs.find((job) => job.name === 'update-perps')?.schedule).toBe(
     '0 0 * * * *'
   )
-  expect(MNX_INSTRUMENTS).toHaveLength(16)
-  for (const instrument of MNX_INSTRUMENTS) {
+  expect(MNX_INSTRUMENTS).toHaveLength(17)
+  expect(MNX_LIVE_INSTRUMENTS).toHaveLength(16)
+  for (const instrument of MNX_LIVE_INSTRUMENTS) {
     expect(
       ORACLE_FEEDS.find((feed) => feed.id === instrument.feedId)
     ).toMatchObject({

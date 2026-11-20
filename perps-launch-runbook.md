@@ -68,7 +68,7 @@ Record the owner, chosen leverage/backing limits, and observed pool transfers.
 
 ## MNX rollout (DEV and PROD)
 
-The sixteen feeds in `MNX_LAUNCH_MARKETS` form an explicit `--cohort=mnx`
+The live feeds in `MNX_LAUNCH_MARKETS` form an explicit `--cohort=mnx`
 rollout in either environment. Default gate commands continue to check the
 existing launch cohort; neither cohort requires the other to have created
 markets. All unresolved markets in either cohort still undergo token,
@@ -244,13 +244,41 @@ After normal visibility changes, select the same cohort for the progressive
 and final public gates:
 
 ```powershell
-npx.cmd ts-node perp-launch-preflight.ts --cohort=mnx --phase=rollout --public-feed=mnx-anthropic-mark --acknowledge-latency-risk --allow-warning=external-alert-policies
+npx.cmd ts-node perp-launch-preflight.ts --cohort=mnx --phase=rollout --public-feed=mnx-openai-mark --acknowledge-latency-risk --allow-warning=external-alert-policies
 npx.cmd ts-node perp-launch-preflight.ts --cohort=mnx --phase=public --acknowledge-latency-risk --allow-warning=external-alert-policies
 ```
 
 No database writes, market creation, deployments or DEV/PROD trading drills
 were performed as part of the code revision. Those are rollout steps, separate
 from passing the code tests and live-provider read checks.
+
+### When MNX delists or replaces an instrument
+
+MNX ends an instrument by dropping it from `/v0/markets` (its own record
+gains a `delisting` with a settlement price). Our market on it then pauses
+with "Missing from MNX active markets", and the tick warns once a minute until
+the feed is retired. The order:
+
+1. Resolve the Manifold market (MKT) at the settlement value decided for it.
+2. Move its row from `instruments` to `delisted` in `common/src/perps/mnx.ts`
+   with a `retirements` entry (`at` = the settlement time). That retires the
+   registry feed, drops it from `MNX_LAUNCH_MARKETS` into
+   `PERP_LAUNCH_RETIRED_MARKETS`, and makes the parser stop looking for it.
+   Keep its ticker in `common/src/perps/ticker.ts`: the settled page shows it.
+3. Add any successor as a new row with its own MNX market id and feed id.
+   Never reuse a retired feed id.
+4. Deploy scheduler-perps, then the API.
+5. Backfill and create the successor for the owning account. For the
+   Anthropic share perpetual (2026-11-20), backed with the M$153,620 residual
+   @MNX received when `ANTHROPIC` settled:
+
+```bash
+npx ts-node backfill-mnx-oracle.ts --feed=mnx-ant-mark          # then --apply
+npx ts-node create-mnx-perps.ts --creator=mnx --feed=mnx-ant-mark   --subsidy-per-side=76810 --max-leverage=10   --topics=anthropic,ai,llms,finance,technology-default           # then --apply
+```
+
+A new listing has less history than the feed preflight's 30-day minimum, so
+expect that check to fail for it until the history accumulates.
 
 ## Why oracle latency is still a launch decision
 

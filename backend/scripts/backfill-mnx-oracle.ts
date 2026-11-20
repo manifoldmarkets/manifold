@@ -1,4 +1,4 @@
-import { MNX_API_URL, MNX_INSTRUMENTS } from 'common/perps/mnx'
+import { MNX_API_URL, MNX_LIVE_INSTRUMENTS } from 'common/perps/mnx'
 import { normalizeOraclePointBatch } from 'common/perps/oracle'
 import { DAY_MS } from 'common/util/time'
 import { ENV } from 'common/envs/constants'
@@ -25,7 +25,7 @@ if (require.main === module)
     const requested = process.argv
       .find((arg) => arg.startsWith('--feed='))
       ?.slice(7)
-    const specs = MNX_INSTRUMENTS.filter(
+    const specs = MNX_LIVE_INSTRUMENTS.filter(
       (i) => !requested || i.feedId === requested
     )
     if (!specs.length) throw new Error('Unknown MNX feed')

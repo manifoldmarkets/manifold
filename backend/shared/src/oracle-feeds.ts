@@ -164,16 +164,26 @@ export type OracleFeedDef = {
 }
 
 export const ORACLE_FEEDS: OracleFeedDef[] = [
-  // One shared /v0/markets request prices all sixteen instruments every 2s
+  // One shared /v0/markets request prices every live instrument every 2s
   // (30 requests/minute per scheduler process; briefly 60 during deploy overlap). MNX publishes no numeric REST quota in its
   // public docs; honor Retry-After and back off on errors. H100 source age is
   // independent of this tick. The defined target is MNX's mark, not its oracle
   // or the underlying share/valuation: see common/perps/mnx and the runbook.
+  // An instrument MNX delisted stays registered as retired (see
+  // MNX_INSTRUMENTS' `retired`): once it leaves /v0/markets the tick would
+  // otherwise warn "Missing from MNX active markets" every minute.
   ...MNX_INSTRUMENTS.map(
     (i): OracleFeedDef => ({
       id: i.feedId,
       description: i.description,
-      marketCreationEnabled: true,
+      ...(i.retired && {
+        lifecycle: {
+          phase: 'retired',
+          at: i.retired.at,
+          reason: i.retired.reason,
+        },
+      }),
+      marketCreationEnabled: !i.retired,
       cadence: 'fast',
       pollPeriodMs: MNX_POLL_MS,
       fetchObservation: (clock) => fetchMnxObservation(i.feedId, clock),

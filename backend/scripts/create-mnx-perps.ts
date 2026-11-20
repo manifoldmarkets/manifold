@@ -7,7 +7,11 @@ import {
   PerpCreatorAccount,
 } from 'common/perps/creator-accounts'
 import { getPerpEffectiveTakerFeeBps } from 'common/perps/fees'
-import { MNX_INSTRUMENTS, MNX_DEFAULT_FEES } from 'common/perps/mnx'
+import {
+  MNX_DEFAULT_FEES,
+  MNX_INSTRUMENTS,
+  MNX_LIVE_INSTRUMENTS,
+} from 'common/perps/mnx'
 import { getPerpFeedTicker } from 'common/perps/ticker'
 import { HOUR_MS, YEAR_MS } from 'common/util/time'
 import { getLocalEnv } from 'shared/init-admin'
@@ -28,6 +32,32 @@ import { runScript } from './run-script'
 // --creator=mnx makes the MNX partner account the owner (it pays the backing
 // and receives the residual); the API key must still belong to the official
 // Manifold creator, which is the only caller create-perp accepts.
+//
+// Delisted (retired) instruments are never created. To launch one new listing
+// with settings other than the manifest's day-one recommendation, name it:
+//   --feed=<feedId>[,<feedId>]   only these live MNX feeds
+//   --subsidy-per-side=<M$>      backing per side (whole mana)
+//   --max-leverage=<n>           market leverage cap (2-100)
+//   --topics=<slug>[,<slug>]     extra topics; the launch topic is always added
+// The overrides require --feed, so they cannot fan out over every missing feed.
+const argValue = (name: string) =>
+  process.argv
+    .find((arg) => arg.startsWith(`--${name}=`))
+    ?.slice(name.length + 3)
+const listArg = (name: string) =>
+  argValue(name)
+    ?.split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+const wholeArg = (name: string, min: number, max: number) => {
+  const raw = argValue(name)
+  if (raw == null) return undefined
+  const value = Number(raw)
+  if (!Number.isSafeInteger(value) || value < min || value > max)
+    throw new Error(`--${name} must be a whole number from ${min} to ${max}`)
+  return value
+}
+
 if (require.main === module)
   runScript(async ({ pg }) => {
     const apply = process.argv.includes('--apply')
@@ -46,13 +76,46 @@ if (require.main === module)
       throw new Error(
         'Set NEXT_PUBLIC_FIREBASE_ENV explicitly to DEV or PROD and select the matching Firebase project'
       )
+    const requestedFeeds = listArg('feed')
+    const subsidyPerSide = wholeArg('subsidy-per-side', 1, 10_000_000)
+    const maxLeverageOverride = wholeArg('max-leverage', 2, 100)
+    const topicSlugs = listArg('topics') ?? []
+    if (
+      !requestedFeeds?.length &&
+      (subsidyPerSide != null ||
+        maxLeverageOverride != null ||
+        topicSlugs.length)
+    )
+      throw new Error(
+        '--subsidy-per-side, --max-leverage and --topics require --feed'
+      )
+    for (const feedId of requestedFeeds ?? []) {
+      const spec = MNX_INSTRUMENTS.find((i) => i.feedId === feedId)
+      if (!spec) throw new Error(`Unknown MNX feed: ${feedId}`)
+      if (spec.retired)
+        throw new Error(`${feedId} is retired: ${spec.retired.reason}`)
+    }
+    const candidates = MNX_LIVE_INSTRUMENTS.filter(
+      (spec) => !requestedFeeds || requestedFeeds.includes(spec.feedId)
+    )
+    const topics = topicSlugs.length
+      ? await pg.manyOrNone<{ id: string; slug: string }>(
+          `select id, slug from groups where slug = any($1)`,
+          [topicSlugs]
+        )
+      : []
+    const unknownTopics = topicSlugs.filter(
+      (slug) => !topics.some((t) => t.slug === slug)
+    )
+    if (unknownTopics.length)
+      throw new Error(`Unknown topic slugs: ${unknownTopics.join(', ')}`)
     const existing = await pg.manyOrNone<{ feed_id: string; id: string }>(
       `select data->>'oracleFeedId' as feed_id, id from contracts
      where mechanism = 'perp' and resolution_time is null
        and data->>'oracleFeedId' = any($1)`,
-      [MNX_INSTRUMENTS.map((i) => i.feedId)]
+      [candidates.map((i) => i.feedId)]
     )
-    const missing = MNX_INSTRUMENTS.filter((spec) => {
+    const missing = candidates.filter((spec) => {
       const matches = existing.filter((c) => c.feed_id === spec.feedId)
       if (matches.length > 1)
         throw new Error(`Duplicate live markets: ${spec.feedId}`)
@@ -85,10 +148,14 @@ if (require.main === module)
         ticker: getPerpFeedTicker(spec.feedId),
         creatorAccount,
         visibility: 'unlisted' as const,
+        ...(topics.length ? { groupIds: topics.map((t) => t.id) } : {}),
         ...MNX_DEFAULT_FEES,
-        maxLeverage: Math.min(recommended.maxLeverage, ready.maxLeverage!),
-        subsidyLong: recommended.subsidyLong,
-        subsidyShort: recommended.subsidyShort,
+        // MNX's margin sets only the default; it never caps this market.
+        maxLeverage:
+          maxLeverageOverride ??
+          Math.min(recommended.maxLeverage, ready.maxLeverage!),
+        subsidyLong: subsidyPerSide ?? recommended.subsidyLong,
+        subsidyShort: subsidyPerSide ?? recommended.subsidyShort,
         maxOraclePriceAgeMs: recommended.maxOraclePriceAgeMs,
         fundingSensitivity: recommended.fundingSensitivity,
         maxFundingRate:
