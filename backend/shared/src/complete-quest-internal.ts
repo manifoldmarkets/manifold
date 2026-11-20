@@ -6,6 +6,7 @@ import {
   MARKET_CREATION_QUESTS,
   QUEST_DETAILS,
   QuestType,
+  toNotificationQuestType,
 } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
@@ -169,7 +170,7 @@ const notifyQuestPayout = async (
     txnId,
     bonusAmount,
     QUEST_DETAILS[questType].requiredCount,
-    questType
+    toNotificationQuestType(questType)
   ).catch((e) =>
     log.error('Failed to create quest payout notification', {
       userId: user.id,

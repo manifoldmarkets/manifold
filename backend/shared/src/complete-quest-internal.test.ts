@@ -579,6 +579,38 @@ describe('completeMarketCreationQuests', () => {
     ])
   })
 
+  // Web clients loaded before MARKETS_CREATED_3 existed would throw on it.
+  it('notifies the three-question reward as MARKETS_CREATED with questCount 3', async () => {
+    otherQuestionsThisWeek = 2
+    await completeMarketCreationQuests(USER, question())
+    expect(createQuestPayoutNotification).toHaveBeenCalledWith(
+      USER,
+      expect.any(String),
+      100,
+      3,
+      'MARKETS_CREATED'
+    )
+    expect(createQuestPayoutNotification).toHaveBeenCalledWith(
+      USER,
+      expect.any(String),
+      100,
+      1,
+      'MARKETS_CREATED'
+    )
+    expect(createQuestPayoutNotification).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      'MARKETS_CREATED_3'
+    )
+    // The ledger keeps the real quest type.
+    expect(paid.map((p) => p.questType).sort()).toEqual([
+      'MARKETS_CREATED',
+      'MARKETS_CREATED_3',
+    ])
+  })
+
   it('pays both quests when the first count it sees is already 3', async () => {
     otherQuestionsThisWeek = 2
     await completeMarketCreationQuests(USER, question())

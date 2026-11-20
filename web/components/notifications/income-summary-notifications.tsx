@@ -35,7 +35,7 @@ import {
 } from './notification-helpers'
 import { MultipleAvatarIcons } from './notification-types'
 import { QuestRewardTxn } from 'common/txn'
-import { QUEST_DETAILS } from 'common/quest'
+import { fromNotificationQuestType, QUEST_DETAILS } from 'common/quest'
 import { QuestsModal } from '../home/quests-or-streak'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
@@ -302,7 +302,9 @@ export function QuestIncomeNotification(props: {
 }) {
   const { notification, highlighted, setHighlighted } = props
   const { data } = notification
-  const { questType } = data as QuestRewardTxn['data']
+  const { questType: notifiedQuestType, questCount } =
+    data as QuestRewardTxn['data']
+  const questType = fromNotificationQuestType(notifiedQuestType, questCount)
   const user = useUser()
   const [open, setOpen] = useState(false)
   // The bonus award embeds effectiveTier in the txn data — use it if present,
@@ -333,7 +335,9 @@ export function QuestIncomeNotification(props: {
       <span className="line-clamp-3">
         <IncomeNotificationLabel notification={notification} /> Bonus for{' '}
         <PrimaryNotificationLink
-          text={`completing the ${QUEST_DETAILS[questType].title} quest`}
+          text={`completing the ${
+            QUEST_DETAILS[questType]?.title ?? 'weekly'
+          } quest`}
         />
       </span>
       {user && <QuestsModal open={open} setOpen={setOpen} user={user} />}

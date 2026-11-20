@@ -55,6 +55,24 @@ export const MARKET_CREATION_QUESTS: QuestType[] = [
   'MARKETS_CREATED_3',
 ]
 
+// Quest payout notifications name the 3-question quest MARKETS_CREATED with
+// questCount 3. Web clients loaded before that quest existed look the
+// notification's questType up in their QUEST_DETAILS, which has no
+// MARKETS_CREATED_3, and would throw. The reward txn keeps MARKETS_CREATED_3.
+export const toNotificationQuestType = (questType: QuestType): QuestType =>
+  questType === 'MARKETS_CREATED_3' ? 'MARKETS_CREATED' : questType
+
+// The quest a payout notification is for (see toNotificationQuestType).
+// Creation rewards before the 3-question quest all had questCount 1.
+export const fromNotificationQuestType = (
+  questType: QuestType,
+  questCount: number | undefined
+): QuestType =>
+  questType === 'MARKETS_CREATED' &&
+  (questCount ?? 0) >= QUEST_DETAILS.MARKETS_CREATED_3.requiredCount
+    ? 'MARKETS_CREATED_3'
+    : questType
+
 const PACIFIC_WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 /**

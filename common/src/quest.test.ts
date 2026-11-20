@@ -1,4 +1,11 @@
-import { getNextQuestWeekStart, getQuestWeekStart } from './quest'
+import {
+  fromNotificationQuestType,
+  getNextQuestWeekStart,
+  getQuestWeekStart,
+  QUEST_DETAILS,
+  QUEST_TYPES,
+  toNotificationQuestType,
+} from './quest'
 import { laWallClockMsPastMidnight } from './streak-snapshot'
 import { DAY_MS, HOUR_MS } from './util/time'
 
@@ -87,5 +94,39 @@ describe('getQuestWeekStart', () => {
         expect(getNextQuestWeekStart(start)).toBeGreaterThan(t)
       }
     }
+  })
+})
+
+describe('quest payout notification types', () => {
+  // A web client loaded before MARKETS_CREATED_3 existed looks the
+  // notification's questType up in its own QUEST_DETAILS.
+  const OLD_CLIENT_QUEST_TYPES = ['BETTING_STREAK', 'SHARES', 'MARKETS_CREATED']
+
+  it('only sends quest types older clients know', () => {
+    for (const questType of QUEST_TYPES)
+      expect(OLD_CLIENT_QUEST_TYPES).toContain(
+        toNotificationQuestType(questType)
+      )
+  })
+
+  it('round-trips every quest with its questCount', () => {
+    for (const questType of QUEST_TYPES) {
+      const { requiredCount } = QUEST_DETAILS[questType]
+      expect(
+        fromNotificationQuestType(
+          toNotificationQuestType(questType),
+          requiredCount
+        )
+      ).toBe(questType)
+    }
+  })
+
+  it('reads older creation notifications (questCount 1, or missing) as the 1-question quest', () => {
+    expect(fromNotificationQuestType('MARKETS_CREATED', 1)).toBe(
+      'MARKETS_CREATED'
+    )
+    expect(fromNotificationQuestType('MARKETS_CREATED', undefined)).toBe(
+      'MARKETS_CREATED'
+    )
   })
 })
