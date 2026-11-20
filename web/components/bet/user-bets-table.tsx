@@ -11,7 +11,7 @@ import { useEvent } from 'client-common/hooks/use-event'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import clsx from 'clsx'
 import { LimitBet } from 'common/bet'
-import { getContractBetNullMetrics } from 'common/calculate'
+import { getContractBetNullMetrics, getProbability } from 'common/calculate'
 import {
   Contract,
   contractPath,
@@ -27,7 +27,6 @@ import {
 } from 'common/perps/format'
 import { getUserFacingPnl } from 'common/perps/pnl'
 import { PerpPosition } from 'common/perps/position'
-import { buildArray } from 'common/util/array'
 import {
   formatMoney,
   formatMoneyPrecise,
@@ -35,7 +34,7 @@ import {
 } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
 import { searchInAny } from 'common/util/parse'
-import { Dictionary, mapValues, sortBy, sum, uniqBy } from 'lodash'
+import { Dictionary, mapValues, partition, sortBy, sum } from 'lodash'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
@@ -80,6 +79,7 @@ type BetSort =
   | 'liquidity'
   | 'priceDiff'
   | 'loan'
+  | 'prob'
 export type BetFilter =
   | 'open'
   | 'sold'
@@ -89,6 +89,14 @@ export type BetFilter =
   | 'limit_bet'
 
 const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
+
+const getSortProb = (c: MarketContract) => {
+  if (c.mechanism !== 'cpmm-1' || c.outcomeType !== 'BINARY') return undefined
+  // The pool retains the final trading price after resolution overwrites c.prob.
+  const prob = getProbability(c)
+  return Number.isFinite(prob) ? prob : undefined
+}
+
 export function UserBetsTable(props: { user: User }) {
   const { user } = props
 
@@ -125,29 +133,26 @@ export function UserBetsTable(props: { user: User }) {
     setOrderFilter(orderFilter === newFilter ? 'active' : newFilter)
   }
 
-  const getMetrics = useEvent(() =>
+  useEffect(() => {
+    if (isAuth === undefined) return
+    let cancelled = false
     // NOTE: this only returns the currently used contract props to save on bandwidth
     api('get-user-contract-metrics-with-contracts', {
       userId: user.id,
       offset: 0,
       // Hack for Ziddletwix
       limit: user.id === 'Iua2KQvL6KYcfGLGNI6PVeGkseo1' ? 10000 : 5000,
-    }).then((res) => {
-      const { contracts, metricsByContract } = res
+    }).then(({ contracts, metricsByContract }) => {
+      if (cancelled) return
       setMetricsByContract(
         mapValues(metricsByContract, (metrics) => metrics[0])
       )
-      setContracts((c) =>
-        uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
-      )
+      setContracts(contracts)
     })
-  )
-
-  useEffect(() => {
-    if (isAuth !== undefined) {
-      getMetrics()
+    return () => {
+      cancelled = true
     }
-  }, [getMetrics, user.id, isAuth])
+  }, [user.id, isAuth, setMetricsByContract, setContracts])
 
   const [filter, setFilter] = usePersistentLocalState<BetFilter>(
     'open',
@@ -273,6 +278,8 @@ export function UserBetsTable(props: { user: User }) {
     { label: 'Lowest Position', field: 'position', direction: 'asc' },
     { label: 'Highest Profit', field: 'profit', direction: 'desc' },
     { label: 'Lowest Profit', field: 'profit', direction: 'asc' },
+    { label: 'Highest Probability', field: 'prob', direction: 'desc' },
+    { label: 'Lowest Probability', field: 'prob', direction: 'asc' },
     { label: 'Highest 1d Change', field: 'day', direction: 'desc' },
     { label: 'Lowest 1d Change', field: 'day', direction: 'asc' },
     { label: 'Highest 1w Change', field: 'week', direction: 'desc' },
@@ -607,6 +614,7 @@ function BetsTable(props: {
         (metricsByContractId[c.id].loan ?? 0) +
         (metricsByContractId[c.id].marginLoan ?? 0)
       ),
+    prob: (c) => -(getSortProb(c) ?? 0),
     dayPriceChange: (c) => -(c.mechanism === 'cpmm-1' ? c.probChanges.day : 0),
     volume24h: (c) => -c.volume24Hours,
     liquidity: (c) => -c.totalLiquidity,
@@ -638,10 +646,16 @@ function BetsTable(props: {
   }
 
   const sortFunction = SORTS[sortOption.field]
-  const contracts =
+  const sortedContracts =
     sortOption.direction === 'desc'
       ? sortBy(allContracts, sortFunction)
       : sortBy(allContracts, sortFunction).reverse()
+  // Keep markets without a single probability (multiple choice, numeric, etc.)
+  // at the bottom in both directions, so the extremes show up first.
+  const contracts =
+    sortOption.field === 'prob'
+      ? partition(sortedContracts, (c) => getSortProb(c) !== undefined).flat()
+      : sortedContracts
 
   const visibleContracts = contracts.slice(0, displayCount)
 

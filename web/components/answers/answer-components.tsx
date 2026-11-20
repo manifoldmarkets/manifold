@@ -20,6 +20,7 @@ import { ReactNode, useEffect, useState } from 'react'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
+import { onSignedOutBetPress } from 'web/lib/util/signed-out-bet'
 import { formatTime } from 'client-common/lib/time'
 import { MoneyDisplay } from '../bet/money-display'
 import { SellSharesModal } from '../bet/sell-row'
@@ -210,12 +211,40 @@ export const AddComment = (props: { onClick: () => void }) => {
   )
 }
 
+// The answer buttons open a trade ticket in place. With nobody signed in, the
+// press can also open sign-in (see common/signed-out-bet.ts).
+export const onAnswerBetPress = (
+  contract: CPMMMultiContract,
+  answer: Answer,
+  outcome: 'YES' | 'NO',
+  user: User | null | undefined
+) => {
+  // TODO: Twomba tracking bet terminology
+  track('bet intent', {
+    location: 'answer panel',
+    contractId: contract.id,
+    answerId: answer.id,
+    outcome,
+    signedOut: !user,
+  })
+  // Only once auth has settled on nobody: sign-in must not open at an account
+  // that is still loading.
+  if (user === null)
+    onSignedOutBetPress({
+      contractId: contract.id,
+      location: 'answer panel',
+      surface: 'ticket',
+      outcome,
+    })
+}
+
 export const MultiBettor = (props: {
   answer: Answer
   contract: CPMMMultiContract
   buttonClassName?: string
 }) => {
   const { answer, contract, buttonClassName } = props
+  const user = useUser()
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
   return (
@@ -240,8 +269,7 @@ export const MultiBettor = (props: {
         className={clsx('bg-primary-50', buttonClassName)}
         onClick={(e) => {
           e.stopPropagation()
-          // TODO: Twomba tracking bet terminology
-          track('bet intent', { location: 'answer panel' })
+          onAnswerBetPress(contract, answer, 'YES', user)
           setOutcome('YES')
         }}
       >
@@ -296,8 +324,7 @@ const YesNoBetButtons = (props: {
         className={clsx('!px-2.5', fillColor ?? 'bg-canvas-50')}
         onClick={(e) => {
           e.stopPropagation()
-          // TODO: Twomba tracking bet terminology
-          track('bet intent', { location: 'answer panel' })
+          onAnswerBetPress(contract, answer, 'YES', user)
           openTicket('YES')
         }}
       >
@@ -311,8 +338,7 @@ const YesNoBetButtons = (props: {
         className={clsx('!px-2.5', fillColor ?? 'bg-canvas-50')}
         onClick={(e) => {
           e.stopPropagation()
-          // TODO: Twomba tracking bet terminology
-          track('bet intent', { location: 'answer panel' })
+          onAnswerBetPress(contract, answer, 'NO', user)
           openTicket('NO')
         }}
       >

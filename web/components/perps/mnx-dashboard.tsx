@@ -12,7 +12,7 @@ import {
 } from 'common/perps/management'
 import {
   MNX_DEFAULT_FEES,
-  MNX_INSTRUMENTS,
+  MNX_LIVE_INSTRUMENTS,
   getMnxInstrument,
 } from 'common/perps/mnx'
 import { getPerpOracleFreshness } from 'common/perps/oracle'
@@ -109,7 +109,7 @@ export function MnxDashboardView({
 
   const live = data.markets.filter(({ contract }) => !contract.isResolved)
   const targets = live.filter(({ contract }) => selected.includes(contract.id))
-  const missing = MNX_INSTRUMENTS.filter(
+  const missing = MNX_LIVE_INSTRUMENTS.filter(
     (i) => !live.some((m) => m.contract.oracleFeedId === i.feedId)
   )
   const sum = (fn: (m: MnxDashboardMarket) => number) =>

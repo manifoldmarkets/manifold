@@ -46,6 +46,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { listGroupsBySlug } from 'web/lib/supabase/groups'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import { onSignedOutBetPress } from 'web/lib/util/signed-out-bet'
 import { useBrowseTopics } from './browse-topics'
 import { ProbSparkline } from './prob-sparkline'
 
@@ -444,9 +445,16 @@ function YesNoButtons(props: { contract: BinaryContract; compact?: boolean }) {
       location: 'browse card',
       outcome: next,
       token: contract.token,
+      contractId: contract.id,
+      signedOut: !user,
     })
     if (!user) {
-      firebaseLogin()
+      onSignedOutBetPress({
+        contractId: contract.id,
+        location: 'browse card',
+        surface: 'button',
+        outcome: next,
+      })
       return
     }
     setOutcome(next)
@@ -515,9 +523,15 @@ export function TradeButton(props: { contract: Contract; compact?: boolean }) {
           track('bet intent', {
             location: 'browse card',
             token: contract.token,
+            contractId: contract.id,
+            signedOut: !user,
           })
           if (!user) {
-            firebaseLogin()
+            onSignedOutBetPress({
+              contractId: contract.id,
+              location: 'browse card',
+              surface: 'button',
+            })
             return
           }
           setOpen(true)

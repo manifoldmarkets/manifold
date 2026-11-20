@@ -12,6 +12,7 @@ import { databaseOracleClock } from 'shared/oracle-clock'
 import {
   ORACLE_FEEDS,
   OracleFeedDef,
+  isOracleFeedLive,
   validateOraclePoint,
 } from 'shared/oracle-feeds'
 import {
@@ -69,6 +70,11 @@ export async function updateOracleFeeds() {
   releaseStuckFeeds(now)
 
   for (const feed of ORACLE_FEEDS) {
+    // A retired feed, or one whose source does not exist yet, is complete or
+    // not started — not stale. No poll, no probe, no alert. (The 2026
+    // generic ballot paged the daily-feed dead-man hourly for two days after
+    // its market settled before this existed.)
+    if (!isOracleFeedLive(feed)) continue
     if (feed.cadence === 'fast') {
       if (isPollDue(feed.id, feed.pollPeriodMs, now))
         dispatch(feed.id, (isCurrent) => tickOneFeed(pg, feed, isCurrent))

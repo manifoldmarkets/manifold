@@ -11,7 +11,7 @@ import {
 
 import { log } from 'shared/utils'
 import { insertOraclePrices } from 'shared/oracle'
-import { getOracleFeed } from 'shared/oracle-feeds'
+import { describeOracleFeedLifecycle, getOracleFeed } from 'shared/oracle-feeds'
 import { VOTEHUB_FEED_SPECS, fetchVoteHubAverage } from 'shared/votehub-feeds'
 import { assertBackfillTarget } from './backfill-guard'
 import { runScript } from './run-script'
@@ -53,6 +53,16 @@ if (require.main === module)
       )
     const feed = getOracleFeed(spec.feedId)
     if (!feed) throw new Error(`${spec.feedId} is not registered`)
+    // A retired series has nothing left to backfill and its settled market
+    // has already priced against the history as it stands. A feed awaiting
+    // its source is fine here: this is exactly how it gets its history once
+    // the key appears (a wrong key still fails below with an HTTP error).
+    if (feed.lifecycle?.phase === 'retired')
+      throw new Error(
+        `refusing to backfill ${spec.feedId}: ${describeOracleFeedLifecycle(
+          feed.lifecycle
+        )}`
+      )
     await assertBackfillTarget(pg, spec.feedId)
 
     // Stamp each day's point from its own calendar date rather than adding a

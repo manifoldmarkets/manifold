@@ -35,11 +35,7 @@ it.each(
       `--phase=${phase}`,
       ...(cohort === 'mnx' ? ['--cohort=mnx'] : []),
       ...(phase === 'rollout'
-        ? [
-            `--public-feed=${
-              cohort === 'mnx' ? 'mnx-anthropic-mark' : 'btc-usd'
-            }`,
-          ]
+        ? [`--public-feed=${cohort === 'mnx' ? 'mnx-openai-mark' : 'btc-usd'}`]
         : []),
     ]
     let audit!: (pg: SupabaseDirectClient) => Promise<void>
@@ -49,7 +45,7 @@ it.each(
       audit = require('../../../scripts/perp-launch-preflight').auditPerpLaunch
     })
     const now = Date.now()
-    const contracts = ['btc-usd', 'mnx-anthropic-mark'].map(
+    const contracts = ['btc-usd', 'mnx-openai-mark'].map(
       (feedId) =>
         ({
           id: feedId,
@@ -159,7 +155,7 @@ const auditWithPinnedPartner = async (
     jest.dontMock('./creator-accounts')
   }
   const now = Date.now()
-  const contracts = ['btc-usd', 'mnx-anthropic-mark'].map(
+  const contracts = ['btc-usd', 'mnx-openai-mark'].map(
     (feedId) =>
       ({
         id: feedId,
@@ -219,25 +215,25 @@ it('accepts the pinned MNX partner as creator of MNX-feed markets only', async (
     '[PASS] creator accounts: official DEV account MxyCh2xvsFMFywwjg3Az0w4xP5B3; MNX partner account @MNX (mnx-user) may own MNX feeds'
   )
   expect(log).toHaveBeenCalledWith(
-    '[PASS] market mnx-anthropic-mark launch creator: MNX partner account @MNX (mnx-user)'
+    '[PASS] market mnx-openai-mark launch creator: MNX partner account @MNX (mnx-user)'
   )
   expect(log).toHaveBeenCalledWith(
-    '[INFO] market mnx-anthropic-mark launch title: stored="fixture", template="Anthropic IPO Market Cap (MNX)"; MNX-owned display titles are editable'
+    '[INFO] market mnx-openai-mark launch title: stored="fixture", template="OpenAI IPO Market Cap (MNX)"; MNX-owned display titles are editable'
   )
   expect(log).not.toHaveBeenCalledWith(
-    expect.stringContaining('[PASS] market mnx-anthropic-mark launch title:')
+    expect.stringContaining('[PASS] market mnx-openai-mark launch title:')
   )
   expect(log.warn).not.toHaveBeenCalledWith(
-    expect.stringContaining('market mnx-anthropic-mark launch title')
+    expect.stringContaining('market mnx-openai-mark launch title')
   )
   expect(log.error).not.toHaveBeenCalledWith(
-    expect.stringContaining('market mnx-anthropic-mark launch title')
+    expect.stringContaining('market mnx-openai-mark launch title')
   )
   expect(log.error).toHaveBeenCalledWith(
     expect.stringContaining('[FAIL] market btc-usd launch title:')
   )
   expect(log.error).toHaveBeenCalledWith(
-    expect.stringContaining('[FAIL] market mnx-anthropic-mark launch ticker:')
+    expect.stringContaining('[FAIL] market mnx-openai-mark launch ticker:')
   )
   expect(log.error).toHaveBeenCalledWith(
     expect.stringContaining(
@@ -248,14 +244,14 @@ it('accepts the pinned MNX partner as creator of MNX-feed markets only', async (
 
 it('reports a matching MNX launch title as PASS', async () => {
   const title = MNX_INSTRUMENTS.find(
-    (instrument) => instrument.feedId === 'mnx-anthropic-mark'
+    (instrument) => instrument.feedId === 'mnx-openai-mark'
   )!.question
   await auditWithPinnedPartner(true, title)
   expect(log).toHaveBeenCalledWith(
-    `[PASS] market mnx-anthropic-mark launch title: ${title}`
+    `[PASS] market mnx-openai-mark launch title: ${title}`
   )
   expect(log).not.toHaveBeenCalledWith(
-    expect.stringContaining('[INFO] market mnx-anthropic-mark launch title:')
+    expect.stringContaining('[INFO] market mnx-openai-mark launch title:')
   )
 })
 
@@ -265,6 +261,6 @@ it('keeps markets owned by the pinned id valid when its row cannot be resolved',
     '[WARN] creator accounts [warning-key=creator-accounts]: MNX partner account mnx-user may own MNX feeds but MNX account mnx-user does not exist in DEV'
   )
   expect(log).toHaveBeenCalledWith(
-    '[PASS] market mnx-anthropic-mark launch creator: MNX partner account mnx-user'
+    '[PASS] market mnx-openai-mark launch creator: MNX partner account mnx-user'
   )
 })

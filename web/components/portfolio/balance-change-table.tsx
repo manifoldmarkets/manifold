@@ -976,6 +976,8 @@ const questTypeToDescription = (questType: QuestType) => {
       return 'Sharing bonus'
     case 'MARKETS_CREATED':
       return 'Creation bonus'
+    case 'MARKETS_CREATED_3':
+      return '3-question creation bonus'
     default:
       return 'questType'
   }

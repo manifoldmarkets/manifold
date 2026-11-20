@@ -1,5 +1,5 @@
 import { MINUTE_MS } from '../util/time'
-import { MNX_INSTRUMENTS } from './mnx'
+import { MNX_INSTRUMENTS, MNX_LIVE_INSTRUMENTS } from './mnx'
 import { OracleFeedHealth } from './oracle-health'
 import { getOracleFreshness, getPerpOracleFreshness } from './oracle'
 import { getOracleAttribution } from './oracle-attribution'
@@ -21,10 +21,16 @@ const contract = {
   maxOraclePriceAgeMs: 5 * MINUTE_MS,
 }
 
-it('defines precisely the agreed 16 markets with permanent MNX attribution', () => {
-  expect(MNX_INSTRUMENTS).toHaveLength(16)
-  expect(new Set(MNX_INSTRUMENTS.map((i) => i.feedId)).size).toBe(16)
+it('defines the agreed live markets plus delisted ones, all with permanent MNX attribution', () => {
+  expect(MNX_INSTRUMENTS).toHaveLength(17)
+  expect(MNX_LIVE_INSTRUMENTS).toHaveLength(15)
+  expect(new Set(MNX_INSTRUMENTS.map((i) => i.feedId)).size).toBe(17)
+  expect(new Set(MNX_INSTRUMENTS.map((i) => i.marketId)).size).toBe(17)
   expect(MNX_INSTRUMENTS.map((i) => i.symbol)).not.toContain('NVDA')
+  expect(MNX_INSTRUMENTS.filter((i) => i.retired).map((i) => i.symbol)).toEqual(
+    ['ANTHROPIC', 'SNDK']
+  )
+  expect(MNX_LIVE_INSTRUMENTS.map((i) => i.symbol)).toContain('ANT')
   for (const spec of MNX_INSTRUMENTS)
     expect(getOracleAttribution(spec.feedId)).toEqual({
       source: 'MNX',
@@ -122,5 +128,14 @@ it('does not let quote reordering erase a freeze or rewind price', () => {
   }
   expect(mergePerpQuotes(latest, recovery).oracleFeedHealth?.status).toBe(
     'available'
+  )
+})
+
+it('prices the Anthropic share perpetual in dollars per share', () => {
+  expect(formatOraclePrice('mnx-ant-mark', 92.25, 2)).toBe('$92.25')
+  expect(
+    MNX_INSTRUMENTS.find((i) => i.feedId === 'mnx-ant-mark')?.description
+  ).toBe(
+    'Tracks the MNX perpetual on one share of Anthropic, PBC Class A common stock (ANT).'
   )
 })
