@@ -958,8 +958,15 @@ async function sidebarLinks({ user = null, isMobile = false } = {}) {
     href: a.getAttribute('data-href'),
     event: a.getAttribute('data-event'),
   }))
+  // The list the links sit in: on desktop it scrolls on its own, so the
+  // controls below it stay on a short screen.
+  const listScrolls = document
+    .querySelector('[data-nav]')
+    .closest('ul')
+    .className.split(' ')
+    .includes('overflow-y-auto')
   await leavePage()
-  return links
+  return Object.assign(links, { listScrolls })
 }
 
 test('the sidebar links the three hubs right after Browse, signed in or out, and first in the phone menu', async () => {
@@ -985,6 +992,12 @@ test('the sidebar links the three hubs right after Browse, signed in or out, and
   const phone = await sidebarLinks({ user, isMobile: true })
   assert.deepEqual(phone.slice(0, 3), hubs)
   assert.equal(phone.filter((link) => link.name === 'Elections').length, 1)
+  // With three more links, the desktop list scrolls on a short screen rather
+  // than pushing "More" (theme, sign out) below it. The phone drawer scrolls
+  // as a whole.
+  assert.equal(signedOut.listScrolls, true)
+  assert.equal(signedIn.listScrolls, true)
+  assert.equal(phone.listScrolls, false)
 })
 
 test('Closing soonest preserves closing-week and substitutes open for all', async () => {

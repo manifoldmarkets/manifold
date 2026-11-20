@@ -228,7 +228,14 @@ export default function Sidebar(props: {
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}
       />
-      <ul className="m-0 mb-4 flex list-none flex-col gap-1 p-0">
+      <ul
+        className={clsx(
+          'm-0 mb-4 flex list-none flex-col gap-1 p-0',
+          // On a short desktop screen the links scroll, so "More" (theme,
+          // sign out) stays on screen. The phone drawer scrolls as a whole.
+          !isMobile && 'min-h-0 overflow-y-auto overflow-x-hidden'
+        )}
+      >
         {navOptions.map((item) => (
           <li key={item.name}>
             {item.name === 'Shop' && isAprilFools() ? (
