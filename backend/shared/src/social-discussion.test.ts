@@ -732,12 +732,25 @@ describe('adding a market to Yap and reading its discussion', () => {
       expect(comments).toHaveLength(1)
       return {
         found: Number(tree[0].Plan['Actual Rows']),
-        // How many comments it planned the rest of the statement for, and how
-        // many there were.
+        // How many comments it planned the rest of the statement for.
         expected: Number(comments[0]['Plan Rows']),
-        matched: times(comments[0], 'Actual Rows'),
         // Comments read and then found not to be ones asked for.
         unwanted: times(comments[0], 'Rows Removed by Filter'),
+        // Rows of the posts and people tables it went through, over every time
+        // it read them.
+        visited: all
+          .filter((node) =>
+            ['social_posts', 'private_users'].includes(
+              String(node['Relation Name'])
+            )
+          )
+          .reduce(
+            (sum, node) =>
+              sum +
+              times(node, 'Actual Rows') +
+              times(node, 'Rows Removed by Filter'),
+            0
+          ),
         // Rows of another table held against a comment they do not belong to.
         mismatched: all.reduce(
           (sum, node) => sum + times(node, 'Rows Removed by Join Filter'),
@@ -750,27 +763,30 @@ describe('adding a market to Yap and reading its discussion', () => {
     // copies.
     const forCard = await run(scans[0])
     expect(forCard.found).toBe(SOCIAL_RECONCILE_BATCH + 1)
-    expect(forCard.matched).toBe(TOPS)
     // PostgreSQL chooses how to look up each comment's copy and author by the
-    // number of comments it expects. Expecting one where there are thousands
-    // is what let it read the whole posts table for each of them: 100 s for
-    // one read on a market ten times this size. Its guess need not be close,
-    // only of the right order.
-    expect(forCard.expected * 50).toBeGreaterThanOrEqual(forCard.matched)
+    // number of comments it expects. Asked with `is not distinct from` and a
+    // null it expected one where there were thousands, and on a market ten
+    // times this size it then read the whole posts table for each of them:
+    // 100 s for one read. At this size it looks each one up even so, which
+    // makes this the check that fails if that condition comes back. Its guess
+    // need not be close, only of the right order.
+    expect(forCard.expected * 50).toBeGreaterThanOrEqual(TOPS)
     // They are found as the comments that reply to nothing, without reading
     // the 6,000 replies.
     expect(forCard.unwanted).toBeLessThan(TOPS)
-    // And each one's copy and author are looked up, or those tables are read
-    // once. Going through every post or every person for each comment would
-    // be hundreds of thousands of mismatches here.
+    // Each one's copy and author are looked up, or those tables are read
+    // once: a few thousand rows either way. Going through every post or every
+    // person for each comment, however that is written, is hundreds of
+    // thousands.
+    expect(forCard.visited).toBeLessThan(5 * TOPS)
     expect(forCard.mismatched).toBeLessThan(TOPS)
 
     // A comment: its three replies, found by the comment they reply to, not
-    // by reading the market's 8,000 comments.
+    // by reading the market's 8,000 comments. With three replies no lookup of
+    // their copies or authors can cost much, so only the first is held here.
     const forComment = await run(scans[1])
     expect(forComment.found).toBe(3)
     expect(forComment.unwanted).toBeLessThan(TOPS)
-    expect(forComment.mismatched).toBeLessThan(TOPS)
   })
 
   test('a copy made by a read or by someone else does not make the author follow the thread', async () => {

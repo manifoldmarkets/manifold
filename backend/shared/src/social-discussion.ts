@@ -347,9 +347,10 @@ export async function reconcileMarketDiscussion(
   // expects that form to match nothing, plans every join for one comment, and
   // can then read the whole posts table once for each comment it does find.
   // A read of a market with 20,000 top-level comments took 100 s that way.
-  const siblings = post.market_comment_id
-    ? "(cc.data->>'replyToCommentId')=$2::text"
-    : "(cc.data->>'replyToCommentId') is null"
+  const siblings =
+    post.market_comment_id == null
+      ? "(cc.data->>'replyToCommentId') is null"
+      : "(cc.data->>'replyToCommentId')=$2::text"
   const rows = await pg.manyOrNone<{
     comment_id: string
     created_time: string
