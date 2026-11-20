@@ -149,7 +149,8 @@ See [MNX oracle methodology](https://docs.mnx.fi/contracts/oracle-methodology),
 
 Launch at the manifest's 3× recommendation (or MNX's margin ceiling, if
 lower), M25,000 per side, funding sensitivity 1 and a nominal annual
-funding cap of 1. Funding runs hourly for all sixteen. The normal 10bps web
+funding cap of 1. Funding runs hourly on every live MNX market (fifteen since
+2026-11-20). The normal 10bps web
 opening fee and API-effective `max(web, configured API)` fee apply; there is
 no fee waiver. Thinness and public marks still permit latency arbitrage even
 at a 2s tick, so retain the existing fee and exposure controls. Preflight warns
@@ -218,7 +219,8 @@ instrument is unavailable. It exits nonzero on unavailable/rejected publication.
 Repair discovery prerequisites with
 `backfill-perp-launch-discovery.ts --cohort=mnx` (dry run), then `--apply`.
 Creation requires `MANIFOLD_API_KEY` belonging to the environment's official
-Manifold creator and sufficient backing (M800,000 for all sixteen). By default
+Manifold creator and sufficient backing (M750,000 for all fifteen live instruments at the
+manifest's M25,000 per side). By default
 the official account owns the markets; `--creator=mnx` makes the verified
 `@MNX` partner account the owner instead, in which case that account must hold
 the backing (the owner pays it at creation and receives the residual pool at
