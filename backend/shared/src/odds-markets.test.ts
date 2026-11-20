@@ -117,7 +117,7 @@ const event: OddsApiEvent = {
 function database(opts: { onLock?: () => void } = {}) {
   const contracts: Contract[] = []
   const writes: string[] = []
-  let tail = Promise.resolve()
+  const lockTails = new Map<string, Promise<void>>()
   const oneOrNone = jest.fn(async (sql: string): Promise<unknown> => {
     if (sql.includes("data->>'sportsEventId'")) return contracts[0] ?? null
     if (sql.includes('from groups'))
@@ -135,15 +135,17 @@ function database(opts: { onLock?: () => void } = {}) {
     task: async (work: (task: { oneOrNone: typeof none }) => Promise<void>) =>
       work({ oneOrNone: none }),
     tx: async (run: (tx: SupabaseDirectClient) => Promise<Contract>) => {
-      let unlock: (() => void) | undefined
+      const releases = new Map<string, () => void>()
       const inserted: Contract[] = []
       const tx = {
         oneOrNone,
-        one: async () => {
-          const previous = tail
-          tail = new Promise<void>((resolve) => {
-            unlock = resolve
-          })
+        one: async (_query: string, [key]: [string]) => {
+          if (releases.has(key)) return {}
+          const previous = lockTails.get(key)
+          lockTails.set(
+            key,
+            new Promise<void>((resolve) => releases.set(key, resolve))
+          )
           await previous
           opts.onLock?.()
           return {}
@@ -165,7 +167,7 @@ function database(opts: { onLock?: () => void } = {}) {
         contracts.push(...inserted)
         return result
       } finally {
-        unlock?.()
+        for (const release of releases.values()) release()
       }
     },
   }
@@ -781,12 +783,12 @@ describe("re-syncing a moved game's title", () => {
   ).question
   const newTitle = buildOddsMarketParams(event, entry).question
 
-  const resync = async (question: string) => {
+  const resync = async (question: string, resolution: string | null = null) => {
     const db = database()
     db.contracts.push({ id: 'existing' } as Contract)
     db.pg.oneOrNone.mockImplementation(async (sql: string) => {
       if (sql.includes("data->>'sportsStartTimestamp' as start"))
-        return { start: oldStart, resolution: null, question }
+        return { start: oldStart, resolution, question }
       if (sql.includes("data->>'sportsEventId'")) return { id: 'existing' }
       return null
     })
@@ -795,8 +797,21 @@ describe("re-syncing a moved game's title", () => {
     })
     const calls = db.pg.none.mock.calls as unknown as [string, unknown[]][]
     const update = calls.find(([sql]) => sql.includes('update contracts'))
-    return JSON.parse(update![1][0] as string)
+    if (!update) return undefined
+    expect(update[0]).toContain('and resolution is null')
+    return JSON.parse(update[1][0] as string)
   }
+
+  it('updates the scheduled kickoff and close without moving the immutable seed', async () => {
+    const patch = await resync(oldTitle)
+    expect(patch.sportsStartTimestamp).toBe(event.commence_time)
+    expect(patch.closeTime).toBe(buildOddsMarketParams(event, entry).closeTime)
+    expect(patch).not.toHaveProperty('sportsSeededStartTimestamp')
+  })
+
+  it('leaves the schedule unchanged once the market resolves', async () => {
+    expect(await resync(oldTitle, 'CANCEL')).toBeUndefined()
+  })
 
   it('moves the date in a title the pipeline wrote', async () => {
     expect(newTitle).not.toEqual(oldTitle)
