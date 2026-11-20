@@ -8,10 +8,39 @@ import { insertOraclePrices } from 'shared/oracle'
 import { advisoryLockQuery } from 'shared/perps/queries'
 import { getLocalEnv } from 'shared/init-admin'
 import { log } from 'shared/utils'
-import { assertBackfillTarget } from './backfill-guard'
 import { runScript } from './run-script'
 
 // Dry-run by default in DEV and PROD; never applies prices to live markets.
+//
+// A feed that already backs a live market can still be backfilled, but only
+// with history from before that market existed. The shared backfill guard
+// refuses any live feed because a backfill there would add points among
+// history a market has already priced against. This one cannot: it inserts
+// only completed MNX candles older than the feed's first stored point. Orders,
+// funding, liquidation and portfolio metrics all read points from after the
+// market was created. So every point must also predate the creation of every
+// live market on the feed, or the run stops. There is no --force.
+export const getPreMarketBackfillBlocker = (
+  points: readonly { ts: number }[],
+  liveMarkets: readonly { slug: string; createdTime: number }[]
+): string | undefined => {
+  if (!liveMarkets.length || !points.length) return undefined
+  if (liveMarkets.some((m) => !Number.isFinite(m.createdTime)))
+    return 'a live market on this feed has no valid creation time'
+  const earliest = liveMarkets.reduce((a, b) =>
+    a.createdTime <= b.createdTime ? a : b
+  )
+  if (points.some((p) => !Number.isFinite(p.ts)))
+    return 'a candle has no valid timestamp'
+  const latest = Math.max(...points.map((p) => p.ts))
+  if (latest >= earliest.createdTime)
+    return `candle at ${new Date(
+      latest
+    ).toISOString()} is not older than live market ${
+      earliest.slug
+    } (created ${new Date(earliest.createdTime).toISOString()})`
+  return undefined
+}
 if (require.main === module)
   runScript(async ({ pg }) => {
     const apply = process.argv.includes('--apply')
@@ -60,7 +89,17 @@ if (require.main === module)
         // Excludes a concurrent market creation and a live collector commit.
         await tx.one(advisoryLockQuery(`create-perp:${spec.feedId}`))
         await tx.one(advisoryLockQuery(`oracle-publish:${spec.feedId}`))
-        await assertBackfillTarget(tx, spec.feedId, []) // no --force escape
+        const liveMarkets = (
+          await tx.manyOrNone<{ slug: string; created_time: string }>(
+            `select slug, created_time from contracts
+             where mechanism = 'perp' and resolution_time is null
+               and data->>'oracleFeedId' = $1`,
+            [spec.feedId]
+          )
+        ).map((m) => ({
+          slug: m.slug,
+          createdTime: Date.parse(m.created_time),
+        }))
         const first = await tx.one<{ ts: string | null }>(
           `select min(ts) as ts from oracle_prices where feed_id = $1`,
           [spec.feedId]
@@ -78,6 +117,17 @@ if (require.main === module)
           )
           if (rejection) throw new Error(rejection)
         }
+        const blocker = getPreMarketBackfillBlocker(batch.points, liveMarkets)
+        if (blocker)
+          throw new Error(
+            `refusing to backfill ${spec.feedId}: ${blocker}. Only history from before every live market on the feed may be added.`
+          )
+        if (liveMarkets.length && batch.points.length)
+          log(
+            `${spec.feedId} backs live market(s) ${liveMarkets
+              .map((m) => m.slug)
+              .join(', ')}; every candle predates their creation`
+          )
         log(
           `${apply ? 'Writing' : 'Would write'} ${
             batch.points.length
