@@ -242,12 +242,25 @@ export async function getForYouSQL(
         'contracts.*, coalesce(avg(uti.avg_conversion_score),1) as avg_topic_conversion_score'
       ),
       from('contracts'),
-      join(`group_contracts on contracts.id = group_contracts.contract_id`),
+      // Left join, so a market with no topics keeps one row (topic columns
+      // null) and is ranked by the order by below instead of being dropped.
+      // An inner join here hid every untagged market from For You for every
+      // user with a topic profile. Topic predicates on this query must stay
+      // null-safe for that row: the blocked-topic filter is a correlated
+      // not exists, which keeps it. group_contracts must stay ahead of uti,
+      // whose on clause reads it; left joins render in the order given.
+      leftJoin(`group_contracts on contracts.id = group_contracts.contract_id`),
+      // The coalesce matches the same rows (no topic id is empty) but makes
+      // this condition non-strict in group_contracts. A strict one lets the
+      // planner nest the joins as contracts left join (group_contracts left
+      // join uti), and with its low row estimate for contracts it then
+      // rebuilt the uti join once per market: on prod that doubled a deep
+      // For You page for a user with 82 topics (3.4 s against 1.7 s before).
       leftJoin(
         `(select
           unnest(array[$1]) as group_id,
           unnest(array[$2]) as avg_conversion_score)
-          as uti on uti.group_id = group_contracts.group_id`,
+          as uti on uti.group_id = coalesce(group_contracts.group_id, '')`,
         [
           Object.keys(userIdsToAverageTopicConversionScores[userId]),
           Object.values(userIdsToAverageTopicConversionScores[userId]),
@@ -286,6 +299,7 @@ export async function getForYouSQL(
       groupBy('contracts.id'),
       // If user has contract-topic scores, use ONLY the defined topic scores when ranking
       // If the user has no contract-matching topic score, use only the contract's importance score
+      // times the prior. That includes a market with no topics at all.
       orderBy(`case
       when bool_or(contracts.boosted) then avg(contracts.${sortByScore})
       when bool_or(uti.avg_conversion_score is not null)

@@ -24,6 +24,9 @@ export function Page(props: {
   hideBottomBar?: boolean
   hideFooter?: boolean
   banner?: ReactNode
+  // Desktop only: a column in the right margin, beside the content, that
+  // stays in view while the page scrolls.
+  rightSidebar?: ReactNode
   // Skip the Google One Tap sign-in prompt on this page (e.g. a landing page
   // where it would cover the content on a first visit).
   hideGoogleOneTap?: boolean
@@ -36,6 +39,7 @@ export function Page(props: {
     hideSidebar,
     hideBottomBar,
     banner,
+    rightSidebar,
     hideGoogleOneTap,
   } = props
 
@@ -103,6 +107,11 @@ export function Page(props: {
           {children}
           {!props.hideFooter && <Footer />}
         </main>
+        {rightSidebar && (
+          <aside className="sticky top-0 hidden max-h-screen self-start overflow-y-auto px-4 lg:col-span-3 lg:block">
+            {rightSidebar}
+          </aside>
+        )}
       </Col>
       {!hideBottomBar && <BottomNavBar />}
     </>

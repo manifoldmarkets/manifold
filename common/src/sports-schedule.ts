@@ -50,7 +50,7 @@ export const sportPath = (sport: SportSelection) =>
 
 /** A topic's page in the sports pages: under its sport, or under All. */
 export const sportTopicPath = (sport: SportSelection, slug: string) =>
-  `/sports/${sport}/${slug}`
+  sport === 'f1' && slug === 'f1' ? sportPath('f1') : `/sports/${sport}/${slug}`
 
 export interface SportCategory {
   key: SportKey

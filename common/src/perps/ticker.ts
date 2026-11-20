@@ -29,13 +29,18 @@ export const isValidPerpTicker = (ticker: string) =>
 export const PERP_FEED_TICKERS: Readonly<Record<string, string>> = {
   'btc-usd': 'BTC',
   'trump-approval-rating': 'TRUMP',
+  // Retired feed (series ended with the 2026 midterm; market settled
+  // 2026-11-05). Its settled market page still renders the badge, so it keeps
+  // its name, and the 2028 pair below take party-suffixed tickers instead.
   'votehub-generic-ballot-2026': 'BALLOT',
+  'votehub-generic-ballot-2028-dem': 'DEM28',
+  'votehub-generic-ballot-2028-rep': 'GOP28',
   'vance-favorability': 'VANCE',
   'crypto-fear-greed': 'FEAR',
   'openrouter-open-weight-share': 'OPENW',
   // The product, not the company: this is the share of OpenRouter tokens
-  // going to Claude models. ANTH is reserved for the Anthropic pre-IPO price
-  // ticker.
+  // going to Claude models. ANTH was the Anthropic pre-IPO valuation future;
+  // ANT is the listed share.
   'openrouter-anthropic-share': 'CLAUDE',
   'openrouter-chinese-lab-share': 'CNLAB',
   'spyx-usd': 'SPYx',
@@ -49,7 +54,11 @@ export const PERP_FEED_TICKERS: Readonly<Record<string, string>> = {
   // settled market page still renders the badge, so it keeps its name.
   'uk-grid-carbon': 'UKCO2',
   // MNX derivative marks, distinct from the OpenRouter usage-share feeds.
+  // Retired (MNX delisted the pre-IPO future; market settled 2026-11-20). Its
+  // settled market page still renders the badge, so it keeps its name.
   'mnx-anthropic-mark': 'ANTH',
+  // Anthropic's Nasdaq ticker, as MNX lists the share perpetual.
+  'mnx-ant-mark': 'ANT',
   'mnx-openai-mark': 'OPENAI',
   'mnx-deepseek-mark': 'DEEP',
   'mnx-moonshot-mark': 'MOON',
@@ -61,6 +70,7 @@ export const PERP_FEED_TICKERS: Readonly<Record<string, string>> = {
   'mnx-meta-mark': 'META',
   'mnx-minimax-mark': 'MINI',
   'mnx-mu-mark': 'MU',
+  // Retired (MNX delisted it 2026-11-19); kept for the settled market page.
   'mnx-sndk-mark': 'SNDK',
   'mnx-spcx-mark': 'SPCX',
   'mnx-tsm-mark': 'TSM',

@@ -8,18 +8,18 @@ import {
   QuestType,
 } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
-import { runTxnFromBank } from 'shared/txn/run-txn'
+import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
   SupabaseDirectClient,
+  SupabaseTransaction,
 } from 'shared/supabase/init'
-import { APIError } from 'common//api/utils'
 import { createQuestPayoutNotification } from 'shared/create-notification'
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
 import * as timezone from 'dayjs/plugin/timezone'
-import { getQuestScore, setQuestScoreValue } from 'common/supabase/set-scores'
+import { setQuestScoreValue } from 'common/supabase/set-scores'
 import { millisToTs } from 'common/supabase/utils'
 import { DAY_MS } from 'common/util/time'
 import { log } from 'shared/utils'
@@ -33,17 +33,45 @@ import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
+const getPacificStartOfDay = () =>
+  dayjs().tz('America/Los_Angeles').startOf('day').valueOf()
+
+// Pays the daily sharing quest once the user has shared a question today. Safe
+// to call any number of times, from any request: it pays whenever today's share
+// count has reached the target and nothing has been paid for today yet, so the
+// next share (or the next call for the same share) makes good a call that
+// failed, never arrived, or ran alongside another one.
+//
+// It used to pay only when a call saw the count step from 0 to exactly 1, and
+// wrote the new count first. A double tap (both calls count 2), a lost first
+// request, or a failed payout skipped that step, so the reward was lost for the
+// rest of the day while the quests modal showed the quest as done.
 export const completeSharingQuest = async (user: User) => {
-  const db = createSupabaseClient()
-  const count = await getCurrentCountForQuest(user.id, 'SHARES')
-  const oldEntry = await getQuestScore(user.id, 'SHARES', db)
-  return await completeQuestInternal(
-    user,
-    'SHARES',
-    oldEntry.score,
-    count,
-    undefined
-  )
+  const questType = 'SHARES'
+  const { scoreId, requiredCount } = QUEST_DETAILS[questType]
+  const startOfDay = getPacificStartOfDay()
+  const period = dayPeriod(startOfDay)
+  const count = await getUserShareEventsCount(user.id, millisToTs(startOfDay))
+  await setQuestScoreValue(user.id, scoreId, count, createSupabaseClient())
+  log('completing quest', { questType, userId: user.id, count, startOfDay })
+  if (count < requiredCount) return { count }
+
+  // Unlocked pre-check, so users who share many questions a day don't take the
+  // user row lock on every share. awardQuestBonus re-checks under the lock.
+  const pg = createSupabaseDirectClient()
+  const paid = await getQuestTypesPaidForPeriod(pg, user.id, period)
+  if (paid.includes(questType)) return { count }
+
+  const resp = await awardQuestBonus(user, questType, period)
+  // Another call paid it first.
+  if (!resp) return { count }
+  if (!resp.txn) {
+    log(`Quest bonus rounded to zero for user ${user.id} (${questType})`)
+    return { count }
+  }
+  // The reward is already paid, so a failed notification mustn't fail the call.
+  await notifyQuestPayout(user, questType, resp.txn.id, resp.bonusAmount)
+  return { count, txn: resp.txn, bonusAmount: resp.bonusAmount }
 }
 
 // Runs after each question a user creates. Counts their questions in the week
@@ -117,12 +145,7 @@ export const payMarketCreationQuests = async (
     count
   )
   for (const questType of unpaid) {
-    const resp = await awardQuestBonus(
-      user,
-      questType,
-      count,
-      weekPeriod(weekStart)
-    )
+    const resp = await awardQuestBonus(user, questType, weekPeriod(weekStart))
     if (!resp) continue
     if (!resp.txn) {
       log(`Quest bonus rounded to zero for user ${user.id} (${questType})`)
@@ -130,90 +153,40 @@ export const payMarketCreationQuests = async (
     }
     // The reward is already paid, so a failed notification mustn't stop the
     // next quest's payout.
-    await createQuestPayoutNotification(
-      user,
-      resp.txn.id,
-      resp.bonusAmount,
-      count,
-      questType
-    ).catch((e) =>
-      log.error('Failed to create quest payout notification', {
-        userId: user.id,
-        questType,
-        error: e instanceof Error ? e.message : String(e),
-      })
-    )
+    await notifyQuestPayout(user, questType, resp.txn.id, resp.bonusAmount)
   }
 }
 
-const completeQuestInternal = async (
+const notifyQuestPayout = async (
   user: User,
   questType: QuestType,
-  oldScore: number,
-  count: number,
-  idempotencyKey: string | undefined
-) => {
-  const db = createSupabaseClient()
-  const questDetails = QUEST_DETAILS[questType]
-  await setQuestScoreValue(
-    user.id,
-    questDetails.scoreId,
-    count,
-    db,
-    idempotencyKey
-  )
-  const startOfDay = dayjs().tz('America/Los_Angeles').startOf('day').valueOf()
-  log('completing quest', {
-    questType,
-    userId: user.id,
-    oldScore,
-    newScore: count,
-    startOfDay,
-    requiredCount: questDetails.requiredCount,
-  })
-  // If they have created the required amounts, send them a quest txn reward.
-  // All users receive a quest bonus, but the amount scales with their effective
-  // tier (flagged = 0, bonus-blocked = 0.2x, free = 1x, subscribers higher).
-  if (count !== oldScore && count === QUEST_DETAILS[questType].requiredCount) {
-    const resp = await awardQuestBonus(user, questType, count, {
-      periodStart: startOfDay,
-      periodEnd: startOfDay + DAY_MS,
+  txnId: string,
+  bonusAmount: number
+) =>
+  await createQuestPayoutNotification(
+    user,
+    txnId,
+    bonusAmount,
+    QUEST_DETAILS[questType].requiredCount,
+    questType
+  ).catch((e) =>
+    log.error('Failed to create quest payout notification', {
+      userId: user.id,
+      questType,
+      error: e instanceof Error ? e.message : String(e),
     })
-    if (!resp) throw new APIError(400, 'Already awarded quest bonus today')
-    if (!resp.txn) {
-      log(`Quest bonus rounded to zero for user ${user.id} (${questType})`)
-      return { count }
-    }
-
-    await createQuestPayoutNotification(
-      user,
-      resp.txn.id,
-      resp.bonusAmount,
-      count,
-      questType
-    )
-    return resp
-  }
-  return { count }
-}
-
-const getCurrentCountForQuest = async (
-  userId: string,
-  questType: 'SHARES'
-): Promise<number> => {
-  if (questType === 'SHARES') {
-    const startOfDay = dayjs()
-      .tz('America/Los_Angeles')
-      .startOf('day')
-      .valueOf()
-    const startTs = millisToTs(startOfDay)
-    log('getting shares count for user', userId, 'from startTs', startTs)
-    return await getUserShareEventsCount(userId, startTs)
-  } else return 0
-}
+  )
 
 // The day or week a quest reward pays for, as epoch ms [start, end).
 type QuestPeriod = { periodStart: number; periodEnd: number }
+
+// periodEnd only bounds rewards paid before rewards recorded periodStart (see
+// PAID_FOR_PERIOD_SQL), so a day that is an hour shorter or longer on a DST
+// change doesn't matter here.
+const dayPeriod = (startOfDay: number): QuestPeriod => ({
+  periodStart: startOfDay,
+  periodEnd: startOfDay + DAY_MS,
+})
 
 const weekPeriod = (weekStart: number): QuestPeriod => ({
   periodStart: weekStart,
@@ -235,7 +208,7 @@ const PAID_FOR_PERIOD_SQL = `
   )`
 
 const getQuestTypesPaidForPeriod = async (
-  pg: SupabaseDirectClient,
+  pg: SupabaseDirectClient | SupabaseTransaction,
   userId: string,
   period: QuestPeriod
 ) =>
@@ -248,59 +221,67 @@ const getQuestTypesPaidForPeriod = async (
     (row) => row.quest_type as QuestType
   )
 
-// Pays the quest's bonus once per period. Returns null if it already paid out
-// for the period, and no txn if the tier multiplier makes the bonus zero.
+// Pays the quest's reward once per period. Returns null if it already paid out
+// for the period, and no txn if the tier multiplier makes the reward zero.
+//
+// Takes only the user row, waiting for it with nothing else held, and pays
+// outside the bets queue, so it can't deadlock with other payments:
+// - It must not wait for the user's queue slot while holding the row. A bet of
+//   the user's can hold that slot while waiting for the row. (Until 2026-11,
+//   runTxnFromBank queued inside this transaction, and the queue's 10 second
+//   expiry then failed the payout with a 503.)
+// - It must not wait for the row while holding the slot. Cash conversion and
+//   in-app purchases hold the row between two queued txns.
+// A bet that read this user's row before the payout committed may retry on a
+// serialization error, as it already would for a payout from another API
+// process.
 const awardQuestBonus = async (
   user: User,
   questType: QuestType,
-  newCount: number,
   period: QuestPeriod
 ) => {
   const pg = createSupabaseDirectClient()
   return await pg.tx(async (tx) => {
     // Lock the user row to serialize concurrent quest reward grants for this
-    // user. Without this, two concurrent /completequest calls (or two
-    // questions created at once) can both pass the previousTxn check below and
-    // both insert reward txns.
-    await tx.oneOrNone('select 1 from users where id = $1 for update', [user.id])
-
-    // make sure we don't already have a txn for this user/questType this period
-    const previousTxn = await tx.oneOrNone(
-      `select 1 from txns
-      where to_id = $/userId/
-      and category = 'QUEST_REWARD'
-      and data->'data'->>'questType' = $/questType/
-      and ${PAID_FOR_PERIOD_SQL}
-      limit 1`,
-      { userId: user.id, questType, ...period }
-    )
-    if (previousTxn) return null
+    // user, including across API instances. Without it, two concurrent calls
+    // (or two questions created at once) can both pass the check below and
+    // both pay.
+    await tx.oneOrNone(`select 1 from users where id = $1 for no key update`, [
+      user.id,
+    ])
+    const paid = await getQuestTypesPaidForPeriod(tx, user.id, period)
+    if (paid.includes(questType)) return null
 
     // Fetch user's supporter entitlements for bonus multiplier
     const entitlements = await getActiveSupporterEntitlements(tx, user.id)
 
-    // Resolve effective tier (account standing + subscription) and apply its
-    // multiplier.
+    // Resolve effective tier (account standing + subscription) and apply
+    // its multiplier.
     const effectiveTier = resolveEffectiveTier({
       entitlements,
       bonusEligibility: user.bonusEligibility,
     })
     const questMultiplier = getEffectiveBonusMultiplier(effectiveTier, 'quest')
-    const baseReward = QUEST_DETAILS[questType].rewardAmount
+    const { rewardAmount: baseReward, requiredCount } = QUEST_DETAILS[questType]
     const rewardAmount = roundTierBonus(baseReward * questMultiplier)
     // runTxn rejects non-positive amounts (flagged accounts earn 0x).
     if (!(rewardAmount > 0)) return { txn: undefined, bonusAmount: 0 }
 
     const bonusTxnData = {
       questType,
-      questCount: newCount,
+      // The quest's required count, not the count seen, as every reward before
+      // periodStart did: API instances still on older code during a deploy
+      // only treat a SHARES or MARKETS_CREATED reward with questCount 1 as
+      // already paid.
+      questCount: requiredCount,
       periodStart: period.periodStart,
       effectiveTier,
       questMultiplier,
       supporterBonus: questMultiplier > 1,
     }
 
-    const bonusTxn: Omit<QuestRewardTxn, 'fromId' | 'id' | 'createdTime'> = {
+    const bonusTxn: Omit<QuestRewardTxn, 'id' | 'createdTime'> = {
+      fromId: 'BANK',
       fromType: 'BANK',
       toId: user.id,
       toType: 'USER',
@@ -309,7 +290,8 @@ const awardQuestBonus = async (
       category: 'QUEST_REWARD',
       data: bonusTxnData,
     }
-    const txn = await runTxnFromBank(tx, bonusTxn)
+    // Locking is done above, so don't queue.
+    const txn = await runTxnOutsideBetQueue(tx, bonusTxn)
     return { txn, bonusAmount: rewardAmount }
   })
 }

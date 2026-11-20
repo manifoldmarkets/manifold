@@ -29,7 +29,7 @@ jest.mock('../utils', () => ({
   log: Object.assign(jest.fn(), { warn: jest.fn(), error: jest.fn() }),
 }))
 const now = 1_800_000_000_000
-const feed = getOracleFeed('mnx-anthropic-mark')!
+const feed = getOracleFeed('mnx-openai-mark')!
 const point = { ts: now, sourceTs: now - 1000, price: 2104 }
 const health = {
   checkedAt: now,

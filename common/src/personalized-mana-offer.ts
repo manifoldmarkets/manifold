@@ -1,12 +1,17 @@
+import { CRYPTO_PURCHASES_ENABLED } from 'common/economy'
+
 export const OFFER_MANA_AMOUNT = 5000
 export const OFFER_PRICE_STRIPE = 40
 export const OFFER_PRICE_CRYPTO = 35
 export const OFFER_DURATION_MS = 72 * 60 * 60 * 1000
 
 // Standard rate is 100 mana / $1, so M5,000 normally costs $50. Best
-// discount path is crypto, so e.g. $35 = 30% off the $50 anchor.
+// discount path is crypto, so e.g. $35 = 30% off the $50 anchor. While crypto
+// is switched off the best price is the card's, e.g. $40 = 20% off, so offer
+// notifications don't promise a discount nobody can get.
 export const OFFER_MAX_DISCOUNT_PCT = Math.round(
-  ((OFFER_MANA_AMOUNT / 100 - OFFER_PRICE_CRYPTO) /
+  ((OFFER_MANA_AMOUNT / 100 -
+    (CRYPTO_PURCHASES_ENABLED ? OFFER_PRICE_CRYPTO : OFFER_PRICE_STRIPE)) /
     (OFFER_MANA_AMOUNT / 100)) *
     100
 )

@@ -38,6 +38,7 @@ import {
   CRYPTO_BULK_THRESHOLD_DISPLAY,
   CRYPTO_FIRST_PURCHASE_BONUS_PCT,
   CRYPTO_MANA_PER_DOLLAR,
+  CRYPTO_PURCHASES_ENABLED,
 } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { api } from 'web/lib/api/api'
@@ -187,7 +188,10 @@ function CheckoutContent() {
   const [creditCardModalOpen, setCreditCardModalOpen] = useState(false)
 
   // Check if user has made a crypto purchase before
-  const { data: cryptoStatus } = useAPIGetter('get-crypto-purchase-status', {})
+  const { data: cryptoStatus } = useAPIGetter(
+    'get-crypto-purchase-status',
+    CRYPTO_PURCHASES_ENABLED ? {} : undefined
+  )
   const isFirstCryptoPurchase = cryptoStatus
     ? !cryptoStatus.hasCryptoPurchase
     : true // Default to true while loading
@@ -428,6 +432,7 @@ function CheckoutContent() {
                 priceUsdStripe={offers.priceUsdStripe}
                 priceUsdCrypto={offers.priceUsdCrypto}
                 cryptoLoading={cryptoLoading}
+                cryptoAvailable={CRYPTO_PURCHASES_ENABLED}
                 cryptoDisabled={!canPay}
                 creditCardDisabled={!canPay}
                 onBuyWithCrypto={() =>
@@ -480,7 +485,9 @@ function CheckoutContent() {
                 </div>
 
                 <p className="text-ink-600 text-center text-sm">
-                  Pay with USDC from any wallet or chain, or use a credit card
+                  {CRYPTO_PURCHASES_ENABLED
+                    ? 'Pay with USDC from any wallet or chain, or use a credit card'
+                    : 'Crypto payments are temporarily unavailable. You can still buy mana with a credit card.'}
                 </p>
 
                 {/* Payment Buttons */}
@@ -517,7 +524,7 @@ function CheckoutContent() {
                     <>
                       <button
                         onClick={() => handleBuyManaClick()}
-                        disabled={cryptoLoading}
+                        disabled={cryptoLoading || !CRYPTO_PURCHASES_ENABLED}
                         className={clsx(
                           'group relative w-full overflow-hidden rounded-xl border-2 border-transparent',
                           'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 bg-[length:200%_100%]',
@@ -539,7 +546,11 @@ function CheckoutContent() {
                           ) : (
                             <>
                               <CurrencyDollarIcon className="h-6 w-6 transition-transform group-hover:scale-110" />
-                              <span>Buy with crypto</span>
+                              <span>
+                                {CRYPTO_PURCHASES_ENABLED
+                                  ? 'Buy with crypto'
+                                  : 'Crypto temporarily unavailable'}
+                              </span>
                             </>
                           )}
                         </Row>
@@ -585,8 +596,10 @@ function CheckoutContent() {
             </div>
 
             {/* Hide the bonus banner + rewards table when the personalized
-                offer is showing — keeps the offer block as the focal point. */}
-            {!showOfferCard && (
+                offer is showing — keeps the offer block as the focal point.
+                Both describe crypto-only bonuses, so they're also hidden
+                while crypto is switched off. */}
+            {!showOfferCard && CRYPTO_PURCHASES_ENABLED && (
               <>
                 {/* Promotional Banner */}
                 {isFirstCryptoPurchase ? (

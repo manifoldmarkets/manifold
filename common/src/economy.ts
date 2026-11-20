@@ -184,6 +184,13 @@ export const MANI_IOS_PRICES = [
 export const SWEEPIES_CASHOUT_FEE = 5
 export const MIN_CASHOUT_AMOUNT = 25
 
+// Crypto checkout is switched off. Daimo, our crypto payment provider, has
+// rejected our API key since 2026-10-23 ("access expired"), and we expect to
+// move to another provider. While this is false, /checkout and the
+// personalized offer card show crypto as temporarily unavailable and take
+// card payments only, and the API refuses to start a crypto session.
+export const CRYPTO_PURCHASES_ENABLED: boolean = false
+
 // Crypto purchase rate: 100 mana per $1 USDC
 export const CRYPTO_MANA_PER_DOLLAR = 100
 

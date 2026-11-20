@@ -81,6 +81,7 @@ import { resolveOddsSportsMarkets } from './sports-odds-resolve'
 import { createF1SportsMarkets } from './sports-f1-create'
 import { resolveF1SportsMarkets } from './sports-f1-resolve'
 import { updateSportsLeaderboards } from './update-sports-leaderboards'
+import { updateElectionLeaderboards } from './update-election-leaderboards'
 
 // Which subset of jobs this process runs. The 2s oracle tick (and the other
 // PERP jobs that apply funding and liquidations) must not share an event loop
@@ -550,6 +551,17 @@ export function createJobs(jobSet: SchedulerJobSet) {
       'update-sports-leaderboards',
       '0 33 * * * *', // hourly at :33
       updateSportsLeaderboards
+    ),
+    // The /election page's leaderboards: profit and creators per election
+    // scope. Each run rebuilds only the boards that are due: the cycle boards
+    // hourly, and the US elections and US politics boards every 6 hours,
+    // because the US politics board reads positions on tens of thousands of
+    // markets. After update-contract-metrics at :42, which refreshes the
+    // profits it reads.
+    createJob(
+      'update-election-leaderboards',
+      '0 47 * * * *', // hourly at :47
+      updateElectionLeaderboards
     ),
   ])
   if (jobSet === 'perps' && jobs.length !== PERP_JOB_NAMES.size)

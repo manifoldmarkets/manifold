@@ -26,6 +26,10 @@ export const MIDTERMS_2026 = {
   senateControl: 'will-republicans-win-the-senate-in-738388924521',
   // Independent multi-choice; each answer is a district, YES = Democrat wins.
   houseDistricts: 'will-a-democrat-win-these-us-house',
+  // Multi-choice (sums to one): how many seats the Democrats hold in the new
+  // Senate, one answer per count plus Other. Independents count for the
+  // party they caucus with.
+  senateSeats: 'how-many-seats-will-the-democrats-h',
 } as const
 
 // 2028 presidential election — the most-traded "who will be elected president"

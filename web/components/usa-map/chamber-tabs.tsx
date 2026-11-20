@@ -60,7 +60,9 @@ export function ChamberTabs(props: {
             }}
           >
             <ChamberIcon mode={m} />
-            <span>{tabName(m)}</span>
+            <span className={styles.steadyLabel} data-text={tabName(m)}>
+              {tabName(m)}
+            </span>
           </button>
         ))}
       </div>

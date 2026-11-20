@@ -7,7 +7,11 @@ import { isEqual } from 'lodash'
 import { Contract } from 'common/contract'
 import { ENV } from 'common/envs/constants'
 import { getMnxCreatorId, isMnxOwnedPerp } from 'common/perps/creator-accounts'
-import { MNX_INSTRUMENTS, getMnxInstrument } from 'common/perps/mnx'
+import {
+  MNX_INSTRUMENTS,
+  MNX_LIVE_INSTRUMENTS,
+  getMnxInstrument,
+} from 'common/perps/mnx'
 import { getPerpFeedTicker } from 'common/perps/ticker'
 import { getLocalEnv } from 'shared/init-admin'
 import { SupabaseDirectClient } from 'shared/supabase/init'
@@ -95,7 +99,7 @@ const run = async (apply: boolean, editorId: string | undefined) => {
         JSON.stringify({ id: contract.id, slug: contract.slug, before, after })
       )
     console.log(
-      `Found ${contracts.length} of ${MNX_INSTRUMENTS.length} registered instruments.`
+      `Found ${contracts.length} of ${MNX_LIVE_INSTRUMENTS.length} live instruments.`
     )
     if (!apply) return
 

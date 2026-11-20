@@ -150,6 +150,7 @@ import { getMarketContext } from './get-market-context'
 import { getMarketLoanMax } from './get-market-loan-max'
 import { getMarketProb } from './get-market-prob'
 import { getMarketProbs } from './get-market-probs'
+import { getMarketProbsHistory } from './get-market-probs-history'
 import { getMarketsByIds } from './get-markets'
 import { getmaxminprofit2025 } from './get-max-min-profit-2025'
 import { getMe } from './get-me'
@@ -261,6 +262,7 @@ import { sportsMarkets } from './sports-markets'
 import { sportsSchedule } from './sports-schedule'
 import { sportsIndex } from './sports-index'
 import { sportsLeaderboards } from './sports-leaderboards'
+import { electionLeaderboards } from './election-leaderboards'
 import { adminSportsResolve } from './admin-sports-resolve'
 import { adminSportsCommunityMarket } from './admin-sports-community-market'
 import { adminSportsInitCommunity } from './admin-sports-init-community'
@@ -404,6 +406,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
   'market/:id/prob': getMarketProb,
   'market-probs': getMarketProbs,
+  'market-probs-history': getMarketProbsHistory,
   'answer/:answerId': getSingleAnswer,
   'market/:contractId/answers': getContractAnswers,
   'markets-by-ids': getMarketsByIds,
@@ -667,6 +670,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'sports-schedule': sportsSchedule,
   'sports-index': sportsIndex,
   'sports-leaderboards': sportsLeaderboards,
+  'election-leaderboards': electionLeaderboards,
   'admin-sports-resolve': adminSportsResolve,
   'admin-sports-community-market': adminSportsCommunityMarket,
   'admin-sports-init-community': adminSportsInitCommunity,
