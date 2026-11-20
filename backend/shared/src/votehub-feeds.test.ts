@@ -1,3 +1,4 @@
+import { getMnxInstrument } from 'common/perps/mnx'
 import { getOracleAttribution } from 'common/perps/oracle-attribution'
 import { ORACLE_TICK_DECORATIONS } from 'common/perps/oracle-display'
 import { getPerpFeedTicker } from 'common/perps/ticker'
@@ -258,17 +259,21 @@ describe('VoteHub feed lifecycle', () => {
       expect(feed?.marketCreationEnabled).toBe(false)
       expect(feed && isOracleFeedLive(feed)).toBe(false)
     }
-    // Everything else in the registry is live.
+    // Everything else in the registry is live, apart from delisted MNX
+    // instruments (retired by common/perps/mnx, covered in mnx-launch.test).
     for (const feed of ORACLE_FEEDS) {
       if (feed === retired || awaiting.includes(feed)) continue
+      if (getMnxInstrument(feed.id)?.retired) continue
       expect([feed.id, isOracleFeedLive(feed)]).toEqual([feed.id, true])
     }
   })
 
   it('mirrors the lifecycle in the launch manifest', () => {
-    expect(PERP_LAUNCH_RETIRED_MARKETS.map((m) => m.feedId)).toEqual([
-      VOTEHUB_GENERIC_BALLOT_2026_FEED_ID,
-    ])
+    expect(
+      PERP_LAUNCH_RETIRED_MARKETS.map((m) => m.feedId).filter(
+        (id) => !getMnxInstrument(id)
+      )
+    ).toEqual([VOTEHUB_GENERIC_BALLOT_2026_FEED_ID])
     expect(PERP_LAUNCH_PENDING_MARKETS.map((m) => m.feedId).sort()).toEqual(
       [
         VOTEHUB_GENERIC_BALLOT_2028_DEM_FEED_ID,

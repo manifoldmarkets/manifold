@@ -560,7 +560,7 @@ agreement in `btc-price.ts`, `validateOpenWeightPublication` in
 
 Feed adapters live next to it:
 
-- `mnx.ts` ? sixteen MNX derivative marks via a shared `fetchObservation`
+- `mnx.ts` ? the live MNX derivative marks (fifteen since 2026-11-20) via a shared `fetchObservation`
   on the 2-second tick; see the detailed MNX section below.
 
 - `btc-price.ts` — BTC/USD spot, median of Coinbase/Kraken/Bitstamp (all
@@ -671,8 +671,9 @@ existed.
 
 ### MNX marks (2-second bulk adapter)
 
-`common/perps/mnx.ts` pins the sixteen reviewed instrument IDs, feed IDs,
-display units and bounds. `shared/mnx.ts` reads one shared `/v0/markets`
+`common/perps/mnx.ts` pins the reviewed instrument IDs, feed IDs,
+display units and bounds: fifteen live instruments, plus delisted ones kept as
+retired feeds so their settled markets still render. `shared/mnx.ts` reads one shared `/v0/markets`
 snapshot per fast tick, with a 1.5s HTTP timeout, an in-flight guard and shared
 failure backoff. This is approximately 30 requests/minute per scheduler
 process (briefly 60 during deployment overlap), plus API/script reads. Tick

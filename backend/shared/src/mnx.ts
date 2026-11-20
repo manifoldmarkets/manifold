@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import {
   MNX_API_URL,
-  MNX_INSTRUMENTS,
+  MNX_LIVE_INSTRUMENTS,
   MNX_POLL_MS,
   MnxInstrument,
 } from 'common/perps/mnx'
@@ -84,7 +84,9 @@ export const parseMnxSnapshot = (
   if (!Number.isFinite(fetchedAt) || fetchedAt <= 0)
     throw new Error('Invalid fetch time')
   const feeds: MnxSnapshot['feeds'] = {}
-  for (const spec of MNX_INSTRUMENTS) {
+  // A delisted instrument is absent from /v0/markets by design; its feed is
+  // retired, so nothing asks for it.
+  for (const spec of MNX_LIVE_INSTRUMENTS) {
     const prior = previous?.feeds[spec.feedId]
     const matches = payload.filter((m) => m && m.symbol === spec.symbol)
     let identity: Pick<MnxFeedSnapshot, 'marketId'> = {}
@@ -302,7 +304,7 @@ export const parseMnxCandles = (
   })
 }
 
-/** Shared request per tick; keep failures shared too so 16 feeds do not each
+/** Shared request per tick; keep failures shared too so the MNX feeds do not each
  * retry an outage. Restarting polls immediately. Retry-After can extend backoff up to ten minutes. */
 export const createMnxSnapshotFetcher = (fetchMarkets = fetchMnxMarkets) => {
   let cached: Promise<MnxSnapshot> | undefined

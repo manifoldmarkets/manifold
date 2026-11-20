@@ -1,4 +1,8 @@
-import { MNX_INSTRUMENTS } from 'common/perps/mnx'
+import {
+  MNX_INSTRUMENTS,
+  MNX_LIVE_INSTRUMENTS,
+  MnxInstrument,
+} from 'common/perps/mnx'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { MAX_QUESTION_LENGTH } from 'common/contract'
 import { DAY_MS, HOUR_MS, MINUTE_MS, YEAR_MS } from 'common/util/time'
@@ -63,39 +67,49 @@ export type PerpLaunchMarketDefinition = {
  * instructions. The preflight warns when a market exceeds them so a reviewer
  * has to make that risk decision explicitly.
  */
-export const MNX_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] =
-  MNX_INSTRUMENTS.map((i) => ({
-    feedId: i.feedId,
-    question: i.question,
-    requiredTopics: [
-      {
-        name: i.category === 'equity' ? 'Stocks' : 'AI',
-        slugByEnvironment:
-          i.category === 'equity'
-            ? { DEV: 'economics-default', PROD: 'stocks' }
-            : { DEV: 'ai', PROD: 'ai' },
-      },
-    ],
-    oracleBehavior:
-      i.category === 'compute' ? 'scheduled-step' : 'continuous-public',
-    requiresSourceAsOf: true,
-    gameDesign: i.description,
-    latencyArbitrageRisk:
-      i.category === 'valuation'
-        ? 'MNX internal-book valuation futures have no external valuation anchor. The defined target is the MNX mark; do not clamp it to its eight-hour oracle EMA. Thinness and the public 2s cached-price window justify a 3× recommendation.'
-        : i.category === 'compute'
-        ? 'H100 references an hourly rental index. Poll at 2s, validate source age separately, and pause on MNX freezes. Scheduled steps and thinness justify 3×.'
-        : 'MNX equity marks combine internal-book prices and an external oracle fallback. The defined target is the derivative mark, including outside the underlying session. A public 2s cached-price window and thinness justify 3×.',
-    recommended: {
-      maxLeverage: 3,
-      annualMaxFundingRate: 1,
-      fundingSensitivity: 1,
-      maxOraclePriceAgeMs: i.maxAgeMs,
-      subsidyLong: 25_000,
-      subsidyShort: 25_000,
+const toMnxLaunchMarket = (i: MnxInstrument): PerpLaunchMarketDefinition => ({
+  feedId: i.feedId,
+  question: i.question,
+  requiredTopics: [
+    {
+      name: i.category === 'equity' ? 'Stocks' : 'AI',
+      slugByEnvironment:
+        i.category === 'equity'
+          ? { DEV: 'economics-default', PROD: 'stocks' }
+          : { DEV: 'ai', PROD: 'ai' },
     },
-    minimumHistory: { spanMs: 30 * DAY_MS, points: 30 * 24 },
-  }))
+  ],
+  oracleBehavior:
+    i.category === 'compute' ? 'scheduled-step' : 'continuous-public',
+  requiresSourceAsOf: true,
+  gameDesign: i.description,
+  latencyArbitrageRisk:
+    i.category === 'valuation'
+      ? 'MNX internal-book valuation futures have no external valuation anchor. The defined target is the MNX mark; do not clamp it to its eight-hour oracle EMA. Thinness and the public 2s cached-price window justify a 3× recommendation.'
+      : i.category === 'compute'
+      ? 'H100 references an hourly rental index. Poll at 2s, validate source age separately, and pause on MNX freezes. Scheduled steps and thinness justify 3×.'
+      : 'MNX equity marks combine internal-book prices and an external oracle fallback. The defined target is the derivative mark, including outside the underlying session. A public 2s cached-price window and thinness justify 3×.',
+  recommended: {
+    maxLeverage: 3,
+    annualMaxFundingRate: 1,
+    fundingSensitivity: 1,
+    maxOraclePriceAgeMs: i.maxAgeMs,
+    subsidyLong: 25_000,
+    subsidyShort: 25_000,
+  },
+  minimumHistory: { spanMs: 30 * DAY_MS, points: 30 * 24 },
+})
+
+export const MNX_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] =
+  MNX_LIVE_INSTRUMENTS.map(toMnxLaunchMarket)
+
+// Delisted MNX instruments, kept with their reviewed settings; see
+// PERP_LAUNCH_RETIRED_MARKETS.
+const MNX_RETIRED_LAUNCH_MARKETS = MNX_INSTRUMENTS.flatMap((i) =>
+  i.retired
+    ? [{ ...toMnxLaunchMarket(i), retiredReason: i.retired.reason }]
+    : []
+)
 
 export const PERP_LAUNCH_MARKETS: readonly PerpLaunchMarketDefinition[] = [
   {
@@ -592,6 +606,7 @@ export const PERP_LAUNCH_RETIRED_MARKETS: readonly PerpRetiredLaunchMarketDefini
       retiredReason:
         "VoteHub's generic_ballot_2026 series ended 2026-11-03 (final value posted 11/04); prod market nScRu5uy6yCu was settled on 2026-11-05 at that value (52.1), per its description. Successors: the 2028 pair in PERP_LAUNCH_PENDING_MARKETS.",
     },
+    ...MNX_RETIRED_LAUNCH_MARKETS,
   ]
 
 // Residual pool value returns to the market creator at settlement. Restrict
