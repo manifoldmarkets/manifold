@@ -392,6 +392,14 @@ describe('hide-comment', () => {
     await expect(
       hide(CREATOR_A, 'market-a', 'on-a', 'delete')
     ).rejects.toMatchObject({ code: 403 })
+    // Whichever market the comment is on: who may act is settled before the
+    // comment is looked at.
+    await expect(hide(CREATOR_A, 'market-b', 'on-a')).rejects.toMatchObject({
+      code: 403,
+    })
+    await expect(
+      hide(CREATOR_A, 'market-a', 'on-b', 'delete')
+    ).rejects.toMatchObject({ code: 403 })
     expect(await stored()).toEqual(before)
   })
 })
@@ -436,6 +444,12 @@ describe('pin-comment', () => {
       code: 403,
     })
     await expectOtherUntouched('on-a', before)
+    // Whichever market the comment is on: who may act is settled first.
+    const pinned = await stored()
+    await expect(pin(CREATOR_B, 'market-a', 'on-b')).rejects.toMatchObject({
+      code: 403,
+    })
+    expect(await stored()).toEqual(pinned)
   })
 })
 
