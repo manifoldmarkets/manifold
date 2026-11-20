@@ -177,21 +177,29 @@ export async function ensureMarketCommentPost(
         existing.source_contract_id !== row.contract_id)
     )
       throw new APIError(409, 'This comment is linked to a different source')
-    if (!(await isSocialThreadOpen(pg, existing)))
+    if (!(await isSocialThreadOpen(pg, existing))) {
+      // The comment is still on its market with a Yap button under it, so
+      // tell the person sharing it why this one cannot be shared. Only them,
+      // and only if Yap would show them the comment: no block with its author
+      // or with the author of the thread it is in. Anything else that closes
+      // a thread is said the general way.
+      const sharer = options.asParent ? undefined : options.sharer
+      const withdrawn =
+        !!existing.deleted_time && !existing.removed_by_moderator
+      const threadAuthor =
+        sharer && withdrawn && existing.root_id !== existing.id
+          ? (await getSocialRow(pg, existing.root_id)).user_id
+          : existing.user_id
       throw new APIError(
         403,
-        // The comment is still on its market with a Yap button under it, so
-        // tell the person sharing it why this one cannot be shared. Only them,
-        // and not if they have a block with its author. Anything else that
-        // closes a thread is said the general way.
-        !options.asParent &&
-        options.sharer &&
-        !options.sharer.blocked.includes(existing.user_id) &&
-        existing.deleted_time &&
-        !existing.removed_by_moderator
+        sharer &&
+        withdrawn &&
+        !sharer.blocked.includes(existing.user_id) &&
+        !sharer.blocked.includes(threadAuthor)
           ? "This comment's author took it off Yap"
           : 'This discussion is closed'
       )
+    }
     return existing
   }
   // A trade or market row is the parent only if it belongs to this market: a

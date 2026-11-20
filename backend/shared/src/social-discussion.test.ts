@@ -481,6 +481,17 @@ describe('adding a market to Yap and reading its discussion', () => {
     await rows(
       `update social_posts set hidden_time=now() where id='mc-hidden-on-yap'`
     )
+    // A reply in someone else's thread: bob's comment, and carol's reply to it,
+    // which carol took off Yap.
+    await insertComment('bobs', { user: 'bob' })
+    await insertComment('carols', {
+      user: 'carol',
+      data: { replyToCommentId: 'bobs' },
+    })
+    await ensureMarketCommentPost(pg, 'carols')
+    await rows(
+      `update social_posts set deleted_time=now() where id='mc-carols'`
+    )
     const share = (commentId: string, blocked: string[] = []) =>
       pg.tx((tx) =>
         ensureSocialSource(
@@ -495,6 +506,20 @@ describe('adding a market to Yap and reading its discussion', () => {
     })
     // Not to someone who has a block with the author (alice wrote it).
     await expect(share('mine', ['alice'])).rejects.toMatchObject({
+      code: 403,
+      message: 'This discussion is closed',
+    })
+    // Nor to someone who has a block with the author of the thread it is in.
+    // Yap shows that person nothing of the thread.
+    await expect(share('carols')).rejects.toMatchObject({
+      code: 403,
+      message: "This comment's author took it off Yap",
+    })
+    await expect(share('carols', ['bob'])).rejects.toMatchObject({
+      code: 403,
+      message: 'This discussion is closed',
+    })
+    await expect(share('carols', ['carol'])).rejects.toMatchObject({
       code: 403,
       message: 'This discussion is closed',
     })
@@ -527,7 +552,7 @@ describe('adding a market to Yap and reading its discussion', () => {
         )
       )
     ).rejects.toMatchObject({ code: 404 })
-    expect(await count('social_posts')).toBe(3)
+    expect(await count('social_posts')).toBe(5)
   })
 
   test('one comment that fails in the database does not stop the others', async () => {
@@ -1002,16 +1027,18 @@ describe('reading copied comments back from the tables', () => {
       )[0].c,
     })
     await ensureMarketCommentPost(pg, 'far')
+    // Read together with the reply it was copied from: each is resolved
+    // against its own market.
     expect(
       (
         await hydrateSocialPosts(
           pg,
-          [await row('mc-far')],
+          [await row('mc-second'), await row('mc-far')],
           { blocked: [] },
           false
         )
-      )[0].text
-    ).toBe('[User unavailable] agreed')
+      ).map((p) => p.text)
+    ).toEqual(['@bobby agreed', '[User unavailable] agreed'])
   })
 
   test('the users it needs are found by their ids, not by reading the users table', async () => {
