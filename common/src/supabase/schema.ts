@@ -3373,6 +3373,51 @@ export type Database = {
         }
         Relationships: []
       }
+      sports_bdl_request_stats: {
+        Row: {
+          endpoint_template: string
+          last_request_at: string
+          last_status: number
+          last_success_at: string | null
+          league_key: string
+          other_count: number
+          process_role: string
+          quota_limit: number | null
+          quota_remaining: number | null
+          rate_limited_count: number
+          success_count: number
+          unauthorized_count: number
+        }
+        Insert: {
+          endpoint_template: string
+          last_request_at: string
+          last_status: number
+          last_success_at?: string | null
+          league_key: string
+          other_count?: number
+          process_role: string
+          quota_limit?: number | null
+          quota_remaining?: number | null
+          rate_limited_count?: number
+          success_count?: number
+          unauthorized_count?: number
+        }
+        Update: {
+          endpoint_template?: string
+          last_request_at?: string
+          last_status?: number
+          last_success_at?: string | null
+          league_key?: string
+          other_count?: number
+          process_role?: string
+          quota_limit?: number | null
+          quota_remaining?: number | null
+          rate_limited_count?: number
+          success_count?: number
+          unauthorized_count?: number
+        }
+        Relationships: []
+      }
       sports_competition_switches: {
         Row: {
           competition_id: string
