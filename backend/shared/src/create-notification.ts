@@ -37,6 +37,7 @@ import {
   userIsBlocked,
   userOptedOutOfBrowserNotifications,
 } from 'common/user-notification-preferences'
+import { getNewsletterNotification } from 'common/newsletter'
 import { formatMoney } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
@@ -1432,6 +1433,19 @@ export const createPollClosedNotification = async (
     )
   })
   await bulkInsertNotifications(bulkNotifications, pg)
+}
+
+// Pinned invitation to subscribe to the Substack newsletter. Inserting it twice
+// is a no-op, so it is safe to call for a user who may already have it.
+export const createNewsletterNotification = async (
+  privateUser: PrivateUser,
+  pg: SupabaseDirectClient
+) => {
+  if (userOptedOutOfBrowserNotifications(privateUser)) return
+  await insertNotificationToSupabase(
+    getNewsletterNotification(privateUser.id, Date.now()),
+    pg
+  )
 }
 
 export const createReferralsProgramNotification = async (
