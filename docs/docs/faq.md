@@ -67,9 +67,12 @@ Mana can be earned by making correct predictions, successful trades, creating po
 - **Prediction streaks** - Make at least one prediction per day to maintain your streak. The reward starts at M5 and increases by M5 for each consecutive day, up to a maximum of M25 per day. Your streak can be viewed on your profile page.
 - **Share a market** - Share a market with others to earn M5.
 
-**Weekly quests:**
+**Weekly quests** (each week starts Monday at midnight Pacific time):
 
 - **Create a market** - Create a market to earn M100.
+- **Create 3 markets** - Create 3 markets in the same week to earn another M100.
+
+Polls don't count toward the weekly quests.
 
 - **Referrals** -
   Refer new users to Manifold and earn M1000 when they sign up using your referral link.
