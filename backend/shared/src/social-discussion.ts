@@ -138,7 +138,9 @@ function marketDiscussionParent(pg: DB, contractId: string, betId?: string) {
 export async function ensureMarketCommentPost(
   pg: DB,
   commentId: string,
-  expectedContractId?: string
+  expectedContractId?: string,
+  // Set when this is the comment that the one being placed replies to.
+  asParent = false
 ): Promise<SocialRow> {
   const row = await pg.oneOrNone<{
     data: ContractComment
@@ -171,7 +173,15 @@ export async function ensureMarketCommentPost(
     )
       throw new APIError(409, 'This comment is linked to a different source')
     if (!(await isSocialThreadOpen(pg, existing)))
-      throw new APIError(403, 'This discussion is closed')
+      throw new APIError(
+        403,
+        // The comment is still on its market with a Yap button under it, so
+        // say why this one cannot be shared. Anything else that closes a
+        // thread is said the general way.
+        !asParent && existing.deleted_time && !existing.removed_by_moderator
+          ? "This comment's author took it off Yap"
+          : 'This discussion is closed'
+      )
     return existing
   }
   // A trade or market row is the parent only if it belongs to this market: a
@@ -180,7 +190,8 @@ export async function ensureMarketCommentPost(
     ? await ensureMarketCommentPost(
         pg,
         comment.replyToCommentId,
-        row.contract_id
+        row.contract_id,
+        true
       )
     : await marketDiscussionParent(pg, row.contract_id, comment.betId)
   if (parent) {

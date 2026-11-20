@@ -70,13 +70,22 @@ update user_reactions r set content_type='comment', content_id=v.comment_id
 from votes v where v.rank=1 and v.content_type='social_post'
   and r.user_id=v.user_id and r.reaction_id=v.reaction_id;
 
-update contract_comments cc set
-  likes=(
-    select count(distinct r.user_id) from user_reactions r
-    where r.content_type='comment' and r.content_id=cc.comment_id and r.reaction_type='like'
-  ),
-  dislikes=(
-    select count(distinct r.user_id) from user_reactions r
-    where r.content_type='comment' and r.content_id=cc.comment_id and r.reaction_type='dislike'
-  )
-where exists(select 1 from social_posts s where s.market_comment_id=cc.comment_id);
+-- Recount the comments that have a post, and write only those whose counts are
+-- wrong, so that running this again rewrites nothing that is already right.
+with counted as (
+  select cc.contract_id, cc.comment_id,
+    (
+      select count(distinct r.user_id) from user_reactions r
+      where r.content_type='comment' and r.content_id=cc.comment_id and r.reaction_type='like'
+    ) as likes,
+    (
+      select count(distinct r.user_id) from user_reactions r
+      where r.content_type='comment' and r.content_id=cc.comment_id and r.reaction_type='dislike'
+    ) as dislikes
+  from contract_comments cc
+  where exists(select 1 from social_posts s where s.market_comment_id=cc.comment_id)
+)
+update contract_comments cc set likes=counted.likes, dislikes=counted.dislikes
+from counted
+where cc.contract_id=counted.contract_id and cc.comment_id=counted.comment_id
+  and (cc.likes is distinct from counted.likes or cc.dislikes is distinct from counted.dislikes);

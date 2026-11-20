@@ -459,6 +459,41 @@ describe('adding a market to Yap and reading its discussion', () => {
     expect(await count('social_posts')).toBe(0)
   })
 
+  test('sharing a comment its author took off Yap says so; other closed threads are said the general way', async () => {
+    for (const id of ['mine', 'moderated', 'hidden-on-yap']) {
+      await insertComment(id)
+      await ensureMarketCommentPost(pg, id)
+      await insertComment(`under-${id}`, { data: { replyToCommentId: id } })
+    }
+    await rows(`update social_posts set deleted_time=now() where id='mc-mine'`)
+    await rows(
+      `update social_posts set deleted_time=now(), removed_by_moderator=true where id='mc-moderated'`
+    )
+    await rows(
+      `update social_posts set hidden_time=now() where id='mc-hidden-on-yap'`
+    )
+    const share = (commentId: string) =>
+      pg.tx((tx) => ensureSocialSource(tx, { contractId: 'market', commentId }))
+    await expect(share('mine')).rejects.toMatchObject({
+      code: 403,
+      message: "This comment's author took it off Yap",
+    })
+    // A moderator's removal or hide is not explained to the sharer.
+    for (const id of ['moderated', 'hidden-on-yap'])
+      await expect(share(id)).rejects.toMatchObject({
+        code: 403,
+        message: 'This discussion is closed',
+      })
+    // A reply under any of them: it is the thread that is closed, and "this
+    // comment" would name the wrong one.
+    for (const id of ['mine', 'moderated', 'hidden-on-yap'])
+      await expect(share(`under-${id}`)).rejects.toMatchObject({
+        code: 403,
+        message: 'This discussion is closed',
+      })
+    expect(await count('social_posts')).toBe(3)
+  })
+
   test('one comment that fails in the database does not stop the others', async () => {
     await insertComment('first')
     // No such user: the copy cannot be written for this one.
@@ -854,6 +889,27 @@ describe('the number of replies shown on a post', () => {
         .filter((node) => !node['Index Cond'] && !node['Recheck Cond'])
         .map((node) => `${node['Node Type']} on ${node['Alias']}`)
     ).toEqual([])
+    // And each post that is counted is found by what it is counted for: the
+    // post it sits under, or the comment it is the copy of. A condition on
+    // anything else would pass the check above and could still read them all.
+    const conditions = (alias: string) =>
+      reads
+        .filter((node) => String(node['Alias']).replace(/_\d+$/, '') === alias)
+        .map((node) => String(node['Index Cond']))
+    const byParent = /^\(parent_id = \w+\.id\)$/
+    const byComment = /^\(market_comment_id = \w+\.comment_id\)$/
+    expect(conditions('p').sort()).toEqual([
+      expect.stringMatching(byComment),
+      expect.stringMatching(byParent),
+    ])
+    expect(conditions('child')).toEqual([
+      expect.stringMatching(byParent),
+      expect.stringMatching(byParent),
+    ])
+    expect(conditions('copied')).toEqual([
+      expect.stringMatching(byComment),
+      expect.stringMatching(byComment),
+    ])
   })
 })
 
@@ -1081,5 +1137,47 @@ describe('the reaction part of 2026111201_social_discussions.sql', () => {
       settled[0]
     )
     expect(await counters('c-both')).toEqual(settled[1])
+  })
+
+  test('running again writes only the comments whose counts are wrong', async () => {
+    await db.exec(migration(MARKET_COMMENT))
+    await seedPosts(true)
+    await seedReactions()
+    await db.exec(migration(DISCUSSIONS))
+    // Each row version carries the transaction that wrote it.
+    const versions = async () =>
+      Object.fromEntries(
+        (
+          await rows(
+            'select comment_id, xmin::text as version from contract_comments'
+          )
+        ).map((row) => [row.comment_id as string, row.version as string])
+      )
+    const first = await versions()
+
+    await db.exec(migration(DISCUSSIONS))
+    expect(await versions()).toEqual(first)
+
+    // A like the counter missed, and a counter that is wrong with no vote behind it.
+    await react('c-both', 'comment', 'dave')
+    await rows(
+      `update contract_comments set dislikes=7 where comment_id='c-twice'`
+    )
+    const before = await versions()
+    await db.exec(migration(DISCUSSIONS))
+    const after = await versions()
+    expect(await counters('c-both')).toEqual({ likes: 3, dislikes: 0 })
+    expect(await counters('c-twice')).toEqual({ likes: 2, dislikes: 0 })
+    expect(
+      Object.keys(after)
+        .filter((id) => after[id] !== before[id])
+        .sort()
+    ).toEqual(['c-both', 'c-twice'])
+    // A comment with no post is never recounted, right or wrong.
+    await rows(
+      `update contract_comments set likes=9 where comment_id='c-untouched'`
+    )
+    await db.exec(migration(DISCUSSIONS))
+    expect(await counters('c-untouched')).toEqual({ likes: 9, dislikes: 0 })
   })
 })
