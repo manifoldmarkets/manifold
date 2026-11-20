@@ -1,16 +1,23 @@
 import { Contract } from 'common/contract'
 import { isEligibleRelatedMarket } from 'common/related-markets'
+import {
+  capRelatedMarketsPerCreator,
+  diversifyRelatedMarkets,
+  RELATED_MARKETS_CANDIDATE_POOL,
+  relatedMarketsMaxPerCreator,
+} from 'common/related-markets-diversity'
 import { MINUTE_MS } from 'common/util/time'
 import { getContractsDirect } from 'shared/supabase/contracts'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
+  SupabaseTransaction,
 } from 'shared/supabase/init'
 import { log, metrics } from 'shared/utils'
 import { cacheGetJson, cacheSetJson } from 'shared/redis/cache'
 
 import { APIHandler } from 'api/helpers/endpoint'
-import { orderBy } from 'lodash'
+import { orderBy, uniqBy } from 'lodash'
 import { TOPIC_SIMILARITY_THRESHOLD } from 'shared/helpers/embeddings'
 import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
 import {
@@ -37,9 +44,107 @@ const RELATED_MARKETS_CACHE_TTL_S = RELATED_MARKETS_CACHE_TTL_MS / 1000
 // calls/day, ~95% of all LLM calls in prod, before this cache.
 const RELATED_MARKETS_FILTER_TTL_S = 24 * 60 * 60
 const relatedMarketsCacheKey = (contractId: string, limit: number) =>
-  // Version the key so deployment immediately abandons six-hour entries
-  // written by the previous cache policy.
-  `related-markets:v2:${contractId}:limit:${limit}`
+  // Version the key so deployment immediately abandons entries written by the
+  // previous selection policy (v3: near-duplicate collapse + creator cap).
+  `related-markets:v3:${contractId}:limit:${limit}`
+
+// The HNSW index hands back at most hnsw.ef_search neighbours (40 on prod),
+// whatever match_count asks for, and most of them are closed or resolved. On
+// a page inside a 60-market templated series every one of those is the
+// series, so the deeper candidate pool needs a wider search. Measured on prod
+// 2026-11-17: ~15 ms for 150 candidates at 300, vs ~5 ms for the default.
+const EXTENDED_POOL_EF_SEARCH = 300
+
+type RelatedCandidate = Pick<
+  Contract,
+  | 'id'
+  | 'question'
+  | 'creatorId'
+  | 'closeTime'
+  | 'deleted'
+  | 'isResolved'
+  | 'mechanism'
+  | 'visibility'
+>
+
+// Only the fields the selection needs: a full `data` row for 150 candidates
+// can run past 1 MB. The chosen ids are materialized afterwards.
+const CANDIDATES_SQL = `
+  select contract_id as id,
+    data->>'question' as question,
+    data->>'creatorId' as creator_id,
+    data->'closeTime' as close_time,
+    data->'deleted' as deleted,
+    data->'isResolved' as is_resolved,
+    data->>'mechanism' as mechanism,
+    data->>'visibility' as visibility
+  from close_contract_embeddings(
+    input_contract_id := $1,
+    similarity_threshold := $2,
+    match_count := $3
+  )`
+
+const toCandidate = (row: {
+  id: string
+  question: string | null
+  creator_id: string | null
+  close_time: unknown
+  deleted: unknown
+  is_resolved: unknown
+  mechanism: string | null
+  visibility: string | null
+}): RelatedCandidate => ({
+  id: row.id,
+  question: row.question ?? '',
+  creatorId: row.creator_id ?? '',
+  closeTime:
+    typeof row.close_time === 'number' && Number.isFinite(row.close_time)
+      ? row.close_time
+      : undefined,
+  deleted: row.deleted === true,
+  isResolved: row.is_resolved === true,
+  mechanism: row.mechanism as Contract['mechanism'],
+  visibility: row.visibility as Contract['visibility'],
+})
+
+/** Ranked candidates: first exactly the list this endpoint always fetched
+ * (default search, `limit * 2`), then a deeper search that only supplies
+ * replacements for candidates the near-duplicate collapse or the creator cap
+ * set aside. A wider search alone would also reorder ordinary pages, since
+ * similarity² × importance lets loosely related popular markets in. */
+const fetchRelatedCandidates = (
+  pg: SupabaseDirectClient,
+  contractId: string,
+  limit: number
+) =>
+  pg.tx(async (tx: SupabaseTransaction) => {
+    const source = await tx.oneOrNone<{
+      question: string | null
+      creator_id: string | null
+    }>(`select question, creator_id from contracts where id = $1`, [contractId])
+    const core = await tx.map(
+      CANDIDATES_SQL,
+      [contractId, TOPIC_SIMILARITY_THRESHOLD, limit * 2],
+      toCandidate
+    )
+    await tx.none(`set local hnsw.ef_search = $1`, [EXTENDED_POOL_EF_SEARCH])
+    const extended = await tx.map(
+      CANDIDATES_SQL,
+      [
+        contractId,
+        TOPIC_SIMILARITY_THRESHOLD,
+        Math.max(RELATED_MARKETS_CANDIDATE_POOL, limit * 4),
+      ],
+      toCandidate
+    )
+    return {
+      source: {
+        question: source?.question ?? '',
+        creatorId: source?.creator_id ?? '',
+      },
+      candidates: uniqBy([...core, ...extended], (c) => c.id),
+    }
+  })
 
 const orderByNonStonks = (c: Contract) =>
   c.outcomeType !== 'STONK' && !c.question.includes('stock') ? 1 : 0
@@ -57,7 +162,7 @@ export const getRelatedMarkets: APIHandler<'get-related-markets'> = async (
     cachedResults &&
     cachedResults.lastUpdated > Date.now() - RELATED_MARKETS_CACHE_TTL_MS
   ) {
-    return refreshedRelatedMarkets(contractId, cachedResults, pg)
+    return materializeRelatedMarkets(contractId, cachedResults, pg, 'memory')
   }
 
   // L1 miss/stale: try the shared Redis cache before recomputing the (expensive)
@@ -71,23 +176,23 @@ export const getRelatedMarkets: APIHandler<'get-related-markets'> = async (
   ) {
     metrics.inc('cache/hits', { cache: 'related-markets' })
     cachedRelatedMarkets.set(cacheKey, cachedEntry)
-    return refreshedRelatedMarkets(contractId, cachedEntry, pg)
+    return materializeRelatedMarkets(contractId, cachedEntry, pg, 'redis')
   }
   metrics.inc('cache/misses', { cache: 'related-markets' })
 
-  const unfilteredMarketsFromEmbeddings = await pg.map(
-    `
-      select * from close_contract_embeddings(
-        input_contract_id := $1,
-        match_count := $2,
-        similarity_threshold := $3
-        )`,
-    [contractId, limit * 2, TOPIC_SIMILARITY_THRESHOLD],
-    (row) => row.data as Contract
+  const { source, candidates } = await fetchRelatedCandidates(
+    pg,
+    contractId,
+    limit
   )
 
-  let marketsFromEmbeddings = unfilteredMarketsFromEmbeddings.filter(
-    (contract) => isEligibleRelatedMarket(contract)
+  // Collapse near-duplicates and cap any one creator before the model sees
+  // the list, so its input stays the same size as before (limit * 2).
+  let marketsFromEmbeddings = diversifyRelatedMarkets(
+    source,
+    candidates.filter((contract) => isEligibleRelatedMarket(contract)),
+    limit * 2,
+    relatedMarketsMaxPerCreator(limit)
   )
 
   if (
@@ -157,7 +262,14 @@ Return a JSON array containing ONLY the IDs of markets to KEEP (those that are d
       )
     }
   }
-  marketsFromEmbeddings = marketsFromEmbeddings.slice(0, limit)
+  // Cap again rather than slice: once the model drops some markets, the
+  // overflow behind them could otherwise put one creator back over the cap
+  // while another creator's accepted markets fall off the end.
+  marketsFromEmbeddings = capRelatedMarketsPerCreator(
+    marketsFromEmbeddings,
+    limit,
+    relatedMarketsMaxPerCreator(limit)
+  )
 
   const marketIds = marketsFromEmbeddings.map((c) => c.id)
   const cacheEntry = {
@@ -167,13 +279,7 @@ Return a JSON array containing ONLY the IDs of markets to KEEP (those that are d
   cachedRelatedMarkets.set(cacheKey, cacheEntry)
   await cacheSetJson(cacheKey, cacheEntry, RELATED_MARKETS_CACHE_TTL_S)
 
-  return {
-    marketsFromEmbeddings: orderBy(
-      marketsFromEmbeddings,
-      orderByNonStonks,
-      'desc'
-    ).map(cleanContractForStaticProps),
-  }
+  return materializeRelatedMarkets(contractId, cacheEntry, pg, 'computed')
 }
 
 export const cleanContractForStaticProps = (c: Contract) =>
@@ -187,12 +293,15 @@ export const cleanContractForStaticProps = (c: Contract) =>
     groupSlugs: [],
   } as Contract)
 
-const refreshedRelatedMarkets = async (
+/** Refetch the chosen ids so every response carries current contract state,
+ * and drop any that stopped being eligible. */
+const materializeRelatedMarkets = async (
   contractId: string,
   cachedResults: cacheType,
-  pg: SupabaseDirectClient
+  pg: SupabaseDirectClient,
+  source: 'memory' | 'redis' | 'computed'
 ) => {
-  log('returning cached related markets', { contractId })
+  log('returning related markets', { contractId, source })
   const refreshedContracts = await getContractsDirect(
     cachedResults.marketIdsFromEmbeddings,
     pg
