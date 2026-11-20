@@ -219,6 +219,11 @@ module.exports = {
         permanent: true,
       },
       {
+        source: '/sports/f1/f1',
+        destination: '/sports/f1',
+        permanent: true,
+      },
+      {
         source: '/sports/world-cup',
         destination: '/sports/world-cup-2026',
         permanent: false,
