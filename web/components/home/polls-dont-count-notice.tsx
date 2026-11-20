@@ -14,7 +14,9 @@ export function PollsDontCountNotice(props: { className?: string }) {
       )}
     >
       <InformationCircleIcon className="text-ink-500 mt-0.5 h-4 w-4 shrink-0" />
-      <span>Polls don't count toward the weekly market creation quests.</span>
+      <span>
+        Polls no longer count toward the weekly market creation quests.
+      </span>
     </Row>
   )
 }
