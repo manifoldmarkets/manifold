@@ -9,6 +9,7 @@ import { Bet } from 'common/bet'
 import { getAutoBountyPayoutPerHour } from 'common/bounty'
 import { getAnswerProbability } from 'common/calculate'
 import { HistoryPoint, MultiPoints } from 'common/chart'
+import { ChartPosition } from 'common/chart-position'
 import {
   BinaryContract,
   BinaryOrPseudoNumericContract,
@@ -59,6 +60,11 @@ import { useLiveContract } from 'web/hooks/use-contract'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import {
+  ValueStore,
+  createValueStore,
+  useValueStore,
+} from 'web/hooks/use-value-store'
+import {
   AnswersResolvePanel,
   IndependentAnswersResolvePanel,
   IndependentAnswersUnresolvePanel,
@@ -101,6 +107,14 @@ export const ContractOverview = memo(
     // The time of the latest bet among the rows the server-rendered part of
     // betPoints was made from.
     serverLastBetTime?: number
+    // The answers the page was rendered with chart points for.
+    serverPointAnswerIds?: string[]
+    // The time of the newest bet in the page's own feed that moved a
+    // probability, if there is one.
+    latestPageBetTime?: number
+    // Whether the contract is the live one, loaded since the page opened, or
+    // still the one the page was rendered with. Taken as live if not given.
+    hasLiveContract?: boolean
     showResolver: boolean
     showUnresolver: boolean
     resolutionRating?: ReactNode
@@ -172,6 +186,9 @@ export const ContractOverview = memo(
             contract={contract}
             points={betPoints as MultiPoints}
             serverLastBetTime={props.serverLastBetTime}
+            serverPointAnswerIds={props.serverPointAnswerIds ?? NO_ANSWER_IDS}
+            latestPageBetTime={props.latestPageBetTime}
+            hasLiveContract={props.hasLiveContract ?? true}
             showResolver={showResolver}
             showUnresolver={showUnresolver}
             setShowResolver={setShowResolver}
@@ -356,6 +373,8 @@ export const BinaryOverview = (props: {
   )
 }
 
+const NO_ANSWER_IDS: string[] = []
+
 // How long the pointer must rest on an answer that is not on the chart before
 // the chart previews it. Previewing adds a line and can rescale the chart, so
 // it should not happen for every row the pointer crosses.
@@ -363,9 +382,15 @@ const HOVER_PREVIEW_DELAY_MS = 150
 
 const ChoiceOverview = (props: {
   points: MultiPoints
-  // The time of the latest bet among the rows the server-rendered part of
-  // `points` was made from.
+  // The time of the latest bet among the rows `points` was made from.
   serverLastBetTime: number | undefined
+  // The answers the page was rendered with chart points for.
+  serverPointAnswerIds: string[]
+  // The time of the newest bet in the page's own feed that moved a
+  // probability, if there is one.
+  latestPageBetTime: number | undefined
+  // Whether the contract is the live one, loaded since the page opened.
+  hasLiveContract: boolean
   contract: CPMMMultiContract
   showResolver: boolean
   showUnresolver: boolean
@@ -401,7 +426,13 @@ const ChoiceOverview = (props: {
   const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
     useTimePicker(contract, () => setShowZoomer(true))
 
-  const [hoverAnswerId, setHoverAnswerId] = useState<string>()
+  // The answer the pointer is on. It is kept outside React state so that
+  // moving the pointer over the answer list re-renders the chart and nothing
+  // else.
+  const hoverStore = useMemo(
+    () => createValueStore<string | undefined>(undefined),
+    []
+  )
   const [selectedAnswerIds, setSelectedAnswerIds] = useState<string[]>([])
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
@@ -449,10 +480,10 @@ const ChoiceOverview = (props: {
   const onAnswerHover = useEvent((answer: Answer | undefined) => {
     clearTimeout(hoverTimer.current)
     if (!answer || graphedAnswerIds.includes(answer.id)) {
-      setHoverAnswerId(answer?.id)
+      hoverStore.set(answer?.id)
     } else {
       hoverTimer.current = setTimeout(
-        () => setHoverAnswerId(answer.id),
+        () => hoverStore.set(answer.id),
         HOVER_PREVIEW_DELAY_MS
       )
     }
@@ -505,13 +536,27 @@ const ChoiceOverview = (props: {
         : [...answers, answer.id]
     )
   }
+  // The same function from render to render, so the answer list can skip
+  // renders that change nothing it shows.
+  const onAnswerClick = useEvent((answer: Answer) => {
+    if (hideGraph) {
+      setSelectedAnswerIds([answer.id])
+      setHideGraph(false)
+    } else addAnswerToGraph(answer)
+  })
   const { points, loading } = useMultiChoiceDataZoomFetcher({
     contract,
     viewXScale: zoomParams?.viewXScale,
     points: props.points,
     createdTime: contract.createdTime,
-    lastBetTime: contract.lastBetTime ?? contract.createdTime,
     serverLastBetTime: props.serverLastBetTime,
+    serverPointAnswerIds: props.serverPointAnswerIds,
+    latestPageBetTime: props.latestPageBetTime,
+    hasLiveContract: props.hasLiveContract,
+    isShown: !hideGraph,
+    isZoomed: currentTimePeriod !== 'allTime',
+    graphedAnswerIds,
+    previewStore: hoverStore,
   })
   return (
     <>
@@ -554,39 +599,23 @@ const ChoiceOverview = (props: {
         )}
       </Row>
       {isMultiCpmm(contract) && !hideGraph && (
-        <SizedContainer
-          className={clsx(
-            // mt-2 keeps the top axis label clear of the controls above.
-            'mt-2 h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
-            showZoomer && 'mb-12'
-          )}
-        >
-          {(w, h) => (
-            <ChoiceContractChart
-              showZoomer={showZoomer}
-              zoomParams={zoomParams}
-              width={w}
-              height={h}
-              multiPoints={points}
-              contract={contract}
-              highlightAnswerId={hoverAnswerId}
-              selectedAnswerIds={graphedAnswerIds}
-              pointerMode={pointerMode}
-              setHoveredAnnotation={setHoveredAnnotation}
-              hoveredAnnotation={hoveredAnnotation}
-              chartAnnotations={chartAnnotations}
-              chartPositions={chartPositions?.filter((cp) =>
-                hoverAnswerId
-                  ? cp.answerId === hoverAnswerId
-                  : selectedAnswerIds.length === 0 ||
-                    (cp.answerId && selectedAnswerIds.includes(cp.answerId))
-              )}
-              hoveredChartPosition={hoveredChartPosition}
-              setHoveredChartPosition={setHoveredChartPosition}
-              zoomY={zoomY}
-            />
-          )}
-        </SizedContainer>
+        <ChoiceChart
+          hoverStore={hoverStore}
+          contract={contract}
+          points={points}
+          graphedAnswerIds={graphedAnswerIds}
+          selectedAnswerIds={selectedAnswerIds}
+          showZoomer={showZoomer}
+          zoomParams={zoomParams}
+          pointerMode={pointerMode}
+          setHoveredAnnotation={setHoveredAnnotation}
+          hoveredAnnotation={hoveredAnnotation}
+          chartAnnotations={chartAnnotations}
+          chartPositions={chartPositions}
+          hoveredChartPosition={hoveredChartPosition}
+          setHoveredChartPosition={setHoveredChartPosition}
+          zoomY={zoomY}
+        />
       )}
       {chartAnnotations?.length && !hideGraph ? (
         <ChartAnnotations
@@ -635,14 +664,7 @@ const ChoiceOverview = (props: {
             contract={contract}
             onAnswerCommentClick={onAnswerCommentClick}
             onAnswerHover={onAnswerHover}
-            onAnswerClick={
-              hideGraph
-                ? (ans) => {
-                    setSelectedAnswerIds([ans.id])
-                    setHideGraph(false)
-                  }
-                : addAnswerToGraph
-            }
+            onAnswerClick={onAnswerClick}
             sort={sort}
             setSort={setSort}
             query={query}
@@ -655,6 +677,71 @@ const ChoiceOverview = (props: {
     </>
   )
 }
+// The chart of a multiple choice market, in a component of its own so that it
+// alone re-renders as the pointer moves over the answer list.
+const ChoiceChart = (
+  props: Omit<
+    Parameters<typeof ChoiceContractChart>[0],
+    | 'width'
+    | 'height'
+    | 'multiPoints'
+    | 'highlightAnswerId'
+    | 'selectedAnswerIds'
+    | 'chartPositions'
+  > & {
+    hoverStore: ValueStore<string | undefined>
+    points: MultiPoints
+    // The answers to draw, and the ones the user picked (none: the defaults).
+    graphedAnswerIds: string[]
+    selectedAnswerIds: string[]
+    chartPositions: ChartPosition[]
+  }
+) => {
+  const {
+    hoverStore,
+    points,
+    graphedAnswerIds,
+    selectedAnswerIds,
+    chartPositions,
+    showZoomer,
+    ...chartProps
+  } = props
+  const hoverAnswerId = useValueStore(hoverStore)
+  const shownPositions = useMemo(
+    () =>
+      chartPositions?.filter((cp) =>
+        hoverAnswerId
+          ? cp.answerId === hoverAnswerId
+          : selectedAnswerIds.length === 0 ||
+            (cp.answerId && selectedAnswerIds.includes(cp.answerId))
+      ),
+    [chartPositions, hoverAnswerId, selectedAnswerIds]
+  )
+
+  return (
+    <SizedContainer
+      className={clsx(
+        // mt-2 keeps the top axis label clear of the controls above.
+        'mt-2 h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
+        showZoomer && 'mb-12'
+      )}
+    >
+      {(w, h) => (
+        <ChoiceContractChart
+          {...chartProps}
+          showZoomer={showZoomer}
+          width={w}
+          height={h}
+          multiPoints={points}
+          highlightAnswerId={hoverAnswerId}
+          selectedAnswerIds={graphedAnswerIds}
+          chartPositions={shownPositions}
+        />
+      )}
+    </SizedContainer>
+  )
+}
+
 const NumberOverview = (props: {
   points: MultiPoints
   contract: CPMMNumericContract
