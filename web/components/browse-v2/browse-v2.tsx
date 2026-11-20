@@ -82,10 +82,6 @@ function BrowseV2Inner() {
     'best',
     'browse-v2-lens'
   )
-  // Most browse clicks land several markets down the list, so every screen
-  // defaults to the denser list view: desktop cards showed fewer markets
-  // before the fold, and fewer were opened from them. Cards remain a choice,
-  // and a choice either way is remembered.
   const isMobile = useIsMobile()
   const [showRail, setShowRail] = useState(false)
   useEffect(() => {
@@ -102,6 +98,10 @@ function BrowseV2Inner() {
   const [savedLayout, setLayout] = usePersistentLocalState<
     BrowseLayout | undefined
   >(undefined, 'browse-v2-layout')
+  // Most browse clicks land several markets down the list, so every screen
+  // defaults to the denser list view: desktop cards showed fewer markets
+  // before the fold, and fewer were opened from them. Cards remain a choice,
+  // and a choice either way is remembered.
   const layout: BrowseLayout = savedLayout ?? 'list'
   const [topicChoice, setTopicChoice] = usePersistentInMemoryState<TopicChoice>(
     ALL_TOPICS,
