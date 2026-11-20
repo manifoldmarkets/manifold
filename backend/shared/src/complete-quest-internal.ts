@@ -16,12 +16,10 @@ import {
   SupabaseTransaction,
 } from 'shared/supabase/init'
 import { createQuestPayoutNotification } from 'shared/create-notification'
-import * as dayjs from 'dayjs'
-import * as utc from 'dayjs/plugin/utc'
-import * as timezone from 'dayjs/plugin/timezone'
 import { setQuestScoreValue } from 'common/supabase/set-scores'
 import { millisToTs } from 'common/supabase/utils'
-import { DAY_MS } from 'common/util/time'
+import { pacificStartOfDayMs } from 'common/streak-snapshot'
+import { HOUR_MS } from 'common/util/time'
 import { log } from 'shared/utils'
 import {
   getEffectiveBonusMultiplier,
@@ -29,12 +27,6 @@ import {
   roundTierBonus,
 } from 'common/supporter-config'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
-
-dayjs.extend(utc)
-dayjs.extend(timezone)
-
-const getPacificStartOfDay = () =>
-  dayjs().tz('America/Los_Angeles').startOf('day').valueOf()
 
 // Pays the daily sharing quest once the user has shared a question today. Safe
 // to call any number of times, from any request: it pays whenever today's share
@@ -49,11 +41,17 @@ const getPacificStartOfDay = () =>
 export const completeSharingQuest = async (user: User) => {
   const questType = 'SHARES'
   const { scoreId, requiredCount } = QUEST_DETAILS[questType]
-  const startOfDay = getPacificStartOfDay()
-  const period = dayPeriod(startOfDay)
-  const count = await getUserShareEventsCount(user.id, millisToTs(startOfDay))
+  const period = getPacificDayPeriod()
+  // Only the period's own shares: a call that took yesterday's period just
+  // before midnight mustn't count a share made after it, or one share would
+  // pay both yesterday's reward and today's.
+  const count = await getUserShareEventsCount(
+    user.id,
+    millisToTs(period.periodStart),
+    millisToTs(period.periodEnd)
+  )
   await setQuestScoreValue(user.id, scoreId, count, createSupabaseClient())
-  log('completing quest', { questType, userId: user.id, count, startOfDay })
+  log('completing quest', { questType, userId: user.id, count, ...period })
   if (count < requiredCount) return { count }
 
   // Unlocked pre-check, so users who share many questions a day don't take the
@@ -180,13 +178,15 @@ const notifyQuestPayout = async (
 // The day or week a quest reward pays for, as epoch ms [start, end).
 type QuestPeriod = { periodStart: number; periodEnd: number }
 
-// periodEnd only bounds rewards paid before rewards recorded periodStart (see
-// PAID_FOR_PERIOD_SQL), so a day that is an hour shorter or longer on a DST
-// change doesn't matter here.
-const dayPeriod = (startOfDay: number): QuestPeriod => ({
-  periodStart: startOfDay,
-  periodEnd: startOfDay + DAY_MS,
-})
+// The Pacific calendar day containing `now`: 23 or 25 hours long on the DST
+// changes. 36 hours past its start is always inside the next day.
+const getPacificDayPeriod = (now: Date = new Date()): QuestPeriod => {
+  const periodStart = pacificStartOfDayMs(now)
+  return {
+    periodStart,
+    periodEnd: pacificStartOfDayMs(new Date(periodStart + 36 * HOUR_MS)),
+  }
+}
 
 const weekPeriod = (weekStart: number): QuestPeriod => ({
   periodStart: weekStart,
@@ -197,6 +197,13 @@ const weekPeriod = (weekStart: number): QuestPeriod => ({
 // before rewards recorded one, was paid within the period. A reward for an
 // earlier period paid late (just past the boundary) records its own period,
 // so it doesn't block this one.
+//
+// A reward without periodStart is placed by created_time, the start of the
+// transaction that paid it. While API instances on older code still run (a
+// rolling deploy), an older instance can pay a period just after it ended, and
+// this code can't tell that reward from the next period's and may pay the
+// period again. So deploy outside Pacific midnight (23:50 to 00:10), and for
+// the weekly creation quests, outside Monday 00:00 Pacific.
 const PAID_FOR_PERIOD_SQL = `
   created_time >= millis_to_ts($/periodStart/)
   and (
@@ -296,13 +303,18 @@ const awardQuestBonus = async (
   })
 }
 
-export async function getUserShareEventsCount(userId: string, startTs: string) {
+export async function getUserShareEventsCount(
+  userId: string,
+  startTs: string,
+  endTs: string
+) {
   const pg = createSupabaseDirectClient()
   const res = await pg.one(
     `select count(*)::int from user_contract_interactions
                 where user_id = $1 and name = 'page share'
-                  and created_time >= $2`,
-    [userId, startTs]
+                  and created_time >= $2
+                  and created_time < $3`,
+    [userId, startTs, endTs]
   )
   return res.count
 }

@@ -68,7 +68,7 @@ type FakeTx = {
   pending: PendingTxn[]
 }
 
-let shares: number
+let shareTimes: number[]
 // The user's other questions in the week of the question being counted.
 let otherQuestionsThisWeek: number
 let scores: Map<string, number>
@@ -122,21 +122,36 @@ const query = (owner: string | undefined) => async (sql: string) => {
   throw new Error(`unexpected query: ${sql}`)
 }
 
+const setShares = (n: number) => {
+  shareTimes = Array.from({ length: n }, () => Date.now())
+}
+
 const fakePg = {
-  one: async (sql: string) => {
-    if (sql.includes('user_contract_interactions')) return { count: shares }
+  one: async (sql: string, params: unknown[]) => {
+    if (sql.includes('user_contract_interactions')) {
+      // [start, end), as the real query.
+      const [, startTs, endTs] = params as [string, string, string?]
+      const start = Date.parse(startTs)
+      // Older code's query had no end bound.
+      const end = endTs === undefined ? Infinity : Date.parse(endTs)
+      return {
+        count: shareTimes.filter((t) => t >= start && t < end).length,
+      }
+    }
     if (sql.includes('from contracts'))
       return { count: otherQuestionsThisWeek + 1 }
     throw new Error(`unexpected query: ${sql}`)
   },
   none: async (sql: string) => {
-    if (sql.includes('insert into user_contract_interactions')) shares++
+    if (sql.includes('insert into user_contract_interactions'))
+      shareTimes.push(Date.now())
     else throw new Error(`unexpected query: ${sql}`)
   },
   oneOrNone: query(undefined),
   map: mapPaidQuestTypes,
   tx: async <T>(fn: (tx: FakeTx) => Promise<T>) => {
     const owner = `tx${++txCount}`
+    const txStart = Date.now()
     const tx: FakeTx = {
       oneOrNone: query(owner),
       map: mapPaidQuestTypes,
@@ -145,7 +160,7 @@ const fakePg = {
     try {
       const result = await fn(tx)
       // Commit.
-      for (const t of tx.pending) paid.push({ ...t, createdTime: Date.now() })
+      for (const t of tx.pending) paid.push({ ...t, createdTime: txStart })
       return result
     } finally {
       releaseRowLock(owner)
@@ -195,7 +210,7 @@ const within = async <T>(ms: number, promise: Promise<T>) => {
 }
 
 beforeEach(() => {
-  shares = 0
+  shareTimes = []
   otherQuestionsThisWeek = 0
   scores = new Map()
   paid = []
@@ -223,7 +238,7 @@ beforeEach(() => {
 
 describe('completeSharingQuest', () => {
   it('pays once the count reaches the target and records the count', async () => {
-    shares = 1
+    setShares(1)
     const result = await completeSharingQuest(USER)
     expect(paid).toEqual([
       expect.objectContaining({ questType: 'SHARES', amount: 5 }),
@@ -240,13 +255,13 @@ describe('completeSharingQuest', () => {
   })
 
   it('pays when the first call already counts two shares (double tap, or the first call was lost)', async () => {
-    shares = 2
+    setShares(2)
     await completeSharingQuest(USER)
     expect(paid).toHaveLength(1)
   })
 
   it('pays exactly once when several calls for a double tap run at once', async () => {
-    shares = 2
+    setShares(2)
     await Promise.all([
       completeSharingQuest(USER),
       completeSharingQuest(USER),
@@ -257,21 +272,21 @@ describe('completeSharingQuest', () => {
   })
 
   it('pays on the next share after a payout fails', async () => {
-    shares = 1
+    setShares(1)
     failNextPayout = true
     await expect(completeSharingQuest(USER)).rejects.toThrow('payout failed')
     expect(paid).toEqual([])
     // The count already shows the quest as done; the next share still pays.
-    shares = 2
+    setShares(2)
     await completeSharingQuest(USER)
     expect(paid).toHaveLength(1)
   })
 
   it("pays only once a day and doesn't lock the user once paid", async () => {
-    shares = 1
+    setShares(1)
     await completeSharingQuest(USER)
     expect(txCount).toBe(1)
-    shares = 5
+    setShares(5)
     await completeSharingQuest(USER)
     expect(paid).toHaveLength(1)
     expect(txCount).toBe(1)
@@ -284,7 +299,7 @@ describe('completeSharingQuest', () => {
       createdTime: Date.now() - 2 * 24 * 60 * 60 * 1000,
       amount: 5,
     })
-    shares = 1
+    setShares(1)
     await completeSharingQuest(USER)
     expect(paid).toHaveLength(2)
   })
@@ -296,7 +311,7 @@ describe('completeSharingQuest', () => {
       createdTime: Date.now(),
       amount: 100,
     })
-    shares = 1
+    setShares(1)
     await completeSharingQuest(USER)
     expect(paid.filter((p) => p.questType === 'SHARES')).toHaveLength(1)
   })
@@ -309,9 +324,62 @@ describe('completeSharingQuest', () => {
       createdTime: Date.now(),
       amount: 5,
     })
-    shares = 1
+    setShares(1)
     await completeSharingQuest(USER)
     expect(paid).toHaveLength(2)
+  })
+
+  // Only Date is faked: the queue, locks and test timeouts keep real timers.
+  const atTime = async (iso: string, fn: () => Promise<void>) => {
+    jest.useFakeTimers({
+      now: Date.parse(iso),
+      doNotFake: [
+        'nextTick',
+        'setImmediate',
+        'setTimeout',
+        'clearTimeout',
+        'setInterval',
+        'clearInterval',
+        'queueMicrotask',
+      ],
+    })
+    try {
+      await fn()
+    } finally {
+      jest.useRealTimers()
+    }
+  }
+
+  it("doesn't pay yesterday's quest with a share made after midnight", async () => {
+    // 17 Nov 23:59:59.900 PST takes 17 Nov's period; the share lands on 18 Nov.
+    await atTime('2026-11-18T07:59:59.900Z', async () => {
+      shareTimes = [Date.parse('2026-11-18T08:00:00.200Z')]
+      await completeSharingQuest(USER)
+      expect(paid).toEqual([])
+      jest.setSystemTime(Date.parse('2026-11-18T08:00:01.000Z'))
+      await completeSharingQuest(USER)
+    })
+    expect(paid).toEqual([
+      expect.objectContaining({
+        questType: 'SHARES',
+        periodStart: Date.parse('2026-11-18T08:00:00.000Z'),
+      }),
+    ])
+  })
+
+  // 1 Nov 2026 is 25 hours long in Los Angeles: 07:00Z to 2 Nov 08:00Z.
+  it('counts a reward without periodStart paid in the 25th hour of the fall-back day', async () => {
+    await atTime('2026-11-02T07:45:00.000Z', async () => {
+      paid.push({
+        questType: 'SHARES',
+        questCount: 1,
+        createdTime: Date.parse('2026-11-02T07:30:00.000Z'),
+        amount: 5,
+      })
+      setShares(1)
+      await completeSharingQuest(USER)
+    })
+    expect(paid).toHaveLength(1)
   })
 
   // Rewards paid before rewards recorded periodStart, e.g. by API instances
@@ -323,13 +391,13 @@ describe('completeSharingQuest', () => {
       createdTime: Date.now(),
       amount: 5,
     })
-    shares = 1
+    setShares(1)
     await completeSharingQuest(USER)
     expect(paid).toHaveLength(1)
   })
 
   it('pays nothing, without failing, when the tier multiplier is zero', async () => {
-    shares = 1
+    setShares(1)
     const flagged = {
       ...USER,
       bonusEligibility: 'requires_verification',
@@ -340,7 +408,7 @@ describe('completeSharingQuest', () => {
   })
 
   it('keeps the payout when the notification fails', async () => {
-    shares = 1
+    setShares(1)
     jest
       .mocked(createQuestPayoutNotification)
       .mockRejectedValueOnce(new Error('notifications down'))
@@ -355,7 +423,7 @@ describe('completeSharingQuest', () => {
   // needed their user row; the payout held the row and waited for the slot.
   // Neither moved until the queue expired the payout 10s later (503).
   it("pays while the user's bet holds their queue slot and waits for their row", async () => {
-    shares = 1
+    setShares(1)
     let betStarted!: () => void
     const started = new Promise<void>((resolve) => (betStarted = resolve))
     const bet = betsQueue.enqueueFn(async () => {
@@ -378,7 +446,7 @@ describe('completeSharingQuest', () => {
   // txns. A payout that took the queue slot and then waited for the row would
   // leave their second txn waiting for the slot until the queue failed it.
   it('lets a payment holding the row between two queued txns finish first', async () => {
-    shares = 1
+    setShares(1)
     let firstDone!: () => void
     const betweenTxns = new Promise<void>((resolve) => (firstDone = resolve))
     const conversion = (async () => {
@@ -397,7 +465,7 @@ describe('completeSharingQuest', () => {
   })
 
   it('waits for a row held by a long payment, then pays, without holding the queue', async () => {
-    shares = 1
+    setShares(1)
     await acquireRowLock('long payment')
     setTimeout(() => releaseRowLock('long payment'), 2000)
     const quest = completeSharingQuest(USER)
@@ -413,7 +481,7 @@ describe('completeSharingQuest', () => {
   // During a deploy, instances still on the old code treat only a reward with
   // questCount 1 as already paid.
   it('records questCount 1 when paid at a later count, so old instances see it', async () => {
-    shares = 3
+    setShares(3)
     await completeSharingQuest(USER)
     expect(paid).toEqual([expect.objectContaining({ questCount: 1 })])
     expect(createQuestPayoutNotification).toHaveBeenCalledWith(
@@ -437,7 +505,7 @@ describe('recordContractInteraction', () => {
 
   it('pays the sharing quest from the request that records the share', async () => {
     await expect(record('page share')).resolves.toEqual({ status: 'success' })
-    expect(shares).toBe(1)
+    expect(shareTimes).toHaveLength(1)
     expect(paid).toHaveLength(1)
   })
 
@@ -450,7 +518,7 @@ describe('recordContractInteraction', () => {
   it('records the share even when the payout fails', async () => {
     failNextPayout = true
     await expect(record('page share')).resolves.toEqual({ status: 'success' })
-    expect(shares).toBe(1)
+    expect(shareTimes).toHaveLength(1)
     expect(paid).toEqual([])
     expect(log.error).toHaveBeenCalled()
   })
